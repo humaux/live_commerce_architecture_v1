@@ -1,0 +1,61 @@
+CI-DRIFT-FACTORY tests-only fixture setup RED — NOT scanner false-negative evidence
+GitHub Foundation run: 38485867853
+Job: 115599248919, foundation / Package docs and gate map are current
+PR head: 686aa5a967b7d29bffe8b2898d17fc0f35743f7f
+Actual checkout: e4abec2d94cf0ab6267986bf773cc14d0aa59282 (merge head into 5497e55c3a0ad8ead2a4a8c30c5500c73af0c5c5)
+Actual job: 2026-10-13T23:42:31Z–23:45:39Z, exit 1
+Receipt URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38485867853/job/115599248919
+Raw job-log SHA256: 34d8c492bdc67b652199dc450bda287a47d10decb84a4103b42ffba165854b90
+All 27 subcases failed baseline coverage/exit checks before candidate writes. New main overwrote aligned widget registration: go=0 contract=1 bff=1/errors2. No candidate miss or expected-fail confirmed by this run.
+Selected verbatim log lines and failure locations:
+
+610:2026-10-13T23:45:35.6839602Z --- FAIL: TestGoFactoryTrunkMustTouchCLI (1.06s)
+611:2026-10-13T23:45:35.6840612Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/conditional_mount (0.05s)
+626:2026-10-13T23:45:35.6878953Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/different_handler_returned_early (0.05s)
+641:2026-10-13T23:45:35.6909622Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/defer (0.05s)
+656:2026-10-13T23:45:35.6940844Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/go (0.06s)
+671:2026-10-13T23:45:35.6991687Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/pool_swapped_after_probe (0.05s)
+686:2026-10-13T23:45:35.7021969Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/field_write (0.05s)
+701:2026-10-13T23:45:35.7052070Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/global_write (0.05s)
+716:2026-10-13T23:45:35.7087237Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/struct_mutated_then_passed_on (0.05s)
+731:2026-10-13T23:45:35.7123328Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/method_value (0.05s)
+746:2026-10-13T23:45:35.7154558Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/captured_probe_error (0.05s)
+761:2026-10-13T23:45:35.7184796Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/route_edit (0.05s)
+776:2026-10-13T23:45:35.7214560Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/middleware_dependency (0.05s)
+791:2026-10-13T23:45:35.7244784Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/body_dependency (0.05s)
+806:2026-10-13T23:45:35.7274598Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/probe_import_web (0.05s)
+821:2026-10-13T23:45:35.7306884Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/probe_import_. (0.05s)
+836:2026-10-13T23:45:35.7341337Z --- FAIL: TestGoFactoryTrunkCallerOriginCLI (0.93s)
+837:2026-10-13T23:45:35.7341961Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/pool_nested_assignment (0.05s)
+852:2026-10-13T23:45:35.7382497Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/pool_nested_short_declaration (0.05s)
+867:2026-10-13T23:45:35.7419311Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/pool_range_variable (0.05s)
+882:2026-10-13T23:45:35.7453384Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/pool_FuncLit_parameter (0.05s)
+901:2026-10-13T23:45:35.7498160Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/context_nested_assignment (0.05s)
+916:2026-10-13T23:45:35.7532500Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/context_nested_short_declaration (0.05s)
+931:2026-10-13T23:45:35.7564542Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/context_range_variable (0.05s)
+946:2026-10-13T23:45:35.7595960Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/context_FuncLit_parameter (0.05s)
+965:2026-10-13T23:45:35.7633378Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/pool_function_value (0.05s)
+980:2026-10-13T23:45:35.7667139Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/context_function_value (0.05s)
+995:2026-10-13T23:45:35.7698543Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/pool_GenDecl_initializer (0.05s)
+1010:2026-10-13T23:45:35.7732627Z     --- FAIL: TestGoFactoryTrunkCallerOriginCLI/context_GenDecl_initializer (0.06s)
+  20 go_factory_trunk_cli_test.go:149
+   6 go_factory_trunk_cli_test.go:161
+   4 go_factory_trunk_cli_test.go:175
+  26 go_factory_trunk_cli_test.go:335
+2026-10-13T23:45:35.6839602Z --- FAIL: TestGoFactoryTrunkMustTouchCLI (1.06s)
+2026-10-13T23:45:35.6840612Z     --- FAIL: TestGoFactoryTrunkMustTouchCLI/conditional_mount (0.05s)
+2026-10-13T23:45:35.6846177Z         go_factory_trunk_cli_test.go:149: coverage/provenance missing "SUMMARY routes go=1 contract=1 bff=1;": exit=1 ERROR (NEW) BFF_NO_GO GET /v1/admin/stores/{}/widgets/{} apps/admin/app/api/stores/[store]/[...resource]/route.ts:4, apps/admin/app/api/stores/[store]/[...resource]/route.ts:5, apps/admin/app/api/stores/[store]/[...resource]/route.ts:6, apps/admin/app/api/stores/[store]/[...resource]/route.ts:7 
+2026-10-13T23:45:35.6851348Z             ERROR (NEW) CONTRACT_ONLY GET /v1/admin/stores/{}/widgets/{} contracts/test-openapi.json:4, contracts/test-openapi.json:5, contracts/test.md:1, contracts/test.md:2 
+2026-10-13T23:45:35.6854056Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14, cmd/api/main.go:22 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-13T23:45:35.6855906Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:22, cmd/api/main.go:42 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-13T23:45:35.6858032Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:22, cmd/api/main.go:42, cmd/api/main.go:44 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-13T23:45:35.6860355Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14, cmd/api/main.go:22 opaque Go methodless mount; child route identity is unproven
+2026-10-13T23:45:35.6862007Z             SUMMARY routes go=0 contract=1 bff=1; errors=2 warnings=3 BFF_NO_GO=1 CONTRACT_ONLY=1 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-13T23:45:35.6864595Z         go_factory_trunk_cli_test.go:149: factory gate exit=1 want=0 touched=false: ERROR (NEW) BFF_NO_GO GET /v1/admin/stores/{}/widgets/{} apps/admin/app/api/stores/[store]/[...resource]/route.ts:4, apps/admin/app/api/stores/[store]/[...resource]/route.ts:5, apps/admin/app/api/stores/[store]/[...resource]/route.ts:6, apps/admin/app/api/stores/[store]/[...resource]/route.ts:7 
+2026-10-13T23:45:35.6867443Z             ERROR (NEW) CONTRACT_ONLY GET /v1/admin/stores/{}/widgets/{} contracts/test-openapi.json:4, contracts/test-openapi.json:5, contracts/test.md:1, contracts/test.md:2 
+2026-10-13T23:45:35.6869611Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14, cmd/api/main.go:22 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-13T23:45:35.6872159Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:22, cmd/api/main.go:42 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-13T23:45:35.6874142Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:22, cmd/api/main.go:42, cmd/api/main.go:44 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-13T23:45:35.6876198Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14, cmd/api/main.go:22 opaque Go methodless mount; child route identity is unproven
+2026-10-13T23:45:35.6877888Z             SUMMARY routes go=0 contract=1 bff=1; errors=2 warnings=3 BFF_NO_GO=1 CONTRACT_ONLY=1 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+34d8c492bdc67b652199dc450bda287a47d10decb84a4103b42ffba165854b90  output/ci-drift-factory/evidence/foundation-trunk-counterexamples.raw.log

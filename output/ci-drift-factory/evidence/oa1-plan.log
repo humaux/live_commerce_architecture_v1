@@ -1,0 +1,13 @@
+# Historical OA1 CI failure, not this unit's current-SHA acceptance
+# Run: 38475612050; job: 115565420528
+# URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38475612050/job/115565420528
+# Source head: 316848601032b434885dd513b11f0a8871ef57e5
+# Base: 256e9740ced9c5de05a83f58eb9f4c79a231b7b2
+# Retrieval: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/115565420528/logs, exit 0
+# Raw receipt SHA256: 8d041da624e1f25281668cb2528a595f9afcf95cbede7235fd0fd37dd3bc7779
+# Excerpt: original log lines 403, 422, 504, 575, 577; unchanged text
+2026-10-13T22:08:30.7699660Z HEAD is now at 8653a5dc Merge 316848601032b434885dd513b11f0a8871ef57e5 into 256e9740ced9c5de05a83f58eb9f4c79a231b7b2
+2026-10-13T22:08:30.9095520Z   HEAD_SHA: 316848601032b434885dd513b11f0a8871ef57e5
+2026-10-13T22:08:54.4912387Z ERROR (TOUCHED) UNRESOLVED   cmd/api/buyer.go:92, cmd/api/buyer.go:185, cmd/api/buyer.go:190 opaque Go handler dispatch buildBuyerWithCVS; route/method coverage is unknown
+2026-10-13T22:08:54.5338164Z SUMMARY routes go=280 contract=148 bff=301; errors=71 warnings=291 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=16 GO_ONLY=200 METHOD_MISMATCH=4 UNRESOLVED=125
+2026-10-13T22:08:54.5348344Z ##[error]Process completed with exit code 1.
