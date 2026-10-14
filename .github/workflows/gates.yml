@@ -184,6 +184,15 @@ jobs:
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      # Disposable authoring ref only: source-pinned package docs are generated
+      # by CI; the normal Gate below still runs unchanged with its own verdict.
+      - name: OA1 package documentation evidence
+        if: github.event_name == 'workflow_dispatch' && matrix.mode == 'focused:^TestOrderAttemptModel'
+        run: |
+          mkdir -p output/ci-gates
+          git rev-parse HEAD > output/ci-gates/oa1-package-doc-source-sha.txt
+          bash scripts/dev/depmap.sh
+          cp docs/engineering/dependency-map.md output/ci-gates/oa1-package-dependency-map.md
       - name: Gate
         run: |
           set -o pipefail
