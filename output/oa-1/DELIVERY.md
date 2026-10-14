@@ -12,10 +12,11 @@
   inline/River execution and periodic sweep. Their scoped CI receipts below
   do not constitute complete OA-1 acceptance. A2 and focused privacy/upgrade
   compatibility are verified below; the full suite remains under verification.
-  Draft PR #53's required plan is blocked by the existing opaque-handler
-  provenance boundary in CI-DRIFT: **BLOCKED(ci-drift-scanner, unit
-  CI-DRIFT-FACTORY)**, separately owned by Codex-2. The public placement path
-  is not enabled.
+  Draft PR #53's original CI-DRIFT block is resolved by the owner-selected
+  preflight move: actual required plan `38488720080/115608564962` and
+  Foundation `38491053093/115616056767` pass the unchanged scanner with
+  errors=0. Current full native and selected required gates remain under
+  verification; the public placement path is not enabled.
 
 ## Evidence
 
@@ -943,3 +944,46 @@ header ratchet, Node units and vulnerability checks. Full required Gates
 `38490193130` and full-native CI119 `38488758453` remain pending/running.
 This evidence update changes no product, test, migration or workflow source;
 whole-unit status remains NOT READY until final required and independent review.
+
+### Full native CI119 result and bounded-discovery fixture repair
+
+CI119 `38488758453`, source
+`ab62e460072debc497bd56ee12a3afb22128d157`, job `115609018709`, ended
+**RED: PASS=205 FAIL=2 SKIP=0, exit=1**. Raw receipt:
+`full-native-red-ci119.log:2188–2195,2253`.
+The two failures are `TestOrderAttemptSweepRepairNeverTakesScopeOrPrincipalLock`
+(repair/pointer sentinel false) and
+`TestOrderAttemptSweepSkipsHeldAttemptWithoutRepair` (replacement job absent).
+The restored API process preflight now passes its same-physical positive and
+all three split-pool startup refusal cases (`1951–1960`). Native expiry,
+periodic sweep, exact custody cleanup and actual worker/inline race also pass
+(`2200,2206,2223,2239`); the old CI115 expiry refusal is not recurring in CI119.
+
+Both remaining tests used the shared database while requiring one global
+oldest-100 batch to visit their new attempt. `0191:53–56` deliberately bounds
+unlocked discovery; `Executor.Sweep` processes that one batch and does not
+advance older live-job candidates. The log did not record the target's rank,
+so exclusion by more than 100 candidates is a source-supported explanation,
+not a measured CI count. No product scheduling or frozen contract change is
+made to force test visitation.
+
+The fixture repair reuses existing `oaExpiryIsolated` for just those two tests.
+Each still admits through real C1 and invokes the actual worker-login Sweep.
+A new positive sentinel requires public discovery to return exactly its
+admitted attempt ID/generation before holding either barrier. Exact counts
+require one scanned/requeued attempt while scope/principal locks are held;
+the held-attempt case requires one scanned, zero repaired/aborted, then one
+repair after release. Every original native linkage, frozen-intent, zero-
+effect and complete post-repair C2 assertion remains. The original 10-second
+test envelope, 45-second sweep budget, 100-row bound and 15-minute deadline
+remain unchanged. CI GREEN for this repair is pending; local execution is
+**NOT_RUN (owner CI-only)**.
+
+Required Foundation `38491053093`, job `115616056767`, source
+`6e570a467fbfa9925bad83922a6e449879d982ad`, is **GREEN**. Receipt:
+`foundation-green-38491053093.log`; unchanged scanner, headers, Node suites
+and vulnerability check all pass. Required Gates `38491053113`, same source,
+has a successful plan (`115619584628`) and running/queued selected gates.
+This is the pre-repair required SHA, not acceptance for changed tests.
+Whole OA-1 remains **NOT READY** pending the repair's full native CI,
+current required gates and independent acceptance.

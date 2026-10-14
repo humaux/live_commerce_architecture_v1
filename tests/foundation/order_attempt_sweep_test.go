@@ -80,6 +80,19 @@ func oaSweepRepair(t *testing.T, e *lbuEnv, a orderattempt.AdmissionReceipt, old
 	return id
 }
 
+func oaSweepOnlyCandidate(t *testing.T, ctx context.Context, pool *pgxpool.Pool, a orderattempt.AdmissionReceipt) {
+	t.Helper()
+	var exact bool
+	// Calls ops.order_attempt_sweep (§3.2): prove this real C1 is selected before
+	// testing a held lock, so SKIP cannot pass merely by omitting the target.
+	err := pool.QueryRow(ctx, `SELECT ops.order_attempt_sweep('discover',NULL,NULL)=
+	 jsonb_build_array(jsonb_build_object('attempt_id',$1::uuid::text,'intent_generation',$2::bigint))`,
+		a.AttemptID, a.Generation).Scan(&exact)
+	if err != nil || !exact {
+		t.Fatalf("isolated sweep must discover exactly this admitted identity/generation: exact=%v err=%v", exact, err)
+	}
+}
+
 func TestOrderAttemptSweepNativeOrphanRepairAndLiveJobs(t *testing.T) {
 	for _, state := range []string{"missing", "completed", "discarded", "cancelled", "available", "pending", "scheduled", "retryable", "running"} {
 		t.Run(state, func(t *testing.T) {
@@ -120,13 +133,18 @@ func TestOrderAttemptSweepNativeOrphanRepairAndLiveJobs(t *testing.T) {
 }
 
 func TestOrderAttemptSweepRepairNeverTakesScopeOrPrincipalLock(t *testing.T) {
-	e := lbuNew(t)
+	// The global oldest-100 batch need not include a new shared-DB attempt.
+	// Isolate the actual C1/Sweep while retaining the native locking assertions.
+	e := oaExpiryIsolated(t)
 	a := oaFenceAdmit(t, e)
 	old := oaSweepJob(t, e, a.AttemptID)
 	oaSweepJobState(t, e, old, "discarded")
 	intent := oaSweepIntent(t, e, a.AttemptID)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	pool := miPool(t, e.p.f, "commerce_claims_worker")
+	executor := oaExecutorNew(t, pool, oaServiceKeys(t))
+	oaSweepOnlyCandidate(t, ctx, pool, a)
 	holder, err := e.p.f.owner.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -135,11 +153,10 @@ func TestOrderAttemptSweepRepairNeverTakesScopeOrPrincipalLock(t *testing.T) {
 	defer holder.Rollback(context.Background())
 	oaStateExec(t, holder, `SELECT scope_id FROM ops.order_attempt_scopes WHERE scope_id=$1 FOR UPDATE`, a.ScopeID)
 	oaStateExec(t, holder, `SELECT id FROM identity.principals WHERE id=$1 FOR UPDATE`, e.p.f.principalA)
-	pool := miPool(t, e.p.f, "commerce_claims_worker")
-	executor := oaExecutorNew(t, pool, oaServiceKeys(t))
-	if _, err = executor.Sweep(ctx); err != nil {
+	counts, err := executor.Sweep(ctx)
+	if err != nil || counts.Scanned != 1 || counts.Requeued != 1 || counts.Aborted != 0 {
 		oaSweepDiagnoseFirst(t, pool)
-		t.Fatal("repair reacquired an earlier lock (including implicit scope FK)", err)
+		t.Fatal("repair must select and repair while earlier locks are held (including implicit scope FK)", counts, err)
 	}
 	oaSweepRepair(t, e, a, old, intent)
 	// A separate later C2 transaction must still execute while the earlier locks
@@ -153,13 +170,17 @@ func TestOrderAttemptSweepRepairNeverTakesScopeOrPrincipalLock(t *testing.T) {
 }
 
 func TestOrderAttemptSweepSkipsHeldAttemptWithoutRepair(t *testing.T) {
-	e := lbuNew(t)
+	// Select this attempt independently of other tests' oldest-100 backlog.
+	e := oaExpiryIsolated(t)
 	a := oaFenceAdmit(t, e)
 	old := oaSweepJob(t, e, a.AttemptID)
 	oaSweepJobState(t, e, old, "missing")
 	intent := oaSweepIntent(t, e, a.AttemptID)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	pool := miPool(t, e.p.f, "commerce_claims_worker")
+	executor := oaExecutorNew(t, pool, oaServiceKeys(t))
+	oaSweepOnlyCandidate(t, ctx, pool, a)
 	holder, err := e.p.f.owner.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -167,11 +188,10 @@ func TestOrderAttemptSweepSkipsHeldAttemptWithoutRepair(t *testing.T) {
 	oaAbortCleanupTx(t, holder)
 	defer holder.Rollback(context.Background())
 	oaStateExec(t, holder, `SELECT attempt_id FROM ops.order_attempts WHERE attempt_id=$1 FOR UPDATE`, a.AttemptID)
-	pool := miPool(t, e.p.f, "commerce_claims_worker")
-	executor := oaExecutorNew(t, pool, oaServiceKeys(t))
-	if _, err = executor.Sweep(ctx); err != nil {
+	counts, err := executor.Sweep(ctx)
+	if err != nil || counts.Scanned != 1 || counts.Requeued != 0 || counts.Aborted != 0 {
 		oaSweepDiagnoseFirst(t, pool)
-		t.Fatal("SKIP LOCKED sweep waited or failed on held attempt", err)
+		t.Fatal("SKIP LOCKED sweep must select but not repair or settle the held attempt", counts, err)
 	}
 	if oaSweepJob(t, e, a.AttemptID) != old || oaSweepIntent(t, e, a.AttemptID) != intent {
 		t.Fatal("held attempt was repaired")
@@ -179,9 +199,10 @@ func TestOrderAttemptSweepSkipsHeldAttemptWithoutRepair(t *testing.T) {
 	if err = holder.Rollback(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = executor.Sweep(ctx); err != nil {
+	counts, err = executor.Sweep(ctx)
+	if err != nil || counts.Scanned != 1 || counts.Requeued != 1 || counts.Aborted != 0 {
 		oaSweepDiagnoseFirst(t, pool)
-		t.Fatal(err)
+		t.Fatal("released attempt must be selected and repaired exactly once", counts, err)
 	}
 	oaSweepRepair(t, e, a, old, intent)
 }
