@@ -48,18 +48,12 @@ func (s *goScanner) opaque(fn *goFunc) {
 		}
 		seen[current.Key] = true
 		s.File = current.File
-		signal := false
+		// Every visited dependency can change the returned handler, even without
+		// its own route literal. Retain its whole span; never subtract factory code.
+		refs = goRefs(refs, []location{s.loc(current.AST)})
 		ast.Inspect(current.AST.Body, func(n ast.Node) bool {
 			if sel, ok := n.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Path" || sel.Sel.Name == "Method" || strings.HasPrefix(sel.Sel.Name, "Method")) {
-				signal = true
 				dispatch = true
-			}
-			if lit, ok := n.(*ast.BasicLit); ok && lit.Kind == token.STRING {
-				v, _ := strconv.Unquote(lit.Value)
-				if strings.HasPrefix(v, "/") {
-					signal = true
-
-				}
 			}
 			if id, ok := n.(*ast.Ident); ok {
 				for _, callee := range s.Package.ByName[id.Name] {
@@ -68,7 +62,6 @@ func (s *goScanner) opaque(fn *goFunc) {
 				v := s.Package.Globals.get(id.Name)
 				for _, text := range v.Text {
 					if strings.HasPrefix(text, "/") {
-						signal = true
 						refs = goRefs(refs, v.Refs)
 
 					}
@@ -85,9 +78,6 @@ func (s *goScanner) opaque(fn *goFunc) {
 			}
 			return true
 		})
-		if signal {
-			refs = goRefs(refs, []location{s.loc(current.AST)})
-		}
 	}
 	// Only actual custom mount guards provide coverage; provider API strings in
 	// underlying handlers cannot define this API's served namespace.
@@ -170,7 +160,7 @@ func goBindOpaqueMountSpans(packages map[string]*goPackage, root string, set *to
 	}
 	for i := range out.Unresolved {
 		f := &out.Unresolved[i]
-		if (f.Method != "PREFIX" && f.Method != "EXACT") || len(f.Locations) == 0 {
+		if (f.Method != "PREFIX" && f.Method != "EXACT" && f.Method != "MOUNT") || len(f.Locations) == 0 {
 			continue
 		}
 		assembly := f.Locations[0].File
