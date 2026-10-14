@@ -51,15 +51,19 @@ func TestBuyerKeptDatabasePreflightRealPG(t *testing.T) {
 	if buyerDatabasePreflight(ctx, base, main) != nil {
 		t.Fatal("captured preflight positive control failed")
 	}
-	for _, stage := range []string{"success", "issuer", "runtime", "checkout"} {
+	for _, stage := range []string{"success", "issuer", "runtime", "checkout", "success_cfg_split", "issuer_cfg_primary", "runtime_cfg_primary", "checkout_cfg_primary", "all_clone_cfg_primary"} {
 		t.Run(stage, func(t *testing.T) {
 			c := base
 			switch stage {
-			case "issuer":
+			case "issuer", "issuer_cfg_primary":
 				c.issuerDSN = os.Getenv("LC_BUYER_KEPT_CLONE_ISSUER_DSN")
-			case "runtime":
+			case "runtime", "runtime_cfg_primary":
 				c.buyerDSN = os.Getenv("LC_BUYER_KEPT_CLONE_RUNTIME_DSN")
-			case "checkout":
+			case "checkout", "checkout_cfg_primary":
+				c.checkoutDSN = os.Getenv("LC_BUYER_KEPT_CLONE_CHECKOUT_DSN")
+			case "all_clone_cfg_primary":
+				c.issuerDSN = os.Getenv("LC_BUYER_KEPT_CLONE_ISSUER_DSN")
+				c.buyerDSN = os.Getenv("LC_BUYER_KEPT_CLONE_RUNTIME_DSN")
 				c.checkoutDSN = os.Getenv("LC_BUYER_KEPT_CLONE_CHECKOUT_DSN")
 			}
 			label := "buyer-kept-" + stage
@@ -89,8 +93,18 @@ func TestBuyerKeptDatabasePreflightRealPG(t *testing.T) {
 			if total < 3 {
 				t.Fatal("actual factory did not hold three live participant connections")
 			}
+			// Change only the captured configuration after the factory has retained
+			// its real pools. Reopening these valid DSNs must not decide the result.
+			switch stage {
+			case "success_cfg_split":
+				c.issuerDSN = os.Getenv("LC_BUYER_KEPT_CLONE_ISSUER_DSN")
+			case "issuer_cfg_primary", "runtime_cfg_primary", "checkout_cfg_primary", "all_clone_cfg_primary":
+				c.issuerDSN = base.issuerDSN
+				c.buyerDSN = base.buyerDSN
+				c.checkoutDSN = base.checkoutDSN
+			}
 			err = buyerKeptDatabasePreflight(ctx, c, parts)
-			if stage == "success" {
+			if stage == "success" || stage == "success_cfg_split" {
 				if err != nil {
 					t.Fatal("same physical retained pools refused")
 				}
