@@ -1,0 +1,184 @@
+plan	Set up job	﻿2026-10-14T03:55:16.9001392Z Current runner version: '2.337.0'
+plan	Set up job	2026-10-14T03:55:16.9027411Z ##[group]Runner Image Provisioner
+plan	Set up job	2026-10-14T03:55:16.9028305Z Hosted Compute Agent
+plan	Set up job	2026-10-14T03:55:16.9028860Z Version: 20261002.596
+plan	Set up job	2026-10-14T03:55:16.9029471Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+plan	Set up job	2026-10-14T03:55:16.9030152Z Build Date: 2026-10-02T22:28:27Z
+plan	Set up job	2026-10-14T03:55:16.9030772Z Worker ID: {704504fc-86a3-4e9a-8582-d76ae7d381e0}
+plan	Set up job	2026-10-14T03:55:16.9031397Z Region: westus3
+plan	Set up job	2026-10-14T03:55:16.9031909Z Cloud: Azure
+plan	Set up job	2026-10-14T03:55:16.9032391Z ##[endgroup]
+plan	Set up job	2026-10-14T03:55:16.9033981Z ##[group]Operating System
+plan	Set up job	2026-10-14T03:55:16.9034551Z Ubuntu
+plan	Set up job	2026-10-14T03:55:16.9035001Z 24.04.5
+plan	Set up job	2026-10-14T03:55:16.9035494Z LTS
+plan	Set up job	2026-10-14T03:55:16.9035948Z ##[endgroup]
+plan	Set up job	2026-10-14T03:55:16.9036438Z ##[group]Runner Image
+plan	Set up job	2026-10-14T03:55:16.9037159Z Image: ubuntu-24.04
+plan	Set up job	2026-10-14T03:55:16.9037689Z Version: 20261004.327.1
+plan	Set up job	2026-10-14T03:55:16.9038678Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+plan	Set up job	2026-10-14T03:55:16.9040246Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+plan	Set up job	2026-10-14T03:55:16.9041120Z ##[endgroup]
+plan	Set up job	2026-10-14T03:55:16.9042134Z ##[group]GITHUB_TOKEN Permissions
+plan	Set up job	2026-10-14T03:55:16.9044365Z Contents: read
+plan	Set up job	2026-10-14T03:55:16.9044929Z Metadata: read
+plan	Set up job	2026-10-14T03:55:16.9045808Z ##[endgroup]
+plan	Set up job	2026-10-14T03:55:16.9047947Z Secret source: Actions
+plan	Set up job	2026-10-14T03:55:16.9048825Z Cache mode: write
+plan	Set up job	2026-10-14T03:55:16.9049462Z Prepare workflow directory
+plan	Set up job	2026-10-14T03:55:16.9358869Z Prepare all required actions
+plan	Set up job	2026-10-14T03:55:16.9406157Z Getting action download info
+plan	Set up job	2026-10-14T03:55:17.2467764Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+plan	Set up job	2026-10-14T03:55:17.3205869Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+plan	Set up job	2026-10-14T03:55:18.1253052Z Complete job name: plan
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	﻿2026-10-14T03:55:18.2059475Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2060790Z with:
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2061369Z   persist-credentials: false
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2062076Z   fetch-depth: 1
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2062720Z   repository: humaux/live_commerce_architecture_v1
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2067241Z   token: ***
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2067839Z   ssh-strict: true
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2068423Z   ssh-user: git
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2069001Z   clean: true
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2069607Z   sparse-checkout-cone-mode: true
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2070276Z   fetch-tags: false
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2070871Z   show-progress: true
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2071438Z   lfs: false
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2072047Z   submodules: false
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2072642Z   set-safe-directory: true
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2073288Z   allow-unsafe-pr-checkout: false
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.2074337Z ##[endgroup]
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3066547Z Syncing repository: humaux/live_commerce_architecture_v1
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3069970Z ##[group]Getting Git version info
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3071163Z Working directory is '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3072539Z [command]/usr/bin/git version
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3163906Z git version 2.55.0
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3189472Z ##[endgroup]
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3205680Z Temporarily overriding HOME='/home/runner/work/_temp/9c159368-2dc8-4cf1-83db-99f2b27de033' before making global git config changes
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3208756Z Adding repository directory to the temporary git global config as a safe directory
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3219682Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3267256Z Deleting the contents of '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3272349Z ##[group]Initializing the repository
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3277857Z [command]/usr/bin/git init /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3405136Z hint: Using 'master' as the name for the initial branch. This default branch name
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3406311Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3407921Z hint: to use in all of your new repositories, which will suppress this warning,
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3409191Z hint: call:
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3410189Z hint:
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3411380Z hint: 	git config --global init.defaultBranch <name>
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3412745Z hint:
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3414202Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3416311Z hint: 'development'. The just-created branch can be renamed via this command:
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3418312Z hint:
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3419374Z hint: 	git branch -m <name>
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3420493Z hint:
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3421811Z hint: Disable this message with "git config set advice.defaultBranchName false"
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3423423Z Initialized empty Git repository in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/.git/
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3429758Z [command]/usr/bin/git remote add origin https://github.com/humaux/live_commerce_architecture_v1
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3471977Z ##[endgroup]
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3473763Z ##[group]Disabling automatic garbage collection
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3475339Z [command]/usr/bin/git config --local gc.auto 0
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3502129Z ##[endgroup]
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3503927Z ##[group]Setting up auth
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3509392Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3537679Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3876712Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.3904547Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.4077719Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.4104067Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.4273138Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.4304132Z ##[endgroup]
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.4305750Z ##[group]Fetching the repository
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:18.4315148Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +96e4c4799f2648f9ce60a6d3de5e7f694280284e:refs/remotes/origin/unit/oa-1-doc-synopsis-235413c7
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:26.9907004Z From https://github.com/humaux/live_commerce_architecture_v1
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:26.9909168Z  * [new ref]         96e4c4799f2648f9ce60a6d3de5e7f694280284e -> origin/unit/oa-1-doc-synopsis-235413c7
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:26.9920049Z ##[endgroup]
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:26.9920928Z ##[group]Determining the checkout info
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:26.9921727Z ##[endgroup]
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:26.9922292Z [command]/usr/bin/git sparse-checkout disable
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:26.9965727Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:26.9990721Z ##[group]Checking out the ref
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:26.9994935Z [command]/usr/bin/git checkout --progress --force -B unit/oa-1-doc-synopsis-235413c7 refs/remotes/origin/unit/oa-1-doc-synopsis-235413c7
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.0184862Z Updating files:  57% (6974/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.0558260Z Updating files:  58% (7016/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.0967568Z Updating files:  59% (7137/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.1199251Z Updating files:  60% (7257/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.1278554Z Updating files:  61% (7378/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.1319554Z Updating files:  62% (7499/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.1464065Z Updating files:  63% (7620/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.1706385Z Updating files:  64% (7741/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.1900703Z Updating files:  65% (7862/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.2053757Z Updating files:  66% (7983/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.2225909Z Updating files:  67% (8104/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.2348593Z Updating files:  68% (8225/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.2405923Z Updating files:  69% (8346/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.2656636Z Updating files:  70% (8467/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.2908615Z Updating files:  71% (8588/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.2990931Z Updating files:  72% (8709/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.3121339Z Updating files:  73% (8830/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.3448827Z Updating files:  74% (8951/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.3693043Z Updating files:  75% (9072/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.3796335Z Updating files:  76% (9193/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.3969022Z Updating files:  77% (9314/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4083969Z Updating files:  78% (9435/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4199342Z Updating files:  79% (9556/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4237632Z Updating files:  80% (9676/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4340999Z Updating files:  81% (9797/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4401739Z Updating files:  82% (9918/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4506430Z Updating files:  83% (10039/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4659748Z Updating files:  84% (10160/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4743057Z Updating files:  85% (10281/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4876630Z Updating files:  86% (10402/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4925023Z Updating files:  87% (10523/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.4964067Z Updating files:  88% (10644/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5018100Z Updating files:  89% (10765/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5062580Z Updating files:  90% (10886/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5172613Z Updating files:  91% (11007/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5289416Z Updating files:  92% (11128/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5453259Z Updating files:  93% (11249/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5531721Z Updating files:  94% (11370/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5621078Z Updating files:  95% (11491/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5751935Z Updating files:  96% (11612/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5870628Z Updating files:  97% (11733/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.5983921Z Updating files:  98% (11854/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6089953Z Updating files:  99% (11975/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6090684Z Updating files: 100% (12095/12095)
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6091151Z Updating files: 100% (12095/12095), done.
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6219604Z Switched to a new branch 'unit/oa-1-doc-synopsis-235413c7'
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6225295Z branch 'unit/oa-1-doc-synopsis-235413c7' set up to track 'origin/unit/oa-1-doc-synopsis-235413c7'.
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6265904Z ##[endgroup]
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6306580Z [command]/usr/bin/git log -1 --format=%H
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6328916Z 96e4c4799f2648f9ce60a6d3de5e7f694280284e
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6337327Z ##[group]Removing auth
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6340585Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6371625Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6554541Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6578618Z http.https://github.com/.extraheader
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6585572Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6612119Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6791600Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6814871Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+plan	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:28.6988103Z ##[endgroup]
+plan	Run node scripts/dev/ci-plan.mjs	﻿2026-10-14T03:55:28.7197411Z ##[group]Run node scripts/dev/ci-plan.mjs
+plan	Run node scripts/dev/ci-plan.mjs	2026-10-14T03:55:28.7197841Z [36;1mnode scripts/dev/ci-plan.mjs[0m
+plan	Run node scripts/dev/ci-plan.mjs	2026-10-14T03:55:28.7385077Z shell: /usr/bin/bash -e {0}
+plan	Run node scripts/dev/ci-plan.mjs	2026-10-14T03:55:28.7385346Z env:
+plan	Run node scripts/dev/ci-plan.mjs	2026-10-14T03:55:28.7385575Z   MODES: focused:^TestOrderAttemptModel
+plan	Run node scripts/dev/ci-plan.mjs	2026-10-14T03:55:28.7385844Z ##[endgroup]
+plan	Run node scripts/dev/ci-plan.mjs	2026-10-14T03:55:28.9585564Z ci-plan: Unexpected token 'o', "focused:^Te"... is not valid JSON
+plan	Run node scripts/dev/ci-plan.mjs	2026-10-14T03:55:28.9630510Z ##[error]Process completed with exit code 1.
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	﻿2026-10-14T03:55:28.9752241Z Post job cleanup.
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.0527851Z [command]/usr/bin/git version
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.0568955Z git version 2.55.0
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.0611938Z Temporarily overriding HOME='/home/runner/work/_temp/868053c7-6b7f-4df2-b7c0-16c6d33f863e' before making global git config changes
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.0612879Z Adding repository directory to the temporary git global config as a safe directory
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.0618648Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.0656141Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.0687384Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.0892187Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.0922102Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.1126284Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+plan	Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-14T03:55:29.1152195Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+plan	Complete job	﻿2026-10-14T03:55:29.1519759Z Evaluate and set job outputs
+plan	Complete job	2026-10-14T03:55:29.1531356Z Set output 'deploy'
+plan	Complete job	2026-10-14T03:55:29.1533349Z Cleaning up orphan processes

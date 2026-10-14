@@ -1266,3 +1266,212 @@ rollback. Its current-SHA mutation and restored proof are pending.
 The same-thread 15-minute heartbeat is registered to collect and reconcile every
 run, update this delivery and Humaux, and notify only substantive failure or
 completion. All local runtime remains NOT_RUN(owner CI-only); whole NOT_READY.
+
+Owner option-2 source/tests were pushed as `235413c783113b9e008966040f7584fe4feda309`.
+Current Foundation `38505364047`/job `115661519687` is complete GREEN, including
+Node/typecheck, unchanged drift scanner `errors=0` at
+`foundation-green-235413c78.log:1083` and check-gates at 1136. PR Gates
+`38505364017` is pending. Prior 8947 Gates `38501799851` was superseded with
+27 successful jobs and 50 cancelled jobs; that partial run is not full acceptance.
+Current normal reserved/deadline CI135 `38505394160` and corrected CAS mutation
+CI134 `38505390841` are registered on exact 235, pending, original budgets.
+
+Further causal mutation receipts at 8947 (all PASS=0 FAIL=1 exit=1):
+
+| Mutation | Run / job | Target assertion and raw receipt |
+|---|---|---|
+| m6-skip-generation-recheck | 38502028107 / 115654290858 | Runtime and claims stale calls improperly returned receipts; `generation-recheck-red-8947a775c.log:744–756` |
+| sealed-origin-echo-lie | 38502028118 / 115653724226 | Independent decrypted recipient/link oracle rejected both origin-change cases; `sealed-origin-red-8947a775c.log:736–745` |
+| expose-privacy-fence | 38502028358 / 115655215702 | Exact fence ACL unsafe; `privacy-fence-red-8947a775c.log:734–739` |
+| expose-privacy-attempt-dml | 38502028182 / 115653676140 | Privacy writer unexpectedly held INSERT; `privacy-dml-red-8947a775c.log:713–726` |
+| production-enable-worker | 38502028413 / 115654370691 | Go configuration-only oracle: literal disabled worker activation pin missing; `production-worker-red-8947a775c.log:730–737` |
+| independent-outbox-commit | 38502028126 / 115655638629 | Split outbox COMMIT returned nil instead of exact 23514; `outbox-split-red-8947a775c.log:735–740` |
+
+The earlier `api-all-preflight-bypass` run `38502028180`/job `115654196431`
+is **NOT_RUN(zero-matched-tests)**, not a causal RED: its regex omitted the
+`OrderAttempt` prefix (`api-all-probe-red-8947a775c.log:729–730`, zero tests,
+job exit=3). Corrected mutation CI136 `38505918571` uses the existing real
+`TestOrderAttemptProcessAPIRejectsSplitBuyerPools` on exact 235; pending.
+CI132's analogous wrong OR arm cannot establish the process probe, even if its
+other two erasure cases pass. Current source, required gates, the remaining
+mutants and chronological restored-normal receipts are still pending. No READY.
+
+## Current collection: native expiry, reserved reason and CAS (2026-10-14)
+
+| Source | CI / job | Actual result and receipt |
+|---|---|---|
+| Tests FIRST `45456d08e` | CI133 `38503715894` / `115657646968` | **GREEN**, `TestOrderAttemptLocalKeyMissingExpiresAtRealDeadline`, PASS=1 FAIL=0 SKIP=0 exit=0, 906.77 seconds. `local-key-deadline-green-ci133.log:725–730`. Uses real C1 clock and direct native Sweep, not a backdated deadline or the separate River-periodic oracle. This is tests-first source, not current-source whole acceptance. |
+| Product `235413c78` | CI135 `38505394160` / `115664781849` | **GREEN**, `TestOrderAttemptReservedPlanUnavailableCannotAbortPending`, PASS=1 FAIL=0 SKIP=0 exit=0; both actual runtime and claims-worker lanes. `reserved-reason-green-235413c78.log:729–733`. Earlier tests-first runtime causal RED is above. |
+| Product `235413c78` | CI134 `38505390841` / `115664677997` | **Causal mutation RED**, PASS=0 FAIL=1 SKIP=0 exit=1. Patched current 0194 CAS; the new stale-generation positive fixture got SQLSTATE 23505 instead of strict PT409/intent_conflict. `omit-cas-red-235413c78.log:695,726–739`. The original future-generation fixture is preserved. |
+| Product `235413c78` | CI136 `38505918571` / `115665119596` | **Causal mutation RED**, PASS=0 FAIL=1 SKIP=0 exit=1. Patched both startup probe calls in `cmd/api/main.go`; the real same-physical positive case passed, all three split-pool configurations wrongly remained running and failed. `api-all-preflight-red-235413c78.log:702–703,731–750`. This replaces the zero-test run as the causal receipt. |
+| Earlier `8947a775c` | `38502028560` / `115655708990` | **Causal configuration mutation RED**, PASS=0 FAIL=1 exit=1; API disabled activation literal missing, `production-api-red-8947a775c.log:736–744`. Like the worker pin, this automated Go oracle is configuration-only, not native DB/provider proof. |
+
+Current PR plan `38505364017/115662734280` is GREEN with the unchanged scanner
+`errors=0` (`plan-green-235413c78.log:532`) and 53 selected modes plus deploy smoke.
+Foundation on the same SHA is full GREEN as recorded above. Current true-deadline
+job `115664781874`, full required universe, chronological restored-normal focused
+tests and independent delta review remain pending. Do not interpret successful
+focused jobs as full workflow acceptance.
+
+Read-only closure audit found the API package synopsis still came from the
+preflight file header. The isolated documentation ref
+`unit/oa-1-doc-synopsis-235413c7` contains only the blank-line fix `186ae8901`
+and disposable CI authoring step `3d6c34972`; CI137 `38507241089` generates the
+dependency map and then runs the unchanged model gate. No local generator runs;
+only the source header fix and CI-produced map will enter PR #53. A2 review
+status is already explicit in contract lines 7–10, and the unit brief already
+records the approved amendment.
+
+Go P2-3 is still **partially open**: authenticated recipient refusal is VOID,
+crypto dependency faults are contractually retryable, but a deterministic final
+notification-text format refusal shares the protocol-invariant error. Tests FIRST
+are being prepared in the isolated format-refusal worktree; no product fix or
+causal RED for that remaining branch is claimed. Malformed internal DTOs and
+authenticated-message invariant failures must retain their existing PENDING
+oracles. All local runtime/build/format/PG remain NOT_RUN(owner CI-only).
+
+The remaining rendered-format regression is tests FIRST
+`5f9987e96bd1e9693b27d6cea137d2a67ef2c1f0`, isolated ref
+`unit/oa-1-format-refusal-235413c7`, CI138 `38508003547`. It establishes signed
+ingress and a successful C1, then injects a trusted fixed-template body fault
+in that scenario's private database: one placeholder, 2000-rune body, unchanged
+fixed identity/version/kinds. Rendering the native order URL exceeds Facebook's
+provider limit. It does not claim merchants can publish a fixed template or that
+the reviewer's trailing-slash example bypasses native domain constraints. The
+real Executor must commit the complete order with VOID(format_invalid), no send
+job/artifact and exact replay. No product edit before causal CI RED; current run
+is pending. Crypto dependency faults remain retryable under contract §3.2.
+
+### Collection update: current native option-2 proof and remaining format branch
+
+CI135 `38505394160`, exact product `235413c78`, is complete GREEN. In addition
+to both reserved-reason lanes, job `115664781874` passes the real-clock missing
+ring version test in **907.02 seconds**, PASS=1 FAIL=0 SKIP=0 exit=0:
+`local-key-deadline-green-235413c78.log:723–726`. It observes PENDING before
+the original deadline, then actual Sweep ABORTED(EXPIRED), zero C2 effects,
+resource release, exact replay and next-generation CAS. PLAN_UNAVAILABLE remains
+reserved/unused; no loss registry or new amendment was introduced.
+
+Historical CI132 `38502551113` on `8947a775c` is fully GREEN: native job
+`115660240649` PASS=21 FAIL=0 SKIP=0 exit=0, `native-green-ci132.log:820`;
+other groups are model GREEN5 (MODEL_ONLY), erasure/shared-key GREEN3 and
+SQL/admission/actual-kept-pool GREEN30. Those earlier source results do not
+replace final current-source restored-normal acceptance after all mutations.
+
+CI138 `38508003547`, tests-FIRST `5f9987e96`, native job `115670922295`, is
+**causal RED**, PASS=0 FAIL=1 SKIP=0 exit=1. Signed ingress, C1 and template
+prerequisites succeeded; the actual continuation returned
+`order_attempt_unavailable` instead of full COMMITTED with VOID(format_invalid)
+(`notification-format-red-ci138.log:731–737`). The final checkText policy refusal
+needs its own closed classification; URL/token/DTO/inbound invariant and AEAD
+dependency faults remain retryable. Product fix and restored GREEN are pending.
+
+CI137 `38507241089` generated the map after preflight-header separation; its
+artifact exposed a second existing file header, `comment_stream.go`, taking
+the package synopsis. A second comment-only fix `96e4c4799` separates that
+header as well. CI139 `38508714010` on the isolated documentation author ref
+will regenerate the map and run the unchanged model gate. Only the two blank
+lines and exact CI-generated map may enter PR #53; its disposable workflow
+authoring step must stay off the PR branch. No factory/scanner changes.
+
+Current required `38505364017` has a REAL `--browser-order` failure, job
+`115663536422`: BO06 `PII/bearer attempted persistent write` at
+`tests/storefront/order-gate.mjs:813`. Evidence is
+`browser-order-235-artifact/job115663536422/job.log:1062–1068` and the downloaded
+artifact `playwright/buyer-order-2297644646/browser.log:38–39`; preceding cart,
+address, order, history and recovery cases pass. The gate/frontends/buyer API
+have identical blobs to PR base `256e9740`; the attempted-write match is not
+captured, so neither regression attribution nor a flake diagnosis is proven.
+All other required jobs remain individually tracked. Full READY is withheld.
+
+### Consolidated format, synopsis and required-fixture continuation
+
+Tests `98670f395` and product `efe359a63` follow CI138's causal RED. Only final
+rendered-text policy rejection receives `ErrOrderAttemptNotificationContent`;
+it is returned after complete authenticated inbound validation. The executor
+classifies it as VOID(format_invalid) before UUID/job allocation. SQL accepts
+only the exact recipient/content-refusal shape with fresh origin/version
+comparison and retains terminal replay conflict checks. URL/token/DTO,
+authenticated malformed messages and AEAD faults stay retryable. A second
+read-only reviewer found no actionable scoped issue (E1, not runtime proof).
+
+Current235 required shards also expose two native fixture/oracle failures:
+
+- g08 `115663536273`: `generation-stale` exact-key replay sent new origin IDs,
+  correctly receiving idempotency_conflict; `shard-g08-red-235413c78.log:1225`.
+  `9e7db9061` freezes one selection for first admission/refusal/replay.
+- g10 `115663536600`: claim helper's unfinished C1 fixture has empty provenance,
+  so extracting its principal produced NULL and excluded both reservations;
+  `shard-g10-red-235413c78.log:1335`. The oracle now independently uses the
+  fixture's authenticated principal, with an additional exact principal check.
+  Owner, generation, digest, deadline, count=2, legacy-denial and subsequent
+  grant assertions remain unchanged. No product workaround or weakened test.
+
+CI140 `38508928340`, source `96e4c4799`, job `115672973072`, generated the
+correct `Command api owns the API process assembly` synopsis and passed model
+tests (MODEL_ONLY). `doc-ci140-model-green.log` and exact artifact
+`doc-ci140-artifact/ci-gates/oa1-package-dependency-map.md` record its provenance.
+That artifact is applied verbatim; disposable authoring workflow remains off
+the PR. CI139 `38508714010` was NOT_RUN(matrix planning): MODES was supplied
+as non-JSON. The corrected dispatch used the same source with JSON input.
+
+Immutable QA ref `unit/oa-1-round1-native-9e7db9061` is source
+`9e7db9061db868534e440fcafdfc294294571b89`. New CI registrations, all unchanged
+budgets and isolated GitHub runners:
+
+| Run | Purpose | Current receipt |
+|---|---|---|
+| 38509379226 | sealed-origin-echo-lie mutation | PENDING |
+| 38509386408 | omit-generation-cas mutation with frozen replay body | PENDING |
+| 38509416754 | independent-outbox-commit mutation | PENDING |
+| 38509389458 | normal rendered-format and exact two failed fixture cases | PENDING |
+
+`38509382674` was cancelled before acceptance because its outbox regex did not
+name an existing test; it is NOT_RUN, never a mutation RED. The corrected exact
+test is `TestOrderAttemptOutboxOnlyCommitRejectsSplitNativeReadyPair`.
+Final restored-normal full focused proof must follow all causal mutations.
+Foundation/full required on the final pushed source and independent delta
+review remain outstanding. No local execution or test-budget change.
+
+### Current source collection before restored-normal acceptance
+
+CI144 `38509389458`, exact `9e7db9061`, is fully GREEN:
+
+- Native notification rendered-format job `115674963355`: PASS=1 FAIL=0
+  SKIP=0 exit=0 (`notification-format-green-ci144.log:733–736`). This is the
+  restored GREEN for CI138's actual signed C1/executor causal RED.
+- Native CAS/claim-custody job `115674963357`: PASS=2 FAIL=0 SKIP=0 exit=0
+  (`cas-claim-fixtures-green-ci144.log:738–748`), including stale CAS, exact
+  winning-key replay and the two reservation/grant custody checks.
+
+The three freshly re-run mutations on that same source are causal RED, each
+PASS=0 FAIL=1 SKIP=0 exit=1. Every log echoes the patched path and before/after
+hashes; all original code remains restored on the PR branch:
+
+| Run / job | Mutation | Actual failing oracle |
+|---|---|---|
+| 38509379226 / 115674861294 | sealed-origin-echo-lie | Both origin-change scenarios decrypt the message and reject stale ciphertext despite a falsely fresh metadata echo (`sealed-origin-red-ci141.log:734–745`). |
+| 38509386408 / 115674916444 | omit-generation-cas | Advanced scope with stale CAS reaches 23505 rather than the required typed PT409 (`omit-cas-red-ci143.log:716–717,749–761`). |
+| 38509416754 / 115675299965 | independent-outbox-commit | Independent native READY outbox COMMIT succeeds instead of exact 23514 refusal (`outbox-split-red-ci145.log:698–699,728–733`). |
+
+Required235 g05 also failed its **CVS fixture prerequisite**, before C2 or a
+crash barrier: `TestOrderAttemptMatrixCVSPickupCrash/native-cvs-control`,
+`shard-g05-red-235413c78.log:1369–1373`, job `115663536279`. The isolated expiry
+seed explicitly forbids CVS bank transfer; choosing a CVS service does not
+enable that payment combination. Source `7d90d1e2c` now enables it only in the
+CVS crash scenario via the real merchant settings PUT with expected_version=1,
+preserving account/window=6 and requiring exact version=2 readback. Global
+fixture defaults, the successful native C1/C2 control and both crash-barrier
+assertions remain unchanged. The original log's public error is unavailable;
+`PT422 bank_transfer_unavailable` is a source inference, not an observed SQL
+log. This RED is a fixture precondition failure, not a product causal RED.
+Restored GREEN for this case and the full native suite is still pending.
+
+Independent read-only E1 audit of `348f208b2` found no actionable scoped gap
+in the frozen replay body, independent authenticated custody oracle, four-field
+notification refusal or exact CI-generated documentation artifact. It does
+not replace runtime proof or the integrator's independent delta review.
+Required235 remains a partial run with four real failures, not all GREEN;
+its BO06 attempted-persistent-write failure remains unattributed. Current
+source must receive fresh Foundation and required PR acceptance. All local
+runtime/build/format/PG remains NOT_RUN(owner CI-only).

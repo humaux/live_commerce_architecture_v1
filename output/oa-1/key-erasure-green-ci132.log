@@ -1,0 +1,789 @@
+﻿2026-10-14T03:25:49.5089514Z Current runner version: '2.337.0'
+2026-10-14T03:25:49.5106456Z ##[group]Runner Image Provisioner
+2026-10-14T03:25:49.5107039Z Hosted Compute Agent
+2026-10-14T03:25:49.5107377Z Version: 20261002.596
+2026-10-14T03:25:49.5107725Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+2026-10-14T03:25:49.5108187Z Build Date: 2026-10-02T22:28:27Z
+2026-10-14T03:25:49.5108605Z Worker ID: {9290a99e-c531-4b38-920b-101f8108c961}
+2026-10-14T03:25:49.5109291Z Region: centralus
+2026-10-14T03:25:49.5109624Z Cloud: Azure
+2026-10-14T03:25:49.5109938Z ##[endgroup]
+2026-10-14T03:25:49.5111019Z ##[group]Operating System
+2026-10-14T03:25:49.5111368Z Ubuntu
+2026-10-14T03:25:49.5111700Z 24.04.5
+2026-10-14T03:25:49.5112013Z LTS
+2026-10-14T03:25:49.5112311Z ##[endgroup]
+2026-10-14T03:25:49.5112660Z ##[group]Runner Image
+2026-10-14T03:25:49.5113040Z Image: ubuntu-24.04
+2026-10-14T03:25:49.5113354Z Version: 20261004.327.1
+2026-10-14T03:25:49.5114132Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-14T03:25:49.5115036Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+2026-10-14T03:25:49.5115560Z ##[endgroup]
+2026-10-14T03:25:49.5116231Z ##[group]GITHUB_TOKEN Permissions
+2026-10-14T03:25:49.5117361Z Contents: read
+2026-10-14T03:25:49.5117681Z Metadata: read
+2026-10-14T03:25:49.5118115Z ##[endgroup]
+2026-10-14T03:25:49.5119500Z Secret source: Actions
+2026-10-14T03:25:49.5120051Z Cache mode: write
+2026-10-14T03:25:49.5120447Z Prepare workflow directory
+2026-10-14T03:25:49.5464134Z Prepare all required actions
+2026-10-14T03:25:49.5493784Z Getting action download info
+2026-10-14T03:25:49.7867550Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+2026-10-14T03:25:49.8817940Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+2026-10-14T03:25:50.4203410Z Download action repository 'actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444' (SHA:a0853c24544627f65ddf259abe73b1d18a591444)
+2026-10-14T03:25:50.5909331Z Download action repository 'actions/cache@caa296126883cff596d87d8935842f9db880ef25' (SHA:caa296126883cff596d87d8935842f9db880ef25)
+2026-10-14T03:25:50.7180390Z Download action repository 'actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f' (SHA:b7c566a772e6b6bfb58ed0dc250532a479d7789f)
+2026-10-14T03:25:50.9307472Z Complete job name: gate (focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools)
+2026-10-14T03:25:50.9924400Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+2026-10-14T03:25:50.9925411Z with:
+2026-10-14T03:25:50.9925934Z   persist-credentials: false
+2026-10-14T03:25:50.9926527Z   fetch-depth: 0
+2026-10-14T03:25:50.9927127Z   repository: humaux/live_commerce_architecture_v1
+2026-10-14T03:25:50.9932789Z   token: ***
+2026-10-14T03:25:50.9933324Z   ssh-strict: true
+2026-10-14T03:25:50.9933836Z   ssh-user: git
+2026-10-14T03:25:50.9934334Z   clean: true
+2026-10-14T03:25:50.9934879Z   sparse-checkout-cone-mode: true
+2026-10-14T03:25:50.9935513Z   fetch-tags: false
+2026-10-14T03:25:50.9936055Z   show-progress: true
+2026-10-14T03:25:50.9936583Z   lfs: false
+2026-10-14T03:25:50.9937069Z   submodules: false
+2026-10-14T03:25:50.9937600Z   set-safe-directory: true
+2026-10-14T03:25:50.9938208Z   allow-unsafe-pr-checkout: false
+2026-10-14T03:25:50.9939018Z env:
+2026-10-14T03:25:50.9939492Z   GOTOOLCHAIN: go1.27.2
+2026-10-14T03:25:50.9940058Z   GOFLAGS: -mod=readonly
+2026-10-14T03:25:50.9940766Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-14T03:25:50.9942145Z   MODE: focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:25:50.9943482Z   LC_SWEEP_WORKERS: 1
+2026-10-14T03:25:50.9944003Z   EXTRA_ENV: 
+2026-10-14T03:25:50.9944492Z ##[endgroup]
+2026-10-14T03:25:51.0627415Z Syncing repository: humaux/live_commerce_architecture_v1
+2026-10-14T03:25:51.0630155Z ##[group]Getting Git version info
+2026-10-14T03:25:51.0631811Z Working directory is '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+2026-10-14T03:25:51.0634021Z [command]/usr/bin/git version
+2026-10-14T03:25:51.0785105Z git version 2.55.0
+2026-10-14T03:25:51.0799807Z ##[endgroup]
+2026-10-14T03:25:51.0811743Z Temporarily overriding HOME='/home/runner/work/_temp/f0fb62ce-9c0e-48a5-b928-3fe993030e72' before making global git config changes
+2026-10-14T03:25:51.0814414Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-14T03:25:51.0819544Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-14T03:25:51.0869194Z Deleting the contents of '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+2026-10-14T03:25:51.0871850Z ##[group]Initializing the repository
+2026-10-14T03:25:51.0875040Z [command]/usr/bin/git init /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-14T03:25:51.0990661Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-14T03:25:51.0993156Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-14T03:25:51.0995167Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-14T03:25:51.0996658Z hint: call:
+2026-10-14T03:25:51.0997576Z hint:
+2026-10-14T03:25:51.0999378Z hint: 	git config --global init.defaultBranch <name>
+2026-10-14T03:25:51.1000806Z hint:
+2026-10-14T03:25:51.1001711Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-14T03:25:51.1002983Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-14T03:25:51.1004000Z hint:
+2026-10-14T03:25:51.1004640Z hint: 	git branch -m <name>
+2026-10-14T03:25:51.1005795Z hint:
+2026-10-14T03:25:51.1007334Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-14T03:25:51.1010532Z Initialized empty Git repository in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/.git/
+2026-10-14T03:25:51.1015423Z [command]/usr/bin/git remote add origin https://github.com/humaux/live_commerce_architecture_v1
+2026-10-14T03:25:51.1049497Z ##[endgroup]
+2026-10-14T03:25:51.1053383Z ##[group]Disabling automatic garbage collection
+2026-10-14T03:25:51.1054923Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-14T03:25:51.1085345Z ##[endgroup]
+2026-10-14T03:25:51.1086520Z ##[group]Setting up auth
+2026-10-14T03:25:51.1090775Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-14T03:25:51.1120084Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-14T03:25:51.1414166Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-14T03:25:51.1443613Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-14T03:25:51.1620368Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-14T03:25:51.1649737Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-14T03:25:51.1821685Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-14T03:25:51.1854399Z ##[endgroup]
+2026-10-14T03:25:51.1855310Z ##[group]Fetching the repository
+2026-10-14T03:25:51.1861087Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-10-14T03:25:57.3987747Z From https://github.com/humaux/live_commerce_architecture_v1
+2026-10-14T03:25:57.3988421Z  * [new branch]        checkout-go-20260924    -> origin/checkout-go-20260924
+2026-10-14T03:25:57.3989072Z  * [new branch]        checkout-sql-20260924   -> origin/checkout-sql-20260924
+2026-10-14T03:25:57.3989553Z  * [new branch]        claude/gallant-bohr-9rs3yo -> origin/claude/gallant-bohr-9rs3yo
+2026-10-14T03:25:57.3990112Z  * [new branch]        codex/account-intake-http-20260924 -> origin/codex/account-intake-http-20260924
+2026-10-14T03:25:57.3990689Z  * [new branch]        codex/admin-assets      -> origin/codex/admin-assets
+2026-10-14T03:25:57.3991006Z  * [new branch]        codex/admin-fixture     -> origin/codex/admin-fixture
+2026-10-14T03:25:57.3991304Z  * [new branch]        codex/admin-ledger      -> origin/codex/admin-ledger
+2026-10-14T03:25:57.3991618Z  * [new branch]        codex/admin-ledger-tests -> origin/codex/admin-ledger-tests
+2026-10-14T03:25:57.3991943Z  * [new branch]        codex/admin-pagination  -> origin/codex/admin-pagination
+2026-10-14T03:25:57.3992308Z  * [new branch]        codex/admin-transport-tests -> origin/codex/admin-transport-tests
+2026-10-14T03:25:57.3992708Z  * [new branch]        codex/buyer-history-backend -> origin/codex/buyer-history-backend
+2026-10-14T03:25:57.3993093Z  * [new branch]        codex/catalog-inventory -> origin/codex/catalog-inventory
+2026-10-14T03:25:57.3993617Z  * [new branch]        codex/catalog-inventory-tests -> origin/codex/catalog-inventory-tests
+2026-10-14T03:25:57.3994425Z  * [new branch]        codex/commerce-buyer-payment-assembly-gate-20260925 -> origin/codex/commerce-buyer-payment-assembly-gate-20260925
+2026-10-14T03:25:57.3995378Z  * [new branch]        codex/commerce-buyer-payment-browser-tests-20260925 -> origin/codex/commerce-buyer-payment-browser-tests-20260925
+2026-10-14T03:25:57.3996168Z  * [new branch]        codex/commerce-buyer-payment-http-20260925 -> origin/codex/commerce-buyer-payment-http-20260925
+2026-10-14T03:25:57.3996862Z  * [new branch]        codex/commerce-buyer-payment-pg-20260925 -> origin/codex/commerce-buyer-payment-pg-20260925
+2026-10-14T03:25:57.3997542Z  * [new branch]        codex/commerce-buyer-payment-public-20260925 -> origin/codex/commerce-buyer-payment-public-20260925
+2026-10-14T03:25:57.3998355Z  * [new branch]        codex/commerce-buyer-payment-public-tests-20260925 -> origin/codex/commerce-buyer-payment-public-tests-20260925
+2026-10-14T03:25:57.3999370Z  * [new branch]        codex/commerce-buyer-payment-ui-controller-20260925 -> origin/codex/commerce-buyer-payment-ui-controller-20260925
+2026-10-14T03:25:57.4000373Z  * [new branch]        codex/commerce-hosted-go-20260925 -> origin/codex/commerce-hosted-go-20260925
+2026-10-14T03:25:57.4001081Z  * [new branch]        codex/commerce-hosted-pg-20260925 -> origin/codex/commerce-hosted-pg-20260925
+2026-10-14T03:25:57.4001702Z  * [new branch]        codex/engineering-maintenance -> origin/codex/engineering-maintenance
+2026-10-14T03:25:57.4002284Z  * [new branch]        codex/expiry-runtime-go -> origin/codex/expiry-runtime-go
+2026-10-14T03:25:57.4002813Z  * [new branch]        codex/expiry-runtime-pg -> origin/codex/expiry-runtime-pg
+2026-10-14T03:25:57.4003348Z  * [new branch]        codex/foundation-platform -> origin/codex/foundation-platform
+2026-10-14T03:25:57.4003866Z  * [new branch]        codex/foundation-tests  -> origin/codex/foundation-tests
+2026-10-14T03:25:57.4004342Z  * [new branch]        codex/locale-routing    -> origin/codex/locale-routing
+2026-10-14T03:25:57.4004909Z  * [new branch]        codex/merchant-orders-bff -> origin/codex/merchant-orders-bff
+2026-10-14T03:25:57.4005574Z  * [new branch]        codex/merchant-orders-bff-test -> origin/codex/merchant-orders-bff-test
+2026-10-14T03:25:57.4006118Z  * [new branch]        codex/merchant-orders-go -> origin/codex/merchant-orders-go
+2026-10-14T03:25:57.4006696Z  * [new branch]        codex/merchant-orders-pg -> origin/codex/merchant-orders-pg
+2026-10-14T03:25:57.4007378Z  * [new branch]        codex/merchant-settings-http-20260924 -> origin/codex/merchant-settings-http-20260924
+2026-10-14T03:25:57.4008168Z  * [new branch]        codex/oidclogin         -> origin/codex/oidclogin
+2026-10-14T03:25:57.4008677Z  * [new branch]        codex/payment-capture-go-20260924 -> origin/codex/payment-capture-go-20260924
+2026-10-14T03:25:57.4009407Z  * [new branch]        codex/payment-capture-sql-20260924 -> origin/codex/payment-capture-sql-20260924
+2026-10-14T03:25:57.4009972Z  * [new branch]        codex/payment-query-20260924 -> origin/codex/payment-query-20260924
+2026-10-14T03:25:57.4010588Z  * [new branch]        codex/payment-runtime-pg-gate-20260925 -> origin/codex/payment-runtime-pg-gate-20260925
+2026-10-14T03:25:57.4011181Z  * [new branch]        codex/payment-start-20260924 -> origin/codex/payment-start-20260924
+2026-10-14T03:25:57.4011775Z  * [new branch]        codex/payment-worker-runtime-20260925 -> origin/codex/payment-worker-runtime-20260925
+2026-10-14T03:25:57.4012558Z  * [new branch]        codex/pr32-email-envelope-red -> origin/codex/pr32-email-envelope-red
+2026-10-14T03:25:57.4013076Z  * [new branch]        codex/pr32-intent-ci-red -> origin/codex/pr32-intent-ci-red
+2026-10-14T03:25:57.4013571Z  * [new branch]        codex/pr32-lock-scope-red -> origin/codex/pr32-lock-scope-red
+2026-10-14T03:25:57.4014089Z  * [new branch]        codex/pr32-price-correct-red -> origin/codex/pr32-price-correct-red
+2026-10-14T03:25:57.4014794Z  * [new branch]        codex/pr32-price-reason-red -> origin/codex/pr32-price-reason-red
+2026-10-14T03:25:57.4015255Z  * [new branch]        codex/pr32-r5-red       -> origin/codex/pr32-r5-red
+2026-10-14T03:25:57.4015595Z  * [new branch]        codex/pr32-recovery-replay-red -> origin/codex/pr32-recovery-replay-red
+2026-10-14T03:25:57.4015950Z  * [new branch]        codex/pr32-reservation-red -> origin/codex/pr32-reservation-red
+2026-10-14T03:25:57.4016298Z  * [new branch]        codex/pr32-server-intent-red -> origin/codex/pr32-server-intent-red
+2026-10-14T03:25:57.4016640Z  * [new branch]        codex/pr32-settled-ui-red -> origin/codex/pr32-settled-ui-red
+2026-10-14T03:25:57.4017027Z  * [new branch]        codex/published-resolver-go-20260925 -> origin/codex/published-resolver-go-20260925
+2026-10-14T03:25:57.4017447Z  * [new branch]        codex/settings-discovery-20260924 -> origin/codex/settings-discovery-20260924
+2026-10-14T03:25:57.4017850Z  * [new branch]        codex/settings-documenter-20260925 -> origin/codex/settings-documenter-20260925
+2026-10-14T03:25:57.4018293Z  * [new branch]        codex/settings-ledger-regression-20260924 -> origin/codex/settings-ledger-regression-20260924
+2026-10-14T03:25:57.4018946Z  * [new branch]        codex/settings-ui-20260924 -> origin/codex/settings-ui-20260924
+2026-10-14T03:25:57.4019279Z  * [new branch]        codex/t03-browser-bff   -> origin/codex/t03-browser-bff
+2026-10-14T03:25:57.4019598Z  * [new branch]        codex/t03-buyer-capability -> origin/codex/t03-buyer-capability
+2026-10-14T03:25:57.4019977Z  * [new branch]        commerce/allocation-config-20260924 -> origin/commerce/allocation-config-20260924
+2026-10-14T03:25:57.4020476Z  * [new branch]        commerce/browser-input-cleanup-fault-tests-20260927 -> origin/commerce/browser-input-cleanup-fault-tests-20260927
+2026-10-14T03:25:57.4020970Z  * [new branch]        commerce/browser-input-config-20260927 -> origin/commerce/browser-input-config-20260927
+2026-10-14T03:25:57.4021443Z  * [new branch]        commerce/browser-input-config-tests-20260927 -> origin/commerce/browser-input-config-tests-20260927
+2026-10-14T03:25:57.4021983Z  * [new branch]        commerce/browser-input-delivery-acceptance-20260927 -> origin/commerce/browser-input-delivery-acceptance-20260927
+2026-10-14T03:25:57.4022491Z  * [new branch]        commerce/browser-input-execution-20260927 -> origin/commerce/browser-input-execution-20260927
+2026-10-14T03:25:57.4022987Z  * [new branch]        commerce/browser-input-execution-tests-20260927 -> origin/commerce/browser-input-execution-tests-20260927
+2026-10-14T03:25:57.4023686Z  * [new branch]        commerce/browser-input-fault-tests-20260927 -> origin/commerce/browser-input-fault-tests-20260927
+2026-10-14T03:25:57.4024489Z  * [new branch]        commerce/browser-input-holds-tests-20260927 -> origin/commerce/browser-input-holds-tests-20260927
+2026-10-14T03:25:57.4025249Z  * [new branch]        commerce/browser-input-http-tests-20260927 -> origin/commerce/browser-input-http-tests-20260927
+2026-10-14T03:25:57.4025796Z  * [new branch]        commerce/browser-input-plan-fault-tests-20260927 -> origin/commerce/browser-input-plan-fault-tests-20260927
+2026-10-14T03:25:57.4026308Z  * [new branch]        commerce/browser-input-studio-read-20260927 -> origin/commerce/browser-input-studio-read-20260927
+2026-10-14T03:25:57.4026775Z  * [new branch]        commerce/browser-input-token-go-20260927 -> origin/commerce/browser-input-token-go-20260927
+2026-10-14T03:25:57.4027212Z  * [new branch]        commerce/brw07-composite-go-20260928 -> origin/commerce/brw07-composite-go-20260928
+2026-10-14T03:25:57.4027641Z  * [new branch]        commerce/brw07-composite-sql-20260928 -> origin/commerce/brw07-composite-sql-20260928
+2026-10-14T03:25:57.4028043Z  * [new branch]        commerce/buyer-catalog-20260925 -> origin/commerce/buyer-catalog-20260925
+2026-10-14T03:25:57.4028449Z  * [new branch]        commerce/buyer-design-record-20260925 -> origin/commerce/buyer-design-record-20260925
+2026-10-14T03:25:57.4029017Z  * [new branch]        commerce/buyer-destination-20260924 -> origin/commerce/buyer-destination-20260924
+2026-10-14T03:25:57.4029500Z  * [new branch]        commerce/buyer-history-browser-extension-20260925 -> origin/commerce/buyer-history-browser-extension-20260925
+2026-10-14T03:25:57.4030017Z  * [new branch]        commerce/buyer-history-design-record-20260925 -> origin/commerce/buyer-history-design-record-20260925
+2026-10-14T03:25:57.4030439Z  * [new branch]        commerce/buyer-http-20260925 -> origin/commerce/buyer-http-20260925
+2026-10-14T03:25:57.4030808Z  * [new branch]        commerce/buyer-options-20260925 -> origin/commerce/buyer-options-20260925
+2026-10-14T03:25:57.4031243Z  * [new branch]        commerce/buyer-order-design-record-20260925 -> origin/commerce/buyer-order-design-record-20260925
+2026-10-14T03:25:57.4031677Z  * [new branch]        commerce/buyer-order-gate-20260925 -> origin/commerce/buyer-order-gate-20260925
+2026-10-14T03:25:57.4032083Z  * [new branch]        commerce/buyer-projections-20260925 -> origin/commerce/buyer-projections-20260925
+2026-10-14T03:25:57.4032487Z  * [new branch]        commerce/buyer-public-bff-20260925 -> origin/commerce/buyer-public-bff-20260925
+2026-10-14T03:25:57.4032996Z  * [new branch]        commerce/buyer-registration-20260925 -> origin/commerce/buyer-registration-20260925
+2026-10-14T03:25:57.4033389Z  * [new branch]        commerce/checkout-quote-20260920 -> origin/commerce/checkout-quote-20260920
+2026-10-14T03:25:57.4033769Z  * [new branch]        commerce/delivery-config-20260920 -> origin/commerce/delivery-config-20260920
+2026-10-14T03:25:57.4034155Z  * [new branch]        commerce/legacy-family-go-20260926 -> origin/commerce/legacy-family-go-20260926
+2026-10-14T03:25:57.4034588Z  * [new branch]        commerce/legacy-family-integration-20260926 -> origin/commerce/legacy-family-integration-20260926
+2026-10-14T03:25:57.4035033Z  * [new branch]        commerce/legacy-family-tests-20260926 -> origin/commerce/legacy-family-tests-20260926
+2026-10-14T03:25:57.4035477Z  * [new branch]        commerce/legacy-maintenance-tests-20260926 -> origin/commerce/legacy-maintenance-tests-20260926
+2026-10-14T03:25:57.4035922Z  * [new branch]        commerce/legacy-upgrade-tests-20260926 -> origin/commerce/legacy-upgrade-tests-20260926
+2026-10-14T03:25:57.4036317Z  * [new branch]        commerce/live-draft-go-20260927 -> origin/commerce/live-draft-go-20260927
+2026-10-14T03:25:57.4036690Z  * [new branch]        commerce/live-draft-tests-20260927 -> origin/commerce/live-draft-tests-20260927
+2026-10-14T03:25:57.4037089Z  * [new branch]        commerce/livekit-input-tests-20260927 -> origin/commerce/livekit-input-tests-20260927
+2026-10-14T03:25:57.4037584Z  * [new branch]        commerce/livekit-input-wire-20260927 -> origin/commerce/livekit-input-wire-20260927
+2026-10-14T03:25:57.4037997Z  * [new branch]        commerce/livekit-material-go-20260927 -> origin/commerce/livekit-material-go-20260927
+2026-10-14T03:25:57.4038427Z  * [new branch]        commerce/livekit-material-tests-20260927 -> origin/commerce/livekit-material-tests-20260927
+2026-10-14T03:25:57.4039001Z  * [new branch]        commerce/livekit-protocol-go-20260927 -> origin/commerce/livekit-protocol-go-20260927
+2026-10-14T03:25:57.4039432Z  * [new branch]        commerce/livekit-protocol-tests-20260927 -> origin/commerce/livekit-protocol-tests-20260927
+2026-10-14T03:25:57.4039843Z  * [new branch]        commerce/livekit-room-go-20260927 -> origin/commerce/livekit-room-go-20260927
+2026-10-14T03:25:57.4040233Z  * [new branch]        commerce/livekit-room-tests-20260927 -> origin/commerce/livekit-room-tests-20260927
+2026-10-14T03:25:57.4040628Z  * [new branch]        commerce/local-recovery-20260927 -> origin/commerce/local-recovery-20260927
+2026-10-14T03:25:57.4041055Z  * [new branch]        commerce/local-recovery-independent-20260927 -> origin/commerce/local-recovery-independent-20260927
+2026-10-14T03:25:57.4041506Z  * [new branch]        commerce/local-recovery-tests-20260927 -> origin/commerce/local-recovery-tests-20260927
+2026-10-14T03:25:57.4041968Z  * [new branch]        commerce/lri-additive-event-snapshot-20260927 -> origin/commerce/lri-additive-event-snapshot-20260927
+2026-10-14T03:25:57.4042420Z  * [new branch]        commerce/media-authority-sql-20260927 -> origin/commerce/media-authority-sql-20260927
+2026-10-14T03:25:57.4042844Z  * [new branch]        commerce/media-authority-tests-20260927 -> origin/commerce/media-authority-tests-20260927
+2026-10-14T03:25:57.4043250Z  * [new branch]        commerce/media-execution-20260927 -> origin/commerce/media-execution-20260927
+2026-10-14T03:25:57.4043661Z  * [new branch]        commerce/media-execution-tests-20260927 -> origin/commerce/media-execution-tests-20260927
+2026-10-14T03:25:57.4044078Z  * [new branch]        commerce/media-input-source-20260927 -> origin/commerce/media-input-source-20260927
+2026-10-14T03:25:57.4044480Z  * [new branch]        commerce/media-input-tests-20260927 -> origin/commerce/media-input-tests-20260927
+2026-10-14T03:25:57.4044877Z  * [new branch]        commerce/media-login-source-20260927 -> origin/commerce/media-login-source-20260927
+2026-10-14T03:25:57.4045361Z  * [new branch]        commerce/media-login-tests-20260927 -> origin/commerce/media-login-tests-20260927
+2026-10-14T03:25:57.4045727Z  * [new branch]        commerce/media-plan-20260927 -> origin/commerce/media-plan-20260927
+2026-10-14T03:25:57.4046093Z  * [new branch]        commerce/media-plan-tests-20260927 -> origin/commerce/media-plan-tests-20260927
+2026-10-14T03:25:57.4046516Z  * [new branch]        commerce/media-recovery-observer-20260927 -> origin/commerce/media-recovery-observer-20260927
+2026-10-14T03:25:57.4046949Z  * [new branch]        commerce/media-recovery-tests-20260927 -> origin/commerce/media-recovery-tests-20260927
+2026-10-14T03:25:57.4047341Z  * [new branch]        commerce/media-runtime-20260927 -> origin/commerce/media-runtime-20260927
+2026-10-14T03:25:57.4047730Z  * [new branch]        commerce/media-runtime-tests-20260927 -> origin/commerce/media-runtime-tests-20260927
+2026-10-14T03:25:57.4048102Z  * [new branch]        commerce/media-stop-20260927 -> origin/commerce/media-stop-20260927
+2026-10-14T03:25:57.4048465Z  * [new branch]        commerce/media-stop-tests-20260927 -> origin/commerce/media-stop-tests-20260927
+2026-10-14T03:25:57.4048983Z  * [new branch]        commerce/merchant-buyer-joint-20260925 -> origin/commerce/merchant-buyer-joint-20260925
+2026-10-14T03:25:57.4049424Z  * [new branch]        commerce/merchant-orders-c-tests-20260927 -> origin/commerce/merchant-orders-c-tests-20260927
+2026-10-14T03:25:57.4049859Z  * [new branch]        commerce/merchant-orders-c-ui-20260927 -> origin/commerce/merchant-orders-c-ui-20260927
+2026-10-14T03:25:57.4050378Z  * [new branch]        commerce/merchant-purchase-entry-20260925 -> origin/commerce/merchant-purchase-entry-20260925
+2026-10-14T03:25:57.4050839Z  * [new branch]        commerce/merchant-purchase-entry-ui-20260925 -> origin/commerce/merchant-purchase-entry-ui-20260925
+2026-10-14T03:25:57.4051265Z  * [new branch]        commerce/meta-consumer-go-20260926 -> origin/commerce/meta-consumer-go-20260926
+2026-10-14T03:25:57.4051708Z  * [new branch]        commerce/meta-consumer-prefixed-repro-20260926 -> origin/commerce/meta-consumer-prefixed-repro-20260926
+2026-10-14T03:25:57.4052159Z  * [new branch]        commerce/meta-consumer-tests-20260926 -> origin/commerce/meta-consumer-tests-20260926
+2026-10-14T03:25:57.4052549Z  * [new branch]        commerce/meta-inbox-go-20260926 -> origin/commerce/meta-inbox-go-20260926
+2026-10-14T03:25:57.4052972Z  * [new branch]        commerce/meta-inbox-tests-20260926 -> origin/commerce/meta-inbox-tests-20260926
+2026-10-14T03:25:57.4053577Z  * [new branch]        commerce/meta-isolation-go-20260926 -> origin/commerce/meta-isolation-go-20260926
+2026-10-14T03:25:57.4054193Z  * [new branch]        commerce/meta-payload-20260926 -> origin/commerce/meta-payload-20260926
+2026-10-14T03:25:57.4054781Z  * [new branch]        commerce/meta-payload-tests-20260926 -> origin/commerce/meta-payload-tests-20260926
+2026-10-14T03:25:57.4055400Z  * [new branch]        commerce/meta-protocol-20260926 -> origin/commerce/meta-protocol-20260926
+2026-10-14T03:25:57.4056055Z  * [new branch]        commerce/meta-protocol-tests-20260926 -> origin/commerce/meta-protocol-tests-20260926
+2026-10-14T03:25:57.4056672Z  * [new branch]        commerce/meta-runtime-go-20260926 -> origin/commerce/meta-runtime-go-20260926
+2026-10-14T03:25:57.4057390Z  * [new branch]        commerce/meta-runtime-isolation-tests-20260926 -> origin/commerce/meta-runtime-isolation-tests-20260926
+2026-10-14T03:25:57.4058085Z  * [new branch]        commerce/meta-runtime-tests-20260926 -> origin/commerce/meta-runtime-tests-20260926
+2026-10-14T03:25:57.4059079Z  * [new branch]        commerce/orders-native-visibility-tests-20260927 -> origin/commerce/orders-native-visibility-tests-20260927
+2026-10-14T03:25:57.4059845Z  * [new branch]        commerce/pickup-source-20260924 -> origin/commerce/pickup-source-20260924
+2026-10-14T03:25:57.4060465Z  * [new branch]        commerce/pricing-20260920 -> origin/commerce/pricing-20260920
+2026-10-14T03:25:57.4061065Z  * [new branch]        commerce/r04-local-input-20260927 -> origin/commerce/r04-local-input-20260927
+2026-10-14T03:25:57.4061923Z  * [new branch]        commerce/r04-local-input-tests-20260927 -> origin/commerce/r04-local-input-tests-20260927
+2026-10-14T03:25:57.4062864Z  * [new branch]        commerce/seed-pool-lifetime-20260927 -> origin/commerce/seed-pool-lifetime-20260927
+2026-10-14T03:25:57.4063537Z  * [new branch]        commerce/startup-diagnostics-20260927 -> origin/commerce/startup-diagnostics-20260927
+2026-10-14T03:25:57.4064006Z  * [new branch]        commerce/studio-b-ui-20260927 -> origin/commerce/studio-b-ui-20260927
+2026-10-14T03:25:57.4064399Z  * [new branch]        commerce/studio-bff-source-20260927 -> origin/commerce/studio-bff-source-20260927
+2026-10-14T03:25:57.4064793Z  * [new branch]        commerce/studio-bff-tests-20260927 -> origin/commerce/studio-bff-tests-20260927
+2026-10-14T03:25:57.4065188Z  * [new branch]        commerce/studio-input-tests-20260927 -> origin/commerce/studio-input-tests-20260927
+2026-10-14T03:25:57.4065636Z  * [new branch]        commerce/studio-native-device-tests-20260927 -> origin/commerce/studio-native-device-tests-20260927
+2026-10-14T03:25:57.4066052Z  * [new branch]        commerce/studio-source-20260927 -> origin/commerce/studio-source-20260927
+2026-10-14T03:25:57.4066410Z  * [new branch]        commerce/studio-tests-20260927 -> origin/commerce/studio-tests-20260927
+2026-10-14T03:25:57.4066775Z  * [new branch]        commerce/studio-ui-tests-20260927 -> origin/commerce/studio-ui-tests-20260927
+2026-10-14T03:25:57.4067260Z  * [new branch]        commerce/t03-design-record-20260920 -> origin/commerce/t03-design-record-20260920
+2026-10-14T03:25:57.4067637Z  * [new branch]        commerce/t06-dispatcher-20260920 -> origin/commerce/t06-dispatcher-20260920
+2026-10-14T03:25:57.4068037Z  * [new branch]        commerce/t06-operation-service-20260920 -> origin/commerce/t06-operation-service-20260920
+2026-10-14T03:25:57.4068402Z  * [new branch]        commerce/wizard-20260920 -> origin/commerce/wizard-20260920
+2026-10-14T03:25:57.4068737Z  * [new branch]        int/lc-u1-shell         -> origin/int/lc-u1-shell
+2026-10-14T03:25:57.4069298Z  * [new branch]        int/product-media-v2-ui -> origin/int/product-media-v2-ui
+2026-10-14T03:25:57.4069633Z  * [new branch]        int/storefront-card-gutter -> origin/int/storefront-card-gutter
+2026-10-14T03:25:57.4069940Z  * [new branch]        int/w1-01u-banner       -> origin/int/w1-01u-banner
+2026-10-14T03:25:57.4070232Z  * [new branch]        int/w3-u1b-picklist-ui  -> origin/int/w3-u1b-picklist-ui
+2026-10-14T03:25:57.4070500Z  * [new branch]        main                    -> origin/main
+2026-10-14T03:25:57.4070803Z  * [new branch]        merchant-accounts-go-20260924 -> origin/merchant-accounts-go-20260924
+2026-10-14T03:25:57.4071154Z  * [new branch]        payment-methods-go-20260924 -> origin/payment-methods-go-20260924
+2026-10-14T03:25:57.4071474Z  * [new branch]        payuni-wire-go-20260924 -> origin/payuni-wire-go-20260924
+2026-10-14T03:25:57.4071758Z  * [new branch]        r3/integration          -> origin/r3/integration
+2026-10-14T03:25:57.4072079Z  * [new branch]        unit/browser-evidence-untracked -> origin/unit/browser-evidence-untracked
+2026-10-14T03:25:57.4072439Z  * [new branch]        unit/cancel-closes-work-item -> origin/unit/cancel-closes-work-item
+2026-10-14T03:25:57.4072756Z  * [new branch]        unit/card-pay-flake     -> origin/unit/card-pay-flake
+2026-10-14T03:25:57.4073072Z  * [new branch]        unit/cart-refresh-generation -> origin/unit/cart-refresh-generation
+2026-10-14T03:25:57.4073398Z  * [new branch]        unit/ci-actions-node24  -> origin/unit/ci-actions-node24
+2026-10-14T03:25:57.4073691Z  * [new branch]        unit/ci-browser-linux   -> origin/unit/ci-browser-linux
+2026-10-14T03:25:57.4073983Z  * [new branch]        unit/ci-contract-drift  -> origin/unit/ci-contract-drift
+2026-10-14T03:25:57.4074273Z  * [new branch]        unit/ci-dedupe-serial   -> origin/unit/ci-dedupe-serial
+2026-10-14T03:25:57.4074559Z  * [new branch]        unit/ci-drift-factory   -> origin/unit/ci-drift-factory
+2026-10-14T03:25:57.4074938Z  * [new branch]        unit/ci-drift-fn        -> origin/unit/ci-drift-fn
+2026-10-14T03:25:57.4075257Z  * [new branch]        unit/ci-playwright-deps-cache -> origin/unit/ci-playwright-deps-cache
+2026-10-14T03:25:57.4075570Z  * [new branch]        unit/ci-pr-gates        -> origin/unit/ci-pr-gates
+2026-10-14T03:25:57.4075859Z  * [new branch]        unit/ci-pr-modes-coverage -> origin/unit/ci-pr-modes-coverage
+2026-10-14T03:25:57.4076200Z  * [new branch]        unit/ci-select-backend-browser -> origin/unit/ci-select-backend-browser
+2026-10-14T03:25:57.4076510Z  * [new branch]        unit/ci-speed           -> origin/unit/ci-speed
+2026-10-14T03:25:57.4076790Z  * [new branch]        unit/delivery-report    -> origin/unit/delivery-report
+2026-10-14T03:25:57.4077089Z  * [new branch]        unit/delivery-report-r2 -> origin/unit/delivery-report-r2
+2026-10-14T03:25:57.4077384Z  * [new branch]        unit/deploy-prep-r3     -> origin/unit/deploy-prep-r3
+2026-10-14T03:25:57.4077716Z  * [new branch]        unit/deploy-prep-r3-p2  -> origin/unit/deploy-prep-r3-p2
+2026-10-14T03:25:57.4078010Z  * [new branch]        unit/e2e-price-regex    -> origin/unit/e2e-price-regex
+2026-10-14T03:25:57.4078311Z  * [new branch]        unit/ext-agent-anthropic -> origin/unit/ext-agent-anthropic
+2026-10-14T03:25:57.4078660Z  * [new branch]        unit/fix-ads-draft-midnight-flake -> origin/unit/fix-ads-draft-midnight-flake
+2026-10-14T03:25:57.4079244Z  * [new branch]        unit/fix-manual-order-regen-race -> origin/unit/fix-manual-order-regen-race
+2026-10-14T03:25:57.4079606Z  * [new branch]        unit/fix-merchant-buyer-pmv2 -> origin/unit/fix-merchant-buyer-pmv2
+2026-10-14T03:25:57.4080117Z  * [new branch]        unit/fix-meta-ads-ma09a -> origin/unit/fix-meta-ads-ma09a
+2026-10-14T03:25:57.4080610Z  * [new branch]        unit/fix-report-funnel-clock -> origin/unit/fix-report-funnel-clock
+2026-10-14T03:25:57.4081165Z  * [new branch]        unit/fix-settings-real-flake -> origin/unit/fix-settings-real-flake
+2026-10-14T03:25:57.4081749Z  * [new branch]        unit/fix-storefront-chips-stream -> origin/unit/fix-storefront-chips-stream
+2026-10-14T03:25:57.4082355Z  * [new branch]        unit/fix-untracked-stripe-capture -> origin/unit/fix-untracked-stripe-capture
+2026-10-14T03:25:57.4082910Z  * [new branch]        unit/followups-polish-1 -> origin/unit/followups-polish-1
+2026-10-14T03:25:57.4083379Z  * [new branch]        unit/gate-dep-register  -> origin/unit/gate-dep-register
+2026-10-14T03:25:57.4083842Z  * [new branch]        unit/gate-port-retry    -> origin/unit/gate-port-retry
+2026-10-14T03:25:57.4084346Z  * [new branch]        unit/lc-a3-print-idempotency -> origin/unit/lc-a3-print-idempotency
+2026-10-14T03:25:57.4084759Z  * [new branch]        unit/lc-b2-deletion-eviction -> origin/unit/lc-b2-deletion-eviction
+2026-10-14T03:25:57.4085082Z  * [new branch]        unit/lc-b3b-buyer-panel -> origin/unit/lc-b3b-buyer-panel
+2026-10-14T03:25:57.4085386Z  * [new branch]        unit/lc-b7-console-read -> origin/unit/lc-b7-console-read
+2026-10-14T03:25:57.4085692Z  * [new branch]        unit/lc-r2-c3-print-purge -> origin/unit/lc-r2-c3-print-purge
+2026-10-14T03:25:57.4085984Z  * [new branch]        unit/lc-u1-shell        -> origin/unit/lc-u1-shell
+2026-10-14T03:25:57.4086280Z  * [new branch]        unit/lc-u2a-comment-stream -> origin/unit/lc-u2a-comment-stream
+2026-10-14T03:25:57.4086592Z  * [new branch]        unit/lc-u2b-inbox-page  -> origin/unit/lc-u2b-inbox-page
+2026-10-14T03:25:57.4086903Z  * [new branch]        unit/lc-u2b2-customer-link -> origin/unit/lc-u2b2-customer-link
+2026-10-14T03:25:57.4087244Z  * [new branch]        unit/lc-u3-create-order-drawer -> origin/unit/lc-u3-create-order-drawer
+2026-10-14T03:25:57.4087606Z  * [new branch]        unit/live-price-keep-on-pause -> origin/unit/live-price-keep-on-pause
+2026-10-14T03:25:57.4087975Z  * [new branch]        unit/matrix-coverage-v2-evidence -> origin/unit/matrix-coverage-v2-evidence
+2026-10-14T03:25:57.4088457Z  * [new branch]        unit/matrix-coverage-v2-execution -> origin/unit/matrix-coverage-v2-execution
+2026-10-14T03:25:57.4088950Z  * [new branch]        unit/matrix-ledger-enforce -> origin/unit/matrix-ledger-enforce
+2026-10-14T03:25:57.4089282Z  * [new branch]        unit/oa-1-order-attempt-core -> origin/unit/oa-1-order-attempt-core
+2026-10-14T03:25:57.4089634Z  * [new branch]        unit/oa-1-plan-key-deadline-red -> origin/unit/oa-1-plan-key-deadline-red
+2026-10-14T03:25:57.4090154Z  * [new branch]        unit/ops-01b-store-suspend -> origin/unit/ops-01b-store-suspend
+2026-10-14T03:25:57.4090645Z  * [new branch]        unit/ops-02b-support-grant -> origin/unit/ops-02b-support-grant
+2026-10-14T03:25:57.4091150Z  * [new branch]        unit/order-attempt-contract -> origin/unit/order-attempt-contract
+2026-10-14T03:25:57.4091650Z  * [new branch]        unit/order-gate-bo01-race -> origin/unit/order-gate-bo01-race
+2026-10-14T03:25:57.4092144Z  * [new branch]        unit/pay-rm1-remove-payuni -> origin/unit/pay-rm1-remove-payuni
+2026-10-14T03:25:57.4092639Z  * [new branch]        unit/perf-dashboard-todos -> origin/unit/perf-dashboard-todos
+2026-10-14T03:25:57.4093111Z  * [new branch]        unit/pr1-ui-followups   -> origin/unit/pr1-ui-followups
+2026-10-14T03:25:57.4093608Z  * [new branch]        unit/product-media-v2-backend -> origin/unit/product-media-v2-backend
+2026-10-14T03:25:57.4094111Z  * [new branch]        unit/ruleset-acceptance -> origin/unit/ruleset-acceptance
+2026-10-14T03:25:57.4094680Z  * [new branch]        unit/scope-revoke-404   -> origin/unit/scope-revoke-404
+2026-10-14T03:25:57.4095177Z  * [new branch]        unit/security-go-1272-xnet-060 -> origin/unit/security-go-1272-xnet-060
+2026-10-14T03:25:57.4095653Z  * [new branch]        unit/settlement-resolve -> origin/unit/settlement-resolve
+2026-10-14T03:25:57.4095966Z  * [new branch]        unit/storefront-image-cap -> origin/unit/storefront-image-cap
+2026-10-14T03:25:57.4096349Z  * [new branch]        unit/tz-audit           -> origin/unit/tz-audit
+2026-10-14T03:25:57.4096660Z  * [new branch]        unit/ux-harden-r1       -> origin/unit/ux-harden-r1
+2026-10-14T03:25:57.4097005Z  * [new branch]        unit/visual-polish-r1   -> origin/unit/visual-polish-r1
+2026-10-14T03:25:57.4097331Z  * [new branch]        unit/w3-03b-checkout-reminder -> origin/unit/w3-03b-checkout-reminder
+2026-10-14T03:25:57.4097660Z  * [new branch]        unit/w3-04b-sold-out-reply -> origin/unit/w3-04b-sold-out-reply
+2026-10-14T03:25:57.4097966Z  * [new branch]        unit/w3-05b-blocklist   -> origin/unit/w3-05b-blocklist
+2026-10-14T03:25:57.4098262Z  * [new branch]        unit/w3-06b-keyword-tools -> origin/unit/w3-06b-keyword-tools
+2026-10-14T03:25:57.4098569Z  * [new branch]        unit/w3-07b-parcel-merge -> origin/unit/w3-07b-parcel-merge
+2026-10-14T03:25:57.4098988Z  * [new branch]        unit/w3-08b-returns     -> origin/unit/w3-08b-returns
+2026-10-14T03:25:57.4099293Z  * [new branch]        unit/w3-u2-live-settings-ui -> origin/unit/w3-u2-live-settings-ui
+2026-10-14T03:25:57.4099638Z  * [new branch]        unit/w3-u3-comment-label-print -> origin/unit/w3-u3-comment-label-print
+2026-10-14T03:25:57.4099978Z  * [new branch]        unit/w3-u4-parcel-merge-ui -> origin/unit/w3-u4-parcel-merge-ui
+2026-10-14T03:25:57.4100282Z  * [new branch]        unit/w3-u5-returns-ui   -> origin/unit/w3-u5-returns-ui
+2026-10-14T03:25:57.4100596Z  * [new branch]        unit/w4-02b-payuni-activation -> origin/unit/w4-02b-payuni-activation
+2026-10-14T03:25:57.4100935Z  * [new branch]        unit/w4-s1-platform-stripe -> origin/unit/w4-s1-platform-stripe
+2026-10-14T03:25:57.4101270Z  * [new branch]        unit/w4-s2-platform-settlement -> origin/unit/w4-s2-platform-settlement
+2026-10-14T03:25:57.4101633Z  * [new branch]        unit/w4-u1-payment-activation-ui -> origin/unit/w4-u1-payment-activation-ui
+2026-10-14T03:25:57.4101982Z  * [new branch]        unit/w5-02b-customer-import -> origin/unit/w5-02b-customer-import
+2026-10-14T03:25:57.4102339Z  * [new branch]        unit/w5-03b-order-history-import -> origin/unit/w5-03b-order-history-import
+2026-10-14T03:25:57.4102830Z  * [new branch]        unit/w5-u1-import-wizard-ui -> origin/unit/w5-u1-import-wizard-ui
+2026-10-14T03:25:57.4103225Z  * [new branch]        unit/w6-02b-reports     -> origin/unit/w6-02b-reports
+2026-10-14T03:25:57.4103552Z  * [new branch]        unit/w6-05b-operations-ledger -> origin/unit/w6-05b-operations-ledger
+2026-10-14T03:25:57.4103872Z  * [new branch]        unit/w6-06b-ads-unbind  -> origin/unit/w6-06b-ads-unbind
+2026-10-14T03:25:57.4104209Z  * [new branch]        unit/w6-u1-customers-reports-ui -> origin/unit/w6-u1-customers-reports-ui
+2026-10-14T03:25:57.4104559Z  * [new branch]        unit/w6-u2-ops-ledger-ads-ui -> origin/unit/w6-u2-ops-ledger-ads-ui
+2026-10-14T03:25:57.4105670Z [command]/usr/bin/git branch --list --remote origin/unit/oa-1-order-attempt-core
+2026-10-14T03:25:57.4105992Z   origin/unit/oa-1-order-attempt-core
+2026-10-14T03:25:57.4106465Z [command]/usr/bin/git rev-parse refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-14T03:25:57.4106724Z 235413c783113b9e008966040f7584fe4feda309
+2026-10-14T03:25:57.4107397Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules origin +8947a775c7494d2aca0e58acdbf3274a1aab4255:refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-14T03:25:57.4199228Z From https://github.com/humaux/live_commerce_architecture_v1
+2026-10-14T03:25:57.4199682Z  + 235413c7...8947a775 8947a775c7494d2aca0e58acdbf3274a1aab4255 -> origin/unit/oa-1-order-attempt-core  (forced update)
+2026-10-14T03:25:57.4203099Z ##[endgroup]
+2026-10-14T03:25:57.4203485Z ##[group]Determining the checkout info
+2026-10-14T03:25:57.4204180Z ##[endgroup]
+2026-10-14T03:25:57.4207419Z [command]/usr/bin/git sparse-checkout disable
+2026-10-14T03:25:57.4251840Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-14T03:25:57.4279143Z ##[group]Checking out the ref
+2026-10-14T03:25:57.4281531Z [command]/usr/bin/git checkout --progress --force -B unit/oa-1-order-attempt-core refs/remotes/origin/unit/oa-1-order-attempt-core
+2026-10-14T03:25:58.4394725Z Updating files:  69% (8455/12083)
+2026-10-14T03:25:58.4573971Z Updating files:  70% (8459/12083)
+2026-10-14T03:25:58.4764372Z Updating files:  71% (8579/12083)
+2026-10-14T03:25:58.4833649Z Updating files:  72% (8700/12083)
+2026-10-14T03:25:58.4946814Z Updating files:  73% (8821/12083)
+2026-10-14T03:25:58.5196705Z Updating files:  74% (8942/12083)
+2026-10-14T03:25:58.5358121Z Updating files:  75% (9063/12083)
+2026-10-14T03:25:58.5421473Z Updating files:  76% (9184/12083)
+2026-10-14T03:25:58.5536356Z Updating files:  77% (9304/12083)
+2026-10-14T03:25:58.5607533Z Updating files:  78% (9425/12083)
+2026-10-14T03:25:58.5691551Z Updating files:  79% (9546/12083)
+2026-10-14T03:25:58.5730617Z Updating files:  80% (9667/12083)
+2026-10-14T03:25:58.5810553Z Updating files:  81% (9788/12083)
+2026-10-14T03:25:58.5861467Z Updating files:  82% (9909/12083)
+2026-10-14T03:25:58.5943770Z Updating files:  83% (10029/12083)
+2026-10-14T03:25:58.6053003Z Updating files:  84% (10150/12083)
+2026-10-14T03:25:58.6140146Z Updating files:  85% (10271/12083)
+2026-10-14T03:25:58.6250405Z Updating files:  86% (10392/12083)
+2026-10-14T03:25:58.6296272Z Updating files:  87% (10513/12083)
+2026-10-14T03:25:58.6336065Z Updating files:  88% (10634/12083)
+2026-10-14T03:25:58.6387808Z Updating files:  89% (10754/12083)
+2026-10-14T03:25:58.6432916Z Updating files:  90% (10875/12083)
+2026-10-14T03:25:58.6522599Z Updating files:  91% (10996/12083)
+2026-10-14T03:25:58.6623734Z Updating files:  92% (11117/12083)
+2026-10-14T03:25:58.6762538Z Updating files:  93% (11238/12083)
+2026-10-14T03:25:58.6839585Z Updating files:  94% (11359/12083)
+2026-10-14T03:25:58.6923007Z Updating files:  95% (11479/12083)
+2026-10-14T03:25:58.7040698Z Updating files:  96% (11600/12083)
+2026-10-14T03:25:58.7151171Z Updating files:  97% (11721/12083)
+2026-10-14T03:25:58.7260344Z Updating files:  98% (11842/12083)
+2026-10-14T03:25:58.7359281Z Updating files:  99% (11963/12083)
+2026-10-14T03:25:58.7359548Z Updating files: 100% (12083/12083)
+2026-10-14T03:25:58.7360236Z Updating files: 100% (12083/12083), done.
+2026-10-14T03:25:58.7453699Z Switched to a new branch 'unit/oa-1-order-attempt-core'
+2026-10-14T03:25:58.7459247Z branch 'unit/oa-1-order-attempt-core' set up to track 'origin/unit/oa-1-order-attempt-core'.
+2026-10-14T03:25:58.7534799Z ##[endgroup]
+2026-10-14T03:25:58.7576028Z [command]/usr/bin/git log -1 --format=%H
+2026-10-14T03:25:58.7600693Z 8947a775c7494d2aca0e58acdbf3274a1aab4255
+2026-10-14T03:25:58.7609400Z ##[group]Removing auth
+2026-10-14T03:25:58.7611932Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-14T03:25:58.7640992Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-14T03:25:58.7826690Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-14T03:25:58.7850148Z http.https://github.com/.extraheader
+2026-10-14T03:25:58.7855420Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-14T03:25:58.7883556Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-14T03:25:58.8064007Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-14T03:25:58.8088725Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-14T03:25:58.8262030Z ##[endgroup]
+2026-10-14T03:25:58.8430985Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+2026-10-14T03:25:58.8431188Z with:
+2026-10-14T03:25:58.8431303Z   go-version-file: go.mod
+2026-10-14T03:25:58.8431424Z   cache: false
+2026-10-14T03:25:58.8431532Z   check-latest: false
+2026-10-14T03:25:58.8432938Z   token: ***
+2026-10-14T03:25:58.8433049Z env:
+2026-10-14T03:25:58.8433153Z   GOTOOLCHAIN: go1.27.2
+2026-10-14T03:25:58.8433277Z   GOFLAGS: -mod=readonly
+2026-10-14T03:25:58.8433418Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-14T03:25:58.8433744Z   MODE: focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:25:58.8434070Z   LC_SWEEP_WORKERS: 1
+2026-10-14T03:25:58.8434183Z   EXTRA_ENV: 
+2026-10-14T03:25:58.8434289Z ##[endgroup]
+2026-10-14T03:25:58.9189427Z Setup go version spec 1.27.2
+2026-10-14T03:25:58.9196004Z Attempting to download 1.27.2...
+2026-10-14T03:25:59.5727270Z matching 1.27.2...
+2026-10-14T03:25:59.5743439Z Acquiring 1.27.2 from https://github.com/actions/go-versions/releases/download/1.27.2-37875086547/go-1.27.2-linux-x64.tar.gz
+2026-10-14T03:26:00.0859316Z Extracting Go...
+2026-10-14T03:26:00.0935408Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/77db53ae-faeb-4076-94bf-57fbb2fa3659 -f /home/runner/work/_temp/c9a49f53-8052-4f7a-b7fd-4513d1fbdecb
+2026-10-14T03:26:01.3078100Z Successfully extracted go to /home/runner/work/_temp/77db53ae-faeb-4076-94bf-57fbb2fa3659
+2026-10-14T03:26:01.3078519Z Adding to the cache ...
+2026-10-14T03:26:05.2649193Z Successfully cached go to /opt/hostedtoolcache/go/1.27.2/x64
+2026-10-14T03:26:05.2651666Z Added go to the path
+2026-10-14T03:26:05.2653355Z Successfully set up Go version 1.27.2
+2026-10-14T03:26:05.2821645Z go version go1.27.2 linux/amd64
+2026-10-14T03:26:05.2821783Z 
+2026-10-14T03:26:05.2821987Z ##[group]go env
+2026-10-14T03:26:05.4096929Z AR='ar'
+2026-10-14T03:26:05.4097146Z CC='gcc'
+2026-10-14T03:26:05.4097380Z CGO_CFLAGS='-O2 -g'
+2026-10-14T03:26:05.4097582Z CGO_CPPFLAGS=''
+2026-10-14T03:26:05.4097760Z CGO_CXXFLAGS='-O2 -g'
+2026-10-14T03:26:05.4097949Z CGO_ENABLED='1'
+2026-10-14T03:26:05.4098114Z CGO_FFLAGS='-O2 -g'
+2026-10-14T03:26:05.4098289Z CGO_LDFLAGS='-O2 -g'
+2026-10-14T03:26:05.4098465Z CXX='g++'
+2026-10-14T03:26:05.4098627Z GCCGO='gccgo'
+2026-10-14T03:26:05.4098921Z GO111MODULE=''
+2026-10-14T03:26:05.4099092Z GOAMD64='v1'
+2026-10-14T03:26:05.4099251Z GOARCH='amd64'
+2026-10-14T03:26:05.4099413Z GOAUTH='netrc'
+2026-10-14T03:26:05.4099590Z GOBIN='/home/runner/go/bin'
+2026-10-14T03:26:05.4099810Z GOCACHE='/home/runner/.cache/go-build'
+2026-10-14T03:26:05.4100031Z GOCACHEPROG=''
+2026-10-14T03:26:05.4100194Z GODEBUG=''
+2026-10-14T03:26:05.4100381Z GOENV='/home/runner/.config/go/env'
+2026-10-14T03:26:05.4100609Z GOEXE=''
+2026-10-14T03:26:05.4100765Z GOEXPERIMENT=''
+2026-10-14T03:26:05.4100932Z GOFIPS140='off'
+2026-10-14T03:26:05.4101110Z GOFLAGS='-mod=readonly'
+2026-10-14T03:26:05.4101678Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build2838621975=/tmp/go-build -gno-record-gcc-switches'
+2026-10-14T03:26:05.4102101Z GOHOSTARCH='amd64'
+2026-10-14T03:26:05.4102216Z GOHOSTOS='linux'
+2026-10-14T03:26:05.4102324Z GOINSECURE=''
+2026-10-14T03:26:05.4102532Z GOMOD='/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/go.mod'
+2026-10-14T03:26:05.4102775Z GOMODCACHE='/home/runner/go/pkg/mod'
+2026-10-14T03:26:05.4102915Z GONOPROXY=''
+2026-10-14T03:26:05.4103022Z GONOSUMDB=''
+2026-10-14T03:26:05.4103122Z GOOS='linux'
+2026-10-14T03:26:05.4103258Z GOPACKAGESDRIVER=''
+2026-10-14T03:26:05.4103378Z GOPATH='/home/runner/go'
+2026-10-14T03:26:05.4103496Z GOPRIVATE=''
+2026-10-14T03:26:05.4103856Z GOPROXY='https://proxy.golang.org,direct'
+2026-10-14T03:26:05.4104042Z GOROOT='/opt/hostedtoolcache/go/1.27.2/x64'
+2026-10-14T03:26:05.4104200Z GOSUMDB='sum.golang.org'
+2026-10-14T03:26:05.4104322Z GOTELEMETRY='local'
+2026-10-14T03:26:05.4104599Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+2026-10-14T03:26:05.4104759Z GOTMPDIR=''
+2026-10-14T03:26:05.4104866Z GOTOOLCHAIN='local'
+2026-10-14T03:26:05.4105038Z GOTOOLDIR='/opt/hostedtoolcache/go/1.27.2/x64/pkg/tool/linux_amd64'
+2026-10-14T03:26:05.4105219Z GOVCS=''
+2026-10-14T03:26:05.4105324Z GOVERSION='go1.27.2'
+2026-10-14T03:26:05.4105437Z GOWORK=''
+2026-10-14T03:26:05.4105551Z PKG_CONFIG='pkg-config'
+2026-10-14T03:26:05.4105638Z 
+2026-10-14T03:26:05.4105928Z ##[endgroup]
+2026-10-14T03:26:05.4284229Z ##[group]Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+2026-10-14T03:26:05.4284438Z with:
+2026-10-14T03:26:05.4284546Z   node-version: 24
+2026-10-14T03:26:05.4284667Z   package-manager-cache: false
+2026-10-14T03:26:05.4284811Z   always-auth: false
+2026-10-14T03:26:05.4284929Z   check-latest: false
+2026-10-14T03:26:05.4286256Z   token: ***
+2026-10-14T03:26:05.4286360Z env:
+2026-10-14T03:26:05.4286463Z   GOTOOLCHAIN: local
+2026-10-14T03:26:05.4286580Z   GOFLAGS: -mod=readonly
+2026-10-14T03:26:05.4286724Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-14T03:26:05.4287052Z   MODE: focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:26:05.4287359Z   LC_SWEEP_WORKERS: 1
+2026-10-14T03:26:05.4287474Z   EXTRA_ENV: 
+2026-10-14T03:26:05.4287580Z ##[endgroup]
+2026-10-14T03:26:05.5230531Z Found in cache @ /opt/hostedtoolcache/node/24.21.0/x64
+2026-10-14T03:26:05.5233442Z (node:2244) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-14T03:26:05.5233962Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-14T03:26:05.5235409Z ##[group]Environment details
+2026-10-14T03:26:08.8439298Z node: v24.21.0
+2026-10-14T03:26:08.8439524Z npm: 11.19.0
+2026-10-14T03:26:08.8439695Z yarn: 1.22.22
+2026-10-14T03:26:08.8440668Z ##[endgroup]
+2026-10-14T03:26:08.8545886Z ##[group]Run corepack enable
+2026-10-14T03:26:08.8546091Z [36;1mcorepack enable[0m
+2026-10-14T03:26:08.8546266Z [36;1mpnpm install --frozen-lockfile --ignore-scripts[0m
+2026-10-14T03:26:08.8837410Z shell: /usr/bin/bash -e {0}
+2026-10-14T03:26:08.8837582Z env:
+2026-10-14T03:26:08.8837701Z   GOTOOLCHAIN: local
+2026-10-14T03:26:08.8837826Z   GOFLAGS: -mod=readonly
+2026-10-14T03:26:08.8837974Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-14T03:26:08.8838310Z   MODE: focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:26:08.8838616Z   LC_SWEEP_WORKERS: 1
+2026-10-14T03:26:08.8838729Z   EXTRA_ENV: 
+2026-10-14T03:26:08.8838976Z ##[endgroup]
+2026-10-14T03:26:09.0672575Z ! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-10.33.0.tgz
+2026-10-14T03:26:10.4148571Z Scope: all 6 workspace projects
+2026-10-14T03:26:10.4317308Z Lockfile is up to date, resolution step is skipped
+2026-10-14T03:26:10.4399107Z Progress: resolved 1, reused 0, downloaded 0, added 0
+2026-10-14T03:26:10.4453854Z Packages: +49
+2026-10-14T03:26:10.4459691Z +++++++++++++++++++++++++++++++++++++++++++++++++
+2026-10-14T03:26:11.4410510Z Progress: resolved 49, reused 0, downloaded 47, added 47
+2026-10-14T03:26:12.3202006Z Progress: resolved 49, reused 0, downloaded 49, added 49, done
+2026-10-14T03:26:12.6200148Z 
+2026-10-14T03:26:12.6200827Z devDependencies:
+2026-10-14T03:26:12.6201124Z + @playwright/test 1.63.0
+2026-10-14T03:26:12.6201494Z + axe-core 4.13.0
+2026-10-14T03:26:12.6201652Z + livekit-client 2.22.3
+2026-10-14T03:26:12.6201779Z + prettier 3.9.8
+2026-10-14T03:26:12.6201905Z + typescript 7.0.2
+2026-10-14T03:26:12.6202087Z + typescript-api <- typescript 6.0.3
+2026-10-14T03:26:12.6202191Z 
+2026-10-14T03:26:12.6357579Z Done in 2.5s using pnpm v10.33.0
+2026-10-14T03:26:12.6734344Z ##[group]Run node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+2026-10-14T03:26:12.6734614Z [36;1mnode scripts/dev/ci-playwright-browsers.mjs "$MODE"[0m
+2026-10-14T03:26:12.6786853Z shell: /usr/bin/bash -e {0}
+2026-10-14T03:26:12.6786989Z env:
+2026-10-14T03:26:12.6787098Z   GOTOOLCHAIN: local
+2026-10-14T03:26:12.6787217Z   GOFLAGS: -mod=readonly
+2026-10-14T03:26:12.6787362Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-14T03:26:12.6787697Z   MODE: focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:26:12.6788002Z   LC_SWEEP_WORKERS: 1
+2026-10-14T03:26:12.6788115Z   EXTRA_ENV: 
+2026-10-14T03:26:12.6788221Z ##[endgroup]
+2026-10-14T03:26:12.7069414Z ci-playwright: mode=focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools browsers=none
+2026-10-14T03:26:12.7161220Z ##[group]Run docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2026-10-14T03:26:12.7161633Z [36;1mdocker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280[0m
+2026-10-14T03:26:12.7213684Z shell: /usr/bin/bash -e {0}
+2026-10-14T03:26:12.7213822Z env:
+2026-10-14T03:26:12.7213930Z   GOTOOLCHAIN: local
+2026-10-14T03:26:12.7214052Z   GOFLAGS: -mod=readonly
+2026-10-14T03:26:12.7214198Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-14T03:26:12.7214529Z   MODE: focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:26:12.7214839Z   LC_SWEEP_WORKERS: 1
+2026-10-14T03:26:12.7214957Z   EXTRA_ENV: 
+2026-10-14T03:26:12.7215065Z ##[endgroup]
+2026-10-14T03:26:13.2379210Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280: Pulling from library/postgres
+2026-10-14T03:26:13.3969702Z 6310eb16bf42: Pulling fs layer
+2026-10-14T03:26:13.3970250Z 6463c6b5c703: Pulling fs layer
+2026-10-14T03:26:13.3970614Z 8d6422da287d: Pulling fs layer
+2026-10-14T03:26:13.3971099Z 2fc0e69f8d7d: Pulling fs layer
+2026-10-14T03:26:13.3971601Z 5fa29c524b4e: Pulling fs layer
+2026-10-14T03:26:13.3971927Z ace4b5b96a91: Pulling fs layer
+2026-10-14T03:26:13.3972314Z af2a6480a058: Pulling fs layer
+2026-10-14T03:26:13.3972558Z 5ee6c6ca7fd9: Pulling fs layer
+2026-10-14T03:26:13.3972814Z c5694bff1357: Pulling fs layer
+2026-10-14T03:26:13.3973120Z aedab7177504: Pulling fs layer
+2026-10-14T03:26:13.3973356Z a4635eaec9b8: Pulling fs layer
+2026-10-14T03:26:13.3973525Z 46e663abc8f5: Pulling fs layer
+2026-10-14T03:26:13.3973718Z 1bb54e8f7727: Pulling fs layer
+2026-10-14T03:26:13.3973858Z af2a6480a058: Waiting
+2026-10-14T03:26:13.3974028Z 2fc0e69f8d7d: Waiting
+2026-10-14T03:26:13.3974249Z 5ee6c6ca7fd9: Waiting
+2026-10-14T03:26:13.3974750Z 5fa29c524b4e: Waiting
+2026-10-14T03:26:13.3975036Z ace4b5b96a91: Waiting
+2026-10-14T03:26:13.3975266Z c5694bff1357: Waiting
+2026-10-14T03:26:13.3975466Z aedab7177504: Waiting
+2026-10-14T03:26:13.3975642Z a4635eaec9b8: Waiting
+2026-10-14T03:26:13.3975897Z 46e663abc8f5: Waiting
+2026-10-14T03:26:13.3976107Z 1bb54e8f7727: Waiting
+2026-10-14T03:26:13.5366714Z 6463c6b5c703: Verifying Checksum
+2026-10-14T03:26:13.5367290Z 6463c6b5c703: Download complete
+2026-10-14T03:26:13.6872021Z 6310eb16bf42: Verifying Checksum
+2026-10-14T03:26:13.6872386Z 6310eb16bf42: Download complete
+2026-10-14T03:26:13.7172438Z 8d6422da287d: Verifying Checksum
+2026-10-14T03:26:13.7173782Z 8d6422da287d: Download complete
+2026-10-14T03:26:13.7807074Z 2fc0e69f8d7d: Verifying Checksum
+2026-10-14T03:26:13.7813651Z 2fc0e69f8d7d: Download complete
+2026-10-14T03:26:13.9379723Z ace4b5b96a91: Verifying Checksum
+2026-10-14T03:26:13.9379986Z ace4b5b96a91: Download complete
+2026-10-14T03:26:13.9661970Z af2a6480a058: Verifying Checksum
+2026-10-14T03:26:13.9662369Z af2a6480a058: Download complete
+2026-10-14T03:26:14.0207270Z 5fa29c524b4e: Verifying Checksum
+2026-10-14T03:26:14.0207844Z 5fa29c524b4e: Download complete
+2026-10-14T03:26:14.0800293Z 5ee6c6ca7fd9: Verifying Checksum
+2026-10-14T03:26:14.0800865Z 5ee6c6ca7fd9: Download complete
+2026-10-14T03:26:14.1516123Z aedab7177504: Verifying Checksum
+2026-10-14T03:26:14.1516844Z aedab7177504: Download complete
+2026-10-14T03:26:14.2512435Z a4635eaec9b8: Verifying Checksum
+2026-10-14T03:26:14.2512892Z a4635eaec9b8: Download complete
+2026-10-14T03:26:14.3003370Z 46e663abc8f5: Verifying Checksum
+2026-10-14T03:26:14.3004308Z 46e663abc8f5: Download complete
+2026-10-14T03:26:14.4067765Z 1bb54e8f7727: Verifying Checksum
+2026-10-14T03:26:14.4068041Z 1bb54e8f7727: Download complete
+2026-10-14T03:26:14.5635712Z c5694bff1357: Verifying Checksum
+2026-10-14T03:26:14.5636108Z c5694bff1357: Download complete
+2026-10-14T03:26:14.5692634Z 6310eb16bf42: Pull complete
+2026-10-14T03:26:23.7850028Z 6463c6b5c703: Pull complete
+2026-10-14T03:26:23.9722322Z 8d6422da287d: Pull complete
+2026-10-14T03:26:24.0345957Z 2fc0e69f8d7d: Pull complete
+2026-10-14T03:26:24.3562448Z 5fa29c524b4e: Pull complete
+2026-10-14T03:26:24.4349512Z ace4b5b96a91: Pull complete
+2026-10-14T03:26:24.4399614Z af2a6480a058: Pull complete
+2026-10-14T03:26:24.4457996Z 5ee6c6ca7fd9: Pull complete
+2026-10-14T03:26:28.1922480Z c5694bff1357: Pull complete
+2026-10-14T03:26:28.2041005Z aedab7177504: Pull complete
+2026-10-14T03:26:28.2114131Z a4635eaec9b8: Pull complete
+2026-10-14T03:26:28.2179141Z 46e663abc8f5: Pull complete
+2026-10-14T03:26:28.2247307Z 1bb54e8f7727: Pull complete
+2026-10-14T03:26:28.2274634Z Digest: sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2026-10-14T03:26:28.2282012Z Status: Downloaded newer image for postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2026-10-14T03:26:28.2287581Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2026-10-14T03:26:28.2323658Z ##[group]Run set -o pipefail
+2026-10-14T03:26:28.2323863Z [36;1mset -o pipefail[0m
+2026-10-14T03:26:28.2324001Z [36;1mmkdir -p output/ci-gates[0m
+2026-10-14T03:26:28.2324269Z [36;1m# Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.[0m
+2026-10-14T03:26:28.2324526Z [36;1mfor kv in $EXTRA_ENV; do[0m
+2026-10-14T03:26:28.2324753Z [36;1m  [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }[0m
+2026-10-14T03:26:28.2324999Z [36;1m  export "$kv"; echo "extra_env: ${kv%%=*} set"[0m
+2026-10-14T03:26:28.2325160Z [36;1mdone[0m
+2026-10-14T03:26:28.2325333Z [36;1m# Explicit dispatch only: inject a real source fault before native PG[0m
+2026-10-14T03:26:28.2325575Z [36;1m# setup. The ordinary gate keeps its verdict and must go red.[0m
+2026-10-14T03:26:28.2325770Z [36;1mif [[ -n "${LC_OA_MUTATION:-}" ]]; then[0m
+2026-10-14T03:26:28.2325980Z [36;1m  [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || exit 2[0m
+2026-10-14T03:26:28.2326189Z [36;1m  python3 tests/foundation/order_attempt_mutation.py[0m
+2026-10-14T03:26:28.2326358Z [36;1mfi[0m
+2026-10-14T03:26:28.2326470Z [36;1mlog_root=output/ci-gates[0m
+2026-10-14T03:26:28.2326604Z [36;1mcase "$MODE" in[0m
+2026-10-14T03:26:28.2326757Z [36;1m  --browser*|--stripe-browser*|--ops-disk-guard)[0m
+2026-10-14T03:26:28.2326932Z [36;1m    mkdir -p output/playwright[0m
+2026-10-14T03:26:28.2327166Z [36;1m    export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"[0m
+2026-10-14T03:26:28.2327418Z [36;1m    log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"[0m
+2026-10-14T03:26:28.2327583Z [36;1m    mkdir -p "$log_root"[0m
+2026-10-14T03:26:28.2327716Z [36;1m    ;;[0m
+2026-10-14T03:26:28.2327817Z [36;1mesac[0m
+2026-10-14T03:26:28.2327975Z [36;1mlog="$log_root/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"[0m
+2026-10-14T03:26:28.2328163Z [36;1mcase "$MODE" in[0m
+2026-10-14T03:26:28.2328334Z [36;1m  foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+2026-10-14T03:26:28.2328684Z [36;1m  shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+2026-10-14T03:26:28.2329402Z [36;1m  # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.[0m
+2026-10-14T03:26:28.2330038Z [36;1m  shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+2026-10-14T03:26:28.2330657Z [36;1m  shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;[0m
+2026-10-14T03:26:28.2331067Z [36;1m  focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;[0m
+2026-10-14T03:26:28.2331499Z [36;1m  # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.[0m
+2026-10-14T03:26:28.2332004Z [36;1m  --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;[0m
+2026-10-14T03:26:28.2332435Z [36;1m  # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.[0m
+2026-10-14T03:26:28.2332718Z [36;1m  # Xvfb comes with `playwright install --with-deps`.[0m
+2026-10-14T03:26:28.2332998Z [36;1m  --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+2026-10-14T03:26:28.2333289Z [36;1m  --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;[0m
+2026-10-14T03:26:28.2333597Z [36;1m  *) echo "unknown mode: $MODE" >&2; exit 2 ;;[0m
+2026-10-14T03:26:28.2333747Z [36;1mesac[0m
+2026-10-14T03:26:28.2383358Z shell: /usr/bin/bash -e {0}
+2026-10-14T03:26:28.2383483Z env:
+2026-10-14T03:26:28.2383595Z   GOTOOLCHAIN: local
+2026-10-14T03:26:28.2383711Z   GOFLAGS: -mod=readonly
+2026-10-14T03:26:28.2383852Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-14T03:26:28.2384178Z   MODE: focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:26:28.2384479Z   LC_SWEEP_WORKERS: 1
+2026-10-14T03:26:28.2384592Z   EXTRA_ENV: 
+2026-10-14T03:26:28.2384697Z ##[endgroup]
+2026-10-14T03:26:29.8787545Z go: downloading github.com/jackc/pgx/v5 v5.11.0
+2026-10-14T03:26:30.1853462Z go: downloading github.com/riverqueue/river v0.40.0
+2026-10-14T03:26:30.1853817Z go: downloading github.com/riverqueue/river/riverdriver/riverpgxv5 v0.40.0
+2026-10-14T03:26:30.1854102Z go: downloading github.com/riverqueue/river/rivertype v0.40.0
+2026-10-14T03:26:30.2236754Z go: downloading github.com/riverqueue/river/riverdriver v0.40.0
+2026-10-14T03:26:30.2841228Z go: downloading golang.org/x/crypto v0.57.0
+2026-10-14T03:26:30.3284059Z go: downloading github.com/jackc/puddle/v2 v2.2.2
+2026-10-14T03:26:30.3295046Z go: downloading github.com/jackc/pgpassfile v1.0.0
+2026-10-14T03:26:30.3444933Z go: downloading github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+2026-10-14T03:26:30.3838474Z go: downloading golang.org/x/text v0.42.0
+2026-10-14T03:26:30.3891735Z go: downloading github.com/riverqueue/river/rivershared v0.40.0
+2026-10-14T03:26:30.4728632Z go: downloading golang.org/x/image v0.46.0
+2026-10-14T03:26:30.6985779Z go: downloading golang.org/x/net v0.60.0
+2026-10-14T03:26:30.7499558Z go: downloading github.com/coreos/go-oidc/v3 v3.21.0
+2026-10-14T03:26:30.7505912Z go: downloading golang.org/x/oauth2 v0.37.0
+2026-10-14T03:26:30.7869280Z go: downloading golang.org/x/sync v0.23.0
+2026-10-14T03:26:30.8087441Z go: downloading github.com/tidwall/gjson v1.19.0
+2026-10-14T03:26:30.8145909Z go: downloading github.com/tidwall/sjson v1.2.5
+2026-10-14T03:26:30.8349358Z go: downloading golang.org/x/sys v0.48.0
+2026-10-14T03:26:30.8600959Z go: downloading github.com/go-jose/go-jose/v4 v4.1.4
+2026-10-14T03:26:30.8609534Z go: downloading github.com/stretchr/testify v1.11.1
+2026-10-14T03:26:30.8654270Z go: downloading go.uber.org/goleak v1.3.0
+2026-10-14T03:26:30.9215122Z go: downloading github.com/tidwall/match v1.2.0
+2026-10-14T03:26:30.9257290Z go: downloading github.com/tidwall/pretty v1.2.1
+2026-10-14T03:26:30.9285307Z go: downloading github.com/davecgh/go-spew v1.1.1
+2026-10-14T03:26:30.9678547Z go: downloading github.com/pmezard/go-difflib v1.0.0
+2026-10-14T03:26:30.9702253Z go: downloading gopkg.in/yaml.v3 v3.0.1
+2026-10-14T03:27:29.7968688Z === RUN   TestOrderAttemptC2FenceBeforeErasureRetainsCommercialProof
+2026-10-14T03:27:36.0753014Z --- PASS: TestOrderAttemptC2FenceBeforeErasureRetainsCommercialProof (6.28s)
+2026-10-14T03:27:36.0753758Z === RUN   TestOrderAttemptErasureBeforeC2FenceAbortsAndAllowsNewCAS
+2026-10-14T03:27:36.0754563Z === RUN   TestOrderAttemptErasureBeforeC2FenceAbortsAndAllowsNewCAS/private-owner
+2026-10-14T03:27:38.9637510Z === RUN   TestOrderAttemptErasureBeforeC2FenceAbortsAndAllowsNewCAS/linked-customer
+2026-10-14T03:27:41.8092619Z --- PASS: TestOrderAttemptErasureBeforeC2FenceAbortsAndAllowsNewCAS (5.73s)
+2026-10-14T03:27:41.8093211Z     --- PASS: TestOrderAttemptErasureBeforeC2FenceAbortsAndAllowsNewCAS/private-owner (2.89s)
+2026-10-14T03:27:41.8093725Z     --- PASS: TestOrderAttemptErasureBeforeC2FenceAbortsAndAllowsNewCAS/linked-customer (2.85s)
+2026-10-14T03:27:41.8188026Z === RUN   TestOrderAttemptPlanKeyCrossTenantSharedAdmission
+2026-10-14T03:27:42.8013882Z --- PASS: TestOrderAttemptPlanKeyCrossTenantSharedAdmission (0.98s)
+2026-10-14T03:27:42.8443003Z PASS
+2026-10-14T03:27:43.8484070Z ok  	livecommerce/tests/foundation	14.212s
+2026-10-14T03:27:44.2183244Z test-focused: top-level PASS=3 FAIL=0 SKIP=0 exit=0
+2026-10-14T03:27:44.4116924Z ##[group]Run grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
+2026-10-14T03:27:44.4117420Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true[0m
+2026-10-14T03:27:44.4168051Z shell: /usr/bin/bash -e {0}
+2026-10-14T03:27:44.4168196Z env:
+2026-10-14T03:27:44.4168302Z   GOTOOLCHAIN: local
+2026-10-14T03:27:44.4168422Z   GOFLAGS: -mod=readonly
+2026-10-14T03:27:44.4168565Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-14T03:27:44.4168977Z   MODE: focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:27:44.4169287Z   LC_SWEEP_WORKERS: 1
+2026-10-14T03:27:44.4169400Z   EXTRA_ENV: 
+2026-10-14T03:27:44.4169512Z ##[endgroup]
+2026-10-14T03:27:44.4246155Z grep: output/playwright/*/ci-gates/*.log: No such file or directory
+2026-10-14T03:27:44.4246671Z test-focused: top-level PASS=3 FAIL=0 SKIP=0 exit=0
+2026-10-14T03:27:44.4285095Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2026-10-14T03:27:44.4285307Z with:
+2026-10-14T03:27:44.4285607Z   name: gate-focused_TestOrderAttempt_C2FenceBeforeErasure_ErasureBeforeC2Fence_PlanKeyCrossTenant_TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:27:44.4285941Z   path: output/ci-gates/
+output/playwright/
+
+2026-10-14T03:27:44.4286092Z   retention-days: 14
+2026-10-14T03:27:44.4286213Z   if-no-files-found: ignore
+2026-10-14T03:27:44.4286340Z   compression-level: 6
+2026-10-14T03:27:44.4286456Z   overwrite: false
+2026-10-14T03:27:44.4286572Z   include-hidden-files: false
+2026-10-14T03:27:44.4286698Z env:
+2026-10-14T03:27:44.4286797Z   GOTOOLCHAIN: local
+2026-10-14T03:27:44.4286914Z   GOFLAGS: -mod=readonly
+2026-10-14T03:27:44.4287054Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+2026-10-14T03:27:44.4287382Z   MODE: focused:^TestOrderAttempt(C2FenceBeforeErasure|ErasureBeforeC2Fence|PlanKeyCrossTenant)|^TestProcessAPIRejectsSplitBuyerPools
+2026-10-14T03:27:44.4287702Z   LC_SWEEP_WORKERS: 1
+2026-10-14T03:27:44.4287816Z   EXTRA_ENV: 
+2026-10-14T03:27:44.4287919Z ##[endgroup]
+2026-10-14T03:27:44.5331189Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-10-14T03:27:44.5332989Z The least common ancestor is /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output. This will be the root directory of the artifact
+2026-10-14T03:27:44.5333679Z With the provided path, there will be 1 file uploaded
+2026-10-14T03:27:44.5334138Z Artifact name is valid!
+2026-10-14T03:27:44.5334378Z Root directory input is valid!
+2026-10-14T03:27:44.8268399Z Beginning upload of artifact content to blob storage
+2026-10-14T03:27:45.0533713Z Uploaded bytes 1034
+2026-10-14T03:27:45.1137195Z Finished uploading artifact content to blob storage!
+2026-10-14T03:27:45.1137792Z SHA256 digest of uploaded artifact zip is a374f3214a5983872cc2daccb500b4dc88dfb4925a86fdb3982fa540f950d0d8
+2026-10-14T03:27:45.1138695Z Finalizing artifact upload
+2026-10-14T03:27:45.4245732Z Artifact gate-focused_TestOrderAttempt_C2FenceBeforeErasure_ErasureBeforeC2Fence_PlanKeyCrossTenant_TestProcessAPIRejectsSplitBuyerPools.zip successfully finalized. Artifact ID 11867599845
+2026-10-14T03:27:45.4246728Z Artifact gate-focused_TestOrderAttempt_C2FenceBeforeErasure_ErasureBeforeC2Fence_PlanKeyCrossTenant_TestProcessAPIRejectsSplitBuyerPools has been successfully uploaded! Final size is 1034 bytes. Artifact ID is 11867599845
+2026-10-14T03:27:45.4249122Z Artifact download URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38502551113/artifacts/11867599845
+2026-10-14T03:27:45.4565620Z Post job cleanup.
+2026-10-14T03:27:45.5767237Z (node:8934) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-14T03:27:45.5767745Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-14T03:27:45.5901131Z Post job cleanup.
+2026-10-14T03:27:45.6982900Z Post job cleanup.
+2026-10-14T03:27:45.7590405Z [command]/usr/bin/git version
+2026-10-14T03:27:45.7629547Z git version 2.55.0
+2026-10-14T03:27:45.7653104Z Temporarily overriding HOME='/home/runner/work/_temp/92150c7f-d6a0-4e58-ba70-dca44e7b6575' before making global git config changes
+2026-10-14T03:27:45.7654240Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-14T03:27:45.7658014Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-14T03:27:45.7694928Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-14T03:27:45.7731539Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-14T03:27:45.7947953Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-14T03:27:45.7977983Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-14T03:27:45.8190423Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-14T03:27:45.8221988Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-14T03:27:45.8528236Z Cleaning up orphan processes
+2026-10-14T03:27:45.8740381Z Terminate orphan process: pid (8102) (sleep)
