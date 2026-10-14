@@ -268,12 +268,12 @@ export function DataTable<R>({
                 </th>
               )}
               {columns.map((c) => (
-                <th key={c.id} scope="col" data-align={c.align} style={c.width ? { width: c.width } : undefined}>
+                <th key={c.id} scope="col" data-align={c.align} data-wrap={c.wrap || undefined} style={c.width ? { width: c.width } : undefined}>
                   {c.header}
                 </th>
               ))}
               {actions && (
-                <th scope="col" data-align="end">
+                <th scope="col" data-align="end" data-actions="">
                   {actionsHeader ?? <span className={s.sr}>{caption}</span>}
                 </th>
               )}
