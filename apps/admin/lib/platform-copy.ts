@@ -69,7 +69,7 @@ export const platformCopy: Record<PlatformLocale, Copy> = {
     email: "聯絡電郵",
     about: [
       "DaWan Live 是本公司擁有的直播電商平台：Facebook 留言收單、商家網店與訂單管理，在同一個工作流程。",
-      "本公司是商家使用本平台服務的合約方，並透過平台自己的 Stripe 帳戶收取平台費用。",
+      "本公司是商家使用本平台服務的合約方；本平台的線上收款由本公司透過 Stripe 處理。",
     ],
   },
   "zh-CN": {
@@ -114,7 +114,7 @@ export const platformCopy: Record<PlatformLocale, Copy> = {
     email: "联系邮箱",
     about: [
       "DaWan Live 是本公司拥有的直播电商平台：Facebook 评论收单、商家网店与订单管理，在同一个工作流程。",
-      "本公司是商家使用本平台服务的合约方，并通过平台自己的 Stripe 账户收取平台费用。",
+      "本公司是商家使用本平台服务的合约方；本平台的线上收款由本公司通过 Stripe 处理。",
     ],
   },
   en: {
@@ -178,7 +178,7 @@ export const platformCopy: Record<PlatformLocale, Copy> = {
     email: "Contact email",
     about: [
       "DaWan Live is the live-commerce platform owned by this company: Facebook comment ordering, your storefront and order management — in one workflow.",
-      "The company is the contracting party for merchants using the platform and collects platform payments through the platform’s own Stripe account.",
+      "The company is the contracting party for merchants using the platform; online payments on the platform are processed by the company through Stripe.",
     ],
   },
 };

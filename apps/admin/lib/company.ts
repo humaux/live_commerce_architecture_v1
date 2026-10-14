@@ -27,7 +27,7 @@ export function operatorSentence(locale: PlatformLocale): string {
   if (locale === "zh-TW")
     return `${company.productName} 是 ${company.legalChinese} 的直播電商平台`;
   if (locale === "zh-CN")
-    return `${company.productName} 是 香港大碗贸易有限公司 的直播电商平台`;
+    return `${company.productName} 是 ${company.legalChinese} 的直播电商平台`;
   return operatedBy;
 }
 export const platformPages = [

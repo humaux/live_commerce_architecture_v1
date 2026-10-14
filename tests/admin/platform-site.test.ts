@@ -35,7 +35,7 @@ test("ADM10 operator sentence is localized while product and company facts stay 
   );
   assert.equal(
     platformCompany.operatorSentence("zh-CN"),
-    "DaWan Live 是 香港大碗贸易有限公司 的直播电商平台",
+    "DaWan Live 是 香港大碗貿易有限公司 的直播电商平台",
   );
   assert.equal(platformCompany.operatorSentence("en"), operatedBy);
 });
