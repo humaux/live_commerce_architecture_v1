@@ -301,7 +301,11 @@ export function ProductMediaManager({
     }
     setLost(false);
     const canonical = await read();
-    if (!canonical) return false;
+    if (!canonical) {
+      // Committed but the re-read failed: outcome is known-saved yet unconfirmed on screen; never invite a duplicate upload.
+      failure.current = { text: c.unknown, halt: true };
+      return false;
+    }
     if (
       op.kind === "upload" &&
       op.role === "sku" &&
