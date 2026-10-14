@@ -117,7 +117,9 @@ export function SegmentedSwitch({
   disabledReason?: string;
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onChange" | "role" | "children" | "aria-label" | "aria-checked" | "disabled" | "type">) {
   const state = buttonState(disabledReason, false);
-  return (
+  const [revealed, setRevealed] = useState(false);
+  const reasonId = useId();
+  const control = (
     <button
       {...props}
       type="button"
@@ -125,15 +127,26 @@ export function SegmentedSwitch({
       aria-checked={checked}
       aria-label={label}
       aria-disabled={state.blocked || undefined}
+      aria-describedby={state.reason !== undefined ? reasonId : props["aria-describedby"]}
       title={state.reason}
       className={s.switch}
       onClick={() => {
-        if (!state.blocked) onChange(!checked);
+        if (state.blocked) return setRevealed(true);
+        onChange(!checked);
       }}
     >
       <span className={s.seg} data-side="on" data-on={checked} aria-hidden="true">{onLabel}</span>
       <span className={s.seg} data-side="off" data-on={!checked} aria-hidden="true">{offLabel}</span>
     </button>
+  );
+  if (state.reason === undefined) return control;
+  return (
+    <span className={s.reasonWrap}>
+      {control}
+      <span id={reasonId} className={revealed ? s.reason : s.sr} role={revealed ? "status" : undefined}>
+        {state.reason}
+      </span>
+    </span>
   );
 }
 

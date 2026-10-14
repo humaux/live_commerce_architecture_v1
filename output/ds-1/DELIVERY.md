@@ -100,3 +100,20 @@ Click ledger (page, control, action, expected, actual, result) is produced by th
 8. **`AppShellV2` is a separate component, not a prop on `AppShell`.** The "flag" is which component a page imports; W3 decides. Only the gallery mounts it.
 9. **Demo state without a URL form is not persisted** (typed field, dialog result, bulk result): the gallery has no backing store, so "refresh keeps it" is verified only for tabs, switch, settings item, KPI list, table state and page.
 10. `process.env.NODE_ENV` in `DataTable` selects strict (throw) vs demote for a second primary action; Next inlines it, so production never throws on styling.
+
+## 7. Round 2 (PR #66 review: PASS with six P2s, all fixed; nothing was run locally)
+
+| # | Fix | Test (all NOT_RUN here, MODEL_ONLY / MOCK) |
+| --- | --- | --- |
+| 1 | `check-hex-ratchet.mjs`: comments are stripped by a tokenizer (`stripComments`) that respects `'` `"` strings, template literals with nested `${}`, and `//` comments (a `/*` inside any of them does not open a block). Scans `.css .scss .js .jsx .ts .tsx .mjs`. Skips `node_modules`/`.next` anywhere, but `tests`/`public` only as `apps/admin/tests` and `apps/admin/public` (by path). "Never raise the baseline" is unchanged (`--write` still refuses growth). | `tests/ui/ds-hex-ratchet.test.mjs`: one case per bypass (string, template, template expression, `//` comment, CSS string, `url(//)`, SCSS `url(http://)`), comments still ignored, and a temp-tree `scan` test for the new extensions and the path-based skips |
+| 2 | `logic.ts`: `selectAllResults(state, pageIds, total, filterKey)` records the key; `bulkTarget` returns `{ scope: "stale_selection" }` when the current key differs. `DataTable` takes `selection.filterKey`; the gallery clears the selection and reports nothing on a stale target. | `tests/ui/ds-logic.test.ts` (different filter, different query, same key, empty key) |
+| 3 | Page scope counts only ids on the current page (`selectionCount(state, total, pageIds)`); `bulkTarget(..., pageIds)` limits ids the same way, so the label, the bulk count and the target agree. | `ds-logic.test.ts` and `tests/ui/ds-render.test.mjs` (banner on page 2 does not count page-1 ids) |
+| 4 | "More" menu items with only `href` render as `<a>` (`menuItemKind`); disabled ones stay a button with the reason. | `ds-logic.test.ts` (`menuItemKind`). The open menu itself is not rendered in a test and no gallery row has a `more` action with only an href: NOT_RUN in the browser |
+| 5 | `AppShellV2`: `close` is `useCallback`, so the drawer effect no longer re-runs on re-render (it restored focus to the menu button and re-focused the first link on every group toggle). | click ledger step "Shell group" now also asserts the group button keeps focus after the click (`ui-gallery-clicks.mjs`, runs in `--browser-ui-gallery`) |
+| 6 | `SegmentedSwitch`: `aria-describedby` points at the reason, which is screen-reader-only until the switch is clicked, then visible (`role=status`), like `Button`. | `tests/ui/ds-render.test.mjs` (describedby id matches the reason element; enabled switch has none). The gallery switch has no disabled reason, so there is no browser click row for it |
+
+New file `tests/ui/ds-render.test.mjs` (server render of the real `Controls.tsx`/`Data.tsx`) is registered in `scripts/dev/test-node.sh` next to the other DS suites.
+
+**Hex baseline:** `tests/ui/hex-baseline.json` was not edited. The stricter tokenizer can change per-file counts (a hex in a trailing `//` comment no longer counts; a hex hidden behind a string `/*` now does). Counts can only fall for the first kind; the second could raise a file above its baseline. The baseline will be re-written in CI with `node scripts/dev/check-hex-ratchet.mjs --write` on the clean tree; that command still refuses to raise an existing baseline, so if CI shows a real increase it must be fixed in the CSS/TS, not in the JSON.
+
+NOT_RUN: `node --test` of the touched suites, `tsc`, `--browser-ui-gallery`. Written, not executed. Known limit: the tokenizer does not parse JS regex literals.

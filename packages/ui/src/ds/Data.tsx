@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent,
 import s from "./data.module.css";
 import { Button, ButtonLink } from "./Controls";
 import {
+  menuItemKind,
   offerAllResults,
   pageSelection,
   pageWindow,
@@ -21,7 +22,11 @@ import {
 
 /* ------------------------------- menu ------------------------------- */
 
-export type MenuItem = { id: string; label: string; onSelect: () => void; variant?: "danger"; disabledReason?: string };
+/** An item either runs `onSelect` or, with `href`, navigates (rendered as a link, not a button). */
+export type MenuItem = { id: string; label: string; variant?: "danger"; disabledReason?: string } & (
+  | { onSelect: () => void; href?: undefined }
+  | { href: string; onSelect?: () => void }
+);
 
 /** A disclosure menu (aria-expanded, not role=menu): Escape and an outside click close it, focus returns to the trigger. */
 export function MenuButton({
@@ -95,20 +100,34 @@ export function MenuButton({
         <div className={s.menu} id={id} data-align={align} role="group" style={place}>
           {items.map((item) => (
             <div key={item.id}>
-              <button
-                type="button"
-                className={s.menuItem}
-                data-variant={item.variant}
-                aria-disabled={item.disabledReason ? true : undefined}
-                onClick={() => {
-                  if (item.disabledReason) return setNote(item.disabledReason);
-                  setOpen(false);
-                  trigger.current?.focus();
-                  item.onSelect();
-                }}
-              >
-                {item.label}
-              </button>
+              {menuItemKind(item) === "link" && item.href !== undefined ? (
+                <a
+                  className={s.menuItem}
+                  data-variant={item.variant}
+                  href={item.href}
+                  onClick={() => {
+                    setOpen(false);
+                    item.onSelect?.();
+                  }}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className={s.menuItem}
+                  data-variant={item.variant}
+                  aria-disabled={item.disabledReason ? true : undefined}
+                  onClick={() => {
+                    if (item.disabledReason) return setNote(item.disabledReason);
+                    setOpen(false);
+                    trigger.current?.focus();
+                    item.onSelect?.();
+                  }}
+                >
+                  {item.label}
+                </button>
+              )}
               {note !== undefined && item.disabledReason === note && <div className={s.menuReason} role="status">{note}</div>}
             </div>
           ))}
@@ -181,7 +200,8 @@ export function DataTable<R>({
   empty: ReactNode;
   error: ReactNode;
   loadingLabel: string;
-  selection?: { state: SelectionState; onChange: (next: SelectionState) => void; total: number; labels: SelectionLabels };
+  /** `filterKey` identifies the current filter/search; "all results" stays bound to it (see bulkTarget). */
+  selection?: { state: SelectionState; onChange: (next: SelectionState) => void; total: number; filterKey: string; labels: SelectionLabels };
   actions?: (row: R) => readonly RowAction[];
   actionsHeader?: string;
   moreLabel?: string;
@@ -189,7 +209,7 @@ export function DataTable<R>({
   const ids = rows.map(rowId);
   const span = columns.length + (selection ? 1 : 0) + (actions ? 1 : 0);
   const strict = process.env.NODE_ENV !== "production";
-  const count = selection ? selectionCount(selection.state, selection.total) : 0;
+  const count = selection ? selectionCount(selection.state, selection.total, ids) : 0;
   const renderActions = (row: R) => {
     const list = resolveRowActions(actions?.(row) ?? [], strict);
     const visible = list.filter((a) => !a.more);
@@ -208,7 +228,10 @@ export function DataTable<R>({
       <div className={s.actions}>
         {visible.map(one)}
         {more.length > 0 && moreLabel && (
-          <MenuButton size="sm" label={<span className={s.sr}>{moreLabel}</span>} items={more.map((a) => ({ id: a.id, label: a.label, onSelect: a.onSelect ?? (() => {}), variant: a.variant === "danger" ? ("danger" as const) : undefined }))} />
+          <MenuButton size="sm" label={<span className={s.sr}>{moreLabel}</span>} items={more.map((a): MenuItem => {
+            const base = { id: a.id, label: a.label, variant: a.variant === "danger" ? ("danger" as const) : undefined };
+            return a.href ? { ...base, href: a.href, onSelect: a.onSelect } : { ...base, onSelect: a.onSelect ?? (() => {}) };
+          })} />
         )}
       </div>
     );
@@ -220,7 +243,7 @@ export function DataTable<R>({
           <strong>{selection.labels.selected(count)}</strong>
           <span>{selection.state.scope === "all" ? selection.labels.allResults(selection.total) : selection.labels.pageOnly}</span>
           {offerAllResults(selection.state, ids, selection.total) && (
-            <Button variant="link" onClick={() => selection.onChange(selectAllResults(selection.state, ids, selection.total))}>
+            <Button variant="link" onClick={() => selection.onChange(selectAllResults(selection.state, ids, selection.total, selection.filterKey))}>
               {selection.labels.selectAllResults(selection.total)}
             </Button>
           )}

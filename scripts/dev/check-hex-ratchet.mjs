@@ -1,33 +1,100 @@
-// Purpose: DS-1 ratchet: the number of hard-coded hex colours in apps/admin CSS/TS/TSX may only go down against the committed baseline tests/ui/hex-baseline.json (total and per file); new files start at zero. packages/ui/src/tokens.css is exempt (it defines the tokens) and lives outside the scanned tree.
+// Purpose: DS-1 ratchet: the number of hard-coded hex colours in apps/admin CSS/SCSS/JS/JSX/TS/TSX/MJS may only go down against the committed baseline tests/ui/hex-baseline.json (total and per file); new files start at zero. packages/ui/src/tokens.css is exempt (it defines the tokens) and lives outside the scanned tree.
 // Depends on: node:fs/path only; reads apps/admin sources, never writes them.
 // Used by: scripts/dev/test-node.sh (check mode), tests/ui/ds-hex-ratchet.test.mjs (pure functions); `node scripts/dev/check-hex-ratchet.mjs --write` rewrites the baseline, and only when nothing grew.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 
 export const ROOT = "apps/admin";
 export const BASELINE = "tests/ui/hex-baseline.json";
-const SKIP_DIRS = new Set(["node_modules", ".next", "tests", "public"]);
-const EXT = /\.(css|tsx|ts|mjs)$/;
+// Skipped anywhere: dependency and build output. Skipped by exact path under the scan root only: the real test and public asset dirs
+// (a folder merely named tests/public deeper in the tree, e.g. src/tests or components/public, is source and is scanned).
+const SKIP_ANYWHERE = new Set(["node_modules", ".next"]);
+const SKIP_UNDER_ROOT = ["tests", "public"];
+const EXT = /\.(css|scss|tsx|ts|jsx|js|mjs)$/;
 // #rgb #rgba #rrggbb #rrggbbaa, not part of a word, an HTML entity or an id such as #main-content.
 const HEX = /(?<![\w&#-])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![\w-])/g;
 
-/** Hex colours in one source text, ignoring block comments and whole-line // comments. */
-export function countHex(source) {
-  const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-  return (code.match(HEX) ?? []).length;
+/**
+ * Source with comments blanked, found by a tokenizer rather than a regex: a quote starts a string (a `/*` or `//` inside it is text),
+ * a `//` comment swallows a `/*` on its line, template literals nest `${ ... }` code. CSS has no `//` comments; SCSS has them but
+ * `url(http://x)` is not one. Newlines are kept. Regex literals are not tokenised (none holds a quote-unbalanced hex in this tree).
+ */
+export function stripComments(source, ext = ".ts") {
+  const line = ext !== ".css";
+  const template = ext !== ".css" && ext !== ".scss";
+  const modes = []; // "tpl" inside a template literal, {depth} inside a ${ } expression
+  let out = "";
+  let i = 0;
+  while (i < source.length) {
+    const ch = source[i];
+    const next = source[i + 1];
+    const top = modes.at(-1);
+    if (top === "tpl") {
+      if (ch === "\\") {
+        out += source.slice(i, i + 2);
+        i += 2;
+      } else if (ch === "`") {
+        modes.pop();
+        out += ch;
+        i++;
+      } else if (ch === "$" && next === "{") {
+        modes.push({ depth: 0 });
+        out += "${";
+        i += 2;
+      } else {
+        out += ch;
+        i++;
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      let j = i + 1;
+      while (j < source.length && source[j] !== ch && source[j] !== "\n") j += source[j] === "\\" ? 2 : 1;
+      out += source.slice(i, j + 1);
+      i = j + 1;
+    } else if (ch === "`" && template) {
+      modes.push("tpl");
+      out += ch;
+      i++;
+    } else if (ch === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+      const stop = end < 0 ? source.length : end + 2;
+      out += source.slice(i, stop).replace(/[^\n]/g, " ");
+      i = stop;
+    } else if (ch === "/" && next === "/" && line && !(ext === ".scss" && source[i - 1] === ":")) {
+      while (i < source.length && source[i] !== "\n") i++;
+    } else {
+      if (top && ch === "{") top.depth++;
+      else if (top && ch === "}") {
+        if (top.depth === 0) modes.pop();
+        else top.depth--;
+      }
+      out += ch;
+      i++;
+    }
+  }
+  return out;
 }
 
-function walk(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-    e.isDirectory() ? (SKIP_DIRS.has(e.name) ? [] : walk(join(dir, e.name))) : EXT.test(e.name) && !e.name.endsWith(".d.ts") ? [join(dir, e.name)] : [],
-  );
+/** Hex colours in one source text, outside comments (see stripComments). */
+export function countHex(source, ext = ".ts") {
+  return (stripComments(source, ext).match(HEX) ?? []).length;
+}
+
+function walk(dir, root) {
+  const skipped = SKIP_UNDER_ROOT.map((name) => join(root, name));
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const path = join(dir, e.name);
+    if (e.isDirectory()) return SKIP_ANYWHERE.has(e.name) || skipped.includes(path) ? [] : walk(path, root);
+    return EXT.test(e.name) && !e.name.endsWith(".d.ts") ? [path] : [];
+  });
 }
 
 /** { total, files: { path: count } } for every file with at least one hex colour, paths sorted. */
 export function scan(root = ROOT) {
   const files = {};
-  for (const path of walk(root).sort()) {
-    const n = countHex(readFileSync(path, "utf8"));
+  for (const path of walk(root, root).sort()) {
+    const n = countHex(readFileSync(path, "utf8"), extname(path));
     if (n > 0) files[path] = n;
   }
   return { total: Object.values(files).reduce((a, b) => a + b, 0), files };

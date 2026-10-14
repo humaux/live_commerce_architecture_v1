@@ -345,6 +345,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     assert.equal(await attr(orders, "aria-expanded"), "false");
     await orders.click();
     assert.equal(await attr(orders, "aria-expanded"), "true");
+    assert.equal(await orders.evaluate((n) => n === document.activeElement), true); // [READ] re-render must not move focus (drawer effect stays mounted)
     await seen(drawer.getByRole("link", { name: group("orders").items[0].label, exact: true }));
     await orders.click();
     assert.equal(await attr(orders, "aria-expanded"), "false");

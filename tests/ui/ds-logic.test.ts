@@ -13,6 +13,7 @@ import {
   emptySelection,
   fileProblem,
   initialOpenGroups,
+  menuItemKind,
   offerAllResults,
   pageFromSearch,
   pageSelection,
@@ -46,12 +47,12 @@ test("selection: partial pick is 'some'; the all-results offer needs a full page
   const full = togglePage(emptySelection, page);
   assert.equal(offerAllResults(full, page, 47), true);
   assert.equal(offerAllResults(full, page, 5), false, "nothing off-page: no offer");
-  assert.equal(selectAllResults(togglePage(emptySelection, page), page, 5).scope, "page", "selectAllResults is a no-op without the offer");
-  assert.equal(selectAllResults(state, page, 47).scope, "page", "a partial page cannot jump to all results");
+  assert.equal(selectAllResults(togglePage(emptySelection, page), page, 5, "k").scope, "page", "selectAllResults is a no-op without the offer");
+  assert.equal(selectAllResults(state, page, 47, "k").scope, "page", "a partial page cannot jump to all results");
 });
 
 test("selection: 'all results' counts the total, is sent as a filter, and needs a confirm", () => {
-  const all = selectAllResults(togglePage(emptySelection, page), page, 47);
+  const all = selectAllResults(togglePage(emptySelection, page), page, 47, "published|");
   assert.equal(all.scope, "all");
   assert.equal(selectionCount(all, 47), 47);
   assert.equal(bulkNeedsConfirm(all), true);
@@ -61,14 +62,41 @@ test("selection: 'all results' counts the total, is sent as a filter, and needs 
   assert.deepEqual(bulkTarget(some, "x"), { scope: "ids", ids: ["c"] });
 });
 
+test("selection: 'all results' is bound to its filter; a different filter is a typed stale_selection, never a bulk target", () => {
+  const all = selectAllResults(togglePage(emptySelection, page), page, 47, "published|");
+  assert.equal(all.filterKey, "published|");
+  assert.deepEqual(bulkTarget(all, "draft|"), { scope: "stale_selection" });
+  assert.deepEqual(bulkTarget(all, "published|x"), { scope: "stale_selection" });
+  assert.deepEqual(bulkTarget(all, "published|"), { scope: "filter", filter: "published|" });
+  assert.deepEqual(bulkTarget(selectAllResults(togglePage(emptySelection, page), page, 47, ""), ""), { scope: "filter", filter: "" }, "empty key is still a key");
+});
+
+test("selection: page scope counts and targets only ids on the current page", () => {
+  let state = togglePage(emptySelection, page);
+  const next = ["f", "g", "h", "i", "j"];
+  assert.equal(selectionCount(state, 47, next), 0, "page 1 ids are not on page 2");
+  assert.equal(selectionCount(state, 47, page), 5);
+  assert.equal(selectionCount(state, 47), 5);
+  state = toggleRow(state, "g", next);
+  assert.equal(selectionCount(state, 47, next), 1);
+  assert.deepEqual(bulkTarget(state, "k", next), { scope: "ids", ids: ["g"] });
+  assert.deepEqual(bulkTarget(state, "k"), { scope: "ids", ids: ["a", "b", "c", "d", "e", "g"] });
+});
+
 test("selection: leaving 'all' by unchecking a row falls back to this page minus that row; header click clears", () => {
-  const all = selectAllResults(togglePage(emptySelection, page), page, 47);
+  const all = selectAllResults(togglePage(emptySelection, page), page, 47, "published|");
   const left = toggleRow(all, "c", page);
   assert.equal(left.scope, "page");
   assert.deepEqual([...left.ids].sort(), ["a", "b", "d", "e"]);
   assert.equal(togglePage(all, page).ids.size, 0);
   assert.equal(clearSelection().scope, "page");
   assert.equal(offerAllResults(left, page, 47), false);
+});
+
+test("menu items: href-only navigates (link); a handler or a disabled reason stays a button", () => {
+  assert.equal(menuItemKind({ href: "?edit=1" }), "link");
+  assert.equal(menuItemKind({}), "button");
+  assert.equal(menuItemKind({ href: "?edit=1", disabledReason: "no access" }), "button");
 });
 
 test("row actions: at most ONE primary per row", () => {

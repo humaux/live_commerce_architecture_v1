@@ -72,7 +72,7 @@ node --input-type=module -e 'import assert from "node:assert/strict"; import {re
 
 # W3-U2 actual BFF Request seams and closed command/copy policy.
 # DS-1 admin design system: pure logic (selection scope, one primary per row, disabled-with-reason, paging, typed confirm), token contrast/scales/aliases, and the hex-colour ratchet (no browser).
-node --test --experimental-strip-types tests/ui/ds-logic.test.ts tests/ui/ds-tokens.test.mjs tests/ui/ds-hex-ratchet.test.mjs
+node --test --experimental-strip-types tests/ui/ds-logic.test.ts tests/ui/ds-tokens.test.mjs tests/ui/ds-hex-ratchet.test.mjs tests/ui/ds-render.test.mjs
 node scripts/dev/check-hex-ratchet.mjs
 node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
 node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts

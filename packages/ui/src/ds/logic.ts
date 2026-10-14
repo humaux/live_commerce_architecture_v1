@@ -6,7 +6,8 @@
 
 /** "page" = the checked rows on this page only; "all" = every result of the current filter (needs a confirm). */
 export type SelectionScope = "page" | "all";
-export type SelectionState = { readonly ids: ReadonlySet<string>; readonly scope: SelectionScope };
+/** `filterKey` is set only in "all" scope: the filter the "all results" offer was made for. */
+export type SelectionState = { readonly ids: ReadonlySet<string>; readonly scope: SelectionScope; readonly filterKey?: string };
 export const emptySelection: SelectionState = { ids: new Set<string>(), scope: "page" };
 
 export type PageSelection = "none" | "some" | "all";
@@ -40,22 +41,30 @@ export function offerAllResults(state: SelectionState, pageIds: readonly string[
   return state.scope === "page" && pageSelection(state, pageIds) === "all" && total > pageIds.length;
 }
 
-export function selectAllResults(state: SelectionState, pageIds: readonly string[], total: number): SelectionState {
-  return offerAllResults(state, pageIds, total) ? { ids: state.ids, scope: "all" } : state;
+export function selectAllResults(state: SelectionState, pageIds: readonly string[], total: number, filterKey: string): SelectionState {
+  return offerAllResults(state, pageIds, total) ? { ids: state.ids, scope: "all", filterKey } : state;
 }
 
 export function clearSelection(): SelectionState {
   return emptySelection;
 }
 
-export function selectionCount(state: SelectionState, total: number): number {
-  return state.scope === "all" ? total : state.ids.size;
+/** "all" = every result; "page" = the checked rows, counted only among `pageIds` when given (ids kept from other pages are not on screen). */
+export function selectionCount(state: SelectionState, total: number, pageIds?: readonly string[]): number {
+  if (state.scope === "all") return total;
+  return pageIds ? pageIds.filter((id) => state.ids.has(id)).length : state.ids.size;
 }
 
 /** A bulk command over "all" results is sent as the filter, never as a list of ids; it must be confirmed first. */
-export type BulkTarget = { scope: "ids"; ids: string[] } | { scope: "filter"; filter: string };
-export function bulkTarget(state: SelectionState, filterKey: string): BulkTarget {
-  return state.scope === "all" ? { scope: "filter", filter: filterKey } : { scope: "ids", ids: [...state.ids].sort() };
+export type BulkTarget = { scope: "ids"; ids: string[] } | { scope: "filter"; filter: string } | { scope: "stale_selection" };
+/**
+ * "all" scope is bound to the filter it was selected under: if the current filter differs the selection is stale and no
+ * target is produced (the caller must clear it). In page scope, `pageIds` limits the ids to the rows on screen.
+ */
+export function bulkTarget(state: SelectionState, filterKey: string, pageIds?: readonly string[]): BulkTarget {
+  if (state.scope === "all") return state.filterKey === filterKey ? { scope: "filter", filter: filterKey } : { scope: "stale_selection" };
+  const ids = pageIds ? pageIds.filter((id) => state.ids.has(id)) : [...state.ids];
+  return { scope: "ids", ids: ids.sort() };
 }
 export const bulkNeedsConfirm = (state: SelectionState): boolean => state.scope === "all";
 
@@ -83,6 +92,11 @@ export function resolveRowActions<T extends ActionLike>(actions: readonly T[], s
     }
     return { ...a, variant: "secondary" } as T;
   });
+}
+
+/** A "more" menu item with only an href navigates, so it renders as a link; a disabled one stays a button that explains itself. */
+export function menuItemKind(item: { href?: string; disabledReason?: string }): "link" | "button" {
+  return item.href !== undefined && !item.disabledReason ? "link" : "button";
 }
 
 export type ButtonState = { blocked: boolean; busy: boolean; reason: string | undefined };

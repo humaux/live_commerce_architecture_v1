@@ -84,7 +84,8 @@ function ProductTable({ c, params, setParam, search }: { c: GalleryCopy; params:
   const rows = params.tstate === "empty" ? [] : filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const total = params.tstate === "empty" ? 0 : filtered.length;
   const filterKey = `${filter}|${query}`;
-  const count = selectionCount(selection, total);
+  const pageIds = rows.map((p) => String(p.n));
+  const count = selectionCount(selection, total, pageIds);
 
   const act = (label: string, p: Product) => setNote(c.lastAction(label, c.productName(p.n)));
   const columns: Column<Product>[] = [
@@ -114,9 +115,10 @@ function ProductTable({ c, params, setParam, search }: { c: GalleryCopy; params:
       title: bulkNeedsConfirm(selection) ? c.dlgTypedTitle : c.dlgTitle,
       description: bulkNeedsConfirm(selection) ? c.dlgTypedDesc : c.dlgDesc,
       done: () => {
-        const target = bulkTarget(selection, filterKey);
-        setBulkDone(c.bulkDone(count, target.scope === "filter" ? c.scopeFilter : c.scopeIds));
+        const target = bulkTarget(selection, filterKey, pageIds);
         setSelection(clearSelection());
+        if (target.scope === "stale_selection") return;
+        setBulkDone(c.bulkDone(count, target.scope === "filter" ? c.scopeFilter : c.scopeIds));
       },
     });
   const dialogs = (
@@ -197,6 +199,7 @@ function ProductTable({ c, params, setParam, search }: { c: GalleryCopy; params:
             state: selection,
             onChange: setSelection,
             total,
+            filterKey,
             labels: { selectPage: c.selectPage, selectRow: c.selectRow, selected: c.selected, pageOnly: c.pageOnly, allResults: c.allResults, selectAllResults: c.selectAll, clear: c.clear },
           }}
         />

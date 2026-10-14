@@ -2,7 +2,7 @@
 // Depends on: react, ./shell2.module.css, ./logic (initialOpenGroups); no API, routing, permissions or translation: nav data, copy and slots are props.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx (the W3 page migration will mount it).
 "use client";
-import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
 import s from "./shell2.module.css";
 import { initialOpenGroups } from "./logic";
 
@@ -77,7 +77,8 @@ export function AppShellV2({ nav, currentId, navLabel, brand, store, topbar, bre
   const [expanded, setExpanded] = useState(() => initialOpenGroups(nav, currentId));
   const drawer = useRef<HTMLElement>(null);
   const rest = useRef<HTMLDivElement>(null);
-  const close = () => setOpen(false);
+  // Stable identity: useDrawer's effect depends on it, and a re-run would restore focus to the menu button and re-focus the first link.
+  const close = useCallback(() => setOpen(false), []);
   const idBase = useId();
   useDrawer(open, close, drawer, rest);
   // A drawer left open while the window grows past 768 px would trap focus on a desktop sidebar.
