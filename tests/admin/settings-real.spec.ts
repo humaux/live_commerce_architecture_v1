@@ -188,7 +188,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page
     .getByRole("button", { name: "Retry pending command", exact: true })
     .click();
-  await expect(page.getByTestId("settings-policy-form").or(page.getByLabel("Stable service code", { exact: true }))).toBeVisible();
+  await expect(page.getByLabel("Stable service code", { exact: true })).toBeVisible();
   await expect(pendingControls).toBeHidden();
   expect(marketRequests.length).toBe(2);
   expect(marketRequests[0].key === marketRequests[1].key).toBe(true);

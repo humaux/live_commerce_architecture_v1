@@ -86,7 +86,7 @@ cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
      如果目标是全新集群，加 `--fresh-cluster`（先导入角色），再执行 `docker compose run --rm -T --no-deps provision-logins` 为登录角色设置密码。
    - 方案 B：PITR，见 §6（`pitr-cutover` 已包含 provision-logins 和新的 base backup）。
 4. **先开放身份和只读订单**，验证数据正确。
-5. **处理删除/撤回的墓碑记录**（K23），然后对账 PSP：对照 PAYUNi 商户后台逐笔核对 `river_payment` 中的 job 和支付状态。
+5. **处理删除/撤回的墓碑记录**（K23），然后对账 PSP：对照 Stripe Dashboard 逐笔核对 `river_payment` 中的 job 和支付状态。
    **历史外部副作用绝不自动重放**，UNKNOWN 状态不能盲目重试。
 6. 恢复**有限写入**（关闭营销），观察看门狗。
 7. 最后开放营销和媒体。

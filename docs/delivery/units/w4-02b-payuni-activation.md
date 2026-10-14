@@ -1,3 +1,5 @@
+> Superseded: PAYUNi removed by owner decision 2026-10-14, see pay-rm2.
+
 # Unit W4-02B — PAYUNi 信用卡商家自助开通（验证状态机，后端，钱路）
 
 **CANCELLED（owner 2026-10-06：「不使用PAYUNi，直接允许商家使用平台的stripe进行收款」）。** 由 `w4-s1-platform-stripe.md` 取代；迁移号 0137 改给 W4-S1。正文仅存档，勿实现。

@@ -1,3 +1,5 @@
+> Superseded: PAYUNi removed by owner decision 2026-10-14, see pay-rm2.
+
 # Payment query and authenticated observations
 
 2026-09-24. Status: PASS_BOUNDED_INTERNAL_QUERY_AND_AUTHENTICATED_REPORTS.

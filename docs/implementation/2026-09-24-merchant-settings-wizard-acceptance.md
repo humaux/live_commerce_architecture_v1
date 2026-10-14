@@ -1,3 +1,5 @@
+> Superseded: PAYUNi removed by owner decision 2026-10-14, see pay-rm2.
+
 # Merchant setup wizard — A composition
 
 Contract: [merchant-settings-wizard-v1](../../contracts/merchant-settings-wizard-v1.md).
