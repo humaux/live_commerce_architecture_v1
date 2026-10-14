@@ -312,9 +312,6 @@ func executionAbortCode(err error) string {
 	if errors.Is(err, command.ErrInsufficient) {
 		return "insufficient_inventory"
 	}
-	if errors.Is(err, ErrPlanKeyUnavailable) {
-		return "PLAN_UNAVAILABLE"
-	}
 	if errors.Is(err, ErrPlanInvalid) {
 		return "PLAN_INVALID"
 	}

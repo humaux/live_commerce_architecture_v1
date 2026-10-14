@@ -1216,8 +1216,15 @@ runs `TestOrderAttemptReservedPlanUnavailableCannotAbortPending` (runtime and
 actual claims-worker reject the unused reason with zero effects) and
 `TestOrderAttemptLocalKeyMissingExpiresAtRealDeadline` (real C1 claim, missing
 ring twice, unchanged real 15-minute deadline, no early release, exact Sweep
-EXPIRED, release proof, key-free replay and next-generation CAS). These are
-pending; the unused classifier/SQL entry is not yet changed before causal RED.
+EXPIRED, release proof, key-free replay and next-generation CAS). The reserved
+reason job `115657646876` is causal RED on exact tests-FIRST 45456: native C1 and
+runtime abort reached assertion `order_attempt_local_key_deadline_test.go:34`,
+which observed `state="ABORTED" err=<nil>` instead of PT400/no receipt
+(`reserved-reason-red-ci133.log:709–714`, PASS=0 FAIL=1 exit=1). The worker lane
+was not reached after that runtime failure. The real deadline job is pending.
+Only after this RED was the Go abort mapping removed and the SQL pending-abort
+allowlist closed; terminal replay still precedes reason validation. No loss
+registry, new amendment, deadline change or grant change was introduced.
 The existing key-rotation and retirement cases now retain PENDING on local skew
 and prove another process holding the original key can commit, with exact
 terminal replay. Receipt/atomicity-only fixtures use explicit trusted
@@ -1242,6 +1249,20 @@ All local runtime/build/formatter/PG remain NOT_RUN. Whole unit NOT_READY.
 Each disposable CI mutation prints its patched source paths and before/after
 hashes. A setup/compile failure cannot count as a causal RED. After these
 receipts, run the restored cases chronologically on the exact source for GREEN.
+Two independent custody mutations also produced causal RED on 8947:
+`custody-constant` CI `38501855586`/job `115651190142` and
+`custody-rehash-canonical` CI `38501855435`/job `115652318517`, each PASS=0 FAIL=1
+at both actual-attempt digest assertions; exact patched paths and hashes are in
+`custody-constant-red-8947a775c.log` and `custody-rehash-red-8947a775c.log`.
+The `omit-generation-cas` mutation CI `38501855217`/job `115651876579` instead
+survived (PASS=1 exit=0; `omit-cas-mutation-green-8947a775c.log`). It is not an
+accepted RED: the future-generation fixture was refused by the independent
+previous-terminal guard. Tests-FIRST `c48acfd46` preserves those cases and adds
+`generation-stale`: advance the scope through actual runtime prepare, then send
+the old generation 0 with a new key, require PT409/intent_conflict, and verify
+the winner through the public scope read and exact-key replay after savepoint
+rollback. Its current-SHA mutation and restored proof are pending.
+
 The same-thread 15-minute heartbeat is registered to collect and reconcile every
 run, update this delivery and Humaux, and notify only substantive failure or
 completion. All local runtime remains NOT_RUN(owner CI-only); whole NOT_READY.

@@ -34,8 +34,8 @@ func (e *PlanError) Code() string { return e.code }
 var (
 	// ErrPlanInvalid means shape, authenticated binding, ciphertext or exact plaintext digest is invalid.
 	ErrPlanInvalid = &PlanError{code: "order_attempt_plan_invalid"}
-	// ErrPlanKeyUnavailable means a ring or required AES-256 key is definitively absent/unusable.
-	// The caller must distinguish this from temporary external key-service failure before invoking Open.
+	// ErrPlanKeyUnavailable is a process-local ring availability observation, never
+	// proof of permanent loss. Keep PENDING until a configured executor or expiry settles it.
 	ErrPlanKeyUnavailable = &PlanError{code: "order_attempt_plan_key_unavailable"}
 	// ErrPlanSealFailed means secure randomness failed; no ciphertext is returned and there is no fallback.
 	ErrPlanSealFailed = &PlanError{code: "order_attempt_plan_seal_failed"}

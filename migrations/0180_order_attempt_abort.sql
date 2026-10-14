@@ -213,7 +213,7 @@ DECLARE ctx jsonb; owner_status text; v_receipt jsonb;
  prior_store text:=current_setting('app.store_id',true);
 BEGIN
  ctx:=ops.order_attempt_fence_context(p_attempt,p_generation);
- IF p_code IS NULL OR p_code<>ALL(ARRAY['EXPIRED','ERASED','PLAN_INVALID','PLAN_UNAVAILABLE',
+ IF p_code IS NULL OR p_code<>ALL(ARRAY['EXPIRED','ERASED','PLAN_INVALID',
   'insufficient_inventory','resource_unavailable','bundle_reserved','bundle_order_exists',
   'invalid_destination','payment_unavailable','limit_exceeded']::text[]) THEN
   RAISE EXCEPTION 'invalid_abort_reason' USING ERRCODE='PT400';
@@ -265,4 +265,4 @@ ALTER FUNCTION ops.abort_order_attempt(bytea,uuid,uuid,bigint,text) OWNER TO com
 REVOKE ALL ON FUNCTION ops.abort_order_attempt(bytea,uuid,uuid,bigint,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ops.abort_order_attempt(bytea,uuid,uuid,bigint,text) TO commerce_runtime,commerce_claims_worker;
 COMMENT ON FUNCTION ops.abort_order_attempt(bytea,uuid,uuid,bigint,text) IS
- 'order-attempt-v1 §§1/3: actual runtime current read or claims worker authority; first take exact attempt fence, replay immutable terminal receipt or metadata-only definitive abort after native absence proof. PLAN_UNAVAILABLE classification belongs to trusted executor; no unknown failure becomes definitive.';
+ 'order-attempt-v1 §§1/3: actual runtime current read or claims worker authority; first take exact attempt fence, replay immutable terminal receipt or metadata-only definitive abort after native absence proof. PLAN_UNAVAILABLE is reserved and unused; local key absence stays retryable until immutable execute_by expires.';
