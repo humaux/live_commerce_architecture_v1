@@ -12,6 +12,8 @@ The retained regression tests exercise the actual scanner CLI against Git-backed
 
 The isolated test commit is `0e16475b6fc5ddb05d65db3908f68393e0c43ae8`, file blob `112edffbfa8d9fdd219dfe66252b10e34d34b374`: 27 active subcases in go_factory_trunk_cli_test.go. Each first proves legacy EXACT and MOUNT coverage, then requires candidate TOUCHED for both. Fixtures are parsed in the CI test before scanner assertions. The caller-origin fixtures keep the unsafe caller in the baseline and add only the factory probe in the candidate.
 
+After the first CI exposed fixture setup failures, the same isolated writer made fixture-only commits `0fabe03e819d2e352c7615590ec3ca4a09a1696a` and `8b23cec4f1e5ff8ea54cf5da99421f6aeb531fb9` on base 686aa5a9. Both mains now retain aligned's widget registration. The two FuncLit cases retain their unsafe parameterized factory call and share its configuration with an explicit outer-main handler mount, providing baseline MOUNT provenance. The final test blob is `775120668c2ccda27ba7a9669ff98b8398be3a8b`; all 27 cases and their strict baseline and TOUCHED assertions are unchanged. This fixture correction is E1 source evidence; candidate execution awaits new CI.
+
 ## Provenance
 
 Original branch base: `256e9740ced9c5de05a83f58eb9f4c79a231b7b2`. Tests-only revision also includes trunk `5497e55c3a0ad8ead2a4a8c30c5500c73af0c5c5`, merged as `6556251fac0c8390b9a4c9e4d14ff3ba1b209603`.
@@ -24,7 +26,7 @@ Author worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift
 | Historical drift_factory_boundary | explorer / gpt-6.1-sol / high | Root worktree; original base above; read-only |
 | Historical drift_factory_tests | test_worker / gpt-6.1-sol / high | /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift-factory-tests; unit/ci-drift-factory-tests; original base then bfcfa5eb; only the two now-retired CLI test files |
 | Historical factory_effect_audit | explorer / gpt-6.1-sol / high | Root worktree at 7b652f59 and source follow-ups; read-only |
-| Tests-only factory_effect_audit | explorer / gpt-6.1-sol / high | Root worktree at test commit 0e16475b6; read-only static audit; Humaux research 0a185907-1730-4af4-8472-eb4d0f8f695e |
+| Tests-only factory_effect_audit | explorer / gpt-6.1-sol / high | Root worktree; read-only static and CI-receipt audit. Initial 0e audit 0a185907 was superseded by 5048c212-b29a-47db-99f4-16400d443307 after CI exposed omitted fixture registration and two missing FuncLit MOUNT baselines |
 | Historical factory_boundary_impl | integration_worker / gpt-6.1-sol / high | /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-drift-factory-effects; unit/ci-drift-factory-effects; base 7b652f59; only the four now-withdrawn scanner source changes |
 | Historical factory_counter_tests | test_worker / gpt-6.1-sol / high | Tests worktree / branch above; base 7b652f59; only now-retired go_factory_effect_cli_test.go |
 | Historical factory_round1_review_audit | explorer / gpt-6.1-sol / high | Root worktree at 42f29ae0; read-only |
@@ -39,14 +41,15 @@ Delegate model/effort records describe explicit dispatch configurations, not ind
 | Retired tests-first bfcfa5eb, [Foundation 38477346748 / job 115571192630](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38477346748/job/115571192630) | RED: startup-probe exclusion expectations failed; toy middleware/child-body cases also missed. [Receipt](evidence/red-factory.log). Those exclusion expectations are no longer this PR's contract. |
 | Retired frozen-probe tests 7b652f59, [Foundation 38478824210 / job 115576095619](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38478824210/job/115576095619) | RED: the added frozen probe produced errors 3. [Receipt](evidence/red-frozen-oa1.log). |
 | Withdrawn scanner at 42f29ae0 | Independent adversarial review by claude-opus-5-5 found P1 false negatives in caller-origin name binding and indirect/initializer call enumeration. Owner rejected further analyzer hardening; restoring trunk removes this implementation from the PR. This is not acceptance of the final tests. |
+| First tests-only 686aa5a967b7d29bffe8b2898d17fc0f35743f7f, [Foundation 38485867853 / job 115599248919](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38485867853/job/115599248919) | RED at fixture baseline in all 27 cases, before candidate writes: go=0, contract=1, bff=1; BFF_NO_GO and CONTRACT_ONLY because the new main omitted aligned's widget registration. [Portable receipt](evidence/trunk-fixture-setup-red.log). Actual checkout e4abec2d94cf0ab6267986bf773cc14d0aa59282 merged that head into 5497e55c. This is fixture setup failure, not scanner-miss evidence; candidate behaviors remain NOT_RUN. |
 
 ## Current acceptance
 
 | Check | Result |
 | --- | --- |
 | Scanner source equals current trunk | E1: effective non-test scanner diff against trunk 5497e55c is empty after integration; all existing trunk tests are unchanged |
-| Independent scoped static review | E1: no scoped P0/P1 at test commit 0e16475b6; test file SHA256 d478e83bd4cbc97f92241b7f14dad9e282101f9c11cb85631a53c020941332b9. Runtime and final integrator acceptance remain pending |
-| New must-be-TOUCHED regressions on unchanged scanner | NOT_RUN — GitHub CI required |
+| Independent scoped static review | The initial 0e source audit is superseded: actual CI exposed baseline defects. E1 fixture-only delta audit at 8b23cec4 found no scoped blocker or assertion weakening; file SHA256 a9d006aee1e314e2f26638249b5c9425fe02fb8f5a76344971ed0d9e1b551ce8, research 3ccba513-a196-42ef-b7f5-e55ecf1aa517. Runtime and final integrator acceptance remain pending |
+| New must-be-TOUCHED regressions on unchanged scanner | Candidate behavior NOT_RUN: first CI stopped at baseline setup; only the new fixtures are being repaired, with TOUCHED assertions unchanged |
 | Existing complete CI-DRIFT package / Foundation / required Gates | NOT_RUN on final tests-only SHA |
 | Confirmed existing scanner false negatives | NOT_RUN — no speculative expected-fail entries |
 | Independent final tests-only review | NOT_RUN; integrator reviews after push |
