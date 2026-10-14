@@ -600,3 +600,11 @@ test("stdin unions legacy trimming without trimming the source lookup path", (t)
   assert.equal(next.deploy, true);
   assert.ok(!next.modes.includes("--studio-backend"), "legacy spelling is only classified, never used as a missing source lookup");
 });
+
+test("pay-rm2: Stripe worker/registrar changes select the buyer payment page gates (Chromium + WebKit)", () => {
+  for (const file of ["internal/payments/stripe_query.go", "internal/payments/stripeadmin/doc.go", "internal/integrations/psp/stripe/client.go"]) {
+    const modes = planPr([file], usage).modes;
+    assert.ok(modes.includes("--browser-payment"), `${file} -> --browser-payment`);
+    assert.ok(modes.includes("--browser-webkit"), `${file} -> --browser-webkit`);
+  }
+});

@@ -394,6 +394,14 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.getByRole("button", { name: "Retry pending command", exact: true }).click();
   await expect.poll(() => svcWrites.length).toBe(2);
   expect(svcWrites[0].key === svcWrites[1].key && svcWrites[0].body === svcWrites[1].body).toBe(true);
+  // The banner also hides while the retry is in flight (busy), so it is not a success signal. Wait for the
+  // completion state instead: the successful replay removes the command journal (SettingsWizard retryPending).
+  await expect
+    .poll(() =>
+      // G-UI8 audit [READ/MEASURE]: reads whether a settings command journal is still pending
+      page.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith("commerce-settings-command:"))),
+    )
+    .toBe(false);
   await expect(page.getByTestId("settings-pending")).toBeHidden();
   await page.unroute(svcPath);
   await page.reload();
