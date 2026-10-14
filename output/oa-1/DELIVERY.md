@@ -794,3 +794,54 @@ unchanged. PR54 is still OPEN, merge SHA absent. Full native CI115 job
 and independent acceptance remain incomplete, **NOT READY**. Existing
 15-minute same-thread heartbeat monitors those runs/dependency. All local
 tests, builds, formatters and PG runs remain **NOT_RUN (owner CI-only)**.
+
+### Owner-selected startup preflight, 2026-10-14
+
+Owner replaced the external scanner dependency with a product startup change.
+Tests-first `f25ad43e8` preserves the existing buyer assembly cases and adds
+actual preflight authority/cleanup cases to that same isolated REAL_PG gate.
+`d63d1c374` opens short-lived issuer/runtime/checkout pools from the captured
+buyer configuration, uses the existing role validation and physical advisory-lock
+probe against the main pool, and closes every temporary pool on all returns.
+`run` calls it before `buildBuyerWithCVS` and before handler mounting/listening.
+Startup errors stay redacted; the existing 10-second startup and probe bounds stay
+unchanged. Disabled buyer mode needs no DSN, reference pool or context.
+
+`cmd/api/buyer.go` is restored byte-identically to current trunk, blob
+`fba31947511f02e001fb892cc0dabd73eb88e1a5`; its signature/body have no remaining
+diff. `scripts/dev/contractdrift/**` and its baseline also have no trunk diff.
+No PR54 change is imported. The dedicated CI-only `api-preflight-bypass` mutation
+removes only the main preflight call: unchanged
+`TestOrderAttemptProcessAPIRejectsSplitBuyerPools` must reject all three
+same-name/different-cluster participants before any listener serves traffic.
+`TestBuyerHTTPAPIAssemblyRealPoolCleanup` continues invoking the real API seam;
+new subcases observe actual labeled connections disappear and the reference
+connection remain live. Normal and mutation CI results are pending registration.
+
+Full native CI115 `38481790718`, source `f079b80a3`, job `115590604172`, ended
+**RED: PASS=194 FAIL=9 SKIP=0, exit 1**. Raw receipt:
+`full-native-red-ci115.log`. Two notification failures are already superseded
+by CI118 GREEN above. The remaining failures share a global sweep refusal:
+`expired_abort`, attempt `79c89069-eb62-4055-907f-4dd10f68daea`,
+`PT409 attempt_has_effects` (lines 1231–1236). The final consumer race fails
+waiting for its startup sweep (line 2285), before entering the race.
+That old log does not identify the fixture that created this UUID, so exact
+attribution is not claimed.
+
+Source analysis proves two refusal fixtures deliberately commit a changed
+reservation state/hash and leave it behind, violating the native abort custody
+guard. `785d8685f` records their opaque identities and requires exact custody,
+zero buyer/checkout effects and zero creation audit; `f62ea8185` restores only
+those captured fields through cleanup registered before injection. Original C2
+refusal/zero-effects assertions remain; the added post-cleanup sentinel requires
+the exact original custody. Product abort/sweep rules, ordering and deadlines
+are untouched. Current full-native acceptance remains pending.
+
+Automatic required runs at `d59937846` completed with the same scanner failure:
+Foundation `38487127990` / `115603358337`,
+Gates `38487128265` / plan `115603359652`, errors=71, exit 1.
+Exact logs: `foundation-d599-scanner-red.log`, `plan-d599-scanner-red.log`.
+**BLOCKED(ci-drift) is not yet marked resolved**: resolution requires the
+unchanged scanner's current PR plan/Foundation receipts with errors=0, followed
+by all required gates and independent acceptance. Whole-unit status: NOT READY.
+All local tests/builds/formatters/PG remain NOT_RUN (owner CI-only).
