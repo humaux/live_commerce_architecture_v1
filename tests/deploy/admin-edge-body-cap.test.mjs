@@ -11,7 +11,10 @@ const bytes = (n, u) => Number(n) * units[(u || "B").toUpperCase()];
 
 test("admin edge body cap >= every admin BFF upload cap", () => {
   const caddy = readFileSync("deploy/caddy/Caddyfile", "utf8");
-  const block = caddy.slice(caddy.indexOf("{$LC_ADMIN_HOST} {"), caddy.indexOf("reverse_proxy 127.0.0.1:3100"));
+  const start = caddy.indexOf("{$LC_ADMIN_HOST} {");
+  assert.ok(start >= 0, "admin site block present");
+  // Search from the admin block: the platform-host block above also proxies to :3100.
+  const block = caddy.slice(start, caddy.indexOf("reverse_proxy 127.0.0.1:3100", start));
   const m = block.match(/max_size\s+([\d.]+)\s*(KB|MB|KiB|MiB|B)?/i);
   assert.ok(m, "admin site block declares request_body max_size");
   const edge = bytes(m[1], m[2]);
