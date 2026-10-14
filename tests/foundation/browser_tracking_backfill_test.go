@@ -32,6 +32,9 @@ func TestBrowserTrackingBackfill(t *testing.T) {
 	if !t.Run("setup-pool-headroom", harnessPoolHeadroomRegression) {
 		return
 	}
+	if !t.Run("stripe-mock-pool-lifetime", harnessStripeMockPoolLifetime) {
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 9*time.Minute)
 	defer cancel()
 	e := rfxNew(t)
