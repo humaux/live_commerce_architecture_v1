@@ -161,7 +161,7 @@ func TestGoFactoryTrunkMustTouchCLI(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			root := trunkFactoryLegacy(t, call, trunkFactorySource, nil)
 			trunkFactoryWrite(t, root, "cmd/api/main.go", trunkFactoryReplace(t, trunkFactorySource, tc.old, tc.next))
-			trunkFactoryAssert(t, call, root, true, tc.exact)
+			trunkFactoryExactTouched(t, call, root, tc.exact)
 		})
 	}
 	for _, alias := range []string{"web", "."} {
