@@ -1,7 +1,7 @@
 import {
   company,
   companyConfig,
-  operatedBy,
+  operatorSentence,
   platformPath,
   type PlatformLocale,
   type PlatformPage,
@@ -57,9 +57,9 @@ export function PlatformFooter({ locale }: { locale: PlatformLocale }) {
   return (
     <footer className="ps-footer">
       <div className="ps-footer-inner">
-        <p className="ps-operated">{operatedBy}</p>
+        <p className="ps-operated">{operatorSentence(locale)}</p>
         <nav aria-label={c.company}>
-          {(["privacy", "terms", "data-deletion", "contact"] as const).map(
+          {(["about", "privacy", "terms", "data-deletion", "contact"] as const).map(
             (p) => (
               <a key={p} href={platformPath(locale, p)}>
                 {c.pages[p]}
@@ -72,12 +72,41 @@ export function PlatformFooter({ locale }: { locale: PlatformLocale }) {
     </footer>
   );
 }
+export function PlatformAbout({ locale }: { locale: PlatformLocale }) {
+  const c = platformCopy[locale];
+  return (
+    <article data-testid="about-page">
+      <a className="ps-back" href={platformPath(locale)}>
+        ← {c.pages.home}
+      </a>
+      <h1>
+        {company.legalEnglish}
+        <br />
+        {company.legalChinese}
+      </h1>
+      <p>{operatorSentence(locale)}</p>
+      {c.about.map((text) => (
+        <p key={text}>{text}</p>
+      ))}
+      <CompanyFacts locale={locale} />
+      <nav aria-label={c.pages.about} data-testid="about-links">
+        {(["terms", "privacy", "data-deletion", "contact"] as const).map(
+          (p) => (
+            <a key={p} href={platformPath(locale, p)}>
+              {c.pages[p]}
+            </a>
+          ),
+        )}
+      </nav>
+    </article>
+  );
+}
 export function PlatformDocument({
   locale,
   page,
 }: {
   locale: PlatformLocale;
-  page: Exclude<PlatformPage, "home">;
+  page: Exclude<PlatformPage, "home" | "about">;
 }) {
   const c = platformCopy[locale];
   return (

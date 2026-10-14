@@ -14,23 +14,25 @@ export const company = {
   address:
     "RM 10, 23/F, New Trend Centre, 704 Prince Edward Road East, San Po Kong, Hong Kong",
 } as const;
-export const operatedBy = `${company.productName} is operated by ${company.legalEnglish}`;
+// Export name kept for existing callers; the text states ownership, not contracting-out.
+export const operatedBy = `${company.productName} is a live-commerce platform of ${company.legalEnglish}`;
 /** Formats a branded title without reading configuration or making network calls. */
 export function brandedTitle(pageName: string): string {
   return `${company.productName} · ${pageName}`;
 }
 export const platformLocales = ["zh-TW", "zh-CN", "en"] as const;
 export type PlatformLocale = (typeof platformLocales)[number];
-/** Formats the operator disclosure for the supplied locale. */
+/** Formats the company-ownership disclosure for the supplied locale. */
 export function operatorSentence(locale: PlatformLocale): string {
   if (locale === "zh-TW")
-    return `${company.productName} 由 ${company.legalChinese} 營運`;
+    return `${company.productName} 是 ${company.legalChinese} 的直播電商平台`;
   if (locale === "zh-CN")
-    return `${company.productName} 由 ${company.legalChinese} 运营`;
+    return `${company.productName} 是 香港大碗贸易有限公司 的直播电商平台`;
   return operatedBy;
 }
 export const platformPages = [
   "home",
+  "about",
   "privacy",
   "terms",
   "data-deletion",
