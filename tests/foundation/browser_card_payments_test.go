@@ -43,18 +43,35 @@ func cpbrRequire(t *testing.T) {
 	}
 }
 
-// cpbrReleaseSetupPools ends fixture-only lifetimes before buyer requests can grow their live pools.
-// Keep A/P buyer runtime, issuer and checkout pools, the hosted service and all shared/live workers.
+// cpbrStoreAPools and cpbrPlatformPools are the buyerhttp pools of the store A nodes and of the platform store nodes.
 // Copies in the seeded orders alias these families; pointer deduplication also preserves cleanup safety.
+func cpbrStoreAPools(e *pslEnv) []*pgxpool.Pool {
+	return []*pgxpool.Pool{e.a.a.runtime, e.a.a.issuer, e.a.pool}
+}
+
+func cpbrPlatformPools(e *pslEnv) []*pgxpool.Pool {
+	return []*pgxpool.Pool{e.plat.p.a.runtime, e.plat.p.a.issuer, e.plat.p.pool}
+}
+
+// cpbrReleaseAdminHalf ends what only the admin half used: the runner-only control listener (with the registrar it drives),
+// the payment worker and the admin stack's identity pool. The buyer half only reads (collector-buyer.mjs clicks no pay button).
+func cpbrReleaseAdminHalf(t *testing.T, e *pslEnv, stack *brfStack, control *httptest.Server) {
+	t.Helper()
+	control.Close()
+	e.stopAllWorkers() // graceful and idempotent; e.pool is closed by cpbrReleaseSetupPools
+	e.reg.Close()
+	stack.authority.Close()
+}
+
+// cpbrReleaseSetupPools ends fixture-only lifetimes before buyer requests can grow their live pools.
+// Keep A/P buyer runtime, issuer and checkout pools and the hosted service; the payment worker was stopped
+// by cpbrReleaseAdminHalf, so its pool and the webhook ingress pool no longer have a borrower.
 func cpbrReleaseSetupPools(t *testing.T, e *pslEnv) {
 	t.Helper()
-	protected := []*pgxpool.Pool{
-		e.f.owner, e.f.runtime,
-		e.a.a.runtime, e.a.a.issuer, e.a.pool,
-		e.plat.p.a.runtime, e.plat.p.a.issuer, e.plat.p.pool,
-		e.hosted, e.pool, e.ingress,
-	}
-	var setupOnly []*pgxpool.Pool
+	protected := []*pgxpool.Pool{e.f.owner, e.f.runtime, e.hosted}
+	protected = append(protected, cpbrStoreAPools(e)...)
+	protected = append(protected, cpbrPlatformPools(e)...)
+	setupOnly := []*pgxpool.Pool{e.pool, e.ingress}
 	for _, p := range []psHarness{e.a, e.b, e.c, e.plat.p, e.ox1.s.p} {
 		setupOnly = append(setupOnly, p.a.identity, p.worker, p.expiry)
 	}
@@ -62,6 +79,17 @@ func cpbrReleaseSetupPools(t *testing.T, e *pslEnv) {
 		setupOnly = append(setupOnly, p.a.runtime, p.a.issuer, p.pool)
 	}
 	harnessReleaseSetupPools(t, protected, setupOnly)
+}
+
+// cpbrLogPools logs the pools that may hold backends in the current buyer phase (the shared trio plus one store's trio).
+func cpbrLogPools(t *testing.T, e *pslEnv, phase string, store []*pgxpool.Pool) {
+	t.Helper()
+	pools := append([]*pgxpool.Pool{e.f.owner, e.f.runtime, e.hosted}, store...)
+	sum := 0
+	for _, p := range pools {
+		sum += int(p.Config().MaxConns)
+	}
+	t.Logf("HARNESS_CARD_POOLS open=%d maxconns_sum=%d observer=1 phase=%s", len(pools), sum, phase)
 }
 
 // cpbrBuyerNode starts the real buyerhttp handler for the store of p and runs tests/storefront/collector-buyer.mjs against the production
@@ -191,7 +219,13 @@ func TestBrowserCardPayments(t *testing.T) {
 	}
 	cbbrShots(t, evidence, 14, "en", "zh-TW")
 	t.Logf("W4-U1 BROWSER (MOCK Stripe): admin half passed (card-payments + settlements); screenshots hashed; evidence=%s", evidence)
+	cpbrReleaseAdminHalf(t, e, stack, control)
 	cpbrReleaseSetupPools(t, e)
+	// The platform store nodes run after the store A nodes: drop the backends its pools kept from setup (Reset keeps the pools open).
+	for _, p := range cpbrPlatformPools(e) {
+		p.Reset()
+	}
+	cpbrLogPools(t, e, "store-a", cpbrStoreAPools(e))
 	// Observe the post-release buyer browser phase; this does not cover setup peaks.
 	harnessWatchCapacity(t, e.f.owner)
 
@@ -208,6 +242,11 @@ func TestBrowserCardPayments(t *testing.T) {
 	unpaid := sstMoreHold(t, e.oa1.s.p) // a payable order: Stripe offered, no attempt yet
 	cpbrBuyerNode(t, ctx, e, unpaid, unpaid.hold.OrderID, "unpaid", "unpaid", "https://buyer-a.example", evidence, derived)
 	cpbrBuyerNode(t, ctx, e, e.oa1.s.p, e.oa1.order, "paid", "paid", "https://buyer-a.example", evidence, derived)
+	// Store A's nodes are done: end its pools so only one store's trio holds backends from here on.
+	for _, p := range cpbrStoreAPools(e) {
+		p.Close()
+	}
+	cpbrLogPools(t, e, "platform-store", cpbrPlatformPools(e))
 	cpbrBuyerNode(t, ctx, e, e.op1.s.p, e.op1.order, "primary", "primary", "https://buyer-p.example", evidence, nil)
 	// Every normal card gate also exercises eight independent, one-attempt reads of the same synthetic order.
 	// The single-context case above stays intact; this guard needs no workflow opt-in and shares no retry state.

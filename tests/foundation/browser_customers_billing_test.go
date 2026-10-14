@@ -131,7 +131,7 @@ func cbbrStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evi
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	return &brfStack{e: e, root: root, evidence: evidence, origin: origin, api: api}
+	return &brfStack{e: e, root: root, evidence: evidence, origin: origin, api: api, authority: authority}
 }
 
 // cbbrShots verifies the hashed screenshot manifest: every requested locale and both viewports are present.
