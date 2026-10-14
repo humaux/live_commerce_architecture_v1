@@ -908,3 +908,38 @@ Final required Gates `38489109358` has 77 selected jobs and remains running.
 `115608564962` and Foundation `38489109260` /
 `115609830243`, both unchanged-scanner errors=0. The separate header failure
 and complete final-SHA acceptance remain open; whole-unit status is NOT READY.
+
+### Review 4265156539: pickup readmission fixture
+
+This finding targets original source `0cf489ac9`. It is already fixed by
+`d27203da351c0d6a9dbdee122be5799de9b3e6d5`, included in the current batch:
+`order_attempt_cancel_readmission_test.go:73` copies `base["customer"]`;
+`oaBeginSelection` obtains the pickup customer from `oaMaterialCVS`, whose
+synthetic recipient is `TEST`. No recipient validator or assertion is relaxed.
+
+The test requires a successful first C1 (PENDING, non-replay, exact generation),
+then a COMMITTED C2 receipt and an actual CONFIRMED pickup order with exact
+payment, frozen total, reservation and claim origin/use/grant bindings
+(`order_attempt_cancel_readmission_test.go:82–109`) before invoking cancel.
+It then performs fresh-generation admission and the complete second C2.
+The test blob at CI117 and current `5e366a21e` is identical:
+`3ab74119da752749ca8f1c53fc753c69e7cad15b`.
+
+Fixture RED: CI116 `38484018646`, job `115593921495`, source `0cf489ac9`,
+`cancel-readmission-red-ci116.log:727–728` fails at the first pickup C1.
+This is **recipient-fixture RED**, not causal evidence of the cancelled-mapping
+bug for pickup; the other CI116 branches fail at fresh CAS admission instead.
+Fixture GREEN: CI117 `38485486491`, job `115598078177`, source `7e06a76dc`,
+`cancel-readmission-green-ci117.log:731` explicitly records
+`TestOrderAttemptCancelReadmitFreshCAS/pay_at_pickup PASS`; line 741 records
+PASS=3 FAIL=0 SKIP=0 exit=0 for the full cancel-readmission group.
+Evidence level: E3 for this fixture regression. No new source change or local
+test run was needed; the fix and its positive sentinels are already present.
+
+Required Foundation CI122 `38490193142`, job `115613301430`, exact source
+`5e366a21e1dd6734d38e7477c81a21018855364a`, is now **GREEN**; raw receipt
+`foundation-preflight-green-ci122.log`. It preserves the unchanged scanner,
+header ratchet, Node units and vulnerability checks. Full required Gates
+`38490193130` and full-native CI119 `38488758453` remain pending/running.
+This evidence update changes no product, test, migration or workflow source;
+whole-unit status remains NOT READY until final required and independent review.
