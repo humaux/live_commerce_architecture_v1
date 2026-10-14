@@ -779,6 +779,8 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     const posts = uploadPosts(page);
     const picker = page.getByTestId("photo-input-detail").locator("xpath=..");
     const note = page.getByTestId("media-note-detail");
+    // The serial suite left 6 detail photos on this product: wait for the list to render before counting (counting at load read 0).
+    await expect(page.getByTestId("photo-row-detail").first()).toBeVisible();
     const detailRows = await page.getByTestId("photo-row-detail").count();
     await expect(
       page.getByText(mc.acceptHint).first(),
@@ -962,6 +964,8 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     page,
   }) => {
     await openEditor(page);
+    // The serial suite left 6 detail photos on this product: wait for the list to render before counting (counting at load read 0).
+    await expect(page.getByTestId("photo-row-detail").first()).toBeVisible();
     const detailRows = await page.getByTestId("photo-row-detail").count();
     const original = await page.getByTestId("product-name").inputValue();
     const renamed = `${original} PE2`;
