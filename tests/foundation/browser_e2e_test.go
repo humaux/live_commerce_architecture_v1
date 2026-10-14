@@ -153,6 +153,8 @@ func TestBrowserE2EDealLoop(t *testing.T) {
 	x.root, _ = filepath.Abs("../..")
 	x.evidence = brfEvidence(t, x.root, "e2e")
 	x.e = rfxNew(t)
+	// No psHarness family exists here; retain the independent buyer and background worker pools.
+	harnessWatchCapacity(t, x.e.f.owner)
 	x.startPaymentWorker(t) // the real payment worker: Stripe sessions, capture, refunds
 	x.sampleConnections(t)
 

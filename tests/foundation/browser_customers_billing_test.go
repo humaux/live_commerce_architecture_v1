@@ -36,6 +36,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/billing"
 	"livecommerce/internal/billing/billingtest"
 	"livecommerce/internal/buyer"
@@ -201,6 +202,11 @@ func TestBrowserCustomersBilling(t *testing.T) {
 	consent(main.s.p.cap, "marketing_messages", "meta_dm")
 	consent(main.s.p.cap, "ads_personalization", "meta_ads")
 	consent(erasableCap, "marketing_messages", "meta_dm")
+	// Claims and consent setup is finished; the later buyer handler retains its three pools.
+	harnessReleaseSetupPools(t,
+		[]*pgxpool.Pool{e.f.owner, e.f.runtime, e.pool, e.hosted, e.ingress, main.s.p.a.runtime, main.s.p.a.issuer, main.s.p.pool},
+		[]*pgxpool.Pool{main.s.p.a.identity, main.s.p.worker, main.s.p.expiry})
+	harnessWatchCapacity(t, e.f.owner)
 	actorKey := cbxOne(t, e.f, `SELECT actor_key FROM claims.bundles WHERE owner_id=$1`, mainOwner)
 	if len(actorKey) != 64 {
 		t.Fatal("fixture: no actor key to prove absence of")

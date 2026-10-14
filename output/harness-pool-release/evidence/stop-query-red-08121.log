@@ -1,0 +1,23 @@
+PR56 round-1 stop-mid-query regression — GitHub CI RED
+Head/checkout: 08121b2831e3a35f9263b82f7f722a2cd4db8662
+Base: 5f59affae1cc60342680070c141d7957642b9c41
+Run: 38518508850 attempt 1, workflow_dispatch
+Job: 115702744696, actual 2026-10-14T05:48:26Z–05:50:34Z, FAILURE
+Mode: focused:^TestHarnessPoolCapacityObservationFailureIsSticky$/stop_mid_query_final_sample$
+Artifact: 11872827774
+Full raw job-log SHA256: de9897949d18f02f3e063419c2fe019b157d8bcb505ff3a0cbac0be785ef98f1
+Independent receipt audit: /root/harness_stop_query_red, test_worker; E3 controlled regression.
+MODEL_ONLY fake observer cancellation fallout; no claim of native PostgreSQL cancellation reproduction.
+Local tests/builds/application runs: NOT_RUN.
+
+Exact selected assertion excerpt from raw job log lines 725–734:
+2026-10-14T05:50:29.8781797Z === RUN   TestHarnessPoolCapacityObservationFailureIsSticky/stop_mid_query_final_sample
+2026-10-14T05:50:29.8784338Z     harness_pool_capacity_test.go:203: stopping sampler canceled the in-flight query context
+2026-10-14T05:50:29.8786031Z     harness_pool_capacity_test.go:206: in-flight observation was not retained: samples=0 peak=0 err=<nil>
+2026-10-14T05:50:29.8788322Z     harness_pool_capacity_test.go:210: final sample failed after sampler stop: samples=0 closed=true err=fake observer closed after canceled query
+2026-10-14T05:50:29.8794433Z --- FAIL: TestHarnessPoolCapacityObservationFailureIsSticky (0.00s)
+2026-10-14T05:50:29.8795982Z     --- FAIL: TestHarnessPoolCapacityObservationFailureIsSticky/stop_mid_query_final_sample (0.00s)
+2026-10-14T05:50:29.8811712Z FAIL
+2026-10-14T05:50:29.8843667Z FAIL	livecommerce/tests/foundation	0.108s
+2026-10-14T05:50:29.8927292Z FAIL
+2026-10-14T05:50:30.1533185Z test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

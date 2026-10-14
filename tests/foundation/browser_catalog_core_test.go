@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
@@ -139,6 +140,9 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	defer cancel()
 	t04Fixture(t)
 	h := bhSetup(t) // published fixture store A1 + the real buyerhttp handler
+	// Both catalog and product-editor modes use this same audited boundary.
+	harnessReleaseSetupPools(t, []*pgxpool.Pool{h.f.owner, h.f.runtime, h.a.runtime, h.a.issuer, h.pool}, []*pgxpool.Pool{h.a.identity, h.worker, h.expiry})
+	harnessWatchCapacity(t, h.f.owner)
 	f := h.f
 	tag := "cc" + strings.ToLower(t04Tag())
 	store, tenant := f.storeA1, f.tenantA

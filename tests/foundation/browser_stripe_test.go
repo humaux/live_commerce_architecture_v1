@@ -42,6 +42,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/buyerhttp"
@@ -301,6 +302,11 @@ func sbNew(t *testing.T, mode string) *sbEnv {
 		t.Fatalf("hosted service: %v", err)
 	}
 	bhPublish(t, e.p.bcHarness, sbOrigin, e.p.f.tenantA, e.p.f.storeA1)
+	// Retain buyer/hosted pools; the registrar remains live for method-disable/enable controls.
+	harnessReleaseSetupPools(t,
+		[]*pgxpool.Pool{e.f.owner, e.f.runtime, hosted, e.p.a.runtime, e.p.a.issuer, e.p.pool},
+		[]*pgxpool.Pool{e.p.a.identity, e.p.worker, e.p.expiry})
+	harnessWatchCapacity(t, e.f.owner)
 	handler, err := buyerhttp.New(ctx, e.p.a.issuer, e.p.a.runtime, e.p.bcHarness.service, e.bffKey, time.Hour, e.svc)
 	if err != nil {
 		t.Fatalf("buyer HTTP constructor: %v", err)
