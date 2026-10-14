@@ -3,6 +3,8 @@
 // Used by: parent CI red/green; owner injections below create isolated partial-effect counterexamples.
 // Invariants: I01/I02/I04/I11/I14; exact current-xid fence, zero effects before seal,
 // retained immutable receipt, released admission artifacts, no scope/barrier locks or plan decryption.
+// PLAN_INVALID is an authenticated trusted-classification protocol fixture for
+// receipt/atomicity checks, not proof of an actual codec error or permanent key loss.
 package foundation_test
 
 import (
@@ -97,8 +99,8 @@ func TestOrderAttemptAbortNoKeyReceiptAndReplay(t *testing.T) {
 	 FROM ops.order_attempts a WHERE attempt_id=$1`, a.AttemptID).Scan(&before); err != nil {
 		t.Fatal(err)
 	}
-	// The executor has definitively lost the original key. A new isolated ring
-	// cannot open C1, but abort is SQL metadata-only and never needs this ring.
+	// An unrelated local ring cannot open C1; this is only a decryption-independent
+	// settlement sentinel. The inactive owner below supplies the native ERASED reason.
 	secret := make([]byte, 32)
 	secret[0] = 99
 	missing, err := orderattempt.NewPlanKeys("unrelated", map[string][]byte{"unrelated": secret})
@@ -121,6 +123,7 @@ func TestOrderAttemptAbortNoKeyReceiptAndReplay(t *testing.T) {
 	if err = seed.Rollback(ctx); err != nil {
 		t.Fatal(err)
 	}
+	mustExec(t, e.p.f.owner, `UPDATE buyer.owners SET active=false WHERE id=(SELECT buyer_owner_id FROM ops.order_attempts WHERE attempt_id=$1)`, a.AttemptID)
 	tx, err := e.p.f.runtime.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -128,11 +131,11 @@ func TestOrderAttemptAbortNoKeyReceiptAndReplay(t *testing.T) {
 	oaAbortCleanupTx(t, tx)
 	oaStateExec(t, tx, `SELECT set_config('app.tenant_id','caller-marker',true),set_config('app.store_id','caller-marker',true),
 	 set_config('app.principal_id','caller-marker',true),set_config('app.buyer_id','caller-marker',true),set_config('app.buyer_session_id','caller-marker',true)`)
-	raw, err = oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+	raw, err = oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "ERASED")
 	if err != nil {
-		t.Fatalf("metadata-only abort after permanent key loss: %v", err)
+		t.Fatalf("metadata-only erasure abort without local decryption: %v", err)
 	}
-	first := oaAbortReceipt(t, raw, a, "PLAN_UNAVAILABLE")
+	first := oaAbortReceipt(t, raw, a, "ERASED")
 	var restored bool
 	if err = tx.QueryRow(ctx, `SELECT current_setting('app.tenant_id')='caller-marker' AND current_setting('app.store_id')='caller-marker'
 	 AND current_setting('app.principal_id')='caller-marker' AND current_setting('app.buyer_id')='caller-marker' AND current_setting('app.buyer_session_id')='caller-marker'`).Scan(&restored); err != nil || !restored {
@@ -163,7 +166,7 @@ func TestOrderAttemptAbortNoKeyReceiptAndReplay(t *testing.T) {
 	}
 	oaAbortCleanupTx(t, replay)
 	raw, err = oaAbortCall(ctx, replay, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "unlisted-new-reason")
-	if err != nil || !bytes.Equal(oaAbortReceipt(t, raw, a, "PLAN_UNAVAILABLE").Receipt, first.Receipt) {
+	if err != nil || !bytes.Equal(oaAbortReceipt(t, raw, a, "ERASED").Receipt, first.Receipt) {
 		t.Fatalf("terminal no-op replay changed receipt: %v", err)
 	}
 }
@@ -174,7 +177,7 @@ func TestOrderAttemptAbortReasonsAndCurrentReadAuthority(t *testing.T) {
 			e := lbuNew(t)
 			a := oaFenceAdmit(t, e)
 			ctx := context.Background()
-			hash, store, generation, reason, want := tokenHash(e.token()), e.store(), a.Generation, "PLAN_UNAVAILABLE", "PT400"
+			hash, store, generation, reason, want := tokenHash(e.token()), e.store(), a.Generation, "PLAN_INVALID", "PT400"
 			switch mode {
 			case "unknown":
 				reason = "unlisted"
@@ -243,7 +246,7 @@ func TestOrderAttemptAbortIndexedOwnerPrefixAndWitness(t *testing.T) {
 		oaStateExec(t, tx, `SET LOCAL ROLE commerce_order_attempt_owner`)
 		if !acquire {
 			oaStateReject(t, tx, "PT409", `SELECT buyer.order_attempt_lock_owners($1,$2)`, a.AttemptID, a.Generation)
-			oaStateReject(t, tx, "PT409", `SELECT ops.order_attempt_abort_fenced($1,$2,'PLAN_UNAVAILABLE')`, a.AttemptID, a.Generation)
+			oaStateReject(t, tx, "PT409", `SELECT ops.order_attempt_abort_fenced($1,$2,'PLAN_INVALID')`, a.AttemptID, a.Generation)
 		} else {
 			var status string
 			if err := tx.QueryRow(ctx, `SELECT buyer.order_attempt_lock_owners($1,$2)`, a.AttemptID, a.Generation).Scan(&status); err != nil || status != "active" {
@@ -300,7 +303,7 @@ func TestOrderAttemptAbortPartialCartRequiresRollback(t *testing.T) {
 		t.Fatal(err)
 	}
 	oaAbortCleanupTx(t, probe)
-	raw, err := oaAbortCall(ctx, probe, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+	raw, err := oaAbortCall(ctx, probe, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_INVALID")
 	oaFenceCode(t, raw, err, "PT409")
 	if err = probe.Rollback(ctx); err != nil {
 		t.Fatal(err)
@@ -309,11 +312,11 @@ func TestOrderAttemptAbortPartialCartRequiresRollback(t *testing.T) {
 		t.Fatal(err)
 	}
 	oaAbortAsRuntime(t, e, tx)
-	raw, err = oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+	raw, err = oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_INVALID")
 	if err != nil {
 		t.Fatalf("rollback to zero effects must permit sealing same fenced attempt: %v", err)
 	}
-	oaAbortReceipt(t, raw, a, "PLAN_UNAVAILABLE")
+	oaAbortReceipt(t, raw, a, "PLAN_INVALID")
 	if err = tx.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -342,16 +345,18 @@ func TestOrderAttemptAbortReleasesOnlyOwnAdmission(t *testing.T) {
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT to_jsonb(g) FROM claims.merchant_origin_grants g WHERE request_id=$1`, foreign).Scan(&before); err != nil {
 		t.Fatal(err)
 	}
+	// Native inactive-owner proof permits ERASED without relying on plan-key availability.
+	mustExec(t, e.p.f.owner, `UPDATE buyer.owners SET active=false WHERE id=(SELECT buyer_owner_id FROM ops.order_attempts WHERE attempt_id=$1)`, a.AttemptID)
 	tx, err := e.p.f.runtime.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	oaAbortCleanupTx(t, tx)
-	raw, err := oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+	raw, err := oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "ERASED")
 	if err != nil {
 		t.Fatal(err)
 	}
-	oaAbortReceipt(t, raw, a, "PLAN_UNAVAILABLE")
+	oaAbortReceipt(t, raw, a, "ERASED")
 	if err = tx.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -369,6 +374,7 @@ func TestOrderAttemptAbortReleasesOnlyOwnAdmission(t *testing.T) {
 func TestOrderAttemptAbortWorkerNoEarlierLocksAndACL(t *testing.T) {
 	e := lbuNew(t)
 	a := oaFenceAdmit(t, e)
+	mustExec(t, e.p.f.owner, `UPDATE buyer.owners SET active=false WHERE id=(SELECT buyer_owner_id FROM ops.order_attempts WHERE attempt_id=$1)`, a.AttemptID)
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 	holder, err := e.p.f.owner.Begin(ctx)
@@ -391,7 +397,7 @@ func TestOrderAttemptAbortWorkerNoEarlierLocksAndACL(t *testing.T) {
 	if err = tx.QueryRow(ctx, `SELECT session_user=current_user AND pg_has_role(session_user,'commerce_claims_worker','MEMBER')`).Scan(&actual); err != nil || !actual {
 		t.Fatal("worker abort did not use actual claims session")
 	}
-	raw, err := oaAbortCall(ctx, tx, nil, nil, a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+	raw, err := oaAbortCall(ctx, tx, nil, nil, a.AttemptID, a.Generation, "ERASED")
 	if err != nil {
 		var native *pgconn.PgError
 		if errors.As(err, &native) {
@@ -399,7 +405,7 @@ func TestOrderAttemptAbortWorkerNoEarlierLocksAndACL(t *testing.T) {
 		}
 		t.Fatalf("worker NULL-store abort must not lock scope/principal/subject barriers: %v", err)
 	}
-	oaAbortReceipt(t, raw, a, "PLAN_UNAVAILABLE")
+	oaAbortReceipt(t, raw, a, "ERASED")
 	if err = tx.Rollback(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -422,7 +428,7 @@ func TestOrderAttemptAbortWorkerNoEarlierLocksAndACL(t *testing.T) {
 		if role == "commerce_claims_worker" {
 			pool = worker
 		}
-		_, err := pool.Exec(ctx, `SELECT ops.order_attempt_abort_fenced($1,1,'PLAN_UNAVAILABLE')`, a.AttemptID)
+		_, err := pool.Exec(ctx, `SELECT ops.order_attempt_abort_fenced($1,1,'ERASED')`, a.AttemptID)
 		oaJobError(t, err, "42501")
 	}
 	var public bool
@@ -464,7 +470,7 @@ func TestOrderAttemptAbortBoundOrConsumedAdmissionRefused(t *testing.T) {
 				t.Fatal(err)
 			}
 			oaAbortCleanupTx(t, probe)
-			raw, err := oaAbortCall(ctx, probe, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+			raw, err := oaAbortCall(ctx, probe, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_INVALID")
 			oaFenceCode(t, raw, err, "PT409")
 			if err = probe.Rollback(ctx); err != nil {
 				t.Fatal(err)
@@ -473,11 +479,11 @@ func TestOrderAttemptAbortBoundOrConsumedAdmissionRefused(t *testing.T) {
 				t.Fatal(err)
 			}
 			oaAbortAsRuntime(t, e, tx)
-			raw, err = oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+			raw, err = oaAbortCall(ctx, tx, tokenHash(e.token()), e.store(), a.AttemptID, a.Generation, "PLAN_INVALID")
 			if err != nil {
 				t.Fatalf("unchanged pending admission after partial rollback: %v", err)
 			}
-			oaAbortReceipt(t, raw, a, "PLAN_UNAVAILABLE")
+			oaAbortReceipt(t, raw, a, "PLAN_INVALID")
 			if err = tx.Rollback(ctx); err != nil {
 				t.Fatal(err)
 			}

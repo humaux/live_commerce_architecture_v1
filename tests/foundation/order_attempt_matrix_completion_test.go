@@ -3,6 +3,8 @@
 // Used by: parent-owned OA1 CI; no product hooks, provider calls or synthetic terminal rows.
 // Invariants: original admitted owner survives configuration rotation; pickup writes roll back;
 // terminal generations require explicit CAS, and concurrent fresh keys create one successor.
+// ABORTED fixtures use synthetic trusted PLAN_INVALID classification through the
+// authenticated API for CAS/replay checks, not actual codec-error or permanent-loss proof.
 package foundation_test
 
 import (
@@ -252,11 +254,11 @@ func TestOrderAttemptMatrixTerminalCASRace(t *testing.T) {
 				}
 				oaExecutorCommitted(t, e, a, plan, terminal, 5)
 			} else {
-				terminal, err = svc.Abort(ctx, e.token(), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+				terminal, err = svc.Abort(ctx, e.token(), e.store(), a.AttemptID, a.Generation, "PLAN_INVALID")
 				if err != nil {
 					t.Fatal(err)
 				}
-				oaExecutorAborted(t, e, a, terminal, "PLAN_UNAVAILABLE")
+				oaExecutorAborted(t, e, a, terminal, "PLAN_INVALID")
 			}
 			stale := req
 			stale.TransportKey = "matrix-stale-" + randomUUID()
@@ -309,13 +311,13 @@ func TestOrderAttemptMatrixTerminalCASRace(t *testing.T) {
 			if err != nil || !exact {
 				t.Fatal("race left duplicate durable attempt/job or wrong scope generation", err)
 			}
-			// Settle the real successor, then replay the original full request. The
-			// terminal row is never inserted/updated by the fixture owner.
-			settled, err := svc.Abort(ctx, e.token(), e.store(), winner.AttemptID, winner.Generation, "PLAN_UNAVAILABLE")
+			// Settle the real successor with the synthetic trusted classification,
+			// then replay the original request; no terminal row is fabricated.
+			settled, err := svc.Abort(ctx, e.token(), e.store(), winner.AttemptID, winner.Generation, "PLAN_INVALID")
 			if err != nil {
 				t.Fatal(err)
 			}
-			oaExecutorAborted(t, e, winner, settled, "PLAN_UNAVAILABLE")
+			oaExecutorAborted(t, e, winner, settled, "PLAN_INVALID")
 			replay, err := svc.Admit(ctx, e.token(), e.store(), req)
 			if err != nil || !replay.Replay || replay.AttemptID != a.AttemptID || replay.Generation != a.Generation || replay.State != state || !bytes.Equal(replay.Receipt, terminal.Receipt) {
 				t.Fatal("successor CAS changed original terminal key replay", err)
@@ -323,7 +325,7 @@ func TestOrderAttemptMatrixTerminalCASRace(t *testing.T) {
 			if state == "COMMITTED" {
 				oaExecutorCommitted(t, e, a, plan, terminal, 5)
 			} else {
-				oaExecutorAborted(t, e, a, terminal, "PLAN_UNAVAILABLE")
+				oaExecutorAborted(t, e, a, terminal, "PLAN_INVALID")
 			}
 		})
 	}

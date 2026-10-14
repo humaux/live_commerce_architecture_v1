@@ -2,6 +2,8 @@
 // Depends on: real C1 Service, runtime authentication and the fenced SQL abort.
 // Used by: OA1 CI; the interface assertion makes the pre-implementation test red.
 // Invariants: I01/I08/I11; no private plan needed, no fresh key before settlement.
+// PLAN_INVALID supplies the existing authenticated trusted classification to test
+// receipt/atomicity/CAS interfaces; this fixture proves no codec error or permanent loss.
 package foundation_test
 
 import (
@@ -42,7 +44,7 @@ func TestOrderAttemptAbortServiceSettlesAndReplays(t *testing.T) {
 		t.Fatalf("real admitted intent positive sentinel: %v", err)
 	}
 	api := oaAbortAPI(t, e)
-	first, err := api.Abort(context.Background(), e.token(), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+	first, err := api.Abort(context.Background(), e.token(), e.store(), a.AttemptID, a.Generation, "PLAN_INVALID")
 	if err != nil || first.State != "ABORTED" {
 		t.Fatalf("fenced abort: state=%s err=%v", first.State, err)
 	}
@@ -50,7 +52,7 @@ func TestOrderAttemptAbortServiceSettlesAndReplays(t *testing.T) {
 	if err := json.Unmarshal(first.Receipt, &receipt); err != nil {
 		t.Fatal(err)
 	}
-	if receipt["state"] != "ABORTED" || receipt["attempt_id"] != a.AttemptID || receipt["intent_generation"] != float64(a.Generation) || receipt["code"] != "PLAN_UNAVAILABLE" {
+	if receipt["state"] != "ABORTED" || receipt["attempt_id"] != a.AttemptID || receipt["intent_generation"] != float64(a.Generation) || receipt["code"] != "PLAN_INVALID" {
 		t.Fatal("abort lost its durable identity or reason")
 	}
 	if _, exists := receipt["order_id"]; exists {

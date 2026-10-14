@@ -173,15 +173,18 @@ func TestOrderAttemptWorkerFirstFenceAndStaleGeneration(t *testing.T) {
 				e := lbuNew(t)
 				a := oaFenceAdmit(t, e)
 				if stale {
-					// Obtain generation two through real abort plus explicit C1 CAS;
+					// Obtain generation two through real C2 commit plus explicit C1 CAS;
 					// testing generation one against it needs no forged job or row.
 					svc, err := orderattempt.NewService(e.p.f.runtime, oaServiceKeys(t))
 					if err != nil {
 						t.Fatal(err)
 					}
-					if _, err = svc.Abort(context.Background(), e.token(), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE"); err != nil {
+					plan, _ := oaMaterialPlan(t, e, oaServiceKeys(t), a.AttemptID)
+					terminal, err := oaExecutorNew(t, e.p.f.runtime, oaServiceKeys(t)).Execute(context.Background(), e.token(), e.store(), a.AttemptID, a.Generation)
+					if err != nil {
 						t.Fatal(err)
 					}
+					oaExecutorCommitted(t, e, a, plan, terminal, 5)
 					req := oaServiceRequest(t, e)
 					previous := a.AttemptID
 					req.PreviousAttemptID = &previous

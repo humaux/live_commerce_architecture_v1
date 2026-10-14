@@ -3,6 +3,8 @@
 // Used by: OA1 CI and the principal-ownership bypass mutation gate.
 // Invariants: all-state keys remain principal-bound; relogin, later generations and
 // retired scopes preserve the original terminal receipt without new domain effects.
+// ABORTED setup uses synthetic trusted PLAN_INVALID classification through the
+// authenticated API for identity/replay checks, not codec-error or permanent-loss proof.
 package foundation_test
 
 import (
@@ -43,11 +45,11 @@ func TestOrderAttemptTerminalIdentityReplay(t *testing.T) {
 				}
 				oaExecutorCommitted(t, e, a, plan, terminal, 5)
 			} else {
-				terminal, err = svc.Abort(ctx, e.token(), e.store(), a.AttemptID, a.Generation, "PLAN_UNAVAILABLE")
+				terminal, err = svc.Abort(ctx, e.token(), e.store(), a.AttemptID, a.Generation, "PLAN_INVALID")
 				if err != nil {
 					t.Fatal("actual zero-effects abort", err)
 				}
-				oaExecutorAborted(t, e, a, terminal, "PLAN_UNAVAILABLE")
+				oaExecutorAborted(t, e, a, terminal, "PLAN_INVALID")
 			}
 			var original []byte
 			if err = e.p.f.owner.QueryRow(ctx, `SELECT to_jsonb(a) FROM ops.order_attempts a WHERE attempt_id=$1`, a.AttemptID).Scan(&original); err != nil {
@@ -109,7 +111,7 @@ func TestOrderAttemptTerminalIdentityReplay(t *testing.T) {
 			if err != nil || newer.AttemptID == a.AttemptID || newer.ScopeID != a.ScopeID || newer.Generation != a.Generation+1 || newer.Replay {
 				t.Fatal("explicit next-generation admission failed", err)
 			}
-			if _, err = svc.Abort(ctx, relogin, e.store(), newer.AttemptID, newer.Generation, "PLAN_UNAVAILABLE"); err != nil {
+			if _, err = svc.Abort(ctx, relogin, e.store(), newer.AttemptID, newer.Generation, "PLAN_INVALID"); err != nil {
 				t.Fatal(err)
 			}
 			checkReplay()
@@ -142,7 +144,7 @@ func TestOrderAttemptTerminalIdentityReplay(t *testing.T) {
 			if state == "COMMITTED" {
 				oaExecutorCommitted(t, e, a, plan, terminal, 5)
 			} else {
-				oaExecutorAborted(t, e, a, terminal, "PLAN_UNAVAILABLE")
+				oaExecutorAborted(t, e, a, terminal, "PLAN_INVALID")
 			}
 		})
 	}
