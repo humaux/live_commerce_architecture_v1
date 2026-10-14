@@ -1,6 +1,6 @@
 // Purpose: Renders one public platform-site page (home, about, privacy, terms, data-deletion, contact) for a locale, with metadata and alternates.
 // Depends on: next (Metadata, notFound), lib/company, lib/platform-copy, components/platform/PlatformHome, PlatformAbout, PlatformDocument.
-// Used by: Next.js App Router for the xgdwm.com platform host (Caddy routes LC_PLATFORM_HOST to /site).
+// Used by: Next.js App Router for the platform host (Caddy routes LC_PLATFORM_HOST to /site).
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
