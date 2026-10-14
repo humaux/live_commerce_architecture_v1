@@ -101,7 +101,7 @@ func TestOrderAttemptAdmissionRealPrivateOwnerAndRollback(t *testing.T) {
 }
 
 func TestOrderAttemptAdmissionRequiresExactCASAndPlacementGrant(t *testing.T) {
-	for _, mode := range []string{"scope", "generation", "terminal", "catalog"} {
+	for _, mode := range []string{"scope", "generation", "generation-stale", "terminal", "catalog"} {
 		t.Run(mode, func(t *testing.T) {
 			e := lbuNew(t)
 			scope := oaAdmissionScope(t, e)
@@ -123,10 +123,54 @@ func TestOrderAttemptAdmissionRequiresExactCASAndPlacementGrant(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer tx.Rollback(context.Background())
+			var first oaAdmission
+			firstKey := "oa-first-" + randomUUID()
+			if mode == "generation-stale" {
+				// A future generation also fails the previous-terminal check. Use
+				// an actually advanced scope and the old zero-generation CAS so
+				// only the current-generation check gives the typed refusal.
+				first, err = oaPrepare(tx, e, scope, firstKey, oaFactsSelection(e))
+				if err != nil || first.Replay || first.State != "PENDING" || first.Generation != scope.Generation+1 || first.ScopeID != scope.ScopeID || first.AttemptID == "" {
+					t.Fatal("real first prepare must advance the scope before stale CAS", err)
+				}
+				var raw []byte
+				err = tx.QueryRow(context.Background(), `SELECT ops.read_order_attempt_scope($1,$2)`, tokenHash(e.token()), e.store()).Scan(&raw)
+				var current oaScopeReceipt
+				if err == nil {
+					err = json.Unmarshal(raw, &current)
+				}
+				if err != nil || current.ScopeID != scope.ScopeID || current.Generation != first.Generation || current.AttemptID == nil || *current.AttemptID != first.AttemptID {
+					t.Fatal("positive advanced-scope sentinel", err)
+				}
+				if _, err = tx.Exec(context.Background(), "SAVEPOINT stale_cas"); err != nil {
+					t.Fatal(err)
+				}
+			}
 			_, err = oaPrepare(tx, e, scope, "oa-refuse-"+randomUUID(), oaFactsSelection(e))
 			var pgerr *pgconn.PgError
 			if !errors.As(err, &pgerr) || pgerr.Code != want {
 				t.Fatalf("C1 %s refused incorrectly: %v", mode, err)
+			}
+			if mode == "generation-stale" {
+				if pgerr.Message != "intent_conflict" {
+					t.Fatalf("stale CAS must fail at the authority check, not an incidental constraint: %v", err)
+				}
+				if _, err = tx.Exec(context.Background(), "ROLLBACK TO SAVEPOINT stale_cas"); err != nil {
+					t.Fatal(err)
+				}
+				var raw []byte
+				err = tx.QueryRow(context.Background(), `SELECT ops.read_order_attempt_scope($1,$2)`, tokenHash(e.token()), e.store()).Scan(&raw)
+				var current oaScopeReceipt
+				if err == nil {
+					err = json.Unmarshal(raw, &current)
+				}
+				if err != nil || current.ScopeID != scope.ScopeID || current.Generation != first.Generation || current.AttemptID == nil || *current.AttemptID != first.AttemptID {
+					t.Fatal("stale CAS altered the winning scope authority", err)
+				}
+				replay, replayErr := oaPrepare(tx, e, scope, firstKey, oaFactsSelection(e))
+				if replayErr != nil || !replay.Replay || replay.AttemptID != first.AttemptID || replay.Generation != first.Generation || replay.State != first.State {
+					t.Fatal("stale CAS altered the exact-key winning attempt", replayErr)
+				}
 			}
 		})
 	}
