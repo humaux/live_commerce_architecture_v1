@@ -138,6 +138,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      # proxy.golang.org drops streams under ~80 parallel jobs (INTERNAL_ERROR, 3x on 2026-10-14: #58 password-auth/visual-lint, #59
+      # merchant-buyer), failing a gate before any test runs. Prefetch with bounded retry; go.sum still verifies every module.
+      - name: Go modules (prefetch with retry)
+        run: for i in 1 2 3; do go mod download && exit 0; echo "go mod download attempt $i failed; retrying"; sleep $((i * 15)); done; exit 1
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "24"
