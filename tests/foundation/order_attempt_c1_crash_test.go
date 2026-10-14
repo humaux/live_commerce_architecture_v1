@@ -44,7 +44,7 @@ func oaC1CrashSnapshot(t *testing.T, e *lbuEnv, scope, bundle string) []byte {
 }
 
 func TestOrderAttemptC1CrashBeforeCommit(t *testing.T) {
-	e := lbuNew(t)
+	e := oaAreaIsolated(t)
 	_, offer, bundle, conversation := e.scenario()
 	req := oaMaterialRequest(t, e, oaClaimSelection(e, []string{bundle}, []string{offer.ID}, conversation))
 	keys := oaServiceKeys(t)

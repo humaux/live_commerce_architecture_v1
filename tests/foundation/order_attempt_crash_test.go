@@ -33,11 +33,11 @@ func oaCrashNativeScenario(t *testing.T) oaCrashScenario {
 
 func oaCrashNativeDeliveryScenario(t *testing.T, cvs bool) oaCrashScenario {
 	t.Helper()
-	e := lbuNew(t)
+	e := oaAreaIsolated(t)
 	session, offer := e.session("A1", ltgLive, 5)
 	bundle := e.h.accepted(t, session, "", "crash-"+t04Tag(), "A1+2").BundleID
 	e.h.closeWindow(t, session)
-	m, conversation, binding, _ := oaNotificationSignedConversation(t, e)
+	m, conversation, binding := oaEnabledProcessConversation(t, e)
 	// The accepted claim is native. This existing fixture helper records its
 	// peer association, exactly as the other native claim acceptance tests do.
 	e.linkPeer(bundle, conversation)
@@ -76,7 +76,7 @@ func oaCrashCustody(t *testing.T, s oaCrashScenario) []byte {
 	 'subjects',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.subject_kind,x.subject_id),'[]'::jsonb) FROM ops.order_attempt_subjects x WHERE x.attempt_id=a.attempt_id),
 	 'reservations',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.bundle_id),'[]'::jsonb) FROM inbox.order_for_buyer x WHERE x.create_attempt_id=a.attempt_id),
 	 'grants',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.bundle_id),'[]'::jsonb) FROM claims.merchant_origin_grants x WHERE x.create_attempt_id=a.attempt_id),
-	 'external_jobs',(SELECT count(*) FROM river.river_job WHERE kind='external_operation_v1'))
+	 'external_jobs',(SELECT coalesce(jsonb_agg(id ORDER BY id),'[]'::jsonb) FROM river.river_job WHERE kind='external_operation_v1'))
 	 FROM ops.order_attempts a WHERE a.attempt_id=$1`, s.a.AttemptID).Scan(&raw)
 	if err != nil {
 		t.Fatal("original C1 custody readback", err)

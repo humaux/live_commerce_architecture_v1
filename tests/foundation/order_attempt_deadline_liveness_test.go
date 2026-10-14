@@ -68,7 +68,7 @@ func oaDeadlineFault(t *testing.T, e *lbuEnv, attempt string) (string, func()) {
 }
 
 func TestOrderAttemptDeadlineRealClaimPeriodicLiveness(t *testing.T) {
-	e := lbuNew(t)
+	e := oaAreaIsolated(t)
 	_, offer, bundle, conversation := e.scenario()
 	selection := oaClaimSelection(e, []string{bundle}, []string{offer.ID}, conversation)
 	req := oaMaterialRequest(t, e, selection)
@@ -109,6 +109,7 @@ func TestOrderAttemptDeadlineRealClaimPeriodicLiveness(t *testing.T) {
 		t.Fatal(err)
 	}
 	pool := miPool(t, e.p.f, "commerce_claims_worker")
+	oaSweepOnlyCandidate(t, ctx, pool, a)
 	consumer := oaSweepConsumer(t, pool, oaExecutorNew(t, pool, keys))
 	first, stopFirst := context.WithTimeout(ctx, 10*time.Second)
 	defer stopFirst()

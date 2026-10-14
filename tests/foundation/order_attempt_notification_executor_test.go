@@ -152,8 +152,8 @@ func TestOrderAttemptNotificationExecutorReadyNativeJobTransaction(t *testing.T)
 }
 
 func TestOrderAttemptNotificationExecutorAEADDependencyRetainsPending(t *testing.T) {
-	e := lbuNew(t)
-	m, conversation, _, _ := oaNotificationSignedConversation(t, e)
+	e := oaAreaIsolated(t)
+	m, conversation, _ := oaEnabledProcessConversation(t, e)
 	selection := oaBeginSelection(t, e, "bank_transfer", "duplicate-origins")
 	selection["for"] = map[string]any{"bundle_ids": []string{}, "conversation_id": conversation}
 	selection["send_payment_link"] = true
@@ -163,7 +163,7 @@ func TestOrderAttemptNotificationExecutorAEADDependencyRetainsPending(t *testing
 	var externalJobs int
 	err := e.p.f.owner.QueryRow(context.Background(), `SELECT plan_ciphertext,plan_key_version,
 	 (SELECT count(*) FROM river.river_job WHERE kind='external_operation_v1') FROM ops.order_attempts WHERE attempt_id=$1`, a.AttemptID).Scan(&originalPlan, &originalKey, &externalJobs)
-	if err != nil || len(originalPlan) == 0 || originalKey == "" {
+	if err != nil || len(originalPlan) == 0 || originalKey == "" || externalJobs != 0 {
 		t.Fatal("real C1 encrypted plan custody sentinel")
 	}
 	defer clear(originalPlan)

@@ -26,11 +26,11 @@ type oaNotificationResumeScenario struct {
 
 func oaNotificationResumeNative(t *testing.T) oaNotificationResumeScenario {
 	t.Helper()
-	e := lbuNew(t)
+	e := oaAreaIsolated(t)
 	session, offer := e.session("A1", ltgLive, 5)
 	bundle := e.h.accepted(t, session, "", "resume-"+t04Tag(), "A1+2").BundleID
 	e.h.closeWindow(t, session)
-	m, conversation, binding, _ := oaNotificationSignedConversation(t, e)
+	m, conversation, binding := oaEnabledProcessConversation(t, e)
 	e.linkPeer(bundle, conversation)
 	selection := oaClaimSelection(e, []string{bundle}, []string{offer.ID}, conversation)
 	selection["send_payment_link"] = true
@@ -54,9 +54,9 @@ func oaNotificationResumeNative(t *testing.T) oaNotificationResumeScenario {
 		executor: oaNotificationExecutorWithPayloadKey(t, pool, m.key),
 	}, plan: plan}
 	var ready bool
-	// The foundation binary shares a database: unrelated stores can already
-	// have READY operations. This C1 must have neither a local operation nor a
-	// local notification job; unrelated successful notifications are allowed.
+	// This database belongs to this scenario. Preserve the direct all-job ID
+	// baseline below so even jobs with no matching operation are observable;
+	// the local operation/job checks separately establish native C1 prerequisites.
 	err = e.p.f.owner.QueryRow(context.Background(), `SELECT a.state='PENDING' AND a.admission_finished
 	 AND a.receipt IS NULL AND a.order_id IS NULL AND a.plan_ciphertext IS NOT NULL
 	 AND b.enabled AND integration.binding_capability_state(a.tenant_id,a.store_id,b.id,'dm_session',ARRAY[]::text[]) IN ('ok','review_required')

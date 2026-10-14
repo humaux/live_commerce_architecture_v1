@@ -172,7 +172,7 @@ func TestOrderAttemptServiceReplaySurvivesRelogin(t *testing.T) {
 }
 
 func TestOrderAttemptServiceSealFailureRollsBackNativeAdmission(t *testing.T) {
-	e := lbuNew(t)
+	e := oaExpiryIsolated(t)
 	req := oaServiceRequest(t, e)
 	selection := oaFactsSelection(e)
 	items := make([]map[string]any, 24)

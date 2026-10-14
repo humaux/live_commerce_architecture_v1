@@ -96,7 +96,7 @@ func oaSweepOnlyCandidate(t *testing.T, ctx context.Context, pool *pgxpool.Pool,
 func TestOrderAttemptSweepNativeOrphanRepairAndLiveJobs(t *testing.T) {
 	for _, state := range []string{"missing", "completed", "discarded", "cancelled", "available", "pending", "scheduled", "retryable", "running"} {
 		t.Run(state, func(t *testing.T) {
-			e := lbuNew(t)
+			e := oaExpiryIsolated(t)
 			a := oaFenceAdmit(t, e)
 			old := oaSweepJob(t, e, a.AttemptID)
 			oaSweepJobState(t, e, old, state)
@@ -105,24 +105,26 @@ func TestOrderAttemptSweepNativeOrphanRepairAndLiveJobs(t *testing.T) {
 			executor := oaExecutorNew(t, pool, oaServiceKeys(t))
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
+			oaSweepOnlyCandidate(t, ctx, pool, a)
 			got, err := executor.Sweep(ctx)
-			if err != nil || got.Scanned < 1 || got.Scanned > 100 {
+			if err != nil || got.Scanned != 1 || got.Aborted != 0 {
 				oaSweepDiagnoseFirst(t, pool)
 				t.Fatalf("bounded native discovery/sweep: counts=%+v err=%v", got, err)
 			}
 			orphan := state == "missing" || state == "completed" || state == "discarded" || state == "cancelled"
 			id := old
 			if orphan {
-				if got.Requeued < 1 {
+				if got.Requeued != 1 {
 					t.Fatal("orphan sweep did not report its repair")
 				}
 				id = oaSweepRepair(t, e, a, old, intent)
-			} else if oaSweepJob(t, e, a.AttemptID) != old || oaSweepIntent(t, e, a.AttemptID) != intent {
+			} else if got.Requeued != 0 || oaSweepJob(t, e, a.AttemptID) != old || oaSweepIntent(t, e, a.AttemptID) != intent {
 				t.Fatal("live job was replaced or intent changed; running/retryable at max_attempts remain live")
 			}
-			if _, err = executor.Sweep(ctx); err != nil {
+			repeat, err := executor.Sweep(ctx)
+			if err != nil || repeat.Scanned != 1 || repeat.Requeued != 0 || repeat.Aborted != 0 {
 				oaSweepDiagnoseFirst(t, pool)
-				t.Fatal(err)
+				t.Fatalf("repeat singleton sweep changed its disposition: counts=%+v err=%v", repeat, err)
 			}
 			if oaSweepJob(t, e, a.AttemptID) != id {
 				t.Fatal("repeat sweep inserted a second live execution job")
@@ -239,7 +241,7 @@ func oaSweepExpired(t *testing.T, e *lbuEnv) orderattempt.AdmissionReceipt {
 func TestOrderAttemptSweepExpiredIntentIgnoresJobLiveness(t *testing.T) {
 	for _, state := range []string{"available", "running", "discarded", "missing"} {
 		t.Run(state, func(t *testing.T) {
-			e := lbuNew(t)
+			e := oaExpiryIsolated(t)
 			a := oaSweepExpired(t, e)
 			old := oaSweepJob(t, e, a.AttemptID)
 			oaSweepJobState(t, e, old, state)
@@ -247,8 +249,9 @@ func TestOrderAttemptSweepExpiredIntentIgnoresJobLiveness(t *testing.T) {
 			executor := oaExecutorNew(t, pool, oaServiceKeys(t))
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
+			oaSweepOnlyCandidate(t, ctx, pool, a)
 			counts, err := executor.Sweep(ctx)
-			if err != nil || counts.Aborted < 1 {
+			if err != nil || counts.Scanned != 1 || counts.Aborted != 1 || counts.Requeued != 0 {
 				oaSweepDiagnoseFirst(t, pool)
 				t.Fatalf("expired intent must settle without decrypting invalid old envelope: counts=%+v err=%v", counts, err)
 			}
@@ -305,7 +308,7 @@ func oaSweepAwait(t *testing.T, ctx context.Context, check func() bool, failure 
 }
 
 func TestOrderAttemptSweepRealRiverStartupAndPeriodicOrphanRecovery(t *testing.T) {
-	e := lbuNew(t)
+	e := oaExpiryIsolated(t)
 	a := oaFenceAdmit(t, e)
 	plan, _ := oaMaterialPlan(t, e, oaServiceKeys(t), a.AttemptID)
 	old := oaSweepJob(t, e, a.AttemptID)
@@ -318,6 +321,9 @@ func TestOrderAttemptSweepRealRiverStartupAndPeriodicOrphanRecovery(t *testing.T
 	}
 	pool := miPool(t, e.p.f, "commerce_claims_worker")
 	executor := oaExecutorNew(t, pool, oaServiceKeys(t))
+	discovery, endDiscovery := context.WithTimeout(context.Background(), 3*time.Second)
+	defer endDiscovery()
+	oaSweepOnlyCandidate(t, discovery, pool, a)
 	oaSweepConsumer(t, pool, executor)
 	defer func() {
 		if t.Failed() {
@@ -401,7 +407,7 @@ func oaSweepUpdates(t *testing.T, tx pgx.Tx, want int64) {
 }
 
 func TestOrderAttemptSweepNativeRepairOneAttemptUpdate(t *testing.T) {
-	e := lbuNew(t)
+	e := oaExpiryIsolated(t)
 	a := oaFenceAdmit(t, e)
 	old := oaSweepJob(t, e, a.AttemptID)
 	oaSweepJobState(t, e, old, "discarded")
@@ -413,6 +419,7 @@ func TestOrderAttemptSweepNativeRepairOneAttemptUpdate(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	oaSweepOnlyCandidate(t, ctx, pool, a)
 	holder, err := e.p.f.owner.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -476,8 +483,11 @@ func TestOrderAttemptSweepNativeRepairOneAttemptUpdate(t *testing.T) {
 }
 
 func TestOrderAttemptSweepDiscoveryIsOpaqueAndOldestBounded(t *testing.T) {
-	e := lbuNew(t)
+	e := oaExpiryIsolated(t)
 	a := oaFenceAdmit(t, e)
+	discovery, endDiscovery := context.WithTimeout(context.Background(), 3*time.Second)
+	defer endDiscovery()
+	oaSweepOnlyCandidate(t, discovery, miPool(t, e.p.f, "commerce_claims_worker"), a)
 	// Native past-seeded metadata makes the LIMIT observable with >100 candidates.
 	// It does not claim C1/AEAD coverage; the target above is admitted by real C1.
 	rowsToSeed := make([]map[string]string, 101)
