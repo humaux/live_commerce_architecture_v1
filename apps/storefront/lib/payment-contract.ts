@@ -2,7 +2,7 @@
 // Mirrors internal/checkout/payment_view.go (validPaymentViewFor) and stripe.go
 // (validStripeHandoff, PaymentSignal); Stripe deltas per contracts/stripe-buyer-ui-v1.md §3.
 // Used by lib/buyer-server.ts (BFF response gate) and lib/order-payment.ts (client gate).
-export type PaymentMethodCode = "payuni_credit" | "stripe_checkout";
+export type PaymentMethodCode = "stripe_checkout";
 
 export type OrderPayment = {
   order_id: string;
@@ -54,30 +54,11 @@ export type PaymentPrepared = {
 
 export type PaymentSignal = { order_id: string; scheduled: boolean };
 
-export type HostedForm = {
-  action:
-    | "https://sandbox-api.payuni.com.tw/api/upp"
-    | "https://api.payuni.com.tw/api/upp";
-  fields: {
-    Version: "2.0";
-    MerID: string;
-    EncryptInfo: string;
-    HashInfo: string;
-  };
-};
-
 export type HostedHandoff = {
   order_id: string;
-  disposition:
-    | "ISSUED"
-    | "ALREADY_ISSUED"
-    | "REDIRECT"
-    | "CREATING"
-    | "CLOSED"
-    | "UNAVAILABLE";
+  disposition: "REDIRECT" | "CREATING" | "CLOSED" | "UNAVAILABLE";
   expires_at: string;
-  form?: HostedForm;
-  // Stripe REDIRECT only. Callers keep it in a local variable; never store or log it.
+  // REDIRECT only. Callers keep it in a local variable; never store or log it.
   redirect_url?: string;
 };
 
@@ -163,7 +144,7 @@ export function validOrderPayment(
     "handoff_expires_at",
     "methods",
   ];
-  // cancel_requested is optional on the wire: Go omits it for PAYUNi and not-started orders.
+  // cancel_requested is optional on the wire: Go omits it for not-started orders.
   const hasCancel =
     value !== null &&
     typeof value === "object" &&
@@ -274,7 +255,7 @@ export function validOrderPayment(
         "name_hant",
         "name_en",
       ]) ||
-      (method.code !== "payuni_credit" && method.code !== "stripe_checkout") ||
+      method.code !== "stripe_checkout" ||
       seen.has(method.code)
     )
       return false;
@@ -322,13 +303,6 @@ export function validPaymentPrepared(
   )
     return false;
   const amount = value.amount_minor as number;
-  if (method === "payuni_credit")
-    return (
-      value.currency === "TWD" &&
-      amount >= 100 &&
-      amount <= 19999900 &&
-      amount % 100 === 0
-    );
   if (method !== "stripe_checkout" || typeof value.currency !== "string")
     return false;
   const range = Object.hasOwn(STRIPE_AMOUNTS, value.currency)
@@ -374,9 +348,8 @@ export function validStripeRedirectURL(u: unknown): u is string {
   }
 }
 
-// Union keyed by disjoint dispositions: PAYUNi ISSUED/ALREADY_ISSUED, Stripe
-// REDIRECT/CREATING/CLOSED/UNAVAILABLE. `method` (client marker) restricts to one family;
-// the BFF does not know the method for a keyless handoff and validates the union.
+// Stripe dispositions only (REDIRECT/CREATING/CLOSED/UNAVAILABLE). Anything else, including a legacy
+// hosted-form disposition from a backend that still serves a removed provider, is rejected.
 export function validHostedHandoff(
   value: unknown,
   orderID: string,
@@ -387,63 +360,23 @@ export function validHostedHandoff(
       ? (value as Record<string, unknown>).disposition
       : undefined;
   if (
-    disposition === "REDIRECT" ||
-    disposition === "CREATING" ||
-    disposition === "CLOSED" ||
-    disposition === "UNAVAILABLE"
-  ) {
-    return (
-      method !== "payuni_credit" &&
-      UUID.test(orderID) &&
-      exact(
-        value,
-        disposition === "REDIRECT"
-          ? ["order_id", "disposition", "expires_at", "redirect_url"]
-          : ["order_id", "disposition", "expires_at"],
-      ) &&
-      value.order_id === orderID &&
-      utc(value.expires_at) &&
-      (disposition !== "REDIRECT" || validStripeRedirectURL(value.redirect_url))
-    );
-  }
-  if (method === "stripe_checkout") return false;
-  if (
-    !UUID.test(orderID) ||
-    !exact(
-      value,
-      disposition === "ISSUED"
-        ? ["order_id", "disposition", "expires_at", "form"]
-        : ["order_id", "disposition", "expires_at"],
-    ) ||
-    value.order_id !== orderID ||
-    !utc(value.expires_at)
+    (method !== undefined && method !== "stripe_checkout") ||
+    (disposition !== "REDIRECT" &&
+      disposition !== "CREATING" &&
+      disposition !== "CLOSED" &&
+      disposition !== "UNAVAILABLE")
   )
     return false;
-  if (value.disposition === "ALREADY_ISSUED") return true;
-  if (
-    value.disposition !== "ISSUED" ||
-    !exact(value.form, ["action", "fields"])
-  )
-    return false;
-  const form = value.form;
-  if (
-    form.action !== "https://sandbox-api.payuni.com.tw/api/upp" &&
-    form.action !== "https://api.payuni.com.tw/api/upp"
-  )
-    return false;
-  if (!exact(form.fields, ["Version", "MerID", "EncryptInfo", "HashInfo"]))
-    return false;
-  const fields = form.fields;
   return (
-    fields.Version === "2.0" &&
-    typeof fields.MerID === "string" &&
-    /^[A-Za-z0-9_-]{1,64}$/.test(fields.MerID) &&
-    typeof fields.EncryptInfo === "string" &&
-    fields.EncryptInfo.length >= 16 &&
-    fields.EncryptInfo.length <= 24576 &&
-    fields.EncryptInfo.length % 2 === 0 &&
-    /^[0-9a-f]+$/.test(fields.EncryptInfo) &&
-    typeof fields.HashInfo === "string" &&
-    /^[0-9A-F]{64}$/.test(fields.HashInfo)
+    UUID.test(orderID) &&
+    exact(
+      value,
+      disposition === "REDIRECT"
+        ? ["order_id", "disposition", "expires_at", "redirect_url"]
+        : ["order_id", "disposition", "expires_at"],
+    ) &&
+    value.order_id === orderID &&
+    utc(value.expires_at) &&
+    (disposition !== "REDIRECT" || validStripeRedirectURL(value.redirect_url))
   );
 }

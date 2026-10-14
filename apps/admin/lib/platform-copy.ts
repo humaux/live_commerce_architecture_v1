@@ -1,3 +1,6 @@
+// Purpose: Localized UI copy (zh-TW, zh-CN, en) for the public platform site: home, nav, about paragraphs, company labels.
+// Depends on: lib/company types only.
+// Used by: components/platform/*, app/(public)/site/[locale]/*.
 import type { PlatformLocale, PlatformPage } from "./company";
 
 type Copy = {
@@ -24,11 +27,13 @@ type Copy = {
   incorporated: string;
   validity: string;
   email: string;
+  about: [string, string];
 };
 export const platformCopy: Record<PlatformLocale, Copy> = {
   "zh-TW": {
     pages: {
       home: "首頁",
+      about: "關於我們",
       privacy: "隱私政策",
       terms: "服務條款",
       "data-deletion": "資料刪除",
@@ -59,16 +64,21 @@ export const platformCopy: Record<PlatformLocale, Copy> = {
     selected: "黑色 · L · 1 件",
     order: "示例訂單",
     pending: "待付款",
-    company: "營運公司",
+    company: "公司資訊",
     cr: "公司編號",
     br: "商業登記證號碼",
     incorporated: "成立日期",
     validity: "商業登記有效期",
     email: "聯絡電郵",
+    about: [
+      "DaWan Live 是本公司擁有的直播電商平台：Facebook 留言收單、商家網店與訂單管理，在同一個工作流程。",
+      "本公司是商家使用本平台服務的合約方；本平台的線上收款由本公司透過 Stripe 處理。",
+    ],
   },
   "zh-CN": {
     pages: {
       home: "首页",
+      about: "关于我们",
       privacy: "隐私政策",
       terms: "服务条款",
       "data-deletion": "资料删除",
@@ -99,16 +109,21 @@ export const platformCopy: Record<PlatformLocale, Copy> = {
     selected: "黑色 · L · 1 件",
     order: "示例订单",
     pending: "待付款",
-    company: "运营公司",
+    company: "公司信息",
     cr: "公司编号",
     br: "商业登记证号码",
     incorporated: "成立日期",
     validity: "商业登记有效期",
     email: "联系邮箱",
+    about: [
+      "DaWan Live 是本公司拥有的直播电商平台：Facebook 评论收单、商家网店与订单管理，在同一个工作流程。",
+      "本公司是商家使用本平台服务的合约方；本平台的线上收款由本公司通过 Stripe 处理。",
+    ],
   },
   en: {
     pages: {
       home: "Home",
+      about: "About us",
       privacy: "Privacy policy",
       terms: "Terms of service",
       "data-deletion": "Data deletion",
@@ -158,11 +173,15 @@ export const platformCopy: Record<PlatformLocale, Copy> = {
     selected: "Black · L · 1 item",
     order: "Example order",
     pending: "Unpaid",
-    company: "Operator",
+    company: "Company",
     cr: "Company number",
     br: "Business registration number",
     incorporated: "Incorporation date",
     validity: "Business registration validity",
     email: "Contact email",
+    about: [
+      "DaWan Live is the live-commerce platform owned by this company: Facebook comment ordering, your storefront and order management — in one workflow.",
+      "The company is the contracting party for merchants using the platform; online payments on the platform are processed by the company through Stripe.",
+    ],
   },
 };

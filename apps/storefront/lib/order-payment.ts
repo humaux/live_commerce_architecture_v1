@@ -3,7 +3,7 @@
 //   POST orders/{id}/payment/prepare  -> payOrder                   (HostedPaymentStarter.BeginHosted / beginStripe)
 //   POST orders/{id}/payment/handoff  -> payOrder                   (TakeHosted / Stripe take_stripe_handoff)
 //   POST orders/{id}/payment/refresh|cancel -> requestPaymentSignal (RefreshPayment / CancelPayment)
-// PAYUNi: one-shot form release, GET-only recovery. Stripe: stripe-buyer-ui-v1 §4 (child tab, no stored URL).
+// Stripe only: stripe-buyer-ui-v1 §4 (child tab, no stored URL).
 import { buyerRequest, BuyerClientError } from "./buyer-client.ts";
 import {
   isStripeView,
@@ -12,7 +12,6 @@ import {
   validPaymentPrepared,
   validPaymentSignal,
   validStripeRedirectURL,
-  type HostedForm,
   type OrderPayment,
   type PaymentMethodCode,
   type PaymentSignal,
@@ -28,10 +27,7 @@ import {
 const LOCK = "commerce-purchase-write-v1";
 const CONTEXT = /^[A-Za-z0-9_-]{43}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const FORM_CHECK_ID = "00000000-0000-0000-0000-000000000000";
-const FORM_CHECK_TIME = "2026-01-01T00:00:00Z";
-const FORM_POLICY =
-  "default-src 'none'; base-uri 'none'; form-action https://sandbox-api.payuni.com.tw/api/upp https://api.payuni.com.tw/api/upp";
+const FORM_POLICY = "default-src 'none'; base-uri 'none'; form-action 'none'";
 
 type Locale = "zh-CN" | "zh-TW" | "en";
 type Method = OrderPayment["methods"][number];
@@ -49,8 +45,7 @@ export type PaymentMarker = {
 };
 export type PaymentDestination = {
   ready(): boolean;
-  submit(form: HostedForm): void;
-  // Stripe only: sends the still-blank child to checkout.stripe.com (see openPaymentDestination).
+  // Sends the still-blank child to checkout.stripe.com (see openPaymentDestination).
   navigate(url: string): void;
   close(): void;
 };
@@ -93,8 +88,7 @@ function parseMarker(
       !UUID.test(value.key) ||
       (value.stage !== "prepare" && value.stage !== "handoff_started") ||
       !exact(value.body, ["method_code", "method_version", "locale"]) ||
-      (value.body.method_code !== "payuni_credit" &&
-        value.body.method_code !== "stripe_checkout") ||
+      value.body.method_code !== "stripe_checkout" ||
       !Number.isSafeInteger(value.body.method_version) ||
       (value.body.method_version as number) < 1 ||
       !["zh-CN", "zh-TW", "en"].includes(value.body.locale as string)
@@ -230,42 +224,6 @@ export function openPaymentDestination(locale: Locale): PaymentDestination {
   };
   return {
     ready: () => !used && owned(),
-    submit(form: HostedForm) {
-      if (
-        used ||
-        !owned() ||
-        !validHostedHandoff(
-          {
-            order_id: FORM_CHECK_ID,
-            disposition: "ISSUED",
-            expires_at: FORM_CHECK_TIME,
-            form,
-          },
-          FORM_CHECK_ID,
-        )
-      )
-        throw new BuyerClientError("invalid_response");
-      const node = document.createElement("form");
-      node.method = "POST";
-      node.action = form.action;
-      node.target = "_self";
-      node.setAttribute("rel", "noreferrer");
-      for (const [name, value] of Object.entries(form.fields)) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        node.appendChild(input);
-      }
-      if (!owned()) throw new BuyerClientError("uncertain");
-      document.body.appendChild(node);
-      used = true; // A thrown or lost form submission must not trigger a second POST.
-      try {
-        node.submit();
-      } finally {
-        node.remove();
-      }
-    },
     navigate(url: string) {
       // The URL is a capability for the buyer's session: it lives only in the caller's local
       // variable and this call. Never store, log or put it in an error (stripe-psp-v1 §9.2, D16).
@@ -289,15 +247,13 @@ const isFresh = (view: OrderPayment) =>
   view.commercial_state === "DRAFT" &&
   view.handoff_state === "NONE";
 
-// stripe-buyer-ui-v1 §4 step 2 marker/view matrix. "mismatch": a PAYUNi marker on a Stripe view
-// or the reverse (or a Stripe marker that already claims handoff_started); nothing is sent.
+// stripe-buyer-ui-v1 §4 step 2 marker/view matrix. "mismatch": a Stripe marker that already claims
+// handoff_started or sits on a view that is not ours; nothing is sent.
 function stripeRoute(
   view: OrderPayment,
   marker: PaymentMarker | null,
 ): boolean | "mismatch" {
   if (!marker) return isStripeView(view);
-  if (marker.body.method_code === "payuni_credit")
-    return isStripeView(view) ? "mismatch" : false;
   // Stripe never writes handoff_started, so that stage is not ours.
   if (marker.stage !== "prepare") return "mismatch";
   const ours = isFresh(view)
@@ -549,130 +505,21 @@ export async function payOrder({
         await fence();
         if (!matchesOrder(view, order))
           throw new BuyerClientError("invalid_response");
-        let marker = pendingOrderPayment(context, order.order_id);
+        const marker = pendingOrderPayment(context, order.order_id);
         const stripe = stripeRoute(view, marker);
         if (stripe === "mismatch") throw new BuyerClientError("request_failed");
         // Stripe only prepares here; the handoff runs after the lock is released (below).
-        if (stripe)
-          return stripePrepare({
-            context,
-            order,
-            locale,
-            method,
-            view,
-            marker,
-            fence,
-          });
-        if (marker?.stage === "handoff_started")
-          throw new BuyerClientError("uncertain");
-        if (marker) {
-          const fresh =
-            view.payment_state === "NOT_STARTED" &&
-            view.commercial_state === "DRAFT" &&
-            view.handoff_state === "NONE";
-          const prepared =
-            view.payment_state === "PENDING" &&
-            view.commercial_state === "AWAITING_PAYMENT" &&
-            view.handoff_state === "PREPARED";
-          if (!fresh && !prepared) throw new BuyerClientError("uncertain");
-        } else {
-          if (
-            view.payment_state !== "NOT_STARTED" ||
-            view.commercial_state !== "DRAFT" ||
-            view.handoff_state !== "NONE" ||
-            !method ||
-            !view.methods.some(
-              (item) =>
-                item.code === method.code && item.version === method.version,
-            )
-          )
-            throw new BuyerClientError("request_failed");
-          marker = {
-            v: 1,
-            context,
-            order_id: order.order_id,
-            key: crypto.randomUUID(),
-            body: {
-              method_code: "payuni_credit",
-              method_version: method.version,
-              locale,
-            },
-            stage: "prepare",
-          };
-          await fence();
-          persistMarker(marker, null);
-        }
-        await fence();
-        const response = await buyerRequest(
-          "POST",
-          `orders/${order.order_id}/payment/prepare`,
+        // Platform Stripe is the only card path; any other view is unavailable and nothing is sent.
+        if (!stripe) throw new BuyerClientError("request_failed");
+        return stripePrepare({
           context,
-          marker.body,
-          marker.key,
-        );
-        await fence();
-        if (!response.ok)
-          throw new BuyerClientError("request_failed", response.status);
-        let prepared: unknown;
-        try {
-          prepared = await response.json();
-        } catch {
-          throw new BuyerClientError("uncertain");
-        }
-        await fence();
-        if (
-          !validPaymentPrepared(prepared, order.order_id, "payuni_credit") ||
-          prepared.currency !== order.snapshot.quote.currency ||
-          prepared.amount_minor !== order.snapshot.quote.amount.total_minor
-        )
-          throw new BuyerClientError("invalid_response");
-        const current = await readOrderPayment(context, order.order_id);
-        await fence();
-        if (
-          !matchesOrder(current, order) ||
-          current.payment_state !== "PENDING" ||
-          current.commercial_state !== "AWAITING_PAYMENT" ||
-          current.handoff_state !== "PREPARED"
-        )
-          throw new BuyerClientError("uncertain");
-        const started: PaymentMarker = { ...marker, stage: "handoff_started" };
-        await fence();
-        persistMarker(started, marker);
-        await fence();
-        if (
-          JSON.stringify(pendingOrderPayment(context, order.order_id)) !==
-          JSON.stringify(started)
-        )
-          throw new BuyerClientError("uncertain");
-        // TakeHosted is one-shot. No catch path may clear this marker or replay Take.
-        const handoff = await buyerRequest(
-          "POST",
-          `orders/${order.order_id}/payment/handoff`,
-          context,
-        );
-        await fence();
-        if (!handoff.ok)
-          throw new BuyerClientError("uncertain", handoff.status);
-        let result: unknown;
-        try {
-          result = await handoff.json();
-        } catch {
-          throw new BuyerClientError("uncertain");
-        }
-        await fence();
-        if (
-          !validHostedHandoff(result, order.order_id) ||
-          result.disposition !== "ISSUED" ||
-          !result.form
-        )
-          throw new BuyerClientError("uncertain");
-        await fence();
-        if (
-          JSON.stringify(pendingOrderPayment(context, order.order_id)) !==
-          JSON.stringify(started)
-        )
-          throw new BuyerClientError("uncertain");
-        destination.submit(result.form);
+          order,
+          locale,
+          method,
+          view,
+          marker,
+          fence,
+        });
       },
     );
     if (stage === "render") {

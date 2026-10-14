@@ -1,3 +1,5 @@
+> Superseded: PAYUNi removed by owner decision 2026-10-14, see pay-rm2.
+
 # Captured payment facts and stock commitment
 
 Date: 2026-09-24. Status: PASS_BOUNDED_INTERNAL_CAPTURE_AND_STOCK_COMMIT.

@@ -309,7 +309,7 @@ test("actual export bind refuses a missing directory; enabling auto-create is de
   }
 }));
 
-test("R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory", () => fixture((dir) => {
+test("R3 preflight: removed PAYUNi knob is gone from the template and rejected if stale, validates Page app and keeps LIVE pair mandatory", () => fixture((dir) => {
   const api = `${dir}/env/api.env`;
   const preflight = () => {
     const r = run("bash", [`${deploy}/scripts/preflight.sh`, "--skip-images"], cleanEnv(dir));
@@ -318,18 +318,22 @@ test("R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE p
     assert.ok((r.stdout + r.stderr).includes("P06"), "preflight must produce rule output");
     return { r, findings };
   };
-  assert.match(readFileSync(api, "utf8"), /^COMMERCE_PAYUNI_NOTIFY_ENABLED=0$/m);
+  // pay-rm2: PAYUNi was removed by owner decision (2026-10-14); the template no longer carries its tripwire knob.
+  assert.doesNotMatch(readFileSync(api, "utf8"), /PAYUNI/i);
   const claims = `${dir}/env/claims-worker.env`;
   assert.match(readFileSync(claims, "utf8"), /^COMMERCE_META_PAGE_APP_ID=$/m);
   const baseline = preflight();
   assert.ok(!baseline.findings.some(l => /PAYUNI|PAGE_APP_ID/.test(l)), baseline.findings.join("\n"));
-  setKey(api, "COMMERCE_PAYUNI_NOTIFY_ENABLED", "1");
-  let r = preflight();
-  assert.notEqual(r.r.status, 0);
-  assert.ok(r.findings.some(l => l.startsWith("P06 FAIL") && l.includes("COMMERCE_PAYUNI_NOTIFY_ENABLED")));
-  setKey(api, "COMMERCE_PAYUNI_NOTIFY_ENABLED", "0");
+  // A stale copy of the removed knob (any value) is now an unknown knob, not a silently tolerated tripwire.
+  for (const stale of ["0", "1"]) {
+    setKey(api, "COMMERCE_PAYUNI_NOTIFY_ENABLED", stale);
+    const rejected = preflight();
+    assert.notEqual(rejected.r.status, 0);
+    assert.ok(rejected.findings.some(l => l.startsWith("P06 FAIL") && l.includes("COMMERCE_PAYUNI_NOTIFY_ENABLED")), stale);
+  }
+  writeFileSync(api, readFileSync(api, "utf8").replace(/^COMMERCE_PAYUNI_NOTIFY_ENABLED=.*\n?/m, ""));
   setKey(claims, "COMMERCE_META_PAGE_APP_ID", "bad-test-value");
-  r = preflight();
+  let r = preflight();
   assert.ok(r.findings.some(l => l.startsWith("P08 FAIL") && l.includes("COMMERCE_META_PAGE_APP_ID")));
   assert.ok(!(r.r.stdout + r.r.stderr).includes("bad-test-value"), "config value leaked");
   setKey(claims, "COMMERCE_META_PAGE_APP_ID", "123456789");

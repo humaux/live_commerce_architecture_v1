@@ -135,8 +135,8 @@ endpoint with no authorization, never a token-bearing feed URL or real unbind.
 
 ### R3 configuration defaults
 
-`api.env`: `COMMERCE_PAYUNI_NOTIFY_ENABLED=0` is only a P06 stale-config tripwire; no runtime reads it because PAYUNi code
-was removed, and no ingress login is provisioned. `claims-worker.env`: empty `COMMERCE_META_PAGE_APP_ID` disables the optional Page health probe;
+`api.env`: PAYUNi was removed by owner decision (2026-10-06 / 2026-10-14); its `COMMERCE_PAYUNI_NOTIFY_ENABLED` knob is gone from the template
+and P06 rejects a stale copy as an unknown knob, so delete that line from any existing `api.env`. `claims-worker.env`: empty `COMMERCE_META_PAGE_APP_ID` disables the optional Page health probe;
 set only a verified numeric app id. API and claims-worker share empty `COMMERCE_META_ADVANCED_ACCESS` and
 `COMMERCE_META_DM_RECEIVER_CONFIRMED=0`; update them together only from the owner's review/probe evidence.
 `LC_MERCHANT_ALERT_MAIL=0` is a separate owner opt-in: an admin origin or buyer-mail flag does not enable merchant alerts.
@@ -179,13 +179,13 @@ Internet ─80/443(+udp)─► edge-netns (pause) ── shared 127.0.0.1 ──
                                                                  ├ api :8080 (must be loopback)
                                                                  ├ admin :3100 (Next standalone)
                                                                  └ storefront :3200 (next start)
-backend (internal) : postgres :5432 ◄── api, expiry-worker (+egress: the SMTP host, only when LC_BUYER_MAIL_ENABLED=1), meta-worker, payment-worker-* (+egress: PAYUNi, api.stripe.com),
+backend (internal) : postgres :5432 ◄── api, expiry-worker (+egress: the SMTP host, only when LC_BUYER_MAIL_ENABLED=1), meta-worker, payment-worker-* (+egress: api.stripe.com),
                      claims-worker (+egress: graph.facebook.com), ads-worker (+egress: graph.facebook.com)
 ops one-shots      : stripe-admin (backend + egress), meta-admin (backend), store-admin (backend; login lc_store_registrar, R3 storefront-publish) — profile ops, run only via ops-admin.sh
 pgsocket volume    : postgres ◄── migrate (network none), provision-logins, pg-ops (network none)
 ```
 Profiles: `db` (postgres, migrate, provision-logins), `app` (edge-netns, caddy, api, admin,
-storefront, expiry-worker), `payments-sandbox` (payment-worker-sandbox: PAYUNi + Stripe/refund dispatch when
+storefront, expiry-worker), `payments-sandbox` (payment-worker-sandbox: Stripe/refund dispatch when
 `LC_STRIPE_ENABLED=1`), `payments-live` (REAL MONEY; Stripe LIVE only with the pair, rule 20), `meta` (meta-worker, holds K_actor),
 `claims` (claims-worker: intake poller + the only sender of Meta private replies; owner approval for real sends),
 `ads` (ads-worker: the only Meta ad-account writer and the only holder of the HPKE private ring; with api.env
@@ -231,7 +231,7 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | Same, author re-run after the fixes (f318632, scratch clone + `cmd/migrate` proposal, sandbox-CA base images via `GO_IMAGE`/`NODE_IMAGE`) | **VERIFIED_LOCAL: 45 PASS / 0 FAIL / 1 BLOCKED**, exit 3 | S07 built through `--network host` (loopback proxy); S08 7 names; S21 `307 -> /zh-CN -> 200`; S34 Chromium PASS; S37–S39 PASS (S39 covers all 4 rollback paths); S33 clean; secret scan hits=0. An independent re-run is still owed, because the author cannot be the only acceptor |
 | Review P1 fixes (2026-09-28): S40 Caddy access-log redaction, S41 superuser rotation without log leak, S42 PITR promote + cut-over, S43 compose.env tag persistence + W10 | see `smoke.sh full` evidence of the fix commit | Author run on a scratch clone + I1 proposal; results recorded in the task's deploy-verify-final.md. An independent re-run is still owed |
 | Logical-restore media gate (S29m) | **BLOCKED (I8)** | Live `media_plan_ready=t`, restored `f`, PITR `t`. It used to be hidden inside the S29 PASS |
-| Real ACME/DNS, OIDC login, PAYUNi sandbox/live, Stripe SANDBOX registration + webhook delivery + checkout, Meta webhooks/private replies, media, 2-host TLS, K8s, load, CVE scan | **NOT_RUN** | Need owner inputs (O2, O3, O11, B3–B6, Stripe test key, Meta App) |
+| Real ACME/DNS, OIDC login, Stripe SANDBOX registration + webhook delivery + checkout, Meta webhooks/private replies, media, 2-host TLS, K8s, load, CVE scan | **NOT_RUN** | Need owner inputs (O2, O3, O11, B3–B6, Stripe test key, Meta App) |
 
 ## Deploy-only dependency ledger (integrator: copy into docs/implementation/dependencies.md, I5)
 

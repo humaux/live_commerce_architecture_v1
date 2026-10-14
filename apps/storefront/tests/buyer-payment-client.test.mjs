@@ -31,7 +31,7 @@ test("BPT05 exact handoff permits absent body/key, one fetch, no form persistenc
   const calls = [];
   globalThis.fetch = async (url, options) => {
     calls.push({ url, options });
-    return Response.json({ disposition: "ISSUED", form: { action: "https://sandbox-api.payuni.com.tw/api/upp" } });
+    return Response.json({ disposition: "REDIRECT", redirect_url: "https://checkout.stripe.com/c/pay/cs_test_a1B2" });
   };
   try {
     const result = await buyerRequest("POST", suffix, context);

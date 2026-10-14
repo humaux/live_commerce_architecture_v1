@@ -171,10 +171,10 @@ services:
       COMMERCE_BUYER_SESSION_TTL: ${LC_BUYER_SESSION_TTL_SECONDS:-2592000}s   # Go duration
       # OIDC redirect = <origin>/api/auth/callback (cmd/api/identity.go:59).
       COMMERCE_PUBLIC_ORIGIN: https://${LC_ADMIN_HOST:?set LC_ADMIN_HOST}
-      # PAYUNi callbacks must be https, dotted, port 443 (payuni/client.go:174-186).
+      # Payment return page (platform Stripe Checkout returns the buyer here).
       COMMERCE_PAYMENT_RETURN_URL: https://${LC_STORE_HOST:?set LC_STORE_HOST}/payment/return
-      # Reserved: no notify receiver exists yet; Caddy answers 404 there (blocker B4).
-      COMMERCE_PAYMENT_NOTIFY_URL: https://${LC_HOOKS_HOST:?set LC_HOOKS_HOST}/payuni/notify
+      # Legacy knob the API config still requires until pay-rm2 phase 2 deletes it; no receiver exists, Caddy answers 404.
+      COMMERCE_PAYMENT_NOTIFY_URL: https://${LC_HOOKS_HOST:?set LC_HOOKS_HOST}/payment/notify
       # DSNs (one LOGIN per authority, deploy/postgres/logins.tsv) and keys, as file paths.
       DATABASE_URL_FILE: /run/secrets/dsn_lc_api_runtime
       COMMERCE_IDENTITY_DATABASE_URL_FILE: /run/secrets/dsn_lc_api_identity
@@ -407,7 +407,7 @@ services:
     <<: *go
     profiles: [payments-sandbox]
     command: ["/app/bin/payment-worker"]
-    networks: [backend, egress]  # egress: PAYUNi sandbox + api.stripe.com HTTPS (endpoints are code constants)
+    networks: [backend, egress]  # egress: api.stripe.com HTTPS (endpoint is a code constant)
     depends_on: *after-db
     env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/payment-worker.env"]
     environment:
@@ -426,7 +426,7 @@ services:
     mem_limit: 256m
 
   payment-worker-live:
-    # REAL MONEY. Enable profile payments-live only with owner approval + PAYUNi qualification (B3).
+    # REAL MONEY. Enable profile payments-live only with owner approval (platform Stripe LIVE pair, stripe-live-enable-v1).
     <<: *go
     profiles: [payments-live]
     command: ["/app/bin/payment-worker"]
@@ -767,7 +767,7 @@ services:
 
 networks:
   edge: {}                        # internet in/out for the edge pod (Caddy, OIDC discovery/JWKS)
-  egress: {}                      # payment workers only (PAYUNi)
+  egress: {}                      # payment workers only (Stripe)
   backend:
     internal: true                # postgres + DB clients; no internet
 

@@ -35,7 +35,7 @@ const config: NextConfig = {
             value:
               // R4S-04: same-origin fetch/img/font/script sources only (no exfiltration path if an encoder ever slips); Next's inline
               // bootstrap needs 'unsafe-inline' until nonce-based script-src (post-pilot, output/r4-backlog/P2.md).
-              `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://sandbox-api.payuni.com.tw/api/upp https://api.payuni.com.tw/api/upp https://logistics-stage.ecpay.com.tw/Express/map https://logistics.ecpay.com.tw/Express/map`,
+              `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://logistics-stage.ecpay.com.tw/Express/map https://logistics.ecpay.com.tw/Express/map`,
           },
         ],
       },

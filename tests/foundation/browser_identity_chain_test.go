@@ -237,9 +237,9 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 		Scan(&accountCount, &credentialCount, &qualifications, &credentialVersion, &operations)
 	wantAccounts, wantCredentials, wantCredentialVersion := 1, 2, 2
 	if wizard {
-		// One initial credential despite crash/retries, plus one independent
-		// account proving fresh UI hydration follows the saved method binding.
-		wantAccounts, wantCredentialVersion = 2, 1
+		// PAY-RM2 (owner 2026-10-14): the wizard no longer has any payment-provider account or method UI,
+		// so a wizard run must leave no merchant account, credential or method row behind.
+		wantAccounts, wantCredentials, wantCredentialVersion = 0, 0, 0
 	}
 	if err != nil || accountCount != wantAccounts || credentialCount != wantCredentials || qualifications != 0 || credentialVersion != wantCredentialVersion || operations != 0 {
 		t.Fatalf("browser account persistence proof failed: accounts=%d credentials=%d qualifications=%d version=%d operations=%d err=%v", accountCount, credentialCount, qualifications, credentialVersion, operations, err)
@@ -255,8 +255,11 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 		Scan(&methodVersions, &methodHeads, &enabledMethods, &inspectCommands)
 	// Wizard revision 2 is an independent concurrent editor; the stale UI must
 	// not overwrite it with an implicitly upgraded expected_version.
-	wantMethodVersions := 2
-	if err != nil || methodVersions != wantMethodVersions || methodHeads != 1 || enabledMethods != 0 || inspectCommands != 0 {
+	wantMethodVersions, wantMethodHeads := 2, 1
+	if wizard {
+		wantMethodVersions, wantMethodHeads = 0, 0 // PAY-RM2: no method writes from the wizard
+	}
+	if err != nil || methodVersions != wantMethodVersions || methodHeads != wantMethodHeads || enabledMethods != 0 || inspectCommands != 0 {
 		t.Fatalf("browser method/inspection persistence proof: versions=%d heads=%d enabled=%d inspect_commands=%d err=%v", methodVersions, methodHeads, enabledMethods, inspectCommands, err)
 	}
 	if wizard {
@@ -268,16 +271,20 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 		 (SELECT count(*) FROM ops.command_results c WHERE c.tenant_id=s.tenant_id AND c.operation='pricing.market.create')
 		 FROM identity.initial_stores s JOIN identity.external_identities e ON e.principal_id=s.principal_id
 		 WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).Scan(&markets, &policies, &services, &commands)
-		if err != nil || markets != 1 || policies != 1 || services != 1 || commands != 1 {
+		// services: the wizard's initial "home" version, the concurrent editor's version and one deduplicated lost-reply replay.
+		if err != nil || markets != 1 || policies != 1 || services != 3 || commands != 1 {
 			t.Fatalf("wizard fresh setup persistence: markets=%d policies=%d services=%d market_commands=%d err=%v", markets, policies, services, commands, err)
 		}
-		var methodName string
-		err = f.owner.QueryRow(ctx, `SELECT m.name_en FROM payments.method_versions m
-		 JOIN identity.initial_stores s ON s.tenant_id=m.tenant_id AND s.store_id=m.store_id
-		 JOIN identity.external_identities e ON e.principal_id=s.principal_id
-		 WHERE e.issuer=$1 AND e.subject='browser-subject' AND m.version=2`, idp.server.URL).Scan(&methodName)
-		if err != nil || methodName != "Remote saved name" {
-			t.Fatalf("wizard stale draft overwrote concurrent editor or failed readback: err=%v", err)
+		// Stale-draft + lost-reply proof moved with the spec (settings-real.spec.ts) from the removed PAYUNi method form to the
+		// "home" delivery service: v2 is the concurrent editor's name (never overwritten by the stale UI), v3 the one replayed write.
+		var v2Name, v3Name string
+		err = f.owner.QueryRow(ctx, `SELECT
+		 (SELECT v.name_en FROM fulfillment.service_versions v WHERE v.tenant_id=s.tenant_id AND v.store_id=s.store_id AND v.code='home' AND v.version=2),
+		 (SELECT v.name_en FROM fulfillment.service_versions v WHERE v.tenant_id=s.tenant_id AND v.store_id=s.store_id AND v.code='home' AND v.version=3)
+		 FROM identity.initial_stores s JOIN identity.external_identities e ON e.principal_id=s.principal_id
+		 WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).Scan(&v2Name, &v3Name)
+		if err != nil || v2Name != "Remote saved name" || v3Name != "Lost reply name" {
+			t.Fatalf("wizard stale draft overwrote concurrent editor, or the lost reply was not replayed exactly once: v2=%q v3=%q err=%v", v2Name, v3Name, err)
 		}
 	}
 	idp.mu.Lock()

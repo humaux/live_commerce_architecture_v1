@@ -131,7 +131,7 @@ export const paymentCopy: Record<Locale, Copy> = {
 
 /**
  * The platform-collector disclosure line (stripe-platform-account-v1 §5): who collects the card payment on behalf of which
- * store, and what the card statement shows. null when the hosted view carries no `collector` (primary connections, PAYUNi), so
+ * store, and what the card statement shows. null when the hosted view carries no `collector` (primary connections), so
  * nothing is rendered. Pure; function replacers keep a `$` in a shop name from being read as a replacement pattern.
  */
 export function collectorDisclosure(

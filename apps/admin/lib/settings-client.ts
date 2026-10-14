@@ -8,14 +8,7 @@ export type Pending = {
   method: "POST" | "PUT";
   resource: string;
   body?: string;
-  secret?: "create" | "rotate";
   uncertain?: boolean;
-  context?: {
-    provider?: "payuni";
-    environment?: string;
-    account_id?: string;
-    expected_version?: number;
-  };
 };
 
 const cookieName = "__Host-commerce_csrf=";

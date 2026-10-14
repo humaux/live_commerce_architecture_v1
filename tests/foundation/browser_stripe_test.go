@@ -790,12 +790,12 @@ func (e *sbEnv) wantOrder(t *testing.T, order string, captured, closed int, comm
 }
 
 func TestBrowserStripeCheckout(t *testing.T) {
-	if os.Getenv("STRIPE_BROWSER") != "1" || os.Getenv("STRIPE_SANDBOX") != "1" {
-		t.Skip("NOT_RUN: SP18 requires STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 (bash scripts/dev/test-local.sh --stripe-browser)")
-	}
 	if os.Getenv("LC_STRIPE_BROWSER_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
-		t.Fatal("use scripts/dev/test-local.sh --stripe-browser")
+		t.Fatal("use scripts/dev/test-local.sh --stripe-browser (or --browser-payment / --browser-webkit for the MOCK SU07/SU09 subtests)")
 	}
+	// Only the SP18 subtests reach real Stripe; the MOCK subtests (SU07/SU09, fake Stripe transport) need no key, so they also run
+	// under --browser-payment and the --browser-webkit payment step.
+	sandbox := os.Getenv("STRIPE_BROWSER") == "1" && os.Getenv("STRIPE_SANDBOX") == "1"
 	type sp18 struct {
 		name, card, scenario, locale string
 		mobile                       bool
@@ -810,6 +810,9 @@ func TestBrowserStripeCheckout(t *testing.T) {
 	} {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
+			if !sandbox {
+				t.Skip("NOT_RUN: SP18 requires STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 (bash scripts/dev/test-local.sh --stripe-browser)")
+			}
 			e := sbNew(t, "SANDBOX")
 			t.Logf("SANDBOX checkout.stripe.com test mode; no live charge; store currency TWD (fixture), qualification probe at 2500 minor")
 			evidence := e.runNode(t, sbCase{Kind: "SP18", Mode: "SANDBOX", Card: c.card, Mobile: c.mobile, Locale: c.locale, Scenario: c.scenario}, 300*time.Second)
@@ -976,6 +979,9 @@ func TestBrowserStripeCheckout(t *testing.T) {
 			if os.Getenv("STRIPE_BROWSER_OBSERVE") != "1" {
 				t.Skip("NOT_RUN: developer-only observation (STRIPE_BROWSER_OBSERVE=1 with -run '/^OBS')")
 			}
+			if !sandbox {
+				t.Skip("NOT_RUN: OBS needs STRIPE_BROWSER=1 and STRIPE_SANDBOX=1")
+			}
 			e := sbNew(t, "SANDBOX")
 			ctx := context.Background()
 			order := e.p.hold.OrderID
@@ -1016,64 +1022,4 @@ func TestBrowserStripeCheckout(t *testing.T) {
 			t.Fatalf("OBSERVE %s: no terminal fact within 120s; evidence=%s", c.name, evidence)
 		})
 	}
-}
-
-// TestBrowserPayuniBaseline (SU05 capture) runs the existing BPU02 chain (hpSetup + local mock PSP)
-// and captures the PAYUNi order-payment element for a SHA-to-SHA comparison
-// (node tests/storefront/payuni-ui-baseline.mjs --compare base.json candidate.json). No Stripe.
-func TestBrowserPayuniBaseline(t *testing.T) {
-	if os.Getenv("LC_STRIPE_BROWSER_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
-		t.Fatal("use scripts/dev/test-local.sh --stripe-browser")
-	}
-	h := hpSetup(t)
-	bhPublish(t, h.bcHarness, sbOrigin, h.f.tenantA, h.f.storeA1)
-	mustExec(t, h.f.owner, `UPDATE catalog.products SET name='Synthetic browser payment product',description='Synthetic acceptance fixture' WHERE id=$1`, h.stock.product.ID)
-	sfiAxisBySKUCode(t, h.f.owner, h.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
-	bffKey := randomToken()
-	handler, err := buyerhttp.New(context.Background(), h.a.issuer, h.a.runtime, h.service, bffKey, time.Hour, h.api.(*checkout.HostedPaymentStarter))
-	if err != nil {
-		t.Fatal("private payment HTTP fixture")
-	}
-	server := httptest.NewServer(handler)
-	t.Cleanup(server.Close)
-	root, err := filepath.Abs("../..")
-	if err != nil {
-		t.Fatal(err)
-	}
-	dir := os.Getenv("LC_BASELINE_OUT_DIR")
-	if dir == "" {
-		dir = brfEvidence(t, root, "stripe-b2-browser-tests")
-	}
-	if err = os.MkdirAll(dir, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	sha, mutant := os.Getenv("LC_BASELINE_SHA"), os.Getenv("LC_BASELINE_MUTATE") == "1"
-	name := "payuni-baseline-" + sha
-	if mutant {
-		name += "-MUTANT"
-	}
-	out := filepath.Join(dir, name+".json")
-	_ = os.Remove(out)
-	ctx, cancel := context.WithTimeout(context.Background(), 240*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "node", "tests/storefront/payuni-ui-baseline.mjs")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	defer func() {
-		if cmd.Process != nil {
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-		}
-	}()
-	cmd.Dir = root
-	cmd.Env = stripeNodeEnvironment(os.Environ(), sbSecretNames(sbSecretsPath()), map[string]string{
-		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": server.URL, "COMMERCE_BUYER_DEMO_LABEL": "1",
-		"COMMERCE_BUYER_BFF_KEY": bffKey, "COMMERCE_BUYER_COOKIE_KEY": randomToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
-		"LC_BASELINE_OUT": out, "LC_BASELINE_PRODUCT": h.stock.product.ID, "LC_BASELINE_SHA": sha, "LC_BASELINE_MUTATE": os.Getenv("LC_BASELINE_MUTATE"),
-	})
-	_ = os.Remove(filepath.Join(dir, name+".log"))
-	logf := browserLog(t, filepath.Join(dir, name+".log"))
-	cmd.Stdout, cmd.Stderr = logf, logf
-	if err = cmd.Run(); err != nil {
-		t.Fatalf("PAYUNi baseline capture failed; log=%s.log\n%s", filepath.Join(dir, name), sbTail(filepath.Join(dir, name+".log"), 25))
-	}
-	t.Logf("PASS: PAYUNi order-payment baseline captured (%s) mutant=%v file=%s", sha, mutant, out)
 }

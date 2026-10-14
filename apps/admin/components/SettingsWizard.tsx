@@ -6,8 +6,9 @@
 // Purpose: merchant setup and provider/Meta settings, forwarding the authenticated store permissions.
 // Depends on: settings read/write clients, MetaConnect and the store list authority.
 // Used by: localized admin settings page.
-// Merchant settings wizard (approved A four-step sequence): BFF /api/stores/{store}/{provider-accounts,markets/...}
-// -> Go internal/httpapi settings routes. The merchant-arranged (manual) branch also hosts the logistics cards
+// Merchant settings wizard (approved A four-step sequence): BFF /api/stores/{store}/markets/...
+// -> Go internal/httpapi settings routes. Card payments are the platform's (settings/payments/card); this wizard has no
+// payment-provider credentials. Step 2 hosts the logistics cards
 // (<LogisticsSettings>: BFF logistics/ecpay, logistics/ecpay/enabled, logistics/cvs-settings -> Go
 // internal/httpapi/cvs.go, taiwan-cvs-logistics-v1 §8/§16.5) in step 2, and its delivery-service editor offers
 // mode "API (ECPay)" for CVS kinds only while the ECPay connection is enabled and checked (§4.1 predicate).
@@ -33,13 +34,12 @@ import { CodSettings } from "./CodSettings";
 import { NotifySettings } from "./NotifySettings";
 import { StorefrontSettings } from "./StorefrontSettings";
 import { MetaConnect } from "./MetaConnect";
-import { availabilityReason, settingsCopy } from "@/lib/settings-copy";
+import { settingsCopy } from "@/lib/settings-copy";
 import { cardPaymentsCopy } from "@/lib/card-payments-copy.ts";
 import { fromMinor, toMinor } from "@/lib/catalog-v2-model";
 import { currencySign } from "@/lib/client";
 import { wholeOnly } from "@/lib/orders-model";
 import {
-  csrfCookie,
   integer,
   readSettings,
   safeError,
@@ -50,12 +50,7 @@ import {
   type Pending,
 } from "@/lib/settings-client";
 import {
-  methodCodes,
-  type Account,
-  type Availability,
   type Market,
-  type Method,
-  type MethodCode,
   type Policy,
   type Service,
   type SettingsInitial,
@@ -66,11 +61,8 @@ import { logisticsCopy } from "@/lib/logistics-copy";
 import type { APIError, Page } from "@/lib/model";
 import {
   emptyDraft,
-  names,
   unknown,
-  type Branch,
   type Draft,
-  type MethodBinding,
   type Observation,
 } from "@/lib/settings-draft";
 import "./settings.css";
@@ -94,15 +86,11 @@ export function SettingsWizard({
     store = initial.store;
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const [accounts, setAccounts] = useState<Account[]>([]),
-    [accountCursor, setAccountCursor] = useState("");
   const [markets, setMarkets] = useState<Market[]>([]),
     [marketCursor, setMarketCursor] = useState("");
-  const [methods, setMethods] = useState<Method[]>([]),
-    [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [serviceCursor, setServiceCursor] = useState("");
-  const [policy, setPolicy] = useState<Policy | null>(null),
-    [availability, setAvailability] = useState<Availability | null>(null);
+  const [policy, setPolicy] = useState<Policy | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [ready, setReady] = useState(false),
     [loading, setLoading] = useState(false),
@@ -118,13 +106,10 @@ export function SettingsWizard({
   const marketRead = useRef(0),
     policyRead = useRef(0);
   const serviceRead = useRef(0),
-    accountPageRead = useRef(0),
     marketPageRead = useRef(0),
     servicePageRead = useRef(0);
   const draftRef = useRef(draft);
   draftRef.current = draft;
-  const accountsRef = useRef(accounts);
-  accountsRef.current = accounts;
   // Currency the money fields of a market are typed in (a market is created in the store currency; hydration runs in async callbacks).
   const marketsRef = useRef(markets);
   marketsRef.current = markets;
@@ -132,23 +117,13 @@ export function SettingsWizard({
     marketsRef.current.find((item) => item.id === marketID)?.currency ?? store?.currency ?? "TWD";
   const stepRef = useRef(step);
   stepRef.current = step;
-  const [methodListTarget, setMethodListTarget] = useState("");
   // Whether "API (ECPay)" may be chosen for a CVS service: the store's ECPay connection is enabled and checked.
   // Read-only probe (GET logistics/ecpay, integration:read); a 403/404/failure simply leaves API mode unavailable.
   const [ecpayReady, setEcpayReady] = useState(false);
-  const hashKey = useRef<HTMLInputElement>(null),
-    hashIV = useRef<HTMLInputElement>(null);
-  const activeAccount =
-    accounts.find((item) => item.id === draft.accountID) ?? null;
   const activeMarket =
     markets.find((item) => item.id === draft.marketID) ?? null;
-  const activeMethod =
-    methods.find((item) => item.code === draft.methodCode) ?? null;
   const activeService =
     services.find((item) => item.code === draft.serviceCode) ?? null;
-  const methodTarget = draft.marketID
-    ? `${draft.marketID}:TW:${draft.methodCode}`
-    : "";
   const serviceTarget =
     draft.marketID &&
     validCountry(draft.country) &&
@@ -157,7 +132,7 @@ export function SettingsWizard({
       : "";
 
   const probeEcpay = store?.id ?? "";
-  const probeStep = ready && draft.branch === "manual" && step === 3;
+  const probeStep = ready && step === 3;
   useEffect(() => {
     if (!probeEcpay || !probeStep) return;
     const active = new AbortController();
@@ -172,95 +147,6 @@ export function SettingsWizard({
     persistDraft(next, atStep);
     draftRef.current = next;
     setDraft(next);
-  }
-  function hydrateMethod(
-    current: Draft,
-    saved: Method | null,
-    fetchedAccount?: Account | null,
-  ): Draft {
-    const labels = names[current.methodCode];
-    const rebind =
-      !!saved &&
-      current.accountChoiceTouched &&
-      !!current.accountID &&
-      (current.accountID !== saved.connection_id ||
-        (!!current.methodBinding &&
-          current.methodBinding.bindingVersion !== saved.binding_version));
-    const boundAccount = saved
-      ? (fetchedAccount ??
-        accountsRef.current.find((item) => item.id === saved.connection_id))
-      : null;
-    return {
-      ...current,
-      accountID:
-        saved && !current.accountChoiceTouched
-          ? saved.connection_id
-          : current.accountID,
-      environment:
-        saved && !current.accountChoiceTouched
-          ? saved.environment
-          : current.environment,
-      merchantID:
-        saved && !current.accountChoiceTouched
-          ? (boundAccount?.account_id ?? "")
-          : current.merchantID,
-      methodBinding: rebind
-        ? current.methodBinding
-        : saved
-          ? {
-              connectionID: saved.connection_id,
-              bindingVersion: saved.binding_version,
-              environment: saved.environment,
-            }
-          : current.methodBinding,
-      nameHans: saved?.name_hans ?? labels[0],
-      nameHant: saved?.name_hant ?? labels[1],
-      nameEN: saved?.name_en ?? labels[2],
-      visible: saved?.visible ?? false,
-      sort: String(saved?.sort_order ?? 10),
-      min: saved ? fromMinor(saved.min_amount_minor, currencyOf(current.marketID)) : "1",
-      max: saved ? fromMinor(saved.max_amount_minor, currencyOf(current.marketID)) : "10000000000",
-      methodObservation: {
-        target: `${current.marketID}:TW:${current.methodCode}`,
-        version: saved?.version ?? 0,
-        dirty: rebind,
-      },
-    };
-  }
-  function withAccountBinding(current: Draft, account: Account | null): Draft {
-    const binding: MethodBinding | null = account
-      ? {
-          connectionID: account.id,
-          bindingVersion: account.binding_version,
-          environment: account.environment,
-        }
-      : null;
-    const old = current.methodBinding;
-    const changed =
-      old?.connectionID !== binding?.connectionID ||
-      old?.bindingVersion !== binding?.bindingVersion ||
-      old?.environment !== binding?.environment;
-    const target = `${current.marketID}:TW:${current.methodCode}`;
-    return {
-      ...current,
-      accountID: account?.id ?? "",
-      accountChoiceTouched: true,
-      environment: account?.environment ?? "SANDBOX",
-      merchantID: account?.account_id ?? "",
-      rotate: false,
-      methodBinding: binding,
-      methodObservation:
-        changed && current.marketID
-          ? {
-              target,
-              version:
-                current.methodObservation?.target === target
-                  ? current.methodObservation.version
-                  : -1,
-              dirty: true,
-            }
-          : current.methodObservation,
-    };
   }
   function hydrateService(current: Draft, saved: Service | null): Draft {
     return {
@@ -302,10 +188,6 @@ export function SettingsWizard({
     };
   }
 
-  function clearSecrets() {
-    if (hashKey.current) hashKey.current.value = "";
-    if (hashIV.current) hashIV.current.value = "";
-  }
   async function stillSession() {
     try {
       return (await sessionBoundary()) === boundary.current;
@@ -316,7 +198,6 @@ export function SettingsWizard({
   function displayError(value: APIError | null) {
     if (!value) return "";
     if (value.code === "command_storage_unavailable") return c.storage;
-    if (value.code === "secret_retry_mismatch") return c.secretRetryMismatch;
     if (value.code === "session_changed" || value.code === "unauthorized")
       return c.session;
     if (value.code === "conflict") return c.conflict;
@@ -353,28 +234,10 @@ export function SettingsWizard({
       setPolicy(null);
       next.policyObservation = null;
       next.serviceObservation = null;
-      if (field !== "serviceCode") next.methodObservation = null;
       policyRead.current += 1;
       serviceRead.current += 1;
       marketRead.current += 1;
     }
-    if (
-      [
-        "nameHans",
-        "nameHant",
-        "nameEN",
-        "visible",
-        "sort",
-        "min",
-        "max",
-      ].includes(field) &&
-      draft.branch === "payuni"
-    )
-      next.methodObservation = {
-        target: methodTarget,
-        version: next.methodObservation?.version ?? -1,
-        dirty: true,
-      };
     if (
       [
         "nameHans",
@@ -385,8 +248,7 @@ export function SettingsWizard({
         "serviceEnabled",
         "serviceVisible",
         "sort",
-      ].includes(field) &&
-      draft.branch === "manual"
+      ].includes(field)
     )
       next.serviceObservation = {
         target: serviceTarget,
@@ -403,8 +265,7 @@ export function SettingsWizard({
         "ttl",
         "policyEnabled",
         "reference",
-      ].includes(field) &&
-      draft.branch === "manual"
+      ].includes(field)
     )
       next.policyObservation = {
         target: serviceTarget,
@@ -421,29 +282,11 @@ export function SettingsWizard({
     }
   }
   function goStep(next: 1 | 2 | 3 | 4) {
-    clearSecrets();
     try {
       persistDraft(draft, next);
       setStep(next);
       setError(null);
       setNotice("");
-    } catch {
-      storageError();
-    }
-  }
-  function changeBranch(branch: Branch) {
-    clearSecrets();
-    const next = {
-      ...draft,
-      branch,
-      methodObservation: null,
-      policyObservation: null,
-      serviceObservation: null,
-    };
-    try {
-      saveDraft(next);
-      setPolicy(null);
-      setError(null);
     } catch {
       storageError();
     }
@@ -486,17 +329,27 @@ export function SettingsWizard({
         if (rawPending) {
           const saved = JSON.parse(rawPending) as Pending;
           if (
-            !saved ||
-            !/^[A-Za-z0-9_.:-]{8,128}$/.test(saved.key) ||
-            !/^(provider-accounts(?:\/[0-9a-f-]{36}\/rotate)?|markets(?:\/[0-9a-f-]{36}\/countries\/[A-Z]{2}\/(?:payment-methods|delivery-services)\/[a-z][a-z0-9_-]{0,39}(?:\/policy)?)?)$/.test(
+            saved &&
+            typeof saved.resource === "string" &&
+            /^(provider-accounts|markets\/[0-9a-f-]{36}\/countries\/[A-Z]{2}\/payment-methods)/.test(
               saved.resource,
-            ) ||
-            (saved.secret && saved.body) ||
-            (!saved.secret && typeof saved.body !== "string")
-          )
-            throw new Error("storage");
-          setPending(saved);
-          setNotice(c.unknown);
+            )
+          ) {
+            // Journal of a removed payment-provider write: nothing left to retry, so discard it rather than block the wizard.
+            localStorage.removeItem(journalKey.current);
+          } else {
+            if (
+              !saved ||
+              !/^[A-Za-z0-9_.:-]{8,128}$/.test(saved.key) ||
+              !/^(markets(?:\/[0-9a-f-]{36}\/countries\/[A-Z]{2}\/delivery-services\/[a-z][a-z0-9_-]{0,39}(?:\/policy)?)?)$/.test(
+                saved.resource,
+              ) ||
+              typeof saved.body !== "string"
+            )
+              throw new Error("storage");
+            setPending(saved);
+            setNotice(c.unknown);
+          }
         }
         setReady(true);
       } catch {
@@ -507,7 +360,6 @@ export function SettingsWizard({
       active = false;
       mounted.current = false;
       epoch.current += 1;
-      clearSecrets();
     };
     // Locale changes remount but retain the session-scoped nonsecret draft.
   }, [store?.id]);
@@ -515,67 +367,18 @@ export function SettingsWizard({
   const loadBase = useCallback(async () => {
     if (!store) return;
     const token = epoch.current;
-    accountPageRead.current += 1;
     marketPageRead.current += 1;
     setLoading(true);
     try {
-      const [accountPage, marketPage] = await Promise.all([
-        readSettings<Page<Account>>(store.id, "provider-accounts"),
-        readSettings<Page<Market>>(store.id, "markets"),
-      ]);
-      const selectedID = draftRef.current.accountID;
-      const selected = selectedID
-        ? (accountPage.items.find((item) => item.id === selectedID) ??
-          (await readSettings<Account>(
-            store.id,
-            `provider-accounts/${selectedID}`,
-          )))
-        : null;
+      const marketPage = await readSettings<Page<Market>>(store.id, "markets");
       if (
         !mounted.current ||
         token !== epoch.current ||
         (await sessionBoundary()) !== boundary.current
       )
         return;
-      setAccounts((rows) => {
-        const page =
-          selected && !accountPage.items.some((item) => item.id === selected.id)
-            ? [...accountPage.items, selected]
-            : accountPage.items;
-        return [
-          ...page,
-          ...rows.filter((item) => !page.some((row) => row.id === item.id)),
-        ];
-      });
       setMarkets(marketPage.items);
-      setAccountCursor(accountPage.next_cursor);
       setMarketCursor(marketPage.next_cursor);
-      const chosen =
-        selected ??
-        (!selectedID &&
-        !draftRef.current.accountChoiceTouched &&
-        !draftRef.current.marketID
-          ? (accountPage.items[0] ?? null)
-          : null);
-      if (
-        chosen &&
-        (!draftRef.current.accountID ||
-          draftRef.current.accountID === chosen.id)
-      ) {
-        const next = {
-          ...draftRef.current,
-          accountID: chosen.id,
-          accountChoiceTouched: draftRef.current.accountChoiceTouched,
-          environment: chosen.environment,
-          merchantID: chosen.account_id,
-          methodBinding: draftRef.current.methodBinding ?? {
-            connectionID: chosen.id,
-            bindingVersion: chosen.binding_version,
-            environment: chosen.environment,
-          },
-        };
-        saveDraft(next);
-      }
     } catch (value) {
       if (mounted.current && token === epoch.current && (await stillSession()))
         setError(safeError(value));
@@ -596,61 +399,21 @@ export function SettingsWizard({
       setLoading(true);
       try {
         const base = `markets/${marketID}/countries/${country}`;
-        const [methodPage, servicePage] = await Promise.all([
-          country === "TW"
-            ? readSettings<Page<Method>>(store.id, `${base}/payment-methods`)
-            : Promise.resolve({ items: [], next_cursor: "" }),
-          readSettings<Page<Service>>(store.id, `${base}/delivery-services`),
-        ]);
-        const methodCode = draftRef.current.methodCode;
-        const savedMethod =
-          methodPage.items.find((item) => item.code === methodCode) ?? null;
-        const boundAccount =
-          savedMethod &&
-          !accountsRef.current.some(
-            (item) => item.id === savedMethod.connection_id,
-          )
-            ? await readSettings<Account>(
-                store.id,
-                `provider-accounts/${savedMethod.connection_id}`,
-              )
-            : null;
+        const servicePage = await readSettings<Page<Service>>(
+          store.id,
+          `${base}/delivery-services`,
+        );
         if (
           !mounted.current ||
           token !== epoch.current ||
           request !== marketRead.current ||
           draftRef.current.marketID !== marketID ||
           draftRef.current.country !== country ||
-          draftRef.current.methodCode !== methodCode ||
           (await sessionBoundary()) !== boundary.current
         )
           return;
-        setMethods(methodPage.items);
-        if (boundAccount)
-          setAccounts((rows) =>
-            rows.some((item) => item.id === boundAccount.id)
-              ? rows
-              : [...rows, boundAccount],
-          );
         setServices(servicePage.items);
-        setMethodListTarget(`${marketID}:${country}`);
         setServiceCursor(servicePage.next_cursor);
-        setAvailability(null);
-        const current = draftRef.current;
-        if (current.branch === "payuni" && country === "TW") {
-          const target = `${marketID}:TW:${current.methodCode}`;
-          const observed = current.methodObservation;
-          const saved = savedMethod;
-          if (!observed || observed.target !== target || !observed.dirty)
-            saveDraft(hydrateMethod(current, saved, boundAccount));
-          else if (observed.version === -1 && !saved)
-            saveDraft({
-              ...current,
-              methodObservation: { ...observed, version: 0 },
-            });
-          else if (observed.version !== (saved?.version ?? 0))
-            setError({ ...unknown, code: "conflict" });
-        }
       } catch (value) {
         if (
           mounted.current &&
@@ -674,46 +437,8 @@ export function SettingsWizard({
   );
   useEffect(() => {
     if (ready && draft.marketID) void loadMarket(draft.marketID, draft.country);
-  }, [
-    ready,
-    draft.marketID,
-    draft.country,
-    draft.branch,
-    draft.methodCode,
-    loadMarket,
-  ]);
+  }, [ready, draft.marketID, draft.country, loadMarket]);
 
-  async function moreAccounts() {
-    if (!store || !ready || !accountCursor) return;
-    const token = epoch.current,
-      request = ++accountPageRead.current,
-      cursor = accountCursor;
-    try {
-      const page = await readSettings<Page<Account>>(
-        store.id,
-        `provider-accounts?cursor=${encodeURIComponent(cursor)}`,
-      );
-      if (
-        !mounted.current ||
-        token !== epoch.current ||
-        request !== accountPageRead.current ||
-        (await sessionBoundary()) !== boundary.current
-      )
-        return;
-      setAccounts((rows) => [
-        ...rows,
-        ...page.items.filter((item) => !rows.some((row) => row.id === item.id)),
-      ]);
-      setAccountCursor(page.next_cursor);
-    } catch (issue) {
-      if (
-        mounted.current &&
-        request === accountPageRead.current &&
-        (await stillSession())
-      )
-        setError(safeError(issue));
-    }
-  }
   async function moreMarkets() {
     if (!store || !ready || !marketCursor) return;
     const token = epoch.current,
@@ -845,11 +570,9 @@ export function SettingsWizard({
     [store],
   );
   useEffect(() => {
-    if (ready && draft.branch === "manual")
-      void loadPolicy(draft.marketID, draft.country, draft.serviceCode);
+    if (ready) void loadPolicy(draft.marketID, draft.country, draft.serviceCode);
   }, [
     ready,
-    draft.branch,
     draft.marketID,
     draft.country,
     draft.serviceCode,
@@ -917,11 +640,9 @@ export function SettingsWizard({
     [store],
   );
   useEffect(() => {
-    if (ready && draft.branch === "manual")
-      void loadService(draft.marketID, draft.country, draft.serviceCode);
+    if (ready) void loadService(draft.marketID, draft.country, draft.serviceCode);
   }, [
     ready,
-    draft.branch,
     draft.marketID,
     draft.country,
     draft.serviceCode,
@@ -952,14 +673,9 @@ export function SettingsWizard({
             return;
           }
           command = previous;
-          if (!command.secret) body = command.body!;
+          body = command.body!;
         } else {
-          // A secret may have committed before this tab receives its response.
-          // Persist that uncertainty before dispatch; the first in-memory
-          // attempt still distinguishes a definite server rejection.
-          const encoded = JSON.stringify(
-            command.secret ? { ...command, uncertain: true } : command,
-          );
+          const encoded = JSON.stringify(command);
           localStorage.setItem(journalKey.current, encoded);
           if (localStorage.getItem(journalKey.current) !== encoded)
             throw new Error("storage");
@@ -983,15 +699,6 @@ export function SettingsWizard({
           setPending(retry);
           setNotice(c.unknown);
           setError(result.error);
-          return;
-        }
-        if (
-          command.secret &&
-          command.uncertain &&
-          result.error?.code === "conflict"
-        ) {
-          setPending(command);
-          setError({ ...result.error, code: "secret_retry_mismatch" });
           return;
         }
         localStorage.removeItem(journalKey.current);
@@ -1037,79 +744,11 @@ export function SettingsWizard({
       after,
     );
   }
-  function secretCommand(
-    secret: "create" | "rotate",
-    resource: string,
-    context: Pending["context"],
-    after: (value: unknown) => void,
-  ) {
-    if (pending) {
-      setNotice(c.unknown);
-      return;
-    }
-    const credentials = {
-      hash_key: hashKey.current?.value ?? "",
-      hash_iv: hashIV.current?.value ?? "",
-    };
-    if (!credentials.hash_key || !credentials.hash_iv) {
-      setError({ ...unknown, code: "invalid_request" });
-      return;
-    }
-    const body = JSON.stringify(
-      secret === "create"
-        ? {
-            provider: "payuni",
-            environment: context?.environment,
-            account_id: context?.account_id,
-            credentials,
-          }
-        : { expected_version: context?.expected_version, credentials },
-    );
-    clearSecrets();
-    void savePending(
-      { key: crypto.randomUUID(), method: "POST", resource, secret, context },
-      body,
-      after,
-    );
-  }
   function retryPending() {
     if (!pending) return;
-    let body = pending.body ?? "";
-    if (pending.secret) {
-      const credentials = {
-        hash_key: hashKey.current?.value ?? "",
-        hash_iv: hashIV.current?.value ?? "",
-      };
-      if (!credentials.hash_key || !credentials.hash_iv) {
-        setError({ ...unknown, code: "invalid_request" });
-        return;
-      }
-      body = JSON.stringify(
-        pending.secret === "create"
-          ? {
-              provider: "payuni",
-              environment: pending.context?.environment,
-              account_id: pending.context?.account_id,
-              credentials,
-            }
-          : {
-              expected_version: pending.context?.expected_version,
-              credentials,
-            },
-      );
-      clearSecrets();
-    }
-    void savePending(pending, body, (value) => {
+    void savePending(pending, pending.body ?? "", (value) => {
       const resource = pending.resource;
-      if (pending.secret) {
-        const saved = value as Account;
-        setAccounts((rows) => [
-          ...rows.filter((row) => row.id !== saved.id),
-          saved,
-        ]);
-        commitDraft(withAccountBinding(draftRef.current, saved), 3);
-        setNotice(c.accountSaved);
-      } else if (resource === "markets") {
+      if (resource === "markets") {
         const saved = value as Market;
         setMarkets((rows) => [
           ...rows.filter((row) => row.id !== saved.id),
@@ -1119,7 +758,6 @@ export function SettingsWizard({
           {
             ...draft,
             marketID: saved.id,
-            methodObservation: null,
             policyObservation: null,
             serviceObservation: null,
           },
@@ -1139,24 +777,6 @@ export function SettingsWizard({
           },
         });
         setNotice(c.policySaved);
-      } else if (resource.includes("payment-methods")) {
-        const saved = value as Method;
-        setMethods((rows) => [
-          ...rows.filter((row) => row.code !== saved.code),
-          saved,
-        ]);
-        commitDraft(
-          {
-            ...draft,
-            methodObservation: {
-              target: `${saved.market_id}:${saved.country}:${saved.code}`,
-              version: saved.version,
-              dirty: false,
-            },
-          },
-          4,
-        );
-        setNotice(c.methodSaved);
       } else if (resource.includes("delivery-services")) {
         const saved = value as Service;
         setServices((rows) => [
@@ -1179,7 +799,6 @@ export function SettingsWizard({
     });
   }
   function commitDraft(next: Draft, nextStep: 1 | 2 | 3 | 4) {
-    clearSecrets();
     try {
       persistDraft(next, nextStep);
       draftRef.current = next;
@@ -1206,20 +825,8 @@ export function SettingsWizard({
   }
   async function reloadCurrent() {
     if (!store || !ready || pending || busyRef.current) return;
-    clearSecrets();
     const next = {
       ...draft,
-      // Explicit discard must drop the unsaved account choice too. Otherwise
-      // hydration would pair that old binding with a newly read method version.
-      ...(draft.branch === "payuni"
-        ? {
-            accountChoiceTouched: false,
-            accountID: "",
-            merchantID: "",
-            methodBinding: null,
-          }
-        : {}),
-      methodObservation: null,
       policyObservation: null,
       serviceObservation: null,
       reference: "",
@@ -1234,58 +841,12 @@ export function SettingsWizard({
     }
     await loadBase();
     if (next.marketID) await loadMarket(next.marketID, next.country);
-    if (next.branch === "manual" && validCode(next.serviceCode))
+    if (validCode(next.serviceCode))
       await Promise.all([
         loadPolicy(next.marketID, next.country, next.serviceCode),
         loadService(next.marketID, next.country, next.serviceCode),
       ]);
     if (mounted.current) setNotice(c.reloaded);
-  }
-  function accountSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (draft.accountID && !draft.rotate) {
-      if (!activeAccount) {
-        setError({ ...unknown, code: "conflict" });
-        return;
-      }
-      goStep(3);
-      return;
-    }
-    if (draft.rotate && activeAccount) {
-      secretCommand(
-        "rotate",
-        `provider-accounts/${activeAccount.id}/rotate`,
-        { expected_version: activeAccount.credential_version },
-        (value) => {
-          const saved = value as Account;
-          setAccounts((rows) =>
-            rows.map((row) => (row.id === saved.id ? saved : row)),
-          );
-          commitDraft(withAccountBinding(draftRef.current, saved), 3);
-          setNotice(c.accountSaved);
-        },
-      );
-      return;
-    }
-    if (!draft.merchantID.trim()) {
-      setError({ ...unknown, code: "invalid_request" });
-      return;
-    }
-    secretCommand(
-      "create",
-      "provider-accounts",
-      {
-        provider: "payuni",
-        environment: draft.environment,
-        account_id: draft.merchantID.trim(),
-      },
-      (value) => {
-        const saved = value as Account;
-        setAccounts((rows) => [...rows, saved]);
-        commitDraft(withAccountBinding(draftRef.current, saved), 3);
-        setNotice(c.accountSaved);
-      },
-    );
   }
   function marketSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1308,125 +869,12 @@ export function SettingsWizard({
           {
             ...draft,
             marketID: saved.id,
-            methodObservation: null,
             policyObservation: null,
             serviceObservation: null,
           },
           3,
         );
         setNotice(c.saved);
-      },
-    );
-  }
-  function selectMethod(code: MethodCode) {
-    const saved = methods.find((item) => item.code === code);
-    const labels = names[code];
-    const nextBase = {
-      ...draft,
-      methodCode: code,
-      methodObservation: null,
-    };
-    const next =
-      methodListTarget === `${draft.marketID}:TW`
-        ? hydrateMethod(nextBase, saved ?? null)
-        : {
-            ...nextBase,
-            nameHans: labels[0],
-            nameHant: labels[1],
-            nameEN: labels[2],
-            visible: false,
-            sort: "10",
-            min: "1",
-            max: "10000000000",
-          };
-    try {
-      saveDraft(next);
-      setAvailability(null);
-    } catch {
-      storageError();
-    }
-  }
-  function methodSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const sort = integer(draft.sort, 0, 1000),
-      min = toMinor(draft.min, activeMarket?.currency ?? "TWD"),
-      max = toMinor(draft.max, activeMarket?.currency ?? "TWD");
-    if (activeMarket && wholeOnly(activeMarket.currency) && /[.,]/.test(draft.min + draft.max)) {
-      setError({ ...unknown, code: "invalid_money" }); // D02: NT$ limits are whole dollars; say so instead of "check the values"
-      return;
-    }
-    if (
-      !activeMarket ||
-      !activeAccount ||
-      activeMarket.currency !== "TWD" ||
-      draft.country !== "TW" ||
-      sort === null ||
-      min === null ||
-      max === null ||
-      min < 1 ||
-      min > max ||
-      !draft.nameHans.trim() ||
-      !draft.nameHant.trim() ||
-      !draft.nameEN.trim()
-    ) {
-      setError({ ...unknown, code: "invalid_request" });
-      return;
-    }
-    const binding = draft.methodBinding;
-    if (
-      !binding ||
-      binding.connectionID !== activeAccount.id ||
-      binding.bindingVersion !== activeAccount.binding_version ||
-      binding.environment !== activeAccount.environment
-    ) {
-      setError({ ...unknown, code: "conflict" });
-      return;
-    }
-    const expected = baseline(
-      draft.methodObservation,
-      methodTarget,
-      activeMethod?.version ?? 0,
-    );
-    if (expected === null) return;
-    const resource = `markets/${activeMarket.id}/countries/TW/payment-methods/${draft.methodCode}`;
-    command(
-      "PUT",
-      resource,
-      {
-        market_id: activeMarket.id,
-        country: "TW",
-        code: draft.methodCode,
-        environment: binding.environment,
-        connection_id: binding.connectionID,
-        binding_version: binding.bindingVersion,
-        expected_version: expected,
-        name_hans: draft.nameHans.trim(),
-        name_hant: draft.nameHant.trim(),
-        name_en: draft.nameEN.trim(),
-        enabled: false,
-        visible: draft.visible,
-        sort_order: sort,
-        min_amount_minor: min,
-        max_amount_minor: max,
-      },
-      (value) => {
-        const saved = value as Method;
-        setMethods((rows) => [
-          ...rows.filter((row) => row.code !== saved.code),
-          saved,
-        ]);
-        commitDraft(
-          {
-            ...draft,
-            methodObservation: {
-              target: methodTarget,
-              version: saved.version,
-              dirty: false,
-            },
-          },
-          4,
-        );
-        setNotice(c.methodSaved);
       },
     );
   }
@@ -1577,62 +1025,6 @@ export function SettingsWizard({
       },
     );
   }
-  async function inspect() {
-    if (!store || !activeMarket || !activeMethod || !ready || busyRef.current)
-      return;
-    busyRef.current = true;
-    setBusy(true);
-    setError(null);
-    setAvailability(null);
-    const token = epoch.current;
-    try {
-      const csrf = csrfCookie();
-      if (
-        (await sessionBoundary(csrf)) !== boundary.current ||
-        csrfCookie() !== csrf
-      )
-        throw new Error("session_changed");
-      const response = await fetch(
-        `/api/stores/${store.id}/markets/${activeMarket.id}/countries/TW/payment-methods/${activeMethod.code}/inspect`,
-        {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": csrf,
-          },
-          body: JSON.stringify({
-            market_id: activeMarket.id,
-            country: "TW",
-            code: activeMethod.code,
-            expected_version: activeMethod.version,
-            environment: activeMethod.environment,
-            currency: activeMarket.currency,
-            amount_minor: activeMethod.min_amount_minor,
-          }),
-        },
-      );
-      const value: unknown = await response.json();
-      if (
-        !mounted.current ||
-        token !== epoch.current ||
-        (await sessionBoundary()) !== boundary.current
-      )
-        return;
-      if (!response.ok) setError(safeError(value));
-      else setAvailability(value as Availability);
-    } catch (value) {
-      if (mounted.current)
-        setError(
-          value instanceof Error && value.message === "session_changed"
-            ? { ...unknown, code: "session_changed" }
-            : safeError(value),
-        );
-    } finally {
-      busyRef.current = false;
-      if (mounted.current) setBusy(false);
-    }
-  }
   const needsPolicySave =
     !policy ||
     draft.reference.trim() !== "" ||
@@ -1643,8 +1035,6 @@ export function SettingsWizard({
     policy.tax_rate_bps !== Number(draft.taxRate) ||
     policy.quote_ttl_seconds !== Number(draft.ttl) ||
     policy.enabled !== draft.policyEnabled;
-  const paymentNames = names[draft.methodCode];
-  const selectedEnvironment = activeAccount?.environment ?? draft.environment;
   return (
     <WorkspaceFrame
       locale={locale}
@@ -1710,18 +1100,6 @@ export function SettingsWizard({
             {pending && !busy && (
               <div className="settings-pending" data-testid="settings-pending">
                 <p>{c.unknown}</p>
-                {pending.secret && (
-                  <div className="settings-secret-retry">
-                    <label>
-                      {c.hashKey}
-                      <input ref={hashKey} type="password" autoComplete="off" />
-                    </label>
-                    <label>
-                      {c.hashIV}
-                      <input ref={hashIV} type="password" autoComplete="off" />
-                    </label>
-                  </div>
-                )}
                 <button type="button" onClick={retryPending}>
                   {c.retry}
                 </button>
@@ -1737,34 +1115,9 @@ export function SettingsWizard({
             {store && step === 1 && (
               <>
                 <h2 className="settings-section-title">{c.platformTitle}</h2>
-                <fieldset
-                  className="settings-platforms"
-                  disabled={!ready || busy || !!pending}
-                >
-                  <legend className="sr-only">{c.platformTitle}</legend>
-                  <label className={draft.branch === "payuni" ? "chosen" : ""}>
-                    <input
-                      type="radio"
-                      name="branch"
-                      aria-label={c.payuni}
-                      checked={draft.branch === "payuni"}
-                      onChange={() => changeBranch("payuni")}
-                    />
-                    <strong>{c.payuni}</strong>
-                    <span>{c.payuniHint}</span>
-                  </label>
-                  <label className={draft.branch === "manual" ? "chosen" : ""}>
-                    <input
-                      type="radio"
-                      name="branch"
-                      aria-label={c.manual}
-                      checked={draft.branch === "manual"}
-                      onChange={() => changeBranch("manual")}
-                    />
-                    <strong>{c.manual}</strong>
-                    <span>{c.manualHint}</span>
-                  </label>
-                </fieldset>
+                <p className="settings-intro">
+                  <strong>{c.manual}</strong> · {c.manualHint}
+                </p>
                 {/* W4-U1: platform card payments live on their own page (nav:false route); entry only. */}
                 <p className="settings-note">
                   <a
@@ -1786,9 +1139,7 @@ export function SettingsWizard({
                 </div>
               </>
             )}
-            {store &&
-              step === 2 &&
-              (draft.branch === "manual" ? (
+            {store && step === 2 && (
                 <>
                   <h2 className="settings-section-title">{c.manual}</h2>
                   <p className="settings-note">{c.manualHint}</p>
@@ -1813,170 +1164,7 @@ export function SettingsWizard({
                     </button>
                   </div>
                 </>
-              ) : (
-                <>
-                  <h2 className="settings-section-title">{c.accountTitle}</h2>
-                  <p className="settings-intro">{c.accountHint}</p>
-                  <form
-                    data-testid="settings-account-form"
-                    onSubmit={accountSubmit}
-                  >
-                    <fieldset
-                      disabled={!ready || busy || !!pending}
-                      className="settings-fields"
-                    >
-                      <label>
-                        {c.accountChoice}
-                        <select
-                          value={draft.accountID}
-                          onChange={(event) => {
-                            const selected = accounts.find(
-                              (item) => item.id === event.target.value,
-                            );
-                            const next = withAccountBinding(
-                              draft,
-                              selected ?? null,
-                            );
-                            try {
-                              saveDraft(next);
-                              clearSecrets();
-                            } catch {
-                              storageError();
-                            }
-                          }}
-                        >
-                          <option value="">{c.newAccount}</option>
-                          {accounts.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.account_id} · {item.environment} · v
-                              {item.credential_version}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      {accountCursor && (
-                        <button
-                          type="button"
-                          disabled={busy || !!pending}
-                          onClick={() => void moreAccounts()}
-                        >
-                          {c.loadMore}
-                        </button>
-                      )}
-                      {activeAccount ? (
-                        <>
-                          <p className="settings-note">
-                            {activeAccount.account_id} ·{" "}
-                            {activeAccount.environment} · {c.saved} v
-                            {activeAccount.credential_version}
-                          </p>
-                          <label className="settings-check">
-                            <input
-                              type="checkbox"
-                              checked={draft.rotate}
-                              onChange={(event) =>
-                                update("rotate", event.target.checked)
-                              }
-                            />
-                            {c.rotate}
-                          </label>
-                        </>
-                      ) : (
-                        <>
-                          <fieldset className="settings-radio">
-                            <legend>{c.environment}</legend>
-                            <label>
-                              <input
-                                type="radio"
-                                name="environment"
-                                aria-label={c.sandbox}
-                                checked={draft.environment === "SANDBOX"}
-                                onChange={() =>
-                                  update("environment", "SANDBOX")
-                                }
-                              />
-                              <strong>{c.sandbox}</strong>
-                              <small>{c.sandboxHint}</small>
-                            </label>
-                            <label>
-                              <input
-                                type="radio"
-                                name="environment"
-                                aria-label={c.live}
-                                checked={draft.environment === "LIVE"}
-                                onChange={() => update("environment", "LIVE")}
-                              />
-                              <strong>{c.live}</strong>
-                              <small>{c.liveHint}</small>
-                            </label>
-                          </fieldset>
-                          <label>
-                            {c.merchantID}
-                            <input
-                              required
-                              maxLength={120}
-                              value={draft.merchantID}
-                              onChange={(event) =>
-                                update("merchantID", event.target.value)
-                              }
-                            />
-                          </label>
-                        </>
-                      )}
-                      {(!activeAccount || draft.rotate) && !pending?.secret && (
-                        <>
-                          <label>
-                            {c.hashKey}
-                            <input
-                              ref={hashKey}
-                              type="password"
-                              required
-                              autoComplete="off"
-                            />
-                          </label>
-                          <label>
-                            {c.hashIV}
-                            <input
-                              ref={hashIV}
-                              type="password"
-                              required
-                              autoComplete="off"
-                            />
-                          </label>
-                          <p className="settings-note">{c.secretHint}</p>
-                        </>
-                      )}
-                      <p className="settings-warning settings-safety">
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
-                          aria-hidden="true"
-                        >
-                          <circle cx="12" cy="12" r="9" />
-                          <path d="M12 7v1m0 3v6" />
-                        </svg>
-                        <span>{c.accountUnverified}</span>
-                      </p>
-                      <div className="settings-actions">
-                        <button type="button" onClick={() => goStep(1)}>
-                          {c.back}
-                        </button>
-                        <button className="primary" type="submit">
-                          {busy
-                            ? c.pending
-                            : activeAccount && !draft.rotate
-                              ? c.next
-                              : c.saveContinue}
-                        </button>
-                      </div>
-                    </fieldset>
-                  </form>
-                </>
-              ))}
+            )}
             {store && step === 3 && (
               <>
                 <h2 className="settings-section-title">{c.marketTitle}</h2>
@@ -2066,151 +1254,7 @@ export function SettingsWizard({
                     {!activeMarket.active && (
                       <p className="message error">{c.marketInactive}</p>
                     )}
-                    {draft.branch === "payuni" ? (
-                      <>
-                        <h2 className="settings-section-title settings-subtitle">
-                          {c.methodTitle}
-                        </h2>
-                        <p className="settings-warning">{c.disabledReason}</p>
-                        <form
-                          data-testid="settings-payment-form"
-                          onSubmit={methodSubmit}
-                          className="settings-fields"
-                        >
-                          <label>
-                            {c.method}
-                            <select
-                              value={draft.methodCode}
-                              disabled={!ready || !!pending || busy}
-                              onChange={(event) =>
-                                selectMethod(event.target.value as MethodCode)
-                              }
-                            >
-                              {methodCodes.map((code) => (
-                                <option key={code} value={code}>
-                                  {
-                                    names[code][
-                                      locale === "en"
-                                        ? 2
-                                        : locale === "zh-TW"
-                                          ? 1
-                                          : 0
-                                    ]
-                                  }
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <div className="settings-field-grid">
-                            <label>
-                              {c.nameHans}
-                              <input
-                                required
-                                maxLength={120}
-                                value={draft.nameHans}
-                                onChange={(event) =>
-                                  update("nameHans", event.target.value)
-                                }
-                              />
-                            </label>
-                            <label>
-                              {c.nameHant}
-                              <input
-                                required
-                                maxLength={120}
-                                value={draft.nameHant}
-                                onChange={(event) =>
-                                  update("nameHant", event.target.value)
-                                }
-                              />
-                            </label>
-                            <label>
-                              {c.nameEN}
-                              <input
-                                required
-                                maxLength={120}
-                                value={draft.nameEN}
-                                onChange={(event) =>
-                                  update("nameEN", event.target.value)
-                                }
-                              />
-                            </label>
-                            <label>
-                              {c.sort}
-                              <input
-                                type="number"
-                                min="0"
-                                max="1000"
-                                required
-                                value={draft.sort}
-                                onChange={(event) =>
-                                  update("sort", event.target.value)
-                                }
-                              />
-                            </label>
-                            <label>
-                              {`${c.minAmount} (${currencySign(activeMarket?.currency ?? "TWD")})`}
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                autoComplete="off"
-                                required
-                                value={draft.min}
-                                onChange={(event) =>
-                                  update("min", event.target.value)
-                                }
-                              />
-                            </label>
-                            <label>
-                              {`${c.maxAmount} (${currencySign(activeMarket?.currency ?? "TWD")})`}
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                autoComplete="off"
-                                required
-                                value={draft.max}
-                                onChange={(event) =>
-                                  update("max", event.target.value)
-                                }
-                              />
-                            </label>
-                          </div>
-                          <label className="settings-check">
-                            <input
-                              type="checkbox"
-                              checked={draft.visible}
-                              onChange={(event) =>
-                                update("visible", event.target.checked)
-                              }
-                            />
-                            {c.visible}
-                          </label>
-                          <p className="settings-note">
-                            {c.enabled}: {c.notAvailable}. {c.providerGate}
-                          </p>
-                          <div className="settings-actions">
-                            <button type="button" onClick={() => goStep(2)}>
-                              {c.back}
-                            </button>
-                            <button
-                              className="primary"
-                              type="submit"
-                              disabled={
-                                !ready ||
-                                !!pending ||
-                                busy ||
-                                !hasBaseline(draft.methodObservation, methodTarget) ||
-                                !activeAccount ||
-                                store.currency !== "TWD"
-                              }
-                            >
-                              {busy ? c.pending : c.saveMethod}
-                            </button>
-                          </div>
-                        </form>
-                      </>
-                    ) : (
-                      <>
+                    <>
                         <h2 className="settings-section-title settings-subtitle">
                           {c.deliveryTitle}
                         </h2>
@@ -2566,8 +1610,7 @@ export function SettingsWizard({
                             </div>
                           </form>
                         )}
-                      </>
-                    )}
+                    </>
                   </>
                 )}
               </>
@@ -2575,15 +1618,11 @@ export function SettingsWizard({
             {store && step === 4 && (
               <div data-testid="settings-status">
                 <h2 className="settings-section-title">{c.statusTitle}</h2>
-                <p className="settings-note">
-                  {draft.branch === "payuni"
-                    ? c.accountUnverified
-                    : c.manualHint}
-                </p>
+                <p className="settings-note">{c.manualHint}</p>
                 <dl className="settings-status-list">
                   <div>
                     <dt>{c.platform}</dt>
-                    <dd>{draft.branch === "payuni" ? c.payuni : c.manual}</dd>
+                    <dd>{c.manual}</dd>
                   </div>
                   <div>
                     <dt>{c.market}</dt>
@@ -2593,68 +1632,27 @@ export function SettingsWizard({
                         : c.notConfigured}
                     </dd>
                   </div>
-                  {draft.branch === "payuni" && (
-                    <div>
-                      <dt>{c.account}</dt>
-                      <dd>
-                        {activeAccount
-                          ? `${activeAccount.account_id} · ${activeAccount.state === "CONFIGURED_UNVERIFIED" ? c.savedUnverified : c.notChecked} · v${activeAccount.credential_version}`
-                          : c.notConfigured}
-                      </dd>
-                    </div>
-                  )}
                   <div>
-                    <dt>{draft.branch === "payuni" ? c.payment : c.service}</dt>
+                    <dt>{c.service}</dt>
                     <dd>
-                      {draft.branch === "payuni"
-                        ? activeMethod
-                          ? `${paymentNames[locale === "en" ? 2 : locale === "zh-TW" ? 1 : 0]} · ${activeMethod.enabled ? c.enabled : c.notAvailable} · ${activeMethod.visible ? c.visible : c.notConfigured}`
-                          : c.notConfigured
-                        : activeService
-                          ? `${activeService.code} · ${activeService.enabled ? c.enabled : c.notAvailable} · ${activeService.visible ? c.visible : c.notConfigured}`
-                          : c.notConfigured}
+                      {activeService
+                        ? `${activeService.code} · ${activeService.enabled ? c.enabled : c.notAvailable} · ${activeService.visible ? c.visible : c.notConfigured}`
+                        : c.notConfigured}
                     </dd>
                   </div>
-                  {draft.branch === "manual" && (
-                    <div>
-                      <dt>{c.policyEnabled}</dt>
-                      <dd>
-                        {policy
-                          ? `v${policy.version} · ${policy.enabled ? c.enabled : c.notAvailable}`
-                          : c.notConfigured}
-                      </dd>
-                    </div>
-                  )}
-                  {draft.branch === "payuni" && (
-                    <div>
-                      <dt>{c.qualification}</dt>
-                      <dd>{c.notApproved}</dd>
-                    </div>
-                  )}
-                  {draft.branch === "payuni" && (
-                    <div>
-                      <dt>{c.runtime}</dt>
-                      <dd>
-                        {availability
-                          ? `${availability.available ? c.enabled : c.notAvailable}${availability.reasons.length ? ` · ${availability.reasons.map((reason) => availabilityReason(locale, reason)).join(", ")}` : ""}`
-                          : c.notChecked}
-                      </dd>
-                    </div>
-                  )}
+                  <div>
+                    <dt>{c.policyEnabled}</dt>
+                    <dd>
+                      {policy
+                        ? `v${policy.version} · ${policy.enabled ? c.enabled : c.notAvailable}`
+                        : c.notConfigured}
+                    </dd>
+                  </div>
                 </dl>
                 <div className="settings-actions">
                   <button type="button" onClick={() => goStep(3)}>
                     {c.back}
                   </button>
-                  {draft.branch === "payuni" && activeMethod && (
-                    <button
-                      type="button"
-                      disabled={busy || !!pending}
-                      onClick={() => void inspect()}
-                    >
-                      {c.inspect}
-                    </button>
-                  )}
                   <button
                     type="button"
                     className="primary"
@@ -2676,7 +1674,7 @@ export function SettingsWizard({
             <dl>
               <div>
                 <dt>{c.platform}</dt>
-                <dd>{draft.branch === "payuni" ? c.payuni : c.manual}</dd>
+                <dd>{c.manual}</dd>
               </div>
               <div>
                 <dt>{c.market}</dt>
@@ -2686,71 +1684,27 @@ export function SettingsWizard({
                     : c.notConfigured}
                 </dd>
               </div>
-              {draft.branch === "payuni" && (
-                <div>
-                  <dt>{c.account}</dt>
-                  <dd>
-                    {activeAccount
-                      ? `${activeAccount.account_id} · ${activeAccount.state === "CONFIGURED_UNVERIFIED" ? c.savedUnverified : c.notChecked}`
-                      : c.notConfigured}
-                  </dd>
-                </div>
-              )}
               <div>
-                <dt>{draft.branch === "payuni" ? c.payment : c.service}</dt>
+                <dt>{c.service}</dt>
                 <dd>
-                  {draft.branch === "payuni"
-                    ? activeMethod
-                      ? activeMethod.enabled
-                        ? c.enabled
-                        : c.notAvailable
-                      : c.notConfigured
-                    : activeService
-                      ? `${activeService.code} · ${activeService.enabled ? c.enabled : c.notAvailable} · ${activeService.visible ? c.visible : c.notConfigured}`
-                      : c.notConfigured}
+                  {activeService
+                    ? `${activeService.code} · ${activeService.enabled ? c.enabled : c.notAvailable} · ${activeService.visible ? c.visible : c.notConfigured}`
+                    : c.notConfigured}
                 </dd>
               </div>
-              {draft.branch === "manual" && (
-                <div>
-                  <dt>{c.policyEnabled}</dt>
-                  <dd>
-                    {policy
-                      ? `v${policy.version} · ${policy.enabled ? c.enabled : c.notAvailable}`
-                      : c.notConfigured}
-                  </dd>
-                </div>
-              )}
-              {draft.branch === "payuni" && (
-                <div>
-                  <dt>{c.qualification}</dt>
-                  <dd>{c.notApproved}</dd>
-                </div>
-              )}
-              {draft.branch === "payuni" && (
-                <div>
-                  <dt>{c.runtime}</dt>
-                  <dd>
-                    {availability
-                      ? availability.available
-                        ? c.enabled
-                        : c.notAvailable
-                      : c.notChecked}
-                  </dd>
-                </div>
-              )}
+              <div>
+                <dt>{c.policyEnabled}</dt>
+                <dd>
+                  {policy
+                    ? `v${policy.version} · ${policy.enabled ? c.enabled : c.notAvailable}`
+                    : c.notConfigured}
+                </dd>
+              </div>
             </dl>
             <div className="settings-status-next">
               <h3>{c.next}</h3>
               <p>
-                {step === 1
-                  ? c.payuniHint
-                  : step === 2
-                    ? c.accountNext
-                    : step === 3
-                      ? draft.branch === "payuni"
-                        ? c.disabledReason
-                        : c.prereq
-                      : c.providerGate}
+                {step <= 2 ? c.manualHint : c.prereq}
               </p>
             </div>
           </aside>

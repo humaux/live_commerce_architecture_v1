@@ -1,6 +1,9 @@
 // Purpose: Exercises settings controls and client-storage disclosures against the supplied real harness origin.
 // Depends on: @playwright/test; harness env: LC_BROWSER_PUBLIC_ORIGIN
 // Used by: tests/foundation/browser_identity_chain_test.go
+// PAYUNi was removed from the wizard (owner decision 2026-10-14, pay-rm2): the only card path is platform Stripe, reached from the
+// wizard through the card-payments link; this spec proves no PAYUNi control or text remains and keeps the safe-uncertainty,
+// policy/service and changed-session checks on the merchant-arranged delivery flow.
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const origin = process.env.LC_BROWSER_PUBLIC_ORIGIN;
@@ -9,23 +12,19 @@ if (!origin || new URL(origin).origin !== origin)
 test.use({ baseURL: origin, trace: "off", actionTimeout: 10_000 });
 test.describe.configure({ timeout: 90_000 });
 
-async function noSecrets(page: Page, secrets: string[]) {
-  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
+async function noPayuni(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: scans visible text and client storage for the removed provider (read only)
   const storage = await page.evaluate(() =>
     JSON.stringify({
       local: { ...localStorage },
       session: { ...sessionStorage },
     }),
   );
-  const html = await page.content();
-  for (const secret of secrets) {
-    // Boolean assertions avoid echoing credentials into failed assertion logs.
-    expect(storage.includes(secret)).toBe(false);
-    expect(html.includes(secret)).toBe(false);
-  }
+  expect(/payuni/i.test(storage)).toBe(false);
+  expect(/payuni/i.test(await page.getByTestId("settings-wizard").innerText())).toBe(false);
 }
 
-test("REAL_PG A wizard creates unseeded configuration and preserves safe uncertainty", async ({
+test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty", async ({
   page,
   context,
 }, testInfo) => {
@@ -62,13 +61,21 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await page.getByTestId("nav-group-settings").click();
   await page.getByTestId("nav-settings").click();
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
-  await page.getByLabel("PAYUNi payment", { exact: true }).check();
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-  const accountForm = page.getByTestId("settings-account-form");
-  await expect(accountForm).toBeVisible();
   await expect(
     page.getByText("Loading saved configuration…", { exact: true }),
   ).toBeHidden();
+  // Step 1: no provider choice, no credential form; the platform card-payments entry is the only payment control.
+  await expect(page.getByRole("radio")).toHaveCount(0);
+  await expect(page.getByLabel("HashKey", { exact: true })).toHaveCount(0);
+  await expect(page.getByTestId("settings-account-form")).toHaveCount(0);
+  await noPayuni(page);
+  await page.getByTestId("settings-card-payments-link").click();
+  await expect(page).toHaveURL(/\/settings\/payments\/card/);
+  await page.goBack();
+  await expect(page.getByTestId("settings-wizard")).toBeVisible();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  // Step 2: merchant-arranged delivery cards. The old PAYUNi account form must not appear.
+  await expect(page.getByTestId("settings-account-form")).toHaveCount(0);
   // G-UI8 audit [READ/MEASURE]: computes rendered text contrast (read only)
   const renderedStyle = await page.evaluate(() => {
     const subtitle = document.querySelector(".settings-heading p")!;
@@ -109,7 +116,7 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
     animations: "disabled",
   });
   await page.screenshot({
-    path: testInfo.outputPath("a-desktop-account.png"),
+    path: testInfo.outputPath("a-desktop-delivery.png"),
     fullPage: true,
     animations: "disabled",
   });
@@ -127,246 +134,66 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
     ),
   ).toBe(true);
   await page.screenshot({
-    path: testInfo.outputPath("a-mobile-account.png"),
+    path: testInfo.outputPath("a-mobile-delivery.png"),
     fullPage: true,
     animations: "disabled",
   });
   await page.setViewportSize({ width: 1586, height: 992 });
 
-  await accountForm
-    .getByLabel("Merchant ID (MerID)", { exact: true })
-    .fill("wizard_fixture");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  const marketForm = page.getByTestId("settings-market-form");
+  await expect(marketForm).toBeVisible();
+  await marketForm.getByLabel("Market code", { exact: true }).fill("taiwan");
+  await marketForm
+    .getByLabel("Market name", { exact: true })
+    .fill("Taiwan retail");
   // Lose only the response after the real command commits. No mocked success.
-  const accountRequests: Array<{ key: string; body: string }> = [];
-  let loseAccountResponse = true;
-  let accountCommitted!: () => void;
-  const committedAccount = new Promise<void>((resolve) => {
-    accountCommitted = resolve;
+  const marketRequests: Array<{ key: string; body: string }> = [];
+  let loseMarketResponse = true;
+  let marketCommitted!: () => void;
+  const committedMarket = new Promise<void>((resolve) => {
+    marketCommitted = resolve;
   });
   let releaseLostResponse!: () => void;
   const lostResponse = new Promise<void>((resolve) => {
     releaseLostResponse = resolve;
   });
-  const accountPath = `/api/stores/${receipt.store_id}/provider-accounts`;
-  await page.route(`**${accountPath}`, async (route) => {
+  const marketPath = `/api/stores/${receipt.store_id}/markets`;
+  await page.route(`**${marketPath}`, async (route) => {
     if (route.request().method() !== "POST") return route.continue();
-    accountRequests.push({
+    marketRequests.push({
       key: route.request().headers()["idempotency-key"],
       body: route.request().postData() ?? "",
     });
-    if (loseAccountResponse) {
-      loseAccountResponse = false;
+    if (loseMarketResponse) {
+      loseMarketResponse = false;
       const response = await route.fetch();
       expect(response.status()).toBe(200);
-      accountCommitted();
+      marketCommitted();
       // Refresh before the UI receives any result: exercise the crash window,
       // not only the catch handler that marks a completed network error unknown.
       await lostResponse;
       await route.abort("failed").catch(() => undefined);
     } else await route.continue();
   });
-  // Synthetic fixture strings, never actual merchant credentials.
-  const hashKey = "K".repeat(32),
-    hashIV = "V".repeat(16);
-  await accountForm.getByLabel("HashKey", { exact: true }).fill(hashKey);
-  await accountForm.getByLabel("HashIV", { exact: true }).fill(hashIV);
-  await accountForm
-    .getByRole("button", { name: "Save account and continue", exact: true })
+  await marketForm
+    .getByRole("button", { name: "Create market", exact: true })
     .click();
-  await committedAccount;
+  await committedMarket;
   await page.reload();
   releaseLostResponse();
   const pendingControls = page.getByTestId("settings-pending");
   await expect(pendingControls).toBeVisible();
-  await expect(
-    pendingControls.getByLabel("HashKey", { exact: true }),
-  ).toHaveValue("");
-  await noSecrets(page, [hashKey, hashIV]);
-  await pendingControls
-    .getByLabel("HashKey", { exact: true })
-    .fill("W".repeat(32));
-  await pendingControls.getByLabel("HashIV", { exact: true }).fill(hashIV);
-  const mismatchedRetry = page.waitForResponse(
-    (response) =>
-      new URL(response.url()).pathname === accountPath &&
-      response.request().method() === "POST",
-  );
+  await expect(pendingControls.getByLabel("HashKey", { exact: true })).toHaveCount(0);
   await page
     .getByRole("button", { name: "Retry pending command", exact: true })
     .click();
-  expect((await mismatchedRetry).status()).toBe(409);
-  await expect(pendingControls).toBeVisible();
-  await noSecrets(page, [hashKey, hashIV, "W".repeat(32)]);
-  await pendingControls.getByLabel("HashKey", { exact: true }).fill(hashKey);
-  await pendingControls.getByLabel("HashIV", { exact: true }).fill(hashIV);
-  await page
-    .getByRole("button", { name: "Retry pending command", exact: true })
-    .click();
-  await expect(page.getByTestId("settings-market-form")).toBeVisible();
-  expect(accountRequests.length).toBe(3);
-  expect(
-    accountRequests.every((item) => item.key === accountRequests[0].key),
-  ).toBe(true);
-  expect(accountRequests[0].body === accountRequests[1].body).toBe(false);
-  expect(accountRequests[0].body === accountRequests[2].body).toBe(true);
-  await noSecrets(page, [hashKey, hashIV]);
-
-  const marketForm = page.getByTestId("settings-market-form");
-  await marketForm.getByLabel("Market code", { exact: true }).fill("taiwan");
-  await marketForm
-    .getByLabel("Market name", { exact: true })
-    .fill("Taiwan retail");
-  await marketForm
-    .getByRole("button", { name: "Create market", exact: true })
-    .click();
-  const paymentForm = page.getByTestId("settings-payment-form");
-  await expect(paymentForm).toBeVisible();
-  await paymentForm
-    .getByLabel("Simplified Chinese name", { exact: true })
-    .fill("信用卡");
-  await paymentForm
-    .getByLabel("Traditional Chinese name", { exact: true })
-    .fill("信用卡");
-  await paymentForm
-    .getByLabel("English name", { exact: true })
-    .fill("Credit card");
-  await paymentForm
-    .getByLabel("Minimum amount (NT$)", { exact: true })
-    .fill("1"); // stop-bleed D02: money fields are NT$ whole dollars now (1 = 100 minor on the wire)
-  await paymentForm
-    .getByLabel("Maximum amount (NT$)", { exact: true })
-    .fill("1000");
-  const methodRequests: Array<{ key: string; body: string }> = [];
-  let loseMethod = true;
-  await page.route("**/payment-methods/payuni_credit", async (route) => {
-    if (route.request().method() !== "PUT") return route.continue();
-    methodRequests.push({
-      key: route.request().headers()["idempotency-key"],
-      body: route.request().postData() ?? "",
-    });
-    if (loseMethod) {
-      loseMethod = false;
-      expect((await route.fetch()).status()).toBe(200);
-      await route.abort("failed");
-    } else await route.continue();
-  });
-  await paymentForm
-    .getByRole("button", { name: "Save disabled payment draft", exact: true })
-    .click();
-  await expect(pendingControls).toBeVisible();
-  await page
-    .getByRole("button", { name: "Retry pending command", exact: true })
-    .click();
-  await expect.poll(() => methodRequests.length).toBe(2);
-  expect(
-    methodRequests[0].key === methodRequests[1].key &&
-      methodRequests[0].body === methodRequests[1].body,
-  ).toBe(true);
-  await page
-    .getByRole("button", { name: "Check status", exact: false })
-    .click();
-  await page
-    .getByRole("button", { name: "Inspect runtime availability", exact: true })
-    .click();
-  await expect(page.getByTestId("settings-status")).toContainText(
-    "Unavailable",
-  );
-  await page.reload();
-  await expect(page.getByTestId("settings-wizard")).toContainText(
-    "wizard_fixture",
-  );
-  await noSecrets(page, [hashKey, hashIV]);
-
-  // A newer server revision must never be borrowed for older dirty form fields.
-  await page
-    .getByRole("button", { name: "Configure methods", exact: false })
-    .click();
-  await paymentForm
-    .getByLabel("English name", { exact: true })
-    .fill("Local unsaved name");
-  // G-UI8 audit [FIXTURE/SETUP]: a concurrent write by another operator (stale-form fixture)
-  const concurrent = await page.evaluate(async (store) => {
-    const prefix = `/api/stores/${store}/markets`;
-    const markets = await (await fetch(prefix)).json();
-    const path = `${prefix}/${markets.items[0].id}/countries/TW/payment-methods/payuni_credit`;
-    const saved = await (await fetch(path)).json();
-    const {
-      market_id,
-      country,
-      code,
-      name_hans,
-      name_hant,
-      enabled,
-      visible,
-      sort_order,
-      min_amount_minor,
-      max_amount_minor,
-    } = saved;
-    const csrf =
-      document.cookie
-        .split(";")
-        .map((part) => part.trim())
-        .find((part) => part.startsWith("__Host-commerce_csrf="))
-        ?.split("=")[1] ?? "";
-    const createdAccount = await fetch(
-      `/api/stores/${store}/provider-accounts`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": crypto.randomUUID(),
-          "X-CSRF-Token": csrf,
-        },
-        body: JSON.stringify({
-          provider: "payuni",
-          environment: "SANDBOX",
-          account_id: "second_fixture",
-          credentials: { hash_key: "H".repeat(32), hash_iv: "I".repeat(16) },
-        }),
-      },
-    );
-    if (createdAccount.status !== 200)
-      return { status: createdAccount.status, marketID: "", connectionID: "" };
-    const accounts = await (
-      await fetch(`/api/stores/${store}/provider-accounts`)
-    ).json();
-    // Bind the method to the NON-first account, regardless of random UUID order.
-    const bound = accounts.items[1];
-    const status = (
-      await fetch(path, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": crypto.randomUUID(),
-          "X-CSRF-Token": csrf,
-        },
-        body: JSON.stringify({
-          market_id,
-          country,
-          code,
-          environment: bound.environment,
-          connection_id: bound.id,
-          binding_version: bound.binding_version,
-          name_hans,
-          name_hant,
-          name_en: "Remote saved name",
-          enabled,
-          visible,
-          sort_order,
-          min_amount_minor,
-          max_amount_minor,
-          expected_version: saved.version,
-        }),
-      })
-    ).status;
-    return {
-      status,
-      marketID: market_id,
-      connectionID: bound.id,
-      firstConnectionID: accounts.items[0].id,
-    };
-  }, receipt.store_id);
-  expect(concurrent.status).toBe(200);
+  await expect(page.getByLabel("Stable service code", { exact: true })).toBeVisible();
+  await expect(pendingControls).toBeHidden();
+  expect(marketRequests.length).toBe(2);
+  expect(marketRequests[0].key === marketRequests[1].key).toBe(true);
+  expect(marketRequests[0].body === marketRequests[1].body).toBe(true);
+  await noPayuni(page);
 
   // Locale routes preserve nonsecret setup and the store's TWD currency.
   for (const [locale, label, heading] of [
@@ -379,81 +206,14 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
       page.getByRole("heading", { name: heading, exact: true }),
     ).toBeVisible();
     await expect(page.getByTestId("settings-wizard")).toContainText("TWD");
+    await noPayuni(page);
     await page.screenshot({
-      path: testInfo.outputPath(`a-${locale}-status.png`),
+      path: testInfo.outputPath(`a-${locale}-delivery.png`),
       fullPage: true,
       animations: "disabled",
     });
   }
-  await expect(
-    paymentForm.getByLabel("English name", { exact: true }),
-  ).toHaveValue("Local unsaved name");
-  await page
-    .getByRole("button", { name: "Connect account", exact: false })
-    .click();
-  await accountForm
-    .getByRole("combobox", { name: "Account", exact: true })
-    .selectOption(concurrent.firstConnectionID!);
-  await accountForm
-    .getByRole("button", { name: "Continue", exact: true })
-    .click();
-  const staleSave = paymentForm.getByRole("button", {
-    name: "Save disabled payment draft",
-    exact: true,
-  });
-  if (await staleSave.isEnabled()) await staleSave.click();
-  await expect(
-    page.getByRole("alert").filter({ hasText: /Configuration changed/ }),
-  ).toBeVisible();
-  // Explicit discard/reload is required; locale navigation cannot silently rebase.
-  await page.getByTestId("settings-reload-current").click();
-  await expect(
-    paymentForm.getByLabel("English name", { exact: true }),
-  ).toHaveValue("Remote saved name");
-  await page
-    .getByRole("button", { name: "Connect account", exact: false })
-    .click();
-  await expect(
-    accountForm.getByRole("combobox", { name: "Account", exact: true }),
-  ).toHaveValue(concurrent.connectionID);
-  await accountForm
-    .getByRole("button", { name: "Continue", exact: true })
-    .click();
 
-  // A new tab has no draft: hydration must follow the saved method's account,
-  // not the first account returned by the catalog. This is read-only acceptance.
-  const fresh = await context.newPage();
-  await fresh.goto(page.url());
-  await fresh.getByRole("button", { name: "Continue", exact: true }).click();
-  await fresh
-    .getByTestId("settings-account-form")
-    .getByRole("button", { name: "Continue", exact: true })
-    .click();
-  await fresh
-    .getByRole("combobox", { name: "Selected market", exact: true })
-    .selectOption(concurrent.marketID);
-  await expect(
-    fresh
-      .getByTestId("settings-payment-form")
-      .getByLabel("English name", { exact: true }),
-  ).toHaveValue("Remote saved name");
-  await fresh
-    .getByRole("button", { name: "Connect account", exact: false })
-    .click();
-  await expect(
-    fresh
-      .getByTestId("settings-account-form")
-      .getByRole("combobox", { name: "Account", exact: true }),
-  ).toHaveValue(concurrent.connectionID);
-  await noSecrets(fresh, [hashKey, hashIV, "H".repeat(32), "I".repeat(16)]);
-  await fresh.close();
-
-  await page
-    .getByRole("button", { name: "Choose platform", exact: false })
-    .click();
-  await page.getByLabel("Merchant-arranged delivery", { exact: true }).check();
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
   const policyForm = page.getByTestId("settings-policy-form");
   // Network scheduling only: use the REAL PG replies, but hold the read baseline
   // and PUT receipt independently. A fast merchant can otherwise save before a
@@ -538,19 +298,115 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
     .getByRole("button", { name: "Save delivery service", exact: true })
     .click();
   await expect(page.getByTestId("settings-status")).toBeVisible();
+  await expect(page.getByTestId("settings-status")).not.toContainText(/PAYUNi/i);
   await page.unroute(policyURL);
   await page.unroute(serviceURL);
   await page.reload();
   await expect(page.getByTestId("settings-status")).toContainText("home");
 
   await page
-    .getByRole("button", { name: "Configure methods", exact: false })
+    .getByRole("button", { name: "Market and delivery", exact: false })
     .click();
   await expect(
     page
       .getByTestId("settings-service-form")
       .getByLabel("English name", { exact: true }),
   ).toHaveValue("Standard delivery");
+
+  // Restored from base 625544483 (they ran on the PAYUNi method write), now on the delivery-service write.
+  const svcForm = page.getByTestId("settings-service-form");
+  const svcName = svcForm.getByLabel("English name", { exact: true });
+  // An unsaved field survives a locale switch.
+  await svcName.fill("Local unsaved name");
+  await page.getByLabel("Language", { exact: true }).selectOption("zh-CN");
+  await expect(page.getByRole("heading", { name: "店铺设置", exact: true })).toBeVisible();
+  await page.getByLabel("语言", { exact: true }).selectOption("en");
+  await expect(page.getByRole("heading", { name: "Store settings", exact: true })).toBeVisible();
+  await expect(svcName).toHaveValue("Local unsaved name");
+  // Stale-version conflict: another operator saves first; our save is refused and only an explicit reload rebases.
+  // G-UI8 audit [FIXTURE/SETUP]: a concurrent write by another operator (stale-form fixture)
+  const concurrent = await page.evaluate(async (store) => {
+    const prefix = `/api/stores/${store}/markets`;
+    const markets = await (await fetch(prefix)).json();
+    const path = `${prefix}/${markets.items[0].id}/countries/TW/delivery-services/home`;
+    const saved = await (await fetch(path)).json();
+    const csrf =
+      document.cookie
+        .split(";")
+        .map((part) => part.trim())
+        .find((part) => part.startsWith("__Host-commerce_csrf="))
+        ?.split("=")[1] ?? "";
+    const response = await fetch(path, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID(),
+        "X-CSRF-Token": csrf,
+      },
+      body: JSON.stringify({
+        market_id: saved.market_id,
+        country: saved.country,
+        code: saved.code,
+        expected_version: saved.version,
+        policy_version: saved.policy_version,
+        name_hans: saved.name_hans,
+        name_hant: saved.name_hant,
+        name_en: "Remote saved name",
+        delivery_kind: saved.delivery_kind,
+        mode: saved.mode,
+        enabled: saved.enabled,
+        visible: saved.visible,
+        sort_order: saved.sort_order,
+      }),
+    });
+    return response.status;
+  }, receipt.store_id);
+  expect(concurrent).toBe(200);
+  await svcForm.getByRole("button", { name: "Save delivery service", exact: true }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: /Configuration changed/ }),
+  ).toBeVisible();
+  await expect(svcName).toHaveValue("Local unsaved name"); // not silently rebased
+  await page.getByTestId("settings-reload-current").click();
+  await expect(svcName).toHaveValue("Remote saved name");
+  await page.reload();
+  await page.getByRole("button", { name: "Market and delivery", exact: false }).click();
+  await expect(svcName).toHaveValue("Remote saved name"); // persisted
+  // Lost response WITHOUT a page reload: the write commits, the reply is lost, the pending banner offers an exact-replay retry.
+  const svcWrites: Array<{ key: string; body: string }> = [];
+  let loseSvc = true;
+  const svcPath = new RegExp(`/api/stores/${receipt.store_id}/markets/[0-9a-f-]{36}/countries/TW/delivery-services/home$`);
+  await page.route(svcPath, async (route) => {
+    if (route.request().method() !== "PUT") return route.continue();
+    svcWrites.push({
+      key: route.request().headers()["idempotency-key"],
+      body: route.request().postData() ?? "",
+    });
+    if (loseSvc) {
+      loseSvc = false;
+      expect((await route.fetch()).status()).toBe(200);
+      await route.abort("failed");
+    } else await route.continue();
+  });
+  await svcName.fill("Lost reply name");
+  await svcForm.getByRole("button", { name: "Save delivery service", exact: true }).click();
+  await expect(page.getByTestId("settings-pending")).toBeVisible();
+  await page.getByRole("button", { name: "Retry pending command", exact: true }).click();
+  await expect.poll(() => svcWrites.length).toBe(2);
+  expect(svcWrites[0].key === svcWrites[1].key && svcWrites[0].body === svcWrites[1].body).toBe(true);
+  // The banner also hides while the retry is in flight (busy), so it is not a success signal. Wait for the
+  // completion state instead: the successful replay removes the command journal (SettingsWizard retryPending).
+  await expect
+    .poll(() =>
+      // G-UI8 audit [READ/MEASURE]: reads whether a settings command journal is still pending
+      page.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith("commerce-settings-command:"))),
+    )
+    .toBe(false);
+  await expect(page.getByTestId("settings-pending")).toBeHidden();
+  await page.unroute(svcPath);
+  await page.reload();
+  await page.getByRole("button", { name: "Market and delivery", exact: false }).click();
+  await expect(svcName).toHaveValue("Lost reply name"); // persisted after the replay
   const originalCSRF = (await context.cookies()).find(
     (c) => c.name === "__Host-commerce_csrf",
   )!;

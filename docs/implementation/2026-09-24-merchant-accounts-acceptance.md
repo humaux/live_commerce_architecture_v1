@@ -1,3 +1,5 @@
+> Superseded: PAYUNi removed by owner decision 2026-10-14, see pay-rm2.
+
 # 商家自有供应商账户凭据：内部验收
 
 2026-09-24；实现 bbcbdf0，完整测试基线 3063ed7。

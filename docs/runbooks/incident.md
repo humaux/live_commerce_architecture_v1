@@ -149,14 +149,14 @@ api 的 `/healthz` 一直返回 200（它不检查数据库），容器的 `/rea
 
 ## 4. 支付 UNKNOWN / 外部不确定状态
 
-- **绝不盲目重试**（AGENTS.md）。先到 PAYUNi 商户后台核对交易的真实状态，再由 worker 的查询路径收敛。
+- **绝不盲目重试**（AGENTS.md）。先到 Stripe Dashboard 核对交易的真实状态，再由 worker 的查询路径收敛。
 - 不要人工改库去"修复"支付状态。
 
 ## 5. 安全事件
 
 | 事件 | 处置 |
 |---|---|
-| `commerce_account_keys_json` 或 replay key 泄露（涉及真实资金） | 立即 `dc stop payment-worker-live`，通知 owner，按 deploy.md §7 轮换（追加新 key），评估商户 PSP 凭据是否需要在 PAYUNi 侧重置 |
+| `commerce_account_keys_json` 或 replay key 泄露（涉及真实资金） | 立即 `dc stop payment-worker-live`，通知 owner，按 deploy.md §7 轮换（追加新 key），评估平台 Stripe 凭据是否需要在 Stripe 侧轮换 |
 | Stripe webhook 签名 keyring 或某端点的 `whsec_` 泄露 | 在 Stripe 后台滚动该端点的签名密钥，用 `ops-admin.sh stripe-admin webhook ... STRIPE_WEBHOOK_SECRET_NEXT` 登记新密钥（deploy.md §6.1 步骤 3），必要时追加 keyring key（deploy.md §7）；`STRIPE_SECRET_KEY` 泄露 → 在 Stripe 后台撤销并 `stripe-admin rotate` |
 | Meta Page token 泄露 | 在 Meta 后台撤销 token，`dc stop claims-worker`，用 `ops-admin.sh meta-admin page-token` 登记新 token（`--expected-version` = 当前版本），确认后再启动 |
 | BFF key 泄露 | 轮换这一对 key（api + admin 或 api + storefront），同时重启 |

@@ -3,7 +3,7 @@
 // Chain: Chromium -> TLS edge (https://buyer.example) -> production Next -> private Go -> PG -> worker.
 // SP18 alone reaches real Stripe hosts, only through the CONNECT tunnel below; the store tab never
 // sees a Stripe key. The SP18 file name in the contract is stripe-browser.spec.ts; this repo drives
-// browsers from Go-launched .mjs scripts (tests/storefront/buyer-payment-browser.mjs), so it does too.
+// browsers from Go-launched .mjs scripts, so it does too.
 //
 // Calls: BFF /api/buyer/orders/{id}/payment[/prepare|/handoff|/refresh|/cancel] and Go /v1/buyer/...
 // (observed at the edge); Go control server /facts and /act (counts and fixture actions only).
@@ -22,7 +22,7 @@ import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
-import { launch, ctxOpts, phone, phoneName } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
+import { engine, launch, ctxOpts, phone, phoneName, phoneToken } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root=process.cwd(),evidence=process.env.LC_STRIPE_EVIDENCE,CONTROL=process.env.LC_STRIPE_CONTROL;
 const cfg=JSON.parse(process.env.LC_STRIPE_CASE??"{}");
@@ -83,7 +83,7 @@ const CH={"X-Gate-Key":process.env.LC_STRIPE_CONTROL_KEY};
 async function control(order){const r=await fetch(`${CONTROL}/facts${order?`?order=${order}`:""}`,{headers:CH});assert.equal(r.status,200,"facts");return r.json();}
 async function act(name,order){const r=await fetch(`${CONTROL}/act?name=${name}${order?`&order=${order}`:""}`,{method:"POST",headers:CH});assert.equal(r.status,200,`act ${name}`);}
 async function until(fn,ms,what,step=400){const end=Date.now()+ms;for(;;){const v=await fn();if(v)return v;if(Date.now()>end)throw new Error(`timeout: ${what}`);await pause(step);}}
-// ---- edge + proxy + Next (same pattern as tests/storefront/buyer-payment-browser.mjs) ----
+// ---- edge + proxy + Next ----
 function relay(port,req,body){
   return new Promise((resolve,reject)=>{
     const headers={...req.headers};delete headers.connection;delete headers["transfer-encoding"];
@@ -412,7 +412,10 @@ async function sp18(){
 }
 async function su07(){
   const c=await context(false),page=await c.newPage();
-  await page.goto(product);await scanSelfTest(page,[c]);
+  const entry=await page.goto(product);assert(entry);await scanSelfTest(page,[c]);
+  // Moved from the retired buyer-payment-browser.mjs (pay-rm2 p1): the storefront CSP keeps a self-only form-action and names no PSP host.
+  const csp=entry.headers()["content-security-policy"]??"";
+  assert.match(csp,/form-action/);assert(csp.includes("'self'")&&!/payuni/i.test(csp));
   const l="en";
   // 1. popup blocked: zero BFF calls, marker absent, alert shown, no facts changed
   let id=await newOrder(page);const before=await control(id),callsBefore=calls.length;
@@ -468,7 +471,42 @@ async function su07(){
   const post=await relay(nextPort,{url:"/payment/return",method:"POST",headers:{host:"buyer.example","content-type":"application/x-www-form-urlencoded"}},Buffer.from("payment=success"));
   assert.equal(get.status,200);assert.equal(post.status,200);assert.equal(get.body.toString(),post.body.toString());
   assert.deepEqual(await control(id),snap);
-  passed("SU07 GET/POST /payment/return leaves every fact unchanged");
+  // Moved from the retired buyer-payment-browser.mjs: the neutral return page is non-cacheable, reflects nothing, sets nothing and allows no form.
+  const reflected="untrusted-payment-callback-marker";
+  const getMarked=await relay(nextPort,{url:`/payment/return?proof=${reflected}`,method:"GET",headers:{host:"buyer.example"}},Buffer.alloc(0));
+  const postMarked=await relay(nextPort,{url:"/payment/return",method:"POST",headers:{host:"buyer.example","content-type":"application/x-www-form-urlencoded"}},Buffer.from(reflected));
+  for(const response of [getMarked,postMarked]){
+    assert.equal(response.status,200);assert(!response.body.toString().includes(reflected));
+    assert.match(response.headers["cache-control"]??"",/no-store/);
+    assert.equal(response.headers["referrer-policy"],"no-referrer");
+    assert.equal(response.headers.location,undefined);assert.equal(response.headers["set-cookie"],undefined);
+    const policy=response.headers["content-security-policy"]??"";
+    assert.match(policy,/default-src 'none'/);assert.match(policy,/style-src 'sha256-[^']+'/);
+    assert.match(policy,/form-action 'none'/);assert(!policy.includes("form-action 'self'"));
+  }
+  assert.deepEqual(await control(id),snap);
+  passed("SU07 GET/POST /payment/return leaves every fact unchanged; neutral headers, nothing reflected");
+  // 6. phone profile (iPhone 15 under webkit, Pixel 7 under chromium): touch, zh-TW copy and money format, no horizontal overflow.
+  // Moved from the retired buyer-payment-browser.mjs so the --browser-webkit payment step keeps an iPhone Safari pass over the order-payment view.
+  // A fresh unpaid order: the SU07 order above was handed off (PENDING) by steps 1-4.
+  const unpaidOrder=await newOrder(page);
+  const mobile=await context(true);await mobile.addCookies(await c.cookies(origin));
+  const mobilePage=await mobile.newPage();await mobilePage.goto(checkout);
+  // Engine-specific: Playwright's macOS WebKit reports navigator.maxTouchPoints===0 even with hasTouch (real iOS Safari reports 5), so under webkit
+  // touch capability is asserted through ontouchstart + (pointer: coarse); Chromium asserts maxTouchPoints>0.
+  // G-UI8 audit [READ/MEASURE]: reads touch capability and the user agent
+  assert(await mobilePage.evaluate(([tok,wk])=>(wk?"ontouchstart" in window&&matchMedia("(pointer: coarse)").matches:navigator.maxTouchPoints>0)&&navigator.userAgent.includes(tok),[phoneToken,engine==="webkit"]));
+  await switchLocale(mobilePage,"zh-TW");
+  await mobilePage.getByTestId("toggle-order-history").click();await mobilePage.locator(`button[data-order-id="${unpaidOrder}"]`).click();
+  await ex(mobilePage.getByTestId("order-id")).toHaveText(unpaidOrder);
+  await ex(mobilePage.locator("html")).toHaveAttribute("lang","zh-TW");
+  await ex(mobilePage.locator(".order-total")).toContainText(/NT\$\s*25(?![\d.,]*\d)/); // one storefront money format: whole amounts carry no ".00"
+  await expectStatusText(mobilePage,"zh-TW","NOT_STARTED","DRAFT");
+  await ex(payBtn(mobilePage,"zh-TW")).toBeVisible();
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow at the phone viewport (layout read, no state change)
+  assert(await mobilePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await mobilePage.close();
+  passed("SU07 phone profile: touch, zh-TW payment/order status copy, NT$25 money format, no horizontal overflow");
   return finalScan([page],[c]);
 }
 async function su09(){
@@ -481,7 +519,7 @@ async function su09(){
   const noDupes=async(from)=>{const live=(await page.evaluate(i=>window.__live.slice(i),from));for(let i=1;i<live.length;i++)assert(!(live[i].text===live[i-1].text&&live[i].role===live[i-1].role&&live[i].t-live[i-1].t<1500),`announcement repeated: ${live[i].role} ${JSON.stringify(live.map(x=>[x.role,x.text.slice(0,30)]))}`);return live.length;};
   // roles and names, three locales
   let id=await newOrder(page);
-  for(const loc of ["zh-CN","zh-TW","en"]){await setLocale(page,loc);await ex(payBtn(page,loc)).toBeVisible();}
+  for(const loc of ["zh-CN","zh-TW","en"]){await setLocale(page,loc);await ex(payBtn(page,loc)).toBeVisible();await ex(page.getByTestId("payment-test-mode")).toBeVisible();} // test-mode disclosure moved from the retired PAYUNi BPU02 (server test_mode = profile<>LIVE, migration 0026)
   await ex(page.getByRole("button",{name:LOC.en.refresh,exact:true})).toBeVisible().catch(()=>{});
   await setLocale(page,"en");
   await three("01-fresh-pay");

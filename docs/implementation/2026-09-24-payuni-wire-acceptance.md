@@ -1,3 +1,5 @@
+> Superseded: PAYUNi removed by owner decision 2026-10-14, see pay-rm2.
+
 # PAYUNi wire：协议层验收
 
 2026-09-24；作者3497645，主线实现36e1897，独立测试5689c50，金额边界e69d5cb，

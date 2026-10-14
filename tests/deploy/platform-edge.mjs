@@ -160,6 +160,10 @@ try {
   }
   for (const url of [
     "/",
+    "/about",
+    "/zh-TW/about",
+    "/zh-CN/about",
+    "/en/about",
     "/privacy",
     "/terms",
     "/data-deletion",
@@ -188,6 +192,9 @@ try {
     "/en/privacy/",
     "/zh-CN/terms/",
     "/zh-TW/data-deletion/",
+    "/about/",
+    "/en/about/",
+    "/zh-TW/about/",
   ]) {
     for (const method of ["GET", "HEAD"]) {
       const query = "?from=review&x=%2F";
@@ -202,7 +209,7 @@ try {
       });
     }
   }
-  for (const url of ["/api/", "/site/", "/en/orders/", "/privacy//"]) {
+  for (const url of ["/api/", "/site/", "/en/orders/", "/privacy//", "/about//", "/en/about/x", "/aboutx"]) {
     assert.equal((await edge(vars.LC_PLATFORM_HOST, url)).status, 404, url);
     evidence.push({ url, method: "GET", result: 404 });
   }
@@ -211,6 +218,8 @@ try {
     404,
   );
   evidence.push({ url: "/privacy/", method: "POST", result: 404 });
+  assert.equal((await edge(vars.LC_PLATFORM_HOST, "/about", "POST")).status, 404);
+  evidence.push({ url: "/about", method: "POST", result: 404 });
   for (const url of [
     "/api",
     "/api/auth/login",
