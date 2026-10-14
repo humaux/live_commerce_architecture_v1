@@ -151,7 +151,9 @@ export function StatesSection({ c }: { c: GalleryCopy }) {
         <PermissionState title={c.permTitle} reason={c.permReason} nextLabel={c.permNextLabel} nextStep={c.permNext} />
         <BlockedState title={c.blockedTitle} reason={c.blockedReason} nextLabel={c.blockedNextLabel} nextStep={c.blockedNext} />
       </div>
-      <p className={s.result} role="status">{retried ? c.retryDone : added ? c.clicked(c.emptyAction) : ""}</p>
+      {/* one line per control: retry must not hide the empty-state result (and vice versa) */}
+      <p className={s.result} role="status">{retried ? c.retryDone : ""}</p>
+      <p className={s.result} role="status">{added ? c.clicked(c.emptyAction) : ""}</p>
     </Card>
   );
 }

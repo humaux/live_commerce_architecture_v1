@@ -90,7 +90,7 @@ function ProductTable({ c, params, setParam, search }: { c: GalleryCopy; params:
   const act = (label: string, p: Product) => setNote(c.lastAction(label, c.productName(p.n)));
   const columns: Column<Product>[] = [
     { id: "thumb", header: c.colThumb, cell: (p) => <ThumbCell src={p.thumb} alt={c.productName(p.n)} emptyLabel={c.thumbEmpty} />, width: "88px" },
-    { id: "name", header: c.colName, cell: (p) => c.productName(p.n) },
+    { id: "name", header: c.colName, cell: (p) => c.productName(p.n), wrap: true },
     { id: "price", header: c.colPrice, cell: (p) => `NT$ ${p.price}`, align: "end" },
     { id: "stock", header: c.colStock, cell: (p) => p.stock, align: "end" },
     { id: "status", header: c.colStatus, cell: (p) => <Badge tone={p.published ? "success" : "neutral"}>{p.published ? c.published : c.draft}</Badge> },

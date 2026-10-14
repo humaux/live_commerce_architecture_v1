@@ -21,13 +21,17 @@
 /* min-width keeps cells from squeezing so row actions never stack: a narrow screen scrolls the table inside its frame instead. */
 .table { width: 100%; min-width: 760px; border-collapse: collapse; color: var(--ds-text-1); font-size: var(--ds-text-md); }
 .table th { padding: var(--ds-space-3) var(--ds-space-4); border-bottom: 1px solid var(--ds-border); color: var(--ds-text-2); font-size: var(--ds-text-sm); font-weight: 600; text-align: start; white-space: nowrap; }
-.table td { padding: var(--ds-space-3) var(--ds-space-4); border-bottom: 1px solid var(--ds-border); vertical-align: middle; }
+.table td { white-space: nowrap; padding: var(--ds-space-3) var(--ds-space-4); border-bottom: 1px solid var(--ds-border); vertical-align: middle; }
 .table tbody tr[data-selected="true"] { background: var(--ds-primary-soft); }
-.table [data-align="end"] { text-align: end; }
-.selectCell { width: 44px; padding-inline: var(--ds-space-2) !important; }
-.check { width: 18px; height: 18px; margin: 13px; accent-color: var(--ds-primary); cursor: pointer; }
+.table [data-align="end"] { text-align: end; font-variant-numeric: tabular-nums; }
+/* a wrap column takes the spare width and breaks long names; the rest keep their natural one-line width */
+.table td[data-wrap="true"] { min-width: 160px; white-space: normal; overflow-wrap: anywhere; }
+.table td[data-actions] { width: 1%; }
+.selectCell { width: 44px; padding-inline: var(--ds-space-2) !important; text-align: center; }
+.check { display: block; width: 18px; height: 18px; margin: 0 auto; accent-color: var(--ds-primary); cursor: pointer; }
 .thumb { display: block; width: 64px; height: 64px; border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); background: var(--ds-surface-muted); object-fit: cover; }
 .thumbEmpty { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border: 1px dashed var(--ds-border-input); border-radius: var(--ds-radius-md); color: var(--ds-text-3); font-size: var(--ds-text-xs); }
+.actions > *, .actions button, .actions a { flex: none; white-space: nowrap; }
 .actions { display: flex; flex-wrap: nowrap; justify-content: flex-end; align-items: center; gap: var(--ds-space-2); }
 .skeleton { display: block; height: 14px; border-radius: var(--ds-radius-sm); background: var(--ds-neutral-bg); }
 .fullRow { padding: 0 !important; }

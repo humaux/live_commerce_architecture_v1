@@ -117,3 +117,48 @@ New file `tests/ui/ds-render.test.mjs` (server render of the real `Controls.tsx`
 **Hex baseline:** `tests/ui/hex-baseline.json` was not edited. The stricter tokenizer can change per-file counts (a hex in a trailing `//` comment no longer counts; a hex hidden behind a string `/*` now does). Counts can only fall for the first kind; the second could raise a file above its baseline. The baseline will be re-written in CI with `node scripts/dev/check-hex-ratchet.mjs --write` on the clean tree; that command still refuses to raise an existing baseline, so if CI shows a real increase it must be fixed in the CSS/TS, not in the JSON.
 
 NOT_RUN: `node --test` of the touched suites, `tsc`, `--browser-ui-gallery`. Written, not executed. Known limit: the tokenizer does not parse JS regex literals.
+
+## 8. Tuning round 1 (CI run 38632499965 `--browser-ui-gallery`: 39 findings; nothing was run locally, status DESIGN/NOT_RUN until CI re-runs)
+
+Root causes and fixes (each finding mapped):
+
+| # | Finding | Cause | Fix |
+|---|---------|-------|-----|
+| 1 | axe `aria-prohibited-attr` (6 cases) | disabled prev/next was `<a aria-label>` without href | `Pagination` renders `<span role="link" aria-disabled="true" aria-label>` (name allowed for the role, no tab stop); enabled arrows stay real `<a href>` |
+| 2 | R3 `cell-overflow` @1440 (select cell, actions cell) | checkbox margin 13 px overflowed the 44 px select cell; row buttons were flex-shrinkable and wrapped inside a nowrap row | `.check` is a centred block with no margin; `.actions > *` is `flex: none; nowrap`; actions cell `width: 1%`; non-text cells `nowrap`; new `Column.wrap` lets only the name column wrap (`overflow-wrap: anywhere`, min 160 px); end-aligned cells are `tabular-nums` |
+| 3 | 15 click/check timeouts | **not an overlay.** Playwright treats `aria-disabled="true"` as "not enabled" and waits for it. The first blocked click (Save bar Update, typed-confirm Delete, Bulk menu, Button disabled) timed out; the typed-confirm failure left a modal `<dialog>` open whose backdrop then intercepted every later table click (header checkbox … Search). EmptyState action was a separate real bug: one shared status line showed the retry text, hiding the empty-state result | Test: blocked controls are clicked with a real mouse click at their centre (`clickBlocked`, no `force`, no dispatchEvent; the pointer still hits any overlay). Component demo: separate status line per control. Dialog already unmounts its body when closed |
+| 4 | "Save bars placement" (en 390 only) | test selector `getByRole("group")` omits `display:none`, so the hidden top bar was not counted (count 1). The ActionBar contract was already right (desktop top+bottom, mobile sticky bottom only) | Selector changed to `[role="group"][aria-label]` (provably wrong selector; assertions unchanged) |
+| 5 | Visual: sidebar ended at ~370 px; status cell icon only | the nav was sticky at 100vh, so a full-page capture showed white below it; the badge text was squeezed out by shrinking cells | `.shell::before` paints the nav colour down the full page height; the nav itself stays sticky at viewport height while content scrolls. Status cell is `nowrap`, so the Badge keeps its text label. 390: nav is the off-canvas drawer, table scrolls inside its own frame (unchanged) |
+
+Not done / honest limits:
+- Row actions on narrow widths do not collapse into More; at < 768 px the table (min-width 760) scrolls horizontally inside its frame and the actions stay visible. Collapsing would hide "Unpublish" from the 390 click journey; decide before pages adopt it.
+- 390 shots were not re-inspected for overflow (no run); CI lint R3 at 390 passed in round 1.
+
+### Per-component pass list (component × state × 3 locales (zh-CN, zh-TW, en) × 1440 / 390)
+
+Legend: DESIGN = fix made, expected to pass; NOT_RUN = CI not yet re-run. Round-1 result column is what CI reported; "after" is expected, not measured.
+
+| Component | State | Round 1 | After fix (all 3 locales × 1440/390) |
+|-----------|-------|---------|--------------------------------------|
+| Button | primary/secondary/danger/link/small/large | pass | DESIGN, NOT_RUN |
+| Button | disabled with reason | fail (Playwright aria-disabled) | DESIGN, NOT_RUN (real mouse click) |
+| Button | loading | pass | DESIGN, NOT_RUN |
+| Alert | action, dismiss | pass | DESIGN, NOT_RUN |
+| ErrorState | retry | pass | DESIGN, NOT_RUN |
+| EmptyState | action | fail (shared status) | DESIGN, NOT_RUN |
+| Dropzone | hint, bad type, too large, accepted, library | pass | DESIGN, NOT_RUN |
+| FormSection | help | pass | DESIGN, NOT_RUN |
+| ActionBars | Update blocked / dirty / saved / Cancel | blocked fail | DESIGN, NOT_RUN |
+| ActionBars | placement (desktop 2 bars, mobile bottom only) | fail @en 390 (selector) | DESIGN, NOT_RUN |
+| ConfirmDialog | cancel | pass | DESIGN, NOT_RUN |
+| ConfirmDialog | typed confirm (blocked, then done) | fail | DESIGN, NOT_RUN |
+| DataTable | header checkbox, row checkbox, select all results, clear | fail (modal left open) | DESIGN, NOT_RUN |
+| DataTable | row primary / secondary / More menu (Duplicate, Delete, Escape, confirm) | fail (modal left open) | DESIGN, NOT_RUN |
+| DataTable | layout, cell overflow @1440 | fail R3 | DESIGN, NOT_RUN |
+| DataTable | loading / error / empty | pass | DESIGN, NOT_RUN |
+| BulkMenu | nothing selected / delete all results / unpublish | fail | DESIGN, NOT_RUN |
+| FilterBar | search box + button, Enter, select | button fail (modal) | DESIGN, NOT_RUN |
+| Pagination | page links, next/prev, disabled arrow | axe fail (6/6) | DESIGN, NOT_RUN |
+| SegmentedSwitch, Tabs (underline, section) | click, keys, reload | pass | DESIGN, NOT_RUN |
+| KpiCard, SettingsLayout | click, reload | pass | DESIGN, NOT_RUN |
+| AppShellV2 | groups, links, drawer (390), topbar menus, skip link, language | pass; visual: sidebar column | DESIGN, NOT_RUN |

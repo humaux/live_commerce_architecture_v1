@@ -12,6 +12,14 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
   const status = (scope, text) => scope.locator('[role="status"]').filter({ hasText: text });
   const btn = (scope, name) => scope.getByRole("button", { name, exact: true }).filter({ visible: true }).first();
   const attr = async (loc, name) => loc.first().getAttribute(name); // [READ] attribute only
+  // Playwright's actionability check treats aria-disabled="true" as "not enabled" and waits forever, but a user can click such a button (it explains itself).
+  // So a blocked control gets a real mouse click at its centre; the pointer still hits whatever is on top, so an overlay would still fail it.
+  const clickBlocked = async (loc) => {
+    await loc.scrollIntoViewIfNeeded();
+    const box = await loc.boundingBox(); // [MEASURE] position only
+    assert.ok(box, "blocked control has a box");
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  };
   const nav = galleryNav(locale);
   const group = (id) => nav.find((g) => g.id === id);
   const drawer = page.getByRole("navigation", { name: c.navLabel });
@@ -31,7 +39,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
   await step("Button disabled with reason", "click", "reason becomes visible, aria-disabled stays true, no other effect", async () => {
     const b = btn(buttons, c.btnDisabled);
     assert.equal(await attr(b, "aria-disabled"), "true");
-    await b.click();
+    await clickBlocked(b);
     await seen(status(buttons, c.btnDisabledReason));
   });
   await step("Button loading", "read state", "aria-busy true (a busy button swallows clicks by design)", async () => {
@@ -89,7 +97,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     await seen(form.getByText(c.formHelp));
   });
   await step("Save bar Update (nothing to save)", "click", "reason visible, nothing saved", async () => {
-    await btn(form, c.save).click();
+    await clickBlocked(btn(form, c.save));
     await seen(status(form, c.saveReason));
   });
   await step("Product name field", "fill 'abc'", `dirty note and counter ${c.formCounter(3)}`, async () => {
@@ -109,7 +117,8 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     assert.equal(await input.inputValue(), "abc");
   });
   await step("Save bars placement", "read", mobile ? "only the bottom bar is visible (sticky)" : "top and bottom bars both visible", async () => {
-    const bars = form.getByRole("group", { name: c.barLabel });
+    // getByRole leaves out display:none elements, so on a phone it would never see the hidden top bar: select by attribute to count both
+    const bars = form.locator(`[role="group"][aria-label="${c.barLabel}"]`);
     assert.equal(await bars.count(), 2);
     assert.equal(await bars.first().isVisible(), !mobile);
     assert.equal(await bars.last().isVisible(), true);
@@ -125,7 +134,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
   });
   await step("ConfirmDialog typed confirm", "open, click Delete (blocked), type word, click Delete", `blocked with reason, then "${c.dlgDone}"`, async () => {
     await btn(dialogDemo, c.dlgOpenTyped).click();
-    await btn(dialog, c.dlgConfirm).click();
+    await clickBlocked(btn(dialog, c.dlgConfirm));
     await seen(status(dialog, c.dlgMismatch));
     await dialog.getByRole("textbox").fill(c.dlgPhrase);
     await btn(dialog, c.dlgConfirm).click();
@@ -139,7 +148,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
   await step("Bulk menu with nothing selected", "click", "disabled with reason (aria-disabled, reason visible)", async () => {
     const bulk = btn(table, c.bulk);
     assert.equal(await attr(bulk, "aria-disabled"), "true");
-    await bulk.click();
+    await clickBlocked(bulk);
     await seen(status(table, c.bulkNone));
   });
   await step("Header checkbox", "check", `${c.selected(5)} and the all-results offer ${c.selectAll(47)}`, async () => {
@@ -156,7 +165,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     await btn(table, c.bulk).click();
     await btn(table, c.bulkDelete).click();
     await seen(dialog.getByText(c.dlgTypedTitle));
-    await btn(dialog, c.dlgConfirm).click();
+    await clickBlocked(btn(dialog, c.dlgConfirm));
     await seen(status(dialog, c.dlgMismatch));
     await dialog.getByRole("textbox").fill(c.dlgPhrase);
     await btn(dialog, c.dlgConfirm).click();

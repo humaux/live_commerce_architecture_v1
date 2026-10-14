@@ -139,7 +139,7 @@ export function MenuButton({
 
 /* ------------------------------ table ------------------------------ */
 
-export type Column<R> = { id: string; header: ReactNode; cell: (row: R) => ReactNode; align?: "end"; width?: string };
+export type Column<R> = { id: string; header: ReactNode; cell: (row: R) => ReactNode; align?: "end"; width?: string; /** free-text column: may wrap (long names) while every other column stays on one line */ wrap?: boolean };
 export type RowAction = { id: string; label: string; variant?: ActionVariant; onSelect?: () => void; href?: string; more?: boolean };
 
 /** Product/media thumbnail cell. `alt` is required (use the product name); no image shows a dashed placeholder with `emptyLabel`. */
@@ -317,11 +317,11 @@ export function DataTable<R>({
                       </td>
                     )}
                     {columns.map((c) => (
-                      <td key={c.id} data-align={c.align}>
+                      <td key={c.id} data-align={c.align} data-wrap={c.wrap || undefined}>
                         {c.cell(row)}
                       </td>
                     ))}
-                    {actions && <td data-align="end">{renderActions(row)}</td>}
+                    {actions && <td data-align="end" data-actions="">{renderActions(row)}</td>}
                   </tr>
                 );
               })}
@@ -432,21 +432,23 @@ export function Pagination({
   labels: PaginationLabels;
   onNavigate?: (page: number, event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
-  const link = (n: number, content: ReactNode, name: string, disabled = false, current = false) => (
+  const link = (n: number, content: ReactNode, name: string, disabled = false, current = false) =>
+    disabled ? (
+      // a disabled arrow is not an <a> without href (axe aria-prohibited-attr): a link-role span keeps the name, aria-disabled and no tab stop
+      <span className={s.pageLink} role="link" aria-label={name} aria-disabled="true">
+        {content}
+      </span>
+    ) : (
     <a
       className={s.pageLink}
-      href={disabled ? undefined : hrefFor(n)}
+      href={hrefFor(n)}
       aria-label={name}
       aria-current={current ? "page" : undefined}
-      aria-disabled={disabled || undefined}
-      onClick={(event) => {
-        if (disabled) return event.preventDefault();
-        onNavigate?.(n, event);
-      }}
+      onClick={(event) => onNavigate?.(n, event)}
     >
       {content}
     </a>
-  );
+    );
   return (
     <nav className={s.pager} aria-label={labels.nav}>
       <span className={s.summary}>{labels.summary}</span>

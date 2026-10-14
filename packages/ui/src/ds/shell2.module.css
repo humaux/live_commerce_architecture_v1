@@ -2,6 +2,9 @@
  * Depends on: ../tokens.css custom properties.
  * Used by: packages/ui/src/ds/AppShellV2.tsx */
 .shell { display: flex; min-height: 100vh; background: var(--ds-page); color: var(--ds-text-1); font-size: var(--ds-text-md); }
+/* the nav is sticky (viewport height, stays while the page scrolls); this strip paints the nav colour down the whole page so the column never ends in white */
+.shell { position: relative; }
+.shell::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; width: var(--ds-nav-width); background: var(--ds-nav-bg); pointer-events: none; }
 .skip { position: absolute; inset-inline-start: var(--ds-space-2); inset-block-start: -64px; z-index: var(--ds-z-toast); padding: var(--ds-space-2) var(--ds-space-4); background: var(--ds-surface); color: var(--ds-link); border-radius: var(--ds-radius-md); }
 .skip:focus { inset-block-start: var(--ds-space-2); outline: var(--ds-focus-width) solid var(--ds-focus); }
 
@@ -71,6 +74,7 @@
 
 /* ---------- mobile drawer (< 768 px) ---------- */
 @media (max-width: 767.98px) {
+  .shell::before { display: none; }
   .nav { position: fixed; inset-block: 0; inset-inline-start: 0; z-index: var(--ds-z-drawer); height: 100dvh; max-width: 86vw; transform: translateX(-100%); visibility: hidden; transition: transform 0.2s, visibility 0s 0.2s; }
   .nav[data-open="true"] { transform: none; visibility: visible; transition: transform 0.2s; }
   .close { display: inline-flex; align-items: center; justify-content: center; position: absolute; inset-block-start: 3px; inset-inline-end: var(--ds-space-2); min-width: var(--ds-target); min-height: var(--ds-target); border: 0; background: none; color: var(--ds-nav-text); font: inherit; font-size: var(--ds-text-xl); cursor: pointer; }
