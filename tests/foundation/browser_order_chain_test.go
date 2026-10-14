@@ -20,6 +20,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Actual form -> production Next -> Go -> isolated PG. Only the hostname/TLS
@@ -29,6 +31,9 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		t.Fatal("use scripts/dev/test-local.sh --browser-order")
 	}
 	h := bhSetup(t)
+	// /expire keeps the expiry pool live throughout the browser control phase.
+	harnessReleaseSetupPools(t, []*pgxpool.Pool{h.f.owner, h.f.runtime, h.a.runtime, h.a.issuer, h.pool, h.expiry}, []*pgxpool.Pool{h.a.identity, h.worker})
+	harnessWatchCapacity(t, h.f.owner)
 	mustExec(t, h.f.owner, `UPDATE catalog.products SET name='Synthetic browser order product',description='Synthetic acceptance fixture' WHERE id=$1`, h.stock.product.ID)
 	sfiAxisBySKUCode(t, h.f.owner, h.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
 	root, err := filepath.Abs("../..")

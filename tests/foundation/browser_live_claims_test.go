@@ -37,6 +37,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"livecommerce/internal/claims"
 	"livecommerce/internal/httpapi"
@@ -151,6 +152,9 @@ func TestBrowserLiveClaimsRealChain(t *testing.T) {
 		miApp, igAsset, h.f.tenantA, h.f.storeA1, igBinding, strings.Repeat("c", 64), time.Now().Add(time.Hour)).Scan(&igRoute, &igEpoch); err != nil {
 		t.Fatal("instagram route", err)
 	}
+	// Route registration is complete; this test never mounts the inbox handler.
+	harnessReleaseSetupPools(t, []*pgxpool.Pool{h.f.owner, h.f.runtime, h.a.runtime, h.a.issuer, h.pool, authority, m.f.owner, m.f.runtime}, []*pgxpool.Pool{h.a.identity, h.worker, h.expiry, m.ingress, m.curator, m.registrar})
+	harnessWatchCapacity(t, h.f.owner)
 	fixtureToken := randomToken()
 	tx, err := h.f.owner.Begin(ctx)
 	if err != nil {
