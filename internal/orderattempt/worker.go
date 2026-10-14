@@ -3,11 +3,13 @@
 // Used by: the combined claims-worker composition root and REAL_PG recovery gates.
 // Invariants: opaque jobs, one attempt per repair Tx, no scope lock, no partial
 // pointer commit, and expiry execution only after the repair Tx has ended.
+
 package orderattempt
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -103,14 +105,18 @@ func (e *Executor) Sweep(ctx context.Context) (SweepResult, error) {
 			return result, &AdmissionError{code: "order_attempt_invalid_response"}
 		}
 	}
+	var failures error
 	for _, candidate := range candidates {
 		if err = bounded.Err(); err != nil {
-			return result, admissionFailure(err, false)
+			return result, errors.Join(failures, admissionFailure(err, false))
 		}
 		result.Scanned++
 		action, err := e.repairAttempt(bounded, candidate)
 		if err != nil {
-			return result, err
+			// A poisoned intent cannot prevent independent candidates from being
+			// repaired. Keep every sanitized failure visible to the worker caller.
+			failures = errors.Join(failures, err)
+			continue
 		}
 		switch action {
 		case "REQUEUE":
@@ -120,14 +126,15 @@ func (e *Executor) Sweep(ctx context.Context) (SweepResult, error) {
 			// executor rechecks the SQL clock under its own fresh attempt fence.
 			out, err := e.Execute(bounded, "", "", candidate.AttemptID, candidate.Generation)
 			if err != nil {
-				return result, err
+				failures = errors.Join(failures, err)
+				continue
 			}
 			if out.State == "ABORTED" {
 				result.Aborted++
 			}
 		}
 	}
-	return result, nil
+	return result, failures
 }
 
 func (e *Executor) repairAttempt(ctx context.Context, candidate admissionJob) (string, error) {

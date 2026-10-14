@@ -3,6 +3,7 @@
 // Used by: parent-owned Go-area review CI; no provider, replacement SQL helper or local run.
 // Invariants: one failing candidate cannot strand its successor; local key absence is
 // not durable loss authority; a loser can wait within the unchanged five-second C2 budget.
+
 package foundation_test
 
 import (

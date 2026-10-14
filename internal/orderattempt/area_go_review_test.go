@@ -2,6 +2,7 @@
 // Depends on: admissionCalculation and the existing independent money fixture.
 // Used by: OA1 Go-area review CI before product changes.
 // Invariants: a null live price requires an explicit authoritative fallback reason.
+
 package orderattempt
 
 import (

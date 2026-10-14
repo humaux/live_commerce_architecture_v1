@@ -3,6 +3,7 @@
 // Used by: parent-owned OA1 area-Go CI; no provider, product hook or trigger bypass.
 // Invariants: malformed historical plaintext is distinguished from key/tag failure;
 // exact fixture custody is restored, and notification-only VOID retains the complete order.
+
 package foundation_test
 
 import (

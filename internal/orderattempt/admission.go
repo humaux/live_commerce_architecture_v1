@@ -3,6 +3,7 @@
 // Used by: dormant OA1 library callers and real-PG acceptance; not wired into placement.
 // Invariants: server authority and all-state replay precede fresh pricing; one READ
 // COMMITTED transaction; no nested scope transaction, private data in jobs or blind retry.
+
 package orderattempt
 
 import (
@@ -271,6 +272,8 @@ func admissionCalculation(raw json.RawMessage) (pricing.Calculation, error) {
 					return pricing.Calculation{}, invalid
 				}
 				price = *claim.LivePriceMinor
+			} else if claim.Reason == "" {
+				return pricing.Calculation{}, invalid
 			}
 			delete(claims, line.Ordinal)
 		} else if exists {

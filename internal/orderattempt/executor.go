@@ -4,6 +4,7 @@
 // Used by: inline execution and the order_attempt_v1 worker, never ordinary Place.
 // Invariants: attempt fence first; terminal replay wins; only exact definitive
 // failures may abort after rollback; no provider call, new admission or bearer receipt.
+
 package orderattempt
 
 import (
@@ -74,7 +75,7 @@ func (e *Executor) Execute(ctx context.Context, merchantToken, store, attempt st
 		_ = tx.Rollback(cleanup)
 	}()
 	if _, err = tx.Exec(bounded, `SELECT set_config('statement_timeout','5s',true),
-	 set_config('lock_timeout','1s',true),set_config('idle_in_transaction_session_timeout','5s',true)`); err != nil {
+	 set_config('lock_timeout','5s',true),set_config('idle_in_transaction_session_timeout','5s',true)`); err != nil {
 		return ExecutionReceipt{}, admissionFailure(err, false)
 	}
 	var authHash []byte
@@ -95,6 +96,11 @@ func (e *Executor) Execute(ctx context.Context, merchantToken, store, attempt st
 		return ExecutionReceipt{}, admissionFailure(err, false)
 	}
 	defer clear(raw)
+	// The first fence may consume the existing five-second C2 budget while
+	// another executor finishes. Later domain locks retain their one-second cap.
+	if _, err = tx.Exec(bounded, `SELECT set_config('lock_timeout','1s',true)`); err != nil {
+		return ExecutionReceipt{}, admissionFailure(err, false)
+	}
 	var fence executionFence
 	if len(raw) > 2*maxPlanBytes || json.Unmarshal(raw, &fence) != nil {
 		return ExecutionReceipt{}, &AdmissionError{code: "order_attempt_invalid_response"}
@@ -119,6 +125,11 @@ func (e *Executor) Execute(ctx context.Context, merchantToken, store, attempt st
 	// back everything and then proves absence in a new, attempt-first fence.
 	out, executionErr := e.executeFenced(bounded, tx, *fence.Binding, *fence.Envelope)
 	if executionErr != nil {
+		if errors.Is(executionErr, ErrPlanKeyUnavailable) {
+			// A process-local ring miss is compatible with deployment skew and
+			// does not establish permanent loss. Preserve the admitted intent.
+			return ExecutionReceipt{}, &AdmissionError{code: "order_attempt_retryable"}
+		}
 		code := executionAbortCode(executionErr)
 		if code == "" {
 			return ExecutionReceipt{}, admissionFailure(executionErr, false)
