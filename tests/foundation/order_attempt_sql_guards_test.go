@@ -8,7 +8,9 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -107,34 +109,66 @@ func TestOrderAttemptSQLNotificationStageGuards(t *testing.T) {
 }
 
 func TestOrderAttemptSQLNoRetainedSelectionDigest(t *testing.T) {
-	s, _, _ := oaOriginPinScenario(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	var canonical, custody []byte
-	err := s.e.p.f.owner.QueryRow(ctx, `SELECT a.request_hash,r.request_hash FROM ops.order_attempts a
-	 JOIN inbox.order_for_buyer r ON r.create_attempt_id=a.attempt_id
-	 WHERE a.attempt_id=$1 AND a.state='PENDING' AND a.admission_finished
-	 AND r.state='pending' AND r.order_id IS NULL AND r.request_id=a.attempt_id
-	 AND r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.buyer_id=a.buyer_owner_id`, s.a.AttemptID).Scan(&canonical, &custody)
-	if err != nil || len(canonical) != 32 || len(custody) != 32 {
-		t.Fatal("real accepted claim admission custody before digest check", err)
-	}
-	if bytes.Equal(canonical, custody) {
-		t.Fatal("claim reservation retains canonical request digest of buyer contact/address after ops retention")
-	}
-	out, err := s.executor.Execute(ctx, "", "", s.a.AttemptID, s.a.Generation)
-	if err != nil {
-		t.Fatal("actual C2 must consume the same non-PII admission custody", err)
-	}
-	durable := oaCrashCommitted(t, s, out)
-	defer clear(durable)
-	var commandDigest, placedDigest []byte
-	err = s.e.p.f.owner.QueryRow(ctx, `SELECT c.request_hash,r.request_hash FROM checkout.command_results c
-	 JOIN inbox.order_for_buyer r ON r.create_attempt_id=c.create_attempt_id
-	 WHERE c.create_attempt_id=$1 AND c.operation='checkout.begin' AND c.idempotency_key=$1::uuid::text
-	 AND c.creator_kind='order_attempt' AND r.state='placed' AND r.order_id=$1
-	 AND r.tenant_id=c.tenant_id AND r.store_id=c.store_id AND r.buyer_id=c.owner_id`, s.a.AttemptID).Scan(&commandDigest, &placedDigest)
-	if err != nil || len(commandDigest) != 32 || !bytes.Equal(commandDigest, custody) || !bytes.Equal(placedDigest, custody) || bytes.Equal(commandDigest, canonical) {
-		t.Fatal("native claim and Begin audit must retain one exact non-PII custody digest", err)
+	var previousAttempt string
+	var previousExpected [32]byte
+	for i := 0; i < 2; i++ {
+		t.Run(fmt.Sprintf("actual_attempt_%d", i+1), func(t *testing.T) {
+			s, _, _ := oaOriginPinScenario(t)
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			var canonical, custody []byte
+			var tenant, store, attempt, owner, principal string
+			var generation int64
+			// Read authority from the actual C1 row and its authenticated scope,
+			// independently of both retained digests and any product hash helper.
+			err := s.e.p.f.owner.QueryRow(ctx, `SELECT a.request_hash,r.request_hash,
+			 a.tenant_id::text,a.store_id::text,a.attempt_id::text,a.intent_generation,
+			 a.buyer_owner_id::text,q.principal_id::text FROM ops.order_attempts a
+			 JOIN ops.order_attempt_scopes q ON q.scope_id=a.scope_id AND q.tenant_id=a.tenant_id AND q.store_id=a.store_id
+			 JOIN inbox.order_for_buyer r ON r.create_attempt_id=a.attempt_id
+			 WHERE a.attempt_id=$1 AND a.scope_id=$2 AND a.intent_generation=$3 AND a.state='PENDING' AND a.admission_finished
+			 AND q.principal_id=(a.admission_provenance->>'principal_id')::uuid
+			 AND r.state='pending' AND r.order_id IS NULL AND r.request_id=a.attempt_id AND r.bundle_id=$4
+			 AND r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.buyer_id=a.buyer_owner_id
+			 AND r.principal_id=q.principal_id`, s.a.AttemptID, s.a.ScopeID, s.a.Generation, s.bundle).
+				Scan(&canonical, &custody, &tenant, &store, &attempt, &generation, &owner, &principal)
+			if err != nil || len(canonical) != 32 || len(custody) != 32 {
+				t.Fatal("real accepted claim admission custody before digest check", err)
+			}
+			if tenant != s.e.tenant() || store != s.e.store() || principal != s.e.p.f.principalA ||
+				attempt != s.a.AttemptID || generation != s.a.Generation || owner == "" {
+				t.Fatal("custody metadata must match authenticated C1 receipt and scope")
+			}
+			expected := sha256.Sum256([]byte(fmt.Sprintf("order-attempt-custody/v1|%s|%s|%s|%d|%s|%s",
+				tenant, store, attempt, generation, owner, principal)))
+			if previousAttempt != "" && (attempt == previousAttempt || expected == previousExpected) {
+				t.Fatal("second actual admission must have a different identity and independently expected custody digest")
+			}
+			previousAttempt, previousExpected = attempt, expected
+			if bytes.Equal(canonical, custody) {
+				t.Fatal("claim reservation retains canonical request digest of buyer contact/address after ops retention")
+			}
+			if !bytes.Equal(custody, expected[:]) {
+				t.Fatal("admission reservation must match independently calculated six-field custody digest")
+			}
+			out, err := s.executor.Execute(ctx, "", "", s.a.AttemptID, s.a.Generation)
+			if err != nil {
+				t.Fatal("actual C2 must consume the same non-PII admission custody", err)
+			}
+			durable := oaCrashCommitted(t, s, out)
+			defer clear(durable)
+			var commandDigest, placedDigest []byte
+			err = s.e.p.f.owner.QueryRow(ctx, `SELECT c.request_hash,r.request_hash FROM checkout.command_results c
+			 JOIN inbox.order_for_buyer r ON r.create_attempt_id=c.create_attempt_id
+			 WHERE c.create_attempt_id=$1 AND c.operation='checkout.begin' AND c.idempotency_key=$1::uuid::text
+			 AND c.creator_kind='order_attempt' AND r.state='placed' AND r.order_id=$1 AND r.bundle_id=$2
+			 AND r.tenant_id=c.tenant_id AND r.store_id=c.store_id AND r.buyer_id=c.owner_id`, s.a.AttemptID, s.bundle).Scan(&commandDigest, &placedDigest)
+			if err != nil || len(commandDigest) != 32 || !bytes.Equal(commandDigest, custody) || !bytes.Equal(placedDigest, custody) || bytes.Equal(commandDigest, canonical) {
+				t.Fatal("native claim and Begin audit must retain one exact non-PII custody digest", err)
+			}
+			if !bytes.Equal(commandDigest, expected[:]) || !bytes.Equal(placedDigest, expected[:]) {
+				t.Fatal("placed reservation and checkout command must match independently calculated six-field custody digest")
+			}
+		})
 	}
 }
