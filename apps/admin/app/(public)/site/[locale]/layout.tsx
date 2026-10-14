@@ -1,3 +1,6 @@
+// Purpose: Public platform-site layout: locale and host guard, page chrome and the company footer.
+// Depends on: next/headers, next/navigation, lib/company (host parser, locales, footer facts), components/platform/platform.css.
+// Used by: Next.js App Router for every page under app/(public)/site/[locale].
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import {
@@ -12,7 +15,7 @@ const direction = `<!--
 THESIS: From a Facebook comment to a recorded order, not a generic dashboard sales pitch.
 OWN-WORLD: White canvas, slate type, orange actions, fine borders, 8px corners, system sans.
 STORY: Understand the illustrated workflow, inspect operator policies, then open a merchant account.
-FIRST VIEWPORT: Brand and login above a large left headline and right benefits; three illustrated workflow panels below with an explicit setup disclaimer. Operator facts begin below the first viewport.
+FIRST VIEWPORT: Brand and login above a large left headline and right benefits; three illustrated workflow panels below with an explicit setup disclaimer. Company facts begin below the first viewport.
 FORM: Approved A workflow-led presentation, decision 880ef0da (selection key, not a roll seed). Comp-led extension; owner chose A on 2026-10-04; no universal connection claims.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
 -->`;

@@ -31,11 +31,11 @@ test("ADM10 operator sentence is localized while product and company facts stay 
   assert.equal(typeof platformCompany.operatorSentence, "function");
   assert.equal(
     platformCompany.operatorSentence("zh-TW"),
-    `${company.productName} 由 ${company.legalChinese} 營運`,
+    "DaWan Live 是 香港大碗貿易有限公司 的直播電商平台",
   );
   assert.equal(
     platformCompany.operatorSentence("zh-CN"),
-    `${company.productName} 由 ${company.legalChinese} 运营`,
+    "DaWan Live 是 香港大碗貿易有限公司 的直播电商平台",
   );
   assert.equal(platformCompany.operatorSentence("en"), operatedBy);
 });
@@ -108,7 +108,7 @@ test("PS1 legal identity is one untranslated source", () => {
   );
   assert.equal(
     operatedBy,
-    `${company.productName} is operated by ${company.legalEnglish}`,
+    "DaWan Live is a live-commerce platform of Hong Kong Da Wan Trading Limited",
   );
 });
 test("PS1 contact and hosts come only from configuration; production fails closed", () => {
@@ -151,7 +151,7 @@ test("PS1 contact and hosts come only from configuration; production fails close
 test("PS2 public routes default to zh-TW, restrict page/locale, and never include admin", () => {
   assert.deepEqual(platformRoute("/"), { locale: "zh-TW", page: "home" });
   for (const locale of ["zh-TW", "zh-CN", "en"]) {
-    for (const page of ["privacy", "terms", "data-deletion", "contact"]) {
+    for (const page of ["about", "privacy", "terms", "data-deletion", "contact"]) {
       assert.deepEqual(platformRoute(`/${locale}/${page}`), { locale, page });
     }
   }
@@ -198,14 +198,15 @@ test("PS1 public page copy has three complete locales, no invented operator iden
     );
     assert.deepEqual(
       Object.keys(platformLegal[locale]).sort(),
-      platformPages.filter((p) => p !== "home").sort(),
+      // "about" is company facts rendered by PlatformAbout, not a legal document.
+      platformPages.filter((p) => p !== "home" && p !== "about").sort(),
     );
     for (const page of platformPages) {
       assert.deepEqual(platformRoute(platformPath(locale, page)), {
         locale,
         page,
       });
-      if (page !== "home")
+      if (page !== "home" && page !== "about")
         assert.ok(
           platformLegal[locale][page].every(
             ([title, text]) => title && text.length > 20,
@@ -233,6 +234,41 @@ test("PS1 production build validates config; public data is not bundled through 
     );
     assert.ok(!component.includes("dangerouslySetInnerHTML"));
   }
+});
+test("COMPANY-SITE /about exists in three locales, is sitemap-listed and linked from nav and footer", () => {
+  assert.ok(platformPages.includes("about"));
+  for (const locale of platformLocales) {
+    assert.deepEqual(platformRoute(platformPath(locale, "about")), { locale, page: "about" });
+    assert.equal(platformPath(locale, "about"), `${locale === "zh-TW" ? "" : `/${locale}`}/about`);
+    assert.ok(platformCopy[locale].pages.about.length > 0);
+    assert.equal(platformCopy[locale].about.length, 2);
+  }
+  // The sitemap enumerates platformLocales x platformPages; there is no second list to drift.
+  const sitemap = readFileSync("apps/admin/app/(public)/site/sitemap.xml/route.ts", "utf8");
+  assert.match(sitemap, /platformLocales\.flatMap[\s\S]*platformPages\.map/);
+  const page = readFileSync("apps/admin/app/(public)/site/[locale]/[page]/page.tsx", "utf8");
+  assert.match(page, /platformPath\(locale, "about"\)/, "header nav links to /about");
+  assert.match(page, /page === "about" \? \(\s*<PlatformAbout/);
+  assert.match(page, /page === "home" && cfg\.verification/, "domain verification stays home-only");
+  const doc = readFileSync("apps/admin/components/platform/PlatformDocument.tsx", "utf8");
+  assert.match(doc, /\["about", "privacy", "terms", "data-deletion", "contact"\]/, "footer links to /about");
+  const about = doc.slice(doc.indexOf("export function PlatformAbout"), doc.indexOf("export function PlatformDocument"));
+  assert.match(about, /<h1>\s*\{company\.legalEnglish\}\s*<br \/>\s*\{company\.legalChinese\}\s*<\/h1>/, "H1 is the legal names");
+  assert.match(about, /<CompanyFacts locale=\{locale\} \/>/, "facts come from the single CompanyFacts block");
+  for (const p of ["terms", "privacy", "data-deletion", "contact"]) assert.ok(about.includes(`"${p}"`), `about links ${p}`);
+});
+test("COMPANY-SITE no public copy presents the company as an operator/contractor", () => {
+  const banned = /operated by|operator|營運|运营|营运/i;
+  for (const locale of platformLocales) {
+    for (const [name, text] of [
+      ["copy", JSON.stringify(platformCopy[locale])],
+      ["legal", JSON.stringify(platformLegal[locale])],
+      ["sentence", platformCompany.operatorSentence(locale)],
+    ])
+      assert.doesNotMatch(text, banned, `${locale}/${name}`);
+    assert.ok(platformCompany.operatorSentence(locale).includes(locale === "en" ? company.legalEnglish : "大碗"));
+  }
+  assert.doesNotMatch(operatedBy, banned);
 });
 test("PS review: admin image installs the manifests for its workspace dependencies before building", () => {
   const dockerfile = readFileSync("deploy/docker/admin.Dockerfile", "utf8");

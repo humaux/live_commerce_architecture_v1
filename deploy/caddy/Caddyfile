@@ -139,7 +139,7 @@
 	@publicSlash {
 		method GET HEAD
 		expression !{http.request.uri.path}.endsWith('//')
-		path_regexp publicSlash ^(/(?:(?:zh-TW|zh-CN|en)(?:/(?:privacy|terms|data-deletion|contact))?|privacy|terms|data-deletion|contact))/$
+		path_regexp publicSlash ^(/(?:(?:zh-TW|zh-CN|en)(?:/(?:about|privacy|terms|data-deletion|contact))?|about|privacy|terms|data-deletion|contact))/$
 	}
 	handle @publicSlash {
 		redir {re.publicSlash.1}{?query} 301
@@ -148,7 +148,7 @@
 	# /api/auth is deliberately excluded from Next's body-buffering proxy matcher.
 	@public {
 		method GET HEAD
-		path / /zh-TW /zh-CN /en /privacy /terms /data-deletion /contact /zh-TW/privacy /zh-TW/terms /zh-TW/data-deletion /zh-TW/contact /zh-CN/privacy /zh-CN/terms /zh-CN/data-deletion /zh-CN/contact /en/privacy /en/terms /en/data-deletion /en/contact /robots.txt /sitemap.xml /_next/static/*
+		path / /zh-TW /zh-CN /en /about /privacy /terms /data-deletion /contact /zh-TW/about /zh-CN/about /en/about /zh-TW/privacy /zh-TW/terms /zh-TW/data-deletion /zh-TW/contact /zh-CN/privacy /zh-CN/terms /zh-CN/data-deletion /zh-CN/contact /en/privacy /en/terms /en/data-deletion /en/contact /robots.txt /sitemap.xml /_next/static/*
 	}
 	handle @public {
 		reverse_proxy 127.0.0.1:3100

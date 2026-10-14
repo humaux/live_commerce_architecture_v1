@@ -40,8 +40,8 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     ],
     terms: [
       [
-        "服務與營運者",
-        "本服務提供商家網店、商品與庫存、Facebook 及已連結 Instagram 帳戶的留言收單、訂單管理及按設定啟用的收款、物流和廣告工作流程。經商家授權，在平台權限及訊息規則允許時，系統代表商家向留言者發送一則含訂單認領連結的私訊回覆，並記錄發送結果及 Meta 提供的送達狀態（如有）。Messenger 訊息及 Instagram 私訊僅在 Meta 實際傳送至平台 Webhook 時處理，用於留言收單及訂單跟進。目前未訂閱傳入私訊事件，因此目前不會經此途徑收到私訊。營運公司及登記資料列於本頁。功能受帳戶權限、商家設定及第三方審核限制；本網站的流程圖僅為產品示意。",
+        "服務與公司",
+        "本服務提供商家網店、商品與庫存、Facebook 及已連結 Instagram 帳戶的留言收單、訂單管理及按設定啟用的收款、物流和廣告工作流程。經商家授權，在平台權限及訊息規則允許時，系統代表商家向留言者發送一則含訂單認領連結的私訊回覆，並記錄發送結果及 Meta 提供的送達狀態（如有）。Messenger 訊息及 Instagram 私訊僅在 Meta 實際傳送至平台 Webhook 時處理，用於留言收單及訂單跟進。目前未訂閱傳入私訊事件，因此目前不會經此途徑收到私訊。公司名稱及登記資料列於本頁。功能受帳戶權限、商家設定及第三方審核限制；本網站的流程圖僅為產品示意。",
       ],
       [
         "商家責任",
@@ -57,7 +57,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "聯絡及爭議",
-        "如對服務、帳戶或條款有疑問，請聯絡下方營運公司。這些條款不排除適用法律下不得排除的權利或責任。",
+        "如對服務、帳戶或條款有疑問，請聯絡我們，公司資料列於下方。這些條款不排除適用法律下不得排除的權利或責任。",
       ],
     ],
     "data-deletion": [
@@ -77,11 +77,11 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     contact: [
       [
         "服務與資料請求",
-        "商家帳戶、服務問題、隱私或資料刪除請求，請使用下方電郵聯絡營運公司。請描述問題及店鋪編號，不要寄送密碼、API 密鑰或完整付款資料。",
+        "商家帳戶、服務問題、隱私或資料刪除請求，請使用下方電郵聯絡我們。請描述問題及店鋪編號，不要寄送密碼、API 密鑰或完整付款資料。",
       ],
       [
         "買家訂單",
-        "商品、配送、退貨及退款問題，請優先聯絡你購物的商家。此處為平台營運公司聯絡方式，並非所有商家的客服或退貨地址。",
+        "商品、配送、退貨及退款問題，請優先聯絡你購物的商家。此處為平台公司（我們）的聯絡方式，並非所有商家的客服或退貨地址。",
       ],
     ],
   },
@@ -114,8 +114,8 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     ],
     terms: [
       [
-        "服务与运营者",
-        "本服务提供商家网店、商品与库存、Facebook 及已关联 Instagram 账户的评论收单、订单管理及按设置启用的收款、物流和广告工作流程。经商家授权，在平台权限及消息规则允许时，系统代表商家向评论者发送一条含订单认领链接的私信回复，并记录发送结果及 Meta 提供的送达状态（如有）。Messenger 消息及 Instagram 私信仅在 Meta 实际传送至平台 Webhook 时处理，用于评论收单及订单跟进。目前未订阅传入私信事件，因此目前不会经此途径收到私信。运营公司及登记资料列于本页。功能受账户权限、商家设置及第三方审核限制；本网站的流程图仅为产品示意。",
+        "服务与公司",
+        "本服务提供商家网店、商品与库存、Facebook 及已关联 Instagram 账户的评论收单、订单管理及按设置启用的收款、物流和广告工作流程。经商家授权，在平台权限及消息规则允许时，系统代表商家向评论者发送一条含订单认领链接的私信回复，并记录发送结果及 Meta 提供的送达状态（如有）。Messenger 消息及 Instagram 私信仅在 Meta 实际传送至平台 Webhook 时处理，用于评论收单及订单跟进。目前未订阅传入私信事件，因此目前不会经此途径收到私信。公司名称及登记资料列于本页。功能受账户权限、商家设置及第三方审核限制；本网站的流程图仅为产品示意。",
       ],
       [
         "商家责任",
@@ -131,7 +131,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "联系及争议",
-        "如对服务、账户或条款有疑问，请联系下方运营公司。这些条款不排除适用法律下不得排除的权利或责任。",
+        "如对服务、账户或条款有疑问，请联系我们，公司资料列于下方。这些条款不排除适用法律下不得排除的权利或责任。",
       ],
     ],
     "data-deletion": [
@@ -151,11 +151,11 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     contact: [
       [
         "服务与资料请求",
-        "商家账户、服务问题、隐私或资料删除请求，请使用下方邮箱联系运营公司。请描述问题及店铺编号，不要发送密码、API 密钥或完整付款资料。",
+        "商家账户、服务问题、隐私或资料删除请求，请使用下方邮箱联系我们。请描述问题及店铺编号，不要发送密码、API 密钥或完整付款资料。",
       ],
       [
         "买家订单",
-        "商品、配送、退货及退款问题，请优先联系你购物的商家。此处为平台运营公司联系方式，并非所有商家的客服或退货地址。",
+        "商品、配送、退货及退款问题，请优先联系你购物的商家。此处为平台公司（我们）的联系方式，并非所有商家的客服或退货地址。",
       ],
     ],
   },
@@ -188,8 +188,8 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     ],
     terms: [
       [
-        "Service and operator",
-        "The service provides merchant storefronts, products and inventory, Facebook and linked Instagram comment ordering, order management and configured payment, logistics and advertising workflows. With merchant authorisation, where platform permissions and messaging rules allow, the system sends one private reply containing an order-claim link to the commenter on the merchant’s behalf, and records the send result and any delivery status Meta provides. Messenger messages and Instagram direct messages are processed only if Meta actually delivers them to the platform’s webhook, for comment ordering and order follow-up. Inbound direct-message events are not currently subscribed to, so no incoming direct messages are currently received through this route. The operator’s registered details appear on this page. Features depend on account permissions, merchant setup and third-party approval. Website workflow diagrams are product illustrations only.",
+        "Service and company",
+        "The service provides merchant storefronts, products and inventory, Facebook and linked Instagram comment ordering, order management and configured payment, logistics and advertising workflows. With merchant authorisation, where platform permissions and messaging rules allow, the system sends one private reply containing an order-claim link to the commenter on the merchant’s behalf, and records the send result and any delivery status Meta provides. Messenger messages and Instagram direct messages are processed only if Meta actually delivers them to the platform’s webhook, for comment ordering and order follow-up. Inbound direct-message events are not currently subscribed to, so no incoming direct messages are currently received through this route. The company’s name and registered details appear on this page. Features depend on account permissions, merchant setup and third-party approval. Website workflow diagrams are product illustrations only.",
       ],
       [
         "Merchant responsibilities",
@@ -205,7 +205,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "Questions and disputes",
-        "Contact the operator below about the service, accounts or these terms. These terms do not exclude rights or liabilities that cannot be excluded under applicable law.",
+        "Contact us (company details below) about the service, accounts or these terms. These terms do not exclude rights or liabilities that cannot be excluded under applicable law.",
       ],
     ],
     "data-deletion": [
@@ -225,11 +225,11 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     contact: [
       [
         "Service and data requests",
-        "Contact the operator using the email below for merchant account, service, privacy or data-deletion requests. Describe the issue and store number; do not send passwords, API secrets or complete payment information.",
+        "Contact us using the email below for merchant account, service, privacy or data-deletion requests. Describe the issue and store number; do not send passwords, API secrets or complete payment information.",
       ],
       [
         "Buyer orders",
-        "For products, delivery, returns or refunds, contact the merchant you purchased from first. This is the platform operator’s contact information, not every merchant’s customer service or returns address.",
+        "For products, delivery, returns or refunds, contact the merchant you purchased from first. This is the platform company’s (our) contact information, not every merchant’s customer service or returns address.",
       ],
     ],
   },

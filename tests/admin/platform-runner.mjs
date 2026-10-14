@@ -18,7 +18,7 @@ const host = "platform.example.invalid",
   adminHost = "admin.example.invalid",
   origin = `https://${host}`;
 const locales = ["zh-TW", "zh-CN", "en"],
-  pages = ["home", "privacy", "terms", "data-deletion", "contact"];
+  pages = ["home", "about", "privacy", "terms", "data-deletion", "contact"];
 const facts = [
   "Hong Kong Da Wan Trading Limited",
   "香港大碗貿易有限公司",
@@ -445,7 +445,7 @@ try {
           .toString()
           .match(/<url>/g) || []
       ).length,
-      15,
+      locales.length * pages.length,
     );
     await matrix(s);
   } finally {
@@ -506,20 +506,20 @@ try {
     `${output}/ps-browser-result.json`,
     JSON.stringify(
       {
-        pass: 30,
+        pass: locales.length * 2 * pages.length,
         fail: 0,
         clicks,
         messagingCopyCases,
         reloads: ledger.filter((r) => r.action === "reload").length,
-        ssrCases: 15,
-        tagCases: 16,
+        ssrCases: locales.length * pages.length,
+        tagCases: locales.length * pages.length + 1,
       },
       null,
       2,
     ),
   );
   console.log(
-    `PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases, ${clicks} real clicks, ${messagingCopyCases} messaging-copy cases and 30 reloads`,
+    `PASS PS1/PS2/PS4: ${locales.length * 2 * pages.length} page cases, ${locales.length * pages.length} SSR cases, ${locales.length * pages.length + 1} tag cases, ${clicks} real clicks, ${messagingCopyCases} messaging-copy cases and ${ledger.filter((r) => r.action === "reload").length} reloads`,
   );
 } finally {
   await browser?.close();
