@@ -8,6 +8,8 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -21,6 +23,7 @@ import (
 	"livecommerce/internal/customers"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
+	"livecommerce/internal/orderattempt"
 	"livecommerce/internal/platform"
 )
 
@@ -71,7 +74,7 @@ func oaAreaRuntime(t *testing.T, e *lbuEnv) (*pgxpool.Pool, int32) {
 
 // The ticker only polls an observed PostgreSQL wait edge; it never establishes
 // ordering. Release immediately once the edge exists, within C2's 1s lock budget.
-func oaAreaWaitEdge(t *testing.T, e *lbuEnv, ctx context.Context, waiter, blocker int32, finished <-chan struct{}) {
+func oaAreaWaitEdge(t *testing.T, e *lbuEnv, ctx context.Context, waiter, blocker int32, finished <-chan struct{}, outcomes ...<-chan oaExecutorOutcome) {
 	t.Helper()
 	ticker := time.NewTicker(5 * time.Millisecond)
 	defer ticker.Stop()
@@ -85,6 +88,19 @@ func oaAreaWaitEdge(t *testing.T, e *lbuEnv, ctx context.Context, waiter, blocke
 		}
 		select {
 		case <-finished:
+			if len(outcomes) == 1 {
+				out := <-outcomes[0]
+				code, sqlState := "", ""
+				var admission *orderattempt.AdmissionError
+				if errors.As(out.err, &admission) {
+					code, sqlState = admission.Code(), admission.SQLState()
+				}
+				var terminal struct {
+					Code string `json:"code"`
+				}
+				_ = json.Unmarshal(out.receipt.Receipt, &terminal)
+				t.Fatalf("operation completed before the required attempt-fence wait: error_type=%T code=%q sqlstate=%q state=%q terminal_code=%q", out.err, code, sqlState, out.receipt.State, terminal.Code)
+			}
 			t.Fatal("operation completed before the required attempt-fence wait")
 		case <-ctx.Done():
 			t.Fatal("required attempt-fence wait not observed")
@@ -179,7 +195,7 @@ func TestOrderAttemptC2FenceBeforeErasureRetainsCommercialProof(t *testing.T) {
 		_ = holder.Rollback(clean)
 		oaAreaDrain(t, executorDone)
 	}()
-	oaAreaWaitEdge(t, e, ctx, executorPID, int32(holder.Conn().PgConn().PID()), executorDone)
+	oaAreaWaitEdge(t, e, ctx, executorPID, int32(holder.Conn().PgConn().PID()), executorDone, executed)
 	pid := make(chan uint32, 1)
 	go func() {
 		erased <- oaCEErase(ctx, e, plan.BuyerOwnerID, "oa-area-erase-"+randomUUID(), pid)
