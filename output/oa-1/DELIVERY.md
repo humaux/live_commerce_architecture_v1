@@ -1111,3 +1111,50 @@ test, build, formatter, dev server or PG was run. These regression fixes await
 fresh CI; the complete unit is **NOT_READY**. Permanent plan-key-loss authority
 still awaits the owner's requested contract clarification; local ring absence
 remains retryable PENDING and cannot justify PLAN_UNAVAILABLE.
+
+# Round-1 continuation: CI130 receipts and independent oracle strengthening
+
+Normal CI130 `38500382938` is pinned to `e08d1a4c60cc924368054ec5a80509497546c67e`:
+
+- Model job `115645762862`: GREEN, top-level PASS=5 FAIL=0 exit=0;
+  `model-green-ci130.log:807`. The legal crash baseline clears both model draft
+  and fence; the unchanged observer then rejects the injected lockless commit.
+- Real C2/erasure barriers `115645762911`: GREEN, PASS=2 FAIL=0 exit=0;
+  `erasure-barrier-green-ci130.log:737–746`. Both positive blocking edges,
+  COMMITTED proof retention/subject deletion, and ERASED zero effects/next CAS pass.
+- Production disabled pin `115645762968`: GREEN, PASS=1 FAIL=0 exit=0,
+  both API and worker. No activation or deployment was performed.
+- Native combined job `115645762770`: RED, PASS=12 FAIL=1;
+  `native-ci130.log:747`. The competing native COD order COMMITTED and the
+  store capacity sentinel pass. The original attempt fails its exact expected
+  `limit_exceeded` disposition: base stock ten minus legacy hold two minus
+  competitor allocation five leaves only three, so allocation refuses first.
+  This is not a demonstrated capacity-code defect. The fixture now calls the
+  existing real inventory writer `topUp()` before C1 and asserts at least five
+  units remain after the competitor. No disposition assertion or budget changed.
+- PR Foundation `38500339435` / `115645530794`: RED solely on generated
+  dependency-map drift; `foundation-red-e08d1a4c6.log`. Applied CI130's exact
+  `oa1-gofmt.patch` and copied its generated dependency map/shard plan. Artifact
+  source SHA is e08; local generation/formatting was NOT_RUN. Current green pending.
+
+CI129 `38499182388`, exact c957 source, completed native job `115642926724`
+RED PASS=9 FAIL=9 exit=1 (`isolation-red-ci129.log:819`). Native periodic expiry
+passes; eight C2-related failures still hit the pre-e08 terminal-custody mismatch.
+The periodic orphan consumer also times out after an earlier candidate is SKIP;
+the log does not establish a separate product root cause. The current restored
+custody source must be checked with the complete isolation subset; no rerun or
+timeout relaxation can substitute for that proof.
+
+Tests FIRST commits `3056ace1b` and `9034aa53e` strengthen threads 4265978705
+and 4265978708. Custody tests independently compute the six-field SHA256 from
+the authenticated C1 identity for two actual C1/C2 attempts. Kept-pool tests
+change configured DSNs after the factory retains its pools, and add an all-clone
+participant case against the main primary database. Consistent custody rehash/
+constant and configuration-reopen/ignore-main mutants are CI-only; their RED
+and restored GREEN receipts remain pending. Original 0194 and granular mutants
+will run against this batch's exact source, with path/hash echoes in each log.
+
+Whole unit remains NOT_READY: current PR-required/complete native gates and
+independent delta review are pending, as is the owner decision for a durable
+permanent plan-key-loss witness (4265883878). A local ring miss stays PENDING;
+it is not proof of permanent loss. All local runtime/build/formatter/PG NOT_RUN.

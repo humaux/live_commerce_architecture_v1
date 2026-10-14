@@ -169,7 +169,7 @@ Package billingtest owns the independent MOCK of the Stripe Billing endpoints th
 
 Package buyer owns the anonymous buyer capability boundary: issuing short-lived opaque capability tokens on the issuer pool and scoping every buyer transaction to one (tenant, store, owner, session) with a replay-safe command record.
 
-- Depends on (internal): `internal/command`
+- Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/api`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/customers`, `internal/fulfillment`, `internal/merchanttools`, `internal/storefront`
 
@@ -543,7 +543,7 @@ Package oidclogin owns verification of an external OIDC login (discovery, PKCE S
 
 ## `internal/orderattempt`
 
-Purpose: settle a proved zero-effects attempt and replay its durable receipt.
+Package orderattempt owns durable merchant order admission, frozen-plan custody and the single-transaction local executor.
 
 - Depends on (internal): `internal/checkout`, `internal/command`, `internal/inbox`, `internal/integrations/core`, `internal/inventory`, `internal/pricing`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
@@ -603,7 +603,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`, `internal/integrations/psp/stripe`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
+- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
 
 ## `internal/pricing`
 

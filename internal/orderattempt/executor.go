@@ -5,7 +5,6 @@
 // Invariants: attempt fence first; terminal replay wins; only exact definitive
 // failures may abort after rollback; no provider call, new admission or bearer receipt.
 
-
 package orderattempt
 
 import (

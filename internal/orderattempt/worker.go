@@ -4,7 +4,6 @@
 // Invariants: opaque jobs, one attempt per repair Tx, no scope lock, no partial
 // pointer commit, and expiry execution only after the repair Tx has ended.
 
-
 package orderattempt
 
 import (

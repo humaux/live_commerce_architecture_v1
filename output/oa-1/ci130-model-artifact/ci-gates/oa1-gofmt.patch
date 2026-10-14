@@ -1,0 +1,47 @@
+diff internal/orderattempt/admission.go.orig internal/orderattempt/admission.go
+--- internal/orderattempt/admission.go.orig
++++ internal/orderattempt/admission.go
+@@ -4,7 +4,6 @@
+ // Invariants: server authority and all-state replay precede fresh pricing; one READ
+ // COMMITTED transaction; no nested scope transaction, private data in jobs or blind retry.
+ 
+-
+ package orderattempt
+ 
+ import (
+diff internal/orderattempt/executor.go.orig internal/orderattempt/executor.go
+--- internal/orderattempt/executor.go.orig
++++ internal/orderattempt/executor.go
+@@ -5,7 +5,6 @@
+ // Invariants: attempt fence first; terminal replay wins; only exact definitive
+ // failures may abort after rollback; no provider call, new admission or bearer receipt.
+ 
+-
+ package orderattempt
+ 
+ import (
+diff internal/orderattempt/worker.go.orig internal/orderattempt/worker.go
+--- internal/orderattempt/worker.go.orig
++++ internal/orderattempt/worker.go
+@@ -4,7 +4,6 @@
+ // Invariants: opaque jobs, one attempt per repair Tx, no scope lock, no partial
+ // pointer commit, and expiry execution only after the repair Tx has ended.
+ 
+-
+ package orderattempt
+ 
+ import (
+diff tests/foundation/order_attempt_model_lock_test.go.orig tests/foundation/order_attempt_model_lock_test.go
+--- tests/foundation/order_attempt_model_lock_test.go.orig
++++ tests/foundation/order_attempt_model_lock_test.go
+@@ -15,8 +15,8 @@
+ 	stage := oaModelCommand{op: oaStage, generation: 1, arg: oaEffects}
+ 	commit := oaModelCommand{op: oaCommit, generation: 1}
+ 	for _, tc := range []struct {
+-		name string
+-		commands []oaModelCommand
++		name         string
++		commands     []oaModelCommand
+ 		state, count int
+ 	}{
+ 		{"a_crash_resume", []oaModelCommand{admit, lock, stage, {op: oaCrash}, lock, stage, commit}, oaCommitted, 1},

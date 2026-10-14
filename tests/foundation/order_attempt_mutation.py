@@ -11,12 +11,12 @@ from pathlib import Path
 import subprocess
 
 
-def replace_exact(path, before, after):
+def replace_exact(path, before, after, expected_count=1):
     file = Path(path)
     original = file.read_text()
-    if original.count(before) != 1:
+    if original.count(before) != expected_count:
         raise SystemExit("mutation source did not match exactly: " + path)
-    changed = original.replace(before, after, 1)
+    changed = original.replace(before, after, expected_count)
     file.write_text(changed)
     return {
         "path": path,
@@ -25,11 +25,53 @@ def replace_exact(path, before, after):
     }
 
 
+def custody_mutations(rehash):
+    # Mutate every writer and reader consistently; only the independent test
+    # oracle may distinguish a rehash/constant from the six-field custody.
+    specs = [
+        ("migrations/0175_order_attempt_claim_admission.sql", "sha256(convert_to('order-attempt-custody/v1|'||v[1]::text||'|'||v[2]::text||'|'||p_attempt::text\n  ||'|'||(ctx->>'intent_generation')::bigint::text||'|'||v_owner::text||'|'||v[3]::text,'UTF8'))", "ctx", True, 1),
+        ("migrations/0180_order_attempt_abort.sql", "sha256(convert_to('order-attempt-custody/v1|'||tenant::text||'|'||store::text||'|'||p_attempt::text\n  ||'|'||(ctx->>'generation')::bigint::text||'|'||owner_id::text||'|'||principal::text,'UTF8'))", "ctx", False, 1),
+        ("migrations/0184_order_attempt_begin.sql", "sha256(convert_to('order-attempt-custody/v1|'||tenant::text||'|'||store::text||'|'||p_attempt::text\n  ||'|'||(binding->>'generation')::bigint::text||'|'||owner_id::text||'|'||principal::text,'UTF8'))", "binding", False, 1),
+        ("migrations/0185_order_attempt_claim_execution.sql", "sha256(convert_to('order-attempt-custody/v1|'||v_tenant::text||'|'||v_store::text||'|'||p_attempt::text\n  ||'|'||(v_binding->>'generation')::bigint::text||'|'||v_owner::text||'|'||v_principal::text,'UTF8'))", "v_binding", False, 2),
+        ("migrations/0189_order_attempt_settlement.sql", "sha256(convert_to('order-attempt-custody/v1|'||tenant::text||'|'||store::text||'|'||p_attempt::text\n    ||'|'||(binding->>'generation')::bigint::text||'|'||buyer_id::text||'|'||(binding->>'principal_id')::uuid::text,'UTF8'))", "binding", False, 1),
+    ]
+    result = []
+    for path, before, alias, hex_value, count in specs:
+        after = "decode(repeat('5a',32),'hex')"
+        if rehash:
+            if hex_value:
+                after = "sha256(decode(" + alias + "->>'request_hash','hex'))"
+            else:
+                after = "sha256(decode((SELECT string_agg(lpad(to_hex(x.b::integer),2,'0'),'' ORDER BY x.n) FROM jsonb_array_elements_text(" + alias + "->'request_hash') WITH ORDINALITY AS x(b,n)),'hex'))"
+        result.append((path, before, after, count))
+    return result
+
+
 def main():
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise SystemExit("OA mutations run only in disposable GitHub CI checkouts")
     name = os.environ.get("LC_OA_MUTATION", "")
     edits = {
+        "custody-rehash-canonical": custody_mutations(True),
+        "custody-constant": custody_mutations(False),
+        "kept-pools-reopen-config": [(
+            "cmd/api/buyer_kept_preflight.go",
+            'import "context"',
+            'import ("context"; "os"; "livecommerce/internal/platform")',
+        ), (
+            "cmd/api/buyer_kept_preflight.go",
+            "\tif ctx == nil || parts.Manual == nil || parts.Manual.ValidateSameDatabase(ctx) != nil {\n\t\treturn errBuyerConfig\n\t}\n\treturn nil\n",
+            "\tif ctx == nil { return errBuyerConfig }\n\treference, err := platform.OpenPool(ctx, os.Getenv(\"LC_BUYER_KEPT_MAIN_DSN\"))\n\tif err != nil { return errBuyerConfig }\n\tdefer reference.Close()\n\treturn buyerDatabasePreflight(ctx, c, reference)\n",
+        )],
+        "kept-pools-ignore-main": [(
+            "internal/merchanttools/database.go",
+            '\n\t"livecommerce/internal/platform"',
+            "",
+        ), (
+            "internal/merchanttools/database.go",
+            "\tif m.issuer.ValidateSameDatabase(ctx, m.pool) != nil ||\n\t\tplatform.ValidateSameDatabase(ctx, m.pool, m.buyerPool) != nil ||\n\t\tm.checkout.ValidateSameDatabase(ctx, m.pool) != nil {\n",
+            "\tif m.issuer.ValidateSameDatabase(ctx, m.buyerPool) != nil ||\n\t\tm.checkout.ValidateSameDatabase(ctx, m.buyerPool) != nil {\n",
+        )],
         "production-enable-api": [(
             "deploy/compose.yml",
             '      LC_ORDER_ATTEMPT_ENABLED: "0"\n      COMMERCE_IDENTITY_ENABLED:',

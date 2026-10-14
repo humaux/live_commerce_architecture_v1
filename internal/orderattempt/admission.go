@@ -4,7 +4,6 @@
 // Invariants: server authority and all-state replay precede fresh pricing; one READ
 // COMMITTED transaction; no nested scope transaction, private data in jobs or blind retry.
 
-
 package orderattempt
 
 import (

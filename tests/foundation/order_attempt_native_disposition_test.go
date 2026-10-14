@@ -89,6 +89,9 @@ func TestOrderAttemptNativeMaxPerOrderRevocationSealsLimitExceeded(t *testing.T)
 func TestOrderAttemptNativeOfflineCapacitySealsLimitExceeded(t *testing.T) {
 	e := oaAreaIsolated(t)
 	oaAreaWholeTWDPrice(t, e)
+	// The base fixture already holds two units. Both real COD attempts need five;
+	// inventory must stay available so the original reaches the offline limit.
+	e.topUp()
 	e.cvsSettings(tcvAllChains, true, "20000", 1)
 	selection := oaBeginSelection(t, e, "cash_on_delivery", "duplicate-origins")
 	a := oaAllocationAdmit(t, e, selection)
@@ -123,6 +126,11 @@ func TestOrderAttemptNativeOfflineCapacitySealsLimitExceeded(t *testing.T) {
 	 AND EXISTS(SELECT 1 FROM checkout.orders WHERE id=$3 AND create_attempt_id=$3 AND owner_id=$4)
 	 FROM fulfillment.cvs_store_settings c WHERE c.tenant_id=$1 AND c.store_id=$2`, e.tenant(), e.store(), competitor.AttemptID, otherPlan.BuyerOwnerID).Scan(&full); err != nil || !full {
 		t.Fatal("native offline-order capacity positive sentinel", err)
+	}
+	var available bool
+	if err = e.p.f.owner.QueryRow(context.Background(), `SELECT sum(on_hand-reserved-allocated-unavailable)>=5
+	 FROM inventory.balances WHERE tenant_id=$1 AND store_id=$2 AND sku_id=$3`, e.tenant(), e.store(), e.money).Scan(&available); err != nil || !available {
+		t.Fatal("original COD must reach the native offline limit before an inventory refusal", err)
 	}
 	oaAreaNativeAbortReplay(t, e, a, "limit_exceeded") // native PT429/offline_order_limit
 	before := oaAreaCommercialSnapshot(t, e, competitor.AttemptID)

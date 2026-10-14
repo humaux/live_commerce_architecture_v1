@@ -15,8 +15,8 @@ func TestOrderAttemptModelContractSeedsAH(t *testing.T) {
 	stage := oaModelCommand{op: oaStage, generation: 1, arg: oaEffects}
 	commit := oaModelCommand{op: oaCommit, generation: 1}
 	for _, tc := range []struct {
-		name string
-		commands []oaModelCommand
+		name         string
+		commands     []oaModelCommand
 		state, count int
 	}{
 		{"a_crash_resume", []oaModelCommand{admit, lock, stage, {op: oaCrash}, lock, stage, commit}, oaCommitted, 1},
