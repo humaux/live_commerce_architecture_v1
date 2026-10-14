@@ -1,5 +1,5 @@
 -- Purpose: native privacy erasure seals indexed OA1 intents before PII redaction.
--- Depends: 0176 subject barriers, 0178 protected xid witness, 0180 absence/release.
+-- Depends on: 0176 subject barriers, 0178 protected xid witness, 0180 absence/release.
 -- Used by: authenticated customers.erase_owner and private restore replay only.
 -- Invariants: all subject barriers -> all attempts -> all owners -> domains;
 -- no plan decryption, key/principal/scope locks, privacy ops SELECT or compensation.

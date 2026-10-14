@@ -1,5 +1,5 @@
 // Purpose: issue and replay encrypted, order-only random pay-entry credentials.
-// Depends: standard-library crypto/JSON, command UUID validation and plan key validation.
+// Depends on: standard-library crypto/JSON, command UUID validation and plan key validation.
 // Used by: OA1 local C2 preparation; SQL owns issuance version, lifetime and validity.
 // Invariants: dedicated immutable keyring, authenticated order/version/digest, no buyer
 // capability, plaintext persistence, provider call or credential-bearing error.

@@ -3,7 +3,8 @@
 // from browser storage, recomputes an admitted price, commits a partial order or
 // contacts a payment/message provider.
 //
-// It depends on PostgreSQL domain definers, the existing pricing/stock algorithms,
-// isolated encryption rings and River InsertTx. API and claims-worker composition
-// roots are its callers; the frozen order-attempt-v1 contract defines its fences.
+// Purpose: durable merchant admission, frozen-plan custody and atomic local execution.
+// Depends on: PostgreSQL domain definers, pricing/stock algorithms, isolated encryption
+// rings and River InsertTx; order-attempt-v1 defines the execution fences.
+// Used by: API and claims-worker composition roots.
 package orderattempt

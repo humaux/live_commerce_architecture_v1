@@ -1,5 +1,5 @@
 -- Purpose: fenced metadata-only abort and the reusable native owner prefix.
--- Depends: 0170/0171 identity/provenance, 0175 admission, 0178 execution witness.
+-- Depends on: 0170/0171 identity/provenance, 0175 admission, 0178 execution witness.
 -- Used by: actual runtime/claims executor; domain helpers remain coordinator-only.
 -- Invariants: current-xid PENDING fence, all indexed owners sorted, exact absence
 -- before release/seal, immutable receipt, no scope/principal/subject-barrier locks.

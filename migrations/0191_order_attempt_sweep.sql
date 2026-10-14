@@ -1,5 +1,5 @@
 -- Purpose: bounded worker-only discovery and attempt-first execution-job repair.
--- Depends: protected attempt identity, 0178 fence conventions and post-River0025.
+-- Depends on: protected attempt identity, 0178 fence conventions and post-River0025.
 -- Used by: Executor.Sweep prepare/InsertTx/finish; expired rows execute separately.
 -- Invariants: no scope/principal/subject locks; one attempt UPDATE per repair;
 -- only a current-xid witness can authorize a fresh native River job.

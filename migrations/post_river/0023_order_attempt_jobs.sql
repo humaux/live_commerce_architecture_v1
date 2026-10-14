@@ -1,5 +1,5 @@
 -- Purpose: fresh transaction-bound order-attempt River enqueue and reciprocal links.
--- Depends: 0170/0172 protected admission storage, upstream River and its existing ACLs.
+-- Depends on: 0170/0172 protected admission storage, upstream River and its existing ACLs.
 -- Used by: runtime C1 InsertTx, claims-worker fenced re-enqueue and periodic sweep.
 -- Invariants: INSERT consumes one protected witness; identity UPDATE cannot admit;
 -- final-state commit checks run after caller GUC restoration; no PII in job args.

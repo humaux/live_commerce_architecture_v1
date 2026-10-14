@@ -872,3 +872,39 @@ Independent static preflight review found no concrete issue (E1, Humaux
 The physical probe proves the trusted configured routing at startup; future
 retargeting remains governed by the existing deployment primary pin.
 Final required Foundation and all selected modes remain pending, NOT READY.
+
+### Preflight acceptance receipts (2026-10-14)
+
+CI119 `38488758453` at exact `ab62e460072debc497bd56ee12a3afb22128d157`:
+`TestBuyerHTTPAPIAssemblyRealPoolCleanup`, job `115609018782`, **GREEN**,
+PASS=1 FAIL=0 SKIP=0 exit=0. This preserves the original real assembly cases
+and runs the new preflight role, cancellation, successful-probe and actual
+connection cleanup assertions through the real `cmd/api` seam.
+Receipt: `preflight-cleanup-green-ci119.log:732–736`.
+Model job `115609018839` is **MODEL_ONLY GREEN**, PASS=2 FAIL=0 exit=0.
+Its CI-generated formatter patch is empty (0 bytes), formatter exit=0,
+source receipt `ci119-authoring/ci-gates/formatter-source-sha.txt`.
+Full native `focused:^TestOrderAttempt`, job `115609018709`, remains running;
+these narrower results do not replace full acceptance.
+
+CI120 `38488762513`, same source, job `115609117886`, is **causal RED**:
+the `api-preflight-bypass` mutation deletes only the main preflight call.
+The unchanged `TestOrderAttemptProcessAPIRejectsSplitBuyerPools` fails in
+all three same-name/different-cluster issuer/runtime/checkout cases, while
+the same-physical-database positive case still passes. PASS=0 FAIL=1 SKIP=0,
+exit=1; `preflight-bypass-red-ci120.log:743–759`. No timeout, assertion or
+factory change is used for calibration. The restored process path is included
+in the still-running full native CI119.
+
+Current required Foundation `38489109260`, job `115609830243`, at `3d0943563`
+passes the dependency-map check and the unmodified scanner (**errors=0**,
+`foundation-preflight-ci121-red.log:1084`). Its **RED** is the next file-header
+ratchet: ten OA1 files use `Depends:` rather than `Depends on:`, or an
+unlabelled package comment. Only their comment labels are repaired; runtime,
+SQL bodies, grants, scanner and baseline remain unchanged. Node/runtime
+steps in that Foundation job are NOT_RUN after the header failure.
+Final required Gates `38489109358` has 77 selected jobs and remains running.
+**BLOCKED(ci-drift) resolved** by actual PR plan `38488720080` /
+`115608564962` and Foundation `38489109260` /
+`115609830243`, both unchanged-scanner errors=0. The separate header failure
+and complete final-SHA acceptance remain open; whole-unit status is NOT READY.

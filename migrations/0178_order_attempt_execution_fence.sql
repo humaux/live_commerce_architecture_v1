@@ -1,5 +1,5 @@
 -- Purpose: attempt-first execution fencing and narrow domain context access.
--- Depends: 0170 durable identity, 0172 merchant authentication, sealed C1 plans.
+-- Depends on: 0170 durable identity, 0172 merchant authentication, sealed C1 plans.
 -- Used by: inline/claims execution and later domain-owned C2/abort helpers.
 -- Invariants: no scope/subject/principal/owner locks; current read authority for
 -- runtime disclosure; only a protected current-transaction witness admits helpers.

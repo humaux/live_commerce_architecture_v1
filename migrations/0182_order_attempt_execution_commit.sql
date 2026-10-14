@@ -1,5 +1,5 @@
 -- Purpose: forbid committing partial OA1 materialization after a real C2 start.
--- Depends: 0170 terminal identity/RLS, 0171 native order provenance, 0178 xid fence.
+-- Depends on: 0170 terminal identity/RLS, 0171 native order provenance, 0178 xid fence.
 -- Used by: deferred attempt-cart INSERT constraint at the outer C2 commit boundary.
 -- Invariants: a lock-only PENDING Tx remains legal; surviving attempt carts require
 -- current-fence COMMITTED authority and a native order with their exact identity.

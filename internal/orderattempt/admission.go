@@ -1,5 +1,5 @@
 // Purpose: atomic merchant C1 admission with frozen money, encrypted plan and River job.
-// Depends: ops prepare/finish definers, pgx/River on one runtime pool, pricing and PlanKeys.
+// Depends on: ops prepare/finish definers, pgx/River on one runtime pool, pricing and PlanKeys.
 // Used by: dormant OA1 library callers and real-PG acceptance; not wired into placement.
 // Invariants: server authority and all-state replay precede fresh pricing; one READ
 // COMMITTED transaction; no nested scope transaction, private data in jobs or blind retry.

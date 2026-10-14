@@ -1,5 +1,5 @@
 -- Purpose: native River liveness and reciprocal repair-witness enforcement.
--- Depends: 0191 repair storage, 0023 initial admission/job guards, upstream River.
+-- Depends on: 0191 repair storage, 0023 initial admission/job guards, upstream River.
 -- Used by: worker-only sweep prepare/InsertTx/finish on one physical pgx.Tx.
 -- Invariants: C1 keeps its original witness; repair INSERT never updates attempt;
 -- only finish binds the fresh job, and repair must commit before C2 settlement.
