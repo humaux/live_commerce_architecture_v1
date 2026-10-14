@@ -80,7 +80,24 @@ test("selection: page scope counts and targets only ids on the current page", ()
   state = toggleRow(state, "g", next);
   assert.equal(selectionCount(state, 47, next), 1);
   assert.deepEqual(bulkTarget(state, "k", next), { scope: "ids", ids: ["g"] });
-  assert.deepEqual(bulkTarget(state, "k"), { scope: "ids", ids: ["a", "b", "c", "d", "e", "g"] });
+  assert.deepEqual([...state.ids], ["g"], "toggling a row on page 2 drops the hidden page 1 ids instead of carrying them");
+  assert.deepEqual(bulkTarget(state, "k"), { scope: "ids", ids: ["g"] });
+});
+
+test("selection: page scope never accumulates ids of a previous page (A to B, row / whole page / un-check)", () => {
+  const a = ["a", "b"];
+  const b = ["c", "d"];
+  const fromA = togglePage(emptySelection, a);
+  const wholeB = togglePage(fromA, b);
+  assert.deepEqual([...wholeB.ids].sort(), ["c", "d"], "select whole page B: no hidden a/b");
+  assert.deepEqual(bulkTarget(wholeB, "k", b), { scope: "ids", ids: ["c", "d"] });
+  assert.deepEqual(bulkTarget(wholeB, "k"), { scope: "ids", ids: ["c", "d"] }, "without pageIds the target is still page B only");
+  assert.equal(togglePage(wholeB, b).ids.size, 0, "un-check whole page B leaves nothing (a/b are not resurrected)");
+  assert.deepEqual([...toggleRow(fromA, "c", b).ids], ["c"], "single row on B");
+  assert.deepEqual(bulkTarget(toggleRow(fromA, "c", b), "k"), { scope: "ids", ids: ["c"] });
+  // all-results still needs the explicit offer: a hidden selection on A cannot jump to all from page B
+  assert.equal(selectAllResults(fromA, b, 47, "k").scope, "page");
+  assert.equal(selectAllResults(wholeB, b, 47, "k").scope, "all");
 });
 
 test("selection: leaving 'all' by unchecking a row falls back to this page minus that row; header click clears", () => {

@@ -118,7 +118,14 @@ function Body({
         )}
       </div>
       <div className={s.foot}>
-        <Button ref={cancel} onClick={onCancel} disabledReason={busy ? busyLabel : undefined}>
+        {/* The block must not depend on the optional copy: busy swallows Cancel even when busyLabel (the visible reason) is absent. */}
+        <Button
+          ref={cancel}
+          onClick={() => {
+            if (!busy) onCancel();
+          }}
+          disabledReason={busy ? busyLabel : undefined}
+        >
           {cancelLabel}
         </Button>
         <Button

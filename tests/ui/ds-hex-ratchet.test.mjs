@@ -33,6 +33,14 @@ test("bypass: a /* inside a string or a // comment does not start a block that h
   assert.equal(countHex("a{background:url(http://cdn.example/x.png);color:#ff0000}", ".scss"), 1, "url(http://) is not an SCSS comment");
 });
 
+test("uncertain // (JSX text, SCSS url) never drops the rest of the line", () => {
+  assert.equal(countHex("const x = <div>https://example.test <span style={{ color: '#ff0000' }} /></div>;", ".tsx"), 1, "URL in JSX text");
+  assert.equal(countHex("const x = <p>see //docs <i style={{ color: '#ff0000' }} /></p>;", ".jsx"), 1, "bare // in JSX text");
+  assert.equal(countHex("a{background:url(//cdn.example/x.png);color:#ff0000}", ".scss"), 1, "protocol-relative SCSS url");
+  assert.equal(countHex("const c = 1; // #ff0000\nconst d = <b>x</b>; // #00ff00", ".tsx"), 0, "real TSX line comments stay ignored");
+  assert.equal(countHex("a{color:red} // #fff\nb{color:blue}", ".scss"), 0, "real SCSS line comment stays ignored");
+});
+
 test("comments are still ignored: block, trailing //, SCSS //, multi-line", () => {
   assert.equal(countHex("const c = 1; // #ff0000\n/* #00ff00\n   #0000ff */ const d = 2;"), 0);
   assert.equal(countHex("a{color:red} /* #fff */\n// #000\nb{color:blue}", ".scss"), 0);

@@ -15,6 +15,23 @@ const EXT = /\.(css|scss|tsx|ts|jsx|js|mjs)$/;
 const HEX = /(?<![\w&#-])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![\w-])/g;
 
 /**
+ * Is the `//` at `i` certainly a line comment? Conservative: when unsure it is NOT one, because dropping the rest of a line hides
+ * real colours (a false "comment" lets a new hard-coded colour pass), while counting a colour in a real comment only fails the gate loudly.
+ * Never a comment: right after `:` (http://, https://) in any source, or right after `(` in SCSS (url(//cdn/x.png)); in JSX/TSX also
+ * not when the line so far has a `<` (possible JSX text) and does not end in `;` `,` `{` `}` `(` `)`.
+ */
+function isLineComment(source, i, out, ext) {
+  const prev = source[i - 1];
+  if (prev === ":") return false;
+  if (ext === ".scss" && prev === "(") return false;
+  if (ext === ".tsx" || ext === ".jsx") {
+    const lineSoFar = out.slice(out.lastIndexOf("\n") + 1).trimEnd();
+    if (lineSoFar.includes("<") && !/[;,{}()]$/.test(lineSoFar)) return false;
+  }
+  return true;
+}
+
+/**
  * Source with comments blanked, found by a tokenizer rather than a regex: a quote starts a string (a `/*` or `//` inside it is text),
  * a `//` comment swallows a `/*` on its line, template literals nest `${ ... }` code. CSS has no `//` comments; SCSS has them but
  * `url(http://x)` is not one. Newlines are kept. Regex literals are not tokenised (none holds a quote-unbalanced hex in this tree).
@@ -61,8 +78,12 @@ export function stripComments(source, ext = ".ts") {
       const stop = end < 0 ? source.length : end + 2;
       out += source.slice(i, stop).replace(/[^\n]/g, " ");
       i = stop;
-    } else if (ch === "/" && next === "/" && line && !(ext === ".scss" && source[i - 1] === ":")) {
+    } else if (ch === "/" && next === "/" && line && isLineComment(source, i, out, ext)) {
       while (i < source.length && source[i] !== "\n") i++;
+    } else if (ch === "/" && next === "/" && line) {
+      // uncertain `//` (URL, JSX text): keep it as code and go on, so the rest of the line is still counted
+      out += "//";
+      i += 2;
     } else {
       if (top && ch === "{") top.depth++;
       else if (top && ch === "}") {

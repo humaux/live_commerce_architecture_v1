@@ -42,6 +42,15 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     await clickBlocked(b);
     await seen(status(buttons, c.btnDisabledReason));
   });
+  await step("Button disabled with reason (keyboard)", "focus, Enter, Space", "still aria-disabled, reason visible; Playwright's enabled-wait is bypassed by real key presses", async () => {
+    const b = btn(buttons, c.btnDisabled);
+    await b.focus();
+    for (const key of ["Enter", "Space"]) {
+      await page.keyboard.press(key);
+      assert.equal(await attr(b, "aria-disabled"), "true");
+      await seen(status(buttons, c.btnDisabledReason));
+    }
+  });
   await step("Button loading", "read state", "aria-busy true (a busy button swallows clicks by design)", async () => {
     assert.equal(await attr(buttons.getByRole("button", { name: c.btnLoading }), "aria-busy"), "true");
   });
@@ -141,6 +150,25 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     await seen(status(dialogDemo, c.dlgDone));
   });
 
+  await step("ConfirmDialog busy without busyLabel", "open, click Cancel, Enter, Space, Escape", "dialog stays open (no cancel result) while busy; Cancel works once the request settles", async () => {
+    await btn(dialogDemo, c.dlgOpenBusy).click();
+    await seen(dialog.getByText(c.dlgTitle));
+    const cancel = btn(dialog, c.cancel);
+    await cancel.click(); // busy without busyLabel is not aria-disabled, so a plain click is the real user path
+    for (const key of ["Enter", "Space", "Escape"]) {
+      if (key !== "Escape") await cancel.focus();
+      await page.keyboard.press(key);
+    }
+    assert.equal(await dialog.isVisible(), true);
+    assert.equal(await status(dialogDemo, c.dlgCancelled).filter({ visible: true }).count(), 0);
+    // after the 5 s busy window the same Cancel closes the dialog
+    for (let i = 0; i < 30 && (await dialog.isVisible()); i++) {
+      await cancel.click();
+      await page.waitForTimeout(300);
+    }
+    await seen(status(dialogDemo, c.dlgCancelled));
+  });
+
   /* ---- B. the list: filter, selection scope, bulk, row actions, states ---- */
   const table = sec("sec-table");
   const row = (n) => table.getByRole("row").filter({ hasText: c.productName(n) });
@@ -230,6 +258,22 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     await seen(table.getByText(c.pagerSummary(1, 7, 32)));
   });
   await step("Filter select (All)", "selectOption", c.pagerSummary(1, 10, 47), async () => {
+    await table.getByLabel(c.filterShow).selectOption("all");
+    await seen(table.getByText(c.pagerSummary(1, 10, 47)));
+  });
+  await step("Filter survives paging", "select Published, click Next, reload, click Previous", `${c.pagerSummary(2, 7, 32)} after Next and reload, ${c.pagerSummary(1, 7, 32)} after Previous; URL keeps pf=published`, async () => {
+    await table.getByLabel(c.filterShow).selectOption("published");
+    await seen(table.getByText(c.pagerSummary(1, 7, 32)));
+    await table.getByRole("link", { name: c.next, exact: true }).click();
+    await page.waitForURL(/page=2/);
+    await seen(table.getByText(c.pagerSummary(2, 7, 32)));
+    assert.match(page.url(), /pf=published/);
+    await page.reload({ waitUntil: "load" });
+    await seen(table.getByText(c.pagerSummary(2, 7, 32)));
+    assert.equal(await table.getByLabel(c.filterShow).inputValue(), "published");
+    await table.getByRole("link", { name: c.prev, exact: true }).click();
+    await seen(table.getByText(c.pagerSummary(1, 7, 32)));
+    assert.equal(await table.getByLabel(c.filterShow).inputValue(), "published");
     await table.getByLabel(c.filterShow).selectOption("all");
     await seen(table.getByText(c.pagerSummary(1, 10, 47)));
   });

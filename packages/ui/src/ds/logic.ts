@@ -19,18 +19,21 @@ export function pageSelection(state: SelectionState, pageIds: readonly string[])
   return n === 0 ? "none" : n === pageIds.length ? "all" : "some";
 }
 
-/** Header checkbox: select the whole page, or clear it. Always returns to page scope. */
+/** The ids of a page-scope selection that are on screen: ids kept from another page are hidden and never carried forward. */
+const onPage = (state: SelectionState, pageIds: readonly string[]): Set<string> => new Set(pageIds.filter((id) => state.ids.has(id)));
+
+/** Header checkbox: select the whole page, or clear it. Always returns to page scope, and only ever holds ids of `pageIds`. */
 export function togglePage(state: SelectionState, pageIds: readonly string[]): SelectionState {
   if (state.scope === "all") return emptySelection;
-  const ids = new Set(state.ids);
+  const ids = onPage(state, pageIds);
   if (pageSelection(state, pageIds) === "all") for (const id of pageIds) ids.delete(id);
   else for (const id of pageIds) ids.add(id);
   return { ids, scope: "page" };
 }
 
-/** Row checkbox. Leaving "all" scope keeps the rows of this page minus the one unchecked. */
+/** Row checkbox. Leaving "all" scope keeps the rows of this page minus the one unchecked; page scope drops ids of other pages. */
 export function toggleRow(state: SelectionState, id: string, pageIds: readonly string[]): SelectionState {
-  const base = state.scope === "all" ? new Set(pageIds) : new Set(state.ids);
+  const base = state.scope === "all" ? new Set(pageIds) : onPage(state, pageIds);
   if (base.has(id)) base.delete(id);
   else base.add(id);
   return { ids: base, scope: "page" };

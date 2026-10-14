@@ -2,7 +2,7 @@
 // Depends on: react, @live-commerce/ui/ds, @live-commerce/i18n, ../src/ui-gallery-copy, ../src/ui-gallery-nav, ./UiGallerySections, ./UiGallery.module.css; sample data only, no API or session.
 // Used by: apps/admin/app/[locale]/ui-gallery/page.tsx (rendered only when LC_UI_GALLERY=1).
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { localeNames, locales, type Locale } from "@live-commerce/i18n";
 import {
   AppShellV2,
@@ -63,10 +63,19 @@ const PRODUCTS: Product[] = Array.from({ length: TOTAL_PRODUCTS }, (_, i) => {
 
 type Dialog = { kind: "plain" | "typed"; title: string; description: string; done: () => void };
 
-function ProductTable({ c, params, setParam, search }: { c: GalleryCopy; params: GalleryParams; setParam: SetParam; search: string }) {
-  const [filter, setFilter] = useState("all");
-  const [draft, setDraft] = useState("");
-  const [query, setQuery] = useState("");
+/** List conditions live in the URL (`pf` = status filter, `pq` = search) so paging links, refresh and back keep the same result set. */
+const FILTERS = ["all", "published", "draft"];
+/** Replaces the list conditions in the URL (undefined removes a key) and returns to page 1, the page of a different result set. */
+type SetList = (conditions: { pf: string | undefined; pq: string | undefined }) => void;
+
+function ProductTable({ c, params, setParam, setList, search }: { c: GalleryCopy; params: GalleryParams; setParam: SetParam; setList: SetList; search: string }) {
+  const [filter, setFilter] = useState(() => {
+    const raw = new URLSearchParams(search).get("pf");
+    return raw !== null && FILTERS.includes(raw) ? raw : "all";
+  });
+  const initialQuery = new URLSearchParams(search).get("pq") ?? "";
+  const [draft, setDraft] = useState(initialQuery);
+  const [query, setQuery] = useState(initialQuery);
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
   const [note, setNote] = useState("");
   const [bulkDone, setBulkDone] = useState("");
@@ -148,6 +157,7 @@ function ProductTable({ c, params, setParam, search }: { c: GalleryCopy; params:
               value={filter}
               onChange={(v) => {
                 setFilter(v);
+                setList({ pf: v === "all" ? undefined : v, pq: query || undefined });
                 setSelection(clearSelection());
               }}
               options={[{ value: "all", label: c.filterAll }, { value: "published", label: c.filterPublished }, { value: "draft", label: c.filterDraft }]}
@@ -158,6 +168,7 @@ function ProductTable({ c, params, setParam, search }: { c: GalleryCopy; params:
               onChange={setDraft}
               onSubmit={(q) => {
                 setQuery(q);
+                setList({ pf: filter === "all" ? undefined : filter, pq: q || undefined });
                 setSelection(clearSelection());
                 setNote(c.searchResult(q));
               }}
@@ -217,13 +228,28 @@ function ProductTable({ c, params, setParam, search }: { c: GalleryCopy; params:
 }
 
 function DialogDemo({ c }: { c: GalleryCopy }) {
-  const [open, setOpen] = useState<"plain" | "typed" | null>(null);
+  const [open, setOpen] = useState<"plain" | "typed" | "busy" | null>(null);
   const [result, setResult] = useState("");
+  // The "busy" demo models a request in flight with NO busyLabel: Cancel and Escape must stay blocked until it settles (5 s).
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!busy) return;
+    const timer = setTimeout(() => setBusy(false), 5000);
+    return () => clearTimeout(timer);
+  }, [busy]);
   return (
     <Card id="sec-dialog" title={c.sDialog}>
       <div className={s.row}>
         <Button onClick={() => setOpen("plain")}>{c.dlgOpenPlain}</Button>
         <Button variant="danger" onClick={() => setOpen("typed")}>{c.dlgOpenTyped}</Button>
+        <Button
+          onClick={() => {
+            setBusy(true);
+            setOpen("busy");
+          }}
+        >
+          {c.dlgOpenBusy}
+        </Button>
         <span role="status">{result}</span>
       </div>
       <ConfirmDialog
@@ -232,6 +258,7 @@ function DialogDemo({ c }: { c: GalleryCopy }) {
         description={open === "typed" ? c.dlgTypedDesc : c.dlgDesc}
         confirmLabel={c.dlgConfirm}
         cancelLabel={c.cancel}
+        busy={open === "busy" && busy}
         typed={open === "typed" ? { phrase: c.dlgPhrase, label: c.dlgTypedLabel, mismatchReason: c.dlgMismatch } : undefined}
         onCancel={() => {
           setOpen(null);
@@ -258,6 +285,18 @@ export function UiGallery({ locale, initial, search: initialSearch }: { locale: 
     query.set(key, value);
     setSearch(`?${query.toString()}`);
     window.history.replaceState(null, "", `${window.location.pathname}?${query.toString()}${window.location.hash}`);
+  };
+  const setList: SetList = (conditions) => {
+    setParams((p) => ({ ...p, page: 1 }));
+    const query = new URLSearchParams(search);
+    for (const [key, value] of Object.entries(conditions)) {
+      if (value === undefined) query.delete(key);
+      else query.set(key, value);
+    }
+    query.delete("page");
+    const text = query.toString();
+    setSearch(text ? `?${text}` : "?");
+    window.history.replaceState(null, "", `${window.location.pathname}${text ? `?${text}` : ""}${window.location.hash}`);
   };
   const nav = useMemo(() => galleryNav(locale), [locale]);
   return (
@@ -303,7 +342,7 @@ export function UiGallery({ locale, initial, search: initialSearch }: { locale: 
         <FormSectionDemo c={c} />
         <SettingsSection c={c} params={params} />
         <KpiSection c={c} params={params} />
-        <ProductTable c={c} params={params} setParam={setParam} search={search} />
+        <ProductTable c={c} params={params} setParam={setParam} setList={setList} search={search} />
       </div>
     </AppShellV2>
   );

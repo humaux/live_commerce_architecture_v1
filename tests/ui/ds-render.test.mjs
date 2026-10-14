@@ -67,6 +67,10 @@ test("DataTable banner: page scope counts only ids on the current page", () => {
   assert.doesNotMatch(table(onPageOne, ["d", "e", "f"]), /\d+ selected/, "ids kept from page 1 are not counted (or shown) on page 2");
   const mixed = logic.toggleRow(onPageOne, "e", ["d", "e", "f"]);
   assert.match(table(mixed, ["d", "e", "f"]), /1 selected/);
+  // the row attribute data-selected stays on every data row (the banner check above looks for "<n> selected" text only)
+  const flags = (html) => [...html.matchAll(/data-selected="(true|false)"/g)].map((m) => m[1]);
+  assert.deepEqual(flags(table(onPageOne, ["d", "e", "f"])), ["false", "false", "false"], "page 2 rows are all marked unselected");
+  assert.deepEqual(flags(table(mixed, ["d", "e", "f"])), ["false", "true", "false"]);
 });
 
 test("DataTable banner: all-results scope counts the total", () => {
