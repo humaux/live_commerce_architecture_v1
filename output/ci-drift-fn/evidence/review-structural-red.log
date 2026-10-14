@@ -1,0 +1,122 @@
+CI-DRIFT-FN review structural counter-examples — genuine CI RED
+Head: 3a3ae4cb90e83afd6c672c720eaa92df3426e738
+Base: e7421a10bda4046a9c151ac8babc2f61672a3ae3
+Actual tested merge: ca7741b58140966e6548a5bba92dafab0c0d7bf1 (raw git log full SHA at line427)
+Foundation run: 38499888354, job: 115644072791, FAILURE
+Actual job execution: 2026-10-14T02:13:35Z through 2026-10-14T02:16:30Z
+Command/step: Package docs and gate map are current / scripts/dev/check-gates.sh
+Raw-log SHA256: e43c89833d200b610885e2d4fdf62c74477aa2666e6d88cbb17a3aa153cf7c2d
+Extraction: unchanged raw lines424–427 and611–713, including all three complete candidate outputs, assertions and final package failure.
+CDF-4: valid baseline then cross-package middleware edit; exit0/errors0/warnings3, all dependency findings missed.
+CDF-5: valid baseline then non-path global initializer edit; exit0/errors0/warnings3, all dependency findings missed.
+CDF-6: valid split-file baseline then route edit; exit1/errors2/warnings1, generic+EXACT reject but parent MOUNT attribution missed.
+Only TestGoFactoryReviewStructuralCLI and these three subtests are listed as failures. No baseline/setup or converted CDF1–3 signature failure appears. This non-verbose failure log does not provide individual PASS rows for the other27.
+Scanner source unchanged from b8fc. No expected-fail handling exists in this tested revision.
+
+2026-10-14T02:13:44.5781450Z HEAD is now at ca7741b5 Merge 3a3ae4cb90e83afd6c672c720eaa92df3426e738 into e7421a10bda4046a9c151ac8babc2f61672a3ae3
+2026-10-14T02:13:44.5865425Z ##[endgroup]
+2026-10-14T02:13:44.5918999Z [command]/usr/bin/git log -1 --format=%H
+2026-10-14T02:13:44.5947446Z ca7741b58140966e6548a5bba92dafab0c0d7bf1
+2026-10-14T02:16:28.2148947Z --- FAIL: TestGoFactoryReviewStructuralCLI (0.47s)
+2026-10-14T02:16:28.2150121Z     --- FAIL: TestGoFactoryReviewStructuralCLI/CDF4_cross-package_middleware (0.07s)
+2026-10-14T02:16:28.2151801Z         go_factory_review_cli_test.go:81: STRICT_CANDIDATE CDF4 cross-package middleware path=internal/mw/mw.go exit=0
+2026-10-14T02:16:28.2154132Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:24 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2157000Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2159238Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38, cmd/api/main.go:40 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2161769Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2163236Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2164465Z         go_factory_review_cli_test.go:89: strict structural coverage missing "ERROR (TOUCHED) UNRESOLVED   ": exit=0
+2026-10-14T02:16:28.2166607Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:24 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2168900Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2171970Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38, cmd/api/main.go:40 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2175195Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2176852Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2178131Z         go_factory_review_cli_test.go:89: strict structural coverage missing "ERROR (TOUCHED) UNRESOLVED EXACT /v1/trunk-factory ": exit=0
+2026-10-14T02:16:28.2180331Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:24 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2182815Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2185634Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38, cmd/api/main.go:40 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2188574Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2190174Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2191497Z         go_factory_review_cli_test.go:89: strict structural coverage missing "ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory ": exit=0
+2026-10-14T02:16:28.2193643Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:24 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2196293Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2198919Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38, cmd/api/main.go:40 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2201794Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2203415Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2205160Z         go_factory_review_cli_test.go:89: strict structural coverage missing "SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3\n": exit=0
+2026-10-14T02:16:28.2207228Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:24 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2209391Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2211798Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38, cmd/api/main.go:40 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2214504Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2216218Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2217194Z         go_factory_review_cli_test.go:93: strict structural rejection required: exit=0 want=1
+2026-10-14T02:16:28.2218938Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:24 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2220910Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2223254Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38, cmd/api/main.go:40 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2225945Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2227376Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2228242Z     --- FAIL: TestGoFactoryReviewStructuralCLI/CDF5_non-path_global (0.07s)
+2026-10-14T02:16:28.2229149Z         go_factory_review_cli_test.go:81: STRICT_CANDIDATE CDF5 non-path global path=cmd/api/main.go exit=0
+2026-10-14T02:16:28.2231155Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2233251Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2235864Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2238604Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2240083Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2241043Z         go_factory_review_cli_test.go:89: strict structural coverage missing "ERROR (TOUCHED) UNRESOLVED   ": exit=0
+2026-10-14T02:16:28.2242845Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2245051Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2247601Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2250307Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2251785Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2252880Z         go_factory_review_cli_test.go:89: strict structural coverage missing "ERROR (TOUCHED) UNRESOLVED EXACT /v1/trunk-factory ": exit=0
+2026-10-14T02:16:28.2254997Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2257428Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2259840Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2262536Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2264002Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2265314Z         go_factory_review_cli_test.go:89: strict structural coverage missing "ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory ": exit=0
+2026-10-14T02:16:28.2267198Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2269294Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2271664Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2274551Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2276042Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2277359Z         go_factory_review_cli_test.go:89: strict structural coverage missing "SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3\n": exit=0
+2026-10-14T02:16:28.2279365Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2281596Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2283981Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2286796Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2306359Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2307927Z         go_factory_review_cli_test.go:93: strict structural rejection required: exit=0 want=1
+2026-10-14T02:16:28.2309970Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2312120Z             WARNING (unresolved) UNRESOLVED   cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2314933Z             WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2317694Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2319183Z             SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2319901Z     --- FAIL: TestGoFactoryReviewStructuralCLI/CDF6_sibling-file_route (0.07s)
+2026-10-14T02:16:28.2320831Z         go_factory_review_cli_test.go:81: STRICT_CANDIDATE CDF6 sibling-file route path=cmd/api/factory.go exit=1
+2026-10-14T02:16:28.2322667Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2325305Z             ERROR (TOUCHED) UNRESOLVED   cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2328060Z             ERROR (TOUCHED) UNRESOLVED EXACT /v1/trunk-factory/changed cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29, cmd/api/factory.go:31 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2330385Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2331649Z             SUMMARY routes go=1 contract=1 bff=1; errors=2 warnings=1 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2332747Z         go_factory_review_cli_test.go:89: strict structural coverage missing "ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory ": exit=1
+2026-10-14T02:16:28.2335162Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2338585Z             ERROR (TOUCHED) UNRESOLVED   cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2341192Z             ERROR (TOUCHED) UNRESOLVED EXACT /v1/trunk-factory/changed cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29, cmd/api/factory.go:31 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2343449Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2345067Z             SUMMARY routes go=1 contract=1 bff=1; errors=2 warnings=1 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2346401Z         go_factory_review_cli_test.go:89: strict structural coverage missing "SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3\n": exit=1
+2026-10-14T02:16:28.2348607Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2350970Z             ERROR (TOUCHED) UNRESOLVED   cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2354141Z             ERROR (TOUCHED) UNRESOLVED EXACT /v1/trunk-factory/changed cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29, cmd/api/factory.go:31 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2356574Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2357852Z             SUMMARY routes go=1 contract=1 bff=1; errors=2 warnings=1 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2358690Z         go_factory_review_cli_test.go:93: strict structural rejection required: exit=1 want=1
+2026-10-14T02:16:28.2360463Z             INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 methodless registration; child paths remain absolute unless StripPrefix is explicit
+2026-10-14T02:16:28.2362645Z             ERROR (TOUCHED) UNRESOLVED   cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
+2026-10-14T02:16:28.2365347Z             ERROR (TOUCHED) UNRESOLVED EXACT /v1/trunk-factory/changed cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29, cmd/api/factory.go:31 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
+2026-10-14T02:16:28.2367626Z             WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 opaque Go methodless mount; child route identity is unproven
+2026-10-14T02:16:28.2368896Z             SUMMARY routes go=1 contract=1 bff=1; errors=2 warnings=1 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
+2026-10-14T02:16:28.2369340Z FAIL
+2026-10-14T02:16:28.2369687Z FAIL	livecommerce/scripts/dev/contractdrift	129.040s
+2026-10-14T02:16:28.2370004Z FAIL

@@ -1,0 +1,15 @@
+# CI-DRIFT-FN — open structural scanner limits
+
+Owner decision after the adversarial review of PR #55 at `b8fc5d267431d243e6d1bdde3f3bd432bb736836`: freeze this PR's scanner implementation and capture the following counter-examples as exact-signature expected-fail tests. No further scanner patch is authorized here. A separate research task, `4a0c4279-fe4f-4cce-b426-9557bbd086a4`, covers the name-based, single-package traversal and mount-provenance design.
+
+| ID / regression | Open behavior to capture | Evidence state |
+| --- | --- | --- |
+| CDF-4 / middleware in another package | `buildBuyer` calls `mw.WithHeader(h)` from `internal/mw`; changing the header value is not traversed as a handler dependency. A sound detector must mark the dependent route findings TOUCHED. | CI-confirmed: exit 0, generic/EXACT/MOUNT all WARNING, errors=0/warnings=3. |
+| CDF-5 / non-path global value | Changing `globalLabel`, which a reachable handler reads into its response, is outside the path-only global-reference spans. A sound detector must mark the dependent route findings TOUCHED. | CI-confirmed: exit 0, generic/EXACT/MOUNT all WARNING, errors=0/warnings=3. |
+| CDF-6 / MOUNT split across files | Builders and mount helpers live in `cmd/api/factory.go`, while `main` mounts them from `cmd/api/main.go`. A child route edit must also mark the parent MOUNT TOUCHED. The current gate can reject the child through other findings while missing this attribution. | CI-confirmed: exit 1, generic and EXACT TOUCHED, parent MOUNT WARNING, errors=2/warnings=1. This is partial attribution, not a gate bypass. |
+
+Genuine RED: [Foundation 38499888354 / job 115644072791](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38499888354/job/115644072791), head `3a3ae4cb90e83afd6c672c720eaa92df3426e738`, actual merge `ca7741b58140966e6548a5bba92dafab0c0d7bf1` into `e7421a10bda4046a9c151ac8babc2f61672a3ae3`, executed 2026-10-14 02:13:35–02:16:30 UTC. [Portable complete red diagnostics](evidence/review-structural-red.log) preserve all three five-line candidate outputs and exit codes. Each candidate was reached after a valid legacy inventory; the log lists only these three structural failures, with no setup or converted CDF-1..3 signature failure. The non-verbose failure log does not list each other passing case.
+
+Portable RED SHA256: `2ed696fda45912267eda6f00539ab5a42b3f15e0e64839d4eba456b31e6168db`. Test commit `7a68c63d546ca560233442a8bd1c5c606db60301` pins only these CI-confirmed, complete output and exit signatures. UNEXPECTED_PASS, setup errors, changed signatures, missing baseline/provenance and unknown failures are hard failures. Existing cases and the whole-factory-span rule remain intact. An expected-fail skip records an unresolved defect; it is not a scanner repair. The new exact xfail runtime is NOT_RUN until its own CI.
+
+No TOUCHED baseline is allowed. These open limits are not repaired by the local-fixture widening in PR #55 and are not accepted as general scanner soundness.
