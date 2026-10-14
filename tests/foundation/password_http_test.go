@@ -417,6 +417,7 @@ func TestPasswordPA08HTTP(t *testing.T) {
 	t.Run("rate_limits_run_before_hashing_hibp_mail_and_lookup", func(t *testing.T) {
 		e := e.sub(t)
 		_ = e
+		pwaAwaitSafeWindow(t, 3600, 0, 10*time.Second)
 		src := pwaIP()
 		for i := 0; i < 5; i++ {
 			e.signupFrom(src, pwaEmail(), pwaSecret())
@@ -444,6 +445,7 @@ func TestPasswordPA08HTTP(t *testing.T) {
 			t.Error("a malformed code reached HIBP or Argon2")
 		}
 		// binding throttle: the 11th complete on one binding is 429 before HIBP/Argon
+		pwaAwaitSafeWindow(t, 600, 0, 10*time.Second)
 		for i := 0; i < 10; i++ {
 			_ = record(e.post("complete", pwaIP().String(), map[string]string{"binding": binding, "purpose": "reset", "code": "000000", "new_password": pwaSecret()}))
 		}
