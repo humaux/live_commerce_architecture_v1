@@ -116,41 +116,6 @@ func trunkFactoryAssert(t *testing.T, call func(string, ...string) (int, string)
 	}
 }
 
-// Only the three signatures observed on b02134b886 in Foundation38487723575
-// and Gates38487723574 qualify. Baseline checks run first; any diagnostic or
-// provenance drift fails closed, and an unexpected fix must retire this xfail.
-func trunkFactoryKnownMiss(t *testing.T, call func(string, ...string) (int, string), root, name, exact string) {
-	t.Helper()
-	code, out := call(root)
-	wantCode, prefix := 0, "WARNING (unresolved)"
-	wantPath, totals := "/v1/trunk-factory", "errors=0 warnings=3"
-	switch name {
-	case "route edit":
-		wantCode, prefix = 1, "ERROR (TOUCHED)"
-		wantPath, totals = "/v1/trunk-factory/changed", "errors=2 warnings=1"
-	case "middleware dependency", "body dependency":
-	default:
-		t.Fatalf("unreviewed expected-fail case %q", name)
-	}
-	if exact != wantPath {
-		t.Fatalf("expected-fail fixture path changed: %q want %q", exact, wantPath)
-	}
-	if code == 1 && strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED EXACT "+wantPath+" ") && strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory ") {
-		t.Fatalf("UNEXPECTED_PASS %s: retire its xfail in output/ci-drift-factory/FOLLOWUPS.md: %s", name, out)
-	}
-	want := strings.Join([]string{
-		"INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit",
-		prefix + " UNRESOLVED   cmd/api/main.go:23, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown",
-		prefix + " UNRESOLVED EXACT " + wantPath + " cmd/api/main.go:23, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown",
-		"WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 opaque Go methodless mount; child route identity is unproven",
-		"SUMMARY routes go=1 contract=1 bff=1; " + totals + " GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3",
-	}, "\n") + "\n"
-	if code != wantCode || out != want {
-		t.Fatalf("unrecognized expected-fail signature %s: exit=%d want=%d\nactual:\n%sexpected:\n%s", name, code, wantCode, out, want)
-	}
-	t.Skipf("EXPECTED_FAIL %s: exact b021 CI diagnostic reproduced; see output/ci-drift-factory/FOLLOWUPS.md", name)
-}
-
 func trunkFactoryLegacy(t *testing.T, call func(string, ...string) (int, string), source string, extra map[string]string) string {
 	t.Helper()
 	root := fixture(t, "aligned")
@@ -196,7 +161,7 @@ func TestGoFactoryTrunkMustTouchCLI(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			root := trunkFactoryLegacy(t, call, trunkFactorySource, nil)
 			trunkFactoryWrite(t, root, "cmd/api/main.go", trunkFactoryReplace(t, trunkFactorySource, tc.old, tc.next))
-			trunkFactoryKnownMiss(t, call, root, tc.name, tc.exact)
+			trunkFactoryAssert(t, call, root, true, tc.exact)
 		})
 	}
 	for _, alias := range []string{"web", "."} {
