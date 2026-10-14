@@ -257,10 +257,6 @@ https:// {
 	handle /v1/cvs/ecpay/status/* {
 		reverse_proxy 127.0.0.1:8080
 	}
-	# Reserved PAYUNi NotifyURL. No receiver exists yet (contracts/buyer-payment-http-v1.md:18); B4.
-	handle /payuni/notify {
-		respond 404
-	}
 	handle {
 		respond 404
 	}
