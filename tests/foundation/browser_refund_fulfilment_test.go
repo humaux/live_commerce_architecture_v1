@@ -55,6 +55,8 @@ type brfStack struct {
 	origin   string
 	api      *httptest.Server
 	env      map[string]string // shared browser environment for the admin app
+	// authority is the admin stack's identity pool when cbbrStartAdmin started it; nil otherwise.
+	authority *pgxpool.Pool
 }
 
 func brfRequire(t *testing.T) {
