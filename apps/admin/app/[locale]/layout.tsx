@@ -1,3 +1,6 @@
+// Purpose: Root layout for the localized merchant admin: locale guard, noindex metadata, global styles.
+// Depends on: next (Metadata, notFound), @live-commerce/i18n (isLocale), ../globals.css.
+// Used by: Next.js App Router for every page under app/[locale].
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
