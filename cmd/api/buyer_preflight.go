@@ -3,6 +3,7 @@
 // Used by: run before buyer handler assembly and by isolated startup acceptance tests.
 // Invariants: no handler or business write; temporary pools close on every return;
 // the main reference pool remains owned by run (order-attempt-v1 section 1).
+
 package main
 
 import (
