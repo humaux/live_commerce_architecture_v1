@@ -79,6 +79,9 @@ func run() error {
 		return err
 	}
 	defer closeIdentity()
+	if err = buyerDatabasePreflight(startup, buyerConfig, pool); err != nil {
+		return err
+	}
 	buyerHandler, cvs, closeBuyer, err := buildBuyerWithCVS(startup, buyerConfig, pool, os.Getenv)
 	if err != nil {
 		return err

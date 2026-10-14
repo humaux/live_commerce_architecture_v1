@@ -30,6 +30,13 @@ def main():
         raise SystemExit("OA mutations run only in disposable GitHub CI checkouts")
     name = os.environ.get("LC_OA_MUTATION", "")
     edits = {
+        "api-preflight-bypass": [(
+            "cmd/api/main.go",
+            "\tif err = buyerDatabasePreflight(startup, buyerConfig, pool); err != nil {\n"
+            "\t\treturn err\n"
+            "\t}\n",
+            "",
+        )],
         "m1-fee-version": [(
             "migrations/0181_order_attempt_destination.sql",
             " IF NOT FOUND OR NOT v_current_service.enabled\n",

@@ -117,17 +117,6 @@ func buildBuyerWithCVS(ctx context.Context, c buyerConfig, mainPool *pgxpool.Poo
 		runtime.Close()
 		issuer.Close()
 	}
-	// OA-1: every API participant must address this physical database. Matching
-	// names (including restored clones) cannot prove that C1/C2 share one store.
-	// River expiry borrows checkoutPool; no extra connection alias is opened.
-	if mainPool != nil {
-		for _, participant := range []*pgxpool.Pool{issuer, runtime, checkoutPool} {
-			if err = platform.ValidateSameDatabase(ctx, mainPool, participant); err != nil {
-				closePools()
-				return nil, cvsParts{}, nil, errBuyerConfig
-			}
-		}
-	}
 	// River is used only to insert the expiry task in Begin's transaction. API
 	// startup does not start workers or gain provider dispatch authority. The
 	// expiry schema keeps River maintenance separate from payment and external jobs.
