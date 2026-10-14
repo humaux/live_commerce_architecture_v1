@@ -272,8 +272,14 @@ func (e *Executor) notificationArtifact(ctx context.Context, tx pgx.Tx, prepared
 		}
 		link := disposition.Origin + "/" + disposition.Locale + "/pay-entry#o=" + binding.OrderID + "&t=" + token
 		if err := e.notifications.CheckOrderAttemptNotificationRecipient(prepared, link); err != nil {
+			code := ""
 			if errors.Is(err, inbox.ErrOrderAttemptNotificationRecipient) {
-				return json.Marshal(map[string]any{"state": "VOID", "void_code": "recipient_invalid",
+				code = "recipient_invalid"
+			} else if errors.Is(err, inbox.ErrOrderAttemptNotificationContent) {
+				code = "format_invalid"
+			}
+			if code != "" {
+				return json.Marshal(map[string]any{"state": "VOID", "void_code": code,
 					"origin": disposition.Origin, "origin_version": disposition.OriginVersion})
 			}
 			return nil, err

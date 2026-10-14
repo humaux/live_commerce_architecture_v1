@@ -25,10 +25,11 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// Format and crypto failures retain retryable custody. Recipient refusal is
-// returned only after authenticated plaintext passes the message invariants.
+// Protocol and crypto failures retain retryable custody. Recipient/content
+// refusals require authenticated plaintext that passes the message invariants.
 var ErrOrderAttemptNotificationFormat = errors.New("inbox: order attempt notification format invariant")
 var ErrOrderAttemptNotificationRecipient = errors.New("inbox: order attempt notification recipient invariant")
+var ErrOrderAttemptNotificationContent = errors.New("inbox: order attempt notification rendered content invalid")
 
 type attemptNotificationThread struct {
 	EventID     string     `json:"event_id"`
@@ -98,7 +99,7 @@ func (s *Service) PrepareOrderAttemptNotification(prepared json.RawMessage, buye
 	}
 	text, err := orderAttemptNotificationText(p, buyerLink)
 	if err != nil {
-		return nil, ErrOrderAttemptNotificationFormat
+		return nil, err
 	}
 	digest, err := s.keys.bodyHMAC(p.TenantID, "order-pay-link|"+p.OrderID+"|"+p.TemplateBody)
 	if err != nil {
@@ -148,8 +149,9 @@ func (s *Service) openOrderAttemptNotification(prepared json.RawMessage, buyerLi
 	if decoder.Decode(new(any)) != io.EOF || p.State != "PREPARED" || !command.ValidID(p.TenantID) || !command.ValidID(p.StoreID) || !command.ValidID(p.OrderID) || !command.ValidID(p.ConversationID) || !command.ValidID(p.BindingID) || p.LinkVersion != 1 || p.TakeoverGeneration < 0 || p.OriginVersion <= 0 || (p.Platform != "facebook" && p.Platform != "instagram") || p.TemplateID != msgtemplates.FixedOrderPayLink || p.TemplateVersion != 1 || strings.Count(p.TemplateBody, linkPlaceholder) != 1 {
 		return p, view, ErrOrderAttemptNotificationFormat
 	}
-	if _, err := orderAttemptNotificationText(p, buyerLink); err != nil {
-		return p, view, ErrOrderAttemptNotificationFormat
+	_, contentErr := orderAttemptNotificationText(p, buyerLink)
+	if contentErr != nil && !errors.Is(contentErr, ErrOrderAttemptNotificationContent) {
+		return p, view, contentErr
 	}
 	r := p.Thread
 	if r.TenantID != p.TenantID || r.StoreID != p.StoreID || !command.ValidID(r.EventID) || !command.ValidID(r.RouteID) || r.RouteEpoch <= 0 || r.ServerSeq <= 0 || r.Direction != "in" || r.AssetID == "" || (p.Platform == "facebook" && r.Object != "page") || (p.Platform == "instagram" && r.Object != "instagram") {
@@ -191,7 +193,9 @@ func (s *Service) openOrderAttemptNotification(prepared json.RawMessage, buyerLi
 	if err != nil {
 		return p, view, ErrOrderAttemptNotificationFormat
 	}
-	return p, view, nil
+	// A rendered-content refusal cannot mask malformed authenticated inbound or
+	// an AEAD dependency fault. Those checks must finish before classification.
+	return p, view, contentErr
 }
 
 func orderAttemptNotificationText(p attemptNotificationPrepared, buyerLink string) (string, error) {
@@ -214,7 +218,7 @@ func orderAttemptNotificationText(p attemptNotificationPrepared, buyerLink strin
 	clear(token)
 	text, err := checkText(KindDM, p.Platform, strings.Replace(p.TemplateBody, linkPlaceholder, buyerLink, 1))
 	if err != nil {
-		return "", ErrOrderAttemptNotificationFormat
+		return "", ErrOrderAttemptNotificationContent
 	}
 	return text, nil
 }
