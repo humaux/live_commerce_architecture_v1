@@ -752,9 +752,8 @@ async function bodyJSON(
           typeof parsed !== "object" ||
           Array.isArray(parsed) ||
           Object.keys(parsed).length !== 3 ||
-          !["payuni_credit", "stripe_checkout"].includes(
-            (parsed as Record<string, string>).method_code,
-          ) ||
+          (parsed as Record<string, string>).method_code !==
+            "stripe_checkout" ||
           !Number.isSafeInteger(
             (parsed as Record<string, unknown>).method_version,
           ) ||

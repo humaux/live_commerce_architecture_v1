@@ -11,12 +11,14 @@ import {
 const orderID = "12345678-1234-1234-1234-123456789abc";
 const expiry = "2026-09-25T01:02:03.123456789Z";
 const method = {
-  code: "payuni_credit",
+  code: "stripe_checkout",
   version: 1,
   name_hans: "测试",
   name_hant: "測試",
   name_en: "Mock",
 };
+// PAYUNi was removed (owner decision 2026-10-14): a backend that still serves it must be rejected, never rendered.
+const legacyMethod = { ...method, code: "payuni_credit" };
 const view = {
   order_id: orderID,
   currency: "TWD",
@@ -34,6 +36,7 @@ const prepared = {
   currency: "TWD",
   amount_minor: 2500,
 };
+// Legacy hosted-form payload: every shape of it must now be rejected.
 const form = {
   action: "https://sandbox-api.payuni.com.tw/api/upp",
   fields: {
@@ -52,14 +55,18 @@ const handoff = {
 
 test("BPT03 exact valid projection and Go nanosecond UTC timestamps", () => {
   assert.equal(validOrderPayment(view, orderID), true);
-  assert.equal(validPaymentPrepared(prepared, orderID, "payuni_credit"), true);
-  assert.equal(validHostedHandoff(handoff, orderID), true);
+  assert.equal(validPaymentPrepared(prepared, orderID, "stripe_checkout"), true);
+  assert.equal(validPaymentPrepared(prepared, orderID, "payuni_credit"), false);
+  assert.equal(validOrderPayment({ ...view, methods: [legacyMethod] }, orderID), false, "PAYUNi method code from the API");
+  assert.equal(validOrderPayment({ ...view, methods: [legacyMethod, method] }, orderID), false);
+  assert.equal(validHostedHandoff(handoff, orderID), false, "PAYUNi ISSUED form");
+  assert.equal(validHostedHandoff(handoff, orderID, "payuni_credit"), false);
   assert.equal(
     validHostedHandoff(
       { order_id: orderID, disposition: "ALREADY_ISSUED", expires_at: expiry },
       orderID,
     ),
-    true,
+    false,
   );
   for (const state of ["PENDING", "AUTHORIZED", "CAPTURED", "REVIEW_REQUIRED"])
     assert.equal(
@@ -92,6 +99,7 @@ test("BPT03 view rejects private fields, inconsistent state and malformed names"
     ["two methods", { methods: [method, method] }],
     ["method private field", { methods: [{ ...method, connection_id: orderID }] }],
     ["method code", { methods: [{ ...method, code: "payuni_atm" }] }],
+    ["removed PAYUNi method code", { methods: [legacyMethod] }],
     ["method version", { methods: [{ ...method, version: 0 }] }],
     ["blank name", { methods: [{ ...method, name_en: "  \t " }] }],
     ["control name", { methods: [{ ...method, name_en: "Mock\n" }] }],
@@ -107,22 +115,24 @@ test("BPT03 view rejects private fields, inconsistent state and malformed names"
   );
 });
 
-test("BPT03 prepared receipt enforces exact original credit-card amount", () => {
+test("BPT03 prepared receipt enforces the Stripe amount table and rejects the PAYUNi method", () => {
   for (const candidate of [
     { ...prepared, attempt_id: orderID },
     { ...prepared, order_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" },
     { ...prepared, state: "CAPTURED" },
-    { ...prepared, currency: "USD" },
     { ...prepared, amount_minor: 0 },
     { ...prepared, amount_minor: 2501 },
-    { ...prepared, amount_minor: 20000000 },
+    { ...prepared, amount_minor: 100 },
+    { ...prepared, amount_minor: 100000000 },
     { ...prepared, amount_minor: 1.5 },
-  ]) assert.equal(validPaymentPrepared(candidate, orderID, "payuni_credit"), false);
-  assert.equal(validPaymentPrepared({ ...prepared, amount_minor: 100 }, orderID, "payuni_credit"), true);
-  assert.equal(validPaymentPrepared({ ...prepared, amount_minor: 19999900 }, orderID, "payuni_credit"), true);
+  ]) assert.equal(validPaymentPrepared(candidate, orderID, "stripe_checkout"), false);
+  // Formerly valid PAYUNi receipts (TWD 100..19999900) no longer pass under the removed method code.
+  for (const amount_minor of [100, 2500, 19999900])
+    assert.equal(validPaymentPrepared({ ...prepared, amount_minor }, orderID, "payuni_credit"), false);
+  assert.equal(validPaymentPrepared({ ...prepared, amount_minor: 19999900 }, orderID, "stripe_checkout"), true);
 });
 
-test("BPT03 hosted form and replay are exact, bounded and action-allowlisted", () => {
+test("BPT03 legacy hosted form and replay are rejected whatever their shape", () => {
   for (const [name, candidate] of [
     ["wrong order", { ...handoff, order_id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" }],
     ["bad disposition", { ...handoff, disposition: "PENDING" }],
@@ -144,7 +154,7 @@ test("BPT03 hosted form and replay are exact, bounded and action-allowlisted", (
 });
 
 // ---- SU01 (author-side): Stripe deltas, stripe-buyer-ui-v1 §3. Independent gates live elsewhere.
-const stripeMethod = { ...method, code: "stripe_checkout", name_en: "Card" };
+const stripeMethod = { ...method, name_en: "Card" };
 const stripeFresh = { ...view, methods: [stripeMethod] };
 const attempt = (extra) => ({
   ...view, methods: [], cancel_requested: false, commercial_state: "AWAITING_PAYMENT",
@@ -152,19 +162,20 @@ const attempt = (extra) => ({
 });
 const checkout = "https://checkout.stripe.com/c/pay/cs_test_a1B2#fid";
 
-test("SU01 Stripe views: fresh, both methods, attempt states, PAYUNi unchanged", () => {
+test("SU01 Stripe views: fresh, attempt states; a PAYUNi method is never a valid view", () => {
   assert.equal(validOrderPayment(stripeFresh, orderID), true);
   assert.equal(isStripeView(stripeFresh), true);
-  assert.equal(isStripeView(view), false);
-  assert.equal(validOrderPayment({ ...view, methods: [method, stripeMethod] }, orderID), true);
-  assert.equal(isStripeView({ ...view, methods: [method, stripeMethod] }), false);
+  assert.equal(isStripeView(view), true);
+  assert.equal(validOrderPayment({ ...view, methods: [legacyMethod, stripeMethod] }, orderID), false);
+  assert.equal(validOrderPayment({ ...view, methods: [stripeMethod, legacyMethod] }, orderID), false);
+  assert.equal(isStripeView({ ...view, methods: [legacyMethod] }), false);
   for (const handoff_state of ["CREATING", "READY", "CLOSED"])
     for (const cancel_requested of [false, true])
       assert.equal(validOrderPayment(attempt({ handoff_state, cancel_requested }), orderID), true, handoff_state);
   assert.equal(validOrderPayment(attempt({ payment_state: "CLOSED_UNPAID", commercial_state: "CANCELLED", handoff_state: "CLOSED", cancel_requested: true }), orderID), true);
   assert.equal(validOrderPayment(attempt({ handoff_state: "UNAVAILABLE", handoff_expires_at: null }), orderID), true);
   assert.equal(isStripeView(attempt({})), true);
-  assert.equal(validOrderPayment(view, orderID), true, "PAYUNi view without cancel_requested");
+  assert.equal(validOrderPayment(view, orderID), true, "fresh view without cancel_requested");
 });
 
 test("SU01 Stripe view negatives", () => {
@@ -210,9 +221,8 @@ test("SU01 prepared amounts follow the corrected per-currency table", () => {
   assert.equal(ok("TWD", 150), false, "TWD must be whole dollars");
   assert.equal(ok("TWD", 100000000), false);
   for (const currency of ["EUR", "JPY", "twd", "TWDX", "", null, undefined]) assert.equal(ok(currency, 5000), false, String(currency));
-  assert.equal(ok("TWD", 2500, "payuni_credit"), true);
-  assert.equal(ok("USD", 2500, "payuni_credit"), false, "PAYUNi stays TWD only");
-  assert.equal(ok("TWD", 20000000, "payuni_credit"), false, "PAYUNi keeps its own upper bound");
+  for (const [currency, amount] of [["TWD", 2500], ["USD", 2500], ["TWD", 20000000]])
+    assert.equal(ok(currency, amount, "payuni_credit"), false, "removed PAYUNi method code");
   assert.equal(ok("TWD", 2500, "stripe"), false);
   assert.equal(validPaymentPrepared({ ...prepared, amount_minor: 2500 }, orderID, undefined), false, "method is required");
   assert.equal(ok("TWD", 1.5), false);
@@ -226,7 +236,7 @@ test("SU01 Stripe handoff union and every redirect_url negative", () => {
   assert.equal(validHostedHandoff(redirect, orderID, "payuni_credit"), false);
   for (const disposition of ["CREATING", "CLOSED", "UNAVAILABLE"])
     assert.equal(validHostedHandoff({ ...base, disposition }, orderID, "stripe_checkout"), true, disposition);
-  assert.equal(validHostedHandoff(handoff, orderID, "payuni_credit"), true);
+  assert.equal(validHostedHandoff(handoff, orderID, "payuni_credit"), false, "PAYUNi ISSUED form is rejected");
   assert.equal(validHostedHandoff(handoff, orderID, "stripe_checkout"), false, "Stripe path rejects ISSUED");
   assert.equal(validHostedHandoff({ ...base, disposition: "ALREADY_ISSUED" }, orderID, "stripe_checkout"), false);
   for (const [name, url] of [
@@ -311,7 +321,7 @@ test("RUI01 refund summary negatives", () => {
     ["string amount", captured({ refund: refundJSON("1", 0) })],
     ["extra refund key (reason leak)", captured({ refund: { ...refundJSON(1, 0), reason: "duplicate" } })],
     ["missing pending", captured({ refund: { refunded_minor: 1 } })],
-    ["refund on PAYUNi view (no cancel_requested)", { ...view, payment_state: "CAPTURED", handoff_state: "ISSUED", handoff_expires_at: expiry, methods: [], refund: refundJSON(0, 1) }],
-    ["REFUNDED on PAYUNi view", { ...view, payment_state: "REFUNDED", methods: [], refund: refundJSON(2500, 0) }],
+    ["refund on a view without cancel_requested", { ...view, payment_state: "CAPTURED", handoff_state: "ISSUED", handoff_expires_at: expiry, methods: [], refund: refundJSON(0, 1) }],
+    ["REFUNDED on a view without cancel_requested", { ...view, payment_state: "REFUNDED", methods: [], refund: refundJSON(2500, 0) }],
   ]) assert.equal(validOrderPayment(candidate, orderID), false, name);
 });

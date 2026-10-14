@@ -2,10 +2,9 @@
 
 // Inline payment section. BFF routes used (via lib/order-payment.ts -> lib/buyer-client.ts):
 //   GET  /api/buyer/orders/{id}/payment          -> Go GET /v1/buyer/orders/{id}/payment
-//   POST .../payment/prepare | handoff           -> BeginHosted / TakeHosted (PAYUNi) or Stripe start/take_stripe_handoff
+//   POST .../payment/prepare | handoff           -> Stripe start/take_stripe_handoff
 //   POST .../payment/refresh | cancel (Stripe)   -> HostedPaymentStarter.RefreshPayment / CancelPayment
-// Stripe states and polling: contracts/stripe-buyer-ui-v1.md §5-§6. PAYUNi rendering is unchanged.
-// Refund summary (stripe-refund-v1 §7.2) is read from the same payment view; no refund route is called.
+// Stripe states and polling: contracts/stripe-buyer-ui-v1.md §5-§6.// Refund summary (stripe-refund-v1 §7.2) is read from the same payment view; no refund route is called.
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Order } from "../lib/purchase";
@@ -311,24 +310,8 @@ export default function OrderPayment({
     hadAction.current = hasAction;
   }, [hasAction]);
 
-  // PAYUNi gate (unchanged); Stripe views use `plan` instead.
-  const fresh =
-    !marker &&
-    view?.payment_state === "NOT_STARTED" &&
-    view.commercial_state === "DRAFT" &&
-    view.handoff_state === "NONE" &&
-    view.methods.length === 1;
-  const recover =
-    marker?.stage === "prepare" &&
-    marker.body.method_code === "payuni_credit" &&
-    view &&
-    ((view.payment_state === "NOT_STARTED" &&
-      view.commercial_state === "DRAFT" &&
-      view.handoff_state === "NONE") ||
-      (view.payment_state === "PENDING" &&
-        view.commercial_state === "AWAITING_PAYMENT" &&
-        view.handoff_state === "PREPARED"));
-  const available = plan ? plan.pay || plan.cont : fresh || recover;
+  // Only Stripe views carry a `plan`; any other view stays on the unavailable state.
+  const available = plan ? plan.pay || plan.cont : false;
 
   async function pay() {
     if (working.current || busy || reading || signalling || !available) return;
@@ -339,7 +322,6 @@ export default function OrderPayment({
     const version = epoch.current;
     const selectedAtStart = selection.current;
     let destination: ReturnType<typeof openPaymentDestination> | undefined;
-    const stripe = !!plan;
     // One handoff POST per click: payOrder is reached only from this click handler, never from
     // an effect, poll, focus or retry, so a double click cannot issue two sessions.
     try {
@@ -353,7 +335,7 @@ export default function OrderPayment({
         destination,
         isCurrent: () => epoch.current === version && selectedAtStart(),
       });
-      // PAYUNi resolves void => "submitted" as before; Stripe reports its own outcome.
+      // Stripe reports its own outcome; a void result means the child tab was sent.
       if (epoch.current === version)
         setMessage(
           outcome === "creating"
@@ -364,11 +346,9 @@ export default function OrderPayment({
         );
     } catch {
       destination?.close();
-      // Stripe never shows the PAYUNi-only "uncertain" copy (a Stripe page may be reopened).
+      // Never show the "uncertain" copy (a Stripe page may be reopened).
       if (epoch.current === version)
-        setMessage(
-          destination ? (stripe ? "opFailed" : "uncertain") : "blocked",
-        );
+        setMessage(destination ? "opFailed" : "blocked");
     } finally {
       working.current = false;
       busyCallback.current(false);

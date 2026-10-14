@@ -12,10 +12,14 @@ const view = {
   order_id: orderID, currency: "TWD", total_minor: 2500,
   commercial_state: "DRAFT", payment_state: "NOT_STARTED",
   handoff_state: "NONE", handoff_expires_at: null, test_mode: true,
-  methods: [{ code: "payuni_credit", version: 1, name_hans: "测试", name_hant: "測試", name_en: "Mock" }],
+  methods: [{ code: "stripe_checkout", version: 1, name_hans: "测试", name_hant: "測試", name_en: "Mock" }],
 };
 const prepared = { order_id: orderID, state: "PAYMENT_PENDING", currency: "TWD", amount_minor: 2500 };
-const handoff = {
+const checkoutURL = "https://checkout.stripe.com/c/pay/cs_test_a1B2";
+const handoff = { order_id: orderID, disposition: "REDIRECT", expires_at: expiry, redirect_url: checkoutURL };
+// PAYUNi was removed (owner decision 2026-10-14): a backend that still serves these shapes must be sanitized to 503.
+const legacyView = { ...view, methods: [{ ...view.methods[0], code: "payuni_credit" }] };
+const legacyHandoff = {
   order_id: orderID, disposition: "ISSUED", expires_at: expiry,
   form: {
     action: "https://sandbox-api.payuni.com.tw/api/upp",
@@ -94,7 +98,7 @@ test("BPT01 exact private path, headers, body and three-locale one-fetch transpo
       assert.equal(gotView.status, 200);
       assert.deepEqual(await gotView.json(), view);
       const gotPrepare = await payment("POST", "/prepare", auth, {
-        body: JSON.stringify({ method_code: "payuni_credit", method_version: 1, locale }),
+        body: JSON.stringify({ method_code: "stripe_checkout", method_version: 1, locale }),
         idempotencyKey: key,
       });
       assert.equal(gotPrepare.status, 200);
@@ -110,7 +114,7 @@ test("BPT01 exact private path, headers, body and three-locale one-fetch transpo
       assert.equal(calls[1].options.headers.get("Idempotency-Key"), key);
       assert.equal(calls[2].options.headers.has("Idempotency-Key"), false);
       assert.equal(calls[2].options.body, undefined);
-      assert.deepEqual(JSON.parse(calls[1].options.body), { method_code: "payuni_credit", method_version: 1, locale });
+      assert.deepEqual(JSON.parse(calls[1].options.body), { method_code: "stripe_checkout", method_version: 1, locale });
       assert.equal(gotHandoff.headers.get("set-cookie"), null);
       assert.equal(JSON.stringify(view).includes(calls[0].options.headers.get("Authorization").slice(7)), false);
     }
@@ -127,7 +131,7 @@ test("BPT02 payment routes reject untrusted path, context, headers, key and body
   let calls = 0;
   globalThis.fetch = () => { calls++; throw new Error("must not fetch"); };
   try {
-    const input = { body: '{"method_code":"payuni_credit","method_version":1,"locale":"en"}', idempotencyKey: key };
+    const input = { body: '{"method_code":"stripe_checkout","method_version":1,"locale":"en"}', idempotencyKey: key };
     const cases = [
       request("GET", `${path}?x=1`, auth),
       request("GET", `${path}#fragment`, auth),
@@ -157,14 +161,15 @@ test("BPT02 payment routes reject untrusted path, context, headers, key and body
       assert.equal(calls, 0, `case ${index}`);
     }
     for (const raw of [
-      "null", "{}", '{"method_code":"payuni_credit","method_version":1,"locale":null}',
-      '{"method_code":"payuni_credit","method_version":1,"locale":"en","locale":"zh-TW"}',
-      '{"method_code":"payuni_credit","method_version":1,"locale":"en","extra":1}',
+      "null", "{}", '{"method_code":"stripe_checkout","method_version":1,"locale":null}',
+      '{"method_code":"stripe_checkout","method_version":1,"locale":"en","locale":"zh-TW"}',
+      '{"method_code":"stripe_checkout","method_version":1,"locale":"en","extra":1}',
       '{"method_code":{"nested":1},"method_version":1,"locale":"en"}',
       '{"method_code":{"nested":1,"nested":2},"method_version":1,"locale":"en"}',
       '{"method_code":"payuni_atm","method_version":1,"locale":"en"}',
-      '{"method_code":"payuni_credit","method_version":0,"locale":"en"}',
-      '{"method_code":"payuni_credit","method_version":1,"locale":"fr"}',
+      '{"method_code":"payuni_credit","method_version":1,"locale":"en"}', // removed provider code
+      '{"method_code":"stripe_checkout","method_version":0,"locale":"en"}',
+      '{"method_code":"stripe_checkout","method_version":1,"locale":"fr"}',
     ]) {
       const rejected = await payment("POST", "/prepare", auth, { body: raw, idempotencyKey: key });
       assert.ok(rejected.status >= 400, raw);
@@ -233,20 +238,24 @@ test("BPT03 hostile upstream success is sanitized, never returned as payment dat
       ["", { ...view, total_minor: -1 }],
       ["", { ...view, handoff_state: "PREPARED", handoff_expires_at: "2026-02-30T00:00:00Z" }],
       ["/prepare", { ...prepared, amount_minor: 0 }],
-      ["/prepare", { ...prepared, currency: "USD" }],
+      ["", legacyView],
+      ["/prepare", { ...prepared, currency: "EUR" }],
       ["/prepare", { ...prepared, amount_minor: 2501 }],
-      ["/handoff", { ...handoff, form: { ...handoff.form, action: "https://evil.example/api/upp" } }],
-      ["/handoff", { ...handoff, form: { ...handoff.form, fields: { ...handoff.form.fields, Credential: "upstream-secret-marker" } } }],
+      ["/handoff", legacyHandoff],
+      ["/handoff", { ...legacyHandoff, form: { ...legacyHandoff.form, action: "https://evil.example/api/upp" } }],
+      ["/handoff", { ...legacyHandoff, form: { ...legacyHandoff.form, fields: { ...legacyHandoff.form.fields, Credential: "upstream-secret-marker" } } }],
+      ["/handoff", { order_id: orderID, disposition: "ALREADY_ISSUED", expires_at: expiry }],
       ["/handoff", { ...handoff, disposition: "ALREADY_ISSUED" }],
     ];
     for (const [suffix, body] of bodies) {
       globalThis.fetch = async () => Response.json(body);
       const input = suffix === "/prepare"
-        ? { body: '{"method_code":"payuni_credit","method_version":1,"locale":"en"}', idempotencyKey: key }
+        ? { body: '{"method_code":"stripe_checkout","method_version":1,"locale":"en"}', idempotencyKey: key }
         : {};
       await safeFailure(await payment(suffix === "" ? "GET" : "POST", suffix, auth, input), 503, suffix === "/handoff");
     }
-    const duplicate = JSON.stringify(handoff).replace('"Version":"2.0"', '"Version":"2.0","Version":"2.0"');
+    const duplicate = JSON.stringify(handoff).replace('"disposition":"REDIRECT"', '"disposition":"REDIRECT","disposition":"REDIRECT"');
+    assert.notEqual(duplicate, JSON.stringify(handoff));
     for (const response of [
       new Response(duplicate, { status: 200, headers: { "Content-Type": "application/json" } }),
       new Response(Buffer.from([0xc3, 0x28]), { status: 200, headers: { "Content-Type": "application/json" } }),
@@ -318,9 +327,8 @@ test("BPT04 every handoff failure is nonretryable, including pre-route and trans
 });
 
 // ---- SU02 (author-side): Stripe routes, stripe-buyer-ui-v1 §2.
-const stripeView = { ...view, methods: [{ ...view.methods[0], code: "stripe_checkout" }] };
-const checkoutURL = "https://checkout.stripe.com/c/pay/cs_test_a1B2";
-const redirect = { order_id: orderID, disposition: "REDIRECT", expires_at: expiry, redirect_url: checkoutURL };
+const stripeView = view;
+const redirect = handoff;
 const signal = { order_id: orderID, scheduled: true };
 const stripePrepare = JSON.stringify({ method_code: "stripe_checkout", method_version: 1, locale: "en" });
 
@@ -415,7 +423,7 @@ test("SU02 every handoff/refresh/cancel failure is nonretryable and sanitized", 
   }
 });
 
-test("SU02 hostile Stripe bodies become the sanitized 503; PAYUNi and Stripe bodies stay byte-identical", async () => {
+test("SU02 hostile Stripe bodies and legacy PAYUNi shapes become the sanitized 503; valid Stripe bodies stay byte-identical", async () => {
   enabled();
   const auth = await session();
   const old = globalThis.fetch;
@@ -428,11 +436,13 @@ test("SU02 hostile Stripe bodies become the sanitized 503; PAYUNi and Stripe bod
       ["/prepare", "POST", stripePrep, { ...prepared, currency: "EUR", amount_minor: 2500 }],
       ["/prepare", "POST", stripePrep, { ...prepared, currency: "USD", amount_minor: 49 }],
       ["/prepare", "POST", stripePrep, { ...prepared, currency: "TWD", amount_minor: 2550 }],
-      ["/prepare", "POST", { body: '{"method_code":"payuni_credit","method_version":1,"locale":"en"}', idempotencyKey: key }, { ...prepared, currency: "USD" }],
+      ["", "GET", {}, legacyView],
+      ["/handoff", "POST", {}, legacyHandoff],
+      ["/handoff", "POST", {}, { order_id: orderID, disposition: "ALREADY_ISSUED", expires_at: expiry }],
       ["/handoff", "POST", {}, { ...redirect, redirect_url: "https://checkout.stripe.com.evil.example/x" }],
       ["/handoff", "POST", {}, { ...redirect, redirect_url: undefined }],
       ["/handoff", "POST", {}, { ...redirect, disposition: "CREATING" }],
-      ["/handoff", "POST", {}, { ...redirect, form: handoff.form }],
+      ["/handoff", "POST", {}, { ...redirect, form: legacyHandoff.form }],
       ["/refresh", "POST", {}, { order_id: orderID }],
       ["/refresh", "POST", {}, { ...signal, scheduled: "yes" }],
       ["/cancel", "POST", {}, { ...signal, extra: 1 }],
@@ -447,10 +457,9 @@ test("SU02 hostile Stripe bodies become the sanitized 503; PAYUNi and Stripe bod
       ["", "GET", {}, stripeView],
       ["", "GET", {}, { ...view, cancel_requested: false, methods: [], payment_state: "PENDING", commercial_state: "AWAITING_PAYMENT", handoff_state: "READY", handoff_expires_at: expiry }],
       ["/prepare", "POST", { body: stripePrepare, idempotencyKey: key }, { ...prepared, currency: "HKD", amount_minor: 400 }],
-      ["/prepare", "POST", { body: '{"method_code":"payuni_credit","method_version":1,"locale":"en"}', idempotencyKey: key }, prepared],
+      ["/prepare", "POST", { body: stripePrepare, idempotencyKey: key }, prepared],
       ["/handoff", "POST", {}, redirect],
       ["/handoff", "POST", {}, { order_id: orderID, disposition: "UNAVAILABLE", expires_at: expiry }],
-      ["/handoff", "POST", {}, handoff],
       ["/cancel", "POST", {}, { ...signal, scheduled: false }],
     ];
     for (const [suffix, method, input, body] of same) {
@@ -465,14 +474,14 @@ test("SU02 hostile Stripe bodies become the sanitized 503; PAYUNi and Stripe bod
   }
 });
 
-test("SU02 prepare accepts only the two known method codes", async () => {
+test("SU02 prepare accepts only the stripe_checkout method code (PAYUNi code rejected)", async () => {
   enabled();
   const auth = await session();
   const old = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = () => { calls++; throw new Error("must not fetch"); };
   try {
-    for (const code of ["stripe", "stripe_card", "Stripe_Checkout", ""]) {
+    for (const code of ["stripe", "stripe_card", "Stripe_Checkout", "payuni_credit", ""]) {
       const rejected = await payment("POST", "/prepare", auth, {
         body: JSON.stringify({ method_code: code, method_version: 1, locale: "en" }), idempotencyKey: key,
       });
