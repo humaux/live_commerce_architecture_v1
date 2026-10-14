@@ -45,7 +45,10 @@ BEGIN
  v:=claims.for_buyer_scope();
  v_owner:=(ctx->>'buyer_owner_id')::uuid;
  v_deadline:=(ctx->>'execute_by')::timestamptz;
- v_request_hash:=decode(ctx->>'request_hash','hex');
+ -- Retained business audit binds only opaque admission authority, never the
+ -- canonical selection hash (which includes buyer contact/address material).
+ v_request_hash:=sha256(convert_to('order-attempt-custody/v1|'||v[1]::text||'|'||v[2]::text||'|'||p_attempt::text
+  ||'|'||(ctx->>'intent_generation')::bigint::text||'|'||v_owner::text||'|'||v[3]::text,'UTF8'));
  IF NOT identity.principal_holds(v[1],v[2],v[3],ARRAY['inventory:reserve']) THEN
   RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';
  END IF;

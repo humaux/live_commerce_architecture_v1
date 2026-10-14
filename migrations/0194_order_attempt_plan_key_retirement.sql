@@ -171,7 +171,9 @@ BEGIN
    INSERT INTO ops.order_attempt_plan_key_versions(key_version) VALUES(p_plan_key_version)
     ON CONFLICT(key_version) DO NOTHING;
    SELECT v.retired_at INTO key_retired_at FROM ops.order_attempt_plan_key_versions v
-    WHERE v.key_version=p_plan_key_version FOR UPDATE;
+    WHERE v.key_version=p_plan_key_version FOR SHARE;
+   -- Unrelated C1 transactions may share a deployed version. Retirement's
+   -- exclusive row lock still waits for every retained admission reference.
    key_locked:=true;
    -- A key-row waiter may now see the same transport winner. Reread before
    -- retirement/placement checks so retained exact replay still precedes gates.

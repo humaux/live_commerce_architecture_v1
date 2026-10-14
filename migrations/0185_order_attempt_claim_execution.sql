@@ -23,7 +23,10 @@ BEGIN
  v_binding:=v_ctx->'binding'; v_facts:=v_ctx->'plan'->'facts'; v_selection:=v_facts->'selection';
  v_tenant:=(v_binding->>'tenant_id')::uuid; v_store:=(v_binding->>'store_id')::uuid;
  v_owner:=(v_binding->>'buyer_owner_id')::uuid; v_principal:=(v_binding->>'principal_id')::uuid;
- v_deadline:=(v_binding->>'execute_by')::timestamptz; v_hash:=sha256(convert_to(v_selection::text,'UTF8'));
+ v_deadline:=(v_binding->>'execute_by')::timestamptz;
+ -- Compare the exact opaque C1 custody, without retaining a PII selection hash.
+ v_hash:=sha256(convert_to('order-attempt-custody/v1|'||v_tenant::text||'|'||v_store::text||'|'||p_attempt::text
+  ||'|'||(v_binding->>'generation')::bigint::text||'|'||v_owner::text||'|'||v_principal::text,'UTF8'));
  v_lines:=v_facts->'claims'->'lines'; v_catalog:=v_facts->'catalog'->'lines';
  IF jsonb_typeof(v_lines) IS DISTINCT FROM 'array' OR jsonb_typeof(v_catalog) IS DISTINCT FROM 'array'
   OR jsonb_typeof(v_selection#>'{for,bundle_ids}') IS DISTINCT FROM 'array' THEN
@@ -132,7 +135,9 @@ BEGIN
  v_binding:=v_ctx->'binding'; v_facts:=v_ctx->'plan'->'facts';
  v_tenant:=(v_binding->>'tenant_id')::uuid; v_store:=(v_binding->>'store_id')::uuid;
  v_owner:=(v_binding->>'buyer_owner_id')::uuid; v_principal:=(v_binding->>'principal_id')::uuid;
- v_deadline:=(v_binding->>'execute_by')::timestamptz; v_hash:=sha256(convert_to((v_facts->'selection')::text,'UTF8'));
+ v_deadline:=(v_binding->>'execute_by')::timestamptz;
+ v_hash:=sha256(convert_to('order-attempt-custody/v1|'||v_tenant::text||'|'||v_store::text||'|'||p_attempt::text
+  ||'|'||(v_binding->>'generation')::bigint::text||'|'||v_owner::text||'|'||v_principal::text,'UTF8'));
  v_lines:=v_facts->'claims'->'lines'; v_catalog:=v_facts->'catalog'->'lines';
  IF jsonb_typeof(v_lines) IS DISTINCT FROM 'array' OR jsonb_typeof(v_catalog) IS DISTINCT FROM 'array' THEN
   RAISE EXCEPTION 'plan_invalid' USING ERRCODE='PT400'; END IF;

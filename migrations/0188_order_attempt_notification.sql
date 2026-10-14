@@ -36,7 +36,10 @@ CREATE TABLE inbox.order_payment_notifications (
  CHECK(binding_id IS NOT NULL OR (state='VOID' AND operation_id IS NULL AND void_stage='before_c3')),
  CHECK((state='VOID' AND void_stage IN ('before_c3','after_c3') AND void_code IS NOT NULL)
   OR (state<>'VOID' AND void_stage='none' AND void_code IS NULL)),
- CHECK(state NOT IN ('DISPATCHING','ACCEPTED','DELIVERY_UNKNOWN') OR dispatch_authorized_at IS NOT NULL)
+ CHECK(state NOT IN ('DISPATCHING','ACCEPTED','DELIVERY_UNKNOWN') OR dispatch_authorized_at IS NOT NULL),
+ CHECK(state<>'READY' OR dispatch_authorized_at IS NULL),
+ CHECK(state<>'VOID' OR (void_stage='before_c3' AND dispatch_authorized_at IS NULL)
+  OR (void_stage='after_c3' AND dispatch_authorized_at IS NOT NULL))
 );
 ALTER TABLE inbox.order_payment_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inbox.order_payment_notifications FORCE ROW LEVEL SECURITY;
@@ -60,6 +63,15 @@ BEGIN
   OR (OLD.dispatch_authorized_at IS NOT NULL AND NEW.dispatch_authorized_at IS DISTINCT FROM OLD.dispatch_authorized_at)
   OR (OLD.state='VOID' AND NEW.state IS DISTINCT FROM 'VOID') THEN
   RAISE EXCEPTION 'notification_identity_immutable' USING ERRCODE='23514';
+ END IF;
+ -- C3/C4 remain OA2-owned. Storage nevertheless refuses skipping the consumed
+ -- permit, reopening a dispatch, or replacing an accepted terminal outcome.
+ -- UNKNOWN may refine to acceptance or authoritative no-effect VOID, never send.
+ IF NEW.state IS DISTINCT FROM OLD.state AND NOT (
+  (OLD.state='READY' AND NEW.state IN ('DISPATCHING','VOID'))
+  OR (OLD.state='DISPATCHING' AND NEW.state IN ('ACCEPTED','DELIVERY_UNKNOWN','VOID'))
+  OR (OLD.state='DELIVERY_UNKNOWN' AND NEW.state IN ('ACCEPTED','VOID'))) THEN
+  RAISE EXCEPTION 'notification_transition_invalid' USING ERRCODE='23514';
  END IF;
  RETURN NEW;
 END $$;
@@ -253,7 +265,7 @@ DECLARE ctx jsonb; b jsonb; prepared jsonb; tenant uuid; store uuid; principal u
  n inbox.order_payment_notifications%ROWTYPE; c record; st record; binding record;
  operation uuid; outbound uuid; job bigint; notification uuid; generation bigint; provider text;
  digest bytea; nonce bytea; ciphertext bytea; enc bytea; sealed bytea; request jsonb; result jsonb; code text;
- now_at timestamptz; semantic bytea;
+ now_at timestamptz; semantic bytea; recipient_refused boolean:=false;
  prior_tenant text:=current_setting('app.tenant_id',true); prior_store text:=current_setting('app.store_id',true);
  prior_principal text:=current_setting('app.principal_id',true); prior_buyer text:=current_setting('app.buyer_id',true);
  prior_session text:=current_setting('app.buyer_session_id',true);
@@ -267,8 +279,19 @@ BEGIN
   IF p_material IS DISTINCT FROM jsonb_build_object('state','NOT_REQUESTED') THEN
    RAISE EXCEPTION 'notification_material_invalid' USING ERRCODE='PT400'; END IF;
  ELSIF p_material->>'state'='VOID' THEN
-  IF p_material IS DISTINCT FROM jsonb_build_object('state','VOID','void_code',p_material->>'void_code')
-   OR p_material->>'void_code' IS NULL THEN RAISE EXCEPTION 'notification_material_invalid' USING ERRCODE='PT400'; END IF;
+  IF p_material->>'void_code' IS NULL THEN RAISE EXCEPTION 'notification_material_invalid' USING ERRCODE='PT400'; END IF;
+  IF p_material IS DISTINCT FROM jsonb_build_object('state','VOID','void_code',p_material->>'void_code') THEN
+   -- Only the trusted executor's authenticated recipient refusal may classify
+   -- PREPARED as VOID. This declares no generic payload/key/format failure.
+   IF p_material IS DISTINCT FROM jsonb_build_object('state','VOID','void_code','recipient_invalid',
+     'origin',p_material->'origin','origin_version',p_material->'origin_version')
+    OR jsonb_typeof(p_material->'origin') IS DISTINCT FROM 'string'
+    OR jsonb_typeof(p_material->'origin_version') IS DISTINCT FROM 'number'
+    OR octet_length(p_material->>'origin') NOT BETWEEN 11 AND 261
+    OR p_material->>'origin_version' !~ '^[1-9][0-9]{0,18}$' THEN
+    RAISE EXCEPTION 'notification_material_invalid' USING ERRCODE='PT400'; END IF;
+   recipient_refused:=true;
+  END IF;
  ELSIF p_material->>'state'='READY' THEN
   IF (p_material-ARRAY['state','operation_id','outbound_id','job_id','body_hmac_hex','key_id','nonce_hex','ciphertext_hex',
     'dispatch_enc_hex','dispatch_ciphertext_hex','template_id','template_version','origin','origin_version'])<>'{}'::jsonb
@@ -298,6 +321,15 @@ BEGIN
  END IF;
  PERFORM set_config('app.tenant_id',tenant::text,true),set_config('app.store_id',store::text,true),
   set_config('app.principal_id',principal::text,true),set_config('app.buyer_id','',true),set_config('app.buyer_session_id','',true);
+ IF recipient_refused THEN
+  -- Even helper replay must independently observe the exact current native
+  -- origin/version. SQL does not claim to decrypt or validate HPKE plaintext.
+  prepared:=inbox.order_attempt_prepare_notification(p_attempt,p_plan);
+  IF prepared->>'state' IS DISTINCT FROM 'PREPARED'
+   OR p_material->'origin' IS DISTINCT FROM prepared->'origin'
+   OR p_material->'origin_version' IS DISTINCT FROM prepared->'origin_version' THEN
+   RAISE EXCEPTION 'notification_reprepare' USING ERRCODE='PT409'; END IF;
+ END IF;
  SELECT x.* INTO n FROM inbox.order_payment_notifications x WHERE x.tenant_id=tenant AND x.store_id=store AND x.semantic_key=semantic;
  IF FOUND THEN
   IF n.state IS DISTINCT FROM p_material->>'state' OR n.owner_id IS DISTINCT FROM buyer_id
@@ -307,7 +339,7 @@ BEGIN
     OR NOT EXISTS(SELECT 1 FROM integration.operations o WHERE o.id=operation AND o.tenant_id=tenant AND o.store_id=store AND o.job_id=job))) THEN
    RAISE EXCEPTION 'notification_material_conflict' USING ERRCODE='PT409'; END IF;
  ELSE
-  prepared:=inbox.order_attempt_prepare_notification(p_attempt,p_plan);
+  IF NOT recipient_refused THEN prepared:=inbox.order_attempt_prepare_notification(p_attempt,p_plan); END IF;
   IF prepared->>'state'='NOT_REQUESTED' THEN
    IF p_material->>'state' IS DISTINCT FROM 'NOT_REQUESTED' THEN RAISE EXCEPTION 'notification_material_invalid' USING ERRCODE='PT400'; END IF;
    result:=prepared;
@@ -322,14 +354,21 @@ BEGIN
    VALUES(tenant,store,buyer_id,p_attempt,p_attempt,'initial',semantic,1,(prepared->>'conversation_id')::uuid,'VOID','before_c3',code)
    RETURNING * INTO n;
   ELSE
-   IF p_material->>'state' IS DISTINCT FROM 'READY' OR prepared->>'state' IS DISTINCT FROM 'PREPARED' THEN
+   IF (NOT recipient_refused AND p_material->>'state' IS DISTINCT FROM 'READY')
+    OR prepared->>'state' IS DISTINCT FROM 'PREPARED' THEN
     RAISE EXCEPTION 'notification_material_invalid' USING ERRCODE='PT400'; END IF;
-   -- Go sealed the URL from the original PREPARED snapshot. Current eligible B
-   -- must never authorize ciphertext for A, including renewal of A's version.
+   -- The executor carries the original PREPARED origin/version. Current B must
+   -- never authorize READY ciphertext for A, including renewal of A's version.
    -- This compares the finish observation; it adds no new cross-domain locks.
    IF p_material->'origin' IS DISTINCT FROM prepared->'origin'
     OR p_material->'origin_version' IS DISTINCT FROM prepared->'origin_version' THEN
     RAISE EXCEPTION 'notification_reprepare' USING ERRCODE='PT409'; END IF;
+   IF recipient_refused THEN
+    INSERT INTO inbox.order_payment_notifications(tenant_id,store_id,owner_id,order_id,create_attempt_id,kind,semantic_key,
+     link_version,conversation_id,state,void_stage,void_code)
+    VALUES(tenant,store,buyer_id,p_attempt,p_attempt,'initial',semantic,1,(prepared->>'conversation_id')::uuid,
+     'VOID','before_c3','recipient_invalid') RETURNING * INTO n;
+   ELSE
    SELECT x.id,x.object,x.asset_id,x.app_id,x.peer_key INTO c FROM social.conversations x
     WHERE x.id=(prepared->>'conversation_id')::uuid AND x.tenant_id=tenant AND x.store_id=store;
    SELECT s.mode,s.assignee_principal,s.takeover_generation,s.human_until,s.last_inbound_at INTO st
@@ -361,6 +400,7 @@ BEGIN
     link_version,conversation_id,binding_id,operation_id,outbound_id,state,void_stage)
    VALUES(notification,tenant,store,buyer_id,p_attempt,p_attempt,'initial',semantic,1,c.id,binding.id,operation,outbound,'READY','none')
    RETURNING * INTO n;
+   END IF;
   END IF;
  END IF;
  IF result IS NULL THEN result:=jsonb_build_object('notification_id',n.id,'state',n.state,'operation_id',n.operation_id,'void_code',n.void_code); END IF;

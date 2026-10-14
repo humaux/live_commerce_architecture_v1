@@ -350,7 +350,10 @@ BEGIN
   VALUES(tenant,store,owner_id,p_attempt,'AWAITING',payment->>'bank_name',payment->>'branch',payment->>'account_name',
    payment->>'account_number',(payment->>'window_hours')::integer,currency,now_at,now_at);
  END IF;
- request_hash:=sha256(convert_to((plan->'facts'->'selection')::text,'UTF8'));
+ -- Native command audit retains the same non-PII custody proof as claim
+ -- admission, consumption and abort; exact selection hashing remains in ops.
+ request_hash:=sha256(convert_to('order-attempt-custody/v1|'||tenant::text||'|'||store::text||'|'||p_attempt::text
+  ||'|'||(binding->>'generation')::bigint::text||'|'||owner_id::text||'|'||principal::text,'UTF8'));
  INSERT INTO checkout.command_results(tenant_id,store_id,owner_id,operation,idempotency_key,creator_session_id,request_hash,
   order_id,response,creator_kind,create_attempt_id)
  VALUES(tenant,store,owner_id,'checkout.begin',p_attempt::text,NULL,request_hash,p_attempt,result,'order_attempt',p_attempt);
