@@ -37,10 +37,13 @@ func TestBuyerKeptDatabasePreflightRealPG(t *testing.T) {
 	var observers []*pgxpool.Pool
 	for _, name := range []string{"LC_BUYER_KEPT_OBSERVER_DSN", "LC_BUYER_KEPT_CLONE_OBSERVER_DSN"} {
 		p, err := pgxpool.New(ctx, os.Getenv(name))
-		if err != nil || p.Ping(ctx) != nil {
+		if err != nil {
 			t.Fatal("fixture observer unavailable")
 		}
 		defer p.Close()
+		if p.Ping(ctx) != nil {
+			t.Fatal("fixture observer unavailable")
+		}
 		observers = append(observers, p)
 	}
 	base := buyerConfig{enabled: true, issuerDSN: os.Getenv("LC_BUYER_KEPT_ISSUER_DSN"), buyerDSN: os.Getenv("LC_BUYER_KEPT_RUNTIME_DSN"), checkoutDSN: os.Getenv("LC_BUYER_KEPT_CHECKOUT_DSN"), bffKey: strings.Repeat("A", 43), ttl: time.Hour}
@@ -66,7 +69,7 @@ func TestBuyerKeptDatabasePreflightRealPG(t *testing.T) {
 				}
 				q := parsed.Query()
 				q.Set("application_name", label)
-				parsed.RawQuery, *dsn = q.Encode(), ""
+				parsed.RawQuery = q.Encode()
 				*dsn = parsed.String()
 			}
 			handler, parts, closePools, err := buildBuyerWithCVS(ctx, c, main, func(string) string { return "" })

@@ -87,6 +87,9 @@ func run() error {
 		return err
 	}
 	defer closeBuyer()
+	if err = buyerKeptDatabasePreflight(startup, buyerConfig, cvs); err != nil {
+		return err
+	}
 	if !buyerConfig.enabled {
 		// Merchant-side CVS (settings, collection, release, MANUAL stores) does not need the buyer surface; ECPay itself needs the
 		// payment profile, so with buyer payment off CVS_ECPAY_ENABLED=1 is a startup error (unit default C9).
