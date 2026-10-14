@@ -1458,6 +1458,16 @@ func TestLiveMediaRecoveryMRR01KnownIDQuery(t *testing.T) {
 	mrStop(t, parent, syscall.SIGTERM, true)
 }
 
+func mrr02LateArrivals(t0 time.Time, arrivals []time.Time, deadline time.Duration) []time.Duration {
+	var late []time.Duration
+	for _, arr := range arrivals {
+		if elapsed := arr.Sub(t0); elapsed > deadline {
+			late = append(late, elapsed)
+		}
+	}
+	return late
+}
+
 func TestLiveMediaRecoveryMRR02RealNinetySecondMiss(t *testing.T) {
 	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "unused provider", 500) })
 	recovery, _ := mrrRecoveryPool(t, h)
@@ -1578,27 +1588,23 @@ func TestLiveMediaRecoveryMRR02RealNinetySecondMiss(t *testing.T) {
 	deadline := 90*time.Second + tolerance
 	t.Logf("MRR02 jitter=%s dbLat=%s derived_tolerance=%s (capped at %s) deadline=%s", jitter, dbLat, tolerance, mrr02TransitBudget, deadline)
 
-	// Negative control: verify that any arrival exceeding 90s + mrr02TransitBudget is strictly flagged.
-	syntheticLate := []time.Duration{90*time.Second + mrr02TransitBudget + 1*time.Millisecond}
-	var syntheticViolations []time.Duration
-	for _, arr := range syntheticLate {
-		if arr > 90*time.Second+tolerance {
-			syntheticViolations = append(syntheticViolations, arr)
-		}
+	// Negative control: verify that mrr02LateArrivals flags an arrival past the transit budget,
+	// and does not flag an arrival within the budget.
+	ctrlBudget := 90*time.Second + mrr02TransitBudget
+	ctrlSynthetic := []time.Time{
+		t0.Add(ctrlBudget),                       // boundary: exactly on budget (must NOT be flagged)
+		t0.Add(ctrlBudget + 1*time.Millisecond), // 1ms late: past budget (MUST be flagged)
 	}
-	if len(syntheticViolations) != 1 {
-		t.Fatal("negative control failed: synthetic arrival past transit budget was not flagged")
+	ctrlFlagged := mrr02LateArrivals(t0, ctrlSynthetic, ctrlBudget)
+	if len(ctrlFlagged) != 1 || ctrlFlagged[0] != ctrlBudget+1*time.Millisecond {
+		t.Fatalf("negative control failed: want exactly [90s+budget+1ms] flagged, got %v", ctrlFlagged)
 	}
 
-	var lateArrivals []time.Duration
 	arrivalsMu.Lock()
-	for _, arr := range queryArrivals {
-		if elapsed := arr.Sub(t0); elapsed > deadline {
-			lateArrivals = append(lateArrivals, elapsed)
-		}
-	}
+	recorded := append([]time.Time(nil), queryArrivals...)
 	arrivalsMu.Unlock()
 
+	lateArrivals := mrr02LateArrivals(t0, recorded, deadline)
 	if queryCount.Load() == 0 || len(lateArrivals) != 0 {
 		t.Fatalf("provider fault not exercised or I/O scheduled after t0+90s: calls=%d late=%d arrivals=%v", queryCount.Load(), len(lateArrivals), lateArrivals)
 	}
