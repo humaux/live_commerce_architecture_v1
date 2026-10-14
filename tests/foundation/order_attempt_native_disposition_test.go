@@ -7,6 +7,7 @@ package foundation_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"livecommerce/internal/orderattempt"
@@ -40,6 +41,10 @@ func TestOrderAttemptNativeBankDisableAndPriceVersionHonorFrozenFacts(t *testing
 	e := oaAreaIsolated(t)
 	a := oaFenceAdmit(t, e)
 	plan, _ := oaMaterialPlan(t, e, oaServiceKeys(t), a.AttemptID)
+	var facts oaBeginFacts
+	if err := json.Unmarshal(plan.Facts, &facts); err != nil {
+		t.Fatal("original frozen payment facts", err)
+	}
 	// §2 freezes payment selection, bank/window details and price/version. An
 	// enabled switch for new admissions does not delete the selected settings.
 	if status, _ := e.cofSettings(1, false, false, 12); status != 200 {
@@ -59,6 +64,13 @@ func TestOrderAttemptNativeBankDisableAndPriceVersionHonorFrozenFacts(t *testing
 		t.Fatal("mutable admission options repriced/revoked frozen intent", err)
 	}
 	oaExecutorCommitted(t, e, a, plan, got, 5)
+	var frozen bool
+	if err = e.p.f.owner.QueryRow(context.Background(), `SELECT bank_name=$2 AND branch=$3 AND account_name=$4
+	 AND account_number=$5 AND window_hours=$6 FROM checkout.bank_transfers WHERE order_id=$1`,
+		a.AttemptID, facts.Catalog.Payment.BankName, facts.Catalog.Payment.Branch, facts.Catalog.Payment.AccountName,
+		facts.Catalog.Payment.AccountNumber, facts.Catalog.Payment.WindowHours).Scan(&frozen); err != nil || !frozen {
+		t.Fatal("current bank disable/version replaced the original bank/window proof", err)
+	}
 }
 
 func TestOrderAttemptNativeMaxPerOrderRevocationSealsLimitExceeded(t *testing.T) {
