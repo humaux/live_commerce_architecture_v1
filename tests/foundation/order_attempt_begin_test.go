@@ -333,7 +333,7 @@ func TestOrderAttemptBeginNativeEffectsAndRollback(t *testing.T) {
 						t.Fatalf("untracked Begin touched native balance counters/version: %v", err)
 					}
 				}
-				err = tx.QueryRow(context.Background(), `SELECT count(*)=1 AND bool_and(r.creator_kind='order_attempt' AND r.creator_session_id IS NULL AND r.create_attempt_id=a.attempt_id AND r.order_id=a.attempt_id AND r.owner_id=a.buyer_owner_id AND r.operation='checkout.begin' AND r.idempotency_key=a.attempt_id::text AND r.request_hash=a.request_hash AND r.response=$2::jsonb) FROM checkout.command_results r JOIN ops.order_attempts a ON a.attempt_id=r.create_attempt_id WHERE a.attempt_id=$1::uuid`, a.AttemptID, string(raw)).Scan(&exact)
+				err = tx.QueryRow(context.Background(), `SELECT count(*)=1 AND bool_and(r.creator_kind='order_attempt' AND r.creator_session_id IS NULL AND r.create_attempt_id=a.attempt_id AND r.order_id=a.attempt_id AND r.owner_id=a.buyer_owner_id AND r.operation='checkout.begin' AND r.idempotency_key=a.attempt_id::text AND r.request_hash=sha256(convert_to('order-attempt-custody/v1|'||a.tenant_id::text||'|'||a.store_id::text||'|'||a.attempt_id::text||'|'||a.intent_generation::text||'|'||a.buyer_owner_id::text||'|'||(a.admission_provenance->>'principal_id')::uuid::text,'UTF8')) AND r.response=$2::jsonb) FROM checkout.command_results r JOIN ops.order_attempts a ON a.attempt_id=r.create_attempt_id WHERE a.attempt_id=$1::uuid`, a.AttemptID, string(raw)).Scan(&exact)
 				if err != nil || !exact {
 					t.Fatalf("native command receipt did not bind request/order/attempt/result: %v", err)
 				}

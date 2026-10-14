@@ -250,7 +250,7 @@ func oaClaimCustodyDiagnostic(t *testing.T, e *lbuEnv, a orderattempt.AdmissionR
 	  AND EXISTS(SELECT 1 FROM inbox.order_for_buyer r WHERE r.tenant_id=g.tenant_id AND r.store_id=g.store_id
 	   AND r.create_attempt_id=a.attempt_id AND r.request_id=g.request_id AND r.bundle_id=g.bundle_id))
 	  FROM claims.merchant_origin_grants g WHERE g.tenant_id=a.tenant_id AND g.store_id=a.store_id AND g.create_attempt_id=a.attempt_id),
-	 coalesce((SELECT bool_and(r.request_hash IS NOT DISTINCT FROM a.request_hash) FROM inbox.order_for_buyer r
+	 coalesce((SELECT bool_and(r.request_hash IS NOT DISTINCT FROM sha256(convert_to('order-attempt-custody/v1|'||a.tenant_id::text||'|'||a.store_id::text||'|'||a.attempt_id::text||'|'||a.intent_generation::text||'|'||a.buyer_owner_id::text||'|'||(a.admission_provenance->>'principal_id')::uuid::text,'UTF8'))) FROM inbox.order_for_buyer r
 	  WHERE r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.create_attempt_id=a.attempt_id),false),
 	 coalesce((SELECT bool_and(r.state='pending') FROM inbox.order_for_buyer r
 	  WHERE r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.create_attempt_id=a.attempt_id),false),
