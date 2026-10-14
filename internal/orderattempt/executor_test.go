@@ -68,7 +68,7 @@ func TestOrderAttemptExecutorAbortClassification(t *testing.T) {
 		want string
 	}{
 		{"allocator insufficient", command.ErrInsufficient, "insufficient_inventory"},
-		{"missing plan key", ErrPlanKeyUnavailable, "PLAN_UNAVAILABLE"},
+		{"missing local plan key stays retryable", ErrPlanKeyUnavailable, ""},
 		{"invalid authenticated plan", ErrPlanInvalid, "PLAN_INVALID"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
