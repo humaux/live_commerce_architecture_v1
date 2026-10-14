@@ -250,7 +250,7 @@
 |---|---|---|---|---|
 | Filter orders by status | filter | Filters order list by commercial or fulfillment state. | GET /api/stores/{store}/orders?limit=25&state={state} | `apps/admin/components/MerchantOrders.tsx:568` |
 | Select order bucket tab | filter | Switches active order lifecycle bucket tab. | GET /api/stores/{store}/orders?limit=25&bucket={bucket} | `apps/admin/components/MerchantOrders.tsx:660` |
-| Apply search and filters | form | Filters orders by search query, payment mode, delivery kind, session, and date range. | GET /api/stores/{store}/orders?limit=25&... | `apps/admin/components/OrderListFilters.tsx:27` |
+| Apply search and filters | form | Filters orders by search query (sent only as a POST JSON body, kept in UI memory — never in the URL, merchant-orders-v2 §23–28), payment mode, delivery kind, session, and date range. | POST search body + GET /api/stores/{store}/orders?limit=25&… (non-sensitive filters) | `apps/admin/components/OrderListFilters.tsx:27` |
 | Toggle advanced filters drawer | view | Expands or collapses secondary order filter controls and state dropdown. | none | `apps/admin/components/OrderListFilters.tsx:38` |
 | Refresh order list | action | Manually triggers full refresh of orders list, actions probe, and counts. | GET /api/stores/{store}/orders | `apps/admin/components/MerchantOrders.tsx:589` |
 | Export unshipped orders CSV | export | Directly downloads CSV of unshipped orders for warehouse fulfillment. | GET /api/stores/{store}/orders/unshipped.csv | `apps/admin/components/MerchantOrders.tsx:599` |
@@ -272,7 +272,7 @@
 | Paginate previous order page | navigation | Pops cursor history stack to return to previous order page. | GET /api/stores/{store}/orders?limit=25&cursor={cursor} | `apps/admin/components/MerchantOrders.tsx:740` |
 
 现存问题：
-- **P1** Orders page route rejects query param q with 404 notFound, breaking shareable search URLs. (`apps/admin/app/[locale]/orders/page.tsx:28`)
+- **保留（隐私约束，非缺陷）** `orders?q` 被拒绝是刻意设计：搜索词可能识别买家，契约要求只走 POST body、不进 URL（merchant-orders-v2.md §23–28）。非敏感筛选可深链，q 故意不可深链。(`apps/admin/app/[locale]/orders/page.tsx:28`)
 - **P2** State filter dropdown is hidden by CSS when data-expanded=false until clicking more filters toggle. (`apps/admin/components/orders-v2.css:16`)
 - **P2** MerchantOrders component receives no stores prop, preventing store switching from the orders page UI. (`apps/admin/components/MerchantOrders.tsx:93`)
 - **P2** Pagination previous cursor stack is kept in memory ref and disabled on direct link access or refresh. (`apps/admin/components/MerchantOrders.tsx:159`)
@@ -783,7 +783,7 @@
 
 现存问题：
 - **P1** Cart link uses raw anchor tag causing full page reload instead of Next.js Link. (`apps/storefront/components/ClaimLink.tsx:309`)
-- **P1** Page refresh strips URL fragment and leaves token null, causing permanent not-found error without recovery. (`apps/storefront/components/ClaimLink.tsx:105`)
+- **保留（安全行为，非缺陷）** 打开后立即移除 fragment、token 只存内存（live-keyword-claims-v1 §996–997）；刷新后已有恢复指引：notice=reopen 引导回商家消息重新打开链接（`ClaimLink.tsx:105-107`, `:288-291`）。重设计不得持久化 token。(`apps/storefront/components/ClaimLink.tsx:105`)
 - **P2** Navigation to checkout uses window.location.assign instead of Next.js router. (`apps/storefront/components/ClaimLink.tsx:182`)
 
 ### P38 `/[locale]/collections/(list)` — Directory of active store collections displaying cover tiles, product counts, and navigation.
@@ -865,7 +865,7 @@
 
 现存问题：
 - **P1** Order lookup link uses raw anchor tag instead of Next.js Link causing full page reload. (`apps/storefront/components/OrderLink.tsx:83`)
-- **P1** Browser refresh clears fragment and leaves token null, permanently showing refused error without recovery. (`apps/storefront/components/OrderLink.tsx:35`)
+- **保留（安全行为，非缺陷）** token 只存内存；刷新后已有拒绝说明、恢复帮助与订单查询入口（`OrderLink.tsx:79-83`）。(`apps/storefront/components/OrderLink.tsx:35`)
 - **P2** Redirect to order uses window.location.replace instead of Next.js router replace. (`apps/storefront/components/OrderLink.tsx:49`)
 
 ## 买家店铺 · 首页、商品与订单
