@@ -31,7 +31,7 @@
    buttons spilled over the status badge (gallery lint R3/R6, 2026-10-15). */
 .table th:not([data-wrap]), .table td:not([data-wrap="true"]) { width: 1%; }
 .table th[data-wrap], .table td[data-wrap="true"] { width: auto; }
-.selectCell { width: 44px; padding-inline: var(--ds-space-2) !important; text-align: center; }
+.table .selectCell { width: 44px; min-width: 44px; padding-inline: var(--ds-space-2) !important; text-align: center; }
 .check { display: block; width: 18px; height: 18px; margin: 0 auto; accent-color: var(--ds-primary); cursor: pointer; }
 .thumb { display: block; width: 64px; height: 64px; border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); background: var(--ds-surface-muted); object-fit: cover; }
 .thumbEmpty { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border: 1px dashed var(--ds-border-input); border-radius: var(--ds-radius-md); color: var(--ds-text-3); font-size: var(--ds-text-xs); }
