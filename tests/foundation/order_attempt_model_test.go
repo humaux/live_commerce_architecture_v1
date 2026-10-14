@@ -91,6 +91,7 @@ func oaReceipt(a oaModelAttempt) oaModelReply {
 
 func (m *oaIntentModel) settleAbort(a *oaModelAttempt) {
 	a.state, a.subjects, a.job = oaAborted, 0, false
+	a.executionLocks = 0
 	m.drafts[a.actor] = oaModelDraft{}
 }
 
@@ -98,6 +99,20 @@ func (m *oaIntentModel) step(c oaModelCommand) oaModelReply {
 	actor, generation := int(c.actor%2), int(c.generation)
 	key, body := int(c.key%16), int(c.body%4)
 	reject := oaModelReply{code: "rejected"}
+	switch c.op {
+	case oaHoldSubjectBarrier:
+		m.subjectBarriers |= 1 << (c.arg % 6)
+		return oaModelReply{code: "subject-held"}
+	case oaReleaseSubjectBarrier:
+		m.subjectBarriers &^= 1 << (c.arg % 6)
+		return oaModelReply{code: "subject-released"}
+	case oaHoldScope:
+		m.scopeHeld[actor] = true
+		return oaModelReply{code: "scope-held"}
+	case oaReleaseScope:
+		m.scopeHeld[actor] = false
+		return oaModelReply{code: "scope-released"}
+	}
 	if c.op == oaAdmit || c.op == oaReplay {
 		// Global key lookup precedes generation/placement validation in every state.
 		for i := 0; i < m.count; i++ {
@@ -110,6 +125,9 @@ func (m *oaIntentModel) step(c oaModelCommand) oaModelReply {
 			}
 		}
 		if c.op == oaReplay || generation != m.generation[actor] || m.count == len(m.attempts) {
+			return reject
+		}
+		if m.scopeHeld[actor] || m.subjectBarriers&(1<<actor|1<<(body+2)) != 0 {
 			return reject
 		}
 		for i := 0; i < m.count; i++ {
@@ -133,6 +151,11 @@ func (m *oaIntentModel) step(c oaModelCommand) oaModelReply {
 		return oaModelReply{code: "rotated"}
 	}
 	if c.op == oaCrash {
+		for i := 0; i < m.count; i++ {
+			if m.attempts[i].actor == actor {
+				m.attempts[i].executionLocks = 0
+			}
+		}
 		m.drafts[actor] = oaModelDraft{}
 		return oaModelReply{code: "unknown"}
 	}
@@ -191,6 +214,7 @@ func (m *oaIntentModel) step(c oaModelCommand) oaModelReply {
 			m.settleAbort(a)
 		} else {
 			*d = oaModelDraft{id: a.id}
+			a.executionLocks = oaModelFenceLock
 		}
 	case oaStage:
 		if d.id != a.id {
@@ -208,6 +232,7 @@ func (m *oaIntentModel) step(c oaModelCommand) oaModelReply {
 				a.effects[i] = 1
 			}
 			a.state, a.order, a.subjects, a.job = oaCommitted, a.id, 0, false
+			a.executionLocks = 0
 			a.hold = 1
 			m.stock--
 			*d = oaModelDraft{}
@@ -239,6 +264,12 @@ func (o *oaModelObserver) check(m oaIntentModel) error {
 	usedStock := 0
 	for i := 0; i < m.count; i++ {
 		a := m.attempts[i]
+		if a.executionLocks & ^oaModelFenceLock != 0 {
+			return fmt.Errorf("C2 acquired an earlier scope or subject lock: id=%d", a.id)
+		}
+		if (m.drafts[a.actor].id == a.id) != (a.executionLocks == oaModelFenceLock) {
+			return fmt.Errorf("execution draft and exact attempt fence disagree: id=%d", a.id)
+		}
 		identity := [6]int{a.actor, a.generation, a.key, a.body, a.owner, a.deadline}
 		if old, ok := o.identity[a.id]; ok && old != identity {
 			return fmt.Errorf("immutable identity changed: id=%d old=%v new=%v", a.id, old, identity)
@@ -327,7 +358,7 @@ func oaCheckModelTransition(before, after oaIntentModel, c oaModelCommand, reply
 		if a.state != oaCommitted && after.attempts[i].state == oaCommitted {
 			d := before.drafts[a.actor]
 			if c.op != oaCommit || int(c.actor%2) != a.actor || int(c.generation) != a.generation ||
-				d.id != a.id || d.stages != oaEffects || before.now >= a.deadline || before.stock <= 0 {
+				d.id != a.id || a.executionLocks != oaModelFenceLock || d.stages != oaEffects || before.now >= a.deadline || before.stock <= 0 {
 				return fmt.Errorf("commit lacked exact owner/generation/fence/deadline/resources")
 			}
 		}
@@ -335,7 +366,8 @@ func oaCheckModelTransition(before, after oaIntentModel, c oaModelCommand, reply
 	if after.count > before.count {
 		a := after.attempts[before.count]
 		if c.op != oaAdmit || after.count != before.count+1 || int(c.generation) != before.generation[a.actor] ||
-			a.generation != before.generation[a.actor]+1 || a.owner != before.credential[a.actor] || a.deadline != before.now+15 {
+			a.generation != before.generation[a.actor]+1 || a.owner != before.credential[a.actor] || a.deadline != before.now+15 ||
+			before.scopeHeld[a.actor] || before.subjectBarriers&a.subjects != 0 {
 			return fmt.Errorf("admission bypassed generation/owner/deadline authority")
 		}
 	}
