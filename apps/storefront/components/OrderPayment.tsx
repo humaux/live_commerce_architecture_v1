@@ -495,31 +495,6 @@ export default function OrderPayment({
             </button>
           )}
         </>
-      ) : available ? (
-        <>
-          {fresh && view && (
-            <p>
-              {
-                view.methods[0][
-                  locale === "en"
-                    ? "name_en"
-                    : locale === "zh-TW"
-                      ? "name_hant"
-                      : "name_hans"
-                ]
-              }
-            </p>
-          )}
-          <p className="order-note">{copy.explain}</p>
-          <button
-            className="payment-pay"
-            data-testid="pay-order"
-            disabled={busy}
-            onClick={() => void pay()}
-          >
-            {recover ? copy.recover : copy.pay}
-          </button>
-        </>
       ) : (
         view && (
           <p className="order-note">

@@ -1,4 +1,4 @@
-// Purpose: Types for the store settings wizard: markets, delivery options, policies and status rows (no PAYUNi since PAY-RM2).
+// Purpose: Types for the store settings wizard: markets, delivery options, policies and status rows.
 // Depends on: ./model types (APIError, Page, Store).
 // Used by: components/SettingsWizard.tsx, LiveSettings.tsx, BuyerPanel.tsx, lib/settings-draft.ts, lib/live-settings-*, proxy.ts.
 import type { APIError, Page, Store } from "./model";
