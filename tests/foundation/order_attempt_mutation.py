@@ -206,6 +206,9 @@ def main():
     (evidence / "oa1-mutation.json").write_text(json.dumps(receipt, indent=2) + "\n")
     (evidence / "oa1-mutation.patch").write_bytes(subprocess.check_output(["git", "diff", "--no-ext-diff"]))
     print("Applied OA mutation " + name + " at " + receipt["source_sha"], flush=True)
+    for change in receipt["changes"]:
+        print("Patched " + change["path"] + " before=" + change["before_sha256"]
+              + " after=" + change["after_sha256"], flush=True)
 
 
 if __name__ == "__main__":
