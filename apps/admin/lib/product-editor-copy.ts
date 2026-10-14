@@ -113,6 +113,7 @@ const en = {
   saving: "Saving…",
   dirty: "Unsaved changes",
   leave: "Leave without saving your changes?",
+  leaveBlocked: "An image upload or save is still running. Wait for it to finish, then leave this page.",
   recoveryRequired:
     "A previous product creation still needs reconciliation. Do not create it again. Keep this tab and ask an administrator to confirm the command receipt before continuing; draft content was not cached.",
   imageRequired: "Add at least one image before publishing.",
@@ -284,6 +285,7 @@ const zhTW: Copy = {
   saving: "儲存中…",
   dirty: "尚未儲存的修改",
   leave: "要離開並捨棄未儲存的修改嗎？",
+  leaveBlocked: "圖片上傳或儲存仍在進行中，請等待完成後再離開此頁。",
   recoveryRequired:
     "先前的商品新增仍待核對，請勿重複新增。請保留此分頁，請管理員核對命令回執後再繼續；系統未快取草稿內容。",
   imageRequired: "上架前請至少新增一張圖片。",
@@ -445,6 +447,7 @@ const zhCN: Copy = {
   saving: "保存中…",
   dirty: "未保存的修改",
   leave: "要离开并放弃未保存的修改吗？",
+  leaveBlocked: "图片上传或保存仍在进行中，请等待完成后再离开此页。",
   recoveryRequired:
     "先前的商品新增仍待核对，请勿重复新增。请保留此标签页，请管理员核对命令回执后再继续；系统未缓存草稿内容。",
   imageRequired: "上架前请至少添加一张图片。",

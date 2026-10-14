@@ -72,15 +72,18 @@ export function ProductDocumentForm({
   const initial = useRef(JSON.stringify(initialDraft(detail))),
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
+  // Media state never freezes the other fields or the section nav: an unreadable image list or an upload only
+  // locks the media block itself (and, while a request is in flight, the save buttons). Staged creation keeps
+  // its photo-processing lock because its photos are part of the draft being saved.
   const disabled =
-    (!!detail && !mediaKnown) ||
-    mediaBusy ||
+    (!detail && mediaBusy) ||
     !referencesReady ||
     !write.fenceReady ||
     write.recoveryBlocked ||
     write.busy ||
     write.pending ||
     !!write.done;
+  const saveDisabled = disabled || mediaBusy;
   const dirty =
     !write.done &&
     (JSON.stringify(draft) !== initial.current ||
@@ -224,7 +227,7 @@ export function ProductDocumentForm({
     if (mode === "create" && photos.some(p=>p.role === "sku" && (!mediaAxis || p.optionName !== mediaAxis.name || !mediaAxis.values.includes(p.optionValue ?? "")))) {
       write.setMessage(productMediaCopy[locale].staleOption); focus("media"); noteSaveAttempt(); return;
     }
-    if (disabled) return;
+    if (saveDisabled) return;
     if (mainMissing && (publish || requestedStatus === 'active')) {
       write.setMessage(productMediaCopy[locale].activeMainMissing);
       focus('media'); noteSaveAttempt(); return;
@@ -764,14 +767,14 @@ export function ProductDocumentForm({
           <button
             type="submit"
             data-testid={mode === "create" ? "product-create" : "product-save"}
-            disabled={disabled || (mainMissing && targetStatus==='active')}
+            disabled={saveDisabled || (mainMissing && targetStatus==='active')}
           >
             {mode === "create" ? c.saveDraft : c.save}
           </button>
           {(write.savedDetail ?? detail)?.status === "active" && (
             <button
               type="button"
-              disabled={disabled}
+              disabled={saveDisabled}
               data-testid="product-unpublish"
               onClick={() => save(false, "draft")}
             >
@@ -782,7 +785,7 @@ export function ProductDocumentForm({
             className="product-primary"
             type="button"
             data-testid="product-publish"
-            disabled={disabled || mainMissing}
+            disabled={saveDisabled || mainMissing}
             onClick={() => save(true)}
           >
             {c.publish}

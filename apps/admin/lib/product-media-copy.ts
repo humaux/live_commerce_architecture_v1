@@ -40,7 +40,12 @@ const en = {
   axisChanged: "The image option changed. Check the images before continuing.",
   storageFailed:
     "This browser cannot keep upload recovery information. Allow site storage and try again.",
-  failed: "Could not save the images. Refresh the list and try again.",
+  failed:
+    'Could not save the image. Choose "Refresh images" to check the list, then try again.',
+  tooLarge: "Photo is over 2 MB — compress it and upload again",
+  acceptHint: "JPEG / PNG / WebP, up to 2 MB each",
+  retryFile: "Retry this photo",
+  batchPartial: "Saved {saved}/{total}. {file} failed: {reason}",
   unauthorized: "Your access changed. Refresh the page and sign in again.",
   mainFull: "Main images are limited to 4. Delete or move one first.",
   detailFull: "Detail images are limited to 20. Delete or move one first.",
@@ -49,7 +54,7 @@ const en = {
   optionCap: "There are too many variant images. Delete unused images first.",
   type: "Choose a JPEG, PNG or WebP photo.",
   decode: "Could not read this photo. Choose another file.",
-  size: "The photo is still larger than 2 MB after resizing. Choose a smaller image.",
+  size: "Photo is over 2 MB — compress it and upload again",
   ratio: "Detail image height must be no more than 6 times its width.",
   changedAxis:
     "Delete unsaved variant images before changing the image option.",
@@ -94,7 +99,11 @@ const tw: Copy = {
   done: "圖片已儲存",
   axisChanged: "圖片選項已變更。請檢查圖片後再繼續。",
   storageFailed: "瀏覽器無法保留上傳恢復資訊。請允許網站儲存後再試。",
-  failed: "圖片未能儲存，請重新讀取清單後再試。",
+  failed: "圖片未能儲存。請按「重新讀取圖片」確認清單，再重試。",
+  tooLarge: "照片超過 2 MB，請壓縮後再上傳",
+  acceptHint: "JPEG / PNG / WebP，單張 ≤ 2 MB",
+  retryFile: "重試這張圖片",
+  batchPartial: "已儲存 {saved}/{total} 張，{file} 失敗：{reason}",
   unauthorized: "登入或權限已變更，請重新整理並登入。",
   mainFull: "主圖最多4張，請先刪除一張或移到詳情圖。",
   detailFull: "詳情圖最多20張，請先刪除一張或移到主圖。",
@@ -102,7 +111,7 @@ const tw: Copy = {
   optionCap: "規格圖已達上限，請先刪除未使用的圖片。",
   type: "請選擇JPEG、PNG或WebP照片。",
   decode: "無法讀取這張照片，請換一個檔案。",
-  size: "縮小後仍超過2MB，請選擇較小的照片。",
+  size: "照片超過 2 MB，請壓縮後再上傳",
   ratio: "詳情長圖的高度最多為寬度的6倍。",
   changedAxis: "切換圖片規格前，請先移除尚未儲存的規格圖。",
   staleOption: "商品規格已變更，請移除不再使用的規格圖。",
@@ -149,7 +158,12 @@ const ja: Copy = {
     "画像の選択項目が変更されました。画像を確認してから続けてください。",
   storageFailed:
     "このブラウザではアップロードの復元情報を保存できません。サイトの保存を許可してから再試行してください。",
-  failed: "画像を保存できませんでした。一覧を再読み込みしてお試しください。",
+  failed:
+    "画像を保存できませんでした。「画像を再読み込み」で一覧を確認してから、もう一度お試しください。",
+  tooLarge: "写真が 2 MB を超えています。圧縮してからアップロードしてください",
+  acceptHint: "JPEG / PNG / WebP、1枚あたり 2 MB まで",
+  retryFile: "この写真を再試行",
+  batchPartial: "{saved}/{total} 枚を保存しました。{file} は失敗しました：{reason}",
   unauthorized:
     "ログインまたは権限が変わりました。再読み込みしてログインしてください。",
   mainFull: "メイン画像は4枚までです。削除するか詳細画像へ移動してください。",
@@ -161,7 +175,7 @@ const ja: Copy = {
     "バリエーション画像が上限に達しました。未使用の画像を削除してください。",
   type: "JPEG、PNG、WebPの写真を選んでください。",
   decode: "この写真を読み込めません。別のファイルを選んでください。",
-  size: "縮小後も2MBを超えています。小さな写真を選んでください。",
+  size: "写真が 2 MB を超えています。圧縮してからアップロードしてください",
   ratio: "詳細画像の高さは幅の6倍までです。",
   changedAxis:
     "画像オプションを変える前に、未保存のバリエーション画像を削除してください。",
@@ -206,7 +220,11 @@ const cn: Copy = {
   done: "图片已保存",
   axisChanged: "图片选项已变更。请检查图片后再继续。",
   storageFailed: "浏览器无法保留上传恢复信息。请允许网站存储后再试。",
-  failed: "图片未能保存，请重新读取清单后再试。",
+  failed: "图片未能保存。请点「重新读取图片」确认清单，再重试。",
+  tooLarge: "照片超过 2 MB，请压缩后再上传",
+  acceptHint: "JPEG / PNG / WebP，单张 ≤ 2 MB",
+  retryFile: "重试这张图片",
+  batchPartial: "已保存 {saved}/{total} 张，{file} 失败：{reason}",
   unauthorized: "登录或权限已变更，请刷新并登录。",
   mainFull: "主图最多4张，请先删除一张或移到详情图。",
   detailFull: "详情图最多20张，请先删除一张或移到主图。",
@@ -214,12 +232,17 @@ const cn: Copy = {
   optionCap: "规格图已达上限，请先删除未使用的图片。",
   type: "请选择JPEG、PNG或WebP照片。",
   decode: "无法读取这张照片，请换一个文件。",
-  size: "缩小后仍超过2MB，请选择较小的照片。",
+  size: "照片超过 2 MB，请压缩后再上传",
   ratio: "详情长图的高度最多为宽度的6倍。",
   changedAxis: "切换图片规格前，请先移除尚未保存的规格图。",
   staleOption: "商品规格已变更，请移除不再使用的规格图。",
   deleteConfirm: "确定删除这张图片？",
   axisSaved: "图片规格已保存",
 };
+/** Fill {placeholders} in a copy template. */
+export const fillCopy = (
+  template: string,
+  values: Record<string, string | number>,
+) => template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ""));
 export const productMediaCopy = { en, "zh-TW": tw, "zh-CN": cn, ja };
 export type ProductMediaCopy = Copy;

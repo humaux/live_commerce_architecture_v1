@@ -4,7 +4,7 @@
 "use client";
 // Approved 03: one document form. The old PATCH/ProductVariants writer is retired.
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
@@ -42,10 +42,16 @@ export function ProductEditor({
     dirty: false,
     locked: false,
   });
+  const [leaveBlocked, setLeaveBlocked] = useState(false);
   const beforeNavigate = useProductLeaveGuard(
     navigation,
     productEditorCopy[locale].leave,
+    () => setLeaveBlocked(true),
   );
+  // The notice belongs to one refused click; it goes away once the lock is released.
+  useEffect(() => {
+    if (!navigation.locked) setLeaveBlocked(false);
+  }, [navigation.locked]);
   const read = useGuardedRead(
     `${renderKey}|${locale}|${store?.id ?? ""}|${productID}`,
     store
@@ -90,6 +96,11 @@ export function ProductEditor({
             </Link>
           }
         />
+        {leaveBlocked && navigation.locked && (
+          <p role="alert" className="pe-leave-blocked" data-testid="product-leave-blocked">
+            {productEditorCopy[locale].leaveBlocked}
+          </p>
+        )}
         {(read.status === "loading" || read.status === "hidden") && (
           <p role="status">{c.edit.loading}</p>
         )}

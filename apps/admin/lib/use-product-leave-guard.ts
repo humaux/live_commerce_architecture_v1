@@ -7,13 +7,16 @@ export type ProductNavigationState = { dirty: boolean; locked: boolean };
 export function useProductLeaveGuard(
   { dirty, locked }: ProductNavigationState,
   leaveText: string,
+  onBlocked?: () => void,
 ) {
   const approvedUnload = useRef(false);
   const beforeNavigate = useCallback(() => {
+    // A refused click must say why instead of doing nothing.
+    if (locked) onBlocked?.();
     const allowed = !locked && (!dirty || window.confirm(leaveText));
     approvedUnload.current = allowed;
     return allowed;
-  }, [dirty, locked, leaveText]);
+  }, [dirty, locked, leaveText, onBlocked]);
   useEffect(() => {
     approvedUnload.current = false;
     if (!dirty && !locked) return;
