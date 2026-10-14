@@ -1592,7 +1592,7 @@ func TestLiveMediaRecoveryMRR02RealNinetySecondMiss(t *testing.T) {
 	// and does not flag an arrival within the budget.
 	ctrlBudget := 90*time.Second + mrr02TransitBudget
 	ctrlSynthetic := []time.Time{
-		t0.Add(ctrlBudget),                       // boundary: exactly on budget (must NOT be flagged)
+		t0.Add(ctrlBudget),                      // boundary: exactly on budget (must NOT be flagged)
 		t0.Add(ctrlBudget + 1*time.Millisecond), // 1ms late: past budget (MUST be flagged)
 	}
 	ctrlFlagged := mrr02LateArrivals(t0, ctrlSynthetic, ctrlBudget)
