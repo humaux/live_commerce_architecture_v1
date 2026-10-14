@@ -82,7 +82,14 @@ test("G-UI1 Next pages and route registry are bidirectional, unique, typed, docu
       (p) =>
         p.replace("apps/admin/app/[locale]", "").replace("/page.tsx", "") ||
         "/",
-    );
+    )
+    // DS-1: /ui-gallery is the design-system gallery, not a product route. It is the one named exemption, and the page must
+    // stay closed (404) unless LC_UI_GALLERY=1; --browser-ui-gallery proves both halves in a browser.
+    .filter((path) => path !== "/ui-gallery");
+  assert.match(
+    readFileSync("apps/admin/app/[locale]/ui-gallery/page.tsx", "utf8"),
+    /process\.env\.LC_UI_GALLERY !== "1"\) notFound\(\)/,
+  );
   assert.deepEqual([...routes.map((r) => r.path)].sort(), pages.sort());
   assert.equal(new Set(routes.map((r) => r.id)).size, routes.length);
   assert.equal(new Set(routes.map((r) => r.path)).size, routes.length);

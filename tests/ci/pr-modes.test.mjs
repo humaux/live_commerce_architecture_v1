@@ -353,7 +353,7 @@ test("lc_covers is registry DATA: declaring modes are selected by prefix match, 
 });
 
 test("backend changes never select the node-only browser modes (no Go harness, no PG fixture)", () => {
-  const nodeOnly = ["--browser-platform-site", "--browser-admin-shell", "--browser-picklist"];
+  const nodeOnly = ["--browser-platform-site", "--browser-admin-shell", "--browser-picklist", "--browser-ui-gallery"];
   for (const p of ["internal/live/stream.go", "cmd/api/main.go", "migrations/0169_x.sql", "internal/brandnewpkg/x.go"]) {
     const modes = planPr([p], usage).modes;
     for (const m of nodeOnly) assert.ok(!modes.includes(m), `${p} must not select ${m}`);
