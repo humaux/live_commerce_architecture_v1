@@ -418,7 +418,7 @@ async function su07(){
   assert.match(csp,/form-action/);assert(csp.includes("'self'")&&!/payuni/i.test(csp));
   const l="en";
   // 1. popup blocked: zero BFF calls, marker absent, alert shown, no facts changed
-  let id=await newOrder(page);const before=await control(id),callsBefore=calls.length;const unpaidOrder=id;
+  let id=await newOrder(page);const before=await control(id),callsBefore=calls.length;
   // G-UI8 audit [EXTERNAL-MOCK]: stubs window.open to null: a popup blocker is browser policy the harness cannot click away
   await page.evaluate(()=>{window.__nativeOpen=window.open;window.open=()=>null;});
   await payBtn(page,l).click();
@@ -488,6 +488,8 @@ async function su07(){
   passed("SU07 GET/POST /payment/return leaves every fact unchanged; neutral headers, nothing reflected");
   // 6. phone profile (iPhone 15 under webkit, Pixel 7 under chromium): touch, zh-TW copy and money format, no horizontal overflow.
   // Moved from the retired buyer-payment-browser.mjs so the --browser-webkit payment step keeps an iPhone Safari pass over the order-payment view.
+  // A fresh unpaid order: the SU07 order above was handed off (PENDING) by steps 1-4.
+  const unpaidOrder=await newOrder(page);
   const mobile=await context(true);await mobile.addCookies(await c.cookies(origin));
   const mobilePage=await mobile.newPage();await mobilePage.goto(checkout);
   // Engine-specific: Playwright's macOS WebKit reports navigator.maxTouchPoints===0 even with hasTouch (real iOS Safari reports 5), so under webkit
