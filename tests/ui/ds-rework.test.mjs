@@ -59,8 +59,8 @@ test("badges: a single text-only rule; loading/alert controls use SVG, never tex
 test("Field: the actual input owns label, error/help/counter associations and maxLength", () => {
   const out = html(el(Field, { label: "Name", required: true, help: "Shown in store", error: "Required", width: "lg", counter: { value: "abc", max: 80, format: (n, max) => `${n} / ${max}` }, children: props => el(TextInput, { ...props, defaultValue: "abc" }) }));
   const id = /<input[^>]*id="([^"]+)"/.exec(out)?.[1];
-  assert.ok(id);
-  assert.ok(out.includes(`for="${id}"`));
+  assert.ok(id, `no input id in: ${out}`);
+  assert.ok(out.includes(`for="${id}"`), `label not tied to input id ${id} in: ${out}`);
   assert.ok(out.includes(`aria-describedby="${id}-help ${id}-error ${id}-counter"`));
   assert.match(out, /aria-invalid="true"/);
   assert.match(out, /maxLength="80"/);
