@@ -1,0 +1,8 @@
+{"command": ["go", "build", "./..."], "started_at": "2026-10-15T07:38:00.239230+00:00", "elapsed_seconds": 8.169, "exit_code": 0, "timed_out": false, "log": "output/pay-rm2-p2a/round2-static-1.log"}
+
+{"command": ["go", "vet", "./..."], "started_at": "2026-10-15T07:38:00.239303+00:00", "elapsed_seconds": 8.269, "exit_code": 0, "timed_out": false, "log": "output/pay-rm2-p2a/round2-static-2.log"}
+
+{"command": ["go", "vet", "-tags=buyerintegration", "./cmd/api"], "started_at": "2026-10-15T07:38:00.239402+00:00", "elapsed_seconds": 0.988, "exit_code": 0, "timed_out": false, "log": "output/pay-rm2-p2a/round2-static-3.log"}
+
+{"command": ["go", "vet", "-tags=browser", "./tests/foundation"], "started_at": "2026-10-15T07:38:00.244997+00:00", "elapsed_seconds": 8.275, "exit_code": 0, "timed_out": false, "log": "output/pay-rm2-p2a/round2-static-4.log"}
+
