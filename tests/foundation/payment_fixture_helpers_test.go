@@ -21,7 +21,14 @@ func rm2StripePending(t *testing.T) pqFixture {
 
 func rm2StripePendingOn(t *testing.T, f *testFixture) pqFixture {
 	t.Helper()
-	e := sflNewOn(t, f, nil)
+	return rm2StripePendingIn(t, sflNewOn(t, f, nil))
+}
+
+// rm2StripePendingIn adds a pending Stripe attempt to an existing env. Several pending attempts on one
+// fixture DB must share an env: each stripetest fake numbers sessions from cs_test_fake_1, so a second
+// fake collides with payments.stripe_sessions.session_id UNIQUE and the worker reports stripe_record_failed.
+func rm2StripePendingIn(t *testing.T, e *sflEnv) pqFixture {
+	t.Helper()
 	s := e.stripeStore(t)
 	q := pqFixture{psHarness: s.p, schema: "river_payment", stripe: e, stripeStore: s}
 	q.rm2StripeStart(t)

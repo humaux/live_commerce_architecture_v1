@@ -532,7 +532,7 @@ func TestBuyerCheckoutExpiryRuntimeEarlyStalePendingAndConfirmed(t *testing.T) {
 	stale := ewSetup(t, f, 1)
 	pendingStripe := rm2StripePendingOn(t, f)
 	pending := pendingStripe.psHarness
-	confirmed := rm2StripePendingOn(t, f)
+	confirmed := rm2StripePendingIn(t, pendingStripe.stripe)
 	mustExec(t, f.owner, `UPDATE river_expiry.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, early.hold.JobID)
 	ewDue(t, stale)
 	mustExec(t, f.owner, `UPDATE checkout.orders SET generation=2 WHERE id=$1`, stale.hold.OrderID)
