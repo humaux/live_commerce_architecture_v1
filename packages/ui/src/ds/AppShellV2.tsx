@@ -2,7 +2,15 @@
 // Depends on: React, shared Icon/Controls, ./shell2.module.css, ./logic (initialOpenGroups); no API, routing, permissions or translation: nav data, copy and slots are props.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx (the W3 page migration will mount it).
 "use client";
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { Icon, type IconName } from "./Icon";
 import { ButtonLink } from "./Controls";
 import s from "./shell2.module.css";
@@ -10,12 +18,23 @@ import { initialOpenGroups } from "./logic";
 
 export type ShellNavItem = { id: string; label: string; href: string };
 /** A group is either a link (`href`) or a collapsible parent with second-level `items` (no icons at level two). */
-export type ShellNavGroup = { id: string; label: string; icon?: IconName; href?: string; items?: readonly ShellNavItem[] };
+export type ShellNavGroup = {
+  id: string;
+  label: string;
+  icon?: IconName;
+  href?: string;
+  items?: readonly ShellNavItem[];
+};
 
 const DRAWER_QUERY = "(max-width: 767.98px)";
 
 /** Mobile drawer behaviour: while open on a narrow screen, trap Tab, close on Escape, lock page scroll, make the rest inert, restore focus. */
-function useDrawer(open: boolean, close: () => void, drawer: RefObject<HTMLElement | null>, rest: RefObject<HTMLElement | null>) {
+function useDrawer(
+  open: boolean,
+  close: () => void,
+  drawer: RefObject<HTMLElement | null>,
+  rest: RefObject<HTMLElement | null>,
+) {
   useEffect(() => {
     if (!open) return;
     const before = document.activeElement as HTMLElement | null;
@@ -23,7 +42,11 @@ function useDrawer(open: boolean, close: () => void, drawer: RefObject<HTMLEleme
     document.body.style.overflow = "hidden";
     rest.current?.setAttribute("inert", "");
     const controls = () =>
-      Array.from(drawer.current?.querySelectorAll<HTMLElement>('a[href],button:not([aria-disabled="true"])') ?? []).filter((e) => e.getClientRects().length);
+      Array.from(
+        drawer.current?.querySelectorAll<HTMLElement>(
+          'a[href],button:not([aria-disabled="true"])',
+        ) ?? [],
+      ).filter((e) => e.getClientRects().length);
     controls()[0]?.focus();
     const key = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -78,20 +101,44 @@ export type AppShellV2Props = {
 };
 
 /** The v2 admin frame. Group parents toggle with aria-expanded; the group holding the current page starts open. */
-export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded", navLabel, brand, store, topbar, breadcrumb, children, menuLabel, closeLabel, skipLabel }: AppShellV2Props) {
+export function AppShellV2({
+  nav,
+  currentId,
+  persistenceKey = "ds-shell-expanded",
+  navLabel,
+  brand,
+  store,
+  topbar,
+  breadcrumb,
+  children,
+  menuLabel,
+  closeLabel,
+  skipLabel,
+}: AppShellV2Props) {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(() => initialOpenGroups(nav, currentId));
+  const [expanded, setExpanded] = useState(() =>
+    initialOpenGroups(nav, currentId),
+  );
   const expandedRef = useRef(expanded);
   const [preferencesReady, setPreferencesReady] = useState(false);
   useEffect(() => {
     try {
-      const saved: unknown = JSON.parse(sessionStorage.getItem(persistenceKey) ?? "null");
+      const saved: unknown = JSON.parse(
+        sessionStorage.getItem(persistenceKey) ?? "null",
+      );
       // Honor both expanded and explicitly collapsed groups; the active group is only the first-visit default.
       if (Array.isArray(saved)) {
-        expandedRef.current = new Set(saved.filter((id): id is string => typeof id === "string" && nav.some(g => g.id === id)));
+        expandedRef.current = new Set(
+          saved.filter(
+            (id): id is string =>
+              typeof id === "string" && nav.some((g) => g.id === id),
+          ),
+        );
         setExpanded(expandedRef.current);
       }
-    } catch { /* Navigation remains usable when storage is unavailable. */ }
+    } catch {
+      /* Navigation remains usable when storage is unavailable. */
+    }
     setPreferencesReady(true);
   }, [persistenceKey, nav, currentId]);
   const drawer = useRef<HTMLElement>(null);
@@ -114,7 +161,11 @@ export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded
     if (next.has(id)) next.delete(id);
     else next.add(id);
     // Persist in the user action, never in an updater React may defer or replay before a reload.
-    try { sessionStorage.setItem(persistenceKey, JSON.stringify([...next])); } catch { /* optional preference */ }
+    try {
+      sessionStorage.setItem(persistenceKey, JSON.stringify([...next]));
+    } catch {
+      /* optional preference */
+    }
     expandedRef.current = next;
     setExpanded(next);
   };
@@ -123,70 +174,145 @@ export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded
       <a className={s.skip} href="#ds-main">
         {skipLabel}
       </a>
-      {open && <button type="button" tabIndex={-1} className={s.backdrop} aria-label={closeLabel} onClick={close} />}
-      <nav ref={drawer} id="ds-nav" className={s.nav} data-open={open} aria-label={navLabel} data-shell-rail>
-        <button type="button" className={s.close} aria-label={closeLabel} onClick={close}>
+      {open && (
+        <button
+          type="button"
+          tabIndex={-1}
+          className={s.backdrop}
+          aria-label={closeLabel}
+          onClick={close}
+        />
+      )}
+      <nav
+        ref={drawer}
+        id="ds-nav"
+        className={s.nav}
+        data-open={open}
+        aria-label={navLabel}
+        data-shell-rail
+      >
+        <button
+          type="button"
+          className={s.close}
+          aria-label={closeLabel}
+          onClick={close}
+        >
           <Icon name="close" />
         </button>
         <div className={s.brand}>{brand}</div>
         <div className={s.store}>
-          <span className={s.storeLogo} aria-hidden="true">{store.logo}</span>
+          <span className={s.storeLogo} aria-hidden="true">
+            {store.logo}
+          </span>
           <span className={s.storeText}>
             <span className={s.storeName}>{store.name}</span>
-            {store.region && <span className={s.storeRegion}>{store.region}</span>}
+            {store.region && (
+              <span className={s.storeRegion}>{store.region}</span>
+            )}
           </span>
         </div>
         <ul className={s.groups}>
-          {preferencesReady && nav.map((group) => {
-            const isOpen = expanded.has(group.id);
-            const holdsCurrent = group.id === currentId || Boolean(group.items?.some((i) => i.id === currentId));
-            const icon = <span className={s.groupIcon} aria-hidden="true">{group.icon && <Icon name={group.icon} />}</span>;
-            if (!group.items?.length)
+          {preferencesReady &&
+            nav.map((group) => {
+              const isOpen = expanded.has(group.id);
+              const holdsCurrent =
+                group.id === currentId ||
+                Boolean(group.items?.some((i) => i.id === currentId));
+              const icon = (
+                <span className={s.groupIcon} aria-hidden="true">
+                  {group.icon && <Icon name={group.icon} />}
+                </span>
+              );
+              if (!group.items?.length)
+                return (
+                  <li key={group.id}>
+                    <a
+                      className={s.groupLink}
+                      href={group.href ?? "#"}
+                      aria-current={group.id === currentId ? "page" : undefined}
+                    >
+                      {icon}
+                      <span className={s.groupLabel}>{group.label}</span>
+                    </a>
+                  </li>
+                );
+              const subId = `${idBase}-${group.id}`;
               return (
                 <li key={group.id}>
-                  <a className={s.groupLink} href={group.href ?? "#"} aria-current={group.id === currentId ? "page" : undefined}>
+                  <button
+                    type="button"
+                    className={s.groupRow}
+                    data-current={holdsCurrent}
+                    aria-expanded={isOpen}
+                    aria-controls={subId}
+                    onClick={() => toggle(group.id)}
+                  >
                     {icon}
                     <span className={s.groupLabel}>{group.label}</span>
-                  </a>
+                    <span
+                      className={s.chev}
+                      data-nav-chevron
+                      aria-hidden="true"
+                    >
+                      <Icon name="chevronRight" size={16} />
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <ul className={s.sub} id={subId}>
+                      {group.items.map((item) => (
+                        <li key={item.id}>
+                          <a
+                            className={s.item}
+                            href={item.href}
+                            aria-current={
+                              item.id === currentId ? "page" : undefined
+                            }
+                            onClick={close}
+                          >
+                            {item.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               );
-            const subId = `${idBase}-${group.id}`;
-            return (
-              <li key={group.id}>
-                <button type="button" className={s.groupRow} data-current={holdsCurrent} aria-expanded={isOpen} aria-controls={subId} onClick={() => toggle(group.id)}>
-                  {icon}
-                  <span className={s.groupLabel}>{group.label}</span>
-                  <span className={s.chev} data-nav-chevron aria-hidden="true"><Icon name="chevronRight" size={16} /></span>
-                </button>
-                {isOpen && (
-                  <ul className={s.sub} id={subId}>
-                    {group.items.map((item) => (
-                      <li key={item.id}>
-                        <a className={s.item} href={item.href} aria-current={item.id === currentId ? "page" : undefined} onClick={close}>
-                          {item.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
+            })}
         </ul>
       </nav>
       <div className={s.work} ref={rest}>
         <header className={s.topbar} data-shell-topbar>
-          <button type="button" className={s.menuButton} aria-label={menuLabel} aria-expanded={open} aria-controls="ds-nav" onClick={() => setOpen(true)}>
+          <button
+            type="button"
+            className={s.menuButton}
+            aria-label={menuLabel}
+            aria-expanded={open}
+            aria-controls="ds-nav"
+            onClick={() => setOpen(true)}
+          >
             <Icon name="menu" />
           </button>
           <span className={s.mobileStore}>{store.name}</span>
           <div className={s.topbarRight}>
-            <div className={s.desktopTools}>{topbar.locale}{topbar.help}</div>
+            <div className={s.desktopTools}>
+              {topbar.locale}
+              {topbar.help}
+            </div>
             {topbar.notifications}
-            <div className={s.desktopTools}><ButtonLink href={topbar.enterStore.href} target="_blank" rel="noopener noreferrer">
-              {topbar.enterStore.label}<Icon name="externalLink" size={16} />
-            </ButtonLink>{topbar.account}</div>
-            <div className={s.mobileTools}>{topbar.mobileAccount ?? topbar.account}</div>
+            <div className={s.desktopTools}>
+              <ButtonLink
+                href={topbar.enterStore.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {topbar.enterStore.label}
+                <Icon name="externalLink" size={16} />
+              </ButtonLink>
+              {topbar.account}
+            </div>
+            <div className={s.mobileTools}>
+              {topbar.mobileAccount ?? topbar.account}
+            </div>
           </div>
         </header>
         {breadcrumb && <div className={s.crumbRow}>{breadcrumb}</div>}

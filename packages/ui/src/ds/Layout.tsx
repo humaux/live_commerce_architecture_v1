@@ -2,19 +2,33 @@
 // Depends on: React, Icon and ./layout.module.css; no API, routing or translation.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
-import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Icon } from "./Icon";
 import s from "./layout.module.css";
 
 type Level = 2 | 3 | 4;
-const tag = (level: Level) => (level === 2 ? "h2" : level === 3 ? "h3" : "h4") as "h2" | "h3" | "h4";
+const tag = (level: Level) =>
+  (level === 2 ? "h2" : level === 3 ? "h3" : "h4") as "h2" | "h3" | "h4";
 
 /** A "?" toggle: the label names the button, the help text appears inline under the title row when opened. */
 function useHelp(help: { label: string; content: ReactNode } | undefined) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const button = help && (
-    <button type="button" className={s.help} aria-label={help.label} aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
+    <button
+      type="button"
+      className={s.help}
+      aria-label={help.label}
+      aria-expanded={open}
+      aria-controls={id}
+      onClick={() => setOpen(!open)}
+    >
       <Icon name="help" size={16} />
     </button>
   );
@@ -55,7 +69,11 @@ export function Card({
   const Heading = tag(level);
   const head = title !== undefined || actions;
   return (
-    <section className={s.card} id={id} aria-labelledby={title !== undefined ? headingId : undefined}>
+    <section
+      className={s.card}
+      id={id}
+      aria-labelledby={title !== undefined ? headingId : undefined}
+    >
       {head && (
         <div className={s.cardHead}>
           {title !== undefined && (
@@ -85,7 +103,13 @@ export function FormSection(props: Omit<Parameters<typeof Card>[0], "flush">) {
 export type Crumb = { label: string; href?: string };
 
 /** Breadcrumb trail; the last crumb is the current page and is not a link. Also usable in the AppShellV2 breadcrumb slot. */
-export function Breadcrumb({ label, crumbs }: { label: string; crumbs: readonly Crumb[] }) {
+export function Breadcrumb({
+  label,
+  crumbs,
+}: {
+  label: string;
+  crumbs: readonly Crumb[];
+}) {
   return (
     <nav aria-label={label}>
       <ol className={s.crumbs}>
@@ -94,7 +118,13 @@ export function Breadcrumb({ label, crumbs }: { label: string; crumbs: readonly 
           return (
             <li key={`${i}-${crumb.label}`}>
               {i > 0 && <Icon name="chevronRight" size={16} />}
-              {crumb.href && !current ? <a href={crumb.href}>{crumb.label}</a> : <span aria-current={current ? "page" : undefined}>{crumb.label}</span>}
+              {crumb.href && !current ? (
+                <a href={crumb.href}>{crumb.label}</a>
+              ) : (
+                <span aria-current={current ? "page" : undefined}>
+                  {crumb.label}
+                </span>
+              )}
             </li>
           );
         })}
@@ -123,8 +153,13 @@ export function PageHeader({
   return (
     <header className={s.pageHeader}>
       <div className={s.pageHeading}>
-        {crumbs && crumbs.length > 0 && <Breadcrumb label={breadcrumbLabel} crumbs={crumbs} />}
-        <div className={s.pageTitleRow}><h1 className={s.pageTitle}>{title}</h1>{status && <div className={s.pageStatus}>{status}</div>}</div>
+        {crumbs && crumbs.length > 0 && (
+          <Breadcrumb label={breadcrumbLabel} crumbs={crumbs} />
+        )}
+        <div className={s.pageTitleRow}>
+          <h1 className={s.pageTitle}>{title}</h1>
+          {status && <div className={s.pageStatus}>{status}</div>}
+        </div>
         {description && <p className={s.pageDescription}>{description}</p>}
       </div>
       {actions && <div className={s.pageActions}>{actions}</div>}
@@ -164,7 +199,11 @@ export function FormActionBar({
     const wrapper = frame.current;
     if (!card || !wrapper) return;
     // CSS bottom:0 alone releases only after the footer's own height fits too. The card edge owns this boundary.
-    const release = () => { wrapper.dataset.footerReleased = String(card.getBoundingClientRect().bottom <= window.innerHeight); };
+    const release = () => {
+      wrapper.dataset.footerReleased = String(
+        card.getBoundingClientRect().bottom <= window.innerHeight,
+      );
+    };
     release();
     window.addEventListener("scroll", release, true);
     window.addEventListener("resize", release);
@@ -177,10 +216,27 @@ export function FormActionBar({
     };
   }, []);
   const activeState = state ?? (dirty ? "dirty" : "clean");
-  const message = activeState === "saving" ? savingNote : activeState === "saved" ? savedNote : activeState === "dirty" ? dirtyNote : note;
+  const message =
+    activeState === "saving"
+      ? savingNote
+      : activeState === "saved"
+        ? savedNote
+        : activeState === "dirty"
+          ? dirtyNote
+          : note;
   const bar = (position: "top" | "bottom") => (
-    <div data-state={activeState} className={`${s.bar} ${position === "top" ? s.barTop : s.barBottom}`} role="group" aria-label={label}>
-      <div className={`${s.barNote} ${dirty ? s.barDirty : ""}`} role={position === "bottom" ? "status" : undefined}>{message}</div>
+    <div
+      data-state={activeState}
+      className={`${s.bar} ${position === "top" ? s.barTop : s.barBottom}`}
+      role="group"
+      aria-label={label}
+    >
+      <div
+        className={`${s.barNote} ${dirty ? s.barDirty : ""}`}
+        role={position === "bottom" ? "status" : undefined}
+      >
+        {message}
+      </div>
       <div className={s.barControls}>{actions}</div>
     </div>
   );
@@ -188,7 +244,9 @@ export function FormActionBar({
     <div ref={frame} className={s.formFrame} data-form-frame>
       <div ref={surface} className={s.formSurface} data-form-surface>
         {bar("top")}
-        <div className={s.formContent} data-form-content>{children}</div>
+        <div className={s.formContent} data-form-content>
+          {children}
+        </div>
       </div>
       {bar("bottom")}
     </div>
@@ -198,7 +256,11 @@ export function FormActionBar({
 /** Compatibility alias; all save-bar layout lives in FormActionBar. */
 export const ActionBars = FormActionBar;
 
-export type SettingsGroup = { id: string; title: string; items: readonly { id: string; label: string; href: string }[] };
+export type SettingsGroup = {
+  id: string;
+  title: string;
+  items: readonly { id: string; label: string; href: string }[];
+};
 
 /** One card with a left sub-nav (group titles, current item marked by a blue bar) and the content on the right. */
 export function SettingsLayout({
@@ -221,7 +283,11 @@ export function SettingsLayout({
             <ul className={s.settingsGroup}>
               {group.items.map((item) => (
                 <li key={item.id}>
-                  <a className={s.settingsLink} href={item.href} aria-current={item.id === current ? "page" : undefined}>
+                  <a
+                    className={s.settingsLink}
+                    href={item.href}
+                    aria-current={item.id === current ? "page" : undefined}
+                  >
                     {item.label}
                   </a>
                 </li>
@@ -251,11 +317,17 @@ export function KpiCard({
 }) {
   const body = (
     <>
-      {icon && <span className={s.kpiIcon} aria-hidden="true">{icon}</span>}
+      {icon && (
+        <span className={s.kpiIcon} aria-hidden="true">
+          {icon}
+        </span>
+      )}
       <span>
         <span className={s.kpiValue}>{value}</span>
         <span className={s.kpiLabel}>{label}</span>
-        <span className={s.kpiTrend} data-tone={trend?.tone}>{trend?.text ?? "\u00a0"}</span>
+        <span className={s.kpiTrend} data-tone={trend?.tone}>
+          {trend?.text ?? "\u00a0"}
+        </span>
       </span>
     </>
   );
@@ -268,17 +340,57 @@ export function KpiCard({
   );
 }
 
-export type TimelineItem = { id: string; title: string; time: string; dateTime: string; detail?: string; tone?: "success" | "neutral" };
+export type TimelineItem = {
+  id: string;
+  title: string;
+  time: string;
+  dateTime: string;
+  detail?: string;
+  tone?: "success" | "neutral";
+};
 /** Chronological facts; every visible time has a machine-readable ISO instant. */
-export function Timeline({ label, items }: { label: string; items: readonly TimelineItem[] }) {
-  return <ol className={s.timeline} aria-label={label}>{items.map(item => <li key={item.id}>
-    <span className={s.timelineIcon}><Icon name={item.tone === "success" ? "check" : "info"} size={16} /></span>
-    <div><strong>{item.title}</strong><time dateTime={item.dateTime}>{item.time}</time>{item.detail && <p>{item.detail}</p>}</div>
-  </li>)}</ol>;
+export function Timeline({
+  label,
+  items,
+}: {
+  label: string;
+  items: readonly TimelineItem[];
+}) {
+  return (
+    <ol className={s.timeline} aria-label={label}>
+      {items.map((item) => (
+        <li key={item.id}>
+          <span className={s.timelineIcon}>
+            <Icon name={item.tone === "success" ? "check" : "info"} size={16} />
+          </span>
+          <div>
+            <strong>{item.title}</strong>
+            <time dateTime={item.dateTime}>{item.time}</time>
+            {item.detail && <p>{item.detail}</p>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
 }
 /** Task-specific two-column detail: reading order remains main then summary on mobile. */
-export function DetailLayout({ main, summary }: { main: ReactNode; summary: ReactNode }) {
-  return <div className={s.detail}><div className={s.detailMain}>{main}</div><aside>{summary}</aside></div>;
+export function DetailLayout({
+  main,
+  summary,
+}: {
+  main: ReactNode;
+  summary: ReactNode;
+}) {
+  return (
+    <div className={s.detail}>
+      <div className={s.detailMain}>{main}</div>
+      <aside>{summary}</aside>
+    </div>
+  );
 }
-export function Stack({ children }: { children: ReactNode }) { return <div className={s.stack}>{children}</div>; }
-export function Inline({ children }: { children: ReactNode }) { return <div className={s.inline}>{children}</div>; }
+export function Stack({ children }: { children: ReactNode }) {
+  return <div className={s.stack}>{children}</div>;
+}
+export function Inline({ children }: { children: ReactNode }) {
+  return <div className={s.inline}>{children}</div>;
+}
