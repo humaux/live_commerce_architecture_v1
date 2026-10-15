@@ -1,5 +1,11 @@
 package foundation_test
 
+// Purpose: payments.apply_capture / capture worker suite: atomic capture, review, refund
+// ordering, ACL, retired-provider rejection and Stripe durable observation across restart.
+// Depends on: pq/pc/ps fixtures, rm2StripePending + sfl Stripe fake (payment_fixture_helpers_test.go,
+// stripe_flow_test.go), payments worker assembly, River schema river_payment.
+// Used by: go test ./tests/foundation (CI gate shard g07).
+
 import (
 	"context"
 	"encoding/hex"
@@ -402,7 +408,8 @@ func TestStripeCaptureDurableObservationAcrossRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { once.Do(func() { close(release) }); pwStopClient(t, client) })
-	sstWake(t, e.f, q.result.AttemptID)
+	// The fixture leaves the query job available but not yet due; sstWake skips that state.
+	q.rm2WakeQuery(t)
 	if err = client.Start(ctx); err != nil {
 		t.Fatal(err)
 	}

@@ -1,10 +1,18 @@
 package foundation_test
 
-// Responsibility: paid-order fixtures for read/fulfilment suites, using the existing Stripe
-// fake, signed webhook and production worker. Depends on sfl/sst fixtures; never dispatches
-// PAYUNi. Workers stop before returning so read-only assertions have a stable baseline.
+// Purpose: paid-order fixtures for read/fulfilment suites, using the existing Stripe
+// fake, signed webhook and production worker; never dispatches PAYUNi. Workers stop
+// before returning so read-only assertions have a stable baseline.
+// Depends on: sfl/sst fixtures (stripe_flow_test.go, stripe_start_test.go), River schema river_payment.
+// Used by: payment capture/query, merchant order, parcel, expiry, CAPI and browser suites in this package.
+// Invariant: after rm2StripePending the query job is River state 'available' with scheduled_at
+// about 5s ahead (create snooze <= River's 5s scheduler interval), so sstWake does not touch it;
+// use rm2WakeQuery to make that exact job due.
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func rm2StripePending(t *testing.T) pqFixture {
 	t.Helper()
@@ -30,6 +38,19 @@ func (q *pqFixture) rm2StripeStart(t *testing.T) {
 	stop := q.stripe.start(t, true)
 	defer stop()
 	q.result, _ = q.stripe.pinned(t, s)
+}
+
+// rm2WakeQuery makes the attempt's own payment_query_v1 job due now. River stores a snooze no
+// longer than its scheduler interval as 'available' with a future scheduled_at, which
+// sstWake (scheduled/retryable only) leaves sleeping.
+func (q pqFixture) rm2WakeQuery(t *testing.T) {
+	t.Helper()
+	tag, err := q.f.owner.Exec(context.Background(), `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp()
+	 WHERE id=$1 AND kind='payment_query_v1' AND args->>'operation_id'=$2
+	 AND state IN ('available','scheduled','retryable')`, q.result.JobID, q.result.AttemptID)
+	if err != nil || tag.RowsAffected() != 1 {
+		t.Fatalf("Stripe query job not wakeable: rows=%d err=%v", tag.RowsAffected(), err)
+	}
 }
 
 func (q pqFixture) rm2StripePay(t *testing.T) {

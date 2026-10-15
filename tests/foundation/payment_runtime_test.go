@@ -1,5 +1,11 @@
 package foundation_test
 
+// Purpose: real payment-worker runtime suite: River assembly, profile isolation, signal and pool
+// cleanup, and a real child-process crash rescued by River's JobRescuer for Stripe.
+// Depends on: pw/pq fixtures, sfl Stripe fake (stripe_flow_test.go), payments.NewPaymentWorkerClient,
+// River schema river_payment; re-execs the test binary for the crash child.
+// Used by: go test ./tests/foundation (CI gate shard g07); pw* helpers used across payment suites.
+
 import (
 	"bufio"
 	"context"
@@ -614,11 +620,17 @@ func TestStripeWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	// rescue the same row. No state rewrite or duplicate enqueue is used.
 	mustExec(t, f.owner, `UPDATE integration.operations SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1`, q.result.OperationID)
 	mustExec(t, f.owner, `UPDATE river_payment.river_job SET attempted_at=clock_timestamp()-interval '2 hours' WHERE id=$1 AND state='running'`, q.result.JobID)
-	var calls atomic.Int32
+	var calls, retrieves atomic.Int32
 	opts := payments.DefaultQueryWorkerOptions()
 	opts.RetryDelay = time.Second // bounded fixture rescue, using River's own scheduler
 	transport := e.fake.Transport()
-	rt, err := payments.NewStripeRuntime(context.Background(), q.worker, keys, "PROVIDER_MOCK", pqTransport(func(r *http.Request) (*http.Response, error) { calls.Add(1); return transport.RoundTrip(r) }))
+	rt, err := payments.NewStripeRuntime(context.Background(), q.worker, keys, "PROVIDER_MOCK", pqTransport(func(r *http.Request) (*http.Response, error) {
+		calls.Add(1)
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/"+session) {
+			retrieves.Add(1)
+		}
+		return transport.RoundTrip(r)
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -670,13 +682,15 @@ func TestStripeWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 		}
 		t.Fatalf("rescue stopped before capture: job=%s attempt=%d scheduled_in=%s rescued=%t operation_generation=%d calls=%d observations=%d", jobState, jobAttempt, time.Until(scheduled), rescued, finalGeneration, calls.Load(), q.reportCount(t))
 	}
-	// Freeze the accepted recovery before checking counts; this worker keeps
-	// polling after a successful observation using the fixture's short retry.
+	// Freeze the accepted recovery before checking counts; the query job snoozes
+	// after its paid observation and must not add a second provider step.
 	pwStopClient(t, client)
 	pcAssertStock(t, q, 0, 2, "CONFIRMED", "COMMITTED")
 	pcAssertWork(t, q, "READY")
-	if calls.Load() != 1 || q.reportCount(t) != beforeReports+1 || pcCount(t, q, "payments.facts", " AND kind='CAPTURED'") != 1 {
-		t.Fatalf("rescue query/report/capture counts: %d/%d/%d", calls.Load(), q.reportCount(t), pcCount(t, q, "payments.facts", " AND kind='CAPTURED'"))
+	// One Stripe query step is two transport calls: GET /v1/account (clientForClaim)
+	// then GET /v1/checkout/sessions/{id} (stripeRetrieve). Exactly one step ran.
+	if calls.Load() != 2 || retrieves.Load() != 1 || q.reportCount(t) != beforeReports+1 || pcCount(t, q, "payments.facts", " AND kind='CAPTURED'") != 1 {
+		t.Fatalf("rescue transport/retrieve/report/capture counts: %d/%d/%d/%d", calls.Load(), retrieves.Load(), q.reportCount(t), pcCount(t, q, "payments.facts", " AND kind='CAPTURED'"))
 	}
 	var finalGeneration int64
 	var finalAttempt int

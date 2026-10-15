@@ -1,5 +1,11 @@
 package foundation_test
 
+// Purpose: payment query worker suite: historical PAYUNi rows are rejected without claim or
+// send; the active Stripe query keeps lease/UNKNOWN recovery under parent-context cancellation.
+// Depends on: pq/ps fixtures, rm2StripePending + sfl Stripe fake, payments.NewPaymentWorkerClient,
+// River schema river_payment.
+// Used by: go test ./tests/foundation (CI gate shard g07); pqFixture helpers used across payment suites.
+
 import (
 	"context"
 	"crypto/aes"
@@ -762,7 +768,8 @@ func TestStripeQueryCancelledIOKeepsRecoverableLease(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { pwStopClient(t, client) })
-	sstWake(t, e.f, q.result.AttemptID)
+	// The fixture leaves the query job available but not yet due; sstWake skips that state.
+	q.rm2WakeQuery(t)
 	if err = client.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}
