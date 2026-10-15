@@ -77,6 +77,7 @@ func routeTableCLIFixture(t *testing.T) (string, string) {
 	trunkFactoryWrite(t, root, "contracts/route-table-openapi.json", `{"openapi":"3.1.0","paths":{
  "/v1/table/one":{"get":{}}, "/v1/table/{id}":{"post":{}}
 }}`)
+	pinFixtureDispatcher(t, root, "router.Routes", prefixDispatcherSHA)
 	return root, p
 }
 
@@ -185,6 +186,7 @@ func TestGoRouteTableListedPathPolicyAcceptedCLI(t *testing.T) {
 	mustWrite(t, p, source+`
 const listedPath = "/v1/table/one"
 `)
+	pinFixtureDispatcher(t, root, "router.Routes", "")
 	code, out := goReviewProcessCLI(t, root)
 	if code != 0 || strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("listed path policy unresolved: exit%d %s", code, out)
@@ -198,6 +200,7 @@ func TestGoRouteTableListedPathHelperAcceptedCLI(t *testing.T) {
 	mustWrite(t, p, source+`
 func listedRequestPath(path string) bool { return path == "/v1/table/one" }
 `)
+	pinFixtureDispatcher(t, root, "router.Routes", "")
 	code, out := goReviewProcessCLI(t, root)
 	if code != 0 || strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("listed path helper unresolved: exit%d %s", code, out)

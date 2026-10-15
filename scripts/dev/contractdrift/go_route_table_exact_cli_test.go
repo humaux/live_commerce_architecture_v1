@@ -64,6 +64,7 @@ func exactTableCLIFixture(t *testing.T) (string, string) {
 	trunkFactoryWrite(t, root, "cmd/api/main.go", exactTableMountSource)
 	// A single code span includes METHOD + full path, matching the canonical index.
 	trunkFactoryWrite(t, root, "contracts/feed.md", "# Feed\n`GET /v1/feed/meta.csv`\n`HEAD /v1/feed/meta.csv`\n")
+	pinFixtureDispatcher(t, root, "router.Routes", exactDispatcherSHA)
 	return root, p
 }
 

@@ -48,6 +48,7 @@ func handlerFactoryCLIFixture(t *testing.T, source string) string {
 	trunkFactoryWrite(t, root, "internal/feed/feed.go", strings.Replace(exactTableCLISource, "package router", "package feed", 1))
 	trunkFactoryWrite(t, root, "contracts/feed.md", "# Feed\n`GET /v1/feed/meta.csv`\n`HEAD /v1/feed/meta.csv`\n")
 	trunkFactoryWrite(t, root, "cmd/api/main.go", source)
+	pinFixtureDispatcher(t, root, "feed.Routes", exactDispatcherSHA)
 	return root
 }
 
