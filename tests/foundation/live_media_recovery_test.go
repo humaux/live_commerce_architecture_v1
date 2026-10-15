@@ -296,6 +296,13 @@ func TestLiveMediaRecoveryMRR03NegativeAuthorityAndFences(t *testing.T) {
 			}
 		}
 	}
+	// read_media_recovery_episode derives scope_status and the per-row disposition in two statements. VOLATILE gives
+	// each statement its own READ COMMITTED snapshot, so a Witness committing between them read back as scope=pending
+	// with a witnessed row (PR #75 CI run 38799313810 g04, MRR02 post90). STABLE pins one snapshot for the whole call.
+	var volatility string
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT provolatile::text FROM pg_proc WHERE oid=to_regprocedure('live.read_media_recovery_episode(uuid)')`).Scan(&volatility); err != nil || volatility != "s" {
+		t.Fatalf("read_media_recovery_episode must read one snapshot (STABLE): provolatile=%q err=%v", volatility, err)
+	}
 	var ready bool
 	if err := recovery.QueryRow(ctx, `SELECT live.media_recovery_ready()`).Scan(&ready); err != nil || !ready {
 		t.Fatalf("recovery readiness: %v %v", ready, err)
