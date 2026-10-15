@@ -108,7 +108,7 @@ func pmHistorical(t *testing.T, p *pmFixture, in payments.MethodInput, version i
 	}
 	defer tx.Rollback(ctx)
 	if _, err = tx.Exec(ctx, `INSERT INTO payments.method_versions(tenant_id,store_id,market_id,country,code,version,provider,environment,connection_id,binding_version,currency,name_hans,name_hant,name_en,enabled,visible,sort_order,min_amount_minor,max_amount_minor,principal_id)
- VALUES($1,$2,$3,$4,$5,$6,'payuni',$7,nullif($8,'')::uuid,$9,'TWD',$10,$11,$12,$13,$14,$15,$16,$17,$18)`, f.tenant, f.store, in.MarketID, in.Country, in.Code, version, in.Environment, in.ConnectionID, in.BindingVersion, in.NameHans, in.NameHant, in.NameEN, in.Enabled, in.Visible, in.SortOrder, in.MinAmountMinor, in.MaxAmountMinor, f.principal); err != nil {
+ VALUES($1,$2,$3,$4,$5,$6,'payuni',$7,nullif($8,'')::uuid,nullif($9::bigint,0),'TWD',$10,$11,$12,$13,$14,$15,$16,$17,$18)`, f.tenant, f.store, in.MarketID, in.Country, in.Code, version, in.Environment, in.ConnectionID, in.BindingVersion, in.NameHans, in.NameHant, in.NameEN, in.Enabled, in.Visible, in.SortOrder, in.MinAmountMinor, in.MaxAmountMinor, f.principal); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = tx.Exec(ctx, `INSERT INTO payments.method_heads(tenant_id,store_id,market_id,country,code,current_version) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(tenant_id,store_id,market_id,country,code) DO UPDATE SET current_version=EXCLUDED.current_version`, f.tenant, f.store, in.MarketID, in.Country, in.Code, version); err != nil {

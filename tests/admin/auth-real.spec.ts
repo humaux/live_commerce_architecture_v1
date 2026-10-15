@@ -392,9 +392,10 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     }
   };
   safeAccount(account.body);
-  expect((await browserJSON(page, accountPath, accountOptions)).body).toEqual(
-    account.body,
-  );
+  // A replay is refused identically; only the per-request request_id differs between two error bodies.
+  const replay = await browserJSON(page, accountPath, accountOptions);
+  expect(replay.status).toBe(422);
+  expect({ ...replay.body, request_id: "" }).toEqual({ ...account.body, request_id: "" });
   expect(
     (
       await browserJSON(page, accountPath, {
@@ -522,9 +523,9 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   expect(savedMethod.status).toBe(422);
   expect(savedMethod.body).toMatchObject({ code: "invalid_request" });
   expect((await browserJSON(page, methodPath)).status).toBe(404);
-  expect((await browserJSON(page, methodPath, methodOptions)).body).toEqual(
-    savedMethod.body,
-  );
+  const methodReplay = await browserJSON(page, methodPath, methodOptions);
+  expect(methodReplay.status).toBe(422);
+  expect({ ...methodReplay.body, request_id: "" }).toEqual({ ...savedMethod.body, request_id: "" });
   const inspectOptions = {
     method: "POST",
     csrf: true,
@@ -546,9 +547,9 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   expect(inspected.status).toBe(404);
   expect(inspected.body).toMatchObject({ code: "not_found" });
   // Inspect is a read-only POST: CSRF required, mutation idempotency key absent.
-  expect(
-    (await browserJSON(page, `${methodPath}/inspect`, inspectOptions)).body,
-  ).toEqual(inspected.body);
+  const reinspected = await browserJSON(page, `${methodPath}/inspect`, inspectOptions);
+  expect(reinspected.status).toBe(404);
+  expect({ ...reinspected.body, request_id: "" }).toEqual({ ...inspected.body, request_id: "" });
   expect(
     (
       await browserJSON(page, `${methodPath}/inspect`, {

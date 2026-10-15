@@ -179,18 +179,19 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 		return w
 	}
 	path, in, key := mahPath(m.f.store), maInput(), t04Key("account-process")
+	// PAY-RM2: provider-account writes are retired. The persisted state the restarted process must
+	// still serve is a pre-removal sealed account with two credential versions (fixture_v1/fixture_v2).
+	first := maHistorical(t, m, m.f.store, in, 2)
 	body := mahBody(t, in)
 	before := m.facts(t)
 	firstProcess, firstDone := start("first")
 	firstPID := firstProcess.Process.Pid
-	first := mahRead(t, request("POST", path, key, body), in.Credentials)
-	if first.CredentialVersion != 1 || first.State != "CONFIGURED_UNVERIFIED" || first.KeyID != "" {
-		t.Fatal("first process returned unsafe account metadata")
+	if got := mahRead(t, request("GET", path+"/"+first.ID, "", nil), in.Credentials); !reflect.DeepEqual(got, first) {
+		t.Fatal("first process could not read the persisted account")
 	}
-	maAssertPersistedSecret(t, m, first, 1, in.Credentials)
-	afterCreate := m.facts(t)
-	if afterCreate[0] != before[0]+1 || afterCreate[1] != before[1]+1 || afterCreate[2] != before[2]+1 || afterCreate[5] != before[5] || afterCreate[6] != before[6] {
-		t.Fatal("create did not persist exactly one account or created provider work")
+	assertAdminError(t, request("POST", path, key, body), 422, "invalid_request")
+	if m.facts(t) != before {
+		t.Fatal("retired create changed durable state")
 	}
 	stop(firstProcess, firstDone)
 	secondProcess, secondDone := start("second")
@@ -205,21 +206,17 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 	if len(page.Items) != 1 || !reflect.DeepEqual(page.Items[0], first) || page.NextCursor != "" {
 		t.Fatal("new process list did not return safe persisted metadata")
 	}
-	if replay := mahRead(t, request("POST", path, key, body), in.Credentials); !reflect.DeepEqual(replay, first) || m.facts(t) != afterCreate {
-		t.Fatal("replay after restart changed response or durable state")
-	}
+	// The same key after restart is refused the same way; no receipt or row appears.
+	assertAdminError(t, request("POST", path, key, body), 422, "invalid_request")
 	rotatedSecret := accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("W", 16)}
-	rotation := settingsBody(t, map[string]any{"expected_version": 1, "credentials": map[string]string{"hash_key": rotatedSecret.HashKey, "hash_iv": rotatedSecret.HashIV}})
-	rotated := mahRead(t, request("POST", path+"/"+first.ID+"/rotate", t04Key("account-process-rotate"), rotation), rotatedSecret)
-	if rotated.CredentialVersion != 2 || rotated.ID != first.ID || rotated.BindingID != first.BindingID || rotated.State != first.State {
-		t.Fatal("rotation after restart changed account identity or state")
+	rotation := settingsBody(t, map[string]any{"expected_version": 2, "credentials": map[string]string{"hash_key": rotatedSecret.HashKey, "hash_iv": rotatedSecret.HashIV}})
+	assertAdminError(t, request("POST", path+"/"+first.ID+"/rotate", t04Key("account-process-rotate"), rotation), 422, "invalid_request")
+	if m.facts(t) != before {
+		t.Fatal("refused replay or rotation after restart changed durable state")
 	}
+	// Both sealed versions still decrypt with the reloaded key configuration.
 	maAssertPersistedSecret(t, m, first, 1, in.Credentials)
-	maAssertPersistedSecret(t, m, rotated, 2, rotatedSecret)
-	afterRotate := m.facts(t)
-	if afterRotate[2] != afterCreate[2]+1 || afterRotate[5] != before[5] || afterRotate[6] != before[6] {
-		t.Fatal("rotation did not persist exactly one revision or created provider work")
-	}
+	maAssertPersistedSecret(t, m, first, 2, in.Credentials)
 	stop(secondProcess, secondDone)
 	for _, name := range []string{"first.log", "second.log"} {
 		logBytes, err := os.ReadFile(filepath.Join(evidence, name))
