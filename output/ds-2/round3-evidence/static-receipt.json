@@ -1,0 +1,40 @@
+{
+  "evidence": "E1 static only",
+  "utc": "2026-10-15T09:48:55.411759+00:00",
+  "source_head": "a1caef739f71c348638ed7dd47ea5f85f8e9ce10",
+  "binding": "source-sha256.txt",
+  "commands": [
+    {
+      "command": "pnpm install --offline --frozen-lockfile --ignore-scripts",
+      "exit": 0,
+      "log": "dependencies.log"
+    },
+    {
+      "command": "pnpm -C apps/admin exec tsc --noEmit",
+      "exit": 0,
+      "log": "typecheck.log"
+    },
+    {
+      "command": "node scripts/dev/check-ds-rules.mjs",
+      "exit": 0,
+      "log": "ds-rules.log"
+    },
+    {
+      "command": "pnpm exec prettier --check apps/admin/components/UiGalleryTemplates.tsx packages/ui/src/ds/AppShellV2.tsx packages/ui/src/ds/Layout.tsx packages/ui/src/ds/layout.module.css tests/admin/ui-gallery-clicks.mjs",
+      "exit": 0,
+      "log": "prettier-check.log"
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0
+    }
+  ],
+  "recovered_setup_errors": [
+    "tsc initially absent: exit254; PATH-only discovery reached compiler but dependencies absent: exit1; offline frozen install resolved both",
+    "First prettier check exit1 on chained evaluate formatting; second write/check exit0 (no semantic change)"
+  ],
+  "not_run": [
+    "ESLint: no installed dependency/config, Prettier used",
+    "All tests, browsers, servers, CI on new head, fault injection, independent review, owner visual sign-off"
+  ]
+}

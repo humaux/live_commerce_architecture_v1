@@ -1,0 +1,5 @@
+apps/admin/components/UiGalleryTemplates.tsx 96ms
+packages/ui/src/ds/AppShellV2.tsx 14ms
+packages/ui/src/ds/Layout.tsx 16ms
+packages/ui/src/ds/layout.module.css 32ms
+tests/admin/ui-gallery-clicks.mjs 78ms

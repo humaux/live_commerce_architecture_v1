@@ -1,0 +1,214 @@
+{
+  "ci_run": "38711545381",
+  "head": "60732a530c87042a495042b310a66cc0883d963d",
+  "rows": 891,
+  "failures": [
+    {
+      "index_zero_based": 188,
+      "page": "/zh-TW/ui-gallery/templates/settings",
+      "control": "settings: Settings sub-nav + notification",
+      "action": "click Notifications, checkbox, save, reload",
+      "expected": "subsection and preference persist",
+      "actual": "Expected values to be strictly equal:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 262,
+      "page": "/zh-TW/ui-gallery#sec-tokens",
+      "control": "Topbar account menu",
+      "action": "click, click Store profile",
+      "expected": "navigates to ?setting=profile",
+      "actual": "locator.click: Error: strict mode violation: getByRole('link', { name: '店鋪資料', exact: true }) resolved to 2 elements:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 314,
+      "page": "/zh-TW/ui-gallery/templates/settings",
+      "control": "settings: Settings sub-nav + notification",
+      "action": "click Notifications, checkbox, save, reload",
+      "expected": "subsection and preference persist",
+      "actual": "Expected values to be strictly equal:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 438,
+      "page": "/zh-CN/ui-gallery/templates/settings",
+      "control": "settings: Settings sub-nav + notification",
+      "action": "click Notifications, checkbox, save, reload",
+      "expected": "subsection and preference persist",
+      "actual": "Expected values to be strictly equal:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 512,
+      "page": "/zh-CN/ui-gallery#sec-tokens",
+      "control": "Topbar account menu",
+      "action": "click, click Store profile",
+      "expected": "navigates to ?setting=profile",
+      "actual": "locator.click: Error: strict mode violation: getByRole('link', { name: '店铺资料', exact: true }) resolved to 2 elements:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 564,
+      "page": "/zh-CN/ui-gallery/templates/settings",
+      "control": "settings: Settings sub-nav + notification",
+      "action": "click Notifications, checkbox, save, reload",
+      "expected": "subsection and preference persist",
+      "actual": "Expected values to be strictly equal:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 638,
+      "page": "/en/ui-gallery?setting=profile#sec-settings",
+      "control": "Sidebar expansion preference survives reload",
+      "action": "expand, reload, collapse, reload",
+      "expected": "Marketing preserves both states independently of the current page",
+      "actual": "Expected values to be strictly equal:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 663,
+      "page": "/en/ui-gallery/templates/detail",
+      "control": "detail: Internal note",
+      "action": "fill, save, reload",
+      "expected": "note and result persist; timeline ISO times remain",
+      "actual": "Expected values to be strictly equal:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 688,
+      "page": "/en/ui-gallery/templates/settings",
+      "control": "settings: Settings sub-nav + notification",
+      "action": "click Notifications, checkbox, save, reload",
+      "expected": "subsection and preference persist",
+      "actual": "Expected values to be strictly equal:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 762,
+      "page": "/en/ui-gallery#sec-tokens",
+      "control": "Topbar account menu",
+      "action": "click, click Store profile",
+      "expected": "navigates to ?setting=profile",
+      "actual": "locator.click: Error: strict mode violation: getByRole('link', { name: 'Store profile', exact: true }) resolved to 2 elements:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 804,
+      "page": "/en/ui-gallery/templates/form?section=media",
+      "control": "form: Form flow and sticky release",
+      "action": "click Basics, native Home/PageDown scrolling",
+      "expected": "page scrolls, no inner scroller; footer docks only while form bottom is offscreen",
+      "actual": "footer releases below the surface",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 814,
+      "page": "/en/ui-gallery/templates/settings",
+      "control": "settings: Settings sub-nav + notification",
+      "action": "click Notifications, checkbox, save, reload",
+      "expected": "subsection and preference persist",
+      "actual": "Expected values to be strictly equal:",
+      "result": "fail"
+    },
+    {
+      "index_zero_based": 887,
+      "page": "/en/ui-gallery#sec-tokens",
+      "control": "Topbar account menu",
+      "action": "click, click Store profile",
+      "expected": "navigates to ?setting=profile",
+      "actual": "locator.click: Error: strict mode violation: getByRole('link', { name: 'Store profile', exact: true }) resolved to 2 elements:",
+      "result": "fail"
+    }
+  ],
+  "settings_notices_captures": [
+    {
+      "name": "settings-notices",
+      "locale": "zh-TW",
+      "width": 1440,
+      "height": 900,
+      "route": "/zh-TW/ui-gallery/templates/settings?setting=notices",
+      "sha256": "03a08b45a18b7358d09b70151db4d9979c0b2d31456d42f936643db6217e4f91",
+      "axe": [],
+      "lint": [],
+      "errors": 0
+    },
+    {
+      "name": "settings-notices",
+      "locale": "zh-TW",
+      "width": 390,
+      "height": 844,
+      "route": "/zh-TW/ui-gallery/templates/settings?setting=notices",
+      "sha256": "8e9ba8d81fced80e132a4cfca189dbae53d860f39daddfcb86d0672cca4580e7",
+      "axe": [],
+      "lint": [],
+      "errors": 0
+    },
+    {
+      "name": "settings-notices",
+      "locale": "zh-CN",
+      "width": 1440,
+      "height": 900,
+      "route": "/zh-CN/ui-gallery/templates/settings?setting=notices",
+      "sha256": "8bafff452356920353c79de5904297a54df4e7bd97b44e19efce97e9fd996c6a",
+      "axe": [],
+      "lint": [],
+      "errors": 0
+    },
+    {
+      "name": "settings-notices",
+      "locale": "zh-CN",
+      "width": 390,
+      "height": 844,
+      "route": "/zh-CN/ui-gallery/templates/settings?setting=notices",
+      "sha256": "3554ea10fab087e0b85ab108db4793a4779a5c061dd71b132fac0d8d66ade5fe",
+      "axe": [],
+      "lint": [],
+      "errors": 0
+    },
+    {
+      "name": "settings-notices",
+      "locale": "en",
+      "width": 1440,
+      "height": 900,
+      "route": "/en/ui-gallery/templates/settings?setting=notices",
+      "sha256": "b91c5c4932c0fe450a5f0e2b1b3153c357524b075c20a37f75435c578190ee35",
+      "axe": [],
+      "lint": [],
+      "errors": 0
+    },
+    {
+      "name": "settings-notices",
+      "locale": "en",
+      "width": 390,
+      "height": 844,
+      "route": "/en/ui-gallery/templates/settings?setting=notices",
+      "sha256": "dd4dce0abd68ac22c54f4b2c70a118300e820882b65794bc2972e425dc3d4ef4",
+      "axe": [],
+      "lint": [],
+      "errors": 0
+    }
+  ],
+  "inputs": [
+    {
+      "path": "/Volumes/data/live_commerce_architecture_v1/output/ds-2/ci-gallery-38711545381/playwright/run.gPZ4pfpI/ui-gallery/click-ledger.json",
+      "sha256": "0d257e86f0a1146ceebb110ed0de006ba44254a258d738a8e76482ac8ecdaced"
+    },
+    {
+      "path": "/Volumes/data/live_commerce_architecture_v1/output/ds-2/ci-gallery-38711545381/playwright/run.gPZ4pfpI/ci-gates/--browser-ui-gallery.log",
+      "sha256": "b545d7f1961e80ecb4e644b19adfa7820bd8802173937ac6df6e5d3dcebfb016"
+    },
+    {
+      "path": "/Volumes/data/live_commerce_architecture_v1/output/ds-2/ci-gallery-38711545381/playwright/run.gPZ4pfpI/ui-gallery/shots/ds2-en-1440x900-settings-notices.png",
+      "sha256": "b91c5c4932c0fe450a5f0e2b1b3153c357524b075c20a37f75435c578190ee35"
+    },
+    {
+      "path": "/Volumes/data/live_commerce_architecture_v1/output/ds-2/ci-gallery-38711545381/playwright/run.gPZ4pfpI/ui-gallery/shots/ds2-en-390x844-form.png",
+      "sha256": "3106fc03bc5396e3a99fd6904a24d65b61f5502682bbba7f49804bcbcb08f867"
+    },
+    {
+      "path": "/Volumes/data/live_commerce_architecture_v1/output/ds-2/ci-gallery-38711545381/playwright/run.gPZ4pfpI/ui-gallery/shots/ds2-en-1440x900-detail.png",
+      "sha256": "3f3e58f62ca8501f4ef1129bf5443ebae8ea1329677bd4778e86a0309c60569a"
+    }
+  ]
+}
