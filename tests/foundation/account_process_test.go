@@ -181,13 +181,22 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 	path, in, key := mahPath(m.f.store), maInput(), t04Key("account-process")
 	// PAY-RM2: provider-account writes are retired. The persisted state the restarted process must
 	// still serve is a pre-removal sealed account with two credential versions (fixture_v1/fixture_v2).
-	first := maHistorical(t, m, m.f.store, in, 2)
+	seeded := maHistorical(t, m, m.f.store, in, 2)
 	body := mahBody(t, in)
 	before, beforeRows := m.facts(t), maHistorySnapshot(t, m)
 	firstProcess, firstDone := start("first")
 	firstPID := firstProcess.Process.Pid
-	if got := mahRead(t, request("GET", path+"/"+first.ID, "", nil), in.Credentials); !reflect.DeepEqual(got, first) {
-		t.Fatal("first process could not read the persisted account")
+	// The seed is the service view: it carries the internal KeyID (redacted by accountMetadata over
+	// HTTP) and pgx time.Location values. Pin the key, redact it, and compare the wire form (every
+	// other field, timestamps included); the HTTP view is then the baseline after the restart.
+	if seeded.KeyID != "fixture_v2" {
+		t.Fatalf("historical seed current credential key=%q, want fixture_v2", seeded.KeyID)
+	}
+	want := seeded
+	want.KeyID = ""
+	first := mahRead(t, request("GET", path+"/"+seeded.ID, "", nil), in.Credentials)
+	if want, got := settingsBody(t, want), settingsBody(t, first); !bytes.Equal(want, got) {
+		t.Fatalf("first process could not read the persisted account: got %s want %s", got, want)
 	}
 	assertAdminError(t, request("POST", path, key, body), 422, "invalid_request")
 	if m.facts(t) != before || maHistorySnapshot(t, m) != beforeRows {
