@@ -39,16 +39,17 @@ const (
 )
 
 type goURLPolicy struct {
-	scanner *goScanner
-	table   goRouteTable
-	owners  map[*goFunc]*goPackage
-	seeds   map[*goFunc]map[*ast.Object]goURLTaint
-	values  map[*ast.Object]goURLTaint
-	parents map[ast.Node]ast.Node
-	locals  map[*ast.Object]bool
-	seen    map[*goFunc]bool
-	urlType types.Type
-	bad     []ast.Node
+	scanner     *goScanner
+	table       goRouteTable
+	owners      map[*goFunc]*goPackage
+	seeds       map[*goFunc]map[*ast.Object]goURLTaint
+	values      map[*ast.Object]goURLTaint
+	parents     map[ast.Node]ast.Node
+	locals      map[*ast.Object]bool
+	seen        map[*goFunc]bool
+	urlType     types.Type
+	requestType types.Type
+	bad         []ast.Node
 }
 
 func (s *goScanner) goTablePathPolicy(table goRouteTable, entry *goFunc) bool {
@@ -98,7 +99,11 @@ func (s *goScanner) goTablePathPolicy(table goRouteTable, entry *goFunc) bool {
 			})
 		}
 	}
-	for _, consumer := range table.Consumers {
+	required := table.Consumers
+	if table.Exact {
+		required = required[1:] // path consumer is reached by the separately proven mount
+	}
+	for _, consumer := range required {
 		if !p.seen[consumer] {
 			return false
 		}
@@ -264,6 +269,19 @@ func (p *goURLPolicy) field(sel *ast.SelectorExpr) bool {
 	return ok // method values are never alias/proven-consumer arguments
 }
 
+func (p *goURLPolicy) requestField(sel *ast.SelectorExpr) bool {
+	if p.requestType == nil {
+		pkg, err := importer.Default().Import("net/http")
+		if err != nil {
+			return false
+		}
+		p.requestType = pkg.Scope().Lookup("Request").Type()
+	}
+	obj, _, _ := types.LookupFieldOrMethod(p.requestType, true, nil, sel.Sel.Name)
+	_, ok := obj.(*types.Var)
+	return ok // unknown methods may copy the URL into an otherwise untracked request
+}
+
 func (p *goURLPolicy) plain(expr ast.Expr) bool {
 	switch node := expr.(type) {
 	case *ast.ParenExpr:
@@ -282,7 +300,7 @@ func (p *goURLPolicy) allowed(fn *goFunc, expr ast.Expr) bool {
 		return true
 	}
 	if sel, ok := parent.(*ast.SelectorExpr); ok && sel.X == expr {
-		return p.kind(expr) == goURLRequest || p.field(sel) || p.canonicalUse(sel)
+		return p.kind(expr) == goURLRequest && p.requestField(sel) || p.field(sel) || p.canonicalUse(sel)
 	}
 	// Declaration and local-assignment identifiers are binding sites, not reads.
 	if id, ok := expr.(*ast.Ident); ok {

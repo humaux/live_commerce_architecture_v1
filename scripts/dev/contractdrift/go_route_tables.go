@@ -81,7 +81,7 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 		resolved := map[location]bool{}
 		for _, fn := range table.Package.Funcs {
 			if !table.Exact && s.goTableReaches(table, fn) ||
-				table.Exact && goTableExactDispatcher(fn, table.Consumers[1]) {
+				table.Exact && goTableExactDispatcher(fn, table.Consumers[1]) && s.goTablePathPolicy(table, fn) {
 				resolved[s.loc(fn.AST)] = true
 			}
 		}
