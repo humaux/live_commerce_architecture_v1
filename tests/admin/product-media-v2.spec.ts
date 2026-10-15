@@ -749,6 +749,8 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     await page.waitForURL(`${origin}/**`);
     await page.goto(editorURL);
     await expect(page.getByTestId("media-detail-list")).toBeVisible();
+    // The container renders before the first images GET resolves: wait for a real row so every later count starts from the loaded list.
+    await expect(page.getByTestId("photo-row-detail").first()).toBeVisible();
   }
   const uploadPosts = (page: Page) => {
     const posts: string[] = [];
@@ -911,6 +913,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     const files = smallDetail().slice(0, 3);
     expect(files, "three small detail fixtures").toHaveLength(3);
     const before = await page.getByTestId("photo-row-detail").count();
+    expect(before, "the loaded list is the baseline, not an unloaded 0").toBeGreaterThan(0);
     // FIXTURE: only the second upload of the batch is refused; the others reach the real backend.
     let seen = 0;
     await page.route(imagesRoute, (route) => {
@@ -942,6 +945,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
       }),
     );
     expect(posts, "all three files were attempted").toHaveLength(3);
+    expect(seen, "the injected 413 handler saw all three POSTs").toBe(3);
     await page.reload();
     await expect(
       page.getByTestId("photo-row-detail"),
@@ -1037,8 +1041,10 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     // FIXTURE: hold the upload open so the editor stays locked, then refuse it.
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));
+    let held = 0;
     await page.route(imagesRoute, async (route) => {
       if (route.request().method() !== "POST") return route.fallback();
+      held++;
       await gate;
       return route.fulfill({
         status: 413,
@@ -1082,11 +1088,161 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
     await expect(
       page.getByTestId("media-note-detail").getByRole("alert"),
     ).toHaveText(mc.tooLarge);
+    expect(held, "the held upload POST really reached the fixture").toBe(1);
     await expect(
       page.getByTestId("product-leave-blocked"),
       "message clears once the upload settles",
     ).toHaveCount(0);
     await page.unroute(imagesRoute);
+  });
+
+  test("a halted batch whose coordinating read fails keeps a visible re-read button; unsaved fields survive", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    const posts = uploadPosts(page);
+    const files = smallDetail().slice(0, 2);
+    const detailRows = await page.getByTestId("photo-row-detail").count();
+    // Unsaved draft that a full page reload would lose.
+    const draft = `${await page.getByTestId("product-name").inputValue()} DRAFT`;
+    await page.getByTestId("product-name").fill(draft);
+    // FIXTURE: the first POST is a definite 409; every read after it fails with 503 until `recovered`.
+    let posted = 0,
+      failedReads = 0,
+      recovered = false;
+    await page.route(imagesRoute, (route) => {
+      const method = route.request().method();
+      if (method === "POST") {
+        posted++;
+        return route.fulfill({
+          status: 409,
+          contentType: "application/json",
+          body: JSON.stringify({ code: "conflict" }),
+        });
+      }
+      if (method === "GET" && posted > 0 && !recovered) {
+        failedReads++;
+        return route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: "{}",
+        });
+      }
+      return route.fallback();
+    });
+    await pickFiles(
+      page,
+      page,
+      "photo-input-detail",
+      files.map((f) => f.name),
+    );
+    const note = page.getByTestId("media-note-general");
+    await expect(
+      note.getByRole("alert"),
+      "the halted batch summary is shown",
+    ).toContainText(files[0].name);
+    const refresh = note.getByRole("button", { name: mc.refresh, exact: true });
+    await expect(refresh, "a re-read entry stays visible").toBeVisible();
+    await expect(refresh).toBeEnabled();
+    expect(posted, "the batch halted after the 409").toBe(1);
+    expect(failedReads, "the coordinating GET was injected").toBeGreaterThan(0);
+    expect(posts).toHaveLength(1);
+    recovered = true;
+    const reread = page.waitForResponse(
+      (r) =>
+        r.request().method() === "GET" &&
+        new URL(r.url()).pathname === imagesPath,
+    );
+    await refresh.click();
+    expect((await reread).status()).toBe(200);
+    await expect(page.getByTestId("photo-row-detail")).toHaveCount(detailRows);
+    await expect(
+      page.getByTestId("photo-input-detail"),
+      "image controls are usable again",
+    ).toBeEnabled();
+    await expect(
+      page.getByTestId("product-name"),
+      "unsaved field survived",
+    ).toHaveValue(draft);
+    pass(
+      page_,
+      mc.refresh,
+      "click after a halted batch with a failed read",
+      "list returns, picker enabled, draft kept",
+      "GET 200",
+    );
+    await page.unroute(imagesRoute);
+  });
+
+  test("the single-file retry is disabled while the product document PUT is in flight", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    const posts = uploadPosts(page);
+    const documentPath = `/api/stores/${store}/products/${product.id}/document`;
+    const documentRoute = (url: URL) => url.pathname === documentPath;
+    // FIXTURE: the upload is refused with a retryable 429 without reaching the backend.
+    let refused = 0;
+    await page.route(imagesRoute, (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      refused++;
+      return route.fulfill({
+        status: 429,
+        contentType: "application/json",
+        body: JSON.stringify({ code: "rate_limited", retryable: true }),
+      });
+    });
+    await pickFiles(page, page, "photo-input-detail", [smallDetail()[0].name]);
+    const note = page.getByTestId("media-note-detail");
+    const retry = note.getByRole("button", { name: mc.retryFile, exact: true });
+    await expect(retry, "retry is offered after the 429").toBeEnabled();
+    expect(refused).toBe(1);
+    // FIXTURE: hold the document PUT open.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let putSeen = 0;
+    await page.route(documentRoute, async (route) => {
+      if (route.request().method() !== "PUT") return route.fallback();
+      putSeen++;
+      await gate;
+      return route.continue();
+    });
+    const original = await page.getByTestId("product-name").inputValue();
+    await page.getByTestId("product-name").fill(`${original} PE3`);
+    const inflight = page.waitForRequest(
+      (r) => r.method() === "PUT" && new URL(r.url()).pathname === documentPath,
+    );
+    await page.getByTestId("product-save").click();
+    await inflight;
+    await expect(
+      retry,
+      "retry cannot start while the document save is pending",
+    ).toBeDisabled();
+    expect(posts, "no new image POST while the save is pending").toHaveLength(1);
+    expect(putSeen).toBe(1);
+    release();
+    await expect(
+      page.getByText(ec.saved, { exact: true }).first(),
+    ).toBeVisible();
+    expect(posts, "still only the original POST").toHaveLength(1);
+    pass(
+      page_,
+      mc.retryFile,
+      "observe during a pending save",
+      "disabled, no extra POST",
+      "disabled, 1 POST",
+    );
+    await page.unroute(imagesRoute);
+    await page.unroute(documentRoute);
+    // Restore the name through the real controls.
+    await page.getByTestId("product-name").fill(original);
+    const restored = page.waitForResponse(
+      (r) =>
+        r.request().method() === "PUT" &&
+        new URL(r.url()).pathname === documentPath,
+    );
+    await page.getByTestId("product-save").click();
+    expect((await restored).status()).toBe(200);
   });
 });
 

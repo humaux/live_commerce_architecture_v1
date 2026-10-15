@@ -89,6 +89,7 @@ export function ProductMediaManager({
     alive = useRef(true),
     running = useRef(false),
     readEpoch = useRef(0),
+    unread = useRef(true), // true while the canonical list is unknown; recovery must stay reachable
     origin = useRef<{ block: Block; value?: string }>({ block: "general" }),
     failure = useRef<{ text: string; halt: boolean; retry?: UploadOp } | null>(
       null,
@@ -127,10 +128,12 @@ export function ProductMediaManager({
     )
       return null;
     if (result.list) {
+      unread.current = false;
       setList(result.list);
       onChanged(result.list);
       return result.list;
     }
+    unread.current = true;
     setList(null);
     onChanged(null);
     listFailed(c.failed);
@@ -142,6 +145,7 @@ export function ProductMediaManager({
   }
   useEffect(() => {
     alive.current = true;
+    unread.current = true;
     setList(null);
     onChanged(null);
     try {
@@ -166,6 +170,7 @@ export function ProductMediaManager({
         epoch === readEpoch.current
       ) {
         if (result.list) {
+          unread.current = false;
           setList(result.list);
           onChanged(result.list);
         } else {
@@ -265,6 +270,7 @@ export function ProductMediaManager({
         remember(null);
       }
       if (answer.reconcile) {
+        unread.current = true;
         setList(null);
         onChanged(null);
         return false;
@@ -336,6 +342,12 @@ export function ProductMediaManager({
       running.current = false;
       if (alive.current) setBusy(false);
     }
+  }
+  /** The per-file retry opens a new image write, so it obeys the same locks as every other mutation. */
+  function retryFile(op: UploadOp) {
+    if (disabled || running.current || pending || lost || !list || !ready)
+      return;
+    void run({ ...op, key: crypto.randomUUID() });
   }
   function action(resource: string, body: unknown, block: Block = "general") {
     if (disabled || running.current || pending || lost) return;
@@ -409,6 +421,8 @@ export function ProductMediaManager({
         }
       }
       if (alive.current && first) {
+        // Halting stops further uploads, never the way back: with the list unknown the summary carries the re-read button.
+        if (unread.current) origin.current = { block: "general" };
         if (selected.length > 1)
           say(
             fillCopy(c.batchPartial, {
@@ -417,7 +431,7 @@ export function ProductMediaManager({
               file: first.name,
               reason: first.text,
             }),
-            { recover: !halted },
+            { recover: !halted || unread.current },
           );
         else if (first.local) say(first.text, { recover: true });
       }
@@ -472,10 +486,8 @@ export function ProductMediaManager({
             {note.retry && (
               <button
                 type="button"
-                disabled={busy}
-                onClick={() =>
-                  void run({ ...note.retry!, key: crypto.randomUUID() })
-                }
+                disabled={locked}
+                onClick={() => retryFile(note.retry!)}
               >
                 {c.retryFile}
               </button>
