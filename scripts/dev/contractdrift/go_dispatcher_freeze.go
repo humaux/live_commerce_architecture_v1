@@ -1,7 +1,7 @@
 // Purpose: bind table coverage to an independently reviewed dispatcher closure.
 // Depends on: stdlib AST, scanner, gofmt, SHA256 and the explicit JSON pin contract.
 // Used by: resolveRouteTables and fixture pin helpers; never writes or updates pins.
-// Invariant: row data and row target bodies are excluded; changed/unproved pins fail regardless of Git touches.
+// Invariant: only row data/row-only targets are excluded; referenced declarations freeze regardless of Git touches.
 
 package main
 
@@ -24,11 +24,12 @@ import (
 const goDispatcherPinFile = "contracts/route-table-dispatchers.json"
 
 type goDispatcherPin struct {
-	Comment   string   `json:"_comment,omitempty"`
-	Table     string   `json:"table"`
-	SHA256    string   `json:"dispatcher_sha256"`
-	Functions []string `json:"functions"`
-	Reviewed  string   `json:"reviewed"`
+	Comment      string   `json:"_comment,omitempty"`
+	Table        string   `json:"table"`
+	SHA256       string   `json:"dispatcher_sha256"`
+	Functions    []string `json:"functions"`
+	Declarations []string `json:"declarations,omitempty"`
+	Reviewed     string   `json:"reviewed"`
 }
 
 func readGoDispatcherPins(root string) (map[string]goDispatcherPin, error) {
@@ -70,41 +71,13 @@ func goDispatcherFunctionsEqual(a, b []string) bool {
 func goTableDispatcherFingerprint(table goRouteTable, entries []*goFunc) (goDispatcherPin, error) {
 	pkg := table.Package
 	roots := append(append([]*goFunc{}, entries...), table.Consumers...)
-	excluded := map[*goFunc]bool{}
-	for _, file := range pkg.Files {
-		for _, decl := range file.AST.Decls {
-			gd, ok := decl.(*ast.GenDecl)
-			if !ok || gd.Tok != token.VAR {
-				continue
-			}
-			for _, spec := range gd.Specs {
-				vs, ok := spec.(*ast.ValueSpec)
-				if !ok || len(vs.Names) != 1 || vs.Names[0].Name != table.Name {
-					continue
-				}
-				// Named function/method values in rows are terminal handler targets.
-				// Calls constructing row values are not terminal targets.
-				for _, value := range vs.Values {
-					ast.Inspect(value, func(n ast.Node) bool {
-						if _, call := n.(*ast.CallExpr); call {
-							return false
-						}
-						if id, ok := n.(*ast.Ident); ok && pkg.Named[id.Name] != nil {
-							excluded[pkg.Named[id.Name]] = true
-						}
-						return true
-					})
-				}
-			}
-		}
-	}
 	for _, fn := range pkg.Funcs {
 		if goDispatcherReceiver(fn) == table.TypeName {
 			roots = append(roots, fn)
 		}
 	}
-	hash, names, err := goDispatcherFingerprint(pkg, roots, excluded, table.Name)
-	return goDispatcherPin{Table: pkg.Files[0].AST.Name.Name + "." + table.MountName, SHA256: hash, Functions: names}, err
+	hash, names, decls, err := goDispatcherFingerprint(pkg, roots, table.Name)
+	return goDispatcherPin{Table: pkg.Files[0].AST.Name.Name + "." + table.MountName, SHA256: hash, Functions: names, Declarations: decls}, err
 }
 
 func goDispatcherReceiver(fn *goFunc) string {
@@ -112,13 +85,20 @@ func goDispatcherReceiver(fn *goFunc) string {
 		return ""
 	}
 	expr := fn.AST.Recv.List[0].Type
-	if ptr, ok := expr.(*ast.StarExpr); ok {
-		expr = ptr.X
+	for {
+		switch e := expr.(type) {
+		case *ast.StarExpr:
+			expr = e.X
+		case *ast.IndexExpr:
+			expr = e.X
+		case *ast.IndexListExpr:
+			expr = e.X
+		case *ast.Ident:
+			return e.Name
+		default:
+			return ""
+		}
 	}
-	if id, ok := expr.(*ast.Ident); ok {
-		return id.Name
-	}
-	return ""
 }
 
 func goDispatcherName(fn *goFunc) string {
@@ -133,58 +113,66 @@ func goDispatcherName(fn *goFunc) string {
 // Imported package selectors are boundaries; no cross-package call is followed.
 // This can freeze extra same-package methods, but cannot miss a receiver helper
 // just because the syntax-only scanner could not infer its type.
-func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, excluded map[*goFunc]bool, rowVariable string) (string, []string, error) {
-	// Follow package variable initializers too: calls through aliases, maps or
-	// stored function values must retain the target body in the closure. Global
-	// function literals receive a stable declaration name for canonicalization.
-	type initializer struct {
-		expr ast.Expr
-		file *goFile
+func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, rowVariable string) (string, []string, []string, error) {
+	type declaration struct {
+		kind, name, key string
+		node            ast.Node
+		file            *goFile
 	}
-	initializers := map[string][]initializer{}
-	literals := map[*ast.FuncLit]*goFunc{}
-	for _, file := range pkg.Files {
+	specs := map[string]*declaration{}
+	for fileIndex, file := range pkg.Files {
 		for _, decl := range file.AST.Decls {
 			gd, ok := decl.(*ast.GenDecl)
-			if !ok || gd.Tok != token.VAR {
+			if !ok || (gd.Tok != token.CONST && gd.Tok != token.VAR && gd.Tok != token.TYPE) {
 				continue
 			}
+			// Freeze const blocks whole: iota positions and implicit expressions depend
+			// on neighbouring specs, including entries not referenced by name.
+			var blockNames []string
 			for _, spec := range gd.Specs {
-				vs, ok := spec.(*ast.ValueSpec)
-				if !ok {
+				var names []string
+				switch v := spec.(type) {
+				case *ast.ValueSpec:
+					for _, name := range v.Names {
+						names = append(names, name.Name)
+					}
+				case *ast.TypeSpec:
+					names = []string{v.Name.Name}
+				}
+				blockNames = append(blockNames, names...)
+				if gd.Tok == token.CONST {
 					continue
 				}
-				for _, name := range vs.Names {
-					index := 0
-					for _, value := range vs.Values {
-						initializers[name.Name] = append(initializers[name.Name], initializer{value, file})
-						ast.Inspect(value, func(n ast.Node) bool {
-							if lit, ok := n.(*ast.FuncLit); ok {
-								index++
-								literals[lit] = &goFunc{File: file, AST: &ast.FuncDecl{Name: ast.NewIdent(fmt.Sprintf("__global_%s_%d", name.Name, index)), Type: lit.Type, Body: lit.Body}}
-								return false // nested literals belong to this body's canonical source
-							}
-							return true
-						})
-					}
+				if gd.Tok == token.VAR && len(names) == 1 && names[0] == rowVariable {
+					continue
+				}
+				d := &declaration{kind: gd.Tok.String(), name: strings.Join(names, ","),
+					key:  fmt.Sprintf("%08d:%012d", fileIndex, spec.Pos()),
+					node: &ast.GenDecl{Tok: gd.Tok, Specs: []ast.Spec{spec}}, file: file}
+				for _, name := range names {
+					specs[name] = d
+				}
+			}
+			if gd.Tok == token.CONST {
+				sorted := append([]string{}, blockNames...)
+				sort.Strings(sorted)
+				d := &declaration{kind: "const", name: strings.Join(sorted, ","),
+					key: fmt.Sprintf("%08d:%012d", fileIndex, gd.Pos()), node: gd, file: file}
+				for _, name := range blockNames {
+					specs[name] = d
 				}
 			}
 		}
 	}
-	seen := map[*goFunc]bool{}
-	expanded := map[string]bool{}
+	seenFuncs := map[*goFunc]bool{}
+	seenSpecs := map[*declaration]bool{}
 	queue := append([]*goFunc{}, roots...)
 	var inspect func(ast.Node, *goFile)
 	inspect = func(node ast.Node, file *goFile) {
+		if node == nil {
+			return
+		}
 		ast.Inspect(node, func(n ast.Node) bool {
-			if kv, ok := n.(*ast.KeyValueExpr); ok {
-				inspect(kv.Value, file)
-				return false
-			}
-			if lit, ok := n.(*ast.FuncLit); ok && literals[lit] != nil {
-				queue = append(queue, literals[lit])
-				return false
-			}
 			if sel, ok := n.(*ast.SelectorExpr); ok {
 				if id, ok := sel.X.(*ast.Ident); ok && id.Obj == nil && file.ImportPaths[id.Name] != "" {
 					return false
@@ -194,70 +182,92 @@ func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, excluded map[*goFu
 						queue = append(queue, callee)
 					}
 				}
-				return true
+				inspect(sel.X, file)
+				return false
 			}
 			if id, ok := n.(*ast.Ident); ok {
+				// Local bindings are not package references. Unresolved cross-file names
+				// remain conservative; imported implementations are explicit boundaries.
+				if id.Obj != nil && file.AST.Scope.Lookup(id.Name) != id.Obj {
+					return true
+				}
 				if callee := pkg.Named[id.Name]; callee != nil {
 					queue = append(queue, callee)
 				}
-				if id.Name != rowVariable && !expanded[id.Name] {
-					expanded[id.Name] = true
-					for _, init := range initializers[id.Name] {
-						inspect(init.expr, init.file)
-					}
+				if d := specs[id.Name]; d != nil && !seenSpecs[d] {
+					seenSpecs[d] = true
+					inspect(d.node, d.file)
 				}
 			}
 			return true
 		})
 	}
-	// Resolve row target aliases with the same graph, then discard the targets'
-	// bodies. The row literal is never followed while traversing dispatchers.
-	queue = nil
-	for _, init := range initializers[rowVariable] {
-		inspect(init.expr, init.file)
-	}
-	for _, target := range queue {
-		excluded[target] = true
-	}
-	queue = append([]*goFunc{}, roots...)
-	expanded = map[string]bool{}
+	// Do not walk the row literal at all. A target referenced only from data never
+	// enters this graph; the same target reached directly by any closure body does.
 	for len(queue) > 0 {
 		fn := queue[0]
 		queue = queue[1:]
-		if seen[fn] || excluded[fn] {
+		if seenFuncs[fn] {
 			continue
 		}
-		seen[fn] = true
+		seenFuncs[fn] = true
+		if fn.AST.Recv != nil {
+			inspect(fn.AST.Recv, fn.File)
+		}
+		inspect(fn.AST.Type, fn.File)
 		inspect(fn.AST.Body, fn.File)
 	}
-	funcs := make([]*goFunc, 0, len(seen))
-	for fn := range seen {
-		funcs = append(funcs, fn)
-	}
-	sort.Slice(funcs, func(i, j int) bool { return goDispatcherName(funcs[i]) < goDispatcherName(funcs[j]) })
-	var canonical bytes.Buffer
-	names := []string{}
-	for _, fn := range funcs {
-		name := goDispatcherName(fn)
-		normalized, err := goDispatcherCanonical(fn)
-		if err != nil {
-			return "", nil, err
+	var decls []*declaration
+	for fn := range seenFuncs {
+		fileIndex := 0
+		for i, file := range pkg.Files {
+			if file == fn.File {
+				fileIndex = i
+				break
+			}
 		}
-		names = append(names, name)
+		key := fmt.Sprintf("%08d:%012d:%s", fileIndex, fn.AST.Pos(), fn.Key)
+		decls = append(decls, &declaration{kind: "func", name: goDispatcherName(fn), key: key, node: fn.AST, file: fn.File})
+	}
+	for d := range seenSpecs {
+		decls = append(decls, d)
+	}
+	sort.SliceStable(decls, func(i, j int) bool {
+		a, b := decls[i], decls[j]
+		if a.kind != b.kind {
+			return a.kind < b.kind
+		}
+		if a.name != b.name {
+			return a.name < b.name
+		}
+		return a.key < b.key
+	})
+	var canonical bytes.Buffer
+	names, declNames := []string{}, []string{}
+	for _, d := range decls {
+		normalized, err := goDispatcherCanonical(d.node)
+		if err != nil {
+			return "", nil, nil, err
+		}
+		name := d.kind + " " + d.name
+		declNames = append(declNames, name)
+		if d.kind == "func" {
+			names = append(names, d.name)
+		}
 		canonical.WriteString(name + "\n")
 		canonical.Write(normalized)
 		canonical.WriteByte('\n')
 	}
 	sum := sha256.Sum256(canonical.Bytes())
-	return hex.EncodeToString(sum[:]), names, nil
+	return hex.EncodeToString(sum[:]), names, declNames, nil
 }
 
 // Re-tokenize with comments disabled and canonical whitespace before gofmt.
 // Merely clearing Doc/Comment fields leaves comment-induced blank-line positions
 // in the AST printer, making a documentation edit change the hash.
-func goDispatcherCanonical(fn *goFunc) ([]byte, error) {
+func goDispatcherCanonical(node ast.Node) ([]byte, error) {
 	var decl bytes.Buffer
-	if err := format.Node(&decl, token.NewFileSet(), fn.AST); err != nil {
+	if err := format.Node(&decl, token.NewFileSet(), node); err != nil {
 		return nil, err
 	}
 	set := token.NewFileSet()

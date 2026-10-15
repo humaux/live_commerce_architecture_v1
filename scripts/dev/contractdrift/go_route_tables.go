@@ -126,7 +126,7 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 		if !pinned {
 			want = "<missing>"
 		}
-		if pinErr != nil || !pinned || candidate.SHA256 != pin.SHA256 || !goDispatcherFunctionsEqual(candidate.Functions, pin.Functions) || pin.Reviewed == "" {
+		if pinErr != nil || !pinned || candidate.SHA256 != pin.SHA256 || !goDispatcherFunctionsEqual(candidate.Functions, pin.Functions) || !goDispatcherFunctionsEqual(candidate.Declarations, pin.Declarations) || pin.Reviewed == "" {
 			detail := fmt.Sprintf("route-table dispatcher changed or unpinned: %s %s want %s; review the dispatcher and update %s", candidate.Table, candidate.SHA256, want, goDispatcherPinFile)
 			for _, row := range table.Routes {
 				s.dispatcherError(row.Locations[0], detail, row.Method, row.Path)

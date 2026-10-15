@@ -16,8 +16,8 @@ import (
 	"testing"
 )
 
-const prefixDispatcherSHA = "bb891b718f9855ea78f60bb77fb3d23fca54c88f933304c21c80bad77198fc89"
-const exactDispatcherSHA = "52e813a9f77a019c91e6ab9919db7977061658a1e2cc4e019fee4eb9337ee246"
+const prefixDispatcherSHA = "f59aafcde055f93dd1f5c01efc3d013c74307bea2ef5b8c960591c5adeed6f5c"
+const exactDispatcherSHA = "43847f5c3ea2918e1011d8fa0d60b1a54f1ba818580f58e2f80b5ce969f46611"
 
 // Explicit fixture review, never called after a negative mutation. scanGo uses
 // goTableDispatcherFingerprint -> goDispatcherFingerprint, the production gate.
@@ -371,7 +371,7 @@ func TestGoDispatcherFreezeGenericNamesDeterministic(t *testing.T) {
 		if i%2 == 1 {
 			roots[0], roots[2] = roots[2], roots[0]
 		}
-		hash, names, err := goDispatcherFingerprint(pkg, roots, map[*goFunc]bool{}, "rows")
+		hash, names, _, err := goDispatcherFingerprint(pkg, roots, "rows")
 		if err != nil {
 			t.Fatal(err)
 		}
