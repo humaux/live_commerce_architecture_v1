@@ -1,0 +1,9 @@
+{
+  "source_sha": "5288fd866aec57c5bc1dc9ff4ac6834cae372782",
+  "overlay_commit": "51273344fc12ff4c8062634fdf749d536958bda7",
+  "overlay_file": "cmd/api/buyer_payment.go",
+  "overlay_sha256": "f460f3f4e97f9d9dfc090a3be5094e3c9d01f71545eebbcaf9321360a40a044f",
+  "diff": [
+    "cmd/api/buyer_payment.go"
+  ]
+}

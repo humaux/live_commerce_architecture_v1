@@ -1,0 +1,448 @@
+[
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/buyer/catalog/v2/collections",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 69,
+          "end": 69
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/buyer/catalog/v2/collections/{}",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 71,
+          "end": 71
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/buyer/cvs-selections/{}",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 62,
+          "end": 62
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/buyer/privacy",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 38,
+          "end": 38
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 55,
+          "end": 55
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "GET",
+      "path": "/v1/buyer/storefront/primary-origin",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/primary.go",
+          "line": 18,
+          "end": 18
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 43,
+          "end": 43
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/cvs-selections",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 59,
+          "end": 59
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/cvs-selections/{}/verify",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 61,
+          "end": 61
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/cvs-stores",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 60,
+          "end": 60
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/orders/{}/payment/cancel",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 77,
+          "end": 77
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/orders/{}/payment/handoff",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 75,
+          "end": 75
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/orders/{}/payment/prepare",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 74,
+          "end": 74
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/orders/{}/payment/refresh",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 76,
+          "end": 76
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/privacy/erasure",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 41,
+          "end": 41
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 58,
+          "end": 58
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/privacy/export",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 40,
+          "end": 40
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 57,
+          "end": 57
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "POST",
+      "path": "/v1/buyer/session/retire",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 40,
+          "end": 40
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "NEW",
+    "Finding": {
+      "kind": "GO_ONLY",
+      "method": "PUT",
+      "path": "/v1/buyer/orders/{}/bank-transfer/proof",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 63,
+          "end": 63
+        }
+      ]
+    }
+  }
+]

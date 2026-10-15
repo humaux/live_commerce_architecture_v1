@@ -13,7 +13,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strings"
 
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/fulfillment"
@@ -36,37 +35,18 @@ func isCVSRoute(kind routeKind) bool {
 // createdResponse marks a body the dispatcher must send with 201 (POST cvs-selections, POST cvs-stores).
 type createdResponse struct{ Body any }
 
-// matchCVSRoute is the path table of the four routes (handler.go's matchRoute delegates to it before the generic id prefixes).
+// matchCVSRoute and allowedCVS retain the resource helpers used by existing tests;
+// both consume the shared route table instead of a second path/method inventory.
 func matchCVSRoute(path string) route {
-	switch path {
-	case "/v1/buyer/cvs-selections":
-		return route{kind: routeCVSSelectionOpen}
-	case "/v1/buyer/cvs-stores":
-		return route{kind: routeCVSStoreEnter}
-	}
-	if rest, ok := strings.CutPrefix(path, "/v1/buyer/cvs-selections/"); ok && rest != "" {
-		if id, verify := strings.CutSuffix(rest, "/verify"); verify {
-			if id != "" && !strings.Contains(id, "/") {
-				return route{kind: routeCVSSelectionVerify, id: id}
-			}
-			return route{}
-		}
-		if !strings.Contains(rest, "/") {
-			return route{kind: routeCVSSelectionGet, id: rest}
-		}
+	selected := matchRoute(path)
+	if isCVSRoute(selected.kind) {
+		return selected
 	}
 	return route{}
 }
 
-// allowedCVS: open and enter-store are POST with a key, verify is a keyless POST, get is a GET.
 func allowedCVS(kind routeKind, method string) bool {
-	switch kind {
-	case routeCVSSelectionOpen, routeCVSSelectionVerify, routeCVSStoreEnter:
-		return method == http.MethodPost
-	case routeCVSSelectionGet:
-		return method == http.MethodGet
-	}
-	return false
+	return isCVSRoute(kind) && allowed(kind, method)
 }
 
 // codedResponse is a responseError that also carries a Retry-After (429 pay_at_pickup_limit, rate_limited). It unwraps to its

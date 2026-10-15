@@ -1,0 +1,28 @@
+{
+  "TestGoRouteTableExtraPathDispatchRejectedCLI": {
+    "unchanged": true,
+    "sha256": "5ed201cddf26544b41e0228af8745449d8d26e2eddec13e49d9e887a222789b1"
+  },
+  "TestGoHandlerFactoryRefusalLeavesCLI": {
+    "unchanged": true,
+    "sha256": "f948dba0f305725445e3c6df11243129dcc82412d17d5dd370a1893c59ea6082"
+  },
+  "scripts/dev/contractdrift/go_refusal_leaf.go": {
+    "unchanged": true,
+    "sha256": "74c741ccf8eb94dac68ff869fc30b749b02e12e61bb86b7f9ad5eb339e94949d"
+  },
+  "scripts/dev/contractdrift/go_extract_test.go": {
+    "unchanged": true,
+    "sha256": "d8801c0487b61c64a69ebb78675ba402a8e968c220f7217c3b3f5764076ca48f"
+  },
+  "cmd/api/buyer.go": {
+    "unchanged": true,
+    "sha256": "a58aeb386cea8ff3c35d5c2ed048d8d8f0ce9a2699c77dee74a50c652ba598e0"
+  },
+  "internal/buyerhttp/handler.go": {
+    "unchanged": true,
+    "sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+  },
+  "runtime_diff": "",
+  "source_sha": "5f6f27b17fc8ccceb5b3f9211db1f0949e04409a"
+}

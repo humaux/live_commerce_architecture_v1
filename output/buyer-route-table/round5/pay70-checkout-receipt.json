@@ -1,0 +1,20 @@
+{
+  "run_id": "buyer-route-table-r5-pay70-checkout-5288fd866",
+  "source_sha": "5288fd866aec57c5bc1dc9ff4ac6834cae372782",
+  "base": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "command": [
+    "git",
+    "checkout",
+    "--detach",
+    "5288fd866aec57c5bc1dc9ff4ac6834cae372782"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round5/pay70-scratch",
+  "exit": 0,
+  "started_at": "2026-10-15T09:48:40.239642+00:00",
+  "finished_at": "2026-10-15T09:48:43.864995+00:00",
+  "elapsed_seconds": 3.625,
+  "timeout_seconds": 180,
+  "stdout": "output/buyer-route-table/round5/pay70-checkout-report.txt",
+  "stderr": "output/buyer-route-table/round5/pay70-checkout-stderr.log",
+  "mode": "STATIC_SOURCE_ONLY; Go tests NOT_RUN"
+}

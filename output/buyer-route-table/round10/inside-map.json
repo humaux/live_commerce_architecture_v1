@@ -1,0 +1,134 @@
+{
+  "return": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: value escape or unsupported read at internal/buyerhttp/handler.go:785"
+    ],
+    "mutation_sha256": "d65b5f6183e8b69986af751de1f0caeca4445aaf563363a6f79bf8e27b4237b5"
+  },
+  "goroutine": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: goroutine/closure capture at internal/buyerhttp/handler.go:268"
+    ],
+    "mutation_sha256": "b21baf6e2c233b272d669dd38f4b5de68879681561685befc5d42ebca4bad8ce"
+  },
+  "method": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: value escape or unsupported read at internal/buyerhttp/handler.go:268"
+    ],
+    "mutation_sha256": "5ee07f955567211747259e59ab730a077e33cf56f7a1b3dfd047ef4122345bcb"
+  },
+  "local-alias": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: value escape or unsupported read at internal/buyerhttp/handler.go:268"
+    ],
+    "mutation_sha256": "e416b2074f1a971add2c5ad9aa2e34f9d2a3c593b8e0274fee70368aadedc675"
+  },
+  "field": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: value escape or unsupported read at internal/buyerhttp/handler.go:268"
+    ],
+    "mutation_sha256": "ec534407ea5305fa836f8c168adda12952100078d7694b4d92127585dea9f1c7"
+  },
+  "map": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: value escape or unsupported read at internal/buyerhttp/handler.go:268"
+    ],
+    "mutation_sha256": "e5b7baa5f40b81b7caa7e9db128503f12350a232834874a52de6d4eb05c594a5"
+  },
+  "slice": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: value escape or unsupported read at internal/buyerhttp/handler.go:268"
+    ],
+    "mutation_sha256": "f71e947b6da500ee32fe5e0bbf4499aa5e83de4922762a72445eca72c253c88e"
+  },
+  "channel": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: value escape or unsupported read at internal/buyerhttp/handler.go:268"
+    ],
+    "mutation_sha256": "f05d170c41d40b589c15c44f2c8d792b51e261643598056aeba479c2464a99bc"
+  },
+  "helper": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: value escape or unsupported read at internal/buyerhttp/handler.go:268"
+    ],
+    "mutation_sha256": "33e6cd8df5edd416054d503c998555a351174f7dbda715849de579302f12a921"
+  },
+  "initializer": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: reference outside hashed closure at internal/buyerhttp/handler.go:785"
+    ],
+    "mutation_sha256": "b4a62579a811245eed221f34877eaef7924aeab34f9884124f5cc1e080f805a6"
+  },
+  "init-method": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: value escape or unsupported read at internal/buyerhttp/handler.go:785"
+    ],
+    "mutation_sha256": "30c3d3e957451ca3278e2f3bfd74697b13c2c2c3fdefdc1336398137d3a9746d"
+  },
+  "method-outside": {
+    "exit": 1,
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ],
+    "freeze_errors": 46,
+    "first": [
+      "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: reference outside hashed closure at internal/buyerhttp/handler.go:785"
+    ],
+    "mutation_sha256": "629920eb59f01b6acf63ffabc5a11405408baa8124f16ee69bc1a08d172d2631"
+  }
+}

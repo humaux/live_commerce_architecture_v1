@@ -1,0 +1,33 @@
+panic: ast.Walk: unexpected node type <nil>
+
+goroutine 1 [running]:
+go/ast.Walk({0x1013028a0?, 0x72ecdf044aa0?}, {0x0, 0x0})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/go/ast/walk.go:352 +0x1158
+go/ast.Inspect(...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/go/ast/walk.go:377
+main.(*goScanner).goTablePathPolicy.func3({0x0, 0x0})
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/scripts/dev/contractdrift/go_route_tables.go:443 +0xd8
+main.(*goScanner).goTablePathPolicy.func6({0x101303480?, 0x72ecdc3d96e0})
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/scripts/dev/contractdrift/go_route_tables.go:502 +0x88
+go/ast.inspector.Visit(0x72ecdf035ac0, {0x101303480?, 0x72ecdc3d96e0?})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/go/ast/walk.go:361 +0x38
+go/ast.Walk({0x1013028a0?, 0x72ecdf035ac0?}, {0x101303480, 0x72ecdc3d96e0})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/go/ast/walk.go:34 +0x44
+go/ast.walkList[...](...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/go/ast/walk.go:21
+go/ast.Walk({0x1013028a0?, 0x72ecdf035ac0?}, {0x101303160, 0x72ecdc3d9710})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/go/ast/walk.go:211 +0x18ec
+go/ast.Inspect(...)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.2.darwin-arm64/src/go/ast/walk.go:377
+main.(*goScanner).goTablePathPolicy(0x72ecdc1f8000, {0x72ecdc21a360, {0x72ecdbd32703, 0x9}, {0x72ecdc20cc17, 0x9}, {0x72ecdbd32690, 0xa}, {0x72ecdc20cc3a, 0x6}, ...}, ...)
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/scripts/dev/contractdrift/go_route_tables.go:490 +0x234
+main.(*goScanner).goTableReaches(0x72ecdc1f8000, {0x72ecdc21a360, {0x72ecdbd32703, 0x9}, {0x72ecdc20cc17, 0x9}, {0x72ecdbd32690, 0xa}, {0x72ecdc20cc3a, 0x6}, ...}, ...)
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/scripts/dev/contractdrift/go_route_tables.go:393 +0x20c
+main.(*goScanner).resolveRouteTables(0x72ecdc1f8000, 0x72ecde643e20)
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/scripts/dev/contractdrift/go_route_tables.go:83 +0x234
+main.scanGo({0x16eea2aad, 0x48})
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/scripts/dev/contractdrift/go_extract.go:240 +0xbd0
+main.run({0x72ecdbc3a010, 0x4, 0x4}, {0x101302800, 0x72ecdbc02020}, {0x101302800, 0x72ecdbc02028})
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/scripts/dev/contractdrift/main.go:51 +0x3bc
+main.main()
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/scripts/dev/contractdrift/main.go:237 +0x6c

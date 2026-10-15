@@ -2,6 +2,7 @@
 // Depends on: Go stdlib only; no DB/API/network mutations.
 // Used by: CI-DRIFT scanGo and its parser gates.
 // Invariant: extraction never executes handlers or discards unresolved registration coverage.
+
 package main
 
 import (
@@ -86,6 +87,9 @@ func (s *goScanner) opaque(fn *goFunc) {
 	}
 	ref := s.loc(fn.AST)
 	detail := "opaque Go handler dispatch " + fn.AST.Name.Name + "; route/method coverage is unknown"
+	// Retain the complete finding first. After all route tables are consumed,
+	// resolveHandlerFactories can prove every returned handler's provenance;
+	// failed proofs keep this finding and every dependency span unchanged.
 	if strings.HasPrefix(ref.File, "cmd/api/") && strings.HasPrefix(fn.AST.Name.Name, "mount") {
 		guards := s.mountGuards(fn)
 		if len(guards) > 0 {

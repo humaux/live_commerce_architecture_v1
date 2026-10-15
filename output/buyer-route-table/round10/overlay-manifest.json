@@ -1,0 +1,8 @@
+{
+  "source_sha": "0b9fa08cdc314119c823bc32e90329bff854a18d",
+  "payment_sha": "51273344fc12ff4c8062634fdf749d536958bda7",
+  "overlay_changes": [
+    "cmd/api/buyer_payment.go"
+  ],
+  "payment_file_sha256": "f460f3f4e97f9d9dfc090a3be5094e3c9d01f71545eebbcaf9321360a40a044f"
+}

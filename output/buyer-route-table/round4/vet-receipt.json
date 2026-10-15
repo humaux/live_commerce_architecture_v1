@@ -1,0 +1,20 @@
+{
+  "run_id": "buyer-route-table-r4-vet-8025b5010",
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "command": [
+    "go",
+    "vet",
+    "./internal/buyerhttp",
+    "./internal/attribution",
+    "./cmd/api",
+    "./scripts/dev/contractdrift"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "exit": 0,
+  "mode": "STATIC_SOURCE_ONLY; tests NOT_RUN",
+  "started_at": "2026-10-15T09:35:57.467865+00:00",
+  "finished_at": "2026-10-15T09:35:57.803707+00:00",
+  "elapsed_seconds": 0.336,
+  "timeout_seconds": 180,
+  "log": "output/buyer-route-table/round4/vet-report.txt"
+}

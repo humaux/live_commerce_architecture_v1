@@ -1,0 +1,19 @@
+{
+  "source_sha": "df8eefa074bcd8577e02363792ee973dde13a317",
+  "sha256": {
+    "output/buyer-route-table/round2/static-report.json": "dba6669b0506e547a08f2688444d1973b1809c5de9b29d9dcb473f09b8932698",
+    "output/buyer-route-table/round2/source-hashes.json": "f0e20d6df3983c9b10a48d78dd0be098d11bd0f4d724dc25b129e2cad34f9f6b",
+    "output/buyer-route-table/round2/errors.json": "dbc6c0631a889653c8c34e6a96c7ab72fd2cc8241b6434c9a3e5b78e4c84cfbc",
+    "output/buyer-route-table/round2/checks.json": "20f38a426fe7bfe8ad1bf2a165368a62617a313ea51cdc4b3d7bad3ba33b9af8",
+    "output/buyer-route-table/round2/cleanup.json": "42d7bb7c5b2f2861ab4104ea2f3cf5ae1acec28d3091522d38d06aea2e7b8179",
+    "output/buyer-route-table/round2/buyer-findings.json": "ec9ef6406313766e89250fabdb2806071f0d087ee768f32958943953db299fcc",
+    "output/buyer-route-table/round2/static-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/round2/static-summary.txt": "01b07ae31b320883ead825189523f5780e2e4529e9ac05efd5b57fcea070f112",
+    "output/buyer-route-table/round2/clone.log": "1e4da5499b3b31a955f7e5876b9f56599cf849c1b76568efacedd48adc57312a",
+    "output/buyer-route-table/round2/check-1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/round2/static-receipt.json": "35b45de32b92c8d9fdcb5371e6c92751eb9e041fbb167b4428a80e2ac3401c33",
+    "output/buyer-route-table/round2/check-2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/round2/check-3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/DELIVERY.md": "0fc40e23b4666d14ed3141afde5abb63aa4583d134f3f94e27fd966e997b0178"
+  }
+}

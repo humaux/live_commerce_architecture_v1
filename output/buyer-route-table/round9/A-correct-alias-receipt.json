@@ -1,0 +1,25 @@
+{
+  "run_id": "r9-A-correct-alias",
+  "source_sha": "fd550da998502884da5601926794ee2362178ba0",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round9/scratch/contractdrift-final",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round9/scratch/fixture",
+    "-base",
+    "trunk"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round9/scratch/fixture",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T11:07:10.218728+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 0.08,
+  "ended_at": "2026-10-15T11:07:10.299279+00:00",
+  "summary": [
+    "SUMMARY routes go=3 contract=3 bff=1; errors=0 warnings=0 GO_NOT_IN_BFF=2 GO_ROUTE_TABLE=1"
+  ],
+  "errors": 0,
+  "touched": 0,
+  "executable_sha256": "956e87db43a9f0a2413fe1d51421dc8d0cf59e7316dbc4627fd64e7200cfd684"
+}

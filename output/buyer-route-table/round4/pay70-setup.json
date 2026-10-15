@@ -1,0 +1,16 @@
+{
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "overlay_source_sha": "51273344fc12ff4c8062634fdf749d536958bda7",
+  "overlays": [
+    {
+      "path": "cmd/api/buyer_payment.go",
+      "source_sha": "51273344fc12ff4c8062634fdf749d536958bda7",
+      "sha256": "f460f3f4e97f9d9dfc090a3be5094e3c9d01f71545eebbcaf9321360a40a044f"
+    }
+  ],
+  "overlay_diff": [
+    "cmd/api/buyer_payment.go"
+  ],
+  "additional_files_required": [],
+  "scratch": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/pay70-scratch"
+}

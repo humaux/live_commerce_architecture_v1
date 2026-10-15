@@ -1,0 +1,17 @@
+{
+  "run_id": "buyer-route-table-r4-build-8025b5010",
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "command": [
+    "go",
+    "build",
+    "./..."
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "exit": 0,
+  "mode": "STATIC_SOURCE_ONLY; tests NOT_RUN",
+  "started_at": "2026-10-15T09:35:53.429774+00:00",
+  "finished_at": "2026-10-15T09:35:57.466836+00:00",
+  "elapsed_seconds": 4.037,
+  "timeout_seconds": 180,
+  "log": "output/buyer-route-table/round4/build-report.txt"
+}

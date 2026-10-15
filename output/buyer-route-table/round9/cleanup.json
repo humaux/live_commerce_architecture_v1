@@ -1,0 +1,12 @@
+{
+  "removed": [
+    "output/buyer-route-table/round9/scratch",
+    "output/buyer-route-table/round9/__pycache__"
+  ],
+  "bytes_removed": 493327147,
+  "files_removed": 12640,
+  "scratch_absent": true,
+  "servers_ports_containers_started": false,
+  "all_task_commands_terminated": true,
+  "date": "2026-10-15T11:08:53.841384+00:00"
+}

@@ -1,0 +1,8 @@
+{
+  "source_sha": "7b19d9237030f9bbf7e9c5066aa78e6d3ffa3e0e",
+  "const_result": "exit1 with per-row dispatcher freeze ERROR; runtime file restored",
+  "harness_stop": "extra no-TOUCHED assertion failed (4 collateral TOUCHED findings after withholding routes)",
+  "owner_contract": "no TOUCHED applies to two unmodified acceptance scenarios; intentional mutations must report freeze ERROR",
+  "source_fix_needed": false,
+  "remaining_actions": "regexp mutation, pay70 overlay; const not rerun"
+}

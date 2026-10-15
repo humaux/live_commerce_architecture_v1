@@ -1,0 +1,6 @@
+scripts/dev/contractdrift/go_extract_test.go:349:		if strings.HasPrefix(u.Path, "/v1/buyer") {
+scripts/dev/contractdrift/bff_review_r1b_cli_test.go:76:				s = strings.Replace(s, "return await fetch(`${config.api}/v1/buyer/${path}`", "return await removedFetch(`${config.api}/v1/buyer/${path}`", 1)
+scripts/dev/contractdrift/bff_review_r1b_cli_test.go:94:			if mutation == "DELETE" && !strings.Contains(out, "UNRESOLVED") && !strings.Contains(out, "DELETE /v1/buyer/") {
+scripts/dev/contractdrift/bff_test.go:82:	for _, r := range []struct{ m, p string }{{"GET", "/v1/admin/stores/{}/operations/{}"}, {"POST", "/v1/admin/stores/{}/operations/{}/retry"}, {"GET", "/v1/admin/stores/{}/reports/manual-orders.csv"}, {"POST", "/v1/identity/login/complete"}, {"POST", "/v1/buyer/session/bootstrap"}, {"GET", "/v1/buyer/catalog/v2/products/{}"}, {"GET", "/v1/buyer/storefront/primary-origin"}, {"POST", "/v1/admin/stores/{}/imports/orders/commit"}, {"POST", "/v1/admin/stores/{}/live-sessions/{}/comments/{}/print"}} {
+scripts/dev/contractdrift/bff_test.go:87:	if bffHas(inv, "POST", "/v1/buyer/session/prepare") {
+scripts/dev/contractdrift/bff_test.go:107:		if !bffHas(inv, r.m, "/v1/buyer/"+r.p) {

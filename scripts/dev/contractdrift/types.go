@@ -20,15 +20,17 @@ type route struct {
 }
 type finding struct {
 	Kind      string     `json:"kind"`
+	Fatal     bool       `json:"fatal,omitempty"`
 	Method    string     `json:"method,omitempty"`
 	Path      string     `json:"path,omitempty"`
 	Detail    string     `json:"detail,omitempty"`
 	Locations []location `json:"locations"`
 }
 type inventory struct {
-	Routes     []route
-	Unresolved []finding
-	Notes      []finding
+	Dispatchers []goDispatcherPin // Candidate fingerprints for explicit review; never automatically persisted.
+	Routes      []route
+	Unresolved  []finding
+	Notes       []finding
 	// BFF origin is the actual scanned forwarding root, never guessed from dependency locations.
 	Producers map[string][]route
 }

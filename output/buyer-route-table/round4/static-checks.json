@@ -1,0 +1,92 @@
+{
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "tool_source": "/Volumes/data/live_commerce_architecture_v1/output/integrator/tools/prepush.sh",
+  "tool_sha256": "a00f1a67041228cd9fe1ce734030c5a8d75fb795d10ca7a7e06581672d8944f5",
+  "mode": "STATIC; no tests",
+  "checks": [
+    {
+      "run_id": "buyer-route-table-r4-prepush",
+      "command": [
+        "bash",
+        "output/integrator/tools/prepush.sh",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+        "e4dad98cc"
+      ],
+      "exit": 0,
+      "started_at": "2026-10-15T09:36:38.244772+00:00",
+      "finished_at": "2026-10-15T09:36:39.151579+00:00",
+      "timeout_seconds": 120,
+      "log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/prepush.log",
+      "output": "check-headers: OK (base e4dad98cc)\nprepush: OK\n"
+    },
+    {
+      "run_id": "buyer-route-table-r4-gofmt",
+      "command": [
+        "gofmt",
+        "-l",
+        "cmd/api/buyer.go",
+        "cmd/api/buyer_feed_test.go",
+        "internal/attribution/feed.go",
+        "internal/buyerhttp/catalogv2.go",
+        "internal/buyerhttp/cvs.go",
+        "internal/buyerhttp/handler.go",
+        "internal/buyerhttp/routes.go",
+        "internal/buyerhttp/routes_legacy_test.go",
+        "internal/buyerhttp/routes_test.go",
+        "internal/buyerhttp/transfer.go",
+        "scripts/dev/contractdrift/go_extract.go",
+        "scripts/dev/contractdrift/go_handler_factory.go",
+        "scripts/dev/contractdrift/go_handler_factory_cli_test.go",
+        "scripts/dev/contractdrift/go_opaque.go",
+        "scripts/dev/contractdrift/go_route_table_cli_test.go",
+        "scripts/dev/contractdrift/go_route_table_exact_cli_test.go",
+        "scripts/dev/contractdrift/go_route_tables.go"
+      ],
+      "exit": 0,
+      "started_at": "2026-10-15T09:36:39.151633+00:00",
+      "finished_at": "2026-10-15T09:36:39.166406+00:00",
+      "timeout_seconds": 120,
+      "log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/gofmt.log",
+      "output": ""
+    },
+    {
+      "run_id": "buyer-route-table-r4-diff-check",
+      "command": [
+        "git",
+        "diff",
+        "e4dad98cc",
+        "--check"
+      ],
+      "exit": 2,
+      "started_at": "2026-10-15T09:36:39.166461+00:00",
+      "finished_at": "2026-10-15T09:36:39.201967+00:00",
+      "timeout_seconds": 120,
+      "log": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/diff-check.log",
+      "output_summary": {
+        "diagnostic_lines": 1040,
+        "files": [
+          "output/buyer-route-table/round3/branch-report.txt",
+          "output/buyer-route-table/round3/pay70-report.txt"
+        ],
+        "note": "Raw historical CLI stdout has trailing spaces; no source whitespace issue. Log retained; not modified to conceal findings."
+      }
+    },
+    {
+      "run_id": "buyer-route-table-r4-source-diff-check",
+      "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+      "command": [
+        "git",
+        "diff",
+        "b5aabc8a4",
+        "--check",
+        "--",
+        "cmd",
+        "internal",
+        "scripts",
+        "contracts"
+      ],
+      "exit": 0,
+      "output": ""
+    }
+  ]
+}

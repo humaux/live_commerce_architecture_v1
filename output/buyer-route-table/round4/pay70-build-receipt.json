@@ -1,0 +1,19 @@
+{
+  "run_id": "buyer-route-table-r4-pay70-build-8025b5010",
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "command": [
+    "go",
+    "build",
+    "-o",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/pay70-api",
+    "./cmd/api"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/pay70-scratch",
+  "exit": 0,
+  "mode": "STATIC_SOURCE_ONLY; tests NOT_RUN",
+  "started_at": "2026-10-15T09:36:03.392367+00:00",
+  "finished_at": "2026-10-15T09:36:07.341437+00:00",
+  "elapsed_seconds": 3.949,
+  "timeout_seconds": 180,
+  "log": "output/buyer-route-table/round4/pay70-build-report.txt"
+}

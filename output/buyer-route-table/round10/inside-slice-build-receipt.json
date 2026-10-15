@@ -1,0 +1,21 @@
+{
+  "run_id": "r10-inside-slice-build",
+  "source_sha": "0b9fa08cdc314119c823bc32e90329bff854a18d",
+  "command": [
+    "go",
+    "build",
+    "./internal/buyerhttp",
+    "./internal/attribution"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round10/scratch/repo",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T11:31:33.632220+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 0.111,
+  "ended_at": "2026-10-15T11:31:33.744267+00:00",
+  "summary": [],
+  "errors": 0,
+  "touched": 0
+}

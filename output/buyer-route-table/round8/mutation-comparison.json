@@ -1,0 +1,32 @@
+{
+  "environment": "STATIC built CLI, no HTTP runtime",
+  "source_sha": "7b19d9237030f9bbf7e9c5066aa78e6d3ffa3e0e",
+  "results": [
+    {
+      "mutation": "const",
+      "identical_mutated_file_sha256": "ef55771ea3d4715209c3888aa8b4db4a8e0c5891068a6a413e76bd686c63e792",
+      "old_cli_exit": 0,
+      "old_errors": 0,
+      "new_cli_exit": 1,
+      "new_errors": 133,
+      "new_freeze_errors": 46,
+      "new_touched": 4,
+      "old_binary": "411be251521c3203f7bb9c80073e5bbf5915579d76c6cebc7df0732bebba8fc1",
+      "new_binary": "bed4990cbfd973bee083be69e36cb80890cfb80d457b1c79faf7f1658bf5fb43",
+      "freeze_candidate_sha256": "79e7097f7864a8a9fe56167c20325e08c94852a9d92205664ae03a1f7b797163"
+    },
+    {
+      "mutation": "regexp",
+      "identical_mutated_file_sha256": "1598d0a2d611b6563087d97d07e56db6434cd256df53409c16b4ad774e4b1145",
+      "old_cli_exit": 0,
+      "old_errors": 0,
+      "new_cli_exit": 1,
+      "new_errors": 133,
+      "new_freeze_errors": 46,
+      "new_touched": 4,
+      "old_binary": "411be251521c3203f7bb9c80073e5bbf5915579d76c6cebc7df0732bebba8fc1",
+      "new_binary": "bed4990cbfd973bee083be69e36cb80890cfb80d457b1c79faf7f1658bf5fb43",
+      "freeze_candidate_sha256": "53a269b3cf84cb511f682299c44976fdf6210bddff577165e4344af6fa30b56c"
+    }
+  ]
+}

@@ -1,13 +1,24 @@
+// Purpose: gate exact feed mounting and BFF-key authentication through assembly.
+// Depends on: attribution.FeedRoutes, net/http/httptest and mountFeed.
+// Used by: cmd/api CI; no database or production services.
+// Invariant: the tested feed path must belong to the runtime route table.
+
 package main
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"livecommerce/internal/attribution"
 )
 
 // mountFeed: only the exact feed path, only with exactly one correct BFF key; everything else reaches next.
 func TestMountFeed(t *testing.T) {
+	const feedPath = "/v1/buyer/feeds/meta.csv"
+	if !attribution.FeedRoutes.MatchesPath(feedPath) {
+		t.Fatal("test feed path differs from runtime route table")
+	}
 	const key = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFG" // 43-char neutral fixture, not a secret
 	var next, feed int
 	h := mountFeed(
@@ -22,11 +33,11 @@ func TestMountFeed(t *testing.T) {
 		h.ServeHTTP(rec, req)
 		return rec.Code
 	}
-	if c := do("/v1/buyer/feeds/meta.csv", key); c != 200 || feed != 1 {
+	if c := do(feedPath, key); c != 200 || feed != 1 {
 		t.Fatalf("right key = %d feed=%d", c, feed)
 	}
 	for name, keys := range map[string][]string{"none": nil, "wrong": {key[1:] + "x"}, "two": {key, key}} {
-		if c := do("/v1/buyer/feeds/meta.csv", keys...); c != 401 || feed != 1 {
+		if c := do(feedPath, keys...); c != 401 || feed != 1 {
 			t.Errorf("%s = %d feed=%d", name, c, feed)
 		}
 	}

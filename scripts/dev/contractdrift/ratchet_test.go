@@ -40,17 +40,8 @@ func TestInitialSeedCannotGrandfatherNewDeletion(t *testing.T) {
 	root := fixture(t, "aligned")
 	p := filepath.Join(root, "internal/httpapi/routes.go")
 	s := readText(t, p)
-	s = strings.Replace(s, `mux.HandleFunc(http.MethodGet+" "+(alias),handler)`, "", 1)
-	s = strings.Replace(s, `mux.HandleFunc(http.MethodGet+" "+(alias), handler)`, "", 1)
-	s = strings.Replace(s, `mux.HandleFunc(http.MethodGet+" "+(alias),handler)`, "", 1)
-	// gofmt inserts spaces around +: mutate the exact complete registration line instead of rewriting a helper.
-	lines := strings.Split(s, "\n")
-	for i, line := range lines {
-		if strings.Contains(line, "mux.HandleFunc") {
-			lines[i] = ""
-		}
-	}
-	mustWrite(t, p, strings.Join(lines, "\n"))
+	s = mustReplace(t, s, `mux.HandleFunc(http.MethodGet+" "+(alias), handler)`, "")
+	mustWrite(t, p, s)
 	code, out := cli(root, "-write-baseline")
 	if code != 1 || !strings.Contains(out, "NEW") {
 		t.Fatalf("new deletion seeded: %d %s", code, out)
@@ -96,7 +87,7 @@ func TestBaseDirectiveAndShiftedDeletionProvenance(t *testing.T) {
 	git(t, root, "commit", "-qm", "baseline")
 	git(t, root, "tag", "-f", "trunk")
 	original := readText(t, p)
-	mustWrite(t, p, strings.Replace(original, "{store_id}", "{store}", 1))
+	mustWrite(t, p, mustReplace(t, original, "{store_id}", "{store}"))
 	code, out = cli(root)
 	if code != 1 || !strings.Contains(out, "TOUCHED") {
 		t.Fatalf("changed normalized base ignored: %d %s", code, out)
@@ -111,7 +102,7 @@ func TestBaseDirectiveAndShiftedDeletionProvenance(t *testing.T) {
 		t.Fatalf("line shifts are not source edits: %d %s", code, out)
 	}
 	moved := readText(t, p)
-	mustWrite(t, p, strings.Replace(moved, "`POST .../ghost`\n", "", 1))
+	mustWrite(t, p, mustReplace(t, moved, "`POST .../ghost`\n", ""))
 	code, out = cli(root)
 	if code != 1 || !strings.Contains(out, "TOUCHED") {
 		t.Fatalf("deleted duplicate after line shift missed: %d %s", code, out)
@@ -193,7 +184,7 @@ func TestSnapshotKeepsModuleScope(t *testing.T) {
 	mustWrite(t, filepath.Join(root, "cmd/api/main.go"), "package main\nimport _ \"example/internal/httpapi\"\nfunc main(){}\n")
 	p := filepath.Join(root, "internal/httpapi/routes.go")
 	original := readText(t, p)
-	mustWrite(t, p, strings.Replace(original, "base := rootPrefix", "base := rootPrefix\n mux.HandleFunc(\"GET /v1/a\",handler)", 1))
+	mustWrite(t, p, mustReplace(t, original, "base := rootPrefix", "base := rootPrefix\n mux.HandleFunc(\"GET /v1/a\",handler)"))
 	if err := os.MkdirAll(filepath.Join(root, "internal/workerbridge"), 0700); err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +201,7 @@ func TestSnapshotKeepsModuleScope(t *testing.T) {
 	git(t, root, "add", ".")
 	git(t, root, "commit", "-qm", "baseline")
 	git(t, root, "tag", "-f", "trunk")
-	mustWrite(t, worker, strings.Replace(w, "})}", "})} // worker only", 1))
+	mustWrite(t, worker, mustReplace(t, w, "})}", "})} // worker only"))
 	code, out = cli(root)
 	if code != 0 {
 		t.Fatalf("unreferenced worker touched API legacy: %d %s", code, out)
@@ -228,10 +219,11 @@ func TestMultilineUnresolvedJSONValueIsTouched(t *testing.T) {
 		if code != 0 {
 			t.Fatalf("legacy unresolved %d %s", code, out)
 		}
-		changed := strings.Replace(body, "#/components/X", "#/components/Y", 1)
-		if changed == body {
-			changed = strings.Replace(body, "null", "42", 1)
+		old, replacement := "#/components/X", "#/components/Y"
+		if !strings.Contains(body, old) {
+			old, replacement = "null", "42"
 		}
+		changed := mustReplace(t, body, old, replacement)
 		mustWrite(t, p, changed)
 		code, out = cli(root)
 		if code != 1 || !strings.Contains(out, "TOUCHED") || !strings.Contains(out, "UNRESOLVED") {

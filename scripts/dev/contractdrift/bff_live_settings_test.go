@@ -144,7 +144,7 @@ func TestBFFLiveSettingsMutations(t *testing.T) {
 			if !strings.Contains(string(data), tc.old) {
 				t.Fatal("mutation target missing")
 			}
-			bffWrite(t, root, tc.file, strings.Replace(string(data), tc.old, tc.new, 1))
+			bffWrite(t, root, tc.file, mustReplace(t, string(data), tc.old, tc.new))
 			inv, err := scanBFF(root)
 			if err != nil {
 				t.Fatal(err)

@@ -1,0 +1,7 @@
+{
+  "source_sha": "4eb31d7de3f948e452f96078075cb6384f410d67",
+  "overlay_commit": "51273344fc12ff4c8062634fdf749d536958bda7",
+  "overlay_file": "cmd/api/buyer_payment.go",
+  "status": "NOT_RUN",
+  "reason": "STOP on real-repository UNRESOLVED; owner Round6 final-targeted-fix rule. No overlay checkout created."
+}

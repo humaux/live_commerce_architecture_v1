@@ -1,0 +1,20 @@
+{
+  "removed": "output/buyer-route-table/round8/scratch",
+  "bytes": 482859965,
+  "children": [
+    "output/buyer-route-table/round8/scratch/red-cli",
+    "output/buyer-route-table/round8/scratch/pay70-api",
+    "output/buyer-route-table/round8/scratch/fixture-exact",
+    "output/buyer-route-table/round8/scratch/pintool-bin",
+    "output/buyer-route-table/round8/scratch/contractdrift",
+    "output/buyer-route-table/round8/scratch/fixture-prefix",
+    "output/buyer-route-table/round8/scratch/pintool",
+    "output/buyer-route-table/round8/scratch/repo"
+  ],
+  "scratch_clone_deleted": true,
+  "scratch_binaries_deleted": true,
+  "own_processes_running": [],
+  "task_servers_ports_containers_created": false,
+  "unique_evidence_preserved": true,
+  "ended_at": "2026-10-15T10:45:44.915883+00:00"
+}

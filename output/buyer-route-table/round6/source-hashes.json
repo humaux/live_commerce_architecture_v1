@@ -1,0 +1,10 @@
+{
+  "source_sha": "4eb31d7de3f948e452f96078075cb6384f410d67",
+  "files": {
+    "scripts/dev/contractdrift/go_handler_factory_cli_test.go": "fc0016f611ae2fd439feb34d540c9b60e5f02c297a3471c180df2937e1ae46c5",
+    "scripts/dev/contractdrift/go_refusal_leaf.go": "74c741ccf8eb94dac68ff869fc30b749b02e12e61bb86b7f9ad5eb339e94949d",
+    "scripts/dev/contractdrift/go_route_table_cli_test.go": "da2778914dbc834259d2f1c32ff585c599288c6273bfd32c415f6678fb743847",
+    "scripts/dev/contractdrift/go_route_tables.go": "3c5523c94fe49ab75dd0d37133f4ff0397bdb53fa7421706a918bf94fe5898d6",
+    "scripts/dev/contractdrift/go_table_path_policy.go": "ec429a59d0c27d41ba510c4ddaa159aa4bc7b64dd002d43f1f5138ca6926c53f"
+  }
+}

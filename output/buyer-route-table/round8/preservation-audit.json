@@ -1,0 +1,29 @@
+{
+  "source_sha": "7b19d9237030f9bbf7e9c5066aa78e6d3ffa3e0e",
+  "start_sha": "2d8f4604efebb6ef5a593df166e845197bf69b5f",
+  "runtime_diff": "",
+  "scripts/dev/contractdrift/go_refusal_leaf.go": {
+    "unchanged": true,
+    "sha256": "74c741ccf8eb94dac68ff869fc30b749b02e12e61bb86b7f9ad5eb339e94949d"
+  },
+  "scripts/dev/contractdrift/go_extract_test.go": {
+    "unchanged": true,
+    "sha256": "d8801c0487b61c64a69ebb78675ba402a8e968c220f7217c3b3f5764076ca48f"
+  },
+  "scripts/dev/contractdrift/go_route_table_cli_test.go": {
+    "unchanged": true,
+    "sha256": "bd2ae3ba98e767745c63d9af568f36534ba65561bc63bb19554c17e711993cec"
+  },
+  "scripts/dev/contractdrift/go_handler_factory_cli_test.go": {
+    "unchanged": true,
+    "sha256": "e7fb3150a112545b73821d2f8b7f5fc7483b9d4e1538ab89710d2a9cc113f65c"
+  },
+  "cmd/api/buyer.go": {
+    "unchanged": true,
+    "sha256": "a58aeb386cea8ff3c35d5c2ed048d8d8f0ce9a2699c77dee74a50c652ba598e0"
+  },
+  "internal/buyerhttp/handler.go": {
+    "unchanged": true,
+    "sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+  }
+}
