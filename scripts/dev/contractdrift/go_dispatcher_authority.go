@@ -254,6 +254,20 @@ func goDispatcherReadOnlyReference(pkg *goPackage, file, declared *goFile, own a
 		init, ok := v.Values[0].(*ast.CallExpr)
 		return ok && goDispatcherStdlibSelector(declared, init.Fun, "regexp", "MustCompile")
 	case *ast.CallExpr:
+		// Calling a frozen function value runs a target that is itself in the hashed
+		// closure; the value is consumed, not retained. Only static initialisers qualify
+		// (func name, func literal, method value) — a func returned by a call stays rejected.
+		if p.Fun == value {
+			v, ok := own.(*ast.ValueSpec)
+			if !ok || len(v.Values) != 1 {
+				return false
+			}
+			switch v.Values[0].(type) {
+			case *ast.Ident, *ast.FuncLit, *ast.SelectorExpr:
+				return true
+			}
+			return false
+		}
 		if fun, ok := p.Fun.(*ast.Ident); ok && fun.Obj == nil && (fun.Name == "len" || fun.Name == "cap") {
 			for _, source := range pkg.Files {
 				if source.AST.Scope.Lookup(fun.Name) != nil {

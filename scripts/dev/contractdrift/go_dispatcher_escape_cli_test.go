@@ -29,6 +29,8 @@ func TestGoDispatcherFrozenValueEscapeCLI(t *testing.T) {
 		{"inside channel", "ch := make(chan *regexp.Regexp,1); ch <- gate;", "", true},
 		{"inside unknown call", "clobber(columns);", `func clobber(p []string){p[0]="sku"}`, true},
 		{"nonfrozen initializer", "", "var alias = gate", false},
+		// Calling a frozen func value is allowed only for static initialisers; a func built by a call is not.
+		{"inside dynamic func value", `probe("x");`, "func makeProbe() func(string) bool { return func(string) bool { return true } }\nvar probe = makeProbe()", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
