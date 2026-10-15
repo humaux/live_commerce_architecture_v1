@@ -592,17 +592,50 @@ async function readControlScale(page) {
       while (container && !container.contains(nodes[j])) container = container.parentElement;
       if (!container) continue;
       const style = getComputedStyle(container);
-      // The nearest shared container must lay out a row, not an unrelated page column.
-      if ((style.display.includes("flex") && style.flexDirection.startsWith("row")) || style.display.includes("grid") || style.display === "table-row") pairs.push([i, j]);
+      // A sticky/fixed branch (including a control's ancestors) is not part of this row.
+      const branch = node => {
+        let child = node;
+        for (let n = node; n && n !== container; n = n.parentElement) {
+          if (["absolute", "fixed", "sticky"].includes(getComputedStyle(n).position)) return null;
+          child = n;
+        }
+        return child;
+      };
+      const a = branch(nodes[i]);
+      const b = branch(nodes[j]);
+      if (!a || !b || a === b) continue;
+      if (style.display.includes("grid")) {
+        // Computed grid tracks are used pixel sizes, including implicitly placed rows.
+        // Both direct grid items must fit one and the same track; spanning items are not a row.
+        const tracks = style.gridTemplateRows.replace(/\[[^\]]*\]/g, "").trim().split(/\s+/);
+        if (!tracks.every(track => /^\d+(?:\.\d+)?px$/.test(track))) continue;
+        const box = container.getBoundingClientRect();
+        let top = box.top + parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop);
+        const gap = parseFloat(style.rowGap) || 0;
+        const ab = a.getBoundingClientRect();
+        const bb = b.getBoundingClientRect();
+        for (const track of tracks) {
+          const bottom = top + parseFloat(track);
+          if ([ab, bb].every(rect => rect.top >= top - 0.5 && rect.bottom <= bottom + 0.5)) {
+            pairs.push([i, j]);
+            break;
+          }
+          top = bottom + gap;
+        }
+      } else if ((style.display.includes("flex") && style.flexDirection.startsWith("row")) || style.display === "table-row") pairs.push([i, j]);
     }
     return pairs;
   }); // [READ] container relationships; no DOM or scroll writes
   const measured = geometry.map((box, i) => ({ name: names[i], ...box }));
+  return { measured, rows, violations: controlScaleViolations(measured, rows) };
+}
+
+function controlScaleViolations(measured, rows) {
   const violations = [];
   if (!measured.length) violations.push("no rendered controls measured");
   for (const control of measured) if (![28, 36, 44].some(height => Math.abs(control.height - height) <= 0.5)) violations.push(`${control.name}: height=${control.height}px`);
   for (const [i, j] of rows) if (Math.abs(measured[i].centre - measured[j].centre) <= 0.5 && Math.abs(measured[i].height - measured[j].height) > 0.5) violations.push(`same row: ${measured[i].name} height=${measured[i].height}px; ${measured[j].name} height=${measured[j].height}px`);
-  return { measured, violations };
+  return violations;
 }
 
 async function sidebarViewportGate({ page, step, locale, template }) {
@@ -657,6 +690,20 @@ async function ds2Matrix({ page, step }) {
     const scale = await readControlScale(page);
     await step(`DS-2 ${locale}/${width} ${name} control scale`, "[READ] rendered heights and row centres", "every control 28/36/44 ±0.5px; same-row heights match", async () => {
       assert.equal(scale.violations.length, 0, scale.violations.join("; "));
+      if (name.startsWith("list")) {
+        const filters = page.getByRole("group", { name: templateCopy[locale].filters, exact: true });
+        const select = await filters.getByRole("combobox").boundingBox();
+        const search = await filters.getByRole("searchbox").boundingBox();
+        assert.ok(Math.abs(select.height - search.height) <= 0.5, "filter combobox and searchbox heights match");
+        if (width === 1440) {
+          const i = scale.measured.findIndex(control => control.name.startsWith("combobox") && control.name.includes(templateCopy[locale].payment));
+          const j = scale.measured.findIndex(control => control.name.startsWith("searchbox"));
+          assert.ok(i >= 0 && j >= 0 && scale.rows.some(pair => pair.includes(i) && pair.includes(j)), "real filter row remains covered");
+          // [FIXTURE] Mutate the measurement only, never the DOM: 44px is on-scale but wrong beside 36px.
+          const mismatched = scale.measured.map((control, index) => index === j ? { ...control, height: 44 } : control);
+          assert.ok(controlScaleViolations(mismatched, scale.rows).some(violation => violation.startsWith("same row:") && violation.includes("searchbox")), "same-row mismatch still rejected");
+        }
+      }
       return `${scale.measured.length} controls measured; no scale or row violations`;
     });
     const path = `${output}/shots/ds2-${locale}-${width}x${height}-${name}.png`;
