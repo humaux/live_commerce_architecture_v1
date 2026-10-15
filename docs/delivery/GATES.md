@@ -431,7 +431,10 @@ Machine diffs force raw text, disable text conversion and external drivers, and 
 The default base is `origin/r3/integration` (`CONTRACT_DRIFT_BASE` or `-base` overrides it). PR matrix and foundation checkouts already fetch full history (`fetch-depth: 0`), so the base is available; an unavailable ref is fatal. Current source positions come from the merge base's actual source snapshot plus the committed/staged/working diff. An untouched baseline mismatch warns; new drift, a touched legacy source, stale entries and baseline growth fail. `-write-baseline` initially seeds only merge-base legacy, then can only shrink the reviewed baseline. It cannot grandfather changes by deleting the file first.
 
 Marked Go route tables additionally require the reviewed dispatcher freeze in
-`contracts/route-table-dispatchers.json`. Changed/missing dispatcher pins are
+`contracts/route-table-dispatchers.json`. The freeze includes transitively referenced
+same-package functions, const blocks, var/type specs; only row data and row-only
+targets are excluded. Cross-package helpers (e.g. `command.ValidID`) are **NOT frozen**
+and are covered by normal review and other gates. Changed/missing dispatcher pins are
 fatal UNRESOLVED for every table row, independent of TOUCHED or legacy baseline;
 a pin for a table that cannot be proved is also an error. Pin hash/function-list
 changes require explicit independent reviewer approval, not automatic regeneration.
