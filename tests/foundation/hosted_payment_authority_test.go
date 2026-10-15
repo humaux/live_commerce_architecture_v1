@@ -36,7 +36,7 @@ func hpSQLState(err error, want string) bool {
 }
 
 func TestBuyerPaymentHostedSQLAuthorityAndScope(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	result, err := h.begin(t04Key("hp-acl"))
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +135,7 @@ func TestBuyerPaymentHostedSQLAuthorityAndScope(t *testing.T) {
 }
 
 func TestBuyerPaymentHostedForgedOuterFormRejected(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	result, err := h.begin(t04Key("hp-form-shape"))
 	if err != nil {
 		t.Fatal(err)
@@ -176,7 +176,7 @@ func TestBuyerPaymentHostedForgedOuterFormRejected(t *testing.T) {
 }
 
 func TestBuyerPaymentHostedStorageFailureRollsBack(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	before := h.counts(t)
 	name := "hp_reject_" + t04Tag()
 	fn := pgx.Identifier{name}.Sanitize()
@@ -217,7 +217,7 @@ func TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			h := hpSetup(t)
+			h := hpSQLSetup(t)
 			result, err := h.begin(t04Key("hp-drift"))
 			if err != nil {
 				t.Fatal(err)
@@ -257,7 +257,7 @@ func hpSeedReviewFact(t *testing.T, h hpHarness, result checkoutResult, review b
 }
 
 func TestBuyerPaymentHostedReplayAfterDisableAndRevokedCapability(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	result, err := h.begin(t04Key("hp-replay-disable"))
 	if err != nil {
 		t.Fatal(err)
@@ -283,7 +283,7 @@ func TestBuyerPaymentHostedReplayAfterDisableAndRevokedCapability(t *testing.T) 
 }
 
 func TestBuyerPaymentHostedQualificationExpiresDuringTakeWait(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	result, err := h.begin(t04Key("hp-wait"))
 	if err != nil {
 		t.Fatal(err)
@@ -316,7 +316,7 @@ func TestBuyerPaymentHostedQualificationExpiresDuringTakeWait(t *testing.T) {
 }
 
 func TestBuyerPaymentHostedWriterCannotMutateFormOrClearHandoff(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	result, err := h.begin(t04Key("hp-immutable"))
 	if err != nil {
 		t.Fatal(err)
@@ -418,7 +418,7 @@ func hpAwaitOrderLock(t *testing.T, h hpHarness, blockerPID uint32) {
 
 func TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites(t *testing.T) {
 	t.Run("prepare-insert", func(t *testing.T) {
-		h := hpSetup(t)
+		h := hpSQLSetup(t)
 		before := h.counts(t)
 		sequence := hpDelayPageWrite(t, h, "INSERT")
 		qualExec(t, h.f.owner, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '2 seconds' WHERE id=$1`, h.proof)
@@ -431,7 +431,7 @@ func TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites(t *testing.T) {
 		}
 	})
 	t.Run("handoff-update", func(t *testing.T) {
-		h := hpSetup(t)
+		h := hpSQLSetup(t)
 		result, err := h.begin(t04Key("hp-expire-take"))
 		if err != nil {
 			t.Fatal(err)
@@ -450,7 +450,7 @@ func TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites(t *testing.T) {
 }
 
 func TestBuyerPaymentHostedCapabilityRevokedDuringTakeWait(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	result, err := h.begin(t04Key("hp-cap-wait"))
 	if err != nil {
 		t.Fatal(err)
@@ -481,7 +481,7 @@ func TestBuyerPaymentHostedCapabilityRevokedDuringTakeWait(t *testing.T) {
 }
 
 func TestBuyerPaymentHostedLocalDeadlineFence(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	result, err := h.begin(t04Key("hp-deadline"))
 	if err != nil {
 		t.Fatal(err)

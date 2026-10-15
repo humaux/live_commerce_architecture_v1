@@ -34,7 +34,7 @@ func TestBuyerPaymentPoolAssemblyRealPG(t *testing.T) {
 	}
 	defer observer.Close()
 
-	for _, stage := range []string{"success", "wrong-hosted-role", "invalid-profile", "invalid-key", "handler"} {
+	for _, stage := range []string{"success", "wrong-hosted-role", "invalid-profile", "invalid-hosted-dsn", "handler"} {
 		t.Run(stage, func(t *testing.T) {
 			values := buyerPaymentTestEnv() // synthetic keys only; no provider request
 			values["COMMERCE_BUYER_ISSUER_DATABASE_URL"] = os.Getenv("LC_BUYER_TEST_ISSUER_DSN")
@@ -54,8 +54,8 @@ func TestBuyerPaymentPoolAssemblyRealPG(t *testing.T) {
 				config.payment.hostedDSN = config.checkoutDSN
 			case "invalid-profile":
 				config.payment.profile = "INVALID"
-			case "invalid-key":
-				config.payment.keys = nil
+			case "invalid-hosted-dsn":
+				config.payment.hostedDSN = ""
 			case "handler":
 				config.ttl = 0
 			}

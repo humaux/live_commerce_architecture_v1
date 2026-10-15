@@ -1,18 +1,8 @@
 package foundation_test
 
-// SP14 (contracts/stripe-psp-v1.md §9.2, §14): the private Go buyer routes over
-// HTTP against real PG. Prepare/handoff/refresh/cancel/view with the frozen keys
-// and enums, and PAYUNi responses byte-identical to the golden files that were
-// captured on base b563bb5 BEFORE the start-http unit merged (see
-// output/stripe-b1-tests-b/golden-capture.md). Never regenerate a golden to make
-// this pass: a diff means the PAYUNi wire changed.
-//
-// BFF Node tests (apps/storefront/lib/payment-contract.ts validators) are
-// NOT_RUN until the buyer-payment-ui amendment; nothing here claims them.
-//
-// No worker runs (shared fixture DB), so the session pin is an owner fixture
-// (sstPin) and the cutoff an aged column (sstAge); both are disclosed.
-// Used with: existing TestBuyerPayment* (PAYUNi behavior), which must stay green.
+// SP14 exercises the real buyer HTTP contract against PG. Stripe wire assertions
+// remain exact; PAYUNi is refused and historical reads remain byte-identical.
+// Session pins/cutoff timestamps are disclosed owner fixtures; no worker runs here.
 
 import (
 	"bytes"
@@ -21,7 +11,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"regexp"
 	"sort"
@@ -33,9 +22,6 @@ import (
 )
 
 var (
-	sbhUUID = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
-	sbhTime = regexp.MustCompile(`"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z"`)
-	sbhHex  = regexp.MustCompile(`[0-9A-Fa-f]{32,}`)
 	// The public validator pattern of contract §9.2 is ^https://checkout\.stripe\.com/[!-~]{1,4000}$.
 	// Go's RE2 refuses repeat counts above 1000, so the bound is a separate length check
 	// (sbhRedirectOK); the character class and host are identical.
@@ -45,26 +31,6 @@ var (
 func sbhRedirectOK(u string) bool {
 	const prefix = "https://checkout.stripe.com/"
 	return sbhRedirect.MatchString(u) && len(u)-len(prefix) >= 1 && len(u)-len(prefix) <= 4000
-}
-
-// sbhNormalize masks exactly what varies per run (order UUID, quoted timestamps,
-// ciphertext/hash hex) and nothing else; it must match the normalizer that
-// produced the goldens.
-func sbhNormalize(b []byte) []byte {
-	b = sbhUUID.ReplaceAll(b, []byte("00000000-0000-4000-8000-000000000000"))
-	b = sbhTime.ReplaceAll(b, []byte(`"2000-01-01T00:00:00Z"`))
-	return sbhHex.ReplaceAll(b, []byte("HEX"))
-}
-
-func sbhGolden(t *testing.T, name string, r bhResponse) {
-	t.Helper()
-	want, err := os.ReadFile("../payments/stripe-sp14-payuni-" + name + ".golden.json")
-	if err != nil {
-		t.Fatalf("golden %s: %v", name, err)
-	}
-	if got := sbhNormalize(r.body); !bytes.Equal(got, want) || r.status != 200 {
-		t.Fatalf("PAYUNi %s changed on the wire (status %d):\n got  %s\n want %s", name, r.status, got, want)
-	}
 }
 
 func sbhServe(t *testing.T, h hpHarness, starter *checkout.HostedPaymentStarter, publish bool) bhHarness {
@@ -82,17 +48,45 @@ func sbhServe(t *testing.T, h hpHarness, starter *checkout.HostedPaymentStarter,
 	return b
 }
 
-// sbhPayuniFlow replays the capture sequence byte for byte.
+// sbhPayuniFlow asserts removal with Stripe enabled and disabled, without rewriting old goldens.
 func sbhPayuniFlow(t *testing.T, h hpHarness, srv bhHarness) {
 	t.Helper()
 	path := "/v1/buyer/orders/" + h.hold.OrderID + "/payment"
-	sbhGolden(t, "view-not-started", srv.request(t, "GET", path, h.cap.Token, "", nil, nil))
+	before, other := bpCounts(t, h)
+	initial := srv.request(t, "GET", path, h.cap.Token, "", nil, nil)
+	fields := bphRaw(t, initial, 200, bpViewKeys)
+	bpState(t, fields, "payment_state", "NOT_STARTED")
+	if string(fields["methods"]) != "[]" {
+		t.Fatal("retired method offered")
+	}
 	in := map[string]any{"method_code": "payuni_credit", "method_version": 1, "locale": "zh-TW"}
-	sbhGolden(t, "prepare", srv.request(t, "POST", path+"/prepare", h.cap.Token, t04Key("sbh-prepare"), in, nil))
-	sbhGolden(t, "view-pending", srv.request(t, "GET", path, h.cap.Token, "", nil, nil))
-	sbhGolden(t, "handoff-issued", srv.request(t, "POST", path+"/handoff", h.cap.Token, "", nil, nil))
-	sbhGolden(t, "handoff-already-issued", srv.request(t, "POST", path+"/handoff", h.cap.Token, "", nil, nil))
-	sbhGolden(t, "view-issued", srv.request(t, "GET", path, h.cap.Token, "", nil, nil))
+	for range 2 {
+		bhError(t, srv.request(t, "POST", path+"/prepare", h.cap.Token, t04Key("sbh-prepare"), in, nil), 422, "invalid_request")
+		bphFail(t, srv.request(t, "POST", path+"/handoff", h.cap.Token, "", nil, nil), 409, "conflict")
+	}
+	after, afterOther := bpCounts(t, h)
+	if before != after || other != afterOther {
+		t.Fatal("retired request created payment facts")
+	}
+	if got := srv.request(t, "GET", path, h.cap.Token, "", nil, nil); got.status != initial.status || !bytes.Equal(got.body, initial.body) {
+		t.Fatal("refusal changed buyer projection")
+	}
+	history := rm2HistoricalAttempt(t, h.psHarness)
+	snapshot := rm2Snapshot(t, h.psHarness, history.AttemptID)
+	first := srv.request(t, "GET", path, h.cap.Token, "", nil, nil)
+	raw := bphRaw(t, first, 200, bpViewKeys)
+	bpState(t, raw, "payment_state", "PENDING")
+	if string(raw["methods"]) != "[]" {
+		t.Fatal("historical attempt offered a method")
+	}
+	for range 2 {
+		bhError(t, srv.request(t, "POST", path+"/prepare", h.cap.Token, t04Key("sbh-history"), in, nil), 422, "invalid_request")
+		bphFail(t, srv.request(t, "POST", path+"/handoff", h.cap.Token, "", nil, nil), 409, "conflict")
+		got := srv.request(t, "GET", path, h.cap.Token, "", nil, nil)
+		if got.status != 200 || !bytes.Equal(first.body, got.body) || rm2Snapshot(t, h.psHarness, history.AttemptID) != snapshot {
+			t.Fatal("history was resumed or rewritten")
+		}
+	}
 }
 
 var sbhViewKeys = func() []string {
@@ -183,13 +177,13 @@ func (x *sbhStripe) signals(t *testing.T) (n int, jobs int) {
 }
 
 func TestStripeSP14BuyerHTTP(t *testing.T) {
-	t.Run("payuni_bytes_identical_stripe_disabled", func(t *testing.T) {
+	t.Run("payuni_refused_history_unchanged_stripe_disabled", func(t *testing.T) {
 		h := hpSetup(t)
 		sbhPayuniFlow(t, h, sbhServe(t, h, h.api.(*checkout.HostedPaymentStarter), true))
 	})
 
-	t.Run("payuni_bytes_identical_stripe_enabled", func(t *testing.T) {
-		// Same goldens through the Stripe-enabled service. The store has no Stripe method, so the
+	t.Run("payuni_refused_history_unchanged_stripe_enabled", func(t *testing.T) {
+		// Same refusal/history contract through the Stripe-enabled service. This store has no Stripe method, so the
 		// projection may not grow a method, a cancel_requested field or another handoff shape.
 		h := hpSetup(t)
 		e := sstNewEnv(t, h.f, sstKeyring(t, "hosted_fixture", h.key))
@@ -199,13 +193,13 @@ func TestStripeSP14BuyerHTTP(t *testing.T) {
 	t.Run("stripe_view_prepare_handoff_enums_and_keys", func(t *testing.T) {
 		x := sbhNew(t, false)
 		before := sstFacts(t, x.h.psHarness)
-		// Before start: no attempt => no cancel_requested (PAYUNi-identical projection), <=2 methods.
+		// Before start: no attempt => no cancel_requested; only the active Stripe method.
 		view := bphRaw(t, x.srv.request(t, "GET", x.path, x.h.cap.Token, "", nil, nil), 200, bpViewKeys)
 		bpState(t, view, "payment_state", "NOT_STARTED")
 		bpState(t, view, "handoff_state", "NONE")
 		var methods []map[string]json.RawMessage
-		if err := json.Unmarshal(view["methods"], &methods); err != nil || len(methods) != 2 {
-			t.Fatalf("methods=%s err=%v (payuni_credit + stripe_checkout)", view["methods"], err)
+		if err := json.Unmarshal(view["methods"], &methods); err != nil || len(methods) != 1 {
+			t.Fatalf("methods=%s err=%v (stripe_checkout only)", view["methods"], err)
 		}
 		codes := map[string]bool{}
 		for _, m := range methods {
@@ -216,7 +210,7 @@ func TestStripeSP14BuyerHTTP(t *testing.T) {
 			_ = json.Unmarshal(m["code"], &code)
 			codes[code] = true
 		}
-		if !codes["payuni_credit"] || !codes["stripe_checkout"] {
+		if codes["payuni_credit"] || !codes["stripe_checkout"] {
 			t.Fatalf("method codes %v", codes)
 		}
 		in := map[string]any{"method_code": "stripe_checkout", "method_version": x.s.method, "locale": "zh-TW"}

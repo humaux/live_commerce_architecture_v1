@@ -1,8 +1,11 @@
+// query_worker.go dispatches only Stripe Checkout operations.
+// Depends on the profile worker pool and River; called by payment-worker.
+// Historical providers are rejected before lease claim, credential load, provider I/O or observation writes.
+
 package payments
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
@@ -15,15 +18,12 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/integrations/core"
-	"livecommerce/internal/integrations/psp/payuni"
-	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/platform"
 )
 
 var (
 	errPaymentQueryJob      = errors.New("payment_query_invalid_job")
 	errPaymentQueryDatabase = errors.New("payment_query_database")
-	errPaymentQueryBudget   = errors.New("payment_query_budget_exhausted")
 	errPaymentQueryFamily   = errors.New("payment_query_wrong_family")
 )
 
@@ -136,96 +136,16 @@ func (w *QueryWorker) Work(ctx context.Context, job *river.Job[paymentQueryArgs]
 	if !validQueryOperation(op) {
 		return river.JobCancel(errPaymentQueryFamily)
 	}
-	if op.Provider == "stripe" {
-		// A disabled Stripe worker leaves the job and operation untouched for an enabled worker.
-		if w.stripe == nil {
-			return river.JobSnooze(5 * time.Second)
-		}
-		return w.stripeStep(ctx, id, op)
+	// A disabled Stripe worker leaves the job and operation untouched for an enabled worker.
+	if w.stripe == nil {
+		return river.JobSnooze(5 * time.Second)
 	}
-	if op.ResultCode == "payment_query_budget_exhausted" && op.LeaseUntil == nil {
-		return river.JobCancel(errPaymentQueryBudget)
-	}
-	if terminalQueryState(op.State) {
-		return nil
-	}
-	claim, providerReference, err := w.claim(ctx, id)
-	if err != nil {
-		return w.dbError(ctx)
-	}
-	switch claim.Disposition {
-	case "busy":
-		return river.JobSnooze(w.options.RetryDelay)
-	case "terminal":
-		return nil
-	case "blocked_binding":
-		return river.JobCancel(errPaymentQueryFamily)
-	case "claimed":
-		if claim.Mode != "reconcile" {
-			return errPaymentQueryDatabase
-		}
-	default:
-		return errPaymentQueryDatabase
-	}
-	if claim.Generation > w.options.MaxGenerations {
-		return w.finish(ctx, id, claim, providerReference, "payment_query_budget_exhausted", true)
-	}
-
-	// The load and the one wire query share one deadline. The load commits
-	// before any provider I/O, and the query uses the parent's cancellation.
-	callCtx, cancel := context.WithTimeout(ctx, w.options.CallTimeout)
-	defer cancel()
-	material, err := w.load(callCtx, id, claim)
-	if ctx.Err() != nil {
-		return river.JobSnooze(w.options.RetryDelay)
-	}
-	if callCtx.Err() != nil {
-		return w.finish(ctx, id, claim, providerReference, "payment_query_timeout", false)
-	}
-	if material.Age >= w.options.MaxAge {
-		return w.finish(ctx, id, claim, providerReference, "payment_query_budget_exhausted", true)
-	}
-	if err != nil {
-		return w.finish(ctx, id, claim, providerReference, "payment_query_material_unavailable", false)
-	}
-	observation, wireErr, panicked := queryOnce(callCtx, material)
-	if ctx.Err() != nil {
-		return river.JobSnooze(w.options.RetryDelay)
-	}
-	if callCtx.Err() != nil {
-		return w.finish(ctx, id, claim, providerReference, "payment_query_timeout", false)
-	}
-	if panicked {
-		return w.finish(ctx, id, claim, providerReference, "payment_query_panic", false)
-	}
-	if wireErr != nil {
-		return w.finish(ctx, id, claim, providerReference, "payment_query_wire_failed", false)
-	}
-	if err := w.record(ctx, id, claim, observation); err != nil {
-		if ctx.Err() != nil {
-			return river.JobSnooze(w.options.RetryDelay)
-		}
-		return w.finish(ctx, id, claim, providerReference, "payment_query_record_failed", false)
-	}
-	return river.JobSnooze(queryRetryDelay(w.options.RetryDelay, observation.DataSource))
-}
-
-func queryRetryDelay(configured time.Duration, source string) time.Duration {
-	if source == "B" && configured < 10*time.Minute {
-		return 10 * time.Minute
-	}
-	return configured
+	return w.stripeStep(ctx, id, op)
 }
 
 func validQueryOperation(op queryOperation) bool {
 	return op.ActorKind == "BUYER_PAYMENT_QUERY" && op.Purpose == "transactional" &&
-		((op.Provider == "payuni" && op.Action == "payuni.query") ||
-			(op.Provider == "stripe" && op.Action == "stripe.checkout_session"))
-}
-
-func terminalQueryState(state string) bool {
-	return state == "SUCCEEDED" || state == "FAILED_FINAL" || state == "CANCELLED" ||
-		state == "BLOCKED_POLICY" || state == "STALE_BINDING"
+		op.Provider == "stripe" && op.Action == "stripe.checkout_session"
 }
 
 func (w *QueryWorker) read(ctx context.Context, id string) (queryOperation, error) {
@@ -260,97 +180,6 @@ func (w *QueryWorker) claim(ctx context.Context, id string) (core.ClaimResult, s
 		return core.ClaimResult{}, "", err
 	}
 	return claim, providerReference, nil
-}
-
-func (w *QueryWorker) load(ctx context.Context, id string, claim core.ClaimResult) (accounts.PaymentQueryMaterial, error) {
-	bounded, cancel := context.WithTimeout(ctx, w.options.DBTimeout)
-	defer cancel()
-	tx, err := w.pool.BeginTx(bounded, pgx.TxOptions{})
-	if err != nil {
-		return accounts.PaymentQueryMaterial{}, err
-	}
-	defer w.rollback(tx)
-	var material accounts.PaymentQueryMaterial
-	if w.options.MockTransport != nil {
-		material, err = w.keys.LoadPaymentQuery(bounded, tx, id, claim.Generation, claim.LeaseToken,
-			w.profile, w.options.MockTransport)
-	} else {
-		material, err = w.keys.LoadPaymentQuery(bounded, tx, id, claim.Generation, claim.LeaseToken, w.profile)
-	}
-	if err != nil {
-		return material, err
-	}
-	if err = tx.Commit(bounded); err != nil {
-		return accounts.PaymentQueryMaterial{}, err
-	}
-	return material, nil
-}
-
-func queryOnce(ctx context.Context, material accounts.PaymentQueryMaterial) (observation payuni.Observation, err error, panicked bool) {
-	defer func() {
-		if recover() != nil {
-			observation, err, panicked = payuni.Observation{}, nil, true
-		}
-	}()
-	observation, err = material.Client.Query(ctx, material.Expected, time.Now().Unix())
-	return observation, err, false
-}
-
-func (w *QueryWorker) record(ctx context.Context, id string, claim core.ClaimResult, report payuni.Observation) error {
-	if w == nil || w.jobs == nil {
-		return errPaymentQueryDatabase
-	}
-	encoded, err := json.Marshal(report)
-	if err != nil {
-		return errPaymentQueryDatabase
-	}
-	bounded, cancel := context.WithTimeout(ctx, w.options.DBTimeout)
-	defer cancel()
-	tx, err := w.pool.BeginTx(bounded, pgx.TxOptions{})
-	if err != nil {
-		return err
-	}
-	defer w.rollback(tx)
-	var reportHash string
-	if err = tx.QueryRow(bounded, `SELECT encode(sha256(convert_to($1::jsonb::text,'UTF8')),'hex')`,
-		encoded).Scan(&reportHash); err != nil {
-		return err
-	}
-	job, err := w.jobs.InsertTx(bounded, tx, paymentReconcileArgs{
-		OperationID: id, ReportHash: reportHash, Version: 1}, &river.InsertOpts{Queue: jobqueue.ForProfile(w.profile)})
-	if err != nil {
-		return err
-	}
-	if _, err = tx.Exec(bounded, `SELECT integration.record_payment_query($1::uuid,$2::bigint,$3::bytea,$4::text,$5::jsonb,$6::bigint)`,
-		id, claim.Generation, claim.LeaseToken, w.profile, encoded, job.Job.ID); err != nil {
-		return err
-	}
-	return tx.Commit(bounded)
-}
-
-func (w *QueryWorker) finish(ctx context.Context, id string, claim core.ClaimResult,
-	providerReference, code string, exhausted bool) error {
-	if ctx.Err() != nil {
-		return river.JobSnooze(w.options.RetryDelay)
-	}
-	bounded, cancel := context.WithTimeout(ctx, w.options.DBTimeout)
-	defer cancel()
-	tx, err := w.pool.BeginTx(bounded, pgx.TxOptions{})
-	if err != nil {
-		return errPaymentQueryDatabase
-	}
-	defer w.rollback(tx)
-	if _, err = tx.Exec(bounded, `SELECT integration.finish_payment_query($1::uuid,$2::bigint,$3::bytea,$4::text,$5::text,$6::text)`,
-		id, claim.Generation, claim.LeaseToken, w.profile, code, providerReference); err != nil {
-		return errPaymentQueryDatabase
-	}
-	if err = tx.Commit(bounded); err != nil {
-		return errPaymentQueryDatabase
-	}
-	if exhausted {
-		return river.JobCancel(errPaymentQueryBudget)
-	}
-	return river.JobSnooze(w.options.RetryDelay)
 }
 
 func (w *QueryWorker) dbError(ctx context.Context) error {

@@ -331,7 +331,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   expect(foreign.status).toBe(404);
 
   // Real Chromium -> Next BFF -> Go -> PG. Synthetic credentials only. This
-  // exercises transport, not the still separately gated settings UI/provider.
+  // exercises refusal through transport; settings controls are covered separately.
   const accountPath = `/api/stores/${created.store_id}/provider-accounts`;
   const accountBody = {
     provider: "payuni",
@@ -353,6 +353,12 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     (await browserJSON(page, accountPath, { ...accountOptions, csrf: false }))
       .status,
   ).toBe(403);
+  // PAY-RM2: this retired route now refuses every write with 422, so the probes below only prove refusal.
+  // The generic guarantees they used to prove on a live route are owned by:
+  //   forged X-Tenant-ID / Bearer ignored, scope from the session -> tests/admin/orders-bff.spec.ts (bogus-header GET returns only the
+  //   real store's orders) and internal/httpapi/handler_test.go TestAdminHTTPTransportGuards;
+  //   same Idempotency-Key with a different body -> 409 idempotency_conflict -> tests/foundation/checkout_offline_fix_test.go
+  //   TestBankTransferK301SameKeyAcrossOrders and checkout_offline_test.go TestBankTransferLifecycle (real PG).
   expect(
     (await browserJSON(page, accountPath + "?unexpected=1", accountOptions))
       .status,
@@ -369,15 +375,8 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
       "X-Tenant-ID": "attacker",
     },
   });
-  expect(account.status).toBe(200);
-  expect(account.body).toMatchObject({
-    id: expect.stringMatching(uuid),
-    provider: "payuni",
-    environment: "SANDBOX",
-    account_id: accountBody.account_id,
-    credential_version: 1,
-    state: "CONFIGURED_UNVERIFIED",
-  });
+  expect(account.status).toBe(422);
+  expect(account.body).toMatchObject({ code: "invalid_request" });
   const safeAccount = (body: unknown) => {
     const text = JSON.stringify(body);
     for (const forbidden of [
@@ -393,9 +392,10 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     }
   };
   safeAccount(account.body);
-  expect((await browserJSON(page, accountPath, accountOptions)).body).toEqual(
-    account.body,
-  );
+  // A replay is refused identically; only the per-request request_id differs between two error bodies.
+  const replay = await browserJSON(page, accountPath, accountOptions);
+  expect(replay.status).toBe(422);
+  expect({ ...replay.body, request_id: "" }).toEqual({ ...account.body, request_id: "" });
   expect(
     (
       await browserJSON(page, accountPath, {
@@ -406,9 +406,11 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
         },
       })
     ).status,
-  ).toBe(409);
-  const detailPath = `${accountPath}/${account.body.id}`;
-  expect((await browserJSON(page, detailPath)).body).toEqual(account.body);
+  ).toBe(422);
+  // Synthetic missing ID: no retired account may be created to drive rotation.
+  const archivedID = "00000000-0000-4000-8000-000000000001";
+  const detailPath = `${accountPath}/${archivedID}`;
+  expect((await browserJSON(page, detailPath)).status).toBe(404);
   const rotationOptions = {
     method: "POST",
     csrf: true,
@@ -423,12 +425,12 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     `${detailPath}/rotate`,
     rotationOptions,
   );
-  expect(rotated.status).toBe(200);
-  expect(rotated.body.credential_version).toBe(2);
+  expect(rotated.status).toBe(422);
+  expect(rotated.body).toMatchObject({ code: "invalid_request" });
   safeAccount(rotated.body);
-  expect(
-    (await browserJSON(page, `${detailPath}/rotate`, rotationOptions)).body,
-  ).toEqual(rotated.body);
+  const rotateReplay = await browserJSON(page, `${detailPath}/rotate`, rotationOptions);
+  expect(rotateReplay.status).toBe(422);
+  expect({ ...rotateReplay.body, request_id: "" }).toEqual({ ...rotated.body, request_id: "" });
   expect(
     (
       await browserJSON(page, `${detailPath}/rotate`, {
@@ -436,9 +438,9 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
         headers: { "Idempotency-Key": "browser-account-stale-0001" },
       })
     ).status,
-  ).toBe(409);
+  ).toBe(422);
   expect((await browserJSON(page, accountPath + "?limit=1")).body).toEqual({
-    items: [rotated.body],
+    items: [],
     next_cursor: "",
   });
   expect((await browserJSON(page, accountPath + "?limit=101")).status).toBe(
@@ -472,7 +474,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     },
     data: accountBody,
   });
-  expect(originControl.status()).toBe(200);
+  expect(originControl.status()).toBe(422);
   // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (forged Origin)
   const badOrigin = await context.request.post(accountPath, {
     headers: {
@@ -499,8 +501,8 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     country: "TW",
     code: "payuni_credit",
     environment: "SANDBOX",
-    connection_id: rotated.body.id,
-    binding_version: rotated.body.binding_version,
+    connection_id: archivedID,
+    binding_version: 1,
     expected_version: 0,
     name_hans: "信用卡",
     name_hant: "信用卡",
@@ -518,17 +520,12 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     headers: { "Idempotency-Key": "browser-method-create-0001" },
   };
   const savedMethod = await browserJSON(page, methodPath, methodOptions);
-  expect(savedMethod.status).toBe(200);
-  expect(savedMethod.body).toMatchObject({
-    version: 1,
-    enabled: false,
-    visible: true,
-    connection_id: rotated.body.id,
-  });
-  expect((await browserJSON(page, methodPath)).body).toEqual(savedMethod.body);
-  expect((await browserJSON(page, methodPath, methodOptions)).body).toEqual(
-    savedMethod.body,
-  );
+  expect(savedMethod.status).toBe(422);
+  expect(savedMethod.body).toMatchObject({ code: "invalid_request" });
+  expect((await browserJSON(page, methodPath)).status).toBe(404);
+  const methodReplay = await browserJSON(page, methodPath, methodOptions);
+  expect(methodReplay.status).toBe(422);
+  expect({ ...methodReplay.body, request_id: "" }).toEqual({ ...savedMethod.body, request_id: "" });
   const inspectOptions = {
     method: "POST",
     csrf: true,
@@ -547,13 +544,12 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     `${methodPath}/inspect`,
     inspectOptions,
   );
-  expect(inspected.status).toBe(200);
-  expect(inspected.body.available).toBe(false);
-  expect(inspected.body.reasons.length).toBeGreaterThan(0);
+  expect(inspected.status).toBe(404);
+  expect(inspected.body).toMatchObject({ code: "not_found" });
   // Inspect is a read-only POST: CSRF required, mutation idempotency key absent.
-  expect(
-    (await browserJSON(page, `${methodPath}/inspect`, inspectOptions)).body,
-  ).toEqual(inspected.body);
+  const reinspected = await browserJSON(page, `${methodPath}/inspect`, inspectOptions);
+  expect(reinspected.status).toBe(404);
+  expect({ ...reinspected.body, request_id: "" }).toEqual({ ...inspected.body, request_id: "" });
   expect(
     (
       await browserJSON(page, `${methodPath}/inspect`, {
@@ -575,15 +571,9 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     body: { ...methodBody, expected_version: 1, visible: false },
     headers: { "Idempotency-Key": "browser-method-hide-0001" },
   });
-  expect(changedMethod.status).toBe(200);
-  expect(changedMethod.body).toMatchObject({
-    version: 2,
-    visible: false,
-    enabled: false,
-  });
-  expect((await browserJSON(page, methodPath)).body).toEqual(
-    changedMethod.body,
-  );
+  expect(changedMethod.status).toBe(422);
+  expect(changedMethod.body).toMatchObject({ code: "invalid_request" });
+  expect((await browserJSON(page, methodPath)).status).toBe(404);
   expect(
     (
       await browserJSON(page, methodPath, {
@@ -610,11 +600,11 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
       limited = true;
       break;
     }
-    expect(replay.status).toBe(200);
+    expect(replay.status).toBe(422);
   }
   expect(limited).toBe(true);
   expect((await rateResponse).headers()["retry-after"]).toBe("60");
-  expect((await browserJSON(page, detailPath)).body).toEqual(rotated.body);
+  expect((await browserJSON(page, detailPath)).status).toBe(404);
 
   const logout = await browserJSON(page, "/api/auth/logout", {
     method: "POST",

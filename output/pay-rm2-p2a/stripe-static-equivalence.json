@@ -1,0 +1,27 @@
+[
+  {
+    "path": "internal/checkout/stripe.go",
+    "noncomment_tokens_equal": true,
+    "sha256_tokens": "fcc816019e7eb2c38d56b53605e9eefa2cf6187b5f4353b8b8463cd763c8765c"
+  },
+  {
+    "path": "internal/integrations/accounts/stripe_crypto.go",
+    "noncomment_tokens_equal": true,
+    "sha256_tokens": "cf208e7ae303aea4e71f7b90bb215ec4a08cec425d28c1297bf5baa986ac67f5"
+  },
+  {
+    "path": "internal/payments/stripe_refund.go",
+    "noncomment_tokens_equal": true,
+    "sha256_tokens": "ffaee3f129aa932066e3681ea349d85a8872a34f01ad997bb71cab7750675ad4"
+  },
+  {
+    "path": "internal/pricing/pricing.go",
+    "noncomment_tokens_equal": true,
+    "sha256_tokens": "cc3366010abe7e3eb6e1d660af76a33b711d78bae5697f95bcbf556bc44009f4"
+  },
+  {
+    "path": "canonicalBuyerPaymentReturnURL (moved from accounts.canonicalHostedURL)",
+    "noncomment_tokens_equal": true,
+    "sha256_tokens": "30a79168e2579ee8e3e058b906035bc29502467d3f57dcdc1319933d0e0b8d8e"
+  }
+]

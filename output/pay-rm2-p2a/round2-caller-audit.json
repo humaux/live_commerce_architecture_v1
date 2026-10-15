@@ -1,0 +1,833 @@
+{
+  "base": "a11d19aacfe419529b06e5fb691771b530976378",
+  "original_rows": 118,
+  "rows": [
+    {
+      "original": "tests/foundation/browser_merchant_orders_bff_test.go:37",
+      "original_symbol_at_base": "TestBrowserMerchantOrdersBFFRealChain",
+      "current_symbol": "tests/foundation/browser_merchant_orders_bff_test.go:31",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/browser_merchant_orders_ui_test.go:57",
+      "original_symbol_at_base": "merchantOrdersUIBrowser",
+      "current_symbol": "tests/foundation/browser_merchant_orders_ui_test.go:51",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/browser_storefront_test.go:87",
+      "original_symbol_at_base": "TestBrowserStorefront",
+      "current_symbol": "tests/foundation/browser_storefront_test.go:82",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/browser_storefront_test.go:89",
+      "original_symbol_at_base": "TestBrowserStorefront",
+      "current_symbol": "tests/foundation/browser_storefront_test.go:82",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_http_test.go:29",
+      "original_symbol_at_base": "bphSetup",
+      "current_symbol": "tests/foundation/buyer_payment_http_test.go:27",
+      "status": "BLOCKED_TRANSITIVE",
+      "reason": "Handler setup is inert; PrepareViewHandoff and ConcurrentHandoff still require PAYUNi success."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_clock_test.go:21",
+      "original_symbol_at_base": "TestBuyerPaymentViewFinalDatabaseClock",
+      "current_symbol": "tests/foundation/buyer_payment_view_clock_test.go:18",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_smoke_test.go:13",
+      "original_symbol_at_base": "TestBuyerPaymentViewSQLSmoke",
+      "current_symbol": "tests/foundation/buyer_payment_view_smoke_test.go:13",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_test.go:87",
+      "original_symbol_at_base": "TestBuyerPaymentViewEligibleAndExactNames",
+      "current_symbol": "tests/foundation/buyer_payment_view_test.go:86",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_test.go:185",
+      "original_symbol_at_base": "TestBuyerPaymentViewCandidateDrift",
+      "current_symbol": "tests/foundation/buyer_payment_view_test.go:130",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_test.go:199",
+      "original_symbol_at_base": "TestBuyerPaymentViewCandidateDrift",
+      "current_symbol": "tests/foundation/buyer_payment_view_test.go:130",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_test.go:217",
+      "original_symbol_at_base": "TestBuyerPaymentViewCandidateDrift",
+      "current_symbol": "tests/foundation/buyer_payment_view_test.go:130",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_test.go:234",
+      "original_symbol_at_base": "TestBuyerPaymentViewCandidateDrift",
+      "current_symbol": "tests/foundation/buyer_payment_view_test.go:130",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_test.go:243",
+      "original_symbol_at_base": "TestBuyerPaymentViewHandoffStatesAndProfileSwitch",
+      "current_symbol": "tests/foundation/buyer_payment_view_test.go:242",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_test.go:282",
+      "original_symbol_at_base": "TestBuyerPaymentViewHandoffStatesAndProfileSwitch",
+      "current_symbol": "tests/foundation/buyer_payment_view_test.go:242",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/buyer_payment_view_test.go:298",
+      "original_symbol_at_base": "TestBuyerPaymentViewSignedFinancialPrecedence",
+      "current_symbol": "tests/foundation/buyer_payment_view_test.go:295",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/expiry_runtime_test.go:481",
+      "original_symbol_at_base": "TestBuyerCheckoutExpiryRuntimeRiverTwoTenantReplayAndIsolation",
+      "current_symbol": "tests/foundation/expiry_runtime_test.go:471",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/expiry_runtime_test.go:535",
+      "original_symbol_at_base": "TestBuyerCheckoutExpiryRuntimeEarlyStalePendingAndConfirmed",
+      "current_symbol": "tests/foundation/expiry_runtime_test.go:529",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/home_cod_review_test.go:717",
+      "original_symbol_at_base": "TestHomeCodReviewStockHoldAndNoPayment",
+      "current_symbol": "tests/foundation/home_cod_review_test.go:682",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:39",
+      "original_symbol_at_base": "TestBuyerPaymentHostedSQLAuthorityAndScope",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:38",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:138",
+      "original_symbol_at_base": "TestBuyerPaymentHostedForgedOuterFormRejected",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:137",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:179",
+      "original_symbol_at_base": "TestBuyerPaymentHostedStorageFailureRollsBack",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:178",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:220",
+      "original_symbol_at_base": "TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:198",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:260",
+      "original_symbol_at_base": "TestBuyerPaymentHostedReplayAfterDisableAndRevokedCapability",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:259",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:286",
+      "original_symbol_at_base": "TestBuyerPaymentHostedQualificationExpiresDuringTakeWait",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:285",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:319",
+      "original_symbol_at_base": "TestBuyerPaymentHostedWriterCannotMutateFormOrClearHandoff",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:318",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:421",
+      "original_symbol_at_base": "TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:419",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:434",
+      "original_symbol_at_base": "TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:419",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:453",
+      "original_symbol_at_base": "TestBuyerPaymentHostedCapabilityRevokedDuringTakeWait",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:452",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_authority_test.go:484",
+      "original_symbol_at_base": "TestBuyerPaymentHostedLocalDeadlineFence",
+      "current_symbol": "tests/foundation/hosted_payment_authority_test.go:483",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_commit_test.go:75",
+      "original_symbol_at_base": "TestBuyerPaymentHostedLostCommitAcknowledgementDoesNotReissue",
+      "current_symbol": "tests/foundation/hosted_payment_commit_test.go:74",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_test.go:50",
+      "original_symbol_at_base": "hpSetup",
+      "current_symbol": "tests/foundation/hosted_payment_test.go:50",
+      "status": "HISTORY_METADATA_HELPER",
+      "reason": "hpSetup only seeds account/method metadata; positive callers elsewhere remain blocked."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_test.go:209",
+      "original_symbol_at_base": "TestBuyerPaymentHostedAtomicPreparationAndIndependentWire",
+      "current_symbol": "tests/foundation/hosted_payment_test.go:208",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_test.go:325",
+      "original_symbol_at_base": "TestBuyerPaymentHostedReplayConflictsAndSingleAttempt",
+      "current_symbol": "tests/foundation/hosted_payment_test.go:324",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_test.go:372",
+      "original_symbol_at_base": "TestBuyerPaymentHostedConcurrentTakeOneForm",
+      "current_symbol": "tests/foundation/hosted_payment_test.go:371",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_test.go:415",
+      "original_symbol_at_base": "TestBuyerPaymentHostedCryptoFailureRollsBack",
+      "current_symbol": "tests/foundation/hosted_payment_test.go:414",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_test.go:436",
+      "original_symbol_at_base": "TestBuyerPaymentHostedThreeFrozenLocales",
+      "current_symbol": "tests/foundation/hosted_payment_test.go:433",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_test.go:473",
+      "original_symbol_at_base": "TestBuyerPaymentHostedAdmissionDriftBeforePrepare",
+      "current_symbol": "tests/foundation/hosted_payment_test.go:457",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/hosted_payment_test.go:486",
+      "original_symbol_at_base": "TestBuyerPaymentHostedAdmissionDriftBeforePrepare",
+      "current_symbol": "tests/foundation/hosted_payment_test.go:457",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/legacy_runtime_admission_test.go:212",
+      "original_symbol_at_base": "TestLegacyRuntimeIsolationAdmissionAndReadiness",
+      "current_symbol": "tests/foundation/legacy_runtime_admission_test.go:12",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/legacy_runtime_isolation_test.go:49",
+      "original_symbol_at_base": "TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies",
+      "current_symbol": "tests/foundation/legacy_runtime_isolation_test.go:43",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/legacy_runtime_isolation_test.go:123",
+      "original_symbol_at_base": "TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies",
+      "current_symbol": "tests/foundation/legacy_runtime_isolation_test.go:120",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/legacy_runtime_upgrade_test.go:1044",
+      "original_symbol_at_base": "TestLegacyRuntimeIsolationFamilyCollidingIDs",
+      "current_symbol": "tests/foundation/legacy_runtime_upgrade_test.go:1032",
+      "status": "HISTORICAL_UPGRADE",
+      "reason": "Archived rows inserted directly; whole-row upgrade/readback, queue/ledger/sequence assertions retained."
+    },
+    {
+      "original": "tests/foundation/legacy_runtime_upgrade_test.go:1060",
+      "original_symbol_at_base": "TestLegacyRuntimeIsolationFamilyCollidingIDs",
+      "current_symbol": "tests/foundation/legacy_runtime_upgrade_test.go:1032",
+      "status": "HISTORICAL_UPGRADE",
+      "reason": "Archived rows inserted directly; whole-row upgrade/readback, queue/ledger/sequence assertions retained."
+    },
+    {
+      "original": "tests/foundation/local_recovery_test.go:656",
+      "original_symbol_at_base": "TestLocalRecoveryLogicalRestoreAndColdStart",
+      "current_symbol": "tests/foundation/local_recovery_test.go:648",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/merchant_accounts_test.go:69",
+      "original_symbol_at_base": "create",
+      "current_symbol": "tests/foundation/merchant_accounts_test.go:66",
+      "status": "CONVERTED_HISTORY_AND_REFUSAL",
+      "reason": "Historical owner seed replaces retired setup writer; actual retired writes rejected; read/auth/scoping assertions retained."
+    },
+    {
+      "original": "tests/foundation/merchant_accounts_test.go:77",
+      "original_symbol_at_base": "rotate",
+      "current_symbol": "tests/foundation/merchant_accounts_test.go:74",
+      "status": "CONVERTED_HISTORY_AND_REFUSAL",
+      "reason": "Historical owner seed replaces retired setup writer; actual retired writes rejected; read/auth/scoping assertions retained."
+    },
+    {
+      "original": "tests/foundation/merchant_orders_test.go:530",
+      "original_symbol_at_base": "TestMerchantOrdersActualPaymentAndExpiryStates",
+      "current_symbol": "tests/foundation/merchant_orders_test.go:526",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/merchant_orders_test.go:588",
+      "original_symbol_at_base": "TestMerchantOrdersActualPaymentAndExpiryStates",
+      "current_symbol": "tests/foundation/merchant_orders_test.go:526",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/merchant_orders_test.go:631",
+      "original_symbol_at_base": "TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects",
+      "current_symbol": "tests/foundation/merchant_orders_test.go:627",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/merchant_orders_v2_legacy_test.go:14",
+      "original_symbol_at_base": "TestMerchantOrdersV2LegacyDisplayFallback",
+      "current_symbol": "tests/foundation/merchant_orders_v2_legacy_test.go:13",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/merchant_orders_v2_legacy_test.go:75",
+      "original_symbol_at_base": "TestMerchantOrdersV2LegacyUnicodeWhitespaceRecipient",
+      "current_symbol": "tests/foundation/merchant_orders_v2_legacy_test.go:74",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/merchant_orders_v2_perf_test.go:25",
+      "original_symbol_at_base": "TestMerchantOrdersV2TenThousandScopedSearch",
+      "current_symbol": "tests/foundation/merchant_orders_v2_perf_test.go:24",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/merchant_orders_v2_test.go:41",
+      "original_symbol_at_base": "TestMerchantOrdersV2ReadContract",
+      "current_symbol": "tests/foundation/merchant_orders_v2_test.go:40",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/meta_ads_capi_test.go:54",
+      "original_symbol_at_base": "newCapiEnv",
+      "current_symbol": "tests/foundation/meta_ads_capi_test.go:52",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/meta_runtime_process_test.go:403",
+      "original_symbol_at_base": "TestMetaRuntimeRealAPIBinariesPageInstagramRestart",
+      "current_symbol": "tests/foundation/meta_runtime_process_test.go:273",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/parcel_fixture_test.go:115",
+      "original_symbol_at_base": "TestParcelFixtureSameBuyerTwoOrders",
+      "current_symbol": "tests/foundation/parcel_fixture_test.go:105",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Existing Stripe mock path replaces convenient PAYUNi payment; archived authorization-only history retained explicitly."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:84",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureAtomicReplayAndFreshSession",
+      "current_symbol": "tests/foundation/payment_capture_test.go:85",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:122",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureEvidenceAndStickyReview",
+      "current_symbol": "tests/foundation/payment_capture_test.go:121",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:187",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureLaterRefundAndReverseOrder",
+      "current_symbol": "tests/foundation/payment_capture_test.go:188",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:209",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureOldAuthorizationIsNotConflict",
+      "current_symbol": "tests/foundation/payment_capture_test.go:210",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:235",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureACLAndObservationBinding",
+      "current_symbol": "tests/foundation/payment_capture_test.go:236",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:297",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureFaultsAreCausalAndAtomic",
+      "current_symbol": "tests/foundation/payment_capture_test.go:295",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:323",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureRealRiverSignedQueryChain",
+      "current_symbol": "tests/foundation/payment_capture_test.go:332",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired execution refused/cancelled, no transport, full history/state unchanged; active Stripe replacements named in DELIVERY."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:430",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureReleasedAnomalyKeepsRealMoney",
+      "current_symbol": "tests/foundation/payment_capture_test.go:475",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:474",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureBalanceWaitIsAtomic",
+      "current_symbol": "tests/foundation/payment_capture_test.go:521",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:509",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureEmptyReferenceAndMerchantReadScope",
+      "current_symbol": "tests/foundation/payment_capture_test.go:556",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:528",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureEmptyReferenceAndMerchantReadScope",
+      "current_symbol": "tests/foundation/payment_capture_test.go:556",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:551",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureMultiSKUSingleCommit",
+      "current_symbol": "tests/foundation/payment_capture_test.go:598",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:568",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureQueryJobBindingAndRollback",
+      "current_symbol": "tests/foundation/payment_capture_test.go:615",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_capture_test.go:638",
+      "original_symbol_at_base": "TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney",
+      "current_symbol": "tests/foundation/payment_capture_test.go:685",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:47",
+      "original_symbol_at_base": "pqSetup",
+      "current_symbol": "tests/foundation/payment_query_test.go:51",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:48",
+      "original_symbol_at_base": "pqSetup",
+      "current_symbol": "tests/foundation/payment_query_test.go:51",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:50",
+      "original_symbol_at_base": "pqSetupWorker",
+      "current_symbol": "tests/foundation/payment_query_test.go:54",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:53",
+      "original_symbol_at_base": "pqSetupWorker",
+      "current_symbol": "tests/foundation/payment_query_test.go:54",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:55",
+      "original_symbol_at_base": "pqSetupSession",
+      "current_symbol": "tests/foundation/payment_query_test.go:59",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:56",
+      "original_symbol_at_base": "pqSetupSession",
+      "current_symbol": "tests/foundation/payment_query_test.go:59",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:58",
+      "original_symbol_at_base": "pqSetupItems",
+      "current_symbol": "tests/foundation/payment_query_test.go:62",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:59",
+      "original_symbol_at_base": "pqSetupItems",
+      "current_symbol": "tests/foundation/payment_query_test.go:62",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:64",
+      "original_symbol_at_base": "pqSetupItemsOn",
+      "current_symbol": "tests/foundation/payment_query_test.go:68",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:100",
+      "original_symbol_at_base": "rotate",
+      "current_symbol": "tests/foundation/payment_query_test.go:SYMBOL_NOT_FOUND",
+      "status": "CONVERTED_HISTORY_HELPER",
+      "reason": "pqSetup owner-seeds archived aggregate, no Rotate/Start; SQL-positive consumers separately BLOCKED."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:199",
+      "original_symbol_at_base": "TestBuyerPaymentQueryHistoricalCredentialAndACL",
+      "current_symbol": "tests/foundation/payment_query_test.go:174",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired execution refused/cancelled, no transport, full history/state unchanged; active Stripe replacements named in DELIVERY."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:230",
+      "original_symbol_at_base": "TestBuyerPaymentQueryReportAtomicDedupAndBinding",
+      "current_symbol": "tests/foundation/payment_query_test.go:216",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:295",
+      "original_symbol_at_base": "TestBuyerPaymentQueryFaultAndLeaseWaitRollback",
+      "current_symbol": "tests/foundation/payment_query_test.go:281",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:439",
+      "original_symbol_at_base": "TestBuyerPaymentQueryRealWorkerSignedHistoricalResponse",
+      "current_symbol": "tests/foundation/payment_query_test.go:428",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired execution refused/cancelled, no transport, full history/state unchanged; active Stripe replacements named in DELIVERY."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:474",
+      "original_symbol_at_base": "TestBuyerPaymentQueryBudgetDurabilityAndNoSend",
+      "current_symbol": "tests/foundation/payment_query_test.go:452",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired execution refused/cancelled, no transport, full history/state unchanged; active Stripe replacements named in DELIVERY."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:505",
+      "original_symbol_at_base": "TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts",
+      "current_symbol": "tests/foundation/payment_query_test.go:486",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:537",
+      "original_symbol_at_base": "TestBuyerPaymentQueryWireFailuresStayPending",
+      "current_symbol": "tests/foundation/payment_query_test.go:513",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired execution refused/cancelled, no transport, full history/state unchanged; active Stripe replacements named in DELIVERY."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:608",
+      "original_symbol_at_base": "TestBuyerPaymentQueryFinishClockAndReferenceFence",
+      "current_symbol": "tests/foundation/payment_query_test.go:576",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:663",
+      "original_symbol_at_base": "TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob",
+      "current_symbol": "tests/foundation/payment_query_test.go:630",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:664",
+      "original_symbol_at_base": "TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob",
+      "current_symbol": "tests/foundation/payment_query_test.go:630",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:713",
+      "original_symbol_at_base": "TestBuyerPaymentQueryConcurrentReportSingleWinner",
+      "current_symbol": "tests/foundation/payment_query_test.go:681",
+      "status": "BLOCKED_SQL_CONTRACT",
+      "reason": "Retained SQL query/capture tests still mutate synthetic PAYUNi aggregates; no migration claimed for these positive contracts."
+    },
+    {
+      "original": "tests/foundation/payment_query_test.go:744",
+      "original_symbol_at_base": "TestBuyerPaymentQueryCancelledIOKeepsRecoverableLease",
+      "current_symbol": "tests/foundation/payment_query_test.go:714",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired execution refused/cancelled, no transport, full history/state unchanged; active Stripe replacements named in DELIVERY."
+    },
+    {
+      "original": "tests/foundation/payment_queue_migration_test.go:64",
+      "original_symbol_at_base": "TestBuyerPaymentWorkerQueueMigrationRollbackAndBackfill",
+      "current_symbol": "tests/foundation/payment_queue_migration_test.go:62",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/payment_queue_routing_test.go:16",
+      "original_symbol_at_base": "TestBuyerPaymentWorkerDeferredRoutingRollback",
+      "current_symbol": "tests/foundation/payment_queue_routing_test.go:14",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/payment_runtime_test.go:268",
+      "original_symbol_at_base": "TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart",
+      "current_symbol": "tests/foundation/payment_runtime_test.go:239",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Two real Stripe mock accounts, paid observations, exact one capture/work each, restart redelivery and foreign jobs unchanged."
+    },
+    {
+      "original": "tests/foundation/payment_runtime_test.go:269",
+      "original_symbol_at_base": "TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart",
+      "current_symbol": "tests/foundation/payment_runtime_test.go:239",
+      "status": "CONVERTED_STRIPE",
+      "reason": "Two real Stripe mock accounts, paid observations, exact one capture/work each, restart redelivery and foreign jobs unchanged."
+    },
+    {
+      "original": "tests/foundation/payment_runtime_test.go:420",
+      "original_symbol_at_base": "TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation",
+      "current_symbol": "tests/foundation/payment_runtime_test.go:351",
+      "status": "BLOCKED",
+      "reason": "Late default polling / actual crash transport and rescue still require PAYUNi execution."
+    },
+    {
+      "original": "tests/foundation/payment_runtime_test.go:434",
+      "original_symbol_at_base": "TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation",
+      "current_symbol": "tests/foundation/payment_runtime_test.go:351",
+      "status": "BLOCKED",
+      "reason": "Late default polling / actual crash transport and rescue still require PAYUNi execution."
+    },
+    {
+      "original": "tests/foundation/payment_runtime_test.go:626",
+      "original_symbol_at_base": "TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue",
+      "current_symbol": "tests/foundation/payment_runtime_test.go:595",
+      "status": "BLOCKED",
+      "reason": "Late default polling / actual crash transport and rescue still require PAYUNi execution."
+    },
+    {
+      "original": "tests/foundation/payment_start_test.go:166",
+      "original_symbol_at_base": "start",
+      "current_symbol": "tests/foundation/payment_start_test.go:165",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/payment_start_test.go:222",
+      "original_symbol_at_base": "TestBuyerPaymentAtomicReplayAndPendingStock",
+      "current_symbol": "tests/foundation/payment_start_test.go:184",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/payment_start_test.go:226",
+      "original_symbol_at_base": "TestBuyerPaymentAtomicReplayAndPendingStock",
+      "current_symbol": "tests/foundation/payment_start_test.go:184",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/payment_start_test.go:230",
+      "original_symbol_at_base": "TestBuyerPaymentAtomicReplayAndPendingStock",
+      "current_symbol": "tests/foundation/payment_start_test.go:184",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/payment_start_test.go:464",
+      "original_symbol_at_base": "TestBuyerPaymentAuthorityAndDispatcherFence",
+      "current_symbol": "tests/foundation/payment_start_test.go:444",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/payment_start_test.go:468",
+      "original_symbol_at_base": "TestBuyerPaymentAuthorityAndDispatcherFence",
+      "current_symbol": "tests/foundation/payment_start_test.go:444",
+      "status": "BLOCKED",
+      "reason": "Legacy start/form/view/CAPI expectations remain; must migrate with same authority/atomicity/race invariants."
+    },
+    {
+      "original": "tests/foundation/payment_worker_admission_test.go:19",
+      "original_symbol_at_base": "TestBuyerPaymentWorkerAdmissionFences",
+      "current_symbol": "tests/foundation/payment_worker_admission_test.go:16",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/payuni_removal_test.go:363",
+      "original_symbol_at_base": "TestRemovePayuniGoRM2UnavailableAndNoStart",
+      "current_symbol": "tests/foundation/payuni_removal_test.go:409",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    },
+    {
+      "original": "tests/foundation/stripe_buyer_http_test.go:117",
+      "original_symbol_at_base": "sbhNew",
+      "current_symbol": "tests/foundation/stripe_buyer_http_test.go:109",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/stripe_buyer_http_test.go:187",
+      "original_symbol_at_base": "TestStripeSP14BuyerHTTP",
+      "current_symbol": "tests/foundation/stripe_buyer_http_test.go:179",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/stripe_buyer_http_test.go:194",
+      "original_symbol_at_base": "TestStripeSP14BuyerHTTP",
+      "current_symbol": "tests/foundation/stripe_buyer_http_test.go:179",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/stripe_flow_test.go:143",
+      "original_symbol_at_base": "addPAYUNi",
+      "current_symbol": "tests/foundation/stripe_flow_test.go:146",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/stripe_flow_test.go:398",
+      "original_symbol_at_base": "TestStripeSP08HappyMock",
+      "current_symbol": "tests/foundation/stripe_flow_test.go:382",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/stripe_process_test.go:46",
+      "original_symbol_at_base": "TestStripeSP15Process",
+      "current_symbol": "tests/foundation/stripe_process_test.go:43",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/stripe_refund_http_test.go:363",
+      "original_symbol_at_base": "TestStripeRF09AdminHTTP",
+      "current_symbol": "tests/foundation/stripe_refund_http_test.go:49",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/stripe_refund_request_test.go:64",
+      "original_symbol_at_base": "TestStripeRF04Request",
+      "current_symbol": "tests/foundation/stripe_refund_request_test.go:60",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/stripe_start_test.go:411",
+      "original_symbol_at_base": "TestStripeSP07Start",
+      "current_symbol": "tests/foundation/stripe_start_test.go:248",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/stripe_start_test.go:456",
+      "original_symbol_at_base": "TestStripeSP07Start",
+      "current_symbol": "tests/foundation/stripe_start_test.go:248",
+      "status": "CONVERTED_INVERSE",
+      "reason": "Retired coexistence request/job is refused with unchanged history; Stripe/refund assertions retained."
+    },
+    {
+      "original": "tests/foundation/taiwan_cvs_pay_at_pickup_test.go:144",
+      "original_symbol_at_base": "TestCvsPayAtPickupBegin",
+      "current_symbol": "tests/foundation/taiwan_cvs_pay_at_pickup_test.go:68",
+      "status": "ARCHIVE_OR_NEGATIVE",
+      "reason": "Owner-seeded historical rows / retained scope or routing checks; no Go PAYUNi start."
+    }
+  ],
+  "coverage": "118/118 original audit lines classified; statuses are source review, not runtime acceptance."
+}

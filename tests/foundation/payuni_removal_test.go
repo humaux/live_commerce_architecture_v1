@@ -10,20 +10,34 @@
 // Used by: scripts/dev/test-focused.sh '^TestRemovePayuniNotify' (local gate); CI full foundation suite.
 // Invariants: never delete data silently — RM02 pins the RAISE-over-seeded-rows refusal (22023).
 // Historical post-River consumers stay held until their root dependencies exist; RM02 releases only 0161.
-// Status: REAL_PG (no provider is called; seeded rows are synthetic).
+// PAY-RM2 adds runtime refusal and historical-read gates; no phase 2a schema change.
+// Status: REAL_PG (CI only; no provider is called; seeded rows are synthetic).
 package foundation_test
 
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"livecommerce/internal/checkout"
+	"livecommerce/internal/command"
+	"livecommerce/internal/integrations/accounts"
+	"livecommerce/internal/payments"
+	"livecommerce/internal/platform"
 
 	"livecommerce/migrations"
 )
@@ -286,4 +300,221 @@ func TestRemovePayuniNotifyRM02SeededDataBlocks(t *testing.T) {
 		t.Fatalf("review-case seed visible as %d rows", n)
 	}
 	assertRefused("one NOTIFY_MISMATCH review case")
+}
+
+// rm2HistoricalAttempt models existing rows, never invokes a Go or SQL start API.
+func rm2HistoricalAttempt(t *testing.T, p psHarness) checkout.PaymentResult {
+	return rm2HistoryIn(t, p, "river_payment", "PROVIDER_MOCK", "payment_mock_v1")
+}
+
+// The owner inserts a synthetic archived aggregate with its original job in one transaction.
+// Existing FK, queue-routing and provenance triggers remain enabled. No credentials are loaded,
+// no start function is called and no network request is made. Used also on old-schema upgrades.
+func rm2HistoryIn(t *testing.T, p psHarness, schema, profile, queue string) checkout.PaymentResult {
+	t.Helper()
+	if (schema != "river" && schema != "river_payment") || (profile != "PROVIDER_MOCK" && profile != "SANDBOX" && profile != "LIVE") {
+		t.Fatal("invalid historical fixture target")
+	}
+	ctx := context.Background()
+	jobs, err := river.NewClient(riverpgxv5.New(p.f.owner), &river.Config{Schema: schema})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx, err := p.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id','',true),set_config('app.buyer_id',$3,true),set_config('app.buyer_session_id',$4,true)`, p.f.tenantA, p.f.storeA1, p.cap.Scope.OwnerID, p.cap.Scope.SessionID); err != nil {
+		t.Fatal(err)
+	}
+	attempt := randomUUID()
+	job, err := jobs.InsertTx(ctx, tx, pqArgs{OperationID: attempt, Version: 1}, &river.InsertOpts{Queue: queue, ScheduledAt: time.Now().Add(time.Hour)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out checkout.PaymentResult
+	err = tx.QueryRow(ctx, `INSERT INTO checkout.payment_attempts(tenant_id,store_id,owner_id,id,session_id,order_id,market_id,country,method_code,method_version,connection_id,credential_version,qualification_id,environment,execution_profile,binding_id,binding_version,currency,amount_minor,merchant_trade_no,state,generation,job_id)
+ SELECT o.tenant_id,o.store_id,o.owner_id,$1,$2,o.id,o.market_id,o.country,m.code,m.version,a.id,a.credential_version,q.id,a.environment,$3,b.id,b.semantic_version,o.currency,o.total_minor,'P'||rtrim(translate(encode(uuid_send($1::uuid),'base64'),'+/','-_'),'='),'PAYMENT_PENDING',o.generation+1,$4
+ FROM checkout.orders o JOIN payments.method_versions m ON m.tenant_id=o.tenant_id AND m.store_id=o.store_id AND m.market_id=o.market_id AND m.country=o.country AND m.code=$5 AND m.version=$6
+ JOIN integration.merchant_accounts a ON a.id=m.connection_id JOIN integration.bindings b ON b.id=a.binding_id JOIN payments.account_qualifications q ON q.id=m.qualification_id
+ WHERE o.id=$7 RETURNING order_id::text,id::text,id::text,job_id,generation,merchant_trade_no,currency,amount_minor,state`, attempt, p.cap.Scope.SessionID, profile, job.Job.ID, p.input.MethodCode, p.input.MethodVersion, p.hold.OrderID).Scan(&out.OrderID, &out.AttemptID, &out.OperationID, &out.JobID, &out.Generation, &out.MerchantTradeNo, &out.Currency, &out.AmountMinor, &out.State)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256([]byte("synthetic archived payment"))
+	if _, err = tx.Exec(ctx, `INSERT INTO integration.operations(id,tenant_id,store_id,principal_id,binding_id,binding_version,provider,external_asset_id,purpose,action,semantic_key,request_hash,request,job_id,state,generation,actor_kind,payment_attempt_id,buyer_owner_id,buyer_session_id)
+ SELECT a.id,a.tenant_id,a.store_id,NULL,a.binding_id,a.binding_version,'payuni',b.external_asset_id,'transactional','payuni.query','payment.query:'||a.id,$2,jsonb_build_object('attempt_id',a.id::text),a.job_id,'UNKNOWN',1,'BUYER_PAYMENT_QUERY',a.id,a.owner_id,a.session_id FROM checkout.payment_attempts a JOIN integration.bindings b ON b.id=a.binding_id WHERE a.id=$1`, attempt, digest[:]); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO integration.operation_events(tenant_id,store_id,operation_id,generation,state,mode,reason_code) SELECT tenant_id,store_id,id,1,'UNKNOWN','','buyer_payment_started' FROM checkout.payment_attempts WHERE id=$1`, attempt); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `UPDATE checkout.orders SET commercial_state='AWAITING_PAYMENT',generation=$2,updated_at=clock_timestamp() WHERE id=$1`, p.hold.OrderID, out.Generation); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.buyer_id',$3,true),set_config('app.buyer_session_id',(SELECT creator_session_id::text FROM checkout.orders WHERE id=$4),true)`, p.f.tenantA, p.f.storeA1, p.cap.Scope.OwnerID, p.hold.OrderID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `UPDATE inventory.reservations SET state='PAYMENT_PENDING',generation=$2 WHERE id=$1`, p.hold.OrderID, out.Generation); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `SELECT set_config('app.buyer_session_id',$1,true)`, p.cap.Scope.SessionID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO checkout.events(tenant_id,store_id,owner_id,order_id,session_id,generation,action,actor_kind) SELECT tenant_id,store_id,owner_id,order_id,session_id,generation,'checkout.payment_started','BUYER' FROM checkout.payment_attempts WHERE id=$1`, attempt); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO checkout.command_results(tenant_id,store_id,owner_id,operation,idempotency_key,creator_session_id,request_hash,order_id,response) SELECT tenant_id,store_id,owner_id,'checkout.payment.start',$2,session_id,$3,order_id,$4::jsonb FROM checkout.payment_attempts WHERE id=$1`, attempt, t04Key("rm2-history"), digest[:], raw); err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// rm2Snapshot covers the attempt, operation (including lease/generation/result), order, reservation,
+// observations, facts, inventory ledger and operation events. River job cancellation is deliberately
+// separate: acknowledging an obsolete queue item must not mutate any payment or inventory state.
+func rm2Snapshot(t *testing.T, p psHarness, attempt string) string {
+	t.Helper()
+	var out string
+	err := p.f.owner.QueryRow(context.Background(), `SELECT jsonb_build_array(
+  (SELECT to_jsonb(a) FROM checkout.payment_attempts a WHERE a.id=$1),
+  (SELECT to_jsonb(o) FROM integration.operations o WHERE o.id=$1),
+  (SELECT to_jsonb(o) FROM checkout.orders o WHERE o.id=$2),
+  (SELECT to_jsonb(r) FROM inventory.reservations r WHERE r.id=$2),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM payments.provider_observations x WHERE attempt_id=$1),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM payments.facts x WHERE attempt_id=$1),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM payments.review_cases x WHERE attempt_id=$1),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM integration.operation_events x WHERE operation_id=$1),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM inventory.ledger x WHERE reservation_id=$2),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM checkout.command_results x WHERE order_id=$2),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM checkout.events x WHERE order_id=$2),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM inventory.balances x WHERE (tenant_id,store_id)=(SELECT tenant_id,store_id FROM checkout.orders WHERE id=$2)),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM fulfillment.payment_work_items x WHERE attempt_id=$1),
+  (SELECT to_jsonb(x) FROM checkout.hosted_payment_pages x WHERE attempt_id=$1)
+ )::text`, attempt, p.hold.OrderID).Scan(&out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func TestRemovePayuniGoRM2UnavailableAndNoStart(t *testing.T) {
+	h := hpSetup(t) // existing fixture: eligible legacy method; production Go API under test
+	before, beforeOther := bpCounts(t, h)
+	err := platform.WithScope(context.Background(), h.f.runtime, h.f.tokens["a"], h.f.storeA1, "integration:read", func(tx pgx.Tx, scope platform.Scope) error {
+		out, err := payments.InspectMethod(context.Background(), tx, scope, h.f.tokens["a"], payments.CheckInput{MarketID: h.market.ID, Country: "TW", Code: "payuni_credit", ExpectedVersion: 1, Environment: "SANDBOX", Currency: "TWD", AmountMinor: 2500})
+		if err != nil {
+			return err
+		}
+		if out.Available || !containsString(out.Reasons, "ADAPTER_UNAVAILABLE") {
+			t.Fatalf("removed method available: %+v", out)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		view, err := h.api.(*checkout.HostedPaymentStarter).PaymentView(context.Background(), h.cap.Token, h.f.storeA1, h.hold.OrderID)
+		if err != nil || len(view.Methods) != 0 || view.PaymentState != "NOT_STARTED" {
+			t.Fatalf("removed buyer method offered: %+v %v", view, err)
+		}
+		if out, err := h.begin(t04Key("rm2-start")); !errors.Is(err, command.ErrInvalid) || out != (checkout.PaymentResult{}) {
+			t.Fatalf("removed hosted start: %+v %v", out, err)
+		}
+		if out, err := h.start(t04Key("rm2-old-start")); !errors.Is(err, command.ErrInvalid) || out != (checkout.PaymentResult{}) {
+			t.Fatalf("removed legacy start: %+v %v", out, err)
+		}
+		if out, err := h.take(); !errors.Is(err, command.ErrConflict) || out.Form != nil || out.RedirectURL != "" {
+			t.Fatalf("removed form released: %+v %v", out, err)
+		}
+	}
+	after, afterOther := bpCounts(t, h)
+	if before != after || beforeOther != afterOther {
+		t.Fatal("removed payment request changed durable state")
+	}
+}
+
+func TestRemovePayuniGoRM2WorkerSkipsHistoryWithoutObservation(t *testing.T) {
+	p := psSetupItemsOn(t, pwIsolatedFixture(t), 1)
+	result := rm2HistoricalAttempt(t, p)
+	keys, err := accounts.NewKeyring("rm2_test", map[string][]byte{"rm2_test": randomBytes(32)}, randomBytes(32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := pqFixture{psHarness: p, keys: keys, result: result, schema: "river_payment"}
+	// Seed one already persisted authenticated report and reconciliation job using unchanged SQL.
+	// The new Go capture worker must refuse even this valid historical report.
+	pcRecord(t, q, pcFull(q))
+	before := rm2Snapshot(t, p, result.AttemptID)
+	var calls atomic.Int64
+	opts := payments.DefaultQueryWorkerOptions()
+	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) {
+		calls.Add(1)
+		return nil, errors.New("removed provider must never be called")
+	})
+	client, err := payments.NewWorkerClient(context.Background(), p.worker, q.keys, "PROVIDER_MOCK", 1, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { pwStopClient(t, client) })
+	mustExec(t, p.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, result.JobID)
+	if err = client.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	pwAwaitJob(t, q, result.JobID, "cancelled")
+	var captureJob int64
+	if err = p.f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, result.OperationID).Scan(&captureJob); err != nil {
+		t.Fatal(err)
+	}
+	pwAwaitJob(t, q, captureJob, "cancelled")
+	pwStopClient(t, client)
+	if calls.Load() != 0 {
+		t.Fatalf("removed provider called %d times", calls.Load())
+	}
+	if after := rm2Snapshot(t, p, result.AttemptID); after != before {
+		t.Fatalf("history mutated after worker: before=%s after=%s", before, after)
+	}
+	// Merchant and buyer views retain the stored state, rather than hiding the old attempt.
+	moGrant(t, p.f, p.f.tenantA, p.f.storeA1, p.f.principalA)
+	rows, err := moRead(context.Background(), p.f.runtime, p.f.tokens["a"], p.f.tenantA, p.f.storeA1, p.f.principalA, p.hold.OrderID, "all", 1)
+	if err != nil || len(rows) != 1 || rows[0]["payment_state"] != "PENDING" || rows[0]["commercial_state"] != "AWAITING_PAYMENT" {
+		t.Fatalf("merchant history hidden or changed: %+v %v", rows, err)
+	}
+	// Buyer view must retain the recorded PENDING state; a handoff remains unavailable.
+	pool, err := platform.OpenHostedPool(context.Background(), hpRole(t, p.f))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	service := hpStarter(t, pool, "PROVIDER_MOCK", q.keys, checkout.HostedConfig{}).(*checkout.HostedPaymentStarter)
+	for i := 0; i < 2; i++ {
+		view, err := service.PaymentView(context.Background(), p.cap.Token, p.f.storeA1, p.hold.OrderID)
+		if err != nil || view.PaymentState != "PENDING" || view.CommercialState != "AWAITING_PAYMENT" || len(view.Methods) != 0 {
+			t.Fatalf("history hidden or changed: %+v %v", view, err)
+		}
+		if out, err := service.TakeHosted(context.Background(), p.cap.Token, p.f.storeA1, p.hold.OrderID); !errors.Is(err, command.ErrConflict) || out.Form != nil || out.RedirectURL != "" {
+			t.Fatalf("history resumed: %+v %v", out, err)
+		}
+	}
+	if after := rm2Snapshot(t, p, result.AttemptID); after != before {
+		t.Fatal("historical read changed state")
+	}
+}
+
+func containsString(values []string, want string) bool {
+	for _, v := range values {
+		if v == want {
+			return true
+		}
+	}
+	return false
 }

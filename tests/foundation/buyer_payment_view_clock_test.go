@@ -18,7 +18,7 @@ import (
 func TestBuyerPaymentViewFinalDatabaseClock(t *testing.T) {
 	for _, stage := range []string{"capability", "qualification", "page"} {
 		t.Run(stage, func(t *testing.T) {
-			h := hpSetup(t)
+			h := hpSQLSetup(t)
 			if stage == "page" {
 				if _, err := h.begin(t04Key("bp-clock-page")); err != nil {
 					t.Fatal(err)
@@ -36,7 +36,7 @@ func TestBuyerPaymentViewFinalDatabaseClock(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			service := hpStarter(t, pool, "PROVIDER_MOCK", keys, h.config).(*checkout.HostedPaymentStarter)
+			service := hpSQLStarter(t, pool, "PROVIDER_MOCK", keys, h.config)
 			before, beforeOther := bpCounts(t, h)
 			holder, err := h.f.owner.Begin(ctx)
 			if err != nil {

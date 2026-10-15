@@ -1,0 +1,13 @@
+{
+  "branch": "unit/pay-rm2-p2a",
+  "changed_paths": 63,
+  "out_of_scope": [],
+  "git_diff_check_exit": 0,
+  "forbidden_paths_untouched": [
+    "migrations/**",
+    "apps/**",
+    "internal/integrations/shipping/**",
+    "go.mod",
+    "go.sum"
+  ]
+}

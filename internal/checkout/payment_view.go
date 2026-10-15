@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -50,10 +51,10 @@ type OrderPayment struct {
 	HandoffExpiresAt *time.Time            `json:"handoff_expires_at"`
 	Methods          []PaymentMethodOption `json:"methods"`
 	// CancelRequested is emitted only for Stripe-attempt orders (view_v2, then cleared by
-	// PaymentView otherwise); nil is omitted so PAYUNi responses stay byte-identical (rulings §4).
+	// PaymentView otherwise); nil is omitted so historical responses stay byte-identical (rulings §4).
 	CancelRequested *bool `json:"cancel_requested,omitempty"`
 	// Refund is emitted only for Stripe-attempt orders with refund activity (view_v2, D8); an absent
-	// field is the same as null, so PAYUNi and refund-free responses keep byte-identical output.
+	// field is the same as null, so historical and refund-free responses keep byte-identical output.
 	Refund *OrderRefund `json:"refund,omitempty"`
 	// Collector is emitted only for derived-connection (platform Stripe) orders; the view SQL answers JSON null for primary
 	// connections, and an absent field is the same as null (the Refund convention), so existing responses stay byte-identical.
@@ -72,18 +73,13 @@ func (s *HostedPaymentStarter) PaymentView(ctx context.Context, token, storeID, 
 		var body []byte
 		if s.stripe == nil {
 			if err := tx.QueryRow(callCtx, `SELECT checkout.hosted_payment_view($1,$2::uuid,$3::uuid,$4,$5)`,
-				tokenHash[:], storeID, orderID, s.starter.profile, s.configDigest[:]).Scan(&body); err != nil {
+				tokenHash[:], storeID, orderID, s.starter.profile, make([]byte, 32)).Scan(&body); err != nil {
 				return err
 			}
 		} else {
-			// checkout.hosted_payment_view_v2: superset of v1 that adds the Stripe method,
-			// CLOSED_UNPAID and cancel_requested; a NULL PAYUNi digest hides the PAYUNi method.
-			var payuni []byte
-			if s.payuni {
-				payuni = s.configDigest[:]
-			}
+			// NULL legacy digest prevents removed methods being offered; historical attempt state stays visible.
 			if err := tx.QueryRow(callCtx, `SELECT checkout.hosted_payment_view_v2($1,$2::uuid,$3::uuid,$4,$5::bytea,$6::bytea)`,
-				tokenHash[:], storeID, orderID, s.starter.profile, payuni, s.stripeDigest[:]).Scan(&body); err != nil {
+				tokenHash[:], storeID, orderID, s.starter.profile, nil, s.stripeDigest[:]).Scan(&body); err != nil {
 				return err
 			}
 		}
@@ -92,7 +88,13 @@ func (s *HostedPaymentStarter) PaymentView(ctx context.Context, token, storeID, 
 		}
 		decoder := json.NewDecoder(bytes.NewReader(body))
 		decoder.DisallowUnknownFields()
-		if err := decoder.Decode(&out); err != nil || !validPaymentViewFor(out, orderID, s.stripe != nil) {
+		if err := decoder.Decode(&out); err != nil {
+			return command.ErrConflict
+		}
+		// Historical projections may still contain a retired candidate because SQL is unchanged in phase 2a.
+		// Preserve the attempt/financial state while removing only the retired buyer action.
+		out.Methods = withoutRemovedMethods(out.Methods)
+		if !validPaymentViewFor(out, orderID, s.stripe != nil) {
 			return command.ErrConflict
 		}
 		if s.stripe != nil {
@@ -116,7 +118,7 @@ func (s *HostedPaymentStarter) PaymentView(ctx context.Context, token, storeID, 
 }
 
 // dropCancelUnlessStripe enforces rulings §4: v2 always emits cancel_requested (the validator
-// requires it), but only Stripe-attempt orders may expose it, so PAYUNi and not-started orders
+// requires it), but only Stripe-attempt orders may expose it, so historical and not-started orders
 // serialize byte-identically whether or not Stripe is enabled. The refund totals follow the same rule
 // (D8): only Stripe-attempt orders can carry them.
 func dropCancelUnlessStripe(out *OrderPayment, isStripe bool) {
@@ -130,19 +132,15 @@ func validPaymentView(out OrderPayment, orderID string) bool {
 	return validPaymentViewFor(out, orderID, false)
 }
 
-// validPaymentViewFor checks one projection. v2 (Stripe-enabled service) allows two
-// methods, CLOSED_UNPAID, the Stripe handoff states and requires cancel_requested;
-// v1 rejects all of them so PAYUNi-only bytes and validation stay unchanged.
+// validPaymentViewFor checks one projection. v2 allows only the Stripe method,
+// CLOSED_UNPAID and Stripe handoff states and requires cancel_requested.
+// v1 retains the historical state vocabulary without any executable method.
 func validPaymentViewFor(out OrderPayment, orderID string, v2 bool) bool {
-	maxMethods := 1
-	if v2 {
-		maxMethods = 2
-	}
 	if (out.CancelRequested != nil) != v2 {
 		return false
 	}
 	if out.OrderID != orderID || len(out.Currency) != 3 || out.TotalMinor < 0 || out.TotalMinor > 1000000000000 ||
-		out.Methods == nil || len(out.Methods) > maxMethods {
+		out.Methods == nil || len(out.Methods) > 1 {
 		return false
 	}
 	for _, ch := range out.Currency {
@@ -198,11 +196,25 @@ func validPaymentViewFor(out OrderPayment, orderID string, v2 bool) bool {
 	}
 	seen := map[string]bool{}
 	for _, method := range out.Methods {
-		if (method.Code != "payuni_credit" && !(v2 && method.Code == stripeMethodCode)) || seen[method.Code] ||
+		if (!v2 || method.Code != stripeMethodCode) || seen[method.Code] ||
 			method.Version < 1 || method.NameHans == "" || method.NameHant == "" || method.NameEN == "" {
 			return false
 		}
 		seen[method.Code] = true
 	}
 	return true
+}
+
+// withoutRemovedMethods removes legacy PAYUNi choices from a read-only projection, never its stored payment state.
+func withoutRemovedMethods(methods []PaymentMethodOption) []PaymentMethodOption {
+	if methods == nil {
+		return nil
+	}
+	out := make([]PaymentMethodOption, 0, len(methods))
+	for _, method := range methods {
+		if !strings.HasPrefix(method.Code, "payuni_") {
+			out = append(out, method)
+		}
+	}
+	return out
 }

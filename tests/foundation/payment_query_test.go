@@ -1,5 +1,11 @@
 package foundation_test
 
+// Purpose: payment query worker suite: historical PAYUNi rows are rejected without claim or
+// send; the active Stripe query keeps lease/UNKNOWN recovery under parent-context cancellation.
+// Depends on: pq/ps fixtures, rm2StripePending + sfl Stripe fake, payments.NewPaymentWorkerClient,
+// River schema river_payment.
+// Used by: go test ./tests/foundation (CI gate shard g07); pqFixture helpers used across payment suites.
+
 import (
 	"context"
 	"crypto/aes"
@@ -26,6 +32,7 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/checkout"
+	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/accounts"
 	integration "livecommerce/internal/integrations/core"
 	"livecommerce/internal/payments"
@@ -35,10 +42,14 @@ import (
 
 type pqFixture struct {
 	psHarness
-	keys           *accounts.Keyring
-	accountService *accounts.Service
-	result         checkout.PaymentResult
-	schema         string
+	keys            *accounts.Keyring
+	accountService  *accounts.Service
+	result          checkout.PaymentResult
+	schema          string
+	historySnapshot string
+	outbound        *atomic.Int32
+	stripe          *sflEnv
+	stripeStore     sstStore
 }
 
 var pqOldSecret = accounts.Credentials{HashKey: strings.Repeat("K", 32), HashIV: strings.Repeat("V", 16)}
@@ -79,29 +90,12 @@ func pqSetupItemsOn(t *testing.T, base *testFixture, keys *accounts.Keyring, fre
 		schema = "river"
 	}
 	q := pqFixture{psHarness: p, keys: keys, accountService: service, schema: schema}
-	q.rotate(t, 1, pqOldSecret)
-	// This disposable owner seeds MOCK qualification only; real issuers remain closed.
-	qualExec(t, p.f.owner, `UPDATE payments.account_qualifications SET credential_version=2 WHERE id=$1`, p.proof)
 	if freshSession {
 		q.cap.Token, q.cap.Scope.SessionID = randomToken(), randomUUID()
 		mustExec(t, p.f.owner, `INSERT INTO buyer.capability_sessions(tenant_id,store_id,owner_id,id,token_hash,expires_at) VALUES($1,$2,$3,$4,$5,clock_timestamp()+interval '1 hour')`, q.cap.Scope.TenantID, q.cap.Scope.StoreID, q.cap.Scope.OwnerID, q.cap.Scope.SessionID, tokenHash(q.cap.Token))
 	}
-	q.result, e = q.start(t04Key("pq-start"))
-	if e != nil {
-		t.Fatal(e)
-	}
+	q.result = rm2HistoryIn(t, q.psHarness, schema, "PROVIDER_MOCK", "payment_mock_v1")
 	return q
-}
-func (q pqFixture) rotate(t *testing.T, version int64, secret accounts.Credentials) {
-	t.Helper()
-	ctx := context.Background()
-	e := platform.WithScope(ctx, q.f.runtime, q.f.tokens["a"], q.f.storeA1, "integration:manage", func(tx pgx.Tx, s platform.Scope) error {
-		_, e := q.accountService.Rotate(ctx, tx, s, q.f.tokens["a"], t04Key("pq-rotate"), accounts.RotateInput{ConnectionID: q.account, ExpectedVersion: version, Credentials: secret})
-		return e
-	})
-	if e != nil {
-		t.Fatal(e)
-	}
 }
 func (q pqFixture) claim(t *testing.T) integration.ClaimResult {
 	t.Helper()
@@ -184,24 +178,19 @@ func pqNoNetwork() http.RoundTripper {
 }
 
 func TestBuyerPaymentQueryHistoricalCredentialAndACL(t *testing.T) {
-	q := pqSetup(t)
-	q.rotate(t, 2, accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("I", 16)})
+	p := psSetup(t)
+	q := pqFixture{psHarness: p, result: rm2HistoricalAttempt(t, p), schema: "river_payment"}
 	mustExec(t, q.f.owner, `UPDATE integration.bindings SET enabled=false,semantic_version=semantic_version+1 WHERE id=$1`, q.binding)
 	qualExec(t, q.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, q.proof)
-	c := q.claim(t)
 	ctx := context.Background()
 	tx, e := q.worker.Begin(ctx)
 	if e != nil {
 		t.Fatal(e)
 	}
 	defer tx.Rollback(ctx)
-	material, e := q.keys.LoadPaymentQuery(ctx, tx, q.result.OperationID, c.Generation, c.LeaseToken, "PROVIDER_MOCK", pqNoNetwork())
-	if e != nil || material.Expected.AmountTWD != 25 || material.Expected.MerTradeNo != q.result.MerchantTradeNo {
-		t.Fatalf("historical material/minor conversion: %v", e)
-	}
-	encoded, _ := json.Marshal(material)
-	if strings.Contains(string(encoded), pqOldSecret.HashKey) || strings.Contains(fmt.Sprintf("%+v", material), pqOldSecret.HashIV) {
-		t.Fatal("material exposes credentials")
+	// The Go material loader was removed. A historical row cannot be restarted or dispatched.
+	if _, e = q.starter.StartPayment(ctx, q.cap.Token, q.f.storeA1, t04Key("pq-removed"), q.input); !errors.Is(e, command.ErrInvalid) {
+		t.Fatalf("removed historical attempt could restart: %v", e)
 	}
 	if e = tx.Commit(ctx); e != nil {
 		t.Fatal(e)
@@ -231,7 +220,7 @@ func TestBuyerPaymentQueryHistoricalCredentialAndACL(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryReportAtomicDedupAndBinding(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	c := q.claim(t)
 	report := pqReport(q)
 	for _, field := range []string{"AmountTWD", "MerTradeNo", "TradeNo", "PaymentType", "AuthType", "DataSource", "CardInst", "extra"} {
@@ -296,7 +285,7 @@ func TestBuyerPaymentQueryReportAtomicDedupAndBinding(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryFaultAndLeaseWaitRollback(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	c := q.claim(t)
 	name := "pq_wait_" + t04Tag()
 	ctx := context.Background()
@@ -439,35 +428,29 @@ func pqAwait(t *testing.T, q pqFixture, jobID int64, wantCode, wantState string)
 	t.Fatal("query worker did not persist expected result/queue state")
 	return time.Time{}
 }
+
+// A formerly valid signed reply is no longer dispatch authority. The transport
+// remains armed with that reply so restoring the adapter is a hard failure.
 func TestBuyerPaymentQueryRealWorkerSignedHistoricalResponse(t *testing.T) {
 	q := pqSetupWorker(t)
-	q.rotate(t, 2, accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("I", 16)})
 	mustExec(t, q.f.owner, `UPDATE integration.bindings SET enabled=false,semantic_version=semantic_version+1 WHERE id=$1`, q.binding)
 	report := pqReport(q)
 	report["DataSource"] = "B"
 	body := pqSignedResponse(report)
 	var calls atomic.Int32
 	opts := payments.DefaultQueryWorkerOptions()
-	opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
+	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) {
 		calls.Add(1)
-		if r.URL.String() != "https://sandbox-api.payuni.com.tw/api/trade/query" || r.Method != "POST" {
-			return nil, errors.New("unexpected_target")
-		}
-		b, _ := io.ReadAll(r.Body)
-		v, e := url.ParseQuery(string(b))
-		if e != nil || v.Get("MerID") != "mock-account" {
-			return nil, errors.New("unexpected_account")
-		}
-		hash := sha256.Sum256([]byte(pqOldSecret.HashKey + v.Get("EncryptInfo") + pqOldSecret.HashIV))
-		if v.Get("HashInfo") != strings.ToUpper(hex.EncodeToString(hash[:])) {
-			return nil, errors.New("not_frozen_credentials")
-		}
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 	})
-	pqStartWorker(t, q, opts)
-	when := pqAwait(t, q, q.result.JobID, "payment_report_observed", "scheduled")
-	if calls.Load() != 1 || q.reportCount(t) != 1 || time.Until(when) < 9*time.Minute {
-		t.Fatalf("signed query/report/B retry mismatch: calls%d reports%d", calls.Load(), q.reportCount(t))
+	before := rm2Snapshot(t, q.psHarness, q.result.AttemptID)
+	_, stop := pqStartWorker(t, q, opts)
+	pwAwaitJob(t, q, q.result.JobID, "cancelled")
+	if err := stop(); err != nil {
+		t.Fatal(err)
+	}
+	if calls.Load() != 0 || q.reportCount(t) != 0 || rm2Snapshot(t, q.psHarness, q.result.AttemptID) != before {
+		t.Fatal("retired signed query dispatched or changed history")
 	}
 	q.pending(t)
 }
@@ -491,13 +474,14 @@ func TestBuyerPaymentQueryBudgetDurabilityAndNoSend(t *testing.T) {
 			var calls atomic.Int32
 			opts := payments.DefaultQueryWorkerOptions()
 			opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) { calls.Add(1); return nil, errors.New("must_not_query") })
+			before := rm2Snapshot(t, q.psHarness, q.result.AttemptID)
 			pqStartWorker(t, q, opts)
-			pqAwait(t, q, q.result.JobID, "payment_query_budget_exhausted", "cancelled")
+			pwAwaitJob(t, q, q.result.JobID, "cancelled")
 			// Owner-only redelivery of the same linked job: commit-time routing now
 			// rejects a second orphan job ID before the worker could see it.
 			mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
-			pqAwait(t, q, q.result.JobID, "payment_query_budget_exhausted", "cancelled")
-			if calls.Load() != 0 || q.reportCount(t) != 0 {
+			pwAwaitJob(t, q, q.result.JobID, "cancelled")
+			if calls.Load() != 0 || q.reportCount(t) != 0 || rm2Snapshot(t, q.psHarness, q.result.AttemptID) != before {
 				t.Fatal("budget retry queried provider")
 			}
 			q.pending(t)
@@ -506,7 +490,7 @@ func TestBuyerPaymentQueryBudgetDurabilityAndNoSend(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	firstReport := pqReport(q)
 	if e := q.record(q.claim(t), firstReport); e != nil {
 		t.Fatal(e)
@@ -519,7 +503,7 @@ func TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts(t *testing.T) {
 		t.Fatal(e)
 	}
 	second.input.OrderID = second.hold.OrderID
-	second.result, e = second.start(t04Key("pq-second-payment"))
+	second.result, e = psSQLStarter(t, second.pool, "PROVIDER_MOCK").StartPayment(context.Background(), second.cap.Token, second.f.storeA1, t04Key("pq-second-start"), second.input)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -562,7 +546,7 @@ func TestBuyerPaymentQueryWireFailuresStayPending(t *testing.T) {
 			}
 			if kind == "aad" {
 				// Corrupt this disposable fixture's encrypted envelope; never real credentials.
-				mustExec(t, q.f.owner, `UPDATE integration.account_credentials SET ciphertext=set_byte(ciphertext,0,(get_byte(ciphertext,0)+1)%256) WHERE connection_id=$1 AND version=2`, q.account)
+				mustExec(t, q.f.owner, `UPDATE integration.account_credentials SET ciphertext=set_byte(ciphertext,0,(get_byte(ciphertext,0)+1)%256) WHERE connection_id=$1 AND version=1`, q.account)
 			}
 			var calls atomic.Int32
 			opts := payments.DefaultQueryWorkerOptions()
@@ -580,24 +564,14 @@ func TestBuyerPaymentQueryWireFailuresStayPending(t *testing.T) {
 				}
 				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 			})
-			want := "payment_query_wire_failed"
-			if kind == "timeout" {
-				want = "payment_query_timeout"
+			before := rm2Snapshot(t, q.psHarness, q.result.AttemptID)
+			_, stop := pqStartWorker(t, q, opts)
+			pwAwaitJob(t, q, q.result.JobID, "cancelled")
+			if err := stop(); err != nil {
+				t.Fatal(err)
 			}
-			if kind == "panic" {
-				want = "payment_query_panic"
-			}
-			if kind == "missing_key" || kind == "aad" {
-				want = "payment_query_material_unavailable"
-			}
-			pqStartWorker(t, q, opts)
-			pqAwait(t, q, q.result.JobID, want, "scheduled")
-			wantCalls := int32(1)
-			if kind == "missing_key" || kind == "aad" {
-				wantCalls = 0
-			}
-			if calls.Load() != wantCalls || q.reportCount(t) != 0 {
-				t.Fatalf("unverified report or unexpected call %d", calls.Load())
+			if calls.Load() != 0 || q.reportCount(t) != 0 || rm2Snapshot(t, q.psHarness, q.result.AttemptID) != before {
+				t.Fatal("removed wire matrix dispatched or changed history")
 			}
 			var jobErrors string
 			if e := q.f.owner.QueryRow(context.Background(), `SELECT coalesce(errors::text,'') FROM river_payment.river_job WHERE id=$1`, q.result.JobID).Scan(&jobErrors); e != nil || strings.Contains(jobErrors, "SECRET_provider_sentinel") {
@@ -609,7 +583,7 @@ func TestBuyerPaymentQueryWireFailuresStayPending(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryFinishClockAndReferenceFence(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	c := q.claim(t)
 	ctx := context.Background()
 	if _, e := q.worker.Exec(ctx, `SELECT integration.finish_payment_query($1,$2,$3,'PROVIDER_MOCK','payment_query_timeout','forged-reference')`, q.result.OperationID, c.Generation, c.LeaseToken); e == nil {
@@ -664,8 +638,8 @@ func TestBuyerPaymentQueryFinishClockAndReferenceFence(t *testing.T) {
 
 func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 	base := pwIsolatedFixture(t)
-	q := pqSetupItemsOn(t, base, nil, false, 1)
-	other := pqSetupItemsOn(t, base, nil, false, 1)
+	q := pqSQLSetupOn(t, base, false, 1)
+	other := pqSQLSetupOn(t, base, false, 1)
 	c := q.claim(t)
 	foreign := other.claim(t)
 	if _, e := q.worker.Exec(context.Background(), `SELECT integration.load_payment_query($1,$2,$3,'PROVIDER_MOCK')`, q.result.OperationID, foreign.Generation, foreign.LeaseToken); e == nil {
@@ -714,7 +688,7 @@ func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryConcurrentReportSingleWinner(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	claim := q.claim(t)
 	report := pqReport(q)
 	start := make(chan struct{})
@@ -744,37 +718,83 @@ func TestBuyerPaymentQueryConcurrentReportSingleWinner(t *testing.T) {
 	q.pending(t)
 }
 
+// Removal must cancel before any provider IO/lease; Stripe cancellation/recovery
+// stays covered by TestStripeQueryCancelledIOKeepsRecoverableLease.
 func TestBuyerPaymentQueryCancelledIOKeepsRecoverableLease(t *testing.T) {
 	q := pqSetupWorker(t)
-	entered := make(chan struct{}, 1)
-	stopped := make(chan struct{}, 1)
+	var calls atomic.Int32
 	opts := payments.DefaultQueryWorkerOptions()
-	opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
-		entered <- struct{}{}
-		<-r.Context().Done()
-		stopped <- struct{}{}
-		return nil, r.Context().Err()
-	})
+	opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) { calls.Add(1); return nil, r.Context().Err() })
+	before := rm2Snapshot(t, q.psHarness, q.result.AttemptID)
 	client, _ := pqStartWorker(t, q, opts)
+	pwAwaitJob(t, q, q.result.JobID, "cancelled")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := client.StopAndCancel(ctx); err != nil {
+		t.Fatal("worker cancellation did not stop")
+	}
+	var state string
+	var hasLease bool
+	if err := q.f.owner.QueryRow(context.Background(), `SELECT state,lease_until IS NOT NULL FROM integration.operations WHERE id=$1`, q.result.OperationID).Scan(&state, &hasLease); err != nil || state != "UNKNOWN" || hasLease || q.reportCount(t) != 0 || calls.Load() != 0 || rm2Snapshot(t, q.psHarness, q.result.AttemptID) != before {
+		t.Fatalf("removed query claimed, sent or mutated: state=%s lease=%v calls=%d err=%v", state, hasLease, calls.Load(), err)
+	}
+	q.pending(t)
+}
+
+// Active-provider replacement for the parent-context/lease assertion above.
+// No detached Stripe request may outlive StopAndCancel, and a cancelled query
+// must keep recoverable UNKNOWN state without inventing a financial observation.
+func TestStripeQueryCancelledIOKeepsRecoverableLease(t *testing.T) {
+	q := rm2StripePending(t)
+	e := q.stripe
+	session := e.session(t, q.result.AttemptID)
+	beforeReports := q.reportCount(t)
+	entered, stopped := make(chan struct{}, 1), make(chan struct{}, 1)
+	transport := e.fake.Transport()
+	rt, err := payments.NewStripeRuntime(context.Background(), e.pool, e.keys, "PROVIDER_MOCK", pqTransport(func(r *http.Request) (*http.Response, error) {
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/"+session) {
+			entered <- struct{}{}
+			<-r.Context().Done()
+			stopped <- struct{}{}
+			return nil, r.Context().Err()
+		}
+		return transport.RoundTrip(r)
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := payments.NewPaymentWorkerClient(context.Background(), e.pool, payments.WorkerConfig{Profile: "PROVIDER_MOCK", Concurrency: 1, Query: e.opts, Keys: e.keys, Stripe: rt})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { pwStopClient(t, client) })
+	// The fixture leaves the query job available but not yet due; sstWake skips that state.
+	q.rm2WakeQuery(t)
+	if err = client.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 	select {
 	case <-entered:
 	case <-time.After(5 * time.Second):
-		t.Fatal("query never entered wire")
+		t.Fatal("Stripe query never entered wire")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	if e := client.StopAndCancel(ctx); e != nil {
-		t.Fatal("worker cancellation did not stop")
+	if err = client.StopAndCancel(ctx); err != nil {
+		t.Fatal("Stripe worker cancellation did not stop", err)
 	}
 	select {
 	case <-stopped:
 	default:
-		t.Fatal("provider IO detached from parent cancellation")
+		t.Fatal("Stripe IO detached from parent cancellation")
 	}
 	var state string
 	var hasLease bool
-	if e := q.f.owner.QueryRow(context.Background(), `SELECT state,lease_until IS NOT NULL FROM integration.operations WHERE id=$1`, q.result.OperationID).Scan(&state, &hasLease); e != nil || state != "UNKNOWN" || !hasLease || q.reportCount(t) != 0 {
-		t.Fatalf("cancelled query not recoverable %v", e)
+	if err = q.f.owner.QueryRow(context.Background(), `SELECT state,lease_until IS NOT NULL FROM integration.operations WHERE id=$1`, q.result.OperationID).Scan(&state, &hasLease); err != nil || state != "UNKNOWN" || !hasLease || q.reportCount(t) != beforeReports {
+		t.Fatalf("cancelled Stripe query lost recovery state: %s %v %v", state, hasLease, err)
 	}
-	q.pending(t)
+	if pcCount(t, q, "payments.facts", "") != 0 || pcCount(t, q, "fulfillment.payment_work_items", "") != 0 {
+		t.Fatal("cancelled Stripe query invented money/work")
+	}
+	pcAssertStock(t, q, 2, 0, "AWAITING_PAYMENT", "PAYMENT_PENDING")
 }

@@ -16,21 +16,29 @@ func TestPaymentViewBoundedShape(t *testing.T) {
 	const order = "00000000-0000-4000-8000-000000000001"
 	base := OrderPayment{OrderID: order, Currency: "TWD", TotalMinor: 100,
 		CommercialState: "DRAFT", TestMode: true, PaymentState: "NOT_STARTED", HandoffState: "NONE",
-		Methods: []PaymentMethodOption{{Code: "payuni_credit", Version: 1, NameHans: "卡", NameHant: "卡", NameEN: "Card"}}}
+		Methods: []PaymentMethodOption{}}
 	if !validPaymentView(base, order) {
 		t.Fatal("valid bounded view rejected")
 	}
 	for name, change := range map[string]func(*OrderPayment){
-		"owner-order":      func(v *OrderPayment) { v.OrderID = "different" },
-		"currency":         func(v *OrderPayment) { v.Currency = "twd" },
-		"amount":           func(v *OrderPayment) { v.TotalMinor = -1 },
-		"null-methods":     func(v *OrderPayment) { v.Methods = nil },
-		"second-method":    func(v *OrderPayment) { v.Methods = append(v.Methods, v.Methods[0]) },
+		"owner-order":  func(v *OrderPayment) { v.OrderID = "different" },
+		"currency":     func(v *OrderPayment) { v.Currency = "twd" },
+		"amount":       func(v *OrderPayment) { v.TotalMinor = -1 },
+		"null-methods": func(v *OrderPayment) { v.Methods = nil },
+		"second-method": func(v *OrderPayment) {
+			v.Methods = []PaymentMethodOption{{Code: "payuni_credit", Version: 1, NameHans: "卡", NameHant: "卡", NameEN: "Card"}}
+		},
 		"unknown-state":    func(v *OrderPayment) { v.PaymentState = "PAID_BY_REDIRECT" },
 		"unknown-handoff":  func(v *OrderPayment) { v.HandoffState = "RETRYABLE" },
 		"missing-deadline": func(v *OrderPayment) { v.HandoffState = "PREPARED" },
-		"pending-option":   func(v *OrderPayment) { v.PaymentState = "PENDING" },
-		"cancelled-option": func(v *OrderPayment) { v.CommercialState = "CANCELLED" },
+		"pending-option": func(v *OrderPayment) {
+			v.PaymentState = "PENDING"
+			v.Methods = []PaymentMethodOption{{Code: "stripe_checkout"}}
+		},
+		"cancelled-option": func(v *OrderPayment) {
+			v.CommercialState = "CANCELLED"
+			v.Methods = []PaymentMethodOption{{Code: "stripe_checkout"}}
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			v := base

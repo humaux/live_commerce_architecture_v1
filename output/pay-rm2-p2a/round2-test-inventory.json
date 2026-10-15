@@ -1,0 +1,319 @@
+{
+  "base": "a11d19aacfe419529b06e5fb691771b530976378",
+  "tests": [
+    {
+      "file": "tests/foundation/browser_merchant_orders_bff_test.go",
+      "test": "TestBrowserMerchantOrdersBFFRealChain",
+      "old_sha256": "68cee650a48cac798a4a090821c2150c4e989be24c70c1d5440fc4713e7baa74",
+      "new_sha256": "62fa780eec94aaccb737f67b07da916f52c4ca4154c1327ce795632369b77944"
+    },
+    {
+      "file": "tests/foundation/browser_merchant_orders_ui_test.go",
+      "test": "TestBrowserMerchantOrdersUIFocused",
+      "old_sha256": "20af68ee014289a43b2ca5ad4d28edd500c66294c8adcd7541a5ae9db591bb63",
+      "new_sha256": "8f51a709d1f38c1388b9a5b9351494e913c466f02bb0650d274b41f6442f0b80"
+    },
+    {
+      "file": "tests/foundation/browser_merchant_orders_ui_test.go",
+      "test": "TestBrowserMerchantOrdersUIRealChain",
+      "old_sha256": "b99b31866299f4532d0a8d03e3cb4aca975a78df99f60ab9b0ca8271e955ec20",
+      "new_sha256": "781f224aab0f84d95e2f55c1c51da474d892b3ce6b1ba3a4561544ed01783f1a"
+    },
+    {
+      "file": "tests/foundation/browser_storefront_test.go",
+      "test": "TestBrowserStorefront",
+      "old_sha256": "bf5bfd7ebdae81c0902178de3677a5ae252d12709f29503714ebe1841cbb6a6d",
+      "new_sha256": "58f41263ab5b0527f4161c150e644e444cbb5dc8c5b8212d8459693fc856aac7"
+    },
+    {
+      "file": "tests/foundation/expiry_runtime_test.go",
+      "test": "TestBuyerCheckoutExpiryRuntimeEarlyStalePendingAndConfirmed",
+      "old_sha256": "b2bbbffcd86756c8215116ec158a8b8808b1eff27daadd2bc119f09aaa6680b5",
+      "new_sha256": "07ad8a672abb195d4972ed933f0c3a1bd3e76d0692f825c569e9eebe47ebf470"
+    },
+    {
+      "file": "tests/foundation/expiry_runtime_test.go",
+      "test": "TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger",
+      "old_sha256": "deb4679ab5faaece593610c1e9587c6c8256b325876675f933ed1f329c65c6a0",
+      "new_sha256": "98354d5432c7ce86967660abf3ea88c0faa900aac1ad15efd33a22fa85c86f9e"
+    },
+    {
+      "file": "tests/foundation/expiry_runtime_test.go",
+      "test": "TestBuyerCheckoutExpiryRuntimePaymentStartRace",
+      "old_sha256": "b67f1d7e62eabd06ee586421691512b9d2310d00794638a2636dd46706396a14",
+      "new_sha256": "55851fa08073179b14fc9ac5574e897826d47bbd259fdf470cb528293d60f7e6"
+    },
+    {
+      "file": "tests/foundation/merchant_account_http_test.go",
+      "test": "TestMerchantAccountHTTPConcurrentRotateCAS",
+      "old_sha256": "5cf03dbe17f658c5544275be6f2fffd52b1db446f95f6b0ee888cc1d5b6e704c",
+      "new_sha256": "59dff7ffdbfe12058f2252e4c178d3bd0acf51f14c3985f128e64db1d26d07fd"
+    },
+    {
+      "file": "tests/foundation/merchant_account_http_test.go",
+      "test": "TestMerchantAccountHTTPListRechecksAfterLockWait",
+      "old_sha256": "e05be831f7da31966099d000ee3246cebe7aa9affeec5ce527f5f1ddf30ccb59",
+      "new_sha256": "22016fe989a8be60d5be747efd8f8386002f92f8f813b5f75ca4181a62fb72bf"
+    },
+    {
+      "file": "tests/foundation/merchant_account_http_test.go",
+      "test": "TestMerchantAccountHTTPPaginationAndAuthority",
+      "old_sha256": "2b2dfb108ace3f07ab3502dd0991f9d5de733c46fe57ad9da151705af9d2ca80",
+      "new_sha256": "db5e642870d220a688795ee44bfd9b72916a17bf09a42fc87e807635f8266b3b"
+    },
+    {
+      "file": "tests/foundation/merchant_account_http_test.go",
+      "test": "TestMerchantAccountHTTPRateLimitIsScoped",
+      "old_sha256": "e2969db1093f353413a75a3eb973cf795d97d64bb6859160ea809fc6c9fad5e4",
+      "new_sha256": "b04a13a7ab2d82090ced7e5452fde168e7506419f8f1f187798d80b29e955a21"
+    },
+    {
+      "file": "tests/foundation/merchant_account_http_test.go",
+      "test": "TestMerchantAccountHTTPRoundTripAndPermanentReplay",
+      "old_sha256": "483d5f5c5fc81b03248d0b2ba96735e31dc16bf4295647aad4e4e869649dbf81",
+      "new_sha256": "68aa57335c10b6db8d8a0688831e312d99694418b7c800cdc412cf32d656f666"
+    },
+    {
+      "file": "tests/foundation/merchant_accounts_test.go",
+      "test": "TestMerchantAccountsAtomicFaultRollback",
+      "old_sha256": "d3afb13e11da6f1317386236eb6a6fe0e8dae51f6a27bce199889f40c504e55d",
+      "new_sha256": "c96899ecffd68beb079fea2e13f87affaac440c56d76eef6b38dccb5cddc6a1c"
+    },
+    {
+      "file": "tests/foundation/merchant_accounts_test.go",
+      "test": "TestMerchantAccountsConcurrentReplayAndRotationCAS",
+      "old_sha256": "99efad02ab53857934690e69c7df8100be20d92aa1b8bbf995778e26f7bb283b",
+      "new_sha256": "f28da8a537c72213c70dae03b8cfdc1e3d7bbfc278ee8bfcadb18dc76e18f758"
+    },
+    {
+      "file": "tests/foundation/merchant_accounts_test.go",
+      "test": "TestMerchantAccountsReplayConflictsAndAuthorization",
+      "old_sha256": "90c442627dcb3082f0ccf98b69a97c7186b19a8cc630ab4642236e2f70a370dc",
+      "new_sha256": "8ce3977507a912a36d651d7b744096806fac17e4aaf4d17a230535f77fc3a829"
+    },
+    {
+      "file": "tests/foundation/merchant_accounts_test.go",
+      "test": "TestMerchantAccountsRotationAtomicFaultRollback",
+      "old_sha256": "258002812278b970ca66a7f41a3501d719d08598ea29d508f6fdb8c94117562e",
+      "new_sha256": "4af7535acc9b980485613a85b38835607559b4254981899aca1fdaf105cad968"
+    },
+    {
+      "file": "tests/foundation/merchant_accounts_test.go",
+      "test": "TestMerchantAccountsRoundTripPrivacyAndRotation",
+      "old_sha256": "033a51273bb8415283a0ec01b6f37a0fdbabfd339546ad1def19f1b331e4c703",
+      "new_sha256": "de971c7bda985ac3b4397f6e5986434f08b4ab103648cb9acbbf48a935436f97"
+    },
+    {
+      "file": "tests/foundation/merchant_accounts_test.go",
+      "test": "TestMerchantAccountsSQLColumnAndMutationBoundaries",
+      "old_sha256": "82672229975174ddb1cebe3fd5916397610d3fd4336367cccac4f5adb315c6d1",
+      "new_sha256": "db4f1544bb4d4103c25009346f346844d86c2ccccbf43494b7796f4574999438"
+    },
+    {
+      "file": "tests/foundation/merchant_orders_test.go",
+      "test": "TestMerchantOrdersActualPaymentAndExpiryStates",
+      "old_sha256": "a17c68b14d902412156fbe0de02498a0ae36c2e51485f1e89fc8cec80d620217",
+      "new_sha256": "a5cc663f2ec564c89ad9d441a6d04d1c0c0ebec8b3b0107d3a20b60f41da3765"
+    },
+    {
+      "file": "tests/foundation/merchant_orders_test.go",
+      "test": "TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects",
+      "old_sha256": "a183a4806f73a193c787f3371bd9f78282c8393e0fe32c03523bde456ce3d3ac",
+      "new_sha256": "dfb83870d25123f793c4c02f4f8697b1a51f511850304a6c465fc11b7ccf4fdb"
+    },
+    {
+      "file": "tests/foundation/merchant_orders_v2_legacy_test.go",
+      "test": "TestMerchantOrdersV2LegacyDisplayFallback",
+      "old_sha256": "b41fb353105ade073aeb6090883e16701b5ba252fdcbf200fe469c137b8ad8d7",
+      "new_sha256": "6698714339e93c446d7966644e9e6b78d0a68bc0a88ef7a216f460a777e8e3db"
+    },
+    {
+      "file": "tests/foundation/merchant_orders_v2_legacy_test.go",
+      "test": "TestMerchantOrdersV2LegacyUnicodeWhitespaceRecipient",
+      "old_sha256": "93fc1111e3c06e76e75b99f12721bd4322532e698d3f3accae4423bd644b2ecd",
+      "new_sha256": "a749815b2e0e28131d4f397a3b4c706a6072af13baef433361812480a2fcd135"
+    },
+    {
+      "file": "tests/foundation/merchant_orders_v2_perf_test.go",
+      "test": "TestMerchantOrdersV2TenThousandScopedSearch",
+      "old_sha256": "f37a158225d0eb078a423fbbab3d5a84b2f15c03ea2633c0efe257341309b80c",
+      "new_sha256": "2cc342886612a588c3561e16b2c09dc23fdae3686051f93427965b2fbfe8fd65"
+    },
+    {
+      "file": "tests/foundation/merchant_orders_v2_test.go",
+      "test": "TestMerchantOrdersV2ReadContract",
+      "old_sha256": "d757a31f5475987edfd1aa267338ccf3d56d2c546db21af92689677947bca3e3",
+      "new_sha256": "a0fe1c8fdc4642ceea75b26434f05303757b158ea62f90a3fed9368e5ef702b4"
+    },
+    {
+      "file": "tests/foundation/merchant_settings_discovery_test.go",
+      "test": "TestMerchantWizardPaymentListBoundsAndExactResources",
+      "old_sha256": "32d8b4b32d2f2aecf386894433a040a7e5d54d62668397f2a0f75e4248445e28",
+      "new_sha256": "cb9c9f99b3121b8be510a5e3c3635e8bbf57fd46ddfa97d6af32d47dfa1eabe5"
+    },
+    {
+      "file": "tests/foundation/merchant_settings_http_test.go",
+      "test": "TestMerchantSettingsHTTPAuthorityAndDiagnostics",
+      "old_sha256": "bd069d4da105e12d47a1f69075cc6530a8723660678483cac81fba5d1bf53995",
+      "new_sha256": "dcc35c67156dc690847cff44d81d7371d6b281e6d5c70aa49b9570e123745de1"
+    },
+    {
+      "file": "tests/foundation/merchant_settings_http_test.go",
+      "test": "TestMerchantSettingsHTTPPaymentCAS",
+      "old_sha256": "55ee4eaf4a66ae575c9f0aaf9934dd6cb41841aabe22c4b0e83bc15a9df2a86e",
+      "new_sha256": "80d4ba8c8f23b8540bc35fe6b8a9c919051a45897423c066a67be5680d0d9b17"
+    },
+    {
+      "file": "tests/foundation/merchant_settings_http_test.go",
+      "test": "TestMerchantSettingsHTTPPaymentPersistenceAndReplay",
+      "old_sha256": "89439c1ccd74c21fec9a3e077977a0a1120087cfb9fdf3ebecf99470dfa7882c",
+      "new_sha256": "4bc45a9fb26a73d2497f879d881e1f160223582da9bf01d0288367becd59a2f6"
+    },
+    {
+      "file": "tests/foundation/parcel_fixture_test.go",
+      "test": "TestParcelFixtureSameBuyerTwoOrders",
+      "old_sha256": "84c41d96504470d847f1bfb41b0936e836727097770fff786a745bc9072ac205",
+      "new_sha256": "f51ddc4f8fedbb89a21fc9cf514d800bdc470d793390fff98e0de9f327e7d9ac"
+    },
+    {
+      "file": "tests/foundation/payment_capture_test.go",
+      "test": "TestBuyerPaymentCaptureACLAndObservationBinding",
+      "old_sha256": "b2e578d25def443d037e525c5c22609953b7d753c9ee45c8bcf0467409bb7258",
+      "new_sha256": "099a38c9d94970585257e46198fb51e62943a9aea59f274a0f5ebead9866dbe9"
+    },
+    {
+      "file": "tests/foundation/payment_capture_test.go",
+      "test": "TestBuyerPaymentCaptureRealRiverSignedQueryChain",
+      "old_sha256": "4893704c3b12245f7cae2a1c3dbeac6e5ce5c4f41898be66fb749348f6d60fc5",
+      "new_sha256": "1cb1a4ce19a21f4a97c9e025e742e8502ebadf482839c9fac59ea348068f64e0"
+    },
+    {
+      "file": "tests/foundation/payment_capture_test.go",
+      "test": "TestStripeCaptureDurableObservationAcrossRestart",
+      "old_sha256": null,
+      "new_sha256": "cc6ba137f03623b365eed98cc919e5af40f7ecb654563fe5cdff4314df88432d"
+    },
+    {
+      "file": "tests/foundation/payment_methods_test.go",
+      "test": "TestPaymentMethodsAtomicFaultRollback",
+      "old_sha256": "d24b7a8454c9c7c882ca9649f8cda0b796367d13329cebd4f5834a6329239c15",
+      "new_sha256": "0297bac2eaf89ae817fae53e4fabf3f51949941752a98d771cd0ce26d84211c3"
+    },
+    {
+      "file": "tests/foundation/payment_methods_test.go",
+      "test": "TestPaymentMethodsAuthorityAndEnvironment",
+      "old_sha256": "5b46f63b9da1a44d5030ef458e4d516df5d4ff2995b715239ff09b45b2c8601d",
+      "new_sha256": "fa2dd0029a7118bd5806006992e5c4713b55769cc5b8915181bb9982db285ddd"
+    },
+    {
+      "file": "tests/foundation/payment_methods_test.go",
+      "test": "TestPaymentMethodsConcurrentReplayAndCAS",
+      "old_sha256": "e7499adf0b294b66657940693759f3d5be727ee4c09b95224cea842115284ca6",
+      "new_sha256": "37fd201f312411d2e563b2e1d15f0e0d041d7857a49b6b1cded2d8de5d41ffac"
+    },
+    {
+      "file": "tests/foundation/payment_methods_test.go",
+      "test": "TestPaymentMethodsDiagnosticsAndCredentialRotation",
+      "old_sha256": "be0af2b5e759e6088e4fd3a9abcfb0966f89c12e5a850b2e42720eec4d031fed",
+      "new_sha256": "077112d57162aa1f0bf73df969dd8f5a1279f338d069b06393a436d2a7a17d9b"
+    },
+    {
+      "file": "tests/foundation/payment_methods_test.go",
+      "test": "TestPaymentMethodsPermissionRevokedDuringWait",
+      "old_sha256": "200a6d7a4a6c90f58bffc6f4a28ed6f02deeba0a7205374aaff7f05c51b9f803",
+      "new_sha256": "0905187bfa9b0b88e39e86e90e118344f5d155ae19b4f3bf282f412b3d026277"
+    },
+    {
+      "file": "tests/foundation/payment_methods_test.go",
+      "test": "TestPaymentMethodsRevisionsReplayAndIsolation",
+      "old_sha256": "ff15324dc81aeab11161bfaa2f71323afb5a7df743de692b49ac7d5862d2e057",
+      "new_sha256": "d365d6274724b89a6d48c734cddf8bc9e99c91bf79f5d8f29fdea907417a030b"
+    },
+    {
+      "file": "tests/foundation/payment_methods_test.go",
+      "test": "TestPaymentMethodsSQLGuardAndScopedTargets",
+      "old_sha256": "4b92fcb99a244ec96fa4c9717ef12163c1e191d9cc56e3411139bcb8b1b7abf0",
+      "new_sha256": "c16711c790a2b9af7663ce7ca4b78cb9d1e487dc3613180b3aa8be5fdef4006c"
+    },
+    {
+      "file": "tests/foundation/payment_query_test.go",
+      "test": "TestBuyerPaymentQueryBudgetDurabilityAndNoSend",
+      "old_sha256": "3a020a8f8367180dd9617e92b2420de676af89d33b137bd82b7eac86f8290622",
+      "new_sha256": "1e4792007ea7fe4721466e8aa1f2ab1453734757fcfb3be962e407e5df610878"
+    },
+    {
+      "file": "tests/foundation/payment_query_test.go",
+      "test": "TestBuyerPaymentQueryCancelledIOKeepsRecoverableLease",
+      "old_sha256": "c048afaf60f6b9f5b42da8321681417fb1557969ab99e58bca1917d2e2f20f1f",
+      "new_sha256": "f84d8c0b8a9ae4010cb753ee69b5521d7332eb8035404f6824b637b23b54849c"
+    },
+    {
+      "file": "tests/foundation/payment_query_test.go",
+      "test": "TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts",
+      "old_sha256": "b13fa5d315b8d70c7f0eb77dc45a2bb902fe032ed642949e98375dfc244792e5",
+      "new_sha256": "93b66c264bc34b9237a4a2ba988082bcf5f7d466344d301a19970261f90ea320"
+    },
+    {
+      "file": "tests/foundation/payment_query_test.go",
+      "test": "TestBuyerPaymentQueryRealWorkerSignedHistoricalResponse",
+      "old_sha256": "5c2a21926dea57caa1e8d51a946239d1b3fcecd48965d80ff06a1edf605b4538",
+      "new_sha256": "ce39ee64218d9a72f6a370ea9ffc4d10e654194924551f2ac5e14d2149270980"
+    },
+    {
+      "file": "tests/foundation/payment_query_test.go",
+      "test": "TestBuyerPaymentQueryWireFailuresStayPending",
+      "old_sha256": "39aa916db2c81fbd24cd01352889ddbbf3f6400d129a998d1c92c5bff732cc48",
+      "new_sha256": "e412ec8bab565181882130b460c1517a269683449c341f80b4e08a19fd88fbe4"
+    },
+    {
+      "file": "tests/foundation/payment_query_test.go",
+      "test": "TestStripeQueryCancelledIOKeepsRecoverableLease",
+      "old_sha256": null,
+      "new_sha256": "276dfaeec0213d2a9cb03b151164c07c9877c010bcac617c78a5a9564a073411"
+    },
+    {
+      "file": "tests/foundation/payment_runtime_test.go",
+      "test": "TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart",
+      "old_sha256": "e619e9baf9d11572a0cf145b9ddcaecbd26ff4371df2b0e72b1cf9361c0d0884",
+      "new_sha256": "7884359f59ea1283f6f3d2f50ec9c7767a0398e8478105ecc5558f13088742c0"
+    },
+    {
+      "file": "tests/foundation/stripe_buyer_http_test.go",
+      "test": "TestStripeSP14BuyerHTTP",
+      "old_sha256": "3e3c63d5922d5e5b5ac9300b19a85efad2b6c230fbbfc62ad3df68f8d6b23fa6",
+      "new_sha256": "2382012415a0d7d6116074ff6b5f6f0461e62e897214b25a68f29ca76fe7dbe7"
+    },
+    {
+      "file": "tests/foundation/stripe_flow_test.go",
+      "test": "TestStripeSP08HappyMock",
+      "old_sha256": "46c540357f84d95f39413944cdd353b857118d49595967023def23ea51f48769",
+      "new_sha256": "f8ae8fe65e33df929a869a5c7deabdcdd1c3d39d55e5b170440e03c825297cc2"
+    },
+    {
+      "file": "tests/foundation/stripe_process_test.go",
+      "test": "TestStripeSP15Process",
+      "old_sha256": "550cedbf9659613e6cd309786c194f6561664f413df749b7329d2845bb8c8cb5",
+      "new_sha256": "cc7ebcf913bef2736036be87d637b5111869fe39bf9b26aedbcea5b25096b49b"
+    },
+    {
+      "file": "tests/foundation/stripe_refund_http_test.go",
+      "test": "TestStripeRF09AdminHTTP",
+      "old_sha256": "fd402125ce6000e47d89cc94d0b3ba26818f5daacf953859ec42eef1ffdc9b80",
+      "new_sha256": "b8e5e73bfd9ac1463a4df43974c52981b482051c1fde961461ac0829576a6182"
+    },
+    {
+      "file": "tests/foundation/stripe_refund_request_test.go",
+      "test": "TestStripeRF04Request",
+      "old_sha256": "9ea7ed0b567cec495915da055d31ecc623b5976d631a8f188b2e0253aab4c736",
+      "new_sha256": "e9b6f7ded2d37724434cfb8dd14a4e3822c8100b2b2738c6c3b970bccf00e048"
+    },
+    {
+      "file": "tests/foundation/stripe_start_test.go",
+      "test": "TestStripeSP07Start",
+      "old_sha256": "26a184233c1007f8dfe75165ce74ee4373204df7d79479ef3a72665a1d9ad157",
+      "new_sha256": "c3caefccc49b967c53353ad103cbaf125a82fb80af7a277d204546c86e1d46db"
+    }
+  ],
+  "deleted_tests": [],
+  "notice": "Source comparison only; no tests executed. Test helper and browser TypeScript edits are described in DELIVERY.md."
+}

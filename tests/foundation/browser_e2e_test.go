@@ -328,9 +328,8 @@ func (x *e2eRun) startAPIs(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(checkoutPool.Close)
-	pcfg := checkout.HostedConfig{ReturnURL: sbReturnURL, NotifyURL: sbOrigin + "/payment/notify"}
 	scfg := checkout.StripeHostedConfig{ReturnURL: sbReturnURL}
-	hosted, err := checkout.NewHostedPaymentService(ctx, e.hosted, e.sstEnv.jobs, "PROVIDER_MOCK", e.keys, checkout.HostedProviders{PAYUNi: &pcfg, Stripe: &scfg})
+	hosted, err := checkout.NewHostedPaymentService(ctx, e.hosted, e.sstEnv.jobs, "PROVIDER_MOCK", e.keys, checkout.HostedProviders{Stripe: &scfg})
 	if err != nil {
 		t.Fatal(err)
 	}

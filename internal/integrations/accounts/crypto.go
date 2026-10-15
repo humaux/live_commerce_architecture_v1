@@ -1,3 +1,6 @@
+// crypto.go retains the shared Stripe keyring and legacy envelope decoding vocabulary.
+// Legacy envelopes have no production signer, query loader or credential-write caller.
+
 package accounts
 
 import (

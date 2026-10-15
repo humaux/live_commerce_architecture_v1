@@ -235,13 +235,10 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 		LEFT JOIN integration.account_credentials c ON c.tenant_id=a.tenant_id AND c.store_id=a.store_id AND c.connection_id=a.id
 		WHERE e.issuer=$1 AND e.subject='browser-subject' GROUP BY s.tenant_id`, idp.server.URL).
 		Scan(&accountCount, &credentialCount, &qualifications, &credentialVersion, &operations)
-	wantAccounts, wantCredentials, wantCredentialVersion := 1, 2, 2
-	if wizard {
-		// PAY-RM2 (owner 2026-10-14): the wizard no longer has any payment-provider account or method UI,
-		// so a wizard run must leave no merchant account, credential or method row behind.
-		wantAccounts, wantCredentials, wantCredentialVersion = 0, 0, 0
-	}
-	if err != nil || accountCount != wantAccounts || credentialCount != wantCredentials || qualifications != 0 || credentialVersion != wantCredentialVersion || operations != 0 {
+	// PAY-RM2 (owner 2026-10-14): provider-account and method writes are retired. The wizard has no such UI and
+	// auth-real.spec.ts asserts every create/rotate/save is refused (422), so neither run may leave a merchant
+	// account, credential, operation or method row behind.
+	if err != nil || accountCount != 0 || credentialCount != 0 || qualifications != 0 || credentialVersion != 0 || operations != 0 {
 		t.Fatalf("browser account persistence proof failed: accounts=%d credentials=%d qualifications=%d version=%d operations=%d err=%v", accountCount, credentialCount, qualifications, credentialVersion, operations, err)
 	}
 	var methodVersions, methodHeads, enabledMethods, inspectCommands int
@@ -253,13 +250,7 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 		FROM identity.initial_stores s JOIN identity.external_identities e ON e.principal_id=s.principal_id
 		WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).
 		Scan(&methodVersions, &methodHeads, &enabledMethods, &inspectCommands)
-	// Wizard revision 2 is an independent concurrent editor; the stale UI must
-	// not overwrite it with an implicitly upgraded expected_version.
-	wantMethodVersions, wantMethodHeads := 2, 1
-	if wizard {
-		wantMethodVersions, wantMethodHeads = 0, 0 // PAY-RM2: no method writes from the wizard
-	}
-	if err != nil || methodVersions != wantMethodVersions || methodHeads != wantMethodHeads || enabledMethods != 0 || inspectCommands != 0 {
+	if err != nil || methodVersions != 0 || methodHeads != 0 || enabledMethods != 0 || inspectCommands != 0 {
 		t.Fatalf("browser method/inspection persistence proof: versions=%d heads=%d enabled=%d inspect_commands=%d err=%v", methodVersions, methodHeads, enabledMethods, inspectCommands, err)
 	}
 	if wizard {

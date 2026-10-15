@@ -72,7 +72,7 @@ func (c *hpCommitLossConn) Read(p []byte) (int, error) {
 }
 
 func TestBuyerPaymentHostedLostCommitAcknowledgementDoesNotReissue(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	result, err := h.begin(t04Key("hp-commit-loss"))
 	if err != nil {
 		t.Fatal(err)
@@ -98,7 +98,7 @@ func TestBuyerPaymentHostedLostCommitAcknowledgementDoesNotReissue(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	api := hpStarter(t, pool, "PROVIDER_MOCK", keys, h.config)
+	api := hpSQLStarter(t, pool, "PROVIDER_MOCK", keys, h.config)
 	loss.armed.Store(true)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

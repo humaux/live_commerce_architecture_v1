@@ -73,7 +73,11 @@ func TestStripeRF04Request(t *testing.T) {
 	if main.captured != 2500 {
 		t.Fatalf("fixture captured %d, the tests below assume TWD 2500", main.captured)
 	}
-	payuni.pcAwaitCapture(t)
+	payuni.pcAwaitRetired(t)
+	rm2ArchivedCapture(t, payuni) // retain the paid-but-unsupported-provider guard independently of the unpaid case
+	if pcCount(t, payuni, "payments.facts", " AND kind='CAPTURED'") != 1 {
+		t.Fatal("archived capture fixture missing")
+	}
 	payuniOrder := rfxOrder{s: sstStore{p: payuni.psHarness}, order: payuni.hold.OrderID}
 	// An order that was started but never paid: no CAPTURED fact.
 	unpaidStore := e.stripeStore(t)

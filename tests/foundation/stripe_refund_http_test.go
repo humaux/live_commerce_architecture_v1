@@ -359,7 +359,7 @@ func TestStripeRF09AdminHTTP(t *testing.T) {
 		}
 	})
 
-	t.Run("PAYUNi responses are byte-identical to the SP14 golden files", func(t *testing.T) {
+	t.Run("PAYUNi is refused and SP14 historical responses remain unchanged", func(t *testing.T) {
 		h := hpSetup(t)
 		sbhPayuniFlow(t, h, sbhServe(t, h, h.api.(*checkout.HostedPaymentStarter), true))
 	})

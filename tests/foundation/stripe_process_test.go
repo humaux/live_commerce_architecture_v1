@@ -46,11 +46,11 @@ func TestStripeSP15Process(t *testing.T) {
 	payuni := e.addPAYUNi(t)
 	stopDisabled := e.start(t, false) // no StripeRuntime: never claims Stripe operations
 
-	t.Run("disabled_assembly_serves_payuni_and_retains_the_stripe_job", func(t *testing.T) {
+	t.Run("disabled_assembly_refuses_payuni_and_retains_the_stripe_job", func(t *testing.T) {
 		s := e.stripeStore(t)
 		seeded := len(e.fake.Requests())
 		res := e.attempt(t, s)
-		payuni.pcAwaitCapture(t) // the PAYUNi provider path is untouched by Stripe support
+		payuni.pcAwaitRetired(t) // obsolete job cancelled without changing its archived state
 		time.Sleep(4 * time.Second)
 		var state string
 		var generation int64

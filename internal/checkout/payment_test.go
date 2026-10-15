@@ -6,28 +6,18 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
 	"livecommerce/internal/command"
 )
 
 func TestPaymentInputAndProfileBoundary(t *testing.T) {
-	in := PaymentInput{OrderID: testID, MethodCode: "payuni_credit", MethodVersion: 1}
-	if !validPaymentInput(in) {
-		t.Fatal("valid input rejected")
-	}
-	body, err := json.Marshal(in)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(body) != `{"order_id":"00000000-0000-0000-0000-000000000001","method_code":"payuni_credit","method_version":1}` {
-		t.Fatalf("payment input shape drifted: %s", body)
-	}
-	for _, changed := range []PaymentInput{
-		{OrderID: "bad", MethodCode: "payuni_credit", MethodVersion: 1},
-		{OrderID: testID, MethodCode: "payuni_installment", MethodVersion: 1},
-		{OrderID: testID, MethodCode: "payuni_credit", MethodVersion: 0},
-	} {
-		if validPaymentInput(changed) {
-			t.Fatalf("invalid payment input accepted: %+v", changed)
+	s := &PaymentStarter{pool: new(pgxpool.Pool), jobs: new(river.Client[pgx.Tx]), profile: "SANDBOX"}
+	for _, code := range []string{"payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay", "stripe_checkout"} {
+		out, err := s.StartPayment(context.Background(), "token", testID, "validkey1", PaymentInput{OrderID: testID, MethodCode: code, MethodVersion: 1})
+		if !errors.Is(err, command.ErrInvalid) || out != (PaymentResult{}) {
+			t.Fatalf("retired non-hosted start admitted %s: %+v %v", code, out, err)
 		}
 	}
 	for _, profile := range []string{"PROVIDER_MOCK", "SANDBOX", "LIVE"} {
@@ -56,26 +46,5 @@ func TestPaymentResultAndJobBoundary(t *testing.T) {
 	}
 	if string(body) != `{"operation_id":"00000000-0000-0000-0000-000000000001","version":1}` {
 		t.Fatalf("query job args drifted: %s", body)
-	}
-	out := PaymentResult{OrderID: testID, AttemptID: testID, OperationID: testID, JobID: 1,
-		Generation: 2, MerchantTradeNo: "M123", Currency: "TWD", AmountMinor: 100, State: "PAYMENT_PENDING"}
-	if !validPaymentResult(out, testID) {
-		t.Fatal("valid payment result rejected")
-	}
-	for _, mutate := range []func(*PaymentResult){
-		func(v *PaymentResult) { v.OperationID = "bad" },
-		func(v *PaymentResult) { v.Generation = 1 },
-		func(v *PaymentResult) { v.AmountMinor = 101 },
-		func(v *PaymentResult) { v.AmountMinor = 20000000 },
-		func(v *PaymentResult) { v.State = "PAID" },
-	} {
-		changed := out
-		mutate(&changed)
-		if validPaymentResult(changed, testID) {
-			t.Fatalf("invalid payment result accepted: %+v", changed)
-		}
-	}
-	if _, err := (&PaymentStarter{}).StartPayment(context.Background(), "", testID, "validkey1", PaymentInput{OrderID: testID, MethodCode: "payuni_credit", MethodVersion: 1}); !errors.Is(err, command.ErrInvalid) {
-		t.Fatalf("uninitialized starter accepted: %v", err)
 	}
 }

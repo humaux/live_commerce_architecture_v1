@@ -236,7 +236,7 @@ func w6uiSeed(t *testing.T) *w6uiFixture {
 	o := w.order(rpAt(10, 9), "CONFIRMED", "storefront", "card", rpLine{randomUUID(), randomUUID(), "USD", "USD-only", 1, 700})
 	w.capture(o, 700, "SANDBOX", rpAt(10, 10))
 	w.exec(`UPDATE checkout.orders SET currency='USD',snapshot=jsonb_set(snapshot,'{quote,currency}','"USD"') WHERE id=$1`, o.id)
-	// 0061 attempt_method_amount_check: USD belongs to Stripe, while the shared reports helper starts with a TWD PayUni attempt.
+	// 0061 attempt_method_amount_check: USD belongs to Stripe, while the shared reports helper seeds a synthetic TWD Stripe attempt.
 	w.exec(`UPDATE checkout.payment_attempts SET method_code='stripe_checkout',currency='USD',amount_minor=700 WHERE id=$1`, o.attempt)
 	w.exec(`UPDATE payments.facts SET currency='USD' WHERE attempt_id=$1`, o.attempt)
 	return x

@@ -55,22 +55,17 @@ func TestBuyerPaymentNestedFlagsReadOnlyWhenEnabled(t *testing.T) {
 	}
 }
 
-func TestBuyerPaymentConfigUsesHistoricalKeyParserWithoutMerchantHTTP(t *testing.T) {
+func TestBuyerPaymentConfigHasNoRetiredKeyParser(t *testing.T) {
 	values := buyerPaymentTestEnv()
 	get := func(name string) string { return values[name] }
 	root, err := loadBuyerConfig(get, "127.0.0.1:8080")
-	if err != nil || !root.payment.enabled || root.payment.keys == nil ||
-		root.payment.endpoints.ReturnURL != "https://pay.example.com/return" ||
-		values["COMMERCE_ACCOUNTS_ENABLED"] != "0" {
+	if err != nil || !root.payment.enabled || values["COMMERCE_ACCOUNTS_ENABLED"] != "0" {
 		t.Fatalf("valid isolated hosted configuration rejected: %v", err)
 	}
 	for name, bad := range map[string]string{
 		"COMMERCE_BUYER_PAYMENT_ENABLED": "true",
 		"COMMERCE_HOSTED_DATABASE_URL":   " ",
 		"COMMERCE_PAYMENT_PROFILE":       "LIVE ",
-		"COMMERCE_PAYMENT_RETURN_URL":    "http://pay.example.com/return",
-		"COMMERCE_PAYMENT_NOTIFY_URL":    "https://pay.example.com/notify?buyer=1",
-		"COMMERCE_ACCOUNT_KEYS_JSON":     "[]",
 	} {
 		original := values[name]
 		values[name] = bad
@@ -108,13 +103,13 @@ func TestBuyerPaymentStripeFlagIsNestedAndNeverReadsStripeSecrets(t *testing.T) 
 			t.Fatalf("flag %q enabled Stripe: %v", off, err)
 		}
 	}
-	// PAYUNi config stays required: there is no Stripe-only B1 deployment.
+	// PAYUNi signing configuration is no longer read or required by Stripe.
 	values["COMMERCE_STRIPE_CHECKOUT_ENABLED"] = "1"
-	values["COMMERCE_PAYMENT_NOTIFY_URL"] = ""
-	if _, err = load(); !errors.Is(err, errBuyerConfig) {
-		t.Fatalf("stripe without PAYUNi config accepted: %v", err)
+	delete(values, "COMMERCE_PAYMENT_NOTIFY_URL")
+	delete(values, "COMMERCE_ACCOUNT_KEYS_JSON")
+	if _, err = load(); err != nil {
+		t.Fatalf("Stripe-only configuration refused: %v", err)
 	}
-	values["COMMERCE_PAYMENT_NOTIFY_URL"] = "https://pay.example.com/notify"
 	for name, bad := range map[string]string{"COMMERCE_STRIPE_CHECKOUT_ENABLED": "true", "COMMERCE_PAYMENT_PROFILE": "LIVE"} {
 		original := values[name]
 		values[name] = bad
@@ -123,11 +118,11 @@ func TestBuyerPaymentStripeFlagIsNestedAndNeverReadsStripeSecrets(t *testing.T) 
 		}
 		values[name] = original
 	}
-	// LIVE remains valid for PAYUNi alone; only Stripe on LIVE is refused.
+	// Historical reads on LIVE need no Stripe pair when Stripe is off.
 	values["COMMERCE_PAYMENT_PROFILE"] = "LIVE"
 	values["COMMERCE_STRIPE_CHECKOUT_ENABLED"] = ""
 	if c, err = load(); err != nil || c.stripe != nil {
-		t.Fatalf("PAYUNi LIVE config regressed: %v", err)
+		t.Fatalf("historical LIVE config regressed: %v", err)
 	}
 
 	// Disabled buyer payment must not even read the nested Stripe flag.

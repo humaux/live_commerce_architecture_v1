@@ -1,3 +1,6 @@
+// capture_worker.go applies only persisted Stripe observations via payments.apply_capture.
+// Depends on the payment worker PG authority and River; removed providers never reach financial writes.
+
 package payments
 
 import (
@@ -90,6 +93,17 @@ func (w *CaptureWorker) Work(ctx context.Context, job *river.Job[paymentReconcil
 	if _, err = tx.Exec(bounded, `SELECT set_config('statement_timeout','5s',true),
 		set_config('lock_timeout','1s',true),set_config('idle_in_transaction_session_timeout','5s',true)`); err != nil {
 		return errCaptureDatabase
+	}
+	// Read the immutable provider under the same transaction; never apply an old report for a removed provider.
+	var provider string
+	if err = tx.QueryRow(bounded, `SELECT provider FROM integration.operations WHERE id=$1::uuid`, job.Args.OperationID).Scan(&provider); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return river.JobCancel(errCaptureJob)
+		}
+		return errCaptureDatabase
+	}
+	if provider != "stripe" {
+		return river.JobCancel(errCaptureJob)
 	}
 	if _, err = tx.Exec(bounded, `SELECT payments.apply_capture($1::uuid,$2::bytea)`,
 		job.Args.OperationID, reportHash); err != nil {
