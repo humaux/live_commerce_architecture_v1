@@ -1026,10 +1026,20 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       await tab(t.general).click();
       const main = page.locator("#ds-main");
       await main.press("Control+Home");
+      await page.waitForFunction(() => window.scrollY === 0); // [READ] native Home must finish before measuring
       const frame = area.locator('[data-form-frame]');
-      const surface = area.locator('[data-form-surface]');
-      const bottom = frame.locator('[data-state][role="group"]').last();
-      const measure = async () => ({ surface: await surface.boundingBox(), bar: await bottom.boundingBox() });
+      const templateCard = await area.getByRole("region", { name: t.templates, exact: true }).elementHandle();
+      // [READ] One synchronous layout snapshot: separate boundingBox awaits can straddle native scrolling.
+      const measure = () => frame.evaluate((n, next) => ({
+        surface: n.querySelector('[data-form-surface]').getBoundingClientRect().toJSON(),
+        bar: n.querySelector(':scope > [data-state][role="group"]').getBoundingClientRect().toJSON(),
+        frame: n.getBoundingClientRect().toJSON(),
+        next: next.getBoundingClientRect().toJSON(),
+        gap: parseFloat(getComputedStyle(n).getPropertyValue("--ds-space-6")),
+        scrollY: window.scrollY,
+        height: window.innerHeight,
+        released: n.dataset.footerReleased,
+      }), templateCard);
       const content = await area.locator('[data-form-content]').evaluate(n => ({ overflow: getComputedStyle(n).overflowY, height: n.clientHeight, scroll: n.scrollHeight })); // [READ]
       assert.equal(content.overflow, "visible");
       assert.ok(content.scroll <= content.height + 1, "content has natural height");
@@ -1045,14 +1055,16 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       assert.ok(panelEdges.border.every(width => width === 0), `nested panel border: ${JSON.stringify(panelEdges)}`);
       assert.ok(panelEdges.inset.every(inset => Math.abs(inset - panelEdges.padding) <= 1), `panel is flush with the card content: ${JSON.stringify(panelEdges)}`);
       let boxes = await measure();
-      const height = page.viewportSize().height;
-      const checkGap = async () => {
-        const next = await area.getByRole("region", { name: t.templates, exact: true }).boundingBox();
-        const gap = await area.evaluate(n => parseFloat(getComputedStyle(n).getPropertyValue("--ds-space-6"))); // [READ] documented section spacing
+      const height = boxes.height;
+      const geometry = () => `scrollY=${boxes.scrollY} surface=${boxes.surface.bottom} bar=${boxes.bar.bottom} frame=${boxes.frame.bottom} next=${boxes.next.top} released=${boxes.released}`;
+      const checkGap = () => {
+        const { next, gap } = boxes;
         const edge = boxes.surface.y + boxes.surface.height > height ? boxes.surface.y + boxes.surface.height : boxes.bar.y + boxes.bar.height;
-        assert.ok(Math.abs(next.y - edge - gap) <= 1, `form-to-template gap=${next.y - edge}px, expected=${gap}px (no displaced footer band)`);
+        assert.ok(Math.abs(next.y - edge - gap) <= 1, `form-to-template gap=${next.y - edge}px, expected=${gap}px; ${geometry()}`);
+        assert.ok(Math.abs(boxes.frame.bottom - edge) <= 1, `no displaced footer band; ${geometry()}`);
       };
-      await checkGap();
+      checkGap();
+      const initialGeometry = geometry();
       if (boxes.surface.y + boxes.surface.height > height) {
         assert.ok(Math.abs(boxes.bar.y + boxes.bar.height - height) <= 1, "footer docks at viewport bottom");
       }
@@ -1064,7 +1076,8 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       }
       assert.ok(boxes.surface.y + boxes.surface.height <= height, "form bottom reached by page scrolling");
       assert.ok(boxes.bar.y >= boxes.surface.y + boxes.surface.height - 1, `footer releases below the surface: ${JSON.stringify(boxes)}`);
-      await checkGap();
+      checkGap();
+      const releasedGeometry = geometry();
       await capture("form-released");
       const toggle = area.getByRole("switch", { name: t.enabled, exact: true });
       const original = await toggle.getAttribute("aria-checked");
@@ -1074,6 +1087,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       assert.equal(await toggle.getAttribute("aria-checked"), original);
       await page.reload({ waitUntil: "load" });
       assert.equal(await area.getByRole("tab", { name: t.general, exact: true }).getAttribute("aria-selected"), "true");
+      return `initial: ${initialGeometry}; released: ${releasedGeometry}`;
     });
   }
   if (template === "settings") {
