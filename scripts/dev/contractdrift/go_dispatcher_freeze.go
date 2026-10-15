@@ -103,7 +103,7 @@ func goTableDispatcherFingerprint(table goRouteTable, entries []*goFunc) (goDisp
 			roots = append(roots, fn)
 		}
 	}
-	hash, names, err := goDispatcherFingerprint(pkg, roots, excluded)
+	hash, names, err := goDispatcherFingerprint(pkg, roots, excluded, table.Name)
 	return goDispatcherPin{Table: pkg.Files[0].AST.Name.Name + "." + table.MountName, SHA256: hash, Functions: names}, err
 }
 
@@ -133,7 +133,7 @@ func goDispatcherName(fn *goFunc) string {
 // Imported package selectors are boundaries; no cross-package call is followed.
 // This can freeze extra same-package methods, but cannot miss a receiver helper
 // just because the syntax-only scanner could not infer its type.
-func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, excluded map[*goFunc]bool) (string, []string, error) {
+func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, excluded map[*goFunc]bool, rowVariable string) (string, []string, error) {
 	// Follow package variable initializers too: calls through aliases, maps or
 	// stored function values must retain the target body in the closure. Global
 	// function literals receive a stable declaration name for canonicalization.
@@ -177,6 +177,10 @@ func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, excluded map[*goFu
 	var inspect func(ast.Node, *goFile)
 	inspect = func(node ast.Node, file *goFile) {
 		ast.Inspect(node, func(n ast.Node) bool {
+			if kv, ok := n.(*ast.KeyValueExpr); ok {
+				inspect(kv.Value, file)
+				return false
+			}
 			if lit, ok := n.(*ast.FuncLit); ok && literals[lit] != nil {
 				queue = append(queue, literals[lit])
 				return false
@@ -196,7 +200,7 @@ func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, excluded map[*goFu
 				if callee := pkg.Named[id.Name]; callee != nil {
 					queue = append(queue, callee)
 				}
-				if !expanded[id.Name] {
+				if id.Name != rowVariable && !expanded[id.Name] {
 					expanded[id.Name] = true
 					for _, init := range initializers[id.Name] {
 						inspect(init.expr, init.file)
@@ -206,6 +210,17 @@ func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, excluded map[*goFu
 			return true
 		})
 	}
+	// Resolve row target aliases with the same graph, then discard the targets'
+	// bodies. The row literal is never followed while traversing dispatchers.
+	queue = nil
+	for _, init := range initializers[rowVariable] {
+		inspect(init.expr, init.file)
+	}
+	for _, target := range queue {
+		excluded[target] = true
+	}
+	queue = append([]*goFunc{}, roots...)
+	expanded = map[string]bool{}
 	for len(queue) > 0 {
 		fn := queue[0]
 		queue = queue[1:]
