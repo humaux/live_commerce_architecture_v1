@@ -100,7 +100,7 @@ func TestGoRouteTableUnservedTailRejectedCLI(t *testing.T) {
 	// The table still advertises the second entry, but the router never visits it.
 	// Full-range consumption is statically enforceable; arbitrary helper behavior
 	// is explicitly left to the buyer transport's differential runtime gate.
-	mustWrite(t, p, strings.Replace(routeTableCLISource, "range rows {", "range rows[:len(Routes)-1] {", 1))
+	mustWrite(t, p, strings.Replace(routeTableCLISource, "range rows {", "range rows[:len(rows)-1] {", 1))
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "invalid or incompletely consumed contractdrift route table") || strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("unserved table entry became known: exit%d %s", code, out)

@@ -85,7 +85,7 @@ func TestGoRouteTableExactSplitResolvesCLI(t *testing.T) {
 func TestGoRouteTableExactInvalidStaysOpaqueCLI(t *testing.T) {
 	cases := []struct{ name, old, replacement string }{
 		{"no marker", "//contractdrift:routes /v1/feed/meta.csv matchesPath allowedMethod exact mount=Routes\n", ""},
-		{"unserved method tail", "range rows {", "range rows[:len(Routes)-1] {"},
+		{"unserved method tail", "range rows {", "range rows[:len(rows)-1] {"},
 		{"different path", "Path: \"/v1/feed/meta.csv\"},", "Path: \"/v1/feed/other.csv\"},"},
 		{"bypassed method guard", "if !allowedMethod(r.Method)", "if r.Method != http.MethodPost && !allowedMethod(r.Method)"},
 		{"other path dispatcher", "w.WriteHeader(200)", "if r.URL.Path == \"/v1/feed/other\" { w.WriteHeader(204); return }; w.WriteHeader(200)"},
