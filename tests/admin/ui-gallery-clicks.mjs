@@ -931,7 +931,8 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
         boxes = await measure();
       }
       assert.ok(boxes.surface.y + boxes.surface.height <= height, "form bottom reached by page scrolling");
-      assert.ok(boxes.bar.y >= boxes.surface.y + boxes.surface.height - 1, "footer releases below the surface");
+      assert.ok(boxes.bar.y >= boxes.surface.y + boxes.surface.height - 1, `footer releases below the surface: ${JSON.stringify(boxes)}`);
+      await capture("form-released");
       const toggle = area.getByRole("switch", { name: t.enabled, exact: true });
       const original = await toggle.getAttribute("aria-checked");
       await toggle.click();

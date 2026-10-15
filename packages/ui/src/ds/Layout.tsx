@@ -2,7 +2,7 @@
 // Depends on: React, Icon and ./layout.module.css; no API, routing or translation.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
-import { useId, useState, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "./Icon";
 import s from "./layout.module.css";
 
@@ -157,6 +157,25 @@ export function FormActionBar({
   actions: ReactNode;
   children: ReactNode;
 }) {
+  const frame = useRef<HTMLDivElement>(null);
+  const surface = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const card = surface.current;
+    const wrapper = frame.current;
+    if (!card || !wrapper) return;
+    // CSS bottom:0 alone releases only after the footer's own height fits too. The card edge owns this boundary.
+    const release = () => { wrapper.dataset.footerReleased = String(card.getBoundingClientRect().bottom <= window.innerHeight); };
+    release();
+    window.addEventListener("scroll", release, true);
+    window.addEventListener("resize", release);
+    const observer = new ResizeObserver(release);
+    observer.observe(card);
+    return () => {
+      window.removeEventListener("scroll", release, true);
+      window.removeEventListener("resize", release);
+      observer.disconnect();
+    };
+  }, []);
   const activeState = state ?? (dirty ? "dirty" : "clean");
   const message = activeState === "saving" ? savingNote : activeState === "saved" ? savedNote : activeState === "dirty" ? dirtyNote : note;
   const bar = (position: "top" | "bottom") => (
@@ -166,8 +185,8 @@ export function FormActionBar({
     </div>
   );
   return (
-    <div className={s.formFrame} data-form-frame>
-      <div className={s.formSurface} data-form-surface>
+    <div ref={frame} className={s.formFrame} data-form-frame>
+      <div ref={surface} className={s.formSurface} data-form-surface>
         {bar("top")}
         <div className={s.formContent} data-form-content>{children}</div>
       </div>
