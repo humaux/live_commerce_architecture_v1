@@ -1,0 +1,25 @@
+{
+  "run_id": "r10-green-goroutine-capture",
+  "source_sha": "0b9fa08cdc314119c823bc32e90329bff854a18d",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round10/scratch/new-cli",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round10/scratch/repo",
+    "-base",
+    "e4dad98cc"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round10/scratch/repo",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T11:31:25.075471+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 1,
+  "elapsed_seconds": 1.034,
+  "ended_at": "2026-10-15T11:31:26.110468+00:00",
+  "summary": [
+    "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+  ],
+  "errors": 133,
+  "touched": 4,
+  "executable_sha256": "49c3ca9cf960475ec6cc7928280f8abdda726ba990c774c0cbfc739f7620cda2"
+}

@@ -1,0 +1,23 @@
+{
+  "source_sha": "0b9fa08cdc314119c823bc32e90329bff854a18d",
+  "unguarded_source_replace_calls": 0,
+  "guarded_files": {
+    "scripts/dev/contractdrift/go_factory_trunk_cli_test.go": 2,
+    "scripts/dev/contractdrift/bff_test.go": 3,
+    "scripts/dev/contractdrift/ratchet_test.go": 6,
+    "scripts/dev/contractdrift/review_r1b_ratchet_cli_test.go": 4,
+    "scripts/dev/contractdrift/go_route_table_cli_test.go": 9,
+    "scripts/dev/contractdrift/go_dispatcher_freeze_cli_test.go": 33,
+    "scripts/dev/contractdrift/review_ratchet_cli_test.go": 7,
+    "scripts/dev/contractdrift/bff_review_r1b_cli_test.go": 25,
+    "scripts/dev/contractdrift/go_route_table_exact_cli_test.go": 2,
+    "scripts/dev/contractdrift/bff_live_settings_test.go": 1,
+    "scripts/dev/contractdrift/go_handler_factory_cli_test.go": 11,
+    "scripts/dev/contractdrift/go_dispatcher_escape_cli_test.go": 3,
+    "scripts/dev/contractdrift/go_review_cli_test.go": 7,
+    "scripts/dev/contractdrift/review_global_namespace_cli_test.go": 1,
+    "scripts/dev/contractdrift/main_test.go": 3
+  },
+  "guarded_calls": 117,
+  "semantics": "first occurrence preserved; All wrapper guards via mustReplace; fallback alternatives choose anchor before mutation"
+}

@@ -1,0 +1,65 @@
+{
+  "pointer-alias": {
+    "exit": 0,
+    "summary": [
+      "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+    ],
+    "freeze_errors": 0,
+    "first": [],
+    "mutation_sha256": "e08465f2b630d2b5c14758b5dfa303109c0e1c8764f4f207c7579733f63e5378"
+  },
+  "pointer-helper": {
+    "exit": 0,
+    "summary": [
+      "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+    ],
+    "freeze_errors": 0,
+    "first": [],
+    "mutation_sha256": "97dfb89f7646fc71550ba1000ef45d0ddb3ed80ed940ea94d8b8750d1bfd5529"
+  },
+  "pointer-method": {
+    "exit": 0,
+    "summary": [
+      "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+    ],
+    "freeze_errors": 0,
+    "first": [],
+    "mutation_sha256": "8ac165711e841ed5c146d5b6398a40150f080b7b88ed2b04333f61b8fa9e92f5"
+  },
+  "slice-alias": {
+    "exit": 0,
+    "summary": [
+      "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+    ],
+    "freeze_errors": 0,
+    "first": [],
+    "mutation_sha256": "625f3c8178e27afa427ef20ec2b391c08884da4bb9e4e080f0f2f3cde5c57c6e"
+  },
+  "slice-helper": {
+    "exit": 0,
+    "summary": [
+      "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+    ],
+    "freeze_errors": 0,
+    "first": [],
+    "mutation_sha256": "1af4a39687d7277deb4a0209cc57924974d1e42ec963680449ef6498f9f4494e"
+  },
+  "return-escape": {
+    "exit": 0,
+    "summary": [
+      "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+    ],
+    "freeze_errors": 0,
+    "first": [],
+    "mutation_sha256": "9af97c77666504b492fcee80f7c2fb8f8cd10491bcf6a18e3a47baefac347ae7"
+  },
+  "goroutine-capture": {
+    "exit": 0,
+    "summary": [
+      "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+    ],
+    "freeze_errors": 0,
+    "first": [],
+    "mutation_sha256": "ba30be2bb2e965891e2855da4422615feef08f5f026723920e0b86dd84d21c49"
+  }
+}

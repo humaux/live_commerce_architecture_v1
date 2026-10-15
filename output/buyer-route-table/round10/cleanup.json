@@ -1,0 +1,9 @@
+{
+  "source_sha": "0b9fa08cdc314119c823bc32e90329bff854a18d",
+  "deleted_task_owned_path": "output/buyer-route-table/round10/scratch",
+  "deleted": true,
+  "logical_file_bytes_removed": 479249435,
+  "finished_at": "2026-10-15T11:33:40.747184+00:00",
+  "processes": "all task-started command sessions reached terminal exit; no servers, containers or ports started",
+  "retained": "all failure/control reports, receipts, scripts, manifests; no other task paths or caches touched"
+}

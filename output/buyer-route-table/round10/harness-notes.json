@@ -1,0 +1,5 @@
+{
+  "counterexample_quoting": "97d977f7b had malformed string quoting detected by gofmt; d6a6b5583 corrected before guard implementation. No Go tests executed.",
+  "slice_red_setup": "First exploratory slice injection was into hashed FeedHandler and correctly failed pin proof (exit1/errors8). Final reproductions append uncalled same-package functions, matching outside-closure bypass. Final red-map contains all seven exit0 controls.",
+  "source_rebind": "Final green maps rerun with scanner built at690a16e38 and target scratch HEAD690a16e38; earlier partial probes retained by label where available."
+}
