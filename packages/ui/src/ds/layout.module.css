@@ -79,10 +79,10 @@
 .barDirty { color: var(--ds-warn-text); font-weight: 600; }
 .barControls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2); margin-left: auto; }
 .barTop { border-width: 0 0 1px; border-radius: 0; }
-.barBottom { position: sticky; bottom: 0; z-index: var(--ds-z-sticky); margin: 0; border-width: 1px 0 0; border-radius: 0; }
+.barBottom { position: sticky; bottom: 0; z-index: var(--ds-z-sticky); margin: -1px 0 0; border-radius: 0 0 var(--ds-radius-md) var(--ds-radius-md); }
 @media (max-width: 767.98px) {
   .barTop { display: none; }
-  .barBottom { position: sticky; bottom: 0; z-index: var(--ds-z-sticky); border-radius: 0; border-width: 1px 0 0; box-shadow: var(--ds-shadow-2); }
+  .barBottom { box-shadow: var(--ds-shadow-2); }
   .barControls { margin-left: 0; width: 100%; }
 }
 
@@ -127,8 +127,10 @@ a.kpi:hover { border-color: var(--ds-primary); box-shadow: var(--ds-shadow-2); }
 
 .cardHead { border-bottom: 1px solid var(--ds-border); }
 .cardFooter { padding: var(--ds-card-footer) var(--ds-card-header-inline); border-top: 1px solid var(--ds-border); }
-.formFrame { border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); background: var(--ds-surface); }
-.formContent { padding: var(--ds-space-6); }
+.formFrame { display: flow-root; min-width: 0; }
+/* Keep the footer's normal-flow footprint outside the white surface: sticky displacement must not leave an empty card. */
+.formSurface { border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); background: var(--ds-surface); }
+.formContent { padding: var(--ds-space-6); height: auto; max-height: none; overflow: visible; }
 .formContent > section { border: 0; box-shadow: none; }
 .kpi { align-items: start; }
 .kpi > span:last-child { display: grid; grid-template-rows: 34px 22px 20px; }

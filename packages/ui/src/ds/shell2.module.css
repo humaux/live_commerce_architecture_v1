@@ -15,10 +15,11 @@
   display: flex;
   flex-direction: column;
   width: var(--ds-nav-width);
-  height: 100vh;
+  height: 100dvh;
+  align-self: flex-start;
   position: sticky;
   inset-block-start: 0;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--ds-nav-bg);
   color: var(--ds-nav-text);
   z-index: var(--ds-z-nav);
@@ -29,7 +30,8 @@
 .storeText { min-width: 0; display: flex; flex-direction: column; }
 .storeName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .storeRegion { color: var(--ds-nav-text-muted); font-size: var(--ds-text-sm); }
-.groups { margin: 0; padding: var(--ds-space-2) 0; list-style: none; }
+.brand, .store { flex: none; }
+.groups { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--ds-nav-text-muted) var(--ds-nav-bg); margin: 0; padding: var(--ds-space-2) 0; list-style: none; }
 .groupRow, .groupLink {
   display: flex;
   align-items: center;

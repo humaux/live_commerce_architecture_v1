@@ -17,14 +17,18 @@ Historical RED evidence: CI run `38700369043` at `6b7b7660`; supplied `ui-galler
 
 Diagnosis is source/ledger analysis; no local browser reproduction is claimed. Browser GREEN and injected-fault RED→GREEN remain NOT_RUN and belong to integrator CI on the final SHA.
 
-### Remaining groups
+### Visual repair groups
 
 | Item | Cause | Change (source pointers; final line map below) |
 | --- | --- | --- |
 | B1 | Explicit phone flex-wrap and all desktop tools retained; no store-name slot. | `AppShellV2.tsx`: single fixed 50px row, phone store name; desktop-only tools hidden and mobile account slot. `UiGalleryFrame.tsx`: profile, all 3 locales, help and external store link in mobile account. Existing help/store/profile/locale assertions adapted to their new locations; added all-item keyboard cycle, focus restore, 50px/44px geometry. |
 | B2 | Min-height alone plus legacy button padding yielded intrinsic sizes; section tabs 40px, help 24px, topbar mixed sm/ghost. | `Controls.tsx`, `controls.module.css`: explicit 28/36/44 border-box heights; iconOnly square; phone 44. `Data.tsx`: MenuButton uses same sizes and optional icon-only/ghost, menu items 36/44. `data.module.css`: search/paging same scale. Shell right cluster 36 desktop/44 phone. `layout.module.css`: help icon 28. Sidebar nav keeps specification-mandated 52px rows (navigation, not action buttons). |
 
-B3–B13 pending in subsequent commits. Risks: CSS and browser behavior unverified locally; static checker, TypeScript/build/unit/browser/axe/visual review/owner sign-off statuses will be listed below. No local processes or fixture downloads created.
+| B3 | Native sticky bottom moved the footer up from its reserved position inside the white card, leaving a white hole and overlaying the lower controls in full-page screenshots. No inner-scroll CSS exists in the old TabPanel; the screenshot alone did not establish an actual inner scroller. | `Layout.tsx`/`layout.module.css`: natural-height, overflow-visible content, separate white form surface and normal-flow sticky footer within one connected frame. The displaced footer footprint is outside the white card. Added real keyboard page-scroll docking/release assertions, no inner overflow, switch click and section persistence; original two-bar/sticky assertions retained. CI screenshot verification NOT_RUN. |
+| B4 | Whole-nav overflow plus shrinking flex children let the last group sit below the viewport; no dedicated list scroll region. | `shell2.module.css`: 100dvh sticky rail with non-shrinking brand/store; groups flex:1/min-height:0/overflow-y:auto. Added real Settings click plus list-scroll/viewport/page-scroll isolation checks. |
+| B5 | Frame used `template` route slug as crumb text and always used online-store parent. | `UiGalleryFrame.tsx`: typed TemplateName and existing localized nav groups; orders→list→detail, products→new product, settings→store settings. Tests assert all localized crumbs/current item and parent click/reload for every template in all six cases. |
+
+B6–B13 pending in subsequent commit. Risks: CSS and browser behavior unverified locally; static checker, TypeScript/build/unit/browser/axe/visual review/owner sign-off statuses will be listed below. No local processes or fixture downloads created.
 
 ---
 

@@ -163,9 +163,11 @@ export function FormActionBar({
     </div>
   );
   return (
-    <div className={s.formFrame}>
-      {bar("top")}
-      <div className={s.formContent}>{children}</div>
+    <div className={s.formFrame} data-form-frame>
+      <div className={s.formSurface} data-form-surface>
+        {bar("top")}
+        <div className={s.formContent} data-form-content>{children}</div>
+      </div>
       {bar("bottom")}
     </div>
   );

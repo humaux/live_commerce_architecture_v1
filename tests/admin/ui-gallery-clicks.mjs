@@ -438,6 +438,17 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
     assert.equal(await attr(drawer.getByRole("link", { name: group("home").label, exact: true }), "aria-current"), "page");
     if (mobile) await page.keyboard.press("Escape");
   });
+  if (!mobile) await step("Sidebar last group", "click Settings, collapse", "last group reachable inside viewport; list scrolls independently", async () => {
+    const settings = btn(drawer, group("settings").label);
+    const pageY = await page.evaluate(() => window.scrollY); // [READ]
+    await settings.click();
+    const box = await settings.boundingBox();
+    assert.ok(box.y >= 0 && box.y + box.height <= page.viewportSize().height);
+    const scroll = await settings.evaluate(n => ({ top: n.closest('nav').querySelector('ul').scrollTop, pageY: window.scrollY })); // [READ]
+    assert.ok(scroll.top > 0, "the navigation list scrolls to Settings");
+    assert.equal(scroll.pageY, pageY, "the page does not scroll with the list");
+    if ((await settings.getAttribute("aria-expanded")) === "true") await settings.click();
+  });
   await step("Topbar row and scale", "read geometry after real shell navigation", "50px row, equal-height controls; phone store name visible", async () => {
     const top = page.locator('[data-shell-topbar]');
     const box = await top.boundingBox();
@@ -591,6 +602,7 @@ async function ds2Matrix({ page, step }) {
 }
 
 async function templateJourney({ page, step, t, template, locale, mobile, capture }) {
+  const { galleryCopy } = await import("../../apps/admin/src/ui-gallery-copy.ts");
   const root = `/${locale}/ui-gallery/templates`;
   const area = page.locator(`[data-template="${template}"]`);
   const button = name => area.getByRole("button", { name, exact: true }).filter({ visible: true }).first();
@@ -606,6 +618,22 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     await seen(area.locator('[data-state="saved"]'));
     await seen(text(t.saved));
   };
+  await run("Localized breadcrumb", "read trail, click parent, reload, return", "correct IA group and localized names; parent navigation persists", async () => {
+    const c = galleryCopy[locale];
+    const groupId = template === "settings" ? "settings" : template === "form" ? "catalog" : "orders";
+    const group = galleryNav(locale).find(item => item.id === groupId);
+    const trail = page.getByRole("navigation", { name: c.crumbLabel, exact: true });
+    const expected = [group.label, ...(template === "detail" ? [t.list] : []), t[template]];
+    assert.deepEqual(await trail.locator("li").allTextContents(), expected);
+    assert.equal(await trail.locator('[aria-current="page"]').textContent(), t[template]);
+    const parent = trail.getByRole("link").last();
+    const href = await parent.getAttribute("href");
+    await parent.click();
+    await page.waitForURL(url => `${url.pathname}${url.search}` === href);
+    await page.reload({ waitUntil: "load" });
+    assert.equal(`${new URL(page.url()).pathname}${new URL(page.url()).search}`, href);
+    await page.goto(`${new URL(page.url()).origin}${root}/${template}`, { waitUntil: "load" });
+  });
   if (template === "list") {
     await run("Export menu keyboard", "focus, ArrowDown, End, Enter", "focus enters menu, command updates visible demo result", async () => {
       await button(t.export).focus();
@@ -807,6 +835,42 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       assert.equal(await bars.count(), 2);
       assert.equal(await bars.first().isVisible(), !mobile);
       assert.equal(await bars.last().evaluate(n => getComputedStyle(n).position), "sticky"); // [READ]
+    });
+    await run("Form flow and sticky release", "click Basics, native Home/PageDown scrolling", "page scrolls, no inner scroller; footer docks only while form bottom is offscreen", async () => {
+      await tab(t.general).click();
+      const main = page.locator("#ds-main");
+      await main.press("Control+Home");
+      const frame = area.locator('[data-form-frame]');
+      const surface = area.locator('[data-form-surface]');
+      const bottom = frame.locator('[data-state][role="group"]').last();
+      const measure = async () => ({ surface: await surface.boundingBox(), bar: await bottom.boundingBox() });
+      const content = await area.locator('[data-form-content]').evaluate(n => ({ overflow: getComputedStyle(n).overflowY, height: n.clientHeight, scroll: n.scrollHeight })); // [READ]
+      assert.equal(content.overflow, "visible");
+      assert.ok(content.scroll <= content.height + 1, "content has natural height");
+      const panel = await area.getByRole("tabpanel").evaluate(n => ({ overflow: getComputedStyle(n).overflowY, height: n.clientHeight, scroll: n.scrollHeight })); // [READ]
+      assert.equal(panel.overflow, "visible");
+      assert.ok(panel.scroll <= panel.height + 1, "panel has no clipped content");
+      let boxes = await measure();
+      const height = page.viewportSize().height;
+      if (boxes.surface.y + boxes.surface.height > height) {
+        assert.ok(Math.abs(boxes.bar.y + boxes.bar.height - height) <= 1, "footer docks at viewport bottom");
+      }
+      for (let i = 0; i < 4 && boxes.surface.y + boxes.surface.height > height; i++) {
+        const before = await page.evaluate(() => window.scrollY); // [READ]
+        await main.press("PageDown");
+        await page.waitForFunction(y => window.scrollY > y, before); // [READ] wait for native scrolling
+        boxes = await measure();
+      }
+      assert.ok(boxes.surface.y + boxes.surface.height <= height, "form bottom reached by page scrolling");
+      assert.ok(boxes.bar.y >= boxes.surface.y + boxes.surface.height - 1, "footer releases below the surface");
+      const toggle = area.getByRole("switch", { name: t.enabled, exact: true });
+      const original = await toggle.getAttribute("aria-checked");
+      await toggle.click();
+      assert.notEqual(await toggle.getAttribute("aria-checked"), original);
+      await toggle.click();
+      assert.equal(await toggle.getAttribute("aria-checked"), original);
+      await page.reload({ waitUntil: "load" });
+      assert.equal(await area.getByRole("tab", { name: t.general, exact: true }).getAttribute("aria-selected"), "true");
     });
   }
   if (template === "settings") {
