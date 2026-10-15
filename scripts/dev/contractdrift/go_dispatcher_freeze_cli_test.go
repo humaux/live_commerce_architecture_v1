@@ -385,3 +385,88 @@ func TestGoDispatcherFreezeGenericNamesDeterministic(t *testing.T) {
 		}
 	}
 }
+
+// R9: writable or platform-selected inputs cannot prove a frozen dispatcher.
+// Each mutation is applied AFTER pinning an otherwise immutable private value.
+func TestGoDispatcherFreezeWriteAuthorityCLI(t *testing.T) {
+	cases := []struct{ name, extra, body, diagnostic string }{
+		{"N1 init", "func init(){ gate = 210 }", "", "frozen var gate: assignment"},
+		{"N3 New", "", "gate = 210; ", "frozen var gate: assignment"},
+		{"address escape", "func unused(){ p := &gate; _ = p }", "", "frozen var gate: address taken"},
+		{"inc dec", "func unused(){ gate++ }", "", "frozen var gate: increment/decrement"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root, p := routeTableCLIFixture(t)
+			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)", 1) + "\nvar gate = 221\n"
+			mustWrite(t, p, source)
+			pinFixtureDispatcher(t, root, "router.Routes", "")
+			assertFreezeCLI(t, root, true)
+			source = strings.Replace(source, "func New() http.Handler { ", "func New() http.Handler { "+tc.body, 1)
+			mustWrite(t, p, source)
+			if tc.extra != "" {
+				trunkFactoryWrite(t, root, "internal/router/zz_write.go", "package router\n"+tc.extra+"\n")
+			}
+			code, out := goReviewProcessCLI(t, root)
+			if code != 1 || !strings.Contains(out, "ERROR (dispatcher freeze)") || !strings.Contains(out, tc.diagnostic) || strings.Contains(out, "GO_ROUTE_TABLE") {
+				t.Fatalf("unsafe input accepted: exit%d %s", code, out)
+			}
+		})
+	}
+}
+
+func TestGoDispatcherFreezeBuildVariantsCLI(t *testing.T) {
+	for _, mode := range []string{"N2 variants", "tag only", "os suffix", "arch suffix", "duplicate var", "duplicate func", "exported var"} {
+		t.Run(mode, func(t *testing.T) {
+			root, p := routeTableCLIFixture(t)
+			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)", 1) + "\nvar gate = 221\n"
+			mustWrite(t, p, source)
+			pinFixtureDispatcher(t, root, "router.Routes", "")
+			assertFreezeCLI(t, root, true)
+			diagnostic := "build constraint"
+			switch mode {
+			case "N2 variants":
+				mustWrite(t, p, strings.Replace(source, "var gate = 221", "", 1))
+				trunkFactoryWrite(t, root, "internal/router/a_gate_linux.go", "//go:build linux\n\npackage router\nvar gate = 210\n")
+				trunkFactoryWrite(t, root, "internal/router/b_gate_other.go", "//go:build !linux\n\npackage router\nvar gate = 221\n")
+			case "tag only":
+				trunkFactoryWrite(t, root, "internal/router/tagged.go", "//go:build custom\n\npackage router\n")
+			case "os suffix":
+				trunkFactoryWrite(t, root, "internal/router/unused_linux.go", "package router\n")
+			case "arch suffix":
+				trunkFactoryWrite(t, root, "internal/router/unused_arm64.go", "package router\n")
+			case "duplicate var":
+				diagnostic = "duplicate frozen name gate"
+				trunkFactoryWrite(t, root, "internal/router/zz_dup.go", "package router\nvar gate = 221\n")
+			case "duplicate func":
+				diagnostic = "duplicate frozen name pattern"
+				trunkFactoryWrite(t, root, "internal/router/zz_dup.go", "package router\nfunc pattern(){}\n")
+			case "exported var":
+				diagnostic = "exported frozen var Gate"
+				mustWrite(t, p, strings.ReplaceAll(source, "gate", "Gate"))
+			}
+			code, out := goReviewProcessCLI(t, root)
+			if code != 1 || !strings.Contains(out, "ERROR (dispatcher freeze)") || !strings.Contains(out, diagnostic) || strings.Contains(out, "GO_ROUTE_TABLE") {
+				t.Fatalf("unsafe selection accepted: exit%d %s", code, out)
+			}
+		})
+	}
+}
+
+func TestGoDispatcherFreezeEveryInitCLI(t *testing.T) {
+	root, _ := routeTableCLIFixture(t)
+	p := trunkFactoryWrite(t, root, "internal/router/zz_init.go", "package router\nfunc init(){ println(1) }\nfunc init(){ println(2) }\n")
+	pin := pinFixtureDispatcher(t, root, "router.Routes", "")
+	count := 0
+	for _, name := range pin.Functions {
+		if name == "init" {
+			count++
+		}
+	}
+	if count != 2 {
+		t.Fatalf("init closure count=%d want2", count)
+	}
+	assertFreezeCLI(t, root, true)
+	mustWrite(t, p, "package router\nfunc init(){ println(1) }\nfunc init(){ println(3) }\n")
+	assertFreezeCLI(t, root, false)
+}
