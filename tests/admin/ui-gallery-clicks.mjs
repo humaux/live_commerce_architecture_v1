@@ -1047,7 +1047,12 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       await tab(t.general).click();
       const main = page.locator("#ds-main");
       await main.press("Control+Home");
-      await page.waitForFunction(() => window.scrollY === 0); // [READ] native Home must finish before measuring
+      // [READ] On timeout, report which native scroll stalled and the page's scroll state (CI 38758700306 zh-TW 390px).
+      const scrollWait = (label, fn, arg) => page.waitForFunction(fn, arg).catch(async error => {
+        const state = await page.evaluate(() => ({ scrollY: window.scrollY, max: document.scrollingElement.scrollHeight - window.innerHeight, active: document.activeElement?.id || document.activeElement?.tagName }));
+        throw new Error(`${label} stalled: ${JSON.stringify(state)}; ${error.message}`);
+      });
+      await scrollWait("Control+Home", () => window.scrollY === 0); // [READ] native Home must finish before measuring
       const frame = area.locator('[data-form-frame]');
       const templateCard = await area.getByRole("region", { name: t.templates, exact: true }).elementHandle();
       // [READ] One synchronous layout snapshot: separate boundingBox awaits can straddle native scrolling.
@@ -1092,7 +1097,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       for (let i = 0; i < 4 && boxes.surface.y + boxes.surface.height > height; i++) {
         const before = await page.evaluate(() => window.scrollY); // [READ]
         await main.press("PageDown");
-        await page.waitForFunction(y => window.scrollY > y, before); // [READ] wait for native scrolling
+        await scrollWait(`PageDown #${i + 1} from ${before}`, y => window.scrollY > y, before); // [READ] wait for native scrolling
         boxes = await measure();
       }
       assert.ok(boxes.surface.y + boxes.surface.height <= height, "form bottom reached by page scrolling");
