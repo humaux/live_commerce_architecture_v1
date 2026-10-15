@@ -1,6 +1,50 @@
 <!-- Purpose: DS-2 implementation handoff, audit mapping and evidence limits. Depends on: task card and scoped source commits. Used by: Claude integrator/independent reviewer/owner. -->
 # DS-2 delivery — implementation awaiting CI and visual acceptance
 
+## Round 3b — 2026-10-15
+
+**BLOCKED — E1: TypeScript and DS rules exit 0; required touched-file Prettier check exits 1. Runtime/visual acceptance NOT_RUN.**
+
+Started from clean `45f28934a0c0ffffcd4ea30ec533bf800b432951` (round 3 plus integrator's whole-file-format revert). Implementation/check SHA: `dcd1a030ccc1a61bacb44f6dc0f46bd96fdeb1d5`; this handoff is a later documentation-only commit. Nine source-file hashes are in [round3b-evidence/source-sha256.txt](round3b-evidence/source-sha256.txt); exact commands/exits/output are in [static-receipt.json](round3b-evidence/static-receipt.json). Earlier round 3 formatter receipts do not apply to this source.
+
+Same assigned worktree `.worktrees/ds-2`, branch `unit/ds-2-rework`, PR #69. Executor: Codex, ui_worker responsibility; runtime model/effort identifiers unavailable; no delegated agents. Task `8453930f-b618-4c84-bbd3-1cf4c09d23db`. Write scope is the DS/gallery/click module plus this requested handoff and evidence. No whole-file formatting, dependency/config/lockfile/backend/live-page changes, push or PR actions. Commit hooks were disabled to respect the local-test prohibition.
+
+Read DESIGN-SPEC and the main worktree's `output/integrator/briefs/ds-2-rework.md`, `output/visual-review/gallery-38711545381/{integrator-audit.md,jev.txt}`. Inspected the supplied `dl/playwright/run.gPZ4pfpI/ui-gallery/shots/ds2-zh-TW-390x844-form.png`. These are historical review inputs at `60732a530`, not acceptance of round 3b.
+
+### Per-item causes, changes and commits
+
+| Item | Cause / fix | Commit |
+| --- | --- | --- |
+| V1 P1 scale | Source inspection found real conflicts: sidebar group buttons inherited 52px; the component demo put 28px/44px buttons on one centred row; NumberInput's outer border subtracted 2px from its 100%-height input. Sidebar controls are now 44px inside 52px slots (4px above/below); demo sizes occupy separate rows; number wrapper uses an inset outline without reducing the input box. `shell2.module.css:35`, `fields.module.css:18`, `UiGallerySections.tsx:72`. | `458b72a70` |
+| V1 mechanical gate | `tests/admin/ui-gallery-clicks.mjs:578` adds `readControlScale`. Every baseline and variant capture measures all rendered buttons, role=button, selects, single-line inputs (including numbers), ButtonLinks and pagination links/disabled arrows. Offscreen rendered controls are included; hidden controls, checkbox/radio/file/range/color inputs and multi-line textareas are excluded. Playwright ariaSnapshot supplies accessible names; failures include name + unrounded height. Heights must be 28/36/44 ±0.5px. Controls with the same nearest shared flex-row/grid/table-row container and vertical centres within 0.5px must match height within 0.5px. Records a separate [READ] ledger step per template/viewport/locale and retains every name/height/centre/violation under `scale` in `ds2-matrix.json`. | `458b72a70` |
+| V2 P1 mobile form | TabPanel's standalone border/padding nested a box inside FormActionBar's already padded card. Add optional `TabPanel.flush` (default false); product form alone opts into zero panel border/padding. The outer card owns the inset. `Controls.tsx:219`, `controls.module.css` final rule, `UiGalleryTemplates.tsx:172`. | `007b0dd7a` |
+| V2 P1 empty band | Even with F5 release, a docked sticky footer leaves its normal-flow footprint below the white surface. The existing observer now measures footer height too (`Layout.tsx:160`), and the frame cancels that outside footprint with a negative bottom margin **only while docked** (`layout.module.css:134`). Once released, the visible footer occupies normal flow and the compensation stops. This avoids a hard-coded 110px and follows wrapped locale/mobile footer height. | `007b0dd7a` |
+| V2 release verification | **F5 already addresses field coverage by source reasoning:** when the card's bottom is on-screen, its observer sets `data-footer-released=true`, and CSS sets the sticky footer's bottom inset to auto. The existing assertion requires the footer top at/after the surface bottom before clicking the last field. Round 3b retains that assertion, sticky-position check, native scrolling, switch clicks and reload persistence. Adds [READ] panel border/inset checks and exact section-gap measurement before scrolling and after release (`clicks.mjs:978`). The existing `form-released` capture remains. **No new released capture is present in the supplied old run, and none was generated locally; current screenshot verification is NOT_RUN.** | `007b0dd7a` |
+| V3 P2 sidebar | Dedicated list CSS already has flex:1, min-height:0, overflow-y:auto. Add `sidebarViewportGate` (`clicks.mjs:608`) on components and all four templates, three locales, 1440×900. [READ] requires positive clientHeight and overflow-y auto/scroll whenever scrollHeight exceeds clientHeight. A real Settings click invokes native list scrolling; [READ] requires last-group bounds inside both list and 900px viewport, increased list scrollTop if initially below the list, and unchanged window scroll. Restore original expansion with a real click. No V3 CSS change or old assertion removal. | `dcd1a030c` |
+
+**Jev disposition:** no false-positive calibration is claimed. Source conflicts were found and corrected; only current-head CI measurements can establish a mechanical PASS. Every existing click/assertion remains, including the older component sidebar scroll check.
+
+### Static checks and blocker (two attempts, stopped)
+
+| Command | Exit / result |
+| --- | --- |
+| `pnpm exec tsc --noEmit -p apps/admin/tsconfig.json --incremental false` | **0**; no emitted/incremental files |
+| `node scripts/dev/check-ds-rules.mjs` | **0**; 20 files in scope, 0 violations |
+| `pnpm exec prettier --check` with the nine modified source files explicitly listed | **1**; all nine reported formatting differences; exact list/output in static receipt |
+
+Before editing, a baseline `prettier --check` on the click module and controls/layout/fields CSS already exited 1. The second and final attempt was the nine-file final check. The owner explicitly prohibited reapplying the reverted whole-file format commit. Narrow edits match incumbent style; no formatter write, ignore directive, scope exclusion, config change or whole-file reformat was used to mask the failure. **The requested all-zero static gate is not achieved, so this handoff is BLOCKED, not READY_FOR_CI.** No third attempt was made.
+
+### NOT_RUN and risks
+
+- All local tests, browsers and servers: NOT_RUN by explicit instruction. No local test process, port, fixture, container, screenshot or temporary script was created.
+- Full `--browser-ui-gallery` CI (three locales × 1440×900 / 390×844, five baseline pages plus variants), axe, visual-lint and click ledger: NOT_RUN on this source. This is MOCK gallery work, not SANDBOX/LIVE acceptance.
+- Injected-fault RED→GREEN for the new scale/row/overflow/gap assertions: NOT_RUN; these are authored checks, not proved gates. CI should inject an off-scale control, same-row mismatch, hidden list overflow, extra panel border/gap, then restore and retain receipts on the actual reviewed source.
+- Current `form-released` screenshot, independent Jev/integrator review and owner screenshot sign-off: NOT_RUN. No E3/E4 or visual PASS claimed.
+- Footer compensation changes the following card's position at the release boundary; resize, translated wrapping, all form sections and shared gallery/settings bars need real scrolling and screenshot review. Sidebar 52px slot/44px control styling and numeric unit outline also need current-head review. Existing full matrix coverage is retained.
+- Scale names and geometry use read-only Playwright snapshots; no product state is altered for measurement. Sidebar reachability uses actual clicks and restores expansion. No API/DOM mutation, forced click or assertion weakening substitutes for acceptance.
+
+Integrator owns the formatter-policy resolution, push, exact-head CI and independent review. Preserve the supplied historical RED evidence; do not reuse it as current acceptance. No live route may adopt DS-2 before the existing visual gates and owner sign-off.
+
 ## Round 3 — 2026-10-15
 
 **READY_FOR_CI — E1: TypeScript, DS rules and Prettier exit 0; browser acceptance NOT_RUN.**
