@@ -3,6 +3,7 @@
 // Used by: scanGo after ordinary registration/opaque discovery, before mount binding.
 // Invariant: only a consumed, immutable marked table resolves its own dispatch coverage;
 // unmarked, partial, mutated and unrelated custom routers retain their opaque findings.
+
 package main
 
 import (

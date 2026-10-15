@@ -2,6 +2,7 @@
 // Depends on: Go stdlib only; no DB/API/network mutations.
 // Used by: CI-DRIFT scanGo and its parser gates.
 // Invariant: extraction never executes handlers or discards unresolved registration coverage.
+
 package main
 
 import (

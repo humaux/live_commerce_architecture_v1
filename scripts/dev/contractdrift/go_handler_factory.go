@@ -3,6 +3,7 @@
 // Used by: resolveRouteTables after all dispatchers and mounts have been considered.
 // Invariant: unknown alternatives, alias writes and unproven path dispatch fail closed;
 // successful proofs retain the original whole-function/dependency spans as notes.
+
 package main
 
 import (
@@ -350,9 +351,9 @@ func (f *goHandlerFrame) closure(lit *ast.FuncLit, terminal bool) bool {
 				if id, ok := arg.(*ast.Ident); ok && id.Obj != nil {
 					if field, ok := id.Obj.Decl.(*ast.Field); ok {
 						if ptr, ok := field.Type.(*ast.StarExpr); ok {
-						if sel, ok := ptr.X.(*ast.SelectorExpr); ok && sel.Sel.Name == "Request" {
-							requestArg = true
-						}
+							if sel, ok := ptr.X.(*ast.SelectorExpr); ok && sel.Sel.Name == "Request" {
+								requestArg = true
+							}
 						}
 					}
 				}

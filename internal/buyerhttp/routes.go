@@ -2,6 +2,7 @@
 // Depends on: net/http, strings and command's existing catalog ID validation.
 // Used by: handler.ServeHTTP (matchRoute/allowed) and the contractdrift AST scanner.
 // Invariants: Routes is read-only; first path match wins, no cleaning/redirects or HEAD aliases.
+
 package buyerhttp
 
 import (

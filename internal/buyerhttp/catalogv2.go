@@ -1,5 +1,6 @@
 // Purpose: catalog v2 reads and projections; depends on pgx and command validation.
 // Used by handler.dispatch after Routes selection; public reads never accept buyer authority.
+
 package buyerhttp
 
 // catalogv2.go serves the catalog-v2 buyer reads of contracts/storefront-v2.md section A: GET

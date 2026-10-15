@@ -2,6 +2,7 @@
 // Depends on: buyerhttp, checkout/platform pools and optional integration services below.
 // Used by: API startup; borrowed authorities retain their original middleware/cleanup order.
 // Invariants: no cleaned-path redirect, no enabled buyer credentials read in disabled mode.
+
 package main
 
 import (
