@@ -2,10 +2,12 @@ package foundation_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
 	"livecommerce/internal/checkout"
+	"livecommerce/internal/command"
 	"livecommerce/internal/payments"
 )
 
@@ -90,10 +92,14 @@ func TestLegacyRuntimeIsolationAdmissionAndReadiness(t *testing.T) {
 	before := p.facts(t)
 	beforePaymentJobs := miIsoRows(t, f, "river_payment.river_job", "")
 	beforeExpiryJobs := miIsoRows(t, f, "river_expiry.river_job", "")
+	// PAY-RM2: the Go non-hosted starter is retired and refuses before touching PG or River, so it can no
+	// longer prove River-schema routing. That guarantee is the database family trigger, still asserted below
+	// ("expiry foreign kind": a payment_query_v1 job in river_expiry is 22023). Here: even miswired, the
+	// retired entry point refuses and writes nothing to business facts or either job lane.
 	badPayment := psStarterIn(t, p.pool, "PROVIDER_MOCK", "river_expiry")
 	p.starter = badPayment
-	if _, err := p.start(t04Key("wrong-payment-schema")); err == nil || err.Error() != "checkout database unavailable" {
-		t.Fatalf("wrong payment River schema leaked error or succeeded: %v", err)
+	if _, err := p.start(t04Key("wrong-payment-schema")); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("retired payment starter with a wrong River schema did not refuse: %v", err)
 	}
 	if got := p.facts(t); got != before || miIsoRows(t, f, "river_payment.river_job", "") != beforePaymentJobs || miIsoRows(t, f, "river_expiry.river_job", "") != beforeExpiryJobs {
 		t.Fatal("wrong payment schema wrote business facts or either family job lane")
@@ -109,7 +115,9 @@ func TestLegacyRuntimeIsolationAdmissionAndReadiness(t *testing.T) {
 	if got := badExpiry.facts(t); got != expiryBefore || miIsoRows(t, badExpiry.f, "river_payment.river_job", "") != beforePaymentJobs || miIsoRows(t, badExpiry.f, "river_expiry.river_job", "") != beforeExpiryJobs {
 		t.Fatal("wrong expiry schema wrote business facts or either family job lane")
 	}
-	p.starter = psStarter(t, p.pool, "PROVIDER_MOCK")
+	// A valid payment-family job for the mutation checks below comes from the frozen SQL start contract
+	// (direct river_payment insert + checkout.start_payment), the same rows the historical producer wrote.
+	p.sql = psSQLStarter(t, p.pool, "PROVIDER_MOCK")
 	goodPayment, err := p.start(t04Key("correct-payment-schema"))
 	if err != nil || goodPayment.JobID < 1 {
 		t.Fatalf("correct payment producer not admitted: %v", err)
