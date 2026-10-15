@@ -17,6 +17,8 @@ test("CSS: injected colour, spacing and font-size literals are red; tokens are g
   assert.deepEqual(rules(".a{font-size:13px}", ".css"), ["R3"]);
   assert.deepEqual(rules(".a{color:var(--ds-text-1);padding:var(--ds-space-3) var(--ds-space-4);margin:0 auto;gap:1px;font-size:var(--ds-text-sm)}", ".css"), []);
   assert.deepEqual(rules(".a{padding-inline:calc(var(--ds-space-4) - 1px);width:100%}", ".css"), []);
+  assert.deepEqual(rules(".sr{margin:-1px}.tab{margin-bottom:-1px}.badge{padding:2px var(--ds-space-2)}.c{padding:var(--ds-card-body)}", ".css"), [], "hairlines and component spacing tokens");
+  assert.deepEqual(rules(".item{padding:0 var(--ds-space-4) 0 52px}", ".css"), ["R2"], "an indent must be a token, not 52px");
   assert.deepEqual(rules("/* #fff 12px */ .a{border:1px solid var(--ds-border)}", ".css"), [], "comments and borders are not checked as spacing");
 });
 
@@ -33,6 +35,7 @@ test("TSX: glyph icons, raw svg, inline style objects, plain className strings a
 
 test("TSX: spec-conforming equivalents are green", () => {
   assert.deepEqual(rules('<svg viewBox="0 0 24 24"><path d="M0 0"/></svg>', ".tsx", "packages/ui/src/ds/icons.tsx"), [], "icons.tsx owns the SVG set");
+  assert.deepEqual(rules('<svg style={{ flexShrink: 0 }} />', ".tsx", "packages/ui/src/ds/Icon.tsx"), [], "the Icon primitive may style its own svg");
   assert.deepEqual(rules('<Icon name="chevron-down" size={16} />', ".tsx", "x/Menu.tsx"), []);
   assert.deepEqual(rules("<div style={{ '--cols': 3 }} className={s.grid} />", ".tsx", "x/G.tsx"), []);
   assert.deepEqual(rules('<a href="#sec-table">↑ 130% 相较昨天</a>', ".tsx", "x/K.tsx"), [], "anchors and arrows inside text are fine");

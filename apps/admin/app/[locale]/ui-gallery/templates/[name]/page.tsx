@@ -1,3 +1,4 @@
+// @ds-page: built only from packages/ui DS components; design-spec rules R1–R7 apply (docs/design/DESIGN-SPEC.md §6).
 // Purpose: Four developer-only template routes; fail closed before parsing any gallery data.
 // Depends on: Next notFound, Locale contract and UiGalleryTemplates; no session, API or real store data.
 // Used by: integrator CI screenshots and click matrix. Invariant: LC_UI_GALLERY must equal "1".

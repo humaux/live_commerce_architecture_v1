@@ -55,7 +55,7 @@
 .chev { flex: none; font-size: var(--ds-text-xs); transition: transform 0.15s; }
 .groupRow[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .sub { margin: 0; padding: 0; list-style: none; }
-.item { display: flex; align-items: center; box-sizing: border-box; min-height: 40px; padding: 0 var(--ds-space-4) 0 52px; color: var(--ds-nav-text-muted); font-size: var(--ds-text-md); text-decoration: none; }
+.item { display: flex; align-items: center; box-sizing: border-box; min-height: 40px; padding: 0 var(--ds-space-4) 0 var(--ds-nav-indent); color: var(--ds-nav-text-muted); font-size: var(--ds-text-md); text-decoration: none; }
 .item[aria-current="page"] { background: var(--ds-nav-active); color: var(--ds-nav-text); font-weight: 600; }
 .nav :focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus-on-dark); outline-offset: -2px; }
 .close { display: none; }

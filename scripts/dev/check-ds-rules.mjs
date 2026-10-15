@@ -9,12 +9,14 @@ import { stripComments } from "./check-hex-ratchet.mjs";
 export const DS_DIR = "packages/ui/src/ds";
 export const PAGE_ROOT = "apps/admin";
 export const MARK = "@ds-page";
-const ICON_FILE = /(^|\/)icons\.tsx$/;
+const ICON_FILE = /(^|\/)(?:icons|Icon)\.tsx$/; // the single icon primitive owns <svg> and its intrinsic svg style
 // §2: text characters that were used as icons in DS-1 (and their usual look-alikes). Arrows such as ↑ stay legal inside text ("↑ 130%").
 export const GLYPHS = "⌂≡✉▣☺✦⚙•▸▾◂▴▲▼◀▶⌕✓✔✕✖×○●■□⚿⦿⛯❯❮›‹⋯⋮";
 const GLYPH_CLASS = `[${GLYPHS}]`;
 const SPACE_PROPS = /^(?:margin|padding|gap|row-gap|column-gap)(?:-(?:top|right|bottom|left|inline|block|inline-start|inline-end|block-start|block-end))?$/;
-const SPACE_OK = /^(?:var\(--ds-space-[\w-]+\)|0|0px|1px|auto|-?\d+(?:\.\d+)?%|calc\(.*var\(--ds-space-.*\))$/;
+// Spacing tokens: --ds-space-* plus the component spacing tokens defined in tokens.css (card / nav / control). Hairlines (±1px, 2px) are
+// allowed for borders, the visually-hidden pattern and badge insets.
+const SPACE_OK = /^(?:var\(--ds-(?:space|card|nav|control)-[\w-]+\)|0|0px|-?1px|2px|auto|-?\d+(?:\.\d+)?%)$/;
 
 /** Violations in one file's source: [{rule, line, text}]. `ext` picks the CSS or TSX rule set. */
 export function check(source, ext, file = "") {
@@ -29,7 +31,7 @@ export function check(source, ext, file = "") {
         const [prop, raw] = [m[1], m[2].replace(/!important/, "").trim()];
         if (SPACE_PROPS.test(prop)) {
           // calc(...) may nest var(): accept a whole calc value that only combines --ds-space tokens with numbers; otherwise check each part.
-          const ok = /^calc\(/.test(raw) ? /var\(--ds-space-/.test(raw) && !/\d+(?:px|rem|em)(?![\w-])/.test(raw.replace(/\b1px\b/g, ""))
+          const ok = /^calc\(/.test(raw) ? /var\(--ds-(?:space|card|nav|control)-/.test(raw) && !/\d+(?:px|rem|em)(?![\w-])/.test(raw.replace(/\b1px\b/g, ""))
             : (raw.match(/var\([^)]*\)|\S+/g) || []).every((p) => SPACE_OK.test(p));
           if (!ok) add("R2 spacing not a --ds-space token", i, l);
         }
@@ -45,7 +47,7 @@ export function check(source, ext, file = "") {
       if (new RegExp(`>\\s*${GLYPH_CLASS}\\s*<|["'\`]\\s*${GLYPH_CLASS}\\s*["'\`]|>\\s*${GLYPH_CLASS}\\s+\\S`).test(l)) add("R4 text glyph used as an icon", i, l);
       if (/<svg[\s>]/.test(l)) add("R5 raw <svg> outside icons.tsx", i, l);
     }
-    for (const m of l.matchAll(/style=\{\{([^}]*)\}\}/g)) {
+    for (const m of ICON_FILE.test(file) ? [] : l.matchAll(/style=\{\{([^}]*)\}\}/g)) {
       const keys = [...m[1].matchAll(/(?:^|,)\s*(["']?)([\w-]+)\1\s*:/g)].map((k) => k[2]);
       if (keys.some((k) => !k.startsWith("--"))) add("R6 inline style (only --custom properties allowed)", i, l);
     }

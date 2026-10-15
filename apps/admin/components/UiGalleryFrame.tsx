@@ -1,3 +1,4 @@
+// @ds-page: built only from packages/ui DS components; design-spec rules R1–R7 apply (docs/design/DESIGN-SPEC.md §6).
 // Purpose: Shared gallery-only frame; every template uses the same shell and working topbar.
 // Depends on: React, DS, localized gallery copy/navigation; synthetic demo data only.
 // Used by: UiGallery and UiGalleryTemplates, behind LC_UI_GALLERY=1; no live-page adoption.

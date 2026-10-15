@@ -1,3 +1,4 @@
+// @ds-page: built only from packages/ui DS components; design-spec rules R1–R7 apply (docs/design/DESIGN-SPEC.md §6).
 // Purpose: Four complete SHOPLINE-style page compositions for design review; synthetic data and local demo state only.
 // Depends on: React, DS components, UiGalleryFrame, typed three-locale copy and gallery state helper.
 // Used by: /{locale}/ui-gallery/templates/{list,detail,form,settings}; no live routes adopt these components.
@@ -63,7 +64,7 @@ export function UiGalleryTemplate({ locale, name, initial }: { locale: Locale; n
 
 const ORDERS = Array.from({ length: 24 }, (_, i) => ({ id: i + 1001, paid: i % 3 !== 0, amount: 360 + i * 120 }));
 // Explicit synthetic pictogram, never a real product photograph.
-const THUMB = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="4" fill="rgb(243,243,243)"/><path d="M17 24h30l-2 29H19z M24 25v-8a8 8 0 0 1 16 0v8" fill="none" stroke="rgb(91,91,91)" stroke-width="2"/></svg>')}`;
+const THUMB = "/demo-assets/gallery-product-thumb.svg"; // synthetic product photo stand-in (static asset, not UI chrome)
 function ListTemplate({ locale, t, params, update, setNotice, created }: { created: number; locale: Locale; t: TemplateCopy; params: TemplateParams; update: (patch: Partial<TemplateParams>) => void; setNotice: (text: string) => void }) {
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");

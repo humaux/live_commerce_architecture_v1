@@ -158,6 +158,7 @@
   --ds-card-header-inline: 24px;
   --ds-card-body: 24px;
   --ds-card-footer: 16px;
+  --ds-nav-indent: 52px; /* level-2 sidebar items align with level-1 labels (icon slot + gap) */
   --ds-disabled-bg: #dae5ef;
   --ds-disabled-text: #435b70;
   /* sizes */
