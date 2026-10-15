@@ -232,10 +232,11 @@ export function GalleryUpload({ t, value, onChange, disabled = false }: { t: Tem
 }
 function SettingsTemplate({ t, params }: { t: TemplateCopy; params: TemplateParams }) {
   const [saved, persist, ready] = useGalleryRecord<{ name: string; currency: string; timezone: string; notices: boolean }>("ds2-settings", { name: "Demo store", currency: "TWD", timezone: "Asia/Taipei", notices: false });
-  const [data, setData] = useState(saved);
+  // No editable draft until the first edit: restored values never need a second effect to reach the fields.
+  const [draft, setData] = useState<typeof saved | null>(null);
+  const data = draft ?? saved;
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
-  useEffect(() => { setData(saved); }, [saved]);
   const dirty = JSON.stringify(data) !== JSON.stringify(saved);
   useEffect(() => {
     if (!saving) return;
@@ -250,9 +251,11 @@ function SettingsTemplate({ t, params }: { t: TemplateCopy; params: TemplatePara
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
   const current = params.setting === "notices" ? "notices" : "profile";
+  // A reload must expose restored preferences, never the server's synthetic defaults as a usable form.
+  if (!ready) return <p role="status">{t.loading}</p>;
   return <SettingsLayout navLabel={t.nav} current={current} groups={[{ id: "store", title: t.config, items: [{ id: "profile", label: t.storeProfile, href: "?setting=profile" }, { id: "notices", label: t.notices, href: "?setting=notices" }] }]}>
     <FormActionBar label={t.action} dirty={dirty} state={saving ? "saving" : dirty ? "dirty" : done ? "saved" : "clean"} note={t.clean} dirtyNote={t.dirty} savingNote={t.saving} savedNote={t.saved}
-      actions={<><Button disabledReason={saving ? t.saving : undefined} onClick={() => { setData(saved); setDone(false); }}>{t.cancel}</Button><Button variant="primary" loading={saving} disabledReason={!ready ? t.loading : !data.name.trim() ? t.invalid : !dirty ? t.noChanges : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
+      actions={<><Button disabledReason={saving ? t.saving : undefined} onClick={() => { setData(null); setDone(false); }}>{t.cancel}</Button><Button variant="primary" loading={saving} disabledReason={!ready ? t.loading : !data.name.trim() ? t.invalid : !dirty ? t.noChanges : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
       <Stack><h2>{current === "profile" ? t.storeProfile : t.notices}</h2>
         {current === "profile" ? <Stack><Field label={t.storeName} required width="full" error={data.name.trim() ? undefined : t.required} counter={{ value: data.name, max: 80, format: (n, max) => `${n} / ${max}` }}>{control => <TextInput {...control} value={data.name} readOnly={saving || !ready} onChange={event => { setData({ ...data, name: event.target.value }); setDone(false); }} />}</Field>
           <FormGrid><Field label={t.currency} help={t.currencyHelp}>{control => <Select {...control} value={data.currency} disabled={saving || !ready} onChange={event => { setData({ ...data, currency: event.target.value }); setDone(false); }}><option value="TWD">TWD · NT$</option><option value="USD">USD · US$</option></Select>}</Field>

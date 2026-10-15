@@ -967,13 +967,13 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     });
     await run("Settings sub-nav + notification", "click Notifications, checkbox, save, reload", "subsection and preference persist", async () => {
       await area.getByRole("navigation", { name: t.nav }).getByRole("link", { name: t.notices, exact: true }).click();
-      assert.equal(new URL(page.url()).searchParams.get("setting"), "notices");
+      assert.equal(new URL(page.url()).searchParams.get("setting"), "notices", "notices URL is selected");
       await area.getByRole("checkbox", { name: t.emailNotices, exact: true }).check();
       await save(); await page.reload({ waitUntil: "load" });
-      assert.equal(await area.getByRole("checkbox", { name: t.emailNotices, exact: true }).isChecked(), true);
+      assert.equal(await area.getByRole("checkbox", { name: t.emailNotices, exact: true }).isChecked(), true, "email notice preference survives reload");
       await capture("settings-notices");
       await area.getByRole("navigation", { name: t.nav }).getByRole("link", { name: t.storeProfile, exact: true }).click();
-      assert.equal(await area.getByLabel(t.storeName, { exact: true }).inputValue(), "Synthetic store A");
+      assert.equal(await area.getByLabel(t.storeName, { exact: true }).inputValue(), "Synthetic store A", "returning to profile restores the saved store name");
     });
   }
   await page.goto(`${new URL(page.url()).origin}${root}/${template}`, { waitUntil: "load" });
