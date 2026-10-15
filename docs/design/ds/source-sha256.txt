@@ -1,0 +1,32 @@
+# Purpose: bind DS-2 implementation/test bytes to handoff; not runtime proof.
+# Depends on: source tree at 7ee79c1cd5e652c5d33a8bff77435c6c99b2da80. Used by: integrator evidence review.
+def3a4633a7e35b6540e2b39883daf39f921a25657e5c10df77b2049ec8b9711  apps/admin/app/[locale]/ui-gallery/page.tsx
+40d079a13d020d08d26fa95e8486cd8916e0fb43d6a9a4bf5158026b3318e3e6  apps/admin/app/[locale]/ui-gallery/templates/[name]/page.tsx
+719a652c9510a31796c740b15122daa6926f671491091436e0ba25890391780e  apps/admin/components/UiGallery.module.css
+b8ffce9bb57a8d26d8862ccf98eceb7b55dde814d378200f38a332a946830cd3  apps/admin/components/UiGallery.tsx
+4a0fa9b5edc2c0bfe49863a1b3ecc49754b493b31115bc80247cb21dd466a596  apps/admin/components/UiGalleryFrame.tsx
+4feb8f4e8633f1f4c68521b49be673bca98c7b5b53273ae1e5c83ae00ea82c36  apps/admin/components/UiGallerySections.tsx
+ba4903666109c6837fcf91c87bf40a36dc99b770966d327c70ba093980189ddf  apps/admin/components/UiGalleryTemplates.tsx
+d4eddb60349e0c2fa02101b4b08e17770babccaacc490173dc22f4e76c51b58a  apps/admin/src/ui-gallery-nav.ts
+957eaaab7645c06720074ba9b7d78fd02f14f2e562b08849fd9f72a241d676ef  apps/admin/src/ui-gallery-state.ts
+dbb38713e8788c92c985216ec69488212074149e1aa1b6392941f690b77657db  apps/admin/src/ui-gallery-template-copy.ts
+7d0e81080715eb30a0da6154e24ec43dd2c7878e61cf06b4f20df80dea770e27  packages/ui/src/ds/AppShellV2.tsx
+cb7ec44698db84abdf4fef1dec0416f395aa965ffc6093f3ec23ff798a76ded4  packages/ui/src/ds/Controls.tsx
+68c1c7b29e1b7ffea67010c7af3dbb34fe9f2f28f3415fe399e033861a3e4d94  packages/ui/src/ds/Data.tsx
+0f78acb59a192841b65dada17454484c53a21bdcf2b840499af32f62355cae53  packages/ui/src/ds/Dialog.tsx
+795e17c2cf0697a3dbd9875a73007d419925e00acb639ea6d471d2c828cf0d85  packages/ui/src/ds/Fields.tsx
+bd79fc8f788097119fd8769aeb58cdaa75ca4293576d8582063544fe2bd5e8db  packages/ui/src/ds/Icon.tsx
+69cd78a4bc71b93096a19eff92cacf99c6dc8eb1a7430631d75a70c8d16f7d05  packages/ui/src/ds/Layout.tsx
+4abc8f98e7014ab40098f2c71ec3bfa647c8844852903d3aabf42f3048c35413  packages/ui/src/ds/States.tsx
+deed8f0294843c011626fd01b9a9fd382fb0675cfc69e281bfc0999e2633cea1  packages/ui/src/ds/controls.module.css
+a22d24bb72c80eca1aea6936ec6bef0dfb2adfc98f456e4a430c95aa2ca44165  packages/ui/src/ds/data.module.css
+8eb38cdd9c085ab310b61507d00aa820a9cc67bbb94406146506499dddf16d02  packages/ui/src/ds/fields.module.css
+d17118547c083d9fb079846fa8074c509bae5453f617f9b9c481213a07dd0bc0  packages/ui/src/ds/index.ts
+aedbd9b5ffbb5fb2b525e8d25c1a6171f81c946bac09284513823402fee169cf  packages/ui/src/ds/layout.module.css
+1fc7b64341bb33eec03e33d26465ac5dafc39d195e2496f89f87650fc4ac7dd5  packages/ui/src/ds/shell2.module.css
+e1afe3fe98df627bca53a90d8292ebf7a4d241c13d35a47404cc79831c13a049  packages/ui/src/ds/states.module.css
+8d0e554149a22fd0691ddf2c19bddda40d10eacefe600f0b81abb7ec52fd4bc6  packages/ui/src/tokens.css
+9a6bef5589d2201ff2d6043b574fd39990b534cddc1240dffe08bbd95c457d62  tests/admin/ui-gallery-clicks.mjs
+bf269a2baae95dd61d9298496351e3d3a464ad383f145d835b5006b557273abb  tests/ui/ds-render.test.mjs
+d19150a77aafb2f6bff3df834706497a212ebb360a4a46c14c5132665b67928e  tests/ui/ds-rework.test.mjs
+de906bde13a30829cc68cf93cabfe940ef212d6eecd5f0d92ca511556363d13d  tests/ui/ds-tokens.test.mjs
