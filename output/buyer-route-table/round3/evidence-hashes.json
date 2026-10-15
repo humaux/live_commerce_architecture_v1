@@ -1,0 +1,23 @@
+{
+  "source_sha": "913cf96719289a70c12679fc72aadd156fedcc97",
+  "files": {
+    "output/buyer-route-table/DELIVERY.md": "86aa38ca9d18a8f94c5977412f5602afcece85a4ca334bf49768d9726f8fe933",
+    "output/buyer-route-table/round3/branch-receipt.json": "c556e340ca70142527b1ce8bf1deeb841df6f46754088e98817380a168a31521",
+    "output/buyer-route-table/round3/branch-report.txt": "5e2bf9ed4f577ced9c9094129d8b99c8df70c6c3588d8696d5833f1b77072609",
+    "output/buyer-route-table/round3/branch-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/round3/buyer-factory-proofs.json": "901d6740c97887bdf2f61b75ef7eda08791aecd01d80712b9c21508cd0621deb",
+    "output/buyer-route-table/round3/check-1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/round3/check-2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/round3/check-3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/round3/checks.json": "1e24ee2f94f6a0c508d8a3624e348e0a6926f83a8f175a1c6493101197285e82",
+    "output/buyer-route-table/round3/cleanup.json": "c74fd5aedd04dc379d3e70541d4872611f7a252445ca35240da925c68c5da524",
+    "output/buyer-route-table/round3/pay70-build-1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/round3/pay70-checkout.log": "89702a1cd3b8ca45d9d8816f676686ea604357631145b6d241665f6d3a1a6bb9",
+    "output/buyer-route-table/round3/pay70-clone.log": "a3654a7a8b8ea995e0d43add8181f052a54c39c17c149b46aa415293069ad544",
+    "output/buyer-route-table/round3/pay70-receipt.json": "5c2c049f4ea10d32593dbfb61dff4fc166573660d6343be68951457fdf1a5782",
+    "output/buyer-route-table/round3/pay70-report.txt": "c3d464e06016d4caa5c91658208fe75dfc02e0aaa1ff47a59eb1554c5e1c003a",
+    "output/buyer-route-table/round3/pay70-setup.json": "8315b0cf890e3853eef7b246be4643ddc6fc2b821ceaf5c71c72e828c78d7d8e",
+    "output/buyer-route-table/round3/pay70-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/buyer-route-table/round3/source-hashes.json": "f7b6ebb497243444bcf483315433e02d34b3f5f22777d838969d39654f7a5a3e"
+  }
+}

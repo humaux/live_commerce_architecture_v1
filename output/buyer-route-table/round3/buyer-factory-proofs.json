@@ -1,0 +1,14 @@
+{
+  "branch": [
+    "INFO () GO_ROUTE_TABLE   cmd/api/buyer.go:20, cmd/api/buyer.go:22, cmd/api/buyer.go:24, cmd/api/buyer.go:88, cmd/api/buyer.go:96, cmd/api/buyer.go:184, cmd/api/buyer_payment.go:86, cmd/api/cvs.go:39, cmd/api/cvs.go:51, internal/attribution/feed.go:93, internal/attribution/feed.go:123, internal/buyerhttp/handler.go:31, internal/buyerhttp/handler.go:55, internal/buyerhttp/handler.go:290, internal/httperror/error.go:25 handler factory buildBuyerHandler resolved from returned handler provenance",
+    "INFO () GO_ROUTE_TABLE   cmd/api/buyer.go:20, cmd/api/buyer.go:22, cmd/api/buyer.go:24, cmd/api/buyer.go:96, cmd/api/buyer.go:184, cmd/api/buyer_payment.go:86, cmd/api/cvs.go:39, cmd/api/cvs.go:51, internal/attribution/feed.go:93, internal/attribution/feed.go:123, internal/buyerhttp/handler.go:31, internal/buyerhttp/handler.go:55, internal/buyerhttp/handler.go:290, internal/httperror/error.go:25 handler factory buildBuyerWithCVS resolved from returned handler provenance"
+  ],
+  "branch_error_count": 0,
+  "branch_touched_count": 0,
+  "pay70": [
+    "INFO () GO_ROUTE_TABLE   cmd/api/buyer.go:20, cmd/api/buyer.go:22, cmd/api/buyer.go:24, cmd/api/buyer.go:88, cmd/api/buyer.go:96, cmd/api/buyer.go:184, cmd/api/buyer_payment.go:76, cmd/api/buyer_payment.go:104, cmd/api/cvs.go:39, cmd/api/cvs.go:51, internal/attribution/feed.go:93, internal/attribution/feed.go:123, internal/buyerhttp/handler.go:31, internal/buyerhttp/handler.go:55, internal/buyerhttp/handler.go:290, internal/httperror/error.go:25 handler factory buildBuyerHandler resolved from returned handler provenance",
+    "INFO () GO_ROUTE_TABLE   cmd/api/buyer.go:20, cmd/api/buyer.go:22, cmd/api/buyer.go:24, cmd/api/buyer.go:96, cmd/api/buyer.go:184, cmd/api/buyer_payment.go:76, cmd/api/buyer_payment.go:104, cmd/api/cvs.go:39, cmd/api/cvs.go:51, internal/attribution/feed.go:93, internal/attribution/feed.go:123, internal/buyerhttp/handler.go:31, internal/buyerhttp/handler.go:55, internal/buyerhttp/handler.go:290, internal/httperror/error.go:25 handler factory buildBuyerWithCVS resolved from returned handler provenance"
+  ],
+  "pay70_error_count": 0,
+  "pay70_touched_count": 0
+}

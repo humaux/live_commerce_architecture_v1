@@ -1,0 +1,40 @@
+{
+  "source_sha": "913cf96719289a70c12679fc72aadd156fedcc97",
+  "base": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "starting_head": "782351ed07e432956f5537ce019fde8d3eaf96f5",
+  "round3_source_changes": [
+    "scripts/dev/contractdrift/go_handler_factory.go",
+    "scripts/dev/contractdrift/go_handler_factory_cli_test.go",
+    "scripts/dev/contractdrift/go_opaque.go",
+    "scripts/dev/contractdrift/go_route_tables.go"
+  ],
+  "files": {
+    "cmd/api/buyer.go": "9428a305cc15544275b0425a5c094840c7576e1f43b2dc3ea0fd4fe6ffe68031",
+    "cmd/api/buyer_payment.go": "0fb89c04e0ee08e5d837ef9f00492cf0a15be3e86a7f5fd4a2ff6c68a1fb2d3e",
+    "contracts/buyer-routes-v1.md": "3df1eeb3094d2f03a2e7f582d0a2beb8b3700509bfedb4ceff8443d36f993bda",
+    "internal/attribution/feed.go": "1062601c9e9ffde6ffa4a7f3655a1f4ec765149c0bb73188e07b7848ee86f821",
+    "internal/buyerhttp/catalogv2.go": "68dbae9f04d39dc3c466165cd3f459cc70d38d3fdf2a63d76173f11040351735",
+    "internal/buyerhttp/cvs.go": "3ea9571bc6aa09466178761d3524edb36e18e7c48b861a32eba786201b14266f",
+    "internal/buyerhttp/handler.go": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8",
+    "internal/buyerhttp/routes.go": "76b34c3c999f78e0e2af6c7a3f344f131f4b0c6ab167ac2ac64c21b71ddff1b0",
+    "internal/buyerhttp/routes_legacy_test.go": "3d9f7dec29d15e98974e170b44d69455dc738a4310272bdbdbc015afe7f5aa51",
+    "internal/buyerhttp/routes_test.go": "3be24540451eb1a3d7a52d9d5ab75e36b9972d4e32742c535cd3a596961325b8",
+    "internal/buyerhttp/transfer.go": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133",
+    "internal/httperror/error.go": "14b7c288565300f84ada77b3b3d925a8c3c99bc25dd4fc75ee57b1ac1655659c",
+    "scripts/dev/contractdrift/baseline.json": "082a0e597254a96c03272becf1c17e38a7c76e4cf842e1ef913233b4662fb3ec",
+    "scripts/dev/contractdrift/go_extract.go": "0ebd429075cdd0e9506e9d46e557907b15bb23193e5d9a4b5aefbb32956733ec",
+    "scripts/dev/contractdrift/go_handler_factory.go": "cfc60c50e0a2c4a840e8fe0c3da5ba788940b4a3dc1ffc1b46be37857e3dd686",
+    "scripts/dev/contractdrift/go_handler_factory_cli_test.go": "001f0044ee6e8c7b2cf1a15306e4797612e1fc9d9e4eb224cbee623c8013a994",
+    "scripts/dev/contractdrift/go_opaque.go": "cd0ca4c7ee356f879b099368045f05e7daa3173e3e668e732e4068a0507e889e",
+    "scripts/dev/contractdrift/go_route_table_cli_test.go": "61ab6df9f1c0776a0dc67a252fea51ed8ffe337af177aba0aa831d9c9eaea2b3",
+    "scripts/dev/contractdrift/go_route_table_exact_cli_test.go": "8e40bf9a4ca68a56a51c83818df7a3d908ffb4e48b757004ff37a6361e95ac8c",
+    "scripts/dev/contractdrift/go_route_tables.go": "c2e0792450a621dbdfb487d5e8382c8b09f6eeb86ebe86e4b986a65572494a72"
+  },
+  "overlay": [
+    {
+      "path": "cmd/api/buyer_payment.go",
+      "source_sha": "51273344fc12ff4c8062634fdf749d536958bda7",
+      "sha256": "f460f3f4e97f9d9dfc090a3be5094e3c9d01f71545eebbcaf9321360a40a044f"
+    }
+  ]
+}

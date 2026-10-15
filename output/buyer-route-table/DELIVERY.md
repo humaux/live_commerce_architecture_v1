@@ -1,3 +1,159 @@
+READY_FOR_CI — Round 3: both required built-CLI scenarios exit 0, errors=0, no TOUCHED. Build/vet E1; automated static acceptance only. All Go tests, mutation/red→green, runtime, CI and independent acceptance NOT_RUN.
+
+# BUYER-ROUTE-TABLE — Round 3 (2026-10-15)
+
+Source SHA: `913cf96719289a70c12679fc72aadd156fedcc97`.
+Base: `e4dad98cc322d35709b475de25063efc92e5d866`.
+Branch/worktree: `unit/buyer-route-table`, `/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table`.
+Starting HEAD: `782351ed07e432956f5537ce019fde8d3eaf96f5`.
+Executor: Codex, integration_worker scope; runtime model/reasoning identifiers are not independently exposed. No child agents.
+Coord: `8569112d-4a60-4fd1-8763-78c6172f39ff`, resumed for this final targeted ruling.
+
+## Round 3 change and checkpoints
+
+| Step | Commit | Result |
+| --- | --- | --- |
+| Real CLI factory tests first | `1bec0c70f` | Two consumed tables compose; inline path switch and unmarked-package returns stay opaque; execution NOT_RUN |
+| Generic returned-handler proof | `913cf9671` | Resolves both buyer assembly factories without changing their source or subtracting dependency spans |
+| Delivery/evidence | Subsequent docs-only commit | Exact source SHA and file hashes below remain the acceptance binding |
+
+`go_opaque.go` still discovers the entire local dependency closure and initially
+emits the same opaque factory finding. After **all** route tables have been
+consumed, `go_route_tables.go:134` invokes
+`go_handler_factory.go:66`'s returned-handler proof. The proof follows every
+HTTP handler result through nil, supplied fallback/child parameters, local or
+imported factories, multiple return slots and local assignments. A table-proven
+ServeHTTP receiver type or exact HandlerFunc dispatcher is a known leaf;
+constructors such as `buyerhttp.New` are proved from their actual returns.
+Middleware must forward proved handlers without adding opaque path/method logic.
+Mount conditions reuse the actual table-consumer recognizer
+(`tableMountCall`), checking each condition rather than blessing a function
+because one table reference occurs somewhere in it.
+
+All assignment alternatives are unioned by AST object, so reassignment, shadowed
+locals, captured writes, unknown sources, address escapes and recursive proofs
+fail closed. Inline HandlerFuncs with their own path dispatch and handlers from
+unmarked packages retain the factory UNRESOLVED finding. No factory-name or
+cmd/api exemption was added. No baseline, owning contract, buyer handler or
+payment source was edited in Round 3; only scanner/test source changed.
+
+Successful proofs become GO_ROUTE_TABLE notes containing the **entire original**
+factory finding's locations plus proof dependencies. Both notes retain
+`mountFeed` (184–198), CVS helpers, and `buildBuyerPayment` (86–112 on the branch;
+76–102 plus its new profile helper at 104–106 in the #70 overlay). Failed proofs leave the old finding and its spans
+unchanged. The reports show both `buildBuyerHandler` and `buildBuyerWithCVS`
+resolved from returned handler provenance, with no path filter hiding either.
+
+## CLI tests and the CI red assertion (execution NOT_RUN)
+
+`scripts/dev/contractdrift/go_handler_factory_cli_test.go` uses the existing
+real Git + built OS CLI fixture helpers; it does not run handlers or an HTTP
+server. Its positive fixture composes separate prefix and exact consumed tables,
+a transparent wrapper and a multi-return delegating factory. Negative cases
+return an inline HandlerFunc switching on `r.URL.Path`, return an unknown
+package's handler, reassign/shadow a handler, add another mount path, or call a
+hidden path helper. A separate case preserves the opaque factory's TOUCHED span.
+
+CI command (NOT_RUN locally):
+
+```sh
+go test ./scripts/dev/contractdrift -run 'TestGo(HandlerFactory|RouteTable|CustomDispatchWithoutTable)' -count=1
+```
+
+With the tests retained, revert only scanner commit `913cf9671` in an isolated
+CI checkout. `TestGoHandlerFactoryTablesResolveCLI`'s **exit=0 and absence of
+UNRESOLVED** assertion must go RED: `buildTop` and `buildComposite` again produce
+opaque findings. Its two factory-provenance note assertions also fail. Restore
+the scanner and require GREEN with all negative cases. This mutation has **not**
+been executed locally; no red→green or suite PASS is claimed. Existing runtime
+buyerhttp/cmd/api/attribution suites and the full scanner suite remain CI work.
+
+## Acceptance A — this branch, exit 0
+
+Built CLI command:
+
+```text
+output/buyer-route-table/round3/contractdrift -root /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table -base e4dad98cc
+```
+
+Exact stdout SUMMARY, copied unchanged from `round3/branch-report.txt`:
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+Receipt: `round3/branch-receipt.json`; `run_id=buyer-route-table-r3-branch-913cf9671`,
+exit **0**, source **913cf96719289a70c12679fc72aadd156fedcc97**. No ERROR or TOUCHED.
+The 51 remaining UNRESOLVED findings are legacy warnings, not the two resolved
+buyer factories. This is zero **errors**, not a claim of zero warnings globally.
+
+## Acceptance B — #70 single-file overlay, exit 0
+
+Created the task-local scratch clone
+`output/buyer-route-table/round3/pay70-scratch`, detached at the same source HEAD.
+Pinned #70 source: `origin/unit/pay-rm2-p2a` = local `unit/pay-rm2-p2a` =
+`51273344fc12ff4c8062634fdf749d536958bda7`.
+
+Only overlaid file: **`cmd/api/buyer_payment.go`**.
+SHA256: `f460f3f4e97f9d9dfc090a3be5094e3c9d01f71545eebbcaf9321360a40a044f`.
+`git diff --name-only HEAD` in the scratch clone listed exactly this file.
+`go build ./cmd/api` exited **0** on the first attempt, so **no additional #70
+files were needed**. No overlay commit was created or copied into this branch.
+Setup commands, timestamps and build result: `round3/pay70-setup.json`,
+`pay70-clone.log`, `pay70-checkout.log`, `pay70-build-1.log`.
+
+Built CLI command:
+
+```text
+output/buyer-route-table/round3/contractdrift -root /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round3/pay70-scratch -base e4dad98cc
+```
+
+Exact stdout SUMMARY, copied unchanged from `round3/pay70-report.txt`:
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+Receipt: `round3/pay70-receipt.json`; `run_id=buyer-route-table-r3-pay70-913cf9671`,
+exit **0**, **no TOUCHED**. This proves the requested buyer_payment.go rebase
+scenario passes the static gate; it does not claim that every file/test in #70
+has been rebased or that payment runtime acceptance has passed.
+
+## Verification, evidence and remaining work
+
+| Command | Exit | Evidence |
+| --- | --- | --- |
+| `go build ./...` | 0 | E1; `round3/check-1.log`, `checks.json` |
+| `go vet ./internal/buyerhttp ./internal/attribution ./cmd/api ./scripts/dev/contractdrift` | 0 | E1; `round3/check-2.log`, `checks.json`; no test execution |
+| `go build -o output/buyer-route-table/round3/contractdrift ./scripts/dev/contractdrift` | 0 | E1; `round3/check-3.log`, `checks.json` |
+| Built CLI branch vs `e4dad98cc` | 0 | Automated static source acceptance; branch report/receipt |
+| Scratch overlay `go build ./cmd/api` | 0 | E1; `round3/pay70-build-1.log`, `pay70-setup.json` |
+| Same built CLI scratch overlay vs `e4dad98cc` | 0 | Automated static source acceptance; pay70 report/receipt |
+
+Both CLI runs used binary SHA256
+`145aec6d081e219b1c2c8a7683557b76ca44d8545cf246532fe1ec93c07f5daf`.
+Every build/vet command had a 180-second timeout; clone/checkout 60 seconds; CLI
+120 seconds. All processes exited. `round3/source-hashes.json` binds source,
+tests, route/index and baseline inputs, including the overlay hash;
+`round3/evidence-hashes.json` binds the retained receipts and logs.
+
+NOT_RUN: all Go tests, mutation/red→green, runtime/browser/HTTP/PG/provider
+checks, CI and independent review. READY_FOR_CI is a static handoff, not full
+unit/release acceptance. No push or PR. The proof supports a finite grammar;
+unsupported aliases/control flow remain conservatively opaque. Route-table
+semantics and runtime equivalence still require their unchanged CI gates.
+
+Task-created scratch clone and built binaries were removed after their hashes,
+overlay manifest and raw reports were retained (`round3/cleanup.json`). No
+servers, containers or ports were started. No other task directory was cleaned.
+Cleanup reclaimed **458,854,080 bytes**; all command processes had exited.
+
+---
+
+> **Round 2 — historical BLOCKED delivery.** Retained verbatim below. Its SHA,
+> findings and pending ruling describe Round 2 only; the current status and
+> acceptance binding are the Round 3 READY_FOR_CI section above.
+
 BLOCKED — Round 2 static CLI exits 1 with two touched buyer assembly UNRESOLVED findings. E1 only; CI/runtime and independent acceptance NOT_RUN.
 
 # BUYER-ROUTE-TABLE — Round 2 (2026-10-15)

@@ -1,0 +1,52 @@
+[
+  {
+    "run_id": "buyer-route-table-r3-check-1-913cf9671",
+    "source_sha": "913cf96719289a70c12679fc72aadd156fedcc97",
+    "command": [
+      "go",
+      "build",
+      "./..."
+    ],
+    "timeout_seconds": 180,
+    "mode": "E1 build/vet only; tests NOT_RUN",
+    "started_at": "2026-10-15T09:11:16.333661+00:00",
+    "exit": 0,
+    "elapsed_seconds": 4.245,
+    "ended_at": "2026-10-15T09:11:20.579366+00:00"
+  },
+  {
+    "run_id": "buyer-route-table-r3-check-2-913cf9671",
+    "source_sha": "913cf96719289a70c12679fc72aadd156fedcc97",
+    "command": [
+      "go",
+      "vet",
+      "./internal/buyerhttp",
+      "./internal/attribution",
+      "./cmd/api",
+      "./scripts/dev/contractdrift"
+    ],
+    "timeout_seconds": 180,
+    "mode": "E1 build/vet only; tests NOT_RUN",
+    "started_at": "2026-10-15T09:11:20.579944+00:00",
+    "exit": 0,
+    "elapsed_seconds": 0.391,
+    "ended_at": "2026-10-15T09:11:20.971303+00:00"
+  },
+  {
+    "run_id": "buyer-route-table-r3-check-3-913cf9671",
+    "source_sha": "913cf96719289a70c12679fc72aadd156fedcc97",
+    "command": [
+      "go",
+      "build",
+      "-o",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round3/contractdrift",
+      "./scripts/dev/contractdrift"
+    ],
+    "timeout_seconds": 180,
+    "mode": "E1 build/vet only; tests NOT_RUN",
+    "started_at": "2026-10-15T09:11:20.971617+00:00",
+    "exit": 0,
+    "elapsed_seconds": 0.29,
+    "ended_at": "2026-10-15T09:11:21.261239+00:00"
+  }
+]
