@@ -1046,13 +1046,23 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     await run("Form flow and sticky release", "click Basics, native Home/PageDown scrolling", "page scrolls, no inner scroller; footer docks only while form bottom is offscreen", async () => {
       await tab(t.general).click();
       const main = page.locator("#ds-main");
-      await main.press("Control+Home");
+      // [READ] Phones have no Home/PageDown key; under touch emulation Chromium intermittently drops the first
+      // keyboard scroll (CI 38764110001: PageDown at scrollY=0, max 322/345, focus #ds-main, no movement in 8s).
+      // A wheel at the viewport centre is still native compositor scrolling, and an inner scroller under the
+      // pointer would swallow it, so the no-inner-scroller assertion keeps its teeth.
+      const nativeScroll = async direction => {
+        if (!mobile) return main.press(direction < 0 ? "Control+Home" : "PageDown");
+        const size = page.viewportSize();
+        await page.mouse.move(size.width / 2, size.height / 2);
+        await page.mouse.wheel(0, direction < 0 ? -100000 : Math.round(size.height * 0.8));
+      };
+      await nativeScroll(-1);
       // [READ] On timeout, report which native scroll stalled and the page's scroll state (CI 38758700306 zh-TW 390px).
       const scrollWait = (label, fn, arg) => page.waitForFunction(fn, arg).catch(async error => {
         const state = await page.evaluate(() => ({ scrollY: window.scrollY, max: document.scrollingElement.scrollHeight - window.innerHeight, active: document.activeElement?.id || document.activeElement?.tagName }));
         throw new Error(`${label} stalled: ${JSON.stringify(state)}; ${error.message}`);
       });
-      await scrollWait("Control+Home", () => window.scrollY === 0); // [READ] native Home must finish before measuring
+      await scrollWait(mobile ? "wheel to top" : "Control+Home", () => window.scrollY === 0); // [READ] native Home must finish before measuring
       const frame = area.locator('[data-form-frame]');
       const templateCard = await area.getByRole("region", { name: t.templates, exact: true }).elementHandle();
       // [READ] One synchronous layout snapshot: separate boundingBox awaits can straddle native scrolling.
@@ -1096,8 +1106,8 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       }
       for (let i = 0; i < 4 && boxes.surface.y + boxes.surface.height > height; i++) {
         const before = await page.evaluate(() => window.scrollY); // [READ]
-        await main.press("PageDown");
-        await scrollWait(`PageDown #${i + 1} from ${before}`, y => window.scrollY > y, before); // [READ] wait for native scrolling
+        await nativeScroll(1);
+        await scrollWait(`${mobile ? "wheel" : "PageDown"} #${i + 1} from ${before}`, y => window.scrollY > y, before); // [READ] wait for native scrolling
         boxes = await measure();
       }
       assert.ok(boxes.surface.y + boxes.surface.height <= height, "form bottom reached by page scrolling");
