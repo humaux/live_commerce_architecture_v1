@@ -3,6 +3,7 @@
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
 import { useId, useState, type ReactNode } from "react";
+import { Icon } from "./Icon";
 import s from "./layout.module.css";
 
 type Level = 2 | 3 | 4;
@@ -14,7 +15,7 @@ function useHelp(help: { label: string; content: ReactNode } | undefined) {
   const id = useId();
   const button = help && (
     <button type="button" className={s.help} aria-label={help.label} aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
-      <span aria-hidden="true">?</span>
+      <Icon name="help" size={16} />
     </button>
   );
   const panel = help && open && (
@@ -34,6 +35,7 @@ export function Card({
   help,
   flush = false,
   children,
+  footer,
   id,
 }: {
   title?: ReactNode;
@@ -46,6 +48,7 @@ export function Card({
   flush?: boolean;
   children?: ReactNode;
   id?: string;
+  footer?: ReactNode;
 }) {
   const { button, panel } = useHelp(help);
   const headingId = useId();
@@ -69,6 +72,7 @@ export function Card({
       <div className={s.cardBody} data-flush={flush}>
         {children}
       </div>
+      {footer && <div className={s.cardFooter}>{footer}</div>}
     </section>
   );
 }
@@ -89,6 +93,7 @@ export function Breadcrumb({ label, crumbs }: { label: string; crumbs: readonly 
           const current = i === crumbs.length - 1;
           return (
             <li key={`${i}-${crumb.label}`}>
+              {i > 0 && <Icon name="chevronRight" size={16} />}
               {crumb.href && !current ? <a href={crumb.href}>{crumb.label}</a> : <span aria-current={current ? "page" : undefined}>{crumb.label}</span>}
             </li>
           );
@@ -128,11 +133,14 @@ export function PageHeader({
  * The save bar of a form page. Desktop shows it above and below the form; at < 768 px only the bottom one is shown and it
  * sticks to the viewport bottom. `actions` is rendered twice: give its controls no `id`. `dirtyNote` replaces `note` while there are unsaved changes.
  */
-export function ActionBars({
+export function FormActionBar({
   label,
   note,
   dirty = false,
   dirtyNote,
+  state,
+  savingNote,
+  savedNote,
   actions,
   children,
 }: {
@@ -140,23 +148,31 @@ export function ActionBars({
   note?: ReactNode;
   dirty?: boolean;
   dirtyNote?: ReactNode;
+  state?: "clean" | "dirty" | "saving" | "saved";
+  savingNote?: ReactNode;
+  savedNote?: ReactNode;
   actions: ReactNode;
   children: ReactNode;
 }) {
+  const activeState = state ?? (dirty ? "dirty" : "clean");
+  const message = activeState === "saving" ? savingNote : activeState === "saved" ? savedNote : activeState === "dirty" ? dirtyNote : note;
   const bar = (position: "top" | "bottom") => (
-    <div className={`${s.bar} ${position === "top" ? s.barTop : s.barBottom}`} role="group" aria-label={label}>
-      <div className={`${s.barNote} ${dirty ? s.barDirty : ""}`}>{dirty && dirtyNote ? dirtyNote : note}</div>
+    <div data-state={activeState} className={`${s.bar} ${position === "top" ? s.barTop : s.barBottom}`} role="group" aria-label={label}>
+      <div className={`${s.barNote} ${dirty ? s.barDirty : ""}`} role={position === "bottom" ? "status" : undefined}>{message}</div>
       <div className={s.barControls}>{actions}</div>
     </div>
   );
   return (
-    <div>
+    <div className={s.formFrame}>
       {bar("top")}
-      {children}
+      <div className={s.formContent}>{children}</div>
       {bar("bottom")}
     </div>
   );
 }
+
+/** Compatibility alias; all save-bar layout lives in FormActionBar. */
+export const ActionBars = FormActionBar;
 
 export type SettingsGroup = { id: string; title: string; items: readonly { id: string; label: string; href: string }[] };
 
@@ -215,7 +231,7 @@ export function KpiCard({
       <span>
         <span className={s.kpiValue}>{value}</span>
         <span className={s.kpiLabel}>{label}</span>
-        {trend && <span className={s.kpiTrend} data-tone={trend.tone}>{trend.text}</span>}
+        <span className={s.kpiTrend} data-tone={trend?.tone}>{trend?.text ?? "\u00a0"}</span>
       </span>
     </>
   );
@@ -227,3 +243,18 @@ export function KpiCard({
     <div className={s.kpi}>{body}</div>
   );
 }
+
+export type TimelineItem = { id: string; title: string; time: string; dateTime: string; detail?: string; tone?: "success" | "neutral" };
+/** Chronological facts; every visible time has a machine-readable ISO instant. */
+export function Timeline({ label, items }: { label: string; items: readonly TimelineItem[] }) {
+  return <ol className={s.timeline} aria-label={label}>{items.map(item => <li key={item.id}>
+    <span className={s.timelineIcon}><Icon name={item.tone === "success" ? "check" : "info"} size={16} /></span>
+    <div><strong>{item.title}</strong><time dateTime={item.dateTime}>{item.time}</time>{item.detail && <p>{item.detail}</p>}</div>
+  </li>)}</ol>;
+}
+/** Task-specific two-column detail: reading order remains main then summary on mobile. */
+export function DetailLayout({ main, summary }: { main: ReactNode; summary: ReactNode }) {
+  return <div className={s.detail}><div className={s.detailMain}>{main}</div><aside>{summary}</aside></div>;
+}
+export function Stack({ children }: { children: ReactNode }) { return <div className={s.stack}>{children}</div>; }
+export function Inline({ children }: { children: ReactNode }) { return <div className={s.inline}>{children}</div>; }

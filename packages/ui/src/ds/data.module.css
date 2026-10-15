@@ -92,3 +92,9 @@
 .pageLink[aria-disabled="true"] { color: var(--ds-text-3); pointer-events: none; cursor: not-allowed; }
 .gap { padding: 0 var(--ds-space-1); color: var(--ds-text-3); }
 .summary { color: var(--ds-text-2); font-size: var(--ds-text-sm); }
+
+.menu { max-width: calc(100vw - var(--ds-space-8)); max-height: 60vh; overflow-y: auto; }
+.menuItem { width: 100%; box-sizing: border-box; text-decoration: none; }
+.scroll { scrollbar-color: var(--ds-border-input) var(--ds-surface-muted); }
+.searchButton { display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 767.98px) { .menuItem, .select, .searchInput, .searchButton, .pageLink { min-height: var(--ds-target); } .pageLink { min-width: var(--ds-target); } }

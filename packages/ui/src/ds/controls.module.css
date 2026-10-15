@@ -24,7 +24,7 @@
   padding: 0 var(--ds-space-4);
   border: 1px solid var(--ds-border-input);
   border-radius: var(--ds-radius-md);
-  background: linear-gradient(var(--ds-surface-muted), var(--ds-surface));
+  background: var(--ds-surface);
   color: var(--ds-text-1);
   font: inherit;
   font-size: var(--ds-text-md);
@@ -152,3 +152,5 @@
   .alertBody { flex-basis: 65%; }
   .alertAction { margin-inline-start: var(--ds-space-8); }
 }
+
+.tabPanel { min-width: 0; }

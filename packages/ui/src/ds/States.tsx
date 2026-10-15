@@ -3,13 +3,15 @@
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
 import { useId, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { Icon, type IconName } from "./Icon";
 import s from "./states.module.css";
 import { Button } from "./Controls";
 import { fileProblem, type FileProblem, type FileRule } from "./logic";
 
 function Block({
   kind,
-  glyph,
+  icon,
+  mode = "compact",
   title,
   text,
   next,
@@ -17,7 +19,8 @@ function Block({
   actions,
 }: {
   kind: "empty" | "error" | "permission" | "blocked";
-  glyph: string;
+  icon: IconName;
+  mode?: "compact" | "full";
   title: ReactNode;
   text?: ReactNode;
   next?: ReactNode;
@@ -25,8 +28,8 @@ function Block({
   actions?: ReactNode;
 }) {
   return (
-    <div className={s.state} data-kind={kind} role={kind === "error" ? "alert" : undefined}>
-      <span className={s.stateIcon} aria-hidden="true">{glyph}</span>
+    <div className={s.state} data-kind={kind} data-mode={mode} role={kind === "error" ? "alert" : undefined}>
+      <span className={s.stateIcon}><Icon name={icon} size={24} /></span>
       <h3 className={s.stateTitle}>{title}</h3>
       {text && <p className={s.stateText}>{text}</p>}
       {next && (
@@ -41,8 +44,8 @@ function Block({
 }
 
 /** Nothing here yet. Say what this list is for and offer the first action. */
-export function EmptyState({ title, description, action }: { title: ReactNode; description?: ReactNode; action?: ReactNode }) {
-  return <Block kind="empty" glyph="○" title={title} text={description} actions={action} />;
+export function EmptyState({ title, description, action, mode }: { title: ReactNode; description?: ReactNode; action?: ReactNode; mode?: "compact" | "full" }) {
+  return <Block kind="empty" icon="empty" mode={mode} title={title} text={description} actions={action} />;
 }
 
 /** The load failed (role="alert"). Show what failed and give a retry; the retry button is rendered only when both props are given. */
@@ -52,17 +55,20 @@ export function ErrorState({
   onRetry,
   retryLabel,
   actions,
+  mode,
 }: {
   title: ReactNode;
   detail?: ReactNode;
   onRetry?: () => void;
   retryLabel?: string;
   actions?: ReactNode;
+  mode?: "compact" | "full";
 }) {
   return (
     <Block
       kind="error"
-      glyph="!"
+      icon="danger"
+      mode={mode}
       title={title}
       text={detail}
       actions={
@@ -86,14 +92,16 @@ export function PermissionState({
   nextStep,
   nextLabel,
   action,
+  mode,
 }: {
   title: ReactNode;
   reason: ReactNode;
   nextStep?: ReactNode;
   nextLabel?: string;
   action?: ReactNode;
+  mode?: "compact" | "full";
 }) {
-  return <Block kind="permission" glyph="⚿" title={title} text={reason} next={nextStep} nextLabel={nextLabel} actions={action} />;
+  return <Block kind="permission" icon="lock" mode={mode} title={title} text={reason} next={nextStep} nextLabel={nextLabel} actions={action} />;
 }
 
 /** A prerequisite is missing (no public URL, not connected, not opened to this store). `reason` and `nextStep` are both required: a block never ends in a bare 404. */
@@ -103,14 +111,16 @@ export function BlockedState({
   nextStep,
   nextLabel,
   action,
+  mode,
 }: {
   title: ReactNode;
   reason: ReactNode;
   nextStep: ReactNode;
   nextLabel?: string;
   action?: ReactNode;
+  mode?: "compact" | "full";
 }) {
-  return <Block kind="blocked" glyph="◼" title={title} text={reason} next={nextStep} nextLabel={nextLabel} actions={action} />;
+  return <Block kind="blocked" icon="alert" mode={mode} title={title} text={reason} next={nextStep} nextLabel={nextLabel} actions={action} />;
 }
 
 export type DropzoneRejection = { name: string; problem: FileProblem };
@@ -130,6 +140,7 @@ export function Dropzone({
   onFiles,
   multiple = true,
   inputLabel,
+  disabledReason,
 }: {
   title: string;
   hint: string;
@@ -142,12 +153,14 @@ export function Dropzone({
   multiple?: boolean;
   /** Accessible name of the (hidden) native input; the Browse button is the visible way to open it. */
   inputLabel: string;
+  disabledReason?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const [rejected, setRejected] = useState<DropzoneRejection[]>([]);
   const hintId = useId();
   const take = (list: FileList | null) => {
+    if (disabledReason) return;
     const files = Array.from(list ?? []);
     const ok: File[] = [];
     const bad: DropzoneRejection[] = [];
@@ -178,19 +191,21 @@ export function Dropzone({
       onDragLeave={() => setOver(false)}
       onDrop={drop}
     >
+      <Icon name="upload" size={24} />
       <p className={s.dropTitle}>{title}</p>
       <p id={hintId} className={s.dropHint}>
         {hint}
       </p>
       <div className={s.dropActions}>
-        <Button variant="primary" onClick={() => input.current?.click()}>
+        <Button variant="primary" disabledReason={disabledReason} onClick={() => input.current?.click()}>
           {browseLabel}
         </Button>
-        {libraryLabel && onLibrary && <Button onClick={onLibrary}>{libraryLabel}</Button>}
+        {libraryLabel && onLibrary && <Button disabledReason={disabledReason} onClick={onLibrary}>{libraryLabel}</Button>}
       </div>
       <input
         ref={input}
         type="file"
+        disabled={Boolean(disabledReason)}
         hidden
         multiple={multiple}
         aria-label={inputLabel}
@@ -211,4 +226,21 @@ export function Dropzone({
       )}
     </div>
   );
+}
+
+export type UploadItem = { id: string; name: string; src?: string; status: "uploading" | "error" | "done"; progress: number; error?: string };
+/** Controlled upload queue: the caller owns real transport, cancellation and retries; this component never fabricates success. */
+export function UploadGrid({ items, label, removeLabel, retryLabel, progressLabel, doneLabel, onRemove, onRetry }: {
+  items: readonly UploadItem[]; label: string; removeLabel: (name: string) => string; retryLabel: (name: string) => string;
+  progressLabel: (progress: number) => string; doneLabel: string; onRemove: (id: string) => void; onRetry: (id: string) => void;
+}) {
+  return <ul className={s.uploadGrid} aria-label={label}>{items.map(item => <li key={item.id} className={s.uploadItem}>
+    {item.src ? <img className={s.uploadThumb} src={item.src} alt={item.name} width={80} height={80} /> : <span className={s.uploadThumb}><Icon name="image" size={24} /></span>}
+    <span className={s.uploadName}>{item.name}</span>
+    {item.status === "uploading" && <><progress max={100} value={item.progress} aria-label={progressLabel(item.progress)} /><span role="status">{progressLabel(item.progress)}</span></>}
+    {item.status === "error" && <span className={s.uploadError} role="alert">{item.error}</span>}
+    {item.status === "done" && <span role="status">{doneLabel}</span>}
+    <div className={s.dropActions}>{item.status === "error" && <Button size="sm" onClick={() => onRetry(item.id)}>{retryLabel(item.name)}</Button>}
+      <Button size="sm" variant="ghost" aria-label={removeLabel(item.name)} onClick={() => onRemove(item.id)}><Icon name="close" size={16} /></Button></div>
+  </li>)}</ul>;
 }

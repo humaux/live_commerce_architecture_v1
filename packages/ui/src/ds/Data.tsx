@@ -3,6 +3,7 @@
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
 import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from "react";
+import { Icon } from "./Icon";
 import s from "./data.module.css";
 import { Button, ButtonLink } from "./Controls";
 import {
@@ -45,6 +46,14 @@ export function MenuButton({
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const pendingFocus = useRef<"first" | "last" | null>(null);
+  useEffect(() => {
+    if (!open || !pendingFocus.current) return;
+    const items = list.current?.querySelectorAll<HTMLElement>("a[href],button");
+    (pendingFocus.current === "last" ? items?.[items.length - 1] : items?.[0])?.focus();
+    pendingFocus.current = null;
+  }, [open]);
   const [note, setNote] = useState<string>();
   const [place, setPlace] = useState<CSSProperties>();
   const id = useId();
@@ -79,7 +88,7 @@ export function MenuButton({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, align]);
   return (
-    <span className={s.menuWrap} ref={wrap}>
+    <span className={s.menuWrap} ref={wrap} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
       <Button
         ref={trigger}
         size={size}
@@ -91,13 +100,32 @@ export function MenuButton({
           if (!open) reposition();
           setOpen(!open);
         }}
+        onKeyDown={(event) => {
+          if (!["ArrowDown", "ArrowUp"].includes(event.key) || disabledReason) return;
+          event.preventDefault();
+          pendingFocus.current = event.key === "ArrowUp" ? "last" : "first";
+          reposition();
+          setOpen(true);
+          if (open) {
+            const nodes = list.current?.querySelectorAll<HTMLElement>("a[href],button");
+            (event.key === "ArrowUp" ? nodes?.[nodes.length - 1] : nodes?.[0])?.focus();
+          }
+        }}
         data-menu-trigger=""
       >
         {label}
-        <span aria-hidden="true">▾</span>
+        <Icon name="chevronDown" size={16} />
       </Button>
       {open && (
-        <div className={s.menu} id={id} data-align={align} role="group" style={place}>
+        <div ref={list} className={s.menu} id={id} data-align={align} role="group" style={place} onKeyDown={(event) => {
+          const keys = ["ArrowDown", "ArrowUp", "Home", "End"];
+          if (!keys.includes(event.key)) return;
+          event.preventDefault();
+          const nodes = Array.from(event.currentTarget.querySelectorAll<HTMLElement>("a[href],button"));
+          const index = nodes.indexOf(document.activeElement as HTMLElement);
+          const next = event.key === "Home" ? 0 : event.key === "End" ? nodes.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + nodes.length) % nodes.length;
+          nodes[next]?.focus();
+        }}>
           {items.map((item) => (
             <div key={item.id}>
               {menuItemKind(item) === "link" && item.href !== undefined ? (
@@ -228,7 +256,7 @@ export function DataTable<R>({
       <div className={s.actions}>
         {visible.map(one)}
         {more.length > 0 && moreLabel && (
-          <MenuButton size="sm" label={<span className={s.sr}>{moreLabel}</span>} items={more.map((a): MenuItem => {
+          <MenuButton size="sm" label={<><Icon name="more" size={16} /><span className={s.sr}>{moreLabel}</span></>} items={more.map((a): MenuItem => {
             const base = { id: a.id, label: a.label, variant: a.variant === "danger" ? ("danger" as const) : undefined };
             return a.href ? { ...base, href: a.href, onSelect: a.onSelect } : { ...base, onSelect: a.onSelect ?? (() => {}) };
           })} />
@@ -396,7 +424,7 @@ export function SearchBox({
     >
       <input className={s.searchInput} type="search" aria-label={label} placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} />
       <button type="submit" className={`${s.searchButton} ${s.focus}`} aria-label={buttonLabel}>
-        <span aria-hidden="true">⌕</span>
+        <Icon name="search" size={16} />
       </button>
     </form>
   );
@@ -453,13 +481,13 @@ export function Pagination({
     <nav className={s.pager} aria-label={labels.nav}>
       <span className={s.summary}>{labels.summary}</span>
       <ul className={s.pages}>
-        <li>{link(page - 1, <span aria-hidden="true">‹</span>, labels.previous, page <= 1)}</li>
+        <li>{link(page - 1, <Icon name="chevronLeft" size={16} />, labels.previous, page <= 1)}</li>
         {pageWindow(page, pageCount).map((entry, i) => (
           <li key={entry === "gap" ? `gap-${i}` : entry}>
             {entry === "gap" ? <span className={s.gap} aria-hidden="true">…</span> : link(entry, entry, labels.page(entry), false, entry === page)}
           </li>
         ))}
-        <li>{link(page + 1, <span aria-hidden="true">›</span>, labels.next, page >= pageCount)}</li>
+        <li>{link(page + 1, <Icon name="chevronRight" size={16} />, labels.next, page >= pageCount)}</li>
       </ul>
     </nav>
   );
