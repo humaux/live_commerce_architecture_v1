@@ -43,6 +43,10 @@
 .skeleton { display: block; height: 14px; border-radius: var(--ds-radius-sm); background: var(--ds-neutral-bg); }
 /* colspan state rows (empty/error) hold running text: nowrap is for data cells only, so restore normal wrapping there (same specificity, later wins). */
 .table td.fullRow { padding: 0 !important; white-space: normal; }
+/* Empty/error states span a 760px-min table; on a narrow scroller they would centre off-screen. Pin the state to the
+ * scroller's visible box (100cqi of the .scroll container) at its start edge so it is fully visible without scrolling. */
+.scroll { container-type: inline-size; }
+.table td.fullRow > * { position: sticky; inset-inline-start: 0; box-sizing: border-box; width: 100cqi; max-width: 100cqi; }
 
 /* selection banner */
 .banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2) var(--ds-space-4); padding: var(--ds-space-2) var(--ds-space-4); background: var(--ds-primary-soft); color: var(--ds-text-1); font-size: var(--ds-text-sm); }
