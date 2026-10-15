@@ -470,3 +470,37 @@ func TestGoDispatcherFreezeEveryInitCLI(t *testing.T) {
 	mustWrite(t, p, "package router\nfunc init(){ println(1) }\nfunc init(){ println(3) }\n")
 	assertFreezeCLI(t, root, false)
 }
+
+// R9 guard branches: composite writes, pointer arguments and local shadows.
+func TestGoDispatcherFreezeCompositeWritersCLI(t *testing.T) {
+	cases := []struct{ name, decl, extra, diagnostic string }{
+		{"index", "var gate = []int{1}", "func unused(){gate[0]=2}", "assignment"},
+		{"field", "var gate = struct{Flag bool}{}", "func unused(){gate.Flag=true}", "assignment"},
+		{"append", "var gate = []int{1}", "func unused(){_ = append(gate,2)}", "append mutation/escape"},
+		{"range", "var gate = 0", "func unused(){for gate = range []int{1}{}}", "range assignment"},
+		{"pointer argument", "var gate = 1", "func unused(){consume(&gate)}; func consume(p *int){*p=2}", "address taken"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root, p := routeTableCLIFixture(t)
+			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)", 1) + "\n" + tc.decl + "\n"
+			mustWrite(t, p, source)
+			pinFixtureDispatcher(t, root, "router.Routes", "")
+			assertFreezeCLI(t, root, true)
+			trunkFactoryWrite(t, root, "internal/router/zz_write.go", "package router\n"+tc.extra+"\n")
+			code, out := goReviewProcessCLI(t, root)
+			if code != 1 || !strings.Contains(out, "ERROR (dispatcher freeze)") || !strings.Contains(out, "frozen var gate: "+tc.diagnostic) {
+				t.Fatalf("writer accepted: exit%d %s", code, out)
+			}
+		})
+	}
+}
+
+func TestGoDispatcherFreezeLocalShadowCLI(t *testing.T) {
+	root, p := routeTableCLIFixture(t)
+	source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)", 1) + "\nvar gate = 1\n"
+	mustWrite(t, p, source)
+	pinFixtureDispatcher(t, root, "router.Routes", "")
+	trunkFactoryWrite(t, root, "internal/router/zz_shadow.go", "package router\nfunc unused(){gate:=1; gate++; p:=&gate; _=p}\n")
+	assertFreezeCLI(t, root, true)
+}
