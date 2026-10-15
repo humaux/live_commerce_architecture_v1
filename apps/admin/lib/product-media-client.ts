@@ -5,6 +5,7 @@
 import { csrfCookie, safeError, sessionBoundary } from "./settings-client";
 import { mediaUploadPath, type MediaRole } from "./product-media-model";
 import { validImage } from "./images-client";
+import { MAX_PHOTO_BYTES } from "./image-list-contract";
 import type { ProductImage } from "./model";
 import type { Outcome } from "./catalog-v2-client";
 /** Upload normalized immutable bytes with the original key; UNKNOWN and session changes require explicit recovery. */
@@ -17,6 +18,9 @@ export async function uploadDocumentImage(
   role: MediaRole = "main",
   optionValue?: string,
 ): Promise<Outcome<ProductImage>> {
+  // Refuse locally: no session probe and no request for a file the server and edge would reject anyway.
+  if (file.size > MAX_PHOTO_BYTES)
+    return { ok: false, code: "too_large", uncertain: false };
   const csrf = csrfCookie();
   try {
     if (
@@ -68,10 +72,11 @@ export async function uploadDocumentImage(
         uncertain: false,
         reconcile: true,
       };
+    // The edge answers 413 with a non-JSON body, so the status alone names the cause.
     if (!response.ok)
       return {
         ok: false,
-        code: safeError(body).code,
+        code: response.status === 413 ? "too_large" : safeError(body).code,
         uncertain: response.status >= 500,
       };
     return validImage(body) && body.product_id === product && body.role === role

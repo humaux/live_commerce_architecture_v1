@@ -138,6 +138,9 @@ export function useProductDocument(
           return;
         }
         op.id = result.value.id;
+        // An edit PUT answered 200 is committed and repeating it creates nothing: the fence only guards a UNKNOWN stage.
+        // Keeping it through the confirm read let a reload in that window lock the editor for good.
+        if (op.edit) sessionStorage.removeItem(fenceKey);
       }
       // image-axis null = "the first axis" = a new product's stored NULL: a no-op that would cost one extra command receipt
       // (tests/foundation/browser_merchant_buyer_chain_test.go budgets document, upload, order, publish), so only a chosen axis is written.
@@ -256,7 +259,7 @@ export function useProductDocument(
   }
   function save(
     draft: ProductDraft,
-    photos: DraftPhoto[],
+    photos: DraftPhoto[] | null,
     publish: boolean,
     status?: "draft" | "active",
     imageAxis?: string | null,
@@ -298,7 +301,7 @@ export function useProductDocument(
           : command("POST", "products/document", body),
         edit: !!baseline,
         expectedStatus: baseline ? (target ?? baseline.status) : undefined,
-        photos: baseline ? [] : [...photos],
+        photos: baseline || !photos ? [] : [...photos],
         publish: baseline ? false : publish,
         uploaded: [],
         imageAxis: baseline ? undefined : imageAxis,

@@ -1022,3 +1022,12 @@
     grid-template-columns: 1fr;
   }
 }
+.pe-leave-blocked {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-danger);
+  border-radius: 4px;
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+  font-weight: 600;
+}

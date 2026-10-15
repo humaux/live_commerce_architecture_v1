@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
-import { productMediaCopy } from "../../apps/admin/lib/product-media-copy.ts";
+import { fillCopy, productMediaCopy } from "../../apps/admin/lib/product-media-copy.ts";
 import {
   fitPhoto,
   validMediaQuery,
@@ -337,4 +337,23 @@ test("a new product issues the image-axis stage only for a chosen axis", () => {
     { edit: true, imageAxis: "Color" },
   ])
     assert.equal(stage(op), false, JSON.stringify(op));
+});
+
+test("PE-FIX-1 media failure copy: one size message, limits before upload, batch template in every locale", () => {
+  for (const [locale, c] of Object.entries(productMediaCopy)) {
+    assert.equal(c.size, c.tooLarge, `${locale}: local and edge size refusals read the same`);
+    assert.match(c.tooLarge, /2 MB/, locale);
+    assert.match(c.acceptHint, /JPEG \/ PNG \/ WebP/, locale);
+    assert.match(c.acceptHint, /2 MB/, locale);
+    for (const key of ["saved", "total", "file", "reason"])
+      assert.ok(c.batchPartial.includes(`{${key}}`), `${locale}: batchPartial has {${key}}`);
+    assert.equal(
+      fillCopy(c.batchPartial, { saved: 2, total: 3, file: "b.jpg", reason: "R" }).includes("{"),
+      false,
+      locale,
+    );
+  }
+  // The generic failure copy must name a button that exists after a failure.
+  for (const locale of ["zh-CN", "zh-TW", "en", "ja"] as const)
+    assert.ok(productMediaCopy[locale].failed.includes(productMediaCopy[locale].refresh), locale);
 });

@@ -12,6 +12,7 @@
 // Used by: tests/foundation/browser_product_media_v2_test.go (TestBrowserProductMediaV2RealUpload), which owns every
 //   process, the buyer.example TLS edge + CONNECT proxy, and the PG readback. Suite "product-media-v2" in
 //   playwright.config.ts and --browser-product-media-v2 in scripts/dev/test-local.sh are integrator wiring.
+// PE-FIX-1 (owner report 2026-10-15) adds the media failure/recovery/editor-lock describe at the end of this file.
 // Status: BROWSER + REAL_PG evidence; MOCK IdP, synthetic TLS edge; no provider, no order placement, no payment.
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
@@ -19,7 +20,11 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { purchaseCopy } from "../../apps/storefront/lib/purchase-copy";
 import { bankTransferCopy } from "../../apps/storefront/lib/bank-transfer-copy";
-import { productMediaCopy } from "../../apps/admin/lib/product-media-copy";
+import {
+  fillCopy,
+  productMediaCopy,
+} from "../../apps/admin/lib/product-media-copy";
+import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -710,6 +715,534 @@ test.describe("PM-U product media v2", () => {
       "4 main + 5 detail render without error",
       "4+5",
     );
+  });
+});
+
+// PE-FIX-1: photo failure, recovery and editor lock (owner report 2026-10-15). Runs after the buyer phases so its extra
+// detail uploads are removed again through the delete button before the Go harness reads the product back (6 detail).
+// Every `page.route` below only prepares a failure fixture (`// FIXTURE`); every assertion follows a real click or chooser.
+test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
+  test.describe.configure({ mode: "serial", timeout: 240_000 });
+  const mc = productMediaCopy["zh-TW"];
+  const ec = productEditorCopy["zh-TW"];
+  const page_ = "admin editor (zh-TW/1440) PE-FIX-1";
+  const imagesPath = `/api/stores/${store}/products/${product.id}/images`;
+  // FIXTURE matcher: route by pathname — a bare path string is matched against the full URL (host + ?role=…) and never fires.
+  const imagesRoute = (url: URL) => url.pathname === imagesPath;
+  const editorURL = `${origin}/zh-TW/products/${product.id}?store=${store}`;
+  const smallDetail = () =>
+    manifest.files.detail.filter(
+      (f) => !f.exif && !f.missing && f.bytes <= 2 * 1024 * 1024,
+    );
+  async function openEditor(page: Page) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    page.on("pageerror", (error) =>
+      pageErrors.push(`PE-FIX-1 ${error.name}: ${error.message}`),
+    );
+    await page.goto(`${origin}/en`);
+    await page
+      .getByRole("button", {
+        name: "Sign in with identity service",
+        exact: true,
+      })
+      .click();
+    await page.waitForURL(`${origin}/**`);
+    await page.goto(editorURL);
+    await expect(page.getByTestId("media-detail-list")).toBeVisible();
+    // The container renders before the first images GET resolves: wait for a real row so every later count starts from the loaded list.
+    await expect(page.getByTestId("photo-row-detail").first()).toBeVisible();
+  }
+  const uploadPosts = (page: Page) => {
+    const posts: string[] = [];
+    page.on("request", (r) => {
+      if (
+        r.method() === "POST" &&
+        new URL(r.url()).pathname === imagesPath
+      )
+        posts.push(r.url());
+    });
+    return posts;
+  };
+  async function removeDetail(page: Page, n: number) {
+    page.once("dialog", (dialog) => void dialog.accept());
+    await page
+      .getByRole("button", { name: `${mc.remove} ${mc.detail} ${n}`, exact: true })
+      .click();
+    await expect(
+      page.getByTestId("photo-row-detail"),
+      `detail ${n} deleted`,
+    ).toHaveCount(n - 1);
+  }
+
+  test("413 and oversize photos name the cause under the picker; refresh reloads; other fields stay editable and save", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    const posts = uploadPosts(page);
+    const picker = page.getByTestId("photo-input-detail").locator("xpath=..");
+    const note = page.getByTestId("media-note-detail");
+    // The serial suite left 6 detail photos on this product: wait for the list to render before counting (counting at load read 0).
+    await expect(page.getByTestId("photo-row-detail").first()).toBeVisible();
+    const detailRows = await page.getByTestId("photo-row-detail").count();
+    await expect(
+      page.getByText(mc.acceptHint).first(),
+      "accepted types and limit are shown before any upload",
+    ).toBeVisible();
+
+    // FIXTURE: a >2 MiB file whose bytes cannot be shrunk locally (JPEG magic, no decodable image).
+    const oversize = path.join(evidence, "pe-fix-1-oversize.jpg");
+    const big = Buffer.alloc(2 * 1024 * 1024 + 4096);
+    big[0] = 0xff;
+    big[1] = 0xd8;
+    big[2] = 0xff;
+    await writeFile(oversize, big, { mode: 0o600 });
+    const chooser = page.waitForEvent("filechooser");
+    await picker.click();
+    await (await chooser).setFiles(oversize);
+    await expect(
+      note.getByRole("alert"),
+      "oversize photo is refused with the size copy",
+    ).toHaveText(mc.tooLarge);
+    expect(posts, "no upload request for the oversize photo").toHaveLength(0);
+    pass(
+      page_,
+      "photo-input-detail",
+      "file chooser: > 2 MiB file",
+      "size copy under the picker, no request sent",
+      "alert shown, 0 POSTs",
+    );
+
+    // FIXTURE: the edge answers 413 with a non-JSON body.
+    await page.route(imagesRoute, (route) =>
+      route.request().method() === "POST"
+        ? route.fulfill({
+            status: 413,
+            contentType: "text/html",
+            body: "Request Entity Too Large",
+          })
+        : route.fallback(),
+    );
+    const refused = page.waitForResponse(
+      (r) =>
+        r.request().method() === "POST" &&
+        new URL(r.url()).pathname === imagesPath,
+    );
+    await pickFiles(page, page, "photo-input-detail", [smallDetail()[0].name]);
+    expect((await refused).status()).toBe(413);
+    const alert = note.getByRole("alert");
+    await expect(alert, "413 maps to the size copy").toHaveText(mc.tooLarge);
+    // [READ/MEASURE] geometry only.
+    const pickerBox = (await picker.boundingBox())!;
+    const alertBox = (await alert.boundingBox())!;
+    expect(
+      Math.abs(alertBox.y - (pickerBox.y + pickerBox.height)),
+      "alert sits within 120 px of the detail picker",
+    ).toBeLessThanOrEqual(120);
+    pass(
+      page_,
+      "photo-input-detail",
+      "file chooser with the edge answering 413",
+      "size copy within 120 px of the picker",
+      `${Math.round(alertBox.y - (pickerBox.y + pickerBox.height))} px`,
+    );
+
+    const reloaded = page.waitForResponse(
+      (r) =>
+        r.request().method() === "GET" &&
+        new URL(r.url()).pathname === imagesPath,
+    );
+    await note
+      .getByRole("button", { name: mc.refresh, exact: true })
+      .click();
+    expect((await reloaded).status(), "image list re-read").toBe(200);
+    await expect(page.getByTestId("photo-row-detail")).toHaveCount(
+      detailRows,
+    );
+    pass(
+      page_,
+      mc.refresh,
+      "click",
+      "list reloads",
+      "GET images 200, detail rows unchanged",
+    );
+
+    // The failure above must not lock the rest of the editor.
+    const original = await page.getByTestId("product-name").inputValue();
+    const renamed = `${original} PE1`;
+    await page.getByTestId("product-name").fill(renamed);
+    await expect(page.getByTestId("product-save")).toBeEnabled();
+    const saved = page.waitForResponse(
+      (r) =>
+        r.request().method() === "PUT" &&
+        new URL(r.url()).pathname ===
+          `/api/stores/${store}/products/${product.id}/document`,
+    );
+    await page.getByTestId("product-save").click();
+    expect((await saved).status(), "document save during a media failure").toBe(
+      200,
+    );
+    await page.reload();
+    await expect(
+      page.getByTestId("product-name"),
+      "name persisted after reload",
+    ).toHaveValue(renamed);
+    pass(
+      page_,
+      "product-name + product-save",
+      "fill, click, reload",
+      "name saved while the image failure was shown",
+      renamed,
+    );
+    await page.getByTestId("product-name").fill(original);
+    const restored = page.waitForResponse(
+      (r) =>
+        r.request().method() === "PUT" &&
+        new URL(r.url()).pathname ===
+          `/api/stores/${store}/products/${product.id}/document`,
+    );
+    await page.getByTestId("product-save").click();
+    expect((await restored).status()).toBe(200);
+    await page.unroute(imagesRoute);
+  });
+
+  test("a batch of three continues after the failed second file and names it", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    const posts = uploadPosts(page);
+    const files = smallDetail().slice(0, 3);
+    expect(files, "three small detail fixtures").toHaveLength(3);
+    const before = await page.getByTestId("photo-row-detail").count();
+    expect(before, "the loaded list is the baseline, not an unloaded 0").toBeGreaterThan(0);
+    // FIXTURE: only the second upload of the batch is refused; the others reach the real backend.
+    let seen = 0;
+    await page.route(imagesRoute, (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      return ++seen === 2
+        ? route.fulfill({
+            status: 413,
+            contentType: "text/html",
+            body: "Request Entity Too Large",
+          })
+        : route.continue();
+    });
+    await pickFiles(
+      page,
+      page,
+      "photo-input-detail",
+      files.map((f) => f.name),
+    );
+    const note = page.getByTestId("media-note-detail");
+    await expect(
+      note.getByRole("alert"),
+      "message reports the count and names the failed file",
+    ).toHaveText(
+      fillCopy(mc.batchPartial, {
+        saved: 2,
+        total: 3,
+        file: files[1].name,
+        reason: mc.tooLarge,
+      }),
+    );
+    expect(posts, "all three files were attempted").toHaveLength(3);
+    expect(seen, "the injected 413 handler saw all three POSTs").toBe(3);
+    await page.reload();
+    await expect(
+      page.getByTestId("photo-row-detail"),
+      "two photos persisted",
+    ).toHaveCount(before + 2);
+    pass(
+      page_,
+      "photo-input-detail",
+      "file chooser: 3 files, 2nd refused",
+      "2/3 saved and the failed file named; saved photos survive reload",
+      `${before} -> ${before + 2}`,
+    );
+    await page.unroute(imagesRoute);
+    // Cleanup through the real delete button so the harness readback still sees six detail images.
+    await removeDetail(page, before + 2);
+    await removeDetail(page, before + 1);
+  });
+
+  test("an active product saves a name edit while the image list cannot be read", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    // The serial suite left 6 detail photos on this product: wait for the list to render before counting (counting at load read 0).
+    await expect(page.getByTestId("photo-row-detail").first()).toBeVisible();
+    const detailRows = await page.getByTestId("photo-row-detail").count();
+    const original = await page.getByTestId("product-name").inputValue();
+    const renamed = `${original} PE2`;
+    const documentPath = `/api/stores/${store}/products/${product.id}/document`;
+    // FIXTURE: the image-list read fails; every other request reaches the real backend.
+    await page.route(imagesRoute, (route) =>
+      route.request().method() === "GET"
+        ? route.fulfill({
+            status: 500,
+            contentType: "application/json",
+            body: "{}",
+          })
+        : route.fallback(),
+    );
+    await page.reload();
+    await expect(
+      page.getByRole("button", { name: mc.refresh, exact: true }).first(),
+      "image list read failure is shown",
+    ).toBeVisible();
+    await page.getByTestId("product-name").fill(renamed);
+    await expect(page.getByTestId("product-save")).toBeEnabled();
+    const saved = page.waitForResponse(
+      (r) =>
+        r.request().method() === "PUT" &&
+        new URL(r.url()).pathname === documentPath,
+    );
+    await page.getByTestId("product-save").click();
+    expect(
+      (await saved).status(),
+      "save is sent although the image list is unknown",
+    ).toBe(200);
+    // The client confirms with a read before it clears its receipt fence; reloading earlier is a real unknown outcome.
+    await expect(
+      page.getByText(ec.saved, { exact: true }).first(),
+      "save confirmed in the page",
+    ).toBeVisible();
+    await page.unroute(imagesRoute);
+    await page.reload();
+    await expect(
+      page.getByTestId("product-name"),
+      "name persisted after reload",
+    ).toHaveValue(renamed);
+    await expect(
+      page.getByTestId("photo-row-detail"),
+      "images unchanged",
+    ).toHaveCount(detailRows);
+    pass(
+      page_,
+      "product-name + product-save",
+      "fill, click, reload with the image list failing",
+      "name saved, images unchanged",
+      renamed,
+    );
+    await page.getByTestId("product-name").fill(original);
+    const restored = page.waitForResponse(
+      (r) =>
+        r.request().method() === "PUT" &&
+        new URL(r.url()).pathname === documentPath,
+    );
+    await page.getByTestId("product-save").click();
+    expect((await restored).status()).toBe(200);
+  });
+
+  test("leaving while an upload is in flight shows a message; the section nav stays usable", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    const files = smallDetail();
+    // FIXTURE: hold the upload open so the editor stays locked, then refuse it.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let held = 0;
+    await page.route(imagesRoute, async (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      held++;
+      await gate;
+      return route.fulfill({
+        status: 413,
+        contentType: "text/html",
+        body: "Request Entity Too Large",
+      });
+    });
+    const inflight = page.waitForRequest(
+      (r) =>
+        r.method() === "POST" && new URL(r.url()).pathname === imagesPath,
+    );
+    await pickFiles(page, page, "photo-input-detail", [files[0].name]);
+    await inflight;
+    await page.getByTestId("product-back").click();
+    await expect(
+      page.getByTestId("product-leave-blocked"),
+      "refused navigation explains itself",
+    ).toHaveText(ec.leaveBlocked);
+    await expect(page).toHaveURL(editorURL);
+    pass(
+      page_,
+      ec.leaveBlocked,
+      "click 全部商品 during an upload",
+      "visible message, page unchanged",
+      "alert shown",
+    );
+    const tab = page
+      .getByTestId("product-section-tabs")
+      .getByRole("button", { name: ec.basics, exact: true });
+    await expect(tab, "section nav is not disabled by an upload").toBeEnabled();
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-current", "location");
+    pass(
+      page_,
+      ec.basics,
+      "click during an upload",
+      "section nav works",
+      "aria-current=location",
+    );
+    release();
+    await expect(
+      page.getByTestId("media-note-detail").getByRole("alert"),
+    ).toHaveText(mc.tooLarge);
+    expect(held, "the held upload POST really reached the fixture").toBe(1);
+    await expect(
+      page.getByTestId("product-leave-blocked"),
+      "message clears once the upload settles",
+    ).toHaveCount(0);
+    await page.unroute(imagesRoute);
+  });
+
+  test("a halted batch whose coordinating read fails keeps a visible re-read button; unsaved fields survive", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    const posts = uploadPosts(page);
+    const files = smallDetail().slice(0, 2);
+    const detailRows = await page.getByTestId("photo-row-detail").count();
+    // Unsaved draft that a full page reload would lose.
+    const draft = `${await page.getByTestId("product-name").inputValue()} DRAFT`;
+    await page.getByTestId("product-name").fill(draft);
+    // FIXTURE: the first POST is a definite 409; every read after it fails with 503 until `recovered`.
+    let posted = 0,
+      failedReads = 0,
+      recovered = false;
+    await page.route(imagesRoute, (route) => {
+      const method = route.request().method();
+      if (method === "POST") {
+        posted++;
+        return route.fulfill({
+          status: 409,
+          contentType: "application/json",
+          body: JSON.stringify({ code: "conflict" }),
+        });
+      }
+      if (method === "GET" && posted > 0 && !recovered) {
+        failedReads++;
+        return route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: "{}",
+        });
+      }
+      return route.fallback();
+    });
+    await pickFiles(
+      page,
+      page,
+      "photo-input-detail",
+      files.map((f) => f.name),
+    );
+    const note = page.getByTestId("media-note-general");
+    await expect(
+      note.getByRole("alert"),
+      "the halted batch summary is shown",
+    ).toContainText(files[0].name);
+    const refresh = note.getByRole("button", { name: mc.refresh, exact: true });
+    await expect(refresh, "a re-read entry stays visible").toBeVisible();
+    await expect(refresh).toBeEnabled();
+    expect(posted, "the batch halted after the 409").toBe(1);
+    expect(failedReads, "the coordinating GET was injected").toBeGreaterThan(0);
+    expect(posts).toHaveLength(1);
+    recovered = true;
+    const reread = page.waitForResponse(
+      (r) =>
+        r.request().method() === "GET" &&
+        new URL(r.url()).pathname === imagesPath,
+    );
+    await refresh.click();
+    expect((await reread).status()).toBe(200);
+    await expect(page.getByTestId("photo-row-detail")).toHaveCount(detailRows);
+    await expect(
+      page.getByTestId("photo-input-detail"),
+      "image controls are usable again",
+    ).toBeEnabled();
+    await expect(
+      page.getByTestId("product-name"),
+      "unsaved field survived",
+    ).toHaveValue(draft);
+    pass(
+      page_,
+      mc.refresh,
+      "click after a halted batch with a failed read",
+      "list returns, picker enabled, draft kept",
+      "GET 200",
+    );
+    await page.unroute(imagesRoute);
+  });
+
+  test("the single-file retry is disabled while the product document PUT is in flight", async ({
+    page,
+  }) => {
+    await openEditor(page);
+    const posts = uploadPosts(page);
+    const documentPath = `/api/stores/${store}/products/${product.id}/document`;
+    const documentRoute = (url: URL) => url.pathname === documentPath;
+    // FIXTURE: the upload is refused with a retryable 429 without reaching the backend.
+    let refused = 0;
+    await page.route(imagesRoute, (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      refused++;
+      return route.fulfill({
+        status: 429,
+        contentType: "application/json",
+        body: JSON.stringify({ code: "rate_limited", retryable: true }),
+      });
+    });
+    await pickFiles(page, page, "photo-input-detail", [smallDetail()[0].name]);
+    const note = page.getByTestId("media-note-detail");
+    const retry = note.getByRole("button", { name: mc.retryFile, exact: true });
+    await expect(retry, "retry is offered after the 429").toBeEnabled();
+    expect(refused).toBe(1);
+    // FIXTURE: hold the document PUT open.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let putSeen = 0;
+    await page.route(documentRoute, async (route) => {
+      if (route.request().method() !== "PUT") return route.fallback();
+      putSeen++;
+      await gate;
+      return route.continue();
+    });
+    const original = await page.getByTestId("product-name").inputValue();
+    await page.getByTestId("product-name").fill(`${original} PE3`);
+    const inflight = page.waitForRequest(
+      (r) => r.method() === "PUT" && new URL(r.url()).pathname === documentPath,
+    );
+    await page.getByTestId("product-save").click();
+    await inflight;
+    await expect(
+      retry,
+      "retry cannot start while the document save is pending",
+    ).toBeDisabled();
+    expect(posts, "no new image POST while the save is pending").toHaveLength(1);
+    expect(putSeen).toBe(1);
+    release();
+    await expect(
+      page.getByText(ec.saved, { exact: true }).first(),
+    ).toBeVisible();
+    expect(posts, "still only the original POST").toHaveLength(1);
+    pass(
+      page_,
+      mc.retryFile,
+      "observe during a pending save",
+      "disabled, no extra POST",
+      "disabled, 1 POST",
+    );
+    await page.unroute(imagesRoute);
+    await page.unroute(documentRoute);
+    // Restore the name through the real controls.
+    await page.getByTestId("product-name").fill(original);
+    const restored = page.waitForResponse(
+      (r) =>
+        r.request().method() === "PUT" &&
+        new URL(r.url()).pathname === documentPath,
+    );
+    await page.getByTestId("product-save").click();
+    expect((await restored).status()).toBe(200);
   });
 });
 

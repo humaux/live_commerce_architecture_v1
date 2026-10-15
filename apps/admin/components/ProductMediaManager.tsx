@@ -20,7 +20,7 @@ import {
 } from "@/lib/images-client";
 import { uploadDocumentImage } from "@/lib/product-media-client";
 import { preparePhoto, PhotoProblem } from "@/lib/photo-preprocess";
-import { productMediaCopy } from "@/lib/product-media-copy";
+import { fillCopy, productMediaCopy } from "@/lib/product-media-copy";
 import {
   mediaCaps,
   effectiveMediaAxis,
@@ -41,6 +41,20 @@ type Pending =
       axis?: string;
     }
   | { kind: "command"; request: Command };
+type UploadOp = Extract<Pending, { kind: "upload" }>;
+/** Where a message is shown: under the picker that caused it, or at the top for list-level problems. */
+type Block = MediaRole | "general";
+type Note = {
+  text: string;
+  block: Block;
+  value?: string;
+  tone: "error" | "info";
+  recover: boolean;
+  retry?: UploadOp;
+};
+/** A retry only helps a transient refusal; size, type and cap refusals fail identically. */
+const retryable = (code: string) =>
+  !/^(too_large|conflict|unsupported|invalid)/.test(code);
 /** Apply one explicit media mutation. UNKNOWN keeps the original request in memory for an identical retry. */
 export function ProductMediaManager({
   locale,
@@ -70,12 +84,28 @@ export function ProductMediaManager({
     [pending, setPending] = useState<Pending | null>(null),
     [lost, setLost] = useState(false),
     [ready, setReady] = useState(false),
-    [message, setMessage] = useState("");
+    [note, setNote] = useState<Note | null>(null);
   const current = useRef(scope),
     alive = useRef(true),
     running = useRef(false),
-    readEpoch = useRef(0);
+    readEpoch = useRef(0),
+    unread = useRef(true), // true while the canonical list is unknown; recovery must stay reachable
+    origin = useRef<{ block: Block; value?: string }>({ block: "general" }),
+    failure = useRef<{ text: string; halt: boolean; retry?: UploadOp } | null>(
+      null,
+    );
   current.current = scope;
+  const say = (text: string, more: Partial<Omit<Note, "text">> = {}) =>
+    setNote({
+      text,
+      block: origin.current.block,
+      value: origin.current.value,
+      tone: "error",
+      recover: false,
+      ...more,
+    });
+  const listFailed = (text: string) =>
+    setNote({ text, block: "general", tone: "error", recover: true });
   const axis = effectiveMediaAxis(axes, list?.image_axis ?? null);
   const group = (role: MediaRole) =>
     list?.items.filter((p) => p.role === role) ?? [];
@@ -98,17 +128,24 @@ export function ProductMediaManager({
     )
       return null;
     if (result.list) {
+      unread.current = false;
       setList(result.list);
       onChanged(result.list);
       return result.list;
     }
+    unread.current = true;
     setList(null);
     onChanged(null);
-    setMessage(c.failed);
+    listFailed(c.failed);
     return null;
+  }
+  /** Manual re-read: a list-level message is obsolete once the list loads again. */
+  async function reload() {
+    if (await read()) setNote((now) => (now?.block === "general" ? null : now));
   }
   useEffect(() => {
     alive.current = true;
+    unread.current = true;
     setList(null);
     onChanged(null);
     try {
@@ -117,7 +154,12 @@ export function ProductMediaManager({
     } catch {
       setLost(true);
       setReady(false);
-      setMessage(c.storageFailed);
+      setNote({
+        text: c.storageFailed,
+        block: "general",
+        tone: "error",
+        recover: false,
+      });
     }
     const controller = new AbortController();
     const epoch = ++readEpoch.current;
@@ -128,11 +170,17 @@ export function ProductMediaManager({
         epoch === readEpoch.current
       ) {
         if (result.list) {
+          unread.current = false;
           setList(result.list);
           onChanged(result.list);
         } else {
           onChanged(null);
-          setMessage(c.failed);
+          setNote({
+            text: c.failed,
+            block: "general",
+            tone: "error",
+            recover: true,
+          });
         }
       }
     });
@@ -143,27 +191,32 @@ export function ProductMediaManager({
     };
   }, [scope, store, productID, journal, onLocked, onChanged, c.failed]);
   useEffect(() => {
-    onLocked(busy || !!pending || lost || !ready || !list);
-  }, [busy, pending, lost, ready, list, onLocked]);
+    // A failed list read only locks this block; it never freezes the rest of the editor or navigation.
+    onLocked(busy || !!pending || lost || !ready);
+  }, [busy, pending, lost, ready, onLocked]);
   const remember = (value: string | null) => {
     try {
       const saved = persistMediaPending(sessionStorage, journal, value);
       setReady(saved);
       if (!saved) {
         setLost(true);
-        setMessage(c.storageFailed);
+        say(c.storageFailed);
       }
       return saved;
     } catch {
       setReady(false);
       setLost(true);
-      setMessage(c.storageFailed);
+      say(c.storageFailed);
       return false;
     }
   };
   async function execute(op: Pending): Promise<boolean> {
     const before = current.current;
     ++readEpoch.current; // A delayed pre-mutation read cannot replace the new canonical head.
+    if (op.kind === "upload")
+      origin.current = { block: op.role, value: op.value };
+    failure.current = null;
+    say(c.saving, { tone: "info" });
     setPending(op);
     if (!remember(op.kind === "upload" ? op.key : op.request.key)) return false;
     if (op.kind === "upload" && op.role === "sku") {
@@ -175,7 +228,8 @@ export function ProductMediaManager({
       ) {
         setPending(null);
         setLost(true);
-        setMessage(c.axisChanged);
+        failure.current = { text: c.axisChanged, halt: true };
+        say(c.axisChanged);
         return false;
       }
     }
@@ -193,51 +247,71 @@ export function ProductMediaManager({
         : await send(store, op.request, boundary, parser);
     if (before !== current.current || !alive.current) return false;
     if (!answer.ok) {
-      setMessage(
-        answer.reconcile
-          ? c.unauthorized
-          : answer.uncertain
-            ? c.unknown
-            : c.failed,
-      );
-      if (!answer.uncertain && !answer.reconcile) {
+      const definite = !answer.uncertain && !answer.reconcile;
+      const text = answer.reconcile
+        ? c.unauthorized
+        : answer.uncertain
+          ? c.unknown
+          : answer.code === "too_large"
+            ? c.tooLarge
+            : c.failed;
+      const retry =
+        definite && op.kind === "upload" && retryable(answer.code)
+          ? op
+          : undefined;
+      failure.current = {
+        text,
+        halt: !definite || answer.code === "conflict",
+        retry,
+      };
+      say(text, { recover: definite, retry });
+      if (definite) {
         setPending(null);
         remember(null);
       }
       if (answer.reconcile) {
+        unread.current = true;
         setList(null);
         onChanged(null);
         return false;
       }
       const canonical = await read();
       if (canonical && answer.code === "conflict" && op.kind === "upload") {
-        if (
+        const full =
           canonical.items.filter((p) => p.role === op.role).length >=
           mediaCaps[op.role]
-        )
-          setMessage(
-            op.role === "main"
+            ? op.role === "main"
               ? c.mainFull
               : op.role === "detail"
                 ? c.detailFull
-                : c.optionCap,
-          );
-        else if (
-          op.role === "sku" &&
-          canonical.option_images.some((link) => link.option_value === op.value)
-        )
-          setMessage(c.optionFull);
+                : c.optionCap
+            : op.role === "sku" &&
+                canonical.option_images.some(
+                  (link) => link.option_value === op.value,
+                )
+              ? c.optionFull
+              : "";
+        if (full) {
+          failure.current = { text: full, halt: true };
+          say(full);
+        }
       }
       return false;
     }
     setPending(null);
     if (!remember(null)) {
       setLost(true);
+      // The server already accepted this operation: never present it as a plain failure that invites a duplicate upload.
+      failure.current = { text: c.unknown, halt: true };
       return false;
     }
     setLost(false);
     const canonical = await read();
-    if (!canonical) return false;
+    if (!canonical) {
+      // Committed but the re-read failed: outcome is known-saved yet unconfirmed on screen; never invite a duplicate upload.
+      failure.current = { text: c.unknown, halt: true };
+      return false;
+    }
     if (
       op.kind === "upload" &&
       op.role === "sku" &&
@@ -250,17 +324,18 @@ export function ProductMediaManager({
           (answer.value as { id: string }).id,
         ))
     ) {
-      setMessage(c.axisChanged);
+      failure.current = { text: c.axisChanged, halt: true };
+      say(c.axisChanged);
       return false;
     }
-    setMessage(c.done);
+    say(c.done, { tone: "info" });
     return true;
   }
   async function run(op: Pending) {
     if (running.current) return;
     running.current = true;
     setBusy(true);
-    setMessage("");
+    setNote(null);
     try {
       await execute(op);
     } finally {
@@ -268,8 +343,15 @@ export function ProductMediaManager({
       if (alive.current) setBusy(false);
     }
   }
-  function action(resource: string, body: unknown) {
+  /** The per-file retry opens a new image write, so it obeys the same locks as every other mutation. */
+  function retryFile(op: UploadOp) {
+    if (disabled || running.current || pending || lost || !list || !ready)
+      return;
+    void run({ ...op, key: crypto.randomUUID() });
+  }
+  function action(resource: string, body: unknown, block: Block = "general") {
     if (disabled || running.current || pending || lost) return;
+    origin.current = { block };
     void run({
       kind: "command",
       request: command("POST", `products/${productID}/${resource}`, body),
@@ -285,8 +367,9 @@ export function ProductMediaManager({
     const selected = Array.from(files);
     const capturedAxis = axis?.name;
     if (!selected.length) return;
+    origin.current = { block: role, value };
     if (group(role).length + selected.length > mediaCaps[role]) {
-      setMessage(
+      say(
         role === "main"
           ? c.mainFull
           : role === "detail"
@@ -297,26 +380,63 @@ export function ProductMediaManager({
     }
     running.current = true;
     setBusy(true);
-    setMessage(c.processing);
+    say(c.processing, { tone: "info" });
+    let saved = 0,
+      first: { name: string; text: string; local: boolean } | null = null,
+      halted = false;
     try {
+      // A failed file does not stop the batch unless the outcome is unknown or the role is full.
       for (const file of selected) {
-        const ready = await preparePhoto(file, role);
+        let prepared: Awaited<ReturnType<typeof preparePhoto>>;
+        try {
+          prepared = await preparePhoto(file, role);
+        } catch (error) {
+          if (!alive.current) return;
+          first ??= {
+            name: file.name,
+            local: true,
+            text: error instanceof PhotoProblem ? c[error.reason] : c.failed,
+          };
+          continue;
+        }
         if (!alive.current) return;
         if (
-          !(await execute({
+          await execute({
             kind: "upload",
-            file: ready.file,
+            file: prepared.file,
             key: crypto.randomUUID(),
             role,
             value,
             axis: capturedAxis,
-          }))
-        )
+          })
+        ) {
+          saved++;
+          continue;
+        }
+        const why = failure.current;
+        first ??= { name: file.name, local: false, text: why?.text ?? c.failed };
+        if (why?.halt) {
+          halted = true;
           break;
+        }
       }
-    } catch (error) {
-      if (alive.current)
-        setMessage(error instanceof PhotoProblem ? c[error.reason] : c.failed);
+      if (alive.current && first) {
+        // Halting stops further uploads, never the way back: with the list unknown the summary carries the re-read button.
+        if (unread.current) origin.current = { block: "general" };
+        if (selected.length > 1)
+          say(
+            fillCopy(c.batchPartial, {
+              saved,
+              total: selected.length,
+              file: first.name,
+              reason: first.text,
+            }),
+            { recover: !halted || unread.current },
+          );
+        else if (first.local) say(first.text, { recover: true });
+      }
+    } catch {
+      if (alive.current) say(c.failed, { recover: true });
     } finally {
       running.current = false;
       if (alive.current) setBusy(false);
@@ -332,18 +452,54 @@ export function ProductMediaManager({
   function order(role: MediaRole, from: number, to: number) {
     const ids = group(role).map((p) => p.id);
     ids.splice(to, 0, ids.splice(from, 1)[0]);
-    action("images/order", { role, ids });
+    action("images/order", { role, ids }, role);
   }
   function remove(key: string) {
-    if (window.confirm(c.deleteConfirm)) action(`images/${key}/delete`, {});
+    const role = list?.items.find((p) => p.id === key)?.role;
+    if (window.confirm(c.deleteConfirm))
+      action(`images/${key}/delete`, {}, role);
   }
   function moveRole(key: string, target: "main" | "detail") {
+    const from = list?.items.find((p) => p.id === key)?.role;
     if (group(target).length >= mediaCaps[target]) {
-      setMessage(target === "main" ? c.mainFull : c.detailFull);
+      origin.current = { block: from ?? target };
+      say(target === "main" ? c.mainFull : c.detailFull);
       return;
     }
-    action(`images/${key}/move`, { role: target });
+    action(`images/${key}/move`, { role: target }, from);
   }
+  const noteView = (block: Block, value?: string) => {
+    if (!note || note.block !== block) return null;
+    if (block === "sku" && note.value !== value) return null;
+    const error = note.tone === "error";
+    return (
+      <div
+        className="pm-note"
+        data-tone={note.tone}
+        data-testid={`media-note-${block}`}
+      >
+        <p role={error ? "alert" : "status"}>
+          {note.text}
+        </p>
+        {note.recover && (
+          <div className="pm-note-actions">
+            {note.retry && (
+              <button
+                type="button"
+                disabled={locked}
+                onClick={() => retryFile(note.retry!)}
+              >
+                {c.retryFile}
+              </button>
+            )}
+            <button type="button" disabled={busy} onClick={() => void reload()}>
+              {c.refresh}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
   const picker = (role: MediaRole, value?: string) => (
     <label className="pm-upload">
       <span>{role === "sku" ? c.addOption : c.add}</span>
@@ -382,18 +538,19 @@ export function ProductMediaManager({
         onRole={moveRole}
       />
       {picker(role)}
+      {noteView(role)}
+      <p className="pe-hint pm-accept">{c.acceptHint}</p>
     </section>
   );
   return (
     <div className="pm-media" data-testid="photo-manager">
-      {!list && <p role="status">{c.loading}</p>}
-      {!list && !busy && (
-        <button type="button" onClick={() => void read()}>
+      {!list && !note && <p role="status">{c.loading}</p>}
+      {!list && !busy && !note && (
+        <button type="button" onClick={() => void reload()}>
           {c.refresh}
         </button>
       )}
-      {busy && <p role="status">{c.saving}</p>}
-      {message && <p role="status">{message}</p>}
+      {noteView("general")}
       {pending && (
         <div className="pm-recovery">
           <p>{c.unknown}</p>
@@ -438,7 +595,7 @@ export function ProductMediaManager({
             value={list?.image_axis ?? ""}
             disabled={locked || !axes.length}
             onChange={(e) =>
-              action("image-axis", { axis: e.target.value || null })
+              action("image-axis", { axis: e.target.value || null }, "sku")
             }
           >
             <option value="">{c.defaultAxis}</option>
@@ -483,8 +640,10 @@ export function ProductMediaManager({
                     <>
                       <p>{c.useCover}</p>
                       {picker("sku", value)}
+                      <p className="pe-hint pm-accept">{c.acceptHint}</p>
                     </>
                   )}
+                  {noteView("sku", value)}
                 </div>
               );
             })}
@@ -513,6 +672,7 @@ export function ProductMediaManager({
             />
           </details>
         )}
+        {noteView("sku")}
       </section>
       {section("detail")}
     </div>

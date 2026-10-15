@@ -35,7 +35,8 @@ export async function preparePhoto(
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
   } catch {
-    throw new PhotoProblem("decode");
+    // An unreadable file over the cap cannot be shrunk here; the size is the actionable cause.
+    throw new PhotoProblem(file.size > MAX_PHOTO_BYTES ? "size" : "decode");
   }
   try {
     if (role === "detail" && bitmap.height > 6 * bitmap.width)
