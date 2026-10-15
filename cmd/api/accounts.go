@@ -1,5 +1,6 @@
 // accounts.go assembles historical provider-account metadata reads with the existing scoped keyring.
 // Retired credential writes are refused by accounts.Service; no signer or payment adapter is assembled.
+
 package main
 
 import (

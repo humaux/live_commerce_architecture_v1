@@ -1,5 +1,6 @@
 // capture_worker.go applies only persisted Stripe observations via payments.apply_capture.
 // Depends on the payment worker PG authority and River; removed providers never reach financial writes.
+
 package payments
 
 import (

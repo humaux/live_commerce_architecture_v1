@@ -1,6 +1,7 @@
 // query_worker.go dispatches only Stripe Checkout operations.
 // Depends on the profile worker pool and River; called by payment-worker.
 // Historical providers are rejected before lease claim, credential load, provider I/O or observation writes.
+
 package payments
 
 import (

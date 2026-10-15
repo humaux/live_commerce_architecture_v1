@@ -1,6 +1,7 @@
 // hosted.go owns Stripe-only payment admission and read-only historical projections.
 // Depends on buyer scope, the hosted PG role and River inserts; called by buyerhttp.
 // Removed providers never prepare a form, enqueue a start or release a handoff.
+
 package checkout
 
 import (

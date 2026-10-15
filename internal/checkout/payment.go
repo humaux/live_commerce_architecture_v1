@@ -1,5 +1,6 @@
 // payment.go defines shared payment DTOs and Stripe idempotency locking.
 // Called by hosted checkout; the retired start API is fail-closed and performs no writes.
+
 package checkout
 
 import (
