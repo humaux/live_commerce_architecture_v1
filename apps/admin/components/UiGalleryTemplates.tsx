@@ -117,9 +117,11 @@ function ListTemplate({ locale, t, params, update, setNotice, created }: { creat
   </Stack>;
 }
 function DetailTemplate({ t }: { t: TemplateCopy }) {
-  const [saved, persist] = useGalleryRecord<{ note: string; result: string }>("ds2-detail-note", { note: "", result: "" });
-  const [note, setNote] = useState("");
-  useEffect(() => { setNote(saved.note); }, [saved.note]);
+  const [saved, persist, ready] = useGalleryRecord<{ note: string; result: string }>("ds2-detail-note", { note: "", result: "" });
+  const [draft, setNote] = useState<string | null>(null);
+  const note = draft ?? saved.note;
+  // Do not expose an empty server-seeded field while the saved note is still being restored.
+  if (!ready) return <p role="status">{t.loading}</p>;
   return <Stack>
     <DetailLayout main={<>
       <Card title={t.thumbnail}><Inline><ThumbCell src={THUMB} alt={t.item} emptyLabel={t.thumbnail} /><div><strong>{t.item}</strong><p>{t.quantity}: 2 · NT$ 360</p></div></Inline></Card>

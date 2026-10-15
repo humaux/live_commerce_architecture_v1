@@ -811,13 +811,15 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       }
     });
     await run("Internal note", "fill, save, reload", "note and result persist; timeline ISO times remain", async () => {
-      assert.equal(await area.getByLabel(t.noteContent, { exact: true }).count(), 1);
+      // Wait for the visible restored editor, then count every match (including hidden duplicates).
+      await seen(area.getByRole("textbox", { name: t.noteContent, exact: true }));
+      assert.equal(await area.getByLabel(t.noteContent, { exact: true }).count(), 1, "one note editor after restoration");
       await area.getByLabel(t.noteContent, { exact: true }).fill("Synthetic note A");
       await button(t.addNote).click();
       await seen(text(t.noteSaved));
       await page.reload({ waitUntil: "load" });
-      assert.equal(await area.getByLabel(t.noteContent, { exact: true }).inputValue(), "Synthetic note A");
-      assert.equal(await area.locator("time[datetime]").count(), 3);
+      assert.equal(await area.getByLabel(t.noteContent, { exact: true }).inputValue(), "Synthetic note A", "saved note is exposed immediately when the editor returns");
+      assert.equal(await area.locator("time[datetime]").count(), 3, "three timeline ISO times survive reload");
     });
     for (const [item, result] of [[t.receipt, t.receiptDone], [t.archive, t.archived]]) await run(item, "open More, choose action, reload", "visible demo result persists", async () => {
       await button(t.more).click(); await button(item).click(); await seen(text(result));
