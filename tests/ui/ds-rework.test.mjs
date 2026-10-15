@@ -27,7 +27,8 @@ function load(name) {
 const { Icon } = load("./Icon");
 const { Field, TextInput, FormGrid } = load("./Fields");
 const { Badge, Alert, Button } = load("./Controls");
-const { FormActionBar, Timeline } = load("./Layout");
+const { FormActionBar, PageHeader, Timeline } = load("./Layout");
+const { MenuButton, DataTable } = load("./Data");
 const { UploadGrid, EmptyState } = load("./States");
 const el = React.createElement;
 const html = node => renderToStaticMarkup(node);
@@ -79,7 +80,8 @@ test("FormActionBar: one connected frame, two responsive bars, explicit state, o
   assert.match(out, /class="formFrame"/);
   assert.equal((out.match(/data-state="saving"/g) ?? []).length, 2);
   assert.equal((out.match(/role="status"/g) ?? []).length, 1);
-  assert.match(out, /class="formContent">Form/);
+  assert.match(out, /class="formContent" data-form-content="true">Form/);
+  assert.match(out, /class="formSurface" data-form-surface="true"/);
 });
 
 test("upload grid: progress, error, retry, remove and completion keep explicit names", () => {
@@ -100,4 +102,22 @@ test("state density is explicit and timeline facts carry ISO time", () => {
   assert.match(html(el(EmptyState, { title: "Empty" })), /data-mode="compact"/);
   assert.match(html(el(EmptyState, { title: "Empty", mode: "full" })), /data-mode="full"/);
   assert.match(html(el(Timeline, { label: "History", items: [{ id: "a", title: "Received", dateTime: "2026-10-15T10:00:00+08:00", time: "10:00 UTC+8" }] })), /<time dateTime="2026-10-15T10:00:00\+08:00">/i);
+});
+
+test("round 2: icon menu has one SVG and an explicit name, header status shares the title row", () => {
+  const menu = html(el(MenuButton, { label: "More", icon: "more", size: "sm", items: [] }));
+  assert.equal((menu.match(/<svg/g) ?? []).length, 1);
+  assert.match(menu, /aria-label="More"/);
+  assert.match(menu, /data-icon-only="true"/);
+  const header = html(el(PageHeader, { breadcrumbLabel: "Trail", title: "Order", status: el(Badge, null, "Paid") }));
+  assert.match(header, /class="pageTitleRow"><h1[^>]*>Order<\/h1><div class="pageStatus">/);
+});
+
+test("round 2: tables expose a localized scroll cue and focusable native scroll group", () => {
+  const out = html(el(DataTable, { caption: "Orders", columns: [], rows: [], rowId: row => row.id, empty: "None", error: "Error", loadingLabel: "Loading", scrollHint: "Scroll horizontally" }));
+  const hint = /id="([^"]+)" data-table-scroll-hint/.exec(out)?.[1];
+  assert.ok(hint);
+  assert.match(out, /Scroll horizontally/);
+  assert.ok(out.includes(`aria-describedby="${hint}"`));
+  assert.match(out, /tabindex="0" role="group" aria-label="Orders"/i);
 });

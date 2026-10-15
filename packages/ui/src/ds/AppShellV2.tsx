@@ -149,7 +149,7 @@ export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded
                 <button type="button" className={s.groupRow} data-current={holdsCurrent} aria-expanded={isOpen} aria-controls={subId} onClick={() => toggle(group.id)}>
                   {icon}
                   <span className={s.groupLabel}>{group.label}</span>
-                  <Icon name="chevronRight" size={16} className={s.chev} />
+                  <span className={s.chev} data-nav-chevron aria-hidden="true"><Icon name="chevronRight" size={16} /></span>
                 </button>
                 {isOpen && (
                   <ul className={s.sub} id={subId}>

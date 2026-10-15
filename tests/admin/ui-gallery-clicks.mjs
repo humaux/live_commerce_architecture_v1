@@ -39,6 +39,20 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
   await step("Button disabled with reason", "click", "reason becomes visible, aria-disabled stays true, no other effect", async () => {
     const b = btn(buttons, c.btnDisabled);
     assert.equal(await attr(b, "aria-disabled"), "true");
+    const contrast = await b.evaluate(n => { // [READ] actual computed disabled label/background, never style injection
+      const style = getComputedStyle(n);
+      const luminance = color => {
+        const [r, g, b] = color.match(/[\d.]+/g).slice(0, 3).map(v => {
+          const channel = Number(v) / 255;
+          return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      const [hi, lo] = [luminance(style.color), luminance(style.backgroundColor)].sort((a, b) => b - a);
+      return { ratio: (hi + 0.05) / (lo + 0.05), opacity: Number(style.opacity) };
+    });
+    assert.ok(contrast.ratio >= 3, `disabled label contrast ${contrast.ratio}`);
+    assert.equal(contrast.opacity, 1);
     await clickBlocked(b);
     await seen(status(buttons, c.btnDisabledReason));
   });
@@ -413,10 +427,16 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
     assert.equal(await attr(orders, "aria-expanded"), "false");
     await orders.click();
     assert.equal(await attr(orders, "aria-expanded"), "true");
+    const chevron = orders.locator('[data-nav-chevron]');
+    const chevronSize = await chevron.evaluate(n => [getComputedStyle(n).width, getComputedStyle(n).height, getComputedStyle(n).flexBasis]); // [READ] slot size, unaffected by rotation
+    assert.deepEqual(chevronSize, ["16px", "16px", "16px"]);
+    assert.equal(await chevron.locator("svg").getAttribute("width"), "16");
+    await page.waitForFunction(el => Math.abs(new DOMMatrix(getComputedStyle(el).transform).b - 1) < 0.01, await chevron.elementHandle()); // [READ] wait for rotation
     assert.equal(await orders.evaluate((n) => n === document.activeElement), true); // [READ] re-render must not move focus (drawer effect stays mounted)
     await seen(drawer.getByRole("link", { name: group("orders").items[0].label, exact: true }));
     await orders.click();
     assert.equal(await attr(orders, "aria-expanded"), "false");
+    await page.waitForFunction(el => Math.abs(new DOMMatrix(getComputedStyle(el).transform).b) < 0.01, await chevron.elementHandle()); // [READ]
     await drawer.getByRole("link", { name: group("orders").items[0].label, exact: true }).waitFor({ state: "detached" });
   });
   await step("Shell second-level link", "click Orders, click Returns, reload", "URL ?nav=returns; after reload the group is open and the link is current", async () => {
@@ -635,6 +655,30 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     await page.goto(`${new URL(page.url()).origin}${root}/${template}`, { waitUntil: "load" });
   });
   if (template === "list") {
+    await run("List control placement", "read filter/preview layout", "filters/search only; demo selector outside card; bulk menu appears only after selection", async () => {
+      const filters = area.getByRole("group", { name: t.filters, exact: true });
+      assert.equal(await filters.getByLabel(t.payment, { exact: true }).count(), 1);
+      assert.equal(await filters.getByRole("searchbox", { name: t.search }).count(), 1);
+      assert.equal(await filters.getByLabel(t.state, { exact: true }).count(), 0);
+      assert.equal(await button(t.action).count(), 0);
+      const preview = area.getByRole("group", { name: t.previewControls, exact: true });
+      assert.equal(await preview.getByLabel(t.state, { exact: true }).count(), 1);
+      assert.equal(await preview.evaluate(n => n.closest("section")), null); // [READ] outside the order card
+    });
+    if (mobile) await run("Table horizontal scroll affordance", "read cue, ArrowRight, reload", "localized cue and native focusable scroller; table moves without page overflow", async () => {
+      const cue = area.locator('[data-table-scroll-hint]');
+      await seen(cue.getByText(t.tableScroll, { exact: true }));
+      const scroller = area.locator('[data-table-scroll]');
+      assert.equal(await scroller.getAttribute("tabindex"), "0");
+      const before = await scroller.evaluate(n => n.scrollLeft); // [READ]
+      await scroller.press("ArrowRight");
+      await scroller.press("ArrowRight");
+      await page.waitForFunction(el => el.scrollLeft > 0, await scroller.elementHandle()); // [READ]
+      assert.ok(await scroller.evaluate(n => n.scrollLeft) > before);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true); // [READ]
+      await page.reload({ waitUntil: "load" });
+      await seen(cue.getByText(t.tableScroll, { exact: true }));
+    });
     await run("Export menu keyboard", "focus, ArrowDown, End, Enter", "focus enters menu, command updates visible demo result", async () => {
       await button(t.export).focus();
       await page.keyboard.press("ArrowDown");
@@ -654,6 +698,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     await run("Select page vs all results", "check page, select all, bulk menu, confirm", "5 selected then 8 selected; all-results operation requires confirmation", async () => {
       await area.getByRole("checkbox", { name: t.selectPage, exact: true }).check();
       await seen(text(`5 ${t.selected}`));
+      assert.equal(await area.locator('[data-selection-bar]').getByRole("button", { name: t.action, exact: true }).count(), 1);
       await button(`${t.selectAll} (8)`).click();
       await seen(text(`8 ${t.selected}`));
       await seen(text(`${t.allResults} (8)`));
@@ -679,6 +724,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       await seen(text(`1 ${t.selected}`));
       await button(t.clear).click();
       assert.equal(await area.locator('tbody tr[data-selected="true"]').count(), 0);
+      assert.equal(await button(t.action).count(), 0);
     });
     await run("Search privacy", "fill DEMO-1001, click Search", "one matching order; neither q nor pq nor the term enters any URL", async () => {
       await area.getByRole("searchbox", { name: t.search }).fill("DEMO-1001");
@@ -706,6 +752,10 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     });
     await run("List row actions", "more, tag, reload", "tag result persists", async () => {
       const row = area.locator("tbody tr").first();
+      const more = row.getByRole("button", { name: t.more, exact: true });
+      assert.equal(await more.getAttribute("aria-label"), t.more);
+      assert.equal(await more.getAttribute("data-icon-only"), "true");
+      assert.equal(await more.locator("svg").count(), 1, "more icon alone, no chevron");
       // On mobile the scroll frame is moved by Playwright actionability, never by DOM mutation.
       await row.getByRole("button", { name: t.more, exact: true }).click();
       await row.getByRole("button", { name: t.tag, exact: true }).click();
@@ -743,6 +793,16 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     });
   }
   if (template === "detail") {
+    await run("Detail status title row", "read header layout", "both statuses are inside the h1 row", async () => {
+      const row = area.getByRole("heading", { level: 1 }).locator("..");
+      await seen(row.getByText(t.paid, { exact: true }));
+      await seen(row.getByText(t.pending, { exact: true }));
+      if (!mobile) {
+        const title = await row.getByRole("heading", { level: 1 }).boundingBox();
+        const badge = await row.getByText(t.paid, { exact: true }).boundingBox();
+        assert.ok(badge.y < title.y + title.height && badge.y + badge.height > title.y);
+      }
+    });
     await run("Internal note", "fill, save, reload", "note and result persist; timeline ISO times remain", async () => {
       assert.equal(await area.getByLabel(t.noteContent, { exact: true }).count(), 1);
       await area.getByLabel(t.noteContent, { exact: true }).fill("Synthetic note A");
@@ -876,6 +936,14 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
   if (template === "settings") {
     await run("Profile fields and save", "edit name/currency/timezone, save, reload", "all selections persist without locale altering values", async () => {
       assert.equal(await area.getByLabel(t.storeName, { exact: true }).count(), 1, "required store name retains its exact visible label");
+      const widths = [];
+      for (const label of [t.storeName, t.currency, t.timezone]) {
+        const control = area.getByLabel(label, { exact: true });
+        assert.equal(await control.evaluate(n => n.closest('[data-width]').dataset.width), "full"); // [READ]
+        widths.push((await control.boundingBox()).width);
+      }
+      assert.ok(Math.abs(widths[1] - widths[2]) <= 1, "same-row controls have equal widths");
+      if (mobile) assert.ok(Math.abs(widths[0] - widths[1]) <= 1, "phone rows all use full width");
       await area.getByLabel(t.storeName, { exact: true }).fill("Synthetic store A");
       await area.getByLabel(t.currency, { exact: true }).selectOption("USD");
       await area.getByLabel(t.timezone, { exact: true }).selectOption("UTC");

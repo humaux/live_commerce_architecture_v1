@@ -11,7 +11,7 @@ import {
   Dropzone, EmptyState, ErrorState, Field, FilterBar, FilterSelect, FormActionBar, FormGrid, Icon,
   Inline, MenuButton, NumberInput, PageHeader, Pagination, RadioGroup, SearchBox, SegmentedSwitch,
   Select, SettingsLayout, Stack, StatusPill, TabPanel, Tabs, Textarea, TextInput, ThumbCell, Timeline,
-  UploadGrid, bulkTarget, clearSelection, selectionCount, type SelectionState, type UploadItem,
+  UploadGrid, bulkTarget, clearSelection, type SelectionState, type UploadItem,
 } from "@live-commerce/ui/ds";
 import { UiGalleryFrame } from "./UiGalleryFrame";
 import { templateCopy, templateNames, type TemplateCopy, type TemplateName } from "../src/ui-gallery-template-copy";
@@ -49,7 +49,8 @@ export function UiGalleryTemplate({ locale, name, initial }: { locale: Locale; n
   return <UiGalleryFrame locale={locale} template={name} currentId={params.nav || (name === "settings" ? "store-profile" : name === "form" ? "products" : "order-list")}>
     <div data-template={name}>
       <Stack>
-        <PageHeader breadcrumbLabel={t.breadcrumb} title={name === "detail" ? `${t.detail} #DEMO-1001` : t[name]} description={t.synthetic}
+        <PageHeader breadcrumbLabel={t.breadcrumb} title={name === "detail" ? `${t.detail} #DEMO-1001` : t[name]} description={name === "detail" ? `${t.synthetic} ${t.date}` : t.synthetic}
+          status={name === "detail" ? <><StatusPill domain="payment" status="paid" label={t.paid} /><Badge tone="warning">{t.pending}</Badge></> : undefined}
           actions={name === "list" ? <><MenuButton label={t.export} items={[{ id: "export", label: t.export, onSelect: () => setNotice(t.exportDone) }]} /><Button variant="primary" disabledReason={created >= 99 ? t.noChanges : undefined} onClick={() => setCreate(true)}>{t.create}<Icon name="plus" size={16} /></Button></> : name === "detail" ? <><ButtonLink href={`${root}/templates/list`}>{t.back}</ButtonLink><MenuButton label={t.more} items={[{ id: "receipt", label: t.receipt, onSelect: () => setNotice(t.receiptDone) }, { id: "archive", label: t.archive, onSelect: () => setNotice(t.archived) }]} /></> : <ButtonLink href={root}>{t.returnGallery}</ButtonLink>} />
         {notice.text && <Alert tone="success">{notice.text}</Alert>}
         {name === "list" && <ListTemplate {...{ locale, t, params, update, setNotice, created }} />}
@@ -77,21 +78,22 @@ function ListTemplate({ locale, t, params, update, setNotice, created }: { creat
   const page = Math.min(params.page, pageCount);
   const rows = params.state === "empty" ? [] : filtered.slice((page - 1) * 5, page * 5);
   const total = params.state === "empty" ? 0 : filtered.length;
-  const count = selectionCount(selection, total, rows.map(o => String(o.id)));
   const reset = () => { setQuery(""); setDraft(""); setSelection(clearSelection()); update({ payment: "all", state: "ready", page: 1 }); };
   const apply = () => {
     const target = bulkTarget(selection, `${params.payment}|${query}`, rows.map(o => String(o.id)));
     if (target.scope !== "stale_selection") setNotice(t.bulkDone);
     setSelection(clearSelection()); setConfirm(false);
   };
-  return <Card title={t.orders}>
+  return <Stack>
+    <FilterBar label={t.previewControls}>
+      <FilterSelect label={t.state} value={params.state} onChange={state => { update({ state, page: 1 }); setSelection(clearSelection()); }} options={[{ value: "ready", label: t.ready }, { value: "loading", label: t.loading }, { value: "error", label: t.error }, { value: "empty", label: t.empty }]} />
+    </FilterBar>
+    <Card title={t.orders}>
     <FilterBar label={t.filters}>
       <FilterSelect label={t.payment} value={params.payment} onChange={payment => { update({ payment, page: 1 }); setSelection(clearSelection()); }} options={[{ value: "all", label: t.all }, { value: "paid", label: t.paid }, { value: "unpaid", label: t.unpaid }]} />
       <SearchBox label={t.search} value={draft} onChange={setDraft} onSubmit={value => { setQuery(value); update({ page: 1 }); setSelection(clearSelection()); }} buttonLabel={t.searchButton} placeholder={t.searchPlaceholder} />
-      <BulkMenu label={t.action} disabledReason={count ? undefined : t.noChanges} items={[{ id: "tag", label: t.tag, onSelect: () => selection.scope === "all" ? setConfirm(true) : apply() }]} />
-      <FilterSelect label={t.state} value={params.state} onChange={state => { update({ state, page: 1 }); setSelection(clearSelection()); }} options={[{ value: "ready", label: t.ready }, { value: "loading", label: t.loading }, { value: "error", label: t.error }, { value: "empty", label: t.empty }]} />
     </FilterBar>
-    <DataTable caption={t.orders} rows={rows} rowId={o => String(o.id)} status={params.state === "loading" || params.state === "error" ? params.state : "ready"} loadingLabel={t.loading}
+    <DataTable caption={t.orders} scrollHint={t.tableScroll} rows={rows} rowId={o => String(o.id)} status={params.state === "loading" || params.state === "error" ? params.state : "ready"} loadingLabel={t.loading}
       empty={<EmptyState title={t.emptyTitle} description={t.emptyDesc} action={<Button variant="primary" onClick={reset}>{t.reset}</Button>} />}
       error={<ErrorState title={t.errorTitle} detail={t.errorDesc} retryLabel={t.retry} onRetry={() => update({ state: "ready" })} />}
       columns={[
@@ -103,20 +105,22 @@ function ListTemplate({ locale, t, params, update, setNotice, created }: { creat
       ]}
       actions={() => [{ id: "view", label: t.view, href: `/${locale}/ui-gallery/templates/detail` }, { id: "tag", label: t.tag, more: true, onSelect: () => setNotice(t.tagged) }]}
       actionsHeader={t.action} moreLabel={t.more}
-      selection={{ state: selection, onChange: setSelection, total, filterKey: `${params.payment}|${query}`, labels: {
+      selection={{ state: selection, onChange: setSelection, total, filterKey: `${params.payment}|${query}`,
+        actions: <BulkMenu label={t.action} items={[{ id: "tag", label: t.tag, onSelect: () => selection.scope === "all" ? setConfirm(true) : apply() }]} />,
+        labels: {
         selectPage: t.selectPage, selectRow: n => `${t.row} ${n}`, selected: n => `${n} ${t.selected}`, pageOnly: t.pageOnly,
         allResults: n => `${t.allResults} (${n})`, selectAllResults: n => `${t.selectAll} (${n})`, clear: t.clear,
       } }} />
     <Pagination page={page} pageCount={pageCount} hrefFor={n => queryFor({ ...params, page: n }) || "?"} labels={{ nav: t.paging, previous: t.previous, next: t.next, page: n => `${t.page} ${n}`, summary: `${total} ${t.filterSummary} · ${page} / ${pageCount}` }} />
     <ConfirmDialog open={confirm} title={t.bulkConfirm} description={t.bulkDesc} confirmLabel={t.confirm} cancelLabel={t.cancel} tone="primary" onConfirm={apply} onCancel={() => setConfirm(false)} />
-  </Card>;
+    </Card>
+  </Stack>;
 }
 function DetailTemplate({ t }: { t: TemplateCopy }) {
   const [saved, persist] = useGalleryRecord<{ note: string; result: string }>("ds2-detail-note", { note: "", result: "" });
   const [note, setNote] = useState("");
   useEffect(() => { setNote(saved.note); }, [saved.note]);
   return <Stack>
-    <Inline><StatusPill domain="payment" status="paid" label={t.paid} /><Badge tone="warning">{t.pending}</Badge><span>{t.date}</span></Inline>
     <DetailLayout main={<>
       <Card title={t.thumbnail}><Inline><ThumbCell src={THUMB} alt={t.item} emptyLabel={t.thumbnail} /><div><strong>{t.item}</strong><p>{t.quantity}: 2 · NT$ 360</p></div></Inline></Card>
       <Card title={t.timeline}><Timeline label={t.timeline} items={[
@@ -174,8 +178,8 @@ function ProductForm({ t, params, update }: { t: TemplateCopy; params: TemplateP
         </Stack>}
         {params.section === "media" && <GalleryUpload t={t} value={data.images} onChange={value => change("images", value)} disabled={saving || !ready} />}
         {params.section === "pricing" && <FormGrid>
-          <Field label={t.price} required error={priceError} width="md">{control => <NumberInput {...control} unit="NT$" min="0" step="0.01" value={data.price} readOnly={saving || !ready} onChange={event => change("price", event.target.value)} />}</Field>
-          <Field label={t.inventory} required error={stockError} width="sm">{control => <TextInput {...control} type="number" min="0" step="1" value={data.stock} readOnly={saving || !ready} onChange={event => change("stock", event.target.value)} />}</Field>
+          <Field label={t.price} required error={priceError} width="full">{control => <NumberInput {...control} unit="NT$" min="0" step="0.01" value={data.price} readOnly={saving || !ready} onChange={event => change("price", event.target.value)} />}</Field>
+          <Field label={t.inventory} required error={stockError} width="full">{control => <TextInput {...control} type="number" min="0" step="1" value={data.stock} readOnly={saving || !ready} onChange={event => change("stock", event.target.value)} />}</Field>
         </FormGrid>}
       </TabPanel>
       <ConfirmDialog open={cancel} title={t.cancelConfirm} confirmLabel={t.discard} cancelLabel={t.cancel} onCancel={() => setCancel(false)} onConfirm={() => { setData(saved); setCancel(false); }} />
@@ -250,7 +254,7 @@ function SettingsTemplate({ t, params }: { t: TemplateCopy; params: TemplatePara
     <FormActionBar label={t.action} dirty={dirty} state={saving ? "saving" : dirty ? "dirty" : done ? "saved" : "clean"} note={t.clean} dirtyNote={t.dirty} savingNote={t.saving} savedNote={t.saved}
       actions={<><Button disabledReason={saving ? t.saving : undefined} onClick={() => { setData(saved); setDone(false); }}>{t.cancel}</Button><Button variant="primary" loading={saving} disabledReason={!ready ? t.loading : !data.name.trim() ? t.invalid : !dirty ? t.noChanges : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
       <Stack><h2>{current === "profile" ? t.storeProfile : t.notices}</h2>
-        {current === "profile" ? <Stack><Field label={t.storeName} required width="lg" error={data.name.trim() ? undefined : t.required} counter={{ value: data.name, max: 80, format: (n, max) => `${n} / ${max}` }}>{control => <TextInput {...control} value={data.name} readOnly={saving || !ready} onChange={event => { setData({ ...data, name: event.target.value }); setDone(false); }} />}</Field>
+        {current === "profile" ? <Stack><Field label={t.storeName} required width="full" error={data.name.trim() ? undefined : t.required} counter={{ value: data.name, max: 80, format: (n, max) => `${n} / ${max}` }}>{control => <TextInput {...control} value={data.name} readOnly={saving || !ready} onChange={event => { setData({ ...data, name: event.target.value }); setDone(false); }} />}</Field>
           <FormGrid><Field label={t.currency} help={t.currencyHelp}>{control => <Select {...control} value={data.currency} disabled={saving || !ready} onChange={event => { setData({ ...data, currency: event.target.value }); setDone(false); }}><option value="TWD">TWD · NT$</option><option value="USD">USD · US$</option></Select>}</Field>
             <Field label={t.timezone} help={t.tzHelp}>{control => <Select {...control} value={data.timezone} disabled={saving || !ready} onChange={event => { setData({ ...data, timezone: event.target.value }); setDone(false); }}><option value="Asia/Taipei">Asia/Taipei · UTC+8</option><option value="UTC">UTC</option></Select>}</Field></FormGrid></Stack>
           : <><Checkbox label={t.emailNotices} checked={data.notices} disabled={saving || !ready} onChange={event => { setData({ ...data, notices: event.target.checked }); setDone(false); }} /><p>{t.noticesHelp}</p></>}

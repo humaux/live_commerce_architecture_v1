@@ -109,19 +109,22 @@ export function PageHeader({
   crumbs,
   title,
   description,
+  status,
   actions,
 }: {
   breadcrumbLabel: string;
   crumbs?: readonly Crumb[];
   title: ReactNode;
   description?: ReactNode;
+  /** Status belongs beside the h1, never in a detached row below the header. */
+  status?: ReactNode;
   actions?: ReactNode;
 }) {
   return (
     <header className={s.pageHeader}>
       <div className={s.pageHeading}>
         {crumbs && crumbs.length > 0 && <Breadcrumb label={breadcrumbLabel} crumbs={crumbs} />}
-        <h1 className={s.pageTitle}>{title}</h1>
+        <div className={s.pageTitleRow}><h1 className={s.pageTitle}>{title}</h1>{status && <div className={s.pageStatus}>{status}</div>}</div>
         {description && <p className={s.pageDescription}>{description}</p>}
       </div>
       {actions && <div className={s.pageActions}>{actions}</div>}

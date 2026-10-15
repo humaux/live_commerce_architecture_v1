@@ -194,6 +194,7 @@ function ProductTable({ c, params, setParam, setList, search }: { c: GalleryCopy
           {bulkDone && <Alert tone="success">{bulkDone}</Alert>}
         </div>
         <DataTable
+          scrollHint={c.tableScroll}
           caption={c.tblCaption}
           columns={columns}
           rows={rows}

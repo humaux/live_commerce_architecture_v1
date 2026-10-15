@@ -241,6 +241,6 @@ export function UploadGrid({ items, label, removeLabel, retryLabel, progressLabe
     {item.status === "error" && <span className={s.uploadError} role="alert">{item.error}</span>}
     {item.status === "done" && <span role="status">{doneLabel}</span>}
     <div className={s.dropActions}>{item.status === "error" && <Button size="sm" disabledReason={disabledReason} onClick={() => onRetry(item.id)}>{retryLabel(item.name)}</Button>}
-      <Button size="sm" disabledReason={disabledReason} variant="ghost" aria-label={removeLabel(item.name)} onClick={() => onRemove(item.id)}><Icon name="close" size={16} /></Button></div>
+      <Button size="sm" iconOnly disabledReason={disabledReason} variant="ghost" aria-label={removeLabel(item.name)} onClick={() => onRemove(item.id)}><Icon name="close" size={16} /></Button></div>
   </li>)}</ul>;
 }

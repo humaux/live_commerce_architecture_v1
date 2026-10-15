@@ -104,6 +104,7 @@ export function MenuButton({
         size={size}
         variant={variant}
         iconOnly={Boolean(icon)}
+        aria-label={icon && typeof label === "string" ? label : undefined}
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -232,6 +233,7 @@ export function DataTable<R>({
   actions,
   actionsHeader,
   moreLabel,
+  scrollHint,
 }: {
   caption: string;
   columns: readonly Column<R>[];
@@ -242,11 +244,14 @@ export function DataTable<R>({
   error: ReactNode;
   loadingLabel: string;
   /** `filterKey` identifies the current filter/search; "all results" stays bound to it (see bulkTarget). */
-  selection?: { state: SelectionState; onChange: (next: SelectionState) => void; total: number; filterKey: string; labels: SelectionLabels };
+  selection?: { state: SelectionState; onChange: (next: SelectionState) => void; total: number; filterKey: string; labels: SelectionLabels; actions?: ReactNode };
   actions?: (row: R) => readonly RowAction[];
   actionsHeader?: string;
   moreLabel?: string;
+  /** Localized mobile affordance; horizontal scrolling is the single mobile table rule. */
+  scrollHint?: string;
 }) {
+  const hintId = useId();
   const ids = rows.map(rowId);
   const span = columns.length + (selection ? 1 : 0) + (actions ? 1 : 0);
   const strict = process.env.NODE_ENV !== "production";
@@ -269,7 +274,7 @@ export function DataTable<R>({
       <div className={s.actions}>
         {visible.map(one)}
         {more.length > 0 && moreLabel && (
-          <MenuButton size="sm" label={<><Icon name="more" size={16} /><span className={s.sr}>{moreLabel}</span></>} items={more.map((a): MenuItem => {
+          <MenuButton size="sm" icon="more" label={moreLabel} items={more.map((a): MenuItem => {
             const base = { id: a.id, label: a.label, variant: a.variant === "danger" ? ("danger" as const) : undefined };
             return a.href ? { ...base, href: a.href, onSelect: a.onSelect } : { ...base, onSelect: a.onSelect ?? (() => {}) };
           })} />
@@ -280,7 +285,7 @@ export function DataTable<R>({
   return (
     <div>
       {selection && count > 0 && (
-        <div className={s.banner} role="status">
+        <div className={s.banner} role="status" data-selection-bar>
           <strong>{selection.labels.selected(count)}</strong>
           <span>{selection.state.scope === "all" ? selection.labels.allResults(selection.total) : selection.labels.pageOnly}</span>
           {offerAllResults(selection.state, ids, selection.total) && (
@@ -291,9 +296,11 @@ export function DataTable<R>({
           <Button variant="link" onClick={() => selection.onChange(clearSelection())}>
             {selection.labels.clear}
           </Button>
+          {selection.actions && <div className={s.selectionActions}>{selection.actions}</div>}
         </div>
       )}
-      <div className={s.scroll}>
+      <div className={s.scrollHint} id={hintId} data-table-scroll-hint><Icon name="chevronLeft" size={16} /><span>{scrollHint ?? caption}</span><Icon name="chevronRight" size={16} /></div>
+      <div className={s.scroll} tabIndex={0} role="group" aria-label={caption} aria-describedby={hintId} data-table-scroll>
         <table className={s.table} aria-busy={status === "loading" || undefined}>
           <caption className={s.sr}>{caption}</caption>
           <thead>

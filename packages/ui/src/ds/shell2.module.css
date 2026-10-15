@@ -54,7 +54,7 @@
 .groupRow[data-current="true"], .groupLink[aria-current="page"] { border-inline-start-color: var(--ds-nav-accent); background: var(--ds-nav-active); }
 .groupIcon { flex: none; display: inline-flex; width: 20px; justify-content: center; }
 .groupLabel { flex: 1; min-width: 0; }
-.chev { flex: none; font-size: var(--ds-text-xs); transition: transform 0.15s; }
+.chev { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 var(--ds-space-4); width: var(--ds-space-4); height: var(--ds-space-4); transition: transform 0.15s; }
 .groupRow[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .sub { margin: 0; padding: 0; list-style: none; }
 .item { display: flex; align-items: center; box-sizing: border-box; min-height: 40px; padding: 0 var(--ds-space-4) 0 var(--ds-nav-indent); color: var(--ds-nav-text-muted); font-size: var(--ds-text-md); text-decoration: none; }

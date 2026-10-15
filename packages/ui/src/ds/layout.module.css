@@ -58,6 +58,7 @@
 .crumbs a { color: var(--ds-text-3); text-decoration: none; }
 .crumbs a:hover { text-decoration: underline; }
 .crumbs [aria-current="page"] { color: var(--ds-text-1); }
+.pageTitleRow, .pageStatus { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2); }
 .pageTitle { margin: 0; font-size: var(--ds-text-2xl); line-height: 1.3; color: var(--ds-text-1); }
 .pageDescription { margin: var(--ds-space-1) 0 0; color: var(--ds-text-2); font-size: var(--ds-text-md); }
 .pageActions { display: flex; flex-wrap: wrap; gap: var(--ds-space-2); }
@@ -95,11 +96,12 @@
 .settingsLink:hover { background: var(--ds-surface-muted); }
 .settingsLink[aria-current="page"] { border-left-color: var(--ds-primary); background: var(--ds-primary-soft); color: var(--ds-primary); font-weight: 600; }
 .settingsLink:focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: -2px; }
-.settingsBody { padding: var(--ds-space-6); min-width: 0; }
+.settingsBody { min-width: 0; }
+.settingsBody .formSurface { border: 0; box-shadow: none; }
 @media (max-width: 767.98px) {
   .settings { grid-template-columns: minmax(0, 1fr); }
   .settingsNav { border-right: 0; border-bottom: 1px solid var(--ds-border); }
-  .settingsBody { padding: var(--ds-space-4); }
+  .settingsBody { min-width: 0; }
 }
 
 /* ---------- KpiCard ---------- */

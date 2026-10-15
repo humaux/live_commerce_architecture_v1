@@ -4,6 +4,7 @@
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
+  tableScroll: "Scroll horizontally to see all columns",
   skip: "Skip to content",
   menu: "Open menu",
   close: "Close menu",
@@ -189,6 +190,7 @@ const en = {
 export type GalleryCopy = typeof en;
 
 const zhTW: GalleryCopy = {
+  tableScroll: "左右滑動查看所有欄位",
   skip: "跳到主要內容",
   menu: "開啟選單",
   close: "關閉選單",
@@ -373,6 +375,7 @@ const zhTW: GalleryCopy = {
 };
 
 const zhCN: GalleryCopy = {
+  tableScroll: "左右滑动查看所有列",
   skip: "跳到主要内容",
   menu: "打开菜单",
   close: "关闭菜单",
