@@ -26,12 +26,11 @@
 .table [data-align="end"] { text-align: end; font-variant-numeric: tabular-nums; }
 /* a wrap column takes the spare width and breaks long names; the rest keep their natural one-line width */
 .table td[data-wrap="true"] { min-width: 160px; white-space: normal; overflow-wrap: anywhere; }
-/* The actions cell shrinks to its (inline-flex, nowrap) buttons so they never spill over the status column; other columns keep their
-   natural width, and a fixed-size column (thumbnail) sets Column.width. A global 1% rule collapsed price/stock headers (gallery R6). */
-.table th[data-actions], .table td[data-actions] { width: 1%; }
-/* The free-text (wrap) column absorbs the spare width, so fixed columns (thumbnail via Column.width) and natural nowrap columns stay compact
-   and the actions column fits a 1440 card without horizontal scrolling (owner sign-off review 2026-10-15: actions were pushed out of view). */
-.table th[data-wrap], .table td[data-wrap="true"] { width: 100%; }
+/* Every non-wrap column (nowrap data, actions) shrinks to its one-line content and the free-text (wrap) column absorbs the spare width,
+   so the actions column fits a 1440 card without horizontal scrolling (owner sign-off review 2026-10-15). Not `width:100%` on the wrap
+   column: Chrome's auto layout then widens the table past its frame (#67 gallery: scrolled by 161px). Column.width (thumbnail) is an
+   inline style and still wins; colspan state rows and the 44px selectCell are excluded (this selector outranks theirs). */
+.table th:not([data-wrap]):not(.fullRow):not(.selectCell), .table td:not([data-wrap]):not(.fullRow):not(.selectCell) { width: 1%; }
 .table th.selectCell, .table td.selectCell { width: 44px; min-width: 44px; padding-inline: var(--ds-space-2) !important; text-align: center; }
 .check { display: block; width: 18px; height: 18px; margin: 0 auto; accent-color: var(--ds-primary); cursor: pointer; }
 .thumb { display: block; width: 64px; height: 64px; border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); background: var(--ds-surface-muted); object-fit: cover; }
