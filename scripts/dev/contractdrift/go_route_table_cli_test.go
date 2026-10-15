@@ -148,6 +148,16 @@ func TestGoRouteTableExtraPathDispatchRejectedCLI(t *testing.T) {
 		{"transformed path", `if strings.TrimPrefix(r.URL.Path, "/debug") == "/v1/table/one" { w.WriteHeader(204); return }`},
 		{"transformed switch", `switch strings.TrimPrefix(r.URL.Path, "/debug") { case "/v1/table/one": w.WriteHeader(204); return }`},
 		{"reached helper", `if debugRequest(r) { w.WriteHeader(204); return }`},
+		{"local alias equality", `p := r.URL.Path; if p == debugPath { w.WriteHeader(204); return }`},
+		{"two assignment alias", `p := r.URL.Path; q := p; if q == debugPath { w.WriteHeader(204); return }`},
+		{"path parameter helper", `if debugPathString(r.URL.Path) { w.WriteHeader(204); return }`},
+		{"contains", `if strings.Contains(r.URL.Path, "/debug") { w.WriteHeader(204); return }`},
+		{"equal fold", `if strings.EqualFold(r.URL.Path, debugPath) { w.WriteHeader(204); return }`},
+		{"escaped path equality", `if r.URL.EscapedPath() == "/x" { w.WriteHeader(204); return }`},
+		{"URL string", `if r.URL.String() == debugPath { w.WriteHeader(204); return }`},
+		{"URL request URI", `if r.URL.RequestURI() == debugPath { w.WriteHeader(204); return }`},
+		{"URL opaque", `if r.URL.Opaque == debugPath { w.WriteHeader(204); return }`},
+		{"struct field storage", `box := struct{ path string }{}; box.path = r.URL.Path; if box.path == debugPath { w.WriteHeader(204); return }`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -156,6 +166,7 @@ func TestGoRouteTableExtraPathDispatchRejectedCLI(t *testing.T) {
 			mustWrite(t, p, source+`
 const debugPath = "/v1/table/debug"
 func debugRequest(r *http.Request) bool { return r.URL.Path == debugPath }
+func debugPathString(path string) bool { return path == debugPath }
 `)
 			code, out := goReviewProcessCLI(t, root)
 			if code != 1 || !strings.Contains(out, "UNRESOLVED") || strings.Contains(out, "GO_ROUTE_TABLE") {
@@ -177,6 +188,19 @@ const listedPath = "/v1/table/one"
 	code, out := goReviewProcessCLI(t, root)
 	if code != 0 || strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("listed path policy unresolved: exit%d %s", code, out)
+	}
+}
+
+func TestGoRouteTableListedPathHelperAcceptedCLI(t *testing.T) {
+	root, p := routeTableCLIFixture(t)
+	source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", `if listedRequestPath(r.URL.Path) { w.Header().Set("X-Listed", "yes") }
+ selected := match(r.URL.Path)`, 1)
+	mustWrite(t, p, source+`
+func listedRequestPath(path string) bool { return path == "/v1/table/one" }
+`)
+	code, out := goReviewProcessCLI(t, root)
+	if code != 0 || strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "GO_ROUTE_TABLE") {
+		t.Fatalf("listed path helper unresolved: exit%d %s", code, out)
 	}
 }
 

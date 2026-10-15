@@ -141,7 +141,12 @@ func TestGoHandlerFactoryRefusalLeavesCLI(t *testing.T) {
 	}{
 		{name: "mountFeed", leaf: `httperror.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { httperror.Write(w, http.StatusUnauthorized, "unauthorized") })).ServeHTTP(w,r)`, resolved: true},
 		{name: "http Error literal return", leaf: `http.HandlerFunc(func(w http.ResponseWriter, unused *http.Request) { http.Error(w, "unavailable", 503); return }).ServeHTTP(w,r)`, resolved: true},
-		{name: "constant expression", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", 401 + 0*len([1]*http.Request{nil})) }).ServeHTTP(w,r)`, resolved: true},
+		{name: "constant expression", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", 600-199) }).ServeHTTP(w,r)`, resolved: true},
+		{name: "len is outside ruling", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", 401 + 0*len([1]*http.Request{nil})) }).ServeHTTP(w,r)`},
+		{name: "constant expression below 400", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "ok", 600-400) }).ServeHTTP(w,r)`},
+		{name: "shadowed http", before: `http := pretendHTTP{}`, leaf: `http.HandlerFunc(func(w nethttp.ResponseWriter, _ *nethttp.Request) { http.Error(w, "denied", 401) }).ServeHTTP(w,r)`},
+		{name: "shadowed httperror", before: `httperror := struct{ Write func(http.ResponseWriter,int,string) }{httperror.Write}`, leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { httperror.Write(w, 401, "denied") }).ServeHTTP(w,r)`},
+		{name: "unlisted wrapper", leaf: `unlistedWrapper(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", 401) })).ServeHTTP(w,r)`},
 		{name: "2xx error writer", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "ok", 204) }).ServeHTTP(w,r)`},
 		{name: "3xx error writer", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "redirect", 302) }).ServeHTTP(w,r)`},
 		{name: "refusal only", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", 401) }).ServeHTTP(w,r)`, only: true},
@@ -165,6 +170,13 @@ func TestGoHandlerFactoryRefusalLeavesCLI(t *testing.T) {
 			}
 			source = strings.Replace(source, `"net/http"`, "\"net/http\"\n \"example/internal/httperror\"", 1)
 			source += "\nfunc pretendError(w http.ResponseWriter, message string, status int) { http.Error(w,message,status) }\n"
+			source = strings.Replace(source, `"net/http"`, `"net/http"; nethttp "net/http"`, 1)
+			source += `
+type pretendHTTP struct{}
+func (pretendHTTP) HandlerFunc(fn func(nethttp.ResponseWriter,*nethttp.Request)) nethttp.Handler { return nethttp.HandlerFunc(fn) }
+func (pretendHTTP) Error(w nethttp.ResponseWriter, message string, status int) { nethttp.Error(w,message,status) }
+func unlistedWrapper(next http.Handler) http.Handler { return next }
+`
 			root := handlerFactoryCLIFixture(t, source)
 			trunkFactoryWrite(t, root, "internal/httperror/error.go", `package httperror
 import "net/http"
