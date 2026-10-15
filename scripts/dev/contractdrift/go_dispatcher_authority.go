@@ -15,6 +15,11 @@ import (
 )
 
 func goDispatcherLocation(file *goFile, node ast.Node) string {
+	// Frozen var/type specs are wrapped in a synthetic GenDecl for hashing;
+	// diagnostics must use the original spec's position, not its zero TokPos.
+	if gd, ok := node.(*ast.GenDecl); ok && !gd.TokPos.IsValid() && len(gd.Specs) > 0 {
+		node = gd.Specs[0]
+	}
 	if file.Set == nil {
 		return file.Path
 	}
