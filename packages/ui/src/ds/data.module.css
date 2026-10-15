@@ -29,6 +29,9 @@
 /* The actions cell shrinks to its (inline-flex, nowrap) buttons so they never spill over the status column; other columns keep their
    natural width, and a fixed-size column (thumbnail) sets Column.width. A global 1% rule collapsed price/stock headers (gallery R6). */
 .table th[data-actions], .table td[data-actions] { width: 1%; }
+/* The free-text (wrap) column absorbs the spare width, so fixed columns (thumbnail via Column.width) and natural nowrap columns stay compact
+   and the actions column fits a 1440 card without horizontal scrolling (owner sign-off review 2026-10-15: actions were pushed out of view). */
+.table th[data-wrap], .table td[data-wrap="true"] { width: 100%; }
 .table th.selectCell, .table td.selectCell { width: 44px; min-width: 44px; padding-inline: var(--ds-space-2) !important; text-align: center; }
 .check { display: block; width: 18px; height: 18px; margin: 0 auto; accent-color: var(--ds-primary); cursor: pointer; }
 .thumb { display: block; width: 64px; height: 64px; border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); background: var(--ds-surface-muted); object-fit: cover; }
