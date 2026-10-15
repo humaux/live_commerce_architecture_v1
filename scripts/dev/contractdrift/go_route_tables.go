@@ -71,6 +71,7 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 			}
 		}
 	}
+	var consumed []goRouteTable
 	for _, table := range tables {
 		resolved := map[location]bool{}
 		for _, fn := range table.Package.Funcs {
@@ -101,6 +102,7 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 			addUnresolved(&s.Out, table.Ref, "route table has no consuming HTTP dispatcher")
 			continue
 		}
+		consumed = append(consumed, table)
 		s.Out.Routes = append(s.Out.Routes, table.Routes...)
 		remaining := s.Out.Unresolved[:0]
 		for _, f := range s.Out.Unresolved {
@@ -129,6 +131,9 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 		}
 		s.Out.Unresolved = remaining
 	}
+	// Factory coverage depends on ALL consumed tables, not whichever table the
+	// scanner happened to visit first. Keep the original opaque dependency spans.
+	s.resolveHandlerFactories(consumed)
 }
 
 func (s *goScanner) readRouteTable(gd *ast.GenDecl, fields []string) (goRouteTable, bool) {
@@ -357,74 +362,83 @@ func (s *goScanner) tableMount(fn *goFunc, table goRouteTable) bool {
 	found := false
 	ast.Inspect(fn.AST.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
-		if !ok || len(call.Args) != 1 || !goPathExpression(call.Args[0]) {
-			return true
-		}
-		method, ok := call.Fun.(*ast.SelectorExpr)
-		if !ok {
-			return true
-		}
-		variable, ok := method.X.(*ast.SelectorExpr)
-		if !ok || variable.Sel.Name != table.Name {
-			return true
-		}
-		pkg, ok := variable.X.(*ast.Ident)
-		if !ok || s.Packages[fn.File.ImportPaths[pkg.Name]] != table.Package {
-			return true
-		}
-		for _, target := range table.Package.ByName[method.Sel.Name] {
-			if target.AST.Recv == nil || len(target.AST.Body.List) != 1 {
-				continue
-			}
-			receiver, ok := target.AST.Recv.List[0].Type.(*ast.Ident)
-			if !ok || receiver.Name != table.TypeName || table.TypeName == "" {
-				continue
-			}
-			ret, ok := target.AST.Body.List[0].(*ast.ReturnStmt)
-			if !ok || len(ret.Results) != 1 {
-				continue
-			}
-			if table.Exact {
-				call, ok := ret.Results[0].(*ast.CallExpr)
-				if !ok || len(call.Args) != 1 || goCallName(call.Fun) != table.Consumers[0].AST.Name.Name ||
-					target.AST.Type.Params == nil || len(target.AST.Type.Params.List) != 1 || len(target.AST.Type.Params.List[0].Names) != 1 {
-					continue
-				}
-				helper, direct := call.Fun.(*ast.Ident)
-				arg, ok := call.Args[0].(*ast.Ident)
-				if direct && helper.Name == table.Consumers[0].AST.Name.Name && ok && arg.Name == target.AST.Type.Params.List[0].Names[0].Name {
-					found = true
-				}
-				continue
-			}
-			prefix, ok := ret.Results[0].(*ast.CallExpr)
-			if !ok || len(prefix.Args) != 2 {
-				continue
-			}
-			if target.AST.Type.Params == nil || len(target.AST.Type.Params.List) != 1 || len(target.AST.Type.Params.List[0].Names) != 1 {
-				continue
-			}
-			argument, ok := prefix.Args[0].(*ast.Ident)
-			if !ok || argument.Name != target.AST.Type.Params.List[0].Names[0].Name {
-				continue
-			}
-			sel, ok := prefix.Fun.(*ast.SelectorExpr)
-			if !ok || sel.Sel.Name != "HasPrefix" {
-				continue
-			}
-			alias, ok := sel.X.(*ast.Ident)
-			if !ok || target.File.ImportPaths[alias.Name] != "strings" {
-				continue
-			}
-			s.Package, s.File = table.Package, target.File
-			value := s.expr(prefix.Args[1], table.Package.Globals)
-			if !value.Unknown && len(value.Text) == 1 && value.Text[0] == table.Prefix {
-				found = true
-			}
+		if ok && s.tableMountCall(fn, call, table) {
+			found = true
 		}
 		return true
 	})
 	return found
+}
+
+// The factory proof uses the same consumer check on each individual condition,
+// so finding one valid table call cannot conceal a second opaque path guard.
+func (s *goScanner) tableMountCall(fn *goFunc, call *ast.CallExpr, table goRouteTable) bool {
+	if len(call.Args) != 1 || !goPathExpression(call.Args[0]) {
+		return false
+	}
+	method, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	variable, ok := method.X.(*ast.SelectorExpr)
+	if !ok || variable.Sel.Name != table.Name {
+		return false
+	}
+	pkg, ok := variable.X.(*ast.Ident)
+	if !ok || s.Packages[fn.File.ImportPaths[pkg.Name]] != table.Package {
+		return false
+	}
+	for _, target := range table.Package.ByName[method.Sel.Name] {
+		if target.AST.Recv == nil || len(target.AST.Body.List) != 1 {
+			continue
+		}
+		receiver, ok := target.AST.Recv.List[0].Type.(*ast.Ident)
+		if !ok || receiver.Name != table.TypeName || table.TypeName == "" {
+			continue
+		}
+		ret, ok := target.AST.Body.List[0].(*ast.ReturnStmt)
+		if !ok || len(ret.Results) != 1 {
+			continue
+		}
+		if table.Exact {
+			call, ok := ret.Results[0].(*ast.CallExpr)
+			if !ok || len(call.Args) != 1 || goCallName(call.Fun) != table.Consumers[0].AST.Name.Name ||
+				target.AST.Type.Params == nil || len(target.AST.Type.Params.List) != 1 || len(target.AST.Type.Params.List[0].Names) != 1 {
+				continue
+			}
+			helper, direct := call.Fun.(*ast.Ident)
+			arg, ok := call.Args[0].(*ast.Ident)
+			if direct && helper.Name == table.Consumers[0].AST.Name.Name && ok && arg.Name == target.AST.Type.Params.List[0].Names[0].Name {
+				return true
+			}
+			continue
+		}
+		prefix, ok := ret.Results[0].(*ast.CallExpr)
+		if !ok || len(prefix.Args) != 2 {
+			continue
+		}
+		if target.AST.Type.Params == nil || len(target.AST.Type.Params.List) != 1 || len(target.AST.Type.Params.List[0].Names) != 1 {
+			continue
+		}
+		argument, ok := prefix.Args[0].(*ast.Ident)
+		if !ok || argument.Name != target.AST.Type.Params.List[0].Names[0].Name {
+			continue
+		}
+		sel, ok := prefix.Fun.(*ast.SelectorExpr)
+		if !ok || sel.Sel.Name != "HasPrefix" {
+			continue
+		}
+		alias, ok := sel.X.(*ast.Ident)
+		if !ok || target.File.ImportPaths[alias.Name] != "strings" {
+			continue
+		}
+		s.Package, s.File = table.Package, target.File
+		value := s.expr(prefix.Args[1], table.Package.Globals)
+		if !value.Unknown && len(value.Text) == 1 && value.Text[0] == table.Prefix {
+			return true
+		}
+	}
+	return false
 }
 
 // Exact consumers cannot filter or truncate the table, or accept a value outside it.
