@@ -1,0 +1,125 @@
+/* Purpose: Styles Card, HelpHint, PageHeader, FormSection, ActionBars, SettingsLayout and KpiCard from --ds-* tokens only.
+ * Depends on: ../tokens.css custom properties.
+ * Used by: packages/ui/src/ds/Layout.tsx */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Card ---------- */
+.card {
+  box-sizing: border-box;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-1);
+  color: var(--ds-text-1);
+  font-size: var(--ds-text-md);
+}
+.cardHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-3); padding: var(--ds-space-4) var(--ds-space-6) 0; }
+.cardTitle { display: flex; align-items: center; gap: var(--ds-space-2); margin: 0; color: var(--ds-link); font-size: var(--ds-text-xl); font-weight: 600; }
+.cardMeta { color: var(--ds-text-3); font-size: var(--ds-text-sm); }
+.cardActions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2); margin-left: auto; }
+.cardBody { padding: var(--ds-space-4) var(--ds-space-6) var(--ds-space-6); }
+.cardBody[data-flush="true"] { padding: 0; }
+.helpText { margin: var(--ds-space-2) var(--ds-space-6) 0; padding: var(--ds-space-2) var(--ds-space-3); border-radius: var(--ds-radius-md); background: var(--ds-primary-soft); color: var(--ds-text-1); font-size: var(--ds-text-sm); }
+.help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 1px solid var(--ds-border-input);
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface);
+  color: var(--ds-text-2);
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  cursor: pointer;
+}
+.help:focus-visible, .kpi:focus-visible, .link:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus);
+  outline-offset: var(--ds-focus-offset);
+}
+
+/* ---------- PageHeader ---------- */
+.pageHeader { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--ds-space-3) var(--ds-space-6); margin-bottom: var(--ds-space-4); }
+.pageHeading { flex: 1 1 280px; min-width: 0; }
+.crumbs { margin: 0 0 var(--ds-space-1); padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: var(--ds-space-2); color: var(--ds-text-3); font-size: var(--ds-text-sm); }
+.crumbs li + li::before { content: "›"; margin-right: var(--ds-space-2); }
+.crumbs a { color: var(--ds-text-3); text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.crumbs [aria-current="page"] { color: var(--ds-text-1); }
+.pageTitle { margin: 0; font-size: var(--ds-text-2xl); line-height: 1.3; color: var(--ds-text-1); }
+.pageDescription { margin: var(--ds-space-1) 0 0; color: var(--ds-text-2); font-size: var(--ds-text-md); }
+.pageActions { display: flex; flex-wrap: wrap; gap: var(--ds-space-2); }
+.link { color: var(--ds-link); }
+
+/* ---------- ActionBars: top + bottom on desktop, sticky bottom only on mobile ---------- */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3) var(--ds-space-4);
+  box-sizing: border-box;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface);
+}
+.barNote { flex: 1 1 240px; color: var(--ds-text-2); font-size: var(--ds-text-sm); }
+.barDirty { color: var(--ds-warn-text); font-weight: 600; }
+.barControls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2); margin-left: auto; }
+.barTop { margin-bottom: var(--ds-space-4); }
+.barBottom { margin-top: var(--ds-space-4); }
+@media (max-width: 767.98px) {
+  .barTop { display: none; }
+  .barBottom { position: sticky; bottom: 0; z-index: var(--ds-z-sticky); border-radius: 0; border-width: 1px 0 0; box-shadow: var(--ds-shadow-2); }
+  .barControls { margin-left: 0; width: 100%; }
+}
+
+/* ---------- SettingsLayout ---------- */
+.settings { display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+.settingsNav { padding: var(--ds-space-4) 0; border-right: 1px solid var(--ds-border); }
+.settingsGroup { margin: 0 0 var(--ds-space-3); padding: 0; list-style: none; }
+.settingsGroupTitle { margin: 0; padding: var(--ds-space-2) var(--ds-space-4); color: var(--ds-text-3); font-size: var(--ds-text-xs); font-weight: 600; }
+.settingsLink { display: block; padding: var(--ds-space-2) var(--ds-space-4); border-left: 3px solid transparent; color: var(--ds-text-1); font-size: var(--ds-text-md); text-decoration: none; }
+.settingsLink:hover { background: var(--ds-surface-muted); }
+.settingsLink[aria-current="page"] { border-left-color: var(--ds-primary); background: var(--ds-primary-soft); color: var(--ds-primary); font-weight: 600; }
+.settingsLink:focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: -2px; }
+.settingsBody { padding: var(--ds-space-6); min-width: 0; }
+@media (max-width: 767.98px) {
+  .settings { grid-template-columns: minmax(0, 1fr); }
+  .settingsNav { border-right: 0; border-bottom: 1px solid var(--ds-border); }
+  .settingsBody { padding: var(--ds-space-4); }
+}
+
+/* ---------- KpiCard ---------- */
+.kpi {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-4);
+  box-sizing: border-box;
+  padding: var(--ds-space-4) var(--ds-space-6);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-1);
+  color: var(--ds-text-1);
+  text-decoration: none;
+}
+a.kpi:hover { border-color: var(--ds-primary); box-shadow: var(--ds-shadow-2); }
+.kpiIcon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--ds-radius-pill); background: var(--ds-primary-soft); color: var(--ds-primary); }
+.kpiValue { display: block; font-size: var(--ds-text-3xl); font-weight: 600; line-height: 1.2; }
+.kpiLabel { display: block; color: var(--ds-text-2); font-size: var(--ds-text-sm); }
+.kpiTrend { display: block; font-size: var(--ds-text-xs); }
+.kpiTrend[data-tone="success"] { color: var(--ds-success-text); }
+.kpiTrend[data-tone="danger"] { color: var(--ds-danger-text); }
+.kpiTrend[data-tone="neutral"] { color: var(--ds-text-2); }

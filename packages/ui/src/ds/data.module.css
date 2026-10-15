@@ -1,0 +1,89 @@
+/* Purpose: Styles DataTable, ThumbCell, MenuButton, FilterBar controls and Pagination from --ds-* tokens only.
+ * Depends on: ../tokens.css custom properties.
+ * Used by: packages/ui/src/ds/Data.tsx */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.focus:focus-visible, .check:focus-visible, .pageLink:focus-visible, .searchInput:focus-visible, .select:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus);
+  outline-offset: var(--ds-focus-offset);
+}
+
+/* ---------- table ---------- */
+.scroll { overflow-x: auto; }
+/* min-width keeps cells from squeezing so row actions never stack: a narrow screen scrolls the table inside its frame instead. */
+.table { width: 100%; min-width: 760px; border-collapse: collapse; color: var(--ds-text-1); font-size: var(--ds-text-md); }
+.table th { padding: var(--ds-space-3) var(--ds-space-4); border-bottom: 1px solid var(--ds-border); color: var(--ds-text-2); font-size: var(--ds-text-sm); font-weight: 600; text-align: start; white-space: nowrap; }
+.table td { white-space: nowrap; padding: var(--ds-space-3) var(--ds-space-4); border-bottom: 1px solid var(--ds-border); vertical-align: middle; }
+.table tbody tr[data-selected="true"] { background: var(--ds-primary-soft); }
+.table [data-align="end"] { text-align: end; font-variant-numeric: tabular-nums; }
+/* a wrap column takes the spare width and breaks long names; the rest keep their natural one-line width */
+.table td[data-wrap="true"] { min-width: 160px; white-space: normal; overflow-wrap: anywhere; }
+/* The actions cell shrinks to its (inline-flex, nowrap) buttons so they never spill over the status column; other columns keep their
+   natural width, and a fixed-size column (thumbnail) sets Column.width. A global 1% rule collapsed price/stock headers (gallery R6). */
+.table th[data-actions], .table td[data-actions] { width: 1%; }
+.table th.selectCell, .table td.selectCell { width: 44px; min-width: 44px; padding-inline: var(--ds-space-2) !important; text-align: center; }
+.check { display: block; width: 18px; height: 18px; margin: 0 auto; accent-color: var(--ds-primary); cursor: pointer; }
+.thumb { display: block; width: 64px; height: 64px; border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); background: var(--ds-surface-muted); object-fit: cover; }
+.thumbEmpty { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; border: 1px dashed var(--ds-border-input); border-radius: var(--ds-radius-md); color: var(--ds-text-3); font-size: var(--ds-text-xs); }
+.actions > *, .actions button, .actions a { flex: none; white-space: nowrap; }
+.actions { display: inline-flex; flex-wrap: nowrap; justify-content: flex-end; align-items: center; gap: var(--ds-space-2); }
+.skeleton { display: block; height: 14px; border-radius: var(--ds-radius-sm); background: var(--ds-neutral-bg); }
+/* colspan state rows (empty/error) hold running text: nowrap is for data cells only, so restore normal wrapping there (same specificity, later wins). */
+.table td.fullRow { padding: 0 !important; white-space: normal; }
+
+/* selection banner */
+.banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2) var(--ds-space-4); padding: var(--ds-space-2) var(--ds-space-4); background: var(--ds-primary-soft); color: var(--ds-text-1); font-size: var(--ds-text-sm); }
+.banner strong { font-weight: 600; }
+
+/* ---------- menu ---------- */
+.menuWrap { position: relative; display: inline-block; }
+.menu {
+  position: absolute;
+  inset-block-start: calc(100% + 4px);
+  inset-inline-end: 0;
+  z-index: var(--ds-z-nav);
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: var(--ds-space-1) 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-2);
+}
+.menu[data-align="start"] { inset-inline-end: auto; inset-inline-start: 0; }
+.menuItem { display: block; padding: var(--ds-space-2) var(--ds-space-4); border: 0; background: none; color: var(--ds-text-1); font: inherit; font-size: var(--ds-text-md); text-align: start; white-space: nowrap; cursor: pointer; }
+.menuItem:hover { background: var(--ds-surface-muted); }
+.menuItem[data-variant="danger"] { color: var(--ds-danger-text); }
+.menuItem[aria-disabled="true"] { color: var(--ds-text-disabled); cursor: not-allowed; }
+.menuItem:focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: -2px; }
+.menuReason { padding: 0 var(--ds-space-4) var(--ds-space-1); color: var(--ds-text-2); font-size: var(--ds-text-xs); white-space: normal; max-width: 260px; }
+
+/* ---------- filter bar ---------- */
+.filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-3) var(--ds-space-4); padding: var(--ds-space-3) 0; }
+.filterField { display: inline-flex; align-items: center; gap: var(--ds-space-2); color: var(--ds-text-2); font-size: var(--ds-text-sm); }
+.select, .searchInput { box-sizing: border-box; min-height: var(--ds-control-height); padding: 0 var(--ds-space-3); border: 1px solid var(--ds-border-input); border-radius: var(--ds-radius-md); background: var(--ds-surface); color: var(--ds-text-1); font: inherit; font-size: var(--ds-text-md); }
+.search { display: inline-flex; flex: 1 1 260px; max-width: 420px; }
+.searchInput { flex: 1; min-width: 0; border-radius: var(--ds-radius-md) 0 0 var(--ds-radius-md); }
+.searchButton { min-width: var(--ds-control-height); min-height: var(--ds-control-height); border: 1px solid var(--ds-border-input); border-inline-start: 0; border-radius: 0 var(--ds-radius-md) var(--ds-radius-md) 0; background: var(--ds-surface-muted); color: var(--ds-text-1); font: inherit; cursor: pointer; }
+.divider { align-self: stretch; width: 1px; background: var(--ds-border); }
+.grow { margin-inline-start: auto; }
+
+/* ---------- pagination ---------- */
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ds-space-3); padding: var(--ds-space-3) var(--ds-space-4); }
+.pages { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-1); margin: 0; padding: 0; list-style: none; }
+.pageLink { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 36px; min-height: 36px; padding: 0 var(--ds-space-2); border: 1px solid transparent; border-radius: var(--ds-radius-md); color: var(--ds-link); font-size: var(--ds-text-md); text-decoration: none; }
+.pageLink:hover { border-color: var(--ds-border); background: var(--ds-surface-muted); }
+.pageLink[aria-current="page"] { border-color: var(--ds-primary); background: var(--ds-primary); color: var(--ds-on-primary); font-weight: 600; }
+/* aria-disabled on a plain link is not exempt from axe contrast, so the disabled arrow stays at --ds-text-3 (5:1) and is told apart by the missing href and the hover state. */
+.pageLink[aria-disabled="true"] { color: var(--ds-text-3); pointer-events: none; cursor: not-allowed; }
+.gap { padding: 0 var(--ds-space-1); color: var(--ds-text-3); }
+.summary { color: var(--ds-text-2); font-size: var(--ds-text-sm); }
