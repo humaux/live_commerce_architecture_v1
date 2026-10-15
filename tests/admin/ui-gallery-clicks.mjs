@@ -986,11 +986,14 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     await run("Section keyboard and number fields", "click Basics, End, edit price/stock, save, reload", "Pricing active, numbers/currency persist", async () => {
       await tab(t.general).click();
       await page.keyboard.press("End");
-      assert.equal(await tab(t.pricing).getAttribute("aria-selected"), "true");
+      // getAttribute does not wait for the re-render that End triggers; wait for the selected tab, then assert.
+      await area.locator('[role="tab"][aria-selected="true"]').filter({ hasText: t.pricing }).waitFor().catch(() => {});
+      assert.equal(await tab(t.pricing).getAttribute("aria-selected"), "true", "End selects the last (Pricing) tab");
       await input(t.price).fill("480"); await input(t.inventory).fill("24");
       await save();
       await page.reload({ waitUntil: "load" });
-      assert.equal(await input(t.price).inputValue(), "480"); assert.equal(await input(t.inventory).inputValue(), "24");
+      assert.equal(await input(t.price).inputValue(), "480", "price persists after reload");
+      assert.equal(await input(t.inventory).inputValue(), "24", "inventory persists after reload");
       await capture("form-pricing");
       await page.keyboard.press("Tab");
     });
