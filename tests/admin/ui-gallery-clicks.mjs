@@ -605,6 +605,35 @@ async function readControlScale(page) {
   return { measured, violations };
 }
 
+async function sidebarViewportGate({ page, step, locale, template }) {
+  const rail = page.locator('[data-shell-rail]');
+  const list = rail.locator(':scope > ul');
+  const settings = list.locator(':scope > li').last().getByRole("button", { name: galleryNav(locale).find(group => group.id === "settings").label, exact: true });
+  await settings.waitFor({ state: "visible" });
+  await step(`DS-2 ${locale}/1440 ${template} sidebar fit`, "[READ] scrollHeight/clientHeight/overflow-y", "nav list fits or has auto/scroll overflow at 1440×900", async () => {
+    const size = await list.evaluate(n => ({ scroll: n.scrollHeight, client: n.clientHeight, overflow: getComputedStyle(n).overflowY })); // [READ]
+    assert.ok(size.client > 0, `nav list has a viewport: ${JSON.stringify(size)}`);
+    assert.ok(size.scroll <= size.client || ["auto", "scroll"].includes(size.overflow), `nav list clipped: ${JSON.stringify(size)}`);
+    return JSON.stringify(size);
+  });
+  await step(`DS-2 ${locale}/1440 ${template} sidebar last group`, "click Settings (native list scrolling), read boxes, restore expansion", "last group reachable inside list and viewport; page scroll unchanged", async () => {
+    const expanded = await settings.getAttribute("aria-expanded");
+    const before = await list.evaluate(n => ({ top: n.scrollTop, pageY: window.scrollY, bottom: n.getBoundingClientRect().bottom })); // [READ]
+    const prior = await settings.boundingBox();
+    try {
+      await settings.click();
+      const box = await settings.boundingBox();
+      const viewport = await list.boundingBox();
+      const after = await list.evaluate(n => ({ top: n.scrollTop, pageY: window.scrollY })); // [READ]
+      assert.ok(box.y >= viewport.y - 1 && box.y + box.height <= viewport.y + viewport.height + 1 && box.y >= 0 && box.y + box.height <= 900, `Settings outside scroll viewport: ${JSON.stringify({ box, viewport })}`);
+      if (prior.y + prior.height > before.bottom + 1) assert.ok(after.top > before.top, `Settings did not scroll into view: ${JSON.stringify({ before, after })}`);
+      assert.equal(after.pageY, before.pageY, "only the sidebar list scrolls");
+    } finally {
+      if (await settings.getAttribute("aria-expanded") !== expanded) await settings.click();
+    }
+  });
+}
+
 async function ds2Matrix({ page, step }) {
   const { mkdir, readFile, writeFile } = await import("node:fs/promises");
   const { createRequire } = await import("node:module");
@@ -653,12 +682,14 @@ async function ds2Matrix({ page, step }) {
       await page.reload({ waitUntil: "load" });
       await page.getByRole("heading", { level: 1, name: galleryCopy[locale].title }).waitFor();
       await step(`DS-2 ${locale}/${width} components visual`, "screenshot + axe + visual-lint", "axe all impacts 0; blocking layout 0", () => capture("components", locale, width, height));
+      if (width === 1440) await sidebarViewportGate({ page, step, locale, template: "components" });
       await clickJourney({ page, step, copy: galleryCopy[locale], locale, mobile: width < 768, ds2Nested: true });
       for (const template of ["list", "detail", "form", "settings"]) {
         const response = await page.goto(`${origin}/${locale}/ui-gallery/templates/${template}`, { waitUntil: "load" });
         assert.equal(response.status(), 200);
         await page.locator(`[data-template="${template}"]`).waitFor();
         await step(`DS-2 ${locale}/${width} ${template} visual`, "screenshot + axe + visual-lint", "axe all impacts 0; blocking layout 0", () => capture(template, locale, width, height));
+        if (width === 1440) await sidebarViewportGate({ page, step, locale, template });
         await templateJourney({ page, step, t: templateCopy[locale], template, locale, mobile: width < 768, capture: name => capture(name, locale, width, height) });
       }
     }
