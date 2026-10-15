@@ -1,0 +1,32 @@
+{
+  "run_id": "buyer-route-table-r4-branch-f62c1b946",
+  "source_sha": "f62c1b946fb828587d7c6d1e9f6bde258061c19a",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/contractdrift",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+    "-base",
+    "e4dad98cc"
+  ],
+  "exit": 1,
+  "mode": "STATIC_SOURCE_ONLY; tests NOT_RUN",
+  "started_at": "2026-10-15T09:32:24.862870+00:00",
+  "finished_at": "2026-10-15T09:32:26.791891+00:00",
+  "elapsed_seconds": 1.929,
+  "timeout_seconds": 180,
+  "log": "output/buyer-route-table/round4/branch-report.txt",
+  "base": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "binary_sha256": "35bfce5021f211bb0b2e7f50dddb1ded53301dc8adfa7439c41b42c2e94c50b0",
+  "summary": [
+    "SUMMARY routes go=328 contract=165 bff=301; errors=2 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=2 METHOD_MISMATCH=4 UNRESOLVED=53"
+  ],
+  "errors": [
+    "ERROR (TOUCHED) UNRESOLVED   cmd/api/buyer.go:89, cmd/api/buyer.go:97, cmd/api/buyer.go:181, cmd/api/buyer_payment.go:86, cmd/api/cvs.go:39, cmd/api/cvs.go:51 opaque Go handler dispatch buildBuyerHandler; route/method coverage is unknown",
+    "ERROR (TOUCHED) UNRESOLVED   cmd/api/buyer.go:97, cmd/api/buyer.go:181, cmd/api/buyer_payment.go:86, cmd/api/cvs.go:39, cmd/api/cvs.go:51 opaque Go handler dispatch buildBuyerWithCVS; route/method coverage is unknown"
+  ],
+  "touched": [
+    "ERROR (TOUCHED) UNRESOLVED   cmd/api/buyer.go:89, cmd/api/buyer.go:97, cmd/api/buyer.go:181, cmd/api/buyer_payment.go:86, cmd/api/cvs.go:39, cmd/api/cvs.go:51 opaque Go handler dispatch buildBuyerHandler; route/method coverage is unknown",
+    "ERROR (TOUCHED) UNRESOLVED   cmd/api/buyer.go:97, cmd/api/buyer.go:181, cmd/api/buyer_payment.go:86, cmd/api/cvs.go:39, cmd/api/cvs.go:51 opaque Go handler dispatch buildBuyerWithCVS; route/method coverage is unknown"
+  ],
+  "report_sha256": "58fb14790a34a7ee93f4dc94697e43d3f5a899a1cad4e28e6b57173c63fbe7b0"
+}

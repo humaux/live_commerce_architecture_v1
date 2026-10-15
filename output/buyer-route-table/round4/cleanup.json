@@ -1,0 +1,39 @@
+{
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "removed_task_owned_only": [
+    {
+      "path": "output/buyer-route-table/round4/pay70-scratch",
+      "bytes": 427593727
+    },
+    {
+      "path": "output/buyer-route-table/round4/contractdrift",
+      "bytes": 6018690
+    },
+    {
+      "path": "output/buyer-route-table/round4/contractdrift-debug",
+      "bytes": 6018738
+    },
+    {
+      "path": "output/buyer-route-table/round4/pay70-api",
+      "bytes": 25587522
+    },
+    {
+      "path": "output/buyer-route-table/round4/factory-debug-source.backup",
+      "bytes": 11632
+    },
+    {
+      "path": "output/buyer-route-table/round4/build.log",
+      "bytes": 0
+    },
+    {
+      "path": "output/buyer-route-table/round4/vet.log",
+      "bytes": 0
+    },
+    {
+      "path": "output/buyer-route-table/round4/build-cli.log",
+      "bytes": 0
+    }
+  ],
+  "reclaimed_bytes": 465230309,
+  "processes": "All foreground build/CLI processes exited; no servers, ports, containers or HTTP fixtures started. CLI snapshots removed by scanner defer."
+}

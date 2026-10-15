@@ -1,0 +1,17 @@
+{
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "starting_sha": "b5aabc8a41c2d007eacb2de3ae40efa3512a7c1d",
+  "files": {
+    "cmd/api/buyer.go": "a58aeb386cea8ff3c35d5c2ed048d8d8f0ce9a2699c77dee74a50c652ba598e0",
+    "cmd/api/buyer_feed_test.go": "5f941fda3cad8ed5b79efdf39bc074e2284b4506d70031e4d887892cfd640f58",
+    "contracts/buyer-routes-v1.md": "104c7f0d0e07c9096cf44c300e4e7c7ec5dfc77e9e0879b1c2cc8059b2cd6219",
+    "internal/attribution/feed.go": "038c20954a45857f489fe2d06d18ee107f4de0f0e43eec3873fa9ae3ffef7b5e",
+    "internal/buyerhttp/routes.go": "2b165d35c508027d1ef5181576b748150ef100991603985735b803c64e7d1474",
+    "internal/buyerhttp/routes_test.go": "3d2ff1f70b579d412f1e32f5912754032474538b6e123472ce5d5a04e4075016",
+    "scripts/dev/contractdrift/go_handler_factory.go": "129e172b53a0473dd951f955b762a812f2059fc14f7bea1b6c89ad592bc9df91",
+    "scripts/dev/contractdrift/go_handler_factory_cli_test.go": "8122ace84f1f689df6d6779bd4a1aaa9e03c110780f59b1c316767acf00734b8",
+    "scripts/dev/contractdrift/go_route_table_cli_test.go": "7b4d7c68e88162a7054db5c1269cc0cc8a13da804ccd6f5a90f3a15951bc2298",
+    "scripts/dev/contractdrift/go_route_table_exact_cli_test.go": "c4f42ff61caeaf215a33006f791086a10018be58ad813bff294d8f15bd65a1f7",
+    "scripts/dev/contractdrift/go_route_tables.go": "566b917060d8ddd4f5b922ab81343ae9582e2b985a9359cf5ba6638418c9efc5"
+  }
+}

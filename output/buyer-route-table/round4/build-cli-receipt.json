@@ -1,0 +1,19 @@
+{
+  "run_id": "buyer-route-table-r4-build-cli-8025b5010",
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "command": [
+    "go",
+    "build",
+    "-o",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/contractdrift",
+    "./scripts/dev/contractdrift"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "exit": 0,
+  "mode": "STATIC_SOURCE_ONLY; tests NOT_RUN",
+  "started_at": "2026-10-15T09:35:57.804181+00:00",
+  "finished_at": "2026-10-15T09:35:58.093894+00:00",
+  "elapsed_seconds": 0.29,
+  "timeout_seconds": 180,
+  "log": "output/buyer-route-table/round4/build-cli-report.txt"
+}

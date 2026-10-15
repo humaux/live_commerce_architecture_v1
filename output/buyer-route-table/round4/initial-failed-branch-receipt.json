@@ -1,0 +1,23 @@
+{
+  "run_id": "buyer-route-table-r4-branch-17dd04b56",
+  "source_sha": "17dd04b560e8e507d5f278e7cc8c78455030a9fe",
+  "base": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "mode": "STATIC_SOURCE_ONLY; tests NOT_RUN",
+  "binary_sha256": "d3c903a6696bcee6a049109cc1b6be105fe6877ebb6c352103a704dfe911e3ec",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/contractdrift",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+    "-base",
+    "e4dad98cc"
+  ],
+  "timeout_seconds": 120,
+  "started_at": "2026-10-15T09:31:15.501981+00:00",
+  "finished_at": "2026-10-15T09:31:16.762241+00:00",
+  "elapsed_seconds": 1.26,
+  "exit": 2,
+  "summary": [],
+  "errors": [],
+  "touched": [],
+  "report_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

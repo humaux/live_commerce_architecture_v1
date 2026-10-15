@@ -1,0 +1,84 @@
+TRACE closure Middleware validtrue forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/httperror Middleware result0 dispatchfalse => true
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/buyerhttp New result0 dispatchfalse => true
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/attribution FeedHandler result0 dispatchtrue => true
+TRACE closure Middleware validtrue forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/httperror Middleware result0 dispatchfalse => true
+TRACE closure mountFeed validtrue forwardedfalse
+TRACE closure mountFeed validfalse forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/cmd/api mountFeed result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/cmd/api buildBuyerWithCVS result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/cmd/api buildBuyerHandler result0 dispatchfalse => false
+TRACE closure Middleware validtrue forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/httperror Middleware result0 dispatchfalse => true
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/buyerhttp New result0 dispatchfalse => true
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/attribution FeedHandler result0 dispatchtrue => true
+TRACE closure Middleware validtrue forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/httperror Middleware result0 dispatchfalse => true
+TRACE closure mountFeed validtrue forwardedfalse
+TRACE closure mountFeed validfalse forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/cmd/api mountFeed result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/cmd/api buildBuyerWithCVS result0 dispatchfalse => false
+TRACE closure buildStoreDomainNonceHandlerOn validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/cmd/api buildStoreDomainNonceHandlerOn result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/cmd/api buildStoreDomainNonceHandler result0 dispatchfalse => false
+TRACE closure buildStoreDomainNonceHandlerOn validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/cmd/api buildStoreDomainNonceHandlerOn result0 dispatchfalse => false
+TRACE closure WebhookHandler validtrue forwardedfalse
+TRACE closure WebhookHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/billing WebhookHandler result0 dispatchfalse => false
+TRACE closure newLimitedRawHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta newLimitedRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta newRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta NewHandler result0 dispatchfalse => false
+TRACE closure newLimitedRawHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta newLimitedRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta newRawHandler result0 dispatchfalse => false
+TRACE closure newLimitedRawHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta newLimitedRawHandler result0 dispatchfalse => false
+TRACE closure newLimitedRawHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta newLimitedRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta newRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta NewInboxHandler result0 dispatchfalse => false
+TRACE closure webhookDispatch validfalse forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta webhookDispatch result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta NewWebhookRouter result0 dispatchfalse => false
+TRACE closure webhookDispatch validfalse forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/integrations/meta webhookDispatch result0 dispatchfalse => false
+TRACE closure Handler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/internal/tlsask Handler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/buyerhttp New result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/cmd/api buildBuyerWithCVS result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/cmd/api buildBuyerHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/buyerhttp New result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/cmd/api buildBuyerWithCVS result0 dispatchfalse => false
+TRACE closure buildStoreDomainNonceHandlerOn validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/cmd/api buildStoreDomainNonceHandlerOn result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/cmd/api buildStoreDomainNonceHandler result0 dispatchfalse => false
+TRACE closure buildStoreDomainNonceHandlerOn validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/cmd/api buildStoreDomainNonceHandlerOn result0 dispatchfalse => false
+TRACE closure FeedHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/attribution FeedHandler result0 dispatchfalse => false
+TRACE closure WebhookHandler validtrue forwardedfalse
+TRACE closure WebhookHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/billing WebhookHandler result0 dispatchfalse => false
+TRACE closure newLimitedRawHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta newLimitedRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta newRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta NewHandler result0 dispatchfalse => false
+TRACE closure newLimitedRawHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta newLimitedRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta newRawHandler result0 dispatchfalse => false
+TRACE closure newLimitedRawHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta newLimitedRawHandler result0 dispatchfalse => false
+TRACE closure newLimitedRawHandler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta newLimitedRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta newRawHandler result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta NewInboxHandler result0 dispatchfalse => false
+TRACE closure webhookDispatch validfalse forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta webhookDispatch result0 dispatchfalse => false
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta NewWebhookRouter result0 dispatchfalse => false
+TRACE closure webhookDispatch validfalse forwardedtrue
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/integrations/meta webhookDispatch result0 dispatchfalse => false
+TRACE closure Handler validfalse forwardedfalse
+TRACE function /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/playwright/ci-contract-drift/base-source-4028045840/internal/tlsask Handler result0 dispatchfalse => false

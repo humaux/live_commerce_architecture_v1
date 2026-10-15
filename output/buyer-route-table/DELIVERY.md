@@ -1,3 +1,160 @@
+BLOCKED — Round 4: both required built-CLI scenarios exit 1, errors=2. Strict inline-terminal rejection exposes the existing feed-auth refusal. Build/vet E1; prepush OK; gofmt empty. No runtime/CI acceptance.
+
+# BUYER-ROUTE-TABLE — Round 4 (2026-10-15)
+
+Source SHA: `8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945`. Starting HEAD: `b5aabc8a41c2d007eacb2de3ae40efa3512a7c1d`.
+Base: `e4dad98cc322d35709b475de25063efc92e5d866`.
+Branch/worktree: `unit/buyer-route-table`, `/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table`.
+Coord: `8569112d-4a60-4fd1-8763-78c6172f39ff`; executor Codex, integration scope.
+Actual runtime model/reasoning identifiers are not independently exposed. No child agents.
+Evidence mode: **STATIC_SOURCE_ONLY**. Go tests, mutations/red→green, runtime,
+PG, browsers, CI and independent acceptance: **NOT_RUN** per the owner restriction.
+This section supersedes earlier READY_FOR_CI statuses below.
+
+## Targeted changes and commits
+
+| Review item | Change | Commit(s) |
+| --- | --- | --- |
+| 1 — hidden path dispatch | Both table resolution and factory Dispatch proof check reached functions. Unlisted Path/RawPath/RequestURI comparisons, switch cases, prefix/suffix calls and indexed lookups stay opaque; literal/constant equality must name an actual nonparameter row. Transformed path comparisons/switches fail closed. Row.Path is distinguished from request.URL.Path. | `21540055e`, `c4cd5456b`, `f62c1b946`, `8025b5010` |
+| 2 — inline terminal | Removed terminal relaxation entirely. Inline FuncLits must forward a proved handler; they never gain leaf coverage from a table mount guard. Actual consumed Dispatch functions and handler parameters retain their proof. | `13ddd1dd0` |
+| 3 — mutable exports | `routeRows` and `feedRows` are private slices; exported `Routes` and `FeedRoutes` are fieldless struct values exposing HasPrefix/MatchesPath. `mount=...` binds the marker to this validated form. Exported row slices are rejected; full-range owning-package read whitelist remains. External indexing/field writes through these values are a compile-time impossibility. CI fixtures now use private rows; tail counterexamples remain valid source. | `5b418bc5b`, `17dd04b56` |
+| 4 — duplicate feed path | Removed unused production `feedPath`; TestMountFeed owns its fixture path and asserts FeedRoutes.MatchesPath before use. | `a13b7c5e3` |
+| 5 — line cites | Corrected primary noBody `:21`, PrimaryOrigin `:25`, proof decodeJSON `:36`, and every other stale pointer found in the canonical index. All 80 references re-read, with line text and source SHA256 in `round4/citations.json`; checked against committed source. | `029cf3137` |
+
+Runtime route rows, precedence, matching, method policy and authentication/response
+implementation remain intact. No baseline edits, subtraction from opaque spans,
+namespace exemptions or changes to owning contracts. Private storage changes do
+not change table order or values. Final delivery-only edits do not alter the
+source binding: `round4/source-hashes.json` covers all 11 changed source/doc files.
+
+## Required existing literal comparisons
+
+All are accepted because their resolved values equal actual table row paths;
+`round4/literal-comparisons.json` records the row locations.
+
+| Handler source | Exact table paths checked |
+| --- | --- |
+| `handler.go:147` | `/v1/buyer/catalog`, `/v1/buyer/checkout-options`, `/v1/buyer/orders`, `v2Prefix+"products"` = `/v1/buyer/catalog/v2/products` |
+| `handler.go:159` | `claimLinkPath` = `/v1/buyer/claim-link`; `claimRedeemPath` = `/v1/buyer/claim-link/redeem` |
+| `handler.go:291` | `/v1/buyer/session` |
+| `handler.go:301` | The same claim-link/redeem pair |
+
+Existing paired same-request URL.EscapedPath/URL.Path comparisons at 146/159/315
+remain canonicality checks. Pattern-helper semantics and arbitrary Go alias/data
+flow remain outside this narrow recognizer's runtime proof; no runtime-completeness
+claim is made. Unknown supported path decisions retain UNRESOLVED.
+
+## CLI counterexamples and the exact red assertions
+
+These are committed **real built-CLI** tests using the existing Git/OS process
+helpers, not a parser stand-in. **Execution and fix-reversion mutations NOT_RUN**
+locally. The assertions below describe what CI must demonstrate; they are not a
+red→green PASS.
+
+| New counterexample | Assertion that must go red when its corresponding fix is reverted |
+| --- | --- |
+| `TestGoRouteTableExtraPathDispatchRejectedCLI/path equality` — extra `/v1/table/debug` before both consumers | exit=1, contains UNRESOLVED, **contains no GO_ROUTE_TABLE**; reverted reachability-only proof resolves it |
+| Same test `/raw path equality` | same rejection assertion for URL.RawPath |
+| Same test `/request URI equality` | same rejection assertion for RequestURI |
+| Same test `/constant equality` | same rejection assertion for constant debugPath |
+| Same test `/path switch` | same rejection assertion for switch URL.Path with unlisted case |
+| Same test `/prefix` | same rejection assertion for HasPrefix(URL.Path, unlisted prefix) |
+| Same test `/suffix` | same rejection assertion for HasSuffix(URL.Path, unlisted suffix) |
+| Same test `/map lookup` | same rejection assertion for map[URL.Path] |
+| Same test `/transformed path` | same rejection assertion when TrimPrefix(path) is compared with a listed literal |
+| Same test `/transformed switch` | same rejection assertion when transformed switch tag has a listed case |
+| Same test `/reached helper` | same rejection assertion for a called helper comparing URL.Path with debugPath |
+| `TestGoHandlerFactoryInlineTerminalRejectedCLI` — inline 204 under exact table mount guard | exit=1, both buildComposite/buildTop opaque findings present, **neither resolved factory note present**; reverting terminal fix restores the false proofs |
+| `TestGoRouteTableMutationRejectedCLI/prefix` and `/exact` — owning-package rows[0].Method assignment | exit=1, invalid/incompletely-consumed table finding, **no GO_ROUTE_TABLE**; removing the owning-package write guard makes the counterexample known |
+| `TestGoRouteTableExportedMutationRejectedCLI` — old exported table + importing-package method assignment | exit=1, UNRESOLVED, **no GO_ROUTE_TABLE**; reverting private-table/facade recognition lets this exported slice resolve again. The new runtime facade itself cannot be indexed; no local compile-failure test was run |
+| `TestGoRouteTableListedPathPolicyAcceptedCLI` — listed constant equality plus tagless switch | exit=0, no UNRESOLVED, GO_ROUTE_TABLE present; reverting nil-tag handling reproduces the CLI panic, not success |
+
+The feed fixture equality assertion is also committed in TestMountFeed. Test suites
+and all fix-reversion runs belong to CI; no local test command was executed.
+
+## Required static acceptance — FAIL, honest BLOCKED
+
+Both commands used the same built scanner binary (SHA256 recorded in receipts):
+
+```text
+output/buyer-route-table/round4/contractdrift -root /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table -base e4dad98cc
+output/buyer-route-table/round4/contractdrift -root /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round4/pay70-scratch -base e4dad98cc
+```
+
+Both exact stdout SUMMARY lines are identical:
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=2 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=2 METHOD_MISMATCH=4 UNRESOLVED=53
+```
+
+`round4/branch-receipt.json` and `round4/pay70-receipt.json`: exit **1** each;
+**2 ERROR (TOUCHED) UNRESOLVED** each, on `buildBuyerHandler` and
+`buildBuyerWithCVS`. Full stdout/stderr are retained in `round4/branch-report.txt`,
+`round4/branch-stderr.log`, `round4/pay70-report.txt`, `round4/pay70-stderr.log`.
+These are failed acceptance receipts, not errors=0.
+
+The #70 scenario uses the Round 3 method: task-local shared clone detached at
+this exact source SHA; only `cmd/api/buyer_payment.go` overlaid from pinned
+`51273344fc12ff4c8062634fdf749d536958bda7`, SHA256
+`f460f3f4e97f9d9dfc090a3be5094e3c9d01f71545eebbcaf9321360a40a044f`.
+`go build -o <task-output>/pay70-api ./cmd/api` exits **0** on first attempt;
+no extra #70 files required. Setup and command receipts are in `round4/pay70-setup.json`,
+`round4/pay70-build-receipt.json`, `round4/pay70-clone-receipt.json`,
+`round4/pay70-checkout-receipt.json`.
+
+### Exact blocker
+
+`cmd/api/buyer.go:188` passes an inline FuncLit returning 401 through
+httperror.Middleware and calls ServeHTTP in mountFeed's BFF-auth refusal branch.
+The tightened item-2 rule rejects **any inline terminal leaf**. The actual
+buyerhttp.New/ServeHTTP and attribution.FeedHandler leaves still prove, but this
+refusal leaf poisons mountFeed and therefore both parent factories. Diagnostic
+built-CLI traces in `round4/factory-debug-stderr.log` show that chain; temporary
+instrumentation was restored, and is absent from committed source.
+
+Resolving this requires an explicit scope/rule ruling for the real refusal path.
+This round leaves the runtime authentication flow intact and does not add a
+status-code exception, parameter-name exception, baseline or fake table coverage.
+Required errors=0 is **unmet**; status is **BLOCKED**, not READY_FOR_CI.
+
+Initial source `17dd04b56` also hit an AST nil-tag panic. Its failed exit-2
+receipt/stdout/stderr are preserved as `round4/initial-failed-branch-*`.
+The nil-tag fix is committed; final CLI runs finish normally with exit 1.
+Earlier factory-failure receipts at `f62c1b946` remain `round4/factory-failed-*`.
+
+## Other checks, cleanup and limits
+
+| Command | Exit / observed result | Evidence |
+| --- | --- | --- |
+| `go build ./...` | 0 — E1 | `round4/build-receipt.json` and stdout/stderr |
+| `go vet ./internal/buyerhttp ./internal/attribution ./cmd/api ./scripts/dev/contractdrift` | 0 — E1, includes test compilation/static analysis; no execution | `round4/vet-receipt.json` |
+| `go build -o output/buyer-route-table/round4/contractdrift ./scripts/dev/contractdrift` | 0 — E1 | `round4/build-cli-receipt.json` |
+| `bash output/integrator/tools/prepush.sh /Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table e4dad98cc` | 0, prints **prepush: OK** | `round4/prepush.log`, `round4/static-checks.json` |
+| `gofmt -l` on all changed Go files vs e4dad98cc | 0, **empty output** | `round4/gofmt.log`, `round4/static-checks.json` |
+| `git diff b5aabc8a4 --check -- cmd internal scripts contracts` | 0, empty output | `round4/source-diff-check.log` |
+
+The existing prepush tool was absent in this worktree. The identical script
+from the main workspace's output/integrator/tools was temporarily copied to the
+specified relative location, executed unchanged, then removed. Its path/hash are
+recorded. Header/package blank lines remain intact; depmap check passes.
+An additional whole-unit `git diff e4dad98cc --check` exits 2 due to trailing
+spaces in **historical raw Round 3 CLI stdout**, retained as evidence rather than
+rewritten; `round4/diff-check.log` records it. Source-only whitespace check passes.
+
+Task-owned scratch clone, binaries, debug source backup and obsolete temporary
+build logs were removed (465230309 bytes); `round4/cleanup.json` lists them.
+All foreground processes exited. No servers, browser sessions, ports, containers
+or runtime fixtures were started. Failure evidence is retained. Source and
+nonmanifest evidence SHA256 receipts are `round4/source-hashes.json` and
+`round4/evidence-hashes.json`.
+
+No push, PR, merge, deployment, live credential/payment/customer action or data
+mutation. No E2/E3/E4 success or independent-acceptance claim. Handoff requires
+the refusal-path ruling above, then both errors=0 CLI scenarios and CI/independent
+review on the resulting exact source SHA.
+
+---
+
 READY_FOR_CI — Round 3: both required built-CLI scenarios exit 0, errors=0, no TOUCHED. Build/vet E1; automated static acceptance only. All Go tests, mutation/red→green, runtime, CI and independent acceptance NOT_RUN.
 
 # BUYER-ROUTE-TABLE — Round 3 (2026-10-15)
