@@ -381,7 +381,150 @@ func goTableConsumer(fn *goFunc, name string, methods bool) bool {
 }
 
 func (s *goScanner) goTableReaches(table goRouteTable, entry *goFunc) bool {
-	return s.goTablePathPolicy(table, entry)
+	seen := map[*goFunc]bool{}
+	queue := []*goFunc{entry}
+	for len(queue) > 0 {
+		fn := queue[0]
+		queue = queue[1:]
+		if seen[fn] {
+			continue
+		}
+		seen[fn] = true
+		if !s.goTablePathPolicy(table, fn) {
+			return false
+		}
+		ast.Inspect(fn.AST.Body, func(n ast.Node) bool {
+			if call, ok := n.(*ast.CallExpr); ok {
+				if callee := table.Package.Named[goCallName(call.Fun)]; callee != nil {
+					queue = append(queue, callee)
+				}
+			}
+			return true
+		})
+	}
+	for _, fn := range table.Consumers {
+		if !seen[fn] {
+			return false
+		}
+	}
+	return true
+}
+
+// Reachability alone cannot prove a complete inventory: a dispatcher may serve
+// another path before calling either consumer. Check every reached function's
+// request-path decisions, including constants, RawPath and RequestURI. Only
+// table calls, listed literal equality and same-URL canonicality checks qualify.
+func (s *goScanner) goTablePathPolicy(table goRouteTable, fn *goFunc) bool {
+	direct := func(expr ast.Expr) bool {
+		sel, ok := expr.(*ast.SelectorExpr)
+		if !ok {
+			return false
+		}
+		if sel.Sel.Name == "RequestURI" {
+			_, ok := sel.X.(*ast.Ident)
+			return ok
+		}
+		url, ok := sel.X.(*ast.SelectorExpr)
+		return ok && url.Sel.Name == "URL" && (sel.Sel.Name == "Path" || sel.Sel.Name == "RawPath")
+	}
+	consumer := func(call *ast.CallExpr) bool {
+		id, ok := call.Fun.(*ast.Ident)
+		if ok {
+			for _, target := range table.Consumers {
+				if table.Package.Named[id.Name] == target {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	path := func(expr ast.Expr) bool {
+		if expr == nil { // tagless switch has no path expression
+			return false
+		}
+		found := false
+		ast.Inspect(expr, func(n ast.Node) bool {
+			if call, ok := n.(*ast.CallExpr); ok && consumer(call) {
+				return false
+			}
+			if expr, ok := n.(ast.Expr); ok && direct(expr) {
+				found = true
+			}
+			return true
+		})
+		return found
+	}
+	listed := func(expr ast.Expr) bool {
+		s.Package, s.File = table.Package, fn.File
+		value := s.expr(expr, table.Package.Globals)
+		if value.Unknown || len(value.Text) != 1 {
+			return false
+		}
+		for _, row := range table.Routes {
+			if row.Path == value.Text[0] && !strings.Contains(row.Path, "{") {
+				return true
+			}
+		}
+		return false
+	}
+	canonical := func(a, b ast.Expr) bool {
+		plain, ok := a.(*ast.SelectorExpr)
+		if !ok || plain.Sel.Name != "Path" {
+			return false
+		}
+		call, ok := b.(*ast.CallExpr)
+		if !ok || len(call.Args) != 0 {
+			return false
+		}
+		escaped, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok || escaped.Sel.Name != "EscapedPath" {
+			return false
+		}
+		url, aOK := plain.X.(*ast.SelectorExpr)
+		other, bOK := escaped.X.(*ast.SelectorExpr)
+		if !aOK || !bOK || url.Sel.Name != "URL" || other.Sel.Name != "URL" {
+			return false
+		}
+		x, xOK := url.X.(*ast.Ident)
+		y, yOK := other.X.(*ast.Ident)
+		return xOK && yOK && x.Obj != nil && x.Obj == y.Obj
+	}
+	valid := true
+	ast.Inspect(fn.AST.Body, func(n ast.Node) bool {
+		switch node := n.(type) {
+		case *ast.BinaryExpr:
+			switch node.Op {
+			case token.EQL, token.NEQ, token.LSS, token.LEQ, token.GTR, token.GEQ:
+				if path(node.X) || path(node.Y) {
+					equal := node.Op == token.EQL || node.Op == token.NEQ
+					valid = valid && equal && (canonical(node.X, node.Y) || canonical(node.Y, node.X) ||
+						direct(node.X) && listed(node.Y) || direct(node.Y) && listed(node.X))
+				}
+			}
+		case *ast.SwitchStmt:
+			if path(node.Tag) {
+				valid = direct(node.Tag) && valid
+				for _, stmt := range node.Body.List {
+					for _, expr := range stmt.(*ast.CaseClause).List {
+						valid = listed(expr) && valid
+					}
+				}
+			}
+		case *ast.CallExpr:
+			if consumer(node) {
+				return false
+			}
+			if name := goCallName(node.Fun); name == "HasPrefix" || name == "HasSuffix" {
+				for _, arg := range node.Args {
+					valid = !path(arg) && valid
+				}
+			}
+		case *ast.IndexExpr:
+			valid = !path(node.Index) && valid
+		}
+		return valid
+	})
+	return valid
 }
 
 // tableMount recognizes only a call on the imported table to a receiver method
