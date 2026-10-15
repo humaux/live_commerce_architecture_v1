@@ -1,0 +1,20 @@
+{
+  "run_id": "r8-gofmt",
+  "source_sha": "7b19d9237030f9bbf7e9c5066aa78e6d3ffa3e0e",
+  "command": [
+    "gofmt",
+    "-l",
+    "scripts/dev/contractdrift"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:42:54.690268+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 0.032,
+  "ended_at": "2026-10-15T10:42:54.723194+00:00",
+  "summary": [],
+  "errors": 0,
+  "touched": 0
+}

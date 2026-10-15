@@ -436,8 +436,8 @@ same-package functions, const blocks, var/type specs; only row data and row-only
 targets are excluded. Cross-package helpers (e.g. `command.ValidID`) are **NOT frozen**
 and are covered by normal review and other gates. Changed/missing dispatcher pins are
 fatal UNRESOLVED for every table row, independent of TOUCHED or legacy baseline;
-a pin for a table that cannot be proved is also an error. Pin hash/function-list
-changes require explicit independent reviewer approval, not automatic regeneration.
+a pin for a table that cannot be proved is also an error. Pin hash/function-list/
+declaration-list changes require explicit independent reviewer approval, not automatic regeneration.
 The boundary and canonicalization are documented in
 [engineering/contractdrift.md](../engineering/contractdrift.md).
 

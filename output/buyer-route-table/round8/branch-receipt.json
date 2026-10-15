@@ -1,0 +1,25 @@
+{
+  "run_id": "r8-branch",
+  "source_sha": "7b19d9237030f9bbf7e9c5066aa78e6d3ffa3e0e",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round8/scratch/contractdrift",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+    "-base",
+    "e4dad98cc"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:43:21.266848+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 2.255,
+  "ended_at": "2026-10-15T10:43:23.522647+00:00",
+  "summary": [
+    "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+  ],
+  "errors": 0,
+  "touched": 0,
+  "executable_sha256": "bed4990cbfd973bee083be69e36cb80890cfb80d457b1c79faf7f1658bf5fb43"
+}

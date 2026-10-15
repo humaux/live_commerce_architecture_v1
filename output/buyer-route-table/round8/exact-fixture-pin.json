@@ -1,0 +1,20 @@
+[
+  {
+    "table": "router.Routes",
+    "dispatcher_sha256": "43847f5c3ea2918e1011d8fa0d60b1a54f1ba818580f58e2f80b5ce969f46611",
+    "functions": [
+      "New",
+      "Table.MatchesPath",
+      "allowedMethod",
+      "matchesPath"
+    ],
+    "declarations": [
+      "func New",
+      "func Table.MatchesPath",
+      "func allowedMethod",
+      "func matchesPath",
+      "type Table"
+    ],
+    "reviewed": ""
+  }
+]

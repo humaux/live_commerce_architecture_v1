@@ -1,3 +1,287 @@
+READY_FOR_INDEPENDENT_REVIEW — Round 8. E3 **STATIC built-CLI acceptance** at `7b19d9237030f9bbf7e9c5066aa78e6d3ffa3e0e`: branch and pinned #70 overlay exit0/errors=0/no TOUCHED. Both reviewer mutations now produce 46 per-row freeze ERRORs each. E1 build/vet/gofmt/prepush passed. All local Go tests, CI and independent r8 review NOT_RUN. No push.
+
+# BUYER-ROUTE-TABLE — Round 8 (2026-10-15)
+
+Start `2d8f4604efebb6ef5a593df166e845197bf69b5f`; branch `unit/buyer-route-table`; worktree `.worktrees/buyer-route-table`; existing PR #71. Comparison base `e4dad98cc322d35709b475de25063efc92e5d866`. Acceptance source `7b19d9237030f9bbf7e9c5066aa78e6d3ffa3e0e`. Subsequent delivery changes are docs/evidence only; `round8/source-hashes.json` binds the accepted scanner/tests/pins/runtime bytes and current documentation. Verify those hashes at the final head before using these receipts.
+
+Executor: Codex (GPT-6 system identity; exact backend model ID/effort not independently exposed), integrator scope; no subagents. Coord task `8569112d-4a60-4fd1-8763-78c6172f39ff`, owner `codex-buyer-route-table-r8`. Ownership: `scripts/dev/contractdrift/**`, explicit pin JSON, engineering/gate docs and task output. Runtime/owning route contracts/baseline/dependency locks unchanged.
+
+Read r7 review in full from the main repository's `output/buyer-route-table/review-r7.md` (absent in this worktree), plus the full Round 7 delivery. `round8/review-input.json` records its original path/hash and CHANGES_REQUESTED verdict.
+
+## Changes and commit separation
+
+| Commit | Change |
+| --- | --- |
+| `06e7f82b6` | Counterexamples first: declaration mutations, direct row-target fallback and generic receiver collisions. Pure row-only tests remove their old direct dispatcher calls to match the clarified boundary. Go tests NOT_RUN. |
+| `813b9517b` | Fix traversal/hash, stable qualified keys, declaration inventory and both explicit re-pins; update literal fixture hash anchors. |
+| `7b19d9237` | Document declaration freeze and imported-helper boundary. |
+| Round 8 delivery commit | Receipts, red map, full declaration lists, cleanup and final gate-doc wording. |
+
+P1: signatures/bodies recursively reach same-package const blocks, var/type specs and functions, including functions referenced by a var initializer. Entire const blocks preserve iota positions and inherited expressions. All declarations use comment-free gofmt source; map key expressions are followed as well. The only data variable excluded is the row table itself.
+
+P2-1: removed the global row-target deny set. Row-only targets are unreachable from the graph and stay excluded; a direct reference from any closure body includes the target and its dependencies, including fallback calls/aliases.
+
+P2-2: pointer, IndexExpr and IndexListExpr receivers unwrap to `Recv.Name`; plain funcs remain `Name`. `sort.SliceStable` compares kind, full name, then full source key (file order/position and existing file:line:column function key). Full kind-qualified declaration lists and function lists must both match pins, alongside SHA256.
+
+Pin comment, gate doc and engineering doc explicitly state: cross-package helpers (e.g. `command.ValidID`) are **NOT frozen**; normal review/other gates cover them. No pin regeneration occurs during normal CLI scans.
+
+## New fingerprints and exact declaration lists
+
+Names below are the complete canonical stream order. `func` entries also form the exact `functions` list. A const block key lists sorted member names; the hashed source retains block order. Whole-block freezing intentionally includes unreferenced neighbours. `declarations` is part of the compared pin contract.
+
+### `attribution.FeedRoutes` — 10 functions, 15 declarations
+
+SHA256: `65b79d881371cc738d37cc31aa915eb175f69c43aa24d4d4b0bab231319ebac1`
+
+Reviewed: `2026-10-15 integrator + independent review r7 (closure read; pending r8 re-check)`
+
+```text
+const originHeader
+func FeedHandler
+func FeedRouteTable.MatchesPath
+func addImageLinks
+func feedError
+func feedMethodAllowed
+func feedPathMatches
+func feedPrice
+func imageLinks
+func loadFeed
+func writeFeed
+type FeedRouteTable
+type feedRow
+var feedColumns
+var isoPattern
+```
+
+### `buyerhttp.Routes` — 81 functions, 150 declarations
+
+SHA256: `86608e032f9cd9c41c7caad8c92695d16bc5eca480141aaf6c278d964881ac84`
+
+Reviewed: `2026-10-15 integrator + independent review r7 (closure read; pending r8 re-check)`
+
+```text
+const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute
+const claimDerivedKeyPrefix,claimLinkPath,claimRedeemPath,claimTokenHeader
+const designPreviewPath,designPublishedPath,previewTokenHeader
+const lookupPath,lookupWindow,routeLookup
+const maxJSON
+const orderLinkPath,routeOrderLink
+const routeCVSSelectionGet,routeCVSSelectionOpen,routeCVSSelectionVerify,routeCVSStoreEnter
+const routeTransferGet,routeTransferProof
+const v2DefaultLimit,v2MaxLimit,v2MaxMinorMoney,v2MaxOffset,v2MaxQuery,v2Prefix
+func RouteTable.HasPrefix
+func admittedPaymentMethod
+func allowed
+func attachV2ImageSizes
+func bearer
+func bodyTimeout
+func buyerTransaction
+func canonicalSecret
+func catalogRequest
+func claimToken
+func classify
+func contactDigest
+func cvsHTTPError
+func decodeExact
+func decodeJSON
+func decodeV2Cursor
+func designPGError
+func encodeV2Cursor
+func forbiddenInput
+func handler.ServeHTTP
+func handler.authorizeView
+func handler.catalogV2Get
+func handler.claimRequest
+func handler.collectionMediaGet
+func handler.consentPut
+func handler.cvsRequest
+func handler.cvsServe
+func handler.designGet
+func handler.dispatch
+func handler.mediaGet
+func handler.orderLink
+func handler.orderLookup
+func handler.paymentRequest
+func handler.primaryOriginGet
+func handler.privacyErase
+func handler.privacyExport
+func handler.privacyGet
+func handler.storeMedia
+func handler.transferRequest
+func handler.viewOnly
+func isCatalogV2
+func isDesignRoute
+func isKeylessPaymentRoute
+func isPaymentRoute
+func isPublicRoute
+func keyFor
+func keylessPaymentPath
+func lookupClientIP
+func mapPublicCatalogError
+func matchPattern
+func matchRoute
+func mobileHint
+func noBody
+func normalizeRef
+func oneHeader
+func optInt
+func optionsRequest
+func ordersRequest
+func parseMinor
+func parseV2Query
+func privacyError
+func projectCart
+func projectCatalog
+func projectCheckout
+func projectClaimPreview
+func projectClaimRedeem
+func projectDestination
+func projectOptions
+func projectOrder
+func projectOrders
+func projectPromotion
+func projectQuote
+func projectQuoteLines
+func projectV2
+func scoped
+func storefrontOrigin
+func strictDecode
+func v2Query.digest
+func viewAllowed
+func writeImage
+func writeOK
+type RouteTable
+type cartItemResponse
+type cartResponse
+type catalogImageResponse
+type catalogItemResponse
+type catalogResponse
+type catalogResult
+type checkoutResponse
+type claimPreviewLineResponse
+type claimPreviewResponse
+type claimRedeemResponse
+type claimSkippedResponse
+type codedResponse
+type createdResponse
+type destinationResponse
+type erasureResponse
+type handler
+type homeAddressResponse
+type lineAmountResponse
+type lookupInput
+type optionResponse
+type optionsResponse
+type orderDestinationResponse
+type orderLinkInput
+type orderPickupResponse
+type orderQuoteResponse
+type orderResponse
+type orderServiceResponse
+type orderSnapshotResponse
+type orderSummaryResponse
+type ordersResponse
+type paymentPrepareInput
+type paymentPrepareResponse
+type pickupResponse
+type promotionResponse
+type quoteAmountResponse
+type quoteLineResponse
+type quoteResponse
+type responseError
+type route
+type routeEntry
+type routeKind
+type v2Axis
+type v2Card
+type v2CollectionCard
+type v2CollectionOne
+type v2CollectionRef
+type v2Collections
+type v2Cursor
+type v2Detail
+type v2Image
+type v2ImageSize
+type v2List
+type v2OptionImage
+type v2Query
+type v2Store
+type v2Variant
+var idempotencyKey
+var linkTokenPattern
+var v2Slug
+```
+
+The buyer/feed function sets remain the reviewed 81/10 names. `buildBuyerPayment` remains outside this closure: it is in `cmd/api`, not `internal/buyerhttp`. Pinned #70 overlay changes exactly `cmd/api/buyer_payment.go` from `51273344fc12ff4c8062634fdf749d536958bda7`; its file SHA256 and sole-path diff are in `round8/overlay-manifest.json`.
+
+Fixture literal anchors (source inspection only; not executed Go tests): prefix `f59aafcde055f93dd1f5c01efc3d013c74307bea2ef5b8c960591c5adeed6f5c`, exact `43847f5c3ea2918e1011d8fa0d60b1a54f1ba818580f58e2f80b5ce969f46611`. Corresponding declaration lists are in `round8/prefix-fixture-pin.json` and `exact-fixture-pin.json`.
+
+## Acceptance SUMMARY lines
+
+Branch:
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+Pinned #70 overlay:
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+| Required check | Exit/result | Evidence under `round8/` |
+| --- | --- | --- |
+| `go build ./...` | 0 / E1 | `build-receipt.json` |
+| `go vet ./...` (static compile/vet of test files; no tests run) | 0 / E1 | `vet-receipt.json` |
+| `gofmt -l scripts/dev/contractdrift` | 0, empty output / E1 | `gofmt-receipt.json` |
+| integrator `prepush.sh <worktree> e4dad98cc` | 0, prepush: OK / E1 | `prepush-receipt.json`; delivery wording rechecked in `prepush-delivery-receipt.json` |
+| build actual CLI | 0 / E1 | `build-cli-receipt.json` |
+| built CLI branch vs e4dad98cc | 0, errors=0, no TOUCHED / E3 STATIC | `branch-receipt.json`, `branch-report.txt` |
+| #70 scratch overlay API build | 0 / E1 | `pay70-build-receipt.json` |
+| same built CLI vs #70 scratch overlay | 0, errors=0, no TOUCHED / E3 STATIC | `pay70-receipt.json`, `pay70-report.txt` |
+| reviewer const221→210 scratch mutation | 1, 46 freeze ERRORs / E3 STATIC negative | `green-const-receipt.json`, `green-const-report.txt` |
+| reviewer v2Slug→`.*` scratch mutation | 1, 46 freeze ERRORs / E3 STATIC negative | `green-regexp-receipt.json`, `green-regexp-report.txt` |
+
+Actual CLI binary SHA256: `bed4990cbfd973bee083be69e36cb80890cfb80d457b1c79faf7f1658bf5fb43`. Both acceptance receipts and both negative receipts identify this binary. Commands register run IDs, start/end/exit, a 180-second timeout and terminal completion wake. All runs ended; no background work remains. `round8/run.py` retains the small stdlib receipt wrapper; it never runs Go tests.
+
+## Red map — observed and prospective evidence separated
+
+Before changing the scanner, the CLI built at counterexample commit `06e7f82b6` reproduced both r7 bypasses on an owned `git clone --shared` scratch clone. Each mutation returned exit0/errors=0/GO_ROUTE_TABLE=4/no TOUCHED. After the fix, the identical mutated file bytes return exit1/errors=133, including **46 fatal per-row dispatcher freeze UNRESOLVED** findings each; buyer table coverage is withheld. Other errors follow from withholding that proof. `round8/mutation-comparison.json` records both file hashes, old/new binary hashes and counts; the individual mutation manifests record the exact replacements.
+
+| Condition | New/retained test and red assertion | Executed evidence |
+| --- | --- | --- |
+| One-value const or transitive const change | `TestGoDispatcherFreezeReferencedDeclarationsCLI/one_value_const`, `/transitive_const`: exit1, per-row freeze ERROR, no table proof | Real routeOrderLink221→210: old bypass / new freeze ERROR observed |
+| Reorder iota block | same test `/iota_reorder`: changed member position must reject | NOT_RUN (Go tests forbidden locally) |
+| Regexp var initializer change | same test `/regexp_initializer`: var source change must reject | Real v2Slug→`.*`: old bypass / new freeze ERROR observed |
+| Used type's field change through a var spec | same test `/transitive_type`: changing config.Flag must reject | NOT_RUN |
+| Const comment-only edit | same test `/const_comment`: still exit0 and resolves | NOT_RUN |
+| Row literal edits are data | retained `TestGoDispatcherFreezeRowsAreDataCLI/add` and `/remove`: route counts change while freeze still resolves | NOT_RUN |
+| Row target also directly called as fallback | `TestGoDispatcherFreezeRowTargetAlsoFallbackCLI`: target must be listed, then body change must reject | NOT_RUN |
+| Pure row-only target bodies excluded | retained RowHandlerBodyExcluded/StoredRowTargetsExcluded cases: still resolves after target edit; fixtures now have no direct dispatcher call | NOT_RUN |
+| Func and generic methods share bare name | `TestGoDispatcherFreezeGenericNamesDeterministic`: exact `Same,box.Same,pair.Same`; same hash over 32 alternating root orders | NOT_RUN |
+| Var initializer reaches func/alias/literal/method value | retained PackageFunctionValuesCLI: target body mutation must reject | NOT_RUN |
+| Missing/changed/list/unreviewed/unprovable/orphan pins, stale untouched pin | retained R7 CLI cases: fatal rejection independent of TOUCHED; baseline cannot absorb failure | NOT_RUN |
+| R6 path negatives and R5 refusal boundaries | ExtraPathDispatchRejectedCLI and HandlerFactoryRefusalLeavesCLI unchanged, along with refusal code and inventory oracle | Byte preservation only; test execution NOT_RUN |
+
+Dropping const-block hashing, var source hashing, type traversal, direct-target reachability or generic qualification makes the corresponding negative/positive assertions fail. Apart from the two real CLI mutations, this is a source-based red map, not a claim of observed fixture-test red→green. CI must execute the full contractdrift suite and its remaining counterexamples. No assertions or acceptance thresholds were relaxed.
+
+An extra orchestration assertion wrongly required the intentional const mutation to have no TOUCHED findings; it stopped after recording the required freeze errors and restoring the file. Withheld table proof yields 4 collateral TOUCHED findings for each negative. `mutation-harness-note.json` records this extra assertion error. No source fix was needed, no const rerun was performed, and both normal acceptance scenarios still strictly require no TOUCHED. Initial candidate-tool package-path compilation was rejected because output is outside the Go module; the second targeted build used explicit source files and succeeded. Initial uncommitted exploration receipts (`fix-build`, candidate inspection) are not the acceptance binding. No blocker exceeded two targeted attempts.
+
+## NOT_RUN, risks and cleanup
+
+- **NOT_RUN:** all local Go tests, new and retained fixture CLI test suites, iota/type/comment/row-data/fallback/generic test execution, full CI, independent r8 review. Scope requested by owner; pins retain pending r8 re-check. Author evidence is not E4 or merge approval.
+- **NOT_RUN:** real HTTP runtime routing, transport/differential gates, REAL_PG, browser real-click, SANDBOX/LIVE/release. The executed CLI checks are static inventory evidence only.
+- Cross-package helper implementations remain unfrozen; use normal review and other gates. Var initializer source is frozen, runtime mutable values are not snapshots. Same-name method inclusion and whole const blocks are conservative and may require reviewed repins for unrelated neighbouring edits.
+- `round8/preservation-audit.json` verifies no `cmd/` or `internal/` diff from starting HEAD and byte preservation of R6 negatives, refusal tests/code and repository inventory tests. Existing routing/runtime code, route contracts, dependency locks and legacy baseline are untouched.
+- Three changed Go files indexed (60 entities, status done); `goDispatcherFingerprint` linked to Humaux fix `82d184ed-c652-4dba-9df2-b8902069ed43`. Decisions/fix/acceptance stored; own canvas updated.
+- Deleted only this round's owned scratch clone, candidate tools, fixture source trees and binaries: **482859965 bytes**. `round8/cleanup.json` records removal. Unique failure/success evidence retained. No task servers, ports or containers were created; all command processes ended. No push, PR mutation, merge or deployment.
+- Rollback point: start `2d8f4604efebb6ef5a593df166e845197bf69b5f`; round-specific commits are separate and can be reverted in reverse order without resetting unrelated work.
+
+---
+
+# Historical delivery below — superseded by Round 8 for this unit
+
 READY_FOR_INDEPENDENT_REVIEW — Round 7. E3 **STATIC built-CLI acceptance** at source `5f6f27b17fc8ccceb5b3f9211db1f0949e04409a`: branch and pinned #70 overlay both exit 0, errors=0, no TOUCHED. E1 build/vet/gofmt/prepush passed. Go tests, observed mutation red→green, CI and independent review NOT_RUN. Pins remain pending independent approval; no push.
 
 # BUYER-ROUTE-TABLE — Round 7 (2026-10-15)

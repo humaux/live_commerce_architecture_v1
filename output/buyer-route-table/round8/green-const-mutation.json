@@ -1,0 +1,6 @@
+{
+  "file": "internal/buyerhttp/orderlink.go",
+  "old": "routeOrderLink routeKind = 221",
+  "new": "routeOrderLink routeKind = 210",
+  "mutated_sha256": "ef55771ea3d4715209c3888aa8b4db4a8e0c5891068a6a413e76bd686c63e792"
+}
