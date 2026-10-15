@@ -256,3 +256,7 @@ Local commands above do not provide E3. No runtime evidence files or screenshots
 - The wrapper captures all-impact axe including minor/moderate; any such finding intentionally fails the gate. Incomplete/aborted captures are not PASS. Existing runner timeouts and artifact retention remain integrator-owned.
 - No blocker was attempted three times; no BLOCKED item was suppressed. Unavailable local runtime checks are intentionally NOT_RUN per authorization.
 - Integrator owns pushing branch/PR/CI, current-SHA receipts, independent visual review and owner screenshot review. DS-1 is not signed off; DS-2 remains gallery-only until those gates and owner approval pass.
+
+> Integrator ruling 2026-10-15 on Round 3b "BLOCKED": the touched-file Prettier check was a card error — those files were already
+> non-Prettier at base and CI enforces no Prettier gate (no prettier step in .github/workflows or scripts/dev). Not a blocker; status
+> treated as READY_FOR_CI. Whole-file reformat stays out of this unit.
