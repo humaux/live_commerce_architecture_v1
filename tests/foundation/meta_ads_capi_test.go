@@ -7,7 +7,7 @@ package foundation_test
 // event through the real dispatcher + capiroute + metaads.Client against the fake Graph.
 // Disclosed owner-pool fixtures: a Stripe PROVIDER_MOCK captured fact is projected
 // to the synthetic SANDBOX profile for downstream CAPI admission (no PSP SANDBOX execution), aged fact time (replica mode), erased-owner
-// flip through the buyer erasure route (real), grant revocation, SET LOCAL ROLE probes.
+// flip through the buyer erasure route (real) after aging the captured Stripe session past its 40-minute window, grant revocation, SET LOCAL ROLE probes.
 //
 // Contract vs CD5 (recorded, not hidden): §6.4 says user_data carries `ph` when normalizable; customers-billing CD5 (frozen, "to
 // mirror in meta-ads") says the destination phone may be used only when checkout records recipient = buyer, else CAPI omits `ph`.
@@ -241,7 +241,24 @@ func TestMetaAdsMA03Consent(t *testing.T) {
 	t.Run("owner erased: no op and the context row is deleted", func(t *testing.T) {
 		c := newCapiEnv(t, adsOpts{})
 		c.prime("SANDBOX", "SANDBOX")
-		r := c.bh.request(t, "POST", "/v1/buyer/privacy/erasure", c.p.cap.Token, t04Key("capi-erase"), map[string]any{"confirm": "ERASE"}, nil)
+		erase := func() bhResponse {
+			return c.bh.request(t, "POST", "/v1/buyer/privacy/erasure", c.p.cap.Token, t04Key("capi-erase"), map[string]any{"confirm": "ERASE"}, nil)
+		}
+		// CD7: the captured attempt's Stripe session stays alive for its 40-minute window (late-capture guard), so the
+		// real route refuses first. Disclosed owner fixture: shift every session timestamp 41 minutes back (replica,
+		// all 0061 CHECKs kept) to stand for that window having passed; nothing else about the payment changes.
+		if r := erase(); r.status != 409 || !strings.Contains(string(r.body), "erasure_blocked") {
+			t.Fatalf("erasure inside the live Stripe session window: %d %s", r.status, r.body)
+		}
+		c.ownerReplica(`UPDATE payments.stripe_sessions SET attempt_created_at=attempt_created_at-interval '41 minutes',
+			expires_at=expires_at-interval '41 minutes',send_deadline=send_deadline-interval '41 minutes',
+			handoff_cutoff=handoff_cutoff-interval '41 minutes',create_first_sent_at=create_first_sent_at-interval '41 minutes',
+			create_last_sent_at=create_last_sent_at-interval '41 minutes',create_suppressed_at=create_suppressed_at-interval '41 minutes',
+			pinned_at=pinned_at-interval '41 minutes',url_purged_at=url_purged_at-interval '41 minutes',
+			first_handed_out_at=first_handed_out_at-interval '41 minutes',cancel_requested_at=cancel_requested_at-interval '41 minutes',
+			last_refresh_at=last_refresh_at-interval '41 minutes',last_expire_at=last_expire_at-interval '41 minutes'
+			WHERE attempt_id=$1`, c.p.result.AttemptID)
+		r := erase()
 		if r.status != 200 {
 			t.Fatalf("erasure: %d %s", r.status, r.body)
 		}

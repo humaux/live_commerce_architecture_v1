@@ -736,8 +736,8 @@ func TestStripeSP07Start(t *testing.T) {
 		}{
 			{"nil_ctx", nil, e.jobs, "PROVIDER_MOCK", e.keys, good},
 			{"nil_jobs", ctx, nil, "PROVIDER_MOCK", e.keys, good},
-			{"no_provider", ctx, e.jobs, "PROVIDER_MOCK", e.keys, checkout.HostedProviders{}},
-			{"payuni_without_keys", ctx, e.jobs, "PROVIDER_MOCK", nil, good},
+			// PAY-RM2: "no_provider" and "payuni_without_keys" are no longer refusals (hosted.go: an empty value is a
+			// historical read-only service, PAYUNi is ignored); asserted below as starts that fail closed instead.
 			// "stripe_on_live_profile" removed: the Stripe branch admits LIVE since 0077 (stripe-live-enable-v1 §5.2); see hosted_live_test.go.
 			{"stripe_on_unknown_profile", ctx, e.jobs, "PRODUCTION", e.keys, good},
 			{"stripe_http_return_url", ctx, e.jobs, "PROVIDER_MOCK", e.keys, checkout.HostedProviders{Stripe: &checkout.StripeHostedConfig{ReturnURL: "http://checkout.example.test/return"}}},
@@ -746,6 +746,25 @@ func TestStripeSP07Start(t *testing.T) {
 			if s, err := checkout.NewHostedPaymentService(v.ctx, e.hosted, v.jobs, v.profile, v.keys, v.p); !errors.Is(err, command.ErrInvalid) || s != nil {
 				t.Fatalf("%s: err=%v", v.name, err)
 			}
+		}
+		// Without a Stripe config the service is read-only: BeginHosted refuses before any write.
+		s := e.seed(t, p)
+		before := sstFacts(t, p)
+		for _, v := range []struct {
+			name string
+			keys *accounts.Keyring
+			p    checkout.HostedProviders
+		}{{"no_provider", e.keys, checkout.HostedProviders{}}, {"payuni_without_keys", nil, checkout.HostedProviders{PAYUNi: &e.pcfg}}} {
+			svc, err := checkout.NewHostedPaymentService(ctx, e.hosted, e.jobs, "PROVIDER_MOCK", v.keys, v.p)
+			if err != nil || svc == nil {
+				t.Fatalf("%s: read-only service: %v", v.name, err)
+			}
+			if out, err := s.begin(svc, t04Key("sst-ro-"+v.name), s.input("zh-TW")); !errors.Is(err, command.ErrInvalid) || out != (checkout.PaymentResult{}) {
+				t.Fatalf("%s: start on a read-only service: out=%+v err=%v", v.name, out, err)
+			}
+		}
+		if got := sstFacts(t, p); got != before {
+			t.Fatalf("read-only service starts wrote facts %v -> %v", before, got)
 		}
 		// Stripe-only is a valid constructor input (keys are only needed for PAYUNi).
 		if s, err := checkout.NewHostedPaymentService(ctx, e.hosted, e.jobs, "PROVIDER_MOCK", nil, checkout.HostedProviders{Stripe: &e.scfg}); err != nil || s == nil {
