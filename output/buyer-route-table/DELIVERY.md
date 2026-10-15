@@ -1,3 +1,111 @@
+READY_FOR_CI / INDEPENDENT_REVIEW — Round 9. E3 **STATIC built-CLI acceptance** at `fb918d9c2659cc81e96bd578267d2a66a45d0237`: branch and pinned #70 overlay exit0/errors=0/no TOUCHED; build/vet/gofmt/prepush exit0. A was a fixture mutation of the dispatcher, not a row-target closure leak. B write/build authority checks reject all eight scratch counterexamples. Local Go tests, CI and independent r9 review NOT_RUN. No push.
+
+# BUYER-ROUTE-TABLE — Round 9 (2026-10-15)
+
+Start `47125030ef6c12efb1047e54d86dd7b1b654744a`; worktree `.worktrees/buyer-route-table`; branch `unit/buyer-route-table`; existing PR #71. Comparison base `e4dad98cc322d35709b475de25063efc92e5d866`. Final accepted source `fb918d9c2659cc81e96bd578267d2a66a45d0237`; later delivery changes contain only docs/evidence. `round9/source-hashes.json` binds 58 scanner/test/fixture/pin/gate-document files; `round9/evidence-hashes.json` binds retained evidence and this delivery. Verify these at the delivery HEAD before relying on the receipts.
+
+Executor: Codex (system GPT-6 identity; actual backend ID/effort not independently exposed), integrator scope; no subagents. Coord `100423e4-74de-41f2-8f52-d51bfc2e5b0f` / `codex-buyer-route-table-r9`. Ownership: `scripts/dev/contractdrift/**`, engineering/gate docs, task output. Read the complete Round 8 delivery and main-repository `output/buyer-route-table/review-r8.md` (absent in this worktree); original review path/hash/verdict in `round9/review-input.json`.
+
+## Separate commits
+
+| Commit | Change |
+| --- | --- |
+| `0e2155858` | B counterexamples FIRST: N1/N2/N3, exported frozen state, address escape, IncDec, duplicate names, build suffixes/tags, every init. Go tests NOT_RUN. |
+| `a98499f73` | A: correct only the row-target mutation anchors; preserve all existing expectations. |
+| `a794e95e3` | Additional counterexamples before B implementation: index/field/range/append/pointer-argument writes and a local-shadow control. |
+| `3051d0f3b` | B package-wide authority and build-selection checks, init roots, per-row errors and boundary documentation. |
+| `fb918d9c2` | Diagnose duplicate declarations using original spec positions rather than synthetic GenDecl line 0. |
+| Round 9 delivery commit | This delivery, source manifests, command receipts and cleanup. |
+
+## A — exact root cause and each failing assertion
+
+The scratch diagnostic CLI was built from the unchanged R8 scanner, with only `main` changed to print `scanGo(root).Dispatchers` (`round9/diagnostic-source.json`, successful `diag-build-explicit-receipt.json`). It reproduces the exact CI pair:
+
+- Before: `9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277`.
+- After the original first-occurrence replacement: `e11db674b7929660233974356bb846e256fad0a0c2b2081d30458cad185584e9`.
+- Both closures have exactly `Table.HasPrefix, allowed, handler.ServeHTTP, match, pattern`, plus types `Table, entry, handler, route`; no row target, stored target var or leaf method enters the closure. Full lists: `A-before-closure.json`, `A-after-closure.json`.
+
+`strings.Replace(source, "w.WriteHeader(204)", "w.WriteHeader(205)", 1)` changes the first 204, in `handler.ServeHTTP`, before the appended row target. `A-wrong-mutation.diff` shows the actual dispatcher edit. Freeze correctly refuses that body change; no declaration walk or fallback rule wrongly pulled in a target. Changing that rule would weaken the intended dispatcher guard.
+
+The direct case now replaces the full unique `func rowLeaf(...)` declaration. Stored alias/literal/method-value cases replace only their appended `tail`, and then change the 204 within that tail. `A-correct-mutation.diff` shows the direct correction. Expectations and thresholds stay unchanged.
+
+| Failing CI condition | Why the unchanged expectation is now met |
+| --- | --- |
+| RowHandlerBodyExcluded: target absent before mutation | `rowLeaf` is referenced only by row data and is still absent from the function list. |
+| RowHandlerBodyExcluded: post-edit CLI resolves and hash equals before | Only the appended leaf body changes; `ServeHTTP` remains 204 and the complete canonical stream is identical. |
+| StoredRowTargetsExcluded / alias | Only `rowLeaf` in the appended alias tail changes; neither alias nor target is reached outside row data. |
+| StoredRowTargetsExcluded / literal | Only the anonymous function source in the appended `rowTarget` tail changes; that var is outside the closure. |
+| StoredRowTargetsExcluded / method_value | Only `leaf.serve` in the appended tail changes; the row-only method target remains outside the closure. |
+
+Four corresponding corrected scratch fixtures run through the final built CLI: all exit0/errors=0/no TOUCHED with identical pre/post hashes. Exact lists/hashes and CLI summaries are in `A-corrected-closures.json` and `A-correct-*-receipt.json`. These are static CLI observations; the Go test assertions themselves remain NOT_RUN locally.
+
+The extra TOUCHED `ServeHTTP`/`mountBuyer` and CONTRACT_ONLY findings are consequences of withholding table proof after the dispatcher change. The fixture adds those dispatchers and `contracts/route-table-openapi.json` after the `trunk` tag. With no table inventory, the opaque regions remain touched and the two correct contract rows appear unserved. `A-original-report.txt` retains all six errors. The fixture contract file is correct and unchanged; no contract/baseline edit hides these lines.
+
+R8 did not catch this because its local evidence exercised real const/regexp mutations and inspected the exclusion test source without executing those fixtures (owner forbids local Go tests). The mutation anchor was assumed to select the appended target; it was not checked against a source diff. The literal hashes and “target absent” assertion cannot detect that mistake, since the changed body was already legitimately frozen. R9 retains the exact mutation diffs and corrected scratch CLI observations. A attempt 1 resolved without a closure change or re-pin.
+
+## B — authority rule and red map
+
+The old implementation froze each var declaration but never checked who writes it, and last-wins maps silently selected declarations across build variants. Before the fix, the built R8 CLI accepted N1/N2/N3 and address escape with exit0/errors=0/GO_ROUTE_TABLE=4. `red-N3` uses a nil reassignment; `red-exact-N3` additionally reproduces the reviewer's exact `regexp.MustCompile(".*")` assignment in `New`.
+
+The final gate scans every non-test file in the table package. A frozen var with any outside assignment (including fields/indexes/range), IncDec, address-taking (also through pointer call arguments), or append/copy/clear/delete mutation/escape is unproven. The var's own declaration is excluded. Parser-bound locals do not count as writes to package state. Frozen exported vars are refused, preventing writes from any importing package; the sole exception is the marked table's documented fieldless facade, validated by the existing facade grammar.
+
+Every frozen declaration name is counted independently of lookup maps. Duplicates fail with a precise source location; methods are receiver-qualified. All `init` funcs are independent roots, including multiple legal init declarations. Any non-test package file with a Go/legacy build line or recognized OS/architecture suffix fails closed without evaluating tags. Unsafe inputs produce one fatal dispatcher diagnostic per advertised row and never resolve that table.
+
+| Counterexample | Pre-fix built CLI | Final built CLI / evidence |
+| --- | --- | --- |
+| N1 new `init` reassigns `v2Slug` | exit0/errors0 | assignment at `zz_init.go:3`; 46 freeze errors |
+| N2 linux/!linux split declaration | exit0/errors0 | build constraint filename `a_slug_linux.go`; 46 freeze errors |
+| N3 assignment in `New`, exact reviewer expression | exit0/errors0 | assignment at `handler.go:57`; 46 freeze errors |
+| `p := &v2Slug` in unrelated function | exit0/errors0 | address taken at `zz_pointer.go:2`; 46 freeze errors |
+| Additional identical declaration | exit0/errors0 | duplicate frozen name at `zz_duplicate.go:3`; 46 freeze errors |
+| Unused custom-tag file | exit0/errors0 | build constraint at `zz_tag.go:1`; 46 freeze errors |
+| New init without a frozen-var write | exit0/errors0 | init changes hash; 46 freeze errors |
+| Exported `V2Slug`, explicitly pinned using pre-fix candidate | exit0/errors0 | exported frozen var at `catalogv2.go:46`; 46 freeze errors |
+
+`B-mutation-results.json`, `red-*-receipt.json`, `final-*-receipt.json` and reports retain the observed red→green static gate evidence. Eight final CLI runs exit1 as required (each errors=133 including 46 per-row freeze errors and collateral route findings). Table withdrawal is intentional in these negatives, so collateral TOUCHED findings are not acceptance failures.
+
+CI-only counterexamples additionally cover duplicate function declarations, bare OS/arch suffixes, IncDec, composite/index/field/range/append writes, pointer arguments, local-shadow acceptance and hashing both init funcs. Those Go tests are **NOT_RUN**, not inferred PASS. A second targeted B correction fixed synthetic declaration diagnostics reporting line 0; final duplicate evidence reports line 3. B attempt 2 resolved; no further repair attempt was made.
+
+Real package checks found no prohibited writes to `v2Slug`, `idempotencyKey`, `linkTokenPattern`, `feedColumns` or `isoPattern`; real tables still resolve. Runtime sources were not edited. No real re-pin: the hash root specification now includes init, but neither real table package has init funcs, and authority checks do not alter the canonical byte stream. Both real hashes remain buyer `86608e03…ac84` (81 funcs/150 declarations) and attribution `65b79d88…bac1` (10/15); the pin file is byte-identical to starting HEAD.
+
+## Final acceptance, SHA binding and SUMMARY lines
+
+All below use source `fb918d9c2659cc81e96bd578267d2a66a45d0237`. `scanner-build.json` binds the final executable SHA256 `956e87db43a9f0a2413fe1d51421dc8d0cf59e7316dbc4627fd64e7200cfd684`; CLI receipts also carry that hash. Scratch-repository `source_sha` records the scanned clone HEAD; the executable is separately bound to the scanner build, including red controls built from `47125030e`.
+
+| Command / scenario | Exit | Evidence in `round9/` |
+| --- | --- | --- |
+| `go build ./...` | 0 | `build-receipt.json` |
+| `go vet ./...` (compiles, does not execute tests) | 0 | `vet-receipt.json` |
+| `gofmt -l scripts/dev/contractdrift` | 0, empty output | `gofmt-receipt.json` |
+| Existing integrator `prepush.sh <worktree> e4dad98cc` | 0 | `prepush-receipt.json` |
+| Built CLI branch `-base e4dad98cc` | 0/errors0/no TOUCHED | `branch-receipt.json` |
+| Built CLI pinned #70 overlay, same base | 0/errors0/no TOUCHED | `pay70-receipt.json` |
+| Overlay `go build ./cmd/api` | 0 | `pay70-build-receipt.json` |
+
+Branch:
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+Pinned #70 overlay:
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+Overlay uses only `cmd/api/buyer_payment.go` from `51273344fc12ff4c8062634fdf749d536958bda7`; its file hash and exact one-file diff are in `overlay-manifest.json`. No remote fetch or push. `preservation-audit.json` proves no runtime change since `47125030e`, and byte preservation of the pin, baseline, route inventory tests, R6 negatives and refusal tests/code.
+
+## NOT_RUN, risks and cleanup
+
+- **NOT_RUN:** every local Go test (including the CI failures and all new tests), full CI, independent r9 review, HTTP routing/transport/differential runtime, REAL_PG, browser clicks, SANDBOX/LIVE and release gates. This is E3 STATIC only, READY_FOR_CI / INDEPENDENT_REVIEW, not unit/runtime/release completion or merge approval.
+- Syntax checks do not model unsafe/reflection, arbitrary alias effects or mutation inside imported implementations. Cross-package helper bodies remain unfrozen. Same-name method over-inclusion and whole const blocks remain conservative. Filename vocabulary must follow Go's supported OS/architecture names as the toolchain evolves.
+- The initial diagnostic build by package path failed because `output/` is outside the module's package tree; the explicit source-file build succeeded. Failed receipt is retained. A code-index handoff initially exceeded the command output cap; the five files were then submitted separately without truncation. Index completed (94 entities); authority and fingerprint entities link to Humaux fix `c7e68495-c8b9-45ea-971d-34bc3a833175`.
+- `cleanup.json`: removed only this round's scratch clone, fixture trees, diagnostic sources, binaries and Python cache; **493327147 bytes** removed. Failure/success evidence is retained. No task server/port/container was started; all command processes terminated. No push, PR mutation, merge or deployment.
+- Decisions/fixes/acceptance stored in Humaux and own canvas updated. Rollback point is `47125030e`; revert this round's separated commits in reverse order without resetting unrelated work.
+
+---
+
+# Historical delivery below — superseded by Round 9 for this unit
+
 READY_FOR_INDEPENDENT_REVIEW — Round 8. E3 **STATIC built-CLI acceptance** at `7b19d9237030f9bbf7e9c5066aa78e6d3ffa3e0e`: branch and pinned #70 overlay exit0/errors=0/no TOUCHED. Both reviewer mutations now produce 46 per-row freeze ERRORs each. E1 build/vet/gofmt/prepush passed. All local Go tests, CI and independent r8 review NOT_RUN. No push.
 
 # BUYER-ROUTE-TABLE — Round 8 (2026-10-15)

@@ -1,0 +1,22 @@
+{
+  "run_id": "r9-diag-build",
+  "source_sha": "47125030ef6c12efb1047e54d86dd7b1b654744a",
+  "command": [
+    "go",
+    "build",
+    "-o",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round9/scratch/diag-cli",
+    "./output/buyer-route-table/round9/scratch/diag"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:57:42.829041+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 1,
+  "elapsed_seconds": 0.017,
+  "ended_at": "2026-10-15T10:57:42.846542+00:00",
+  "summary": [],
+  "errors": 0,
+  "touched": 0
+}

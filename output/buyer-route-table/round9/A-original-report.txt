@@ -1,0 +1,7 @@
+ERROR (NEW) CONTRACT_ONLY GET /v1/table/one contracts/route-table-openapi.json:1 
+ERROR (NEW) CONTRACT_ONLY POST /v1/table/{} contracts/route-table-openapi.json:1 
+ERROR (TOUCHED) UNRESOLVED   cmd/api/main.go:9 opaque Go handler dispatch mountBuyer; route/method coverage is unknown
+ERROR (TOUCHED) UNRESOLVED   internal/router/routes.go:12, internal/router/routes.go:18, internal/router/routes.go:24, internal/router/routes.go:34 opaque Go handler dispatch ServeHTTP; route/method coverage is unknown
+ERROR (dispatcher freeze) UNRESOLVED GET /v1/table/one internal/router/routes.go:8 route-table dispatcher changed or unpinned: router.Routes e11db674b7929660233974356bb846e256fad0a0c2b2081d30458cad185584e9 want 9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277; review the dispatcher and update contracts/route-table-dispatchers.json
+ERROR (dispatcher freeze) UNRESOLVED POST /v1/table/{} internal/router/routes.go:9 route-table dispatcher changed or unpinned: router.Routes e11db674b7929660233974356bb846e256fad0a0c2b2081d30458cad185584e9 want 9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277; review the dispatcher and update contracts/route-table-dispatchers.json
+SUMMARY routes go=1 contract=3 bff=1; errors=6 warnings=0 CONTRACT_ONLY=2 UNRESOLVED=4

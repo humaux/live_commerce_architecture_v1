@@ -1,0 +1,31 @@
+{
+  "start_sha": "47125030ef6c12efb1047e54d86dd7b1b654744a",
+  "source_sha": "fb918d9c2659cc81e96bd578267d2a66a45d0237",
+  "runtime_diff": "",
+  "files": {
+    "scripts/dev/contractdrift/go_refusal_leaf.go": {
+      "unchanged": true,
+      "sha256": "74c741ccf8eb94dac68ff869fc30b749b02e12e61bb86b7f9ad5eb339e94949d"
+    },
+    "scripts/dev/contractdrift/go_route_table_cli_test.go": {
+      "unchanged": true,
+      "sha256": "bd2ae3ba98e767745c63d9af568f36534ba65561bc63bb19554c17e711993cec"
+    },
+    "scripts/dev/contractdrift/go_handler_factory_cli_test.go": {
+      "unchanged": true,
+      "sha256": "e7fb3150a112545b73821d2f8b7f5fc7483b9d4e1538ab89710d2a9cc113f65c"
+    },
+    "scripts/dev/contractdrift/go_extract_test.go": {
+      "unchanged": true,
+      "sha256": "d8801c0487b61c64a69ebb78675ba402a8e968c220f7217c3b3f5764076ca48f"
+    },
+    "contracts/route-table-dispatchers.json": {
+      "unchanged": true,
+      "sha256": "65dc64b9507fa78e9b728ca7b2975e0eecc2f0dad752f5120efcc873a7857660"
+    },
+    "scripts/dev/contractdrift/baseline.json": {
+      "unchanged": true,
+      "sha256": "082a0e597254a96c03272becf1c17e38a7c76e4cf842e1ef913233b4662fb3ec"
+    }
+  }
+}

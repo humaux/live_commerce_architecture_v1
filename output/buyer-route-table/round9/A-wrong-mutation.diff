@@ -1,0 +1,11 @@
+--- before
++++ wrong-first-replace
+@@ -35,7 +35,7 @@
+  selected := match(r.URL.Path)
+  if selected.kind == "" { http.NotFound(w,r); return }
+  if !allowed(selected.kind,r.Method) { w.WriteHeader(405); return }
+- w.WriteHeader(204)
++ w.WriteHeader(205)
+ }
+ 
+ func rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}

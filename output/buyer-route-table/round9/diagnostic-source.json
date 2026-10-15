@@ -1,0 +1,32 @@
+{
+  "source_sha": "47125030ef6c12efb1047e54d86dd7b1b654744a",
+  "change": "main only: json encode scanGo(root).Dispatchers instead of production report",
+  "no_tests": true,
+  "files": {
+    "bff_sinks.go": "90a3e9d431a4516fd2d6314bfb27e4c8889e2ad5fa39154e4e6eeea9a83bec91",
+    "go_handler_factory.go": "7a6f7cf448ffc24bff98f18914793d868753af9ed61dc12822441051cfd31ac7",
+    "git.go": "e7b3dd4858c5d31ad8513e0551619c308921986f28e8c90c3463a5a7995dfc0e",
+    "go_opaque.go": "994fab1ef188d191cba89702c04aa3ee332895381cb2678a08076a4e2e4d4ecf",
+    "bff.go": "a6abee464ee88df1f209be22daedc007c28cc245ad97e6047936a6359b355e2f",
+    "go_route_tables.go": "859057ffbfa0b059f0ddb7d0f91623352139905c10985107602c57f571942665",
+    "bff_regex.go": "660bf868b474119e6ae7b6d7e936cfb7396c294d3c056ae8c8ac8f24f19b7703",
+    "types.go": "667e09bed4e2e4db75139dd81d89ac4afc865b5024ca199fa26f9bbd37c34319",
+    "bff_values.go": "b76b213c8b23ce9fa0c42a7600ec46e598c7bfd029dc9e2ab3c70153e0c6b209",
+    "go_refusal_leaf.go": "74c741ccf8eb94dac68ff869fc30b749b02e12e61bb86b7f9ad5eb339e94949d",
+    "go_extract.go": "9320112a2ac1b71a069f148205a68d79c511d8bb86b12b842ef8db6d265033a6",
+    "go_dispatcher_freeze.go": "44207fb8933bd9c677a063e8af4e6a4afc100f132f2edaf2a0060f228fb6b046",
+    "contracts.go": "ce9b5bd2d1bd4eb7b74c35ac0f39aa2e001f102687f60ecca81d509871772d9b",
+    "go_fallback.go": "2c154f567b825ce233f67fa319e32d26a52ba681d3dc6b41c8fc1b504326e8a7",
+    "go_eval.go": "17c9cc16ecdeb6b3a6a6ae4b95902186cce9dbb35524c936162015136bf7726c",
+    "bff_buyer.go": "71929361f642ec2e8ec2367b94f78faabae7d2f9fe51d6ae2f78ec8e9dd7238a",
+    "bff_live_settings.go": "dc8e9bcd175adfed0e88a9e53c8651bb5a0605e43c3916b2a1c79f7adc9b8c5f",
+    "bff_ts.go": "e328a5acefd820f07429618586149781ef19c0b3ad38e38153da9865cd637b64",
+    "snapshot.go": "eaa385e22d5897f934f86921fccbc0e1d3a22510866bbd897da03eef46c002a7",
+    "go_walk.go": "651ebdf0882f8e1fc395ced322f993fd4db3ab21bdd3924ede609adf95c13f7b",
+    "bff_adapters.go": "d4b5a7e3f76ef68abbd2d3a3c8614686fccebe8e74acf5704311531380694434",
+    "main.go": "dfec3b6883355c1ec45aa507785e6ba068cd9fd2c75104542d18bda265352267",
+    "ratchet.go": "65365567f5d3a355aded136c96a37d95a424d5eb4ccf590811b54fde0d2fe0da",
+    "bff_graph.go": "6e72be74c02e626651aded5ea881fed55b0049674d928d0c7cc94e3032186ee0"
+  },
+  "binary_sha256": "37791757d1b303f409b3d86d1921134baa2105e87b257a615b65be8e52dbc0b6"
+}

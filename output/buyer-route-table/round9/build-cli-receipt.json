@@ -1,0 +1,22 @@
+{
+  "run_id": "r9-build-cli",
+  "source_sha": "fb918d9c2659cc81e96bd578267d2a66a45d0237",
+  "command": [
+    "go",
+    "build",
+    "-o",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round9/scratch/contractdrift-final",
+    "./scripts/dev/contractdrift"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T11:06:28.485153+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 2.467,
+  "ended_at": "2026-10-15T11:06:30.952784+00:00",
+  "summary": [],
+  "errors": 0,
+  "touched": 0
+}
