@@ -167,6 +167,7 @@ func debugRequest(r *http.Request) bool { return r.URL.Path == debugPath }
 func TestGoRouteTableListedPathPolicyAcceptedCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
 	source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", `if r.URL.EscapedPath() != r.URL.Path { http.NotFound(w,r); return }
+ switch { case r.URL.Path == listedPath: w.Header().Set("X-Switch", "listed") }
  if r.URL.Path == listedPath { w.Header().Set("X-Listed", "yes") }
  selected := match(r.URL.Path)`, 1)
 	mustWrite(t, p, source+`

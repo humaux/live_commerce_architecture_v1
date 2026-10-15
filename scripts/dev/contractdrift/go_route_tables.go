@@ -439,6 +439,9 @@ func (s *goScanner) goTablePathPolicy(table goRouteTable, fn *goFunc) bool {
 		return false
 	}
 	path := func(expr ast.Expr) bool {
+		if expr == nil { // tagless switch has no path expression
+			return false
+		}
 		found := false
 		ast.Inspect(expr, func(n ast.Node) bool {
 			if call, ok := n.(*ast.CallExpr); ok && consumer(call) {
