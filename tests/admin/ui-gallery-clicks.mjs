@@ -707,6 +707,9 @@ async function ds2Matrix({ page, step }) {
       return `${scale.measured.length} controls measured; no scale or row violations`;
     });
     const path = `${output}/shots/ds2-${locale}-${width}x${height}-${name}.png`;
+    // Full-page shots paint sticky bars at the current scroll offset (a second topbar mid-page after uploads);
+    // start from the top unless the scrolled state is the subject of the shot.
+    if (name !== "form-released") await page.evaluate(() => new Promise(r => { window.scrollTo(0, 0); requestAnimationFrame(() => r()); })); // [READ] view position only
     const png = await page.screenshot({ path, fullPage: true, animations: "disabled" });
     await page.addScriptTag({ content: axeSource });
     const axe = await page.evaluate(async () => (await window.axe.run(document, { resultTypes: ["violations"] })).violations.map(v => ({ id: v.id, impact: v.impact, nodes: v.nodes.map(n => n.target) }))); // [READ] all impacts, stricter than legacy runner

@@ -54,7 +54,7 @@ export function UiGalleryTemplate({ locale, name, initial }: { locale: Locale; n
           actions={name === "list" ? <><MenuButton label={t.export} items={[{ id: "export", label: t.export, onSelect: () => setNotice(t.exportDone) }]} /><Button variant="primary" disabledReason={created >= 99 ? t.noChanges : undefined} onClick={() => setCreate(true)}>{t.create}<Icon name="plus" size={16} /></Button></> : name === "detail" ? <><ButtonLink href={`${root}/templates/list`}>{t.back}</ButtonLink><MenuButton label={t.more} items={[{ id: "receipt", label: t.receipt, onSelect: () => setNotice(t.receiptDone) }, { id: "archive", label: t.archive, onSelect: () => setNotice(t.archived) }]} /></> : <ButtonLink href={root}>{t.returnGallery}</ButtonLink>} />
         {notice.text && <Alert tone="success">{notice.text}</Alert>}
         {name === "list" && <ListTemplate {...{ locale, t, params, update, setNotice, created }} />}
-        {name === "detail" && <DetailTemplate {...{ t }} />}
+        {name === "detail" && <DetailTemplate {...{ locale, t }} />}
         {name === "form" && <ProductForm {...{ t, params, update }} />}
         {name === "settings" && <SettingsTemplate {...{ t, params }} />}
         <ConfirmDialog open={create} title={t.create} description={t.synthetic} confirmLabel={t.confirm} cancelLabel={t.cancel} tone="primary" onCancel={() => setCreate(false)} onConfirm={() => { persistNotice({ text: t.created, created: String(created + 1) }); setCreate(false); }} />
@@ -116,7 +116,7 @@ function ListTemplate({ locale, t, params, update, setNotice, created }: { creat
     </Card>
   </Stack>;
 }
-function DetailTemplate({ t }: { t: TemplateCopy }) {
+function DetailTemplate({ locale, t }: { locale: Locale; t: TemplateCopy }) {
   const [saved, persist, ready] = useGalleryRecord<{ note: string; result: string }>("ds2-detail-note", { note: "", result: "" });
   const [draft, setNote] = useState<string | null>(null);
   const note = draft ?? saved.note;
@@ -124,7 +124,7 @@ function DetailTemplate({ t }: { t: TemplateCopy }) {
   if (!ready) return <p role="status">{t.loading}</p>;
   return <Stack>
     <DetailLayout main={<>
-      <Card title={t.thumbnail}><Inline><ThumbCell src={THUMB} alt={t.item} emptyLabel={t.thumbnail} /><div><strong>{t.item}</strong><p>{t.quantity}: 2 · NT$ 360</p></div></Inline></Card>
+      <Card title={t.thumbnail}><Inline><ThumbCell src={THUMB} alt={t.item} emptyLabel={t.thumbnail} /><div><strong>{t.item}</strong><p>{t.quantity}: 2 · {money(locale, "TWD", 36000)}</p></div></Inline></Card>
       <Card title={t.timeline}><Timeline label={t.timeline} items={[
         { id: "pack", title: t.packed, time: "2026-10-15 10:30 UTC+8", dateTime: "2026-10-15T10:30:00+08:00" },
         { id: "pay", title: t.paidEvent, time: "2026-10-15 10:05 UTC+8", dateTime: "2026-10-15T10:05:00+08:00", tone: "success" },
@@ -133,7 +133,7 @@ function DetailTemplate({ t }: { t: TemplateCopy }) {
       <Card title={t.note}><Stack><Field label={t.noteContent} width="full" counter={{ value: note, max: 500, format: (n, max) => `${n} / ${max}` }}>{control => <Textarea {...control} value={note} onChange={event => setNote(event.target.value)} />}</Field>
         <Inline><Button variant="primary" disabledReason={note.trim() && note !== saved.note ? undefined : t.noChanges} onClick={() => persist({ note, result: t.noteSaved })}>{t.addNote}</Button></Inline>
         {saved.result && <Alert tone="success">{saved.result}</Alert>}</Stack></Card>
-    </>} summary={<Card title={t.summary}><Stack><div><strong>{t.buyer}</strong><p>{t.demoBuyer} A</p></div><div><strong>{t.shipping}</strong><p>{t.delivery}</p></div><div><strong>{t.total}</strong><p>NT$ 720</p></div></Stack></Card>} />
+    </>} summary={<Card title={t.summary}><Stack><div><strong>{t.buyer}</strong><p>{t.demoBuyer} A</p></div><div><strong>{t.shipping}</strong><p>{t.delivery}</p></div><div><strong>{t.total}</strong><p>{money(locale, "TWD", 72000)}</p></div></Stack></Card>} />
   </Stack>;
 }
 
