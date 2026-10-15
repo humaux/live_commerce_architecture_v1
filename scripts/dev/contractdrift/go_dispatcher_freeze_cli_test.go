@@ -228,7 +228,7 @@ func TestGoDispatcherFreezeRowHandlerBodyExcludedCLI(t *testing.T) {
 		t.Fatal("row handler target included in closure")
 	}
 	assertFreezeCLI(t, root, true)
-	mustWrite(t, p, strings.Replace(source, "w.WriteHeader(204)", "w.WriteHeader(205)", 1))
+	mustWrite(t, p, strings.Replace(source, "func rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}", "func rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(205)}", 1))
 	assertFreezeCLI(t, root, true)
 	inv, err := scanGo(root)
 	if err != nil {
@@ -280,7 +280,7 @@ func TestGoDispatcherFreezeStoredRowTargetsExcludedCLI(t *testing.T) {
 			mustWrite(t, p, source)
 			before := pinFixtureDispatcher(t, root, "router.Routes", "")
 			assertFreezeCLI(t, root, true)
-			mustWrite(t, p, strings.Replace(source, "w.WriteHeader(204)", "w.WriteHeader(205)", 1))
+			mustWrite(t, p, strings.Replace(source, tail, strings.Replace(tail, "w.WriteHeader(204)", "w.WriteHeader(205)", 1), 1))
 			assertFreezeCLI(t, root, true)
 			inv, err := scanGo(root)
 			if err != nil {
