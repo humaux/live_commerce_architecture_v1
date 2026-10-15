@@ -910,8 +910,20 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       // Loading/error carry no trustworthy count and empty has nothing to page: no pager (was "0 results · 1 / 2").
       assert.equal(await area.getByRole("navigation", { name: t.paging, exact: true }).count(), 0, `no pager while ${state}`);
       if (state === "loading") { assert.equal(await area.locator('table[aria-busy="true"]').count(), 1); await area.getByLabel(t.state, { exact: true }).selectOption("ready"); }
-      if (state === "error") { await seen(text(t.errorTitle)); await button(t.retry).click(); }
-      if (state === "empty") { await seen(text(t.emptyTitle)); await button(t.reset).click(); }
+      // [READ] The state must be readable where it renders, not only after Playwright's click auto-scroll: on 390px the
+      // 760px-min table once centred it off-screen (run 38765960368: only "試試"/"此處預" visible at the right edge).
+      const inView = async (title, action) => {
+        const box = await area.locator("[data-table-scroll]").evaluate((scroll, names) => {
+          const view = scroll.getBoundingClientRect();
+          const find = name => [...scroll.querySelectorAll("*")].filter(n => n.textContent.trim() === name).pop()?.getBoundingClientRect(); // deepest match
+          const parts = [find(names[0]), find(names[1])];
+          return { scrollLeft: scroll.scrollLeft, view: [view.left, view.right], parts: parts.map(r => r && [r.left, r.right]) };
+        }, [title, action]);
+        assert.equal(box.scrollLeft, 0, `${state}: table scroller moved`);
+        for (const part of box.parts) assert.ok(part && part[0] >= box.view[0] - 1 && part[1] <= box.view[1] + 1, `${state} state off-screen: ${JSON.stringify(box)}`);
+      };
+      if (state === "error") { await seen(text(t.errorTitle)); await inView(t.errorTitle, t.retry); await button(t.retry).click(); }
+      if (state === "empty") { await seen(text(t.emptyTitle)); await inView(t.emptyTitle, t.reset); await button(t.reset).click(); }
       assert.equal(await area.locator("tbody tr[data-selected]").count(), 5);
       await seen(area.getByRole("navigation", { name: t.paging, exact: true }));
     });
