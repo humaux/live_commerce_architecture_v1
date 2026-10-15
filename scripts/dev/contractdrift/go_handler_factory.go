@@ -9,6 +9,7 @@ package main
 import (
 	"go/ast"
 	"go/token"
+	"go/types"
 	"strings"
 )
 
@@ -47,6 +48,7 @@ type goHandlerProof struct {
 	Owners   map[*goFunc]*goPackage
 	Dispatch map[*goFunc]bool
 	Active   map[*goFunc]bool
+	HTTP     *types.Package
 	Refs     []location
 }
 
@@ -327,6 +329,7 @@ func (f *goHandlerFrame) closure(lit *ast.FuncLit) bool {
 		return true
 	})
 	seen := map[*goFunc]bool{}
+	var refusals, proven []ast.Node
 	var inspect func(ast.Node) bool
 	inspect = func(n ast.Node) bool {
 		if sel, ok := n.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Path" || strings.HasPrefix(sel.Sel.Name, "Method")) {
@@ -337,8 +340,16 @@ func (f *goHandlerFrame) closure(lit *ast.FuncLit) bool {
 				return false // only this proven consumer owns these Path selectors
 			}
 			if sel, ok := call.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "ServeHTTP" {
-				forwarded = true
-				valid = f.value(sel.X, 0) && valid
+				if f.refusal(sel.X) {
+					refusals = append(refusals, call)
+				} else {
+					good := f.value(sel.X, 0)
+					forwarded = good || forwarded
+					valid = good && valid
+					if good {
+						proven = append(proven, call)
+					}
+				}
 				for _, arg := range call.Args {
 					ast.Inspect(arg, inspect)
 				}
@@ -372,6 +383,10 @@ func (f *goHandlerFrame) closure(lit *ast.FuncLit) bool {
 		return true
 	}
 	ast.Inspect(lit.Body, inspect)
-	// A table guard proves interception, never the inline leaf's dispatch.
+	// Refusals add no routes: each needs a proven sibling inside the SAME
+	// table-selected branch. A fallback outside that branch cannot supply proof.
+	for _, refusal := range refusals {
+		valid = f.refusalBranch(lit.Body, guards, refusal, proven) && valid
+	}
 	return valid && forwarded
 }
