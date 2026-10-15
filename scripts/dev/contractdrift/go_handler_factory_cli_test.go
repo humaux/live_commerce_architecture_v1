@@ -2,6 +2,7 @@
 // Depends on: existing two-table source fixtures and real Git/CLI helpers.
 // Used by: CI for BUYER-ROUTE-TABLE round 3; these fixtures never serve HTTP.
 // Invariant: every returned handler must be proven; one opaque alternative poisons the factory.
+
 package main
 
 import (
@@ -115,5 +116,18 @@ func New() http.Handler { return http.NotFoundHandler() }
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "opaque Go handler dispatch buildComposite;") {
 		t.Fatalf("opaque factory span lost: exit%d %s", code, out)
+	}
+}
+
+// Reverting only the terminal-leaf fix incorrectly resolves both build factories:
+// a valid table guard cannot supply dispatch provenance to an inline 204 leaf.
+func TestGoHandlerFactoryInlineTerminalRejectedCLI(t *testing.T) {
+	source := strings.Replace(handlerFactoryCLISource, "child.ServeHTTP(w,r)", `http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }).ServeHTTP(w,r)`, 1)
+	root := handlerFactoryCLIFixture(t, source)
+	code, out := goReviewProcessCLI(t, root)
+	if code != 1 || !strings.Contains(out, "opaque Go handler dispatch buildComposite;") ||
+		!strings.Contains(out, "opaque Go handler dispatch buildTop;") ||
+		strings.Contains(out, "handler factory buildComposite resolved") || strings.Contains(out, "handler factory buildTop resolved") {
+		t.Fatalf("inline terminal became table-covered: exit%d %s", code, out)
 	}
 }

@@ -179,11 +179,11 @@ func (p *goHandlerProof) function(fn *goFunc, result int, params map[*ast.Object
 			found = true
 			switch {
 			case len(ret.Results) == len(results):
-				valid = f.value(ret.Results[result], 0, false) && valid
+				valid = f.value(ret.Results[result], 0) && valid
 			case len(ret.Results) == 1:
-				valid = f.value(ret.Results[0], result, false) && valid
+				valid = f.value(ret.Results[0], result) && valid
 			case len(ret.Results) == 0 && results[result].Name != nil:
-				valid = f.value(results[result].Name, 0, false) && valid
+				valid = f.value(results[result].Name, 0) && valid
 			default:
 				valid = false
 			}
@@ -208,7 +208,7 @@ func (f *goHandlerFrame) callee(expr ast.Expr) *goFunc {
 	return nil
 }
 
-func (f *goHandlerFrame) value(expr ast.Expr, result int, terminal bool) bool {
+func (f *goHandlerFrame) value(expr ast.Expr, result int) bool {
 	switch node := expr.(type) {
 	case *ast.Ident:
 		if node.Obj == nil {
@@ -221,7 +221,7 @@ func (f *goHandlerFrame) value(expr ast.Expr, result int, terminal bool) bool {
 		defer delete(f.Seen, node.Obj)
 		valid, found := f.Params[node.Obj]
 		for _, origin := range f.Values[node.Obj] {
-			good := f.value(origin.Expr, origin.Result, terminal)
+			good := f.value(origin.Expr, origin.Result)
 			if !found {
 				valid, found = good, true
 			} else {
@@ -235,9 +235,9 @@ func (f *goHandlerFrame) value(expr ast.Expr, result int, terminal bool) bool {
 		}
 		return found && valid
 	case *ast.ParenExpr:
-		return f.value(node.X, result, terminal)
+		return f.value(node.X, result)
 	case *ast.UnaryExpr:
-		return node.Op == token.AND && f.value(node.X, result, terminal)
+		return node.Op == token.AND && f.value(node.X, result)
 	case *ast.CompositeLit:
 		typ, ok := node.Type.(*ast.Ident)
 		if !ok {
@@ -257,10 +257,10 @@ func (f *goHandlerFrame) value(expr ast.Expr, result int, terminal bool) bool {
 			}
 		}
 	case *ast.FuncLit:
-		return result == 0 && f.closure(node, terminal)
+		return result == 0 && f.closure(node)
 	case *ast.CallExpr:
 		if result == 0 && goHTTPHandlerType(node.Fun, f.Func.File) && len(node.Args) == 1 {
-			return f.value(node.Args[0], 0, terminal)
+			return f.value(node.Args[0], 0)
 		}
 		if target := f.callee(node.Fun); target != nil {
 			params := map[*ast.Object]bool{}
@@ -269,7 +269,7 @@ func (f *goHandlerFrame) value(expr ast.Expr, result int, terminal bool) bool {
 					if slot.Name == nil || i >= len(node.Args) {
 						return false
 					}
-					params[slot.Name.Obj] = f.value(node.Args[i], 0, terminal)
+					params[slot.Name.Obj] = f.value(node.Args[i], 0)
 					if !params[slot.Name.Obj] {
 						return false
 					}
@@ -297,8 +297,8 @@ func (f *goHandlerFrame) tableCondition(call *ast.CallExpr) bool {
 	return false
 }
 
-func (f *goHandlerFrame) closure(lit *ast.FuncLit, terminal bool) bool {
-	valid, forwarded, mounted := true, false, false
+func (f *goHandlerFrame) closure(lit *ast.FuncLit) bool {
+	valid, forwarded := true, false
 	guards := map[*ast.CallExpr]bool{}
 	var condition func(ast.Expr) bool
 	condition = func(expr ast.Expr) bool {
@@ -321,8 +321,8 @@ func (f *goHandlerFrame) closure(lit *ast.FuncLit, terminal bool) bool {
 		if _, nested := n.(*ast.FuncLit); nested {
 			return false
 		}
-		if stmt, ok := n.(*ast.IfStmt); ok && condition(stmt.Cond) {
-			mounted = true
+		if stmt, ok := n.(*ast.IfStmt); ok {
+			condition(stmt.Cond)
 		}
 		return true
 	})
@@ -338,7 +338,7 @@ func (f *goHandlerFrame) closure(lit *ast.FuncLit, terminal bool) bool {
 			}
 			if sel, ok := call.Fun.(*ast.SelectorExpr); ok && sel.Sel.Name == "ServeHTTP" {
 				forwarded = true
-				valid = f.value(sel.X, 0, terminal || mounted) && valid
+				valid = f.value(sel.X, 0) && valid
 				for _, arg := range call.Args {
 					ast.Inspect(arg, inspect)
 				}
@@ -372,5 +372,6 @@ func (f *goHandlerFrame) closure(lit *ast.FuncLit, terminal bool) bool {
 		return true
 	}
 	ast.Inspect(lit.Body, inspect)
-	return valid && (forwarded || terminal)
+	// A table guard proves interception, never the inline leaf's dispatch.
+	return valid && forwarded
 }
