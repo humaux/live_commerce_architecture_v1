@@ -86,6 +86,17 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 				used = true
 			}
 		}
+		if table.Exact && used {
+			mounted := false
+			for _, p := range packages {
+				for _, fn := range p.Funcs {
+					if s.tableMount(fn, table) {
+						mounted = true
+					}
+				}
+			}
+			used = mounted
+		}
 		if !used {
 			addUnresolved(&s.Out, table.Ref, "route table has no consuming HTTP dispatcher")
 			continue
@@ -379,8 +390,9 @@ func (s *goScanner) tableMount(fn *goFunc, table goRouteTable) bool {
 					target.AST.Type.Params == nil || len(target.AST.Type.Params.List) != 1 || len(target.AST.Type.Params.List[0].Names) != 1 {
 					continue
 				}
+				helper, direct := call.Fun.(*ast.Ident)
 				arg, ok := call.Args[0].(*ast.Ident)
-				if ok && arg.Name == target.AST.Type.Params.List[0].Names[0].Name {
+				if direct && helper.Name == table.Consumers[0].AST.Name.Name && ok && arg.Name == target.AST.Type.Params.List[0].Names[0].Name {
 					found = true
 				}
 				continue
@@ -507,6 +519,10 @@ func goTableExactDispatcher(fn *goFunc, consumer *goFunc) bool {
 	}
 	call, ok := neg.X.(*ast.CallExpr)
 	if !ok || goCallName(call.Fun) != consumer.AST.Name.Name || len(call.Args) != 1 {
+		return false
+	}
+	helper, direct := call.Fun.(*ast.Ident)
+	if !direct || helper.Name != consumer.AST.Name.Name {
 		return false
 	}
 	method, ok := call.Args[0].(*ast.SelectorExpr)
