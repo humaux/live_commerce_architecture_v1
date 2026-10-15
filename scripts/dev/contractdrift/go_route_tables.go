@@ -503,6 +503,7 @@ func (s *goScanner) goTablePathPolicy(table goRouteTable, fn *goFunc) bool {
 			}
 		case *ast.SwitchStmt:
 			if path(node.Tag) {
+				valid = direct(node.Tag) && valid
 				for _, stmt := range node.Body.List {
 					for _, expr := range stmt.(*ast.CaseClause).List {
 						valid = listed(expr) && valid

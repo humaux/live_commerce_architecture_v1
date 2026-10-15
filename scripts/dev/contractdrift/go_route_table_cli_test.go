@@ -146,6 +146,7 @@ func TestGoRouteTableExtraPathDispatchRejectedCLI(t *testing.T) {
 		{"suffix", `if strings.HasSuffix(r.URL.Path, "/debug") { w.WriteHeader(204); return }`},
 		{"map lookup", `if map[string]bool{"/v1/table/debug":true}[r.URL.Path] { w.WriteHeader(204); return }`},
 		{"transformed path", `if strings.TrimPrefix(r.URL.Path, "/debug") == "/v1/table/one" { w.WriteHeader(204); return }`},
+		{"transformed switch", `switch strings.TrimPrefix(r.URL.Path, "/debug") { case "/v1/table/one": w.WriteHeader(204); return }`},
 		{"reached helper", `if debugRequest(r) { w.WriteHeader(204); return }`},
 	}
 	for _, tc := range cases {
