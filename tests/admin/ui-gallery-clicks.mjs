@@ -523,8 +523,15 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
       await page.waitForURL(/#ds-main$/);
     });
   await step("Topbar account menu", "click, click Store profile", "navigates to ?setting=profile", async () => {
-    await btn(page, c.account).click();
-    await page.getByRole(mobile ? "link" : "button", { name: c.setItemProfile, exact: true }).click();
+    const account = page.locator('[data-shell-topbar]').getByRole("button", { name: c.account, exact: true });
+    assert.equal(await account.count(), 1, "one accessible account trigger at this viewport");
+    await account.click();
+    const menuId = await account.getAttribute("aria-controls");
+    assert.ok(menuId, "account trigger identifies its disclosure");
+    // The gallery's SettingsLayout also has a Store profile link; this journey owns the account disclosure.
+    const profile = page.locator(`[id="${menuId}"]`).getByRole(mobile ? "link" : "button", { name: c.setItemProfile, exact: true });
+    assert.equal(await profile.count(), 1, "one profile action in the open account disclosure");
+    await profile.click();
     await page.waitForURL(/setting=profile/);
   });
   const other = locale === "en" ? "zh-TW" : "en";
