@@ -131,3 +131,59 @@ func TestGoHandlerFactoryInlineTerminalRejectedCLI(t *testing.T) {
 		t.Fatalf("inline terminal became table-covered: exit%d %s", code, out)
 	}
 }
+
+// R5: removing the exception must break the positive; dropping a condition must
+// break the corresponding unresolved assertion. Execution/mutations are CI-only.
+func TestGoHandlerFactoryRefusalLeavesCLI(t *testing.T) {
+	cases := []struct {
+		name, leaf, before      string
+		only, outside, resolved bool
+	}{
+		{name: "mountFeed", leaf: `httperror.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { httperror.Write(w, http.StatusUnauthorized, "unauthorized") })).ServeHTTP(w,r)`, resolved: true},
+		{name: "http Error literal return", leaf: `http.HandlerFunc(func(w http.ResponseWriter, unused *http.Request) { http.Error(w, "unavailable", 503); return }).ServeHTTP(w,r)`, resolved: true},
+		{name: "constant expression", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", 401 + 0*len([1]*http.Request{nil})) }).ServeHTTP(w,r)`, resolved: true},
+		{name: "2xx error writer", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "ok", 204) }).ServeHTTP(w,r)`},
+		{name: "3xx error writer", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "redirect", 302) }).ServeHTTP(w,r)`},
+		{name: "refusal only", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", 401) }).ServeHTTP(w,r)`, only: true},
+		{name: "variable status", before: `status := http.StatusUnauthorized; _ = status`, leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", status) }).ServeHTTP(w,r)`},
+		{name: "request read", leaf: `http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Error(w, r.URL.Path, 401) }).ServeHTTP(w,r)`},
+		{name: "request reference constant message", leaf: `http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Error(w, "denied", 401 + 0*len([1]*http.Request{r})) }).ServeHTTP(w,r)`},
+		{name: "second statement", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", 401); w.WriteHeader(500) }).ServeHTTP(w,r)`},
+		{name: "dynamic message", before: `message := "denied"; _ = message`, leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, message, 401) }).ServeHTTP(w,r)`},
+		{name: "unrecognised writer", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { pretendError(w, "denied", 401) }).ServeHTTP(w,r)`},
+		{name: "outside table guard", leaf: `http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "denied", 401) }).ServeHTTP(w,r)`, outside: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			replacement := tc.before + "\nif r.Header.Get(\"X-Key\") == \"\" { " + tc.leaf + "; return }; child.ServeHTTP(w,r)"
+			if tc.only {
+				replacement = tc.leaf
+			} // fallback outside the table branch is insufficient
+			source := strings.Replace(handlerFactoryCLISource, "child.ServeHTTP(w,r)", replacement, 1)
+			if tc.outside {
+				source = strings.Replace(handlerFactoryCLISource, "return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n  if !feed", "return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n  if r.Header.Get(\"X-Key\") == \"\" { "+tc.leaf+"; return }; if !feed", 1)
+			}
+			source = strings.Replace(source, `"net/http"`, "\"net/http\"\n \"example/internal/httperror\"", 1)
+			source += "\nfunc pretendError(w http.ResponseWriter, message string, status int) { http.Error(w,message,status) }\n"
+			root := handlerFactoryCLIFixture(t, source)
+			trunkFactoryWrite(t, root, "internal/httperror/error.go", `package httperror
+import "net/http"
+func Middleware(next http.Handler) http.Handler { return next }
+func Write(w http.ResponseWriter, status int, message string) { http.Error(w,message,status) }
+`)
+			code, out := goReviewProcessCLI(t, root)
+			if tc.resolved {
+				if code != 0 || !strings.Contains(out, "SUMMARY routes go=5 contract=5 bff=1; errors=0") || strings.Contains(out, "UNRESOLVED") {
+					t.Fatalf("refusal poisoned table branch: exit%d %s", code, out)
+				}
+				for _, name := range []string{"buildComposite", "buildTop"} {
+					if !strings.Contains(out, "handler factory "+name+" resolved") {
+						t.Errorf("missing refusal factory proof %s: %s", name, out)
+					}
+				}
+			} else if code != 1 || !strings.Contains(out, "opaque Go handler dispatch buildComposite;") || !strings.Contains(out, "opaque Go handler dispatch buildTop;") || strings.Contains(out, "handler factory buildComposite resolved") || strings.Contains(out, "handler factory buildTop resolved") {
+				t.Fatalf("invalid refusal became table-covered: exit%d %s", code, out)
+			}
+		})
+	}
+}
