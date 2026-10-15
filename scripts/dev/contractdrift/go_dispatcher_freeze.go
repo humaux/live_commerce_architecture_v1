@@ -229,13 +229,22 @@ func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, rowVariable string
 			return "", nil, nil, fmt.Errorf("duplicate frozen name %s at %s", name, goDispatcherLocation(fn.File, fn.AST))
 		}
 	}
+	closure := map[ast.Node]bool{}
+	for fn := range seenFuncs {
+		closure[fn.AST] = true
+	}
+	for d := range seenSpecs {
+		for _, spec := range d.node.(*ast.GenDecl).Specs {
+			closure[spec] = true
+		}
+	}
 	for d := range seenSpecs {
 		for _, name := range strings.Split(d.name, ",") {
 			if name != "_" && counts[name] > 1 {
 				return "", nil, nil, fmt.Errorf("duplicate frozen name %s at %s", name, goDispatcherLocation(d.file, d.node))
 			}
 			if d.kind == "var" {
-				if err := goDispatcherVarAuthority(pkg, name, d.node.(*ast.GenDecl).Specs[0], d.file, facadeNames); err != nil {
+				if err := goDispatcherVarAuthority(pkg, name, d.node.(*ast.GenDecl).Specs[0], d.file, facadeNames, closure); err != nil {
 					return "", nil, nil, err
 				}
 			}

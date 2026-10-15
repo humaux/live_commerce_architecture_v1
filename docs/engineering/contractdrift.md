@@ -35,14 +35,37 @@ fails (method names are receiver-qualified; multiple `init` functions are legal
 and all are hashed). Last-wins lookup maps never establish proof.
 
 Every frozen package var must be private, except the marked table's documented
-fieldless facade value. The scanner checks all package files, including `init`,
-constructors and unreachable functions, for assignments (including indexed/field
-and range writes), increment/decrement, address-taking and builtin mutation or
-escape through append/copy/clear/delete outside the var's own declaration. Such a
-hit withholds all table rows and reports the variable, operation and file:line.
-Exported state is refused regardless of where another package could write it;
-only the fieldless facade has no writable dispatch state. Parser-bound local
-shadows are distinct from package variables.
+fieldless facade value. Across every non-test package file, **every reference**
+must belong to the hashed function/spec closure (including every `init`). An
+outside function, method or non-frozen initializer reference withholds every row
+with a freeze ERROR naming the variable and reference file:line. Parser-bound
+local shadows and selector member names are not package-variable references.
+Existing direct-write, address-taking and builtin-mutation checks still run.
+
+Inside the closure, only immediate, proven read contexts are allowed: discard
+(`_ = value`), equality/inequality, unshadowed builtin `len`/`cap`, and this entire
+stdlib allowlist:
+
+| Use | Required provenance | Read-only basis |
+| --- | --- | --- |
+| `(*regexp.Regexp).MatchString` | frozen initializer is a direct call to stdlib `regexp.MustCompile`; directly invoked receiver method | [stdlib contract](https://pkg.go.dev/regexp#Regexp.MatchString) returns whether the input matches; [Regexp concurrency contract](https://pkg.go.dev/regexp#Regexp) separates matching from configuration mutators |
+| `(*encoding/csv.Writer).Write(record)` | directly invoked on an identifier bound to a concrete `*csv.Writer` parameter, with that file's stdlib import | [stdlib implementation](https://go.dev/src/encoding/csv/writer.go) iterates string fields and copies bytes into its own writer; it does not assign to or retain `record` |
+
+These are the only non-builtin calls receiving frozen values in the real
+closures (`parseV2Query`, `matchPattern`, `keyFor`, `orderLink`, `feedPrice`,
+`writeFeed`). `Longest` configures matching and is **rejected inside the closure**
+as well as outside it. Hashing its source is insufficient. No other regexp
+method, strings/slices function, name-only `MatchString`/`Write` imitation or
+unknown imported function is implicitly trusted.
+
+Returns, local/global aliases, field/map/slice/channel stores, composite values,
+method values and goroutine/function-literal captures fail closed. The syntax
+checker deliberately refuses even a direct same-package closure call receiving
+a frozen value: it does not attempt parameter-effect/alias analysis. A future
+read-only helper can be supported only with a separate proof and negative gate;
+it is not automatically safe because its body is hashed. Other unsupported read
+syntax also refuses proof. This conservative restriction accepts the current
+real tables without changing the hashed source or the pins.
 
 Each declaration is printed, re-tokenized without comments or original whitespace,
 and gofmt-normalized. Sort is stable by kind then name, with the full source key
@@ -68,10 +91,13 @@ not complete static URL analysis or a runtime routing proof. **Cross-package
 helpers (e.g. `command.ValidID`) are NOT frozen** and are covered by normal review
 and other gates, including transport tests. Var initializer source is frozen;
 later runtime values are not a state snapshot. This syntax gate does not model
-unsafe/reflection, mutation inside imported implementations or arbitrary alias
-effects. Those remain review and runtime-gate responsibilities. Reviewers must check the pin's
+unsafe/reflection, mutation inside imported implementations. Unknown frozen-value uses are refused,
+not treated as harmless aliases. Imported implementation behavior remains a
+review and runtime-gate responsibility. Reviewers must check the pin's
 closure, row targets and affected package contracts. Tests in
 `go_dispatcher_freeze_cli_test.go` anchor fixture hashes and cover declaration
 mutations, comments, data-only row targets, direct fallback targets, stored function
 values, generic names/determinism, missing/unprovable pins and untouched stale
-pins. See the Round 9 delivery for executed evidence and NOT_RUN gates.
+pins. See the Round 10 delivery for executed evidence and NOT_RUN gates. All CLI
+source mutations use `mustReplace` (first occurrence) or `mustReplaceAll` (which
+first calls `mustReplace`); missing/no-op anchors fail the fixture immediately.
