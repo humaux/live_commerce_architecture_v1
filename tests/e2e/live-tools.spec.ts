@@ -49,7 +49,9 @@ const cells: { n: number; locale: Locale; viewport: Viewport }[] = [
 ];
 // 30000 minor = 300.00 normal price, 20000 = 200.00 live price, quantity 2 on the claim and 1 on the direct purchase.
 const live = { total: "400", unit: "200", normalTotal: "600", normalUnit: "300" };
-const has = (n: string) => new RegExp(`(^|[^0-9.,])${n}(\\.00)?([^0-9]|$)`);
+// Same rule as tests/storefront/amount-match.mjs before the number: no ASCII letter/digit/","/"." ("NT$400" matches, hex "f200c" does not).
+// After it only a digit is refused: rendered text joins elements, so a label can follow directly ("NT$200NT$300直播價").
+const has = (n: string) => new RegExp(`(?<![0-9A-Za-z,.])${n}(\\.00)?([^0-9]|$)`);
 // Negative price checks scan whole sections, which also show fixture ids built from random hex: the order UUID
 // ("2ef200c7-…"), the SKU code "LT<n>-<TAG>" and the product name "Live tools product <n> <TAG>". Remove exactly those
 // fixture formats first so an id never reads as a price (PR #33 flake: "must not show 200" matched UUID "…f200c…").
