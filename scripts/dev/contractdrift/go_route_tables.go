@@ -415,6 +415,18 @@ func (s *goScanner) goTableReaches(table goRouteTable, entry *goFunc) bool {
 // request-path decisions, including constants, RawPath and RequestURI. Only
 // table calls, listed literal equality and same-URL canonicality checks qualify.
 func (s *goScanner) goTablePathPolicy(table goRouteTable, fn *goFunc) bool {
+	direct := func(expr ast.Expr) bool {
+		sel, ok := expr.(*ast.SelectorExpr)
+		if !ok {
+			return false
+		}
+		if sel.Sel.Name == "RequestURI" {
+			_, ok := sel.X.(*ast.Ident)
+			return ok
+		}
+		url, ok := sel.X.(*ast.SelectorExpr)
+		return ok && url.Sel.Name == "URL" && (sel.Sel.Name == "Path" || sel.Sel.Name == "RawPath")
+	}
 	consumer := func(call *ast.CallExpr) bool {
 		id, ok := call.Fun.(*ast.Ident)
 		if ok {
@@ -432,7 +444,7 @@ func (s *goScanner) goTablePathPolicy(table goRouteTable, fn *goFunc) bool {
 			if call, ok := n.(*ast.CallExpr); ok && consumer(call) {
 				return false
 			}
-			if sel, ok := n.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Path" || sel.Sel.Name == "RawPath" || sel.Sel.Name == "RequestURI") {
+			if expr, ok := n.(ast.Expr); ok && direct(expr) {
 				found = true
 			}
 			return true
@@ -483,7 +495,7 @@ func (s *goScanner) goTablePathPolicy(table goRouteTable, fn *goFunc) bool {
 				if path(node.X) || path(node.Y) {
 					equal := node.Op == token.EQL || node.Op == token.NEQ
 					valid = valid && equal && (canonical(node.X, node.Y) || canonical(node.Y, node.X) ||
-						path(node.X) && listed(node.Y) || path(node.Y) && listed(node.X))
+						direct(node.X) && listed(node.Y) || direct(node.Y) && listed(node.X))
 				}
 			}
 		case *ast.SwitchStmt:

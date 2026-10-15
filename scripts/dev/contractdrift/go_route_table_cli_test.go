@@ -145,6 +145,8 @@ func TestGoRouteTableExtraPathDispatchRejectedCLI(t *testing.T) {
 		{"prefix", `if strings.HasPrefix(r.URL.Path, "/v1/table/debug") { w.WriteHeader(204); return }`},
 		{"suffix", `if strings.HasSuffix(r.URL.Path, "/debug") { w.WriteHeader(204); return }`},
 		{"map lookup", `if map[string]bool{"/v1/table/debug":true}[r.URL.Path] { w.WriteHeader(204); return }`},
+		{"transformed path", `if strings.TrimPrefix(r.URL.Path, "/debug") == "/v1/table/one" { w.WriteHeader(204); return }`},
+		{"reached helper", `if debugRequest(r) { w.WriteHeader(204); return }`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -152,6 +154,7 @@ func TestGoRouteTableExtraPathDispatchRejectedCLI(t *testing.T) {
 			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", tc.branch+"\n selected := match(r.URL.Path)", 1)
 			mustWrite(t, p, source+`
 const debugPath = "/v1/table/debug"
+func debugRequest(r *http.Request) bool { return r.URL.Path == debugPath }
 `)
 			code, out := goReviewProcessCLI(t, root)
 			if code != 1 || !strings.Contains(out, "UNRESOLVED") || strings.Contains(out, "GO_ROUTE_TABLE") {
