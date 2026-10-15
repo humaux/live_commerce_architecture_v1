@@ -72,8 +72,8 @@ add the claim token as defined in their owning contract.
 | `GET /v1/buyer/quotes/{id}` | B + O + C; K forbidden | buyer-http-v1.md §Routes and strict input; §Explicit response projections |
 | `GET /v1/buyer/destinations/{id}` | B + O + C; K forbidden | buyer-http-v1.md §Routes and strict input; §Explicit response projections |
 | `GET /v1/buyer/orders/{id}` | B + O + C; K forbidden | buyer-http-v1.md §Routes and strict input; §Explicit response projections |
-| `GET /v1/buyer/feeds/meta.csv` | B + O; C/K not inspected | meta-ads-v1.md §7 HTTP (public feed); catalog-inventory-v1.md §Meta catalog feed; internal/attribution/feed.go:100 (GET/HEAD transport) |
-| `HEAD /v1/buyer/feeds/meta.csv` | B + O; C/K not inspected | meta-ads-v1.md §7 HTTP (public feed); catalog-inventory-v1.md §Meta catalog feed; internal/attribution/feed.go:100 (GET/HEAD transport) |
+| `GET /v1/buyer/feeds/meta.csv` | B + O; C/K not inspected | meta-ads-v1.md §7 HTTP (public feed); catalog-inventory-v1.md §Meta catalog feed; internal/attribution/feed.go:123 (GET/HEAD transport) |
+| `HEAD /v1/buyer/feeds/meta.csv` | B + O; C/K not inspected | meta-ads-v1.md §7 HTTP (public feed); catalog-inventory-v1.md §Meta catalog feed; internal/attribution/feed.go:123 (GET/HEAD transport) |
 
 ## 2. Current code-derived behaviour (owner review)
 
