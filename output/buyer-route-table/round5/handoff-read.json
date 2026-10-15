@@ -1,0 +1,6 @@
+{
+  "requested_relative_notes_absent": true,
+  "read_only_fallback": "/Volumes/data/live_commerce_architecture_v1/output/buyer-route-table/integrator-notes.md",
+  "sha256": "1c6f589d868c048ce154eebf911fcb3d6ba4aa72538b0c8b579c4d579436a61b",
+  "round4_exact_blocker_read_from": "output/buyer-route-table/DELIVERY.md"
+}

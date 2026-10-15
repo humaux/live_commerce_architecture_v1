@@ -1,0 +1,11 @@
+{
+  "other_opaque_guards_and_span_assertions_byte_identical_after_only_buyer_removals": true,
+  "existing_inline_terminal_test_byte_identical": true,
+  "buyer_runtime_byte_identical": true,
+  "buyer_runtime_sha256": "a58aeb386cea8ff3c35d5c2ed048d8d8f0ce9a2699c77dee74a50c652ba598e0",
+  "further_hardcoded_buyer_opaque_expectations": [],
+  "grep_log": "buyer-test-grep.txt",
+  "source_sha": "5288fd866aec57c5bc1dc9ff4ac6834cae372782",
+  "audit_attempts": 2,
+  "first_attempt": "audit comparison removed the list item before the span pair; comparison failed; corrected comparator order, no source change"
+}

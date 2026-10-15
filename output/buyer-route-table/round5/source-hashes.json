@@ -1,0 +1,27 @@
+{
+  "source_sha": "5288fd866aec57c5bc1dc9ff4ac6834cae372782",
+  "starting_sha": "73fdaea041818f4324d1cc24089a3d874eba60fb",
+  "base": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "files": {
+    "cmd/api/buyer.go": "a58aeb386cea8ff3c35d5c2ed048d8d8f0ce9a2699c77dee74a50c652ba598e0",
+    "cmd/api/buyer_feed_test.go": "5f941fda3cad8ed5b79efdf39bc074e2284b4506d70031e4d887892cfd640f58",
+    "contracts/buyer-routes-v1.md": "104c7f0d0e07c9096cf44c300e4e7c7ec5dfc77e9e0879b1c2cc8059b2cd6219",
+    "internal/attribution/feed.go": "038c20954a45857f489fe2d06d18ee107f4de0f0e43eec3873fa9ae3ffef7b5e",
+    "internal/buyerhttp/catalogv2.go": "8d31b606a4be3a8a0b7b1472f78d2c7046b9cc13cd182c72c1f65463d96085d4",
+    "internal/buyerhttp/cvs.go": "3ea9571bc6aa09466178761d3524edb36e18e7c48b861a32eba786201b14266f",
+    "internal/buyerhttp/handler.go": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8",
+    "internal/buyerhttp/routes.go": "2b165d35c508027d1ef5181576b748150ef100991603985735b803c64e7d1474",
+    "internal/buyerhttp/routes_legacy_test.go": "3d9f7dec29d15e98974e170b44d69455dc738a4310272bdbdbc015afe7f5aa51",
+    "internal/buyerhttp/routes_test.go": "3d2ff1f70b579d412f1e32f5912754032474538b6e123472ce5d5a04e4075016",
+    "internal/buyerhttp/transfer.go": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133",
+    "scripts/dev/contractdrift/go_extract.go": "9320112a2ac1b71a069f148205a68d79c511d8bb86b12b842ef8db6d265033a6",
+    "scripts/dev/contractdrift/go_extract_test.go": "d8801c0487b61c64a69ebb78675ba402a8e968c220f7217c3b3f5764076ca48f",
+    "scripts/dev/contractdrift/go_handler_factory.go": "7a6f7cf448ffc24bff98f18914793d868753af9ed61dc12822441051cfd31ac7",
+    "scripts/dev/contractdrift/go_handler_factory_cli_test.go": "5c0399fb81d20224bdd3e48096877d8f81d10173a78cbbb42c8daa5ada480436",
+    "scripts/dev/contractdrift/go_opaque.go": "994fab1ef188d191cba89702c04aa3ee332895381cb2678a08076a4e2e4d4ecf",
+    "scripts/dev/contractdrift/go_refusal_leaf.go": "0e6be927a467b6f3a8e427304950ae4875017e28bd86f09d91ac667c24702822",
+    "scripts/dev/contractdrift/go_route_table_cli_test.go": "7b4d7c68e88162a7054db5c1269cc0cc8a13da804ccd6f5a90f3a15951bc2298",
+    "scripts/dev/contractdrift/go_route_table_exact_cli_test.go": "c4f42ff61caeaf215a33006f791086a10018be58ad813bff294d8f15bd65a1f7",
+    "scripts/dev/contractdrift/go_route_tables.go": "566b917060d8ddd4f5b922ab81343ae9582e2b985a9359cf5ba6638418c9efc5"
+  }
+}

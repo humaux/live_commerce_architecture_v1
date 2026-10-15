@@ -1,0 +1,27 @@
+{
+  "run_id": "buyer-route-table-r5-pay70-5288fd866",
+  "source_sha": "5288fd866aec57c5bc1dc9ff4ac6834cae372782",
+  "base": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round5/contractdrift",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round5/pay70-scratch",
+    "-base",
+    "e4dad98cc"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "exit": 0,
+  "started_at": "2026-10-15T09:48:48.197410+00:00",
+  "finished_at": "2026-10-15T09:48:49.462887+00:00",
+  "elapsed_seconds": 1.265,
+  "timeout_seconds": 180,
+  "stdout": "output/buyer-route-table/round5/pay70-report.txt",
+  "stderr": "output/buyer-route-table/round5/pay70-stderr.log",
+  "mode": "STATIC_SOURCE_ONLY; Go tests NOT_RUN",
+  "summary": [
+    "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+  ],
+  "errors": [],
+  "touched": [],
+  "binary_sha256": "3ac02b26d9e4beb669d0b48368c39e0f0e211812e44f15e8b19598ca59e8b9b2"
+}

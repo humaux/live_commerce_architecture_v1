@@ -1,3 +1,171 @@
+READY_FOR_CI — Round 5. Both required built-CLI scenarios: exit 0, errors=0, no TOUCHED. E1 build/vet; static acceptance only. Go tests, mutation red→green, CI and independent acceptance NOT_RUN.
+
+# BUYER-ROUTE-TABLE — Round 5 (2026-10-15)
+
+Source SHA: `5288fd866aec57c5bc1dc9ff4ac6834cae372782`. Starting HEAD: `73fdaea041818f4324d1cc24089a3d874eba60fb`.
+Base: `e4dad98cc322d35709b475de25063efc92e5d866`.
+Branch/worktree: `unit/buyer-route-table`, `.worktrees/buyer-route-table`; existing PR #71.
+Coord: `8569112d-4a60-4fd1-8763-78c6172f39ff` (same owner identity continued from Round 4).
+Executor: Codex, integration scope; actual model/reasoning identifiers not independently exposed. No child agents.
+Only these four source/test files changed this round: `go_handler_factory.go`,
+`go_refusal_leaf.go`, `go_handler_factory_cli_test.go`, `go_extract_test.go`, all
+under `scripts/dev/contractdrift/`. Evidence: **STATIC_SOURCE_ONLY**.
+This status supersedes Round 4 and all older sections below.
+
+## Changes and separate commits
+
+| Item | Commit | Change and source pointers |
+| --- | --- | --- |
+| R5-1 tests, committed before fix | `762ab2ea1` | `go_handler_factory_cli_test.go:137` adds the mountFeed-shaped positive and refusal boundary counterexamples. Existing `TestGoHandlerFactoryInlineTerminalRejectedCLI` at `:124` is byte-identical. |
+| R5-1 scanner fix | `38798d8c5` | `go_refusal_leaf.go:20` is the single documented writer list; `:41` validates inline shape, parameters, statements, constants and request nonuse; `:193` requires same-table-branch proof. `go_handler_factory.go:344` separates refusals from proven leaves and `:389` applies the branch requirement. |
+| R5-2 inventory truth | `5288fd866` | `go_extract_test.go:274` replaces buyer opaque pins with table-derived rows/provenance and no-unresolved checks. Independent AST oracle at `:499`; function-span check at `:608`. |
+
+The writer identities are `net/http.Error(w, M, S)` and the scanned module's
+`internal/httperror.Write(w, S, M)`. Only inline FuncLits, optionally wrapped in
+http.HandlerFunc/httperror.Middleware, qualify. Each contains exactly the writer
+call, optionally followed by an empty return; S is a constant integer 400..599,
+M a constant string, and the request parameter is never referenced. The same
+table-selected branch must contain a proven handler leaf. Refusals append no
+routes and cannot independently prove a handler. Supplied fallbacks outside that
+branch do not satisfy this condition.
+
+The branch grammar recognizes a positive table guard body, a negative table
+guard's explicit else, or its continuation after an unconditional return.
+Unsupported shapes fail closed. Constant recognition supports literals, explicit
+AST const bindings, imported net/http constants, simple constant arithmetic and
+fixed-array constant len expressions; variables are never folded from initializers.
+No runtime code changed, including **cmd/api/buyer.go**. No baseline, owning
+contract, dependency or namespace exemption changed.
+
+## Per-condition red map — CI execution NOT_RUN
+
+All entries use the real built-CLI test helper. This table records the exact
+assertion and deliberate regression CI must exercise; it is **not an executed
+red→green claim**. `go_handler_factory_cli_test.go:176` is the positive check:
+exit=0, exact five-route SUMMARY, no UNRESOLVED; `:180` requires both factory
+proof notes. `:184` is the negative check: exit=1, both buildComposite/buildTop
+opaque findings present, neither resolved factory note present.
+
+| Regression / dropped condition | Test / source line | Assertion that must go RED |
+| --- | --- | --- |
+| Remove refusal exception entirely | `RefusalLeavesCLI/mountFeed` `:142`; also literal+return `:143` and constant expression `:144` | Positive `:176` and factory-proof `:180`: the rejection again poisons the parents. |
+| Widen inline terminals to any content leaf | Existing `InlineTerminalRejectedCLI` `:124`, unchanged inline 204 | Existing negative `:130`: requires exit=1 and both opaque factories with no proof notes. |
+| (a) Widen recognized writers to arbitrary calls | `/unrecognised writer` `:153` | Negative `:184`; treating pretendError as a writer wrongly resolves both factories. |
+| (a)/(c) Permit statements after the writer | `/second statement` `:151` | Negative `:184`; ignoring the second WriteHeader would resolve the leaf. |
+| (b) Remove error-status range requirement | `/2xx error writer` `:145`, `/3xx error writer` `:146` | Negative `:184`; a 204/302 written with http.Error remains rejected. |
+| (b) Fold variables as constants | `/variable status` `:148` | Negative `:184`; treating a variable initializer as a compile-time status resolves it. |
+| (b) Permit a dynamic message | `/dynamic message` `:152` | Negative `:184`; treating the message variable as constant resolves it. |
+| (c) Permit request references | `/request reference constant message` `:150` | Negative `:184`; `401 + 0*len([1]*http.Request{r})` is constant, so removing only the request-reference check must admit it and break this assertion. Positive constant expression `:144` uses nil instead. |
+| (c) Read r.URL.Path | `/request read` `:149` | Negative `:184` stays required; this case also violates constant-message (b), so the preceding constant-expression case isolates (c). |
+| (d) Count only refusal leaves as proof / count an outside fallback | `/refusal only` `:147` | Negative `:184`; removing same-branch sibling validation makes the outside `next` fallback falsely suffice. |
+| (d) Drop table-branch containment | `/outside table guard` `:154` | Negative `:184`; the refusal precedes table interception and cannot borrow the later child proof. |
+
+CI should run the unchanged inline-terminal test, new RefusalLeavesCLI and full
+contractdrift suite, plus TestGoRepositoryInventory and existing buyer/cmd/api
+gates. CI-only mutation runs should apply the regressions above independently,
+observe the named red assertion, restore source, then record green at the same
+source revision. No local Go test or mutation command was run.
+
+## R5-2 replacement and grep results
+
+The source oracle parses the marked private tables behind buyerhttp.Routes and
+attribution.FeedRoutes, resolves source constants/concatenations, and derives all
+expected normalized METHOD+path keys. It requires 46 distinct buyer rows plus
+the two feed GET/HEAD rows. Every key must exist in inv.Routes with its exact
+owning source row location and a GO_ROUTE_TABLE note whose owning-table span
+covers that row (`internal/buyerhttp/routes.go` / `internal/attribution/feed.go`).
+No inv.Unresolved may have a `/v1/buyer` path, name one of buildBuyerHandler /
+buildBuyerWithCVS / mountFeed, or overlap those cmd/api/buyer.go function spans.
+
+Other opaque entries remain byte-identical: PREFIX /v1/meta, PREFIX /v1/stripe,
+PREFIX /.well-known/lc-domain-check/, EXACT /v1/platform/stripe/webhook, EXACT
+/internal/tls-ask. Their existing span pairs and check bodies are unchanged.
+`round5/preservation-audit.json` verifies this after removing only the two buyer
+list entries and the buyer span pair. It also verifies the existing inline 204
+test and cmd/api/buyer.go are byte-identical to the starting HEAD.
+
+Grep of **every contractdrift *test.go** for /v1/buyer found the obsolete opaque
+expectations only in TestGoRepositoryInventory. Other matches are finite-route
+BFF assertions/fixtures in `bff_test.go:82`, `:87`, `:107` and
+`bff_review_r1b_cli_test.go:76`, `:94`; they do not pin buyer opacity and were
+left unchanged. Full grep evidence: `round5/buyer-test-grep.txt`.
+The preservation comparator's first attempt removed overlapping text in the
+wrong order; its second attempt corrected the comparator and passed, with no
+source change. This is recorded in preservation-audit.json.
+
+## Static acceptance receipts
+
+Branch SUMMARY (exact stdout):
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+Pinned #70 overlay SUMMARY (exact stdout):
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+Both receipts record exit **0**, errors **0**, empty ERROR and TOUCHED arrays,
+source SHA and scanner binary SHA256. This is static contract drift acceptance,
+not execution of handlers or of the new Go tests. The unchanged global inventory
+still has 51 baseline/non-touched UNRESOLVED and 288 warnings; neither count is
+presented as runtime acceptance or a clean global inventory.
+
+| Command / scenario | Exit / result | Receipt (under round5/) |
+| --- | --- | --- |
+| `go build ./...` | 0, E1 | `build-receipt.json` |
+| `go vet ./internal/buyerhttp ./internal/attribution ./cmd/api ./scripts/dev/contractdrift` | 0, E1, includes test compilation/static analysis only | `vet-receipt.json` |
+| `gofmt -l` on all changed Go files vs e4dad98cc | 0, empty stdout | `gofmt-receipt.json` |
+| `git diff 73fdaea04 --check -- cmd internal scripts contracts` | 0 | `source-diff-check-receipt.json` |
+| `go build -o <round5>/contractdrift ./scripts/dev/contractdrift` | 0 | `build-cli-receipt.json` |
+| Built CLI `-root <this-worktree> -base e4dad98cc` | 0, errors=0, no TOUCHED | `branch-receipt.json`, `branch-report.txt` |
+| Built CLI `-root <round5>/pay70-scratch -base e4dad98cc` | 0, errors=0, no TOUCHED | `pay70-receipt.json`, `pay70-report.txt` |
+| Overlay `go build -o <round5>/pay70-api ./cmd/api` | 0 | `pay70-build-receipt.json` |
+| `bash output/integrator/tools/prepush.sh . e4dad98cc` | 0, **prepush: OK** | `prepush-receipt.json`, `prepush-report.txt` |
+
+The overlay clone was detached at 5288fd866aec57c5bc1dc9ff4ac6834cae372782. Its **only** working-tree diff
+was cmd/api/buyer_payment.go from pinned
+`51273344fc12ff4c8062634fdf749d536958bda7`, SHA256
+`f460f3f4e97f9d9dfc090a3be5094e3c9d01f71545eebbcaf9321360a40a044f`.
+No extra #70 files were required. See pay70-setup.json and clone/checkout receipts.
+The missing relative prepush tool was copied unchanged from the main workspace,
+run, then removed; prepush-tool.json records origin/hash. The requested
+integrator-notes.md was also absent here and was read from the main workspace
+without changes; handoff-read.json records that source/hash.
+
+Initial branch acceptance also exited 0; initial-branch-* evidence is retained.
+The final gate runner inadvertently invoked the identical branch scan three
+times while checking three output tokens; all exited 0 and the final receipt is
+retained. No source changed between them; this added no acceptance scope.
+Every command had a timeout and foreground completion observation; no wait or
+unmonitored background process remains.
+
+## NOT_RUN, risks and handoff
+
+- **NOT_RUN**: all Go tests (including new positive/counterexamples and inventory
+  oracle), mutation/red→green execution, runtime/PG/browser/HTTP, CI jobs and
+  independent review. Required next step is integrator CI + independent acceptance.
+- **Risks**: this remains a narrow static AST recognizer. Unsupported constant or
+  control-flow forms stay opaque. net/http named statuses use the local Go
+  toolchain's export importer; unavailable export data fails closed. No runtime
+  completeness/performance/release claim is made.
+- **Cleanup**: only this task's clone and binaries removed, **471,982,906 bytes**;
+  cleanup.json lists each. No server, browser, port, container or runtime fixture
+  was started. Logs, source/evidence hashes and failure information are retained.
+- **Binding**: source-hashes.json covers all unit source/contracts changed vs the
+  base, including the four R5 files. Evidence-hashes.json binds retained R5
+  evidence. Later delivery-only commits do not change these source bytes.
+- Code index updated for the four changed files (58 entities); refusal/refusalBranch
+  linked to Humaux fix memory `49903b8f-f79b-4a8f-b184-5a30b23e9b6b`.
+- **No push**, PR mutation, merge, deployment or production action.
+
+---
+
+> **Round 4 — historical BLOCKED evidence.** Retained unchanged below; current
+> status is the Round 5 READY_FOR_CI section above.
+
 BLOCKED — Round 4: both required built-CLI scenarios exit 1, errors=2. Strict inline-terminal rejection exposes the existing feed-auth refusal. Build/vet E1; prepush OK; gofmt empty. No runtime/CI acceptance.
 
 # BUYER-ROUTE-TABLE — Round 4 (2026-10-15)
