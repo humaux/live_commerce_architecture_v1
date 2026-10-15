@@ -246,7 +246,15 @@ func mcAwait(t *testing.T, m miTest, e mcEvent) {
 		}
 		time.Sleep(20 * time.Millisecond) // Polls completion only; no race conclusion depends on this delay.
 	}
-	t.Fatal("actual River consumer did not complete")
+	// OA1-NOTIFY-FLAKE (recurred 2026-10-14, 2026-10-15): report where the job stalled (never fetched / retry not promoted /
+	// still running) so the next timeout names its cause instead of being rerun. Synthetic fixture data only; errors truncated.
+	var diag string
+	if err := m.f.owner.QueryRow(context.Background(), `SELECT format('state=%s attempt=%s queue=%s due_in=%s attempted_by=%s last_error=%s',
+	 j.state, j.attempt, j.queue, j.scheduled_at-clock_timestamp(), coalesce(array_length(j.attempted_by,1),0),
+	 left(coalesce(j.errors[array_length(j.errors,1)]->>'error',''),200)) FROM `+mcJobTable(t, m.f)+` j WHERE j.id=$1`, e.job).Scan(&diag); err != nil {
+		diag = "diagnostic query failed: " + err.Error()
+	}
+	t.Fatalf("actual River consumer did not complete: %s", diag)
 }
 
 func TestMetaConsumerPopulated0028Upgrade(t *testing.T) {
