@@ -762,6 +762,18 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     await seen(area.locator('[data-state="saved"]'));
     await seen(text(t.saved));
   };
+  // The record hydrates from sessionStorage in an effect after load, so a read right after reload can see the seed.
+  // Form: Cancel enables once ready, then the draft re-syncs (one "dirty" render) back to "clean".
+  // Settings reads saved directly; its fields stop being read-only once ready.
+  const reloadHydrated = async () => {
+    await page.reload({ waitUntil: "load" });
+    if (template === "settings") {
+      await page.waitForFunction(el => !el.readOnly, await area.getByLabel(t.storeName, { exact: true }).elementHandle()); // [READ]
+      return;
+    }
+    await page.waitForFunction(el => !el.hasAttribute("aria-disabled"), await button(t.cancel).elementHandle()); // [READ]
+    await seen(area.locator('[data-state="clean"]'));
+  };
   await run("Localized breadcrumb", "read trail, click parent, reload, return", "correct IA group and localized names; parent navigation persists", async () => {
     const c = galleryCopy[locale];
     const groupId = template === "settings" ? "settings" : template === "form" ? "catalog" : "orders";
@@ -961,7 +973,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       await area.getByRole("radio", { name: t.live, exact: true }).check();
       await area.getByRole("switch", { name: t.enabled, exact: true }).click();
       await save();
-      await page.reload({ waitUntil: "load" });
+      await reloadHydrated();
       assert.equal(await input(t.name).inputValue(), "Synthetic product A");
       assert.equal(await input(t.category).inputValue(), "accessories");
       assert.equal(await input(t.description).inputValue(), "Synthetic material and care.");
@@ -991,7 +1003,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       assert.equal(await tab(t.pricing).getAttribute("aria-selected"), "true", "End selects the last (Pricing) tab");
       await input(t.price).fill("480"); await input(t.inventory).fill("24");
       await save();
-      await page.reload({ waitUntil: "load" });
+      await reloadHydrated();
       assert.equal(await input(t.price).inputValue(), "480", "price persists after reload");
       assert.equal(await input(t.inventory).inputValue(), "24", "inventory persists after reload");
       await capture("form-pricing");
@@ -1011,12 +1023,12 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       await seen(text(t.uploaded));
       await area.getByRole("checkbox", { name: t.transferFail, exact: true }).uncheck();
       await save();
-      await page.reload({ waitUntil: "load" });
+      await reloadHydrated();
       await seen(text("demo.png"));
       await capture("form-media");
       await button(`${t.remove} demo.png`).click();
       await save();
-      await page.reload({ waitUntil: "load" });
+      await reloadHydrated();
       assert.equal(await text("demo.png").count(), 0);
     });
     await run("Save bar placement", "read computed styles", "mobile: bottom only; desktop: top + sticky bottom", async () => {
@@ -1108,7 +1120,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       await area.getByLabel(t.currency, { exact: true }).selectOption("USD");
       await area.getByLabel(t.timezone, { exact: true }).selectOption("UTC");
       await save();
-      await page.reload({ waitUntil: "load" });
+      await reloadHydrated();
       assert.equal(await area.getByLabel(t.storeName, { exact: true }).inputValue(), "Synthetic store A");
       assert.equal(await area.getByLabel(t.currency, { exact: true }).inputValue(), "USD");
       assert.equal(await area.getByLabel(t.timezone, { exact: true }).inputValue(), "UTC");
