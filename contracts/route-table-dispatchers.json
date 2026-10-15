@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "86608e032f9cd9c41c7caad8c92695d16bc5eca480141aaf6c278d964881ac84",
+    "dispatcher_sha256": "c593c0be301721ca9917c2f2b4ea05acafc2bc9935c419c79d55f9b99da71f60",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -272,6 +272,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "2026-10-15 integrator + independent review (Opus r7 closure read; r8-r10b approved, output/buyer-route-table/review-r10b.md)"
+    "reviewed": "2026-10-15 PR 70 admittedPaymentMethod narrowed to stripe_checkout; pending independent review"
   }
 ]
