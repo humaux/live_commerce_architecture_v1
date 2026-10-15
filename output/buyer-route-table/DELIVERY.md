@@ -1,3 +1,146 @@
+BLOCKED — Round 2 static CLI exits 1 with two touched buyer assembly UNRESOLVED findings. E1 only; CI/runtime and independent acceptance NOT_RUN.
+
+# BUYER-ROUTE-TABLE — Round 2 (2026-10-15)
+
+Source SHA: `df8eefa074bcd8577e02363792ee973dde13a317`.
+Base: `e4dad98cc322d35709b475de25063efc92e5d866`.
+Branch/worktree: `unit/buyer-route-table`, `/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table`.
+Role/executor: integration_worker scope, Codex, reasoning high as dispatched; runtime model id is not independently exposed. No child agents.
+Coord: `8569112d-4a60-4fd1-8763-78c6172f39ff`.
+
+## Round 2 ruling and result
+
+The canonical index now records all 46 `buyerhttp.Routes` entries and feed GET/HEAD,
+with full method/path syntax, BFF/Bearer/Idempotency-Key policy and owning contract
+sections. `contracts/buyer-routes-v1.md` §2.1–§2.3 describes the three requested
+transports as **documented-from-code 2026-10-15**, with handler/service line pointers,
+request/success/error/size details. In particular, privacy GET currently ignores a
+supplied body and enforces no body-size limit; the index records that behaviour.
+No owning contract text changed.
+
+`contracts.go:94`'s `mdRoute` requires METHOD + whitespace + an immediate path token,
+whose character class excludes backticks. The full prepare path at
+`buyer-payment-http-v1.md:100` is written as POST followed by an opening backtick,
+so it does not match at all. Relative path forms also need a recognized `Route base:`.
+The index places METHOD and full `/v1/buyer/...` path within the same code span;
+it leaves the parser and the owning contracts unchanged.
+
+The feed's two entries are declared at `internal/attribution/feed.go:94` and `:95`.
+`cmd/api/buyer.go:186` uses `attribution.FeedRoutes.MatchesPath`; the receiver wraps
+the complete exact-path table walk (`feed.go:100`, `:102`). The handler's first guard
+uses the complete method table walk (`feed.go:111`, `:125`). The path equality and
+GET/HEAD method sets are identical to the prior conditions. All methods at that
+exact path still reach the BFF check first: missing/duplicate/wrong key remains
+401 before handler/SQL, with the existing constant-time compare unchanged
+(`cmd/api/buyer.go:190`). Unsupported methods with a valid BFF key still get 405
+from the same handler; origin validation, timeouts, SQL, response headers, GET CSV
+and HEAD without CSV remain in their original order. This is source reasoning,
+not an executed runtime-equivalence claim.
+
+## Round 2 checkpoints
+
+| Step | Commit | Result |
+| --- | --- | --- |
+| Canonical index and code-derived descriptions | `f40fdf84c` | 48 method/path rows; owning contracts untouched |
+| Exact feed table + consumers | `b8a9bdf93` | mount path and handler method guard consume one table |
+| Exact recognizer | `1183ed690` | generic final `exact` marker form |
+| Require actual owning mount/direct consumers | `c95c28c94` | unused table cannot claim exact coverage |
+| CLI positive/counterexamples | `2268af117` | tests committed, execution NOT_RUN |
+| Final feed handler pointer | `df8eefa07` | source SHA used by all Round 2 receipts |
+
+## Scanner extension and CI proof (NOT_RUN)
+
+`go_route_tables.go:27` documents the additional marker form:
+`//contractdrift:routes /exact/path pathConsumer methodConsumer exact`.
+All rows must have that same exact path; the two consumers must be full-table
+boolean equality walks with closed false fallbacks. The method dispatcher must
+be a direct returned HTTP HandlerFunc beginning with a closed negative guard on
+that consumer's actual request Method, and cannot dispatch on Path. The actual
+imported table receiver must wrap the path consumer for an owning mount. See
+`readRouteTable`, `tableMount`, `goTableExactConsumer`, `goTableExactDispatcher`.
+The round-1 prefix grammar remains supported. `go_opaque.go` and baseline are unchanged.
+
+CI must run the existing buyerhttp, cmd/api and attribution suites, plus the full
+contractdrift suite, without removing assertions. Focused command:
+`go test ./scripts/dev/contractdrift -run 'TestGo(RouteTable|CustomDispatchWithoutTable)' -count=1`.
+The new `go_route_table_exact_cli_test.go` cases exercise real Git + built CLI:
+exact GET/HEAD resolution and declaration provenance; missing marker; truncated
+consumer; a row with a different path; bypassed method guard; extra handler path;
+unrelated mount; missing table-consuming mount. Tests do not run HTTP servers.
+
+In a CI-only isolated checkout, restore `go_route_tables.go` from round-1 HEAD
+`28aaaea99` while retaining feed/table/tests. `TestGoRouteTableExactSplitResolvesCLI`
+must go RED: exit 0, three-route SUMMARY, no-UNRESOLVED and declaration provenance
+assertions fail because the fifth marker field is unsupported. Restore the
+extension and require GREEN plus the negative cases. This red→green execution,
+all existing runtime tests and independent review are **NOT_RUN** locally by
+explicit instruction. The current static report also shows that factory coverage
+remains unresolved; do not infer full gate acceptance from the fixture plan.
+
+## Static acceptance — BLOCKED, no workaround
+
+The built CLI ran once against an exact source-HEAD local clone, using `-base
+e4dad98cc -json`; exit **1**. `round2/static-report.json` is unmodified stdout;
+`round2/static-receipt.json` records SHA, exact command, timeout and timestamps.
+The SUMMARY below uses `main.go:221`'s text format rendered from that JSON; it is
+not a second scan or a claimed literal stdout line from the JSON command:
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=2 warnings=288
+```
+
+All 48 indexed buyer method/path pairs resolve. The original 16 new buyer GO_ONLY
+findings are gone. Path-scoped `/v1/buyer` UNRESOLVED: **0**; new buyer
+CONTRACT_ONLY: **0**; new buyer METHOD_MISMATCH: **0**. However, these two buyer
+assembly UNRESOLVED errors have **no path field**, so the zero path-scoped count
+must not conceal them or be presented as zero buyer unknown coverage:
+
+| Remaining error | Source | Retained dependency span |
+| --- | --- | --- |
+| ERROR (TOUCHED) UNRESOLVED — opaque Go handler dispatch buildBuyerHandler | `cmd/api/buyer.go:88` (88–91) | includes buildBuyerWithCVS and mountFeed (184–198) |
+| ERROR (TOUCHED) UNRESOLVED — opaque Go handler dispatch buildBuyerWithCVS | `cmd/api/buyer.go:96` (96–175) | includes mountFeed (184–198), CVS and payment assembly |
+
+The report contains GO_ROUTE_TABLE provenance for both Routes and FeedRoutes;
+the exact mount and feed handler resolve, but the upper factory functions are
+not covered by the current table recognizer and remain opaque. Per the ruling,
+source work stopped on this first scan. No fix retry, namespace exemption,
+probe exclusion, baseline edit, -write-baseline or source reshaping followed.
+The two errors are retained verbatim in `round2/errors.json`. Integrator ruling
+is required before further source work; this is **not READY_FOR_CI acceptance**.
+
+## Verification and evidence boundary
+
+| Command | Exit | Evidence |
+| --- | --- | --- |
+| `go build ./...` | 0 | E1; round2/check-1.log, checks.json |
+| `go vet ./internal/buyerhttp ./internal/attribution ./cmd/api ./scripts/dev/contractdrift` | 0 | E1; round2/check-2.log, checks.json; no test execution |
+| `go build -o output/buyer-route-table/round2/contractdrift ./scripts/dev/contractdrift` | 0 | E1; round2/check-3.log, checks.json |
+| Built CLI `-root <exact-HEAD clone> -base e4dad98cc -json` | 1 | Static evidence; round2/static-report.json, static-receipt.json, errors.json |
+
+`round2/source-hashes.json` binds all changed source/test/index files against the
+base. Later commits in this round only retain delivery/evidence. No E2/E3/E4 PASS
+or unit completion claim is made. A changed source requires fresh evidence.
+
+## NOT_RUN, risks and cleanup
+
+- NOT_RUN: every Go test, mutation/red→green execution, browser, HTTP server,
+  database/provider runtime, CI and independent review. No push or PR.
+- BLOCKED: the two TOUCHED unscoped buyer factory findings; do not merge as accepted.
+- Exported route tables remain mutable by convention; owning-package writes and
+  partial consumption are rejected statically, but this is not a whole-program
+  mutation/alias proof. The recognizer supports a finite grammar; factory coverage
+  is the demonstrated remaining limit. Runtime equivalence still requires CI.
+- The task-created exact-HEAD clone, its scanner snapshots and built binary were
+  removed (432,881,037 bytes); logs/failing evidence retained in round2. Build/vet/
+  CLI processes exited; no servers, containers, ports or runtime fixtures started.
+  See round2/cleanup.json. Other task directories were not changed.
+
+---
+
+> **Round 1 — historical BLOCKED delivery.** The following is retained verbatim
+> for provenance; its source SHA, counts, limitations and pending ruling describe
+> round 1 only. Current status is the Round 2 BLOCKED section above.
+
 BLOCKED — E1 source/compile only; CI tests and independent acceptance NOT_RUN.
 
 # BUYER-ROUTE-TABLE delivery

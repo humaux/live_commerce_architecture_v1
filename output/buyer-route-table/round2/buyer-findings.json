@@ -1,0 +1,815 @@
+[
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "DELETE",
+      "path": "/v1/buyer/session",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 38,
+          "end": 38
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "GET",
+      "path": "/v1/buyer/catalog/v2/collections",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 69,
+          "end": 69
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "GET",
+      "path": "/v1/buyer/catalog/v2/collections/{}",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 71,
+          "end": 71
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "GET",
+      "path": "/v1/buyer/design/preview",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/design.go",
+          "line": 34,
+          "end": 34
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 42,
+          "end": 42
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "GET",
+      "path": "/v1/buyer/design/published",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/design.go",
+          "line": 33,
+          "end": 33
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 41,
+          "end": 41
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "GET",
+      "path": "/v1/buyer/feeds/meta.csv",
+      "locations": [
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 13,
+          "end": 13
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 93,
+          "end": 96
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 94,
+          "end": 94
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "GET",
+      "path": "/v1/buyer/media/c/{}/{}",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 72,
+          "end": 72
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "GET",
+      "path": "/v1/buyer/media/p/{}/{}",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 73,
+          "end": 73
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "GET",
+      "path": "/v1/buyer/media/s/{}",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 67,
+          "end": 67
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "HEAD",
+      "path": "/v1/buyer/feeds/meta.csv",
+      "locations": [
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 13,
+          "end": 13
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 93,
+          "end": 96
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 95,
+          "end": 95
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_NOT_IN_BFF",
+      "method": "POST",
+      "path": "/v1/buyer/session",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 8,
+          "end": 8
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 37,
+          "end": 37
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_ROUTE_TABLE",
+      "path": "/v1/buyer",
+      "detail": "dispatch resolved from consumed route table Routes",
+      "locations": [
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 35,
+          "end": 82
+        },
+        {
+          "file": "cmd/api/buyer.go",
+          "line": 35,
+          "end": 46
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 290,
+          "end": 396
+        },
+        {
+          "file": "internal/buyerhttp/claims.go",
+          "line": 31,
+          "end": 31
+        },
+        {
+          "file": "internal/buyerhttp/claims.go",
+          "line": 32,
+          "end": 32
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 278,
+          "end": 288
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 145,
+          "end": 161
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 37,
+          "end": 37
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 136,
+          "end": 143
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 128,
+          "end": 134
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 84,
+          "end": 91
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 93,
+          "end": 100
+        },
+        {
+          "file": "internal/buyerhttp/payment.go",
+          "line": 91,
+          "end": 93
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 268,
+          "end": 275
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 27,
+          "end": 29
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 52,
+          "end": 54
+        },
+        {
+          "file": "internal/buyerhttp/design.go",
+          "line": 39,
+          "end": 41
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 259,
+          "end": 266
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 749,
+          "end": 772
+        },
+        {
+          "file": "internal/buyerhttp/lookup.go",
+          "line": 191,
+          "end": 203
+        },
+        {
+          "file": "internal/buyerhttp/cvs.go",
+          "line": 62,
+          "end": 77
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 405,
+          "end": 668
+        },
+        {
+          "file": "internal/buyerhttp/routes.go",
+          "line": 103,
+          "end": 139
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 47,
+          "end": 49
+        },
+        {
+          "file": "internal/buyerhttp/lookup.go",
+          "line": 159,
+          "end": 171
+        },
+        {
+          "file": "internal/buyerhttp/lookup.go",
+          "line": 176,
+          "end": 187
+        },
+        {
+          "file": "internal/buyerhttp/payment.go",
+          "line": 85,
+          "end": 87
+        },
+        {
+          "file": "internal/buyerhttp/media.go",
+          "line": 25,
+          "end": 74
+        },
+        {
+          "file": "internal/buyerhttp/design.go",
+          "line": 43,
+          "end": 113
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 464,
+          "end": 487
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 268,
+          "end": 315
+        },
+        {
+          "file": "internal/buyerhttp/primary.go",
+          "line": 20,
+          "end": 37
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 701,
+          "end": 747
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 779,
+          "end": 783
+        },
+        {
+          "file": "internal/buyerhttp/lookup.go",
+          "line": 115,
+          "end": 155
+        },
+        {
+          "file": "internal/buyerhttp/orderlink.go",
+          "line": 43,
+          "end": 77
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 680,
+          "end": 699
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 670,
+          "end": 678
+        },
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 45,
+          "end": 57
+        },
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 61,
+          "end": 85
+        },
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 89,
+          "end": 109
+        },
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 120,
+          "end": 141
+        },
+        {
+          "file": "internal/buyerhttp/payment.go",
+          "line": 95,
+          "end": 126
+        },
+        {
+          "file": "internal/buyerhttp/claims.go",
+          "line": 79,
+          "end": 104
+        },
+        {
+          "file": "internal/buyerhttp/cvs.go",
+          "line": 95,
+          "end": 102
+        },
+        {
+          "file": "internal/buyerhttp/transfer.go",
+          "line": 30,
+          "end": 42
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 251,
+          "end": 257
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 425,
+          "end": 435
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 204,
+          "end": 249
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 55,
+          "end": 70
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 163,
+          "end": 202
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 106,
+          "end": 119
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 136,
+          "end": 142
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 197,
+          "end": 211
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 246,
+          "end": 266
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 276,
+          "end": 279
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 361,
+          "end": 407
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 151,
+          "end": 154
+        },
+        {
+          "file": "internal/buyerhttp/media.go",
+          "line": 78,
+          "end": 91
+        },
+        {
+          "file": "internal/buyerhttp/design.go",
+          "line": 115,
+          "end": 139
+        },
+        {
+          "file": "internal/buyerhttp/design.go",
+          "line": 142,
+          "end": 153
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 375,
+          "end": 386
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 193,
+          "end": 254
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 396,
+          "end": 460
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 318,
+          "end": 371
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 774,
+          "end": 777
+        },
+        {
+          "file": "internal/buyerhttp/lookup.go",
+          "line": 44,
+          "end": 62
+        },
+        {
+          "file": "internal/buyerhttp/lookup.go",
+          "line": 66,
+          "end": 93
+        },
+        {
+          "file": "internal/buyerhttp/lookup.go",
+          "line": 97,
+          "end": 111
+        },
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 172,
+          "end": 184
+        },
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 145,
+          "end": 168
+        },
+        {
+          "file": "internal/buyerhttp/privacy.go",
+          "line": 189,
+          "end": 217
+        },
+        {
+          "file": "internal/buyerhttp/payment.go",
+          "line": 81,
+          "end": 83
+        },
+        {
+          "file": "internal/buyerhttp/claims.go",
+          "line": 108,
+          "end": 118
+        },
+        {
+          "file": "internal/buyerhttp/claims.go",
+          "line": 120,
+          "end": 129
+        },
+        {
+          "file": "internal/buyerhttp/claims.go",
+          "line": 131,
+          "end": 141
+        },
+        {
+          "file": "internal/buyerhttp/cvs.go",
+          "line": 104,
+          "end": 135
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 185,
+          "end": 195
+        },
+        {
+          "file": "internal/buyerhttp/projections.go",
+          "line": 297,
+          "end": 302
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 156,
+          "end": 161
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 256,
+          "end": 265
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 175,
+          "end": 190
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 390,
+          "end": 394
+        },
+        {
+          "file": "internal/buyerhttp/catalogv2.go",
+          "line": 169,
+          "end": 172
+        },
+        {
+          "file": "internal/buyerhttp/handler.go",
+          "line": 403,
+          "end": 403
+        },
+        {
+          "file": "internal/buyerhttp/cvs.go",
+          "line": 81,
+          "end": 84
+        },
+        {
+          "file": "internal/buyerhttp/cvs.go",
+          "line": 88,
+          "end": 91
+        }
+      ]
+    }
+  },
+  {
+    "Level": "INFO",
+    "Reason": "",
+    "Finding": {
+      "kind": "GO_ROUTE_TABLE",
+      "path": "/v1/buyer/feeds/meta.csv",
+      "detail": "dispatch resolved from consumed route table FeedRoutes",
+      "locations": [
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 93,
+          "end": 96
+        },
+        {
+          "file": "cmd/api/buyer.go",
+          "line": 184,
+          "end": 198
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 123,
+          "end": 149
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 111,
+          "end": 118
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 151,
+          "end": 180
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 256,
+          "end": 267
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 64,
+          "end": 79
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 186,
+          "end": 227
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 52,
+          "end": 57
+        },
+        {
+          "file": "internal/attribution/feed.go",
+          "line": 232,
+          "end": 253
+        }
+      ]
+    }
+  }
+]
