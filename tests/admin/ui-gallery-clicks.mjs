@@ -541,11 +541,11 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
     if ((await attr(marketing, "aria-expanded")) !== "true") await marketing.click();
     await page.reload({ waitUntil: "load" });
     await openDrawer();
-    assert.equal(await attr(btn(drawer, group("marketing").label), "aria-expanded"), "true");
+    assert.equal(await attr(btn(drawer, group("marketing").label), "aria-expanded"), "true", "expanded Marketing survives reload");
     await btn(drawer, group("marketing").label).click();
     await page.reload({ waitUntil: "load" });
     await openDrawer();
-    assert.equal(await attr(btn(drawer, group("marketing").label), "aria-expanded"), "false");
+    assert.equal(await attr(btn(drawer, group("marketing").label), "aria-expanded"), "false", "collapsed Marketing survives reload");
     if (mobile) await page.keyboard.press("Escape");
   });
   await step("Dialog keyboard containment and restoration", "open, Shift+Tab, Tab cycles, Escape", "focus remains in dialog, Escape returns focus to opener", async () => {

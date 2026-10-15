@@ -81,12 +81,18 @@ export type AppShellV2Props = {
 export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded", navLabel, brand, store, topbar, breadcrumb, children, menuLabel, closeLabel, skipLabel }: AppShellV2Props) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(() => initialOpenGroups(nav, currentId));
+  const expandedRef = useRef(expanded);
+  const [preferencesReady, setPreferencesReady] = useState(false);
   useEffect(() => {
     try {
       const saved: unknown = JSON.parse(sessionStorage.getItem(persistenceKey) ?? "null");
       // Honor both expanded and explicitly collapsed groups; the active group is only the first-visit default.
-      if (Array.isArray(saved)) setExpanded(new Set(saved.filter((id): id is string => typeof id === "string" && nav.some(g => g.id === id))));
+      if (Array.isArray(saved)) {
+        expandedRef.current = new Set(saved.filter((id): id is string => typeof id === "string" && nav.some(g => g.id === id)));
+        setExpanded(expandedRef.current);
+      }
     } catch { /* Navigation remains usable when storage is unavailable. */ }
+    setPreferencesReady(true);
   }, [persistenceKey, nav, currentId]);
   const drawer = useRef<HTMLElement>(null);
   const rest = useRef<HTMLDivElement>(null);
@@ -103,14 +109,15 @@ export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded
     query.addEventListener("change", widen);
     return () => query.removeEventListener("change", widen);
   }, []);
-  const toggle = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      try { sessionStorage.setItem(persistenceKey, JSON.stringify([...next])); } catch { /* optional preference */ }
-      return next;
-    });
+  const toggle = (id: string) => {
+    const next = new Set(expandedRef.current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    // Persist in the user action, never in an updater React may defer or replay before a reload.
+    try { sessionStorage.setItem(persistenceKey, JSON.stringify([...next])); } catch { /* optional preference */ }
+    expandedRef.current = next;
+    setExpanded(next);
+  };
   return (
     <div className={s.shell} data-ds-shell="2">
       <a className={s.skip} href="#ds-main">
@@ -130,7 +137,7 @@ export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded
           </span>
         </div>
         <ul className={s.groups}>
-          {nav.map((group) => {
+          {preferencesReady && nav.map((group) => {
             const isOpen = expanded.has(group.id);
             const holdsCurrent = group.id === currentId || Boolean(group.items?.some((i) => i.id === currentId));
             const icon = <span className={s.groupIcon} aria-hidden="true">{group.icon && <Icon name={group.icon} />}</span>;
