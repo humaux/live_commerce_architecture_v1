@@ -61,6 +61,10 @@ test("Field: the actual input owns label, error/help/counter associations and ma
   const id = /<input[^>]*?\sid="([^"]+)"/.exec(out)?.[1]; // \sid= so aria-invalid="true" (…id="true") is never read as the id
   assert.ok(id, `no input id in: ${out}`);
   assert.ok(out.includes(`for="${id}"`), `label not tied to input id ${id} in: ${out}`);
+  // getByLabel exact uses the label's text, including aria-hidden descendants. Required marks must be siblings.
+  assert.ok(out.includes(`<label for="${id}">Name</label>`), "required field has one exact, unadorned label");
+  assert.match(out, /<\/label><span class="required" aria-hidden="true">\*<\/span>/);
+  assert.match(out, /<input[^>]* required=""/);
   assert.ok(out.includes(`aria-describedby="${id}-help ${id}-error ${id}-counter"`));
   assert.match(out, /aria-invalid="true"/);
   assert.match(out, /maxLength="80"/);

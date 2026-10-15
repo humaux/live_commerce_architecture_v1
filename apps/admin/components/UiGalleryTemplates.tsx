@@ -124,7 +124,7 @@ function DetailTemplate({ t }: { t: TemplateCopy }) {
         { id: "pay", title: t.paidEvent, time: "2026-10-15 10:05 UTC+8", dateTime: "2026-10-15T10:05:00+08:00", tone: "success" },
         { id: "create", title: t.received, time: "2026-10-15 10:00 UTC+8", dateTime: "2026-10-15T10:00:00+08:00", tone: "success" },
       ]} /></Card>
-      <Card title={t.note}><Stack><Field label={t.note} width="full" counter={{ value: note, max: 500, format: (n, max) => `${n} / ${max}` }}>{control => <Textarea {...control} value={note} onChange={event => setNote(event.target.value)} />}</Field>
+      <Card title={t.note}><Stack><Field label={t.noteContent} width="full" counter={{ value: note, max: 500, format: (n, max) => `${n} / ${max}` }}>{control => <Textarea {...control} value={note} onChange={event => setNote(event.target.value)} />}</Field>
         <Inline><Button variant="primary" disabledReason={note.trim() && note !== saved.note ? undefined : t.noChanges} onClick={() => persist({ note, result: t.noteSaved })}>{t.addNote}</Button></Inline>
         {saved.result && <Alert tone="success">{saved.result}</Alert>}</Stack></Card>
     </>} summary={<Card title={t.summary}><Stack><div><strong>{t.buyer}</strong><p>{t.demoBuyer} A</p></div><div><strong>{t.shipping}</strong><p>{t.delivery}</p></div><div><strong>{t.total}</strong><p>NT$ 720</p></div></Stack></Card>} />

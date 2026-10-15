@@ -686,11 +686,12 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
   }
   if (template === "detail") {
     await run("Internal note", "fill, save, reload", "note and result persist; timeline ISO times remain", async () => {
-      await area.getByLabel(t.note, { exact: true }).fill("Synthetic note A");
+      assert.equal(await area.getByLabel(t.noteContent, { exact: true }).count(), 1);
+      await area.getByLabel(t.noteContent, { exact: true }).fill("Synthetic note A");
       await button(t.addNote).click();
       await seen(text(t.noteSaved));
       await page.reload({ waitUntil: "load" });
-      assert.equal(await area.getByLabel(t.note, { exact: true }).inputValue(), "Synthetic note A");
+      assert.equal(await area.getByLabel(t.noteContent, { exact: true }).inputValue(), "Synthetic note A");
       assert.equal(await area.locator("time[datetime]").count(), 3);
     });
     for (const [item, result] of [[t.receipt, t.receiptDone], [t.archive, t.archived]]) await run(item, "open More, choose action, reload", "visible demo result persists", async () => {
@@ -707,6 +708,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     const tab = label => area.getByRole("tab", { name: label, exact: true });
     await run("Save disabled→enabled; fields", "edit every basic control, save, reload", "dirty/saving/saved; all field values persist", async () => {
       assert.equal(await button(t.save).getAttribute("aria-disabled"), "true");
+      assert.equal(await input(t.name).count(), 1, "required name retains its exact visible label");
       await input(t.name).fill("Synthetic product A");
       await seen(text(t.dirty));
       await input(t.category).selectOption("accessories");
@@ -779,6 +781,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
   }
   if (template === "settings") {
     await run("Profile fields and save", "edit name/currency/timezone, save, reload", "all selections persist without locale altering values", async () => {
+      assert.equal(await area.getByLabel(t.storeName, { exact: true }).count(), 1, "required store name retains its exact visible label");
       await area.getByLabel(t.storeName, { exact: true }).fill("Synthetic store A");
       await area.getByLabel(t.currency, { exact: true }).selectOption("USD");
       await area.getByLabel(t.timezone, { exact: true }).selectOption("UTC");

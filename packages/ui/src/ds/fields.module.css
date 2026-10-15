@@ -4,6 +4,7 @@
 .field[data-width="md"] { max-width: var(--ds-field-md); }
 .field[data-width="lg"] { max-width: var(--ds-field-lg); }
 .labelRow { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ds-space-3); }
+.labelTitle { display: inline-flex; align-items: baseline; gap: var(--ds-space-1); }
 .labelRow label, .radio legend { color: var(--ds-text-1); font-size: var(--ds-text-md); font-weight: 600; }
 .required, .error { color: var(--ds-danger-text); }
 .counter, .help { color: var(--ds-text-2); font-size: var(--ds-text-xs); line-height: var(--ds-leading); margin: 0; }

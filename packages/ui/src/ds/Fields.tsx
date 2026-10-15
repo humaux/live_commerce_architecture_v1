@@ -15,7 +15,7 @@ export function Field({ label, required, help, error, width = "full", counter, c
   const id = useId();
   const described = [help ? `${id}-help` : "", error ? `${id}-error` : "", counter ? `${id}-counter` : ""].filter(Boolean).join(" ");
   return <div className={s.field} data-width={width}>
-    <div className={s.labelRow}><label htmlFor={id}>{label}{required && <span className={s.required} aria-hidden="true"> *</span>}</label>
+    <div className={s.labelRow}><div className={s.labelTitle}><label htmlFor={id}>{label}</label>{required && <span className={s.required} aria-hidden="true">*</span>}</div>
       {counter && <span id={`${id}-counter`} className={s.counter}>{counter.format(counter.value.length, counter.max)}</span>}</div>
     {children({ id, "aria-describedby": described || undefined, "aria-invalid": error ? true : undefined, required, maxLength: counter?.max })}
     {help && <div id={`${id}-help`} className={s.help}>{help}</div>}

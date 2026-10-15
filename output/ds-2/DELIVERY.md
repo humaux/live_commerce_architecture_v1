@@ -1,6 +1,28 @@
 <!-- Purpose: DS-2 implementation handoff, audit mapping and evidence limits. Depends on: task card and scoped source commits. Used by: Claude integrator/independent reviewer/owner. -->
 # DS-2 delivery — implementation awaiting CI and visual acceptance
 
+## Round 2 — 2026-10-15 (implementation in progress; E1 only)
+
+Base/head supplied: `6b7b766048cd0370a1cc3489b047600348199ae3`, PR #69 draft. Same worktree/branch; executor Codex (runtime model identifier unavailable), no delegated agents. Four requested commit groups: A, B1–B2, B3–B5, B6–B13. No push/PR/test/browser/server authorized; only `node scripts/dev/check-ds-rules.mjs` may execute locally.
+
+### A — CI function diagnosis and repair
+
+Historical RED evidence: CI run `38700369043` at `6b7b7660`; supplied `ui-gallery/click-ledger.json` has 830 rows, 42 fail: each of the seven interactions fails in all 3 locales × 2 viewports. Artifact root: `/private/tmp/claude-501/-Volumes-data-live-commerce-architecture-v1/d13e4b5b-6b4d-4249-8530-ca9ae1ef506c/scratchpad/g69art/playwright/run.JDBl4nHD/ui-gallery/`. Review: main worktree `output/visual-review/gallery-38700369043/{integrator-audit.md,jev.txt}`. These are old-head RED evidence, never a current-head acceptance result.
+
+| Item | Cause from ledger + source | Change / evidence pointer |
+| --- | --- | --- |
+| A1 | `detail: Internal note` reports strict-mode resolution to two elements. `Card` labels its section with the heading, while the textarea Field used the identical `t.note`. | `UiGalleryTemplates.tsx:128`: distinct localized `t.noteContent` field label. `ui-gallery-template-copy.ts:8`: three locales. Test queries follow the new visible label, add uniqueness, retain fill/save/reload/time assertions. |
+| A2 | All 18 form failures occur at required Name or Price fill. `Fields.tsx:23` placed the literal required star inside `<label>`: exact label text was `商品名稱 *` / `商品名称 *` / `Product name *` (and price equivalents), while the journey asks for the bare copy with `exact:true`. aria-hidden hides the star from assistive naming, but does not remove it from Playwright label text. General-section screenshots show the name/description controls rendered; name fails first, before description is reached. Pricing is selected by the preceding keyboard assertion. | `Fields.tsx:23`, `fields.module.css:7`: required mark is a sibling of the exact label; native required/error/help/counter unchanged. No readiness/editability guard removed. `ds-rework.test.mjs`: exact raw label + required sibling + native required regression assertions. `ui-gallery-clicks.mjs`: name uniqueness before original interactions. |
+| A3 | All 18 settings failures target required Store name, including final `inputValue` after returning from Notifications. Same label-star mismatch, not editability: inputValue does not wait for editable state. Supplied profile screenshot shows the input present; the readOnly guard is only saving/initial hydration. | Shared Field fix covers store name. Added exact-label uniqueness; retained every original settings value/save/cancel/sub-nav/reload assertion. |
+
+Diagnosis is source/ledger analysis; no local browser reproduction is claimed. Browser GREEN and injected-fault RED→GREEN remain NOT_RUN and belong to integrator CI on the final SHA.
+
+### Remaining groups
+
+B1–B13 pending in subsequent commits. Risks: CSS and browser behavior unverified locally; static checker, TypeScript/build/unit/browser/axe/visual review/owner sign-off statuses will be listed below. No local processes or fixture downloads created.
+
+---
+
 Role: ui_worker (write); executor: Codex, task requested reasoning high (exact runtime model identifier is not exposed by this session). No delegated agents. Worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/ds-2`; branch `unit/ds-2-rework`; base `e4dad98cc322d35709b475de25063efc92e5d866` on `r3/integration`.
 
 Implementation/test source SHA: `7ee79c1cd5e652c5d33a8bff77435c6c99b2da80`. This delivery and source-hash manifest are committed afterward with no implementation changes. File hashes: `docs/design/ds/source-sha256.txt`. Status is E1 **JavaScript syntax/source structure only**, not TypeScript compilation, E3 acceptance or visual sign-off. Browser tier: MOCK/synthetic. All runtime gates below are NOT_RUN.
