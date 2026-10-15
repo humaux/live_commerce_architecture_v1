@@ -6,12 +6,13 @@ import { test } from "node:test";
 import { amt, amountMatcher } from "./amount-match.mjs";
 
 test("amt(96000) matches the amount as a whole token, prefixed or not", () => {
-  for (const s of ["NT$960", "NT$960.00", "960", "合計 NT$960", "$960 total", "(960)"]) assert.match(s, amt(96000), s);
+  for (const s of ["NT$960", "NT$960.00", "960", "合計 NT$960", "$960 total", "(960)", "NT$960NT$1,060", "合計NT$960"]) assert.match(s, amt(96000), s);
   assert.match("NT$1,060", amt(106000));
+  assert.match("Order totalNT$1,060Quote valid until", amt(106000)); // Playwright joins adjacent elements: a label may follow the amount
 });
 
 test("amt(96000) never matches inside fixture ids or other numbers", () => {
-  for (const s of ["BRP-40faa960dbfa", "x960", "960a", "1,960", "9600", "1960", "0.960", "960,000", "NT$1,060"]) assert.doesNotMatch(s, amt(96000), s);
+  for (const s of ["BRP-40faa960dbfa", "x960", "1,960", "9600", "1960", "0.960", "960,000", "NT$1,060"]) assert.doesNotMatch(s, amt(96000), s);
 });
 
 test("amountMatcher keeps thousands separators literal", () => {
