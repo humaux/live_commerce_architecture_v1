@@ -19,11 +19,20 @@ type Route struct {
 	kind   routeKind
 }
 
+// RouteTable owns both strict endpoint selection and interception of cleaning aliases.
+type RouteTable []Route
+
+// HasPrefix deliberately includes aliases such as /v1/buyer-extra, as mountBuyer
+// always did. The strict matcher rejects them without a credential-bearing redirect.
+func (RouteTable) HasPrefix(path string) bool {
+	return strings.HasPrefix(path, "/v1/buyer")
+}
+
 // Routes is the complete buyerhttp inventory, in the original matching precedence.
-// Treat this exported array as immutable. Feed belongs to cmd/api.mountFeed, not this handler.
+// Treat this exported table as immutable. Feed belongs to cmd/api.mountFeed, not this handler.
 //
 //contractdrift:routes /v1/buyer matchRoute allowed
-var Routes = [...]Route{
+var Routes = RouteTable{
 	{Method: http.MethodGet, Path: "/v1/buyer/session", kind: sessionRoute},
 	{Method: http.MethodPost, Path: "/v1/buyer/session", kind: sessionRoute},
 	{Method: http.MethodDelete, Path: "/v1/buyer/session", kind: sessionRoute},

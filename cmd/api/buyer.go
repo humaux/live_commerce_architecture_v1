@@ -1,3 +1,7 @@
+// Purpose: assemble the private buyer services and mount their strict route table before ServeMux.
+// Depends on: buyerhttp, checkout/platform pools and optional integration services below.
+// Used by: API startup; borrowed authorities retain their original middleware/cleanup order.
+// Invariants: no cleaned-path redirect, no enabled buyer credentials read in disabled mode.
 package main
 
 import (
@@ -33,7 +37,7 @@ func mountBuyer(fallback, buyerHandler http.Handler) http.Handler {
 		return fallback
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/v1/buyer") || strings.HasPrefix(path.Clean(r.URL.Path), "/v1/buyer") {
+		if buyerhttp.Routes.HasPrefix(r.URL.Path) || buyerhttp.Routes.HasPrefix(path.Clean(r.URL.Path)) {
 			buyerHandler.ServeHTTP(w, r)
 			return
 		}

@@ -83,7 +83,7 @@ func scanGo(root string) (inventory, error) {
 			if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 				return nil
 			}
-			f, err := parser.ParseFile(s.Set, path, nil, 0)
+			f, err := parser.ParseFile(s.Set, path, nil, parser.ParseComments)
 			if err != nil {
 				return fmt.Errorf("Go route AST %s: %w", path, err)
 			}
@@ -236,6 +236,7 @@ func scanGo(root string) (inventory, error) {
 			})
 		}
 	}
+	s.resolveRouteTables(packages)
 	s.Out.Routes = goDedupRoutes(s.Out.Routes)
 	s.Out.Unresolved = goDedupFindings(s.Out.Unresolved)
 	goBindOpaqueMountSpans(packages, s.Root, s.Set, &s.Out)
