@@ -1,5 +1,7 @@
 # PAY-RM2 phase 2a delivery
 
+**Merged 2026-10-16 as 5492b7274 (PR #70, squash, head ed06573d3).** Full Gates run 38793980208: 81 pass / 1 skipped after one rerun of `--browser-studio-ui` (flake, root cause fixed in PR #75). Independent reviews APPROVE through ed06573d3 (output/pay-rm2-p2a/review-*.md). Phase 2b DROP migration is NOT_RUN and awaits the owner. The round sections below are historical.
+
 ## Round 3 — integrator ruling handoff (current)
 
 Status: **READY_FOR_CI — E1 / structure ready only.** Exactly **55/55** symbols classified and handled: **45 A, 9 B, 1 C**; no fourth bucket, no unresolved symbol. Every one of the 55 test symbols remains (the 31 unit tests of the deleted adapter code were removed with it in round 1; see "Converted / deleted test inventory"). This is ready for integrator CI intake; it does **not** claim SQL/runtime, red→green, independent acceptance, or Full Gates passed.
@@ -559,6 +561,7 @@ Guarantees lost with the retired feature (feature-only, no equivalent needed): c
 
 Generic guarantees:
 - Process-side keyring open/refuse: partially covered by `TestStripeSP15Process` (tests/foundation/stripe_process_test.go:43). Its decrypt runs in-process; only the readiness probe runs as the built binary.
-- **NOT_COVERED:** a successful idempotent write, replayed after a real API process restart, returns its stored receipt. The studio restart test replays within one process, and the k3 idempotency tests are in-process. Follow-up: add a restart replay gate on a live merchant write (owner-visible gap; not blocking PAY-RM2).
+- **Covered by follow-up (pending owner merge):** a successful idempotent write, replayed after a real API process restart, returns its stored receipt. Gate: `TestMerchantWriteReplayAfterAPIRestart` (tests/foundation/merchant_restart_replay_test.go, `--browser-identity`), PR #73 — CI 38763342871 green, independent review output/restart-replay-gate/review-d196e4beb.md APPROVE. Was NOT_COVERED until #73 merges: the studio restart test replays within one process, and the k3 idempotency tests are in-process.
+- **Covered (merged de57e6fae, PR #74):** the live Stripe producer fails closed with a River client miswired to the expiry schema, writing no facts or River jobs — `TestStripeStartWrongRiverSchemaFailsClosed` (tests/foundation/stripe_wrong_schema_test.go). Replaces the retired PAYUNi starter's wrong-schema case (review-0617d49ef.md NOT_COVERED P2).
 
 Reviews: output/pay-rm2-p2a/review-b9cfe42cd.md (REQUEST CHANGES → addressed in the next commit).
