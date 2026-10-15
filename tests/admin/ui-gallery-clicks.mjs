@@ -171,6 +171,19 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
 
   /* ---- B. the list: filter, selection scope, bulk, row actions, states ---- */
   const table = sec("sec-table");
+  if (!mobile)
+    await step("Table fits the desktop card", "read", "no horizontal scroll; the actions column is fully visible", async () => {
+      // [READ/MEASURE] layout only: a desktop list must show every column, actions included, without scrolling the table frame.
+      const fit = await table.locator("table").evaluate((t) => {
+        const frame = t.parentElement;
+        const head = t.querySelector("th[data-actions]");
+        const f = frame.getBoundingClientRect();
+        const h = head ? head.getBoundingClientRect() : null;
+        return { overflow: frame.scrollWidth - frame.clientWidth, actionsInside: !!h && h.right <= f.right + 1 && h.left >= f.left - 1 };
+      });
+      assert.ok(fit.overflow <= 1, `table frame scrolls by ${fit.overflow}px at desktop width`);
+      assert.equal(fit.actionsInside, true, "actions column header is inside the visible frame");
+    });
   const row = (n) => table.getByRole("row").filter({ hasText: c.productName(n) });
   const note = (text) => seen(table.locator('p[role="status"]').filter({ hasText: text }));
   await step("Bulk menu with nothing selected", "click", "disabled with reason (aria-disabled, reason visible)", async () => {
