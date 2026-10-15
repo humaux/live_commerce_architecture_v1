@@ -430,4 +430,12 @@ Machine diffs force raw text, disable text conversion and external drivers, and 
 
 The default base is `origin/r3/integration` (`CONTRACT_DRIFT_BASE` or `-base` overrides it). PR matrix and foundation checkouts already fetch full history (`fetch-depth: 0`), so the base is available; an unavailable ref is fatal. Current source positions come from the merge base's actual source snapshot plus the committed/staged/working diff. An untouched baseline mismatch warns; new drift, a touched legacy source, stale entries and baseline growth fail. `-write-baseline` initially seeds only merge-base legacy, then can only shrink the reviewed baseline. It cannot grandfather changes by deleting the file first.
 
+Marked Go route tables additionally require the reviewed dispatcher freeze in
+`contracts/route-table-dispatchers.json`. Changed/missing dispatcher pins are
+fatal UNRESOLVED for every table row, independent of TOUCHED or legacy baseline;
+a pin for a table that cannot be proved is also an error. Pin hash/function-list
+changes require explicit independent reviewer approval, not automatic regeneration.
+The boundary and canonicalization are documented in
+[engineering/contractdrift.md](../engineering/contractdrift.md).
+
 Self-tests use `scripts/dev/contractdrift/testdata` and temporary real Git repositories; they run in check-gates. `-json` provides the complete classified report with every file:line. This is static E3 source evidence, not API runtime, browser or provider acceptance.

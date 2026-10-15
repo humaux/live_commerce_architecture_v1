@@ -1,0 +1,16 @@
+{
+  "run_id": "r7-static-vet",
+  "source_sha": "a0d53b08c340f74138f7d3cfd9776c0738fe525b",
+  "command": [
+    "go",
+    "vet",
+    "./..."
+  ],
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:20:51.066287+00:00",
+  "status": "finished",
+  "wake": "exec session completion; root checks exit and ERROR/TOUCHED",
+  "exit_code": 0,
+  "elapsed_seconds": 0.71,
+  "ended_at": "2026-10-15T10:20:51.776200+00:00"
+}

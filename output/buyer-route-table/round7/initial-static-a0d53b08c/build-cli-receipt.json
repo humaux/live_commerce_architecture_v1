@@ -1,0 +1,19 @@
+{
+  "run_id": "r7-static-build-cli",
+  "source_sha": "a0d53b08c340f74138f7d3cfd9776c0738fe525b",
+  "command": [
+    "go",
+    "build",
+    "-o",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round7/scratch/contractdrift",
+    "./scripts/dev/contractdrift"
+  ],
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:20:52.439647+00:00",
+  "status": "finished",
+  "wake": "exec session completion; root checks exit and ERROR/TOUCHED",
+  "exit_code": 0,
+  "elapsed_seconds": 0.339,
+  "ended_at": "2026-10-15T10:20:52.778552+00:00",
+  "binary_sha256": "b0f82a0e588a8106ce18112ab437dd41d8b689c4f37928d03b3fa73472c8d5c6"
+}

@@ -1,0 +1,17 @@
+{
+  "run_id": "r7-static-prepush",
+  "source_sha": "a0d53b08c340f74138f7d3cfd9776c0738fe525b",
+  "command": [
+    "bash",
+    "/Volumes/data/live_commerce_architecture_v1/output/integrator/tools/prepush.sh",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+    "e4dad98cc"
+  ],
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:20:51.796190+00:00",
+  "status": "finished",
+  "wake": "exec session completion; root checks exit and ERROR/TOUCHED",
+  "exit_code": 0,
+  "elapsed_seconds": 0.643,
+  "ended_at": "2026-10-15T10:20:52.439507+00:00"
+}

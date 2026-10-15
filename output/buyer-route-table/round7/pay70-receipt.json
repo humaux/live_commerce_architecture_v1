@@ -1,0 +1,25 @@
+{
+  "run_id": "r7-final-pay70",
+  "source_sha": "5f6f27b17fc8ccceb5b3f9211db1f0949e04409a",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round7/scratch/contractdrift",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round7/scratch/pay70-overlay",
+    "-base",
+    "e4dad98cc"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:26:44.708917+00:00",
+  "status": "finished",
+  "wake": "exec completion wakes root; exit!=0 or ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 1.157,
+  "ended_at": "2026-10-15T10:26:45.866345+00:00",
+  "binary_sha256": "eedb6cc683a8098eef43f11395d8dfa3aed744e6767065ab7659bed6f6606fdf",
+  "summary": [
+    "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+  ],
+  "errors": [],
+  "touched": []
+}

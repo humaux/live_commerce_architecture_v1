@@ -1,3 +1,209 @@
+READY_FOR_INDEPENDENT_REVIEW — Round 7. E3 **STATIC built-CLI acceptance** at source `5f6f27b17fc8ccceb5b3f9211db1f0949e04409a`: branch and pinned #70 overlay both exit 0, errors=0, no TOUCHED. E1 build/vet/gofmt/prepush passed. Go tests, observed mutation red→green, CI and independent review NOT_RUN. Pins remain pending independent approval; no push.
+
+# BUYER-ROUTE-TABLE — Round 7 (2026-10-15)
+
+This arbitration replaces Round 6's blocked allowlist approach with reviewed dispatcher change detection. It is a new design, not a third targeted allowlist repair.
+Branch/worktree: `unit/buyer-route-table`, `.worktrees/buyer-route-table`; existing PR #71.
+Start `13de0deee1fa8e10d3dd753b424070de79debca0`; acceptance source `5f6f27b17fc8ccceb5b3f9211db1f0949e04409a`; comparison base `e4dad98cc322d35709b475de25063efc92e5d866`.
+Executor: Codex, integrator scope; actual model/effort identifiers not independently exposed. No subagents. Same coord/owner `8569112d-4a60-4fd1-8763-78c6172f39ff` / `codex-buyer-route-r6`.
+Ownership: `scripts/dev/contractdrift/**`, explicit `contracts/route-table-dispatchers.json`, engineering/gate docs and `output/buyer-route-table/**`. Runtime source, baseline, owning route contracts and dependency locks unchanged.
+Read Round 6 DELIVERY and original R5 review at the main repository's `output/buyer-route-table/review-r5.md` (absent in this worktree); source review hash recorded in `round7/review-input.json`.
+
+## Changes and commit separation
+
+| Commit | Change |
+| --- | --- |
+| `bcda30358` | Remove R6 whole-function URL taint gate entirely; restore R5 shape checks. |
+| `eec4049c9` | Dispatcher freeze, fatal per-row diagnostics and explicit real-repository pins. |
+| `a0d53b08c` | Fixture pins, literal hash anchors and requested freeze CLI tests. |
+| `11f64cb1c` | Static self-review hardening: follow package-level stored function aliases/literals/method values. |
+| `3877ce305` | Keep row data and stored row-target bodies outside that traversal. |
+| `5f6f27b17` | Add stored row-target exclusion counterexamples. |
+| Round 7 docs commit | Engineering/gate documentation, this delivery and source-bound receipts. |
+
+R5 shape checks give the existing invalid-consumer/path diagnostics; they are not presented as complete path analysis. R6 taint code is deleted, with no dual gate logic. Freeze requires both SHA256 and exact sorted function list. Missing or changed pins withhold every table route and report ERROR (dispatcher freeze), independently of TOUCHED. Unprovable/orphan/malformed/duplicate pins fail. `-write-baseline` cannot grandfather a freeze failure.
+Canonicalization removes comments and whitespace through tokenization, gofmt-normalizes the declarations and hashes sorted receiver-qualified names plus normalized declaration bytes. The pin's `_comment` header and `docs/engineering/contractdrift.md` require explicit independent approval of pin diffs. No automatic pin updates occur during scanning.
+
+## Exact dispatcher closures for independent review
+
+Root selection includes proven HTTP dispatcher functions, both consumers and facade receiver methods. Calls and function values stay within the owning package; ambiguous receiver names conservatively include all same-name methods. Package variable initializers are followed for function targets. Row literals and row handler target bodies are excluded. Current real tables store kinds/method/path data rather than explicit function targets, so no business handler targets were excluded from these real closures.
+
+### `attribution.FeedRoutes` — 10 functions
+
+SHA256: `43d54db98b98e55ba81241abc3bb3c21fa8746f590cc2fce864a4d8720c4c8d8`
+Reviewed: `2026-10-15 integrator (pending independent review)`
+
+```text
+FeedHandler
+FeedRouteTable.MatchesPath
+addImageLinks
+feedError
+feedMethodAllowed
+feedPathMatches
+feedPrice
+imageLinks
+loadFeed
+writeFeed
+```
+
+### `buyerhttp.Routes` — 81 functions
+
+SHA256: `e59984c645e6139403b91cf1a3e88c27e3be101ce2f95d296824a1168ee623fa`
+Reviewed: `2026-10-15 integrator (pending independent review)`
+
+```text
+RouteTable.HasPrefix
+admittedPaymentMethod
+allowed
+attachV2ImageSizes
+bearer
+bodyTimeout
+buyerTransaction
+canonicalSecret
+catalogRequest
+claimToken
+classify
+contactDigest
+cvsHTTPError
+decodeExact
+decodeJSON
+decodeV2Cursor
+designPGError
+encodeV2Cursor
+forbiddenInput
+handler.ServeHTTP
+handler.authorizeView
+handler.catalogV2Get
+handler.claimRequest
+handler.collectionMediaGet
+handler.consentPut
+handler.cvsRequest
+handler.cvsServe
+handler.designGet
+handler.dispatch
+handler.mediaGet
+handler.orderLink
+handler.orderLookup
+handler.paymentRequest
+handler.primaryOriginGet
+handler.privacyErase
+handler.privacyExport
+handler.privacyGet
+handler.storeMedia
+handler.transferRequest
+handler.viewOnly
+isCatalogV2
+isDesignRoute
+isKeylessPaymentRoute
+isPaymentRoute
+isPublicRoute
+keyFor
+keylessPaymentPath
+lookupClientIP
+mapPublicCatalogError
+matchPattern
+matchRoute
+mobileHint
+noBody
+normalizeRef
+oneHeader
+optInt
+optionsRequest
+ordersRequest
+parseMinor
+parseV2Query
+privacyError
+projectCart
+projectCatalog
+projectCheckout
+projectClaimPreview
+projectClaimRedeem
+projectDestination
+projectOptions
+projectOrder
+projectOrders
+projectPromotion
+projectQuote
+projectQuoteLines
+projectV2
+scoped
+storefrontOrigin
+strictDecode
+v2Query.digest
+viewAllowed
+writeImage
+writeOK
+```
+
+`buildBuyerPayment` is absent from `buyerhttp.Routes`: it lives in `cmd/api`, while the closure is confined to `internal/buyerhttp`. The #70 overlay changes exactly `cmd/api/buyer_payment.go` from pinned `51273344fc12ff4c8062634fdf749d536958bda7`. See `round7/overlay-manifest.json`. A separate detached worktree was used; no runtime file in this branch changed.
+
+## Current acceptance SUMMARY lines
+
+Branch:
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+Pinned #70 overlay:
+
+```text
+SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+```
+
+| Check at source `5f6f27b17fc8ccceb5b3f9211db1f0949e04409a` | Exit / result | Evidence |
+| --- | --- | --- |
+| `go build ./...` | 0 / E1 | `round7/build-receipt.json` |
+| `go vet ./...` | 0 / E1; not a Go test execution | `round7/vet-receipt.json` |
+| gofmt all contractdrift Go files | 0, empty / E1 | `round7/gofmt-receipt.json` |
+| Integrator `prepush.sh <worktree> e4dad98cc` | 0, `prepush: OK` / E1 | `round7/prepush-receipt.json` |
+| Build actual CLI | 0 / E1, binary SHA256 recorded | `round7/build-cli-receipt.json` |
+| Actual branch CLI vs e4dad98cc | 0, errors=0, no TOUCHED / E3 STATIC | `round7/branch-receipt.json`, `branch-report.txt` |
+| #70 overlay API build | 0 / E1 | `round7/pay70-build-receipt.json` |
+| Same built CLI against pinned #70 overlay | 0, errors=0, no TOUCHED / E3 STATIC | `round7/pay70-receipt.json`, `pay70-report.txt` |
+
+All commands have start/end/exit receipts and 180-second timeouts; terminal completion woke the root agent. No task remains running. Initial source `a0d53b08c` receipts are archived under `round7/initial-static-a0d53b08c`; they are historical, not the current acceptance binding. The package-path invocation for the temporary pin-review tool initially failed because output is outside the main Go module; a single correction to explicit source-file arguments succeeded. No acceptance gate failed, no blocker received more than two attempts.
+
+## Red map — prospective test assertions; execution NOT_RUN
+
+`pinFixtureDispatcher` scans through the production in-package fingerprint function, writes the unmodified fixture pin, and asserts literal positive hashes:
+
+- Prefix `bb891b718f9855ea78f60bb77fb3d23fca54c88f933304c21c80bad77198fc89`.
+- Exact `52e813a9f77a019c91e6ab9919db7977061658a1e2cc4e019fee4eb9337ee246`.
+
+Negative mutations never repin. Positive listed-path/helper variants explicitly review their own modified dispatcher before invoking the CLI. Two-table fixture setup preserves the other table's pin.
+
+| Condition / regression | Test that goes red; assertion |
+| --- | --- |
+| (a) Pinned fixture resolves | Existing `TestGoRouteTableResolvesCLI`, `TestGoRouteTableExactSplitResolvesCLI`; new `TestGoDispatcherFreezePinnedAndChangesCLI/pinned`: exit0, GO_ROUTE_TABLE, no UNRESOLVED. Removing freeze alone does not make these positive controls red. |
+| (b) Reached helper semantic byte changes (`id !=` → `id ==`) | `PinnedAndChangesCLI/reached helper one byte`: shared `assertFreezeCLI` requires exit1, fatal per-row UNRESOLVED and no GO_ROUTE_TABLE. **Removing freeze makes this assertion red.** |
+| (c) Comment-only/doc edits | `PinnedAndChangesCLI/comment only`, `/doc comment`: exit0, GO_ROUTE_TABLE; reintroducing comment/position churn makes these red. |
+| (d) Row target body excluded | `TestGoDispatcherFreezeRowHandlerBodyExcludedCLI`, `TestGoDispatcherFreezeStoredRowTargetsExcludedCLI/{alias,literal,method value}`: both CLI runs resolve; body edit keeps exact fingerprint. Including target bodies makes these red. |
+| (e) Rows added/removed are data | `TestGoDispatcherFreezeRowsAreDataCLI/{add,remove}`: no UNRESOLVED, GO_ROUTE_TABLE, exact new go/contract counts 4/4 or 2/2. Hashing row data makes these red. |
+| (f) Missing file/entry | `TestGoDispatcherFreezeMissingPinsCLI/{file,entry}`: fatal per-route rejection with no GO_ROUTE_TABLE. **Removing freeze makes both red.** Wrong hash/list and unreviewed cases extend this boundary. |
+| (g) Pin cannot be proved | `TestGoDispatcherFreezeUnprovedPinErrorsCLI/{unmarked,unconsumed,orphan,invalid rows}`: fatal ERROR naming the unproved pin, no table proof except the unrelated valid table in orphan case. **Removing orphan-pin enforcement makes this red**, even when shape checks still reject the table. |
+| Independent of TOUCHED/baseline | `TestGoDispatcherFreezeUntouchedStillErrorsCLI`: stale dispatcher and pin committed at trunk; fatal per-row errors with no TOUCHED, and baseline seeding fails. **Removing freeze or downgrading it to touched-only makes this red.** |
+| Stored helpers remain in closure | `TestGoDispatcherFreezePackageFunctionValuesCLI/{alias,literal,method value}`: target body edit alone produces fatal per-route rejection. **Dropping initializer/function-value traversal makes these red.** |
+| R6 counterexamples remain effective | Unchanged `TestGoRouteTableExtraPathDispatchRejectedCLI`: all negatives require exit1/UNRESOLVED/no GO_ROUTE_TABLE. Removing freeze while retaining R5 shapes makes the ten R6 alias/helper/Contains/EqualFold/URL method/Opaque/storage cases red; direct equality/prefix/suffix cases can still be rejected by the first shape layer. |
+| R5 P2 stays fixed | Unchanged `go_refusal_leaf.go` and `TestGoHandlerFactoryRefusalLeavesCLI`; len-outside-ruling, shadowed writers, unlisted wrapper and below400 cases retained. Reintroducing len folding breaks its negative assertion; freeze removal does not replace this check. |
+
+This is a source-based red map, **not observed mutation red→green**. CI must run the unchanged R6 counterexamples and full contractdrift suite (including TestGoRepositoryInventory), and deliberately remove/restore the freeze checks to record red→green at the acceptance source. New gate existence is not claimed from unexecuted tests.
+
+## NOT_RUN, risks and cleanup
+
+- All local Go tests, fixture CLI test executions, mutation red→green, CI and independent acceptance: NOT_RUN by owner instruction. Pins are candidates marked pending independent review; do not merge on author evidence alone.
+- REAL_PG, browser real-click, runtime transport/differential, SANDBOX/LIVE/release: NOT_RUN; this task changes only static inventory tooling/contracts.
+- Fingerprints establish reviewed change detection within same-package function boundaries. Imported implementations and other mutable/global data are outside the specified function-source fingerprint. Existing transport gates and independent review remain required; no complete URL proof is claimed.
+- Conservative same-name receiver inclusion and current kind-based tables intentionally freeze additional business helpers. Legitimate function edits need a visible reviewed pin diff; table row and comment edits do not.
+- `round7/preservation-audit.json` confirms the complete R6 extra-path/refusal test bodies, refusal constant folding code, TestGoRepositoryInventory file, cmd/api/buyer.go and buyerhttp/handler.go are byte-identical to the starting HEAD; the entire runtime diff is empty.
+- `round7/source-hashes.json` binds scanner, tests, pins, runtime boundary and docs; `round7/evidence-hashes.json` binds the receipts. Documentation/evidence-only commits preserve acceptance source bytes.
+- Code index: eight changed Go files indexed (104 entities, done); `goDispatcherFingerprint` linked to Humaux fix `cd1b543a-139c-4c6f-9a46-930cd8dae4ec`. Retired taint file deletion submitted to the index.
+- Only task-owned scratch trees/binaries and detached overlay are removed; unique receipts/reports stay. Cleanup receipt `round7/cleanup.json`; no task processes, servers, ports or containers remain. No push, PR update or merge performed.
+
+---
+
+# Historical delivery below — superseded by Round 7 arbitration and STATIC acceptance
+
 BLOCKED — Round 6 (last targeted attempt). Source `4eb31d7de3f948e452f96078075cb6384f410d67`. Real built CLI exit 1, errors=106, 21 TOUCHED findings. Implementation E1 only; no accepted E3 completion. Integrator arbitration required. STOP applied; no runtime edits, exemption, push, or further targeted repair.
 
 # BUYER-ROUTE-TABLE — Round 6 (2026-10-15)
