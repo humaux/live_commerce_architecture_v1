@@ -91,7 +91,7 @@ func TestGoDispatcherFreezePinnedAndChangesCLI(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
 			if tc.old != "" {
-				mustWrite(t, p, strings.Replace(routeTableCLISource, tc.old, tc.replacement, 1))
+				mustWrite(t, p, mustReplace(t, routeTableCLISource, tc.old, tc.replacement))
 			}
 			assertFreezeCLI(t, root, tc.resolved)
 		})
@@ -138,7 +138,7 @@ func TestGoDispatcherFreezeMissingPinsCLI(t *testing.T) {
 
 func TestGoDispatcherFreezeUntouchedStillErrorsCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
-	mustWrite(t, p, strings.Replace(routeTableCLISource, `id != ""`, `id == ""`, 1))
+	mustWrite(t, p, mustReplace(t, routeTableCLISource, `id != ""`, `id == ""`))
 	// Make both the changed dispatcher and its stale pin merge-base history: no
 	// changed hunk remains. Freeze failure must never downgrade to legacy warning.
 	git(t, root, "add", ".")
@@ -160,11 +160,11 @@ func TestGoDispatcherFreezeUnprovedPinErrorsCLI(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
 			switch mode {
 			case "unmarked":
-				mustWrite(t, p, strings.Replace(routeTableCLISource, "//contractdrift:routes /v1/table match allowed mount=Routes\n", "", 1))
+				mustWrite(t, p, mustReplace(t, routeTableCLISource, "//contractdrift:routes /v1/table match allowed mount=Routes\n", ""))
 			case "unconsumed":
-				mustWrite(t, p, strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "selected := route{}", 1))
+				mustWrite(t, p, mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", "selected := route{}"))
 			case "invalid rows":
-				mustWrite(t, p, strings.Replace(routeTableCLISource, "range rows {", "range rows[:1] {", 1))
+				mustWrite(t, p, mustReplace(t, routeTableCLISource, "range rows {", "range rows[:1] {"))
 			case "orphan":
 				pins, err := readGoDispatcherPins(root)
 				if err != nil {
@@ -196,11 +196,11 @@ func TestGoDispatcherFreezeRowsAreDataCLI(t *testing.T) {
 			source := routeTableCLISource
 			contract := `{"openapi":"3.1.0","paths":{"/v1/table/one":{"get":{}}}}`
 			if mode == "add" {
-				source = strings.Replace(source, ` {Method: http.MethodPost, Path: "/v1/table/{id}", kind: "item"},`, ` {Method: http.MethodPost, Path: "/v1/table/{id}", kind: "item"},
- {Method: http.MethodGet, Path: "/v1/table/new", kind: "new"},`, 1)
+				source = mustReplace(t, source, ` {Method: http.MethodPost, Path: "/v1/table/{id}", kind: "item"},`, ` {Method: http.MethodPost, Path: "/v1/table/{id}", kind: "item"},
+ {Method: http.MethodGet, Path: "/v1/table/new", kind: "new"},`)
 				contract = `{"openapi":"3.1.0","paths":{"/v1/table/one":{"get":{}},"/v1/table/{id}":{"post":{}},"/v1/table/new":{"get":{}}}}`
 			} else {
-				source = strings.Replace(source, ` {Method: http.MethodPost, Path: "/v1/table/{id}", kind: "item"},`+"\n", "", 1)
+				source = mustReplace(t, source, ` {Method: http.MethodPost, Path: "/v1/table/{id}", kind: "item"},`+"\n", "")
 			}
 			mustWrite(t, p, source)
 			mustWrite(t, filepath.Join(root, "contracts/route-table-openapi.json"), contract)
@@ -218,9 +218,9 @@ func TestGoDispatcherFreezeRowsAreDataCLI(t *testing.T) {
 
 func TestGoDispatcherFreezeRowHandlerBodyExcludedCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
-	source := strings.Replace(routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc", 1)
-	source = strings.ReplaceAll(source, `kind: "one"},`, `kind: "one", Handler: rowLeaf},`)
-	source = strings.ReplaceAll(source, `kind: "item"},`, `kind: "item", Handler: rowLeaf},`)
+	source := mustReplace(t, routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc")
+	source = mustReplaceAll(t, source, `kind: "one"},`, `kind: "one", Handler: rowLeaf},`)
+	source = mustReplaceAll(t, source, `kind: "item"},`, `kind: "item", Handler: rowLeaf},`)
 	source = source + "\nfunc rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\n"
 	mustWrite(t, p, source)
 	before := pinFixtureDispatcher(t, root, "router.Routes", "")
@@ -228,7 +228,7 @@ func TestGoDispatcherFreezeRowHandlerBodyExcludedCLI(t *testing.T) {
 		t.Fatal("row handler target included in closure")
 	}
 	assertFreezeCLI(t, root, true)
-	mustWrite(t, p, strings.Replace(source, "func rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}", "func rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(205)}", 1))
+	mustWrite(t, p, mustReplace(t, source, "func rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}", "func rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(205)}"))
 	assertFreezeCLI(t, root, true)
 	inv, err := scanGo(root)
 	if err != nil {
@@ -243,7 +243,7 @@ func TestGoDispatcherFreezePackageFunctionValuesCLI(t *testing.T) {
 	for _, mode := range []string{"alias", "literal", "method value"} {
 		t.Run(mode, func(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
-			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "probe(r.URL.Path)\n selected := match(r.URL.Path)", 1)
+			source := mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", "probe(r.URL.Path)\n selected := match(r.URL.Path)")
 			tail := "\nfunc helper(path string) bool { return path == \"one\" }\nvar probe = helper\n"
 			if mode == "literal" {
 				tail = "\nvar probe = func(path string) bool { return path == \"one\" }\n"
@@ -256,7 +256,7 @@ func TestGoDispatcherFreezePackageFunctionValuesCLI(t *testing.T) {
 			pinFixtureDispatcher(t, root, "router.Routes", "")
 			assertFreezeCLI(t, root, true)
 			// The dispatcher declaration is unchanged; mutate only the reached target.
-			mustWrite(t, p, strings.Replace(source, `path == "one"`, `path == "two"`, 1))
+			mustWrite(t, p, mustReplace(t, source, `path == "one"`, `path == "two"`))
 			assertFreezeCLI(t, root, false)
 		})
 	}
@@ -266,9 +266,9 @@ func TestGoDispatcherFreezeStoredRowTargetsExcludedCLI(t *testing.T) {
 	for _, mode := range []string{"alias", "literal", "method value"} {
 		t.Run(mode, func(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
-			source := strings.Replace(routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc", 1)
-			source = strings.ReplaceAll(source, `kind: "one"},`, `kind: "one", Handler: rowTarget},`)
-			source = strings.ReplaceAll(source, `kind: "item"},`, `kind: "item", Handler: rowTarget},`)
+			source := mustReplace(t, routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc")
+			source = mustReplaceAll(t, source, `kind: "one"},`, `kind: "one", Handler: rowTarget},`)
+			source = mustReplaceAll(t, source, `kind: "item"},`, `kind: "item", Handler: rowTarget},`)
 			tail := "\nfunc rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\nvar rowTarget = rowLeaf\n"
 			if mode == "literal" {
 				tail = "\nvar rowTarget = func(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\n"
@@ -280,7 +280,7 @@ func TestGoDispatcherFreezeStoredRowTargetsExcludedCLI(t *testing.T) {
 			mustWrite(t, p, source)
 			before := pinFixtureDispatcher(t, root, "router.Routes", "")
 			assertFreezeCLI(t, root, true)
-			mustWrite(t, p, strings.Replace(source, tail, strings.Replace(tail, "w.WriteHeader(204)", "w.WriteHeader(205)", 1), 1))
+			mustWrite(t, p, mustReplace(t, source, tail, mustReplace(t, tail, "w.WriteHeader(204)", "w.WriteHeader(205)")))
 			assertFreezeCLI(t, root, true)
 			inv, err := scanGo(root)
 			if err != nil {
@@ -309,15 +309,15 @@ func TestGoDispatcherFreezeReferencedDeclarationsCLI(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
-			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate\n selected := match(r.URL.Path)", 1)
+			source := mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate\n selected := match(r.URL.Path)")
 			if tc.name == "regexp initializer" {
-				source = strings.Replace(source, `"net/http";`, `"net/http"; "regexp";`, 1)
+				source = mustReplace(t, source, `"net/http";`, `"net/http"; "regexp";`)
 			}
 			source += "\n" + tc.decl + "\n"
 			mustWrite(t, p, source)
 			pinFixtureDispatcher(t, root, "router.Routes", "")
 			assertFreezeCLI(t, root, true)
-			mustWrite(t, p, strings.Replace(source, tc.old, tc.replacement, 1))
+			mustWrite(t, p, mustReplace(t, source, tc.old, tc.replacement))
 			assertFreezeCLI(t, root, tc.resolves)
 		})
 	}
@@ -325,10 +325,10 @@ func TestGoDispatcherFreezeReferencedDeclarationsCLI(t *testing.T) {
 
 func TestGoDispatcherFreezeRowTargetAlsoFallbackCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
-	source := strings.Replace(routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc", 1)
-	source = strings.ReplaceAll(source, `kind: "one"},`, `kind: "one", Handler: rowLeaf},`)
-	source = strings.ReplaceAll(source, `kind: "item"},`, `kind: "item", Handler: rowLeaf},`)
-	source = strings.Replace(source, "http.NotFound(w,r)", "rowLeaf(w,r)", 1)
+	source := mustReplace(t, routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc")
+	source = mustReplaceAll(t, source, `kind: "one"},`, `kind: "one", Handler: rowLeaf},`)
+	source = mustReplaceAll(t, source, `kind: "item"},`, `kind: "item", Handler: rowLeaf},`)
+	source = mustReplace(t, source, "http.NotFound(w,r)", "rowLeaf(w,r)")
 	source += "\nfunc rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(404)}\n"
 	mustWrite(t, p, source)
 	pin := pinFixtureDispatcher(t, root, "router.Routes", "")
@@ -336,7 +336,7 @@ func TestGoDispatcherFreezeRowTargetAlsoFallbackCLI(t *testing.T) {
 	if !strings.Contains(strings.Join(pin.Functions, "\n"), "rowLeaf") {
 		t.Error("direct fallback target missing from closure")
 	}
-	mustWrite(t, p, strings.Replace(source, "w.WriteHeader(404)", "w.WriteHeader(204)", 1))
+	mustWrite(t, p, mustReplace(t, source, "w.WriteHeader(404)", "w.WriteHeader(204)"))
 	assertFreezeCLI(t, root, false)
 }
 
@@ -398,11 +398,13 @@ func TestGoDispatcherFreezeWriteAuthorityCLI(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
-			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)", 1) + "\nvar gate = 221\n"
+			source := mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)") + "\nvar gate = 221\n"
 			mustWrite(t, p, source)
 			pinFixtureDispatcher(t, root, "router.Routes", "")
 			assertFreezeCLI(t, root, true)
-			source = strings.Replace(source, "func New() http.Handler { ", "func New() http.Handler { "+tc.body, 1)
+			if tc.body != "" {
+				source = mustReplace(t, source, "func New() http.Handler { ", "func New() http.Handler { "+tc.body)
+			}
 			mustWrite(t, p, source)
 			if tc.extra != "" {
 				trunkFactoryWrite(t, root, "internal/router/zz_write.go", "package router\n"+tc.extra+"\n")
@@ -419,14 +421,14 @@ func TestGoDispatcherFreezeBuildVariantsCLI(t *testing.T) {
 	for _, mode := range []string{"N2 variants", "tag only", "os suffix", "arch suffix", "duplicate var", "duplicate func", "exported var"} {
 		t.Run(mode, func(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
-			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)", 1) + "\nvar gate = 221\n"
+			source := mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)") + "\nvar gate = 221\n"
 			mustWrite(t, p, source)
 			pinFixtureDispatcher(t, root, "router.Routes", "")
 			assertFreezeCLI(t, root, true)
 			diagnostic := "build constraint"
 			switch mode {
 			case "N2 variants":
-				mustWrite(t, p, strings.Replace(source, "var gate = 221", "", 1))
+				mustWrite(t, p, mustReplace(t, source, "var gate = 221", ""))
 				trunkFactoryWrite(t, root, "internal/router/a_gate_linux.go", "//go:build linux\n\npackage router\nvar gate = 210\n")
 				trunkFactoryWrite(t, root, "internal/router/b_gate_other.go", "//go:build !linux\n\npackage router\nvar gate = 221\n")
 			case "tag only":
@@ -443,7 +445,7 @@ func TestGoDispatcherFreezeBuildVariantsCLI(t *testing.T) {
 				trunkFactoryWrite(t, root, "internal/router/zz_dup.go", "package router\nfunc pattern(){}\n")
 			case "exported var":
 				diagnostic = "exported frozen var Gate"
-				mustWrite(t, p, strings.ReplaceAll(source, "gate", "Gate"))
+				mustWrite(t, p, mustReplaceAll(t, source, "gate", "Gate"))
 			}
 			code, out := goReviewProcessCLI(t, root)
 			if code != 1 || !strings.Contains(out, "ERROR (dispatcher freeze)") || !strings.Contains(out, diagnostic) || strings.Contains(out, "GO_ROUTE_TABLE") {
@@ -483,7 +485,7 @@ func TestGoDispatcherFreezeCompositeWritersCLI(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
-			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)", 1) + "\n" + tc.decl + "\n"
+			source := mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)") + "\n" + tc.decl + "\n"
 			mustWrite(t, p, source)
 			pinFixtureDispatcher(t, root, "router.Routes", "")
 			assertFreezeCLI(t, root, true)
@@ -498,7 +500,7 @@ func TestGoDispatcherFreezeCompositeWritersCLI(t *testing.T) {
 
 func TestGoDispatcherFreezeLocalShadowCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
-	source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)", 1) + "\nvar gate = 1\n"
+	source := mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate; selected := match(r.URL.Path)") + "\nvar gate = 1\n"
 	mustWrite(t, p, source)
 	pinFixtureDispatcher(t, root, "router.Routes", "")
 	trunkFactoryWrite(t, root, "internal/router/zz_shadow.go", "package router\nfunc unused(){gate:=1; gate++; p:=&gate; _=p}\n")

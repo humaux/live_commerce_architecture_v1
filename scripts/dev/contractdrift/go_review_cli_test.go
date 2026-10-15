@@ -58,12 +58,12 @@ func childHandler() http.Handler { return http.NotFoundHandler() }
 	if code != 0 || !strings.Contains(out, "WARNING (unresolved) UNRESOLVED MOUNT /v1/review_mount") {
 		t.Fatalf("legacy mount did not remain a warning: exit%d %s", code, out)
 	}
-	mustWrite(t, p, strings.Replace(s, `return http.NotFoundHandler()`, `return http.NotFoundHandler() /* changed child */`, 1))
+	mustWrite(t, p, mustReplace(t, s, `return http.NotFoundHandler()`, `return http.NotFoundHandler() /* changed child */`))
 	code, out = goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED MOUNT /v1/review_mount") {
 		t.Fatalf("touched handler dependency escaped mount gate: exit%d %s", code, out)
 	}
-	mustWrite(t, p, strings.Replace(s, `mux.Handle("/v1/review_mount", child)`, `mux.Handle("/v1/review_mount", child) // touched`, 1))
+	mustWrite(t, p, mustReplace(t, s, `mux.Handle("/v1/review_mount", child)`, `mux.Handle("/v1/review_mount", child) // touched`))
 	code, out = goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED MOUNT /v1/review_mount") {
 		t.Fatalf("touched methodless Handle escaped gate: exit%d %s", code, out)
@@ -87,7 +87,7 @@ func TestGoReviewFactory405CLI(t *testing.T) {
 	root := fixture(t, "aligned")
 	mustWrite(t, filepath.Join(root, "go.mod"), "module example\n")
 	p := filepath.Join(root, "internal/httpapi/routes.go")
-	s := strings.Replace(readText(t, p), `import "net/http"`, "import \"net/http\"\nimport \"example/internal/response\"", 1) + `
+	s := mustReplace(t, readText(t, p), `import "net/http"`, "import \"net/http\"\nimport \"example/internal/response\"") + `
 func registerReview(mux *http.ServeMux) {
  mux.HandleFunc("POST /v1/review_factory", unrelatedName("", handler))
  mux.HandleFunc("/v1/review_factory_methodless", unrelatedName("", handler))
@@ -119,13 +119,13 @@ func write(w http.ResponseWriter, status int) { w.Header().Set("Content-Type", "
 	git(t, root, "add", ".")
 	git(t, root, "commit", "-qm", "proven legacy 405 factory")
 	git(t, root, "tag", "-f", "trunk")
-	mustWrite(t, helper, strings.Replace(writer, "w.WriteHeader(status)", "w.WriteHeader(200)", 1))
+	mustWrite(t, helper, mustReplace(t, writer, "w.WriteHeader(status)", "w.WriteHeader(200)"))
 	code, out = goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "GO_ONLY POST /v1/review_factory") || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED EXACT /v1/review_factory_methodless") {
 		t.Fatalf("changed imported writer escaped gate: exit%d %s", code, out)
 	}
 	t.Run("header argument writes first", func(t *testing.T) {
-		bad := strings.Replace(writer, `"application/json"`, `sideEffect(w)`, 1) + `
+		bad := mustReplace(t, writer, `"application/json"`, `sideEffect(w)`) + `
 func sideEffect(w http.ResponseWriter) string { w.WriteHeader(200); return "application/json" }
 `
 		mustWrite(t, helper, bad)
@@ -135,7 +135,7 @@ func sideEffect(w http.ResponseWriter) string { w.WriteHeader(200); return "appl
 		}
 	})
 	t.Run("status reassigned", func(t *testing.T) {
-		mustWrite(t, helper, strings.Replace(writer, "w.WriteHeader(status)", "status = 200; w.WriteHeader(status)", 1))
+		mustWrite(t, helper, mustReplace(t, writer, "w.WriteHeader(status)", "status = 200; w.WriteHeader(status)"))
 		code, out := goReviewProcessCLI(t, root)
 		if code != 1 || !strings.Contains(out, "GO_ONLY POST /v1/review_factory") {
 			t.Fatalf("reassigned status escaped proof: exit%d %s", code, out)
@@ -178,7 +178,7 @@ func registerReview(mux *http.ServeMux) {
 	if code != 0 || !strings.Contains(out, "GO_405_FALLBACK POST /v1/review_numeric") || !strings.Contains(out, "GO_405_FALLBACK PUT /v1/review_symbolic") {
 		t.Fatalf("actual 405 bodies were not preserved: exit%d %s", code, out)
 	}
-	mustWrite(t, p, strings.Replace(s, `w.WriteHeader(http.StatusMethodNotAllowed)`, `other.WriteHeader(http.StatusMethodNotAllowed)`, 1))
+	mustWrite(t, p, mustReplace(t, s, `w.WriteHeader(http.StatusMethodNotAllowed)`, `other.WriteHeader(http.StatusMethodNotAllowed)`))
 	code, out = goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "GO_ONLY PUT /v1/review_symbolic") {
 		t.Fatalf("unrelated writer was mistaken for response fallback: exit%d %s", code, out)

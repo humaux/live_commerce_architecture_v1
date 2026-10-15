@@ -65,7 +65,7 @@ func TestReviewR1bBuyerTransportRealCLI(t *testing.T) {
 			before := s
 			switch mutation {
 			case "omitted":
-				s = strings.Replace(s, "\n      method,\n", "", 1)
+				s = mustReplace(t, s, "\n      method,\n", "")
 			case "deleted function":
 				start, end := strings.Index(s, "async function upstream("), strings.Index(s, "async function upstreamJSON(")
 				if start < 0 || end < start {
@@ -73,13 +73,13 @@ func TestReviewR1bBuyerTransportRealCLI(t *testing.T) {
 				}
 				s = s[:start] + s[end:]
 			case "deleted fetch":
-				s = strings.Replace(s, "return await fetch(`${config.api}/v1/buyer/${path}`", "return await removedFetch(`${config.api}/v1/buyer/${path}`", 1)
+				s = mustReplace(t, s, "return await fetch(`${config.api}/v1/buyer/${path}`", "return await removedFetch(`${config.api}/v1/buyer/${path}`")
 			default:
 				method := mutation
 				if method == "DELETE" {
 					method = `"DELETE"`
 				}
-				s = strings.Replace(s, "\n      method,\n", "\n      method: "+method+",\n", 1)
+				s = mustReplace(t, s, "\n      method,\n", "\n      method: "+method+",\n")
 			}
 			if s == before {
 				t.Fatal("transport mutation did not apply")
@@ -120,17 +120,17 @@ func TestReviewR1bSpecializedExtraSinksRealCLI(t *testing.T) {
 				probe := "\nawait fetch(" + url + ", { method: \"POST\" });\n"
 				switch {
 				case strings.HasSuffix(file, "reports/[report]/route.ts"):
-					s = strings.Replace(s, "  const { store, report }", probe+"  const { store, report }", 1)
+					s = mustReplace(t, s, "  const { store, report }", probe+"  const { store, report }")
 				case strings.HasSuffix(file, "tools/[...resource]/route.ts"):
-					s = strings.Replace(s, "  const { store, resource }", probe+"  const { store, resource }", 1)
+					s = mustReplace(t, s, "  const { store, resource }", probe+"  const { store, resource }")
 				case strings.HasSuffix(file, "import-proxy.ts"):
-					s = strings.Replace(s, "  const route=importRoute", probe+"  const route=importRoute", 1)
+					s = mustReplace(t, s, "  const route=importRoute", probe+"  const route=importRoute")
 				case strings.HasSuffix(file, "picklist-proxy.ts"):
-					s = strings.Replace(s, "  const response = await callBackend(", probe+"  const response = await callBackend(", 1)
+					s = mustReplace(t, s, "  const response = await callBackend(", probe+"  const response = await callBackend(")
 				case strings.HasSuffix(file, "buyer-server.ts"):
-					s = strings.Replace(s, "  const outbound = new Headers", probe+"  const outbound = new Headers", 1)
+					s = mustReplace(t, s, "  const outbound = new Headers", probe+"  const outbound = new Headers")
 				default:
-					s = strings.Replace(s, "export const GET = handleBuyerRequest;", "export async function GET(request, context) {"+probe+"return handleBuyerRequest(request, context); }", 1)
+					s = mustReplace(t, s, "export const GET = handleBuyerRequest;", "export async function GET(request, context) {"+probe+"return handleBuyerRequest(request, context); }")
 				}
 				if s == readText(t, p) {
 					t.Fatal("extra sink mutation did not apply")
@@ -170,7 +170,7 @@ func TestReviewR1bSinkValuesRealCLI(t *testing.T) {
 			if !strings.Contains(s, marker) {
 				t.Fatal("real route shape moved")
 			}
-			s = strings.Replace(s, marker, marker+"\n"+probe+"\n", 1)
+			s = mustReplace(t, s, marker, marker+"\n"+probe+"\n")
 			if name == "module alias" {
 				s = "const hidden=callBackend;\n" + s
 			}
@@ -189,7 +189,7 @@ func TestReviewR1bUnreachableSinkValueRealCLI(t *testing.T) {
 	p := filepath.Join(root, "apps/storefront/app/api/buyer/[...path]/route.ts")
 	s := `import { callBackend } from "../../../../../admin/lib/backend";` + "\n" + readText(t, p) + `\nfunction unused(){const hidden=fetch;return hidden("https://go.invalid/v1/__unused",{method:"POST"});}`
 	// The import itself and this private function are not reachable from an export.
-	s = strings.Replace(s, `\nfunction unused`, "\nfunction unused", 1)
+	s = mustReplace(t, s, `\nfunction unused`, "\nfunction unused")
 	mustWrite(t, p, s)
 	if code, out := call(root); code != 0 {
 		t.Fatalf("unreachable alias became forwarding evidence: %d %s", code, out)
@@ -217,7 +217,7 @@ func TestReviewR1bImportedSinkValuesRealCLI(t *testing.T) {
 			bffWrite(t, root, "apps/admin/lib/extra.ts", alias)
 			s := `import {hidden} from "@/lib/extra";` + "\n" + readText(t, p)
 			if kind != "unused import" {
-				s = strings.Replace(s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\nawait hidden(\"new-uncontracted\",{method:\"POST\"});\n", 1)
+				s = mustReplace(t, s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\nawait hidden(\"new-uncontracted\",{method:\"POST\"});\n")
 			}
 			mustWrite(t, p, s)
 			code, out := call(root)
@@ -243,7 +243,7 @@ func TestReviewR1bAdminProxySinkValuesRealCLI(t *testing.T) {
 			p := filepath.Join(root, file)
 			s := readText(t, p)
 			if reachable {
-				s = "const hidden=fetch;\n" + strings.Replace(s, "export function proxy(request: NextRequest) {", "export function proxy(request: NextRequest) {\nhidden(\"https://go.invalid/v1/__proxy_probe\",{method:\"POST\"});\n", 1)
+				s = "const hidden=fetch;\n" + mustReplace(t, s, "export function proxy(request: NextRequest) {", "export function proxy(request: NextRequest) {\nhidden(\"https://go.invalid/v1/__proxy_probe\",{method:\"POST\"});\n")
 			} else {
 				s += "\nfunction unused(){const hidden=fetch;return hidden(\"https://go.invalid/v1/__unused\",{method:\"POST\"});}\n"
 			}
@@ -268,7 +268,7 @@ func TestReviewR1bTypeValueDualBindingRealCLI(t *testing.T) {
 	file := "apps/admin/app/api/stores/[store]/[...resource]/route.ts"
 	p := filepath.Join(root, file)
 	s := readText(t, p)
-	s = "type hidden=typeof fetch;\nconst hidden=fetch;\n" + strings.Replace(s, "{if(!routes", "{hidden(\"https://go.invalid/v1/__dual\",{method:\"POST\"});if(!routes", 1)
+	s = "type hidden=typeof fetch;\nconst hidden=fetch;\n" + mustReplace(t, s, "{if(!routes", "{hidden(\"https://go.invalid/v1/__dual\",{method:\"POST\"});if(!routes")
 	mustWrite(t, p, s)
 	code, out := call(root)
 	if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "ERROR") || !strings.Contains(out, file+":") {
@@ -287,7 +287,7 @@ func TestReviewR1bSharedCyclicSinkGraphRealCLI(t *testing.T) {
 	file := "apps/admin/app/api/stores/[store]/[...resource]/route.ts"
 	p := filepath.Join(root, file)
 	s := `import {a0,a24} from "@/lib/shared-cycle";` + "\n" + readText(t, p)
-	s = strings.Replace(s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\na0(false);a24(false);\n", 1)
+	s = mustReplace(t, s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\na0(false);a24(false);\n")
 	mustWrite(t, p, s)
 	code, out := call(root) // reviewCLI retains its existing 30-second process bound.
 	if code != 1 || !strings.Contains(out, "ERROR") || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, file+":") || !strings.Contains(out, "shared-cycle.ts:") {
@@ -307,7 +307,7 @@ func TestReviewR1bWorkspaceSinkBindingsRealCLI(t *testing.T) {
 			p := filepath.Join(root, file)
 			s := `import {hidden} from "@fixture/drift-extra";` + "\n" + readText(t, p)
 			if used {
-				s = strings.Replace(s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\nhidden(\"https://go.invalid/v1/__workspace\",{method:\"POST\"});\n", 1)
+				s = mustReplace(t, s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\nhidden(\"https://go.invalid/v1/__workspace\",{method:\"POST\"});\n")
 			}
 			mustWrite(t, p, s)
 			code, out := call(root)
@@ -337,7 +337,7 @@ func TestReviewR1bWorkspaceManifestRetargetRealCLI(t *testing.T) {
 	file := "apps/admin/app/api/stores/[store]/[...resource]/route.ts"
 	p := filepath.Join(root, file)
 	s := `import {hidden} from "@fixture/drift-extra";` + "\n" + readText(t, p)
-	s = strings.Replace(s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\nhidden(\"https://go.invalid/v1/__workspace\",{method:\"POST\"});\n", 1)
+	s = mustReplace(t, s, "async function route(request: Request, context: Context) {", "async function route(request: Request, context: Context) {\nhidden(\"https://go.invalid/v1/__workspace\",{method:\"POST\"});\n")
 	mustWrite(t, p, s)
 	git(t, root, "add", ".")
 	git(t, root, "commit", "-qm", "legacy workspace alias")
@@ -366,23 +366,23 @@ func TestReviewR1bMerchantTransportProofRealCLI(t *testing.T) {
 			}
 			prefix, transport := s[:start], s[start:]
 			if kind == "computed config assignment" {
-				transport = strings.Replace(transport, "  const headers = new Headers(init.headers);", "  authConfig[\"apiOrigin\"] = \"https://go.invalid/v1/__merchant_probe\";\n  const headers = new Headers(init.headers);", 1)
+				transport = mustReplace(t, transport, "  const headers = new Headers(init.headers);", "  authConfig[\"apiOrigin\"] = \"https://go.invalid/v1/__merchant_probe\";\n  const headers = new Headers(init.headers);")
 			} else if kind == "config object escape" {
-				transport = strings.Replace(transport, "  const headers = new Headers(init.headers);", "  Object.assign(authConfig, {apiOrigin: \"https://go.invalid/v1/__merchant_probe\"});\n  const headers = new Headers(init.headers);", 1)
+				transport = mustReplace(t, transport, "  const headers = new Headers(init.headers);", "  Object.assign(authConfig, {apiOrigin: \"https://go.invalid/v1/__merchant_probe\"});\n  const headers = new Headers(init.headers);")
 			} else if kind == "config property reassigned" {
-				transport = strings.Replace(transport, "  const headers = new Headers(init.headers);", "  authConfig.apiOrigin = \"https://go.invalid/v1/__merchant_probe\";\n  const headers = new Headers(init.headers);", 1)
+				transport = mustReplace(t, transport, "  const headers = new Headers(init.headers);", "  authConfig.apiOrigin = \"https://go.invalid/v1/__merchant_probe\";\n  const headers = new Headers(init.headers);")
 			} else if kind == "config origin retarget" {
-				prefix = strings.Replace(prefix, "apiOrigin: exactOrigin(", "apiOrigin: unprovenOrigin(", 1)
+				prefix = mustReplace(t, prefix, "apiOrigin: exactOrigin(", "apiOrigin: unprovenOrigin(")
 			} else if kind == "path reassigned" {
-				transport = strings.Replace(transport, "  if (!authConfig)", "  path = \"/v1/__merchant_probe\";\n  if (!authConfig)", 1)
+				transport = mustReplace(t, transport, "  if (!authConfig)", "  path = \"/v1/__merchant_probe\";\n  if (!authConfig)")
 			} else if kind == "dynamic URL" {
-				transport = strings.Replace(transport, "fetch(`${authConfig.apiOrigin}${path}`", "fetch(dynamicURL()", 1)
+				transport = mustReplace(t, transport, "fetch(`${authConfig.apiOrigin}${path}`", "fetch(dynamicURL()")
 			} else {
 				extra := "...init, method: \"DELETE\","
 				if kind == "spread before init" {
 					extra = "method: \"DELETE\", ...init,"
 				}
-				transport = strings.Replace(transport, "...init,", extra, 1)
+				transport = mustReplace(t, transport, "...init,", extra)
 			}
 			if prefix+transport == s {
 				t.Fatal("merchant mutation did not apply")
@@ -402,7 +402,7 @@ func TestReviewR1bOriginObjectEscapeRealCLI(t *testing.T) {
 	file := "apps/admin/lib/auth.ts"
 	p := filepath.Join(root, file)
 	s := readText(t, p)
-	s = strings.Replace(s, "  return url.origin;", "  Object.defineProperty(url, \"origin\", {value: \"https://go.invalid/v1/__merchant_probe\"});\n  return url.origin;", 1)
+	s = mustReplace(t, s, "  return url.origin;", "  Object.defineProperty(url, \"origin\", {value: \"https://go.invalid/v1/__merchant_probe\"});\n  return url.origin;")
 	mustWrite(t, p, s)
 	code, out := call(root)
 	if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "ERROR") || !strings.Contains(out, file+":") {

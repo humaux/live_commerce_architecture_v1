@@ -32,7 +32,7 @@ func TestReviewR1BForcedTextDiffCLI(t *testing.T) {
 				git(t, root, "config", "diff.noprefix", "true")
 			}
 			p := filepath.Join(root, "internal/httpapi/routes.go")
-			mustWrite(t, p, strings.Replace(readText(t, p), `"/orphan", handler)`, `"/orphan", handler) // edited`, 1))
+			mustWrite(t, p, mustReplace(t, readText(t, p), `"/orphan", handler)`, `"/orphan", handler) // edited`))
 			if code, out := reviewCLI(t)(root); code != 1 || !strings.Contains(out, "TOUCHED") {
 				t.Fatalf("%s suppressed raw changed lines: %d %s", mode, code, out)
 			}
@@ -68,7 +68,7 @@ func TestReviewR1BDeletedUnresolvedCLI(t *testing.T) {
 			}
 			baselinePath := filepath.Join(root, "scripts/dev/contractdrift/baseline.json")
 			before := readText(t, baselinePath)
-			mustWrite(t, p, strings.Replace(original, "\"paths\": null,\n", "", 1))
+			mustWrite(t, p, mustReplace(t, original, "\"paths\": null,\n", ""))
 			if code, out := call(root, args...); code != 1 || !strings.Contains(out, "UNRESOLVED") {
 				t.Fatalf("deleted unresolved source accepted: %d %s", code, out)
 			}
@@ -104,7 +104,7 @@ func TestReviewR1BDeletionFixLeavesUnrelatedUnknownCLI(t *testing.T) {
 	git(t, root, "add", ".")
 	git(t, root, "commit", "-qm", "baseline")
 	git(t, root, "tag", "-f", "trunk")
-	mustWrite(t, p, strings.Replace(original, "\"bad-one\": {\"get\":{}},\n", "", 1))
+	mustWrite(t, p, mustReplace(t, original, "\"bad-one\": {\"get\":{}},\n", ""))
 	call := reviewCLI(t)
 	for _, args := range [][]string{nil, {"-write-baseline"}} {
 		if code, out := call(root, args...); code != 0 || !strings.Contains(out, "UNRESOLVED") {
@@ -128,7 +128,7 @@ func TestReviewR1BDeletionCreatesSecondUnknownCLI(t *testing.T) {
 	git(t, root, "add", ".")
 	git(t, root, "commit", "-qm", "baseline")
 	git(t, root, "tag", "-f", "trunk")
-	mustWrite(t, p, strings.Replace(original, baseLine, "", 1))
+	mustWrite(t, p, mustReplace(t, original, baseLine, ""))
 	call := reviewCLI(t)
 	for _, args := range [][]string{nil, {"-write-baseline"}} {
 		if code, out := call(root, args...); code != 1 || !strings.Contains(out, "UNRESOLVED") {

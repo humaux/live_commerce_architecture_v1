@@ -2,6 +2,7 @@
 // Depends on: Git fixtures and the independently pinned pre-mutation dispatcher.
 // Used by: CI; local Go tests are forbidden for this unit.
 // Invariant: every escape gives a positioned freeze ERROR, even before pin comparison.
+
 package main
 
 import (
@@ -32,8 +33,8 @@ func TestGoDispatcherFrozenValueEscapeCLI(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
-			source := strings.Replace(routeTableCLISource, `"net/http";`, `"net/http"; "regexp";`, 1)
-			source = strings.Replace(source, "selected := match(r.URL.Path)", `_ = gate.MatchString("x"); _ = len(columns); selected := match(r.URL.Path)`, 1)
+			source := mustReplace(t, routeTableCLISource, `"net/http";`, `"net/http"; "regexp";`)
+			source = mustReplace(t, source, "selected := match(r.URL.Path)", `_ = gate.MatchString("x"); _ = len(columns); selected := match(r.URL.Path)`)
 			source += `
 var gate = regexp.MustCompile("x")
 var columns = []string{"id"}
@@ -50,7 +51,7 @@ var columns = []string{"id"}
 				if !tc.inside {
 					replacement = anchor + tc.body
 				}
-				source = strings.Replace(source, anchor, replacement, 1)
+				source = mustReplace(t, source, anchor, replacement)
 			}
 			mustWrite(t, p, source+"\n"+tc.extra+"\n")
 			code, out := goReviewProcessCLI(t, root)

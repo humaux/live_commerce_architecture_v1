@@ -23,7 +23,7 @@ func TestReviewR1BGlobalNamespaceSinkRealCLI(t *testing.T) {
 				if strings.Count(s, marker) != 1 {
 					t.Fatal("actual forwarding export moved")
 				}
-				s = strings.Replace(s, marker, marker+"\n"+probe+"\n", 1)
+				s = mustReplace(t, s, marker, marker+"\n"+probe+"\n")
 			} else {
 				s += "\nasync function unusedGlobalSink(){" + probe + "}\n"
 			}

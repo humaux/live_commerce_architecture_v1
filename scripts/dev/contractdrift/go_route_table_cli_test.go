@@ -101,7 +101,7 @@ func TestGoRouteTableUnservedTailRejectedCLI(t *testing.T) {
 	// The table still advertises the second entry, but the router never visits it.
 	// Full-range consumption is statically enforceable; arbitrary helper behavior
 	// is explicitly left to the buyer transport's differential runtime gate.
-	mustWrite(t, p, strings.Replace(routeTableCLISource, "range rows {", "range rows[:len(rows)-1] {", 1))
+	mustWrite(t, p, mustReplace(t, routeTableCLISource, "range rows {", "range rows[:len(rows)-1] {"))
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "invalid or incompletely consumed contractdrift route table") || strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("unserved table entry became known: exit%d %s", code, out)
@@ -110,7 +110,7 @@ func TestGoRouteTableUnservedTailRejectedCLI(t *testing.T) {
 
 func TestGoCustomDispatchWithoutTableRemainsOpaqueCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
-	mustWrite(t, p, strings.Replace(routeTableCLISource, "//contractdrift:routes /v1/table match allowed mount=Routes\n", "", 1))
+	mustWrite(t, p, mustReplace(t, routeTableCLISource, "//contractdrift:routes /v1/table match allowed mount=Routes\n", ""))
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1") || strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("unmarked custom router ceased being opaque: exit%d %s", code, out)
@@ -163,7 +163,7 @@ func TestGoRouteTableExtraPathDispatchRejectedCLI(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root, p := routeTableCLIFixture(t)
-			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", tc.branch+"\n selected := match(r.URL.Path)", 1)
+			source := mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", tc.branch+"\n selected := match(r.URL.Path)")
 			mustWrite(t, p, source+`
 const debugPath = "/v1/table/debug"
 func debugRequest(r *http.Request) bool { return r.URL.Path == debugPath }
@@ -179,10 +179,10 @@ func debugPathString(path string) bool { return path == debugPath }
 
 func TestGoRouteTableListedPathPolicyAcceptedCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
-	source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", `if r.URL.EscapedPath() != r.URL.Path { http.NotFound(w,r); return }
+	source := mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", `if r.URL.EscapedPath() != r.URL.Path { http.NotFound(w,r); return }
  switch { case r.URL.Path == listedPath: w.Header().Set("X-Switch", "listed") }
  if r.URL.Path == listedPath { w.Header().Set("X-Listed", "yes") }
- selected := match(r.URL.Path)`, 1)
+ selected := match(r.URL.Path)`)
 	mustWrite(t, p, source+`
 const listedPath = "/v1/table/one"
 `)
@@ -195,8 +195,8 @@ const listedPath = "/v1/table/one"
 
 func TestGoRouteTableListedPathHelperAcceptedCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
-	source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", `if listedRequestPath(r.URL.Path) { w.Header().Set("X-Listed", "yes") }
- selected := match(r.URL.Path)`, 1)
+	source := mustReplace(t, routeTableCLISource, "selected := match(r.URL.Path)", `if listedRequestPath(r.URL.Path) { w.Header().Set("X-Listed", "yes") }
+ selected := match(r.URL.Path)`)
 	mustWrite(t, p, source+`
 func listedRequestPath(path string) bool { return path == "/v1/table/one" }
 `)
@@ -231,10 +231,10 @@ func mutate() { rows[0].Method = "DELETE" }
 // rejected even when the write is in the importing package, outside the owner.
 func TestGoRouteTableExportedMutationRejectedCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
-	source := strings.Replace(routeTableCLISource, "type Table struct{}; var Routes = Table{}", "type Table []entry", 1)
-	source = strings.Replace(source, " mount=Routes", "", 1)
-	source = strings.ReplaceAll(source, "rows", "Routes")
-	source = strings.Replace(source, "var Routes = []entry{", "var Routes = Table{", 1)
+	source := mustReplace(t, routeTableCLISource, "type Table struct{}; var Routes = Table{}", "type Table []entry")
+	source = mustReplace(t, source, " mount=Routes", "")
+	source = mustReplaceAll(t, source, "rows", "Routes")
+	source = mustReplace(t, source, "var Routes = []entry{", "var Routes = Table{")
 	mustWrite(t, p, source)
 	mustWrite(t, filepath.Join(root, "cmd/api/main.go"), routeTableMountSource+`
 func mutateImported() { router.Routes[0].Method = "DELETE" }

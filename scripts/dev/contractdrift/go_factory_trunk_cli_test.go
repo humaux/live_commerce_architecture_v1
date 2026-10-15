@@ -87,7 +87,7 @@ func trunkFactoryReplace(t *testing.T, source, old, next string) string {
 	if strings.Count(source, old) != 1 {
 		t.Fatalf("fixture seam %q must occur exactly once", old)
 	}
-	return strings.Replace(source, old, next, 1)
+	return mustReplace(t, source, old, next)
 }
 
 func trunkFactoryAssert(t *testing.T, call func(string, ...string) (int, string), root string, touched bool, exact string) {
@@ -172,7 +172,7 @@ func TestGoFactoryTrunkMustTouchCLI(t *testing.T) {
 			if alias == "." {
 				prefix = ""
 			}
-			source = strings.ReplaceAll(source, "platform.", prefix)
+			source = mustReplaceAll(t, source, "platform.", prefix)
 			root := trunkFactoryLegacy(t, call, source, map[string]string{"internal/platform/runtime.go": trunkFactoryPlatform})
 			probe := `if err := ` + prefix + `ValidateSameDatabase(ctx, mainPool, participant); err != nil { return nil, nil, errIdentity }`
 			trunkFactoryWrite(t, root, "cmd/api/main.go", trunkFactoryReplace(t, source, "_ = participant // INSERT_PROBE", probe))

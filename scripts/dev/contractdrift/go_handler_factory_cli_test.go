@@ -45,7 +45,7 @@ func mountFeed(next, child http.Handler) http.Handler {
 func handlerFactoryCLIFixture(t *testing.T, source string) string {
 	t.Helper()
 	root, _ := routeTableCLIFixture(t)
-	trunkFactoryWrite(t, root, "internal/feed/feed.go", strings.Replace(exactTableCLISource, "package router", "package feed", 1))
+	trunkFactoryWrite(t, root, "internal/feed/feed.go", mustReplace(t, exactTableCLISource, "package router", "package feed"))
 	trunkFactoryWrite(t, root, "contracts/feed.md", "# Feed\n`GET /v1/feed/meta.csv`\n`HEAD /v1/feed/meta.csv`\n")
 	trunkFactoryWrite(t, root, "cmd/api/main.go", source)
 	pinFixtureDispatcher(t, root, "feed.Routes", exactDispatcherSHA)
@@ -80,9 +80,9 @@ func TestGoHandlerFactoryOpaqueReturnsStayUnresolvedCLI(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			source := strings.Replace(handlerFactoryCLISource, tc.old, tc.replacement, 1)
+			source := mustReplace(t, handlerFactoryCLISource, tc.old, tc.replacement)
 			if strings.Contains(source, "unknown.New()") {
-				source = strings.Replace(source, `"net/http"`, "\"net/http\"\n \"example/internal/unknown\"", 1)
+				source = mustReplace(t, source, `"net/http"`, "\"net/http\"\n \"example/internal/unknown\"")
 			}
 			source += "\nfunc hiddenPath(r *http.Request) bool { return r.URL.Path == \"/v1/hidden\" }\n"
 			root := handlerFactoryCLIFixture(t, source)
@@ -100,8 +100,8 @@ func New() http.Handler { return http.NotFoundHandler() }
 }
 
 func TestGoHandlerFactoryUnresolvedSpansRetainedCLI(t *testing.T) {
-	source := strings.Replace(handlerFactoryCLISource, "if disabled { return fallback, nil }", "if disabled { return unknown.New(), nil }", 1)
-	source = strings.Replace(source, `"net/http"`, "\"net/http\"\n \"example/internal/unknown\"", 1)
+	source := mustReplace(t, handlerFactoryCLISource, "if disabled { return fallback, nil }", "if disabled { return unknown.New(), nil }")
+	source = mustReplace(t, source, `"net/http"`, "\"net/http\"\n \"example/internal/unknown\"")
 	root := handlerFactoryCLIFixture(t, source)
 	trunkFactoryWrite(t, root, "internal/unknown/unknown.go", `package unknown
 import "net/http"
@@ -113,7 +113,7 @@ func New() http.Handler { return http.NotFoundHandler() }
 	// Only a non-route helper inside the factory changes, like PR70's payment
 	// builder. The old whole-function dependency span must still make it TOUCHED.
 	p := filepath.Join(root, "cmd/api/main.go")
-	mustWrite(t, p, strings.Replace(source, "h := router.New()", "h := router.New() // dependency changed", 1))
+	mustWrite(t, p, mustReplace(t, source, "h := router.New()", "h := router.New() // dependency changed"))
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED") || !strings.Contains(out, "opaque Go handler dispatch buildComposite;") {
 		t.Fatalf("opaque factory span lost: exit%d %s", code, out)
@@ -123,7 +123,7 @@ func New() http.Handler { return http.NotFoundHandler() }
 // Reverting only the terminal-leaf fix incorrectly resolves both build factories:
 // a valid table guard cannot supply dispatch provenance to an inline 204 leaf.
 func TestGoHandlerFactoryInlineTerminalRejectedCLI(t *testing.T) {
-	source := strings.Replace(handlerFactoryCLISource, "child.ServeHTTP(w,r)", `http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }).ServeHTTP(w,r)`, 1)
+	source := mustReplace(t, handlerFactoryCLISource, "child.ServeHTTP(w,r)", `http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }).ServeHTTP(w,r)`)
 	root := handlerFactoryCLIFixture(t, source)
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "opaque Go handler dispatch buildComposite;") ||
@@ -165,13 +165,13 @@ func TestGoHandlerFactoryRefusalLeavesCLI(t *testing.T) {
 			if tc.only {
 				replacement = tc.leaf
 			} // fallback outside the table branch is insufficient
-			source := strings.Replace(handlerFactoryCLISource, "child.ServeHTTP(w,r)", replacement, 1)
+			source := mustReplace(t, handlerFactoryCLISource, "child.ServeHTTP(w,r)", replacement)
 			if tc.outside {
-				source = strings.Replace(handlerFactoryCLISource, "return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n  if !feed", "return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n  if r.Header.Get(\"X-Key\") == \"\" { "+tc.leaf+"; return }; if !feed", 1)
+				source = mustReplace(t, handlerFactoryCLISource, "return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n  if !feed", "return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n  if r.Header.Get(\"X-Key\") == \"\" { "+tc.leaf+"; return }; if !feed")
 			}
-			source = strings.Replace(source, `"net/http"`, "\"net/http\"\n \"example/internal/httperror\"", 1)
+			source = mustReplace(t, source, `"net/http"`, "\"net/http\"\n \"example/internal/httperror\"")
 			source += "\nfunc pretendError(w http.ResponseWriter, message string, status int) { http.Error(w,message,status) }\n"
-			source = strings.Replace(source, `"net/http"`, `"net/http"; nethttp "net/http"`, 1)
+			source = mustReplace(t, source, `"net/http"`, `"net/http"; nethttp "net/http"`)
 			source += `
 type pretendHTTP struct{}
 func (pretendHTTP) HandlerFunc(fn func(nethttp.ResponseWriter,*nethttp.Request)) nethttp.Handler { return nethttp.HandlerFunc(fn) }

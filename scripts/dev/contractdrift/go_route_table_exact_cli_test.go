@@ -94,7 +94,7 @@ func TestGoRouteTableExactInvalidStaysOpaqueCLI(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root, p := exactTableCLIFixture(t)
-			mustWrite(t, p, strings.Replace(exactTableCLISource, tc.old, tc.replacement, 1))
+			mustWrite(t, p, mustReplace(t, exactTableCLISource, tc.old, tc.replacement))
 			code, out := goReviewProcessCLI(t, root)
 			if code != 1 || !strings.Contains(out, "UNRESOLVED") || strings.Contains(out, "GO_ROUTE_TABLE") {
 				t.Fatalf("invalid exact table became known: exit%d %s", code, out)
@@ -121,8 +121,7 @@ func mountOther(next, child http.Handler) http.Handler {
 
 func TestGoRouteTableExactRequiresOwningMountCLI(t *testing.T) {
 	root, _ := exactTableCLIFixture(t)
-	mustWrite(t, filepath.Join(root, "cmd/api/main.go"), strings.Replace(exactTableMountSource,
-		"!router.Routes.MatchesPath(r.URL.Path)", "r.URL.Path != \"/v1/feed/meta.csv\"", 1))
+	mustWrite(t, filepath.Join(root, "cmd/api/main.go"), mustReplace(t, exactTableMountSource, "!router.Routes.MatchesPath(r.URL.Path)", "r.URL.Path != \"/v1/feed/meta.csv\""))
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "UNRESOLVED EXACT /v1/feed/meta.csv") || strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("unconsumed exact mount became known: exit%d %s", code, out)
