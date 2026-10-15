@@ -43,6 +43,10 @@
 .skeleton { display: block; height: 14px; border-radius: var(--ds-radius-sm); background: var(--ds-neutral-bg); }
 /* colspan state rows (empty/error) hold running text: nowrap is for data cells only, so restore normal wrapping there (same specificity, later wins). */
 .table td.fullRow { padding: 0 !important; white-space: normal; }
+/* Empty/error states span a 760px-min table; on a narrow scroller they would centre off-screen. Pin the state to the
+ * scroller's visible box (100cqi of the .scroll container) at its start edge so it is fully visible without scrolling. */
+.scroll { container-type: inline-size; }
+.table td.fullRow > * { position: sticky; inset-inline-start: 0; box-sizing: border-box; width: 100cqi; max-width: 100cqi; }
 
 /* selection banner */
 .banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2) var(--ds-space-4); padding: var(--ds-space-2) var(--ds-space-4); background: var(--ds-primary-soft); color: var(--ds-text-1); font-size: var(--ds-text-sm); }
@@ -65,7 +69,7 @@
   box-shadow: var(--ds-shadow-2);
 }
 .menu[data-align="start"] { inset-inline-end: auto; inset-inline-start: 0; }
-.menuItem { display: block; padding: var(--ds-space-2) var(--ds-space-4); border: 0; background: none; color: var(--ds-text-1); font: inherit; font-size: var(--ds-text-md); text-align: start; white-space: nowrap; cursor: pointer; }
+.menuItem { display: flex; align-items: center; height: var(--ds-button-md); min-height: var(--ds-button-md); padding: 0 var(--ds-space-4); border: 0; background: none; color: var(--ds-text-1); font: inherit; font-size: var(--ds-text-md); text-align: start; white-space: nowrap; cursor: pointer; }
 .menuItem:hover { background: var(--ds-surface-muted); }
 .menuItem[data-variant="danger"] { color: var(--ds-danger-text); }
 .menuItem[aria-disabled="true"] { color: var(--ds-text-disabled); cursor: not-allowed; }
@@ -78,17 +82,32 @@
 .select, .searchInput { box-sizing: border-box; min-height: var(--ds-control-height); padding: 0 var(--ds-space-3); border: 1px solid var(--ds-border-input); border-radius: var(--ds-radius-md); background: var(--ds-surface); color: var(--ds-text-1); font: inherit; font-size: var(--ds-text-md); }
 .search { display: inline-flex; flex: 1 1 260px; max-width: 420px; }
 .searchInput { flex: 1; min-width: 0; border-radius: var(--ds-radius-md) 0 0 var(--ds-radius-md); }
-.searchButton { min-width: var(--ds-control-height); min-height: var(--ds-control-height); border: 1px solid var(--ds-border-input); border-inline-start: 0; border-radius: 0 var(--ds-radius-md) var(--ds-radius-md) 0; background: var(--ds-surface-muted); color: var(--ds-text-1); font: inherit; cursor: pointer; }
+.searchButton { padding: 0; box-sizing: border-box; height: var(--ds-control-height); min-width: var(--ds-control-height); min-height: var(--ds-control-height); border: 1px solid var(--ds-border-input); border-inline-start: 0; border-radius: 0 var(--ds-radius-md) var(--ds-radius-md) 0; background: var(--ds-surface-muted); color: var(--ds-text-1); font: inherit; cursor: pointer; }
 .divider { align-self: stretch; width: 1px; background: var(--ds-border); }
 .grow { margin-inline-start: auto; }
 
 /* ---------- pagination ---------- */
 .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ds-space-3); padding: var(--ds-space-3) var(--ds-space-4); }
 .pages { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-1); margin: 0; padding: 0; list-style: none; }
-.pageLink { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 36px; min-height: 36px; padding: 0 var(--ds-space-2); border: 1px solid transparent; border-radius: var(--ds-radius-md); color: var(--ds-link); font-size: var(--ds-text-md); text-decoration: none; }
+.pageLink { height: var(--ds-button-md); display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 36px; min-height: 36px; padding: 0 var(--ds-space-2); border: 1px solid transparent; border-radius: var(--ds-radius-md); color: var(--ds-link); font-size: var(--ds-text-md); text-decoration: none; }
 .pageLink:hover { border-color: var(--ds-border); background: var(--ds-surface-muted); }
 .pageLink[aria-current="page"] { border-color: var(--ds-primary); background: var(--ds-primary); color: var(--ds-on-primary); font-weight: 600; }
 /* aria-disabled on a plain link is not exempt from axe contrast, so the disabled arrow stays at --ds-text-3 (5:1) and is told apart by the missing href and the hover state. */
 .pageLink[aria-disabled="true"] { color: var(--ds-text-3); pointer-events: none; cursor: not-allowed; }
 .gap { padding: 0 var(--ds-space-1); color: var(--ds-text-3); }
 .summary { color: var(--ds-text-2); font-size: var(--ds-text-sm); }
+
+.menu { max-width: calc(100vw - var(--ds-space-8)); max-height: 60vh; overflow-y: auto; }
+.menuItem { width: 100%; box-sizing: border-box; text-decoration: none; }
+.scroll { scrollbar-color: var(--ds-border-input) var(--ds-surface-muted); }
+.searchButton { display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 767.98px) { .menuItem, .searchButton, .pageLink { height: var(--ds-button-lg); min-height: var(--ds-button-lg); } .select, .searchInput { min-height: var(--ds-target); } .pageLink { min-width: var(--ds-target); } }
+
+/* A persistent mobile cue and a focusable native scroller; no whole-page horizontal overflow. */
+.scroll { max-width: 100%; }
+.scroll:focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: -2px; }
+.scrollHint { display: none; }
+.selectionActions { margin-inline-start: auto; }
+@media (max-width: 767.98px) {
+  .scrollHint { display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-2); padding: var(--ds-space-2) var(--ds-space-3); background: var(--ds-surface-muted); color: var(--ds-text-2); font-size: var(--ds-text-xs); }
+}

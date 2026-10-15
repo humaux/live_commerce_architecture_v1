@@ -1,0 +1,34 @@
+# Purpose: bind Round 2 DS-2 implementation/test bytes; E1 static only, not runtime proof.
+# Depends on: round2 source based on 6b7b766048cd0370a1cc3489b047600348199ae3; final commit recorded in branch log.
+# Used by: integrator review; round2-static.txt binds this manifest and checker.
+def3a4633a7e35b6540e2b39883daf39f921a25657e5c10df77b2049ec8b9711  apps/admin/app/[locale]/ui-gallery/page.tsx
+84b79404d7e7b240c84c861bc4fcbad95a1737e80b081726916ecaa72b40d81b  apps/admin/app/[locale]/ui-gallery/templates/[name]/page.tsx
+719a652c9510a31796c740b15122daa6926f671491091436e0ba25890391780e  apps/admin/components/UiGallery.module.css
+7b0bb2abfa3d24d3d06933ca05b90194a0a71ccd28bdaaa946e51dbaff984a44  apps/admin/components/UiGallery.tsx
+dbd52e684367cad130659051a238071710b31228e924f902ae139f12171dbd53  apps/admin/components/UiGalleryFrame.tsx
+4feb8f4e8633f1f4c68521b49be673bca98c7b5b53273ae1e5c83ae00ea82c36  apps/admin/components/UiGallerySections.tsx
+26428a2c6bf9b6922a9713e41c44f1892e5615c41daf3eaff5860eee08567499  apps/admin/components/UiGalleryTemplates.tsx
+f54c0d6335fa4c96810522087da4948ab8f8520f0c9755d8ace7065f5913b109  apps/admin/src/ui-gallery-copy.ts
+d4eddb60349e0c2fa02101b4b08e17770babccaacc490173dc22f4e76c51b58a  apps/admin/src/ui-gallery-nav.ts
+957eaaab7645c06720074ba9b7d78fd02f14f2e562b08849fd9f72a241d676ef  apps/admin/src/ui-gallery-state.ts
+5afd3b80aeda43a83a760ecdfb3bcd3357c559a1c18c6d26b09fd7886538cd4d  apps/admin/src/ui-gallery-template-copy.ts
+1f5c21d2d0a7ee0378d47b1c8f3413db51ca50d1d2b52b2c1f99da874adae8a1  packages/ui/src/ds/AppShellV2.tsx
+444acbcf70019a47fea6db58824317c2df2cec18fdf472b48430cbc9d892ba03  packages/ui/src/ds/Controls.tsx
+533b99f40797a2f67414280ba7671705e2e7c1a58387ff541f9011d6efca434b  packages/ui/src/ds/Data.tsx
+0f78acb59a192841b65dada17454484c53a21bdcf2b840499af32f62355cae53  packages/ui/src/ds/Dialog.tsx
+e06e9b9e71995bda4a4ce2b2042305841b6d3c3bc6da557c7d0a829b0c8465f9  packages/ui/src/ds/Fields.tsx
+bd79fc8f788097119fd8769aeb58cdaa75ca4293576d8582063544fe2bd5e8db  packages/ui/src/ds/Icon.tsx
+fb72fff7029aa8f4147eb375292df9aa70e01dec0be10a1b73a7a45de60fe9a8  packages/ui/src/ds/Layout.tsx
+52bf57c26d20ba22052ac23d37e56fe8f6d17e63918e506da7025e4e48046a4d  packages/ui/src/ds/States.tsx
+63e03ce62ba4fe455ca08f29fbf470253af9391949a67902be9b5442c2f1cdeb  packages/ui/src/ds/controls.module.css
+0fcc1df000cbedede874ca0251a3bcf57ceda776be7f82b8ac03684dd5922503  packages/ui/src/ds/data.module.css
+11756664a58b24cb57fb57822099c57ae8e15d5e11b78d6219defc5366d0a466  packages/ui/src/ds/fields.module.css
+d17118547c083d9fb079846fa8074c509bae5453f617f9b9c481213a07dd0bc0  packages/ui/src/ds/index.ts
+1ff28a23da4a92e49fb89bfe3b77dd0ac88f54878b8ef3a7db12c5702247a26e  packages/ui/src/ds/layout.module.css
+bf982bc99d98aa8be0874a757c9032791600d8a8fd3b37234e41c1510b956bb5  packages/ui/src/ds/shell2.module.css
+e1afe3fe98df627bca53a90d8292ebf7a4d241c13d35a47404cc79831c13a049  packages/ui/src/ds/states.module.css
+81b911b22d785cddd65fea56cd81c0bb492b5e5c0c0a9dac5fb490b91cb3082e  packages/ui/src/tokens.css
+8a8eb785004448db9063dda4cc7e14c5fe9a9ce3127c78bdecd7f992bac02232  tests/admin/ui-gallery-clicks.mjs
+bf269a2baae95dd61d9298496351e3d3a464ad383f145d835b5006b557273abb  tests/ui/ds-render.test.mjs
+5f55a4e7d267e30460282cbd4484b7c82c1ba81a26f72e312a892a2cccac9118  tests/ui/ds-rework.test.mjs
+de906bde13a30829cc68cf93cabfe940ef212d6eecd5f0d92ca511556363d13d  tests/ui/ds-tokens.test.mjs

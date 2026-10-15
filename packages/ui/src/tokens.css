@@ -144,9 +144,26 @@
   --ds-z-drawer: 40;
   --ds-z-dialog: 60;
   --ds-z-toast: 70;
+  --ds-font: system-ui, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --ds-font-cn: system-ui, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --ds-leading: 1.5;
+  --ds-leading-heading: 1.3;
+  --ds-field-sm: 160px;
+  --ds-field-md: 320px;
+  --ds-field-lg: 480px;
+  --ds-button-sm: 28px;
+  --ds-button-md: 36px;
+  --ds-button-lg: 44px;
+  --ds-card-header-block: 16px;
+  --ds-card-header-inline: 24px;
+  --ds-card-body: 24px;
+  --ds-card-footer: 16px;
+  --ds-nav-indent: 52px; /* level-2 sidebar items align with level-1 labels (icon slot + gap) */
+  --ds-disabled-bg: #dae5ef;
+  --ds-disabled-text: #435b70;
   /* sizes */
-  --ds-nav-width: 260px;
-  --ds-nav-item-height: 48px;
+  --ds-nav-width: 270px;
+  --ds-nav-item-height: 52px;
   --ds-topbar-height: 50px;
   --ds-target: 44px;
   --ds-control-height: 36px;

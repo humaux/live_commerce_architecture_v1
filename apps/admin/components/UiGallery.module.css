@@ -14,9 +14,6 @@
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-4); }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-space-4); }
 .gap { height: var(--ds-space-6); }
-.field { display: flex; flex-direction: column; gap: var(--ds-space-1); max-width: 400px; }
-.input { box-sizing: border-box; min-height: var(--ds-control-height); padding: 0 var(--ds-space-3); border: 1px solid var(--ds-border-input); border-radius: var(--ds-radius-md); background: var(--ds-surface); color: var(--ds-text-1); font: inherit; font-size: var(--ds-text-md); }
-.input:focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: var(--ds-focus-offset); }
 .h2 { margin: 0 0 var(--ds-space-2); font-size: var(--ds-text-xl); }
 .pad { padding: var(--ds-space-2) var(--ds-space-6); }
 .locales { display: flex; gap: var(--ds-space-3); font-size: var(--ds-text-sm); }
@@ -27,3 +24,7 @@
   .grid2, .grid3 { grid-template-columns: minmax(0, 1fr); }
   .pad { padding: var(--ds-space-2) var(--ds-space-4); }
 }
+
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.result:empty { display: none; }
+.row:last-child { margin-bottom: 0; }

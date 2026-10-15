@@ -1,0 +1,58 @@
+{
+  "status": "BLOCKED",
+  "evidence_level": "E1",
+  "tier": "MOCK_SOURCE_ONLY",
+  "base_sha": "45f28934a0c0ffffcd4ea30ec533bf800b432951",
+  "source_sha": "dcd1a030ccc1a61bacb44f6dc0f46bd96fdeb1d5",
+  "scope": [
+    "V1",
+    "V2",
+    "V3"
+  ],
+  "checks": [
+    {
+      "command": "pnpm exec tsc --noEmit -p apps/admin/tsconfig.json --incremental false",
+      "name": "tsc",
+      "chunk_id": "fd1464",
+      "wall_time_seconds": 0.880643834,
+      "exit_code": 0,
+      "original_token_count": 0,
+      "output": ""
+    },
+    {
+      "command": "node scripts/dev/check-ds-rules.mjs",
+      "name": "ds-rules",
+      "chunk_id": "5648db",
+      "wall_time_seconds": 0.132722458,
+      "exit_code": 0,
+      "original_token_count": 13,
+      "output": "check-ds-rules: 20 files in scope, 0 violation(s)\n"
+    },
+    {
+      "command": "pnpm exec prettier --check tests/admin/ui-gallery-clicks.mjs packages/ui/src/ds/shell2.module.css packages/ui/src/ds/fields.module.css apps/admin/components/UiGallerySections.tsx packages/ui/src/ds/Controls.tsx packages/ui/src/ds/controls.module.css apps/admin/components/UiGalleryTemplates.tsx packages/ui/src/ds/Layout.tsx packages/ui/src/ds/layout.module.css",
+      "name": "prettier",
+      "chunk_id": "7cdfed",
+      "wall_time_seconds": 0.78068175,
+      "exit_code": 1,
+      "original_token_count": 125,
+      "output": "Checking formatting...\n[warn] tests/admin/ui-gallery-clicks.mjs\n[warn] packages/ui/src/ds/shell2.module.css\n[warn] packages/ui/src/ds/fields.module.css\n[warn] apps/admin/components/UiGallerySections.tsx\n[warn] packages/ui/src/ds/Controls.tsx\n[warn] packages/ui/src/ds/controls.module.css\n[warn] apps/admin/components/UiGalleryTemplates.tsx\n[warn] packages/ui/src/ds/Layout.tsx\n[warn] packages/ui/src/ds/layout.module.css\n[warn] Code style issues found in 9 files. Run Prettier with --write to fix.\n"
+    }
+  ],
+  "format_blocker": {
+    "attempts": 2,
+    "baseline": "Before edits: prettier --check on ui-gallery-clicks.mjs, controls.module.css, layout.module.css, fields.module.css exited 1; final touched-file check exits 1 on all 9 modified source files.",
+    "resolution": "Stopped at owner 2-attempt ceiling. No whole-file formatting, ignores, assertion weakening or configuration changes."
+  },
+  "not_run": [
+    "All local tests/browser/server runs (owner forbids)",
+    "CI --browser-ui-gallery on final head",
+    "New-gate injected-fault red to green",
+    "form-released screenshot on final head",
+    "Independent visual review/owner signoff"
+  ],
+  "commits": {
+    "V1": "458b72a70",
+    "V2": "007b0dd7a",
+    "V3": "dcd1a030c"
+  }
+}

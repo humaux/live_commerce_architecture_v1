@@ -1,0 +1,14 @@
+Purpose: Round 2 allowed local static-check receipt; not compilation or runtime acceptance.
+UTC: 2026-10-15T09:13:28.166356+00:00
+Branch: unit/ds-2-rework
+Base: 6b7b766048cd0370a1cc3489b047600348199ae3
+Source binding: docs/design/ds/source-sha256.txt (31 implementation/test files)
+Manifest SHA256: d0125dff4a6fdd2bd761e9b1e7807e2029a9c54922d4d3e13667235db3c380f3
+Checker SHA256: 3a51d04a0eb6f8f0e9d852c9a1380409b6de1f5856adb6e389d91020a4a3e127
+Command: node scripts/dev/check-ds-rules.mjs
+Exit code: 0
+Stdout: check-ds-rules: 20 files in scope, 0 violation(s)
+Evidence: E1 static structure only.
+NOT_RUN: TypeScript, build, lint, unit/token tests, browser clicks, axe, visual-lint,
+         screenshot matrix, injected-fault RED->GREEN, independent visual/owner review.
+No tests, browser, server, push, PR, merge or deployment executed in Round 2.

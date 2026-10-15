@@ -1,14 +1,16 @@
 // Purpose: Owns AppShellV2, the redesigned admin frame: dark sidebar with the nine NEEDS section 1 groups (collapsible second level), store card, topbar (locale, help, notifications, enter-my-store, account), breadcrumb slot and a mobile drawer below 768 px. Not switched on for any page yet.
-// Depends on: react, ./shell2.module.css, ./logic (initialOpenGroups); no API, routing, permissions or translation: nav data, copy and slots are props.
+// Depends on: React, shared Icon/Controls, ./shell2.module.css, ./logic (initialOpenGroups); no API, routing, permissions or translation: nav data, copy and slots are props.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx (the W3 page migration will mount it).
 "use client";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
+import { Icon, type IconName } from "./Icon";
+import { ButtonLink } from "./Controls";
 import s from "./shell2.module.css";
 import { initialOpenGroups } from "./logic";
 
 export type ShellNavItem = { id: string; label: string; href: string };
 /** A group is either a link (`href`) or a collapsible parent with second-level `items` (no icons at level two). */
-export type ShellNavGroup = { id: string; label: string; icon?: ReactNode; href?: string; items?: readonly ShellNavItem[] };
+export type ShellNavGroup = { id: string; label: string; icon?: IconName; href?: string; items?: readonly ShellNavItem[] };
 
 const DRAWER_QUERY = "(max-width: 767.98px)";
 
@@ -54,6 +56,8 @@ export type AppShellV2Props = {
   nav: readonly ShellNavGroup[];
   /** id of the current group or second-level item. */
   currentId?: string;
+  /** Gallery/app-specific key; never persist identities or permissions here. */
+  persistenceKey?: string;
   navLabel: string;
   brand: ReactNode;
   store: { name: string; region?: string; logo?: ReactNode };
@@ -62,6 +66,8 @@ export type AppShellV2Props = {
     help: ReactNode;
     notifications: ReactNode;
     account: ReactNode;
+    /** Mobile disclosure includes locale/help/store links as well as profile. */
+    mobileAccount?: ReactNode;
     enterStore: { label: string; href: string };
   };
   breadcrumb?: ReactNode;
@@ -72,9 +78,22 @@ export type AppShellV2Props = {
 };
 
 /** The v2 admin frame. Group parents toggle with aria-expanded; the group holding the current page starts open. */
-export function AppShellV2({ nav, currentId, navLabel, brand, store, topbar, breadcrumb, children, menuLabel, closeLabel, skipLabel }: AppShellV2Props) {
+export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded", navLabel, brand, store, topbar, breadcrumb, children, menuLabel, closeLabel, skipLabel }: AppShellV2Props) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(() => initialOpenGroups(nav, currentId));
+  const expandedRef = useRef(expanded);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  useEffect(() => {
+    try {
+      const saved: unknown = JSON.parse(sessionStorage.getItem(persistenceKey) ?? "null");
+      // Honor both expanded and explicitly collapsed groups; the active group is only the first-visit default.
+      if (Array.isArray(saved)) {
+        expandedRef.current = new Set(saved.filter((id): id is string => typeof id === "string" && nav.some(g => g.id === id)));
+        setExpanded(expandedRef.current);
+      }
+    } catch { /* Navigation remains usable when storage is unavailable. */ }
+    setPreferencesReady(true);
+  }, [persistenceKey, nav, currentId]);
   const drawer = useRef<HTMLElement>(null);
   const rest = useRef<HTMLDivElement>(null);
   // Stable identity: useDrawer's effect depends on it, and a re-run would restore focus to the menu button and re-focus the first link.
@@ -90,13 +109,15 @@ export function AppShellV2({ nav, currentId, navLabel, brand, store, topbar, bre
     query.addEventListener("change", widen);
     return () => query.removeEventListener("change", widen);
   }, []);
-  const toggle = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const toggle = (id: string) => {
+    const next = new Set(expandedRef.current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    // Persist in the user action, never in an updater React may defer or replay before a reload.
+    try { sessionStorage.setItem(persistenceKey, JSON.stringify([...next])); } catch { /* optional preference */ }
+    expandedRef.current = next;
+    setExpanded(next);
+  };
   return (
     <div className={s.shell} data-ds-shell="2">
       <a className={s.skip} href="#ds-main">
@@ -105,7 +126,7 @@ export function AppShellV2({ nav, currentId, navLabel, brand, store, topbar, bre
       {open && <button type="button" tabIndex={-1} className={s.backdrop} aria-label={closeLabel} onClick={close} />}
       <nav ref={drawer} id="ds-nav" className={s.nav} data-open={open} aria-label={navLabel} data-shell-rail>
         <button type="button" className={s.close} aria-label={closeLabel} onClick={close}>
-          <span aria-hidden="true">×</span>
+          <Icon name="close" />
         </button>
         <div className={s.brand}>{brand}</div>
         <div className={s.store}>
@@ -116,10 +137,10 @@ export function AppShellV2({ nav, currentId, navLabel, brand, store, topbar, bre
           </span>
         </div>
         <ul className={s.groups}>
-          {nav.map((group) => {
+          {preferencesReady && nav.map((group) => {
             const isOpen = expanded.has(group.id);
             const holdsCurrent = group.id === currentId || Boolean(group.items?.some((i) => i.id === currentId));
-            const icon = <span className={s.groupIcon} aria-hidden="true">{group.icon}</span>;
+            const icon = <span className={s.groupIcon} aria-hidden="true">{group.icon && <Icon name={group.icon} />}</span>;
             if (!group.items?.length)
               return (
                 <li key={group.id}>
@@ -135,7 +156,7 @@ export function AppShellV2({ nav, currentId, navLabel, brand, store, topbar, bre
                 <button type="button" className={s.groupRow} data-current={holdsCurrent} aria-expanded={isOpen} aria-controls={subId} onClick={() => toggle(group.id)}>
                   {icon}
                   <span className={s.groupLabel}>{group.label}</span>
-                  <span className={s.chev} aria-hidden="true">▸</span>
+                  <span className={s.chev} data-nav-chevron aria-hidden="true"><Icon name="chevronRight" size={16} /></span>
                 </button>
                 {isOpen && (
                   <ul className={s.sub} id={subId}>
@@ -156,16 +177,16 @@ export function AppShellV2({ nav, currentId, navLabel, brand, store, topbar, bre
       <div className={s.work} ref={rest}>
         <header className={s.topbar} data-shell-topbar>
           <button type="button" className={s.menuButton} aria-label={menuLabel} aria-expanded={open} aria-controls="ds-nav" onClick={() => setOpen(true)}>
-            <span aria-hidden="true">☰</span>
+            <Icon name="menu" />
           </button>
+          <span className={s.mobileStore}>{store.name}</span>
           <div className={s.topbarRight}>
-            {topbar.locale}
-            {topbar.help}
+            <div className={s.desktopTools}>{topbar.locale}{topbar.help}</div>
             {topbar.notifications}
-            <a className={s.enter} href={topbar.enterStore.href} target="_blank" rel="noopener noreferrer">
-              {topbar.enterStore.label}
-            </a>
-            {topbar.account}
+            <div className={s.desktopTools}><ButtonLink href={topbar.enterStore.href} target="_blank" rel="noopener noreferrer">
+              {topbar.enterStore.label}<Icon name="externalLink" size={16} />
+            </ButtonLink>{topbar.account}</div>
+            <div className={s.mobileTools}>{topbar.mobileAccount ?? topbar.account}</div>
           </div>
         </header>
         {breadcrumb && <div className={s.crumbRow}>{breadcrumb}</div>}

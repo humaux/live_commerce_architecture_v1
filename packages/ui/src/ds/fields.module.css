@@ -1,0 +1,27 @@
+/* Purpose: Field widths, help/error rhythm and native form layout. Depends on: --ds-* tokens. Used by: Fields.tsx. */
+.field { display: flex; flex-direction: column; gap: var(--ds-space-2); min-width: 0; width: 100%; box-sizing: border-box; }
+.field[data-width="sm"] { max-width: var(--ds-field-sm); }
+.field[data-width="md"] { max-width: var(--ds-field-md); }
+.field[data-width="lg"] { max-width: var(--ds-field-lg); }
+.labelRow { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ds-space-3); }
+.labelTitle { display: inline-flex; align-items: baseline; gap: var(--ds-space-1); }
+.labelRow label, .radio legend { color: var(--ds-text-1); font-size: var(--ds-text-md); font-weight: 600; }
+.required, .error { color: var(--ds-danger-text); }
+.counter, .help { color: var(--ds-text-2); font-size: var(--ds-text-xs); line-height: var(--ds-leading); margin: 0; }
+.counter { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.error { font-size: var(--ds-text-xs); }
+.control { box-sizing: border-box; width: 100%; min-width: 0; height: var(--ds-control-height); min-height: var(--ds-control-height); padding: 0 var(--ds-space-3); border: 1px solid var(--ds-border-input); border-radius: var(--ds-radius-md); background: var(--ds-surface); color: var(--ds-text-1); font: inherit; font-size: var(--ds-text-md); line-height: var(--ds-leading); }
+.control:focus-visible, .choice input:focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: var(--ds-focus-offset); }
+.control[aria-invalid="true"] { border-color: var(--ds-danger); }
+.control::placeholder { color: var(--ds-text-3); }
+.textarea { height: auto; min-height: calc(var(--ds-control-height) * 3); padding-block: var(--ds-space-2); resize: vertical; }
+.number { display: flex; align-items: center; height: var(--ds-control-height); box-sizing: border-box; border: 0; border-radius: var(--ds-radius-md); overflow: hidden; background: var(--ds-surface-muted); box-shadow: inset 0 0 0 1px var(--ds-border-input); }
+.number > span { padding-inline: var(--ds-space-3); color: var(--ds-text-2); font-size: var(--ds-text-sm); }
+.number .control { height: 100%; min-height: 0; border: 0; border-inline-start: 1px solid var(--ds-border-input); border-radius: 0; }
+.number:focus-within { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: var(--ds-focus-offset); }
+.choice { display: inline-flex; align-items: center; gap: var(--ds-space-2); color: var(--ds-text-1); font-size: var(--ds-text-md); cursor: pointer; min-height: var(--ds-control-height); }
+.choice input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--ds-primary); }
+.radio { min-width: 0; margin: 0; padding: 0; border: 0; }
+.choices { display: flex; flex-wrap: wrap; gap: var(--ds-space-4); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-6); align-items: start; }
+@media (max-width: 767.98px) { .grid { grid-template-columns: minmax(0, 1fr); } .control:not(.textarea), .number { height: var(--ds-target); } .control, .choice { min-height: var(--ds-target); } .number .control { height: 100%; min-height: 0; } }

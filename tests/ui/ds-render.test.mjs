@@ -20,8 +20,9 @@ function load(path, resolve) {
   runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: resolve, process });
   return exports;
 }
-const controls = load("packages/ui/src/ds/Controls.tsx", (name) => (name.endsWith(".css") ? css : name === "./logic" ? logic : requireApp(name)));
-const data = load("packages/ui/src/ds/Data.tsx", (name) => (name.endsWith(".css") ? css : name === "./logic" ? logic : name === "./Controls" ? controls : requireApp(name)));
+const icon = load("packages/ui/src/ds/Icon.tsx", requireApp);
+const controls = load("packages/ui/src/ds/Controls.tsx", (name) => (name.endsWith(".css") ? css : name === "./logic" ? logic : name === "./Icon" ? icon : requireApp(name)));
+const data = load("packages/ui/src/ds/Data.tsx", (name) => (name.endsWith(".css") ? css : name === "./logic" ? logic : name === "./Controls" ? controls : name === "./Icon" ? icon : requireApp(name)));
 const html = (node) => renderToStaticMarkup(node);
 
 test("SegmentedSwitch: a disabled switch points aria-describedby at its (hidden until clicked) reason", () => {
