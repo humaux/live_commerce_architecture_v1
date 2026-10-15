@@ -1,0 +1,370 @@
+[
+  {
+    "method": "GET",
+    "path": "/v1/buyer/session",
+    "handler": "dispatch: IssueForTrustedStore / scoped session check / Revoke",
+    "kind": "sessionRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 36
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/session",
+    "handler": "dispatch: IssueForTrustedStore / scoped session check / Revoke",
+    "kind": "sessionRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 37
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1/buyer/session",
+    "handler": "dispatch: IssueForTrustedStore / scoped session check / Revoke",
+    "kind": "sessionRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 38
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/session/bootstrap",
+    "handler": "dispatch: RegisterForTrustedStore",
+    "kind": "bootstrapRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 39
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/session/retire",
+    "handler": "dispatch: RetireForTrustedStore",
+    "kind": "retireRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 40
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/design/published",
+    "handler": "designGet",
+    "kind": "designPublishedRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 41
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/design/preview",
+    "handler": "designGet",
+    "kind": "designPreviewRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 42
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/storefront/primary-origin",
+    "handler": "primaryOriginGet",
+    "kind": "primaryOriginRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 43
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/catalog",
+    "handler": "dispatch: storefront.ListCatalog",
+    "kind": "catalogRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 44
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/checkout-options",
+    "handler": "dispatch: checkout.ListOptions",
+    "kind": "optionsRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 45
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/cart",
+    "handler": "dispatch: storefront.GetCart / SetCart",
+    "kind": "cartRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 46
+  },
+  {
+    "method": "PUT",
+    "path": "/v1/buyer/cart",
+    "handler": "dispatch: storefront.GetCart / SetCart",
+    "kind": "cartRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 47
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/quotes",
+    "handler": "dispatch: storefront.CreateQuote",
+    "kind": "quotesRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 48
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/destination",
+    "handler": "dispatch: CurrentDestination / SetDestination",
+    "kind": "destinationRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 49
+  },
+  {
+    "method": "PUT",
+    "path": "/v1/buyer/destination",
+    "handler": "dispatch: CurrentDestination / SetDestination",
+    "kind": "destinationRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 50
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/checkout",
+    "handler": "dispatch: checkout.Begin",
+    "kind": "checkoutRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 51
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/orders",
+    "handler": "dispatch: checkout.ListOrders",
+    "kind": "ordersRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 52
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/claim-link",
+    "handler": "claimRequest",
+    "kind": "claimLinkRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 53
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/claim-link/redeem",
+    "handler": "claimRequest",
+    "kind": "claimRedeemRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 54
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/privacy",
+    "handler": "privacyGet",
+    "kind": "privacyRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 55
+  },
+  {
+    "method": "PUT",
+    "path": "/v1/buyer/consents",
+    "handler": "consentPut",
+    "kind": "consentsRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 56
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/privacy/export",
+    "handler": "privacyExport",
+    "kind": "privacyExportRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 57
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/privacy/erasure",
+    "handler": "privacyErase",
+    "kind": "privacyErasureRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 58
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/cvs-selections",
+    "handler": "cvsRequest / cvsServe",
+    "kind": "routeCVSSelectionOpen",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 59
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/cvs-stores",
+    "handler": "cvsRequest / cvsServe",
+    "kind": "routeCVSStoreEnter",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 60
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/cvs-selections/{id}/verify",
+    "handler": "cvsRequest / cvsServe",
+    "kind": "routeCVSSelectionVerify",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 61
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/cvs-selections/{id}",
+    "handler": "cvsRequest / cvsServe",
+    "kind": "routeCVSSelectionGet",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 62
+  },
+  {
+    "method": "PUT",
+    "path": "/v1/buyer/orders/{id}/bank-transfer/proof",
+    "handler": "transferRequest",
+    "kind": "routeTransferProof",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 63
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/orders/{id}/bank-transfer",
+    "handler": "transferRequest",
+    "kind": "routeTransferGet",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 64
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/orders/lookup",
+    "handler": "orderLookup",
+    "kind": "routeLookup",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 65
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/orders/link",
+    "handler": "orderLink",
+    "kind": "routeOrderLink",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 66
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/media/s/{image}",
+    "handler": "designGet / storeMedia",
+    "kind": "storeMediaRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 67
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/catalog/v2/products",
+    "handler": "catalogV2Get",
+    "kind": "catalogV2ProductsRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 68
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/catalog/v2/collections",
+    "handler": "catalogV2Get",
+    "kind": "catalogV2CollectionsRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 69
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/catalog/v2/products/{slug_or_id}",
+    "handler": "catalogV2Get",
+    "kind": "catalogV2ProductRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 70
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/catalog/v2/collections/{slug}",
+    "handler": "catalogV2Get",
+    "kind": "catalogV2CollectionRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 71
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/media/c/{id}/{image}",
+    "handler": "collectionMediaGet",
+    "kind": "collectionMediaRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 72
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/media/p/{id}/{image}",
+    "handler": "mediaGet",
+    "kind": "mediaRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 73
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/orders/{id}/payment/prepare",
+    "handler": "paymentRequest",
+    "kind": "paymentPrepareRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 74
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/orders/{id}/payment/handoff",
+    "handler": "paymentRequest",
+    "kind": "paymentHandoffRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 75
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/orders/{id}/payment/refresh",
+    "handler": "paymentRequest",
+    "kind": "paymentRefreshRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 76
+  },
+  {
+    "method": "POST",
+    "path": "/v1/buyer/orders/{id}/payment/cancel",
+    "handler": "paymentRequest",
+    "kind": "paymentCancelRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 77
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/orders/{id}/payment",
+    "handler": "paymentRequest",
+    "kind": "paymentRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 78
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/quotes/{id}",
+    "handler": "dispatch: storefront.GetQuote",
+    "kind": "quoteRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 79
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/destinations/{id}",
+    "handler": "dispatch: GetDestination",
+    "kind": "destinationItemRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 80
+  },
+  {
+    "method": "GET",
+    "path": "/v1/buyer/orders/{id}",
+    "handler": "dispatch: checkout.Get",
+    "kind": "orderRoute",
+    "file": "internal/buyerhttp/routes.go",
+    "line": 81
+  }
+]

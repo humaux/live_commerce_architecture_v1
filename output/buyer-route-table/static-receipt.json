@@ -1,0 +1,15 @@
+{
+  "sha": "6f04a2aa61ab981166bcf24d52986e9f69a0e86b",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/contractdrift",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/source-scan",
+    "-base",
+    "e4dad98cc",
+    "-json"
+  ],
+  "exit": 1,
+  "elapsed": 2.09,
+  "report": "output/buyer-route-table/static-report.json",
+  "mode": "STATIC_SOURCE_ONLY; no Go tests"
+}

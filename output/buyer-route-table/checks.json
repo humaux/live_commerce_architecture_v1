@@ -1,0 +1,39 @@
+[
+  {
+    "sha": "6f04a2aa61ab981166bcf24d52986e9f69a0e86b",
+    "command": [
+      "go",
+      "build",
+      "./..."
+    ],
+    "exit": 0,
+    "log": "output/buyer-route-table/check-1.log",
+    "elapsed": 3.89
+  },
+  {
+    "sha": "6f04a2aa61ab981166bcf24d52986e9f69a0e86b",
+    "command": [
+      "go",
+      "vet",
+      "./internal/buyerhttp",
+      "./cmd/api",
+      "./scripts/dev/contractdrift"
+    ],
+    "exit": 0,
+    "log": "output/buyer-route-table/check-2.log",
+    "elapsed": 0.86
+  },
+  {
+    "sha": "6f04a2aa61ab981166bcf24d52986e9f69a0e86b",
+    "command": [
+      "go",
+      "build",
+      "-o",
+      "output/buyer-route-table/contractdrift",
+      "./scripts/dev/contractdrift"
+    ],
+    "exit": 0,
+    "log": "output/buyer-route-table/check-3.log",
+    "elapsed": 0.34
+  }
+]

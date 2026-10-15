@@ -1,0 +1,4 @@
+SHA 6f04a2aa61ab981166bcf24d52986e9f69a0e86b
+COMMAND ['go', 'vet', './internal/buyerhttp', './cmd/api', './scripts/dev/contractdrift']
+
+EXIT 0
