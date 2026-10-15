@@ -2,7 +2,7 @@
 
 ## Round 3 — integrator ruling handoff (current)
 
-Status: **READY_FOR_CI — E1 / structure ready only.** Exactly **55/55** symbols classified and handled: **45 A, 9 B, 1 C**; no fourth bucket, no unresolved symbol. Every original test symbol remains. This is ready for integrator CI intake; it does **not** claim SQL/runtime, red→green, independent acceptance, or Full Gates passed.
+Status: **READY_FOR_CI — E1 / structure ready only.** Exactly **55/55** symbols classified and handled: **45 A, 9 B, 1 C**; no fourth bucket, no unresolved symbol. Every one of the 55 test symbols remains (the 31 unit tests of the deleted adapter code were removed with it in round 1; see "Converted / deleted test inventory"). This is ready for integrator CI intake; it does **not** claim SQL/runtime, red→green, independent acceptance, or Full Gates passed.
 
 Role: delegated `commerce_worker` for Claude Code integrator, round 3; Codex runtime does not expose an exact model identifier or reasoning setting. No recursive delegation. Worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/pay-rm2-p2a`, branch `unit/pay-rm2-p2a`; base `c697be61be7aca82108b7e8fb999e6ed94e81070`; implementation commit `9dd54ec51b41cec7de1677b0261da93232a48f18`. This round changes only foundation test sources and task-owned output evidence. No production Go, migration, cmd/app source, module/lockfile change. Commits local only; no push/PR/merge/deploy.
 
@@ -107,6 +107,16 @@ Machine-readable mirror: `round3-contract-classification.json`. File:line refere
 
 ---
 
+## Integrator follow-up after the Opus review (2026-10-15, PR #70) — current
+
+- P1 dependency map stale → regenerated `docs/engineering/dependency-map.md` (`depmap.sh --check` up to date).
+- P1 `lc_covers` listed the deleted `internal/integrations/psp/payuni` in all 39 browser-mode lists of `scripts/dev/test-local.sh` → removed.
+- P2 the Stripe return-URL validator `canonicalBuyerPaymentReturnURL` lost its only tests with the retired HostedConfig → `cmd/api/buyer_payment_return_url_test.go` carries the 14 unsafe cases (plus `.localhost`, dotless host, empty path) and the host/`:443` canonical-form and fixed-point assertions.
+- P2 `internal/checkout/stripe_test.go`: the retired `ALREADY_ISSUED` disposition is now asserted invalid both with and without a URL.
+- P2 `tests/admin/auth-real.spec.ts`: the retired-route probes only prove refusal; the generic header-tenant and idempotency guarantees are named in the spec (orders-bff.spec.ts, TestAdminHTTPTransportGuards, TestBankTransferK301SameKeyAcrossOrders, TestBankTransferLifecycle).
+- P2 recorded deploy precondition: `capture_worker.go` / `query_worker.go` now cancel queued PAYUNi reconcile/query jobs without writing a fact or opening a review case. **Before deploying p2a to any environment, count PAYUNi attempts outside PROVIDER_MOCK that are not terminal or have queued payment_reconcile_v1/query jobs; it must be 0, otherwise stop and route them to review first.**
+- P2 the A-bucket SQL helper (`tests/foundation/payment_sql_contract_helpers_test.go`) takes the advisory lock without the production `lock_timeout='0'` wrapper; assertions are intact. If an A-bucket race test goes red with 55P03 in CI, align the helper with `payment.go:70-82`, do not relax the test.
+
 ## Round 2 — historical handoff (superseded by round 3 above)
 
 Status: **BLOCKED / incomplete test-contract migration, E1 only; NOT READY_FOR_CI.** No Full Gates or runtime acceptance is claimed. All 118 lines of the original caller audit are classified in `round2-caller-audit.json`; some still require the retired success contract. Exact remaining test symbols/lines are in `round2-blockers.txt` and listed below. This is a local partial handoff, not task completion.
@@ -136,6 +146,8 @@ Role: delegated commerce_worker for Claude Code integrator; actual model identif
 | admin auth browser account/method probes | HTTP refusal, missing detail/method and empty account list | Same BFF/CSRF/origin/auth/privacy checks; same 61-attempt rate loop, 429 and Retry-After=60. These are existing API probes, not new real-click acceptance |
 
 ### Old test → named replacement/assertion (round 2)
+
+> Historical (round 2). Statements below such as "No Test function was deleted" described round 2 only and are superseded by round 3.
 
 No Test function was deleted. `round2-test-inventory.json` binds changed/new functions to old/new source hashes and records an empty deleted-test set. Test helpers, browser UI fixtures and TypeScript API probes are also described above. The table names the replacement for removed retired-provider success assertions; unchanged assertions are not represented as new execution evidence.
 
@@ -501,6 +513,8 @@ This is a **source catalog audit**, not a live DB inventory; no database connect
 Migration 0161 **already** removes the PAYUNi notify endpoint/receipt tables, four functions, role and review policy when its empty-data guards hold. They are not claimed as still-existing objects on a fully migrated database; RM01/RM02 remain unchanged. Installed schema state is NOT_RUN.
 
 ## Remaining scan and blocking test contract
+
+> Historical (round 1). The BLOCKED state below is resolved by round 3 (55/55 handled).
 
 Production scan has seven lines: retained provider constant; historical method vocabulary; old-envelope discriminator; buyer historical method filter (comment + predicate); ignored HostedProviders tombstone; one shipping keyring comment **outside write scope**. `remaining-payuni-grep.txt` includes the tests too. The literal acceptance wording “only enum/history/removal tests” still needs integrator disposition for the compatibility tombstone and outside-scope comment; no runtime call remains.
 

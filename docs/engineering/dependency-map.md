@@ -23,7 +23,7 @@ Command ads-worker owns the Meta ads River host (meta-ads-v1 §6, ads-graph): th
 
 ## `cmd/api`
 
-Command api owns the API process assembly: it loads each feature's configuration (identity, accounts, buyer and hosted payment, Meta webhooks, Stripe webhooks, Studio, claims, merchant refunds, Taiwan CVS), opens the scoped DB pools, builds the handlers and mounts them on one listener.
+accounts.go assembles historical provider-account metadata reads with the existing scoped keyring.
 
 - Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/metabridge`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/mail`, `internal/merchanttools`, `internal/metaconnect`, `internal/msgtemplates`, `internal/oidclogin`, `internal/payments`, `internal/payments/stripewebhook`, `internal/platform`, `internal/tlsask`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
@@ -79,7 +79,7 @@ Command migrate owns applying livecommerce/migrations (embedded, checksummed, fo
 
 ## `cmd/payment-worker`
 
-Command payment-worker owns the process that runs one payment River queue, chosen by profile (SANDBOX or LIVE, jobqueue.ForProfile): PAYUNi query and capture reconciliation and, with COMMERCE_STRIPE_ENABLED=1 on SANDBOX only, the Stripe query, signal and refund workers of internal/payments.
+Command payment-worker owns the process that runs one payment River queue, chosen by profile (SANDBOX or LIVE, jobqueue.ForProfile): Stripe observation reconciliation and, with COMMERCE_STRIPE_ENABLED=1 (LIVE additionally needs owner approval), the Stripe query, signal and refund workers of internal/payments.
 
 - Depends on (internal): `internal/integrations/accounts`, `internal/integrations/psp/stripe`, `internal/jobqueue`, `internal/payments`, `internal/platform`
 - Depends on (third-party): —
@@ -191,9 +191,9 @@ Package catalog owns the merchant-scoped catalog transaction slice: products (dr
 
 ## `internal/checkout`
 
-Package checkout owns the trusted buyer checkout transaction: Begin turns a priced cart snapshot into an order plus a stock hold, then hosted payment start (PAYUNi always, Stripe Checkout when enabled), the buyer's order and payment views, and the checkout-expiry worker that releases due holds.
+Package checkout owns the trusted buyer checkout transaction: Begin turns a priced cart snapshot into an order plus a stock hold, then hosted payment start (Stripe Checkout when enabled), the buyer's order and payment views, and the checkout-expiry worker that releases due holds.
 
-- Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/inventory`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/storefront`
+- Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/inventory`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/storefront`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgtype`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: `cmd/api`, `cmd/expiry-worker`, `internal/buyerhttp`, `internal/merchanttools`, `internal/orderattempt`
 
@@ -311,9 +311,9 @@ Package inbox owns the merchant inbox read side (contracts/live-console-v1.md §
 
 ## `internal/integrations/accounts`
 
-Package accounts owns the custody of merchant-owned provider credentials: sealed key material, account records and the hosted-payment configuration read.
+crypto.go retains the shared Stripe keyring and legacy envelope decoding vocabulary.
 
-- Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/pagination`, `internal/platform`
+- Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/integrations/psp/stripe`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
 - Used by: `cmd/api`, `cmd/payment-worker`, `cmd/stripe-admin`, `internal/checkout`, `internal/httpapi`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`
 
@@ -396,14 +396,6 @@ Purpose: live-console-v1 §2.3 — the internal API↔claims-worker bridge.
 - Depends on (internal): `internal/claims`, `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/metabridge`, `internal/metaconnect`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
 - Used by: `cmd/claims-worker`, `cmd/meta-admin`
-
-## `internal/integrations/psp/payuni`
-
-Package payuni owns the narrow PAYUNi UPP v2.0 wire profile: hosted-form signing, notification verification, trade query and the TWD amount rule.
-
-- Depends on (internal): —
-- Depends on (third-party): —
-- Used by: `internal/checkout`, `internal/integrations/accounts`, `internal/payments`
 
 ## `internal/integrations/psp/stripe`
 
@@ -559,9 +551,9 @@ Package pagination owns bounded, opaque keyset positions for scoped lists: Encod
 
 ## `internal/payments`
 
-Package payments owns merchant payment-method configuration (methods.go) and the payment runtime on the profile queues: PAYUNi capture reconciliation and query workers, the Stripe Checkout query, signal and refund workers (stripe_*.go; contracts/stripe-psp-v1.md, stripe-refund-v1) and the lease-bound provider client material they use.
+capture_worker.go applies only persisted Stripe observations via payments.apply_capture.
 
-- Depends on (internal): `internal/command`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`
+- Depends on (internal): `internal/command`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/psp/stripe`, `internal/jobqueue`, `internal/pagination`, `internal/platform`, `internal/pricing`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: `cmd/api`, `cmd/payment-worker`, `internal/httpapi`
 

@@ -104,12 +104,16 @@ func TestStripeHandoffValidatorAndRedirectShape(t *testing.T) {
 			t.Fatalf("%s carried a url", disposition)
 		}
 	}
-	// PAYUNi handoffs may never carry a Stripe URL, and their bytes stay free of the new key.
+	// The retired PAYUNi disposition is never a valid Stripe handoff, with or without a URL,
+	// and its bytes stay free of the Stripe redirect key.
 	payuni := HostedHandoff{OrderID: testID, Disposition: "ALREADY_ISSUED", ExpiresAt: cutoff, RedirectURL: redirect.RedirectURL}
 	if validStripeHandoff(payuni, testID) {
-		t.Fatal("payuni handoff accepted a redirect url")
+		t.Fatal("retired payuni disposition accepted with a redirect url")
 	}
 	payuni.RedirectURL = ""
+	if validStripeHandoff(payuni, testID) {
+		t.Fatal("retired payuni disposition accepted without a redirect url")
+	}
 	body, err := json.Marshal(payuni)
 	if err != nil || strings.Contains(string(body), "redirect_url") {
 		t.Fatalf("payuni handoff bytes changed: %s %v", body, err)

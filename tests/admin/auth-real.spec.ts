@@ -353,6 +353,12 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     (await browserJSON(page, accountPath, { ...accountOptions, csrf: false }))
       .status,
   ).toBe(403);
+  // PAY-RM2: this retired route now refuses every write with 422, so the probes below only prove refusal.
+  // The generic guarantees they used to prove on a live route are owned by:
+  //   forged X-Tenant-ID / Bearer ignored, scope from the session -> tests/admin/orders-bff.spec.ts (bogus-header GET returns only the
+  //   real store's orders) and internal/httpapi/handler_test.go TestAdminHTTPTransportGuards;
+  //   same Idempotency-Key with a different body -> 409 idempotency_conflict -> tests/foundation/checkout_offline_fix_test.go
+  //   TestBankTransferK301SameKeyAcrossOrders and checkout_offline_test.go TestBankTransferLifecycle (real PG).
   expect(
     (await browserJSON(page, accountPath + "?unexpected=1", accountOptions))
       .status,
