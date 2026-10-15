@@ -1,10 +1,11 @@
 // @ds-page: built only from packages/ui DS components; design-spec rules R1–R7 apply (docs/design/DESIGN-SPEC.md §6).
 // Purpose: Four complete SHOPLINE-style page compositions for design review; synthetic data and local demo state only.
-// Depends on: React, DS components, UiGalleryFrame, typed three-locale copy and gallery state helper.
+// Depends on: React, @live-commerce/format (money), DS components, UiGalleryFrame, typed three-locale copy and gallery state helper.
 // Used by: /{locale}/ui-gallery/templates/{list,detail,form,settings}; no live routes adopt these components.
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { money } from "@live-commerce/format";
 import {
   Alert, Badge, BulkMenu, Button, ButtonLink, Card, Checkbox, ConfirmDialog, DataTable, DetailLayout,
   Dropzone, EmptyState, ErrorState, Field, FilterBar, FilterSelect, FormActionBar, FormGrid, Icon,
@@ -41,7 +42,7 @@ export function UiGalleryTemplate({ locale, name, initial }: { locale: Locale; n
     window.history.replaceState(null, "", `${window.location.pathname}${queryFor(next)}`);
   };
   const root = `/${locale}/ui-gallery`;
-  const [notice, persistNotice] = useGalleryRecord(`ds2-${name}-notice`, { text: "", created: "0" });
+  const [notice, persistNotice] = useGalleryRecord<{ text: string; created: string }>(`ds2-${name}-notice`, { text: "", created: "0" });
   const [create, setCreate] = useState(false);
   const created = /^\d{1,2}$/.test(notice.created) ? Number(notice.created) : 0;
   const setNotice = (text: string) => persistNotice({ ...notice, text });
@@ -98,7 +99,7 @@ function ListTemplate({ locale, t, params, update, setNotice, created }: { creat
         { id: "order", header: t.order, cell: o => <ButtonLink variant="link" size="sm" href={`/${locale}/ui-gallery/templates/detail`}>DEMO-{o.id}</ButtonLink>, wrap: true },
         { id: "buyer", header: t.buyer, cell: o => `${t.demoBuyer} ${o.id - 1000}`, wrap: true },
         { id: "payment", header: t.payment, cell: o => <StatusPill domain="payment" status={o.paid ? "paid" : "unpaid"} label={o.paid ? t.paid : t.unpaid} /> },
-        { id: "amount", header: t.amount, cell: o => `NT$ ${o.amount.toLocaleString(locale)}`, align: "end" },
+        { id: "amount", header: t.amount, cell: o => money(locale, "TWD", o.amount * 100), align: "end" },
       ]}
       actions={() => [{ id: "view", label: t.view, href: `/${locale}/ui-gallery/templates/detail` }, { id: "tag", label: t.tag, more: true, onSelect: () => setNotice(t.tagged) }]}
       actionsHeader={t.action} moreLabel={t.more}
@@ -111,7 +112,7 @@ function ListTemplate({ locale, t, params, update, setNotice, created }: { creat
   </Card>;
 }
 function DetailTemplate({ t }: { t: TemplateCopy }) {
-  const [saved, persist] = useGalleryRecord("ds2-detail-note", { note: "", result: "" });
+  const [saved, persist] = useGalleryRecord<{ note: string; result: string }>("ds2-detail-note", { note: "", result: "" });
   const [note, setNote] = useState("");
   useEffect(() => { setNote(saved.note); }, [saved.note]);
   return <Stack>
@@ -226,7 +227,7 @@ export function GalleryUpload({ t, value, onChange, disabled = false }: { t: Tem
   </Stack>;
 }
 function SettingsTemplate({ t, params }: { t: TemplateCopy; params: TemplateParams }) {
-  const [saved, persist, ready] = useGalleryRecord("ds2-settings", { name: "Demo store", currency: "TWD", timezone: "Asia/Taipei", notices: false });
+  const [saved, persist, ready] = useGalleryRecord<{ name: string; currency: string; timezone: string; notices: boolean }>("ds2-settings", { name: "Demo store", currency: "TWD", timezone: "Asia/Taipei", notices: false });
   const [data, setData] = useState(saved);
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
