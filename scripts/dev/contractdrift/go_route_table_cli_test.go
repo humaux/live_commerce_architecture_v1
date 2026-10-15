@@ -2,6 +2,7 @@
 // Depends on: aligned source fixtures, real Git, goReviewProcessCLI and the stdlib parser.
 // Used by: CI contract-drift gates; source fixtures are never run as HTTP servers.
 // Invariants: unserved table tails and custom dispatch without a table cannot become KNOWN.
+
 package main
 
 import (
@@ -129,5 +130,47 @@ func mountOther(next, child http.Handler) http.Handler {
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "UNRESOLVED EXACT /v1/table/unlisted") {
 		t.Fatalf("table concealed unrelated opaque mount: exit%d %s", code, out)
+	}
+}
+
+// Reverting only the round-4 path proof makes each negative case lose its
+// no-GO_ROUTE_TABLE assertion: both consumers are still reachable.
+func TestGoRouteTableExtraPathDispatchRejectedCLI(t *testing.T) {
+	cases := []struct{ name, branch string }{
+		{"path equality", `if r.URL.Path == "/v1/table/debug" { w.WriteHeader(204); return }`},
+		{"raw path equality", `if r.URL.RawPath == "/v1/table/debug" { w.WriteHeader(204); return }`},
+		{"request URI equality", `if r.RequestURI == "/v1/table/debug" { w.WriteHeader(204); return }`},
+		{"constant equality", `if r.URL.Path == debugPath { w.WriteHeader(204); return }`},
+		{"path switch", `switch r.URL.Path { case "/v1/table/debug": w.WriteHeader(204); return }`},
+		{"prefix", `if strings.HasPrefix(r.URL.Path, "/v1/table/debug") { w.WriteHeader(204); return }`},
+		{"suffix", `if strings.HasSuffix(r.URL.Path, "/debug") { w.WriteHeader(204); return }`},
+		{"map lookup", `if map[string]bool{"/v1/table/debug":true}[r.URL.Path] { w.WriteHeader(204); return }`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root, p := routeTableCLIFixture(t)
+			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", tc.branch+"\n selected := match(r.URL.Path)", 1)
+			mustWrite(t, p, source+`
+const debugPath = "/v1/table/debug"
+`)
+			code, out := goReviewProcessCLI(t, root)
+			if code != 1 || !strings.Contains(out, "UNRESOLVED") || strings.Contains(out, "GO_ROUTE_TABLE") {
+				t.Fatalf("extra path dispatch became table-covered: exit%d %s", code, out)
+			}
+		})
+	}
+}
+
+func TestGoRouteTableListedPathPolicyAcceptedCLI(t *testing.T) {
+	root, p := routeTableCLIFixture(t)
+	source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", `if r.URL.EscapedPath() != r.URL.Path { http.NotFound(w,r); return }
+ if r.URL.Path == listedPath { w.Header().Set("X-Listed", "yes") }
+ selected := match(r.URL.Path)`, 1)
+	mustWrite(t, p, source+`
+const listedPath = "/v1/table/one"
+`)
+	code, out := goReviewProcessCLI(t, root)
+	if code != 0 || strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "GO_ROUTE_TABLE") {
+		t.Fatalf("listed path policy unresolved: exit%d %s", code, out)
 	}
 }

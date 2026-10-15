@@ -73,7 +73,7 @@ func (s *goScanner) resolveHandlerFactories(tables []goRouteTable) {
 			byLocation[s.loc(fn.AST)] = fn
 			for _, table := range tables {
 				if pkg == table.Package && (table.Exact && goTableExactDispatcher(fn, table.Consumers[1]) ||
-					!table.Exact && fn.AST.Recv != nil && fn.AST.Name.Name == "ServeHTTP" && goTableReaches(pkg, fn, table.Consumers)) {
+					!table.Exact && fn.AST.Recv != nil && fn.AST.Name.Name == "ServeHTTP" && s.goTableReaches(table, fn)) {
 					p.Dispatch[fn] = true
 				}
 			}
