@@ -23,10 +23,19 @@ import (
 // The marker declares the complete namespace inventory. Pattern-helper semantics
 // and service-kind exhaustiveness are runtime invariants, gated by router tests.
 // This is deliberately not an inference from arbitrary literals or an exemption.
+//
+// Exact split mount/handler grammar adds a final "exact" marker field. All rows
+// must have the SAME literal path, equal to the marker path. The two consumers
+// are full-table boolean equality walks (Path == path and Method == method).
+// A table receiver wraps the path consumer for the owning mount, while the
+// returned HandlerFunc starts with a closed !methodConsumer(r.Method) guard.
+// It must not dispatch on another path. This resolves a GET/HEAD feed without
+// treating a namespace-prefix check or an unrelated opaque handler as exact.
 type goRouteTable struct {
 	Package      *goPackage
 	Name, Prefix string
 	TypeName     string
+	Exact        bool
 	Consumers    []*goFunc
 	Routes       []route
 	Ref          location
@@ -65,7 +74,8 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 	for _, table := range tables {
 		resolved := map[location]bool{}
 		for _, fn := range table.Package.Funcs {
-			if goTableReaches(table.Package, fn, table.Consumers) {
+			if !table.Exact && goTableReaches(table.Package, fn, table.Consumers) ||
+				table.Exact && goTableExactDispatcher(fn, table.Consumers[1]) {
 				resolved[s.loc(fn.AST)] = true
 			}
 		}
@@ -112,7 +122,8 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 
 func (s *goScanner) readRouteTable(gd *ast.GenDecl, fields []string) (goRouteTable, bool) {
 	table := goRouteTable{Package: s.Package, Ref: s.loc(gd)}
-	if len(fields) != 4 || fields[0] != "//contractdrift:routes" || !strings.HasPrefix(fields[1], "/") || len(gd.Specs) != 1 {
+	table.Exact = len(fields) == 5 && fields[4] == "exact"
+	if (len(fields) != 4 && !table.Exact) || fields[0] != "//contractdrift:routes" || !strings.HasPrefix(fields[1], "/") || len(gd.Specs) != 1 {
 		return table, false
 	}
 	table.Prefix = fields[1]
@@ -157,15 +168,26 @@ func (s *goScanner) readRouteTable(gd *ast.GenDecl, fields []string) (goRouteTab
 			return table, false
 		}
 		m, p := method.Text[0], path.Text[0]
-		if !bffHTTP(m) || !strings.HasPrefix(p, table.Prefix+"/") || !goTablePattern(p) || seen[m+" "+p] {
+		pathOK := strings.HasPrefix(p, table.Prefix+"/")
+		if table.Exact {
+			pathOK = p == table.Prefix && !strings.ContainsAny(p, "{}")
+		}
+		if !bffHTTP(m) || !pathOK || !goTablePattern(p) || seen[m+" "+p] {
 			return table, false
 		}
 		seen[m+" "+p] = true
 		table.Routes = append(table.Routes, route{Method: m, Path: normalizePath(p), Locations: goRefs([]location{s.loc(lit.Elts[i])}, method.Refs, path.Refs, []location{table.Ref})})
 	}
-	for i, name := range fields[2:] {
+	for i, name := range fields[2:4] {
 		fn := s.Package.Named[name]
-		if fn == nil || !goTableConsumer(fn, table.Name, i == 1) {
+		valid := fn != nil
+		if valid && table.Exact {
+			valid = goTableExactConsumer(fn, table.Name, i == 1)
+		}
+		if valid && !table.Exact {
+			valid = goTableConsumer(fn, table.Name, i == 1)
+		}
+		if !valid {
 			return table, false
 		}
 		table.Consumers = append(table.Consumers, fn)
@@ -351,6 +373,18 @@ func (s *goScanner) tableMount(fn *goFunc, table goRouteTable) bool {
 			if !ok || len(ret.Results) != 1 {
 				continue
 			}
+			if table.Exact {
+				call, ok := ret.Results[0].(*ast.CallExpr)
+				if !ok || len(call.Args) != 1 || goCallName(call.Fun) != table.Consumers[0].AST.Name.Name ||
+					target.AST.Type.Params == nil || len(target.AST.Type.Params.List) != 1 || len(target.AST.Type.Params.List[0].Names) != 1 {
+					continue
+				}
+				arg, ok := call.Args[0].(*ast.Ident)
+				if ok && arg.Name == target.AST.Type.Params.List[0].Names[0].Name {
+					found = true
+				}
+				continue
+			}
 			prefix, ok := ret.Results[0].(*ast.CallExpr)
 			if !ok || len(prefix.Args) != 2 {
 				continue
@@ -379,4 +413,123 @@ func (s *goScanner) tableMount(fn *goFunc, table goRouteTable) bool {
 		return true
 	})
 	return found
+}
+
+// Exact consumers cannot filter or truncate the table, or accept a value outside it.
+func goTableExactConsumer(fn *goFunc, name string, methods bool) bool {
+	body := fn.AST.Body.List
+	if len(body) != 2 || fn.AST.Type.Params == nil || len(fn.AST.Type.Params.List) != 1 || len(fn.AST.Type.Params.List[0].Names) != 1 {
+		return false
+	}
+	loop, ok := body[0].(*ast.RangeStmt)
+	if !ok || loop.Tok != token.DEFINE || len(loop.Body.List) != 1 {
+		return false
+	}
+	source, ok := loop.X.(*ast.Ident)
+	if !ok || source.Name != name {
+		return false
+	}
+	entry, ok := loop.Value.(*ast.Ident)
+	if !ok || entry.Name == "_" {
+		return false
+	}
+	branch, ok := loop.Body.List[0].(*ast.IfStmt)
+	if !ok || branch.Init != nil || branch.Else != nil || len(branch.Body.List) != 1 {
+		return false
+	}
+	cond, ok := branch.Cond.(*ast.BinaryExpr)
+	if !ok || cond.Op != token.EQL {
+		return false
+	}
+	field, ok := cond.X.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	owner, ok := field.X.(*ast.Ident)
+	if !ok || owner.Name != entry.Name {
+		return false
+	}
+	want := "Path"
+	if methods {
+		want = "Method"
+	}
+	arg, ok := cond.Y.(*ast.Ident)
+	if !ok || field.Sel.Name != want || arg.Name != fn.AST.Type.Params.List[0].Names[0].Name {
+		return false
+	}
+	yes, ok := branch.Body.List[0].(*ast.ReturnStmt)
+	if !ok || len(yes.Results) != 1 {
+		return false
+	}
+	no, ok := body[1].(*ast.ReturnStmt)
+	if !ok || len(no.Results) != 1 {
+		return false
+	}
+	y, ok := yes.Results[0].(*ast.Ident)
+	n, noOK := no.Results[0].(*ast.Ident)
+	return ok && noOK && y.Name == "true" && n.Name == "false"
+}
+
+// Only the direct returned HandlerFunc's first, closed method guard can claim
+// the method half of an exact table. A path-dispatching handler stays opaque.
+func goTableExactDispatcher(fn *goFunc, consumer *goFunc) bool {
+	body := fn.AST.Body.List
+	if len(body) != 1 {
+		return false
+	}
+	ret, ok := body[0].(*ast.ReturnStmt)
+	if !ok || len(ret.Results) != 1 {
+		return false
+	}
+	wrapper, ok := ret.Results[0].(*ast.CallExpr)
+	if !ok || len(wrapper.Args) != 1 {
+		return false
+	}
+	sel, ok := wrapper.Fun.(*ast.SelectorExpr)
+	if !ok || sel.Sel.Name != "HandlerFunc" {
+		return false
+	}
+	pkg, ok := sel.X.(*ast.Ident)
+	if !ok || fn.File.ImportPaths[pkg.Name] != "net/http" {
+		return false
+	}
+	handler, ok := wrapper.Args[0].(*ast.FuncLit)
+	if !ok || len(handler.Body.List) == 0 {
+		return false
+	}
+	guard, ok := handler.Body.List[0].(*ast.IfStmt)
+	if !ok || guard.Init != nil || guard.Else != nil || len(guard.Body.List) == 0 {
+		return false
+	}
+	neg, ok := guard.Cond.(*ast.UnaryExpr)
+	if !ok || neg.Op != token.NOT {
+		return false
+	}
+	call, ok := neg.X.(*ast.CallExpr)
+	if !ok || goCallName(call.Fun) != consumer.AST.Name.Name || len(call.Args) != 1 {
+		return false
+	}
+	method, ok := call.Args[0].(*ast.SelectorExpr)
+	if !ok || method.Sel.Name != "Method" {
+		return false
+	}
+	if handler.Type.Params == nil || len(handler.Type.Params.List) != 2 || len(handler.Type.Params.List[1].Names) != 1 {
+		return false
+	}
+	request, ok := method.X.(*ast.Ident)
+	if !ok || request.Name != handler.Type.Params.List[1].Names[0].Name {
+		return false
+	}
+	closed, ok := guard.Body.List[len(guard.Body.List)-1].(*ast.ReturnStmt)
+	if !ok || len(closed.Results) != 0 {
+		return false
+	}
+	valid := true
+	ast.Inspect(handler.Body, func(n ast.Node) bool {
+		if sel, ok := n.(*ast.SelectorExpr); ok && sel.Sel.Name == "Path" {
+			valid = false
+		}
+		return true
+	})
+	return valid
 }
