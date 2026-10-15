@@ -63,6 +63,28 @@ func TestMerchantWriteReplayAfterAPIRestart(t *testing.T) {
 	origin := "http://" + addr
 	dsn := f.runtime.Config().ConnString()
 	childEnv := browserEnvironment(map[string]string{"LISTEN_ADDR": addr, "DATABASE_URL": dsn})
+	// Registered before any process starts so the scan also runs when an assertion fails midway.
+	t.Cleanup(func() {
+		secrets := []string{f.tokens["a"], dsn, f.databaseURL}
+		if pw := f.runtime.Config().ConnConfig.Password; pw != "" {
+			secrets = append(secrets, pw)
+		}
+		for _, logName := range []string{"first.log", "second.log"} {
+			logBytes, err := os.ReadFile(filepath.Join(evidence, logName))
+			if os.IsNotExist(err) {
+				continue
+			}
+			if err != nil {
+				t.Error(err)
+				continue
+			}
+			for _, secret := range secrets {
+				if strings.Contains(string(logBytes), secret) {
+					t.Error("API process log contained sensitive fixture material")
+				}
+			}
+		}
+	})
 	client := &http.Client{Timeout: 5 * time.Second}
 	start := func(name string) (*exec.Cmd, chan error) {
 		t.Helper()
@@ -172,12 +194,20 @@ func TestMerchantWriteReplayAfterAPIRestart(t *testing.T) {
 	firstProcess, firstDone := start("first")
 	firstPID := firstProcess.Process.Pid
 	first := request("POST", path, key, body)
-	if first.Code < 200 || first.Code > 299 || !strings.Contains(first.Body.String(), name) {
+	if first.Code != http.StatusOK || !strings.Contains(first.Body.String(), name) {
 		t.Fatalf("first write status=%d body=%s", first.Code, first.Body.String())
 	}
 	afterWrite := snapshot()
-	if strings.Count(afterWrite, `"name": "`+name+`"`) != 1 || !strings.Contains(afterWrite, `"inventory.warehouse.created"`) {
-		t.Fatalf("first write did not persist exactly one warehouse with its audit: %s", afterWrite)
+	var warehouses, receipts, audits int
+	if err := f.owner.QueryRow(context.Background(), `SELECT
+ (SELECT count(*) FROM inventory.warehouses WHERE tenant_id=$1 AND store_id=$2 AND name=$3),
+ (SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='inventory.warehouse.create' AND idempotency_key=$4),
+ (SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inventory.warehouse.created')`,
+		f.tenantA, f.storeA1, name, key).Scan(&warehouses, &receipts, &audits); err != nil {
+		t.Fatal(err)
+	}
+	if warehouses != 1 || receipts != 1 || audits != 1 {
+		t.Fatalf("first write persisted warehouses=%d receipts=%d audits=%d, want 1/1/1", warehouses, receipts, audits)
 	}
 	stop(firstProcess, firstDone)
 
@@ -201,16 +231,5 @@ func TestMerchantWriteReplayAfterAPIRestart(t *testing.T) {
 		t.Fatalf("list after replays: status=%d body=%s", list.Code, list.Body.String())
 	}
 	stop(secondProcess, secondDone)
-	for _, logName := range []string{"first.log", "second.log"} {
-		logBytes, err := os.ReadFile(filepath.Join(evidence, logName))
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, secret := range []string{f.tokens["a"], dsn, f.databaseURL} {
-			if strings.Contains(string(logBytes), secret) {
-				t.Fatal("API process log contained sensitive fixture material")
-			}
-		}
-	}
 	t.Logf("PASS: actual API PIDs %d -> %d, same isolated PG; evidence=%s", firstPID, secondProcess.Process.Pid, evidence)
 }
