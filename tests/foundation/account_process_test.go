@@ -183,14 +183,14 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 	// still serve is a pre-removal sealed account with two credential versions (fixture_v1/fixture_v2).
 	first := maHistorical(t, m, m.f.store, in, 2)
 	body := mahBody(t, in)
-	before := m.facts(t)
+	before, beforeRows := m.facts(t), maHistorySnapshot(t, m)
 	firstProcess, firstDone := start("first")
 	firstPID := firstProcess.Process.Pid
 	if got := mahRead(t, request("GET", path+"/"+first.ID, "", nil), in.Credentials); !reflect.DeepEqual(got, first) {
 		t.Fatal("first process could not read the persisted account")
 	}
 	assertAdminError(t, request("POST", path, key, body), 422, "invalid_request")
-	if m.facts(t) != before {
+	if m.facts(t) != before || maHistorySnapshot(t, m) != beforeRows {
 		t.Fatal("retired create changed durable state")
 	}
 	stop(firstProcess, firstDone)
@@ -211,10 +211,11 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 	rotatedSecret := accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("W", 16)}
 	rotation := settingsBody(t, map[string]any{"expected_version": 2, "credentials": map[string]string{"hash_key": rotatedSecret.HashKey, "hash_iv": rotatedSecret.HashIV}})
 	assertAdminError(t, request("POST", path+"/"+first.ID+"/rotate", t04Key("account-process-rotate"), rotation), 422, "invalid_request")
-	if m.facts(t) != before {
+	if m.facts(t) != before || maHistorySnapshot(t, m) != beforeRows {
 		t.Fatal("refused replay or rotation after restart changed durable state")
 	}
-	// Both sealed versions still decrypt with the reloaded key configuration.
+	// The stored ciphertext is intact (decrypted here with the fixture keys; the API process only parses
+	// the keyring at startup and reads key_id). Process-side keyring open/refuse is TestStripeSP15Process.
 	maAssertPersistedSecret(t, m, first, 1, in.Credentials)
 	maAssertPersistedSecret(t, m, first, 2, in.Credentials)
 	stop(secondProcess, secondDone)

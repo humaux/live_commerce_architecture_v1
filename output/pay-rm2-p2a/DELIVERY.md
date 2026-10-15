@@ -545,3 +545,20 @@ Final local static command receipts are `static-checks.json`, `static-checks.log
 - Runtime SQL/ACL correctness of the new capture provider read and new historical fixture assertions: **NOT_RUN**. Immutable provider/worker visibility assumptions need CI and review.
 - Existing PAYUNi attempts remain frozen; outstanding money/stock/manual reconciliation needs owner handling. No automatic refund/retry/data cleanup is introduced.
 - No push, PR, merge, deployment, production key, outbound PSP request or production write. Final local commit is a partial handoff, not a release or task acceptance claim.
+
+## Integrator round (2026-10-15, after rebase on #71): retired account restart gate
+
+`TestMerchantAccountAPIProcessRestart` no longer creates or rotates a PAYUNi account through the retired HTTP route. It seeds a pre-removal sealed account (maHistorical, 2 versions) and proves the following across a real API binary restart:
+- GET and list are identical;
+- create replay and rotation are refused with 422;
+- counts and full rows (maHistorySnapshot) are unchanged;
+- the stored ciphertext is intact;
+- the process logs contain no secrets.
+
+Guarantees lost with the retired feature (feature-only, no equivalent needed): create durability, rotation persistence, and the replay-key fingerprint of an account write.
+
+Generic guarantees:
+- Process-side keyring open/refuse: partially covered by `TestStripeSP15Process` (tests/foundation/stripe_process_test.go:43). Its decrypt runs in-process; only the readiness probe runs as the built binary.
+- **NOT_COVERED:** a successful idempotent write, replayed after a real API process restart, returns its stored receipt. The studio restart test replays within one process, and the k3 idempotency tests are in-process. Follow-up: add a restart replay gate on a live merchant write (owner-visible gap; not blocking PAY-RM2).
+
+Reviews: output/pay-rm2-p2a/review-b9cfe42cd.md (REQUEST CHANGES → addressed in the next commit).

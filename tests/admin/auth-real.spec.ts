@@ -428,9 +428,9 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   expect(rotated.status).toBe(422);
   expect(rotated.body).toMatchObject({ code: "invalid_request" });
   safeAccount(rotated.body);
-  expect(
-    (await browserJSON(page, `${detailPath}/rotate`, rotationOptions)).body,
-  ).toEqual(rotated.body);
+  const rotateReplay = await browserJSON(page, `${detailPath}/rotate`, rotationOptions);
+  expect(rotateReplay.status).toBe(422);
+  expect({ ...rotateReplay.body, request_id: "" }).toEqual({ ...rotated.body, request_id: "" });
   expect(
     (
       await browserJSON(page, `${detailPath}/rotate`, {
