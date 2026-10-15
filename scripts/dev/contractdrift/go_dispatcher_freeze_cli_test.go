@@ -235,3 +235,26 @@ func TestGoDispatcherFreezeRowHandlerBodyExcludedCLI(t *testing.T) {
 		t.Fatal("row handler body changed dispatcher fingerprint")
 	}
 }
+
+func TestGoDispatcherFreezePackageFunctionValuesCLI(t *testing.T) {
+	for _, mode := range []string{"alias", "literal", "method value"} {
+		t.Run(mode, func(t *testing.T) {
+			root, p := routeTableCLIFixture(t)
+			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "probe(r.URL.Path)\n selected := match(r.URL.Path)", 1)
+			tail := "\nfunc helper(path string) bool { return path == \"one\" }\nvar probe = helper\n"
+			if mode == "literal" {
+				tail = "\nvar probe = func(path string) bool { return path == \"one\" }\n"
+			}
+			if mode == "method value" {
+				tail = "\ntype checker struct{}\nfunc (checker) helper(path string) bool {return path == \"one\"}\nvar probe = checker{}.helper\n"
+			}
+			source += tail
+			mustWrite(t, p, source)
+			pinFixtureDispatcher(t, root, "router.Routes", "")
+			assertFreezeCLI(t, root, true)
+			// The dispatcher declaration is unchanged; mutate only the reached target.
+			mustWrite(t, p, strings.Replace(source, `path == "one"`, `path == "two"`, 1))
+			assertFreezeCLI(t, root, false)
+		})
+	}
+}

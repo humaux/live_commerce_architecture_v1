@@ -134,18 +134,55 @@ func goDispatcherName(fn *goFunc) string {
 // This can freeze extra same-package methods, but cannot miss a receiver helper
 // just because the syntax-only scanner could not infer its type.
 func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, excluded map[*goFunc]bool) (string, []string, error) {
-	seen := map[*goFunc]bool{}
-	queue := append([]*goFunc{}, roots...)
-	for len(queue) > 0 {
-		fn := queue[0]
-		queue = queue[1:]
-		if seen[fn] || excluded[fn] {
-			continue
+	// Follow package variable initializers too: calls through aliases, maps or
+	// stored function values must retain the target body in the closure. Global
+	// function literals receive a stable declaration name for canonicalization.
+	type initializer struct {
+		expr ast.Expr
+		file *goFile
+	}
+	initializers := map[string][]initializer{}
+	literals := map[*ast.FuncLit]*goFunc{}
+	for _, file := range pkg.Files {
+		for _, decl := range file.AST.Decls {
+			gd, ok := decl.(*ast.GenDecl)
+			if !ok || gd.Tok != token.VAR {
+				continue
+			}
+			for _, spec := range gd.Specs {
+				vs, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
+				}
+				for _, name := range vs.Names {
+					index := 0
+					for _, value := range vs.Values {
+						initializers[name.Name] = append(initializers[name.Name], initializer{value, file})
+						ast.Inspect(value, func(n ast.Node) bool {
+							if lit, ok := n.(*ast.FuncLit); ok {
+								index++
+								literals[lit] = &goFunc{File: file, AST: &ast.FuncDecl{Name: ast.NewIdent(fmt.Sprintf("__global_%s_%d", name.Name, index)), Type: lit.Type, Body: lit.Body}}
+								return false // nested literals belong to this body's canonical source
+							}
+							return true
+						})
+					}
+				}
+			}
 		}
-		seen[fn] = true
-		ast.Inspect(fn.AST.Body, func(n ast.Node) bool {
+	}
+	seen := map[*goFunc]bool{}
+	expanded := map[string]bool{}
+	queue := append([]*goFunc{}, roots...)
+	var inspect func(ast.Node, *goFile)
+	inspect = func(node ast.Node, file *goFile) {
+		ast.Inspect(node, func(n ast.Node) bool {
+			if lit, ok := n.(*ast.FuncLit); ok && literals[lit] != nil {
+				queue = append(queue, literals[lit])
+				return false
+			}
 			if sel, ok := n.(*ast.SelectorExpr); ok {
-				if id, ok := sel.X.(*ast.Ident); ok && id.Obj == nil && fn.File.ImportPaths[id.Name] != "" {
+				if id, ok := sel.X.(*ast.Ident); ok && id.Obj == nil && file.ImportPaths[id.Name] != "" {
 					return false
 				}
 				for _, callee := range pkg.ByName[sel.Sel.Name] {
@@ -155,11 +192,28 @@ func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, excluded map[*goFu
 				}
 				return true
 			}
-			if id, ok := n.(*ast.Ident); ok && pkg.Named[id.Name] != nil {
-				queue = append(queue, pkg.Named[id.Name])
+			if id, ok := n.(*ast.Ident); ok {
+				if callee := pkg.Named[id.Name]; callee != nil {
+					queue = append(queue, callee)
+				}
+				if !expanded[id.Name] {
+					expanded[id.Name] = true
+					for _, init := range initializers[id.Name] {
+						inspect(init.expr, init.file)
+					}
+				}
 			}
 			return true
 		})
+	}
+	for len(queue) > 0 {
+		fn := queue[0]
+		queue = queue[1:]
+		if seen[fn] || excluded[fn] {
+			continue
+		}
+		seen[fn] = true
+		inspect(fn.AST.Body, fn.File)
 	}
 	funcs := make([]*goFunc, 0, len(seen))
 	for fn := range seen {
