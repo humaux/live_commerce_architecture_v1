@@ -152,36 +152,6 @@ func (f *goHandlerFrame) refusalConstant(expr ast.Expr, active map[*ast.Object]b
 			(left.Kind() == constant.String && right.Kind() == constant.String && node.Op == token.ADD) {
 			return constant.BinaryOp(left, node.Op, right)
 		}
-	case *ast.CallExpr:
-		// len of a fixed array literal is constant even when its elements refer to
-		// r. Scan r separately above: constant folding must not erase request use.
-		id, ok := node.Fun.(*ast.Ident)
-		if !ok || id.Name != "len" || id.Obj != nil || len(node.Args) != 1 {
-			return unknown
-		}
-		lit, ok := node.Args[0].(*ast.CompositeLit)
-		if !ok {
-			return unknown
-		}
-		array, ok := lit.Type.(*ast.ArrayType)
-		if !ok || array.Len == nil {
-			return unknown
-		}
-		safe := true
-		ast.Inspect(lit, func(n ast.Node) bool {
-			switch x := n.(type) {
-			case *ast.CallExpr:
-				safe = false
-			case *ast.UnaryExpr:
-				if x.Op == token.ARROW {
-					safe = false
-				}
-			}
-			return true
-		})
-		if safe {
-			return f.refusalConstant(array.Len, active)
-		}
 	}
 	return unknown
 }
