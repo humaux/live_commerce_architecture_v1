@@ -1,5 +1,5 @@
 {
-  "output/buyer-route-table/DELIVERY.md": "fa5eb4e5601705f112d34b1946c6748eb5e8dd9699f83ff8819ca1dc5aea8a4d",
+  "output/buyer-route-table/DELIVERY.md": "e1f4e1960ce7ea955631913469e007593f0d45729934776902413537ced98641",
   "output/buyer-route-table/round10/branch-receipt.json": "f1b739e5116ba2df7c6ce59372f6abba309b825c13148c958a3b6d9a938a4fdf",
   "output/buyer-route-table/round10/branch-report.txt": "a430b60de60d0e96f0db81e624139ec820cd0e7ed0487fce5a283a165dc139b2",
   "output/buyer-route-table/round10/branch-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -192,5 +192,6 @@
   "output/buyer-route-table/round10/source-hashes.json": "38f63865b2148364097ec57695093a17b3d27f196c15cf900334d681982f7b7b",
   "output/buyer-route-table/round10/vet-receipt.json": "54fce2b8c36edff2b634ecc4d7034e406a1881ca89d02b080f1fea89815f140b",
   "output/buyer-route-table/round10/vet-report.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "output/buyer-route-table/round10/vet-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  "output/buyer-route-table/round10/vet-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "output/buyer-route-table/round10/whitespace-audit.json": "28131ec941bb092e1547784bcc5d3fac54cdf025fe3420a77a32e3af492fe1c8"
 }
