@@ -7,6 +7,9 @@ package main
 
 import (
 	"encoding/json"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
@@ -218,7 +221,7 @@ func TestGoDispatcherFreezeRowHandlerBodyExcludedCLI(t *testing.T) {
 	source := strings.Replace(routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc", 1)
 	source = strings.ReplaceAll(source, `kind: "one"},`, `kind: "one", Handler: rowLeaf},`)
 	source = strings.ReplaceAll(source, `kind: "item"},`, `kind: "item", Handler: rowLeaf},`)
-	source = strings.Replace(source, "w.WriteHeader(204)", "rowLeaf(w,r)", 1) + "\nfunc rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\n"
+	source = source + "\nfunc rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\n"
 	mustWrite(t, p, source)
 	before := pinFixtureDispatcher(t, root, "router.Routes", "")
 	if strings.Contains(strings.Join(before.Functions, "\n"), "rowLeaf") {
@@ -266,7 +269,6 @@ func TestGoDispatcherFreezeStoredRowTargetsExcludedCLI(t *testing.T) {
 			source := strings.Replace(routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc", 1)
 			source = strings.ReplaceAll(source, `kind: "one"},`, `kind: "one", Handler: rowTarget},`)
 			source = strings.ReplaceAll(source, `kind: "item"},`, `kind: "item", Handler: rowTarget},`)
-			source = strings.Replace(source, "w.WriteHeader(204)", "rowTarget(w,r)", 1)
 			tail := "\nfunc rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\nvar rowTarget = rowLeaf\n"
 			if mode == "literal" {
 				tail = "\nvar rowTarget = func(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\n"
@@ -288,5 +290,98 @@ func TestGoDispatcherFreezeStoredRowTargetsExcludedCLI(t *testing.T) {
 				t.Fatal("stored row target body entered dispatcher closure")
 			}
 		})
+	}
+}
+
+// Pins are taken before each mutation; these counterexamples fail on Round 7.
+func TestGoDispatcherFreezeReferencedDeclarationsCLI(t *testing.T) {
+	cases := []struct {
+		name, decl, old, replacement string
+		resolves                     bool
+	}{
+		{"one value const", `const gate = 221`, "221", "210", false},
+		{"transitive const", `const gate = next; const next = 221`, "221", "210", false},
+		{"iota reorder", "const (\n first = iota\n gate\n last\n)", "first = iota\n gate", "gate = iota\n first", false},
+		{"regexp initializer", "var gate = regexp.MustCompile(`^[a-z]+$`)", "^[a-z]+$", ".*", false},
+		{"transitive type", `type config struct { Flag bool }; var gate config`, "Flag bool", "Flag string", false},
+		{"const comment", `const gate = 221 // original`, "// original", "// documentation only\n// second line", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root, p := routeTableCLIFixture(t)
+			source := strings.Replace(routeTableCLISource, "selected := match(r.URL.Path)", "_ = gate\n selected := match(r.URL.Path)", 1)
+			if tc.name == "regexp initializer" {
+				source = strings.Replace(source, `"net/http";`, `"net/http"; "regexp";`, 1)
+			}
+			source += "\n" + tc.decl + "\n"
+			mustWrite(t, p, source)
+			pinFixtureDispatcher(t, root, "router.Routes", "")
+			assertFreezeCLI(t, root, true)
+			mustWrite(t, p, strings.Replace(source, tc.old, tc.replacement, 1))
+			assertFreezeCLI(t, root, tc.resolves)
+		})
+	}
+}
+
+func TestGoDispatcherFreezeRowTargetAlsoFallbackCLI(t *testing.T) {
+	root, p := routeTableCLIFixture(t)
+	source := strings.Replace(routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc", 1)
+	source = strings.ReplaceAll(source, `kind: "one"},`, `kind: "one", Handler: rowLeaf},`)
+	source = strings.ReplaceAll(source, `kind: "item"},`, `kind: "item", Handler: rowLeaf},`)
+	source = strings.Replace(source, "http.NotFound(w,r)", "rowLeaf(w,r)", 1)
+	source += "\nfunc rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(404)}\n"
+	mustWrite(t, p, source)
+	pin := pinFixtureDispatcher(t, root, "router.Routes", "")
+	assertFreezeCLI(t, root, true)
+	if !strings.Contains(strings.Join(pin.Functions, "\n"), "rowLeaf") {
+		t.Error("direct fallback target missing from closure")
+	}
+	mustWrite(t, p, strings.Replace(source, "w.WriteHeader(404)", "w.WriteHeader(204)", 1))
+	assertFreezeCLI(t, root, false)
+}
+
+func TestGoDispatcherFreezeGenericNamesDeterministic(t *testing.T) {
+	source := `package router
+ type box[K any] struct{}
+ type pair[K,V any] struct{}
+ func Same() {}
+ func (*box[K]) Same() {}
+ func (pair[K,V]) Same() {}
+ `
+	set := token.NewFileSet()
+	f, err := parser.ParseFile(set, "generic.go", source, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := &goFile{AST: f}
+	pkg := &goPackage{Files: []*goFile{file}, Named: map[string]*goFunc{}, ByName: map[string][]*goFunc{}}
+	for _, decl := range f.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok {
+			g := &goFunc{AST: fn, File: file, Key: set.Position(fn.Pos()).String()}
+			pkg.Funcs = append(pkg.Funcs, g)
+			pkg.ByName[fn.Name.Name] = append(pkg.ByName[fn.Name.Name], g)
+			if fn.Recv == nil {
+				pkg.Named[fn.Name.Name] = g
+			}
+		}
+	}
+	var wantHash string
+	for i := 0; i < 32; i++ {
+		roots := append([]*goFunc{}, pkg.Funcs...)
+		if i%2 == 1 {
+			roots[0], roots[2] = roots[2], roots[0]
+		}
+		hash, names, err := goDispatcherFingerprint(pkg, roots, map[*goFunc]bool{}, "rows")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Join(names, ",") != "Same,box.Same,pair.Same" {
+			t.Fatalf("unqualified/colliding names: %v", names)
+		}
+		if i == 0 {
+			wantHash = hash
+		} else if hash != wantHash {
+			t.Fatalf("nondeterministic fingerprint: %s != %s", hash, wantHash)
+		}
 	}
 }
