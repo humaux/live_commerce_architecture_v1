@@ -258,3 +258,35 @@ func TestGoDispatcherFreezePackageFunctionValuesCLI(t *testing.T) {
 		})
 	}
 }
+
+func TestGoDispatcherFreezeStoredRowTargetsExcludedCLI(t *testing.T) {
+	for _, mode := range []string{"alias", "literal", "method value"} {
+		t.Run(mode, func(t *testing.T) {
+			root, p := routeTableCLIFixture(t)
+			source := strings.Replace(routeTableCLISource, "Method, Path, kind string", "Method, Path, kind string; Handler http.HandlerFunc", 1)
+			source = strings.ReplaceAll(source, `kind: "one"},`, `kind: "one", Handler: rowTarget},`)
+			source = strings.ReplaceAll(source, `kind: "item"},`, `kind: "item", Handler: rowTarget},`)
+			source = strings.Replace(source, "w.WriteHeader(204)", "rowTarget(w,r)", 1)
+			tail := "\nfunc rowLeaf(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\nvar rowTarget = rowLeaf\n"
+			if mode == "literal" {
+				tail = "\nvar rowTarget = func(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\n"
+			}
+			if mode == "method value" {
+				tail = "\ntype leaf struct{}\nfunc (leaf) serve(w http.ResponseWriter,r *http.Request){w.WriteHeader(204)}\nvar rowTarget = leaf{}.serve\n"
+			}
+			source += tail
+			mustWrite(t, p, source)
+			before := pinFixtureDispatcher(t, root, "router.Routes", "")
+			assertFreezeCLI(t, root, true)
+			mustWrite(t, p, strings.Replace(source, "w.WriteHeader(204)", "w.WriteHeader(205)", 1))
+			assertFreezeCLI(t, root, true)
+			inv, err := scanGo(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(inv.Dispatchers) != 1 || inv.Dispatchers[0].SHA256 != before.SHA256 {
+				t.Fatal("stored row target body entered dispatcher closure")
+			}
+		})
+	}
+}
