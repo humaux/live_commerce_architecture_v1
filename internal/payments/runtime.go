@@ -1,7 +1,7 @@
 // Purpose: assemble the payment worker River client for one execution profile and bind it to the
 // matching DB authority (WorkerAuthority, T21-03); registers the query, capture, Stripe signal and refund workers.
 // Depends on: internal/jobqueue (profile queue), internal/platform (worker pool authority check),
-// internal/integrations/accounts (keyring), River on pgx, PostgreSQL integration.profile_authority_ok.
+// internal/integrations/accounts (keyring), River on pgx, PostgreSQL integration.payment_queue_ready().
 // Used by: cmd/payment-worker/main.go.
 
 package payments
