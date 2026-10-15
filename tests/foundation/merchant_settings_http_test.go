@@ -52,51 +52,41 @@ func TestMerchantSettingsHTTPPaymentPersistenceAndReplay(t *testing.T) {
 	p.link(t)
 	path := settingsPath(f.store, p.in.MarketID, "payment-methods", p.in.Code)
 	h := httpapi.NewHandler(f.base.runtime)
-	before := p.counts(t)
+	first := pmHistorical(t, p, p.in, 1)
+	changed := p.in
+	changed.ExpectedVersion = 1
+	changed.Visible = false
+	changed.NameHant = "線上刷卡"
+	second := pmHistorical(t, p, changed, 2)
+	if first.Version != 1 || second.Version != 2 || second.Visible || second.Enabled || second.NameHant != "線上刷卡" {
+		t.Fatal("historical revisions lost independent state/language")
+	}
+	before, snapshot := p.counts(t), pmHistorySnapshot(t, p)
 	body, key := settingsBody(t, p.in), t04Key("settings-create")
 	put := func(body []byte, key string) *httptest.ResponseRecorder {
 		return adminRequest(h, "PUT", path, f.token, body, "application/json", map[string]string{"Idempotency-Key": key})
 	}
-	first := settingsRead[payments.Method](t, put(body, key))
-	if first.Version != 1 || first.Enabled || !first.Visible || first.ConnectionID != p.in.ConnectionID || first.NameEN != p.in.NameEN || first.NameHans != p.in.NameHans || first.NameHant != p.in.NameHant {
-		t.Fatalf("incorrect draft readback: %+v", first)
+	for _, in := range []payments.MethodInput{p.in, changed} {
+		for _, k := range []string{key, t04Key("settings-stale")} {
+			assertAdminError(t, put(settingsBody(t, in), k), 422, "invalid_request")
+		}
 	}
-	// A fresh handler has no memory of the request: database persistence is required.
-	got := settingsRead[payments.Method](t, adminRequest(httpapi.NewHandler(f.base.runtime), "GET", path, f.token, nil, "", nil))
-	if !reflect.DeepEqual(got, first) {
-		t.Fatal("GET did not return persisted configuration")
-	}
-	changed := p.in
-	changed.ExpectedVersion, changed.Visible, changed.NameHant = 1, false, "線上刷卡"
-	second := settingsRead[payments.Method](t, put(settingsBody(t, changed), t04Key("settings-hide")))
-	if second.Version != 2 || second.Visible || second.Enabled || second.NameHant != "線上刷卡" {
-		t.Fatal("visibility update lost independent state or language")
-	}
-	if replay := settingsRead[payments.Method](t, put(body, key)); !reflect.DeepEqual(replay, first) {
-		t.Fatal("permanent replay changed after newer revision")
-	}
-	assertAdminError(t, put(settingsBody(t, changed), key), 409, "conflict")
-	assertAdminError(t, put(settingsBody(t, changed), t04Key("settings-stale")), 409, "conflict")
 	assertAdminError(t, put(body, ""), 422, "invalid_request")
-	after := p.counts(t)
-	want := before
-	want[3] += 2 // accepted command receipts
-	want[4] += 2 // accepted audits
-	want[7] += 2 // immutable revisions
-	want[8]++    // current head
-	if after != want {
-		t.Fatalf("unexpected durable writes or provider job: got %v want %v", after, want)
+	got := settingsRead[payments.Method](t, adminRequest(httpapi.NewHandler(f.base.runtime), "GET", path, f.token, nil, "", nil))
+	if !reflect.DeepEqual(got, second) {
+		t.Fatal("fresh GET changed persisted historical configuration")
+	}
+	if p.counts(t) != before || pmHistorySnapshot(t, p) != snapshot {
+		t.Fatal("retired method HTTP write/replay changed history or effects")
 	}
 }
 
 func TestMerchantSettingsHTTPPaymentCAS(t *testing.T) {
 	p := pmSetup(t)
 	f := p.m.f
-	if _, err := p.set(f.token, f.store, t04Key("settings-cas-seed"), p.in); err != nil {
-		t.Fatal(err)
-	}
+	original := pmHistorical(t, p, p.in, 1)
 	h, path := httpapi.NewHandler(f.base.runtime), settingsPath(f.store, p.in.MarketID, "payment-methods", p.in.Code)
-	before := p.counts(t)
+	before, snapshot := p.counts(t), pmHistorySnapshot(t, p)
 	responses := make(chan *httptest.ResponseRecorder, 2)
 	start := make(chan struct{})
 	for _, name := range []string{"First editor", "Second editor"} {
@@ -109,24 +99,15 @@ func TestMerchantSettingsHTTPPaymentCAS(t *testing.T) {
 		}()
 	}
 	close(start)
-	winners := 0
 	for range 2 {
-		w := <-responses
-		if w.Code == 200 {
-			if got := settingsRead[payments.Method](t, w); got.Version != 2 {
-				t.Fatal("CAS winner did not advance one revision")
-			}
-			winners++
-		} else {
-			assertAdminError(t, w, 409, "conflict")
-		}
+		assertAdminError(t, <-responses, 422, "invalid_request")
 	}
-	want := before
-	want[3]++
-	want[4]++
-	want[7]++
-	if winners != 1 || p.counts(t) != want {
-		t.Fatal("concurrent editors did not produce exactly one accepted update")
+	if p.counts(t) != before || pmHistorySnapshot(t, p) != snapshot {
+		t.Fatal("retired concurrent method editors changed history or effects")
+	}
+	got := settingsRead[payments.Method](t, adminRequest(h, "GET", path, f.token, nil, "", nil))
+	if !reflect.DeepEqual(got, original) {
+		t.Fatal("retired concurrent edits changed historical head")
 	}
 }
 
@@ -134,9 +115,7 @@ func TestMerchantSettingsHTTPAuthorityAndDiagnostics(t *testing.T) {
 	p := pmSetup(t)
 	f := p.m.f
 	p.link(t)
-	if _, err := p.set(f.token, f.store, t04Key("settings-auth-seed"), p.in); err != nil {
-		t.Fatal(err)
-	}
+	pmHistorical(t, p, p.in, 1)
 	h, path := httpapi.NewHandler(f.base.runtime), settingsPath(f.store, p.in.MarketID, "payment-methods", p.in.Code)
 	before := p.counts(t)
 	putBody := p.in

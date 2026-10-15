@@ -22,7 +22,7 @@ import (
 // transition acceptance evidence. Clone immutable real checkout references, use
 // unique order/job IDs and cancelled carts so all original FK/checks stay on.
 func TestMerchantOrdersV2TenThousandScopedSearch(t *testing.T) {
-	q := pqSetup(t)
+	q := rm2StripePending(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
 	ctx := context.Background()
 	mustExec(t, q.f.owner, `WITH inserted AS (INSERT INTO checkout.orders
@@ -41,10 +41,7 @@ func TestMerchantOrdersV2TenThousandScopedSearch(t *testing.T) {
 	mustExec(t, q.f.owner, `ANALYZE checkout.orders`)
 	// Tracking is a separate real captured-and-manually-shipped order, not an
 	// impossible shipment attached to a cancelled synthetic order.
-	hash := pcRecord(t, q, pcFull(q))
-	if err := pcApply(q.worker, q.result.AttemptID, hash); err != nil {
-		t.Fatal(err)
-	}
+	q.rm2StripePay(t)
 	mustExec(t, q.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'fulfillment:write') ON CONFLICT DO NOTHING`, q.f.tenantA, q.f.storeA1, q.f.principalA)
 	carrier, tracking := "black_cat", "SYNTHETIC-TRACK-7654"
 	if _, err := t04Scoped(ctx, q.f, q.f.tokens["a"], q.f.storeA1, "fulfillment:write", func(tx pgx.Tx, scope platform.Scope) (merchantorders.ShipmentVersion, error) {
@@ -55,20 +52,15 @@ func TestMerchantOrdersV2TenThousandScopedSearch(t *testing.T) {
 	// One real paid, unshipped order makes the ready-to-ship SQL count non-zero.
 	ready := q
 	ready.cap = mustIssue(t, q.cqHarness.service, q.f.storeA1)
-	ready.bcHarness.prepare(t, ready.cap, []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 2}}) // mock SKU NT$12.50 x2 meets provider whole-TWD rule
+	ready.bcHarness.prepare(t, ready.cap, []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 2}}) // retain the original two-unit inventory workload
 	readyOrder, e := ready.bcHarness.begin(t04Key("mo-v2-ready"))
 	if e != nil {
 		t.Fatal(e)
 	}
 	ready.hold = readyOrder
 	ready.input.OrderID = readyOrder.OrderID
-	ready.result, e = ready.start(t04Key("mo-v2-ready-start"))
-	if e != nil {
-		t.Fatal(e)
-	}
-	if e = pcApply(ready.worker, ready.result.AttemptID, pcRecord(t, ready, pcFull(ready))); e != nil {
-		t.Fatal(e)
-	}
+	ready.rm2StripeStart(t)
+	ready.rm2StripePay(t)
 	otherStore, otherID := moBeginInOtherStore(t, q.f, true)
 	foreignStore, foreignID := moBeginInOtherStore(t, q.f, false)
 	handler := httpapi.NewHandler(q.f.runtime)

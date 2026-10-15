@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/payments"
 	"livecommerce/internal/platform"
@@ -276,7 +278,13 @@ func TestBuyerPaymentCaptureACLAndObservationBinding(t *testing.T) {
 	}
 	// Historical matching evidence remains usable after current credentials,
 	// qualification and enablement change; they cannot erase actual money.
-	q.rotate(t, 2, accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("I", 16)})
+	snapshot := rm2Snapshot(t, q.psHarness, q.result.AttemptID)
+	if err := platform.WithScope(context.Background(), q.f.runtime, q.f.tokens["a"], q.f.storeA1, "integration:manage", func(tx pgx.Tx, s platform.Scope) error {
+		_, err := q.accountService.Rotate(context.Background(), tx, s, q.f.tokens["a"], t04Key("pc-retired-rotate"), accounts.RotateInput{ConnectionID: q.account, ExpectedVersion: 1, Credentials: accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("I", 16)}})
+		return err
+	}); !errors.Is(err, command.ErrInvalid) || rm2Snapshot(t, q.psHarness, q.result.AttemptID) != snapshot {
+		t.Fatal("retired rotation changed history", err)
+	}
 	mustExec(t, q.f.owner, `UPDATE integration.bindings SET enabled=false,semantic_version=semantic_version+1 WHERE id=$1`, q.binding)
 	if e := pcApply(q.worker, q.result.AttemptID, hash); e != nil {
 		t.Fatal(e)
@@ -319,109 +327,149 @@ func TestBuyerPaymentCaptureFaultsAreCausalAndAtomic(t *testing.T) {
 	}
 }
 
+// The old signed query chain is now forbidden at both dispatch stages. Historical
+// authenticated observations must survive without financial/stock/work mutation.
 func TestBuyerPaymentCaptureRealRiverSignedQueryChain(t *testing.T) {
 	q := pqSetupWorker(t)
-	ctx := context.Background()
+	pcRecord(t, q, pcFull(q)) // previously persisted evidence, not provider execution
+	before := rm2Snapshot(t, q.psHarness, q.result.AttemptID)
+	var calls atomic.Int32
 	opts := payments.DefaultQueryWorkerOptions()
 	body := pqSignedResponse(pcFull(q))
-	entered := make(chan struct{}, 1)
-	release := make(chan struct{})
-	var releaseOnce sync.Once
-	opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
-		if r.URL.Host != "sandbox-api.payuni.com.tw" || r.URL.Path != "/api/trade/query" {
-			return nil, errors.New("unexpected query target")
-		}
-		select {
-		case entered <- struct{}{}:
-		default:
-		}
-		select {
-		case <-release:
-		case <-r.Context().Done():
-			return nil, r.Context().Err()
-		}
+	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) {
+		calls.Add(1)
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 	})
-	// First run only the real query worker. No capture worker is online yet:
-	// the crash/restart gap must have persistent reconciliation work waiting.
-	queryClient, stopQuery := pqStartWorker(t, q, opts)
-	t.Cleanup(func() { releaseOnce.Do(func() { close(release) }) })
+	client, err := payments.NewWorkerClient(context.Background(), q.worker, q.keys, "PROVIDER_MOCK", 1, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { pwStopClient(t, client) })
+	var captureJob int64
+	var jobHash string
+	if err = q.f.owner.QueryRow(context.Background(), `SELECT id,args->>'report_hash' FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&captureJob, &jobHash); err != nil {
+		t.Fatal(err)
+	}
+	if jobHash != hex.EncodeToString(pcHash(t, q, pcFull(q))) {
+		t.Fatal("archived reconcile job lost canonical report binding")
+	}
+	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
+	if err = client.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	pwAwaitJob(t, q, q.result.JobID, "cancelled")
+	pwAwaitJob(t, q, captureJob, "cancelled")
+	pwStopClient(t, client)
+	if calls.Load() != 0 || rm2Snapshot(t, q.psHarness, q.result.AttemptID) != before || pcCount(t, q, "payments.facts", "") != 0 || pcCount(t, q, "fulfillment.payment_work_items", "") != 0 {
+		t.Fatal("retired query/capture chain changed money or history")
+	}
+	pcAssertStock(t, q, 2, 0, "AWAITING_PAYMENT", "PAYMENT_PENDING")
+}
+
+// Replaces the active-provider durability half of the former PAYUNi signed query
+// chain. The real Stripe query commits its canonical observation and reconcile
+// job while River acknowledges a queue pause; capture runs only after restart.
+func TestStripeCaptureDurableObservationAcrossRestart(t *testing.T) {
+	q := rm2StripePending(t)
+	e := q.stripe
+	ctx := context.Background()
+	session := e.session(t, q.result.AttemptID)
+	if !e.fake.SetState(session, "complete", "paid") {
+		t.Fatal("fake Stripe session missing")
+	}
+	entered, release := make(chan struct{}, 1), make(chan struct{})
+	var once sync.Once
+	transport := e.fake.Transport()
+	rt, err := payments.NewStripeRuntime(ctx, e.pool, e.keys, "PROVIDER_MOCK", pqTransport(func(r *http.Request) (*http.Response, error) {
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/"+session) {
+			select {
+			case entered <- struct{}{}:
+			default:
+			}
+			select {
+			case <-release:
+			case <-r.Context().Done():
+				return nil, r.Context().Err()
+			}
+		}
+		return transport.RoundTrip(r)
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := payments.NewPaymentWorkerClient(ctx, e.pool, payments.WorkerConfig{Profile: "PROVIDER_MOCK", Concurrency: 2, Query: e.opts, Keys: e.keys, Stripe: rt})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { once.Do(func() { close(release) }); pwStopClient(t, client) })
+	sstWake(t, e.f, q.result.AttemptID)
+	if err = client.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
 	select {
 	case <-entered:
 	case <-time.After(5 * time.Second):
-		t.Fatal("query worker never entered the MOCK transport")
+		t.Fatal("Stripe query never entered transport")
 	}
-	// A persisted paused_at alone is not a fetch barrier: the River producer
-	// pauses only after handling its control message. Wait for its own ACK while
-	// the already-claimed query is still held at transport.
-	pausedEvents, unsubscribe := queryClient.Subscribe(river.EventKindQueuePaused)
+	paused, unsubscribe := client.Subscribe(river.EventKindQueuePaused)
 	defer unsubscribe()
-	if e := queryClient.QueuePause(ctx, "payment_mock_v1", nil); e != nil {
-		t.Fatal("pause query-only River queue", e)
+	if err = client.QueuePause(ctx, "payment_mock_v1", nil); err != nil {
+		t.Fatal(err)
 	}
 	select {
-	case event := <-pausedEvents:
+	case event := <-paused:
 		if event == nil || event.Queue == nil || event.Queue.Name != "payment_mock_v1" {
-			t.Fatalf("wrong River queue pause ACK: %+v", event)
+			t.Fatalf("wrong pause ACK: %+v", event)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatal("query-only River queue pause ACK missing")
+		t.Fatal("Stripe queue pause ACK missing")
 	}
-	releaseOnce.Do(func() { close(release) })
-	pqAwait(t, q, q.result.JobID, "payment_report_observed", "scheduled")
-	q.pending(t)
+	once.Do(func() { close(release) })
 	var jobID int64
-	var jobHash string
-	if e := q.f.owner.QueryRow(ctx, `SELECT id,args->>'report_hash' FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&jobID, &jobHash); e != nil {
-		t.Fatal(e)
-	}
-	if jobHash != hex.EncodeToString(pcHash(t, q, pcFull(q))) {
-		t.Fatal("durable job not bound to canonical persisted projection")
-	}
-	var durableState string
-	var durableAttempt int
-	if e := q.f.owner.QueryRow(ctx, `SELECT state,attempt FROM river_payment.river_job WHERE id=$1`, jobID).Scan(&durableState, &durableAttempt); e != nil || durableState != "available" || durableAttempt != 0 {
-		t.Fatalf("reconcile was fetched before capture restart: state=%s attempt=%d err=%v", durableState, durableAttempt, e)
-	}
-	if e := stopQuery(); e != nil {
-		t.Fatal("stop query-only worker before capture restart", e)
-	}
-	mustExec(t, q.f.owner, `UPDATE river_payment.river_queue SET paused_at=NULL WHERE name='payment_mock_v1'`)
-	w, e := payments.NewCaptureWorker(ctx, q.worker)
-	if e != nil {
-		t.Fatal(e)
-	}
-	workers := river.NewWorkers()
-	river.AddWorker(workers, w)
-	queue := "payment_mock_v1"
-	client, e := river.NewClient(riverpgxv5.New(q.worker), &river.Config{Schema: "river_payment", Workers: workers, Queues: map[string]river.QueueConfig{queue: {MaxWorkers: 2}}, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), JobTimeout: 15 * time.Second, RescueStuckJobsAfter: 30 * time.Second})
-	if e != nil {
-		t.Fatal(e)
-	}
-	if e = client.Start(ctx); e != nil {
-		t.Fatal(e)
-	}
-	t.Cleanup(func() {
-		c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if e := client.StopAndCancel(c); e != nil {
-			t.Error(e)
-		}
-	})
+	var hash string
 	deadline := time.Now().Add(6 * time.Second)
 	for time.Now().Before(deadline) {
-		var state string
-		if e = q.f.owner.QueryRow(ctx, `SELECT state FROM river_payment.river_job WHERE id=$1`, jobID).Scan(&state); e != nil {
-			t.Fatal(e)
+		// Select the paid observation's own reconcile job; an earlier open-session
+		// observation from the fixture cannot satisfy the money durability gate.
+		err = e.f.owner.QueryRow(ctx, `SELECT j.id,j.args->>'report_hash'
+   FROM river_payment.river_job j JOIN payments.provider_observations o
+   ON encode(o.report_hash,'hex')=j.args->>'report_hash'
+   WHERE j.kind='payment_reconcile_v1' AND j.args->>'operation_id'=$1
+   AND o.attempt_id=$2 AND o.report->>'PaymentStatus'='paid'`, q.result.OperationID, q.result.AttemptID).Scan(&jobID, &hash)
+		if err == nil {
+			break
 		}
-		if state == "completed" {
-			pcAssertStock(t, q, 0, 2, "CONFIRMED", "COMMITTED")
-			pcAssertWork(t, q, "READY")
-			return
+		if !errors.Is(err, pgx.ErrNoRows) {
+			t.Fatal(err)
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	t.Fatal("capture worker did not commit durable work")
+	if jobID == 0 {
+		t.Fatal("paid Stripe observation/reconcile was not durable")
+	}
+	var canonical string
+	if err = e.f.owner.QueryRow(ctx, `SELECT encode(sha256(convert_to(report::text,'UTF8')),'hex') FROM payments.provider_observations WHERE attempt_id=$1 AND encode(report_hash,'hex')=$2`, q.result.AttemptID, hash).Scan(&canonical); err != nil || hash != canonical {
+		t.Fatalf("durable canonical report hash: %v", err)
+	}
+	var state string
+	var attempt int
+	if err = e.f.owner.QueryRow(ctx, `SELECT state,attempt FROM river_payment.river_job WHERE id=$1`, jobID).Scan(&state, &attempt); err != nil || state != "available" || attempt != 0 {
+		t.Fatalf("capture fetched before restart: %s %d %v", state, attempt, err)
+	}
+	pcAssertStock(t, q, 2, 0, "AWAITING_PAYMENT", "PAYMENT_PENDING")
+	if pcCount(t, q, "payments.facts", "") != 0 || pcCount(t, q, "fulfillment.payment_work_items", "") != 0 {
+		t.Fatal("query applied money before capture restart")
+	}
+	pwStopClient(t, client)
+	mustExec(t, e.f.owner, `UPDATE river_payment.river_queue SET paused_at=NULL WHERE name='payment_mock_v1'`)
+	stop := e.start(t, true)
+	defer stop()
+	pwAwaitJob(t, q, jobID, "completed")
+	pcAssertStock(t, q, 0, 2, "CONFIRMED", "COMMITTED")
+	pcAssertWork(t, q, "READY")
+	if pcCount(t, q, "payments.facts", " AND kind='CAPTURED'") != 1 {
+		t.Fatal("Stripe restart capture not unique")
+	}
 }
 
 func TestBuyerPaymentCaptureReleasedAnomalyKeepsRealMoney(t *testing.T) {

@@ -43,42 +43,32 @@ func TestMerchantAccountHTTPRoundTripAndPermanentReplay(t *testing.T) {
 	m := maSetup(t)
 	h := httpapi.NewHandler(m.f.base.runtime, httpapi.Options{Accounts: m.service})
 	path, in, key := mahPath(m.f.store), maInput(), t04Key("account-http")
-	body, before := mahBody(t, in), m.facts(t)
-	first := mahRead(t, mahRequest(h, "POST", path, m.f.token, key, body), in.Credentials)
-	if first.KeyID != "" || first.State != "CONFIGURED_UNVERIFIED" || first.CredentialVersion != 1 {
-		t.Fatal("unsafe account state")
+	a := maHistorical(t, m, m.f.store, in, 2)
+	first := mahRead(t, mahRequest(h, "GET", path+"/"+a.ID, m.f.token, "", nil), in.Credentials)
+	if first.KeyID != "" || first.State != "CONFIGURED_UNVERIFIED" || first.CredentialVersion != 2 {
+		t.Fatal("unsafe historical account state")
 	}
-	maAssertPersistedSecret(t, m, first, 1, in.Credentials)
-	after := m.facts(t)
-	if after[0] != before[0]+1 || after[1] != before[1]+1 || after[2] != before[2]+1 || after[5] != before[5] || after[6] != before[6] {
-		t.Fatal("wrong account aggregate or external operation")
+	for _, version := range []int64{1, 2} {
+		maAssertPersistedSecret(t, m, a, version, in.Credentials)
 	}
+	before, snapshot := m.facts(t), maHistorySnapshot(t, m)
 	fresh := httpapi.NewHandler(m.f.base.runtime, httpapi.Options{Accounts: m.service})
-	got := mahRead(t, mahRequest(fresh, "GET", path+"/"+first.ID, m.f.token, "", nil), in.Credentials)
-	if !reflect.DeepEqual(first, got) {
-		t.Fatal("fresh handler did not read persisted account")
+	rotation := settingsBody(t, map[string]any{"expected_version": 2, "credentials": map[string]string{"hash_key": strings.Repeat("N", 32), "hash_iv": strings.Repeat("W", 16)}})
+	for _, handler := range []http.Handler{h, fresh} {
+		for range 2 {
+			assertAdminError(t, mahRequest(handler, "POST", path, m.f.token, key, mahBody(t, in)), 422, "invalid_request")
+			assertAdminError(t, mahRequest(handler, "POST", path+"/"+a.ID+"/rotate", m.f.token, key, rotation), 422, "invalid_request")
+		}
+		got := mahRead(t, mahRequest(handler, "GET", path+"/"+a.ID, m.f.token, "", nil), in.Credentials)
+		if !reflect.DeepEqual(first, got) {
+			t.Fatal("fresh handler changed historical account metadata")
+		}
 	}
-	rotatedSecret := accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("W", 16)}
-	rotation := settingsBody(t, map[string]any{"expected_version": 1, "credentials": map[string]string{"hash_key": rotatedSecret.HashKey, "hash_iv": rotatedSecret.HashIV}})
-	rotateKey := t04Key("account-http-rotate")
-	rotated := mahRead(t, mahRequest(h, "POST", path+"/"+first.ID+"/rotate", m.f.token, rotateKey, rotation), rotatedSecret)
-	if rotated.CredentialVersion != 2 || rotated.ID != first.ID || rotated.BindingID != first.BindingID || rotated.State != first.State {
-		t.Fatal("rotation rebound or falsely verified account")
-	}
-	maAssertPersistedSecret(t, m, rotated, 2, rotatedSecret)
-	maAssertPersistedSecret(t, m, first, 1, in.Credentials)
-	stable := m.facts(t)
-	if replay := mahRead(t, mahRequest(h, "POST", path, m.f.token, key, body), in.Credentials); !reflect.DeepEqual(replay, first) {
-		t.Fatal("historical create replay changed")
-	}
-	if replay := mahRead(t, mahRequest(h, "POST", path+"/"+first.ID+"/rotate", m.f.token, rotateKey, rotation), rotatedSecret); !reflect.DeepEqual(replay, rotated) {
-		t.Fatal("rotation replay changed")
-	}
-	in.Credentials = rotatedSecret
-	assertAdminError(t, mahRequest(h, "POST", path, m.f.token, key, mahBody(t, in)), 409, "conflict")
-	assertAdminError(t, mahRequest(h, "POST", path+"/"+first.ID+"/rotate", m.f.token, t04Key("stale-rotate"), rotation), 409, "conflict")
-	if m.facts(t) != stable {
-		t.Fatal("replay/conflict had durable effects")
+	changed := in
+	changed.Credentials.HashKey = strings.Repeat("X", 32)
+	assertAdminError(t, mahRequest(h, "POST", path, m.f.token, key, mahBody(t, changed)), 422, "invalid_request")
+	if m.facts(t) != before || maHistorySnapshot(t, m) != snapshot {
+		t.Fatal("retired HTTP create/rotate/replay changed history or effects")
 	}
 }
 
@@ -89,7 +79,7 @@ func TestMerchantAccountHTTPPaginationAndAuthority(t *testing.T) {
 	ids := map[string]bool{}
 	for range 3 {
 		in := maInput()
-		a := mahRead(t, mahRequest(h, "POST", path, m.f.token, t04Key("account-page"), mahBody(t, in)), in.Credentials)
+		a := maHistorical(t, m, m.f.store, in, 1)
 		ids[a.ID] = true
 	}
 	stable := m.facts(t)
@@ -164,22 +154,22 @@ func TestMerchantAccountHTTPRateLimitIsScoped(t *testing.T) {
 	m := maSetup(t)
 	h := httpapi.NewHandler(m.f.base.runtime, httpapi.Options{Accounts: m.service})
 	path, in, key := mahPath(m.f.store), maInput(), t04Key("account-limit")
+	a := maHistorical(t, m, m.f.store, in, 1)
 	body := mahBody(t, in)
-	first := mahRead(t, mahRequest(h, "POST", path, m.f.token, key, body), in.Credentials)
-	stable := m.facts(t)
-	for i := 1; i < 60; i++ {
-		mahRead(t, mahRequest(h, "POST", path, m.f.token, key, body), in.Credentials)
+	stable, snapshot := m.facts(t), maHistorySnapshot(t, m)
+	for i := 0; i < 60; i++ {
+		assertAdminError(t, mahRequest(h, "POST", path, m.f.token, key, body), 422, "invalid_request")
 	}
 	w := mahRequest(h, "POST", path, m.f.token, key, body)
 	assertAdminError(t, w, 429, "rate_limited")
-	if w.Header().Get("Retry-After") != "60" || m.facts(t) != stable {
-		t.Fatal("limiter altered data or omitted backoff")
+	if w.Header().Get("Retry-After") != "60" || m.facts(t) != stable || maHistorySnapshot(t, m) != snapshot {
+		t.Fatal("limiter changed data or omitted backoff")
 	}
-	mahRead(t, mahRequest(h, "GET", path+"/"+first.ID, m.f.token, "", nil), in.Credentials)
-	// The SAME handler/process cannot let one store exhaust a different store.
-	other := mahRead(t, mahRequest(h, "POST", mahPath(m.f.otherStore), m.f.token, key, body), in.Credentials)
-	if first.ID == other.ID {
-		t.Fatal("stores shared an account")
+	mahRead(t, mahRequest(h, "GET", path+"/"+a.ID, m.f.token, "", nil), in.Credentials)
+	// SAME handler/process: the exhausted store must not rate-limit the other store.
+	assertAdminError(t, mahRequest(h, "POST", mahPath(m.f.otherStore), m.f.token, key, body), 422, "invalid_request")
+	if m.facts(t) != stable || maHistorySnapshot(t, m) != snapshot {
+		t.Fatal("other-store refusal wrote state")
 	}
 }
 
@@ -187,8 +177,8 @@ func TestMerchantAccountHTTPConcurrentRotateCAS(t *testing.T) {
 	m := maSetup(t)
 	h := httpapi.NewHandler(m.f.base.runtime, httpapi.Options{Accounts: m.service})
 	in := maInput()
-	a := mahRead(t, mahRequest(h, "POST", mahPath(m.f.store), m.f.token, t04Key("account-cas"), mahBody(t, in)), in.Credentials)
-	before, done := m.facts(t), make(chan *httptest.ResponseRecorder, 2)
+	a := maHistorical(t, m, m.f.store, in, 1)
+	before, snapshot, done := m.facts(t), maHistorySnapshot(t, m), make(chan *httptest.ResponseRecorder, 2)
 	start := make(chan struct{})
 	for _, ch := range []string{"N", "M"} {
 		body := settingsBody(t, map[string]any{"expected_version": 1, "credentials": map[string]string{"hash_key": strings.Repeat(ch, 32), "hash_iv": strings.Repeat("V", 16)}})
@@ -198,16 +188,15 @@ func TestMerchantAccountHTTPConcurrentRotateCAS(t *testing.T) {
 		}()
 	}
 	close(start)
-	statuses := map[int]int{}
 	for range 2 {
-		statuses[(<-done).Code]++
+		assertAdminError(t, <-done, 422, "invalid_request")
 	}
-	if statuses[200] != 1 || statuses[409] != 1 {
-		t.Fatalf("CAS statuses: %v", statuses)
+	if m.facts(t) != before || maHistorySnapshot(t, m) != snapshot {
+		t.Fatal("concurrent retired rotation changed credential history")
 	}
-	after := m.facts(t)
-	if after[2] != before[2]+1 || after[3] != before[3]+1 || after[4] != before[4]+1 || after[5] != before[5] || after[6] != before[6] {
-		t.Fatal("CAS wrote more than one credential revision")
+	got := mahRead(t, mahRequest(h, "GET", mahPath(m.f.store)+"/"+a.ID, m.f.token, "", nil), in.Credentials)
+	if got.CredentialVersion != 1 {
+		t.Fatal("retired rotation advanced historical head")
 	}
 }
 
@@ -215,7 +204,7 @@ func TestMerchantAccountHTTPListRechecksAfterLockWait(t *testing.T) {
 	m := maSetup(t)
 	h := httpapi.NewHandler(m.f.base.runtime, httpapi.Options{Accounts: m.service})
 	in := maInput()
-	mahRead(t, mahRequest(h, "POST", mahPath(m.f.store), m.f.token, t04Key("account-revoke"), mahBody(t, in)), in.Credentials)
+	maHistorical(t, m, m.f.store, in, 1)
 	ctx, before := context.Background(), m.facts(t)
 	block, err := m.f.base.owner.Begin(ctx)
 	if err != nil {

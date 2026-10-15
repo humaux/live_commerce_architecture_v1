@@ -34,7 +34,7 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 160*time.Second)
 	defer cancel()
-	q := pqSetup(t)
+	q := rm2StripePending(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
 	secondBuyer := mustIssue(t, q.cqHarness.service, q.f.storeA1)
 	secondHarness := q.bcHarness

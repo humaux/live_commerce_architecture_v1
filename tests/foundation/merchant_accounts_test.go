@@ -106,51 +106,59 @@ func (m *maFixture) facts(t *testing.T) (out [7]int64) {
 func TestMerchantAccountsRoundTripPrivacyAndRotation(t *testing.T) {
 	m := maSetup(t)
 	in := maInput()
-	key := t04Key("ma-create")
-	before := m.facts(t)
-	a, e := m.create(m.f.token, m.f.store, key, in)
-	if e != nil {
-		t.Fatal(e)
+	a := maHistorical(t, m, m.f.store, in, 2)
+	liveInput := in
+	liveInput.Environment = "LIVE"
+	live := maHistorical(t, m, m.f.store, liveInput, 1)
+	if live.ID == a.ID || live.BindingID == a.BindingID || live.Environment != "LIVE" || live.State != "CONFIGURED_UNVERIFIED" {
+		t.Fatal("archived environments not isolated")
 	}
-	if a.CredentialVersion != 1 || a.BindingVersion != 1 || a.State != "CONFIGURED_UNVERIFIED" || a.KeyID != "fixture_v1" {
-		t.Fatalf("incorrect metadata: %+v", a)
+	maAssertPersistedSecret(t, m, live, 1, in.Credentials)
+	for _, entry := range []struct {
+		id   string
+		want int
+	}{{a.ID, 2}, {live.ID, 1}} {
+		var n int
+		if err := m.f.base.owner.QueryRow(context.Background(), `SELECT count(*) FROM integration.account_credentials WHERE connection_id=$1`, entry.id).Scan(&n); err != nil || n != entry.want {
+			t.Fatal("immutable credential history lost", err)
+		}
 	}
+	before, snapshot := m.facts(t), maHistorySnapshot(t, m)
 	got, e := m.get(m.f.token, m.f.store, a.ID)
-	if e != nil || got != a {
-		t.Fatalf("metadata readback mismatch: %v", e)
+	if e != nil || got != a || a.CredentialVersion != 2 || a.BindingVersion != 1 || a.State != "CONFIGURED_UNVERIFIED" || a.KeyID != "fixture_v2" {
+		t.Fatalf("historical metadata: %+v %v", got, e)
 	}
-	counts := m.facts(t)
-	if counts[0]-before[0] != 1 || counts[1]-before[1] != 1 || counts[2]-before[2] != 1 || counts[5] != before[5] || counts[6] != before[6] {
-		t.Fatal("incorrect aggregate or external job created")
+	for _, version := range []int64{1, 2} {
+		maAssertPersistedSecret(t, m, a, version, in.Credentials)
 	}
-	replay, e := m.create(m.f.token, m.f.store, key, in)
-	if e != nil || replay != a || m.facts(t) != counts {
-		t.Fatalf("replay mutated state: %v", e)
+	for _, environment := range []string{"SANDBOX", "LIVE"} {
+		in.Environment = environment
+		for range 2 {
+			if out, e := m.create(m.f.token, m.f.store, t04Key("ma-create"), in); !errors.Is(e, command.ErrInvalid) || out != (accounts.Connection{}) {
+				t.Fatalf("retired create admitted: %v", e)
+			}
+			if out, e := m.rotate(m.f.token, t04Key("ma-rotate"), accounts.RotateInput{ConnectionID: a.ID, ExpectedVersion: 2, Credentials: in.Credentials}); !errors.Is(e, command.ErrInvalid) || out != (accounts.Connection{}) {
+				t.Fatalf("retired rotate admitted: %v", e)
+			}
+		}
 	}
-	var blob []byte
-	var nonceLen int
+	if m.facts(t) != before || maHistorySnapshot(t, m) != snapshot {
+		t.Fatal("retired account call changed history, receipts, audit or jobs")
+	}
+	meta, _ := json.Marshal(got)
 	var response, audit string
-	if e = m.f.base.owner.QueryRow(context.Background(), `SELECT ciphertext,octet_length(nonce) FROM integration.account_credentials WHERE connection_id=$1`, a.ID).Scan(&blob, &nonceLen); e != nil {
-		t.Fatal(e)
-	}
 	if e = m.f.base.owner.QueryRow(context.Background(), `SELECT coalesce(jsonb_agg(response)::text,'') FROM ops.command_results WHERE tenant_id=$1`, m.f.tenant).Scan(&response); e != nil {
 		t.Fatal(e)
 	}
 	if e = m.f.base.owner.QueryRow(context.Background(), `SELECT coalesce(jsonb_agg(to_jsonb(a))::text,'') FROM ops.audit_events a WHERE tenant_id=$1`, m.f.tenant).Scan(&audit); e != nil {
 		t.Fatal(e)
 	}
-	meta, _ := json.Marshal(a)
-	maAssertPersistedSecret(t, m, a, 1, in.Credentials)
-	if nonceLen != 12 {
-		t.Fatal("invalid nonce length")
-	}
-	for _, v := range []string{string(blob), response, audit, string(meta)} {
+	for _, v := range []string{string(meta), response, audit} {
 		if strings.Contains(v, in.Credentials.HashKey) || strings.Contains(v, in.Credentials.HashIV) {
 			t.Fatal("credential leaked into persistent projection")
 		}
 	}
-	// Disable through the existing semantic control. Secret rotation must not
-	// silently enable it or advance the asset semantic version.
+	// Existing binding control is independent of the retired credential writer.
 	e = m.f.scoped(context.Background(), m.f.token, m.f.store, func(tx pgx.Tx, s platform.Scope) error {
 		_, e := m.f.service.SetBindingEnabled(context.Background(), tx, s, m.f.token, t04Key("ma-disable"), a.BindingID, 1, false)
 		return e
@@ -158,50 +166,28 @@ func TestMerchantAccountsRoundTripPrivacyAndRotation(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	newKeys, e := accounts.NewKeyring("fixture_v2", m.keys, m.replayKey)
-	if e != nil {
-		t.Fatal(e)
+	disabled, e := m.get(m.f.token, m.f.store, a.ID)
+	if e != nil || disabled.Enabled || disabled.BindingVersion != 2 || disabled.CredentialVersion != 2 {
+		t.Fatal("historical control changed credential head", e)
 	}
-	m.service, e = accounts.New(newKeys, m.f.service)
-	if e != nil {
-		t.Fatal(e)
-	}
-	newSecret := accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("W", 16)}
-	rotated, e := m.rotate(m.f.token, t04Key("ma-rotate"), accounts.RotateInput{ConnectionID: a.ID, ExpectedVersion: 1, Credentials: newSecret})
-	if e != nil || rotated.CredentialVersion != 2 || rotated.BindingVersion != 2 || rotated.Enabled || rotated.State != "CONFIGURED_UNVERIFIED" {
-		t.Fatalf("rotation changed identity/control: %v %+v", e, rotated)
-	}
-	if rotated.KeyID != "fixture_v2" {
-		t.Fatal("rotation did not use active encryption key")
-	}
-	maAssertPersistedSecret(t, m, rotated, 2, newSecret)
-	maAssertPersistedSecret(t, m, a, 1, in.Credentials)
-	// Replaying the original write after an encryption-key switch uses the
-	// stable keyed fingerprint and returns its historical metadata, no new write.
-	stable := m.facts(t)
-	replayed, e := m.create(m.f.token, m.f.store, key, in)
-	if e != nil || replayed != a || m.facts(t) != stable {
-		t.Fatalf("key rotation broke permanent replay: %v", e)
-	}
-	var n int
-	if e = m.f.base.owner.QueryRow(context.Background(), `SELECT count(*) FROM integration.account_credentials WHERE connection_id=$1`, a.ID).Scan(&n); e != nil || n != 2 {
-		t.Fatal("rotation lost immutable history")
-	}
-	in.Environment = "LIVE"
-	live, e := m.create(m.f.token, m.f.store, t04Key("ma-live"), in)
-	if e != nil || live.ID == a.ID || live.BindingID == a.BindingID || live.State != "CONFIGURED_UNVERIFIED" {
-		t.Fatalf("environments not separate: %v", e)
+	stable := maHistorySnapshot(t, m)
+	if _, e = m.rotate(m.f.token, t04Key("ma-disabled-rotate"), accounts.RotateInput{ConnectionID: a.ID, ExpectedVersion: 2, Credentials: in.Credentials}); !errors.Is(e, command.ErrInvalid) || maHistorySnapshot(t, m) != stable {
+		t.Fatal("rotation changed disabled history", e)
 	}
 }
 
-// Independently verify the actual persisted envelope with the frozen AAD and
-// fixture-only key; do not export a production plaintext-read API to test this.
 func maAssertPersistedSecret(t *testing.T, m *maFixture, a accounts.Connection, version int64, want accounts.Credentials) {
 	t.Helper()
 	var keyID string
 	var nonce, encrypted []byte
 	if e := m.f.base.owner.QueryRow(context.Background(), `SELECT key_id,nonce,ciphertext FROM integration.account_credentials WHERE tenant_id=$1 AND store_id=$2 AND connection_id=$3 AND version=$4`, m.f.tenant, m.f.store, a.ID, version).Scan(&keyID, &nonce, &encrypted); e != nil {
 		t.Fatal(e)
+	}
+	if len(nonce) != 12 {
+		t.Fatal("invalid nonce length")
+	}
+	if strings.Contains(string(encrypted), want.HashKey) || strings.Contains(string(encrypted), want.HashIV) {
+		t.Fatal("credential stored in plaintext")
 	}
 	block, e := aes.NewCipher(m.keys[keyID])
 	if e != nil {
@@ -252,10 +238,8 @@ func maAssertPersistedSecret(t *testing.T, m *maFixture, a accounts.Connection, 
 
 func TestMerchantAccountsSQLColumnAndMutationBoundaries(t *testing.T) {
 	m := maSetup(t)
-	a, e := m.create(m.f.token, m.f.store, t04Key("ma-sql"), maInput())
-	if e != nil {
-		t.Fatal(e)
-	}
+	a := maHistorical(t, m, m.f.store, maInput(), 1)
+	var e error
 	for _, q := range []string{
 		`SELECT ciphertext FROM integration.account_credentials WHERE connection_id=$1`,
 		`SELECT nonce FROM integration.account_credentials WHERE connection_id=$1`,
@@ -312,12 +296,12 @@ func TestMerchantAccountsAtomicFaultRollback(t *testing.T) {
 				mustExec(t, m.f.base.owner, `DROP FUNCTION public.`+name+`()`)
 				mustExec(t, m.f.base.owner, `DROP SEQUENCE public.`+name+`_hits`)
 			})
-			if _, e := m.create(m.f.token, m.f.store, t04Key("ma-fault"), maInput()); e == nil {
+			if _, e := m.create(m.f.token, m.f.store, t04Key("ma-fault"), maInput()); !errors.Is(e, command.ErrInvalid) {
 				t.Fatal("fault accepted")
 			}
 			var fired bool
-			if e := m.f.base.owner.QueryRow(context.Background(), `SELECT is_called FROM public.`+name+`_hits`).Scan(&fired); e != nil || !fired {
-				t.Fatalf("exact injected target not reached: %v", e)
+			if e := m.f.base.owner.QueryRow(context.Background(), `SELECT is_called FROM public.`+name+`_hits`).Scan(&fired); e != nil || fired {
+				t.Fatalf("retired create reached SQL write target: %v", e)
 			}
 			if m.facts(t) != before {
 				t.Fatal("fault left partial credential aggregate")
@@ -330,17 +314,15 @@ func TestMerchantAccountsReplayConflictsAndAuthorization(t *testing.T) {
 	m := maSetup(t)
 	in := maInput()
 	key := t04Key("ma-replay")
-	a, e := m.create(m.f.token, m.f.store, key, in)
-	if e != nil {
-		t.Fatal(e)
-	}
+	a := maHistorical(t, m, m.f.store, in, 1)
+	var e error
 	before := m.facts(t)
 	changed := in
 	changed.Credentials.HashKey = strings.Repeat("X", 32)
-	if _, e = m.create(m.f.token, m.f.store, key, changed); !errors.Is(e, command.ErrConflict) {
+	if _, e = m.create(m.f.token, m.f.store, key, changed); !errors.Is(e, command.ErrInvalid) {
 		t.Fatalf("changed secret replay: %v", e)
 	}
-	if _, e = m.create(m.f.token, m.f.store, t04Key("ma-duplicate"), in); !errors.Is(e, command.ErrConflict) {
+	if _, e = m.create(m.f.token, m.f.store, t04Key("ma-duplicate"), in); !errors.Is(e, command.ErrInvalid) {
 		t.Fatalf("duplicate account: %v", e)
 	}
 	if m.facts(t) != before {
@@ -379,48 +361,33 @@ func TestMerchantAccountsReplayConflictsAndAuthorization(t *testing.T) {
 func TestMerchantAccountsConcurrentReplayAndRotationCAS(t *testing.T) {
 	m := maSetup(t)
 	in := maInput()
+	a := maHistorical(t, m, m.f.store, in, 1)
+	before, snapshot := m.facts(t), maHistorySnapshot(t, m)
 	key := t04Key("ma-concurrent")
-	before := m.facts(t)
 	var results [4]accounts.Connection
 	var errs [4]error
 	var wg sync.WaitGroup
-	for i := range results {
-		wg.Add(1)
-		go func(i int) { defer wg.Done(); results[i], errs[i] = m.create(m.f.token, m.f.store, key, in) }(i)
-	}
-	wg.Wait()
-	for i := range results {
-		if errs[i] != nil || results[i] != results[0] {
-			t.Fatalf("concurrent replay mismatch: %v", errs[i])
+	for _, rotate := range []bool{false, true} {
+		for i := range results {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				if rotate {
+					results[i], errs[i] = m.rotate(m.f.token, key, accounts.RotateInput{ConnectionID: a.ID, ExpectedVersion: 1, Credentials: in.Credentials})
+				} else {
+					results[i], errs[i] = m.create(m.f.token, m.f.store, key, in)
+				}
+			}(i)
 		}
-	}
-	after := m.facts(t)
-	if after[0]-before[0] != 1 || after[1]-before[1] != 1 || after[2]-before[2] != 1 {
-		t.Fatal("duplicate account facts")
-	}
-	id := results[0].ID
-	for i := range results {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			results[i], errs[i] = m.rotate(m.f.token, t04Key("ma-cas"), accounts.RotateInput{ConnectionID: id, ExpectedVersion: 1, Credentials: in.Credentials})
-		}(i)
-	}
-	wg.Wait()
-	winners := 0
-	for _, e := range errs {
-		if e == nil {
-			winners++
-		} else if !errors.Is(e, command.ErrConflict) {
-			t.Fatalf("unexpected CAS error: %v", e)
+		wg.Wait()
+		for i := range results {
+			if !errors.Is(errs[i], command.ErrInvalid) || results[i] != (accounts.Connection{}) {
+				t.Fatalf("concurrent retired write admitted: %v", errs[i])
+			}
 		}
-	}
-	if winners != 1 {
-		t.Fatalf("CAS winners=%d", winners)
-	}
-	after = m.facts(t)
-	if after[2]-before[2] != 2 {
-		t.Fatal("CAS appended extra secret versions")
+		if m.facts(t) != before || maHistorySnapshot(t, m) != snapshot {
+			t.Fatal("concurrent retired writes changed credential aggregate")
+		}
 	}
 }
 
@@ -470,10 +437,8 @@ func TestMerchantAccountsRotationAtomicFaultRollback(t *testing.T) {
 		t.Run(table, func(t *testing.T) {
 			m := maSetup(t)
 			in := maInput()
-			a, e := m.create(m.f.token, m.f.store, t04Key("ma-beforefault"), in)
-			if e != nil {
-				t.Fatal(e)
-			}
+			a := maHistorical(t, m, m.f.store, in, 1)
+			var e error
 			before := m.facts(t)
 			name := "ma_rotate_fault_" + t04Tag()
 			event := "INSERT"
@@ -490,12 +455,12 @@ func TestMerchantAccountsRotationAtomicFaultRollback(t *testing.T) {
 				mustExec(t, m.f.base.owner, `DROP SEQUENCE public.`+name+`_hits`)
 			})
 			_, e = m.rotate(m.f.token, t04Key("ma-rotatefault"), accounts.RotateInput{ConnectionID: a.ID, ExpectedVersion: 1, Credentials: accounts.Credentials{HashKey: "new_key", HashIV: "new_iv"}})
-			if e == nil {
-				t.Fatal("rotation fault accepted")
+			if !errors.Is(e, command.ErrInvalid) {
+				t.Fatal("retired rotation did not refuse before SQL")
 			}
 			var fired bool
-			if e = m.f.base.owner.QueryRow(context.Background(), `SELECT is_called FROM public.`+name+`_hits`).Scan(&fired); e != nil || !fired {
-				t.Fatalf("rotation did not reach injection: %v", e)
+			if e = m.f.base.owner.QueryRow(context.Background(), `SELECT is_called FROM public.`+name+`_hits`).Scan(&fired); e != nil || fired {
+				t.Fatalf("retired rotation reached SQL write target: %v", e)
 			}
 			if m.facts(t) != before {
 				t.Fatal("failed rotation left partial aggregate")

@@ -33,7 +33,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
-	"livecommerce/internal/buyer"
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/accounts"
@@ -303,32 +302,77 @@ func TestRemovePayuniNotifyRM02SeededDataBlocks(t *testing.T) {
 	assertRefused("one NOTIFY_MISMATCH review case")
 }
 
-// rm2HistoricalAttempt creates an existing legacy row through the unchanged SQL boundary solely
-// as a synthetic history fixture. This is intentionally separate from every production Go start API.
-// No credentials are read and no provider is contacted. Removing the SQL belongs to phase 2b.
+// rm2HistoricalAttempt models existing rows, never invokes a Go or SQL start API.
 func rm2HistoricalAttempt(t *testing.T, p psHarness) checkout.PaymentResult {
+	return rm2HistoryIn(t, p, "river_payment", "PROVIDER_MOCK", "payment_mock_v1")
+}
+
+// The owner inserts a synthetic archived aggregate with its original job in one transaction.
+// Existing FK, queue-routing and provenance triggers remain enabled. No credentials are loaded,
+// no start function is called and no network request is made. Used also on old-schema upgrades.
+func rm2HistoryIn(t *testing.T, p psHarness, schema, profile, queue string) checkout.PaymentResult {
 	t.Helper()
+	if (schema != "river" && schema != "river_payment") || (profile != "PROVIDER_MOCK" && profile != "SANDBOX" && profile != "LIVE") {
+		t.Fatal("invalid historical fixture target")
+	}
 	ctx := context.Background()
-	jobs, err := river.NewClient(riverpgxv5.New(p.pool), &river.Config{Schema: "river_payment"})
+	jobs, err := river.NewClient(riverpgxv5.New(p.f.owner), &river.Config{Schema: schema})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx, err := p.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id','',true),set_config('app.buyer_id',$3,true),set_config('app.buyer_session_id',$4,true)`, p.f.tenantA, p.f.storeA1, p.cap.Scope.OwnerID, p.cap.Scope.SessionID); err != nil {
+		t.Fatal(err)
+	}
+	attempt := randomUUID()
+	job, err := jobs.InsertTx(ctx, tx, pqArgs{OperationID: attempt, Version: 1}, &river.InsertOpts{Queue: queue, ScheduledAt: time.Now().Add(time.Hour)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	var out checkout.PaymentResult
-	err = buyer.WithScope(ctx, p.pool, p.cap.Token, p.f.storeA1, func(ctx context.Context, tx pgx.Tx, _ buyer.Scope) error {
-		attempt := randomUUID()
-		job, err := jobs.InsertTx(ctx, tx, pqArgs{OperationID: attempt, Version: 1}, &river.InsertOpts{Queue: "payment_mock_v1", ScheduledAt: time.Now().Add(time.Hour)})
-		if err != nil {
-			return err
-		}
-		digest := sha256.Sum256([]byte("synthetic pre-removal history"))
-		var raw []byte
-		if err = tx.QueryRow(ctx, `SELECT checkout.start_payment($1,$2::uuid,$3,$4,$5::uuid,$6,$7::bigint,$8,$9::uuid,$10::bigint)`,
-			tokenHash(p.cap.Token), p.f.storeA1, t04Key("rm2-history"), digest[:], p.hold.OrderID, p.input.MethodCode, p.input.MethodVersion, "PROVIDER_MOCK", attempt, job.Job.ID).Scan(&raw); err != nil {
-			return err
-		}
-		return json.Unmarshal(raw, &out)
-	})
+	err = tx.QueryRow(ctx, `INSERT INTO checkout.payment_attempts(tenant_id,store_id,owner_id,id,session_id,order_id,market_id,country,method_code,method_version,connection_id,credential_version,qualification_id,environment,execution_profile,binding_id,binding_version,currency,amount_minor,merchant_trade_no,state,generation,job_id)
+ SELECT o.tenant_id,o.store_id,o.owner_id,$1,$2,o.id,o.market_id,o.country,m.code,m.version,a.id,a.credential_version,q.id,a.environment,$3,b.id,b.semantic_version,o.currency,o.total_minor,'P'||rtrim(translate(encode(uuid_send($1::uuid),'base64'),'+/','-_'),'='),'PAYMENT_PENDING',o.generation+1,$4
+ FROM checkout.orders o JOIN payments.method_versions m ON m.tenant_id=o.tenant_id AND m.store_id=o.store_id AND m.market_id=o.market_id AND m.country=o.country AND m.code=$5 AND m.version=$6
+ JOIN integration.merchant_accounts a ON a.id=m.connection_id JOIN integration.bindings b ON b.id=a.binding_id JOIN payments.account_qualifications q ON q.id=m.qualification_id
+ WHERE o.id=$7 RETURNING order_id::text,id::text,id::text,job_id,generation,merchant_trade_no,currency,amount_minor,state`, attempt, p.cap.Scope.SessionID, profile, job.Job.ID, p.input.MethodCode, p.input.MethodVersion, p.hold.OrderID).Scan(&out.OrderID, &out.AttemptID, &out.OperationID, &out.JobID, &out.Generation, &out.MerchantTradeNo, &out.Currency, &out.AmountMinor, &out.State)
 	if err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256([]byte("synthetic archived payment"))
+	if _, err = tx.Exec(ctx, `INSERT INTO integration.operations(id,tenant_id,store_id,principal_id,binding_id,binding_version,provider,external_asset_id,purpose,action,semantic_key,request_hash,request,job_id,state,generation,actor_kind,payment_attempt_id,buyer_owner_id,buyer_session_id)
+ SELECT a.id,a.tenant_id,a.store_id,NULL,a.binding_id,a.binding_version,'payuni',b.external_asset_id,'transactional','payuni.query','payment.query:'||a.id,$2,jsonb_build_object('attempt_id',a.id::text),a.job_id,'UNKNOWN',1,'BUYER_PAYMENT_QUERY',a.id,a.owner_id,a.session_id FROM checkout.payment_attempts a JOIN integration.bindings b ON b.id=a.binding_id WHERE a.id=$1`, attempt, digest[:]); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO integration.operation_events(tenant_id,store_id,operation_id,generation,state,mode,reason_code) SELECT tenant_id,store_id,id,1,'UNKNOWN','','buyer_payment_started' FROM checkout.payment_attempts WHERE id=$1`, attempt); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `UPDATE checkout.orders SET commercial_state='AWAITING_PAYMENT',generation=$2,updated_at=clock_timestamp() WHERE id=$1`, p.hold.OrderID, out.Generation); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.buyer_id',$3,true),set_config('app.buyer_session_id',(SELECT creator_session_id::text FROM checkout.orders WHERE id=$4),true)`, p.f.tenantA, p.f.storeA1, p.cap.Scope.OwnerID, p.hold.OrderID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `UPDATE inventory.reservations SET state='PAYMENT_PENDING',generation=$2 WHERE id=$1`, p.hold.OrderID, out.Generation); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `SELECT set_config('app.buyer_session_id',$1,true)`, p.cap.Scope.SessionID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO checkout.events(tenant_id,store_id,owner_id,order_id,session_id,generation,action,actor_kind) SELECT tenant_id,store_id,owner_id,order_id,session_id,generation,'checkout.payment_started','BUYER' FROM checkout.payment_attempts WHERE id=$1`, attempt); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO checkout.command_results(tenant_id,store_id,owner_id,operation,idempotency_key,creator_session_id,request_hash,order_id,response) SELECT tenant_id,store_id,owner_id,'checkout.payment.start',$2,session_id,$3,order_id,$4::jsonb FROM checkout.payment_attempts WHERE id=$1`, attempt, t04Key("rm2-history"), digest[:], raw); err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
 	return out
@@ -345,13 +389,16 @@ func rm2Snapshot(t *testing.T, p psHarness, attempt string) string {
   (SELECT to_jsonb(o) FROM integration.operations o WHERE o.id=$1),
   (SELECT to_jsonb(o) FROM checkout.orders o WHERE o.id=$2),
   (SELECT to_jsonb(r) FROM inventory.reservations r WHERE r.id=$2),
-  (SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1),
-  (SELECT count(*) FROM payments.facts WHERE attempt_id=$1),
-  (SELECT count(*) FROM payments.review_cases WHERE attempt_id=$1),
-  (SELECT count(*) FROM integration.operation_events WHERE operation_id=$1),
-  (SELECT count(*) FROM inventory.ledger WHERE reservation_id=$2),
-  (SELECT count(*) FROM checkout.command_results WHERE order_id=$2),
-  (SELECT count(*) FROM checkout.events WHERE order_id=$2)
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM payments.provider_observations x WHERE attempt_id=$1),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM payments.facts x WHERE attempt_id=$1),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM payments.review_cases x WHERE attempt_id=$1),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM integration.operation_events x WHERE operation_id=$1),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM inventory.ledger x WHERE reservation_id=$2),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM checkout.command_results x WHERE order_id=$2),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM checkout.events x WHERE order_id=$2),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM inventory.balances x WHERE (tenant_id,store_id)=(SELECT tenant_id,store_id FROM checkout.orders WHERE id=$2)),
+  (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]') FROM fulfillment.payment_work_items x WHERE attempt_id=$1),
+  (SELECT to_jsonb(x) FROM checkout.hosted_payment_pages x WHERE attempt_id=$1)
  )::text`, attempt, p.hold.OrderID).Scan(&out)
 	if err != nil {
 		t.Fatal(err)

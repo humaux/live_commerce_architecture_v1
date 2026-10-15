@@ -314,9 +314,8 @@ func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.
 	if queue := pwQueue(t, f.owner, legacy.JobID); queue != "default" {
 		t.Fatalf("legacy producer queue=%s", queue)
 	}
-	if _, err := p.start(t04Key("ew-upgrade-pending")); err != nil {
-		t.Fatal(err)
-	}
+	// Pre-upgrade data is historical; never restart the removed provider.
+	rm2HistoryIn(t, p, "river", "PROVIDER_MOCK", "payment_mock_v1")
 	var advancedGeneration int64
 	if err := f.owner.QueryRow(context.Background(), `SELECT generation FROM checkout.orders WHERE id=$1`, p.hold.OrderID).Scan(&advancedGeneration); err != nil || advancedGeneration != 2 {
 		t.Fatalf("pre-upgrade payment did not advance current generation: %d %v", advancedGeneration, err)
@@ -531,20 +530,15 @@ func TestBuyerCheckoutExpiryRuntimeEarlyStalePendingAndConfirmed(t *testing.T) {
 	f := ewFixture(t)
 	early := ewSetup(t, f, 1)
 	stale := ewSetup(t, f, 1)
-	pending := ewSetup(t, f, 1)
-	confirmed := pqSetupItemsOn(t, f, nil, false, 1)
+	pendingStripe := rm2StripePendingOn(t, f)
+	pending := pendingStripe.psHarness
+	confirmed := rm2StripePendingOn(t, f)
 	mustExec(t, f.owner, `UPDATE river_expiry.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, early.hold.JobID)
 	ewDue(t, stale)
 	mustExec(t, f.owner, `UPDATE checkout.orders SET generation=2 WHERE id=$1`, stale.hold.OrderID)
 	mustExec(t, f.owner, `UPDATE inventory.reservations SET generation=2 WHERE id=$1`, stale.hold.OrderID)
-	if _, err := pending.start(t04Key("ew-pending")); err != nil {
-		t.Fatal(err)
-	}
 	ewDue(t, pending)
-	hash := pcRecord(t, confirmed, pcFull(confirmed))
-	if err := pcApply(confirmed.worker, confirmed.result.AttemptID, hash); err != nil {
-		t.Fatal(err)
-	}
+	confirmed.rm2StripePay(t)
 	ewDue(t, confirmed.psHarness)
 	client := ewClient(t, early.expiry, 2)
 	ewAwaitSnooze(t, f.owner, early.hold.JobID)
@@ -575,6 +569,8 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			p := ewSetup(t, f, 1)
+			stripe := sstNewEnv(t, f, pwKeys(t))
+			store := stripe.seed(t, p)
 			lock, err := f.owner.Begin(context.Background())
 			if err != nil {
 				t.Fatal(err)
@@ -602,7 +598,7 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 			var state string
 			var paymentWaiting, expiryWaiting bool
 			for time.Now().Before(deadline) {
-				state, _, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, p.pool.Config().ConnConfig.User, p.expiry.Config().ConnConfig.User, holderPID)
+				state, _, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, stripe.hosted.Config().ConnConfig.User, p.expiry.Config().ConnConfig.User, holderPID)
 				if state == "running" && expiryWaiting {
 					break
 				}
@@ -612,7 +608,7 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 				t.Fatalf("River expiry did not block on owned order row: state=%s blocked=%t", state, expiryWaiting)
 			}
 			go func() {
-				result, err := p.start(t04Key("ew-race-payment"))
+				result, err := store.begin(stripe.svc, t04Key("ew-race-payment"), store.input("zh-TW"))
 				paymentDone <- paymentOutcome{result, err}
 			}()
 			// Both real callers must be blocked by this transaction's order row,
@@ -620,7 +616,7 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 			deadline = time.Now().Add(2 * time.Second)
 			witness := false
 			for time.Now().Before(deadline) {
-				state, paymentWaiting, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, p.pool.Config().ConnConfig.User, p.expiry.Config().ConnConfig.User, holderPID)
+				state, paymentWaiting, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, stripe.hosted.Config().ConnConfig.User, p.expiry.Config().ConnConfig.User, holderPID)
 				if state == "running" && paymentWaiting && expiryWaiting {
 					witness = true
 					break
@@ -629,7 +625,7 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 			}
 			if !witness {
 				t.Fatalf("payment and River expiry did not contend: state=%s payment_blocked=%t expiry_blocked=%t roles=%s/%s",
-					state, paymentWaiting, expiryWaiting, p.pool.Config().ConnConfig.User, p.expiry.Config().ConnConfig.User)
+					state, paymentWaiting, expiryWaiting, stripe.hosted.Config().ConnConfig.User, p.expiry.Config().ConnConfig.User)
 			}
 			if dueWhileWaiting {
 				if _, err := lock.Exec(context.Background(), `UPDATE checkout.orders SET expires_at=clock_timestamp()-interval '1 second',created_at=clock_timestamp()-interval '901 seconds' WHERE id=$1`, p.hold.OrderID); err != nil {

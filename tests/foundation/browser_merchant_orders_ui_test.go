@@ -41,7 +41,7 @@ import (
 	"livecommerce/internal/storefront"
 )
 
-// MOU01-06: only the OIDC issuer is mocked in the happy path. Order, payment,
+// MOU01-06: the OIDC issuer and Stripe transport are mocked in the happy path. Order, payment,
 // expiry and projection reads are all real business APIs over an owned PG18.
 func TestBrowserMerchantOrdersUIRealChain(t *testing.T) { merchantOrdersUIBrowser(t, false) }
 
@@ -54,7 +54,7 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 540*time.Second)
 	defer cancel()
-	q := pqSetup(t)
+	q := rm2StripePending(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
 	// One real inventory adjustment permits page two without more seed pools.
 	var stockVersion int64
@@ -90,20 +90,16 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	}
 	for _, mode := range []string{"authorized", "captured", "review", "allocation_failed", "shipped"} {
 		id, clone := newDraft(2)
-		clone.result, err = clone.start(t04Key("mou-start"))
-		if err != nil {
-			t.Fatal(err)
+		if mode == "authorized" {
+			clone.result = rm2HistoricalAttempt(t, clone.psHarness)
+			rm2ArchivedFact(t, clone, "AUTHORIZED")
+		} else {
+			clone.rm2StripeStart(t)
+			if mode == "review" {
+				clone.stripe.fake.Patch(clone.stripe.session(t, clone.result.AttemptID), map[string]any{"presentment_details": map[string]any{"presentment_currency": "eur", "presentment_amount": 71}})
+			}
 		}
 		ids[mode] = id
-		report := pcFull(clone)
-		switch mode {
-		case "authorized":
-			report["CloseStatus"] = "9"
-			delete(report, "CloseAmountTWD")
-		case "review":
-			report["CardRefundStatus"], report["CardRefundAmountTWD"] = "2", int64(1)
-		}
-		hash := pcRecord(t, clone, report)
 		if mode == "allocation_failed" {
 			// Labeled controlled fault: same fixture as MOR payment capture gate.
 			tx, e := q.f.owner.Begin(ctx)
@@ -132,8 +128,8 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 				t.Fatal(e)
 			}
 		}
-		if err = pcApply(clone.worker, clone.result.AttemptID, hash); err != nil {
-			t.Fatal(err)
+		if mode != "authorized" {
+			clone.rm2StripePay(t)
 		}
 		if mode == "shipped" {
 			mustExec(t, q.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'fulfillment:write') ON CONFLICT DO NOTHING`, q.f.tenantA, q.f.storeA1, q.f.principalA)

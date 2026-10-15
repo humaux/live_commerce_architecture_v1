@@ -27,8 +27,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
-	"github.com/riverqueue/river/rivertype"
-	"livecommerce/internal/checkout"
 	"livecommerce/internal/integrations/accounts"
 	integration "livecommerce/internal/integrations/core"
 	"livecommerce/internal/payments"
@@ -132,9 +130,8 @@ func pwWorkerPool(t *testing.T, f *testFixture) *pgxpool.Pool {
 	return waOpen(t, f, waPayment, platform.WorkerPayment)
 }
 
-// Force the pre-upgrade producer's requested default queue before River's
-// actual InsertTx. The starter still inserts the job before its attempt in the
-// same transaction; only the post-River deferred trigger can resolve it.
+// Model an archived producer aggregate in the old family. This never resumes a PAYUNi start.
+// The real deferred queue guard still normalizes the persisted default queue at commit.
 func pwOldQuerySetupOn(t *testing.T, f *testFixture, keys *accounts.Keyring, historical ...string) pqFixture {
 	t.Helper()
 	p := psSetupItemsOn(t, f, 1, historical...)
@@ -146,30 +143,7 @@ func pwOldQuerySetupOn(t *testing.T, f *testFixture, keys *accounts.Keyring, his
 	if len(historical) == 1 && historical[0] == "river" {
 		schema = "river"
 	}
-	q := pqFixture{psHarness: p, keys: keys, accountService: service, schema: schema}
-	q.rotate(t, 1, pqOldSecret)
-	qualExec(t, p.f.owner, `UPDATE payments.account_qualifications SET credential_version=2 WHERE id=$1`, p.proof)
-	middleware := river.JobInsertMiddlewareFunc(func(ctx context.Context, params []*rivertype.JobInsertParams, next func(context.Context) ([]*rivertype.JobInsertResult, error)) ([]*rivertype.JobInsertResult, error) {
-		for _, row := range params {
-			if row.Kind == "payment_query_v1" {
-				row.Queue = "default"
-			}
-		}
-		return next(ctx)
-	})
-	jobs, err := river.NewClient(riverpgxv5.New(p.pool), &river.Config{Schema: schema, JobInsertMiddleware: []rivertype.JobInsertMiddleware{middleware}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	q.starter, err = checkout.NewPaymentStarter(context.Background(), p.pool, jobs, "PROVIDER_MOCK")
-	if err != nil {
-		t.Fatal(err)
-	}
-	q.result, err = q.start(t04Key("pw-old-start"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return q
+	return pqFixture{psHarness: p, keys: keys, accountService: service, schema: schema, result: rm2HistoryIn(t, p, schema, "PROVIDER_MOCK", "default")}
 }
 
 func pwDefaultDomainJobs(t *testing.T, q pqFixture) (expiryID, externalID int64) {
@@ -263,45 +237,47 @@ func pwQueryTrade(values url.Values) (string, error) {
 }
 
 func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
-	f := pwIsolatedFixture(t)
-	keys := pwKeys(t)
-	first := pqSetupItemsOn(t, f, keys, false, 1)
-	second := pqSetupItemsOn(t, f, keys, false, 1)
+	e := sflNew(t, nil)
+	f, keys := e.f, e.keys
+	stores := []sstStore{e.stripeStore(t), e.stripeStore(t)}
+	stopSeed := e.start(t, true)
+	queries := make([]pqFixture, 2)
+	sessions := make([]string, 2)
+	for i, store := range stores {
+		result, session := e.pinned(t, store)
+		queries[i] = pqFixture{psHarness: store.p, result: result, keys: keys, schema: "river_payment"}
+		sessions[i] = session
+	}
+	stopSeed()
+	first, second := queries[0], queries[1]
+	for _, session := range sessions {
+		if !e.fake.SetState(session, "complete", "paid") {
+			t.Fatal("missing Stripe session")
+		}
+	}
 	expiryID, externalID := pwDefaultDomainJobs(t, first)
 	expiryBefore, externalBefore := pwJobExceptQueueIn(t, f.owner, "river_expiry.river_job", expiryID), pwJobExceptQueueIn(t, f.owner, "river.river_job", externalID)
 	if first.result.AttemptID == second.result.AttemptID || first.f.tenantA == second.f.tenantA {
 		t.Fatal("two-tenant worker fixture collapsed")
 	}
 	var calls atomic.Int32
-	bodies := map[string]string{first.result.MerchantTradeNo: pqSignedResponse(pcFull(first)), second.result.MerchantTradeNo: pqSignedResponse(pcFull(second))}
-	opts := payments.DefaultQueryWorkerOptions()
-	opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
-		if r.URL.String() != "https://sandbox-api.payuni.com.tw/api/trade/query" || r.Method != http.MethodPost {
-			return nil, fmt.Errorf("unexpected query destination")
+	opts := e.opts
+	transport := e.fake.Transport()
+	rt, err := payments.NewStripeRuntime(context.Background(), e.pool, keys, "PROVIDER_MOCK", pqTransport(func(r *http.Request) (*http.Response, error) {
+		if r.Method == http.MethodGet && (strings.HasSuffix(r.URL.Path, "/"+sessions[0]) || strings.HasSuffix(r.URL.Path, "/"+sessions[1])) {
+			calls.Add(1)
 		}
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			return nil, err
-		}
-		values, err := url.ParseQuery(string(body))
-		if err != nil {
-			return nil, err
-		}
-		trade, err := pwQueryTrade(values)
-		if err != nil {
-			return nil, err
-		}
-		response := bodies[trade]
-		if values.Get("MerID") != "mock-account" || response == "" {
-			return nil, fmt.Errorf("unexpected signed query request")
-		}
-		calls.Add(1)
-		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(response)), Header: make(http.Header)}, nil
-	})
+		return transport.RoundTrip(r)
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := payments.WorkerConfig{Profile: "PROVIDER_MOCK", Concurrency: 2, Query: opts, Keys: keys, Stripe: rt}
+
 	for _, q := range []pqFixture{first, second} {
 		mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
 	}
-	client, err := payments.NewWorkerClient(context.Background(), first.worker, keys, "PROVIDER_MOCK", 2, opts)
+	client, err := payments.NewPaymentWorkerClient(context.Background(), e.pool, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,15 +291,15 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 		}
 	}()
 	for _, q := range []pqFixture{first, second} {
-		pqAwait(t, q, q.result.JobID, "payment_report_observed", "scheduled")
-		if q.reportCount(t) != 1 {
-			t.Fatal("query stage did not persist observation")
+		e.awaitFact(t, q.result.AttemptID, "CAPTURED")
+		if n := e.count(t, `SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1 AND report->>'PaymentStatus'='paid'`, q.result.AttemptID); n != 1 {
+			t.Fatalf("paid observation count=%d want 1", n)
 		}
 	}
 	// Reconcile jobs become available only after the real query commits.
 	var reconcileIDs [2]int64
 	for i, q := range []pqFixture{first, second} {
-		if err := q.f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&reconcileIDs[i]); err != nil {
+		if err := q.f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1 AND args->>'report_hash' IN (SELECT encode(report_hash,'hex') FROM payments.provider_observations WHERE attempt_id=$1 AND report->>'PaymentStatus'='paid')`, q.result.OperationID).Scan(&reconcileIDs[i]); err != nil {
 			t.Fatal(err)
 		}
 		pwAwaitJob(t, q, reconcileIDs[i], "completed")
@@ -334,7 +310,7 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 		}
 	}
 	if calls.Load() != 2 {
-		t.Fatalf("signed transport calls=%d want 2", calls.Load())
+		t.Fatalf("Stripe retrieve calls=%d want 2", calls.Load())
 	}
 	pwStopClient(t, client)
 	running = false
@@ -347,7 +323,7 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 		}
 		mustExec(t, f.owner, `UPDATE river_payment.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, id)
 	}
-	restarted, err := payments.NewWorkerClient(context.Background(), first.worker, keys, "PROVIDER_MOCK", 2, opts)
+	restarted, err := payments.NewPaymentWorkerClient(context.Background(), e.pool, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}

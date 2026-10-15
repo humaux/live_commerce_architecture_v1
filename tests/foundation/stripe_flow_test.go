@@ -24,14 +24,15 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -62,10 +63,15 @@ type sflEnv struct {
 
 func sflNew(t *testing.T, tune func(*payments.QueryWorkerOptions)) *sflEnv {
 	t.Helper()
-	f := pwIsolatedFixture(t)
+	return sflNewOn(t, pwIsolatedFixture(t), tune)
+}
+
+// sflNewOn reuses the existing Stripe fixture on a caller-owned isolated database.
+func sflNewOn(t *testing.T, f *testFixture, tune func(*payments.QueryWorkerOptions)) *sflEnv {
+	t.Helper()
 	keys := pwKeys(t)
 	e := &sflEnv{sstEnv: sstNewEnv(t, f, keys), pool: pwWorkerPool(t, f), opts: payments.DefaultQueryWorkerOptions()}
-	e.opts.MockTransport = pqNoNetwork() // PAYUNi transport; SP08 replaces it before start
+	e.opts.MockTransport = pqNoNetwork() // removed-provider transport is always forbidden
 	if tune != nil {
 		tune(&e.opts)
 	}
@@ -136,34 +142,20 @@ func (e *sflEnv) startWith(t *testing.T, stripeEnabled bool, keys *accounts.Keyr
 	return stop
 }
 
-// addPAYUNi creates a PAYUNi store whose query job is due now and installs the
-// signed-mock PAYUNi transport (the existing PW chain) for the next worker start.
+// addPAYUNi adds archived rows due on the shared profile queue. Any outbound call is a defect.
 func (e *sflEnv) addPAYUNi(t *testing.T) pqFixture {
 	t.Helper()
 	c := pqSetupItemsOn(t, e.f, e.keys, false, 1)
-	mustExec(t, e.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, c.result.JobID)
-	signed := pqSignedResponse(pcFull(c))
-	e.opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
-		if r.URL.String() != "https://sandbox-api.payuni.com.tw/api/trade/query" || r.Method != http.MethodPost {
-			return nil, fmt.Errorf("unexpected PAYUNi destination")
-		}
-		raw, err := io.ReadAll(r.Body)
-		if err != nil {
-			return nil, err
-		}
-		values, err := url.ParseQuery(string(raw))
-		if err != nil {
-			return nil, err
-		}
-		if trade, err := pwQueryTrade(values); err != nil || trade != c.result.MerchantTradeNo {
-			return nil, fmt.Errorf("unexpected PAYUNi trade")
-		}
-		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(signed)), Header: make(http.Header)}, nil
+	c.outbound = &atomic.Int32{}
+	c.historySnapshot = rm2Snapshot(t, c.psHarness, c.result.AttemptID)
+	e.opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) {
+		c.outbound.Add(1)
+		return nil, errors.New("retired provider outbound call")
 	})
+	mustExec(t, e.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, c.result.JobID)
 	return c
 }
 
-// stripeStore creates a fresh tenant/store/hold with an enabled Stripe method.
 func (e *sflEnv) stripeStore(t *testing.T) sstStore {
 	t.Helper()
 	return e.seed(t, psSetupItemsOn(t, e.f, 1))
@@ -394,7 +386,7 @@ func TestStripeSP08HappyMock(t *testing.T) {
 	if a.account == b.account || a.secret == b.secret || a.p.f.tenantA == b.p.f.tenantA {
 		t.Fatal("fixture collapsed two Stripe stores into one")
 	}
-	// The PAYUNi store: existing signed-mock query/capture chain, one profile queue, one worker.
+	// Historical PAYUNi row: same queue/worker must cancel it without effects.
 	c := e.addPAYUNi(t)
 	endpointA, secretA := e.endpoint(t, a)
 	endpointB, secretB := e.endpoint(t, b)
@@ -521,24 +513,22 @@ func TestStripeSP08HappyMock(t *testing.T) {
 	if out, err := e.svc.TakeHosted(context.Background(), a.p.cap.Token, a.p.f.storeA1, a.p.hold.OrderID); err != nil || out.Disposition != "CLOSED" || out.RedirectURL != "" {
 		t.Fatalf("handoff after capture: %+v %v", out, err)
 	}
-	// The PAYUNi store completed on the same queue and worker (unchanged provider path).
-	c.pcAwaitCapture(t)
+	// The removed-provider job is acknowledged without claims, observations or stock writes.
+	c.pcAwaitRetired(t)
 	sflNoLeakedSecrets(t, e, a.secret, b.secret, secretA, secretB)
 }
 
-// pcAwaitCapture waits for the PAYUNi store's reconcile job and checks its stock.
-func (q pqFixture) pcAwaitCapture(t *testing.T) {
+// pcAwaitRetired waits for acknowledgement only; archived payment and stock stay byte-identical.
+func (q pqFixture) pcAwaitRetired(t *testing.T) {
 	t.Helper()
-	deadline := time.Now().Add(30 * time.Second)
-	for time.Now().Before(deadline) {
-		if pcCount(t, q, "payments.facts", " AND kind='CAPTURED'") == 1 {
-			pcAssertStock(t, q, 0, 2, "CONFIRMED", "COMMITTED")
-			pcAssertWork(t, q, "READY")
-			return
-		}
-		time.Sleep(200 * time.Millisecond)
+	pwAwaitJob(t, q, q.result.JobID, "cancelled")
+	if q.outbound == nil || q.outbound.Load() != 0 {
+		t.Fatal("retired provider was dispatched")
 	}
-	t.Fatal("PAYUNi store did not capture on the shared profile queue")
+	if q.historySnapshot == "" || rm2Snapshot(t, q.psHarness, q.result.AttemptID) != q.historySnapshot {
+		t.Fatal("worker changed archived payment aggregate")
+	}
+	q.pending(t)
 }
 
 func sflForeignRead(t *testing.T, e *sflEnv, s sstStore, foreignSession string) {

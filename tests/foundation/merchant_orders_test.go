@@ -527,7 +527,12 @@ func TestMerchantOrdersActualPaymentAndExpiryStates(t *testing.T) {
 	ctx := context.Background()
 	for _, mode := range []string{"pending", "authorized", "captured", "review"} {
 		t.Run(mode, func(t *testing.T) {
-			q := pqSetup(t)
+			var q pqFixture
+			if mode == "authorized" {
+				q = pqSetup(t)
+			} else {
+				q = rm2StripePending(t)
+			} // archived authorization-only history has no Stripe analogue
 			moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
 			read := func() map[string]any {
 				t.Helper()
@@ -544,17 +549,13 @@ func TestMerchantOrdersActualPaymentAndExpiryStates(t *testing.T) {
 			if mode == "pending" {
 				return
 			}
-			report := pcFull(q)
-			switch mode {
-			case "authorized":
-				report["CloseStatus"] = "9"
-				delete(report, "CloseAmountTWD")
-			case "review":
-				report["CardRefundStatus"], report["CardRefundAmountTWD"] = "2", int64(1)
-			}
-			hash := pcRecord(t, q, report)
-			if err := pcApply(q.worker, q.result.AttemptID, hash); err != nil {
-				t.Fatal(err)
+			if mode == "authorized" {
+				rm2ArchivedFact(t, q, "AUTHORIZED")
+			} else {
+				if mode == "review" {
+					q.stripe.fake.Patch(q.stripe.session(t, q.result.AttemptID), map[string]any{"presentment_details": map[string]any{"presentment_currency": "eur", "presentment_amount": 71}})
+				}
+				q.rm2StripePay(t)
 			}
 			wantPayment, wantWork, wantCommercial := "CAPTURED", "READY", "CONFIRMED"
 			if mode == "authorized" {
@@ -585,12 +586,10 @@ func TestMerchantOrdersActualPaymentAndExpiryStates(t *testing.T) {
 		}
 	})
 	t.Run("paid allocation failure", func(t *testing.T) {
-		q := pqSetup(t)
+		q := rm2StripePending(t)
 		moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
-		hash := pcRecord(t, q, pcFull(q))
-		// Fault injection matches the existing capture gate: release a pending
-		// reservation in the disposable database before the real capture worker
-		// runs. Financial facts and review work are created only by pcApply.
+		// Retain the controlled release/cancel fault before Stripe capture;
+		// the signed webhook and worker must retain money and create review work.
 		tx, err := q.f.owner.Begin(ctx)
 		if err != nil {
 			t.Fatal(err)
@@ -614,9 +613,7 @@ func TestMerchantOrdersActualPaymentAndExpiryStates(t *testing.T) {
 		if err = tx.Commit(ctx); err != nil {
 			t.Fatal(err)
 		}
-		if err = pcApply(q.worker, q.result.AttemptID, hash); err != nil {
-			t.Fatal(err)
-		}
+		q.rm2StripePay(t)
 		if pcCount(t, q, "payments.facts", " AND kind='CAPTURED'") != 1 || pcCount(t, q, "payments.review_cases", " AND reason='PAID_ALLOCATION_FAILED'") != 1 {
 			t.Fatal("capture worker did not persist money and allocation review")
 		}
@@ -628,7 +625,7 @@ func TestMerchantOrdersActualPaymentAndExpiryStates(t *testing.T) {
 }
 
 func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
-	q := pqSetup(t)
+	q := rm2StripePending(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
 	secondBuyer := mustIssue(t, q.cqHarness.service, q.f.storeA1)
 	secondHarness := q.bcHarness
@@ -639,7 +636,7 @@ func TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects(t *testing.T) {
 	}
 	// Tie both checkout-created orders at a microsecond boundary: only the UUID
 	// can separate the keyset positions. Their state transitions still came from
-	// the existing Begin/StartPayment APIs.
+	// the existing Begin/Stripe hosted APIs.
 	mustExec(t, q.f.owner, `UPDATE checkout.orders SET created_at=(SELECT created_at FROM checkout.orders WHERE id=$1) WHERE id=$2`, q.hold.OrderID, second.OrderID)
 	handler := httpapi.NewHandler(q.f.runtime)
 	base := "/v1/admin/stores/" + q.f.storeA1 + "/orders"

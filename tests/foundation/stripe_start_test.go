@@ -106,11 +106,11 @@ func sstNewEnv(t *testing.T, f *testFixture, keys *accounts.Keyring) *sstEnv {
 }
 
 // service builds a hosted service over the shared hosted pool. It is exactly the
-// call cmd/api makes (PAYUNi config stays required in B1, contract brief §cmd/api).
+// Stripe-only call cmd/api makes after PAYUNi removal.
 func (e *sstEnv) service(t *testing.T, profile string, stripeCfg checkout.StripeHostedConfig) *checkout.HostedPaymentStarter {
 	t.Helper()
 	s, err := checkout.NewHostedPaymentService(context.Background(), e.hosted, e.jobs, profile, e.keys,
-		checkout.HostedProviders{PAYUNi: &e.pcfg, Stripe: &stripeCfg})
+		checkout.HostedProviders{Stripe: &stripeCfg})
 	if err != nil {
 		t.Fatalf("hosted service (%s): %v", profile, err)
 	}
@@ -422,7 +422,7 @@ func TestStripeSP07Start(t *testing.T) {
 				defer wg.Done()
 				<-start
 				in := s.input("zh-TW")
-				if i%2 == 0 { // PAYUNi prepares the same order concurrently
+				if i%2 == 0 { // retired PAYUNi request races a valid Stripe start
 					in.MethodCode, in.MethodVersion = "payuni_credit", 1
 				}
 				_, errs[i] = s.begin(e.svc, t04Key(fmt.Sprintf("sst-race-%d", i)), in)
@@ -432,6 +432,12 @@ func TestStripeSP07Start(t *testing.T) {
 		wg.Wait()
 		winners := 0
 		for i, err := range errs {
+			if i%2 == 0 {
+				if !errors.Is(err, command.ErrInvalid) {
+					t.Fatalf("retired racer %d admitted: %v", i, err)
+				}
+				continue
+			}
 			switch {
 			case err == nil:
 				winners++
@@ -447,7 +453,7 @@ func TestStripeSP07Start(t *testing.T) {
 		if err := h.f.owner.QueryRow(context.Background(), `SELECT method_code FROM checkout.payment_attempts WHERE owner_id=$1`, h.cap.Scope.OwnerID).Scan(&method); err != nil {
 			t.Fatal(err)
 		}
-		if (method == "stripe_checkout") != (after[4] == 1) || (method == "payuni_credit") != (after[8] == 1) {
+		if method != "stripe_checkout" || after[4] != 1 || after[8] != 0 {
 			t.Fatalf("winner %s left the other provider's page/session rows: %v", method, after)
 		}
 	})
@@ -487,7 +493,13 @@ func TestStripeSP07Start(t *testing.T) {
 		close(start)
 		wg.Wait()
 		wins := 0
-		for _, err := range results {
+		for slot, err := range results {
+			if slot%2 == 1 {
+				if !errors.Is(err, command.ErrInvalid) {
+					t.Fatalf("retired workload admitted: %v", err)
+				}
+				continue
+			}
 			if err == nil {
 				wins++
 			} else if !errors.Is(err, command.ErrConflict) {
