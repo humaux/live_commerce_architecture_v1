@@ -167,7 +167,6 @@ export function FormActionBar({
     if (!card || !wrapper || !bottomBar) return;
     // CSS bottom:0 alone releases only after the footer's own height fits too. The card edge owns this boundary.
     const release = () => {
-      wrapper.style.setProperty("--ds-control-footer-height", `${bottomBar.getBoundingClientRect().height}px`);
       wrapper.dataset.footerReleased = String(card.getBoundingClientRect().bottom <= window.innerHeight);
     };
     release();
