@@ -1,3 +1,5 @@
+// accounts.go assembles historical provider-account metadata reads with the existing scoped keyring.
+// Retired credential writes are refused by accounts.Service; no signer or payment adapter is assembled.
 package main
 
 import (
@@ -40,8 +42,8 @@ func loadAccountConfig(getenv func(string) string, identityEnabled bool, addr st
 	return config, nil
 }
 
-// Both merchant administration and hosted signing use the shared historical
-// keyring format. Loading keys grants no merchant HTTP authority by itself.
+// Merchant administration retains the shared historical keyring format.
+// Loading keys grants no merchant HTTP or payment execution authority by itself.
 func loadAccountKeys(getenv func(string) string) (*accounts.Keyring, error) {
 	keyring, err := accounts.LoadKeyring(getenv)
 	if err != nil {

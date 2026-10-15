@@ -131,7 +131,7 @@ func TestBuyerPaymentSignalRoutesAreKeylessPostOnlyAndFailClosed(t *testing.T) {
 		if status, code := classify(err); status != http.StatusNotFound || code != "not_found" {
 			t.Fatalf("disabled payment service exposed %s: %d %s", suffix, status, code)
 		}
-		h.payment = &checkout.HostedPaymentStarter{} // PAYUNi-only service: Stripe signals are absent
+		h.payment = &checkout.HostedPaymentStarter{} // historical read-only service: Stripe signals are absent
 		err = h.dispatch(context.Background(), httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, path+suffix, strings.NewReader("{}")),
 			selected, paymentOrderID, testBuyerKey, "")
 		if status, code := classify(err); status != http.StatusUnprocessableEntity || code != "invalid_request" {
@@ -156,7 +156,7 @@ func TestBuyerPaymentKeylessPathsAreNonRetryableAndPrepareAdmitsStripe(t *testin
 	if keylessPaymentPath("/v1/buyer/cart/payment/refresh") || keylessPaymentPath("/v1/buyer/session") {
 		t.Fatal("non-order path classified as keyless payment")
 	}
-	for code, want := range map[string]bool{"payuni_credit": true, "stripe_checkout": true,
+	for code, want := range map[string]bool{"payuni_credit": false, "stripe_checkout": true,
 		"stripe": false, "": false, "payuni_installment": false, "Stripe_Checkout": false} {
 		if admittedPaymentMethod(code) != want {
 			t.Fatalf("prepare method allow-list drifted for %q", code)

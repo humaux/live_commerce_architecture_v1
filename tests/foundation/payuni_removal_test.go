@@ -10,20 +10,35 @@
 // Used by: scripts/dev/test-focused.sh '^TestRemovePayuniNotify' (local gate); CI full foundation suite.
 // Invariants: never delete data silently — RM02 pins the RAISE-over-seeded-rows refusal (22023).
 // Historical post-River consumers stay held until their root dependencies exist; RM02 releases only 0161.
-// Status: REAL_PG (no provider is called; seeded rows are synthetic).
+// PAY-RM2 adds runtime refusal and historical-read gates; no phase 2a schema change.
+// Status: REAL_PG (CI only; no provider is called; seeded rows are synthetic).
 package foundation_test
 
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
+	"livecommerce/internal/buyer"
+	"livecommerce/internal/checkout"
+	"livecommerce/internal/command"
+	"livecommerce/internal/integrations/accounts"
+	"livecommerce/internal/payments"
+	"livecommerce/internal/platform"
 
 	"livecommerce/migrations"
 )
@@ -286,4 +301,173 @@ func TestRemovePayuniNotifyRM02SeededDataBlocks(t *testing.T) {
 		t.Fatalf("review-case seed visible as %d rows", n)
 	}
 	assertRefused("one NOTIFY_MISMATCH review case")
+}
+
+// rm2HistoricalAttempt creates an existing legacy row through the unchanged SQL boundary solely
+// as a synthetic history fixture. This is intentionally separate from every production Go start API.
+// No credentials are read and no provider is contacted. Removing the SQL belongs to phase 2b.
+func rm2HistoricalAttempt(t *testing.T, p psHarness) checkout.PaymentResult {
+	t.Helper()
+	ctx := context.Background()
+	jobs, err := river.NewClient(riverpgxv5.New(p.pool), &river.Config{Schema: "river_payment"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out checkout.PaymentResult
+	err = buyer.WithScope(ctx, p.pool, p.cap.Token, p.f.storeA1, func(ctx context.Context, tx pgx.Tx, _ buyer.Scope) error {
+		attempt := randomUUID()
+		job, err := jobs.InsertTx(ctx, tx, pqArgs{OperationID: attempt, Version: 1}, &river.InsertOpts{Queue: "payment_mock_v1", ScheduledAt: time.Now().Add(time.Hour)})
+		if err != nil {
+			return err
+		}
+		digest := sha256.Sum256([]byte("synthetic pre-removal history"))
+		var raw []byte
+		if err = tx.QueryRow(ctx, `SELECT checkout.start_payment($1,$2::uuid,$3,$4,$5::uuid,$6,$7::bigint,$8,$9::uuid,$10::bigint)`,
+			tokenHash(p.cap.Token), p.f.storeA1, t04Key("rm2-history"), digest[:], p.hold.OrderID, p.input.MethodCode, p.input.MethodVersion, "PROVIDER_MOCK", attempt, job.Job.ID).Scan(&raw); err != nil {
+			return err
+		}
+		return json.Unmarshal(raw, &out)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// rm2Snapshot covers the attempt, operation (including lease/generation/result), order, reservation,
+// observations, facts, inventory ledger and operation events. River job cancellation is deliberately
+// separate: acknowledging an obsolete queue item must not mutate any payment or inventory state.
+func rm2Snapshot(t *testing.T, p psHarness, attempt string) string {
+	t.Helper()
+	var out string
+	err := p.f.owner.QueryRow(context.Background(), `SELECT jsonb_build_array(
+  (SELECT to_jsonb(a) FROM checkout.payment_attempts a WHERE a.id=$1),
+  (SELECT to_jsonb(o) FROM integration.operations o WHERE o.id=$1),
+  (SELECT to_jsonb(o) FROM checkout.orders o WHERE o.id=$2),
+  (SELECT to_jsonb(r) FROM inventory.reservations r WHERE r.id=$2),
+  (SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1),
+  (SELECT count(*) FROM payments.facts WHERE attempt_id=$1),
+  (SELECT count(*) FROM payments.review_cases WHERE attempt_id=$1),
+  (SELECT count(*) FROM integration.operation_events WHERE operation_id=$1),
+  (SELECT count(*) FROM inventory.ledger WHERE reservation_id=$2),
+  (SELECT count(*) FROM checkout.command_results WHERE order_id=$2),
+  (SELECT count(*) FROM checkout.events WHERE order_id=$2)
+ )::text`, attempt, p.hold.OrderID).Scan(&out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func TestRemovePayuniGoRM2UnavailableAndNoStart(t *testing.T) {
+	h := hpSetup(t) // existing fixture: eligible legacy method; production Go API under test
+	before, beforeOther := bpCounts(t, h)
+	err := platform.WithScope(context.Background(), h.f.runtime, h.f.tokens["a"], h.f.storeA1, "integration:read", func(tx pgx.Tx, scope platform.Scope) error {
+		out, err := payments.InspectMethod(context.Background(), tx, scope, h.f.tokens["a"], payments.CheckInput{MarketID: h.market.ID, Country: "TW", Code: "payuni_credit", ExpectedVersion: 1, Environment: "SANDBOX", Currency: "TWD", AmountMinor: 2500})
+		if err != nil {
+			return err
+		}
+		if out.Available || !containsString(out.Reasons, "ADAPTER_UNAVAILABLE") {
+			t.Fatalf("removed method available: %+v", out)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		view, err := h.api.(*checkout.HostedPaymentStarter).PaymentView(context.Background(), h.cap.Token, h.f.storeA1, h.hold.OrderID)
+		if err != nil || len(view.Methods) != 0 || view.PaymentState != "NOT_STARTED" {
+			t.Fatalf("removed buyer method offered: %+v %v", view, err)
+		}
+		if out, err := h.begin(t04Key("rm2-start")); !errors.Is(err, command.ErrInvalid) || out != (checkout.PaymentResult{}) {
+			t.Fatalf("removed hosted start: %+v %v", out, err)
+		}
+		if out, err := h.start(t04Key("rm2-old-start")); !errors.Is(err, command.ErrInvalid) || out != (checkout.PaymentResult{}) {
+			t.Fatalf("removed legacy start: %+v %v", out, err)
+		}
+		if out, err := h.take(); !errors.Is(err, command.ErrConflict) || out.Form != nil || out.RedirectURL != "" {
+			t.Fatalf("removed form released: %+v %v", out, err)
+		}
+	}
+	after, afterOther := bpCounts(t, h)
+	if before != after || beforeOther != afterOther {
+		t.Fatal("removed payment request changed durable state")
+	}
+}
+
+func TestRemovePayuniGoRM2WorkerSkipsHistoryWithoutObservation(t *testing.T) {
+	p := psSetupItemsOn(t, pwIsolatedFixture(t), 1)
+	result := rm2HistoricalAttempt(t, p)
+	keys, err := accounts.NewKeyring("rm2_test", map[string][]byte{"rm2_test": randomBytes(32)}, randomBytes(32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := pqFixture{psHarness: p, keys: keys, result: result, schema: "river_payment"}
+	// Seed one already persisted authenticated report and reconciliation job using unchanged SQL.
+	// The new Go capture worker must refuse even this valid historical report.
+	pcRecord(t, q, pcFull(q))
+	before := rm2Snapshot(t, p, result.AttemptID)
+	var calls atomic.Int64
+	opts := payments.DefaultQueryWorkerOptions()
+	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) {
+		calls.Add(1)
+		return nil, errors.New("removed provider must never be called")
+	})
+	client, err := payments.NewWorkerClient(context.Background(), p.worker, q.keys, "PROVIDER_MOCK", 1, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { pwStopClient(t, client) })
+	mustExec(t, p.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, result.JobID)
+	if err = client.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	pwAwaitJob(t, q, result.JobID, "cancelled")
+	var captureJob int64
+	if err = p.f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, result.OperationID).Scan(&captureJob); err != nil {
+		t.Fatal(err)
+	}
+	pwAwaitJob(t, q, captureJob, "cancelled")
+	pwStopClient(t, client)
+	if calls.Load() != 0 {
+		t.Fatalf("removed provider called %d times", calls.Load())
+	}
+	if after := rm2Snapshot(t, p, result.AttemptID); after != before {
+		t.Fatalf("history mutated after worker: before=%s after=%s", before, after)
+	}
+	// Merchant and buyer views retain the stored state, rather than hiding the old attempt.
+	moGrant(t, p.f, p.f.tenantA, p.f.storeA1, p.f.principalA)
+	rows, err := moRead(context.Background(), p.f.runtime, p.f.tokens["a"], p.f.tenantA, p.f.storeA1, p.f.principalA, p.hold.OrderID, "all", 1)
+	if err != nil || len(rows) != 1 || rows[0]["payment_state"] != "PENDING" || rows[0]["commercial_state"] != "AWAITING_PAYMENT" {
+		t.Fatalf("merchant history hidden or changed: %+v %v", rows, err)
+	}
+	// Buyer view must retain the recorded PENDING state; a handoff remains unavailable.
+	pool, err := platform.OpenHostedPool(context.Background(), hpRole(t, p.f))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	service := hpStarter(t, pool, "PROVIDER_MOCK", q.keys, checkout.HostedConfig{}).(*checkout.HostedPaymentStarter)
+	for i := 0; i < 2; i++ {
+		view, err := service.PaymentView(context.Background(), p.cap.Token, p.f.storeA1, p.hold.OrderID)
+		if err != nil || view.PaymentState != "PENDING" || view.CommercialState != "AWAITING_PAYMENT" || len(view.Methods) != 0 {
+			t.Fatalf("history hidden or changed: %+v %v", view, err)
+		}
+		if out, err := service.TakeHosted(context.Background(), p.cap.Token, p.f.storeA1, p.hold.OrderID); !errors.Is(err, command.ErrConflict) || out.Form != nil || out.RedirectURL != "" {
+			t.Fatalf("history resumed: %+v %v", out, err)
+		}
+	}
+	if after := rm2Snapshot(t, p, result.AttemptID); after != before {
+		t.Fatal("historical read changed state")
+	}
+}
+
+func containsString(values []string, want string) bool {
+	for _, v := range values {
+		if v == want {
+			return true
+		}
+	}
+	return false
 }

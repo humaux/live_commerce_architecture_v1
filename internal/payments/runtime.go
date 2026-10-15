@@ -45,7 +45,7 @@ type WorkerConfig struct {
 	Stripe      *StripeRuntime
 }
 
-// NewWorkerClient keeps the existing PAYUNi assembly signature.
+// NewWorkerClient retains the historical assembly signature; no retired provider is dispatched.
 func NewWorkerClient(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyring,
 	profile string, concurrency int, queryOptions QueryWorkerOptions) (*river.Client[pgx.Tx], error) {
 	return NewPaymentWorkerClient(ctx, pool, WorkerConfig{Profile: profile, Concurrency: concurrency,

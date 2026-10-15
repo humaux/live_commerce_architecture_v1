@@ -13,7 +13,7 @@ import (
 	"livecommerce/internal/integrations/psp/stripe"
 )
 
-// Stripe material has its own wire format and AAD. PAYUNi's credential format
+// Stripe material has its own wire format and AAD. the historical credential format
 // remains independent, even when both use the same Keyring implementation.
 var errStripeMaterial = errors.New("stripe material unavailable")
 

@@ -1,42 +1,33 @@
+// hosted_test.go proves retired credential creation fails before any SQL or provider material can be used.
 package accounts
 
 import (
-	"bytes"
+	"context"
+	"errors"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/command"
+	"livecommerce/internal/integrations/core"
+	"livecommerce/internal/platform"
 )
 
-func TestHostedConfigCanonicalDigest(t *testing.T) {
-	first, digest, err := (HostedConfig{ReturnURL: "https://PAY.example.com:443/return",
-		NotifyURL: "https://pay.example.com/notify"}).CanonicalDigest()
-	if err != nil || first.ReturnURL != "https://pay.example.com/return" {
-		t.Fatalf("canonical endpoints rejected: %+v, %v", first, err)
-	}
-	_, same, err := (HostedConfig{ReturnURL: "https://pay.example.com/return",
-		NotifyURL: "https://pay.example.com/notify"}).CanonicalDigest()
-	if err != nil || !bytes.Equal(digest[:], same[:]) {
-		t.Fatal("equivalent endpoints changed the request digest")
-	}
-	roundTrip, again, err := first.CanonicalDigest()
-	if err != nil || roundTrip != first || again != digest {
-		t.Fatal("canonical endpoints cannot be reused by the hosted builder")
-	}
-	_, changed, err := (HostedConfig{ReturnURL: "https://pay.example.com/return-v2",
-		NotifyURL: "https://pay.example.com/notify"}).CanonicalDigest()
-	if err != nil || bytes.Equal(digest[:], changed[:]) {
-		t.Fatal("changed endpoint reused the request digest")
-	}
+// The embedded interface deliberately panics on every method. A retired write must not even authorize via SQL.
+type removedAccountTx struct{ pgx.Tx }
+
+func removedAccountScope() platform.Scope {
+	return platform.Scope{TenantID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", StoreID: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", PrincipalID: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", Revision: 1}
 }
 
-func TestHostedConfigRejectsUnsafeEndpoints(t *testing.T) {
-	for _, bad := range []string{"", "http://pay.example.com/return", "https://pay.example.com:8443/return",
-		"https://user@pay.example.com/return", "https://pay.example.com/return?x=1",
-		"https://pay.example.com/return#x", "https://127.0.0.1/return",
-		"https://localhost/return", "https://pay.example.com/a/../return",
-		"https://pay.example.com:/return", "https://pay.example.com/return%2Fextra",
-		"https://pay.example.com/返回", "https://pay.example.com/return<one>",
-		"https://pay.example.com/return\"one"} {
-		if _, _, err := (HostedConfig{ReturnURL: bad, NotifyURL: "https://pay.example.com/notify"}).CanonicalDigest(); err == nil {
-			t.Fatalf("unsafe callback accepted: %q", bad)
+func TestRemovedAccountCreateNeverReadsOrWrites(t *testing.T) {
+	s, err := New(testKeyring(t), &core.Service{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, environment := range []string{"SANDBOX", "LIVE"} {
+		out, err := s.Create(context.Background(), removedAccountTx{}, removedAccountScope(), "token", "validkey1", CreateInput{Provider: "payuni", Environment: environment, AccountID: "mock-account", Credentials: Credentials{"01234567890123456789012345678901", "0123456789012345"}})
+		if !errors.Is(err, command.ErrInvalid) || out != (Connection{}) {
+			t.Fatalf("removed account created: %+v %v", out, err)
 		}
 	}
 }

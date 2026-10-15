@@ -26,6 +26,7 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/checkout"
+	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/accounts"
 	integration "livecommerce/internal/integrations/core"
 	"livecommerce/internal/payments"
@@ -184,24 +185,19 @@ func pqNoNetwork() http.RoundTripper {
 }
 
 func TestBuyerPaymentQueryHistoricalCredentialAndACL(t *testing.T) {
-	q := pqSetup(t)
-	q.rotate(t, 2, accounts.Credentials{HashKey: strings.Repeat("N", 32), HashIV: strings.Repeat("I", 16)})
+	p := psSetup(t)
+	q := pqFixture{psHarness: p, result: rm2HistoricalAttempt(t, p), schema: "river_payment"}
 	mustExec(t, q.f.owner, `UPDATE integration.bindings SET enabled=false,semantic_version=semantic_version+1 WHERE id=$1`, q.binding)
 	qualExec(t, q.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, q.proof)
-	c := q.claim(t)
 	ctx := context.Background()
 	tx, e := q.worker.Begin(ctx)
 	if e != nil {
 		t.Fatal(e)
 	}
 	defer tx.Rollback(ctx)
-	material, e := q.keys.LoadPaymentQuery(ctx, tx, q.result.OperationID, c.Generation, c.LeaseToken, "PROVIDER_MOCK", pqNoNetwork())
-	if e != nil || material.Expected.AmountTWD != 25 || material.Expected.MerTradeNo != q.result.MerchantTradeNo {
-		t.Fatalf("historical material/minor conversion: %v", e)
-	}
-	encoded, _ := json.Marshal(material)
-	if strings.Contains(string(encoded), pqOldSecret.HashKey) || strings.Contains(fmt.Sprintf("%+v", material), pqOldSecret.HashIV) {
-		t.Fatal("material exposes credentials")
+	// The Go material loader was removed. A historical row cannot be restarted or dispatched.
+	if _, e = q.starter.StartPayment(ctx, q.cap.Token, q.f.storeA1, t04Key("pq-removed"), q.input); !errors.Is(e, command.ErrInvalid) {
+		t.Fatalf("removed historical attempt could restart: %v", e)
 	}
 	if e = tx.Commit(ctx); e != nil {
 		t.Fatal(e)

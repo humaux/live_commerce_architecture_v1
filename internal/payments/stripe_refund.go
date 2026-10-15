@@ -52,7 +52,7 @@ func validRefundArgs(a paymentRefundArgs) bool {
 	return a.Version == 1 && command.ValidID(a.OperationID)
 }
 
-// validRefundOperation is the family fence of a refund operation (never a checkout or PAYUNi op).
+// validRefundOperation is the family fence of a refund operation (never a checkout or historical provider op).
 func validRefundOperation(op queryOperation) bool {
 	return op.ActorKind == "PAYMENT_REFUND" && op.Provider == "stripe" && op.Action == "stripe.refund" &&
 		op.Purpose == "transactional"

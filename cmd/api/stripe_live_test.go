@@ -124,7 +124,7 @@ func TestBuyerStripeCheckoutLiveNeedsThePair(t *testing.T) {
 			t.Fatalf("LIVE Stripe %s accepted: %v", name, err)
 		}
 	}
-	// LD6: the platform kill switch (flag off) needs no pair and reads none; PAYUNi on LIVE is untouched.
+	// LD6: the platform kill switch (flag off) needs no pair and reads none; historical reads on LIVE is untouched.
 	c, read, err = load("LIVE", "0", nil)
 	if err != nil || c.stripe != nil || len(liveNames(read)) != 0 {
 		t.Fatalf("LIVE with Stripe checkout off: %v stripe=%v read=%v", err, c.stripe != nil, liveNames(read))

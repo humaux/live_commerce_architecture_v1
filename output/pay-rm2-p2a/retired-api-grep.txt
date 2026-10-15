@@ -1,0 +1,1 @@
+cmd/api/payuni_removed_test.go:69:		if strings.HasPrefix(name, "PAYUNI_") || strings.HasPrefix(name, "COMMERCE_ACCOUNT_") || name == "COMMERCE_PAYMENT_NOTIFY_URL" {

@@ -277,7 +277,7 @@ type Promo struct {
 }
 
 // wholeStep is the smallest chargeable step of a currency in minor units. TWD is charged in whole dollars (stripe-psp-v1 D15 and the section 4
-// table: TWD 2500..99999900 step 100; PAYUNi amount%100=0), so a discount must not leave a fractional-dollar total that payment start would
+// table: TWD 2500..99999900 step 100), so a discount must not leave a fractional-dollar total that payment start would
 // refuse after the order was already placed. Every other currency of the closed allowlist charges at its minor unit.
 func wholeStep(currency string) int64 {
 	if currency == "TWD" {

@@ -47,19 +47,16 @@ func TestStripeHostedConfigDigestIsFrozenShape(t *testing.T) {
 func TestHostedProvidersConstructorBoundary(t *testing.T) {
 	ctx := context.Background()
 	jobs := new(river.Client[pgx.Tx])
-	payuni := HostedConfig{ReturnURL: "https://pay.example.com/return", NotifyURL: "https://pay.example.com/notify"}
 	stripeConfig := StripeHostedConfig{ReturnURL: "https://pay.example.com/return"}
 	build := func(c context.Context, j *river.Client[pgx.Tx], profile string, p HostedProviders) error {
 		_, err := NewHostedPaymentService(c, nil, j, profile, nil, p)
 		return err
 	}
 	for name, err := range map[string]error{
-		"no provider":         build(ctx, jobs, "SANDBOX", HostedProviders{}),
-		"nil ctx":             build(nil, jobs, "SANDBOX", HostedProviders{Stripe: &stripeConfig}), //nolint:staticcheck // nil ctx is the case under test
-		"nil jobs":            build(ctx, nil, "SANDBOX", HostedProviders{Stripe: &stripeConfig}),
-		"payuni without keys": build(ctx, jobs, "SANDBOX", HostedProviders{PAYUNi: &payuni}),
-		"bad stripe url":      build(ctx, jobs, "SANDBOX", HostedProviders{Stripe: &StripeHostedConfig{ReturnURL: "http://x.example.com/r"}}),
-		"bad profile":         build(ctx, jobs, "PROD", HostedProviders{Stripe: &stripeConfig}),
+		"nil ctx":        build(nil, jobs, "SANDBOX", HostedProviders{Stripe: &stripeConfig}), //nolint:staticcheck // nil ctx is the case under test
+		"nil jobs":       build(ctx, nil, "SANDBOX", HostedProviders{Stripe: &stripeConfig}),
+		"bad stripe url": build(ctx, jobs, "SANDBOX", HostedProviders{Stripe: &StripeHostedConfig{ReturnURL: "http://x.example.com/r"}}),
+		"bad profile":    build(ctx, jobs, "PROD", HostedProviders{Stripe: &stripeConfig}),
 	} {
 		if !errors.Is(err, command.ErrInvalid) {
 			t.Fatalf("%s: want ErrInvalid, got %v", name, err)
@@ -109,7 +106,7 @@ func TestStripeHandoffValidatorAndRedirectShape(t *testing.T) {
 	}
 	// PAYUNi handoffs may never carry a Stripe URL, and their bytes stay free of the new key.
 	payuni := HostedHandoff{OrderID: testID, Disposition: "ALREADY_ISSUED", ExpiresAt: cutoff, RedirectURL: redirect.RedirectURL}
-	if validHostedHandoff(payuni, testID, "SANDBOX") {
+	if validStripeHandoff(payuni, testID) {
 		t.Fatal("payuni handoff accepted a redirect url")
 	}
 	payuni.RedirectURL = ""
@@ -141,12 +138,9 @@ func TestStripePaymentResultUsesClosedCurrencyTable(t *testing.T) {
 			t.Fatalf("invalid stripe result accepted: %+v", bad)
 		}
 	}
-	if validPaymentResult(ok, testID) {
-		t.Fatal("PAYUNi receipt validator started admitting non-TWD results")
-	}
+
 	for _, in := range []HostedInput{
 		{OrderID: testID, MethodCode: "stripe_checkout", MethodVersion: 1, Locale: "en"},
-		{OrderID: testID, MethodCode: "payuni_credit", MethodVersion: 1, Locale: "zh-TW"},
 	} {
 		if !validHostedInput(in) {
 			t.Fatalf("valid hosted input rejected: %+v", in)
@@ -170,27 +164,27 @@ func TestPaymentViewV2Validator(t *testing.T) {
 		return PaymentMethodOption{Code: code, Version: 1, NameHans: "a", NameHant: "b", NameEN: "c"}
 	}
 	base := OrderPayment{OrderID: testID, Currency: "HKD", TotalMinor: 500, CommercialState: "DRAFT",
-		PaymentState: "NOT_STARTED", HandoffState: "NONE", Methods: []PaymentMethodOption{method("payuni_credit"), method("stripe_checkout")}}
+		PaymentState: "NOT_STARTED", HandoffState: "NONE", Methods: []PaymentMethodOption{method("stripe_checkout")}}
 	base.CancelRequested = &yes
 	if !validPaymentViewFor(base, testID, true) {
-		t.Fatal("two-method v2 view rejected")
+		t.Fatal("Stripe-only v2 view rejected")
 	}
 	if validPaymentViewFor(base, testID, false) {
-		t.Fatal("v1 accepted cancel_requested and two methods")
+		t.Fatal("v1 accepted cancel_requested and an active method")
 	}
 	v1 := base
 	v1.CancelRequested = nil
-	v1.Methods = v1.Methods[:1]
+	v1.Methods = []PaymentMethodOption{}
 	if !validPaymentView(v1, testID) || validPaymentViewFor(v1, testID, true) {
 		t.Fatal("v1 view must stay valid without cancel_requested and be refused by v2")
 	}
 	dup := base
 	dup.Methods = []PaymentMethodOption{method("stripe_checkout"), method("stripe_checkout")}
 	unknown := base
-	unknown.Methods = []PaymentMethodOption{method("payuni_credit"), method("payuni_atm")}
+	unknown.Methods = []PaymentMethodOption{method("payuni_credit")}
 	three := base
 	three.Methods = append(append([]PaymentMethodOption{}, base.Methods...), method("payuni_credit"))
-	for name, bad := range map[string]OrderPayment{"duplicate method": dup, "unknown method": unknown, "three methods": three} {
+	for name, bad := range map[string]OrderPayment{"duplicate method": dup, "unknown method": unknown, "mixed providers": three} {
 		if validPaymentViewFor(bad, testID, true) {
 			t.Fatalf("%s accepted", name)
 		}

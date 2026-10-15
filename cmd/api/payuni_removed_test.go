@@ -5,6 +5,7 @@
 // Depends on: internal/httpapi (NewHandler with a nil pool: DB-free), the cmd/api mount* wrappers.
 // Used by: go test ./cmd/api (unit gate); referenced by output/pay-rm1-remove-payuni/DELIVERY.md.
 // Invariants: removal must not reroute any other namespace (I18: the 404 is asserted, not assumed).
+// PAY-RM2 extends this gate with Stripe-only configuration reads and no retired signing inputs.
 package main
 
 import (
@@ -52,5 +53,25 @@ func TestRemovePayuniNotifyRM03RouterHasNoNotifyRoute(t *testing.T) {
 		if rec.Code != http.StatusOK || routed[want] != 1 {
 			t.Fatalf("POST %s = %d routed=%v, want the %s stub", path, rec.Code, routed, want)
 		}
+	}
+}
+
+// TestRemovePayuniGoRM2StripeOnlyConfig forbids reads of retired signing config and still
+// retains the established Stripe return URL. LIVE approval fences remain in stripe_live_test.go. No PG/provider calls.
+func TestRemovePayuniGoRM2StripeOnlyConfig(t *testing.T) {
+	values := buyerPaymentTestEnv()
+	values["COMMERCE_STRIPE_CHECKOUT_ENABLED"] = "1"
+	delete(values, "COMMERCE_PAYMENT_NOTIFY_URL")
+	delete(values, "COMMERCE_ACCOUNT_KEYS_JSON")
+	var reads []string
+	config, err := loadBuyerPaymentConfig(func(name string) string {
+		reads = append(reads, name)
+		if strings.HasPrefix(name, "PAYUNI_") || strings.HasPrefix(name, "COMMERCE_ACCOUNT_") || name == "COMMERCE_PAYMENT_NOTIFY_URL" {
+			t.Fatalf("removed provider configuration read: %s", name)
+		}
+		return values[name]
+	}, "127.0.0.1:8080")
+	if err != nil || !config.enabled || config.stripe == nil || config.stripe.ReturnURL != "https://pay.example.com/return" {
+		t.Fatalf("Stripe-only config unavailable: %+v %v (reads %v)", config, err, reads)
 	}
 }

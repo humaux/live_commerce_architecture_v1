@@ -1,4 +1,5 @@
-// methods.go owns merchant payment-method configuration, not payment attempts.
+// methods.go owns historical merchant payment-method reads and permanent unavailable diagnostics.
+// Depends on scoped pricing/account metadata; retired configuration writes never reach PG.
 
 package payments
 
@@ -18,7 +19,7 @@ import (
 	"livecommerce/internal/pricing"
 )
 
-const provider = "payuni"
+const provider = "payuni" // removed provider — read-only, never dispatched
 
 type MethodInput struct {
 	MarketID        string `json:"market_id"`
@@ -83,101 +84,7 @@ func SetMethod(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key 
 	if in.Enabled {
 		return out, command.ErrConflict
 	}
-	if err = authorize(ctx, tx, scope, token, "integration:manage"); err != nil {
-		return out, err
-	}
-	request := struct {
-		PrincipalID string `json:"principal_id"`
-		MethodInput
-	}{scope.PrincipalID, in}
-	err = command.Run(ctx, tx, scope, "payment.method.set", key, request, &out, func() error {
-		market, lockErr := pricing.LockMarket(ctx, tx, scope.TenantID, scope.StoreID, in.MarketID)
-		if lockErr != nil {
-			return lockErr
-		}
-		if market.Currency != "TWD" {
-			return command.ErrConflict
-		}
-		if lockErr = advisoryLock(ctx, tx, methodLockKey(scope, in.MarketID, in.Country, in.Code)); lockErr != nil {
-			return lockErr
-		}
-		current, exists, lockErr := lockCurrent(ctx, tx, scope, in.MarketID, in.Country, in.Code, true)
-		if lockErr != nil {
-			return lockErr
-		}
-		if exists != (in.ExpectedVersion > 0) || (exists && current.Version != in.ExpectedVersion) {
-			return command.ErrConflict
-		}
-		if in.ConnectionID != "" {
-			account, accountErr := lockAccount(ctx, tx, scope, in.ConnectionID)
-			if accountErr != nil {
-				return accountErr
-			}
-			if account.Provider != provider || account.Environment != in.Environment {
-				return command.ErrConflict
-			}
-			bindingVersion, _, bindingErr := lockBinding(ctx, tx, scope, account.BindingID)
-			if bindingErr != nil {
-				return bindingErr
-			}
-			unchanged := exists && current.ConnectionID == in.ConnectionID &&
-				current.Environment == in.Environment && current.BindingVersion == in.BindingVersion
-			if !unchanged && bindingVersion != in.BindingVersion {
-				return command.ErrConflict
-			}
-		}
-		version := int64(1)
-		if exists {
-			version = current.Version + 1
-		}
-		out = Method{MarketID: in.MarketID, Country: in.Country, Code: in.Code,
-			Version: version, Provider: provider, Environment: in.Environment,
-			ConnectionID: in.ConnectionID, BindingVersion: in.BindingVersion, Currency: market.Currency,
-			NameHans: in.NameHans, NameHant: in.NameHant, NameEN: in.NameEN,
-			Enabled: in.Enabled, Visible: in.Visible, SortOrder: in.SortOrder,
-			MinAmountMinor: in.MinAmountMinor, MaxAmountMinor: in.MaxAmountMinor}
-		_, insertErr := tx.Exec(ctx, `INSERT INTO payments.method_versions(
-			tenant_id,store_id,market_id,country,code,version,provider,environment,
-			connection_id,binding_version,currency,name_hans,name_hant,name_en,
-			enabled,visible,sort_order,min_amount_minor,max_amount_minor,principal_id)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,nullif($9::text,'')::uuid,
-			nullif($10::bigint,0),$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
-			scope.TenantID, scope.StoreID, out.MarketID, out.Country, out.Code, out.Version,
-			out.Provider, out.Environment, out.ConnectionID, out.BindingVersion, out.Currency,
-			out.NameHans, out.NameHant, out.NameEN, out.Enabled, out.Visible, out.SortOrder,
-			out.MinAmountMinor, out.MaxAmountMinor, scope.PrincipalID)
-		if insertErr != nil {
-			return mapError(insertErr)
-		}
-		if exists {
-			tag, updateErr := tx.Exec(ctx, `UPDATE payments.method_heads SET current_version=$6
-				WHERE tenant_id=$1 AND store_id=$2 AND market_id=$3 AND country=$4 AND code=$5
-				AND current_version=$7`, scope.TenantID, scope.StoreID, in.MarketID, in.Country,
-				in.Code, out.Version, current.Version)
-			if updateErr != nil {
-				return mapError(updateErr)
-			}
-			if tag.RowsAffected() != 1 {
-				return command.ErrConflict
-			}
-		} else {
-			_, insertErr = tx.Exec(ctx, `INSERT INTO payments.method_heads(
-				tenant_id,store_id,market_id,country,code,current_version)
-				VALUES($1,$2,$3,$4,$5,$6)`, scope.TenantID, scope.StoreID, in.MarketID,
-				in.Country, in.Code, out.Version)
-			if insertErr != nil {
-				return mapError(insertErr)
-			}
-		}
-		return command.Audit(ctx, tx, scope, "payment.method.set")
-	})
-	if err != nil {
-		return Method{}, mapError(err)
-	}
-	if err = authorize(ctx, tx, scope, token, "integration:manage"); err != nil {
-		return Method{}, err
-	}
-	return out, nil
+	return out, command.ErrInvalid
 }
 
 func GetMethod(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, marketID, country, code string) (out Method, err error) {
@@ -234,6 +141,7 @@ func InspectMethod(ctx context.Context, tx pgx.Tx, scope platform.Scope, token s
 	return out, nil
 }
 
+// validTarget parses the stored method vocabulary for historical reads and diagnostics only.
 func validTarget(marketID, country, code string) bool {
 	if !command.ValidID(marketID) || country != "TW" {
 		return false
@@ -301,7 +209,7 @@ func diagnose(method Method, marketActive bool, in CheckInput, bindingVersion, c
 		add(!bindingEnabled, "BINDING_DISABLED")
 		add(true, "CREDENTIALS_UNVERIFIED")
 	}
-	// ponytail: the adapter gate is deliberately constant until provider admission exists.
+	// The removed adapter is permanently unavailable, including historically enabled rows.
 	out.Reasons = append(out.Reasons, "ADAPTER_UNAVAILABLE")
 	return out
 }
@@ -370,25 +278,6 @@ func lockBinding(ctx context.Context, tx pgx.Tx, scope platform.Scope, bindingID
 		WHERE tenant_id=$1 AND store_id=$2 AND id=$3 FOR SHARE`, scope.TenantID,
 		scope.StoreID, bindingID).Scan(&version, &enabled)
 	return version, enabled, mapError(err)
-}
-
-func methodLockKey(scope platform.Scope, marketID, country, code string) string {
-	return "payment.method|" + scope.TenantID + "|" + scope.StoreID + "|" + marketID + "|" + country + "|" + code
-}
-
-func advisoryLock(ctx context.Context, tx pgx.Tx, key string) error {
-	var timeout string
-	if err := tx.QueryRow(ctx, `SHOW lock_timeout`).Scan(&timeout); err != nil {
-		return err
-	}
-	if _, err := tx.Exec(ctx, `SELECT set_config('lock_timeout','0',true)`); err != nil {
-		return err
-	}
-	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, key); err != nil {
-		return err
-	}
-	_, err := tx.Exec(ctx, `SELECT set_config('lock_timeout',$1,true)`, timeout)
-	return err
 }
 
 func authorize(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, permission string) error {
