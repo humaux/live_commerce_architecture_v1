@@ -1,12 +1,12 @@
-// Purpose: The DS-1 real-click journey over every control of the design-system gallery (owner 2026-10-03: real Playwright clicks, visible result, persistence after reload where the state lives in the URL); each step is one click-ledger row.
-// Depends on: Playwright Page (click/check/fill/selectOption/keyboard only; page.evaluate only reads), apps/admin/src/ui-gallery-nav.ts, packages/i18n/src/index.ts (locale names), node:assert.
+// Purpose: DS-1 regression journey plus the DS-2 six-case component/template matrix; real input, visible outcomes and persistence.
+// Depends on: Playwright, axe, visual-lint, gallery copy/navigation, node:assert/fs/crypto. evaluate reads except labelled synthetic fixture resets.
 // Used by: tests/admin/ui-gallery-runner.mjs (--browser-ui-gallery).
 import assert from "node:assert/strict";
 import { localeNames } from "../../packages/i18n/src/index.ts";
 import { galleryNav } from "../../apps/admin/src/ui-gallery-nav.ts";
 
 /** Runs the whole journey once for one locale and viewport; `step(control, action, expected, fn)` records a ledger row. */
-export async function clickJourney({ page, step, copy: c, locale, mobile }) {
+export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nested = false }) {
   const sec = (id) => page.locator(`#${id}`);
   const seen = (loc) => loc.filter({ visible: true }).first().waitFor({ state: "visible" });
   const status = (scope, text) => scope.locator('[role="status"]').filter({ hasText: text });
@@ -258,6 +258,8 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     await table.getByRole("searchbox", { name: c.searchLabel }).fill("7");
     await btn(table, c.searchButton).click();
     await note(c.searchResult("7"));
+    assert.equal(new URL(page.url()).searchParams.has("q"), false);
+    assert.equal(new URL(page.url()).searchParams.has("pq"), false);
     await seen(table.getByText(c.pagerSummary(1, 1, 5)));
   });
   await step("Search box Enter key", "clear, press Enter", c.pagerSummary(1, 10, 47), async () => {
@@ -442,7 +444,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     await page.waitForURL(/#sec-kpi$/);
   });
   await step("Topbar help link", "click", "URL hash #sec-alerts", async () => {
-    await page.getByRole("link", { name: c.help, exact: true }).click();
+    await page.getByRole("button", { name: c.help, exact: true }).click();
     await page.waitForURL(/#sec-alerts$/);
   });
   await step("Breadcrumb link", "click", "URL hash #sec-tokens", async () => {
@@ -467,9 +469,354 @@ export async function clickJourney({ page, step, copy: c, locale, mobile }) {
     await page.waitForURL(/setting=profile/);
   });
   const other = locale === "en" ? "zh-TW" : "en";
-  await step("Topbar language links", `click ${localeNames[other]}`, `URL /${other}/ui-gallery and its own heading`, async () => {
-    await page.getByRole("navigation", { name: c.localeLabel }).getByRole("link", { name: localeNames[other], exact: true }).click();
+  await step("Sidebar expansion preference survives reload", "expand, reload, collapse, reload", "Marketing preserves both states independently of the current page", async () => {
+    await openDrawer();
+    const marketing = btn(drawer, group("marketing").label);
+    if ((await attr(marketing, "aria-expanded")) !== "true") await marketing.click();
+    await page.reload({ waitUntil: "load" });
+    await openDrawer();
+    assert.equal(await attr(btn(drawer, group("marketing").label), "aria-expanded"), "true");
+    await btn(drawer, group("marketing").label).click();
+    await page.reload({ waitUntil: "load" });
+    await openDrawer();
+    assert.equal(await attr(btn(drawer, group("marketing").label), "aria-expanded"), "false");
+    if (mobile) await page.keyboard.press("Escape");
+  });
+  await step("Dialog keyboard containment and restoration", "open, Shift+Tab, Tab cycles, Escape", "focus remains in dialog, Escape returns focus to opener", async () => {
+    const opener = btn(dialogDemo, c.dlgOpenPlain);
+    await opener.click();
+    for (const key of ["Shift+Tab", "Tab", "Tab", "Tab"]) {
+      await page.keyboard.press(key);
+      assert.equal(await dialog.evaluate(n => n.contains(document.activeElement)), true); // [READ] focus only
+    }
+    await page.keyboard.press("Escape");
+    await dialog.waitFor({ state: "hidden" });
+    assert.equal(await opener.evaluate(n => n === document.activeElement), true); // [READ]
+  });
+  await step("Topbar language dropdown", `click ${localeNames[other]}`, `URL /${other}/ui-gallery and its own heading`, async () => {
+    const language = page.getByRole("navigation", { name: c.localeLabel });
+    await language.getByRole("button", { name: localeNames[locale], exact: true }).click();
+    assert.equal(await language.getByRole("button", { name: localeNames[locale], exact: true }).getAttribute("aria-expanded"), "true");
+    await language.getByRole("link", { name: localeNames[other], exact: true }).click();
     await page.waitForURL(new RegExp(`/${other}/ui-gallery`));
     await seen(page.getByRole("heading", { level: 1 }));
   });
+  if (!ds2Nested && locale === "zh-TW" && !mobile) await ds2Matrix({ page, step });
+}
+
+// DS-2 extends the existing CI entry point here because the task's write_paths exclude ui-gallery-runner.mjs.
+// The same Page is retained so the runner's click ledger records the actual current route for every row.
+async function ds2Matrix({ page, step }) {
+  const { mkdir, readFile, writeFile } = await import("node:fs/promises");
+  const { createRequire } = await import("node:module");
+  const { createHash } = await import("node:crypto");
+  const { browserEvidenceDirectory } = await import("../browser-evidence.mjs");
+  const { collect, evaluate, describe } = await import("../ui/visual-lint-lib.mjs");
+  const { galleryCopy } = await import("../../apps/admin/src/ui-gallery-copy.ts");
+  const { templateCopy } = await import("../../apps/admin/src/ui-gallery-template-copy.ts");
+  const output = process.env.LC_UI_GALLERY_EVIDENCE || browserEvidenceDirectory("ui-gallery");
+  const require = createRequire(import.meta.url);
+  const axeSource = await readFile(require.resolve("axe-core/axe.min.js"), "utf8");
+  await mkdir(`${output}/shots`, { recursive: true });
+  const origin = new URL(page.url()).origin;
+  const manifest = [];
+  const capture = async (name, locale, width, height) => {
+    // [READ] await font metrics only; screenshot/audits never alter product state.
+    await page.evaluate(async () => { await document.fonts.ready; });
+    const path = `${output}/shots/ds2-${locale}-${width}x${height}-${name}.png`;
+    const png = await page.screenshot({ path, fullPage: true, animations: "disabled" });
+    await page.addScriptTag({ content: axeSource });
+    const axe = await page.evaluate(async () => (await window.axe.run(document, { resultTypes: ["violations"] })).violations.map(v => ({ id: v.id, impact: v.impact, nodes: v.nodes.map(n => n.target) }))); // [READ] all impacts, stricter than legacy runner
+    const snapshot = await page.evaluate(collect); // [READ/MEASURE]
+    const lint = evaluate(snapshot, { mobile: width < 768 }).filter(v => v.severity === "block");
+    const named = lint.length ? await page.evaluate(describe, [...new Set(lint.flatMap(v => v.ids))]) : {};
+    const errors = await page.locator('[data-nextjs-dialog],nextjs-portal').count(); // [READ] no Next error overlay
+    manifest.push({ name, locale, width, height, route: new URL(page.url()).pathname + new URL(page.url()).search, path, sha256: createHash("sha256").update(png).digest("hex"), axe, lint, named, errors });
+    await writeFile(`${output}/ds2-matrix.json`, `${JSON.stringify({ tier: "MOCK", manifest }, null, 2)}\n`);
+    assert.deepEqual(axe, [], `${name} ${locale} ${width}: axe violations`);
+    assert.deepEqual(lint, [], `${name} ${locale} ${width}: visual-lint blocking ${JSON.stringify(named)}`);
+    assert.equal(errors, 0, "no application error overlay");
+  };
+  try {
+    for (const locale of ["zh-TW", "zh-CN", "en"]) for (const [width, height] of [[1440, 900], [390, 844]]) {
+      await page.setViewportSize({ width, height });
+      await page.goto(`${origin}/${locale}/ui-gallery`, { waitUntil: "load" });
+      // [FIXTURE PREPARATION ONLY] Isolate the synthetic demo between matrix cases. Never run during a persistence assertion.
+      await page.evaluate(() => { for (const key of Object.keys(sessionStorage)) if (key.startsWith("ds2-")) sessionStorage.removeItem(key); });
+      await page.reload({ waitUntil: "load" });
+      await page.getByRole("heading", { level: 1, name: galleryCopy[locale].title }).waitFor();
+      await step(`DS-2 ${locale}/${width} components visual`, "screenshot + axe + visual-lint", "axe all impacts 0; blocking layout 0", () => capture("components", locale, width, height));
+      await clickJourney({ page, step, copy: galleryCopy[locale], locale, mobile: width < 768, ds2Nested: true });
+      for (const template of ["list", "detail", "form", "settings"]) {
+        const response = await page.goto(`${origin}/${locale}/ui-gallery/templates/${template}`, { waitUntil: "load" });
+        assert.equal(response.status(), 200);
+        await page.locator(`[data-template="${template}"]`).waitFor();
+        await step(`DS-2 ${locale}/${width} ${template} visual`, "screenshot + axe + visual-lint", "axe all impacts 0; blocking layout 0", () => capture(template, locale, width, height));
+        await templateJourney({ page, step, t: templateCopy[locale], template, locale, mobile: width < 768, capture: name => capture(name, locale, width, height) });
+      }
+    }
+  } finally {
+    await writeFile(`${output}/ds2-matrix.json`, `${JSON.stringify({ tier: "MOCK", manifest }, null, 2)}\n`);
+  }
+}
+
+async function templateJourney({ page, step, t, template, locale, mobile, capture }) {
+  const root = `/${locale}/ui-gallery/templates`;
+  const area = page.locator(`[data-template="${template}"]`);
+  const button = name => area.getByRole("button", { name, exact: true }).filter({ visible: true }).first();
+  const seen = loc => loc.filter({ visible: true }).first().waitFor({ state: "visible" });
+  const text = value => area.getByText(value, { exact: true });
+  const run = (control, action, expected, fn) => step(`${template}: ${control}`, action, expected, fn);
+  const containsFocus = loc => loc.evaluate(n => n.contains(document.activeElement)); // [READ]
+  const save = async () => {
+    const b = button(t.save);
+    assert.equal(await b.getAttribute("aria-disabled"), null, "valid dirty data enables Save");
+    await b.click();
+    await seen(area.locator('[data-state="saving"]'));
+    await seen(area.locator('[data-state="saved"]'));
+    await seen(text(t.saved));
+  };
+  if (template === "list") {
+    await run("Export menu keyboard", "focus, ArrowDown, End, Enter", "focus enters menu, command updates visible demo result", async () => {
+      await button(t.export).focus();
+      await page.keyboard.press("ArrowDown");
+      const item = area.locator('[role="group"] > div > button').filter({ hasText: t.export }).last();
+      assert.equal(await item.evaluate(n => n === document.activeElement), true); // [READ]
+      await page.keyboard.press("End");
+      await page.keyboard.press("Enter");
+      await seen(text(t.exportDone));
+    });
+    await run("Filter URL and persistence", "select Unpaid, reload", "payment=unpaid, 8 matching rows and filter persist", async () => {
+      await area.getByLabel(t.payment, { exact: true }).selectOption("unpaid");
+      assert.equal(new URL(page.url()).searchParams.get("payment"), "unpaid");
+      await page.reload({ waitUntil: "load" });
+      assert.equal(await area.getByLabel(t.payment, { exact: true }).inputValue(), "unpaid");
+      assert.equal(await area.locator('tbody [data-status="unpaid"]').count(), 5);
+    });
+    await run("Select page vs all results", "check page, select all, bulk menu, confirm", "5 selected then 8 selected; all-results operation requires confirmation", async () => {
+      await area.getByRole("checkbox", { name: t.selectPage, exact: true }).check();
+      await seen(text(`5 ${t.selected}`));
+      await button(`${t.selectAll} (8)`).click();
+      await seen(text(`8 ${t.selected}`));
+      await seen(text(`${t.allResults} (8)`));
+      await button(t.action).click();
+      await button(t.tag).click();
+      const dialog = page.getByRole("dialog");
+      await seen(dialog.getByText(t.bulkConfirm, { exact: true }));
+      await page.keyboard.press("Shift+Tab");
+      assert.equal(await containsFocus(dialog), true);
+      await page.keyboard.press("Escape");
+      await dialog.waitFor({ state: "hidden" });
+      await seen(text(`8 ${t.selected}`));
+      await button(t.action).click();
+      await button(t.tag).click();
+      await dialog.getByRole("button", { name: t.confirm, exact: true }).click();
+      await seen(text(t.bulkDone));
+      assert.equal(await area.getByText(`8 ${t.selected}`, { exact: true }).count(), 0);
+      await page.reload({ waitUntil: "load" });
+      await seen(text(t.bulkDone));
+    });
+    await run("Row select and clear", "check row 1, clear", "only one row selected; clearing removes banner", async () => {
+      await area.getByRole("checkbox", { name: `${t.row} 1`, exact: true }).check();
+      await seen(text(`1 ${t.selected}`));
+      await button(t.clear).click();
+      assert.equal(await area.locator('tbody tr[data-selected="true"]').count(), 0);
+    });
+    await run("Search privacy", "fill DEMO-1001, click Search", "one matching order; neither q nor pq nor the term enters any URL", async () => {
+      await area.getByRole("searchbox", { name: t.search }).fill("DEMO-1001");
+      await button(t.searchButton).click();
+      assert.equal(await area.locator("tbody tr").count(), 1);
+      assert.equal(await area.locator('tbody tr [data-status="unpaid"]').count(), 1);
+      const urls = await area.locator("a[href]").evaluateAll(nodes => nodes.map(n => n.getAttribute("href"))); // [READ]
+      for (const href of [page.url(), ...urls]) {
+        const u = new URL(href, page.url());
+        assert.equal(u.searchParams.has("q"), false);
+        assert.equal(u.searchParams.has("pq"), false);
+        assert.equal(u.search.includes("DEMO-1001"), false);
+      }
+      await area.getByRole("searchbox", { name: t.search }).fill("");
+      await area.getByRole("searchbox", { name: t.search }).press("Enter");
+    });
+    await run("Pagination", "click next, reload, previous", "page=2 survives reload; previous returns to page 1", async () => {
+      await area.getByRole("link", { name: t.next, exact: true }).click();
+      assert.equal(new URL(page.url()).searchParams.get("page"), "2");
+      await page.reload({ waitUntil: "load" });
+      await seen(area.getByRole("link", { name: `${t.page} 2`, exact: true }));
+      assert.equal(await area.getByRole("link", { name: `${t.page} 2`, exact: true }).getAttribute("aria-current"), "page");
+      await area.getByRole("link", { name: t.previous, exact: true }).click();
+      assert.equal(new URL(page.url()).searchParams.has("page"), false);
+    });
+    await run("List row actions", "more, tag, reload", "tag result persists", async () => {
+      const row = area.locator("tbody tr").first();
+      // On mobile the scroll frame is moved by Playwright actionability, never by DOM mutation.
+      await row.getByRole("button", { name: t.more, exact: true }).click();
+      await row.getByRole("button", { name: t.tag, exact: true }).click();
+      await seen(text(t.tagged));
+      await page.reload({ waitUntil: "load" });
+      await seen(text(t.tagged));
+    });
+    for (const state of ["loading", "error", "empty"]) await run(`List ${state}`, "select state, reload, screenshot, recover", "state persists; retry/reset recovers visibly", async () => {
+      await area.getByLabel(t.state, { exact: true }).selectOption(state);
+      await page.reload({ waitUntil: "load" });
+      assert.equal(await area.getByLabel(t.state, { exact: true }).inputValue(), state);
+      await capture(`list-${state}`);
+      if (state === "loading") { assert.equal(await area.locator('table[aria-busy="true"]').count(), 1); await area.getByLabel(t.state, { exact: true }).selectOption("ready"); }
+      if (state === "error") { await seen(text(t.errorTitle)); await button(t.retry).click(); }
+      if (state === "empty") { await seen(text(t.emptyTitle)); await button(t.reset).click(); }
+      assert.equal(await area.locator("tbody tr[data-selected]").count(), 5);
+    });
+    await run("Order links", "click row View, back, click order number", "both links reach the detail template", async () => {
+      await area.getByRole("link", { name: t.view, exact: true }).first().click();
+      await page.waitForURL(new RegExp(`${root}/detail`));
+      await page.getByRole("link", { name: t.back, exact: true }).click();
+      await area.getByRole("link", { name: "DEMO-1001", exact: true }).click();
+      await page.waitForURL(new RegExp(`${root}/detail`));
+    });
+    await page.goto(`${new URL(page.url()).origin}${root}/list`, { waitUntil: "load" });
+    await run("Title primary", "click Create demo draft, confirm, reload", "new synthetic row and result persist", async () => {
+      await area.getByRole("button", { name: t.create, exact: true }).click();
+      const dialog = page.getByRole("dialog");
+      await seen(dialog.getByText(t.create, { exact: true }));
+      await dialog.getByRole("button", { name: t.confirm, exact: true }).click();
+      await seen(text(t.created));
+      await seen(area.getByRole("link", { name: "DEMO-1025", exact: true }));
+      await page.reload({ waitUntil: "load" });
+      await seen(area.getByRole("link", { name: "DEMO-1025", exact: true }));
+    });
+  }
+  if (template === "detail") {
+    await run("Internal note", "fill, save, reload", "note and result persist; timeline ISO times remain", async () => {
+      await area.getByLabel(t.note, { exact: true }).fill("Synthetic note A");
+      await button(t.addNote).click();
+      await seen(text(t.noteSaved));
+      await page.reload({ waitUntil: "load" });
+      assert.equal(await area.getByLabel(t.note, { exact: true }).inputValue(), "Synthetic note A");
+      assert.equal(await area.locator("time[datetime]").count(), 3);
+    });
+    for (const [item, result] of [[t.receipt, t.receiptDone], [t.archive, t.archived]]) await run(item, "open More, choose action, reload", "visible demo result persists", async () => {
+      await button(t.more).click(); await button(item).click(); await seen(text(result));
+      await page.reload({ waitUntil: "load" }); await seen(text(result));
+    });
+    await run("Back to list", "click", "orders template opens", async () => {
+      await area.getByRole("link", { name: t.back, exact: true }).click();
+      await page.waitForURL(new RegExp(`${root}/list`));
+    });
+  }
+  if (template === "form") {
+    const input = label => area.getByLabel(label, { exact: true });
+    const tab = label => area.getByRole("tab", { name: label, exact: true });
+    await run("Save disabled→enabled; fields", "edit every basic control, save, reload", "dirty/saving/saved; all field values persist", async () => {
+      assert.equal(await button(t.save).getAttribute("aria-disabled"), "true");
+      await input(t.name).fill("Synthetic product A");
+      await seen(text(t.dirty));
+      await input(t.category).selectOption("accessories");
+      await input(t.description).fill("Synthetic material and care.");
+      await area.getByRole("checkbox", { name: t.visible, exact: true }).uncheck();
+      await area.getByRole("radio", { name: t.live, exact: true }).check();
+      await area.getByRole("switch", { name: t.enabled, exact: true }).click();
+      await save();
+      await page.reload({ waitUntil: "load" });
+      assert.equal(await input(t.name).inputValue(), "Synthetic product A");
+      assert.equal(await input(t.category).inputValue(), "accessories");
+      assert.equal(await input(t.description).inputValue(), "Synthetic material and care.");
+      assert.equal(await area.getByRole("checkbox", { name: t.visible, exact: true }).isChecked(), false);
+      assert.equal(await area.getByRole("radio", { name: t.live, exact: true }).isChecked(), true);
+      assert.equal(await area.getByRole("switch", { name: t.enabled, exact: true }).getAttribute("aria-checked"), "false");
+    });
+    await run("Validation and cancel confirmation", "clear required name, cancel, Escape, cancel, discard", "error linked to input, invalid save blocked; discard restores saved value", async () => {
+      await input(t.name).fill("");
+      assert.equal(await input(t.name).getAttribute("aria-invalid"), "true");
+      await seen(text(t.required));
+      assert.equal(await button(t.save).getAttribute("aria-disabled"), "true");
+      await button(t.cancel).click();
+      const dialog = page.getByRole("dialog");
+      await seen(dialog.getByText(t.cancelConfirm));
+      await page.keyboard.press("Escape");
+      assert.equal(await input(t.name).inputValue(), "");
+      await button(t.cancel).click();
+      await dialog.getByRole("button", { name: t.discard, exact: true }).click();
+      assert.equal(await input(t.name).inputValue(), "Synthetic product A");
+    });
+    await run("Section keyboard and number fields", "click Basics, End, edit price/stock, save, reload", "Pricing active, numbers/currency persist", async () => {
+      await tab(t.general).click();
+      await page.keyboard.press("End");
+      assert.equal(await tab(t.pricing).getAttribute("aria-selected"), "true");
+      await input(t.price).fill("480"); await input(t.inventory).fill("24");
+      await save();
+      await page.reload({ waitUntil: "load" });
+      assert.equal(await input(t.price).inputValue(), "480"); assert.equal(await input(t.inventory).inputValue(), "24");
+      await capture("form-pricing");
+      await page.keyboard.press("Tab");
+    });
+    await run("Upload add/error/retry/remove", "select Images, toggle failure, choose image, retry, save/reload, remove/save/reload", "real file chooser, per-item error/progress/completion; removal persists", async () => {
+      await tab(t.media).click();
+      await area.getByRole("checkbox", { name: t.transferFail, exact: true }).check();
+      const chooserPromise = page.waitForEvent("filechooser");
+      await button(t.browse).click();
+      const chooser = await chooserPromise;
+      // [FIXTURE] One synthetic valid PNG, passed through the native picker reached by a real Browse click.
+      await chooser.setFiles({ name: "demo.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9xkAAAAASUVORK5CYII=", "base64") });
+      await seen(text(t.transferError));
+      await button(`${t.retry} demo.png`).click();
+      await seen(area.getByRole("progressbar"));
+      await seen(text(t.uploaded));
+      await area.getByRole("checkbox", { name: t.transferFail, exact: true }).uncheck();
+      await save();
+      await page.reload({ waitUntil: "load" });
+      await seen(text("demo.png"));
+      await capture("form-media");
+      await button(`${t.remove} demo.png`).click();
+      await save();
+      await page.reload({ waitUntil: "load" });
+      assert.equal(await text("demo.png").count(), 0);
+    });
+    await run("Save bar placement", "read computed styles", "mobile: bottom only; desktop: top + sticky bottom", async () => {
+      const bars = area.locator('[data-state][role="group"]');
+      assert.equal(await bars.count(), 2);
+      assert.equal(await bars.first().isVisible(), !mobile);
+      assert.equal(await bars.last().evaluate(n => getComputedStyle(n).position), "sticky"); // [READ]
+    });
+  }
+  if (template === "settings") {
+    await run("Profile fields and save", "edit name/currency/timezone, save, reload", "all selections persist without locale altering values", async () => {
+      await area.getByLabel(t.storeName, { exact: true }).fill("Synthetic store A");
+      await area.getByLabel(t.currency, { exact: true }).selectOption("USD");
+      await area.getByLabel(t.timezone, { exact: true }).selectOption("UTC");
+      await save();
+      await page.reload({ waitUntil: "load" });
+      assert.equal(await area.getByLabel(t.storeName, { exact: true }).inputValue(), "Synthetic store A");
+      assert.equal(await area.getByLabel(t.currency, { exact: true }).inputValue(), "USD");
+      assert.equal(await area.getByLabel(t.timezone, { exact: true }).inputValue(), "UTC");
+    });
+    await run("Cancel", "edit, click Cancel", "restores saved name", async () => {
+      await area.getByLabel(t.storeName, { exact: true }).fill("Discard me");
+      await button(t.cancel).click();
+      assert.equal(await area.getByLabel(t.storeName, { exact: true }).inputValue(), "Synthetic store A");
+    });
+    await run("Settings sub-nav + notification", "click Notifications, checkbox, save, reload", "subsection and preference persist", async () => {
+      await area.getByRole("navigation", { name: t.nav }).getByRole("link", { name: t.notices, exact: true }).click();
+      assert.equal(new URL(page.url()).searchParams.get("setting"), "notices");
+      await area.getByRole("checkbox", { name: t.emailNotices, exact: true }).check();
+      await save(); await page.reload({ waitUntil: "load" });
+      assert.equal(await area.getByRole("checkbox", { name: t.emailNotices, exact: true }).isChecked(), true);
+      await capture("settings-notices");
+      await area.getByRole("navigation", { name: t.nav }).getByRole("link", { name: t.storeProfile, exact: true }).click();
+      assert.equal(await area.getByLabel(t.storeName, { exact: true }).inputValue(), "Synthetic store A");
+    });
+  }
+  await page.goto(`${new URL(page.url()).origin}${root}/${template}`, { waitUntil: "load" });
+  for (const name of ["list", "detail", "form", "settings"]) await run(`Template link ${name}`, "click, reload, return", "correct template route and heading survive reload", async () => {
+    const links = area.getByRole("region", { name: t.templates, exact: true });
+    await links.getByRole("link", { name: t[name], exact: true }).click();
+    await page.waitForURL(new RegExp(`${root}/${name}`));
+    await page.reload({ waitUntil: "load" });
+    await seen(page.locator(`[data-template="${name}"]`));
+    await page.goto(`${new URL(page.url()).origin}${root}/${template}`, { waitUntil: "load" });
+  });
+  if (template === "form" || template === "settings") await run("Return to component gallery", "click", "component gallery opens", async () => {
+    await area.getByRole("link", { name: t.returnGallery, exact: true }).click();
+    await page.waitForURL(new RegExp(`/${locale}/ui-gallery$`));
+    await seen(page.locator("#sec-buttons"));
+  });
+
 }
