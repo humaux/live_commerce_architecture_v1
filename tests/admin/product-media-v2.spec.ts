@@ -997,6 +997,11 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
       (await saved).status(),
       "save is sent although the image list is unknown",
     ).toBe(200);
+    // The client confirms with a read before it clears its receipt fence; reloading earlier is a real unknown outcome.
+    await expect(
+      page.getByText(ec.saved, { exact: true }).first(),
+      "save confirmed in the page",
+    ).toBeVisible();
     await page.unroute(imagesRoute);
     await page.reload();
     await expect(
