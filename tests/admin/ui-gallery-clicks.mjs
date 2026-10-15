@@ -574,6 +574,37 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
 
 // DS-2 extends the existing CI entry point here because the task's write_paths exclude ui-gallery-runner.mjs.
 // The same Page is retained so the runner's click ledger records the actual current route for every row.
+// [READ] Includes offscreen rendered controls (e.g. a scrolling table), not display:none controls.
+async function readControlScale(page) {
+  const controls = page.locator('button, [role="button"], select, input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):not([type="color"]), a[data-size], nav > ul > li > a, nav > ul > li > [role="link"]').filter({ visible: true });
+  const geometry = await controls.evaluateAll(nodes => nodes.map(n => {
+    const box = n.getBoundingClientRect();
+    return { height: box.height, centre: box.top + box.height / 2 };
+  })); // [READ] rendered border boxes only
+  const names = await Promise.all(Array.from({ length: geometry.length }, async (_, i) => {
+    const snapshot = await controls.nth(i).ariaSnapshot(); // [READ] Playwright's computed accessible name
+    return snapshot.split("\n")[0].replace(/^\s*-\s*/, "");
+  }));
+  const rows = await controls.evaluateAll(nodes => {
+    const pairs = [];
+    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+      let container = nodes[i].parentElement;
+      while (container && !container.contains(nodes[j])) container = container.parentElement;
+      if (!container) continue;
+      const style = getComputedStyle(container);
+      // The nearest shared container must lay out a row, not an unrelated page column.
+      if ((style.display.includes("flex") && style.flexDirection.startsWith("row")) || style.display.includes("grid") || style.display === "table-row") pairs.push([i, j]);
+    }
+    return pairs;
+  }); // [READ] container relationships; no DOM or scroll writes
+  const measured = geometry.map((box, i) => ({ name: names[i], ...box }));
+  const violations = [];
+  if (!measured.length) violations.push("no rendered controls measured");
+  for (const control of measured) if (![28, 36, 44].some(height => Math.abs(control.height - height) <= 0.5)) violations.push(`${control.name}: height=${control.height}px`);
+  for (const [i, j] of rows) if (Math.abs(measured[i].centre - measured[j].centre) <= 0.5 && Math.abs(measured[i].height - measured[j].height) > 0.5) violations.push(`same row: ${measured[i].name} height=${measured[i].height}px; ${measured[j].name} height=${measured[j].height}px`);
+  return { measured, violations };
+}
+
 async function ds2Matrix({ page, step }) {
   const { mkdir, readFile, writeFile } = await import("node:fs/promises");
   const { createRequire } = await import("node:module");
@@ -591,6 +622,14 @@ async function ds2Matrix({ page, step }) {
   const capture = async (name, locale, width, height) => {
     // [READ] await font metrics only; screenshot/audits never alter product state.
     await page.evaluate(async () => { await document.fonts.ready; });
+    await page.locator('[data-shell-rail] > ul > li').first().waitFor({ state: "attached" });
+    if (name === "settings") await page.locator('[data-template="settings"] input').first().waitFor({ state: "visible" });
+    if (name === "detail") await page.locator('[data-template="detail"] textarea').waitFor({ state: "visible" });
+    const scale = await readControlScale(page);
+    await step(`DS-2 ${locale}/${width} ${name} control scale`, "[READ] rendered heights and row centres", "every control 28/36/44 ±0.5px; same-row heights match", async () => {
+      assert.equal(scale.violations.length, 0, scale.violations.join("; "));
+      return `${scale.measured.length} controls measured; no scale or row violations`;
+    });
     const path = `${output}/shots/ds2-${locale}-${width}x${height}-${name}.png`;
     const png = await page.screenshot({ path, fullPage: true, animations: "disabled" });
     await page.addScriptTag({ content: axeSource });
@@ -599,7 +638,7 @@ async function ds2Matrix({ page, step }) {
     const lint = evaluate(snapshot, { mobile: width < 768 }).filter(v => v.severity === "block");
     const named = lint.length ? await page.evaluate(describe, [...new Set(lint.flatMap(v => v.ids))]) : {};
     const errors = await page.locator('[data-nextjs-dialog],nextjs-portal').count(); // [READ] no Next error overlay
-    manifest.push({ name, locale, width, height, route: new URL(page.url()).pathname + new URL(page.url()).search, path, sha256: createHash("sha256").update(png).digest("hex"), axe, lint, named, errors });
+    manifest.push({ name, locale, width, height, route: new URL(page.url()).pathname + new URL(page.url()).search, path, sha256: createHash("sha256").update(png).digest("hex"), scale, axe, lint, named, errors });
     await writeFile(`${output}/ds2-matrix.json`, `${JSON.stringify({ tier: "MOCK", manifest }, null, 2)}\n`);
     assert.deepEqual(axe, [], `${name} ${locale} ${width}: axe violations`);
     assert.deepEqual(lint, [], `${name} ${locale} ${width}: visual-lint blocking ${JSON.stringify(named)}`);

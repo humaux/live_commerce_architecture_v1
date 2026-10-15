@@ -71,6 +71,8 @@ export function ButtonsSection({ c }: { c: GalleryCopy }) {
       </div>
       <div className={s.row}>
         <Button size="sm" variant="secondary" onClick={() => setClicked(c.btnSmall)}>{c.btnSmall}</Button>
+      </div>
+      <div className={s.row}>
         <Button size="lg" variant="secondary" onClick={() => setClicked(c.btnLarge)}>{c.btnLarge}</Button>
       </div>
       <div className={s.row}>

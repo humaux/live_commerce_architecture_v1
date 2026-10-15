@@ -32,13 +32,16 @@
 .storeRegion { color: var(--ds-nav-text-muted); font-size: var(--ds-text-sm); }
 .brand, .store { flex: none; }
 .groups { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--ds-nav-text-muted) var(--ds-nav-bg); margin: 0; padding: var(--ds-space-2) 0; list-style: none; }
+/* The 52px navigation slot contains a 44px control, on the action-control scale. */
+.groups > li { padding-block: var(--ds-space-1); }
 .groupRow, .groupLink {
   display: flex;
   align-items: center;
   gap: var(--ds-space-3);
   box-sizing: border-box;
   width: 100%;
-  min-height: var(--ds-nav-item-height);
+  height: var(--ds-button-lg);
+  min-height: var(--ds-button-lg);
   padding: 0 var(--ds-space-4);
   border: 0;
   border-inline-start: 3px solid transparent;
