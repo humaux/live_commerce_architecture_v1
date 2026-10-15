@@ -1,6 +1,6 @@
 # PAY-RM2 phase 2a delivery
 
-**Merged 2026-10-15 UTC as 5492b7274 (PR #70, squash, head ed06573d3).** Gates run 38793980208 green on attempt 2 (80 pass / 1 skipped `deploy`; Foundation run 38793979983 green); attempt 1 failed only `--browser-studio-ui` (flake; root cause fixed by PR #75, merged c077226e7). Independent reviews (committed in output/pay-rm2-p2a/): APPROVE review-572e239ee, review-f02adcb3b; REQUEST CHANGES review-b9cfe42cd, addressed in bd96be74b; then APPROVE review-bd96be74b, review-c7146aec5, review-32b5df70e, review-0617d49ef, review-fe3be0ab4, review-22de69581 and review-ed06573d3 (merged head). Phase 2b DROP migration is NOT_RUN and awaits the owner. The round sections below are historical.
+**Merged 2026-10-15 UTC as 5492b7274 (PR #70, squash, head ed06573d3).** Gates run 38793980208 green on attempt 2 (80 pass / 1 skipped `deploy`; Foundation run 38793979983 green); attempt 1 failed only `--browser-studio-ui` (flake; root-cause fix merged in PR #75 (c077226e7)). Independent reviews (committed in output/pay-rm2-p2a/): APPROVE review-572e239ee, review-f02adcb3b; REQUEST CHANGES review-b9cfe42cd, addressed in bd96be74b; then APPROVE review-bd96be74b, review-c7146aec5, review-32b5df70e, review-0617d49ef, review-fe3be0ab4, review-22de69581 and review-ed06573d3 (merged head). Phase 2b DROP migration is NOT_RUN and awaits the owner. The round sections below are historical.
 
 ## Round 3 — integrator ruling handoff (current)
 
