@@ -72,11 +72,11 @@ func goTableDispatcherFingerprint(table goRouteTable, entries []*goFunc) (goDisp
 	pkg := table.Package
 	roots := append(append([]*goFunc{}, entries...), table.Consumers...)
 	for _, fn := range pkg.Funcs {
-		if goDispatcherReceiver(fn) == table.TypeName {
+		if goDispatcherReceiver(fn) == table.TypeName || fn.AST.Recv == nil && fn.AST.Name.Name == "init" {
 			roots = append(roots, fn)
 		}
 	}
-	hash, names, decls, err := goDispatcherFingerprint(pkg, roots, table.Name)
+	hash, names, decls, err := goDispatcherFingerprint(pkg, roots, table.Name, table.MountName)
 	return goDispatcherPin{Table: pkg.Files[0].AST.Name.Name + "." + table.MountName, SHA256: hash, Functions: names, Declarations: decls}, err
 }
 
@@ -113,11 +113,15 @@ func goDispatcherName(fn *goFunc) string {
 // Imported package selectors are boundaries; no cross-package call is followed.
 // This can freeze extra same-package methods, but cannot miss a receiver helper
 // just because the syntax-only scanner could not infer its type.
-func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, rowVariable string) (string, []string, []string, error) {
+func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, rowVariable string, facadeNames ...string) (string, []string, []string, error) {
 	type declaration struct {
 		kind, name, key string
 		node            ast.Node
 		file            *goFile
+	}
+	counts, err := goDispatcherPackageNames(pkg)
+	if err != nil {
+		return "", nil, nil, err
 	}
 	specs := map[string]*declaration{}
 	for fileIndex, file := range pkg.Files {
@@ -216,6 +220,26 @@ func goDispatcherFingerprint(pkg *goPackage, roots []*goFunc, rowVariable string
 		}
 		inspect(fn.AST.Type, fn.File)
 		inspect(fn.AST.Body, fn.File)
+	}
+	// Name resolution maps are only an aid: never let a last-wins declaration
+	// or a writer elsewhere in the package become an authority for frozen inputs.
+	for fn := range seenFuncs {
+		name := goDispatcherName(fn)
+		if name != "init" && counts[name] > 1 {
+			return "", nil, nil, fmt.Errorf("duplicate frozen name %s at %s", name, goDispatcherLocation(fn.File, fn.AST))
+		}
+	}
+	for d := range seenSpecs {
+		for _, name := range strings.Split(d.name, ",") {
+			if name != "_" && counts[name] > 1 {
+				return "", nil, nil, fmt.Errorf("duplicate frozen name %s at %s", name, goDispatcherLocation(d.file, d.node))
+			}
+			if d.kind == "var" {
+				if err := goDispatcherVarAuthority(pkg, name, d.node.(*ast.GenDecl).Specs[0], d.file, facadeNames); err != nil {
+					return "", nil, nil, err
+				}
+			}
+		}
 	}
 	var decls []*declaration
 	for fn := range seenFuncs {

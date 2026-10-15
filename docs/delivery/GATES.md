@@ -432,11 +432,14 @@ The default base is `origin/r3/integration` (`CONTRACT_DRIFT_BASE` or `-base` ov
 
 Marked Go route tables additionally require the reviewed dispatcher freeze in
 `contracts/route-table-dispatchers.json`. The freeze includes transitively referenced
-same-package functions, const blocks, var/type specs; only row data and row-only
+same-package functions (including every package `init`), const blocks, var/type specs; only row data and row-only
 targets are excluded. Cross-package helpers (e.g. `command.ValidID`) are **NOT frozen**
 and are covered by normal review and other gates. Changed/missing dispatcher pins are
 fatal UNRESOLVED for every table row, independent of TOUCHED or legacy baseline;
-a pin for a table that cannot be proved is also an error. Pin hash/function-list/
+a pin for a table that cannot be proved is also an error. Frozen vars with outside
+writers/address escapes, exported frozen state other than the fieldless table facade,
+duplicate frozen names, or any build-constrained table-package file fail closed
+with a precise dispatcher ERROR. Pin hash/function-list/
 declaration-list changes require explicit independent reviewer approval, not automatic regeneration.
 The boundary and canonicalization are documented in
 [engineering/contractdrift.md](../engineering/contractdrift.md).

@@ -117,7 +117,10 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 		}
 		candidate, err := goTableDispatcherFingerprint(table, entries)
 		if err != nil {
-			s.dispatcherError(table.Ref, "cannot fingerprint dispatcher: "+err.Error(), "", "")
+			for _, row := range table.Routes {
+				s.dispatcherError(row.Locations[0], "cannot prove dispatcher "+candidate.Table+": "+err.Error(), row.Method, row.Path)
+			}
+			provedPins[candidate.Table] = true
 			continue
 		}
 		s.Out.Dispatchers = append(s.Out.Dispatchers, candidate)

@@ -14,7 +14,7 @@ explicit independent reviewer approval after reading the entire closure.**
 never generates or updates this file as part of passing a gate.
 
 The closure starts at the proven table-consuming HTTP dispatch function(s), both
-consumers and the table facade's receiver methods. From signatures and bodies it
+consumers, the table facade's receiver methods and every package `init` function. From signatures and bodies it
 follows every referenced same-package function, const block, var spec and type
 spec, recursively following references in those declarations too. Var initializers
 can pull functions into the closure; anonymous function source is part of its var
@@ -27,6 +27,22 @@ only by that data stays outside the closure. If any closure body also references
 the target directly (including fallback calls or stored aliases), its declaration
 and dependencies are frozen. The current buyer/feed rows carry kinds/method/path
 data, so their reached business helpers remain included.
+
+Before hashing, every non-test file in the table package must be independent of
+build selection: `//go:build`, legacy `// +build`, and OS/architecture filename
+suffixes fail closed, without evaluating tags. A frozen name declared twice also
+fails (method names are receiver-qualified; multiple `init` functions are legal
+and all are hashed). Last-wins lookup maps never establish proof.
+
+Every frozen package var must be private, except the marked table's documented
+fieldless facade value. The scanner checks all package files, including `init`,
+constructors and unreachable functions, for assignments (including indexed/field
+and range writes), increment/decrement, address-taking and builtin mutation or
+escape through append/copy/clear/delete outside the var's own declaration. Such a
+hit withholds all table rows and reports the variable, operation and file:line.
+Exported state is refused regardless of where another package could write it;
+only the fieldless facade has no writable dispatch state. Parser-bound local
+shadows are distinct from package variables.
 
 Each declaration is printed, re-tokenized without comments or original whitespace,
 and gofmt-normalized. Sort is stable by kind then name, with the full source key
@@ -51,9 +67,11 @@ This is reviewed change detection within the same-package declaration boundary,
 not complete static URL analysis or a runtime routing proof. **Cross-package
 helpers (e.g. `command.ValidID`) are NOT frozen** and are covered by normal review
 and other gates, including transport tests. Var initializer source is frozen;
-later runtime values are not a state snapshot. Reviewers must check the pin's
+later runtime values are not a state snapshot. This syntax gate does not model
+unsafe/reflection, mutation inside imported implementations or arbitrary alias
+effects. Those remain review and runtime-gate responsibilities. Reviewers must check the pin's
 closure, row targets and affected package contracts. Tests in
 `go_dispatcher_freeze_cli_test.go` anchor fixture hashes and cover declaration
 mutations, comments, data-only row targets, direct fallback targets, stored function
 values, generic names/determinism, missing/unprovable pins and untouched stale
-pins. See the Round 8 delivery for executed evidence and NOT_RUN gates.
+pins. See the Round 9 delivery for executed evidence and NOT_RUN gates.

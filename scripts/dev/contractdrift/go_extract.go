@@ -30,6 +30,8 @@ type goValue struct {
 }
 type goEnv []map[string]goValue
 type goFile struct {
+	Path        string
+	Set         *token.FileSet
 	ImportRefs  map[string]location
 	ImportPaths map[string]string
 	AST         *ast.File
@@ -94,7 +96,8 @@ func scanGo(root string) (inventory, error) {
 				p = &goPackage{Named: map[string]*goFunc{}, ByName: map[string][]*goFunc{}, Path: filepath.ToSlash(filepath.Dir(path)), Types: map[string][]string{}, Globals: goEnv{{}}, Routes: map[string]bool{}}
 				packages[key] = p
 			}
-			file := &goFile{AST: f, ImportRefs: map[string]location{}, ImportPaths: map[string]string{}}
+			rel, _ := filepath.Rel(root, path)
+			file := &goFile{Path: filepath.ToSlash(rel), Set: s.Set, AST: f, ImportRefs: map[string]location{}, ImportPaths: map[string]string{}}
 			for _, im := range f.Imports {
 				v, _ := strconv.Unquote(im.Path.Value)
 				alias := filepath.Base(v)
