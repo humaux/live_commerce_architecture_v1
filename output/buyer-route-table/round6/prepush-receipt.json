@@ -1,0 +1,19 @@
+{
+  "run_id": "buyer-route-r6-prepush-4eb31d7de",
+  "source_sha": "4eb31d7de3f948e452f96078075cb6384f410d67",
+  "command": [
+    "bash",
+    "output/integrator/tools/prepush.sh",
+    ".",
+    "e4dad98cc"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "started_at": "2026-10-15T10:07:33.865577+00:00",
+  "timeout_seconds": 180,
+  "mode": "STATIC_SOURCE_ONLY; Go tests NOT_RUN",
+  "exit": 0,
+  "finished_at": "2026-10-15T10:07:36.757109+00:00",
+  "elapsed_seconds": 2.892,
+  "stdout": "output/buyer-route-table/round6/prepush-report.txt",
+  "stderr": "output/buyer-route-table/round6/prepush-stderr.log"
+}

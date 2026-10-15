@@ -1,0 +1,14 @@
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:146 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:147 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:148 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:149 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:159 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:279 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:283 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:291 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:293 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:301 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:305 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:315 URL-derived use outside route-table allowlist
+ERROR (TOUCHED) UNRESOLVED   internal/buyerhttp/handler.go:388 URL-derived use outside route-table allowlist
+SUMMARY routes go=280 contract=165 bff=301; errors=106 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=81 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=16 GO_ONLY=200 METHOD_MISMATCH=4 UNRESOLVED=72

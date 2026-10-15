@@ -1,0 +1,9 @@
+{
+  "existing_extra_cases_unchanged": true,
+  "existing_extra_cases_count": 11,
+  "listed_policy_function_byte_identical": true,
+  "scripts/dev/contractdrift/go_extract_test.go_byte_identical": true,
+  "cmd/api/buyer.go_byte_identical": true,
+  "internal/buyerhttp/handler.go_byte_identical": true,
+  "source_sha": "4eb31d7de3f948e452f96078075cb6384f410d67"
+}

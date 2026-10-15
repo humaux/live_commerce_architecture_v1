@@ -1,3 +1,119 @@
+BLOCKED — Round 6 (last targeted attempt). Source `4eb31d7de3f948e452f96078075cb6384f410d67`. Real built CLI exit 1, errors=106, 21 TOUCHED findings. Implementation E1 only; no accepted E3 completion. Integrator arbitration required. STOP applied; no runtime edits, exemption, push, or further targeted repair.
+
+# BUYER-ROUTE-TABLE — Round 6 (2026-10-15)
+
+Branch/worktree: `unit/buyer-route-table`, `.worktrees/buyer-route-table`; existing PR #71.
+Starting HEAD `e0855512fd45164328b55fbdce63f0f89cc5ff62`; comparison base `e4dad98cc322d35709b475de25063efc92e5d866`.
+Coord `8569112d-4a60-4fd1-8763-78c6172f39ff`: BLOCKED (`input_required`).
+Executor: Codex, integration scope; actual model/effort identifiers are not independently exposed. No subagents.
+Ownership: `scripts/dev/contractdrift/**`, `output/buyer-route-table/**`; no runtime/schema/lockfile edits.
+Humaux problem: `7d5cafee-731f-467a-a111-be1b43a78a22`; own canvas updated; code index submitted for five changed Go files and linked to `goTablePathPolicy`.
+
+## Stop reason and exact uses
+
+The real branch CLI at the source SHA produced explicit `URL-derived use outside route-table allowlist` findings for:
+
+- `internal/buyerhttp/handler.go:279`: `strings.HasPrefix(path, "/v1/buyer/orders/")`.
+- `internal/buyerhttp/handler.go:283`: `strings.HasSuffix(path, suffix)`.
+- Both receive the URL-derived parameter through `handler.go:293`: `keylessPaymentPath(r.URL.Path)`.
+
+These real uses alone violate the required allowlist. They classify payment failures rather than add routes, but the ruling admits no purpose-based exception. Runtime code was left unchanged. No third targeted repair will be attempted.
+
+Other observed findings: `forbiddenInput` at lines 146–149/159 uses URL nil guards, the reverse canonical equality (`EscapedPath()==Path`), query/ForceQuery values and concatenated path constants; ServeHTTP has URL nil guards at 291/293/301. Full exact locations are in `round6/blocked-findings.txt`.
+
+Known conservative limitations also contribute findings: `r.Context()` at 305 is rejected as an unanalysed request method; the canonical refusal at 315 uses a local `fail` closure outside the currently proven refusal-call grammar; forwarding `r` to receiver method `h.dispatch` at 388 is unproven. These are recognizer limitations, not claims of runtime bugs. The exact feed table is also withheld: `internal/attribution/feed.go:133` tests `r.URL.RawQuery != ""`, outside the literal URL-use allowlist; its generic table/dispatcher findings are retained. The 106 errors include cascading missing-route/contract findings after the 48 buyer/feed table rows are withheld, not 106 independent bugs.
+
+Arbitration is required on the conflict between the specified URL-use policy and existing legitimate uses, plus the remaining proof limitations. The candidate scanner is not presented as accepted or fully validated.
+
+## Commits and preservation
+
+| Item | Commit | Change |
+| --- | --- | --- |
+| Counterexamples FIRST | `f94f55291` | Ten URL-derived rejected cases, listed-only helper positive, P2 boundary cases. |
+| Allowlist candidate | `1d5e17305` | Remove old denylist branches; add monotone local/parameter taint and allowed-parent checks. |
+| P2 constant folding | `e534c72af` | Drop len folding; retain explicit constants and simple arithmetic. |
+| Additional static boundary review | `4eb31d7de` | Apply policy to exact handler candidates and reject unproved request-method escapes. |
+
+`round6/preservation-audit.json` confirms all 11 original extra-path cases remain unchanged, the entire existing listed-policy positive is byte-identical, and `go_extract_test.go` (including TestGoRepositoryInventory), `cmd/api/buyer.go`, and `internal/buyerhttp/handler.go` are byte-identical to the starting HEAD. The refusal positive previously using len now uses `600-199`; its previous len shape is a new negative.
+
+## Allowlist table
+
+One comment block and one data variable: `scripts/dev/contractdrift/go_table_path_policy.go`, `goTableURLUseAllowlist`.
+
+| Allowed position | Proof / candidate behavior |
+| --- | --- |
+| Proven table path consumer argument | Plain identifier/URL-field argument; consumer body is the existing table-proof boundary. Transform calls do not qualify. |
+| == / != or switch equality with listed path | Constant string value must exactly equal one declared table path. Variables are not folded. |
+| Exact `r.URL.EscapedPath() != r.URL.Path` refusal | Same lexical request; exact if guard, recognised refusal call then return. Current recognised refusal call is imported `http.NotFound`. |
+| Analysed helper argument | Named local/imported function with parameter taint, analysed to fixed point. Every reached use is checked; derived returns/storage/unknown helpers reject. |
+| Request forwarding to proven leaf | Imported `http.NotFound` and analysed helper forwarding supported; dynamic handler/middleware/receiver forms remain UNRESOLVED when proof is unavailable. |
+
+Local variable assignment transfers provenance rather than sanitising it. Struct/global/blank stores, transformed values, URL method values, async uses and escaping URL-capturing closures reject. Immediate synchronous closures are inspected in their enclosing body; unknown closure-parameter forwarding rejects. Request Host and ordinary non-URL fields are outside URL taint. Request aliases preserve the source object. Stdlib type-field identity distinguishes URL fields from method values. The old path/string denylist was deleted; existing consumer/mount grammar remains a separate prerequisite.
+
+## Current built-CLI SUMMARY and gates
+
+Branch command: built `contractdrift -root <this-worktree> -base e4dad98cc`; receipt `round6/branch-receipt.json`, full output `round6/branch-report.txt`.
+
+```text
+SUMMARY routes go=280 contract=165 bff=301; errors=106 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=81 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=16 GO_ONLY=200 METHOD_MISMATCH=4 UNRESOLVED=72
+```
+
+Required #70 overlay (`cmd/api/buyer_payment.go` from pinned `51273344fc12ff4c8062634fdf749d536958bda7`): **NOT_RUN**, no SUMMARY exists this round. Owner's STOP condition triggered on the first real-repository scenario; no overlay checkout was created. See `round6/pay70-receipt.json`. Historical Round 5 green does not apply.
+
+| Check at source SHA `4eb31d7de` | Exit / result | Receipt |
+| --- | --- | --- |
+| `go build ./...` | 0 / E1 | `round6/build-receipt.json` |
+| `go vet ./...` | 0 / E1 | `round6/vet-receipt.json` |
+| `go build -o <round6>/contractdrift ./scripts/dev/contractdrift` | 0 / E1 | `round6/build-cli-receipt.json` |
+| `gofmt -l` all contractdrift Go files | 0, empty / E1 | `round6/gofmt-receipt.json` |
+| `bash output/integrator/tools/prepush.sh . e4dad98cc` | 0, `prepush: OK` / E1 | `round6/prepush-receipt.json` |
+| Real branch built CLI | 1, errors=106, TOUCHED=21 / acceptance FAIL | `round6/branch-receipt.json` |
+| #70 overlay built CLI | NOT_RUN after STOP | `round6/pay70-receipt.json` |
+
+The prepush tool was copied byte-for-byte from the existing integrator tool into the requested relative path, fingerprinted in `round6/prepush-tool.json`, then the task-owned copy was removed. Every invoked command has a timeout and start/end/exit receipt. No Go test command was run.
+
+## CI red map — prospective assertions, execution NOT_RUN
+
+All ten new URL negatives use `TestGoRouteTableExtraPathDispatchRejectedCLI`, assertion at `go_route_table_cli_test.go:172–173`: exit must be 1, UNRESOLVED present, GO_ROUTE_TABLE absent. Replacing this allowlist with the old denylist is expected to restore table coverage and trip that assertion for each row. This is source reasoning, not an observed red→green receipt.
+
+| New case | Source line | Old-denylist blind spot / red assertion |
+| --- | --- | --- |
+| local alias equality | 151 | Comparison sees p rather than r.URL.Path; common negative assertion 172–173. |
+| two assignment alias | 152 | No transitive alias provenance; common negative assertion. |
+| path parameter helper | 153 | Helper compares a parameter, caller has only an argument; common negative assertion. |
+| contains | 154 | Unknown string-function shape; common negative assertion. |
+| equal fold | 155 | Unknown string-function shape; common negative assertion. |
+| escaped path equality | 156 | URL method result omitted by direct-selector matcher; common negative assertion. |
+| URL string | 157 | URL method result omitted; common negative assertion. |
+| URL request URI | 158 | URL method result omitted; common negative assertion. |
+| URL opaque | 159 | URL field not in old direct-selector set; common negative assertion. |
+| struct field storage | 160 | Assignment not checked, comparison reads box.path; common negative assertion. |
+| listed-only helper positive | 194–203 | Positive control; exit0/no UNRESOLVED/GO_ROUTE_TABLE at 202–203. Old denylist also passes; this is not a negative mutation witness. |
+
+Existing `/prefix` and `/suffix` cases at 145–146 and their assertion remain unchanged; owner's CI run 38716294967 is the supplied historical red evidence, not a current green run.
+
+| P2 counterexample / positive | Assertion and regression |
+| --- | --- |
+| len outside ruling (145) | RefusalLeavesCLI negative 196–197 goes red if old len folding is restored and leaf becomes accepted. |
+| constant expression below400 (146, `600-400`) | Negative 196–197 guards range checking after arithmetic. Reverting only URL allowlist does not affect it. |
+| shadowed http (147) | Negative 196–197 guards import/object identity. |
+| shadowed httperror (148) | Negative 196–197 guards import/object identity. |
+| unlisted wrapper (149) | Negative 196–197 guards the narrow refusal wrapper grammar. |
+| arithmetic positive (`600-199`,144) | Positive 188–193 retains constant arithmetic acceptance. |
+
+## NOT_RUN, risks, handoff
+
+- All local Go tests, including TestGoRepositoryInventory and every new CLI counterexample: NOT_RUN by owner instruction. The inventory acceptance oracle is unchanged; no green claim is made.
+- Observed mutation red→green, CI, independent acceptance, REAL_PG, browser/runtime/release gates: NOT_RUN. New gate existence/complete allowlist soundness is not claimed from E1.
+- Pinned overlay scenario: NOT_RUN because the real branch hit the explicit STOP rule.
+- Conservative proof gaps are listed above; no runtime bug is inferred from them. Unknown forms stay UNRESOLVED. Do not merge this candidate without arbitration and independent acceptance.
+- No push, no external mutations, no runtime changes or new exemptions. Own binaries and copied tool removed; no fixture worktrees, containers, ports or pending local processes. See `round6/cleanup.json`.
+- Source hashes: `round6/source-hashes.json`; evidence hashes: `round6/evidence-hashes.json`. A subsequent evidence-only commit preserves these source hashes; SHA-bound CLI and static results apply only to those exact source bytes.
+
+---
+
+# Historical delivery below — superseded by Round 6 BLOCKED
+
 READY_FOR_CI — Round 5. Both required built-CLI scenarios: exit 0, errors=0, no TOUCHED. E1 build/vet; static acceptance only. Go tests, mutation red→green, CI and independent acceptance NOT_RUN.
 
 # BUYER-ROUTE-TABLE — Round 5 (2026-10-15)
