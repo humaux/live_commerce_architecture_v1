@@ -216,9 +216,9 @@ export function Tabs({
 }
 
 /** The panel of one tab; render it for the active tab only. */
-export function TabPanel({ idPrefix, id, children }: { idPrefix: string; id: string; children: ReactNode }) {
+export function TabPanel({ idPrefix, id, children, flush = false }: { idPrefix: string; id: string; children: ReactNode; flush?: boolean }) {
   return (
-    <div className={s.tabPanel} role="tabpanel" id={`${idPrefix}-panel-${id}`} aria-labelledby={`${idPrefix}-tab-${id}`} tabIndex={0}>
+    <div className={s.tabPanel} data-flush={flush || undefined} role="tabpanel" id={`${idPrefix}-panel-${id}`} aria-labelledby={`${idPrefix}-tab-${id}`} tabIndex={0}>
       {children}
     </div>
   );

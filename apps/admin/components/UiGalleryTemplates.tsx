@@ -169,7 +169,7 @@ function ProductForm({ t, params, update }: { t: TemplateCopy; params: TemplateP
     actions={<><Button disabledReason={!ready ? t.loading : saving ? t.saving : undefined} onClick={() => { if (dirty) setCancel(true); }}>{t.cancel}</Button><Button variant="primary" loading={saving} loadingLabel={t.saving} disabledReason={!ready ? t.loading : invalid ? t.invalid : !dirty ? t.noChanges : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
     <Stack>
       <Tabs idPrefix="product-sections" variant="section" value={params.section} onChange={section => update({ section })} ariaLabel={t.form} items={[{ id: "general", label: t.general }, { id: "media", label: t.media }, { id: "pricing", label: t.pricing }]} />
-      <TabPanel idPrefix="product-sections" id={params.section}>
+      <TabPanel idPrefix="product-sections" id={params.section} flush>
         {params.section === "general" && <Stack><FormGrid>
           <Field label={t.name} required help={t.nameHelp} error={nameError} counter={{ value: data.name, max: 80, format: (n, max) => `${n} / ${max}` }}>{control => <TextInput {...control} value={data.name} readOnly={saving || !ready} onChange={event => change("name", event.target.value)} />}</Field>
           <Field label={t.category}>{control => <Select {...control} value={data.category} disabled={saving || !ready} onChange={event => change("category", event.target.value)}><option value="bags">{t.bags}</option><option value="accessories">{t.accessories}</option></Select>}</Field>

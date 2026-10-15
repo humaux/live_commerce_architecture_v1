@@ -158,3 +158,5 @@
 }
 
 .tabPanel { min-width: 0; }
+/* An enclosing form card already owns the surface, border and field inset. */
+.tabPanel[data-flush="true"] { border: 0; padding: 0; }

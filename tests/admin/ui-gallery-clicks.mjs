@@ -958,8 +958,23 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       const panel = await area.getByRole("tabpanel").evaluate(n => ({ overflow: getComputedStyle(n).overflowY, height: n.clientHeight, scroll: n.scrollHeight })); // [READ]
       assert.equal(panel.overflow, "visible");
       assert.ok(panel.scroll <= panel.height + 1, "panel has no clipped content");
+      const panelEdges = await area.getByRole("tabpanel").evaluate(n => {
+        const style = getComputedStyle(n);
+        const content = n.closest('[data-form-content]').getBoundingClientRect();
+        const box = n.getBoundingClientRect();
+        return { border: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth].map(parseFloat), inset: [box.left - content.left, content.right - box.right], padding: parseFloat(getComputedStyle(n.closest('[data-form-content]')).paddingLeft) };
+      }); // [READ] no nested panel outline; one card-owned inset
+      assert.ok(panelEdges.border.every(width => width === 0), `nested panel border: ${JSON.stringify(panelEdges)}`);
+      assert.ok(panelEdges.inset.every(inset => Math.abs(inset - panelEdges.padding) <= 1), `panel is flush with the card content: ${JSON.stringify(panelEdges)}`);
       let boxes = await measure();
       const height = page.viewportSize().height;
+      const checkGap = async () => {
+        const next = await area.getByRole("region", { name: t.templates, exact: true }).boundingBox();
+        const gap = await area.evaluate(n => parseFloat(getComputedStyle(n).getPropertyValue("--ds-space-6"))); // [READ] documented section spacing
+        const edge = boxes.surface.y + boxes.surface.height > height ? boxes.surface.y + boxes.surface.height : boxes.bar.y + boxes.bar.height;
+        assert.ok(Math.abs(next.y - edge - gap) <= 1, `form-to-template gap=${next.y - edge}px, expected=${gap}px (no displaced footer band)`);
+      };
+      await checkGap();
       if (boxes.surface.y + boxes.surface.height > height) {
         assert.ok(Math.abs(boxes.bar.y + boxes.bar.height - height) <= 1, "footer docks at viewport bottom");
       }
@@ -971,6 +986,7 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       }
       assert.ok(boxes.surface.y + boxes.surface.height <= height, "form bottom reached by page scrolling");
       assert.ok(boxes.bar.y >= boxes.surface.y + boxes.surface.height - 1, `footer releases below the surface: ${JSON.stringify(boxes)}`);
+      await checkGap();
       await capture("form-released");
       const toggle = area.getByRole("switch", { name: t.enabled, exact: true });
       const original = await toggle.getAttribute("aria-checked");

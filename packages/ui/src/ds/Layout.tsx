@@ -159,17 +159,23 @@ export function FormActionBar({
 }) {
   const frame = useRef<HTMLDivElement>(null);
   const surface = useRef<HTMLDivElement>(null);
+  const footer = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const card = surface.current;
     const wrapper = frame.current;
-    if (!card || !wrapper) return;
+    const bottomBar = footer.current;
+    if (!card || !wrapper || !bottomBar) return;
     // CSS bottom:0 alone releases only after the footer's own height fits too. The card edge owns this boundary.
-    const release = () => { wrapper.dataset.footerReleased = String(card.getBoundingClientRect().bottom <= window.innerHeight); };
+    const release = () => {
+      wrapper.style.setProperty("--ds-control-footer-height", `${bottomBar.getBoundingClientRect().height}px`);
+      wrapper.dataset.footerReleased = String(card.getBoundingClientRect().bottom <= window.innerHeight);
+    };
     release();
     window.addEventListener("scroll", release, true);
     window.addEventListener("resize", release);
     const observer = new ResizeObserver(release);
     observer.observe(card);
+    observer.observe(bottomBar);
     return () => {
       window.removeEventListener("scroll", release, true);
       window.removeEventListener("resize", release);
@@ -179,7 +185,7 @@ export function FormActionBar({
   const activeState = state ?? (dirty ? "dirty" : "clean");
   const message = activeState === "saving" ? savingNote : activeState === "saved" ? savedNote : activeState === "dirty" ? dirtyNote : note;
   const bar = (position: "top" | "bottom") => (
-    <div data-state={activeState} className={`${s.bar} ${position === "top" ? s.barTop : s.barBottom}`} role="group" aria-label={label}>
+    <div ref={position === "bottom" ? footer : undefined} data-state={activeState} className={`${s.bar} ${position === "top" ? s.barTop : s.barBottom}`} role="group" aria-label={label}>
       <div className={`${s.barNote} ${dirty ? s.barDirty : ""}`} role={position === "bottom" ? "status" : undefined}>{message}</div>
       <div className={s.barControls}>{actions}</div>
     </div>

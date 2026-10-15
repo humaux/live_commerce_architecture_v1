@@ -130,6 +130,8 @@ a.kpi:hover { border-color: var(--ds-primary); box-shadow: var(--ds-shadow-2); }
 .cardHead { border-bottom: 1px solid var(--ds-border); }
 .cardFooter { padding: var(--ds-card-footer) var(--ds-card-header-inline); border-top: 1px solid var(--ds-border); }
 .formFrame { display: flow-root; min-width: 0; }
+/* Cancel only the displaced footer footprint. Once released, the visible footer occupies it again. */
+.formFrame[data-footer-released="false"] { margin-block-end: calc(-1 * var(--ds-control-footer-height)); }
 .formFrame[data-footer-released="true"] > .barBottom { bottom: auto; }
 /* Keep the footer's normal-flow footprint outside the white surface: sticky displacement must not leave an empty card. */
 .formSurface { border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md); background: var(--ds-surface); }
