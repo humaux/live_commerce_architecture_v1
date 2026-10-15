@@ -299,7 +299,7 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 	// Reconcile jobs become available only after the real query commits.
 	var reconcileIDs [2]int64
 	for i, q := range []pqFixture{first, second} {
-		if err := q.f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1 AND args->>'report_hash' IN (SELECT encode(report_hash,'hex') FROM payments.provider_observations WHERE attempt_id=$1 AND report->>'PaymentStatus'='paid')`, q.result.OperationID).Scan(&reconcileIDs[i]); err != nil {
+		if err := q.f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1 AND args->>'report_hash' IN (SELECT encode(report_hash,'hex') FROM payments.provider_observations WHERE attempt_id=$2::uuid AND report->>'PaymentStatus'='paid')`, q.result.OperationID, q.result.AttemptID).Scan(&reconcileIDs[i]); err != nil {
 			t.Fatal(err)
 		}
 		pwAwaitJob(t, q, reconcileIDs[i], "completed")
