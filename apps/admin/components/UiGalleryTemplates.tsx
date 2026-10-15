@@ -74,10 +74,10 @@ function ListTemplate({ locale, t, params, update, setNotice, created }: { creat
   const [confirm, setConfirm] = useState(false);
   const orders = [...Array.from({ length: created }, (_, i) => ({ id: 1025 + i, paid: false, amount: 360 })), ...ORDERS];
   const filtered = orders.filter(o => (params.payment === "paid" ? o.paid : params.payment === "unpaid" ? !o.paid : true) && (!query || `DEMO-${o.id}`.toLowerCase().includes(query.toLowerCase())));
-  const pageCount = Math.max(1, Math.ceil(filtered.length / 5));
+  const total = params.state === "empty" ? 0 : filtered.length;
+  const pageCount = Math.max(1, Math.ceil(total / 5));
   const page = Math.min(params.page, pageCount);
   const rows = params.state === "empty" ? [] : filtered.slice((page - 1) * 5, page * 5);
-  const total = params.state === "empty" ? 0 : filtered.length;
   const reset = () => { setQuery(""); setDraft(""); setSelection(clearSelection()); update({ payment: "all", state: "ready", page: 1 }); };
   const apply = () => {
     const target = bulkTarget(selection, `${params.payment}|${query}`, rows.map(o => String(o.id)));
@@ -111,7 +111,7 @@ function ListTemplate({ locale, t, params, update, setNotice, created }: { creat
         selectPage: t.selectPage, selectRow: n => `${t.row} ${n}`, selected: n => `${n} ${t.selected}`, pageOnly: t.pageOnly,
         allResults: n => `${t.allResults} (${n})`, selectAllResults: n => `${t.selectAll} (${n})`, clear: t.clear,
       } }} />
-    <Pagination page={page} pageCount={pageCount} hrefFor={n => queryFor({ ...params, page: n }) || "?"} labels={{ nav: t.paging, previous: t.previous, next: t.next, page: n => `${t.page} ${n}`, summary: `${total} ${t.filterSummary} · ${page} / ${pageCount}` }} />
+    {params.state === "ready" && <Pagination page={page} pageCount={pageCount} hrefFor={n => queryFor({ ...params, page: n }) || "?"} labels={{ nav: t.paging, previous: t.previous, next: t.next, page: n => `${t.page} ${n}`, summary: `${total} ${t.filterSummary} · ${page} / ${pageCount}` }} />}
     <ConfirmDialog open={confirm} title={t.bulkConfirm} description={t.bulkDesc} confirmLabel={t.confirm} cancelLabel={t.cancel} tone="primary" onConfirm={apply} onCancel={() => setConfirm(false)} />
     </Card>
   </Stack>;

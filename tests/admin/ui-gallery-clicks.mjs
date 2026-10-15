@@ -907,10 +907,13 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       await page.reload({ waitUntil: "load" });
       assert.equal(await area.getByLabel(t.state, { exact: true }).inputValue(), state);
       await capture(`list-${state}`);
+      // Loading/error carry no trustworthy count and empty has nothing to page: no pager (was "0 results · 1 / 2").
+      assert.equal(await area.getByRole("navigation", { name: t.paging, exact: true }).count(), 0, `no pager while ${state}`);
       if (state === "loading") { assert.equal(await area.locator('table[aria-busy="true"]').count(), 1); await area.getByLabel(t.state, { exact: true }).selectOption("ready"); }
       if (state === "error") { await seen(text(t.errorTitle)); await button(t.retry).click(); }
       if (state === "empty") { await seen(text(t.emptyTitle)); await button(t.reset).click(); }
       assert.equal(await area.locator("tbody tr[data-selected]").count(), 5);
+      await seen(area.getByRole("navigation", { name: t.paging, exact: true }));
     });
     await run("Order links", "click row View, back, click order number", "both links reach the detail template", async () => {
       await area.getByRole("link", { name: t.view, exact: true }).first().click();
