@@ -1,6 +1,6 @@
 # PAY-RM2 phase 2a delivery
 
-**Merged 2026-10-16 as 5492b7274 (PR #70, squash, head ed06573d3).** Full Gates run 38793980208: 81 pass / 1 skipped after one rerun of `--browser-studio-ui` (flake, root cause fixed in PR #75). Independent reviews APPROVE through ed06573d3 (output/pay-rm2-p2a/review-*.md). Phase 2b DROP migration is NOT_RUN and awaits the owner. The round sections below are historical.
+**Merged 2026-10-15 UTC as 5492b7274 (PR #70, squash, head ed06573d3).** Gates run 38793980208 green on attempt 2 (80 pass / 1 skipped `deploy`; Foundation run 38793979983 green); attempt 1 failed only `--browser-studio-ui` (flake; root-cause fix proposed in PR #75, open, not merged). Independent reviews APPROVE through ed06573d3 (output/pay-rm2-p2a/review-*.md). Phase 2b DROP migration is NOT_RUN and awaits the owner. The round sections below are historical.
 
 ## Round 3 — integrator ruling handoff (current)
 
@@ -561,7 +561,7 @@ Guarantees lost with the retired feature (feature-only, no equivalent needed): c
 
 Generic guarantees:
 - Process-side keyring open/refuse: partially covered by `TestStripeSP15Process` (tests/foundation/stripe_process_test.go:43). Its decrypt runs in-process; only the readiness probe runs as the built binary.
-- **Covered by follow-up (pending owner merge):** a successful idempotent write, replayed after a real API process restart, returns its stored receipt. Gate: `TestMerchantWriteReplayAfterAPIRestart` (tests/foundation/merchant_restart_replay_test.go, `--browser-identity`), PR #73 — CI 38763342871 green, independent review output/restart-replay-gate/review-d196e4beb.md APPROVE. Was NOT_COVERED until #73 merges: the studio restart test replays within one process, and the k3 idempotency tests are in-process.
+- **NOT_COVERED on r3/integration — gate ready in PR #73 (open, pending owner merge):** a successful idempotent write, replayed after a real API process restart, returns its stored receipt. Gate: `TestMerchantWriteReplayAfterAPIRestart` (tests/foundation/merchant_restart_replay_test.go, `--browser-identity`), PR #73 — CI 38763342871 green, independent review output/restart-replay-gate/review-d196e4beb.md APPROVE. Remains NOT_COVERED until #73 merges: the studio restart test replays within one process, and the k3 idempotency tests are in-process.
 - **Covered (merged de57e6fae, PR #74):** the live Stripe producer fails closed with a River client miswired to the expiry schema, writing no facts or River jobs — `TestStripeStartWrongRiverSchemaFailsClosed` (tests/foundation/stripe_wrong_schema_test.go). Replaces the retired PAYUNi starter's wrong-schema case (review-0617d49ef.md NOT_COVERED P2).
 
 Reviews: output/pay-rm2-p2a/review-b9cfe42cd.md (REQUEST CHANGES → addressed in the next commit).
