@@ -1,7 +1,7 @@
 // Purpose: declare the private buyer transport's complete method/path inventory once.
 // Depends on: net/http, strings and command's existing catalog ID validation.
 // Used by: handler.ServeHTTP (matchRoute/allowed) and the contractdrift AST scanner.
-// Invariants: Routes is read-only; first path match wins, no cleaning/redirects or HEAD aliases.
+// Invariants: private rows cannot escape; first path match wins, no cleaning/redirects or HEAD aliases.
 
 package buyerhttp
 
@@ -12,16 +12,19 @@ import (
 	"livecommerce/internal/command"
 )
 
-// Route binds a method and strict segment pattern to the existing service dispatch kind.
+// routeEntry binds a method and strict segment pattern to the existing service dispatch kind.
 // Parameter names select route fields; ID syntax is still checked after method validation.
-type Route struct {
+type routeEntry struct {
 	Method string
 	Path   string
 	kind   routeKind
 }
 
 // RouteTable owns both strict endpoint selection and interception of cleaning aliases.
-type RouteTable []Route
+type RouteTable struct{}
+
+// Routes exposes only namespace interception; row storage is private.
+var Routes = RouteTable{}
 
 // HasPrefix deliberately includes aliases such as /v1/buyer-extra, as mountBuyer
 // always did. The strict matcher rejects them without a credential-bearing redirect.
@@ -29,11 +32,11 @@ func (RouteTable) HasPrefix(path string) bool {
 	return strings.HasPrefix(path, "/v1/buyer")
 }
 
-// Routes is the complete buyerhttp inventory, in the original matching precedence.
-// Treat this exported table as immutable. Feed belongs to cmd/api.mountFeed, not this handler.
+// routeRows is the complete buyerhttp inventory, in the original matching precedence.
+// Feed belongs to cmd/api.mountFeed, not this handler.
 //
-//contractdrift:routes /v1/buyer matchRoute allowed
-var Routes = RouteTable{
+//contractdrift:routes /v1/buyer matchRoute allowed mount=Routes
+var routeRows = []routeEntry{
 	{Method: http.MethodGet, Path: "/v1/buyer/session", kind: sessionRoute},
 	{Method: http.MethodPost, Path: "/v1/buyer/session", kind: sessionRoute},
 	{Method: http.MethodDelete, Path: "/v1/buyer/session", kind: sessionRoute},
@@ -83,7 +86,7 @@ var Routes = RouteTable{
 }
 
 func matchRoute(path string) route {
-	for _, entry := range Routes {
+	for _, entry := range routeRows {
 		if selected, ok := matchPattern(entry, path); ok {
 			return selected
 		}
@@ -92,7 +95,7 @@ func matchRoute(path string) route {
 }
 
 func allowed(kind routeKind, method string) bool {
-	for _, entry := range Routes {
+	for _, entry := range routeRows {
 		if entry.kind == kind && entry.Method == method {
 			return true
 		}
@@ -101,7 +104,7 @@ func allowed(kind routeKind, method string) bool {
 }
 
 // matchPattern only splits literal segments. It never cleans or decodes a URL.
-func matchPattern(entry Route, path string) (route, bool) {
+func matchPattern(entry routeEntry, path string) (route, bool) {
 	pattern, segments := strings.Split(entry.Path, "/"), strings.Split(path, "/")
 	if len(pattern) != len(segments) {
 		return route{}, false

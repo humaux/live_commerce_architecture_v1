@@ -1,6 +1,6 @@
 // Purpose: GET /v1/buyer/feeds/meta.csv: the public Meta Commerce Manager product feed of the verified storefront host (image links per product-media-v2).
 // Depends on: ads.feed_rows, catalog.buyer_feed_images, catalog.buyer_feed_variant_images (migrations 0080/0082/0149); buyer.resolve_published_store.
-// Invariants: exact mount path and GET/HEAD allowance consume FeedRoutes; BFF authentication stays in mountFeed.
+// Invariants: exact mount path and GET/HEAD allowance consume private feedRows; BFF authentication stays in mountFeed.
 // Used by: cmd/api (mountFeed) via the storefront BFF app/feeds/meta.csv; tests/foundation/product_media_v2_test.go.
 
 package attribution
@@ -78,19 +78,22 @@ func writeFeed(w *csv.Writer, rows []feedRow) error {
 	return w.Error()
 }
 
-// FeedRoute is one method on the exact feed mount; bodies remain owned by FeedHandler.
-type FeedRoute struct {
+// feedRoute is one method on the exact feed mount; bodies remain owned by FeedHandler.
+type feedRoute struct {
 	Method string
 	Path   string
 }
 
 // FeedRouteTable is consumed by the exact-path mount and the handler method guard.
-type FeedRouteTable []FeedRoute
+type FeedRouteTable struct{}
 
-// FeedRoutes lists every method served at this exact path. It is immutable after initialization.
+// FeedRoutes exposes only exact-path interception; row storage is private.
+var FeedRoutes = FeedRouteTable{}
+
+// feedRows lists every method served at this exact path; it never escapes this package.
 //
-//contractdrift:routes /v1/buyer/feeds/meta.csv feedPathMatches feedMethodAllowed exact
-var FeedRoutes = FeedRouteTable{
+//contractdrift:routes /v1/buyer/feeds/meta.csv feedPathMatches feedMethodAllowed exact mount=FeedRoutes
+var feedRows = []feedRoute{
 	{Method: http.MethodGet, Path: "/v1/buyer/feeds/meta.csv"},
 	{Method: http.MethodHead, Path: "/v1/buyer/feeds/meta.csv"},
 }
@@ -100,7 +103,7 @@ var FeedRoutes = FeedRouteTable{
 func (FeedRouteTable) MatchesPath(path string) bool { return feedPathMatches(path) }
 
 func feedPathMatches(path string) bool {
-	for _, entry := range FeedRoutes {
+	for _, entry := range feedRows {
 		if entry.Path == path {
 			return true
 		}
@@ -109,7 +112,7 @@ func feedPathMatches(path string) bool {
 }
 
 func feedMethodAllowed(method string) bool {
-	for _, entry := range FeedRoutes {
+	for _, entry := range feedRows {
 		if entry.Method == method {
 			return true
 		}

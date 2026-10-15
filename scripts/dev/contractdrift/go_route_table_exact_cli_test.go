@@ -2,6 +2,7 @@
 // Depends on: real Git/CLI helpers and aligned fixtures; no HTTP server or test-only parser.
 // Used by: CI only for BUYER-ROUTE-TABLE round 2.
 // Invariants: no marker, partial consumption, bypassed guard and unrelated mounts stay unresolved.
+
 package main
 
 import (
@@ -13,21 +14,21 @@ import (
 const exactTableCLISource = `package router
 import "net/http"
 type entry struct { Method, Path string }
-type Table []entry
-//contractdrift:routes /v1/feed/meta.csv matchesPath allowedMethod exact
-var Routes = Table{
+type Table struct{}; var Routes = Table{}
+//contractdrift:routes /v1/feed/meta.csv matchesPath allowedMethod exact mount=Routes
+var rows = []entry{
  {Method: http.MethodGet, Path: "/v1/feed/meta.csv"},
  {Method: http.MethodHead, Path: "/v1/feed/meta.csv"},
 }
 func (Table) MatchesPath(path string) bool { return matchesPath(path) }
 func matchesPath(path string) bool {
- for _, entry := range Routes {
+ for _, entry := range rows {
   if entry.Path == path { return true }
  }
  return false
 }
 func allowedMethod(method string) bool {
- for _, entry := range Routes {
+ for _, entry := range rows {
   if entry.Method == method { return true }
  }
  return false
@@ -83,8 +84,8 @@ func TestGoRouteTableExactSplitResolvesCLI(t *testing.T) {
 
 func TestGoRouteTableExactInvalidStaysOpaqueCLI(t *testing.T) {
 	cases := []struct{ name, old, replacement string }{
-		{"no marker", "//contractdrift:routes /v1/feed/meta.csv matchesPath allowedMethod exact\n", ""},
-		{"unserved method tail", "range Routes {", "range Routes[:len(Routes)-1] {"},
+		{"no marker", "//contractdrift:routes /v1/feed/meta.csv matchesPath allowedMethod exact mount=Routes\n", ""},
+		{"unserved method tail", "range rows {", "range rows[:len(Routes)-1] {"},
 		{"different path", "Path: \"/v1/feed/meta.csv\"},", "Path: \"/v1/feed/other.csv\"},"},
 		{"bypassed method guard", "if !allowedMethod(r.Method)", "if r.Method != http.MethodPost && !allowedMethod(r.Method)"},
 		{"other path dispatcher", "w.WriteHeader(200)", "if r.URL.Path == \"/v1/feed/other\" { w.WriteHeader(204); return }; w.WriteHeader(200)"},

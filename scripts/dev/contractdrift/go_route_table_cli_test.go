@@ -15,21 +15,21 @@ const routeTableCLISource = `package router
 import ("net/http"; "strings")
 type entry struct { Method, Path, kind string }
 type route struct { kind string }
-type Table []entry
-//contractdrift:routes /v1/table match allowed
-var Routes = Table{
+type Table struct{}; var Routes = Table{}
+//contractdrift:routes /v1/table match allowed mount=Routes
+var rows = []entry{
  {Method: http.MethodGet, Path: "/v1/table/one", kind: "one"},
  {Method: http.MethodPost, Path: "/v1/table/{id}", kind: "item"},
 }
 func (Table) HasPrefix(path string) bool { return strings.HasPrefix(path,"/v1/table") }
 func match(path string) route {
- for _, e := range Routes {
+ for _, e := range rows {
   if selected, ok := pattern(e,path); ok { return selected }
  }
  return route{}
 }
 func allowed(kind, method string) bool {
- for _, e := range Routes {
+ for _, e := range rows {
   if e.kind == kind && e.Method == method { return true }
  }
  return false
@@ -100,7 +100,7 @@ func TestGoRouteTableUnservedTailRejectedCLI(t *testing.T) {
 	// The table still advertises the second entry, but the router never visits it.
 	// Full-range consumption is statically enforceable; arbitrary helper behavior
 	// is explicitly left to the buyer transport's differential runtime gate.
-	mustWrite(t, p, strings.Replace(routeTableCLISource, "range Routes {", "range Routes[:len(Routes)-1] {", 1))
+	mustWrite(t, p, strings.Replace(routeTableCLISource, "range rows {", "range rows[:len(Routes)-1] {", 1))
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "invalid or incompletely consumed contractdrift route table") || strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("unserved table entry became known: exit%d %s", code, out)
@@ -109,7 +109,7 @@ func TestGoRouteTableUnservedTailRejectedCLI(t *testing.T) {
 
 func TestGoCustomDispatchWithoutTableRemainsOpaqueCLI(t *testing.T) {
 	root, p := routeTableCLIFixture(t)
-	mustWrite(t, p, strings.Replace(routeTableCLISource, "//contractdrift:routes /v1/table match allowed\n", "", 1))
+	mustWrite(t, p, strings.Replace(routeTableCLISource, "//contractdrift:routes /v1/table match allowed mount=Routes\n", "", 1))
 	code, out := goReviewProcessCLI(t, root)
 	if code != 1 || !strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "SUMMARY routes go=1") || strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("unmarked custom router ceased being opaque: exit%d %s", code, out)
@@ -172,5 +172,45 @@ const listedPath = "/v1/table/one"
 	code, out := goReviewProcessCLI(t, root)
 	if code != 0 || strings.Contains(out, "UNRESOLVED") || !strings.Contains(out, "GO_ROUTE_TABLE") {
 		t.Fatalf("listed path policy unresolved: exit%d %s", code, out)
+	}
+}
+
+func TestGoRouteTableMutationRejectedCLI(t *testing.T) {
+	for _, exact := range []bool{false, true} {
+		t.Run(map[bool]string{false: "prefix", true: "exact"}[exact], func(t *testing.T) {
+			source := routeTableCLISource
+			root, p := routeTableCLIFixture(t)
+			if exact {
+				root, p = exactTableCLIFixture(t)
+				source = exactTableCLISource
+			}
+			mustWrite(t, p, source+`
+func mutate() { rows[0].Method = "DELETE" }
+`)
+			code, out := goReviewProcessCLI(t, root)
+			if code != 1 || !strings.Contains(out, "invalid or incompletely consumed contractdrift route table") || strings.Contains(out, "GO_ROUTE_TABLE") {
+				t.Fatalf("owning-package table write became known: exit%d %s", code, out)
+			}
+		})
+	}
+}
+
+// This source intentionally uses the old mutable exported slice shape. It is
+// rejected even when the write is in the importing package, outside the owner.
+func TestGoRouteTableExportedMutationRejectedCLI(t *testing.T) {
+	root, p := routeTableCLIFixture(t)
+	source := strings.Replace(routeTableCLISource, "type Table struct{}; var Routes = Table{}", "type Table []entry", 1)
+	source = strings.Replace(source, " mount=Routes", "", 1)
+	source = strings.ReplaceAll(source, "rows", "Routes")
+	source = strings.Replace(source, "var Routes = []entry{", "var Routes = Table{", 1)
+	mustWrite(t, p, source)
+	mustWrite(t, filepath.Join(root, "cmd/api/main.go"), routeTableMountSource+`
+func mutateImported() { router.Routes[0].Method = "DELETE" }
+`)
+	code, out := goReviewProcessCLI(t, root)
+	// RED if private rows/read-only facade recognition is reverted: this exported
+	// table again resolves despite the importing package's method write.
+	if code != 1 || !strings.Contains(out, "UNRESOLVED") || strings.Contains(out, "GO_ROUTE_TABLE") {
+		t.Fatalf("imported mutable table became known: exit%d %s", code, out)
 	}
 }

@@ -12,10 +12,13 @@ import (
 	"strings"
 )
 
-// Marker grammar (on a single package-level array/slice composite literal):
+// Marker grammar (on a private package-level array/slice composite literal):
 //
-//	//contractdrift:routes /namespace pathMatcher methodChecker
-//	var Routes = [...]NamedRoute{{Method: http.MethodGet, Path: "/namespace/{id}", ...}}
+//	//contractdrift:routes /namespace pathMatcher methodChecker mount=Routes
+//	var rows = [...]NamedRoute{{Method: http.MethodGet, Path: "/namespace/{id}", ...}}
+//
+// Routes must be a separate, fieldless struct value: its methods expose no rows.
+// An exported slice cannot be proven immutable by an owning-package write scan.
 //
 // Method/Path must each resolve to one string; parameters occupy whole segments.
 // Both named consumers must consist of a FULL range over this table plus a closed
@@ -36,6 +39,7 @@ type goRouteTable struct {
 	Package      *goPackage
 	Name, Prefix string
 	TypeName     string
+	MountName    string
 	Exact        bool
 	Consumers    []*goFunc
 	Routes       []route
@@ -139,6 +143,11 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 
 func (s *goScanner) readRouteTable(gd *ast.GenDecl, fields []string) (goRouteTable, bool) {
 	table := goRouteTable{Package: s.Package, Ref: s.loc(gd)}
+	if len(fields) < 5 || !strings.HasPrefix(fields[len(fields)-1], "mount=") {
+		return table, false
+	}
+	table.MountName = strings.TrimPrefix(fields[len(fields)-1], "mount=")
+	fields = fields[:len(fields)-1]
 	table.Exact = len(fields) == 5 && fields[4] == "exact"
 	if (len(fields) != 4 && !table.Exact) || fields[0] != "//contractdrift:routes" || !strings.HasPrefix(fields[1], "/") || len(gd.Specs) != 1 {
 		return table, false
@@ -149,13 +158,19 @@ func (s *goScanner) readRouteTable(gd *ast.GenDecl, fields []string) (goRouteTab
 		return table, false
 	}
 	table.Name = vs.Names[0].Name
+	if ast.IsExported(table.Name) {
+		return table, false // another package could mutate an exported row slice
+	}
+	table.TypeName = goTableMountType(s.Package, table.MountName)
+	if table.TypeName == "" {
+		return table, false
+	}
 	lit, ok := vs.Values[0].(*ast.CompositeLit)
 	if !ok {
 		return table, false
 	}
 	array, ok := lit.Type.(*ast.ArrayType)
 	if named, namedOK := lit.Type.(*ast.Ident); namedOK {
-		table.TypeName = named.Name
 		for _, file := range s.Package.Files {
 			for _, decl := range file.AST.Decls {
 				if gd, yes := decl.(*ast.GenDecl); yes {
@@ -232,6 +247,42 @@ func (s *goScanner) readRouteTable(gd *ast.GenDecl, fields []string) (goRouteTab
 		}
 	}
 	return table, true
+}
+
+// A zero-field struct literal carries no slice, pointer, alias or mutable row
+// state. Reassigning its exported value cannot change the private inventory.
+func goTableMountType(pkg *goPackage, name string) string {
+	if !ast.IsExported(name) {
+		return ""
+	}
+	types := map[string]bool{}
+	values := map[string]string{}
+	for _, file := range pkg.Files {
+		for _, decl := range file.AST.Decls {
+			if gd, ok := decl.(*ast.GenDecl); ok {
+				for _, spec := range gd.Specs {
+					switch node := spec.(type) {
+					case *ast.TypeSpec:
+						if st, ok := node.Type.(*ast.StructType); ok && len(st.Fields.List) == 0 && !node.Assign.IsValid() {
+							types[node.Name.Name] = true
+						}
+					case *ast.ValueSpec:
+						if gd.Tok == token.VAR && len(node.Names) == 1 && len(node.Values) == 1 {
+							if lit, ok := node.Values[0].(*ast.CompositeLit); ok && len(lit.Elts) == 0 {
+								if typ, ok := lit.Type.(*ast.Ident); ok {
+									values[node.Names[0].Name] = typ.Name
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if typ := values[name]; types[typ] {
+		return typ
+	}
+	return ""
 }
 
 func goTablePattern(path string) bool {
@@ -486,7 +537,7 @@ func (s *goScanner) tableMountCall(fn *goFunc, call *ast.CallExpr, table goRoute
 		return false
 	}
 	variable, ok := method.X.(*ast.SelectorExpr)
-	if !ok || variable.Sel.Name != table.Name {
+	if !ok || variable.Sel.Name != table.MountName {
 		return false
 	}
 	pkg, ok := variable.X.(*ast.Ident)

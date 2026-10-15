@@ -1,7 +1,8 @@
 // Purpose: CI gates for table consumption, strict transport rejection and legacy equivalence.
-// Depends on: Routes, a frozen pre-table matcher and httperror's normal response envelope.
+// Depends on: private routeRows, a frozen pre-table matcher and httperror's normal response envelope.
 // Used by: buyerhttp CI; no database, browser, server or production authority.
 // Invariant: the table cannot add/lose a method or alter path precedence unnoticed.
+
 package buyerhttp
 
 import (
@@ -19,11 +20,11 @@ func routeSample(pattern string) string {
 }
 
 func TestRouteTableEntriesAreDispatched(t *testing.T) {
-	if len(Routes) != 46 {
-		t.Fatalf("inventory changed: %d entries", len(Routes))
+	if len(routeRows) != 46 {
+		t.Fatalf("inventory changed: %d entries", len(routeRows))
 	}
 	seen := map[string]bool{}
-	for _, entry := range Routes {
+	for _, entry := range routeRows {
 		t.Run(entry.Method+" "+entry.Path, func(t *testing.T) {
 			key := entry.Method + " " + entry.Path
 			if seen[key] {
@@ -61,7 +62,7 @@ func TestRouteTableUnknownPathStill404(t *testing.T) {
 
 func TestRouteTableMatchesLegacy(t *testing.T) {
 	paths := map[string]bool{"/v1/buyer": true, "/v1/buyer/": true, "/v1/buyer/not-listed": true}
-	for _, entry := range Routes {
+	for _, entry := range routeRows {
 		path := routeSample(entry.Path)
 		for _, p := range []string{path, path + "/", path + "/extra", strings.Replace(path, "/v1/buyer/", "/v1//buyer/", 1),
 			strings.Replace(path, "/v1/buyer/", "/v1/buyer/../buyer/", 1)} {
