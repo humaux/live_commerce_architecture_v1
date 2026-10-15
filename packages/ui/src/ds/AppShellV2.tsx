@@ -1,5 +1,5 @@
 // Purpose: Owns AppShellV2, the redesigned admin frame: dark sidebar with the nine NEEDS section 1 groups (collapsible second level), store card, topbar (locale, help, notifications, enter-my-store, account), breadcrumb slot and a mobile drawer below 768 px. Not switched on for any page yet.
-// Depends on: react, ./shell2.module.css, ./logic (initialOpenGroups); no API, routing, permissions or translation: nav data, copy and slots are props.
+// Depends on: React, shared Icon/Controls, ./shell2.module.css, ./logic (initialOpenGroups); no API, routing, permissions or translation: nav data, copy and slots are props.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx (the W3 page migration will mount it).
 "use client";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
@@ -82,7 +82,8 @@ export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded
   useEffect(() => {
     try {
       const saved: unknown = JSON.parse(sessionStorage.getItem(persistenceKey) ?? "null");
-      if (Array.isArray(saved)) setExpanded(new Set([...saved.filter((id): id is string => typeof id === "string" && nav.some(g => g.id === id)), ...initialOpenGroups(nav, currentId)]));
+      // Honor both expanded and explicitly collapsed groups; the active group is only the first-visit default.
+      if (Array.isArray(saved)) setExpanded(new Set(saved.filter((id): id is string => typeof id === "string" && nav.some(g => g.id === id))));
     } catch { /* Navigation remains usable when storage is unavailable. */ }
   }, [persistenceKey, nav, currentId]);
   const drawer = useRef<HTMLElement>(null);

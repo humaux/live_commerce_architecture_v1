@@ -1,5 +1,5 @@
-// Purpose: Owns ConfirmDialog, the DS-1 second-step confirmation (native modal dialog, optional typed-confirm phrase) for refunds, deletes, bulk-over-all-results and ending a live.
-// Depends on: react, ./dialog.module.css, ./Controls (Button), ./logic (typedConfirmMatches); no API or translation.
+// Purpose: Owns ConfirmDialog, the DS-2 second-step confirmation (native modal dialog, optional typed-confirm phrase) for refunds, deletes, bulk-over-all-results and ending a live.
+// Depends on: React, ./dialog.module.css, ./Controls (Button), ./logic (typedConfirmMatches); no API or translation.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
 import { useEffect, useId, useRef, useState } from "react";

@@ -1,5 +1,5 @@
-// Purpose: Owns the DS-1 interactive primitives: Button (disabled-with-reason, loading), ButtonLink, SegmentedSwitch, Tabs, Badge, StatusPill, Alert. All copy arrives through props.
-// Depends on: react, ./controls.module.css, ./logic (button state, status families); no API, routing or translation.
+// Purpose: Owns the DS-2 interactive primitives: Button (disabled-with-reason, loading), ButtonLink, SegmentedSwitch, Tabs, Badge, StatusPill, Alert. All copy arrives through props.
+// Depends on: React, Icon, ./controls.module.css and ./logic; no API, routing or translation.
 // Used by: packages/ui/src/ds/index.ts and the other ds components; apps/admin/components/UiGallery.tsx.
 "use client";
 import {

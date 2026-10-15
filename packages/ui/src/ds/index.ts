@@ -1,4 +1,4 @@
-// Purpose: Public entry of the admin design system (DS-1), imported as "@live-commerce/ui/ds"; loads the tokens and re-exports every component and pure rule.
+// Purpose: Public entry of the admin design system (DS-2), imported as "@live-commerce/ui/ds"; loads the tokens and re-exports every component and pure rule.
 // Depends on: ../tokens.css and the ds components/logic in this folder.
 // Used by: apps/admin/components/UiGallery.tsx now; the W3 page migrations next. A separate entry because PageHeader and Badge share names with the legacy exports of "@live-commerce/ui".
 import "../tokens.css";

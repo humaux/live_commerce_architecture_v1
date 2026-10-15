@@ -1,5 +1,5 @@
-// Purpose: Owns the DS-1 list pattern: DataTable (selection with page/all-results scope, thumbnail cell, row actions with one primary at most, empty/loading/error rows), MenuButton, FilterBar controls and URL-friendly Pagination.
-// Depends on: react, ./data.module.css, ./Controls (Button), ./logic (selection, row actions, page window); no API, routing or translation.
+// Purpose: Owns the DS-2 list pattern: DataTable (selection with page/all-results scope, thumbnail cell, row actions with one primary at most, empty/loading/error rows), MenuButton, FilterBar controls and URL-friendly Pagination.
+// Depends on: React, shared Icon/Controls, ./data.module.css, ./Controls (Button), ./logic (selection, row actions, page window); no API, routing or translation.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
 import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from "react";
@@ -61,10 +61,15 @@ export function MenuButton({
   const reposition = () => {
     const box = trigger.current?.getBoundingClientRect();
     if (!box) return;
-    setPlace({ position: "fixed", top: box.bottom + 4, ...(align === "end" ? { left: "auto", right: window.innerWidth - box.right } : { right: "auto", left: box.left }) });
+    const height = list.current?.offsetHeight ?? Math.min(window.innerHeight * 0.6, items.length * 44 + 8);
+    const width = list.current?.offsetWidth ?? 220;
+    const up = window.innerHeight - box.bottom < height + 8 && box.top > height;
+    const left = Math.max(16, Math.min(align === "end" ? box.right - width : box.left, window.innerWidth - width - 16));
+    setPlace({ position: "fixed", left, right: "auto", ...(up ? { top: "auto", bottom: window.innerHeight - box.top + 4 } : { top: box.bottom + 4, bottom: "auto" }) });
   };
   useEffect(() => {
     if (!open) return;
+    reposition();
     const away = (event: Event) => {
       if (!wrap.current?.contains(event.target as Node)) setOpen(false);
     };
@@ -86,7 +91,7 @@ export function MenuButton({
     };
     // reposition only reads refs and align
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, align]);
+  }, [open, align, items.length]);
   return (
     <span className={s.menuWrap} ref={wrap} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false); }}>
       <Button

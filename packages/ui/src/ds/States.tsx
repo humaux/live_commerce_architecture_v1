@@ -1,5 +1,5 @@
-// Purpose: Owns the DS-1 state blocks (Empty, Error, Permission, Blocked: each with reason and next step) and the Dropzone that shows format and size limits before any upload.
-// Depends on: react, ./states.module.css, ./Controls (Button), ./logic (fileProblem); no API, routing or translation.
+// Purpose: Owns the DS-2 state blocks (Empty, Error, Permission, Blocked: each with reason and next step) and the Dropzone that shows format and size limits before any upload.
+// Depends on: React, shared Icon/Controls, ./states.module.css, ./Controls (Button), ./logic (fileProblem); no API, routing or translation.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
 import { useId, useRef, useState, type DragEvent, type ReactNode } from "react";
@@ -230,8 +230,8 @@ export function Dropzone({
 
 export type UploadItem = { id: string; name: string; src?: string; status: "uploading" | "error" | "done"; progress: number; error?: string };
 /** Controlled upload queue: the caller owns real transport, cancellation and retries; this component never fabricates success. */
-export function UploadGrid({ items, label, removeLabel, retryLabel, progressLabel, doneLabel, onRemove, onRetry }: {
-  items: readonly UploadItem[]; label: string; removeLabel: (name: string) => string; retryLabel: (name: string) => string;
+export function UploadGrid({ items, label, removeLabel, retryLabel, progressLabel, doneLabel, onRemove, onRetry, disabledReason }: {
+  disabledReason?: string; items: readonly UploadItem[]; label: string; removeLabel: (name: string) => string; retryLabel: (name: string) => string;
   progressLabel: (progress: number) => string; doneLabel: string; onRemove: (id: string) => void; onRetry: (id: string) => void;
 }) {
   return <ul className={s.uploadGrid} aria-label={label}>{items.map(item => <li key={item.id} className={s.uploadItem}>
@@ -240,7 +240,7 @@ export function UploadGrid({ items, label, removeLabel, retryLabel, progressLabe
     {item.status === "uploading" && <><progress max={100} value={item.progress} aria-label={progressLabel(item.progress)} /><span role="status">{progressLabel(item.progress)}</span></>}
     {item.status === "error" && <span className={s.uploadError} role="alert">{item.error}</span>}
     {item.status === "done" && <span role="status">{doneLabel}</span>}
-    <div className={s.dropActions}>{item.status === "error" && <Button size="sm" onClick={() => onRetry(item.id)}>{retryLabel(item.name)}</Button>}
-      <Button size="sm" variant="ghost" aria-label={removeLabel(item.name)} onClick={() => onRemove(item.id)}><Icon name="close" size={16} /></Button></div>
+    <div className={s.dropActions}>{item.status === "error" && <Button size="sm" disabledReason={disabledReason} onClick={() => onRetry(item.id)}>{retryLabel(item.name)}</Button>}
+      <Button size="sm" disabledReason={disabledReason} variant="ghost" aria-label={removeLabel(item.name)} onClick={() => onRemove(item.id)}><Icon name="close" size={16} /></Button></div>
   </li>)}</ul>;
 }

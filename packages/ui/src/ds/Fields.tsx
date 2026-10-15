@@ -37,9 +37,9 @@ export function NumberInput({ unit, ...props }: Omit<InputHTMLAttributes<HTMLInp
 export function Checkbox({ label, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { label: string }) {
   return <label className={s.choice}><input {...props} type="checkbox" />{label}</label>;
 }
-export function RadioGroup({ label, options, value, onChange, help }: { label: string; options: readonly { value: string; label: string }[]; value: string; onChange: (value: string) => void; help?: string }) {
+export function RadioGroup({ label, options, value, onChange, help, disabled = false }: { label: string; options: readonly { value: string; label: string }[]; value: string; onChange: (value: string) => void; help?: string; disabled?: boolean }) {
   const name = useId();
-  return <fieldset className={s.radio} aria-describedby={help ? `${name}-help` : undefined}><legend>{label}</legend>
+  return <fieldset disabled={disabled} className={s.radio} aria-describedby={help ? `${name}-help` : undefined}><legend>{label}</legend>
     <div className={s.choices}>{options.map(o => <label key={o.value} className={s.choice}><input type="radio" name={name} value={o.value} checked={value === o.value} onChange={() => onChange(o.value)} />{o.label}</label>)}</div>
     {help && <p id={`${name}-help`} className={s.help}>{help}</p>}
   </fieldset>;

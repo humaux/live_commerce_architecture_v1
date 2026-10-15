@@ -1,5 +1,5 @@
-// Purpose: Owns the DS-1 page-structure components: Card, HelpHint, PageHeader, FormSection, ActionBars, SettingsLayout, KpiCard. Copy arrives through props only.
-// Depends on: react, ./layout.module.css; no API, routing or translation.
+// Purpose: DS-2 cards, page/form/detail/settings layout, KPI and timeline; caller owns copy and business state.
+// Depends on: React, Icon and ./layout.module.css; no API, routing or translation.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
 import { useId, useState, type ReactNode } from "react";
@@ -40,7 +40,7 @@ export function Card({
 }: {
   title?: ReactNode;
   level?: Level;
-  /** Small grey text next to the title, e.g. the "0 / 12" counter. */
+  /** Named section metadata. Field character counters belong to Field rather than this slot. */
   meta?: ReactNode;
   actions?: ReactNode;
   help?: { label: string; content: ReactNode };
@@ -77,7 +77,7 @@ export function Card({
   );
 }
 
-/** A form section: a Card whose title carries the help "?" and the field counter. */
+/** A form section: Card title and optional contextual help; fields own their individual labels and counters. */
 export function FormSection(props: Omit<Parameters<typeof Card>[0], "flush">) {
   return <Card {...props} />;
 }

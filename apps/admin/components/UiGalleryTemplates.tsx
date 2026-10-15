@@ -158,22 +158,22 @@ function ProductForm({ t, params, update }: { t: TemplateCopy; params: TemplateP
   }, [dirty]);
   const state = saving ? "saving" : dirty ? "dirty" : done ? "saved" : "clean";
   return <FormActionBar label={t.action} state={state} dirty={dirty} note={t.clean} dirtyNote={t.dirty} savingNote={t.saving} savedNote={t.saved}
-    actions={<><Button disabledReason={saving ? t.saving : undefined} onClick={() => { if (dirty) setCancel(true); }}>{t.cancel}</Button><Button variant="primary" loading={saving} loadingLabel={t.saving} disabledReason={!ready ? t.loading : invalid ? t.invalid : !dirty ? t.noChanges : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
+    actions={<><Button disabledReason={!ready ? t.loading : saving ? t.saving : undefined} onClick={() => { if (dirty) setCancel(true); }}>{t.cancel}</Button><Button variant="primary" loading={saving} loadingLabel={t.saving} disabledReason={!ready ? t.loading : invalid ? t.invalid : !dirty ? t.noChanges : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
     <Stack>
       <Tabs idPrefix="product-sections" variant="section" value={params.section} onChange={section => update({ section })} ariaLabel={t.form} items={[{ id: "general", label: t.general }, { id: "media", label: t.media }, { id: "pricing", label: t.pricing }]} />
       <TabPanel idPrefix="product-sections" id={params.section}>
         {params.section === "general" && <Stack><FormGrid>
-          <Field label={t.name} required help={t.nameHelp} error={nameError} counter={{ value: data.name, max: 80, format: (n, max) => `${n} / ${max}` }}>{control => <TextInput {...control} value={data.name} readOnly={saving} onChange={event => change("name", event.target.value)} />}</Field>
-          <Field label={t.category}>{control => <Select {...control} value={data.category} disabled={saving} onChange={event => change("category", event.target.value)}><option value="bags">{t.bags}</option><option value="accessories">{t.accessories}</option></Select>}</Field>
-        </FormGrid><Field label={t.description} help={t.descriptionHelp} counter={{ value: data.description, max: 500, format: (n, max) => `${n} / ${max}` }}>{control => <Textarea {...control} value={data.description} readOnly={saving} onChange={event => change("description", event.target.value)} />}</Field>
-          <Checkbox label={t.visible} checked={data.visible} disabled={saving} onChange={event => change("visible", event.target.checked)} />
-          <RadioGroup disabled={saving} label={t.channel} value={data.channel} onChange={value => { if (!saving) change("channel", value); }} options={[{ value: "online", label: t.online }, { value: "live", label: t.live }]} />
-          <Inline><span>{t.enabled}</span><SegmentedSwitch label={t.enabled} checked={data.enabled} onChange={value => change("enabled", value)} onLabel={t.yes} offLabel={t.no} disabledReason={saving ? t.saving : undefined} /></Inline>
+          <Field label={t.name} required help={t.nameHelp} error={nameError} counter={{ value: data.name, max: 80, format: (n, max) => `${n} / ${max}` }}>{control => <TextInput {...control} value={data.name} readOnly={saving || !ready} onChange={event => change("name", event.target.value)} />}</Field>
+          <Field label={t.category}>{control => <Select {...control} value={data.category} disabled={saving || !ready} onChange={event => change("category", event.target.value)}><option value="bags">{t.bags}</option><option value="accessories">{t.accessories}</option></Select>}</Field>
+        </FormGrid><Field label={t.description} help={t.descriptionHelp} counter={{ value: data.description, max: 500, format: (n, max) => `${n} / ${max}` }}>{control => <Textarea {...control} value={data.description} readOnly={saving || !ready} onChange={event => change("description", event.target.value)} />}</Field>
+          <Checkbox label={t.visible} checked={data.visible} disabled={saving || !ready} onChange={event => change("visible", event.target.checked)} />
+          <RadioGroup disabled={saving || !ready} label={t.channel} value={data.channel} onChange={value => { if (!saving) change("channel", value); }} options={[{ value: "online", label: t.online }, { value: "live", label: t.live }]} />
+          <Inline><span>{t.enabled}</span><SegmentedSwitch label={t.enabled} checked={data.enabled} onChange={value => change("enabled", value)} onLabel={t.yes} offLabel={t.no} disabledReason={!ready ? t.loading : saving ? t.saving : undefined} /></Inline>
         </Stack>}
-        {params.section === "media" && <GalleryUpload t={t} value={data.images} onChange={value => change("images", value)} disabled={saving} />}
+        {params.section === "media" && <GalleryUpload t={t} value={data.images} onChange={value => change("images", value)} disabled={saving || !ready} />}
         {params.section === "pricing" && <FormGrid>
-          <Field label={t.price} required error={priceError} width="md">{control => <NumberInput {...control} unit="NT$" min="0" step="0.01" value={data.price} readOnly={saving} onChange={event => change("price", event.target.value)} />}</Field>
-          <Field label={t.inventory} required error={stockError} width="sm">{control => <TextInput {...control} type="number" min="0" step="1" value={data.stock} readOnly={saving} onChange={event => change("stock", event.target.value)} />}</Field>
+          <Field label={t.price} required error={priceError} width="md">{control => <NumberInput {...control} unit="NT$" min="0" step="0.01" value={data.price} readOnly={saving || !ready} onChange={event => change("price", event.target.value)} />}</Field>
+          <Field label={t.inventory} required error={stockError} width="sm">{control => <TextInput {...control} type="number" min="0" step="1" value={data.stock} readOnly={saving || !ready} onChange={event => change("stock", event.target.value)} />}</Field>
         </FormGrid>}
       </TabPanel>
       <ConfirmDialog open={cancel} title={t.cancelConfirm} confirmLabel={t.discard} cancelLabel={t.cancel} onCancel={() => setCancel(false)} onConfirm={() => { setData(saved); setCancel(false); }} />
@@ -225,7 +225,7 @@ export function GalleryUpload({ t, value, onChange, disabled = false }: { t: Tem
   </Stack>;
 }
 function SettingsTemplate({ t, params }: { t: TemplateCopy; params: TemplateParams }) {
-  const [saved, persist] = useGalleryRecord("ds2-settings", { name: "Demo store", currency: "TWD", timezone: "Asia/Taipei", notices: false });
+  const [saved, persist, ready] = useGalleryRecord("ds2-settings", { name: "Demo store", currency: "TWD", timezone: "Asia/Taipei", notices: false });
   const [data, setData] = useState(saved);
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -246,12 +246,12 @@ function SettingsTemplate({ t, params }: { t: TemplateCopy; params: TemplatePara
   const current = params.setting === "notices" ? "notices" : "profile";
   return <SettingsLayout navLabel={t.nav} current={current} groups={[{ id: "store", title: t.config, items: [{ id: "profile", label: t.storeProfile, href: "?setting=profile" }, { id: "notices", label: t.notices, href: "?setting=notices" }] }]}>
     <FormActionBar label={t.action} dirty={dirty} state={saving ? "saving" : dirty ? "dirty" : done ? "saved" : "clean"} note={t.clean} dirtyNote={t.dirty} savingNote={t.saving} savedNote={t.saved}
-      actions={<><Button disabledReason={saving ? t.saving : undefined} onClick={() => { setData(saved); setDone(false); }}>{t.cancel}</Button><Button variant="primary" loading={saving} disabledReason={!data.name.trim() ? t.invalid : !dirty ? t.noChanges : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
+      actions={<><Button disabledReason={saving ? t.saving : undefined} onClick={() => { setData(saved); setDone(false); }}>{t.cancel}</Button><Button variant="primary" loading={saving} disabledReason={!ready ? t.loading : !data.name.trim() ? t.invalid : !dirty ? t.noChanges : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
       <Stack><h2>{current === "profile" ? t.storeProfile : t.notices}</h2>
-        {current === "profile" ? <Stack><Field label={t.storeName} required width="lg" error={data.name.trim() ? undefined : t.required} counter={{ value: data.name, max: 80, format: (n, max) => `${n} / ${max}` }}>{control => <TextInput {...control} value={data.name} readOnly={saving} onChange={event => { setData({ ...data, name: event.target.value }); setDone(false); }} />}</Field>
-          <FormGrid><Field label={t.currency} help={t.currencyHelp}>{control => <Select {...control} value={data.currency} disabled={saving} onChange={event => { setData({ ...data, currency: event.target.value }); setDone(false); }}><option value="TWD">TWD · NT$</option><option value="USD">USD · US$</option></Select>}</Field>
-            <Field label={t.timezone} help={t.tzHelp}>{control => <Select {...control} value={data.timezone} disabled={saving} onChange={event => { setData({ ...data, timezone: event.target.value }); setDone(false); }}><option value="Asia/Taipei">Asia/Taipei · UTC+8</option><option value="UTC">UTC</option></Select>}</Field></FormGrid></Stack>
-          : <><Checkbox label={t.emailNotices} checked={data.notices} disabled={saving} onChange={event => { setData({ ...data, notices: event.target.checked }); setDone(false); }} /><p>{t.noticesHelp}</p></>}
+        {current === "profile" ? <Stack><Field label={t.storeName} required width="lg" error={data.name.trim() ? undefined : t.required} counter={{ value: data.name, max: 80, format: (n, max) => `${n} / ${max}` }}>{control => <TextInput {...control} value={data.name} readOnly={saving || !ready} onChange={event => { setData({ ...data, name: event.target.value }); setDone(false); }} />}</Field>
+          <FormGrid><Field label={t.currency} help={t.currencyHelp}>{control => <Select {...control} value={data.currency} disabled={saving || !ready} onChange={event => { setData({ ...data, currency: event.target.value }); setDone(false); }}><option value="TWD">TWD · NT$</option><option value="USD">USD · US$</option></Select>}</Field>
+            <Field label={t.timezone} help={t.tzHelp}>{control => <Select {...control} value={data.timezone} disabled={saving || !ready} onChange={event => { setData({ ...data, timezone: event.target.value }); setDone(false); }}><option value="Asia/Taipei">Asia/Taipei · UTC+8</option><option value="UTC">UTC</option></Select>}</Field></FormGrid></Stack>
+          : <><Checkbox label={t.emailNotices} checked={data.notices} disabled={saving || !ready} onChange={event => { setData({ ...data, notices: event.target.checked }); setDone(false); }} /><p>{t.noticesHelp}</p></>}
       </Stack>
     </FormActionBar>
   </SettingsLayout>;

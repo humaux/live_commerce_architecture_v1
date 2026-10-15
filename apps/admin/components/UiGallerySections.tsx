@@ -72,10 +72,12 @@ export function ButtonsSection({ c }: { c: GalleryCopy }) {
       <div className={s.row}>
         <Button size="sm" variant="secondary" onClick={() => setClicked(c.btnSmall)}>{c.btnSmall}</Button>
         <Button size="lg" variant="secondary" onClick={() => setClicked(c.btnLarge)}>{c.btnLarge}</Button>
-        </div>
-      <div className={s.row}><Button variant="primary" loading loadingLabel={c.btnLoadingLabel}>{c.btnLoading}</Button>
-        </div>
-      <div className={s.row}><Button variant="primary" disabledReason={c.btnDisabledReason}>{c.btnDisabled}</Button>
+      </div>
+      <div className={s.row}>
+        <Button variant="primary" loading loadingLabel={c.btnLoadingLabel}>{c.btnLoading}</Button>
+      </div>
+      <div className={s.row}>
+        <Button variant="primary" disabledReason={c.btnDisabledReason}>{c.btnDisabled}</Button>
       </div>
       <p className={s.result} role="status">{clicked}</p>
     </Card>
