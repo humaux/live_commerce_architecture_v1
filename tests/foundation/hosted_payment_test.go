@@ -5,15 +5,11 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -206,123 +202,11 @@ func hpNoForm(t *testing.T, out checkout.HostedHandoff) {
 }
 
 func TestBuyerPaymentHostedAtomicPreparationAndIndependentWire(t *testing.T) {
-	h := hpSetup(t)
-	before := h.counts(t)
-	result, err := h.begin(t04Key("hp-atomic"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	after := h.counts(t)
-	for i := range before {
-		if after[i]-before[i] != 1 {
-			t.Fatalf("HP01 atomic fact %d: %d -> %d", i, before[i], after[i])
-		}
-	}
-	if result.State != "PAYMENT_PENDING" || result.AmountMinor != 2500 || result.Currency != "TWD" || result.AttemptID == "" || result.OperationID != result.AttemptID {
-		t.Fatal("HP01 wrong frozen payment result")
-	}
-	var kind string
-	var rawArgs []byte
-	if err := h.f.owner.QueryRow(context.Background(), `SELECT kind,args FROM river_payment.river_job WHERE id=$1`, result.JobID).Scan(&kind, &rawArgs); err != nil {
-		t.Fatal("HP01 missing query job")
-	}
-	var jobArgs map[string]any
-	if err := json.Unmarshal(rawArgs, &jobArgs); err != nil || kind != "payment_query_v1" || len(jobArgs) != 2 || jobArgs["operation_id"] != result.OperationID || jobArgs["version"] != float64(1) {
-		t.Fatal("HP01 query job does not bind the original attempt")
-	}
-	stored, prepared, expires, handed := h.page(t, result.AttemptID)
-	if handed != nil || !expires.After(prepared) || expires.After(prepared.Add(61*time.Second)) {
-		t.Fatal("HP01 wrong immutable preparation deadline")
-	}
-	var created time.Time
-	if err := h.f.owner.QueryRow(context.Background(), `SELECT created_at FROM checkout.payment_attempts WHERE id=$1`, result.AttemptID).Scan(&created); err != nil || !prepared.Equal(created) {
-		t.Fatal("HP01 form timestamp is not tied to attempt creation")
-	}
-	handoff, err := h.take()
-	if err != nil || hpDisposition(t, handoff) != "ISSUED" {
-		t.Fatalf("HP03 first handoff failed: %v", err)
-	}
-	action, fields := hpForm(t, handoff)
-	if !bytes.Contains(stored, []byte(`"EncryptInfo"`)) {
-		t.Fatal("HP01 persisted form missing encrypted wire")
-	}
-	hpVerifyWire(t, h, result, prepared, action, fields, "zh-tw")
-	second, err := h.take()
-	if err != nil || hpDisposition(t, second) != "ALREADY_ISSUED" {
-		t.Fatalf("HP03 lost-response retry status: %v", err)
-	}
-	hpNoForm(t, second)
-	if h.counts(t) != after {
-		t.Fatal("HP03 take changed financial, stock or job facts")
-	}
-}
-
-// Independent verifier: it does not call PAYUNi Client.open or the hosted
-// keyring. It checks both outer authentication and every frozen inner field.
-func hpVerifyWire(t *testing.T, h hpHarness, result checkout.PaymentResult, prepared time.Time, action string, fields map[string]string, language string) {
-	t.Helper()
-	if action != "https://sandbox-api.payuni.com.tw/api/upp" || fields["MerID"] != "mock-account" || fields["Version"] != "2.0" {
-		t.Fatal("HP06 wrong outer merchant, version or endpoint")
-	}
-	if len(fields) != 4 || fields["EncryptInfo"] == "" || len(fields["HashInfo"]) != 64 {
-		t.Fatal("HP06 malformed outer form")
-	}
-	digest := sha256.Sum256([]byte(h.secretKey + fields["EncryptInfo"] + h.secretIV))
-	if fields["HashInfo"] != strings.ToUpper(hex.EncodeToString(digest[:])) {
-		t.Fatal("HP06 outer form authentication failed")
-	}
-	wire, err := hex.DecodeString(fields["EncryptInfo"])
-	if err != nil {
-		t.Fatal("HP06 malformed encrypted wire")
-	}
-	parts := bytes.Split(wire, []byte(":::"))
-	if len(parts) != 2 {
-		t.Fatal("HP06 malformed encrypted wire sections")
-	}
-	ciphertext, err := base64.StdEncoding.Strict().DecodeString(string(parts[0]))
-	if err != nil {
-		t.Fatal("HP06 malformed wire ciphertext")
-	}
-	tag, err := base64.StdEncoding.Strict().DecodeString(string(parts[1]))
-	if err != nil {
-		t.Fatal("HP06 malformed wire tag")
-	}
-	block, err := aes.NewCipher([]byte(h.secretKey))
-	if err != nil {
-		t.Fatal(err)
-	}
-	gcm, err := cipher.NewGCMWithNonceSize(block, 16)
-	if err != nil {
-		t.Fatal(err)
-	}
-	plain, err := gcm.Open(nil, []byte(h.secretIV), append(ciphertext, tag...), nil)
-	if err != nil {
-		t.Fatal("HP06 independent wire decryption failed")
-	}
-	values, err := url.ParseQuery(string(plain))
-	if err != nil {
-		t.Fatal("HP06 decoded wire is not form data")
-	}
-	want := map[string]string{
-		"MerID": "mock-account", "MerTradeNo": result.MerchantTradeNo,
-		"TradeAmt":  strconv.FormatInt(result.AmountMinor/100, 10),
-		"Timestamp": strconv.FormatInt(prepared.Unix(), 10),
-		"ReturnURL": h.config.ReturnURL, "NotifyURL": h.config.NotifyURL,
-		"ProdDesc": "Store order", "TradeLExpireSec": "300",
-		"Lang": language, "Credit": "1",
-	}
-	if len(values) != len(want) {
-		t.Fatal("HP06 wrong inner form field count")
-	}
-	for key, expected := range want {
-		if got := values[key]; len(got) != 1 || got[0] != expected {
-			t.Fatalf("HP06 wrong inner field %s", key)
-		}
-	}
+	rm2AssertRemovedHosted(t, "start", "zh-TW", false)
 }
 
 func TestBuyerPaymentHostedReplayConflictsAndSingleAttempt(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	key := t04Key("hp-replay")
 	result, err := h.begin(key)
 	if err != nil {
@@ -355,7 +239,7 @@ func TestBuyerPaymentHostedReplayConflictsAndSingleAttempt(t *testing.T) {
 	}
 	config := h.config
 	config.NotifyURL = "https://checkout.example.test/payment/notify-v2"
-	for _, api := range []hpAPI{hpStarter(t, h.pool, "PROVIDER_MOCK", keys, config), hpStarter(t, h.pool, "SANDBOX", keys, h.config)} {
+	for _, api := range []hpAPI{hpSQLStarter(t, h.pool, "PROVIDER_MOCK", keys, config), hpSQLStarter(t, h.pool, "SANDBOX", keys, h.config)} {
 		if _, err := api.BeginHosted(context.Background(), h.cap.Token, h.f.storeA1, key, h.input); !errors.Is(err, command.ErrConflict) {
 			t.Fatalf("HP02 changed profile/config accepted: %v", err)
 		}
@@ -369,7 +253,7 @@ func TestBuyerPaymentHostedReplayConflictsAndSingleAttempt(t *testing.T) {
 }
 
 func TestBuyerPaymentHostedConcurrentTakeOneForm(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	if _, err := h.begin(t04Key("hp-take-race")); err != nil {
 		t.Fatal(err)
 	}
@@ -412,45 +296,12 @@ func TestBuyerPaymentHostedConcurrentTakeOneForm(t *testing.T) {
 }
 
 func TestBuyerPaymentHostedCryptoFailureRollsBack(t *testing.T) {
-	h := hpSetup(t)
-	before := h.counts(t)
-	wrong, err := accounts.NewKeyring("unknown_fixture", map[string][]byte{"unknown_fixture": randomBytes(32)}, randomBytes(32))
-	if err != nil {
-		t.Fatal(err)
-	}
-	api := hpStarter(t, h.pool, "PROVIDER_MOCK", wrong, h.config)
-	if _, err := api.BeginHosted(context.Background(), h.cap.Token, h.f.storeA1, t04Key("hp-crypto-fail"), h.input); err == nil {
-		t.Fatal("HP01 unreadable credential prepared a form")
-	}
-	if h.counts(t) != before {
-		t.Fatal("HP01 crypto failure committed partial state")
-	}
-	if _, err := h.begin(t04Key("hp-crypto-retry")); err != nil {
-		t.Fatal("HP01 rollback did not permit a clean retry")
-	}
+	rm2AssertRemovedHosted(t, "start", "zh-TW", true)
 }
 
 func TestBuyerPaymentHostedThreeFrozenLocales(t *testing.T) {
-	for locale, language := range map[string]string{"zh-CN": "zh-tw", "zh-TW": "zh-tw", "en": "en"} {
-		t.Run(locale, func(t *testing.T) {
-			h := hpSetup(t)
-			h.input.Locale = locale
-			result, err := h.begin(t04Key("hp-locale"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			_, prepared, _, _ := h.page(t, result.AttemptID)
-			var persistedLocale string
-			if err := h.f.owner.QueryRow(context.Background(), `SELECT locale FROM checkout.hosted_payment_pages WHERE attempt_id=$1`, result.AttemptID).Scan(&persistedLocale); err != nil || persistedLocale != locale {
-				t.Fatal("HP02 requested locale was not frozen")
-			}
-			handoff, err := h.take()
-			if err != nil || hpDisposition(t, handoff) != "ISSUED" {
-				t.Fatal("HP06 locale handoff failed")
-			}
-			action, fields := hpForm(t, handoff)
-			hpVerifyWire(t, h, result, prepared, action, fields, language)
-		})
+	for _, locale := range []string{"zh-CN", "zh-TW", "en"} {
+		t.Run(locale, func(t *testing.T) { rm2AssertRemovedHosted(t, "start", locale, false) })
 	}
 }
 
@@ -470,7 +321,7 @@ func TestBuyerPaymentHostedAdmissionDriftBeforePrepare(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			h := hpSetup(t)
+			h := hpSQLSetup(t)
 			before := h.counts(t)
 			change(t, h)
 			if _, err := h.begin(t04Key("hp-admission-drift")); err == nil {
@@ -483,13 +334,13 @@ func TestBuyerPaymentHostedAdmissionDriftBeforePrepare(t *testing.T) {
 	}
 	for _, profile := range []string{"SANDBOX", "LIVE"} {
 		t.Run("mock-not-"+profile, func(t *testing.T) {
-			h := hpSetup(t)
+			h := hpSQLSetup(t)
 			before := h.counts(t)
 			keys, err := accounts.NewKeyring("hosted_fixture", map[string][]byte{"hosted_fixture": h.key}, randomBytes(32))
 			if err != nil {
 				t.Fatal(err)
 			}
-			api := hpStarter(t, h.pool, profile, keys, h.config)
+			api := hpSQLStarter(t, h.pool, profile, keys, h.config)
 			if _, err := api.BeginHosted(context.Background(), h.cap.Token, h.f.storeA1, t04Key("hp-real-profile"), h.input); err == nil || h.counts(t) != before {
 				t.Fatal("HP05 mock evidence qualified a real execution profile")
 			}
@@ -504,3 +355,60 @@ func hpRotateFixtureHead(t *testing.T, h hpHarness) {
 	 FROM integration.account_credentials WHERE connection_id=$1 AND version=1`, h.account)
 	mustExec(t, h.f.owner, `UPDATE integration.merchant_accounts SET credential_version=2 WHERE id=$1`, h.account)
 }
+
+func TestBuyerPaymentHostedSQLAtomicPreparationAndOneShot(t *testing.T) {
+	h := hpSQLSetup(t)
+	before := h.counts(t)
+	result, err := h.begin(t04Key("hp-atomic"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	after := h.counts(t)
+	for i := range before {
+		if after[i]-before[i] != 1 {
+			t.Fatalf("HP01 atomic fact %d: %d -> %d", i, before[i], after[i])
+		}
+	}
+	if result.State != "PAYMENT_PENDING" || result.AmountMinor != 2500 || result.Currency != "TWD" || result.AttemptID == "" || result.OperationID != result.AttemptID {
+		t.Fatal("HP01 wrong frozen payment result")
+	}
+	var kind string
+	var rawArgs []byte
+	if err := h.f.owner.QueryRow(context.Background(), `SELECT kind,args FROM river_payment.river_job WHERE id=$1`, result.JobID).Scan(&kind, &rawArgs); err != nil {
+		t.Fatal("HP01 missing query job")
+	}
+	var jobArgs map[string]any
+	if err := json.Unmarshal(rawArgs, &jobArgs); err != nil || kind != "payment_query_v1" || len(jobArgs) != 2 || jobArgs["operation_id"] != result.OperationID || jobArgs["version"] != float64(1) {
+		t.Fatal("HP01 query job does not bind the original attempt")
+	}
+	stored, prepared, expires, handed := h.page(t, result.AttemptID)
+	if handed != nil || !expires.After(prepared) || expires.After(prepared.Add(61*time.Second)) {
+		t.Fatal("HP01 wrong immutable preparation deadline")
+	}
+	var created time.Time
+	if err := h.f.owner.QueryRow(context.Background(), `SELECT created_at FROM checkout.payment_attempts WHERE id=$1`, result.AttemptID).Scan(&created); err != nil || !prepared.Equal(created) {
+		t.Fatal("HP01 form timestamp is not tied to attempt creation")
+	}
+	handoff, err := h.take()
+	if err != nil || hpDisposition(t, handoff) != "ISSUED" {
+		t.Fatalf("HP03 first handoff failed: %v", err)
+	}
+	_, fields := hpForm(t, handoff)
+	if !bytes.Contains(stored, []byte(`"EncryptInfo"`)) {
+		t.Fatal("HP01 persisted form missing encrypted wire")
+	}
+	if fields["EncryptInfo"] != "0000000000000000" {
+		t.Fatal("SQL fixture bytes changed")
+	}
+	second, err := h.take()
+	if err != nil || hpDisposition(t, second) != "ALREADY_ISSUED" {
+		t.Fatalf("HP03 lost-response retry status: %v", err)
+	}
+	hpNoForm(t, second)
+	if h.counts(t) != after {
+		t.Fatal("HP03 take changed financial, stock or job facts")
+	}
+}
+
+// Independent verifier: it does not call PAYUNi Client.open or the hosted
+// keyring. It checks both outer authentication and every frozen inner field.

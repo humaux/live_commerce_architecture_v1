@@ -389,8 +389,12 @@ func TestStripeSP07Start(t *testing.T) {
 			{"changed_profile", otherProfile, s.input("zh-TW")},
 			{"changed_method", e.svc, payuni},
 		} {
-			if _, err := s.begin(v.svc, key, v.in); !errors.Is(err, command.ErrConflict) {
-				t.Fatalf("%s: same key with changed frozen input was not 409: %v", v.name, err)
+			want := command.ErrConflict
+			if v.name == "changed_method" {
+				want = command.ErrInvalid // retired method is rejected before receipt lookup
+			}
+			if _, err := s.begin(v.svc, key, v.in); !errors.Is(err, want) {
+				t.Fatalf("%s: changed frozen input refusal=%v want=%v", v.name, err, want)
 			}
 			if sstFacts(t, p) != stable {
 				t.Fatalf("%s changed facts", v.name)

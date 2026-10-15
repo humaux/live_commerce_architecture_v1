@@ -28,7 +28,7 @@ func bpKeys(value map[string]json.RawMessage) []string {
 	return keys
 }
 
-func bpView(t *testing.T, service *checkout.HostedPaymentStarter, token, storeID, orderID string) (checkout.OrderPayment, map[string]json.RawMessage) {
+func bpView(t *testing.T, service *rm2HostedSQL, token, storeID, orderID string) (checkout.OrderPayment, map[string]json.RawMessage) {
 	t.Helper()
 	result, err := service.PaymentView(context.Background(), token, storeID, orderID)
 	if err != nil {
@@ -61,13 +61,13 @@ func bpState(t *testing.T, fields map[string]json.RawMessage, name, expected str
 	}
 }
 
-func bpStarter(t *testing.T, h hpHarness, profile string, config checkout.HostedConfig) *checkout.HostedPaymentStarter {
+func bpStarter(t *testing.T, h hpHarness, profile string, config checkout.HostedConfig) *rm2HostedSQL {
 	t.Helper()
 	keys, err := accounts.NewKeyring("hosted_fixture", map[string][]byte{"hosted_fixture": h.key}, randomBytes(32))
 	if err != nil {
 		t.Fatal(err)
 	}
-	return hpStarter(t, h.pool, profile, keys, config).(*checkout.HostedPaymentStarter)
+	return hpSQLStarter(t, h.pool, profile, keys, config)
 }
 
 func bpCounts(t *testing.T, h hpHarness) (base [8]int64, other [3]int64) {
@@ -84,9 +84,9 @@ func bpCounts(t *testing.T, h hpHarness) (base [8]int64, other [3]int64) {
 }
 
 func TestBuyerPaymentViewEligibleAndExactNames(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	before, beforeOther := bpCounts(t, h)
-	view, raw := bpView(t, h.api.(*checkout.HostedPaymentStarter), h.cap.Token, h.f.storeA1, h.hold.OrderID)
+	view, raw := bpView(t, h.api.(*rm2HostedSQL), h.cap.Token, h.f.storeA1, h.hold.OrderID)
 	if view.OrderID != h.hold.OrderID || view.Currency != "TWD" || view.TotalMinor != 2500 || view.CommercialState != "DRAFT" || !view.TestMode {
 		t.Fatal("BPH01 owned order projection changed frozen amount or test disclosure")
 	}
@@ -115,14 +115,14 @@ func TestBuyerPaymentViewEligibleAndExactNames(t *testing.T) {
 		{h.cap.Token, h.f.storeA1, randomUUID()},
 		{mustIssue(t, h.cqHarness.service, h.f.storeA1).Token, h.f.storeA1, h.hold.OrderID},
 	} {
-		if _, err := h.api.(*checkout.HostedPaymentStarter).PaymentView(context.Background(), target.token, target.store, target.order); !errors.Is(err, command.ErrNotFound) {
+		if _, err := h.api.(*rm2HostedSQL).PaymentView(context.Background(), target.token, target.store, target.order); !errors.Is(err, command.ErrNotFound) {
 			t.Fatalf("BPH01 missing/foreign order did not map to not found: %v", err)
 		}
 	}
-	if _, err := h.api.(*checkout.HostedPaymentStarter).PaymentView(context.Background(), h.cap.Token, randomUUID(), h.hold.OrderID); err == nil {
+	if _, err := h.api.(*rm2HostedSQL).PaymentView(context.Background(), h.cap.Token, randomUUID(), h.hold.OrderID); err == nil {
 		t.Fatal("BPH01 cross-store view succeeded")
 	}
-	if _, err := h.api.(*checkout.HostedPaymentStarter).PaymentView(context.Background(), randomToken(), h.f.storeA1, h.hold.OrderID); err == nil {
+	if _, err := h.api.(*rm2HostedSQL).PaymentView(context.Background(), randomToken(), h.f.storeA1, h.hold.OrderID); err == nil {
 		t.Fatal("BPH01 forged capability read payment view")
 	}
 }
@@ -182,10 +182,10 @@ func TestBuyerPaymentViewCandidateDrift(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			h := hpSetup(t)
+			h := hpSQLSetup(t)
 			change(t, h)
 			before, beforeOther := bpCounts(t, h)
-			view, raw := bpView(t, h.api.(*checkout.HostedPaymentStarter), h.cap.Token, h.f.storeA1, h.hold.OrderID)
+			view, raw := bpView(t, h.api.(*rm2HostedSQL), h.cap.Token, h.f.storeA1, h.hold.OrderID)
 			if view.PaymentState != "NOT_STARTED" || len(view.Methods) != 0 || string(raw["methods"]) != "[]" {
 				t.Fatal("BPH01 ineligible method was shown as a payment option")
 			}
@@ -196,13 +196,13 @@ func TestBuyerPaymentViewCandidateDrift(t *testing.T) {
 		})
 	}
 	t.Run("current-method-head", func(t *testing.T) {
-		h := hpSetup(t)
+		h := hpSQLSetup(t)
 		mustExec(t, h.f.owner, `INSERT INTO payments.method_versions
 		 (tenant_id,store_id,market_id,country,code,version,provider,environment,connection_id,binding_version,currency,name_hans,name_hant,name_en,enabled,visible,sort_order,min_amount_minor,max_amount_minor,principal_id,qualification_id)
 		 SELECT tenant_id,store_id,market_id,country,code,2,provider,environment,connection_id,binding_version,currency,name_hans,name_hant,'Current Head',enabled,visible,sort_order,min_amount_minor,max_amount_minor,principal_id,qualification_id
 		 FROM payments.method_versions WHERE connection_id=$1 AND version=1`, h.account)
 		mustExec(t, h.f.owner, `UPDATE payments.method_heads SET current_version=2 WHERE tenant_id=$1 AND store_id=$2 AND code='payuni_credit'`, h.f.tenantA, h.f.storeA1)
-		view, _ := bpView(t, h.api.(*checkout.HostedPaymentStarter), h.cap.Token, h.f.storeA1, h.hold.OrderID)
+		view, _ := bpView(t, h.api.(*rm2HostedSQL), h.cap.Token, h.f.storeA1, h.hold.OrderID)
 		if len(view.Methods) != 1 || view.Methods[0].Version != 2 || view.Methods[0].NameEN != "Current Head" {
 			t.Fatal("BPH01 projection used stale method version after head advanced")
 		}
@@ -214,7 +214,7 @@ func TestBuyerPaymentViewCandidateDrift(t *testing.T) {
 		{"account-provider-check", `UPDATE integration.merchant_accounts SET provider='other' WHERE id=$1`},
 	} {
 		t.Run(trial.name, func(t *testing.T) {
-			h := hpSetup(t)
+			h := hpSQLSetup(t)
 			id := h.account
 			if trial.name == "binding-asset-fk" {
 				id = h.binding
@@ -224,14 +224,14 @@ func TestBuyerPaymentViewCandidateDrift(t *testing.T) {
 			if !errors.As(err, &pgErr) || (pgErr.Code != "23503" && pgErr.Code != "23514") {
 				t.Fatalf("BPH01 schema allowed disconnected account/binding target: %v", err)
 			}
-			view, _ := bpView(t, h.api.(*checkout.HostedPaymentStarter), h.cap.Token, h.f.storeA1, h.hold.OrderID)
+			view, _ := bpView(t, h.api.(*rm2HostedSQL), h.cap.Token, h.f.storeA1, h.hold.OrderID)
 			if len(view.Methods) != 1 {
 				t.Fatal("BPH01 rejected schema drift unexpectedly removed current method")
 			}
 		})
 	}
 	t.Run("mock-not-live", func(t *testing.T) {
-		h := hpSetup(t)
+		h := hpSQLSetup(t)
 		view, _ := bpView(t, bpStarter(t, h, "LIVE", h.config), h.cap.Token, h.f.storeA1, h.hold.OrderID)
 		if view.TestMode || len(view.Methods) != 0 {
 			t.Fatal("BPH01 MOCK qualification entered LIVE method candidates")
@@ -240,11 +240,11 @@ func TestBuyerPaymentViewCandidateDrift(t *testing.T) {
 }
 
 func TestBuyerPaymentViewHandoffStatesAndProfileSwitch(t *testing.T) {
-	h := hpSetup(t)
+	h := hpSQLSetup(t)
 	if _, err := h.begin(t04Key("bp-view-begin")); err != nil {
 		t.Fatal(err)
 	}
-	service := h.api.(*checkout.HostedPaymentStarter)
+	service := h.api.(*rm2HostedSQL)
 	before, beforeOther := bpCounts(t, h)
 	prepared, raw := bpView(t, service, h.cap.Token, h.f.storeA1, h.hold.OrderID)
 	if prepared.PaymentState != "PENDING" || prepared.HandoffState != "PREPARED" || prepared.HandoffExpiresAt == nil || len(prepared.Methods) != 0 || !prepared.TestMode || string(raw["handoff_expires_at"]) == "null" {
@@ -279,13 +279,13 @@ func TestBuyerPaymentViewHandoffStatesAndProfileSwitch(t *testing.T) {
 		t.Fatal("BPH02 view or denied profile calls changed payment facts")
 	}
 	t.Run("expired-unissued", func(t *testing.T) {
-		h := hpSetup(t)
+		h := hpSQLSetup(t)
 		result, err := h.begin(t04Key("bp-expired"))
 		if err != nil {
 			t.Fatal(err)
 		}
 		mustExec(t, h.f.owner, `UPDATE checkout.hosted_payment_pages SET prepared_at=clock_timestamp()-interval '60 seconds',expires_at=clock_timestamp()-interval '1 second' WHERE attempt_id=$1`, result.AttemptID)
-		view, _ := bpView(t, h.api.(*checkout.HostedPaymentStarter), h.cap.Token, h.f.storeA1, h.hold.OrderID)
+		view, _ := bpView(t, h.api.(*rm2HostedSQL), h.cap.Token, h.f.storeA1, h.hold.OrderID)
 		if view.HandoffState != "EXPIRED" || view.PaymentState != "PENDING" || view.HandoffExpiresAt == nil || !view.HandoffExpiresAt.Before(time.Now()) {
 			t.Fatal("BPH02 elapsed local deadline changed pending financial truth")
 		}
@@ -295,14 +295,14 @@ func TestBuyerPaymentViewHandoffStatesAndProfileSwitch(t *testing.T) {
 func TestBuyerPaymentViewSignedFinancialPrecedence(t *testing.T) {
 	for _, state := range []string{"PENDING", "AUTHORIZED", "CAPTURED", "REVIEW_REQUIRED"} {
 		t.Run(state, func(t *testing.T) {
-			q := pqSetup(t)
+			q := pqSQLSetup(t, false, 1)
 			pool, err := platform.OpenHostedPool(context.Background(), hpRole(t, q.f))
 			if err != nil {
 				t.Fatal(err)
 			}
 			t.Cleanup(pool.Close)
 			config := checkout.HostedConfig{ReturnURL: "https://checkout.example.test/payment/return", NotifyURL: "https://checkout.example.test/payment/notify"}
-			service := hpStarter(t, pool, "PROVIDER_MOCK", q.keys, config).(*checkout.HostedPaymentStarter)
+			service := hpSQLStarter(t, pool, "PROVIDER_MOCK", q.keys, config)
 			if state != "PENDING" {
 				report := pcFull(q)
 				switch state {
@@ -327,7 +327,7 @@ func TestBuyerPaymentViewSignedFinancialPrecedence(t *testing.T) {
 			if after != before || afterOther != beforeOther {
 				t.Fatal("BPH02 view wrote signed financial or inventory facts")
 			}
-			switched := hpStarter(t, pool, "LIVE", q.keys, config).(*checkout.HostedPaymentStarter)
+			switched := hpSQLStarter(t, pool, "LIVE", q.keys, config)
 			historical, _ := bpView(t, switched, q.cap.Token, q.f.storeA1, q.hold.OrderID)
 			if historical.PaymentState != state || historical.HandoffState != "UNAVAILABLE" || !historical.TestMode || len(historical.Methods) != 0 {
 				t.Fatal("BPH02 different profile could not read frozen historical facts safely")

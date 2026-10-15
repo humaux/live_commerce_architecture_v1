@@ -214,7 +214,7 @@ func TestBuyerPaymentQueryHistoricalCredentialAndACL(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryReportAtomicDedupAndBinding(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	c := q.claim(t)
 	report := pqReport(q)
 	for _, field := range []string{"AmountTWD", "MerTradeNo", "TradeNo", "PaymentType", "AuthType", "DataSource", "CardInst", "extra"} {
@@ -279,7 +279,7 @@ func TestBuyerPaymentQueryReportAtomicDedupAndBinding(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryFaultAndLeaseWaitRollback(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	c := q.claim(t)
 	name := "pq_wait_" + t04Tag()
 	ctx := context.Background()
@@ -484,7 +484,7 @@ func TestBuyerPaymentQueryBudgetDurabilityAndNoSend(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	firstReport := pqReport(q)
 	if e := q.record(q.claim(t), firstReport); e != nil {
 		t.Fatal(e)
@@ -497,7 +497,10 @@ func TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts(t *testing.T) {
 		t.Fatal(e)
 	}
 	second.input.OrderID = second.hold.OrderID
-	second.result = rm2HistoricalAttempt(t, second.psHarness)
+	second.result, e = psSQLStarter(t, second.pool, "PROVIDER_MOCK").StartPayment(context.Background(), second.cap.Token, second.f.storeA1, t04Key("pq-second-start"), second.input)
+	if e != nil {
+		t.Fatal(e)
+	}
 	report := pqReport(second)
 	report["TradeNo"] = firstReport["TradeNo"]
 	e = second.record(second.claim(t), report)
@@ -574,7 +577,7 @@ func TestBuyerPaymentQueryWireFailuresStayPending(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryFinishClockAndReferenceFence(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	c := q.claim(t)
 	ctx := context.Background()
 	if _, e := q.worker.Exec(ctx, `SELECT integration.finish_payment_query($1,$2,$3,'PROVIDER_MOCK','payment_query_timeout','forged-reference')`, q.result.OperationID, c.Generation, c.LeaseToken); e == nil {
@@ -629,8 +632,8 @@ func TestBuyerPaymentQueryFinishClockAndReferenceFence(t *testing.T) {
 
 func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 	base := pwIsolatedFixture(t)
-	q := pqSetupItemsOn(t, base, nil, false, 1)
-	other := pqSetupItemsOn(t, base, nil, false, 1)
+	q := pqSQLSetupOn(t, base, false, 1)
+	other := pqSQLSetupOn(t, base, false, 1)
 	c := q.claim(t)
 	foreign := other.claim(t)
 	if _, e := q.worker.Exec(context.Background(), `SELECT integration.load_payment_query($1,$2,$3,'PROVIDER_MOCK')`, q.result.OperationID, foreign.Generation, foreign.LeaseToken); e == nil {
@@ -679,7 +682,7 @@ func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryConcurrentReportSingleWinner(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	claim := q.claim(t)
 	report := pqReport(q)
 	start := make(chan struct{})

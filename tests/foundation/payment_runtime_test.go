@@ -349,96 +349,7 @@ func TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart(t *testing.T) {
 }
 
 func TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation(t *testing.T) {
-	f := pwIsolatedFixture(t)
-	keys := pwKeys(t)
-	var unrelated int64
-	if err := f.owner.QueryRow(context.Background(), `INSERT INTO river.river_job(kind,args,max_attempts,queue) VALUES('pw_unrelated_v1','{}',2,'default') RETURNING id`).Scan(&unrelated); err != nil {
-		t.Fatal(err)
-	}
-	unrelatedBefore := pwJobExceptQueue(t, f.owner, unrelated)
-	response := make(chan string, 1)
-	opts := payments.DefaultQueryWorkerOptions()
-	opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
-		var body string
-		select {
-		case body = <-response:
-		case <-r.Context().Done():
-			return nil, r.Context().Err()
-		}
-		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
-	})
-	client, err := payments.NewWorkerClient(context.Background(), pwWorkerPool(t, f), keys, "PROVIDER_MOCK", 2, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := client.Start(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	defer pwStopClient(t, client)
-	// The old producer requests default before it inserts the attempt; its
-	// deferred route must commit before this already-running client can claim it.
-	q := pwOldQuerySetupOn(t, f, keys)
-	response <- pqSignedResponse(pcFull(q))
-	if pwQueueIn(t, f.owner, "river_payment.river_job", q.result.JobID) != "payment_mock_v1" {
-		t.Fatal("deferred late insert not routed")
-	}
-	mustExec(t, f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
-	pqAwait(t, q, q.result.JobID, "payment_report_observed", "scheduled")
-	var reconcile int64
-	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&reconcile); err != nil {
-		t.Fatal(err)
-	}
-	pwAwaitJob(t, q, reconcile, "completed")
-	pcAssertStock(t, q, 0, 2, "CONFIRMED", "COMMITTED")
-	// The old observation producer requests default for an available reconcile
-	// job after client Start. River's original NOTIFY names default; the worker
-	// must still poll its profile queue and perform the real capture.
-	notified := pqSetupItemsOn(t, f, keys, false, 1)
-	if err := notified.record(notified.claim(t), pcFull(notified)); err != nil {
-		t.Fatal(err)
-	}
-	var notifiedID int64
-	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, notified.result.OperationID).Scan(&notifiedID); err != nil {
-		t.Fatal(err)
-	}
-	if pwQueueIn(t, f.owner, "river_payment.river_job", notifiedID) != "payment_mock_v1" {
-		t.Fatal("old default-notified reconcile was not routed")
-	}
-	mustExec(t, f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, notified.result.JobID)
-	pwAwaitJob(t, notified, notifiedID, "completed")
-	pcAssertStock(t, notified, 0, 2, "CONFIRMED", "COMMITTED")
-	foreign := pqSetupItemsOn(t, f, keys, false, 1)
-	// Owner-only fixture mutation creates a due SANDBOX job without contacting a
-	// provider. Bypass then restore the immutable family guard solely for this
-	// fixture poison; the MOCK client must never claim the separate fixed queue.
-	mustExec(t, f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
-	defer mustExec(t, f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
-	mustExec(t, f.owner, `UPDATE checkout.payment_attempts SET execution_profile='SANDBOX' WHERE id=$1`, foreign.result.AttemptID)
-	mustExec(t, f.owner, `UPDATE river_payment.river_job SET queue='payment_sandbox_v1',scheduled_at=clock_timestamp() WHERE id=$1`, foreign.result.JobID)
-	mustExec(t, f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
-	var generationBefore, generationAfter int64
-	if err := f.owner.QueryRow(context.Background(), `SELECT generation FROM integration.operations WHERE id=$1`, foreign.result.OperationID).Scan(&generationBefore); err != nil {
-		t.Fatal(err)
-	}
-	time.Sleep(2 * time.Second)
-	if err := f.owner.QueryRow(context.Background(), `SELECT generation FROM integration.operations WHERE id=$1`, foreign.result.OperationID).Scan(&generationAfter); err != nil {
-		t.Fatal(err)
-	}
-	if generationAfter != generationBefore || pwQueueIn(t, f.owner, "river_payment.river_job", foreign.result.JobID) != "payment_sandbox_v1" {
-		t.Fatal("MOCK consumer claimed a SANDBOX attempt")
-	}
-	var foreignAttempts, foreignObservations, foreignFacts int
-	var multiReady bool
-	if err := f.owner.QueryRow(context.Background(), `SELECT j.attempt,
-	 (SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1),
-	 (SELECT count(*) FROM payments.facts WHERE attempt_id=$1),
-	 integration.payment_queue_ready()
-	 FROM river_payment.river_job j WHERE j.id=$2`, foreign.result.AttemptID, foreign.result.JobID).Scan(&foreignAttempts, &foreignObservations, &foreignFacts, &multiReady); err != nil || foreignAttempts != 0 || foreignObservations != 0 || foreignFacts != 0 || !multiReady {
-		t.Fatalf("cross-profile isolation/admission: attempts=%d observations=%d facts=%d ready=%t err=%v", foreignAttempts, foreignObservations, foreignFacts, multiReady, err)
-	}
-	if pwJobExceptQueue(t, f.owner, unrelated) != unrelatedBefore || pwQueue(t, f.owner, unrelated) != "default" {
-		t.Fatal("ordinary default River job changed")
-	}
+	rm2AssertRemovedWorker(t, false)
 }
 
 func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
@@ -553,6 +464,14 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 }
 
 func TestBuyerPaymentWorkerCrashChild(t *testing.T) {
+	rm2AssertRemovedWorker(t, false)
+}
+
+func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
+	rm2AssertRemovedWorker(t, false)
+}
+
+func TestStripeWorkerCrashChild(t *testing.T) {
 	if os.Getenv("LC_PW_CHILD") != "1" {
 		return
 	}
@@ -576,13 +495,19 @@ func TestBuyerPaymentWorkerCrashChild(t *testing.T) {
 	}
 	opts := payments.DefaultQueryWorkerOptions()
 	opts.MockTransport = pqTransport(func(r *http.Request) (*http.Response, error) {
-		req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, os.Getenv("LC_PW_CHILD_MOCK_URL"), nil)
+		req, err := http.NewRequestWithContext(r.Context(), r.Method, os.Getenv("LC_PW_CHILD_MOCK_URL")+r.URL.RequestURI(), r.Body)
 		if err != nil {
 			return nil, err
 		}
+		req.Header = r.Header.Clone()
 		return http.DefaultClient.Do(req)
 	})
-	client, err := payments.NewWorkerClient(ctx, pool, keys, "PROVIDER_MOCK", 1, opts)
+	rt, err := payments.NewStripeRuntime(ctx, pool, keys, "PROVIDER_MOCK", opts.MockTransport)
+	if err != nil {
+		t.Fatal("child Stripe runtime")
+	}
+	opts.MockTransport = pqNoNetwork()
+	client, err := payments.NewPaymentWorkerClient(ctx, pool, payments.WorkerConfig{Profile: "PROVIDER_MOCK", Concurrency: 1, Query: opts, Keys: keys, Stripe: rt})
 	if err != nil {
 		t.Fatal("child client admission")
 	}
@@ -592,14 +517,23 @@ func TestBuyerPaymentWorkerCrashChild(t *testing.T) {
 	select {} // parent kills this process; no Go cleanup runs
 }
 
-func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
+func TestStripeWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	f := pwIsolatedFixture(t)
 	key, replay := randomBytes(32), randomBytes(32)
 	keys, err := accounts.NewKeyring("query_test", map[string][]byte{"query_test": key}, replay)
 	if err != nil {
 		t.Fatal(err)
 	}
-	q := pqSetupItemsOn(t, f, keys, false, 1)
+	e := sflNewOn(t, f, nil, keys)
+	s := e.stripeStore(t)
+	stop := e.start(t, true)
+	result, session := e.pinned(t, s)
+	stop()
+	q := pqFixture{psHarness: s.p, keys: keys, result: result, schema: "river_payment", stripe: e, stripeStore: s}
+	beforeReports := q.reportCount(t)
+	if !e.fake.SetState(session, "complete", "paid") {
+		t.Fatal("missing mock Stripe session")
+	}
 	q.pending(t)
 	entered := make(chan struct{}, 1)
 	release := make(chan struct{})
@@ -614,11 +548,18 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 		}
 	}))
 	defer server.Close()
+	defer func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+	}()
 	executable, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
 	}
-	child := exec.Command(executable, "-test.run=^TestBuyerPaymentWorkerCrashChild$", "-test.timeout=60s")
+	child := exec.Command(executable, "-test.run=^TestStripeWorkerCrashChild$", "-test.timeout=60s")
 	child.Env = append(os.Environ(), "LC_PW_CHILD=1", "LC_PW_CHILD_DSN="+q.worker.Config().ConnString(),
 		"LC_PW_CHILD_KEY="+base64.StdEncoding.EncodeToString(key), "LC_PW_CHILD_REPLAY="+base64.StdEncoding.EncodeToString(replay), "LC_PW_CHILD_MOCK_URL="+server.URL)
 	child.Stdout, child.Stderr = io.Discard, io.Discard
@@ -627,11 +568,22 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	}
 	done := make(chan error, 1)
 	go func() { done <- child.Wait() }()
-	defer func() { _ = child.Process.Kill() }()
+	reaped := false
+	defer func() {
+		if !reaped {
+			_ = child.Process.Kill()
+			select {
+			case <-done:
+			case <-time.After(5 * time.Second):
+				t.Error("crash child cleanup did not reap process")
+			}
+		}
+	}()
 	mustExec(t, f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
 	select {
 	case <-entered:
 	case <-done:
+		reaped = true
 		t.Fatal("child exited before provider query boundary")
 	case <-time.After(10 * time.Second):
 		t.Fatal("child did not claim due payment query")
@@ -646,6 +598,7 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	}
 	select {
 	case err := <-done:
+		reaped = true
 		if err == nil {
 			t.Fatal("killed child exited successfully")
 		}
@@ -664,12 +617,13 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	var calls atomic.Int32
 	opts := payments.DefaultQueryWorkerOptions()
 	opts.RetryDelay = time.Second // bounded fixture rescue, using River's own scheduler
-	body := pqSignedResponse(pcFull(q))
-	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) {
-		calls.Add(1)
-		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
-	})
-	client, err := payments.NewWorkerClient(context.Background(), q.worker, keys, "PROVIDER_MOCK", 1, opts)
+	transport := e.fake.Transport()
+	rt, err := payments.NewStripeRuntime(context.Background(), q.worker, keys, "PROVIDER_MOCK", pqTransport(func(r *http.Request) (*http.Response, error) { calls.Add(1); return transport.RoundTrip(r) }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts.MockTransport = pqNoNetwork()
+	client, err := payments.NewPaymentWorkerClient(context.Background(), q.worker, payments.WorkerConfig{Profile: "PROVIDER_MOCK", Concurrency: 1, Query: opts, Keys: keys, Stripe: rt})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -721,7 +675,7 @@ func TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue(t *testing.T) {
 	pwStopClient(t, client)
 	pcAssertStock(t, q, 0, 2, "CONFIRMED", "COMMITTED")
 	pcAssertWork(t, q, "READY")
-	if calls.Load() != 1 || q.reportCount(t) != 1 || pcCount(t, q, "payments.facts", " AND kind='CAPTURED'") != 1 {
+	if calls.Load() != 1 || q.reportCount(t) != beforeReports+1 || pcCount(t, q, "payments.facts", " AND kind='CAPTURED'") != 1 {
 		t.Fatalf("rescue query/report/capture counts: %d/%d/%d", calls.Load(), q.reportCount(t), pcCount(t, q, "payments.facts", " AND kind='CAPTURED'"))
 	}
 	var finalGeneration int64

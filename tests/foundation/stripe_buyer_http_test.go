@@ -193,13 +193,13 @@ func TestStripeSP14BuyerHTTP(t *testing.T) {
 	t.Run("stripe_view_prepare_handoff_enums_and_keys", func(t *testing.T) {
 		x := sbhNew(t, false)
 		before := sstFacts(t, x.h.psHarness)
-		// Before start: no attempt => no cancel_requested (PAYUNi-identical projection), <=2 methods.
+		// Before start: no attempt => no cancel_requested; only the active Stripe method.
 		view := bphRaw(t, x.srv.request(t, "GET", x.path, x.h.cap.Token, "", nil, nil), 200, bpViewKeys)
 		bpState(t, view, "payment_state", "NOT_STARTED")
 		bpState(t, view, "handoff_state", "NONE")
 		var methods []map[string]json.RawMessage
-		if err := json.Unmarshal(view["methods"], &methods); err != nil || len(methods) != 2 {
-			t.Fatalf("methods=%s err=%v (payuni_credit + stripe_checkout)", view["methods"], err)
+		if err := json.Unmarshal(view["methods"], &methods); err != nil || len(methods) != 1 {
+			t.Fatalf("methods=%s err=%v (stripe_checkout only)", view["methods"], err)
 		}
 		codes := map[string]bool{}
 		for _, m := range methods {
@@ -210,7 +210,7 @@ func TestStripeSP14BuyerHTTP(t *testing.T) {
 			_ = json.Unmarshal(m["code"], &code)
 			codes[code] = true
 		}
-		if !codes["payuni_credit"] || !codes["stripe_checkout"] {
+		if codes["payuni_credit"] || !codes["stripe_checkout"] {
 			t.Fatalf("method codes %v", codes)
 		}
 		in := map[string]any{"method_code": "stripe_checkout", "method_version": x.s.method, "locale": "zh-TW"}

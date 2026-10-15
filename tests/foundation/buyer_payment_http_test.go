@@ -1,7 +1,6 @@
 package foundation_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -10,7 +9,6 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -74,70 +72,8 @@ func bphRawBody(raw string) func(*http.Request) {
 }
 
 func TestBuyerPaymentHTTPPrepareViewHandoffThreeLocales(t *testing.T) {
-	for locale, lang := range map[string]string{"zh-CN": "zh-tw", "zh-TW": "zh-tw", "en": "en"} {
-		t.Run(locale, func(t *testing.T) {
-			h := bphSetup(t)
-			path := bphPath(h, "")
-			before, beforeOther := bpCounts(t, h.hpHarness)
-			initial := h.http.request(t, "GET", path, h.cap.Token, "", nil, nil)
-			initialRaw := bphRaw(t, initial, 200, bpViewKeys)
-			bpState(t, initialRaw, "payment_state", "NOT_STARTED")
-			bpState(t, initialRaw, "handoff_state", "NONE")
-			var options []map[string]json.RawMessage
-			if err := json.Unmarshal(initialRaw["methods"], &options); err != nil || len(options) != 1 || !reflect.DeepEqual(bpKeys(options[0]), bpMethodKeys) {
-				t.Fatal("BPH03 current method was not projected with exact safe fields")
-			}
-			in := map[string]any{"method_code": "payuni_credit", "method_version": 1, "locale": locale}
-			key := t04Key("bph-prepare")
-			preparedHTTP := h.http.request(t, "POST", path+"/prepare", h.cap.Token, key, in, nil)
-			prepared := bphRaw(t, preparedHTTP, 200, []string{"amount_minor", "currency", "order_id", "state"})
-			bpState(t, prepared, "state", "PAYMENT_PENDING")
-			var amount int64
-			if err := json.Unmarshal(prepared["amount_minor"], &amount); err != nil || amount != 2500 {
-				t.Fatal("BPH03 prepare did not use the frozen original amount")
-			}
-			stable := h.counts(t)
-			replayed := h.http.request(t, "POST", path+"/prepare", h.cap.Token, key, in, nil)
-			if replayed.status != 200 || !bytes.Equal(preparedHTTP.body, replayed.body) || h.counts(t) != stable {
-				t.Fatal("BPH03 HTTP prepare replay changed receipt or payment facts")
-			}
-			pending := bphRaw(t, h.http.request(t, "GET", path, h.cap.Token, "", nil, nil), 200, bpViewKeys)
-			bpState(t, pending, "payment_state", "PENDING")
-			bpState(t, pending, "handoff_state", "PREPARED")
-			if string(pending["methods"]) != "[]" {
-				t.Fatal("BPH03 pending payment offered another method")
-			}
-			first := h.http.request(t, "POST", path+"/handoff", h.cap.Token, "", nil, nil)
-			issued := bphRaw(t, first, 200, []string{"disposition", "expires_at", "form", "order_id"})
-			bpState(t, issued, "disposition", "ISSUED")
-			var form struct {
-				Action string            `json:"action"`
-				Fields map[string]string `json:"fields"`
-			}
-			if err := json.Unmarshal(issued["form"], &form); err != nil || len(form.Fields) != 4 {
-				t.Fatal("BPH03 issued handoff lacks bounded scalar form")
-			}
-			var attempt checkout.PaymentResult
-			if err := h.f.owner.QueryRow(context.Background(), `SELECT merchant_trade_no,amount_minor,id::text FROM checkout.payment_attempts WHERE order_id=$1`, h.hold.OrderID).
-				Scan(&attempt.MerchantTradeNo, &attempt.AmountMinor, &attempt.AttemptID); err != nil {
-				t.Fatal(err)
-			}
-			_, created, _, _ := h.page(t, attempt.AttemptID)
-			hpVerifyWire(t, h.hpHarness, attempt, created, form.Action, form.Fields, lang)
-			second := h.http.request(t, "POST", path+"/handoff", h.cap.Token, "", nil, nil)
-			noForm := bphRaw(t, second, 200, []string{"disposition", "expires_at", "order_id"})
-			bpState(t, noForm, "disposition", "ALREADY_ISSUED")
-			latest := bphRaw(t, h.http.request(t, "GET", path, h.cap.Token, "", nil, nil), 200, bpViewKeys)
-			bpState(t, latest, "payment_state", "PENDING")
-			bpState(t, latest, "handoff_state", "ISSUED")
-			if h.counts(t) != stable {
-				t.Fatal("BPH03 GET/take/repeat changed payment/stock/job aggregate")
-			}
-			_, afterOther := bpCounts(t, h.hpHarness)
-			if before == stable || beforeOther != afterOther {
-				t.Fatal("BPH03 prepare did not create original payment facts or touched other facts")
-			}
-		})
+	for _, locale := range []string{"zh-CN", "zh-TW", "en"} {
+		t.Run(locale, func(t *testing.T) { rm2AssertRemovedHTTP(t, "prepare", locale) })
 	}
 }
 
@@ -215,77 +151,7 @@ func bphConcurrentTake(h bphHarness) (bhResponse, error) {
 }
 
 func TestBuyerPaymentHTTPConcurrentHandoffAndEarlyFailures(t *testing.T) {
-	h := bphSetup(t)
-	path := bphPath(h, "")
-	in := map[string]any{"method_code": "payuni_credit", "method_version": 1, "locale": "en"}
-	if response := h.http.request(t, "POST", path+"/prepare", h.cap.Token, t04Key("bph-concurrent"), in, nil); response.status != 200 {
-		t.Fatal("BPH04 concurrent case did not prepare")
-	}
-	var wg sync.WaitGroup
-	results := make(chan bhResponse, 2)
-	errs := make(chan error, 2)
-	for i := 0; i < 2; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			result, err := bphConcurrentTake(h)
-			results <- result
-			errs <- err
-		}()
-	}
-	wg.Wait()
-	close(results)
-	close(errs)
-	for err := range errs {
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	issued, replay := 0, 0
-	for result := range results {
-		if result.status != 200 {
-			t.Fatal("BPH04 concurrent handoff failed")
-		}
-		var fields map[string]json.RawMessage
-		if err := json.Unmarshal(result.body, &fields); err != nil {
-			t.Fatal(err)
-		}
-		var disposition string
-		if err := json.Unmarshal(fields["disposition"], &disposition); err != nil {
-			t.Fatal(err)
-		}
-		switch disposition {
-		case "ISSUED":
-			issued++
-			if string(fields["form"]) == "" || string(fields["form"]) == "null" {
-				t.Fatal("BPH04 issued handoff lacked form")
-			}
-		case "ALREADY_ISSUED":
-			replay++
-			if _, found := fields["form"]; found {
-				t.Fatal("BPH04 repeated handoff exposed form")
-			}
-		default:
-			t.Fatal("BPH04 unknown concurrent handoff disposition")
-		}
-	}
-	if issued != 1 || replay != 1 {
-		t.Fatal("BPH04 concurrent HTTP took more than one form")
-	}
-	// Service failure occurs before any hosted SQL. A handoff 503 must remain
-	// nonretryable because the client cannot know whether another path committed.
-	h.a.issuer.Close()
-	bphFail(t, h.http.request(t, "POST", path+"/handoff", h.cap.Token, "", nil, nil), 503, "unavailable")
-	_, _, _, handed := h.page(t, func() string {
-		var id string
-		if err := h.f.owner.QueryRow(context.Background(), `SELECT id::text FROM checkout.payment_attempts WHERE order_id=$1`, h.hold.OrderID).Scan(&id); err != nil {
-			t.Fatal(err)
-		}
-		return id
-	}())
-	if handed == nil {
-		t.Fatal("BPH04 early 503 erased committed one-shot marker")
-	}
+	rm2AssertRemovedHTTP(t, "handoff", "en")
 }
 
 func TestBuyerPaymentHTTPDisabledFeatureNoRelease(t *testing.T) {

@@ -83,7 +83,7 @@ func pcAssertWork(t *testing.T, q pqFixture, state string) {
 }
 
 func TestBuyerPaymentCaptureAtomicReplayAndFreshSession(t *testing.T) {
-	q := pqSetupSession(t, true)
+	q := pqSQLSetup(t, true, 1)
 	hash := pcRecord(t, q, pcFull(q))
 	if pcCount(t, q, "payments.facts", "") != 0 {
 		t.Fatal("query persistence changed financial facts before local reconciliation")
@@ -121,7 +121,7 @@ func TestBuyerPaymentCaptureAtomicReplayAndFreshSession(t *testing.T) {
 func TestBuyerPaymentCaptureEvidenceAndStickyReview(t *testing.T) {
 	for _, mode := range []string{"authorized", "incomplete", "zero", "partial", "missing", "wrong_trade_status", "refund_before", "refund_with_capture", "neutral_refund_fields", "remain_above_total"} {
 		t.Run(mode, func(t *testing.T) {
-			q := pqSetup(t)
+			q := pqSQLSetup(t, false, 1)
 			r := pcFull(q)
 			wantCapture, wantReview, wantReady := 0, 0, false
 			switch mode {
@@ -186,7 +186,7 @@ func TestBuyerPaymentCaptureEvidenceAndStickyReview(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureLaterRefundAndReverseOrder(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	full := pcRecord(t, q, pcFull(q))
 	if e := pcApply(q.worker, q.result.AttemptID, full); e != nil {
 		t.Fatal(e)
@@ -208,7 +208,7 @@ func TestBuyerPaymentCaptureLaterRefundAndReverseOrder(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureOldAuthorizationIsNotConflict(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	oldAuth := pcRecord(t, q, pqReport(q))
 	full := pcRecord(t, q, pcFull(q))
 	if e := pcApply(q.worker, q.result.AttemptID, full); e != nil {
@@ -234,7 +234,7 @@ func TestBuyerPaymentCaptureOldAuthorizationIsNotConflict(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureACLAndObservationBinding(t *testing.T) {
-	q, other := pqSetup(t), pqSetup(t)
+	q, other := pqSQLSetup(t, false, 1), pqSQLSetup(t, false, 1)
 	hash := pcRecord(t, q, pcFull(q))
 	for _, wrong := range [][]byte{nil, randomBytes(31), randomBytes(32)} {
 		if e := pcApply(q.worker, q.result.AttemptID, wrong); e == nil {
@@ -302,7 +302,7 @@ func TestBuyerPaymentCaptureFaultsAreCausalAndAtomic(t *testing.T) {
 		{"fulfillment.payment_work_items", "INSERT", "NEW.order_id=$ORDER"},
 	} {
 		t.Run(point.table, func(t *testing.T) {
-			q := pqSetup(t)
+			q := pqSQLSetup(t, false, 1)
 			hash := pcRecord(t, q, pcFull(q))
 			name := "pc_fault_" + t04Tag()
 			predicate := strings.ReplaceAll(strings.ReplaceAll(point.predicate, "$ORDER", "'"+q.hold.OrderID+"'::uuid"), "$ATTEMPT", "'"+q.result.AttemptID+"'::uuid")
@@ -475,7 +475,7 @@ func TestStripeCaptureDurableObservationAcrossRestart(t *testing.T) {
 func TestBuyerPaymentCaptureReleasedAnomalyKeepsRealMoney(t *testing.T) {
 	for _, state := range []string{"EXPIRED", "RELEASED"} {
 		t.Run(state, func(t *testing.T) {
-			q := pqSetup(t)
+			q := pqSQLSetup(t, false, 1)
 			hash := pcRecord(t, q, pcFull(q))
 			ctx := context.Background()
 			// Owner-only anomaly injection in a disposable PG. There is currently
@@ -519,7 +519,7 @@ func TestBuyerPaymentCaptureReleasedAnomalyKeepsRealMoney(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureBalanceWaitIsAtomic(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	hash := pcRecord(t, q, pcFull(q))
 	ctx := context.Background()
 	name := "pc_wait_" + t04Tag()
@@ -554,7 +554,7 @@ func TestBuyerPaymentCaptureBalanceWaitIsAtomic(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureEmptyReferenceAndMerchantReadScope(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	r := pqReport(q)
 	r["TradeNo"], r["TradeStatus"], r["DataSource"] = "", "8", "B"
 	pendingHash := pcRecord(t, q, r)
@@ -573,7 +573,7 @@ func TestBuyerPaymentCaptureEmptyReferenceAndMerchantReadScope(t *testing.T) {
 		t.Fatal(e)
 	}
 	pcAssertWork(t, q, "READY")
-	other := pqSetup(t)
+	other := pqSQLSetup(t, false, 1)
 	ctx := context.Background()
 	for _, sc := range []struct {
 		q    pqFixture
@@ -596,7 +596,7 @@ func TestBuyerPaymentCaptureEmptyReferenceAndMerchantReadScope(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureMultiSKUSingleCommit(t *testing.T) {
-	q := pqSetupItems(t, false, 2)
+	q := pqSQLSetup(t, false, 2)
 	hash := pcRecord(t, q, pcFull(q))
 	for i := 0; i < 2; i++ {
 		if e := pcApply(q.worker, q.result.AttemptID, hash); e != nil {
@@ -613,7 +613,7 @@ func TestBuyerPaymentCaptureMultiSKUSingleCommit(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureQueryJobBindingAndRollback(t *testing.T) {
-	q := pqSetup(t)
+	q := pqSQLSetup(t, false, 1)
 	c := q.claim(t)
 	r := pcFull(q)
 	hash := hex.EncodeToString(pcHash(t, q, r))
@@ -683,7 +683,17 @@ func TestBuyerPaymentCaptureQueryJobBindingAndRollback(t *testing.T) {
 }
 
 func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
-	q := pqSetupWorker(t)
+	rm2AssertRemovedWorker(t, true)
+}
+
+func TestStripeCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
+	q := rm2StripePending(t)
+	evidence := &slrEnv{sstEnv: q.stripe.sstEnv, p: q.psHarness}
+	session := q.stripe.session(t, q.result.AttemptID)
+	if !q.stripe.fake.SetState(session, "complete", "paid") {
+		t.Fatal("missing mock session")
+	}
+	hash := evidence.observe(t, q.result.AttemptID, evidence.sessionReport(t, q.result.AttemptID, "complete", "paid", "succeeded", false))
 	ctx := context.Background()
 	w, e := payments.NewCaptureWorker(ctx, q.worker)
 	if e != nil {
@@ -698,16 +708,18 @@ func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
 	}
 	// Begin with valid committed intake, then use fixture-owner corruption to
 	// exercise the worker's defense behind the new commit-time insert fence.
-	if e = q.record(q.claim(t), pqReport(q)); e != nil {
+	inserted, e := client.Insert(ctx, pcArgs{OperationID: q.result.AttemptID, ReportHash: hex.EncodeToString(hash), Version: 1}, nil)
+	if e != nil {
 		t.Fatal(e)
 	}
+	reports := q.reportCount(t)
 	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
 	defer mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
-	var jobID int64
+	jobID := inserted.Job.ID
 	if e = q.f.owner.QueryRow(ctx, `UPDATE river_payment.river_job SET
 		args=jsonb_set(args,'{report_hash}',to_jsonb($2::text))
-		WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1 RETURNING id`,
-		q.result.OperationID, strings.Repeat("a", 64)).Scan(&jobID); e != nil {
+		WHERE id=$1 RETURNING id`,
+		jobID, strings.Repeat("a", 64)).Scan(&jobID); e != nil {
 		t.Fatal(e)
 	}
 	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
@@ -729,7 +741,7 @@ func TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney(t *testing.T) {
 			t.Fatal(e)
 		}
 		if state == "cancelled" {
-			if attempts != 1 || pcCount(t, q, "payments.facts", "") != 0 || q.reportCount(t) != 1 {
+			if attempts != 1 || pcCount(t, q, "payments.facts", "") != 0 || q.reportCount(t) != reports {
 				t.Fatal("forged job retried or wrote money")
 			}
 			q.pending(t)

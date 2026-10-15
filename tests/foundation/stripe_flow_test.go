@@ -67,9 +67,14 @@ func sflNew(t *testing.T, tune func(*payments.QueryWorkerOptions)) *sflEnv {
 }
 
 // sflNewOn reuses the existing Stripe fixture on a caller-owned isolated database.
-func sflNewOn(t *testing.T, f *testFixture, tune func(*payments.QueryWorkerOptions)) *sflEnv {
+func sflNewOn(t *testing.T, f *testFixture, tune func(*payments.QueryWorkerOptions), fixtureKeys ...*accounts.Keyring) *sflEnv {
 	t.Helper()
 	keys := pwKeys(t)
+	if len(fixtureKeys) == 1 {
+		keys = fixtureKeys[0]
+	} else if len(fixtureKeys) != 0 {
+		t.Fatal("invalid fixture keyring count")
+	}
 	e := &sflEnv{sstEnv: sstNewEnv(t, f, keys), pool: pwWorkerPool(t, f), opts: payments.DefaultQueryWorkerOptions()}
 	e.opts.MockTransport = pqNoNetwork() // removed-provider transport is always forbidden
 	if tune != nil {
