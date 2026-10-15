@@ -1,4 +1,4 @@
-/* Purpose: Styles AppShellV2: dark 260 px sidebar with collapsible groups and a store card, 50 px topbar, breadcrumb row, mobile drawer below 768 px.
+/* Purpose: Styles AppShellV2: dark 270 px sidebar with collapsible groups and a store card, 50 px topbar, breadcrumb row, mobile drawer below 768 px.
  * Depends on: ../tokens.css custom properties.
  * Used by: packages/ui/src/ds/AppShellV2.tsx */
 .shell { display: flex; min-height: 100vh; background: var(--ds-page); color: var(--ds-text-1); font-size: var(--ds-text-md); }
@@ -88,3 +88,13 @@
 @media (prefers-reduced-motion: reduce) {
   .nav, .nav[data-open="true"], .chev { transition: none; }
 }
+
+.shell { font-family: var(--ds-font); line-height: var(--ds-leading); }
+:global(html[lang="zh-CN"]) .shell { font-family: var(--ds-font-cn); }
+.shell ::selection { background: var(--ds-primary-soft); color: var(--ds-text-1); }
+.shell input, .shell textarea { caret-color: var(--ds-primary); }
+.groupIcon { width: var(--ds-space-6); align-items: center; }
+.chev { width: var(--ds-space-4); height: var(--ds-space-4); }
+.item:hover { color: var(--ds-nav-text); background: var(--ds-nav-active); }
+.topbarRight { gap: var(--ds-space-2); }
+@media (max-width: 767.98px) { .topbarRight { flex: 1; justify-content: flex-end; } }
