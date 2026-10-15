@@ -8,7 +8,7 @@ current implementation for owner review, not a runtime acceptance claim.
 ## 1. Canonical inventory
 
 Each code span contains METHOD, a space and the full path, exactly as
-`scripts/dev/contractdrift/contracts.go:94` (`mdRoute`) reads it. In particular,
+`scripts/dev/contractdrift/contracts.go:90` (`mdRoute`) reads it. In particular,
 `buyer-payment-http-v1.md:100` puts a backtick BETWEEN POST and the full path;
 the regexp excludes that backtick from the path token, so it never matches that
 row. Relative paths also need a recognized `Route base:` directive. The owning
@@ -72,8 +72,8 @@ add the claim token as defined in their owning contract.
 | `GET /v1/buyer/quotes/{id}` | B + O + C; K forbidden | buyer-http-v1.md §Routes and strict input; §Explicit response projections |
 | `GET /v1/buyer/destinations/{id}` | B + O + C; K forbidden | buyer-http-v1.md §Routes and strict input; §Explicit response projections |
 | `GET /v1/buyer/orders/{id}` | B + O + C; K forbidden | buyer-http-v1.md §Routes and strict input; §Explicit response projections |
-| `GET /v1/buyer/feeds/meta.csv` | B + O; C/K not inspected | meta-ads-v1.md §7 HTTP (public feed); catalog-inventory-v1.md §Meta catalog feed; internal/attribution/feed.go:123 (GET/HEAD transport) |
-| `HEAD /v1/buyer/feeds/meta.csv` | B + O; C/K not inspected | meta-ads-v1.md §7 HTTP (public feed); catalog-inventory-v1.md §Meta catalog feed; internal/attribution/feed.go:123 (GET/HEAD transport) |
+| `GET /v1/buyer/feeds/meta.csv` | B + O; C/K not inspected | meta-ads-v1.md §7 HTTP (public feed); catalog-inventory-v1.md §Meta catalog feed; internal/attribution/feed.go:128 (GET/HEAD transport) |
+| `HEAD /v1/buyer/feeds/meta.csv` | B + O; C/K not inspected | meta-ads-v1.md §7 HTTP (public feed); catalog-inventory-v1.md §Meta catalog feed; internal/attribution/feed.go:128 (GET/HEAD transport) |
 
 ## 2. Current code-derived behaviour (owner review)
 
@@ -92,14 +92,14 @@ handler pointers where the handler delegates. No handler behaviour is changed.
   `method_not_allowed`; noncanonical order UUID: 422 `invalid_request`
   (`handler.go:334`, `:338`). K must be absent for the two GETs, and exactly one
   matching `^[A-Za-z0-9_.:-]{8,128}$` for proof PUT; otherwise 422
-  `invalid_request` (`handler.go:39`, `:268`, `:342`).
+  `invalid_request` (`handler.go:39`, `:268`, `:345`).
 - Privacy/proof require one canonical Bearer; invalid/missing/duplicate Bearer:
   401 `unauthorized`. Primary-origin refuses any Authorization: 403 `forbidden`
-  (`handler.go:391`, `:358`, `:365`; `catalogv2.go:52`). Origin resolves before
+  (`handler.go:368`, `:360`, `:366`; `catalogv2.go:54`). Origin resolves before
   dispatch; unpublished/unknown origin is 404 `not_found`, invalid origin 422
   `invalid_request` (`handler.go:372`, `:749`). View-only sessions cannot read
   privacy or submit proof (403 `forbidden`; lookup failure 503 `unavailable`)
-  (`handler.go:379`; `internal/buyerhttp/lookup.go:172`, `:191`).
+  (`handler.go:379`; `internal/buyerhttp/lookup.go:176`, `:191`).
 - Shared 10-second context/read/write deadlines (`handler.go:305`); errors use
   the safe JSON envelope, no-store and nosniff via `New`'s middleware
   (`handler.go:75`; `internal/httperror/error.go:25`). Generic mappings: 401
@@ -116,7 +116,7 @@ The indexed privacy GET takes no request fields; it reads the authenticated
 scope through `customers.ReadBuyerPrivacy` and returns
 `{consents:{marketing_messages:bool,ads_personalization:bool},erased:bool}`
 (`internal/buyerhttp/privacy.go:45`, `:55`; `internal/customers/types.go:80`,
-`:177`). It drops the service's `store_name` (`internal/customers/privacy.go:141`).
+`:177`). It drops the service's `store_name` (`internal/customers/privacy.go:151`).
 The handler does **not** call `noBody` or `decodeJSON`: supplied body bytes are
 not read, and it enforces no body-size limit (`privacy.go:45`).
 Errors delegate to `privacyError` (`privacy.go:49`, `:172`), which maps its
@@ -131,26 +131,26 @@ claiming that all write-only privacy sentinels occur on the read operation.
 The indexed primary-origin GET uses only the verified origin. It calls
 `noBody`: any positive Content-Length or observed body byte is 422
 `invalid_request`, so the allowed body size is zero bytes
-(`internal/buyerhttp/primary.go:20`; `handler.go:680`). It calls
+(`internal/buyerhttp/primary.go:21`; `handler.go:680`). It calls
 `storefrontdomains.PrimaryOrigin` and returns 200 `{primary_origin:string|null}`
 (the empty service result becomes null); it returns JSON, not a redirect
-(`primary.go:24`, `:29`, `:33`; `internal/storefrontdomains/service.go:209`).
+(`primary.go:25`, `:29`, `:33`; `internal/storefrontdomains/service.go:209`).
 Errors from that call use the shared mapping, including invalid input 422
 `invalid_request`, unknown/unpublished origin 404 `not_found` at the preceding
 resolver, and unclassified dependency/timeout failures 503 `unavailable`
-(`primary.go:26`; `handler.go:372`, `:749`). The shared BFF/Authorization/method/
+(`primary.go:27`; `handler.go:372`, `:749`). The shared BFF/Authorization/method/
 query/K refusals apply; success inherits no-store (`handler.go:75`;
-`internal/httperror/error.go:36`).
+`internal/httperror/error.go:35`).
 
 ### 2.3 Transfer proof — documented-from-code 2026-10-15
 
 The indexed proof PUT takes the canonical order UUID and strict JSON
 `{last5:string,amount_minor:int64,paid_at:RFC3339 timestamp}`; the handler decodes
 `checkout.ProofInput` then calls `SubmitTransferProof` with server-resolved store,
-Bearer and K (`internal/buyerhttp/transfer.go:30`, `:35`, `:39`;
+Bearer and K (`internal/buyerhttp/transfer.go:30`, `:36`, `:39`;
 `internal/checkout/transfer.go:61`). Last5 is exactly five ASCII digits; amount is
 1..1,000,000,000,000; paid_at must be nonzero and is normalized to UTC microseconds
-(`internal/checkout/transfer.go:77`, `:86`, `:139`).
+(`internal/checkout/transfer.go:76`, `:87`, `:143`).
 
 Exactly one Content-Type parsing to application/json is required (415
 `json_required` otherwise). Body limit is 64 KiB (Content-Length or observed
@@ -158,14 +158,14 @@ excess: 422 `invalid_request`); missing/malformed JSON, explicit null anywhere,
 unknown fields, wrong types and trailing JSON values: 400 `invalid_json`
 (`internal/buyerhttp/handler.go:37`, `:701`). JSON decode does not independently
 require each key; missing fields reach service validation and fail 422
-`invalid_request` (`transfer.go:35`; `internal/checkout/transfer.go:139`).
+`invalid_request` (`transfer.go:36`; `internal/checkout/transfer.go:140`).
 
 Success is 200 `{order_id,state:"SUBMITTED",proof_count,submitted_at}`; a
 malformed SQL projection becomes conflict (`internal/buyerhttp/handler.go:525`,
-`:654`, `:666`; `internal/checkout/transfer.go:68`, `:161`). The service uses
+`:654`, `:666`; `internal/checkout/transfer.go:68`, `:162`). The service uses
 buyer scope and the SQL definer for ownership/window/state/idempotency, then
 rechecks capability (`internal/buyerhttp/transfer.go:39`;
-`internal/checkout/transfer.go:157`). Errors pass through checkout `safeError`
+`internal/checkout/transfer.go:158`). Errors pass through checkout `safeError`
 and the shared HTTP mapping: 401 `unauthorized`, 422 `invalid_request`, 404
 `not_found`, 409 `conflict` (including a refused state/replay), and dependency/
 timeout failures 503 `unavailable`; shared transport/view-only refusals above
@@ -178,4 +178,4 @@ explicit list at `internal/checkout/transfer.go:136`; transport at
 `internal/buyerhttp/transfer.go:39`, `internal/buyerhttp/cvs.go:62`,
 `internal/checkout/checkout.go:659`, `:844`). A coded PT429 is preserved as
 429 with Retry-After, and coded PT409 as 409; these are mapper capabilities,
-not evidence of a new proof rate limit (`handler.go:388`; `checkout.go:844`).
+not evidence of a new proof rate limit (`handler.go:392`; `checkout.go:844`).
