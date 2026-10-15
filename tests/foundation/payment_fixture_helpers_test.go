@@ -41,11 +41,26 @@ func (q pqFixture) rm2StripePay(t *testing.T) {
 	if !q.stripe.fake.SetState(session, "complete", "paid") {
 		t.Fatal("fake Stripe session missing")
 	}
-	endpoint, secret := q.stripe.endpoint(t, q.stripeStore)
+	endpoint, secret := q.stripe.paymentEndpoint(t, q.stripeStore)
 	if status := q.stripe.deliver(t, endpoint, secret, sflEvent(q.result.AttemptID, session)); status != 200 {
 		t.Fatalf("Stripe signed webhook status=%d", status)
 	}
 	stop := q.stripe.start(t, true)
 	defer stop()
 	q.stripe.awaitFact(t, q.result.AttemptID, "CAPTURED")
+}
+
+// paymentEndpoint registers the store's webhook endpoint once and reuses it: a second create for the
+// same connection is refused by payments.set_stripe_webhook_endpoint (PT409 "already exists").
+func (e *sflEnv) paymentEndpoint(t *testing.T, s sstStore) (string, string) {
+	t.Helper()
+	if h, ok := e.hooks[s.connection]; ok {
+		return h[0], h[1]
+	}
+	id, secret := e.endpoint(t, s)
+	if e.hooks == nil {
+		e.hooks = map[string][2]string{}
+	}
+	e.hooks[s.connection] = [2]string{id, secret}
+	return id, secret
 }

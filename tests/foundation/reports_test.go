@@ -128,7 +128,7 @@ func (w *rpWorld) order(at time.Time, state, source, mode string, lines ...rpLin
 func (w *rpWorld) capture(o rpOrder, minor int64, env string, at time.Time) {
 	w.exec(`WITH a AS (INSERT INTO checkout.payment_attempts(tenant_id,store_id,owner_id,id,session_id,order_id,market_id,country,method_code,method_version,connection_id,credential_version,
 	  qualification_id,environment,execution_profile,binding_id,binding_version,currency,amount_minor,merchant_trade_no,state,generation,job_id)
-	 VALUES($1,$2,$3,$4::uuid,gen_random_uuid(),$5,gen_random_uuid(),'TW','stripe_checkout',1,gen_random_uuid(),1,gen_random_uuid(),$6,'PROVIDER_MOCK',gen_random_uuid(),1,'TWD',100,
+	 VALUES($1,$2,$3,$4::uuid,gen_random_uuid(),$5,gen_random_uuid(),'TW','stripe_checkout',1,gen_random_uuid(),1,gen_random_uuid(),$6,'PROVIDER_MOCK',gen_random_uuid(),1,'TWD',2500,
 	  substr(replace($4::text,'-',''),1,25),'PAYMENT_PENDING',2,$7) RETURNING 1)
 	 INSERT INTO payments.facts(tenant_id,store_id,attempt_id,kind,amount_minor,currency,provider_reference,connection_id,execution_profile,environment,source_report_hash,received_at)
 	 VALUES($1,$2,$4::uuid,'CAPTURED',$8,'TWD','ref_'||substr(replace($4::text,'-',''),1,20),gen_random_uuid(),'PROVIDER_MOCK',$6,sha256('x'::bytea),$9)`,
@@ -602,7 +602,7 @@ func (w *rpWorld) perfSeed() {
 	   g.at,g.at,'card',CASE WHEN g.n%10=0 THEN 'merchant_manual' ELSE 'storefront' END,NULL FROM g RETURNING id),
 	 a AS (INSERT INTO checkout.payment_attempts(tenant_id,store_id,owner_id,id,session_id,order_id,market_id,country,method_code,method_version,connection_id,credential_version,
 	   qualification_id,environment,execution_profile,binding_id,binding_version,currency,amount_minor,merchant_trade_no,state,generation,job_id)
-	  SELECT $1,$2,g.owner,g.aid,gen_random_uuid(),g.oid,gen_random_uuid(),'TW','stripe_checkout',1,gen_random_uuid(),1,gen_random_uuid(),'LIVE','PROVIDER_MOCK',gen_random_uuid(),1,'TWD',100,
+	  SELECT $1,$2,g.owner,g.aid,gen_random_uuid(),g.oid,gen_random_uuid(),'TW','stripe_checkout',1,gen_random_uuid(),1,gen_random_uuid(),'LIVE','PROVIDER_MOCK',gen_random_uuid(),1,'TWD',2500,
 	   substr(replace(g.aid::text,'-',''),1,25),'PAYMENT_PENDING',2,$4::bigint+g.n FROM g RETURNING id),
 	 f AS (INSERT INTO payments.facts(tenant_id,store_id,attempt_id,kind,amount_minor,currency,provider_reference,connection_id,execution_profile,environment,source_report_hash,received_at)
 	  SELECT $1,$2,g.aid,'CAPTURED',30000,'TWD','ref_'||substr(replace(g.aid::text,'-',''),1,20),gen_random_uuid(),'PROVIDER_MOCK','LIVE',sha256('x'::bytea),g.at+interval '1 minute' FROM g RETURNING 1),

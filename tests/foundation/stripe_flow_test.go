@@ -59,6 +59,7 @@ type sflEnv struct {
 	ingress *pgxpool.Pool
 	hook    *httptest.Server
 	stops   []func()
+	hooks   map[string][2]string // rm2 paid-order fixtures: one webhook endpoint per connection
 }
 
 func sflNew(t *testing.T, tune func(*payments.QueryWorkerOptions)) *sflEnv {
