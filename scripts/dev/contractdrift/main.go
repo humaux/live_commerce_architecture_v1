@@ -140,7 +140,7 @@ func run(args []string, out, errOut io.Writer) int {
 			seed.Entries = append(seed.Entries, f)
 		}
 		for _, f := range findings {
-			if f.Kind == "UNRESOLVED" && unresolvedTouched(f, baseFacts, changes) {
+			if f.Fatal || f.Kind == "UNRESOLVED" && unresolvedTouched(f, baseFacts, changes) {
 				return fail(fmt.Errorf("changed UNRESOLVED cannot be grandfathered"))
 			}
 		}
@@ -160,7 +160,9 @@ func run(args []string, out, errOut io.Writer) int {
 	for _, f := range findings {
 		counts[f.Kind]++
 		level, reason := "INFO", ""
-		if f.Kind == "BFF_REMOVED" {
+		if f.Fatal {
+			level, reason = "ERROR", "dispatcher freeze"
+		} else if f.Kind == "BFF_REMOVED" {
 			level, reason = "ERROR", "merge-base regression"
 		} else if mismatchKinds[f.Kind] {
 			if _, ok := legacy[findingKey(f)]; !ok {

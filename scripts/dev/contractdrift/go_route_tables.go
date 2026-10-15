@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"strings"
@@ -47,6 +48,11 @@ type goRouteTable struct {
 }
 
 func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
+	pins, pinErr := readGoDispatcherPins(s.Root)
+	if pinErr != nil {
+		s.dispatcherError(location{File: goDispatcherPinFile, Line: 1}, "invalid dispatcher pin file: "+pinErr.Error(), "", "")
+	}
+	provedPins := map[string]bool{}
 	var tables []goRouteTable
 	for _, p := range packages {
 		// Only API-reachable packages were initialized by scanGo.
@@ -79,10 +85,12 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 	var consumed []goRouteTable
 	for _, table := range tables {
 		resolved := map[location]bool{}
+		var entries []*goFunc
 		for _, fn := range table.Package.Funcs {
 			if !table.Exact && s.goTableReaches(table, fn) ||
 				table.Exact && goTableExactDispatcher(fn, table.Consumers[1]) && s.goTablePathPolicy(table, fn) {
 				resolved[s.loc(fn.AST)] = true
+				entries = append(entries, fn)
 			}
 		}
 		// A declaration without an actual opaque HTTP entrypoint does not invent routes.
@@ -107,6 +115,27 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 			addUnresolved(&s.Out, table.Ref, "route table has no consuming HTTP dispatcher")
 			continue
 		}
+		candidate, err := goTableDispatcherFingerprint(table, entries)
+		if err != nil {
+			s.dispatcherError(table.Ref, "cannot fingerprint dispatcher: "+err.Error(), "", "")
+			continue
+		}
+		s.Out.Dispatchers = append(s.Out.Dispatchers, candidate)
+		pin, pinned := pins[candidate.Table]
+		want := pin.SHA256
+		if !pinned {
+			want = "<missing>"
+		}
+		if pinErr != nil || !pinned || candidate.SHA256 != pin.SHA256 || !goDispatcherFunctionsEqual(candidate.Functions, pin.Functions) || pin.Reviewed == "" {
+			detail := fmt.Sprintf("route-table dispatcher changed or unpinned: %s %s want %s; review the dispatcher and update %s", candidate.Table, candidate.SHA256, want, goDispatcherPinFile)
+			for _, row := range table.Routes {
+				s.dispatcherError(row.Locations[0], detail, row.Method, row.Path)
+			}
+			// Already diagnosed this table, including every row. Do not add an orphan error too.
+			provedPins[candidate.Table] = true
+			continue
+		}
+		provedPins[candidate.Table] = true
 		consumed = append(consumed, table)
 		s.Out.Routes = append(s.Out.Routes, table.Routes...)
 		remaining := s.Out.Unresolved[:0]
@@ -135,6 +164,11 @@ func (s *goScanner) resolveRouteTables(packages map[string]*goPackage) {
 			}
 		}
 		s.Out.Unresolved = remaining
+	}
+	for name := range pins {
+		if !provedPins[name] {
+			s.dispatcherError(location{File: goDispatcherPinFile, Line: 1}, "pinned route table cannot be proved: "+name, "", "")
+		}
 	}
 	// Factory coverage depends on ALL consumed tables, not whichever table the
 	// scanner happened to visit first. Keep the original opaque dependency spans.
