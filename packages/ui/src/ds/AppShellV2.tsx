@@ -66,6 +66,8 @@ export type AppShellV2Props = {
     help: ReactNode;
     notifications: ReactNode;
     account: ReactNode;
+    /** Mobile disclosure includes locale/help/store links as well as profile. */
+    mobileAccount?: ReactNode;
     enterStore: { label: string; href: string };
   };
   breadcrumb?: ReactNode;
@@ -170,14 +172,14 @@ export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded
           <button type="button" className={s.menuButton} aria-label={menuLabel} aria-expanded={open} aria-controls="ds-nav" onClick={() => setOpen(true)}>
             <Icon name="menu" />
           </button>
+          <span className={s.mobileStore}>{store.name}</span>
           <div className={s.topbarRight}>
-            {topbar.locale}
-            {topbar.help}
+            <div className={s.desktopTools}>{topbar.locale}{topbar.help}</div>
             {topbar.notifications}
-            <ButtonLink size="sm" href={topbar.enterStore.href} target="_blank" rel="noopener noreferrer">
+            <div className={s.desktopTools}><ButtonLink href={topbar.enterStore.href} target="_blank" rel="noopener noreferrer">
               {topbar.enterStore.label}<Icon name="externalLink" size={16} />
-            </ButtonLink>
-            {topbar.account}
+            </ButtonLink>{topbar.account}</div>
+            <div className={s.mobileTools}>{topbar.mobileAccount ?? topbar.account}</div>
           </div>
         </header>
         {breadcrumb && <div className={s.crumbRow}>{breadcrumb}</div>}

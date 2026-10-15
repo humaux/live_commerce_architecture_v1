@@ -3,7 +3,7 @@
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
 import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from "react";
-import { Icon } from "./Icon";
+import { Icon, type IconName } from "./Icon";
 import s from "./data.module.css";
 import { Button, ButtonLink } from "./Controls";
 import {
@@ -26,7 +26,7 @@ import {
 /** An item either runs `onSelect` or, with `href`, navigates (rendered as a link, not a button). */
 export type MenuItem = { id: string; label: string; variant?: "danger"; disabledReason?: string } & (
   | { onSelect: () => void; href?: undefined }
-  | { href: string; onSelect?: () => void }
+  | { href: string; target?: "_blank"; onSelect?: () => void }
 );
 
 /** A disclosure menu (aria-expanded, not role=menu): Escape and an outside click close it, focus returns to the trigger. */
@@ -36,12 +36,17 @@ export function MenuButton({
   align = "end",
   size = "md",
   disabledReason,
+  icon,
+  variant = "secondary",
 }: {
   label: ReactNode;
   items: readonly MenuItem[];
   align?: "start" | "end";
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
   disabledReason?: string;
+  /** Icon-only disclosure: no extra caret; label remains available to assistive technology. */
+  icon?: IconName;
+  variant?: "secondary" | "ghost";
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
@@ -97,6 +102,8 @@ export function MenuButton({
       <Button
         ref={trigger}
         size={size}
+        variant={variant}
+        iconOnly={Boolean(icon)}
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
@@ -118,8 +125,7 @@ export function MenuButton({
         }}
         data-menu-trigger=""
       >
-        {label}
-        <Icon name="chevronDown" size={16} />
+        {icon ? <><Icon name={icon} size={16} /><span className={s.sr}>{label}</span></> : <>{label}<Icon name="chevronDown" size={16} /></>}
       </Button>
       {open && (
         <div ref={list} className={s.menu} id={id} data-align={align} role="group" style={place} onKeyDown={(event) => {
@@ -138,6 +144,8 @@ export function MenuButton({
                   className={s.menuItem}
                   data-variant={item.variant}
                   href={item.href}
+                  target={item.target}
+                  rel={item.target === "_blank" ? "noopener noreferrer" : undefined}
                   onClick={() => {
                     setOpen(false);
                     item.onSelect?.();

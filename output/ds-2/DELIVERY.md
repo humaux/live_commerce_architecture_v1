@@ -19,7 +19,12 @@ Diagnosis is source/ledger analysis; no local browser reproduction is claimed. B
 
 ### Remaining groups
 
-B1–B13 pending in subsequent commits. Risks: CSS and browser behavior unverified locally; static checker, TypeScript/build/unit/browser/axe/visual review/owner sign-off statuses will be listed below. No local processes or fixture downloads created.
+| Item | Cause | Change (source pointers; final line map below) |
+| --- | --- | --- |
+| B1 | Explicit phone flex-wrap and all desktop tools retained; no store-name slot. | `AppShellV2.tsx`: single fixed 50px row, phone store name; desktop-only tools hidden and mobile account slot. `UiGalleryFrame.tsx`: profile, all 3 locales, help and external store link in mobile account. Existing help/store/profile/locale assertions adapted to their new locations; added all-item keyboard cycle, focus restore, 50px/44px geometry. |
+| B2 | Min-height alone plus legacy button padding yielded intrinsic sizes; section tabs 40px, help 24px, topbar mixed sm/ghost. | `Controls.tsx`, `controls.module.css`: explicit 28/36/44 border-box heights; iconOnly square; phone 44. `Data.tsx`: MenuButton uses same sizes and optional icon-only/ghost, menu items 36/44. `data.module.css`: search/paging same scale. Shell right cluster 36 desktop/44 phone. `layout.module.css`: help icon 28. Sidebar nav keeps specification-mandated 52px rows (navigation, not action buttons). |
+
+B3–B13 pending in subsequent commits. Risks: CSS and browser behavior unverified locally; static checker, TypeScript/build/unit/browser/axe/visual review/owner sign-off statuses will be listed below. No local processes or fixture downloads created.
 
 ---
 

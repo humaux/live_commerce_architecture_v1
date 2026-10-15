@@ -24,6 +24,8 @@ export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disable
   ref?: Ref<HTMLButtonElement>;
   variant?: ButtonVariant;
   size?: ButtonSize;
+  /** Square control using the same height scale; caller supplies its accessible label. */
+  iconOnly?: boolean;
   type?: "button" | "submit" | "reset";
   /** Shows a spinner and swallows clicks. Keep the children as the label; `loadingLabel` is announced instead while busy. */
   loading?: boolean;
@@ -36,6 +38,7 @@ export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disable
 export function Button({
   variant = "secondary",
   size = "md",
+  iconOnly = false,
   type = "button",
   loading = false,
   loadingLabel,
@@ -56,6 +59,7 @@ export function Button({
       className={`${s.button} ${className}`}
       data-variant={variant}
       data-size={size}
+      data-icon-only={iconOnly || undefined}
       aria-disabled={state.blocked || undefined}
       aria-busy={state.busy || undefined}
       aria-describedby={reasonShown ? reasonId : props["aria-describedby"]}

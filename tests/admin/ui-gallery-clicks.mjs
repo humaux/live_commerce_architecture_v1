@@ -2,7 +2,7 @@
 // Depends on: Playwright, axe, visual-lint, gallery copy/navigation, node:assert/fs/crypto. evaluate reads except labelled synthetic fixture resets.
 // Used by: tests/admin/ui-gallery-runner.mjs (--browser-ui-gallery).
 import assert from "node:assert/strict";
-import { localeNames } from "../../packages/i18n/src/index.ts";
+import { localeNames, locales } from "../../packages/i18n/src/index.ts";
 import { galleryNav } from "../../apps/admin/src/ui-gallery-nav.ts";
 
 /** Runs the whole journey once for one locale and viewport; `step(control, action, expected, fn)` records a ledger row. */
@@ -438,13 +438,40 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
     assert.equal(await attr(drawer.getByRole("link", { name: group("home").label, exact: true }), "aria-current"), "page");
     if (mobile) await page.keyboard.press("Escape");
   });
+  await step("Topbar row and scale", "read geometry after real shell navigation", "50px row, equal-height controls; phone store name visible", async () => {
+    const top = page.locator('[data-shell-topbar]');
+    const box = await top.boundingBox();
+    assert.equal(Math.round(box.height), 50);
+    const heights = await top.locator('button:visible,a:visible').evaluateAll(nodes => nodes.map(n => Math.round(n.getBoundingClientRect().height))); // [READ] geometry only
+    assert.ok(heights.length >= 3);
+    assert.ok(heights.every(h => h === (mobile ? 44 : 36)), `topbar heights: ${heights}`);
+    if (mobile) {
+      await seen(top.getByText(c.storeName, { exact: true }));
+      assert.equal(await top.getByRole("button").count(), 3, "menu, notifications, account only");
+    }
+  });
+  if (mobile) await step("Mobile account items keyboard", "ArrowDown through every item, Escape", "profile, 3 locales, help and store are keyboard reachable; focus restored", async () => {
+    const top = page.locator('[data-shell-topbar]');
+    const account = top.getByRole("button", { name: c.account, exact: true });
+    await account.press("ArrowDown");
+    for (const label of [c.setItemProfile, ...locales.map(l => localeNames[l]), c.help, c.enterStore]) {
+      const item = top.getByRole("link", { name: label, exact: true });
+      await seen(item);
+      assert.equal(await item.evaluate(n => n === document.activeElement), true); // [READ] focus
+      await page.keyboard.press("ArrowDown");
+    }
+    await page.keyboard.press("Escape");
+    assert.equal(await account.getAttribute("aria-expanded"), "false");
+    assert.equal(await account.evaluate(n => n === document.activeElement), true); // [READ]
+  });
   await step("Topbar notifications menu", "click, click item", "menu opens, item sets #sec-kpi", async () => {
     await btn(page, c.notifications).click();
     await btn(page, c.kpiUnread).click();
     await page.waitForURL(/#sec-kpi$/);
   });
   await step("Topbar help link", "click", "URL hash #sec-alerts", async () => {
-    await page.getByRole("button", { name: c.help, exact: true }).click();
+    if (mobile) await btn(page, c.account).click();
+    await page.getByRole(mobile ? "link" : "button", { name: c.help, exact: true }).click();
     await page.waitForURL(/#sec-alerts$/);
   });
   await step("Breadcrumb link", "click", "URL hash #sec-tokens", async () => {
@@ -452,6 +479,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
     await page.waitForURL(/#sec-tokens$/);
   });
   await step("Topbar Enter my store", "click", "opens a new tab (target=_blank)", async () => {
+    if (mobile) await btn(page, c.account).click();
     const [popup] = await Promise.all([page.context().waitForEvent("page"), page.getByRole("link", { name: c.enterStore, exact: true }).click()]);
     assert.match(popup.url(), /ui-gallery/);
     await popup.close();
@@ -465,7 +493,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
     });
   await step("Topbar account menu", "click, click Store profile", "navigates to ?setting=profile", async () => {
     await btn(page, c.account).click();
-    await btn(page, c.setItemProfile).click();
+    await page.getByRole(mobile ? "link" : "button", { name: c.setItemProfile, exact: true }).click();
     await page.waitForURL(/setting=profile/);
   });
   const other = locale === "en" ? "zh-TW" : "en";
@@ -494,9 +522,11 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
     assert.equal(await opener.evaluate(n => n === document.activeElement), true); // [READ]
   });
   await step("Topbar language dropdown", `click ${localeNames[other]}`, `URL /${other}/ui-gallery and its own heading`, async () => {
-    const language = page.getByRole("navigation", { name: c.localeLabel });
-    await language.getByRole("button", { name: localeNames[locale], exact: true }).click();
-    assert.equal(await language.getByRole("button", { name: localeNames[locale], exact: true }).getAttribute("aria-expanded"), "true");
+    // The phone keeps language links inside Account; desktop retains its dedicated dropdown.
+    const language = mobile ? page.locator('[data-shell-topbar]') : page.getByRole("navigation", { name: c.localeLabel });
+    const trigger = language.getByRole("button", { name: mobile ? c.account : localeNames[locale], exact: true });
+    await trigger.click();
+    assert.equal(await trigger.getAttribute("aria-expanded"), "true");
     await language.getByRole("link", { name: localeNames[other], exact: true }).click();
     await page.waitForURL(new RegExp(`/${other}/ui-gallery`));
     await seen(page.getByRole("heading", { level: 1 }));
