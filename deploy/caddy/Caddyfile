@@ -166,8 +166,11 @@ www.{$LC_PLATFORM_HOST} {
 # Merchant back office (Next standalone, lc-admin).
 {$LC_ADMIN_HOST} {
 	import edge
+	# Must stay >= the largest admin BFF body cap (product/collection/design photo 2.5 MiB, CSV import 2 MiB);
+	# each BFF route still enforces its own cap. 1MB here rejected every photo over 1 MB with a bare 413 in production
+	# (2026-10-15). Pinned by tests/deploy/admin-edge-body-cap.test.mjs.
 	request_body {
-		max_size 1MB
+		max_size 3MB
 	}
 	reverse_proxy 127.0.0.1:3100
 }

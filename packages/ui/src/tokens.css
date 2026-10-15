@@ -1,7 +1,17 @@
 /*
- * Purpose: Defines shared UI color, spacing, typography and control-size tokens.
+ * Purpose: Defines shared UI color, spacing, typography and control-size tokens: the legacy --ui-* set (values unchanged, so current pages render as before) and the DS-1 semantic --ds-* set.
  * Depends on: CSS custom properties and matching component DOM classes; no API calls.
- * Used by: packages/ui/src/AppShell.tsx, apps/admin/app/globals.css
+ * Used by: packages/ui/src/AppShell.tsx, packages/ui/src/ds/*, apps/admin/app/globals.css
+ *
+ * ALIAS LIST (W3 migration switch): put data-ds="2" on a page wrapper (or <html>) and every legacy --ui-* name below
+ * resolves to its --ds-* replacement; without the attribute nothing changes.
+ *   --ui-primary/-brand/-brand-text -> --ds-primary     --ui-primary-hover -> --ds-primary-hover   --ui-primary-soft -> --ds-primary-soft
+ *   --ui-link -> --ds-link                              --ui-rail -> --ds-nav-bg                    --ui-rail-selected -> --ds-nav-active
+ *   --ui-rail-active -> --ds-nav-accent-text            --ui-page -> --ds-page                      --ui-surface -> --ds-surface
+ *   --ui-border -> --ds-border                          --ui-text -> --ds-text-1                    --ui-muted -> --ds-text-2
+ *   --ui-danger/-success/-warning/-info -> --ds-<tone>-text   --ui-*-soft -> --ds-<tone>-bg           --ui-focus -> --ds-focus
+ *   --ui-radius -> --ds-radius-md                       --ui-text-body/-helper -> --ds-text-md/-xs  --ui-rail-width -> --ds-nav-width
+ * Not remapped (identical px already): --ui-space-*, --ui-target, --ui-control-compact, --ui-heading-*, --ui-field-*.
  */
 :root {
   --ui-primary: #247965;
@@ -45,4 +55,131 @@
   --ui-field-medium: 400px;
   --ui-field-long: 640px;
   --ui-rail-width: 220px;
+}
+
+/* DS-1 semantic tokens: the measured SHOPLINE reference (section 6), darkened where the reference fails WCAG (see output/ds-1/DELIVERY.md). */
+:root {
+  /* shell */
+  --ds-nav-bg: #373d4c;
+  --ds-nav-active: #494f5d;
+  --ds-nav-logo-bg: #4c5561;
+  --ds-nav-text: #f4f6f9;
+  --ds-nav-text-muted: #c4cad6;
+  --ds-nav-accent: #4492d1;
+  --ds-nav-accent-text: #9cc9f5;
+  --ds-topbar-bg: #fdfdfd;
+  /* surfaces */
+  --ds-page: #f8f8f8;
+  --ds-surface: #fff;
+  --ds-surface-muted: #f3f3f3;
+  /* action blue: "blue = main action". #4492d1 is the brand reference; text-bearing blues are darkened to >= 4.5:1 on white. */
+  --ds-brand: #4492d1;
+  --ds-primary: #2a6fb0;
+  --ds-primary-hover: #225e96;
+  --ds-primary-soft: #e8f1fa;
+  --ds-on-primary: #fff;
+  --ds-link: #2a6fb0;
+  --ds-link-hover: #1f5a91;
+  --ds-segment-on: #2a6fb0;
+  --ds-toggle-on: #3f7f32;
+  /* tones: each text colour is >= 4.5:1 on white and on its own soft background */
+  --ds-success-text: #2f6f55;
+  --ds-success-bg: #e6f3ec;
+  --ds-warn-text: #5c4300;
+  --ds-warn-bg: #fae2a9;
+  --ds-warn-soft: #fff4d9;
+  --ds-danger: #b42318;
+  --ds-danger-hover: #8f1b12;
+  --ds-danger-text: #b42318;
+  --ds-danger-bg: #fdebe9;
+  --ds-info-text: #1d4ed8;
+  --ds-info-bg: #eaf0fc;
+  --ds-neutral-text: #3f4753;
+  --ds-neutral-bg: #edf0f3;
+  /* text */
+  --ds-text-1: #333;
+  --ds-text-2: #5b5b5b;
+  --ds-text-3: #6b6b6b;
+  --ds-text-disabled: #8a8a8a;
+  /* lines: separators are decorative; the input border is a control boundary and holds 3:1 */
+  --ds-border: #ddd;
+  --ds-border-input: #8c8c8c;
+  /* focus: 2 px ring, >= 3:1 on white and on --ds-page; the dark variant holds 3:1 on --ds-nav-bg and --ds-nav-active */
+  --ds-focus: #1d4ed8;
+  --ds-focus-on-dark: #9cc9f5;
+  --ds-focus-width: 2px;
+  --ds-focus-offset: 2px;
+  /* spacing, 4-based */
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 20px;
+  --ds-space-6: 24px;
+  --ds-space-8: 32px;
+  --ds-space-10: 40px;
+  --ds-space-12: 48px;
+  /* radius, shadow */
+  --ds-radius-sm: 2px;
+  --ds-radius-md: 4px;
+  --ds-radius-lg: 8px;
+  --ds-radius-pill: 999px;
+  --ds-shadow-1: 0 1px 2px rgb(0 0 0 / 6%);
+  --ds-shadow-2: 0 4px 12px rgb(0 0 0 / 12%);
+  --ds-shadow-3: 0 12px 32px rgb(0 0 0 / 20%);
+  --ds-scrim: rgb(20 24 32 / 55%);
+  /* type scale */
+  --ds-text-xs: 12px;
+  --ds-text-sm: 13px;
+  --ds-text-md: 14px;
+  --ds-text-lg: 16px;
+  --ds-text-xl: 18px;
+  --ds-text-2xl: 22px;
+  --ds-text-3xl: 28px;
+  /* z-index scale */
+  --ds-z-base: 0;
+  --ds-z-sticky: 20;
+  --ds-z-topbar: 25;
+  --ds-z-nav: 30;
+  --ds-z-drawer: 40;
+  --ds-z-dialog: 60;
+  --ds-z-toast: 70;
+  /* sizes */
+  --ds-nav-width: 260px;
+  --ds-nav-item-height: 48px;
+  --ds-topbar-height: 50px;
+  --ds-target: 44px;
+  --ds-control-height: 36px;
+}
+
+/* Opt-in remap of the legacy names (see ALIAS LIST). Applied nowhere yet; W3 sets data-ds="2" per migrated page. */
+[data-ds="2"] {
+  --ui-primary: var(--ds-primary);
+  --ui-primary-hover: var(--ds-primary-hover);
+  --ui-primary-soft: var(--ds-primary-soft);
+  --ui-brand: var(--ds-primary);
+  --ui-brand-text: var(--ds-primary);
+  --ui-link: var(--ds-link);
+  --ui-rail-active: var(--ds-nav-accent-text);
+  --ui-rail-selected: var(--ds-nav-active);
+  --ui-rail: var(--ds-nav-bg);
+  --ui-page: var(--ds-page);
+  --ui-surface: var(--ds-surface);
+  --ui-border: var(--ds-border);
+  --ui-text: var(--ds-text-1);
+  --ui-muted: var(--ds-text-2);
+  --ui-danger: var(--ds-danger-text);
+  --ui-success: var(--ds-success-text);
+  --ui-warning: var(--ds-warn-text);
+  --ui-info: var(--ds-info-text);
+  --ui-neutral-soft: var(--ds-neutral-bg);
+  --ui-success-soft: var(--ds-success-bg);
+  --ui-warning-soft: var(--ds-warn-soft);
+  --ui-danger-soft: var(--ds-danger-bg);
+  --ui-info-soft: var(--ds-info-bg);
+  --ui-focus: var(--ds-focus);
+  --ui-radius: var(--ds-radius-md);
+  --ui-text-body: var(--ds-text-md);
+  --ui-text-helper: var(--ds-text-xs);
+  --ui-rail-width: var(--ds-nav-width);
 }

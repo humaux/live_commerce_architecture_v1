@@ -1,0 +1,30 @@
+{
+  "total": 386,
+  "files": {
+    "apps/admin/app/globals.css": 77,
+    "apps/admin/app/print.css": 5,
+    "apps/admin/components/ProductAdmin.css": 4,
+    "apps/admin/components/ProductDocument.css": 5,
+    "apps/admin/components/DesignProfile.tsx": 1,
+    "apps/admin/components/ads.css": 26,
+    "apps/admin/components/attribution.css": 6,
+    "apps/admin/components/claims.css": 22,
+    "apps/admin/components/customer-tags.css": 25,
+    "apps/admin/components/customers.css": 8,
+    "apps/admin/components/design.css": 10,
+    "apps/admin/components/merchant-tools.css": 17,
+    "apps/admin/components/meta-health.css": 13,
+    "apps/admin/components/operations.css": 13,
+    "apps/admin/components/order-actions.css": 13,
+    "apps/admin/components/orders.css": 11,
+    "apps/admin/components/picklist.css": 3,
+    "apps/admin/components/platform/platform.css": 33,
+    "apps/admin/components/product-media.css": 6,
+    "apps/admin/components/promotions.css": 2,
+    "apps/admin/components/settings.css": 22,
+    "apps/admin/components/tracking-import.css": 14,
+    "apps/admin/lib/photo-preprocess.ts": 1,
+    "apps/admin/src/features/live/workspace.css": 11,
+    "apps/admin/src/features/messages/Inbox.module.css": 38
+  }
+}

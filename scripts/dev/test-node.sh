@@ -13,7 +13,7 @@ cd "$(git rev-parse --show-toplevel)"
 if [[ "$#" -gt 1 ]] || [[ "$#" -eq 1 && "$1" != --require-r04 ]]; then
   echo "Usage: bash scripts/dev/test-node.sh [--require-r04]" >&2; exit 2
 fi
-node --test --experimental-strip-types apps/storefront/tests/*.test.mjs packages/i18n/tests/*.test.ts packages/markdown-lite/tests/*.test.ts tests/admin/design-model.test.ts tests/admin/team-model.test.ts tests/admin/design-gate.test.ts tests/admin/promotions-model.test.ts tests/admin/team-bff.test.ts tests/admin/notify-model.test.ts tests/admin/meta-health-model.test.ts tests/admin/meta-connect-model.test.ts tests/admin/merchant-tools-model.test.ts tests/admin/meta-connect-gate.test.ts tests/deploy/meta-connect-preflight.test.mjs tests/deploy/ops-alert-preflight.test.mjs tests/deploy/deploy-prep-r3.test.mjs tests/admin/invite-next.test.ts tests/admin/money-time-model.test.ts tests/admin/store-domains-ui.test.ts tests/admin/shell-registry.test.ts tests/admin/shell-render.test.ts tests/admin/shell-architecture.test.mjs tests/ui/click-sweep-lib.test.mjs tests/ui/visual-lint-lib.test.mjs
+node --test --experimental-strip-types apps/storefront/tests/*.test.mjs packages/i18n/tests/*.test.ts packages/markdown-lite/tests/*.test.ts tests/admin/design-model.test.ts tests/admin/team-model.test.ts tests/admin/design-gate.test.ts tests/admin/promotions-model.test.ts tests/admin/team-bff.test.ts tests/admin/notify-model.test.ts tests/admin/meta-health-model.test.ts tests/admin/meta-connect-model.test.ts tests/admin/merchant-tools-model.test.ts tests/admin/meta-connect-gate.test.ts tests/deploy/meta-connect-preflight.test.mjs tests/deploy/ops-alert-preflight.test.mjs tests/deploy/deploy-prep-r3.test.mjs tests/deploy/admin-edge-body-cap.test.mjs tests/admin/invite-next.test.ts tests/admin/money-time-model.test.ts tests/admin/store-domains-ui.test.ts tests/admin/shell-registry.test.ts tests/admin/shell-render.test.ts tests/admin/shell-architecture.test.mjs tests/ui/click-sweep-lib.test.mjs tests/ui/visual-lint-lib.test.mjs
 node --test tests/ui/visual-scroll-capture.test.mjs
 node --test --experimental-strip-types tests/admin/operations-model.test.ts
 # TZ audit: real schedule/default producers and loaded component display seams run in both foreign zones.
@@ -71,6 +71,9 @@ node --test --experimental-strip-types tests/admin/inbox-customer-link.test.ts t
 node --input-type=module -e 'import assert from "node:assert/strict"; import {readFileSync,existsSync} from "node:fs"; assert.ok(existsSync("tests/foundation/browser_inbox_ui_test.go")); assert.ok(existsSync("tests/admin/inbox-ui.spec.ts")); assert.ok(readFileSync("playwright.config.ts","utf8").includes(`"inbox": ["inbox-ui.spec.ts", "inbox-bundle-ui.spec.ts", "inbox-customer-ui.spec.ts"]`),"inbox authority suite missing"); assert.ok(readFileSync("scripts/dev/test-local.sh","utf8").includes("TestBrowserInboxUIRealChain"),"inbox Go gate missing"); assert.ok(readFileSync("docs/delivery/GATES.md","utf8").includes("--browser-inbox"),"inbox gate registry missing");'
 
 # W3-U2 actual BFF Request seams and closed command/copy policy.
+# DS-1 admin design system: pure logic (selection scope, one primary per row, disabled-with-reason, paging, typed confirm), token contrast/scales/aliases, and the hex-colour ratchet (no browser).
+node --test --experimental-strip-types tests/ui/ds-logic.test.ts tests/ui/ds-tokens.test.mjs tests/ui/ds-hex-ratchet.test.mjs tests/ui/ds-render.test.mjs
+node scripts/dev/check-hex-ratchet.mjs
 node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
 node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts
 # Browser-run artifact isolation and regression write-root counterexamples.

@@ -1,0 +1,23 @@
+/* Purpose: Styles ConfirmDialog (native modal <dialog>) from --ds-* tokens only.
+ * Depends on: ../tokens.css custom properties.
+ * Used by: packages/ui/src/ds/Dialog.tsx */
+.dialog {
+  box-sizing: border-box;
+  width: min(480px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface);
+  color: var(--ds-text-1);
+  box-shadow: var(--ds-shadow-3);
+  font-size: var(--ds-text-md);
+}
+.dialog::backdrop { background: var(--ds-scrim); }
+.body { display: flex; flex-direction: column; gap: var(--ds-space-3); padding: var(--ds-space-6); }
+.title { margin: 0; font-size: var(--ds-text-xl); font-weight: 600; }
+.text { margin: 0; color: var(--ds-text-2); }
+.typed { display: flex; flex-direction: column; gap: var(--ds-space-1); font-size: var(--ds-text-sm); color: var(--ds-text-2); }
+.typed code { color: var(--ds-text-1); font-weight: 600; }
+.input { box-sizing: border-box; min-height: var(--ds-control-height); padding: 0 var(--ds-space-3); border: 1px solid var(--ds-border-input); border-radius: var(--ds-radius-md); font: inherit; font-size: var(--ds-text-md); color: var(--ds-text-1); background: var(--ds-surface); }
+.input:focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: var(--ds-focus-offset); }
+.foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--ds-space-2); padding: var(--ds-space-3) var(--ds-space-6) var(--ds-space-6); }

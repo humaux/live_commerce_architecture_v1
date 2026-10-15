@@ -1,0 +1,43 @@
+/* Purpose: Styles EmptyState, ErrorState, PermissionState, BlockedState and Dropzone from --ds-* tokens only.
+ * Depends on: ../tokens.css custom properties.
+ * Used by: packages/ui/src/ds/States.tsx */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-2);
+  box-sizing: border-box;
+  padding: var(--ds-space-10) var(--ds-space-6);
+  text-align: center;
+  color: var(--ds-text-2);
+  font-size: var(--ds-text-md);
+}
+.state[data-kind="error"] { color: var(--ds-text-1); }
+.stateIcon { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: var(--ds-radius-pill); background: var(--ds-neutral-bg); color: var(--ds-neutral-text); font-size: var(--ds-text-xl); }
+.state[data-kind="error"] .stateIcon { background: var(--ds-danger-bg); color: var(--ds-danger-text); }
+.state[data-kind="blocked"] .stateIcon, .state[data-kind="permission"] .stateIcon { background: var(--ds-warn-bg); color: var(--ds-warn-text); }
+.stateTitle { margin: 0; color: var(--ds-text-1); font-size: var(--ds-text-lg); font-weight: 600; }
+.stateText { margin: 0; max-width: 480px; }
+.stateNext { margin: var(--ds-space-2) 0 0; max-width: 480px; color: var(--ds-text-1); }
+.stateNextLabel { font-weight: 600; }
+.stateActions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--ds-space-2); margin-top: var(--ds-space-3); }
+
+/* ---------- Dropzone ---------- */
+.drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-3);
+  box-sizing: border-box;
+  padding: var(--ds-space-8) var(--ds-space-6);
+  border: 2px dashed var(--ds-border-input);
+  border-radius: var(--ds-radius-md);
+  background: var(--ds-surface-muted);
+  text-align: center;
+  color: var(--ds-text-1);
+}
+.drop[data-over="true"] { border-color: var(--ds-primary); background: var(--ds-primary-soft); }
+.dropTitle { margin: 0; font-size: var(--ds-text-lg); font-weight: 600; }
+.dropHint { margin: 0; color: var(--ds-text-2); font-size: var(--ds-text-sm); }
+.dropActions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--ds-space-2); }
+.dropErrors { margin: 0; padding: 0; list-style: none; color: var(--ds-danger-text); font-size: var(--ds-text-sm); }

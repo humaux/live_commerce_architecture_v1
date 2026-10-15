@@ -119,6 +119,27 @@ case "$1" in
   exit 0
     }
     ;;
+  --browser-ui-gallery)
+    lc_build=none
+    lc_fixture=none
+    lc_covers=""
+    lc_browsers=chromium
+    lc_prepare() {
+  # DS-1 (MOCK): refuse a no-test success before any build.
+  test -f tests/admin/ui-gallery-runner.mjs
+  test -f tests/admin/ui-gallery-clicks.mjs
+  test -f 'apps/admin/app/[locale]/ui-gallery/page.tsx'
+  test -f tests/ui/hex-baseline.json
+    }
+    lc_run() {
+  mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/ui-gallery"
+  # --test-reporter=spec pins the "ℹ pass N / ℹ fail F" summary that scripts/dev/release-gate.sh counts (B-browser-ui-gallery has no go test events).
+  node --test --test-reporter=spec --experimental-strip-types tests/ui/ds-logic.test.ts tests/ui/ds-tokens.test.mjs tests/ui/ds-hex-ratchet.test.mjs
+  pnpm --filter @live-commerce/admin build > "$LC_BROWSER_EVIDENCE_ROOT/ui-gallery/build.log" 2>&1
+  LC_UI_GALLERY_EVIDENCE="$LC_BROWSER_EVIDENCE_ROOT/ui-gallery" node --experimental-strip-types tests/admin/ui-gallery-runner.mjs
+  exit 0
+    }
+    ;;
   --browser-click-sweep)
     lc_build=both
     lc_fixture=pg

@@ -535,6 +535,16 @@ for m in $browser_modes; do
     else
       record "$id" "$tier" FAIL "browser-admin-shell exit $rc but node pass=$np, browser matrix cases=${mc:-0}: zero tests or a failure is never PASS" "$rc" "$LOG"
     fi
+  elif [[ "$m" == --browser-ui-gallery ]]; then
+    # DS-1: Node + Playwright only, no go test events. test-local.sh runs the DS node suites with the spec reporter ("ℹ pass N" / "ℹ fail F"),
+    # then tests/admin/ui-gallery-runner.mjs prints "PASS DS-1 ui-gallery: M matrix cases ..., K real-click ledger rows". Zero of either, or any failure, is FAIL.
+    np=$(awk '/^ℹ pass [0-9]+$/ {n=$3} END {print n+0}' "$LOG")
+    mc=$(sed -n 's/^PASS DS-1 ui-gallery: \([0-9][0-9]*\) matrix cases.*/\1/p' "$LOG" | tail -1)
+    if ((np >= 1)) && grep -qE '^ℹ fail 0$' "$LOG" && [[ "${mc:-0}" -ge 1 ]]; then
+      record "$id" "$tier" PASS "$np Node tests + $mc gallery matrix cases + real-click ledger (DS-1 design system, MOCK)" "$rc" "$LOG"
+    else
+      record "$id" "$tier" FAIL "browser-ui-gallery exit $rc but node pass=$np, matrix cases=${mc:-0}: zero tests or a failure is never PASS" "$rc" "$LOG"
+    fi
   else
     read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/$id.skipped" "$OUT/$id.skipped-other")"
     if ((gf > 0 || gp == 0)); then
