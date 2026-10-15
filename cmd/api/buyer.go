@@ -174,7 +174,8 @@ func buildBuyerWithCVS(ctx context.Context, c buyerConfig, mainPool *pgxpool.Poo
 	return mountFeed(h, httperror.Middleware(attribution.FeedHandler(runtime)), c.bffKey), parts, closePools, nil
 }
 
-// feedPath is the one route mountFeed serves (meta-ads-v1 §7; the storefront app proxies /feeds/meta.csv to it).
+// feedPath names the compatibility path used by assembly tests; runtime dispatch consumes attribution.FeedRoutes.
+// It is the one route mountFeed serves (meta-ads-v1 §7; the storefront app proxies /feeds/meta.csv to it).
 const feedPath = "/v1/buyer/feeds/meta.csv"
 
 // mountFeed serves feedPath from feed and everything else from next. The feed data is public, but the route keeps the
@@ -182,7 +183,7 @@ const feedPath = "/v1/buyer/feeds/meta.csv"
 // missing X-Commerce-Buyer-BFF-Key is 401 before any SQL, compared in constant time.
 func mountFeed(next, feed http.Handler, bffKey string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != feedPath {
+		if !attribution.FeedRoutes.MatchesPath(r.URL.Path) {
 			next.ServeHTTP(w, r)
 			return
 		}
