@@ -248,7 +248,7 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	origin := "http://" + address
 	idp := newBrowserIDP(t, origin+"/api/auth/callback")
 	mustExec(t, q.f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, q.f.principalA)
-	_, _, authority := identityFixture(t)
+	_, _, authority := identityFixtureOn(t, q.f) // sessions must land in q's (isolated) cluster
 	provider, err := oidclogin.New(ctx, oidclogin.Config{Issuer: idp.server.URL, ClientID: browserClientID, RedirectURL: idp.redirect, AllowLoopbackForTests: true})
 	if err != nil {
 		t.Fatal(err)

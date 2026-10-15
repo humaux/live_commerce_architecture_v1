@@ -50,8 +50,9 @@ func (q pqFixture) rm2StripePay(t *testing.T) {
 	q.stripe.awaitFact(t, q.result.AttemptID, "CAPTURED")
 }
 
-// paymentEndpoint registers the store's webhook endpoint once and reuses it: a second create for the
-// same connection is refused by payments.set_stripe_webhook_endpoint (PT409 "already exists").
+// paymentEndpoint registers the store's webhook endpoint once and reuses it: a second endpoint for the
+// same connection violates the (tenant, store, connection, profile) unique index (23505), which the
+// registrar reports as stripeadmin: rejected.
 func (e *sflEnv) paymentEndpoint(t *testing.T, s sstStore) (string, string) {
 	t.Helper()
 	if h, ok := e.hooks[s.connection]; ok {
