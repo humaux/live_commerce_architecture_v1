@@ -58,8 +58,19 @@ as well as outside it. Hashing its source is insufficient. No other regexp
 method, strings/slices function, name-only `MatchString`/`Write` imitation or
 unknown imported function is implicitly trusted.
 
+One more read context is allowed: **calling** a frozen func-valued variable
+(`probe(x)`, the variable is the callee and is consumed by the call). Its
+initializer must be static: a function literal, a name that resolves to a
+package-level `func` declaration, or a selector whose receiver contains no call
+(`pkg.Func`, `checker{}.method`). A func held in another variable, or produced by
+a call (`makeProbe()`, `newGate().ok`, `makeBox().fn`), fails closed, because the
+state it closes over can change outside the hashed closure. A cross-package func
+*variable* (`pkg.Var`) is the documented imported boundary, no weaker than calling
+it directly.
+
 Returns, local/global aliases, field/map/slice/channel stores, composite values,
-method values and goroutine/function-literal captures fail closed. The syntax
+method values (other than the static-initializer call above) and
+goroutine/function-literal captures fail closed. The syntax
 checker deliberately refuses even a direct same-package closure call receiving
 a frozen value: it does not attempt parameter-effect/alias analysis. A future
 read-only helper can be supported only with a separate proof and negative gate;

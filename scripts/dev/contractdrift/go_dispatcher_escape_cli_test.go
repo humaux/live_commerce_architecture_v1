@@ -31,6 +31,9 @@ func TestGoDispatcherFrozenValueEscapeCLI(t *testing.T) {
 		{"nonfrozen initializer", "", "var alias = gate", false},
 		// Calling a frozen func value is allowed only for static initialisers; a func built by a call is not.
 		{"inside dynamic func value", `probe("x");`, "func makeProbe() func(string) bool { return func(string) bool { return true } }\nvar probe = makeProbe()", true},
+		{"inside call-produced method value", `probe("x");`, "type holder struct{ max int }\nfunc (h *holder) ok(s string) bool { return len(s) <= h.max }\nfunc newHolder() *holder { return &holder{max: 9} }\nvar probe = newHolder().ok", true},
+		{"inside call-produced field func", `probe("x");`, "type box struct{ fn func(string) bool }\nfunc makeBox() box { return box{fn: func(string) bool { return true }} }\nvar probe = makeBox().fn", true},
+		{"inside func var alias", `probe("x");`, "var inner = func(string) bool { return true }\nvar probe = inner", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

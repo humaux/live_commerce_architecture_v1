@@ -262,9 +262,27 @@ func goDispatcherReadOnlyReference(pkg *goPackage, file, declared *goFile, own a
 			if !ok || len(v.Values) != 1 {
 				return false
 			}
-			switch v.Values[0].(type) {
-			case *ast.Ident, *ast.FuncLit, *ast.SelectorExpr:
+			switch init := v.Values[0].(type) {
+			case *ast.FuncLit:
 				return true
+			case *ast.Ident:
+				// Only a package-level func declaration; a var holding a func stays rejected.
+				for _, source := range pkg.Files {
+					if obj := source.AST.Scope.Lookup(init.Name); obj != nil {
+						return obj.Kind == ast.Fun
+					}
+				}
+				return false
+			case *ast.SelectorExpr:
+				// pkg.Func or a method value on a call-free receiver; a receiver produced
+				// by a call (newGate().ok) can hold state mutable from outside the closure.
+				called := false
+				ast.Inspect(init.X, func(n ast.Node) bool {
+					_, isCall := n.(*ast.CallExpr)
+					called = called || isCall
+					return !called
+				})
+				return !called
 			}
 			return false
 		}
