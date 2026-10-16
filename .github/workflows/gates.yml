@@ -116,6 +116,9 @@ jobs:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 150
+    permissions:
+      contents: read
+      actions: read # Temporary calibration: read the existing successful run's shard artifacts; never write Actions or repository state.
     concurrency:
       # event_name separates run classes on the same ref: a nightly schedule (cancel-in-progress) must never cancel push verification.
       group: gates-${{ github.event_name }}-${{ github.ref }}-${{ matrix.mode }}-${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }}
@@ -197,6 +200,54 @@ jobs:
             [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }
             export "$kv"; echo "extra_env: ${kv%%=*} set"
           done
+          # Temporary CI-only data regeneration. Removed from the final diff after
+          # downloading the generated patch; reuse --ingest/--write, never hand-edit a generated plan.
+          if [[ -n "${LC_SHARD_TIMING_RUN:-}" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$MODE" == shard:unit && "$LC_SHARD_TIMING_RUN" =~ ^[0-9]+$ ]] || exit 2
+            export GH_TOKEN="${{ github.token }}"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$LC_SHARD_TIMING_RUN" > "$RUNNER_TEMP/timing-source.json"
+            node --input-type=module -e 'import fs from "node:fs"; const r=JSON.parse(fs.readFileSync(process.argv[1])); if(r.conclusion!=="success" || r.path!==".github/workflows/gates.yml" || r.head_sha!=="c077226e7a6c1511069cac0c8df57212e0c702d8") throw Error("unexpected timing source"); console.log(JSON.stringify({id:r.id,head_sha:r.head_sha,run_attempt:r.run_attempt}));' "$RUNNER_TEMP/timing-source.json"
+            git diff --exit-code c077226e7a6c1511069cac0c8df57212e0c702d8 HEAD -- tests/foundation internal migrations go.mod go.sum
+            gh run download "$LC_SHARD_TIMING_RUN" --repo "$GITHUB_REPOSITORY" --pattern 'gate-shard_g*' --dir "$RUNNER_TEMP/timing-source"
+            before=0
+            node --test --test-reporter=tap tests/ci/shard-plan.test.mjs > output/ci-gates/shard-timing-red.log 2>&1 || before=$?
+            echo "pre-refresh regression exit=$before"
+            [[ "$before" == 1 ]] || { cat output/ci-gates/shard-timing-red.log; exit 2; }
+            grep -Eq '^not ok [0-9]+ - real 15-minute clock gates' output/ci-gates/shard-timing-red.log
+            grep -q '^# fail 1$' output/ci-gates/shard-timing-red.log
+            logs=()
+            while IFS= read -r id; do
+              mapfile -t found < <(find "$RUNNER_TEMP/timing-source" -type f -name "shard_${id}.log")
+              [[ "${#found[@]}" == 1 ]] || { echo "missing/duplicate source log $id"; exit 2; }
+              logs+=("${found[0]}")
+            done < <(node scripts/dev/shard-plan.mjs ids)
+            node --input-type=module - "${logs[@]}" <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          import { parseDurations, topLevelTests } from './scripts/dev/shard-plan.mjs';
+          const seen = new Set();
+          for (const file of process.argv.slice(2)) {
+            const log = readFileSync(file, 'utf8');
+            assert.match(log, /^PASS$/m, `${file}: missing successful test terminator`);
+            assert.match(log, /^ok\s+\S+\/tests\/foundation\s+[0-9.]+s(?:\s|$)/m, `${file}: missing successful package terminator`);
+            const rows = [...log.matchAll(/^--- (?:PASS|FAIL|SKIP): (Test\S*) \(([0-9.]+)s\)$/gm)];
+            const times = parseDurations(log);
+            assert.equal(rows.length, Object.keys(times).length, `${file}: duplicate top-level timing`);
+            assert.ok(rows.length, `${file}: no top-level timing`);
+            for (const name of Object.keys(times)) {
+              assert.ok(!seen.has(name), `${name}: duplicate across shard logs`);
+              seen.add(name);
+            }
+          }
+          assert.deepEqual([...seen].sort(), topLevelTests(), 'source timing inventory must cover every compiled foundation test exactly once');
+          NODE
+            node scripts/dev/shard-plan.mjs --ingest "${logs[@]}"
+            node scripts/dev/shard-plan.mjs --write
+            node scripts/dev/shard-plan.mjs --check
+            node --test --test-reporter=tap tests/ci/shard-plan.test.mjs | tee output/ci-gates/shard-timing-green.log
+            git diff -- scripts/dev/shard-timing.json scripts/dev/shard-plan.json > output/ci-gates/shard-timing-refresh.patch
+            cp "$RUNNER_TEMP/timing-source.json" output/ci-gates/
+          fi
           # Explicit dispatch only: inject a real source fault before native PG
           # setup. The ordinary gate keeps its verdict and must go red.
           if [[ -n "${LC_OA_MUTATION:-}" ]]; then

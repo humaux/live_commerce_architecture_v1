@@ -1,5 +1,6 @@
-// Unit tests of the foundation shard plan (scripts/dev/shard-plan.mjs): the source parser agrees with Go's own test discovery rules, the packing is deterministic and
-// balanced, and the coverage proof is red when a top-level test would run in no shard or in two. Run by scripts/dev/test-node.sh (no Go, no PG).
+// Purpose: prove foundation shard coverage, deterministic packing and measured real-clock timing regressions.
+// Depends on: scripts/dev/shard-plan.mjs, shard-plan.json, shard-timing.json and the foundation source inventory; Node built-ins.
+// Used by: scripts/dev/test-node.sh and the GitHub-only shard timing calibration. No Go or PostgreSQL here.
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -9,6 +10,25 @@ import { UNPLANNED_LIMIT, check, pack, parseDurations, runRegex, selectedBy, ski
 
 const plan = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8"));
 const names = topLevelTests();
+
+test("real 15-minute clock gates have measured weights rather than the five-second fallback", () => {
+  // Original receipts: Gates run 38808160050 @ c077226e, jobs 116675000695/787/850.
+  // These tests observed 904.35/904.57/904.78 s. Keep their real waits unchanged;
+  // the scheduler must account for the 900 s lower bound instead of hiding it.
+  const seconds = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-timing.json", import.meta.url), "utf8")).seconds;
+  const realClocks = [
+    "TestOrderAttemptLocalKeyMissingExpiresAtRealDeadline",
+    "TestOrderAttemptDeadlineRealClaimPeriodicLiveness",
+    "TestOrderAttemptDeadlineExecutionCrossesRealClock",
+  ];
+  for (const name of realClocks) {
+    assert.ok(names.includes(name), `timing regression points to a missing test: ${name}`);
+    assert.ok(seconds[name] >= 900, `${name}: measured weight ${seconds[name]} must include its real 900 s clock`);
+    const group = plan.groups.find((g) => g.tests.includes(name));
+    assert.ok(group, `${name}: refresh the generated plan too`);
+    assert.ok(group.est_seconds + 0.5 >= seconds[name], `${group.id}: stale estimate ${group.est_seconds} < ${name} weight ${seconds[name]}`);
+  }
+});
 
 test("parser: only compiled, correctly-shaped Test functions of untagged _test.go files", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "shard-parse-"));
