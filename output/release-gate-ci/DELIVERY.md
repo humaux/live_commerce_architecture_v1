@@ -1,7 +1,7 @@
 <!-- Purpose: SHA-bound evidence for CI efficiency optimization only. -->
 <!-- Depends on: current shard planner, original GitHub run/job receipts and owner CI-only authorization. -->
 <!-- Used by: integrator and independent reviewer; not a second requirements or gate catalogue. -->
-# CI efficiency: measured shard refresh (in progress)
+# CI efficiency: measured shard refresh (final matrix pending)
 
 - Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/release-gate-ci`
 - Branch: `unit/release-gate-ci`; base: `c077226e7a6c1511069cac0c8df57212e0c702d8`.
@@ -36,10 +36,21 @@ These land in g01/g02/g06. Their Gate steps take ~24–27 minutes while other fo
 3. Download/apply that CI-produced patch, remove the temporary workflow delta, and commit the normal timing/plan refresh. Keep ten groups, all test names, the catch-all, exact-once coverage and all original thresholds/timeouts.
 4. Final GitHub run: full foundation matrix plus normal PR checks. Compare the same foundation mode set against the baseline, reporting longest execution and queue time separately. No predicted speed-up is a PASS claim.
 
-## Current receipts / NOT_RUN
+## Calibration receipts (E3 for data generation, not final speed acceptance)
 
-- Calibration dispatch: [38932747569](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38932747569), source `e7afff8e4dff563ba5c2c0c2d2674a684000a287`, `modes=["shard:unit"]`, `extra_env=LC_SHARD_TIMING_RUN=38808160050`, started 2026-10-16T16:32:25Z. **IN_PROGRESS**, not a PASS; job timeout 150 minutes. Read-only static review found and corrected the missing full-inventory validation and Node 24 default reporter mismatch before dispatch. TAP is explicit ([Node 24 official reporter documentation](https://nodejs.org/download/release/v24.15.0/docs/api/test.html#test-reporters)).
-- Optimized matrix: **NOT_RUN**.
-- Independent final review: **NOT_RUN**.
+- [Run 38932747569](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38932747569), exact source `e7afff8e4dff563ba5c2c0c2d2674a684000a287`, completed **success** at 2026-10-16T16:42:07Z. `modes=["shard:unit"]`, `extra_env=LC_SHARD_TIMING_RUN=38808160050`; gate job [117080677379](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38932747569/job/117080677379). No duplicate dispatch.
+- Original artifact: `gate-shard_unit`, id `12060197948`, Actions digest `sha256:37bd24b2ee1cdc75c9698d9945e545a153516c49605099b4e8057dd4be7064ed` (not expired when read).
+- `node --test --test-reporter=tap tests/ci/shard-plan.test.mjs`: before refresh **exit 1**, 7 PASS / 1 FAIL / 0 skipped. The sole failure is the new real-clock regression, caused by an undefined measured weight, not a setup error. After refresh **exit 0**, 8 PASS / 0 FAIL / 0 skipped. Original downloaded logs: `calibration-38932747569/ci-gates/shard-timing-{red,green}.log`.
+- The existing generator ran on GitHub: `--ingest` of all ten original successful shard logs; `--write`; `--check` **exit 0**, **1521 top-level tests, exactly once in ten groups**. Before ingest, the calibration required successful package/test terminators, no duplicate names within/across logs, and equality with the current compiled foundation inventory. Source run is successful attempt 1 at `c077226e7a6c1511069cac0c8df57212e0c702d8`, and product/foundation source equality was checked by CI.
+- CI-produced `calibration-38932747569/ci-gates/shard-timing-refresh.patch` was applied mechanically, not regenerated locally. All ten original logs are retained in `source-receipts/full/gate-shard_gNN/ci-gates/shard_gNN.log`; provenance is `calibration-38932747569/ci-gates/timing-source.json` and the original Actions artifacts. These downloads are retained evidence, not new source modules.
+- Generated estimates are **905 / 905 / 904 / 794 / 794 / 794 / 794 / 794 / 794 / 794 seconds**, with the three real-clock tests in singleton groups and one catch-all. Estimates are scheduling inputs, **not measured optimized runtimes**. No original test, assertion, timeout or drift limit changed.
+- Temporary calibration code and its `actions:read` permission have been removed: the final workflow is identical to the base. Read-only independent static review found no P0/P1/P2 in the generated patch, coverage, or regression; final runtime acceptance remains pending.
+- Earlier static review corrected the missing full-inventory validation and Node 24 default reporter mismatch before dispatch. TAP is explicit ([Node 24 official reporter documentation](https://nodejs.org/download/release/v24.15.0/docs/api/test.html#test-reporters)).
+
+## Final acceptance / NOT_RUN
+
+- Final source SHA / PR / matrix run: **pending next source commit**. Normal PR checks will supply the ten foundation groups and unit shard together with the fixed required checks; do not duplicate that same matrix in an extra dispatch.
+- Optimized execution, queue time and cumulative job-minute comparison: **NOT_RUN** until the final source matrix terminates.
+- Independent final-SHA review: **NOT_RUN** (the applied source diff has received a read-only static review, not final runtime acceptance).
 - Product changes, new release framework, SANDBOX/LIVE provider calls, production and deployment: **not in scope**.
 - No product Go/SQL, contracts, provider credentials, locks or dependency manifests changed.

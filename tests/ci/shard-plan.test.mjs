@@ -1,6 +1,6 @@
 // Purpose: prove foundation shard coverage, deterministic packing and measured real-clock timing regressions.
 // Depends on: scripts/dev/shard-plan.mjs, shard-plan.json, shard-timing.json and the foundation source inventory; Node built-ins.
-// Used by: scripts/dev/test-node.sh and the GitHub-only shard timing calibration. No Go or PostgreSQL here.
+// Used by: scripts/dev/test-node.sh and GitHub foundation checks. No Go or PostgreSQL here.
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
