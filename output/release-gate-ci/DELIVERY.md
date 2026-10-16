@@ -38,7 +38,7 @@ These land in g01/g02/g06. Their Gate steps take ~24–27 minutes while other fo
 
 ## Current receipts / NOT_RUN
 
-- Calibration dispatch: **NOT_RUN** (run ID registered when started).
+- Calibration dispatch: [38932747569](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/38932747569), source `e7afff8e4dff563ba5c2c0c2d2674a684000a287`, `modes=["shard:unit"]`, `extra_env=LC_SHARD_TIMING_RUN=38808160050`, started 2026-10-16T16:32:25Z. **IN_PROGRESS**, not a PASS; job timeout 150 minutes. Read-only static review found and corrected the missing full-inventory validation and Node 24 default reporter mismatch before dispatch. TAP is explicit ([Node 24 official reporter documentation](https://nodejs.org/download/release/v24.15.0/docs/api/test.html#test-reporters)).
 - Optimized matrix: **NOT_RUN**.
 - Independent final review: **NOT_RUN**.
 - Product changes, new release framework, SANDBOX/LIVE provider calls, production and deployment: **not in scope**.
