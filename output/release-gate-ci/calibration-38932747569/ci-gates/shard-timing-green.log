@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: real 15-minute clock gates have measured weights rather than the five-second fallback
+ok 1 - real 15-minute clock gates have measured weights rather than the five-second fallback
+  ---
+  duration_ms: 6.136501
+  type: 'test'
+  ...
+# Subtest: parser: only compiled, correctly-shaped Test functions of untagged _test.go files
+ok 2 - parser: only compiled, correctly-shaped Test functions of untagged _test.go files
+  ---
+  duration_ms: 0.736158
+  type: 'test'
+  ...
+# Subtest: the real plan: every top-level test of tests/foundation runs in exactly one group
+ok 3 - the real plan: every top-level test of tests/foundation runs in exactly one group
+  ---
+  duration_ms: 1159.121568
+  type: 'test'
+  ...
+# Subtest: a new test (in no list) still runs, exactly once, in the catch-all group; the same name with no catch-all is red
+ok 4 - a new test (in no list) still runs, exactly once, in the catch-all group; the same name with no catch-all is red
+  ---
+  duration_ms: 1846.105116
+  type: 'test'
+  ...
+# Subtest: a test listed in two groups is red; drift beyond the limit is red
+ok 5 - a test listed in two groups is red; drift beyond the limit is red
+  ---
+  duration_ms: 1663.340001
+  type: 'test'
+  ...
+# Subtest: regexes: anchored explicit lists; the catch-all skips exactly everyone else's tests
+ok 6 - regexes: anchored explicit lists; the catch-all skips exactly everyone else's tests
+  ---
+  duration_ms: 1.361333
+  type: 'test'
+  ...
+# Subtest: pack: deterministic, balanced to within the longest test, every name once
+ok 7 - pack: deterministic, balanced to within the longest test, every name once
+  ---
+  duration_ms: 11.213639
+  type: 'test'
+  ...
+# Subtest: parseDurations: top-level lines only
+ok 8 - parseDurations: top-level lines only
+  ---
+  duration_ms: 0.55322
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4776.888609
