@@ -3,7 +3,7 @@
 <!-- Used by: PR78 independent review and integrator; not a replacement gate or timing authority. -->
 # Round 2 — cumulative job cost, unchanged coverage
 
-Status: implementation candidate; runtime benefit **NOT_RUN**. Prior round acceptance remains in `../DELIVERY.md`.
+Status: first candidate's new mutation test failed in GitHub; correction pending CI. Runtime benefit **NOT_RUN**. Prior round acceptance remains in `../DELIVERY.md`.
 
 - Role: primary CI implementer; runtime model/effort labels unavailable (UNKNOWN). Two independent read-only cost/source auditors; worktree `.worktrees/release-gate-ci`, branch `unit/release-gate-ci`.
 - Human authority: 2026-10-17 request to reduce cumulative job minutes, preserve achieved long-tail improvement, no reduced coverage/weakened gates, GitHub-only execution. Coordination task `87135804-7943-49c9-b987-a51011d1d5f7`.
@@ -24,8 +24,10 @@ New Node tests assert the real workflow/runner contract, then inject disabled ca
 
 ## Pending receipts
 
-- Candidate source SHA: pending commit; rollback checkpoint `b583861b85c75a944d555ef6118d3c7034f15b8f`.
-- GitHub run IDs / actual execution trees: NOT_RUN, to register immediately after authorized push/dispatch.
+- Historical candidate source SHA: `8f654758ef6fa8791135d7b13cad7a424dcee953`; rollback checkpoint `b583861b85c75a944d555ef6118d3c7034f15b8f`.
+- GitHub RED: Foundation `38946480082`, job `117126785014`, new `go-build-cache.test.mjs:44` mutation assertion, 217 PASS / 1 FAIL in its Node group. Original log: `red-38946480082.log`. Root cause: the injected removal replaced only the first `LC_FOUNDATION_SKIP` in the actual shell command, leaving its second reference, so the assertion correctly reported a missing expected exception. Correction replaces **all occurrences within that command** and asserts the mutation changed the source. No production command, selector, assertion or threshold was relaxed.
+- Gates `38946479955` attempt 1 at that source was deliberately cancelled after this definite new-test failure, to avoid spending the rest of the 80-job matrix on an invalid acceptance candidate. It is not a cold performance result. Raw run/jobs retained separately. A corrected source must complete a new first attempt and same-source rerun before any cold/warm claim.
+- Same-source warm attempt: NOT_RUN; after the cold attempt is terminal, re-run the same PR workflow so it can read that PR's native cache scope. Do not compare a branch dispatch with an inaccessible PR cache.
 - Compare the same eleven-mode union, including cache restore/save overhead and cold/warm state. Goal: job total <184.18 min **and** longest Gate ≤1188 s; do not equate a forecast or queue reduction with compute saved.
 - Separately report entire fixed-required matrix job minutes; never substitute a narrower dispatch for that whole-workflow scope.
 - Verify the unchanged 1522-result name multiset and ten SKIP names; required static/Node/browser/aggregate gates must stay green at final source.

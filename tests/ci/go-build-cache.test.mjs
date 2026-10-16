@@ -40,7 +40,9 @@ test("injected disabled cache or unbound manifest goes RED under the real cache 
 test("injected result reuse or lost race/selector goes RED, rather than manufacturing cheaper gates", () => {
   for (const [from, to] of [["-count=1", "-count=0"], ["-race", ""], ["LC_FOUNDATION_SKIP", "REMOVED_SKIP"]]) {
     const start = runner.indexOf("  foundation)");
-    const changed = runner.slice(0, start) + runner.slice(start).replace(/^  GOTOOLCHAIN=.* go test .*$/m, line => line.replace(from, to));
+    // Shell selectors occur in both the conditional expansion and its value; remove both.
+    const changed = runner.slice(0, start) + runner.slice(start).replace(/^  GOTOOLCHAIN=.* go test .*$/m, line => line.replaceAll(from, to));
+    assert.notEqual(changed, runner, `inject ${from} into the real command`);
     assert.throws(() => executionContract(changed), /keep /);
   }
 });
