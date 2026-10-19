@@ -161,6 +161,11 @@
   --ds-nav-indent: 52px; /* level-2 sidebar items align with level-1 labels (icon slot + gap) */
   --ds-disabled-bg: #dae5ef;
   --ds-disabled-text: #435b70;
+  /* disabled primary: a muted primary, not a ghost: fill >= 3:1 on --ds-surface/--ds-page/--ds-surface-muted, white label 3.5:1 */
+  --ds-disabled-primary-bg: #6d8cab;
+  --ds-disabled-primary-text: var(--ds-on-primary);
+  /* the chevron path spans 14 of 24 units; scaled so its ink reaches 14px of the 16px icon box (was 9px beside 14px text) */
+  --ds-nav-chevron-scale: 1.5;
   /* sizes */
   --ds-nav-width: 270px;
   --ds-nav-item-height: 52px;

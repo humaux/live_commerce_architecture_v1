@@ -790,20 +790,35 @@ async function ds2Matrix({ page, step }) {
       }
       return `${scale.measured.length} controls measured; no scale or row violations`;
     });
+    // Before the shot: the wheel walk ends at the page end, and the shot must not inherit that scroll.
+    if (width < 768 && /^(form|settings)/.test(name) && name !== "form-released")
+      await step(`DS-2 ${locale}/${width} ${name} wheel reach`, "native wheel top to end; elementFromPoint at each control", "every field control fully in view, unobstructed, at some scroll position; top bar pinned", () => wheelReach(page, page.locator("[data-template]")));
     const path = `${output}/shots/ds2-${locale}-${width}x${height}-${name}.png`;
     // Full-page shots paint sticky bars at the current scroll offset (a second topbar mid-page after uploads);
     // start from the top unless the scrolled state is the subject of the shot.
     if (name !== "form-released") await page.evaluate(() => new Promise(r => { window.scrollTo(0, 0); requestAnimationFrame(() => r()); })); // [READ] view position only
-    if (width < 768 && /^(form|settings)/.test(name) && name !== "form-released")
-      await step(`DS-2 ${locale}/${width} ${name} wheel reach`, "native wheel top to end; elementFromPoint at each control", "every field control fully in view, unobstructed, at some scroll position; top bar pinned", () => wheelReach(page, page.locator("[data-template]")));
-    const frame = await readFrame(page);
-    await step(`DS-2 ${locale}/${width} ${name} captured frame`, "[READ] rects of the frame about to be captured", "no sticky/fixed chrome over a control; no clipped tab; disabled primary fill and label >= 3:1", async () => {
-      assert.deepEqual(frame.occluded, [], "sticky/fixed chrome over controls in the captured frame");
-      assert.deepEqual(frame.clippedTabs, [], "tab labels clipped");
-      assert.deepEqual(frame.faint, [], "disabled primary too faint");
-      return `${frame.chrome} sticky/fixed elements, ${frame.controls} controls, ${frame.tabs} tabs, ${frame.disabledPrimary} disabled primaries`;
-    });
-    const png = await page.screenshot({ path, fullPage: true, animations: "disabled" });
+    // Capture fix (VR 38779535720): a full-page shot paints sticky chrome at its viewport rect, so a phone shot showed the docked
+    // save bar over the radio group and, once scrolled, the top bar across the name input. Grow the viewport to the document
+    // height so nothing scrolls: the top bar sits at the top and the save bar at the end of the form. Restored before axe/lint.
+    const viewport = page.viewportSize();
+    let png;
+    try {
+      for (let i = 0; i < 4; i++) {
+        const full = await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(document.scrollingElement.scrollHeight))))); // [READ] settled document height
+        if (full <= page.viewportSize().height) break;
+        await page.setViewportSize({ width: viewport.width, height: full });
+      }
+      const frame = await readFrame(page);
+      await step(`DS-2 ${locale}/${width} ${name} captured frame`, "[READ] rects of the frame about to be captured", "no sticky/fixed chrome over a control; no clipped tab; disabled primary fill and label >= 3:1", async () => {
+        assert.deepEqual(frame.occluded, [], `sticky/fixed chrome over controls in the captured frame: ${frame.occluded.join("; ")}`);
+        assert.deepEqual(frame.clippedTabs, [], `tab labels clipped: ${frame.clippedTabs.join("; ")}`);
+        assert.deepEqual(frame.faint, [], `disabled primary too faint: ${frame.faint.join("; ")}`);
+        return `${frame.chrome} sticky/fixed elements, ${frame.controls} controls, ${frame.tabs} tabs, ${frame.disabledPrimary} disabled primaries`;
+      });
+      png = await page.screenshot({ path, fullPage: true, animations: "disabled" });
+    } finally {
+      await page.setViewportSize(viewport);
+    }
     await page.addScriptTag({ content: axeSource });
     const axe = await page.evaluate(async () => (await window.axe.run(document, { resultTypes: ["violations"] })).violations.map(v => ({ id: v.id, impact: v.impact, nodes: v.nodes.map(n => n.target) }))); // [READ] all impacts, stricter than legacy runner
     const snapshot = await page.evaluate(collect); // [READ/MEASURE]

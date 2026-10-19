@@ -47,6 +47,7 @@
 .button[data-variant="link"]:hover:not([aria-disabled="true"]) { color: var(--ds-link-hover); }
 .button[aria-disabled="true"] { cursor: not-allowed; }
 .button[aria-disabled="true"]:not([aria-busy="true"]) { background: var(--ds-disabled-bg); color: var(--ds-disabled-text); border-color: var(--ds-disabled-bg); opacity: 1; }
+.button[data-variant="primary"][aria-disabled="true"]:not([aria-busy="true"]) { background: var(--ds-disabled-primary-bg); color: var(--ds-disabled-primary-text); border-color: var(--ds-disabled-primary-bg); }
 .button:focus-visible, .tab:focus-visible, .switch:focus-visible, .dismiss:focus-visible {
   outline: var(--ds-focus-width) solid var(--ds-focus);
   outline-offset: var(--ds-focus-offset);
@@ -78,7 +79,8 @@
 .switch[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
 
 /* ---------- Tabs ---------- */
-.tabs { display: flex; gap: var(--ds-space-1); overflow-x: auto; max-width: 100%; }
+/* Tabs wrap to a second row rather than scroll a label out of view (VR 38779535720: "Pricing & inventory" clipped at 390px). */
+.tabs { display: flex; flex-wrap: wrap; gap: var(--ds-space-1); overflow-x: auto; max-width: 100%; }
 .tabs[data-variant="underline"] { border-bottom: 1px solid var(--ds-border); }
 .tabs[data-variant="section"] { background: var(--ds-surface-muted); border: 1px solid var(--ds-border); border-radius: var(--ds-radius-md) var(--ds-radius-md) 0 0; gap: 0; }
 .tab {
