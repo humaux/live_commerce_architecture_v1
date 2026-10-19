@@ -2,7 +2,8 @@
 //   (one identical ./tests/foundation -race build graph) may restore/save the immutable setup-go key, and the foundation command keeps
 //   -race, -count=1 and the exact -run/-skip selector semantics (review-735cb2ce2 P2-1, P2-3).
 // Depends on: pinned gates.yml setup-go configuration and the foundation mode's real invocation.
-//   Also pins that every cache-owning shard leg runs LC_FOUNDATION_PKGS=./tests/foundation (gates.yml gate step; #86, PR #81 review P2-2).
+//   Also pins that every cache-owning shard leg runs LC_FOUNDATION_PKGS=./tests/foundation exactly once (gates.yml gate step, every shard:
+//   case arm at any indentation; #86, PR #81 review P2-2; #107).
 // Used by: test-node.sh on GitHub; injected regressions exercise the same assertions as the real files.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -27,11 +28,24 @@ function cacheContract(source) {
 // #86 (PR #81 review P2-2): the cache above is only safe while every cache-owning leg builds the same ./tests/foundation graph.
 function shardScopeContract(source) {
   const gate = source.split(/^  gate:\s*$/m)[1]?.split(/^  aggregate:\s*$/m)[0] ?? "";
-  const arms = [...gate.matchAll(/^ {12}(shard:[^)\s]*)\)\s+(.*)$/gm)].map(m => [m[1], m[2]]);
-  assert.ok(arms.some(([pattern]) => pattern === "shard:g[0-9][0-9]"), "the shard:gNN arm exists");
-  for (const [pattern, body] of arms) {
-    if (pattern === "shard:unit") continue; // 'shard:unit' never satisfies startsWith(matrix.mode, 'shard:g')
-    assert.match(body, /^LC_FOUNDATION_PKGS=\.\/tests\/foundation (?!\S*\.\/)/, `${pattern} legs share the cache and must build only ./tests/foundation`);
+  // #107: every case arm with a shard: alternative, at any indentation, quoted or in "(pattern)" form; its body runs to ";;".
+  const lines = gate.split("\n");
+  const arms = [];
+  lines.forEach((line, i) => {
+    const m = line.trimStart().match(/^\(?([^#)\s][^)\s]*)\)(.*)$/);
+    const alternatives = m?.[1].replace(/["']/g, "").split("|") ?? [];
+    if (!alternatives.some(a => a.startsWith("shard:"))) return;
+    let body = m[2];
+    for (let j = i + 1; !body.includes(";;") && j < lines.length; j++) body += `\n${lines[j]}`;
+    arms.push([alternatives, body.split(";;")[0].trim()]);
+  });
+  assert.ok(arms.some(([alternatives]) => alternatives.includes("shard:g[0-9][0-9]")), "the shard:gNN arm exists");
+  for (const [alternatives, body] of arms) {
+    if (alternatives.every(a => a === "shard:unit")) continue; // 'shard:unit' never satisfies startsWith(matrix.mode, 'shard:g')
+    const message = `${alternatives.join("|")} legs share the cache and must build only ./tests/foundation`;
+    assert.match(body, /^LC_FOUNDATION_PKGS=\.\/tests\/foundation (?!\S*\.\/)/, message);
+    // The shell keeps the last assignment, so a second one anywhere in the arm would override the first (#107).
+    assert.equal(body.split("LC_FOUNDATION_PKGS=").length - 1, 1, message);
   }
 }
 
