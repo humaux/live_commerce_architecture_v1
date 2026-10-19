@@ -168,6 +168,13 @@ func TestPaymentSharedInvariantObservationLeaseFence(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer holder.Rollback(ctx)
+	// The snapshot and the original lease are read before the lock: rm2Snapshot reads operation_events, which this
+	// holder locks ACCESS EXCLUSIVE, so reading it afterwards would wait on the test's own lock.
+	before := rm2Snapshot(t, e.p, attempt)
+	var origLease time.Time
+	if err = e.f.owner.QueryRow(ctx, `SELECT lease_until FROM integration.operations WHERE id=$1`, attempt).Scan(&origLease); err != nil {
+		t.Fatal(err)
+	}
 	if _, err = holder.Exec(ctx, `LOCK TABLE integration.operation_events IN ACCESS EXCLUSIVE MODE`); err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +186,6 @@ func TestPaymentSharedInvariantObservationLeaseFence(t *testing.T) {
 	if err = e.f.owner.QueryRow(ctx, `UPDATE integration.operations SET lease_until=clock_timestamp()+$2::interval WHERE id=$1 RETURNING lease_until`, attempt, life).Scan(&expiry); err != nil {
 		t.Fatal(err)
 	}
-	before := rm2Snapshot(t, e.p, attempt)
 	done := make(chan error, 1)
 	go func() {
 		done <- func() error {
@@ -222,6 +228,13 @@ func TestPaymentSharedInvariantObservationLeaseFence(t *testing.T) {
 	if !errors.As(err, &pe) || pe.Code != "40001" {
 		t.Fatalf("observation recorded past its lease: %v", err)
 	}
+	var code string
+	var leased bool
+	if err = e.f.owner.QueryRow(ctx, `SELECT coalesce(result_code,''),lease_until IS NOT NULL FROM integration.operations WHERE id=$1`, attempt).Scan(&code, &leased); err != nil || code == "stripe_report_observed" || !leased {
+		t.Fatalf("failed record partially completed the operation: code=%q leased=%v %v", code, leased, err)
+	}
+	// Undo only this test's own lease shortening; the whole aggregate must then equal the pre-lock snapshot.
+	mustExec(t, e.f.owner, `UPDATE integration.operations SET lease_until=$2 WHERE id=$1`, attempt, origLease)
 	if after := rm2Snapshot(t, e.p, attempt); after != before {
 		t.Fatalf("late lease left a partial report/Complete:\nbefore=%s\nafter=%s", before, after)
 	}
