@@ -625,7 +625,12 @@ async function readControlScale(page, root = page) {
           }
           top = bottom + gap;
         }
-      } else if ((style.display.includes("flex") && style.flexDirection.startsWith("row")) || style.display === "table-row") pairs.push([i, j]);
+      } else if ((style.display.includes("flex") && style.flexDirection.startsWith("row")) || style.display === "table-row") {
+        // One flex line = the two items overlap vertically (wrapped lines never do), whatever align-items does (#88).
+        const ab = a.getBoundingClientRect();
+        const bb = b.getBoundingClientRect();
+        if (Math.min(ab.bottom, bb.bottom) - Math.max(ab.top, bb.top) > 0.5) pairs.push([i, j]);
+      }
     }
     return pairs;
   }); // [READ] container relationships; no DOM or scroll writes
@@ -637,7 +642,8 @@ function controlScaleViolations(measured, rows) {
   const violations = [];
   if (!measured.length) violations.push("no rendered controls measured");
   for (const control of measured) if (![28, 36, 44].some(height => Math.abs(control.height - height) <= 0.5)) violations.push(`${control.name}: height=${control.height}px`);
-  for (const [i, j] of rows) if (Math.abs(measured[i].centre - measured[j].centre) <= 0.5 && Math.abs(measured[i].height - measured[j].height) > 0.5) violations.push(`same row: ${measured[i].name} height=${measured[i].height}px; ${measured[j].name} height=${measured[j].height}px`);
+  // rows are real layout rows (grid track / flex line / table row), so heights compare even when top/bottom-aligned (#88).
+  for (const [i, j] of rows) if (Math.abs(measured[i].height - measured[j].height) > 0.5) violations.push(`same row: ${measured[i].name} height=${measured[i].height}px; ${measured[j].name} height=${measured[j].height}px`);
   return violations;
 }
 
