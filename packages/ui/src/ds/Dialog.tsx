@@ -1,5 +1,5 @@
-// Purpose: Owns ConfirmDialog, the DS-1 second-step confirmation (native modal dialog, optional typed-confirm phrase) for refunds, deletes, bulk-over-all-results and ending a live.
-// Depends on: react, ./dialog.module.css, ./Controls (Button), ./logic (typedConfirmMatches); no API or translation.
+// Purpose: Owns ConfirmDialog, the DS-2 second-step confirmation (native modal dialog, optional typed-confirm phrase) for refunds, deletes, bulk-over-all-results and ending a live.
+// Depends on: React, ./dialog.module.css, ./Controls (Button), ./logic (typedConfirmMatches); no API or translation.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
@@ -47,17 +47,28 @@ export function ConfirmDialog({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const restore = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const node = dialog.current;
     if (!node) return;
-    if (open && !node.open) node.showModal();
-    if (!open && node.open) node.close();
+    if (open && !node.open) {
+      restore.current = document.activeElement as HTMLElement | null;
+      node.showModal();
+    }
+    if (!open && node.open) { node.close(); restore.current?.focus(); }
   }, [open]);
   return (
     <dialog
       ref={dialog}
       className={s.dialog}
       aria-labelledby={titleId}
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        const nodes = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button,input,a[href]')).filter(n => n.getClientRects().length);
+        const first = nodes[0]; const last = nodes.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onCancel();

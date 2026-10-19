@@ -2,9 +2,12 @@
 // Depends on: react, @live-commerce/ui/ds, ../src/ui-gallery-copy, ./UiGallery.module.css; sample data only, no API.
 // Used by: apps/admin/components/UiGallery.tsx.
 "use client";
-import { useId, useState } from "react";
+import { useState } from "react";
 import {
-  ActionBars,
+  FormActionBar,
+  Field,
+  TextInput,
+  Icon,
   Alert,
   Badge,
   BlockedState,
@@ -67,9 +70,15 @@ export function ButtonsSection({ c }: { c: GalleryCopy }) {
         <Button variant="link" onClick={() => setClicked(c.btnLink)}>{c.btnLink}</Button>
       </div>
       <div className={s.row}>
-        <Button size="sm" variant="primary" onClick={() => setClicked(c.btnSmall)}>{c.btnSmall}</Button>
-        <Button size="lg" variant="primary" onClick={() => setClicked(c.btnLarge)}>{c.btnLarge}</Button>
+        <Button size="sm" variant="secondary" onClick={() => setClicked(c.btnSmall)}>{c.btnSmall}</Button>
+      </div>
+      <div className={s.row}>
+        <Button size="lg" variant="secondary" onClick={() => setClicked(c.btnLarge)}>{c.btnLarge}</Button>
+      </div>
+      <div className={s.row}>
         <Button variant="primary" loading loadingLabel={c.btnLoadingLabel}>{c.btnLoading}</Button>
+      </div>
+      <div className={s.row}>
         <Button variant="primary" disabledReason={c.btnDisabledReason}>{c.btnDisabled}</Button>
       </div>
       <p className={s.result} role="status">{clicked}</p>
@@ -184,11 +193,10 @@ export function FormSectionDemo({ c }: { c: GalleryCopy }) {
   const [saved, setSaved] = useState("");
   const [name, setName] = useState("");
   const [done, setDone] = useState(false);
-  const id = useId();
   const dirty = name !== saved;
   return (
     <div id="sec-form">
-      <ActionBars
+      <FormActionBar
         label={c.barLabel}
         note={c.formNote}
         dirty={dirty}
@@ -209,23 +217,13 @@ export function FormSectionDemo({ c }: { c: GalleryCopy }) {
           </>
         }
       >
-        <FormSection title={c.formTitle} meta={c.formCounter(name.length)} help={{ label: c.formHelpLabel, content: c.formHelp }}>
-          <div className={s.field}>
-            <label htmlFor={id}>{c.nameLabel}</label>
-            <input
-              id={id}
-              className={s.input}
-              value={name}
-              maxLength={12}
-              onChange={(event) => {
-                setName(event.target.value);
-                setDone(false);
-              }}
-            />
-          </div>
+        <FormSection title={c.formTitle} help={{ label: c.formHelpLabel, content: c.formHelp }}>
+          <Field label={c.nameLabel} width="lg" counter={{ value: name, max: 12, format: (n) => c.formCounter(n) }}>
+            {control => <TextInput {...control} value={name} onChange={event => { setName(event.target.value); setDone(false); }} />}
+          </Field>
           <p className={s.result} role="status">{done && !dirty ? c.saved : ""}</p>
         </FormSection>
-      </ActionBars>
+      </FormActionBar>
     </div>
   );
 }
@@ -257,9 +255,9 @@ export function KpiSection({ c, params }: { c: GalleryCopy; params: GalleryParam
   return (
     <Card id="sec-kpi" title={c.sKpi}>
       <div className={s.grid3}>
-        <KpiCard value="3" label={c.kpiUnread} href={href("unread")} icon="✉" />
-        <KpiCard value="12" label={c.kpiUnshipped} href={href("unshipped")} icon="▤" />
-        <KpiCard value="5" label={c.kpiUnpaid} href={href("unpaid")} icon="¤" trend={{ text: c.kpiTrend, tone: "success" }} />
+        <KpiCard value="3" label={c.kpiUnread} href={href("unread")} icon={<Icon name="messages" size={24} />} />
+        <KpiCard value="12" label={c.kpiUnshipped} href={href("unshipped")} icon={<Icon name="orders" size={24} />} />
+        <KpiCard value="5" label={c.kpiUnpaid} href={href("unpaid")} icon={<Icon name="analytics" size={24} />} trend={{ text: c.kpiTrend, tone: "success" }} />
       </div>
       <p className={s.result} role="status">{names[params.list] ? c.kpiOpened(names[params.list] as string) : c.kpiNone}</p>
     </Card>

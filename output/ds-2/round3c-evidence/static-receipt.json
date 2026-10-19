@@ -1,0 +1,65 @@
+{
+  "round": "3c",
+  "status": "READY_FOR_CI",
+  "evidence_level": "E1",
+  "tier": "MOCK_SOURCE_ONLY",
+  "base_sha": "55e5fcddf99e1a8539cdfecbef3d27c088244108",
+  "source_sha": "0ef21c2b2e111851f25e51da89c86658b7fadc00",
+  "checked_at": "2026-10-15T11:09:00.015606+00:00",
+  "checks": [
+    {
+      "name": "typecheck",
+      "command": [
+        "pnpm",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "apps/admin/tsconfig.json",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 0,
+      "log": "output/ds-2/round3c-evidence/typecheck.log"
+    },
+    {
+      "name": "ds-rules",
+      "command": [
+        "node",
+        "scripts/dev/check-ds-rules.mjs"
+      ],
+      "exit_code": 0,
+      "log": "output/ds-2/round3c-evidence/ds-rules.log"
+    }
+  ],
+  "sha256": {
+    "tests/admin/ui-gallery-clicks.mjs": "37910348f04934cbff1ce43934c62d34b48300d7dd6cc74fca89ef2ae65d94de",
+    "packages/ui/src/ds/Layout.tsx": "ecaf98e3b1898041f913fdc5ca1ded6487781587227a2d79e9ac06fe1a74df96",
+    "packages/ui/src/ds/layout.module.css": "61d0dd13976b9e830a7eb20c41f1fc201427f7d4580224626388a39c87f29b49"
+  },
+  "commits": {
+    "G1": "f9b4bf710",
+    "G2": "b1df07b7e",
+    "delivery": "0ef21c2b2"
+  },
+  "not_run": [
+    "local tests/browser/server (owner forbids)",
+    "current-SHA CI and click matrix",
+    "injected same-row mismatch execution",
+    "docked/released 24px across locales and viewports",
+    "independent visual review and owner sign-off"
+  ],
+  "risks": [
+    "native scroll/release timing and used grid geometry need CI",
+    "G1 grid-track measurement assumes existing horizontal start-aligned layouts"
+  ],
+  "code_graph": {
+    "index_submitted": [
+      "tests/admin/ui-gallery-clicks.mjs",
+      "packages/ui/src/ds/Layout.tsx",
+      "packages/ui/src/ds/layout.module.css"
+    ],
+    "FormActionBar": "linked to f787f7ea-00a3-4843-b2da-9fe0b756fe49",
+    "readControlScale": "link unavailable: mjs entity not found after indexing"
+  }
+}

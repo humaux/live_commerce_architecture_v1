@@ -4,6 +4,8 @@
 import assert from "node:assert/strict";
 import { readdirSync, existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
+
+const GALLERY_PAGES = ["/ui-gallery", "/ui-gallery/templates/[name]"];
 import {
   routes,
   groups,
@@ -83,13 +85,16 @@ test("G-UI1 Next pages and route registry are bidirectional, unique, typed, docu
         p.replace("apps/admin/app/[locale]", "").replace("/page.tsx", "") ||
         "/",
     )
-    // DS-1: /ui-gallery is the design-system gallery, not a product route. It is the one named exemption, and the page must
-    // stay closed (404) unless LC_UI_GALLERY=1; --browser-ui-gallery proves both halves in a browser.
-    .filter((path) => path !== "/ui-gallery");
-  assert.match(
-    readFileSync("apps/admin/app/[locale]/ui-gallery/page.tsx", "utf8"),
-    /process\.env\.LC_UI_GALLERY !== "1"\) notFound\(\)/,
-  );
+    // DS-1/DS-2: /ui-gallery and its page templates are the design-system gallery, not product routes. They are the named exemptions,
+    // and each page must stay closed (404) unless LC_UI_GALLERY=1; --browser-ui-gallery proves both halves in a browser.
+    .filter((path) => !GALLERY_PAGES.includes(path));
+  for (const path of GALLERY_PAGES) {
+    assert.match(
+      readFileSync(`apps/admin/app/[locale]${path}/page.tsx`, "utf8"),
+      /process\.env\.LC_UI_GALLERY !== "1"\) notFound\(\)/,
+      `${path} must 404 unless LC_UI_GALLERY=1`,
+    );
+  }
   assert.deepEqual([...routes.map((r) => r.path)].sort(), pages.sort());
   assert.equal(new Set(routes.map((r) => r.id)).size, routes.length);
   assert.equal(new Set(routes.map((r) => r.path)).size, routes.length);

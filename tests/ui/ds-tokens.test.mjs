@@ -4,6 +4,9 @@
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { test } from "node:test";
+// The existing browser-mode entry enumerates this file explicitly rather than globbing ds-*.test.mjs.
+// Register the DS-2 render contracts through that unchanged CI entry as well as test-node.sh.
+import "./ds-rework.test.mjs";
 
 const css = readFileSync("packages/ui/src/tokens.css", "utf8");
 const decls = new Map();
@@ -32,7 +35,7 @@ const ratio = (a, b) => {
 const TEXT_PAIRS = [
   ["text-1", "surface"], ["text-1", "page"], ["text-2", "surface"], ["text-2", "page"], ["text-3", "surface"], ["text-3", "page"],
   ["text-2", "surface-muted"], ["text-3", "surface-muted"], ["text-1", "surface-muted"], ["text-1", "primary-soft"],
-  ["on-primary", "primary"], ["on-primary", "primary-hover"], ["on-primary", "danger"], ["on-primary", "danger-hover"], ["on-primary", "toggle-on"], ["on-primary", "text-2"],
+  ["disabled-text", "disabled-bg"], ["on-primary", "primary"], ["on-primary", "primary-hover"], ["on-primary", "danger"], ["on-primary", "danger-hover"], ["on-primary", "toggle-on"], ["on-primary", "text-2"],
   ["link", "surface"], ["link", "page"], ["link-hover", "surface"], ["primary", "primary-soft"], ["primary", "surface"],
   ["success-text", "surface"], ["success-text", "success-bg"], ["warn-text", "warn-bg"], ["warn-text", "warn-soft"], ["warn-text", "surface"],
   ["danger-text", "surface"], ["danger-text", "danger-bg"], ["info-text", "surface"], ["info-text", "info-bg"], ["neutral-text", "neutral-bg"],
@@ -43,6 +46,7 @@ const UI_PAIRS = [
   ["focus", "surface"], ["focus", "page"], ["focus", "surface-muted"], ["focus", "primary-soft"],
   ["focus-on-dark", "nav-bg"], ["focus-on-dark", "nav-active"], ["focus-on-dark", "nav-logo-bg"],
   ["border-input", "surface"], ["border-input", "page"], ["nav-accent", "nav-bg"], ["primary", "page"],
+  ["disabled-primary-bg", "surface"], ["disabled-primary-bg", "page"], ["disabled-primary-bg", "surface-muted"], ["disabled-primary-text", "disabled-primary-bg"],
 ];
 
 test("contrast: every text pair holds 4.5:1", () => {

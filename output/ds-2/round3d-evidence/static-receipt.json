@@ -1,0 +1,100 @@
+{
+  "round": "3d",
+  "status": "H1_READY_FOR_CI_H2_BLOCKED_LAST_ATTEMPT",
+  "evidence_level": "E1",
+  "tier": "MOCK_SOURCE_ONLY",
+  "base_sha": "84279c4d6b17147c00e33c35207b9f6d77e17949",
+  "source_sha": "cb9cc3873a8649b8edd40890165241a5b1e7c1c7",
+  "checked_at": "2026-10-15T11:28:38.760470+00:00",
+  "commits": {
+    "H1": "1164848ed",
+    "H2": "cb9cc3873"
+  },
+  "checks": [
+    {
+      "name": "typecheck",
+      "command": [
+        "pnpm",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "apps/admin/tsconfig.json",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 0,
+      "log": "output/ds-2/round3d-evidence/typecheck.log"
+    },
+    {
+      "name": "ds-rules",
+      "command": [
+        "node",
+        "scripts/dev/check-ds-rules.mjs"
+      ],
+      "exit_code": 0,
+      "log": "output/ds-2/round3d-evidence/ds-rules.log"
+    },
+    {
+      "name": "JavaScript syntax only",
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/ui-gallery-clicks.mjs"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "layout mechanical detector",
+      "command": [
+        "node",
+        "/Users/luolimo/.codex/skills/impeccable/scripts/detect.mjs",
+        "--json",
+        "--scope",
+        "layout",
+        "packages/ui/src/ds/layout.module.css"
+      ],
+      "exit_code": 0,
+      "result": []
+    }
+  ],
+  "sha256": {
+    "packages/ui/src/ds/layout.module.css": "b72a25c972b525fa7ed5be2f5abd6bac5c9c608c531c9c6c73ebcd766d88d2c9",
+    "tests/admin/ui-gallery-clicks.mjs": "34c3fde41329ffec8b3633fcf327a4f7ea2b7e468c25d755af975e1aefaf2f7e",
+    "packages/ui/src/ds/Layout.tsx": "ecaf98e3b1898041f913fdc5ca1ded6487781587227a2d79e9ac06fe1a74df96"
+  },
+  "evidence_sha256": {
+    "output/ds-2/round3d-evidence/ci-input-measurements.json": "c8246741508289fdd06a8704fba262970ce9f01ed3bda21d2efcd62a1ebcf3be",
+    "output/ds-2/round3d-evidence/typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output/ds-2/round3d-evidence/ds-rules.log": "a4c1144b0de5bbeb9d76a5a8e7e7fb0f8f2fe40184a3e8a6b0d1b11c4e6fac34"
+  },
+  "not_run": [
+    "Local tests, browsers and servers: owner prohibits",
+    "Current-source CI R1 and G2 matrix across3 locales x2 widths",
+    "Runtime injected-fault red-green for corrected G2 measurement",
+    "Independent review and owner screenshot sign-off"
+  ],
+  "risks": [
+    "H1 wrapping and widths require runtime CI; E1 is not visual acceptance",
+    "H2 exact6–14px residual cause not provable from archive; timing hypothesis only. Last targeted attempt exhausted; integrator arbitration required",
+    "Full-page screenshot is not a release-state DOM snapshot; only one released PNG exists, five absent",
+    "Native PageDown/release timing remains unverified;24px,1px tolerance and original assertions kept"
+  ],
+  "code_graph": {
+    "files_submitted": [
+      "packages/ui/src/ds/layout.module.css",
+      "tests/admin/ui-gallery-clicks.mjs"
+    ],
+    "FormActionBar_link": "97956bf0-4ce5-44a5-b90f-e854006533b2",
+    "templateJourney_link": "NOT_LINKED entity unavailable after indexing; problem d785c477-7b0b-4b2e-910f-42286d552340"
+  }
+}

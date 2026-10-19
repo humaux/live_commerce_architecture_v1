@@ -1,5 +1,5 @@
-// Purpose: Owns the DS-1 interactive primitives: Button (disabled-with-reason, loading), ButtonLink, SegmentedSwitch, Tabs, Badge, StatusPill, Alert. All copy arrives through props.
-// Depends on: react, ./controls.module.css, ./logic (button state, status families); no API, routing or translation.
+// Purpose: Owns the DS-2 interactive primitives: Button (disabled-with-reason, loading), ButtonLink, SegmentedSwitch, Tabs, Badge, StatusPill, Alert. All copy arrives through props.
+// Depends on: React, Icon, ./controls.module.css and ./logic; no API, routing or translation.
 // Used by: packages/ui/src/ds/index.ts and the other ds components; apps/admin/components/UiGallery.tsx.
 "use client";
 import {
@@ -12,10 +12,11 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
+import { Icon, type IconName } from "./Icon";
 import s from "./controls.module.css";
 import { buttonState, statusTone, type StatusDomain, type StatusOf, type Tone } from "./logic";
 
-export type ButtonVariant = "primary" | "secondary" | "danger" | "link";
+export type ButtonVariant = "primary" | "secondary" | "danger" | "link" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 
 export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled" | "type"> & {
@@ -23,6 +24,8 @@ export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disable
   ref?: Ref<HTMLButtonElement>;
   variant?: ButtonVariant;
   size?: ButtonSize;
+  /** Square control using the same height scale; caller supplies its accessible label. */
+  iconOnly?: boolean;
   type?: "button" | "submit" | "reset";
   /** Shows a spinner and swallows clicks. Keep the children as the label; `loadingLabel` is announced instead while busy. */
   loading?: boolean;
@@ -35,6 +38,7 @@ export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disable
 export function Button({
   variant = "secondary",
   size = "md",
+  iconOnly = false,
   type = "button",
   loading = false,
   loadingLabel,
@@ -55,6 +59,7 @@ export function Button({
       className={`${s.button} ${className}`}
       data-variant={variant}
       data-size={size}
+      data-icon-only={iconOnly || undefined}
       aria-disabled={state.blocked || undefined}
       aria-busy={state.busy || undefined}
       aria-describedby={reasonShown ? reasonId : props["aria-describedby"]}
@@ -68,7 +73,7 @@ export function Button({
         onClick?.(event);
       }}
     >
-      {state.busy && <span className={s.spinner} aria-hidden="true" />}
+      {state.busy && <Icon name="spinner" size={16} className={s.spinner} />}
       {children}
       {state.busy && loadingLabel && <span className={s.sr}>{loadingLabel}</span>}
     </button>
@@ -211,21 +216,20 @@ export function Tabs({
 }
 
 /** The panel of one tab; render it for the active tab only. */
-export function TabPanel({ idPrefix, id, children }: { idPrefix: string; id: string; children: ReactNode }) {
+export function TabPanel({ idPrefix, id, children, flush = false }: { idPrefix: string; id: string; children: ReactNode; flush?: boolean }) {
   return (
-    <div role="tabpanel" id={`${idPrefix}-panel-${id}`} aria-labelledby={`${idPrefix}-tab-${id}`} tabIndex={0}>
+    <div className={s.tabPanel} data-flush={flush || undefined} role="tabpanel" id={`${idPrefix}-panel-${id}`} aria-labelledby={`${idPrefix}-tab-${id}`} tabIndex={0}>
       {children}
     </div>
   );
 }
 
-const glyphs: Record<Tone, string> = { neutral: "–", info: "●", success: "✓", warning: "!", danger: "✕" };
+const toneIcons: Record<Tone, IconName> = { neutral: "info", info: "info", success: "check", warning: "warning", danger: "danger" };
 
-/** A tone-coloured label with a shape glyph, so meaning never rests on colour alone. */
+/** A text-only label: words always carry the meaning; every status family follows the same rule. */
 export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
   return (
     <span className={s.badge} data-tone={tone}>
-      <span className={s.glyph} aria-hidden="true">{glyphs[tone]}</span>
       {children}
     </span>
   );
@@ -262,7 +266,7 @@ export function Alert({
 }) {
   return (
     <div className={s.alert} data-tone={tone} role={tone === "danger" ? "alert" : "status"}>
-      <span className={s.glyph} aria-hidden="true">{glyphs[tone]}</span>
+      <Icon className={s.alertIcon} name={toneIcons[tone]} size={20} />
       <div className={s.alertBody}>
         {title && <strong className={s.alertTitle}>{title}</strong>}
         {children && <div>{children}</div>}
@@ -270,7 +274,7 @@ export function Alert({
       {action && <div className={s.alertAction}>{action}</div>}
       {onDismiss && dismissLabel && (
         <button type="button" className={s.dismiss} aria-label={dismissLabel} onClick={onDismiss}>
-          <span aria-hidden="true">×</span>
+          <Icon name="close" size={16} />
         </button>
       )}
     </div>

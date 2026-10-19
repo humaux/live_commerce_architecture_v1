@@ -3,12 +3,12 @@
 // Used by: apps/admin/app/[locale]/ui-gallery/page.tsx (rendered only when LC_UI_GALLERY=1).
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { localeNames, locales, type Locale } from "@live-commerce/i18n";
+import type { Locale } from "@live-commerce/i18n";
+import { UiGalleryFrame } from "./UiGalleryFrame";
+import { TemplateLinks } from "./UiGalleryTemplates";
 import {
-  AppShellV2,
   Alert,
   BulkMenu,
-  Breadcrumb,
   Button,
   Card,
   ConfirmDialog,
@@ -35,7 +35,6 @@ import {
   type SelectionState,
 } from "@live-commerce/ui/ds";
 import { galleryCopy, type GalleryCopy } from "../src/ui-gallery-copy";
-import { galleryNav } from "../src/ui-gallery-nav";
 import {
   AlertsSection,
   BadgesSection,
@@ -63,17 +62,17 @@ const PRODUCTS: Product[] = Array.from({ length: TOTAL_PRODUCTS }, (_, i) => {
 
 type Dialog = { kind: "plain" | "typed"; title: string; description: string; done: () => void };
 
-/** List conditions live in the URL (`pf` = status filter, `pq` = search) so paging links, refresh and back keep the same result set. */
+/** List conditions live in the URL (`pf` = status filter; search is memory-only) so paging links, refresh and back keep the same result set. */
 const FILTERS = ["all", "published", "draft"];
 /** Replaces the list conditions in the URL (undefined removes a key) and returns to page 1, the page of a different result set. */
-type SetList = (conditions: { pf: string | undefined; pq: string | undefined }) => void;
+type SetList = (conditions: { pf: string | undefined }) => void;
 
 function ProductTable({ c, params, setParam, setList, search }: { c: GalleryCopy; params: GalleryParams; setParam: SetParam; setList: SetList; search: string }) {
   const [filter, setFilter] = useState(() => {
     const raw = new URLSearchParams(search).get("pf");
     return raw !== null && FILTERS.includes(raw) ? raw : "all";
   });
-  const initialQuery = new URLSearchParams(search).get("pq") ?? "";
+  const initialQuery = ""; // Search may contain personal data: never read/write it through the URL.
   const [draft, setDraft] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery);
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
@@ -157,7 +156,7 @@ function ProductTable({ c, params, setParam, setList, search }: { c: GalleryCopy
               value={filter}
               onChange={(v) => {
                 setFilter(v);
-                setList({ pf: v === "all" ? undefined : v, pq: query || undefined });
+                setList({ pf: v === "all" ? undefined : v });
                 setSelection(clearSelection());
               }}
               options={[{ value: "all", label: c.filterAll }, { value: "published", label: c.filterPublished }, { value: "draft", label: c.filterDraft }]}
@@ -168,7 +167,7 @@ function ProductTable({ c, params, setParam, setList, search }: { c: GalleryCopy
               onChange={setDraft}
               onSubmit={(q) => {
                 setQuery(q);
-                setList({ pf: filter === "all" ? undefined : filter, pq: q || undefined });
+                setList({ pf: filter === "all" ? undefined : filter });
                 setSelection(clearSelection());
                 setNote(c.searchResult(q));
               }}
@@ -195,6 +194,7 @@ function ProductTable({ c, params, setParam, setList, search }: { c: GalleryCopy
           {bulkDone && <Alert tone="success">{bulkDone}</Alert>}
         </div>
         <DataTable
+          scrollHint={c.tableScroll}
           caption={c.tblCaption}
           columns={columns}
           rows={rows}
@@ -298,40 +298,11 @@ export function UiGallery({ locale, initial, search: initialSearch }: { locale: 
     setSearch(text ? `?${text}` : "?");
     window.history.replaceState(null, "", `${window.location.pathname}${text ? `?${text}` : ""}${window.location.hash}`);
   };
-  const nav = useMemo(() => galleryNav(locale), [locale]);
   return (
-    <AppShellV2
-      nav={nav}
-      currentId={params.nav || "products"}
-      navLabel={c.navLabel}
-      brand={c.brand}
-      store={{ name: c.storeName, region: c.storeRegion, logo: "D" }}
-      menuLabel={c.menu}
-      closeLabel={c.close}
-      skipLabel={c.skip}
-      breadcrumb={<Breadcrumb label={c.crumbLabel} crumbs={[{ label: c.crumbHome, href: "#sec-tokens" }, { label: c.crumbHere }]} />}
-      topbar={{
-        locale: (
-          <nav className={s.locales} aria-label={c.localeLabel}>
-            {locales.map((l) => (
-              <a key={l} href={`/${l}/ui-gallery`} lang={l} aria-current={l === locale ? "true" : undefined}>
-                {localeNames[l]}
-              </a>
-            ))}
-          </nav>
-        ),
-        help: <a className={s.topLink} href="#sec-alerts">{c.help}</a>,
-        notifications: (
-          <MenuButton size="sm" label={c.notifications} items={[{ id: "unread", label: c.kpiUnread, onSelect: () => { window.location.hash = "#sec-kpi"; } }]} />
-        ),
-        account: (
-          <MenuButton size="sm" label={c.account} items={[{ id: "profile", label: c.setItemProfile, onSelect: () => { window.location.href = "?setting=profile#sec-settings"; } }]} />
-        ),
-        enterStore: { label: c.enterStore, href: "#sec-tokens" },
-      }}
-    >
+    <UiGalleryFrame locale={locale} currentId={params.nav || "products"}>
       <PageHeader breadcrumbLabel={c.crumbLabel} title={c.title} description={c.description} />
       <div className={s.page}>
+        <TemplateLinks locale={locale} />
         <TokensSection c={c} />
         <ButtonsSection c={c} />
         <SwitchTabsSection c={c} params={params} setParam={setParam} />
@@ -344,6 +315,6 @@ export function UiGallery({ locale, initial, search: initialSearch }: { locale: 
         <KpiSection c={c} params={params} />
         <ProductTable c={c} params={params} setParam={setParam} setList={setList} search={search} />
       </div>
-    </AppShellV2>
+    </UiGalleryFrame>
   );
 }

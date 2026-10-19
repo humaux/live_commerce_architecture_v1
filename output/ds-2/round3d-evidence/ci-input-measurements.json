@@ -1,0 +1,489 @@
+{
+  "run_id": "38725491004",
+  "ci_head": "84279c4d6b17147c00e33c35207b9f6d77e17949",
+  "input_archive": "/Volumes/data/live_commerce_architecture_v1/output/ds-2/ci-gallery-38725491004/playwright/run.FXJd3cJ7",
+  "method": "Offline RGB scan of existing PNGs only; last page-colour vertical run between form and template at x=300 desktop/x=20 phone. Integer raster edges are screenshot-time document pixels, not assertion-time DOMRects. No browser/test/server launched.",
+  "input_sha256": {
+    "ui-gallery/click-ledger.json": "da724f6096741999a81954f6bbb8b1f2509954a9fc4200e48fb3f13bbdeaf51d",
+    "ui-gallery/ds2-matrix.json": "f08c4741ba7fbe838d02a6472ff031b56c42d4ca1dc70e788af8dfacf2d42bd0",
+    "ci-gates/--browser-ui-gallery.log": "671bd2de8344af7af93df2b7c8b7e14aed056d702ca9ef97caa12fd00ca8e2bc"
+  },
+  "failed_rows": [
+    {
+      "page": "/zh-TW/ui-gallery/templates/form?section=media",
+      "control": "form: Form flow and sticky release",
+      "action": "click Basics, native Home/PageDown scrolling",
+      "expected": "page scrolls, no inner scroller; footer docks only while form bottom is offscreen",
+      "actual": "form-to-template gap=31px, expected=24px (no displaced footer band)",
+      "result": "fail"
+    },
+    {
+      "page": "/zh-TW/ui-gallery/templates/form?section=media",
+      "control": "form: Form flow and sticky release",
+      "action": "click Basics, native Home/PageDown scrolling",
+      "expected": "page scrolls, no inner scroller; footer docks only while form bottom is offscreen",
+      "actual": "form-to-template gap=38px, expected=24px (no displaced footer band)",
+      "result": "fail"
+    },
+    {
+      "page": "/zh-CN/ui-gallery/templates/form?section=media",
+      "control": "form: Form flow and sticky release",
+      "action": "click Basics, native Home/PageDown scrolling",
+      "expected": "page scrolls, no inner scroller; footer docks only while form bottom is offscreen",
+      "actual": "form-to-template gap=30px, expected=24px (no displaced footer band)",
+      "result": "fail"
+    },
+    {
+      "page": "/zh-CN/ui-gallery/templates/form?section=media",
+      "control": "form: Form flow and sticky release",
+      "action": "click Basics, native Home/PageDown scrolling",
+      "expected": "page scrolls, no inner scroller; footer docks only while form bottom is offscreen",
+      "actual": "form-to-template gap=36px, expected=24px (no displaced footer band)",
+      "result": "fail"
+    },
+    {
+      "page": "/en/ui-gallery/templates/form?section=media",
+      "control": "form: Form flow and sticky release",
+      "action": "click Basics, native Home/PageDown scrolling",
+      "expected": "page scrolls, no inner scroller; footer docks only while form bottom is offscreen",
+      "actual": "form-to-template gap=30px, expected=24px (no displaced footer band)",
+      "result": "fail"
+    },
+    {
+      "page": "/en/ui-gallery/templates/form",
+      "control": "DS-2 en/390 form visual",
+      "action": "screenshot + axe + visual-lint",
+      "expected": "axe all impacts 0; blocking layout 0",
+      "actual": "form en 390: visual-lint blocking {\"5\":{\"path\":\"main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__formSurface:nth-of-type(1)\",\"tag\":\"div\",\"testid\":\"\",\"text\":\"No unsaved changesCancelSave changesTher\"},\"29\":{\"path\":\"main#ds-main ",
+      "result": "fail"
+    },
+    {
+      "page": "/en/ui-gallery/templates/form",
+      "control": "form: Section keyboard and number fields",
+      "action": "click Basics, End, edit price/stock, save, reload",
+      "expected": "Pricing active, numbers/currency persist",
+      "actual": "form-pricing en 390: visual-lint blocking {\"5\":{\"path\":\"main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__formSurface:nth-of-type(1)\",\"tag\":\"div\",\"testid\":\"\",\"text\":\"No unsaved changesCancelSave changesTher\"},\"19\":{\"path\":\"main#",
+      "result": "fail"
+    },
+    {
+      "page": "/en/ui-gallery/templates/form?section=pricing",
+      "control": "form: Upload add/error/retry/remove",
+      "action": "select Images, toggle failure, choose image, retry, save/reload, remove/save/reload",
+      "expected": "real file chooser, per-item error/progress/completion; removal persists",
+      "actual": "form-media en 390: visual-lint blocking {\"5\":{\"path\":\"main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__formSurface:nth-of-type(1)\",\"tag\":\"div\",\"testid\":\"\",\"text\":\"No unsaved changesCancelSave changesTher\"},\"16\":{\"path\":\"main#ds",
+      "result": "fail"
+    },
+    {
+      "page": "/en/ui-gallery/templates/form?section=media",
+      "control": "form: Form flow and sticky release",
+      "action": "click Basics, native Home/PageDown scrolling",
+      "expected": "page scrolls, no inner scroller; footer docks only while form bottom is offscreen",
+      "actual": "form-released en 390: visual-lint blocking {\"5\":{\"path\":\"main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__formSurface:nth-of-type(1)\",\"tag\":\"div\",\"testid\":\"\",\"text\":\"No unsaved changesCancelSave changesTher\"},\"29\":{\"path\":\"main",
+      "result": "fail"
+    }
+  ],
+  "h1_r1": [
+    {
+      "name": "form",
+      "locale": "en",
+      "width": 390,
+      "lint": [
+        {
+          "rule": "R1",
+          "kind": "document-scroll-width",
+          "ids": [],
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 472,
+            "h": 900
+          },
+          "measured": {
+            "scrollWidth": 472,
+            "viewportWidth": 390,
+            "overBy": 82
+          },
+          "severity": "block"
+        },
+        {
+          "rule": "R1",
+          "kind": "element-beyond-viewport",
+          "ids": [
+            5
+          ],
+          "rect": {
+            "x": 16,
+            "y": 270.9,
+            "w": 455.7,
+            "h": 664
+          },
+          "measured": {
+            "left": 16,
+            "right": 471.7,
+            "viewportWidth": 390,
+            "overBy": 81.7
+          },
+          "severity": "block"
+        },
+        {
+          "rule": "R1",
+          "kind": "element-beyond-viewport",
+          "ids": [
+            29
+          ],
+          "rect": {
+            "x": 16,
+            "y": 742.5,
+            "w": 455.7,
+            "h": 101.5
+          },
+          "measured": {
+            "left": 16,
+            "right": 471.7,
+            "viewportWidth": 390,
+            "overBy": 81.7
+          },
+          "severity": "block"
+        }
+      ],
+      "named": {
+        "5": {
+          "path": "main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__formSurface:nth-of-type(1)",
+          "tag": "div",
+          "testid": "",
+          "text": "No unsaved changesCancelSave changesTher"
+        },
+        "29": {
+          "path": "main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__bar.layout-module__e4BCMq__barBottom:nth-of-type(2)",
+          "tag": "div",
+          "testid": "",
+          "text": "No unsaved changesCancelSave changesTher"
+        }
+      }
+    },
+    {
+      "name": "form-pricing",
+      "locale": "en",
+      "width": 390,
+      "lint": [
+        {
+          "rule": "R1",
+          "kind": "document-scroll-width",
+          "ids": [],
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 474,
+            "h": 899
+          },
+          "measured": {
+            "scrollWidth": 474,
+            "viewportWidth": 390,
+            "overBy": 84
+          },
+          "severity": "block"
+        },
+        {
+          "rule": "R1",
+          "kind": "element-beyond-viewport",
+          "ids": [
+            5
+          ],
+          "rect": {
+            "x": 16,
+            "y": 270.9,
+            "w": 458.2,
+            "h": 274
+          },
+          "measured": {
+            "left": 16,
+            "right": 474.2,
+            "viewportWidth": 390,
+            "overBy": 84.2
+          },
+          "severity": "block"
+        },
+        {
+          "rule": "R1",
+          "kind": "element-beyond-viewport",
+          "ids": [
+            19
+          ],
+          "rect": {
+            "x": 16,
+            "y": 543.9,
+            "w": 458.2,
+            "h": 101.5
+          },
+          "measured": {
+            "left": 16,
+            "right": 474.2,
+            "viewportWidth": 390,
+            "overBy": 84.2
+          },
+          "severity": "block"
+        }
+      ],
+      "named": {
+        "5": {
+          "path": "main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__formSurface:nth-of-type(1)",
+          "tag": "div",
+          "testid": "",
+          "text": "No unsaved changesCancelSave changesTher"
+        },
+        "19": {
+          "path": "main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__bar.layout-module__e4BCMq__barBottom:nth-of-type(2)",
+          "tag": "div",
+          "testid": "",
+          "text": "No unsaved changesCancelSave changesTher"
+        }
+      }
+    },
+    {
+      "name": "form-media",
+      "locale": "en",
+      "width": 390,
+      "lint": [
+        {
+          "rule": "R1",
+          "kind": "document-scroll-width",
+          "ids": [],
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 461,
+            "h": 900
+          },
+          "measured": {
+            "scrollWidth": 461,
+            "viewportWidth": 390,
+            "overBy": 71
+          },
+          "severity": "block"
+        },
+        {
+          "rule": "R1",
+          "kind": "element-beyond-viewport",
+          "ids": [
+            5
+          ],
+          "rect": {
+            "x": 16,
+            "y": 270.9,
+            "w": 445.1,
+            "h": 645.2
+          },
+          "measured": {
+            "left": 16,
+            "right": 461.1,
+            "viewportWidth": 390,
+            "overBy": 71.1
+          },
+          "severity": "block"
+        },
+        {
+          "rule": "R1",
+          "kind": "element-beyond-viewport",
+          "ids": [
+            16
+          ],
+          "rect": {
+            "x": 16,
+            "y": 915.1,
+            "w": 445.1,
+            "h": 101.5
+          },
+          "measured": {
+            "left": 16,
+            "right": 461.1,
+            "viewportWidth": 390,
+            "overBy": 71.1
+          },
+          "severity": "block"
+        }
+      ],
+      "named": {
+        "5": {
+          "path": "main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__formSurface:nth-of-type(1)",
+          "tag": "div",
+          "testid": "",
+          "text": "No unsaved changesCancelSave changesTher"
+        },
+        "16": {
+          "path": "main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__bar.layout-module__e4BCMq__barBottom:nth-of-type(2)",
+          "tag": "div",
+          "testid": "",
+          "text": "No unsaved changesCancelSave changesTher"
+        }
+      }
+    },
+    {
+      "name": "form-released",
+      "locale": "en",
+      "width": 390,
+      "lint": [
+        {
+          "rule": "R1",
+          "kind": "document-scroll-width",
+          "ids": [],
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "w": 472,
+            "h": 900
+          },
+          "measured": {
+            "scrollWidth": 472,
+            "viewportWidth": 390,
+            "overBy": 82
+          },
+          "severity": "block"
+        },
+        {
+          "rule": "R1",
+          "kind": "element-beyond-viewport",
+          "ids": [
+            5
+          ],
+          "rect": {
+            "x": 16,
+            "y": 270.9,
+            "w": 455.7,
+            "h": 664
+          },
+          "measured": {
+            "left": 16,
+            "right": 471.7,
+            "viewportWidth": 390,
+            "overBy": 81.7
+          },
+          "severity": "block"
+        },
+        {
+          "rule": "R1",
+          "kind": "element-beyond-viewport",
+          "ids": [
+            29
+          ],
+          "rect": {
+            "x": 16,
+            "y": 742.5,
+            "w": 455.7,
+            "h": 101.5
+          },
+          "measured": {
+            "left": 16,
+            "right": 471.7,
+            "viewportWidth": 390,
+            "overBy": 81.7
+          },
+          "severity": "block"
+        }
+      ],
+      "named": {
+        "5": {
+          "path": "main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__formSurface:nth-of-type(1)",
+          "tag": "div",
+          "testid": "",
+          "text": "No unsaved changesCancelSave changesTher"
+        },
+        "29": {
+          "path": "main#ds-main > div > div.layout-module__e4BCMq__stack > div.layout-module__e4BCMq__formFrame > div.layout-module__e4BCMq__bar.layout-module__e4BCMq__barBottom:nth-of-type(2)",
+          "tag": "div",
+          "testid": "",
+          "text": "No unsaved changesCancelSave changesTher"
+        }
+      }
+    }
+  ],
+  "screenshot_measurements": [
+    {
+      "file": "ds2-en-1440x900-form.png",
+      "sha256": "8ef5cb33fb72be5b065e30f6c50e5efd222709c801e1aadb585902675807caff",
+      "image_size": [
+        1440,
+        1131
+      ],
+      "scan_x": 300,
+      "form_end_document_pixel": 929,
+      "template_start_document_pixel": 953,
+      "visible_gap_px": 24
+    },
+    {
+      "file": "ds2-en-390x844-form-released.png",
+      "sha256": "dbd8c99c4bff67bbc19d7d7a19196c48c13aa1fc7e8b856ce4bfed89ceaf16eb",
+      "image_size": [
+        472,
+        1189
+      ],
+      "scan_x": 20,
+      "form_end_document_pixel": 935,
+      "template_start_document_pixel": 959,
+      "visible_gap_px": 24
+    },
+    {
+      "file": "ds2-en-390x844-form.png",
+      "sha256": "1d0fc87ef3fa4f5310643b315bc7fe5122c828d4d3823c8f7ce760947c88446a",
+      "image_size": [
+        472,
+        1189
+      ],
+      "scan_x": 20,
+      "form_end_document_pixel": 935,
+      "template_start_document_pixel": 959,
+      "visible_gap_px": 24
+    },
+    {
+      "file": "ds2-zh-CN-1440x900-form.png",
+      "sha256": "14828f70b4e7189c4cb36ba4e24fc6d47d9ce4e44658609d055531754c4f1623",
+      "image_size": [
+        1440,
+        1131
+      ],
+      "scan_x": 300,
+      "form_end_document_pixel": 929,
+      "template_start_document_pixel": 953,
+      "visible_gap_px": 24
+    },
+    {
+      "file": "ds2-zh-CN-390x844-form.png",
+      "sha256": "b4bae2f1ad816a110f33cae72e05a6585332033488349b27c4896652b700352f",
+      "image_size": [
+        390,
+        1166
+      ],
+      "scan_x": 20,
+      "form_end_document_pixel": 912,
+      "template_start_document_pixel": 936,
+      "visible_gap_px": 24
+    },
+    {
+      "file": "ds2-zh-TW-1440x900-form.png",
+      "sha256": "07ec0b5539406ca6d8b69b861a70dc04eb0b79a63ec74655aabf4dc7336903df",
+      "image_size": [
+        1440,
+        1131
+      ],
+      "scan_x": 300,
+      "form_end_document_pixel": 929,
+      "template_start_document_pixel": 953,
+      "visible_gap_px": 24
+    },
+    {
+      "file": "ds2-zh-TW-390x844-form.png",
+      "sha256": "7b64c3d439dc7b8e0c4448eab5123a893605e52b492ef6cf58b0cd510be0d862",
+      "image_size": [
+        390,
+        1166
+      ],
+      "scan_x": 20,
+      "form_end_document_pixel": 912,
+      "template_start_document_pixel": 936,
+      "visible_gap_px": 24
+    }
+  ],
+  "h2_status": "BLOCKED — LAST targeted attempt; integrator arbitration required",
+  "h2_observed": "G2 failure deltas over24: TW1440+7, TW390+14, CN1440+6, CN390+12, en1440+6. All six baseline form rasters show24. Only en390 released PNG exists; it shows24. No failed-assertion-time scrollY/frame/surface/bar/next boxes were retained.",
+  "h2_source_defect": "Separate await surface.boundingBox(), bar.boundingBox(), and next.boundingBox() subtract viewport coordinates sampled at different times. Native Home may still be moving. Corrected to one synchronous DOM snapshot and wait for Home scrollY0. Original edge formula,24px token and1px tolerance retained; added no retained frame band assertion and coordinate diagnostics.",
+  "h2_limit": "Temporal sampling is a supported hypothesis, not a proven sole cause of6–14px residuals. Exact extra box or scroll delta unavailable. No speculative CSS correction. No current-source runtime green; no further targeted G2 attempt."
+}

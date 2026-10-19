@@ -4,6 +4,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
+import { galleryNav } from "@/src/ui-gallery-nav";
 import { UiGallery } from "@/components/UiGallery";
 
 // Developer-only page, not localized product copy; the title exists so the document passes the axe document-title rule.
@@ -25,12 +26,14 @@ export default async function UiGalleryPage({ params, searchParams }: { params: 
     sw: pick(one(raw.sw), ["0", "1"], "1"),
     setting: pick(one(raw.setting), ["profile", "shipping", "payments", "notices"], "profile"),
     list: pick(one(raw.list), ["unread", "unshipped", "unpaid"], ""),
-    nav: one(raw.nav).slice(0, 40),
+    nav: pick(one(raw.nav), galleryNav(locale).flatMap(group => [group.id, ...group.items.map(item => item.id)]), ""),
     page: /^[1-9][0-9]{0,3}$/.test(page) ? Number(page) : 1,
     tstate: pick(one(raw.tstate), ["ready", "loading", "error", "empty"], "ready"),
   };
   const query = new URLSearchParams();
-  for (const [k, v] of Object.entries(raw)) if (typeof v === "string") query.set(k, v);
+  for (const [k, v] of Object.entries(initial)) query.set(k, String(v));
+  const pf = pick(one(raw.pf), ["all", "published", "draft"], "all");
+  if (pf !== "all") query.set("pf", pf);
   const search = query.toString();
   return <UiGallery locale={locale} initial={initial} search={search ? `?${search}` : ""} />;
 }
