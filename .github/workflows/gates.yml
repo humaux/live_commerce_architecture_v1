@@ -140,7 +140,8 @@ jobs:
           # Reuse verified modules and content-addressed compiler output, never PG or gate receipts.
           # Go hashes source/flags (including -race); -count=1 below still executes every selected test.
           # Only the shard:gNN legs restore/save: they all compile the identical ./tests/foundation -race graph (-run/-skip do not
-          # change build IDs), so whichever finishes first saves a complete entry. The key is immutable, so any other writer
+          # change build IDs), so whichever finishes first saves the shared foundation compile (cmd/* binaries that individual
+          # tests `go build` at runtime still differ per shard and may rebuild). The key is immutable, so any other writer
           # (ui-gallery builds no Go, shard:unit a different package set) would seed a partial cache for every later run (review-735cb2ce2 P2-1).
           # go.mod joins the key to retire the partial go.sum-only entry #78 left behind.
           cache: ${{ startsWith(matrix.mode, 'shard:g') }}

@@ -1,0 +1,11 @@
+(shard:g01)	pretest=80	gate=988	Cache is not fou		Unable to reserve cache with key setup-g
+(shard:g02)	pretest=80	gate=991	Cache is not fou		Unable to reserve cache with key setup-g
+(shard:g03)	pretest=84	gate=992	Cache is not fou		Unable to reserve cache with key setup-g
+(shard:g04)	pretest=4	gate=845	hit:6324b79d8a24	Cache Size: ~199 MB	Cache hit occurred on the primary key se
+(shard:g05)	pretest=119	gate=959	Cache is not fou		Unable to reserve cache with key setup-g
+(shard:g06)	pretest=135	gate=979	Cache is not fou		Unable to reserve cache with key setup-g
+(shard:g07)	pretest=100	gate=832	Cache is not fou		Cache saved with the key: setup-go-Linux
+(shard:g08)	pretest=118	gate=916	Cache is not fou		Unable to reserve cache with key setup-g
+(shard:g09)	pretest=123	gate=1279	Cache is not fou		Unable to reserve cache with key setup-g
+(shard:g10)	pretest=118	gate=940	Cache is not fou		Unable to reserve cache with key setup-g
+(shard:unit)	pretest=50	gate=463	nocache		

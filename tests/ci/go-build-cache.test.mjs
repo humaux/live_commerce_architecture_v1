@@ -41,8 +41,8 @@ test("matrix reuses native Go compilation while every selected foundation test s
 
 test("injected disabled cache or unbound manifest goes RED under the real cache contract", () => {
   const cacheLine = "cache: ${{ startsWith(matrix.mode, 'shard:g') }}";
+  assert.ok(workflow.includes(cacheLine));
   for (const to of ["cache: true", "cache: false", "cache: ${{ startsWith(matrix.mode, 'shard:') }}"]) {
-    assert.ok(workflow.includes(cacheLine));
     assert.throws(() => cacheContract(workflow.replace(cacheLine, to)), /only the shard:gNN legs/);
   }
   assert.throws(() => cacheContract(workflow.replace("            go.mod\n            go.sum\n", "            go.mod\n")), /verified module manifest/);
