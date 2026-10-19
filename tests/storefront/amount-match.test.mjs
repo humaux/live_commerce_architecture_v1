@@ -3,7 +3,7 @@
 // Used by: scripts/dev/test-node.sh.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { amt, amountMatcher, withoutFixtureIds } from "./amount-match.mjs";
+import { amt, amountMatcher } from "./amount-match.mjs";
 
 test("amt(96000) matches the amount as a whole token, prefixed or not", () => {
   for (const s of ["NT$960", "NT$960.00", "960", "合計 NT$960", "$960 total", "(960)", "NT$960NT$1,060", "合計NT$960"]) assert.match(s, amt(96000), s);
@@ -23,7 +23,8 @@ test("amountMatcher keeps thousands separators literal", () => {
 test("negative checks ignore fixture ids that start with the amount (review-93b987562 P2-1)", () => {
   // quotation text as promotions-gate.mjs:207 reads it, with an injected SKU code tag that starts with 960 (BRP-<12 hex>, t04Tag)
   const refused = "Promo gate item 1 A BRP-960abcdef012 NT$400 Promo gate item 1 B BRP-40faa960dbfa NT$600 Shipping NT$60 Total NT$1,060";
-  assert.doesNotMatch(withoutFixtureIds(refused), amt(96000));
-  assert.match(withoutFixtureIds(refused), amt(106000)); // stripping removes ids only, never amounts
-  assert.match(withoutFixtureIds("BRP-960abcdef012 Total NT$960"), amt(96000)); // a real 960 still fails the check
+  assert.doesNotMatch(refused, amt(96000));
+  assert.match(refused, amt(106000)); // the fixture prefix refuses ids only, never amounts
+  assert.match("BRP-960abcdef012 Total NT$960", amt(96000)); // a real 960 still fails the check
+  assert.match("Discount -960", amt(96000)); // "-" alone is not refused: discounts render as "-NT$100" / "-100"
 });
