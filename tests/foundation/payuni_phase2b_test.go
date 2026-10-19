@@ -237,7 +237,8 @@ func TestPayuniPhase2bRefusesPayuniOrderAwaitingPayment(t *testing.T) {
 	before := rm2ScopeSnapshot(t, p, false)
 	mustExec(t, f.owner, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1)`, versions)
 	err = migrations.Apply(ctx, f.owner)
-	if err == nil || !strings.Contains(err.Error(), "0 non-terminal PAYUNi operation(s), 1 PAYUNi order(s) awaiting payment") || !strings.Contains(err.Error(), "22023") {
+	// The refusal must be 0197's own (exact prefix), not 0198's/0199's guards that print the same counts (review-105 P2).
+	if err == nil || !strings.Contains(err.Error(), "PAYUNi phase-2b drop refused: 0 non-terminal PAYUNi operation(s), 1 PAYUNi order(s) awaiting payment") || !strings.Contains(err.Error(), "22023") {
 		t.Fatalf("0197 over a PAYUNi order awaiting payment: %v", err)
 	}
 	if n := countRows(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=ANY($1)`, versions); n != 0 {

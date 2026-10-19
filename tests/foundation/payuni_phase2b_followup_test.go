@@ -1,8 +1,8 @@
 // Purpose: gates for the PAY-RM2 phase-2b follow-ups (issue #93; review output/pay-rm2-p2b/review-1d7af85d0.md):
 //
 //	PFU01: 0199's stricter guard refuses (22023, nothing changed) while a PAYUNi reservation is still PAYMENT_PENDING
-//	       (P2-2) and while a stored PAYUNi observation was never applied (P2-3); once an operator releases the stock
-//	       and records a review case it proceeds and every row is still there.
+//	       (P2-2) and while a stored PAYUNi observation was never applied (P2-3); a failed-payment report 0018 applied
+//	       as a no-op does not block it, and every row is still there.
 //	PFU02: post_river/0027 re-runs that guard inside the post-River transaction (P2-1).
 //	PFU03: on an upgrade from just before 0197 the numbered phase alone (post-River held back) leaves no grantee able
 //	       to execute checkout.start_payment / integration.record_payment_query (P2-1 window), and revokes the leftover
@@ -11,7 +11,7 @@
 //	       reconciled although 0018 cited its benign reports in nothing, and refuses (22023, revokes rolled back) when
 //	       a paid report was never applied.
 //
-// Depends on: migrations.Apply; pwIsolatedFixture; psSetupItemsOn; rm2HistoricalAttempt; pcFull/pqJSON; rmVersions/
+// Depends on: migrations.Apply; pwIsolatedFixture; psSetupItemsOn; rm2HistoricalAttempt; pqReport/pqJSON; rmVersions/
 //
 //	rmChecksums/rmSkipLedger (payuni_removal_test.go); p2bPreState (payuni_phase2b_test.go); pfeReplica
 //	(payuni_form_erase_test.go); lriPre0032Fixture/lriApplyFull/lriLedger/lriCloseProducerPools
@@ -86,7 +86,7 @@ func TestPayuniPhase2bFollowupGuardStockAndUnappliedReport(t *testing.T) {
 	}
 	// This isolated DB was built with 0199 already applied (its DDL is IF EXISTS / REVOKE, idempotent), so DDL
 	// rollback cannot be observed here (the guard is the file's first statement in the one numbered transaction, as
-	// in 0197 whose rollback P2B02 pins). What a refusal must leave unchanged here is the business history.
+	// in 0197 whose rollback P2B02 pins). What a refusal must leave unchanged here is the business history; the DDL rollback is pinned by PFU04 on the legacy chain.
 	before := rm2Snapshot(t, p, result.AttemptID)
 	pfuRefused(t, f.owner, pfuNumbered, pfuApplyOnly(t, f.owner, pfuNumbered),
 		"0 non-terminal PAYUNi operation(s), 0 PAYUNi order(s) awaiting payment, 1 PAYUNi reservation(s) still PAYMENT_PENDING, 0 stored PAYUNi observation(s) never applied")
@@ -94,22 +94,22 @@ func TestPayuniPhase2bFollowupGuardStockAndUnappliedReport(t *testing.T) {
 		t.Errorf("refused 0199 changed PAYUNi history:\nbefore=%s\nafter=%s", before, after)
 	}
 
-	// Stock released; a stored PAYUNi QUERY report that no fact or review case cites.
-	pfeReplica(t, f.owner, `UPDATE inventory.reservations SET state='RELEASED' WHERE id='`+p.hold.OrderID+`'`)
-	report := pcFull(pqFixture{psHarness: p, result: result})
-	mustExec(t, f.owner, `INSERT INTO payments.provider_observations(tenant_id,store_id,attempt_id,source,execution_profile,environment,first_generation,report,report_hash)
-		SELECT a.tenant_id,a.store_id,a.id,'QUERY',a.execution_profile,a.environment,a.generation,$2::jsonb,sha256(convert_to($2::jsonb::text,'UTF8'))
-		FROM checkout.payment_attempts a WHERE a.id=$1`, result.AttemptID, pqJSON(report))
+	// Stock released. The operation carries the TradeNo record_payment_query stored on it. A failed-payment report
+	// (TradeStatus 2) is one 0018 applied without writing anything: it is not unapplied and 0199 proceeds.
+	q := pqFixture{psHarness: p, result: result}
+	pfeReplica(t, f.owner, `UPDATE inventory.reservations SET state='RELEASED' WHERE id='`+p.hold.OrderID+`'`,
+		`UPDATE integration.operations SET provider_reference='`+pqReport(q)["TradeNo"].(string)+`' WHERE id='`+result.OperationID+`'`)
+	pfuReport(t, q, func(r map[string]any) { r["TradeStatus"] = "2" })
+	if err := pfuApplyOnly(t, f.owner, pfuNumbered); err != nil {
+		t.Fatalf("0199 over a reconciled PAYUNi history with a failed-payment report: %v", err)
+	}
+	// A paid capture report that was never applied (no AUTHORIZED/CAPTURED fact). Replaces the former
+	// "operator records a review case, 0199 proceeds" step (review-105-336b06942 P1: hand-written review cases are
+	// not reconciliation; the runbook now escalates this count to the owner).
+	pfuReport(t, q, func(r map[string]any) { r["CloseStatus"], r["CloseAmountTWD"] = "2", result.AmountMinor/100 })
 	pfuRefused(t, f.owner, pfuNumbered, pfuApplyOnly(t, f.owner, pfuNumbered),
 		"0 PAYUNi reservation(s) still PAYMENT_PENDING, 1 stored PAYUNi observation(s) never applied")
-
-	// Operator records a review case for it: the follow-up proceeds and history stays.
-	mustExec(t, f.owner, `INSERT INTO payments.review_cases(tenant_id,store_id,attempt_id,reason,source_report_hash)
-		SELECT tenant_id,store_id,attempt_id,'CONFLICTING_REPORT',report_hash FROM payments.provider_observations WHERE attempt_id=$1`, result.AttemptID)
-	if err := pfuApplyOnly(t, f.owner, pfuNumbered); err != nil {
-		t.Fatalf("0199 over reconciled PAYUNi history: %v", err)
-	}
-	if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1)+(SELECT count(*) FROM payments.review_cases WHERE attempt_id=$1)+(SELECT count(*) FROM checkout.payment_attempts WHERE id=$1)`, result.AttemptID); n != 3 {
+	if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1)+(SELECT count(*) FROM payments.facts WHERE attempt_id=$1)+(SELECT count(*) FROM payments.review_cases WHERE attempt_id=$1)+(SELECT count(*) FROM checkout.payment_attempts WHERE id=$1)`, result.AttemptID); n != 3 {
 		t.Errorf("0199 changed PAYUNi history rows: %d", n)
 	}
 }
