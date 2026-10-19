@@ -493,7 +493,7 @@ export function Pagination({
   labels: PaginationLabels;
   onNavigate?: (page: number, event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
-  // #107: an in-place page change can unmount the link that had focus (Next turns into a disabled, non-focusable arrow on the
+  // Issue 107: an in-place page change can unmount the link that had focus (Next turns into a disabled, non-focusable arrow on the
   // last page), dropping focus to <body>. Keep it in the pager on the current page link, next to where the user acted (WAI-ARIA
   // APG, Developing a Keyboard Interface: never lose focus when the focused element goes away). Never steals focus that moved on.
   const nav = useRef<HTMLElement>(null);
