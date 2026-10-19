@@ -165,5 +165,5 @@ exists. The wire package reverts to its pre-W4-01B surface: `NewNotify`,
 `NotificationAuth` and `AuthenticateNotification` are gone; `VerifyNotification`
 remains the local bounded parser, and the unresolved background-transport/ACK warning
 above stands unchanged. The older PAYUNi hosted/query/capture path (migrations
-0014–0018, `payments.apply_capture_payuni_v1`) is explicitly out of PAY-RM1 scope and
+0014–0018, `payments.apply_capture_payuni_v1` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)*) is explicitly out of PAY-RM1 scope and
 remains until OPEN-1 decides it.

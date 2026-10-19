@@ -5,7 +5,7 @@ Purpose: one row per test that drove SQL dropped by `migrations/0197_payuni_phas
 Depends on: `tests/foundation/*_test.go` on branch `unit/pay-rm2-p2b`, `output/pay-rm2-p2a/round3-contract-classification.json`.
 Used by: PR #85 review, the owner, and the independent reviewer.
 Invariants: no assertion is removed without a replacement. Mapping codes:
-**a** = a Stripe mock/sandbox test that already asserts the same invariant,
+**a** = a Stripe mock/sandbox test that already asserts the same invariant. Every a-mapping below was matched by test name and description only: **name-matched, reviewer to verify** (money-path reviewer, integrator ruling 2026-10-19),
 **b** = a refusal/absence assertion,
 **c** = historical rows seeded directly (same columns the dropped writer stored), with the original assertions kept.
 Evidence level: E1 (static: `go vet`, `go test -c`, `gofmt`, prepush). Every row is NOT_RUN until CI reports.
@@ -24,7 +24,7 @@ Evidence level: E1 (static: `go vet`, `go test -c`, `gofmt`, prepush). Every row
 
 ### payment_start_test.go: all → `p2bStartRetired` (a+b)
 
-| test | a: Stripe test holding the invariant |
+| test | a: Stripe test (name-matched, reviewer to verify) |
 |---|---|
 | TestBuyerPaymentAtomicReplayAndPendingStock | TestStripeSP07Start/atomic_rows_and_zero_provider_calls, /replay_and_frozen_input_conflicts |
 | TestBuyerPaymentConcurrentKeys | TestStripeConcurrentKeys; TestStripeSP07Start/concurrent_payuni_vs_stripe_one_winner |
@@ -38,7 +38,7 @@ Evidence level: E1 (static: `go vet`, `go test -c`, `gofmt`, prepush). Every row
 
 ### hosted_payment_test.go, hosted_payment_authority_test.go, hosted_payment_commit_test.go: all → `p2bHostedRetired` (a+b+c)
 
-| test | a: Stripe test holding the invariant |
+| test | a: Stripe test (name-matched, reviewer to verify) |
 |---|---|
 | TestBuyerPaymentHostedReplayConflictsAndSingleAttempt | TestStripeSP07Start/replay_and_frozen_input_conflicts |
 | TestBuyerPaymentHostedConcurrentTakeOneForm | TestStripeHTTPThreeLocalesAndConcurrentHandoff |
@@ -60,29 +60,29 @@ Evidence level: E1 (static: `go vet`, `go test -c`, `gofmt`, prepush). Every row
 
 | test | map | replacement |
 |---|---|---|
-| TestBuyerPaymentQueryReportAtomicDedupAndBinding | a+b | `p2bQueryRetired`; a: TestStripeSP11SQLSignalLoader, TestStripeCaptureDurableObservationAcrossRestart |
-| TestBuyerPaymentQueryFaultAndLeaseWaitRollback | a+b | `p2bQueryRetired`; a: TestStripeQueryCancelledIOKeepsRecoverableLease |
-| TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts | a+b | `p2bQueryRetired`; a: TestStripeSP12MoneyChecks |
-| TestBuyerPaymentQueryFinishClockAndReferenceFence | a+b | `p2bQueryRetired`; a: TestStripeSP10Deadline, TestStripeSP12MoneyChecks |
-| TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob | a+b | `p2bQueryRetired`; a: TestStripeSP11SQLSignalLoader, TestStripeSP08HappyMock (no key or scope leakage) |
-| TestBuyerPaymentQueryConcurrentReportSingleWinner | a+b | `p2bQueryRetired`; a: TestStripeSP13WebhookHTTP/accept_atomically_and_dedupe_changed_body |
+| TestBuyerPaymentQueryReportAtomicDedupAndBinding | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeSP11SQLSignalLoader, TestStripeCaptureDurableObservationAcrossRestart |
+| TestBuyerPaymentQueryFaultAndLeaseWaitRollback | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeQueryCancelledIOKeepsRecoverableLease |
+| TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeSP12MoneyChecks |
+| TestBuyerPaymentQueryFinishClockAndReferenceFence | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeSP10Deadline, TestStripeSP12MoneyChecks |
+| TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeSP11SQLSignalLoader, TestStripeSP08HappyMock (no key or scope leakage) |
+| TestBuyerPaymentQueryConcurrentReportSingleWinner | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeSP13WebhookHTTP/accept_atomically_and_dedupe_changed_body |
 | TestBuyerPaymentQueryHistoricalCredentialAndACL | b (partial) | the worker-only EXECUTE check on load/require/record is replaced by an absence check of the three functions; the ciphertext and observation-write ACL assertions and `q.pending` are unchanged |
 
 ### payment_capture_test.go
 
 | test | map | replacement |
 |---|---|---|
-| TestBuyerPaymentCaptureAtomicReplayAndFreshSession | a+b+c | `p2bCaptureRetired`; a: P2B03 "stripe capture and replay settle", TestStripeSP08HappyMock |
-| TestBuyerPaymentCaptureEvidenceAndStickyReview | a+b+c | `p2bCaptureRetired`; a: TestStripeSP12MoneyChecks, TestStripeUntrackedDriftReview |
-| TestBuyerPaymentCaptureLaterRefundAndReverseOrder | a+b+c | `p2bCaptureRetired`; a: TestStripeRF07Lifecycle, TestStripeRF05HappyMock |
-| TestBuyerPaymentCaptureOldAuthorizationIsNotConflict | a+b+c | `p2bCaptureRetired`; a: TestStripeSP12MoneyChecks |
-| TestBuyerPaymentCaptureACLAndObservationBinding | a+b+c | `p2bCaptureRetired`; a: TestStripeSP06Schema, TestStripeSP11SQLSignalLoader |
-| TestBuyerPaymentCaptureFaultsAreCausalAndAtomic | a+b+c | `p2bCaptureRetired`; a: TestStripeCaptureDurableObservationAcrossRestart |
-| TestBuyerPaymentCaptureReleasedAnomalyKeepsRealMoney | a+b+c | `p2bCaptureRetired`; a: TestStripeSP10Deadline/paid_in_the_last_second_captures_not_closes |
-| TestBuyerPaymentCaptureBalanceWaitIsAtomic | a+b+c | `p2bCaptureRetired`; a: TestStripeUntrackedReservationRefusals, TestStripeUntrackedQuantityBoundary |
-| TestBuyerPaymentCaptureEmptyReferenceAndMerchantReadScope | a+b+c | `p2bCaptureRetired`; a: TestStripeSP12MoneyChecks; merchant read scope of PAYUNi history: P2B03 (`moRead`) |
-| TestBuyerPaymentCaptureMultiSKUSingleCommit | a+b+c | `p2bCaptureRetired`; a: TestStripeUntrackedMixedDrift, TestStripeSP08HappyMock |
-| TestBuyerPaymentCaptureQueryJobBindingAndRollback | a+b+c | `p2bCaptureRetired`; a: TestStripeSP11SQLSignalLoader, TestStripeCaptureForgedRiverJobCancelsWithoutMoney |
+| TestBuyerPaymentCaptureAtomicReplayAndFreshSession | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): P2B03 "stripe capture and replay settle", TestStripeSP08HappyMock |
+| TestBuyerPaymentCaptureEvidenceAndStickyReview | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP12MoneyChecks, TestStripeUntrackedDriftReview |
+| TestBuyerPaymentCaptureLaterRefundAndReverseOrder | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeRF07Lifecycle, TestStripeRF05HappyMock |
+| TestBuyerPaymentCaptureOldAuthorizationIsNotConflict | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP12MoneyChecks |
+| TestBuyerPaymentCaptureACLAndObservationBinding | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP06Schema, TestStripeSP11SQLSignalLoader |
+| TestBuyerPaymentCaptureFaultsAreCausalAndAtomic | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeCaptureDurableObservationAcrossRestart |
+| TestBuyerPaymentCaptureReleasedAnomalyKeepsRealMoney | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP10Deadline/paid_in_the_last_second_captures_not_closes |
+| TestBuyerPaymentCaptureBalanceWaitIsAtomic | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeUntrackedReservationRefusals, TestStripeUntrackedQuantityBoundary |
+| TestBuyerPaymentCaptureEmptyReferenceAndMerchantReadScope | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP12MoneyChecks; merchant read scope of PAYUNi history: P2B03 (`moRead`) |
+| TestBuyerPaymentCaptureMultiSKUSingleCommit | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeUntrackedMixedDrift, TestStripeSP08HappyMock |
+| TestBuyerPaymentCaptureQueryJobBindingAndRollback | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP11SQLSignalLoader, TestStripeCaptureForgedRiverJobCancelsWithoutMoney |
 | TestBuyerPaymentCaptureRealRiverSignedQueryChain | c | `pcRecord` → `rm2SeedReport`; every assertion unchanged |
 
 ### Read-path tests: c, all assertions kept
@@ -109,7 +109,7 @@ These fixtures are migrated to the pre-0032 schema, filled by the historical pro
 orders AWAITING_PAYMENT), and then upgraded. 0197's guard rightly refuses to drop over that history. Without a change,
 the tests that expect `lriApply` to fail (tampered ledger, running old job, and so on) would pass for the wrong reason.
 `lriApply` therefore pre-records `0197` and `post_river/0026` with their real checksums, so these gates certify the
-upgrade up to the phase-2a head. The drop and its refusal over exactly this history are certified by P2B01, P2B02 and
+upgrade up to the phase-2a head. The refusal on this very fixture over the FULL chain (no pre-record) is pinned by P2B04 TestPayuniPhase2bLegacyUpgradeStopsAt0197: 22023 at 0197, ledger unchanged, phase-2b objects still present. The drop itself is certified by P2B01, P2B02 and
 P2B02b. The old-schema `pcRecord` and `pqRecordIn` calls in these files still run against the historical
 `record_payment_query`, which exists in that schema. TestLegacyRuntimeIsolationFamilyCollidingIDs keeps calling
 `record_payment_query` after `lriApply`; it therefore certifies the phase-2a family-ID fence. The Stripe equivalent
@@ -123,6 +123,7 @@ is TestStripeSP11SQLSignalLoader.
 | TestPayuniPhase2bRefusesUnreconciledPayuni (P2B02) | RED a95e0b0a2 → GREEN 92721601f |
 | TestPayuniPhase2bRefusesPayuniOrderAwaitingPayment (P2B02b, new) | guard clause 2 (order AWAITING_PAYMENT, every operation terminal). Added after GREEN, so there is no separate RED run. On a95e0b0a2 it would fail at the missing-migration check |
 | TestPayuniPhase2bDispatchStripeCapturesPayuniRefused (P2B03) | RED a95e0b0a2 → GREEN 92721601f |
+| TestPayuniPhase2bLegacyUpgradeStopsAt0197 (P2B04, new) | legacy pre-0032 fixture with unreconciled PAYUNi history, full chain without the lriApply pre-record: stops at 0197 with 22023, ledger unchanged, phase-2b objects present. RED e7685cbf4 (asserts a clean upgrade) → GREEN next commit |
 
 ## Not changed and why
 
@@ -131,5 +132,7 @@ is TestStripeSP11SQLSignalLoader.
 - `payment_queue_migration_test.go` and `legacy_runtime_upgrade_test.go` old-schema calls run on the pre-0032 schema,
   where the functions exist.
 - `contracts/payment-*-v1.md`, `contracts/payuni-wire-v1.md`, `contracts/legacy-runtime-isolation-v1.md` and
-  `contracts/stripe-psp-v1.md` still describe the dropped functions. They are out of this unit's write scope; a
-  follow-up docs unit should update them (UNKNOWN for the owner).
+  `contracts/stripe-psp-v1.md`: every mention of a dropped function is marked "retired in 0197 / post_river 0026
+  (PAY-RM2 phase 2b)" inline; history sections are not rewritten (integrator ruling 2026-10-19).
+  `contracts/taiwan-cvs-logistics-v1.md` also names `checkout.start_payment` (lines ~931/952) but was not in the
+  permitted list, so it is left for the integrator.

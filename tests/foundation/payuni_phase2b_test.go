@@ -267,11 +267,20 @@ func TestPayuniPhase2bLegacyUpgradeStopsAt0197(t *testing.T) {
 	}
 	ledger := lriLedger(t, f, "")
 	err := lriApplyFull(ctx, f.owner)
-	// RED (P2B04 first push): assert the legacy chain upgrades cleanly, to observe 0197's refusal in CI.
-	if err != nil {
-		t.Fatalf("full legacy chain did not complete: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "PAYUNi phase-2b drop refused") || !strings.Contains(err.Error(), "22023") {
+		t.Fatalf("legacy chain over unreconciled PAYUNi history must stop at 0197 with 22023: %v", err)
 	}
-	_ = ledger
+	if got := lriLedger(t, f, ""); got != ledger {
+		t.Error("refused legacy chain changed the migration ledger")
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version IN ('0197_payuni_phase2b_drop.sql','post_river/0026_payuni_phase2b_drop.sql')`); n != 0 {
+		t.Errorf("refused legacy chain recorded %d phase-2b ledger row(s)", n)
+	}
+	for _, sig := range present {
+		if rmReg(t, f.owner, "to_regprocedure", sig) == "" {
+			t.Errorf("refused legacy chain dropped %s", sig)
+		}
+	}
 }
 
 // TestPayuniPhase2bDispatchStripeCapturesPayuniRefused (P2B03) runs on the fully migrated fixture schema.

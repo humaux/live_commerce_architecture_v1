@@ -10,7 +10,7 @@ not financial capture, refund, stock allocation or permission to release forms.
 - Reuse River `payment_query_v1`, core Claim/Complete, immutable attempts,
   account ciphertext versions, Keyring.open and the existing PAYUNi Query wire.
   No additional broker, operation registry, dynamic endpoint or credential API.
-- `integration.load_payment_query(operation, generation, token, profile)` is
+- `integration.load_payment_query(operation, generation, token, profile)` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)* is
   SECURITY DEFINER with fixed search_path, callable only by commerce_worker.
   Lock binding then operation like Claim. Require exact BUYER_PAYMENT_QUERY /
   reconcile / UNKNOWN, current generation and constant-sized token SHA256, live
@@ -50,13 +50,13 @@ not financial capture, refund, stock allocation or permission to release forms.
   Claim; never claim or complete a merchant operation. Claim commits before
   loading/querying. Load transaction commits before one wire query. No dispatch.
 - Persist one verified projection via `integration.record_payment_query(op,
-  generation,token,profile,jsonb)` and Complete UNKNOWN/payment_report_observed
+  generation,token,profile,jsonb)` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)* and Complete UNKNOWN/payment_report_observed
   in the same transaction; then snooze. No financial interpretation here.
   DataSource B is incomplete: snooze at least ten minutes per PAYUNi query docs.
 - Failure/panic/timeout/missing key only fixed persisted codes and UNKNOWN,
   never fail/release stock or expose raw wire/PG error. Parent cancellation does
   not detach external I/O. Completion uses bounded context if parent still live.
-  `integration.finish_payment_query(op,generation,token,profile,code,reference)`
+  `integration.finish_payment_query(op,generation,token,profile,code,reference)` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)*
   wraps existing Complete with exact reference/profile and post-write clock
   fences. Its fixed code allowlist is budget_exhausted, timeout,
   material_unavailable, panic, wire_failed, record_failed, all prefixed
