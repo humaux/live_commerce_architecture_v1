@@ -1,5 +1,5 @@
 // Purpose: promotions-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
-// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Depends on: tests/helpers/next-startup.mjs, tests/storefront/amount-match.mjs and existing app/fixture/edge imports below.
 // Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // Independent promotions browser gate (R4 test author; contracts/storefront-v2.md §F). Driven by TestBrowserPromotions
 // (tests/foundation/browser_promotions_test.go), which owns the admin Next + Go API + PG and hands the admin origin in LC_PM_ADMIN_ORIGIN.
@@ -28,6 +28,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts } from "./browser-engine.mjs";
+import { money, amt } from "./amount-match.mjs";
 
 const root = process.cwd(), evidence = process.env.LC_PM_EVIDENCE;
 const adminOrigin = process.env.LC_PM_ADMIN_ORIGIN, buyerOrigin = "https://buyer.example";
@@ -43,9 +44,8 @@ const listen = async server => { server.listen(0, "127.0.0.1"); await once(serve
 const sha = buf => crypto.createHash("sha256").update(buf).digest("hex");
 const shots = [], uiErrors = [];
 // server numbers (minor units) -> the digits the pages show. TWD is shown in whole dollars with thousands separators (96000 -> "960",
-// 100000 -> "1,000"); amt() matches the number as a whole token, with or without ".00", so "960" never matches inside "1,960".
-const money = minor => (minor / 100).toLocaleString("en-US");
-const amt = minor => new RegExp(`(^|[^0-9,.])${money(minor).replace(/,/g, "[,]")}(\\.00)?(?![0-9,])`);
+// 100000 -> "1,000"); amt() (./amount-match.mjs) matches the number as a whole token, with or without ".00", so "960" never matches inside
+// "1,960" nor inside the random-hex SKU code "BRP-40faa960dbfa".
 const taipeiWall = (offsetMs) => new Date(Date.now() + 8 * 3600e3 + offsetMs).toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm in Asia/Taipei
 // Expected buyer copy (apps/storefront/lib/promo-copy.ts). These strings are the product's wording of the contract codes promo_invalid / promo_min_subtotal.
 const copy = {
