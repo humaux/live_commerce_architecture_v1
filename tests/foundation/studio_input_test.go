@@ -1,5 +1,11 @@
 package foundation_test
 
+// Purpose: Studio input read/write routes against real Go + PG: /input and /input/prepared ACL and no-store, runtime state
+//   and joint stop, candidate fences and strict routes, and read-authorization freshness (contracts/live-browser-input-recovery-v1.md).
+// Depends on: brwHarness/brwRegistered/brwStart (live_browser_input_runtime_test.go), internal/httpapi, internal/live,
+//   internal/platform, pgx; a task-owned PG 18 database.
+// Used by: go test ./tests/foundation (Gates shard:gNN legs via scripts/dev/shard-plan.json; scripts/dev/test-local.sh foundation).
+
 import (
 	"bytes"
 	"context"

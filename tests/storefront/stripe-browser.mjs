@@ -100,7 +100,7 @@ async function hostedLoaded(child,n,what){
 // Bounded child.close(): 15000 ms is the bound this file already gives a popup to close (the "blank child closed" waits).
 async function closeChild(child,what){
   step("close:",what);
-  const r=await within(/* RED INJECTION (issue 86): a close that never completes; removed in the next commit */ new Promise(()=>{}).then(()=>"closed",e=>`error ${e?.message??e}`),15000,"pending");
+  const r=await within(child.close().then(()=>"closed",e=>`error ${e?.message??e}`),15000,"pending");
   if(r!=="closed")throw new Error(`child.close() for ${what}: ${r} after 15000 ms`);
   step("closed:",what);
 }
