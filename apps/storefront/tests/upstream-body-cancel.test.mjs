@@ -1,6 +1,6 @@
 // Purpose: issue #84 regression — when the storefront BFF rejects an upstream answer without reading it, it must cancel the
 // response body (Node 24 bundled Undici: always consume or cancel, never rely on GC) and keep the same safe status.
-// Depends on: lib/media-proxy.ts (proxyImage), lib/shop-upstream.ts (listProducts); "next/headers" and "react" are stubbed by a
+// Depends on: lib/media-proxy.ts (proxyImage), lib/shop-upstream.ts (listProducts), app/feeds/meta.csv/route.ts (GET, #107); "next/headers" and "react" are stubbed by a
 // registerHooks resolver (no Next runtime, no network: global fetch is mocked with a cancel-observable ReadableStream).
 // Used by: scripts/dev/test-node.sh (apps/storefront/tests/*.test.mjs glob, Foundation "Node unit suites").
 import assert from "node:assert/strict";
@@ -17,6 +17,7 @@ registerHooks({
 });
 const { proxyImage } = await import("../lib/media-proxy.ts");
 const { listProducts } = await import("../lib/shop-upstream.ts");
+const { GET: metaFeed } = await import("../app/feeds/meta.csv/route.ts");
 
 const env = { COMMERCE_BUYER_WEB_ENABLED: "1", COMMERCE_BUYER_API_ORIGIN: "http://127.0.0.1:19000", COMMERCE_BUYER_BFF_KEY: "A".repeat(43) };
 
@@ -43,6 +44,19 @@ test("media proxy cancels every rejected upstream body and keeps the safe status
     const probe = stalled(status, type);
     const mock = t.mock.method(globalThis, "fetch", async () => probe.response);
     const res = await proxyImage(new Request(`https://shop.example/media/s/${image}`, { headers: { host: "shop.example" } }), `/v1/buyer/media/s/${image}`);
+    mock.mock.restore();
+    assert.equal(res.status, want, `${status} ${type}`);
+    assert.equal(probe.cancelled, 1, `${status} ${type}: rejected body not cancelled`);
+  }
+});
+
+// #107 (PR #97 review P2-1): the Meta feed route had the same reject-without-cancel branches (404/422 -> 404, non-200 or non-CSV -> 503).
+test("meta feed route cancels every rejected upstream body and keeps the safe status", async (t) => {
+  withEnv(t);
+  for (const [status, type, want] of [[404, "text/csv", 404], [422, "application/json", 404], [500, "text/csv", 503], [200, "text/html", 503]]) {
+    const probe = stalled(status, type);
+    const mock = t.mock.method(globalThis, "fetch", async () => probe.response);
+    const res = await metaFeed(new Request("https://shop.example/feeds/meta.csv", { headers: { host: "shop.example" } }));
     mock.mock.restore();
     assert.equal(res.status, want, `${status} ${type}`);
     assert.equal(probe.cancelled, 1, `${status} ${type}: rejected body not cancelled`);
