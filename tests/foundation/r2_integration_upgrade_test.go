@@ -112,10 +112,11 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// post_river/0024 (OA1 attempt-owned checkout expiry job guard) adds one: 119 -> 120.
 	// post_river/0025 (OA1 fenced orphan execution job repair) adds one: 120 -> 121.
 	// 0195 (MRR02 read_media_recovery_episode reads one snapshot: STABLE) adds one: 121 -> 122.
-	// 0197 (PAY-RM2 phase 2b drop of the retained PAYUNi SQL path) adds one: 122 -> 123.
-	// post_river/0026 (PAY-RM2 phase 2b: start_payment/record_payment_query, which post_river/0005 recreates) adds one: 123 -> 124.
-	if len(r2) != 124 {
-		t.Fatalf("R2 migration set = %d files %v, want 124", len(r2), r2)
+	// 0196 (one-snapshot STABLE Studio readers) adds one: 122 -> 123.
+	// 0197 (PAY-RM2 phase 2b drop of the retained PAYUNi SQL path) adds one: 123 -> 124.
+	// post_river/0026 (PAY-RM2 phase 2b: start_payment/record_payment_query, which post_river/0005 recreates) adds one: 124 -> 125.
+	if len(r2) != 125 {
+		t.Fatalf("R2 migration set = %d files %v, want 125", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
