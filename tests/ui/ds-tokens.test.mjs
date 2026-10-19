@@ -46,6 +46,7 @@ const UI_PAIRS = [
   ["focus", "surface"], ["focus", "page"], ["focus", "surface-muted"], ["focus", "primary-soft"],
   ["focus-on-dark", "nav-bg"], ["focus-on-dark", "nav-active"], ["focus-on-dark", "nav-logo-bg"],
   ["border-input", "surface"], ["border-input", "page"], ["nav-accent", "nav-bg"], ["primary", "page"],
+  ["disabled-primary-bg", "surface"], ["disabled-primary-bg", "page"], ["disabled-primary-bg", "surface-muted"], ["disabled-primary-text", "disabled-primary-bg"],
 ];
 
 test("contrast: every text pair holds 4.5:1", () => {

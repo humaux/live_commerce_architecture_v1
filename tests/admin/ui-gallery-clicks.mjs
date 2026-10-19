@@ -677,19 +677,21 @@ function readFrame(page) {
   });
 }
 
-// [READ] Real phone scrolling: wheel from the top to the page end in 120px notches. Every field control must at some scroll position sit
-// wholly in the viewport with elementFromPoint at its centre and edge midpoints landing on it (no sticky bar on top), and the top bar
-// must stay pinned at the viewport top. Tabs are excluded here; readFrame owns tab clipping.
+// [READ] Real-viewport scrolling (before capture() resizes anything): wheel from the top to the page end in 120px notches. Every
+// control, tabs included, must at some scroll position sit wholly in the viewport with elementFromPoint at its centre and edge
+// midpoints landing on it (no sticky/fixed chrome on top), and the top bar must stay pinned at the viewport top.
+// A control that is only out of view sideways inside an inner horizontal scroller (a wide table at 390px) is probed on its visible
+// part; if none of it is visible at any position it is listed as `sideways` (horizontal reach is not what this gate measures).
+// Returns { total, blocked, sideways, scrollY }; the caller asserts, so the injected-occluder self-test can observe a failure.
 async function wheelReach(page, scope) {
   const size = page.viewportSize();
   await page.mouse.move(size.width / 2, size.height / 2);
   await page.mouse.wheel(0, -100000);
   await page.waitForFunction(() => window.scrollY === 0);
   const probe = () => scope.evaluate(root => {
-    const controls = [...root.querySelectorAll('input:not([type="hidden"]), select, textarea, button, [role="radio"], [role="switch"]')].filter(n => {
+    const controls = [...root.querySelectorAll('input:not([type="hidden"]), select, textarea, button, [role="radio"], [role="switch"], [role="tab"]')].filter(n => {
       const r = n.getBoundingClientRect();
-      const s = getComputedStyle(n);
-      return r.width >= 4 && r.height >= 4 && s.visibility !== "hidden" && !n.closest('[role="tablist"]');
+      return r.width >= 4 && r.height >= 4 && getComputedStyle(n).visibility !== "hidden";
     });
     return {
       scrollY: window.scrollY,
@@ -697,29 +699,38 @@ async function wheelReach(page, scope) {
       topbar: document.querySelector("[data-shell-topbar]").getBoundingClientRect().top,
       controls: controls.map((n, i) => {
         const r = n.getBoundingClientRect();
-        const inset = Math.min(2, r.width / 4, r.height / 4);
-        const [cx, cy] = [r.left + r.width / 2, r.top + r.height / 2];
-        const points = [[cx, cy], [cx, r.top + inset], [cx, r.bottom - inset], [r.left + inset, cy], [r.right - inset, cy]];
-        const inView = r.top >= 0 && r.bottom <= window.innerHeight && r.left >= 0 && r.right <= window.innerWidth;
-        const clear = inView && points.every(([x, y]) => { const hit = document.elementFromPoint(x, y); return hit === n || n.contains(hit); });
-        return [`${i}:${n.tagName.toLowerCase()}[${(n.getAttribute("aria-label") || n.labels?.[0]?.textContent || n.textContent || n.name || "").trim().slice(0, 30)}]`, clear];
+        let [left, right, inner] = [r.left, r.right, false];
+        for (let p = n.parentElement; p && p !== document.body; p = p.parentElement) {
+          if (getComputedStyle(p).overflowX === "visible" || p.scrollWidth <= p.clientWidth) continue;
+          const box = p.getBoundingClientRect();
+          [left, right, inner] = [Math.max(left, box.left + p.clientLeft), Math.min(right, box.left + p.clientLeft + p.clientWidth), true];
+        }
+        const key = `${i}:${n.tagName.toLowerCase()}[${(n.getAttribute("aria-label") || n.labels?.[0]?.textContent || n.textContent || n.name || "").trim().slice(0, 30)}]`;
+        const vertical = r.top >= 0 && r.bottom <= window.innerHeight;
+        if (inner && right - left < 4) return [key, vertical ? "sideways" : "out"];
+        if (!inner && (r.left < 0 || r.right > window.innerWidth)) return [key, "out"];
+        const inset = Math.min(2, (right - left) / 4, r.height / 4);
+        const [cx, cy] = [(left + right) / 2, r.top + r.height / 2];
+        const points = [[cx, cy], [cx, r.top + inset], [cx, r.bottom - inset], [left + inset, cy], [right - inset, cy]];
+        const clear = vertical && points.every(([x, y]) => { const hit = document.elementFromPoint(x, y); return hit === n || n.contains(hit); });
+        return [key, clear ? "clear" : "out"];
       }),
     };
   });
-  const reached = new Map();
+  const rank = { out: 0, sideways: 1, clear: 2 };
+  const best = new Map();
   let state;
-  for (let notch = 0; notch < 80; notch++) {
+  for (let notch = 0; notch < 400; notch++) {
     state = await probe();
-    for (const [key, clear] of state.controls) reached.set(key, reached.get(key) || clear);
+    for (const [key, seen] of state.controls) if (!best.has(key) || rank[seen] > rank[best.get(key)]) best.set(key, seen);
     assert.ok(Math.abs(state.topbar) <= 0.5, `top bar left the viewport top at scrollY=${state.scrollY}: top=${state.topbar}`);
     if (state.scrollY >= state.max - 0.5) break;
     await page.mouse.wheel(0, 120);
     await page.waitForFunction(y => window.scrollY > y, state.scrollY);
   }
   assert.ok(state.scrollY >= state.max - 0.5, `wheel did not reach the page end: ${JSON.stringify({ scrollY: state.scrollY, max: state.max })}`);
-  const blocked = [...reached].filter(([, clear]) => !clear).map(([key]) => key);
-  assert.deepEqual(blocked, [], "controls never fully visible and unobstructed under native wheel scrolling");
-  return `${reached.size} controls each reached fully visible and unobstructed; page end scrollY=${state.scrollY}`;
+  const of = kind => [...best].filter(([, seen]) => seen === kind).map(([key]) => key);
+  return { total: best.size, blocked: of("out"), sideways: of("sideways"), scrollY: state.scrollY };
 }
 
 async function sidebarViewportGate({ page, step, locale, template }) {
@@ -790,9 +801,26 @@ async function ds2Matrix({ page, step }) {
       }
       return `${scale.measured.length} controls measured; no scale or row violations`;
     });
-    // Before the shot: the wheel walk ends at the page end, and the shot must not inherit that scroll.
-    if (width < 768 && /^(form|settings)/.test(name) && name !== "form-released")
-      await step(`DS-2 ${locale}/${width} ${name} wheel reach`, "native wheel top to end; elementFromPoint at each control", "every field control fully in view, unobstructed, at some scroll position; top bar pinned", () => wheelReach(page, page.locator("[data-template]")));
+    // Before the shot and before any resize: the real viewport. The wheel walk ends at the page end; the shot must not inherit that scroll.
+    // form-released is the form page already walked by capture("form").
+    const main = page.locator("#ds-main");
+    if (name === "form" && locale === "zh-TW" && width < 768)
+      await step(`DS-2 ${locale}/${width} wheel reach self-test`, "[FIXTURE] inject one fixed full-viewport occluder, wheel walk, remove it", "every control reported blocked: the gate can fail", async () => {
+        await page.evaluate(() => { const n = document.createElement("div"); n.dataset.reachOccluder = ""; n.style.cssText = "position:fixed;inset:0;z-index:2147483647"; document.body.append(n); }); // [FIXTURE] removed below
+        try {
+          const injected = await wheelReach(page, main);
+          assert.ok(injected.total > 0 && injected.blocked.length === injected.total, `occluder not detected: ${JSON.stringify(injected)}`);
+          return `occluder: ${injected.blocked.length}/${injected.total} controls blocked`;
+        } finally {
+          await page.evaluate(() => document.querySelector("[data-reach-occluder]")?.remove()); // [FIXTURE] restore
+        }
+      });
+    if (name !== "form-released")
+      await step(`DS-2 ${locale}/${width} ${name} wheel reach`, "native wheel top to end in the real viewport; elementFromPoint at each control", "every control fully in view, unobstructed, at some scroll position; top bar pinned", async () => {
+        const reach = await wheelReach(page, main);
+        assert.deepEqual(reach.blocked, [], `controls never fully visible and unobstructed under native wheel scrolling: ${reach.blocked.join("; ")}`);
+        return `${reach.total - reach.sideways.length}/${reach.total} controls reached fully visible and unobstructed; sideways-only in an inner scroller: ${reach.sideways.length ? reach.sideways.join("; ") : "none"}; page end scrollY=${reach.scrollY}`;
+      });
     const path = `${output}/shots/ds2-${locale}-${width}x${height}-${name}.png`;
     // Full-page shots paint sticky bars at the current scroll offset (a second topbar mid-page after uploads);
     // start from the top unless the scrolled state is the subject of the shot.
@@ -808,6 +836,8 @@ async function ds2Matrix({ page, step }) {
         if (full <= page.viewportSize().height) break;
         await page.setViewportSize({ width: viewport.width, height: full });
       }
+      const settled = await page.evaluate(() => document.scrollingElement.scrollHeight); // [READ]
+      assert.ok(settled <= page.viewportSize().height, `viewport did not converge to the document height: ${settled} > ${page.viewportSize().height}`);
       const frame = await readFrame(page);
       await step(`DS-2 ${locale}/${width} ${name} captured frame`, "[READ] rects of the frame about to be captured", "no sticky/fixed chrome over a control; no clipped tab; disabled primary fill and label >= 3:1", async () => {
         assert.deepEqual(frame.occluded, [], `sticky/fixed chrome over controls in the captured frame: ${frame.occluded.join("; ")}`);
