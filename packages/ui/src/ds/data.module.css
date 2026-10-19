@@ -56,7 +56,7 @@
 .menuWrap { position: relative; display: inline-block; }
 .menu {
   position: absolute;
-  inset-block-start: calc(100% + 4px);
+  inset-block-start: calc(100% + var(--ds-space-1));
   inset-inline-end: 0;
   z-index: var(--ds-z-nav);
   display: flex;

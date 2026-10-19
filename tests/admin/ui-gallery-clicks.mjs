@@ -578,8 +578,8 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
 // DS-2 extends the existing CI entry point here because the task's write_paths exclude ui-gallery-runner.mjs.
 // The same Page is retained so the runner's click ledger records the actual current route for every row.
 // [READ] Includes offscreen rendered controls (e.g. a scrolling table), not display:none controls.
-async function readControlScale(page) {
-  const controls = page.locator('button, [role="button"], select, input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):not([type="color"]), a[data-size], nav > ul > li > a, nav > ul > li > [role="link"]').filter({ visible: true });
+async function readControlScale(page, root = page) {
+  const controls = root.locator('button, [role="button"], select, input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):not([type="color"]), a[data-size], nav > ul > li > a, nav > ul > li > [role="link"]').filter({ visible: true });
   const geometry = await controls.evaluateAll(nodes => nodes.map(n => {
     const box = n.getBoundingClientRect();
     return { height: box.height, centre: box.top + box.height / 2 };
@@ -625,7 +625,12 @@ async function readControlScale(page) {
           }
           top = bottom + gap;
         }
-      } else if ((style.display.includes("flex") && style.flexDirection.startsWith("row")) || style.display === "table-row") pairs.push([i, j]);
+      } else if ((style.display.includes("flex") && style.flexDirection.startsWith("row")) || style.display === "table-row") {
+        // One flex line = the two items overlap vertically (wrapped lines never do), whatever align-items does (#88).
+        const ab = a.getBoundingClientRect();
+        const bb = b.getBoundingClientRect();
+        if (Math.min(ab.bottom, bb.bottom) - Math.max(ab.top, bb.top) > 0.5) pairs.push([i, j]);
+      }
     }
     return pairs;
   }); // [READ] container relationships; no DOM or scroll writes
@@ -637,7 +642,8 @@ function controlScaleViolations(measured, rows) {
   const violations = [];
   if (!measured.length) violations.push("no rendered controls measured");
   for (const control of measured) if (![28, 36, 44].some(height => Math.abs(control.height - height) <= 0.5)) violations.push(`${control.name}: height=${control.height}px`);
-  for (const [i, j] of rows) if (Math.abs(measured[i].centre - measured[j].centre) <= 0.5 && Math.abs(measured[i].height - measured[j].height) > 0.5) violations.push(`same row: ${measured[i].name} height=${measured[i].height}px; ${measured[j].name} height=${measured[j].height}px`);
+  // rows are real layout rows (grid track / flex line / table row), so heights compare even when top/bottom-aligned (#88).
+  for (const [i, j] of rows) if (Math.abs(measured[i].height - measured[j].height) > 0.5) violations.push(`same row: ${measured[i].name} height=${measured[i].height}px; ${measured[j].name} height=${measured[j].height}px`);
   return violations;
 }
 
@@ -702,16 +708,22 @@ async function wheelReach(page, scope) {
       topbar: document.querySelector("[data-shell-topbar]").getBoundingClientRect().top,
       controls: controls.map((n, i) => {
         const r = n.getBoundingClientRect();
-        let [left, right, inner, table] = [r.left, r.right, false, true];
+        let [left, right, inner, table, clipped] = [r.left, r.right, false, true, false];
         for (let p = n.parentElement; p && p !== document.body; p = p.parentElement) {
-          if (!["auto", "scroll"].includes(getComputedStyle(p).overflowX) || p.scrollWidth <= p.clientWidth) continue;
+          const overflow = getComputedStyle(p).overflowX;
+          // A hidden/clip box moves with any outer scroller, so a cut it makes is permanent: no sideways exemption (#92).
+          if (["hidden", "clip"].includes(overflow)) {
+            const box = p.getBoundingClientRect();
+            if (r.left < box.left + p.clientLeft - 0.5 || r.right > box.left + p.clientLeft + p.clientWidth + 0.5) clipped = true;
+          }
+          if (!["auto", "scroll"].includes(overflow) || p.scrollWidth <= p.clientWidth) continue;
           const box = p.getBoundingClientRect();
           [left, right, inner] = [Math.max(left, box.left + p.clientLeft), Math.min(right, box.left + p.clientLeft + p.clientWidth), true];
           table = table && p.hasAttribute("data-table-scroll");
         }
         const key = `${i}:${n.tagName.toLowerCase()}[${(n.getAttribute("aria-label") || n.labels?.[0]?.textContent || n.textContent || n.name || "").trim().slice(0, 30)}]`;
         const vertical = r.top >= 0 && r.bottom <= window.innerHeight;
-        if (inner && right - left < 4) return [key, vertical && table ? "sideways" : "out"];
+        if (inner && right - left < 4) return [key, vertical && table && !clipped ? "sideways" : "out"];
         if (inner && !table && right - left < r.width - 0.5) return [key, "out"]; // partly clipped sideways outside the table scroller
         if (!inner && (r.left < 0 || r.right > window.innerWidth)) return [key, "out"];
         const inset = Math.min(2, (right - left) / 4, r.height / 4);
@@ -806,6 +818,27 @@ async function ds2Matrix({ page, step }) {
       }
       return `${scale.measured.length} controls measured; no scale or row violations`;
     });
+    if (name === "components" && locale === "zh-TW" && width === 1440)
+      await step(`DS-2 ${locale}/${width} control row self-test (#88)`, "[FIXTURE] inject top/bottom-aligned 36+44 rows and a wrapped 36/44 pair, measure, remove", "top- and bottom-aligned unequal heights red; a real wrap green", async () => {
+        // [FIXTURE] removed in finally; all:unset keeps the measured box exactly the declared height.
+        await page.evaluate(() => {
+          const b = (label, h) => `<button aria-label="${label}" style="all:unset;display:block;box-sizing:border-box;width:40px;height:${h}px"></button>`;
+          const row = (align, a, c, extra = "") => `<div style="display:flex;flex-direction:row;align-items:${align};gap:4px;${extra}">${b(a, 36)}${b(c, 44)}</div>`;
+          const n = document.createElement("div");
+          n.dataset.rowFixture = "";
+          n.innerHTML = row("flex-start", "fx-top-36", "fx-top-44") + row("flex-end", "fx-end-36", "fx-end-44") + row("flex-start", "fx-wrap-36", "fx-wrap-44", "flex-wrap:wrap;width:60px");
+          document.querySelector("#ds-main").append(n);
+        });
+        try {
+          const injected = await readControlScale(page, page.locator("[data-row-fixture]"));
+          const rowFindings = injected.violations.filter(v => v.startsWith("same row:"));
+          for (const id of ["fx-top", "fx-end"]) assert.ok(rowFindings.some(v => v.includes(`${id}-36`) && v.includes(`${id}-44`)), `${id} 36/44 in one flex line not rejected: ${JSON.stringify(injected.violations)}`);
+          assert.ok(!rowFindings.some(v => v.includes("fx-wrap")), `wrapped controls on separate lines rejected: ${JSON.stringify(injected.violations)}`);
+          return rowFindings.join("; ");
+        } finally {
+          await page.evaluate(() => document.querySelector("[data-row-fixture]")?.remove()); // [FIXTURE] restore
+        }
+      });
     // Before the shot and before any resize: the real viewport. The wheel walk ends at the page end; the shot must not inherit that scroll.
     // form-released is the form page already walked by capture("form").
     const main = page.locator("#ds-main");
@@ -818,6 +851,33 @@ async function ds2Matrix({ page, step }) {
           return `occluder: ${injected.blocked.length}/${injected.total} controls blocked`;
         } finally {
           await page.evaluate(() => document.querySelector("[data-reach-occluder]")?.remove()); // [FIXTURE] restore
+        }
+      });
+    if (name === "form" && locale === "zh-TW" && width < 768)
+      await step(`DS-2 ${locale}/${width} wheel reach clip self-test (#92)`, "[FIXTURE] inject clipped controls inside and outside a table scroller, wheel walk, remove", "permanently clipped controls blocked; plain off-screen table control sideways; visible control reached", async () => {
+        // [FIXTURE] removed in finally. Table viewport 200px over 760px content; a 100px overflow:clip box at x=400 holds a button at
+        // +120px (never visible, whatever the table scroll); a sibling table button at x=540 is only off-screen sideways.
+        await page.evaluate(() => {
+          const btn = (label, style) => `<button type="button" aria-label="${label}" style="all:unset;display:inline-block;box-sizing:border-box;width:40px;height:36px;${style}">x</button>`;
+          const n = document.createElement("div");
+          n.dataset.reachFixture = "";
+          n.innerHTML = `<div data-table-scroll style="overflow-x:auto;width:200px"><div style="position:relative;width:760px;height:44px">`
+            + `<div style="position:absolute;left:400px;top:0;width:100px;height:44px;overflow:clip;white-space:nowrap">${btn("fx-clip-in-table", "margin-left:120px")}</div>`
+            + `${btn("fx-table-offscreen", "position:absolute;left:540px;top:0")}</div></div>`
+            + `<div style="width:100px;overflow:clip;white-space:nowrap">${btn("fx-clip-standalone", "margin-left:120px")}</div>`
+            + btn("fx-visible", "");
+          document.querySelector("#ds-main").append(n);
+        });
+        try {
+          const reach = await wheelReach(page, page.locator("[data-reach-fixture]"));
+          const has = (list, id) => list.some(key => key.includes(`[${id}]`));
+          assert.ok(has(reach.blocked, "fx-clip-in-table"), `clip inside the table scroller not blocked: ${JSON.stringify(reach)}`);
+          assert.ok(has(reach.blocked, "fx-clip-standalone"), `standalone clip not blocked: ${JSON.stringify(reach)}`);
+          assert.ok(has(reach.sideways, "fx-table-offscreen") && !has(reach.blocked, "fx-table-offscreen"), `plain table control not sideways: ${JSON.stringify(reach)}`);
+          assert.ok(!has(reach.blocked, "fx-visible") && !has(reach.sideways, "fx-visible"), `visible control not reached: ${JSON.stringify(reach)}`);
+          return `blocked ${reach.blocked.join(", ")}; sideways ${reach.sideways.join(", ")}`;
+        } finally {
+          await page.evaluate(() => document.querySelector("[data-reach-fixture]")?.remove()); // [FIXTURE] restore
         }
       });
     if (name !== "form-released")
@@ -834,7 +894,12 @@ async function ds2Matrix({ page, step }) {
     // save bar over the radio group and, once scrolled, the top bar across the name input. Grow the viewport to the document
     // height so nothing scrolls: the top bar sits at the top and the save bar at the end of the form. Restored before axe/lint.
     const viewport = page.viewportSize();
+    // Provenance (#90): first the subject state in the declared width×height viewport (what a user sees), then the grown overview.
+    const viewportPath = path.replace(/\.png$/, "-viewport.png");
+    const viewportPng = await page.screenshot({ path: viewportPath, animations: "disabled" });
+    const viewportShot = { ...viewport, scrollY: await page.evaluate(() => window.scrollY), path: viewportPath, sha256: createHash("sha256").update(viewportPng).digest("hex") }; // [READ]
     let png;
+    let overview;
     try {
       for (let i = 0; i < 4; i++) {
         const full = await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(document.scrollingElement.scrollHeight))))); // [READ] settled document height
@@ -850,6 +915,7 @@ async function ds2Matrix({ page, step }) {
         assert.deepEqual(frame.faint, [], `disabled primary too faint: ${frame.faint.join("; ")}`);
         return `${frame.chrome} sticky/fixed elements, ${frame.controls} controls, ${frame.tabs} tabs, ${frame.disabledPrimary} disabled primaries`;
       });
+      overview = { ...page.viewportSize(), fullPage: true, note: "viewport grown to the document height; not the declared viewport" };
       png = await page.screenshot({ path, fullPage: true, animations: "disabled" });
     } finally {
       await page.setViewportSize(viewport);
@@ -860,7 +926,7 @@ async function ds2Matrix({ page, step }) {
     const lint = evaluate(snapshot, { mobile: width < 768 }).filter(v => v.severity === "block");
     const named = lint.length ? await page.evaluate(describe, [...new Set(lint.flatMap(v => v.ids))]) : {};
     const errors = await page.locator('[data-nextjs-dialog],nextjs-portal').count(); // [READ] no Next error overlay
-    manifest.push({ name, locale, width, height, route: new URL(page.url()).pathname + new URL(page.url()).search, path, sha256: createHash("sha256").update(png).digest("hex"), scale, axe, lint, named, errors });
+    manifest.push({ name, locale, width, height, route: new URL(page.url()).pathname + new URL(page.url()).search, path, sha256: createHash("sha256").update(png).digest("hex"), overview, viewportShot, scale, axe, lint, named, errors });
     await writeFile(`${output}/ds2-matrix.json`, `${JSON.stringify({ tier: "MOCK", manifest }, null, 2)}\n`);
     assert.deepEqual(axe, [], `${name} ${locale} ${width}: axe violations`);
     assert.deepEqual(lint, [], `${name} ${locale} ${width}: visual-lint blocking ${JSON.stringify(named)}`);
@@ -911,13 +977,16 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
   // The record hydrates from sessionStorage in an effect after load, so a read right after reload can see the seed.
   // Form: Cancel enables once ready, then the draft re-syncs (one "dirty" render) back to "clean".
   // Settings reads saved directly; its fields stop being read-only once ready.
+  // Waits until the button the locator names carries no aria-disabled (#89 self-test below). A locator is re-resolved on every
+  // poll: readiness swaps Button's span wrapper for a bare <button>, so an ElementHandle taken earlier would watch a detached node.
+  const enabled = (loc, timeout) => loc.and(page.locator("button:not([aria-disabled])")).first().waitFor({ state: "attached", timeout });
   const reloadHydrated = async () => {
     await page.reload({ waitUntil: "load" });
     if (template === "settings") {
       await page.waitForFunction(el => !el.readOnly, await area.getByLabel(t.storeName, { exact: true }).elementHandle()); // [READ]
       return;
     }
-    await page.waitForFunction(el => !el.hasAttribute("aria-disabled"), await button(t.cancel).elementHandle()); // [READ]
+    await enabled(area.getByRole("button", { name: t.cancel, exact: true }).filter({ visible: true }));
     await seen(area.locator('[data-state="clean"]'));
   };
   await run("Localized breadcrumb", "read trail, click parent, reload, return", "correct IA group and localized names; parent navigation persists", async () => {
@@ -1031,6 +1100,60 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       assert.equal(await area.getByRole("link", { name: `${t.page} 2`, exact: true }).getAttribute("aria-current"), "page");
       await area.getByRole("link", { name: t.previous, exact: true }).click();
       assert.equal(new URL(page.url()).searchParams.has("page"), false);
+    });
+    await run("Search then paginate (#87)", "All payments, search DEMO-100, next, previous", "9 matches over 2 pages; search term, total and rows survive paging; term never enters the URL", async () => {
+      const payment = await area.getByLabel(t.payment, { exact: true }).inputValue();
+      await area.getByLabel(t.payment, { exact: true }).selectOption("all");
+      const box = area.getByRole("searchbox", { name: t.search });
+      await box.fill("DEMO-100");
+      await button(t.searchButton).click();
+      const pageOf = async (n, ids) => {
+        await seen(text(`9 ${t.filterSummary} · ${n} / 2`));
+        assert.deepEqual(await area.locator("tbody tr a").filter({ hasText: /^DEMO-/ }).allTextContents(), ids.map(id => `DEMO-${id}`));
+        assert.equal(await box.inputValue(), "DEMO-100", "search term kept");
+        assert.equal(new URL(page.url()).search.includes("DEMO"), false, "term not in URL");
+      };
+      await pageOf(1, [1001, 1002, 1003, 1004, 1005]);
+      await area.getByRole("link", { name: t.next, exact: true }).click();
+      await pageOf(2, [1006, 1007, 1008, 1009]);
+      assert.equal(new URL(page.url()).searchParams.get("page"), "2");
+      await area.getByRole("link", { name: t.previous, exact: true }).click();
+      await pageOf(1, [1001, 1002, 1003, 1004, 1005]);
+      await box.fill("");
+      await box.press("Enter");
+      await area.getByLabel(t.payment, { exact: true }).selectOption(payment);
+    });
+    await run("Bulk focus after apply (#87)", "keyboard: row 1, menu Tag; page + all results, Tag, Escape, Tag, Enter on Apply", "focus lands on the page checkbox when the selection bar closes; Escape keeps it on the menu trigger", async () => {
+      const head = area.getByRole("checkbox", { name: t.selectPage, exact: true });
+      const focused = loc => loc.evaluate(n => n === document.activeElement); // [READ]
+      const where = () => page.evaluate(() => document.activeElement?.outerHTML.slice(0, 80)); // [READ]
+      const settle = () => page.waitForFunction(() => document.activeElement !== document.body, null, { timeout: 2000 }).catch(() => {}); // [READ]
+      const viaMenu = async () => {
+        await button(t.action).focus();
+        await page.keyboard.press("ArrowDown");
+        await page.keyboard.press("Enter");
+      };
+      await area.getByRole("checkbox", { name: `${t.row} 1`, exact: true }).check();
+      await viaMenu();
+      await seen(text(t.bulkDone));
+      await area.locator("[data-selection-bar]").waitFor({ state: "detached" });
+      await settle();
+      assert.equal(await focused(head), true, `page-only apply: focus on ${await where()}`);
+      await head.check();
+      await area.locator("[data-selection-bar]").getByRole("button").filter({ hasText: t.selectAll }).click();
+      await viaMenu();
+      const dialog = page.getByRole("dialog");
+      await seen(dialog.getByText(t.bulkConfirm, { exact: true }));
+      await page.keyboard.press("Escape");
+      await dialog.waitFor({ state: "hidden" });
+      assert.equal(await focused(area.locator("[data-selection-bar] [data-menu-trigger]")), true, `cancel keeps focus on the mounted trigger, not ${await where()}`);
+      await viaMenu();
+      await seen(dialog.getByText(t.bulkConfirm, { exact: true }));
+      await dialog.getByRole("button", { name: t.confirm, exact: true }).focus();
+      await page.keyboard.press("Enter");
+      await area.locator("[data-selection-bar]").waitFor({ state: "detached" });
+      await settle();
+      assert.equal(await focused(head), true, `all-results apply: focus on ${await where()}`);
     });
     await run("List row actions", "more, tag, reload", "tag result persists", async () => {
       const row = area.locator("tbody tr").first();
@@ -1191,6 +1314,52 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       await save();
       await reloadHydrated();
       assert.equal(await text("demo.png").count(), 0);
+    });
+    await run("Save waits for uploads (#87)", "choose image, try Save at once, wait for transfer, save, reload, switch tabs", "Save blocked with a reason while a transfer runs; after save the form stays clean through reload and tab switches", async () => {
+      await tab(t.media).click();
+      const chooserPromise = page.waitForEvent("filechooser");
+      await button(t.browse).click();
+      // [FIXTURE] One synthetic valid PNG through the native picker reached by a real Browse click.
+      await (await chooserPromise).setFiles({ name: "wait.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9xkAAAAASUVORK5CYII=", "base64") });
+      await seen(area.getByRole("progressbar"));
+      // Locator.click() waits for "enabled" (aria-disabled counts), so it clicked only after the 700ms transfer and saved (CI
+      // 39285725371). A real mouse click at the centre hits the blocked button now; the reason lives only while the transfer
+      // runs, so transfer, block and revealed reason are read in one snapshot right after the click.
+      const saveButton = button(t.save);
+      await saveButton.scrollIntoViewIfNeeded();
+      const box = await saveButton.boundingBox(); // [MEASURE] position only
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      const snap = await saveButton.evaluate(n => {
+        const reason = document.getElementById(n.getAttribute("aria-describedby") || "");
+        // UploadGrid renders a native <progress> (implicit progressbar role, no role attribute): match the element too.
+        return { uploading: Boolean(n.closest("[data-template]").querySelector('progress, [role="progressbar"]')), disabled: n.getAttribute("aria-disabled"), reason: reason?.getAttribute("role") === "status" ? reason.textContent : null };
+      }); // [READ]
+      assert.equal(snap.uploading, true, `snapshot taken after the transfer ended; the block cannot be observed: ${JSON.stringify(snap)}`);
+      assert.deepEqual(snap, { uploading: true, disabled: "true", reason: t.uploadPending }, "Save is blocked with a reason while an image transfer is in progress");
+      await seen(text(t.uploaded));
+      await save();
+      await reloadHydrated();
+      await seen(text("wait.png"));
+      await seen(text(t.uploaded));
+      await tab(t.general).click();
+      await tab(t.media).click();
+      await seen(area.locator('[data-state="clean"]'));
+      assert.equal(await area.locator('[data-state="dirty"]').count(), 0, "a saved form does not turn dirty without an edit");
+      await button(`${t.remove} wait.png`).click();
+      await save();
+      await reloadHydrated();
+    });
+    if (locale === "zh-TW" && !mobile) await run("Readiness wait self-test (#89)", "[FIXTURE] disabled span-wrapped button, start the wait, replace it with an enabled bare button", "the wait resolves on the new node", async () => {
+      await page.evaluate(() => { const n = document.createElement("span"); n.dataset.readyFixture = ""; n.innerHTML = '<button type="button" aria-disabled="true">fx-ready</button>'; document.querySelector("#ds-main").append(n); }); // [FIXTURE] removed below
+      try {
+        const waiting = enabled(page.getByRole("button", { name: "fx-ready", exact: true }), 5000);
+        await page.waitForTimeout(500); // [FIXTURE] the wait is in place before readiness, as after a reload
+        // [FIXTURE] readiness swaps the span-wrapped button for a bare one, as Controls.tsx Button does when its reason clears.
+        await page.evaluate(() => { const b = document.createElement("button"); b.type = "button"; b.textContent = "fx-ready"; b.dataset.readyFixture = ""; document.querySelector("[data-ready-fixture]").replaceWith(b); });
+        await waiting;
+      } finally {
+        await page.evaluate(() => document.querySelectorAll("[data-ready-fixture]").forEach(n => n.remove())); // [FIXTURE] restore
+      }
     });
     await run("Save bar placement", "read computed styles", "mobile: bottom only; desktop: top + sticky bottom", async () => {
       const bars = area.locator('[data-state][role="group"]');

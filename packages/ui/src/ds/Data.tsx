@@ -2,7 +2,7 @@
 // Depends on: React, shared Icon/Controls, ./data.module.css, ./Controls (Button), ./logic (selection, row actions, page window); no API, routing or translation.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
 "use client";
-import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent, type ReactNode, type RefObject } from "react";
 import { Icon, type IconName } from "./Icon";
 import s from "./data.module.css";
 import { Button, ButtonLink } from "./Controls";
@@ -200,7 +200,7 @@ export type SelectionLabels = {
   clear: string;
 };
 
-function CheckBox({ checked, mixed, label, onChange }: { checked: boolean; mixed?: boolean; label: string; onChange: () => void }) {
+function CheckBox({ checked, mixed, label, onChange, focusRef }: { checked: boolean; mixed?: boolean; label: string; onChange: () => void; focusRef?: RefObject<HTMLInputElement | null> }) {
   return (
     <input
       type="checkbox"
@@ -209,6 +209,7 @@ function CheckBox({ checked, mixed, label, onChange }: { checked: boolean; mixed
       checked={checked}
       ref={(node) => {
         if (node) node.indeterminate = Boolean(mixed);
+        if (focusRef) focusRef.current = node;
       }}
       onChange={onChange}
     />
@@ -256,6 +257,17 @@ export function DataTable<R>({
   const span = columns.length + (selection ? 1 : 0) + (actions ? 1 : 0);
   const strict = process.env.NODE_ENV !== "production";
   const count = selection ? selectionCount(selection.state, selection.total, ids) : 0;
+  // When the selection bar closes (bulk command applied, Clear) the control that had focus unmounts with it and focus falls to
+  // <body>; land it on the stable page checkbox instead (#87). After a tick, so a closing dialog restores first; never steals focus.
+  const pageCheck = useRef<HTMLInputElement>(null);
+  const hadBar = useRef(false);
+  useEffect(() => {
+    const closed = hadBar.current && count === 0;
+    hadBar.current = count > 0;
+    if (!closed) return;
+    const timer = setTimeout(() => { if (!document.activeElement || document.activeElement === document.body) pageCheck.current?.focus(); });
+    return () => clearTimeout(timer);
+  }, [count]);
   const renderActions = (row: R) => {
     const list = resolveRowActions(actions?.(row) ?? [], strict);
     const visible = list.filter((a) => !a.more);
@@ -308,6 +320,7 @@ export function DataTable<R>({
               {selection && (
                 <th scope="col" className={s.selectCell}>
                   <CheckBox
+                    focusRef={pageCheck}
                     label={selection.labels.selectPage}
                     checked={selection.state.scope === "all" || pageSelection(selection.state, ids) === "all"}
                     mixed={selection.state.scope === "page" && pageSelection(selection.state, ids) === "some"}

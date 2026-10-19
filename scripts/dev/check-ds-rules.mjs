@@ -13,7 +13,8 @@ const ICON_FILE = /(^|\/)(?:icons|Icon)\.tsx$/; // the single icon primitive own
 // §2: text characters that were used as icons in DS-1 (and their usual look-alikes). Arrows such as ↑ stay legal inside text ("↑ 130%").
 export const GLYPHS = "⌂≡✉▣☺✦⚙•▸▾◂▴▲▼◀▶⌕✓✔✕✖×○●■□⚿⦿⛯❯❮›‹⋯⋮";
 const GLYPH_CLASS = `[${GLYPHS}]`;
-const SPACE_PROPS = /^(?:margin|padding|gap|row-gap|column-gap)(?:-(?:top|right|bottom|left|inline|block|inline-start|inline-end|block-start|block-end))?$/;
+// The inset family (inset, inset-*, top/right/bottom/left) is spacing too (DESIGN-SPEC §6 R2; #88).
+const SPACE_PROPS = /^(?:(?:margin|padding|gap|row-gap|column-gap|inset)(?:-(?:top|right|bottom|left|inline|block|inline-start|inline-end|block-start|block-end))?|top|right|bottom|left)$/;
 // Spacing tokens: --ds-space-* plus the component spacing tokens defined in tokens.css (card / nav / control). Hairlines (±1px, 2px) are
 // allowed for borders, the visually-hidden pattern and badge insets.
 const SPACE_OK = /^(?:var\(--ds-(?:space|card|nav|control)-[\w-]+\)|0|0px|-?1px|2px|auto|-?\d+(?:\.\d+)?%)$/;
@@ -40,19 +41,22 @@ export function check(source, ext, file = "") {
     });
     return out;
   }
-  // TSX / TS
-  lines.forEach((l, i) => {
-    if (/["'`]#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})["'`]|["'`](?:rgba?|hsla?)\(/.test(l)) add("R1 colour literal", i, l);
-    if (!ICON_FILE.test(file)) {
-      if (new RegExp(`>\\s*${GLYPH_CLASS}\\s*<|["'\`]\\s*${GLYPH_CLASS}\\s*["'\`]|>\\s*${GLYPH_CLASS}\\s+\\S`).test(l)) add("R4 text glyph used as an icon", i, l);
-      if (/<svg[\s>]/.test(l)) add("R5 raw <svg> outside icons.tsx", i, l);
-    }
-    for (const m of ICON_FILE.test(file) ? [] : l.matchAll(/style=\{\{([^}]*)\}\}/g)) {
+  // TSX / TS: match the whole comment-stripped source, so multi-line JSX cannot hide a violation (#88); report the match's line.
+  const starts = [0];
+  for (let k = 0; k < clean.length; k++) if (clean[k] === "\n") starts.push(k + 1);
+  const lineAt = (index) => { let i = 0; while (i + 1 < starts.length && starts[i + 1] <= index) i++; return i; };
+  const each = (re, fn) => { for (const m of clean.matchAll(re)) fn(m, lineAt(m.index)); };
+  const hit = (rule) => (m, i) => add(rule, i, lines[i]);
+  each(/["'`]#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})["'`]|["'`](?:rgba?|hsla?)\(/g, hit("R1 colour literal"));
+  if (!ICON_FILE.test(file)) {
+    each(new RegExp(`>\\s*${GLYPH_CLASS}\\s*<|["'\`]\\s*${GLYPH_CLASS}\\s*["'\`]|>\\s*${GLYPH_CLASS}\\s+\\S`, "g"), hit("R4 text glyph used as an icon"));
+    each(/<svg[\s>/]/g, hit("R5 raw <svg> outside icons.tsx"));
+    each(/style\s*=\s*\{\{([^}]*)\}\}/g, (m, i) => {
       const keys = [...m[1].matchAll(/(?:^|,)\s*(["']?)([\w-]+)\1\s*:/g)].map((k) => k[2]);
-      if (keys.some((k) => !k.startsWith("--"))) add("R6 inline style (only --custom properties allowed)", i, l);
-    }
-    if (/className=["'][^"']+["']/.test(l)) add("R7 plain className string (use CSS modules or DS components)", i, l);
-  });
+      if (keys.some((k) => !k.startsWith("--"))) add("R6 inline style (only --custom properties allowed)", i, lines[i]);
+    });
+  }
+  each(/className\s*=\s*["'][^"']+["']/g, hit("R7 plain className string (use CSS modules or DS components)"));
   return out;
 }
 
