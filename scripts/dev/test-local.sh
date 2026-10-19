@@ -226,7 +226,7 @@ case "$1" in
   :
     }
     lc_run() {
-  LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=600s -run '^(TestBrowserIdentityRealChain|TestBrowserSettingsWizardRealChain|TestMerchantAccountAPIProcessRestart)$' -v ./tests/foundation
+  LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.2 go test -race -tags browser -count=1 -timeout=600s -run '^(TestBrowserIdentityRealChain|TestBrowserSettingsWizardRealChain|TestMerchantAccountAPIProcessRestart|TestMerchantWriteReplayAfterAPIRestart)$' -v ./tests/foundation
   printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
     }
     ;;
