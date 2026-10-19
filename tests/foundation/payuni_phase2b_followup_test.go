@@ -7,11 +7,15 @@
 //	PFU03: on an upgrade from just before 0197 the numbered phase alone (post-River held back) leaves no grantee able
 //	       to execute checkout.start_payment / integration.record_payment_query (P2-1 window), and revokes the leftover
 //	       hosted-form writer authority (P2-5); the pre-state proves each privilege existed, so the gate is not vacuous.
+//	PFU04 (review-105-336b06942 P1): the full real chain over a legacy PAYUNi history applies when that history is
+//	       reconciled although 0018 cited its benign reports in nothing, and refuses (22023, revokes rolled back) when
+//	       a paid report was never applied.
 //
 // Depends on: migrations.Apply; pwIsolatedFixture; psSetupItemsOn; rm2HistoricalAttempt; pcFull/pqJSON; rmVersions/
 //
 //	rmChecksums/rmSkipLedger (payuni_removal_test.go); p2bPreState (payuni_phase2b_test.go); pfeReplica
-//	(payuni_form_erase_test.go).
+//	(payuni_form_erase_test.go); lriPre0032Fixture/lriApplyFull/lriLedger/lriCloseProducerPools
+//	(legacy_runtime_upgrade_test.go); pwOldQuerySetupOn/pwKeys (payment_runtime_test.go); pqReport.
 //
 // Used by: CI full foundation suite; scripts/dev/test-focused.sh '^TestPayuniPhase2bFollowup'.
 // Invariants: synthetic data only; the migrations under test never delete or rewrite a row.
@@ -19,6 +23,8 @@ package foundation_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -187,4 +193,123 @@ func TestPayuniPhase2bFollowupClosesWindowAndRevokesHostedWriter(t *testing.T) {
 	if got := pfuHostedAuthority(t, fresh.owner); got != want {
 		t.Errorf("fresh install hosted writer authority %+v, want %+v", got, want)
 	}
+}
+
+// pfuInject (LC_PFU_INJECT=1) is the calibration fault for PFU04's rollback assertion: after the refused chain it
+// commits 0199's revoke sections out of band, i.e. the state a runner that applied them outside the refused
+// transaction would leave. The rollback assertion must then fail.
+func pfuInject() bool { return os.Getenv("LC_PFU_INJECT") != "" }
+
+// pfuLegacy is the P2B04 history: the legacy pre-0032 schema plus one PAYUNi attempt written by the historical
+// producer. The operation carries the TradeNo that integration.record_payment_query stored on it (complete_operation).
+func pfuLegacy(t *testing.T) (*testFixture, pqFixture) {
+	t.Helper()
+	f := lriPre0032Fixture(t)
+	q := pwOldQuerySetupOn(t, f, pwKeys(t), "river")
+	lriCloseProducerPools(q.psHarness)
+	pfeReplica(t, f.owner, `UPDATE integration.operations SET provider_reference='`+pqReport(q)["TradeNo"].(string)+`' WHERE id='`+q.result.OperationID+`'`)
+	return f, q
+}
+
+// pfuReport stores one QUERY observation the way the dropped record_payment_query did and returns its hash.
+func pfuReport(t *testing.T, q pqFixture, edit func(map[string]any)) []byte {
+	t.Helper()
+	r := pqReport(q)
+	edit(r)
+	var hash []byte
+	if err := q.f.owner.QueryRow(context.Background(), `INSERT INTO payments.provider_observations(tenant_id,store_id,attempt_id,source,execution_profile,environment,first_generation,report,report_hash)
+		SELECT a.tenant_id,a.store_id,a.id,'QUERY',a.execution_profile,a.environment,a.generation,$2::jsonb,sha256(convert_to($2::jsonb::text,'UTF8'))
+		FROM checkout.payment_attempts a WHERE a.id=$1 RETURNING report_hash`, q.result.AttemptID, pqJSON(r)).Scan(&hash); err != nil {
+		t.Fatal(err)
+	}
+	return hash
+}
+
+// pfuReconcile is the operator's cancellation: operation terminal, order CANCELLED, stock RELEASED.
+func pfuReconcile(t *testing.T, q pqFixture) {
+	t.Helper()
+	pfeReplica(t, q.f.owner,
+		`UPDATE integration.operations SET state='FAILED_FINAL' WHERE id='`+q.result.OperationID+`'`,
+		`UPDATE checkout.orders SET commercial_state='CANCELLED' WHERE id='`+q.hold.OrderID+`'`,
+		`UPDATE inventory.reservations SET state='RELEASED' WHERE id='`+q.hold.OrderID+`'`)
+}
+
+// TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied (PFU04, review-105-336b06942 P1): the full real chain
+// (lriApplyFull, no pre-record) over a legacy PAYUNi history.
+//   - reconciled: five QUERY reports, each applied by the real 0018 body (payments.apply_capture on this schema);
+//     0018 cites only the authorization in a fact; the pending/empty-TradeNo, DataSource B, duplicate-auth and
+//     cancelled (TradeStatus 3) reports are cited by nothing. The operator cancelled the order. 0197-0199 and
+//     post_river 0026/0027 must all apply.
+//   - unapplied: the authorization report is stored but was never applied. 0199 must refuse (22023) and the refusal
+//     must roll back the whole numbered batch, including 0199's own revokes: start_payment / record_payment_query
+//     grantees and the hosted-form writer authority are exactly as before (calibrated by pfuInject).
+func TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied(t *testing.T) {
+	pfuRequire(t)
+	ctx := context.Background()
+	t.Run("reconciled", func(t *testing.T) {
+		f, q := pfuLegacy(t)
+		hashes := [][]byte{
+			pfuReport(t, q, func(r map[string]any) { r["TradeStatus"], r["TradeNo"] = "0", "" }),
+			pfuReport(t, q, func(r map[string]any) { r["DataSource"] = "B" }),
+			pfuReport(t, q, func(map[string]any) {}),
+			pfuReport(t, q, func(r map[string]any) { r["CloseStatus"] = "1" }),
+			pfuReport(t, q, func(r map[string]any) { r["TradeStatus"] = "3" }),
+		}
+		for i, h := range hashes {
+			if _, err := f.owner.Exec(ctx, `SELECT payments.apply_capture($1::uuid,$2::bytea)`, q.result.AttemptID, h); err != nil {
+				t.Fatalf("legacy 0018 apply of report %d: %v", i, err)
+			}
+		}
+		if got := pfeRow(t, f.owner, `SELECT coalesce((SELECT string_agg(kind,',' ORDER BY kind) FROM payments.facts WHERE attempt_id=$1),'')||'/'||
+			(SELECT count(*) FROM payments.review_cases WHERE attempt_id=$1)||'/'||
+			(SELECT count(*) FROM payments.provider_observations x WHERE x.attempt_id=$1
+			  AND NOT EXISTS(SELECT 1 FROM payments.facts y WHERE y.attempt_id=x.attempt_id AND y.source_report_hash=x.report_hash))`, q.result.AttemptID); got != "AUTHORIZED/0/4" {
+			t.Fatalf("legacy 0018 history facts/reviews/uncited = %s, want AUTHORIZED/0/4 (four reports 0018 applied without citing them)", got)
+		}
+		pfuReconcile(t, q)
+		if err := lriApplyFull(ctx, f.owner); err != nil {
+			t.Fatalf("full chain over reconciled PAYUNi history must apply: %v", err)
+		}
+		for _, v := range []string{"0197_payuni_phase2b_drop.sql", pfuNumbered, "post_river/0026_payuni_phase2b_drop.sql", pfuPost} {
+			if n := countRows(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1`, v); n != 1 {
+				t.Errorf("reconciled chain: ledger has %d row(s) for %s", n, v)
+			}
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1`, q.result.AttemptID); n != 5 {
+			t.Errorf("reconciled chain changed PAYUNi observations: %d", n)
+		}
+	})
+	t.Run("unapplied", func(t *testing.T) {
+		f, q := pfuLegacy(t)
+		pfuReport(t, q, func(r map[string]any) { r["TradeStatus"], r["TradeNo"] = "0", "" })
+		pfuReport(t, q, func(map[string]any) {}) // paid authorization whose reconcile job never ran
+		pfuReconcile(t, q)
+		start, record, hosted := pfuGrantees(t, f.owner, pfuStart), pfuGrantees(t, f.owner, pfuRecord), pfuHostedAuthority(t, f.owner)
+		if start == "" || record == "" || !hosted.insert || !hosted.update || !hosted.cipher {
+			t.Fatalf("legacy baseline lacks the privileges 0199 revokes (start %q, record %q, hosted %+v); the rollback gate would be vacuous", start, record, hosted)
+		}
+		ledger := lriLedger(t, f, "")
+		err := lriApplyFull(ctx, f.owner)
+		if pfuInject() {
+			body, rerr := os.ReadFile(filepath.Join("../../migrations", pfuNumbered))
+			if rerr != nil {
+				t.Fatal(rerr)
+			}
+			mustExec(t, f.owner, string(body)[strings.Index(string(body), "-- 2) "):])
+		}
+		pfuRefused(t, f.owner, pfuNumbered, err, "PAYUNi phase-2b follow-up refused",
+			"0 PAYUNi reservation(s) still PAYMENT_PENDING, 1 stored PAYUNi observation(s) never applied")
+		if got := lriLedger(t, f, ""); got != ledger {
+			t.Error("refused chain changed the migration ledger")
+		}
+		if got := pfuGrantees(t, f.owner, pfuStart); got != start {
+			t.Errorf("refused 0199 left start_payment grantees %q, want %q", got, start)
+		}
+		if got := pfuGrantees(t, f.owner, pfuRecord); got != record {
+			t.Errorf("refused 0199 left record_payment_query grantees %q, want %q", got, record)
+		}
+		if got := pfuHostedAuthority(t, f.owner); got != hosted {
+			t.Errorf("refused 0199 left hosted authority %+v, want %+v", got, hosted)
+		}
+	})
 }
