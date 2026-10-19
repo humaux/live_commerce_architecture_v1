@@ -81,8 +81,16 @@ const email=`gate+${Date.now()%1000000000}@example.com`; // synthetic; SU08 sent
 // ---- control server (counts only) ----
 const CH={"X-Gate-Key":process.env.LC_STRIPE_CONTROL_KEY};
 async function control(order){const r=await fetch(`${CONTROL}/facts${order?`?order=${order}`:""}`,{headers:CH});assert.equal(r.status,200,"facts");return r.json();}
-async function act(name,order){const r=await fetch(`${CONTROL}/act?name=${name}${order?`&order=${order}`:""}`,{method:"POST",headers:CH});assert.equal(r.status,200,`act ${name}`);}
+async function act(name,order){step("act",name);const r=await fetch(`${CONTROL}/act?name=${name}${order?`&order=${order}`:""}`,{method:"POST",headers:CH});assert.equal(r.status,200,`act ${name}`);}
 async function until(fn,ms,what,step=400){const end=Date.now()+ms;for(;;){const v=await fn();if(v)return v;if(Date.now()>end)throw new Error(`timeout: ${what}`);await pause(step);}}
+// MOCK hosted handoff. The route below counts a visit when it INTERCEPTS the request, before the popup's cross-site navigation
+// (about:blank on buyer.example -> checkout.stripe.com) finishes loading. Closing the popup inside that window can leave
+// Chromium's close pending forever: SU09_mobile (CI run 39256563874) closed the O6 child right after the counter ticked and
+// hung until the 580 s watchdog with the hosted page still open. Wait for the hosted page's own load before any close.
+async function hostedLoaded(child,n,what){
+  await child.waitForURL(u=>u.origin==="https://checkout.stripe.com",{waitUntil:"load",timeout:60000});
+  assert(stripeVisits>=n,`hosted visits for ${what}: ${stripeVisits} < ${n}`);step("hosted loaded:",what);
+}
 // ---- edge + proxy + Next ----
 function relay(port,req,body){
   return new Promise((resolve,reject)=>{
@@ -218,13 +226,20 @@ async function cancelViaUI(page,l,{keyboard=false}={}){
 }
 async function keyboardTo(page,name){
   // G-UI8 audit [FIXTURE/SETUP]: blurs and scrolls to the top so the keyboard Tab walk starts at the page start (positioning)
+  // A keyboard user cannot Tab onto a disabled button: after a popup closes, the store tab's focus/pageshow
+  // refresh can still be settling, so wait until the target is enabled (same 20 s `ex` bound) before walking.
+  await ex(page.getByRole("button",{name,exact:true})).toBeEnabled();
   await page.evaluate(()=>{document.activeElement?.blur?.();window.scrollTo(0,0);});
+  const trail=new Set();
   for(let i=0;i<150;i++){
     await page.keyboard.press("Tab");
-    // G-UI8 audit [READ/MEASURE]: reads the focused button's name
-    if(await page.evaluate(()=>{const a=document.activeElement;return a&&a.tagName==="BUTTON"?a.textContent.trim():"";})===name)return;
+    // G-UI8 audit [READ/MEASURE]: reads the focused element's tag and name
+    const at=await page.evaluate(()=>{const a=document.activeElement;return a?`${a.tagName}:${(a.textContent??"").trim().slice(0,40)}${a.disabled?":disabled":""}`:"none";});
+    if(at===`BUTTON:${name}`)return;trail.add(at);
   }
-  throw new Error("keyboard focus never reached the named button");
+  // G-UI8 audit [READ/MEASURE]: failure diagnostics only (focus state + named button state)
+  const why=await page.evaluate(n=>({hasFocus:document.hasFocus(),buttons:[...document.querySelectorAll("button")].filter(b=>b.textContent.trim()===n).map(b=>({disabled:b.disabled,visible:!!b.offsetParent}))}),name);
+  throw new Error(`keyboard focus never reached the named button: ${JSON.stringify(why)} trail=${JSON.stringify([...trail].slice(0,30))}`);
 }
 async function closeAll(pages){for(const p of pages)await p.close().catch(()=>{});}
 // ---- SU08: scan every store-origin surface ----
@@ -432,11 +447,11 @@ async function su07(){
   passed("SU07 popup blocked => `blocked`, zero BFF calls, no marker, no facts");
   // 2. child closed => Continue reuses the same session
   let pop=page.waitForEvent("popup");await payBtn(page,l).click();let child=await pop;
-  await until(()=>stripeVisits>=1,60000,"first hosted navigation");
+  await hostedLoaded(child,1,"first hosted navigation");
   await ex(recoverBtn(page,l)).toBeVisible();await child.close();
   assert.equal(paymentCalls(id,"prepare").length,1);
   const visits=stripeVisits;pop=page.waitForEvent("popup");await recoverBtn(page,l).click();child=await pop;
-  await until(()=>stripeVisits>visits,60000,"Continue hosted navigation");await child.close();
+  await hostedLoaded(child,visits+1,"Continue hosted navigation");await child.close();
   let f=await control(id);assert.equal(f.order.sessions,1);assert.equal(f.order.attempts,1);
   assert.equal(paymentCalls(id,"prepare").length,1,"Continue does not prepare again");assert.equal(paymentCalls(id,"handoff").length,2);
   passed("SU07 child closed => Continue reuses the same session (1 session row, 1 prepare, 2 handoffs)");
@@ -526,13 +541,13 @@ async function su09(){
   // O1: keyboard-only Pay -> Continue -> Cancel
   let mark=await liveLen();
   await keyboardTo(page,LOC.en.pay);let pop=page.waitForEvent("popup");await page.keyboard.press("Enter");let child=await pop;
-  await until(()=>stripeVisits>=1,60000,"hosted navigation (keyboard Pay)");
+  await hostedLoaded(child,1,"hosted navigation (keyboard Pay)");
   await ex(recoverBtn(page,"en")).toBeVisible();await ex(cancelBtn(page,"en")).toBeVisible();await ex(page.getByText(LOC.en.submitted,{exact:true})).toBeVisible();
   await noDupes(mark);await three("02-continue-ready-submitted");
   const stable=await liveLen();await pause(12000); // covers the 5 s and 10 s background polls
   assert.equal(await liveLen(),stable,"same-state polls render nothing");
   await child.close();await keyboardTo(page,LOC.en.recover);pop=page.waitForEvent("popup");await page.keyboard.press("Enter");child=await pop;
-  await until(()=>stripeVisits>=2,60000,"hosted navigation (keyboard Continue)");await child.close();
+  await hostedLoaded(child,2,"hosted navigation (keyboard Continue)");await child.close();
   mark=await liveLen();await cancelViaUI(page,"en",{keyboard:true});
   // §8: focus moves to the status line at the moment Cancel/Continue disappear (`cancelling`). Assert it
   // before refreshUntil, whose own Refresh click legitimately moves focus onto the Refresh button.
@@ -543,7 +558,7 @@ async function su09(){
   passed(`SU09 ${vp}: keyboard-only Pay/Continue/Cancel, roles+names in 3 locales, one announcement per change, focus to status`);
   // O2: captured + confirmed
   id=await newOrder(page);pop=page.waitForEvent("popup");await payBtn(page,"en").click();child=await pop;
-  await until(()=>stripeVisits>=3,60000,"hosted navigation (O2)");await act("pay",id);mark=await liveLen();
+  await hostedLoaded(child,3,"hosted navigation (O2)");await act("pay",id);mark=await liveLen();
   await refreshUntil(page,["CAPTURED"],90000,"mock capture");await expectStatusText(page,"en","CAPTURED","CONFIRMED");await noDupes(mark);
   await ex(page.getByTestId("order-payment")).toHaveAttribute("aria-busy","false");await three("04-captured-confirmed");await child.close();
   // O3: CREATING budget, CREATING view, cancelling
@@ -555,11 +570,11 @@ async function su09(){
   await act("worker-start");await refreshUntil(page,["CLOSED_UNPAID"],90000,"unsent closure after worker start");
   // O6: cutoff (UNAVAILABLE and client clock past handoff_expires_at)
   id=await newOrder(page);pop=page.waitForEvent("popup");await payBtn(page,"en").click();child=await pop;
-  await until(()=>stripeVisits>=4,60000,"hosted navigation (O6)");await child.close();await act("age-cutoff",id);await page.reload();
+  await hostedLoaded(child,4,"hosted navigation (O6)");await child.close();await act("age-cutoff",id);await page.reload();
   await ex(page.getByText(LOC.en.cutoff,{exact:true})).toBeVisible();await ex(cancelBtn(page,"en")).toBeVisible();await ex(recoverBtn(page,"en")).toHaveCount(0);await three("08-cutoff");
   // O7: REVIEW_REQUIRED (SP12 presentment drift)
   id=await newOrder(page);pop=page.waitForEvent("popup");await payBtn(page,"en").click();child=await pop;
-  await until(()=>stripeVisits>=5,60000,"hosted navigation (O7)");await act("review",id);await child.close();
+  await hostedLoaded(child,5,"hosted navigation (O7)");await act("review",id);await child.close();
   await refreshUntil(page,["REVIEW_REQUIRED"],90000,"review");await expectStatusText(page,"en","REVIEW_REQUIRED");
   await ex(recoverBtn(page,"en")).toHaveCount(0);await ex(cancelBtn(page,"en")).toHaveCount(0);await three("09-review-required");
   // O5: the handoff POST answers UNAVAILABLE (qualification revoked by the operator) => `failed`, never `uncertain`.
@@ -568,7 +583,7 @@ async function su09(){
   // time cutoff. So the contract's `readOnly` row (UNAVAILABLE and now < handoff_expires_at) has no producer: recorded.
   id=await newOrder(page);
   pop=page.waitForEvent("popup");await payBtn(page,"en").click();child=await pop;
-  await until(()=>stripeVisits>=6,60000,"hosted navigation (O5)");await child.close();
+  await hostedLoaded(child,6,"hosted navigation (O5)");await child.close();
   await act("qualification-revoke");
   pop=page.waitForEvent("popup");await recoverBtn(page,"en").click();const child5=await pop;
   await ex(page.getByText(LOC.en.failed,{exact:true})).toBeVisible();await until(()=>child5.isClosed(),15000,"blank child closed on UNAVAILABLE");
@@ -583,6 +598,7 @@ async function su09(){
   return finalScan([page],[c]);
 }
 const attachStep=p=>{
+  p.on("close",()=>step("page closed")); // with "hosted loaded:" and "act", a hang names its step in browser.log
   p.on("framenavigated",f=>{if(f===p.mainFrame()){try{step("nav ->",new URL(f.url()).host||"about:blank");}catch{}}});
   p.on("response",r=>{try{const u=new URL(r.url());if(u.origin===origin&&r.request().isNavigationRequest())step("document response",r.status(),r.request().method(),u.pathname==="/payment/return"?u.pathname:"(other)",r.headers()["content-type"]??"-","len",r.headers()["content-length"]??"-");}catch{}});
   p.on("requestfailed",r=>{try{const u=new URL(r.url());if(u.origin===origin)step("request failed",r.method(),u.pathname==="/payment/return"?u.pathname:"(other)",r.failure()?.errorText);}catch{}});
