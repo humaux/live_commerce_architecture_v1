@@ -9,6 +9,9 @@
 // (observed at the edge); Go control server /facts and /act (counts and fixture actions only).
 // Output: result.json (+ PNGs) in LC_STRIPE_EVIDENCE. Every console line is redacted: a Stripe URL,
 // session id, key or synthetic email must never reach browser.log (SU08).
+// Purpose: drive the SP18/SU07/SU09/OBS Stripe buyer UI browser gates described above.
+// Depends on: ./shop-helpers.mjs, ./browser-engine.mjs, @playwright/test, the Go control server (LC_STRIPE_CONTROL), openssl.
+// Used by: tests/foundation/browser_stripe_test.go (TestBrowserStripeCheckout launches this script per case).
 import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
@@ -84,12 +87,22 @@ async function control(order){const r=await fetch(`${CONTROL}/facts${order?`?ord
 async function act(name,order){step("act",name);const r=await fetch(`${CONTROL}/act?name=${name}${order?`&order=${order}`:""}`,{method:"POST",headers:CH});assert.equal(r.status,200,`act ${name}`);}
 async function until(fn,ms,what,step=400){const end=Date.now()+ms;for(;;){const v=await fn();if(v)return v;if(Date.now()>end)throw new Error(`timeout: ${what}`);await pause(step);}}
 // MOCK hosted handoff. The route below counts a visit when it INTERCEPTS the request, before the popup's cross-site navigation
-// (about:blank on buyer.example -> checkout.stripe.com) finishes loading. Closing the popup inside that window can leave
-// Chromium's close pending forever: SU09_mobile (CI run 39256563874) closed the O6 child right after the counter ticked and
-// hung until the 580 s watchdog with the hosted page still open. Wait for the hosted page's own load before any close.
+// (about:blank on buyer.example -> checkout.stripe.com) finishes loading. OBSERVED (CI run 39256563874, SU09_mobile): the
+// O6 child was closed right after the counter ticked; browser.log's last event is "nav -> checkout.stripe.com", then nothing
+// until the 580 s watchdog, and the snapshot still shows the hosted page open, i.e. child.close() never completed.
+// HYPOTHESIS (unproven: the old log has no close/load steps, and why Chromium would stall is unknown): closing inside that
+// window leaves Chromium's close pending. So wait for the hosted page's own load before any close, and bound the close
+// itself (closeChild below) so a stalled close fails naming its step instead of costing the watchdog.
 async function hostedLoaded(child,n,what){
   await child.waitForURL(u=>u.origin==="https://checkout.stripe.com",{waitUntil:"load",timeout:60000});
   assert(stripeVisits>=n,`hosted visits for ${what}: ${stripeVisits} < ${n}`);step("hosted loaded:",what);
+}
+// Bounded child.close(): 15000 ms is the bound this file already gives a popup to close (the "blank child closed" waits).
+async function closeChild(child,what){
+  step("close:",what);
+  const r=await within(/* RED INJECTION (issue 86): a close that never completes; removed in the next commit */ new Promise(()=>{}).then(()=>"closed",e=>`error ${e?.message??e}`),15000,"pending");
+  if(r!=="closed")throw new Error(`child.close() for ${what}: ${r} after 15000 ms`);
+  step("closed:",what);
 }
 // ---- edge + proxy + Next ----
 function relay(port,req,body){
@@ -386,14 +399,14 @@ async function sp18(){
     await shot(page.getByTestId("order-payment"),`sp18-${cfg.scenario}-${vp}-${l}-2-continue`,"SANDBOX");
     passed(`SP18 ${cfg.scenario} ${vp} ${l}: Pay opened the hosted page in a child tab; store tab shows Continue + Cancel`);
     if(cfg.card==="ok"||cfg.card==="4242"){
-      await fillHostedCard(child,CARD.ok);await returnedNeutral(child);await child.close();await page.bringToFront();
+      await fillHostedCard(child,CARD.ok);await returnedNeutral(child);await closeChild(child,`SP18 ${cfg.scenario} hosted return`);await page.bringToFront();
       await refreshUntil(page,["CAPTURED"],90000,"4242");
       await expectStatusText(page,l,"CAPTURED","CONFIRMED");
       await shot(page.getByTestId("order-payment"),`sp18-${cfg.scenario}-${vp}-${l}-3-captured`,"SANDBOX");
       const f=await control(id);assert.equal(f.order.captured,1);assert.equal(f.order.reservation,"COMMITTED");assert.equal(f.allocated,base.allocated+2);assert.equal(f.reserved,base.reserved-2);
       passed(`SP18 ${cfg.scenario} 4242: CAPTURED + CONFIRMED, reservation COMMITTED, stock allocated`);
     }else if(cfg.card==="3ds"){
-      await fillHostedCard(child,CARD.threeDS);await completeThreeDS(child);await returnedNeutral(child);await child.close();await page.bringToFront();
+      await fillHostedCard(child,CARD.threeDS);await completeThreeDS(child);await returnedNeutral(child);await closeChild(child,`SP18 ${cfg.scenario} hosted return`);await page.bringToFront();
       await refreshUntil(page,["CAPTURED"],90000,"3ds");
       await expectStatusText(page,l,"CAPTURED","CONFIRMED");
       await shot(page.getByTestId("order-payment"),`sp18-${cfg.scenario}-${vp}-${l}-3-captured`,"SANDBOX");
@@ -448,10 +461,10 @@ async function su07(){
   // 2. child closed => Continue reuses the same session
   let pop=page.waitForEvent("popup");await payBtn(page,l).click();let child=await pop;
   await hostedLoaded(child,1,"first hosted navigation");
-  await ex(recoverBtn(page,l)).toBeVisible();await child.close();
+  await ex(recoverBtn(page,l)).toBeVisible();await closeChild(child,"SU07 first hosted navigation");
   assert.equal(paymentCalls(id,"prepare").length,1);
   const visits=stripeVisits;pop=page.waitForEvent("popup");await recoverBtn(page,l).click();child=await pop;
-  await hostedLoaded(child,visits+1,"Continue hosted navigation");await child.close();
+  await hostedLoaded(child,visits+1,"Continue hosted navigation");await closeChild(child,"SU07 Continue hosted navigation");
   let f=await control(id);assert.equal(f.order.sessions,1);assert.equal(f.order.attempts,1);
   assert.equal(paymentCalls(id,"prepare").length,1,"Continue does not prepare again");assert.equal(paymentCalls(id,"handoff").length,2);
   passed("SU07 child closed => Continue reuses the same session (1 session row, 1 prepare, 2 handoffs)");
@@ -546,8 +559,8 @@ async function su09(){
   await noDupes(mark);await three("02-continue-ready-submitted");
   const stable=await liveLen();await pause(12000); // covers the 5 s and 10 s background polls
   assert.equal(await liveLen(),stable,"same-state polls render nothing");
-  await child.close();await keyboardTo(page,LOC.en.recover);pop=page.waitForEvent("popup");await page.keyboard.press("Enter");child=await pop;
-  await hostedLoaded(child,2,"hosted navigation (keyboard Continue)");await child.close();
+  await closeChild(child,"SU09 keyboard Pay");await keyboardTo(page,LOC.en.recover);pop=page.waitForEvent("popup");await page.keyboard.press("Enter");child=await pop;
+  await hostedLoaded(child,2,"hosted navigation (keyboard Continue)");await closeChild(child,"SU09 keyboard Continue");
   mark=await liveLen();await cancelViaUI(page,"en",{keyboard:true});
   // §8: focus moves to the status line at the moment Cancel/Continue disappear (`cancelling`). Assert it
   // before refreshUntil, whose own Refresh click legitimately moves focus onto the Refresh button.
@@ -560,7 +573,7 @@ async function su09(){
   id=await newOrder(page);pop=page.waitForEvent("popup");await payBtn(page,"en").click();child=await pop;
   await hostedLoaded(child,3,"hosted navigation (O2)");await act("pay",id);mark=await liveLen();
   await refreshUntil(page,["CAPTURED"],90000,"mock capture");await expectStatusText(page,"en","CAPTURED","CONFIRMED");await noDupes(mark);
-  await ex(page.getByTestId("order-payment")).toHaveAttribute("aria-busy","false");await three("04-captured-confirmed");await child.close();
+  await ex(page.getByTestId("order-payment")).toHaveAttribute("aria-busy","false");await three("04-captured-confirmed");await closeChild(child,"SU09 O2");
   // O3: CREATING budget, CREATING view, cancelling
   await act("worker-stop");id=await newOrder(page);pop=page.waitForEvent("popup");await payBtn(page,"en").click();child=await pop;
   await ex(page.getByText(LOC.en.creating,{exact:true})).toBeVisible({timeout:60000});await until(()=>child.isClosed(),15000,"blank child closed after the CREATING budget");
@@ -570,11 +583,11 @@ async function su09(){
   await act("worker-start");await refreshUntil(page,["CLOSED_UNPAID"],90000,"unsent closure after worker start");
   // O6: cutoff (UNAVAILABLE and client clock past handoff_expires_at)
   id=await newOrder(page);pop=page.waitForEvent("popup");await payBtn(page,"en").click();child=await pop;
-  await hostedLoaded(child,4,"hosted navigation (O6)");await child.close();await act("age-cutoff",id);await page.reload();
+  await hostedLoaded(child,4,"hosted navigation (O6)");await closeChild(child,"SU09 O6");await act("age-cutoff",id);await page.reload();
   await ex(page.getByText(LOC.en.cutoff,{exact:true})).toBeVisible();await ex(cancelBtn(page,"en")).toBeVisible();await ex(recoverBtn(page,"en")).toHaveCount(0);await three("08-cutoff");
   // O7: REVIEW_REQUIRED (SP12 presentment drift)
   id=await newOrder(page);pop=page.waitForEvent("popup");await payBtn(page,"en").click();child=await pop;
-  await hostedLoaded(child,5,"hosted navigation (O7)");await act("review",id);await child.close();
+  await hostedLoaded(child,5,"hosted navigation (O7)");await act("review",id);await closeChild(child,"SU09 O7");
   await refreshUntil(page,["REVIEW_REQUIRED"],90000,"review");await expectStatusText(page,"en","REVIEW_REQUIRED");
   await ex(recoverBtn(page,"en")).toHaveCount(0);await ex(cancelBtn(page,"en")).toHaveCount(0);await three("09-review-required");
   // O5: the handoff POST answers UNAVAILABLE (qualification revoked by the operator) => `failed`, never `uncertain`.
@@ -583,7 +596,7 @@ async function su09(){
   // time cutoff. So the contract's `readOnly` row (UNAVAILABLE and now < handoff_expires_at) has no producer: recorded.
   id=await newOrder(page);
   pop=page.waitForEvent("popup");await payBtn(page,"en").click();child=await pop;
-  await hostedLoaded(child,6,"hosted navigation (O5)");await child.close();
+  await hostedLoaded(child,6,"hosted navigation (O5)");await closeChild(child,"SU09 O5");
   await act("qualification-revoke");
   pop=page.waitForEvent("popup");await recoverBtn(page,"en").click();const child5=await pop;
   await ex(page.getByText(LOC.en.failed,{exact:true})).toBeVisible();await until(()=>child5.isClosed(),15000,"blank child closed on UNAVAILABLE");
