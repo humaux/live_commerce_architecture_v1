@@ -283,9 +283,11 @@ func lriAddShims(f *testFixture) error {
 // legacy database with such history CANNOT upgrade past 0197 (22023, ledger and schema unchanged) is certified on
 // this same fixture, without the pre-record, by P2B04 TestPayuniPhase2bLegacyUpgradeStopsAt0197 (payuni_phase2b_test.go).
 // PAY-RM2 phase 2c: 0198 (PAYUNi form erase) carries the same guard, so it is pre-recorded for the same reason; its
-// erase and refusal are certified by PFE01-PFE04 (payuni_form_erase_test.go).
+// erase and refusal are certified by PFE01-PFE04 (payuni_form_erase_test.go). 0199 and post_river/0027 (issue #93) carry the
+// stricter form of that guard and are pre-recorded likewise; PFU01-PFU03 (payuni_phase2b_followup_test.go) certify them.
 func lriApply(ctx context.Context, pool *pgxpool.Pool) error {
-	for _, v := range []string{"0197_payuni_phase2b_drop.sql", "0198_payuni_form_material_erase.sql", "post_river/0026_payuni_phase2b_drop.sql"} {
+	for _, v := range []string{"0197_payuni_phase2b_drop.sql", "0198_payuni_form_material_erase.sql", "0199_payuni_phase2b_followups.sql",
+		"post_river/0026_payuni_phase2b_drop.sql", "post_river/0027_payuni_phase2b_guard_recheck.sql"} {
 		body, err := os.ReadFile(filepath.Join("../../migrations", v))
 		if err != nil {
 			return err

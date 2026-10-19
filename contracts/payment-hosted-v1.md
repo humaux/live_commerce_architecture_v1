@@ -129,7 +129,8 @@ never from a caller-supplied account/version. It checks:
 
 The new material function returns only encrypted historical credential material
 and immutable form inputs to the trusted keyring boundary, within that transaction.
-The writer gets only the needed credential columns under scoped policy; runtime
+The writer gets only the needed credential columns under scoped policy *(revoked in 0199 with policy
+`hosted_credential_read`; no definer used it after 0197, PAY-RM2 issue #93)*; runtime
 gets no general credential read. The keyring decrypts through existing AAD/open.
 There is no latest-credential substitution after rotation.
 
@@ -165,7 +166,8 @@ roles. Repeated take authenticates scope/profile/config and returns ALREADY_ISSU
 without a form even after expiry/binding disable; first take requires full current
 eligibility. Save/take repeat capability and deadline fences after trigger/FK waits.
 Table has non-null immutable form/deadline *(form erased to the 0198 marker for PAYUNi rows, PAY-RM2 phase 2c)*; only handed_out_at NULL to non-NULL is
-updatable (column grant and one-way RLS). All row scope policies join the attempt
+updatable (column grant and one-way RLS) *(writer INSERT and UPDATE(handed_out_at) grants and policies
+`hosted_insert`/`hosted_take` revoked in 0199; `hosted_read` and SELECT stay for the read views)*. All row scope policies join the attempt
 with explicit tenant/store/owner checks, independent of broader capture RLS.
 
 After handoff, current binding disable/credential rotation still cannot redirect

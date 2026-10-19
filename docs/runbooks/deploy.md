@@ -125,6 +125,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 - 迁移失败时修复代码后重新执行。**绝不修改已经应用的 SQL 或 checksum**。
 - 退出码 75 表示另一个迁移持有锁 718020260920。**不要循环重试**：先确认没有其他迁移在运行，再人工重试一次（见 incident.md §migrate）。
 - 已知风险 R3：`migrations.Apply` 内部超时 30 s，大数据量迁移前需要先由集成者调整（I4）。
+- PAYUNi 退役守卫（0197、0198、0199、post_river/0027，PAY-RM2 2b/2c）：库里只要还有未对账的 PAYUNi 历史（非终态 PAYUNi operation、AWAITING_PAYMENT 的 PAYUNi 订单、仍为 PAYMENT_PENDING 的 PAYUNi 库存预留、或从未应用的已存 PAYUNi 观测），迁移就会以 `code=22023` 拒绝，`cmd/migrate` exit 1。编号迁移在**同一个事务**里执行，所以拒绝会让**本批全部编号迁移一起回滚**（不只是 0197，同一 release 里更早的编号迁移也不会生效），账本不变。上线前先跑守卫里的四个只读计数；运维对账必须同时写 RELEASE ledger、把预留改为终态，并为未应用的观测记录 review case，然后再重跑 migrate。post_river 阶段被 0027 拒绝时同理回滚整个 post_river 批次。
 
 ### 4.1 升级 4dc08b3 → R4（试点主机，保留真实 owner 数据，只能前向）
 

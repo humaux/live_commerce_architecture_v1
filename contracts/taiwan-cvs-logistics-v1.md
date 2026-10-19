@@ -928,7 +928,7 @@ per PROCESS §5.
 - `checkout.orders.payment_mode IN ('card','pay_at_pickup')` + `collection_state` (§4.1). The buyer Begin
   body gains `payment_mode` (default `"card"`); Go passes it as `p_payment_mode` to the 10-arg
   `checkout.begin_hold` (R-6 post_river file; current 8-arg body is `post_river/0005:98`).
-- **`card`:** unchanged (then `checkout.start_payment`, Stripe).
+- **`card`:** unchanged (then `checkout.start_payment` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)*, Stripe).
 - **`pay_at_pickup` branch** of `begin_hold`, after all existing checks, same lock order plus
   `fulfillment.cvs_store_settings` FOR UPDATE after the service head (serialises pay-at-pickup placements per
   store; a missing row means pay-at-pickup off, so every placement locks a row). Guards (any failure ⇒ zero holds):
@@ -949,7 +949,7 @@ per PROCESS §5.
   `operation='checkout.pay_at_pickup.commit'`, `command_key = order id`, no payment attempt/fact) and the
   reservation → `COMMITTED` (HELD→COMMITTED, §11.5); events `checkout.held` + `checkout.pay_at_pickup_placed`.
   Result adds `payment_mode` and `commercial_state`. **No payment attempt and no Stripe session:**
-  `checkout.start_payment` (`post_river/0005:371`) and the live Stripe entry `checkout.start_stripe_payment`
+  `checkout.start_payment` (`post_river/0005:371`; *retired in 0197 / post_river 0026, PAY-RM2 phase 2b*) and the live Stripe entry `checkout.start_stripe_payment`
   (`post_river/0012:171`) both refuse a non-DRAFT order. The expiry job `begin_hold`
   requires is still inserted; `checkout.expire_held` returns STALE for a non-DRAFT order (`0013:569`), so
   it never releases the stock.
