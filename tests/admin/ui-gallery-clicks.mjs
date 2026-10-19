@@ -711,8 +711,10 @@ async function wheelReach(page, scope) {
         let [left, right, inner, table, clipped] = [r.left, r.right, false, true, false];
         for (let p = n.parentElement; p && p !== document.body; p = p.parentElement) {
           const overflow = getComputedStyle(p).overflowX;
-          // A hidden/clip box moves with any outer scroller, so a cut it makes is permanent: no sideways exemption (#92).
-          if (["hidden", "clip"].includes(overflow)) {
+          // A hidden/clip box between the control and its first inner scroller moves with that scroller, so a cut it makes is
+          // permanent: no sideways exemption (#92). One outside the scroller (a rounded Card around the table) stays put while
+          // the table scrolls, so it cannot hide the control at every scroll position: not counted (#107).
+          if (!inner && ["hidden", "clip"].includes(overflow)) {
             const box = p.getBoundingClientRect();
             if (r.left < box.left + p.clientLeft - 0.5 || r.right > box.left + p.clientLeft + p.clientWidth + 0.5) clipped = true;
           }

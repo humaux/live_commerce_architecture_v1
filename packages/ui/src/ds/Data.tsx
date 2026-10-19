@@ -493,6 +493,17 @@ export function Pagination({
   labels: PaginationLabels;
   onNavigate?: (page: number, event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
+  // #107: an in-place page change can unmount the link that had focus (Next turns into a disabled, non-focusable arrow on the
+  // last page), dropping focus to <body>. Keep it in the pager on the current page link, next to where the user acted (WAI-ARIA
+  // APG, Developing a Keyboard Interface: never lose focus when the focused element goes away). Never steals focus that moved on.
+  const nav = useRef<HTMLElement>(null);
+  const navigated = useRef(false);
+  useEffect(() => {
+    if (!navigated.current) return;
+    navigated.current = false;
+    if (!document.activeElement || document.activeElement === document.body)
+      nav.current?.querySelector<HTMLElement>('[aria-current="page"]')?.focus();
+  }, [page]);
   const link = (n: number, content: ReactNode, name: string, disabled = false, current = false) =>
     disabled ? (
       // a disabled arrow is not an <a> without href (axe aria-prohibited-attr): a link-role span keeps the name, aria-disabled and no tab stop
@@ -505,13 +516,16 @@ export function Pagination({
       href={hrefFor(n)}
       aria-label={name}
       aria-current={current ? "page" : undefined}
-      onClick={(event) => onNavigate?.(n, event)}
+      onClick={(event) => {
+        onNavigate?.(n, event);
+        navigated.current = event.defaultPrevented; // only an in-place page change; a followed link reloads anyway
+      }}
     >
       {content}
     </a>
     );
   return (
-    <nav className={s.pager} aria-label={labels.nav}>
+    <nav ref={nav} className={s.pager} aria-label={labels.nav}>
       <span className={s.summary}>{labels.summary}</span>
       <ul className={s.pages}>
         <li>{link(page - 1, <Icon name="chevronLeft" size={16} />, labels.previous, page <= 1)}</li>
