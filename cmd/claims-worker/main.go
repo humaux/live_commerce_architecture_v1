@@ -1,6 +1,6 @@
 // Purpose: claims-worker process — poll the claims intake, dispatch external operations (Meta reply/audience/live-videos, inbox resubscribe, ECPay CVS) through the River default queue, and run the retention purge and store-domain verify sweeps. The only process holding the Meta Page private keyring and ECPay custody.
 // Depends on: platform worker pools, metareply routes, claimsintake, retention, storefrontdomains, ecpayroute, core.NewDispatcher, river (schema "river"), COMMERCE_CLAIMS_WORKER_ENABLED.
-// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go.
+// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go.
 package main
 
 import (
@@ -393,7 +393,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 			MaxHeaderBytes:    16 << 10,
 		}
 		go func() { _ = console.Run(pollCtx) }()
-		go func() { _ = consoleServer.ListenAndServe() }()
+		_, _ = startConsoleServer(consoleServer)
 		defer func() {
 			shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
@@ -419,6 +419,13 @@ func run(ctx context.Context, getenv func(string) string) error {
 	default:
 		return runErr
 	}
+}
+
+// startConsoleServer starts the comment-bridge listener. Issue #83 seam (RED): the listen error is still swallowed.
+func startConsoleServer(srv *http.Server) (<-chan error, error) {
+	failed := make(chan error, 1)
+	go func() { _ = srv.ListenAndServe() }()
+	return failed, nil
 }
 
 // sameDatabase proves both pools reach the same physical database with a bounded lock probe.
