@@ -1,3 +1,8 @@
+// Purpose: merchant BFF auth core - config, cookies, Origin/CSRF checks and the private-Go transport (details below).
+// Depends on: server-only, node:crypto, ./model (types), ./invite-next.ts; env COMMERCE_IDENTITY_ENABLED, COMMERCE_BFF_KEY,
+//   COMMERCE_PUBLIC_ORIGIN, COMMERCE_API_ORIGIN, COMMERCE_OIDC_ISSUER, COMMERCE_PASSWORD_LOGIN_ENABLED; Go /v1/identity/*.
+// Used by: app/api/auth/*, app/api/onboarding, app/api/stores*, app/api/team, lib/backend.ts, lib/picklist-proxy.ts;
+//   tests/admin/*-bff tests, tests/admin/safe-json-cancel.test.ts.
 // Merchant BFF auth core: config, cookies, Origin/CSRF, private-Go transport. Callers:
 // app/api/auth/{login,callback,logout}, app/api/auth/password/*, app/api/onboarding, app/api/stores*,
 // lib/backend.ts. Go endpoints: /v1/identity/* (internal/identityhttp). Password-login config (U4)
@@ -329,8 +334,11 @@ export async function safeJSON<T>(response: Response): Promise<T | null> {
   if (
     response.headers.get("content-type")?.split(";", 1)[0] !==
     "application/json"
-  )
+  ) {
+    // #84: cancel the refused body (Node 24 Undici: consume or cancel, never wait for GC); the null answer stands.
+    await response.body?.cancel().catch(() => {});
     return null;
+  }
   try {
     return (await response.json()) as T;
   } catch {
