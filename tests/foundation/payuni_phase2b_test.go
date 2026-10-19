@@ -178,7 +178,7 @@ func TestPayuniPhase2bRefusesUnreconciledPayuni(t *testing.T) {
 	}
 	op := randomUUID()
 	seed(`INSERT INTO integration.operations(id,tenant_id,store_id,principal_id,binding_id,binding_version,provider,external_asset_id,purpose,action,semantic_key,request_hash,request,job_id,state,generation,actor_kind,payment_attempt_id,buyer_owner_id,buyer_session_id)
-		VALUES($1,gen_random_uuid(),gen_random_uuid(),NULL,gen_random_uuid(),1,'payuni','SANDBOX:p2b-synthetic','transactional','payuni.query','payment.query:'||$1,decode(repeat('ab',32),'hex'),jsonb_build_object('attempt_id',$1),1,'UNKNOWN',1,'BUYER_PAYMENT_QUERY',$1::uuid,gen_random_uuid(),gen_random_uuid())`, op)
+		VALUES($1::uuid,gen_random_uuid(),gen_random_uuid(),NULL,gen_random_uuid(),1,'payuni','SANDBOX:p2b-synthetic','transactional','payuni.query','payment.query:'||$1::uuid::text,decode(repeat('ab',32),'hex'),jsonb_build_object('attempt_id',$1::uuid::text),1,'UNKNOWN',1,'BUYER_PAYMENT_QUERY',$1::uuid,gen_random_uuid(),gen_random_uuid())`, op)
 	mustExec(t, db, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1)`, versions)
 	err = migrations.Apply(ctx, db)
 	if err == nil || !strings.Contains(err.Error(), "PAYUNi phase-2b drop refused") || !strings.Contains(err.Error(), "22023") {
