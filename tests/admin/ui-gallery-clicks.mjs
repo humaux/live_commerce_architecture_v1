@@ -971,8 +971,9 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
   // The record hydrates from sessionStorage in an effect after load, so a read right after reload can see the seed.
   // Form: Cancel enables once ready, then the draft re-syncs (one "dirty" render) back to "clean".
   // Settings reads saved directly; its fields stop being read-only once ready.
-  // Waits until the button the locator names carries no aria-disabled (#89 self-test below).
-  const enabled = async (loc, timeout) => page.waitForFunction(el => !el.hasAttribute("aria-disabled"), await loc.first().elementHandle(), { timeout }); // [READ]
+  // Waits until the button the locator names carries no aria-disabled (#89 self-test below). A locator is re-resolved on every
+  // poll: readiness swaps Button's span wrapper for a bare <button>, so an ElementHandle taken earlier would watch a detached node.
+  const enabled = (loc, timeout) => loc.and(page.locator("button:not([aria-disabled])")).first().waitFor({ state: "attached", timeout });
   const reloadHydrated = async () => {
     await page.reload({ waitUntil: "load" });
     if (template === "settings") {
