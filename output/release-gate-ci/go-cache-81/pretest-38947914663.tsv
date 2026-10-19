@@ -1,0 +1,11 @@
+(shard:g01)	pretest=97	gate=1006	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:g02)	pretest=130	gate=1042	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:g03)	pretest=89	gate=997	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:g04)	pretest=120	gate=967	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:g05)	pretest=125	gate=1016	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:g06)	pretest=123	gate=935	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:g07)	pretest=126	gate=1003	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:g08)	pretest=100	gate=845	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:g09)	pretest=120	gate=972	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:g10)	pretest=96	gate=827	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se
+(shard:unit)	pretest=59	gate=546	hit:63215caef51b	Cache Size: ~37 MB	Cache hit occurred on the primary key se

@@ -1,0 +1,1498 @@
+[
+  {
+    "completed_at": "2026-10-19T07:16:05Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929133787,
+    "name": "gate (shard:g04)",
+    "started_at": "2026-10-19T07:01:16Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:01:17Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:01:16Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:25Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:01:17Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:37Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:01:25Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:37Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:01:37Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:38Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:01:37Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:43Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:01:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:43Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:01:43Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:43Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:01:43Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:43Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:01:43Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:43Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:01:43Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:43Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:01:43Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:43Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:01:43Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:51Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:01:43Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:16:02Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:01:51Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:16:02Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:16:02Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:16:03Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:16:02Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:16:03Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:16:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:16:03Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:16:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:16:03Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:16:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:16:03Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:16:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:16:03Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:16:03Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:15:22Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929133856,
+    "name": "gate (shard:g08)",
+    "started_at": "2026-10-19T07:01:33Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:01:35Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:01:34Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:01:45Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:01:35Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:03Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:01:45Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:03Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:02:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:04Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:02:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:08Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:02:04Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:08Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:02:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:08Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:02:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:08Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:02:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:08Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:02:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:08Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:02:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:08Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:02:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:02:23Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:02:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:15:17Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:02:23Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:15:18Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:15:17Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:15:19Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:15:18Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:15:19Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:15:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:15:19Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:15:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:15:19Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:15:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:15:19Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:15:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:15:19Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:15:19Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:24:01Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929133877,
+    "name": "gate (shard:unit)",
+    "started_at": "2026-10-19T07:13:49Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:13:51Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:13:49Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:00Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:13:51Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:09Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:14:00Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:11Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:14:09Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:15Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:14:11Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:19Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:14:15Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:19Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:14:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:19Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:14:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:19Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:14:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:19Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:14:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:19Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:14:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:19Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:14:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:14:32Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:14:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:57Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:14:32Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:57Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:23:57Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:23:57Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:23:58Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:31:42Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929133882,
+    "name": "gate (shard:g09)",
+    "started_at": "2026-10-19T07:17:19Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:17:21Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:17:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:30Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:17:21Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:42Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:17:30Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:42Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:17:42Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:42Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:17:42Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:48Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:17:42Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:48Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:17:48Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:48Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:17:48Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:48Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:17:48Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:48Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:17:48Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:48Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:17:48Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:48Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:17:48Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:17:56Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:17:48Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:31:38Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:17:56Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:31:38Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:31:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:31:39Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:31:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:31:39Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:31:39Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:31:39Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:31:39Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:31:39Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:31:39Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:31:40Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:31:39Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:31:40Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:31:40Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:34:51Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929133884,
+    "name": "gate (shard:g07)",
+    "started_at": "2026-10-19T07:21:59Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:22:01Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:21:59Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:11Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:22:01Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:29Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:22:11Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:30Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:22:29Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:30Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:22:30Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:34Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:22:30Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:34Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:22:34Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:34Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:22:34Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:34Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:22:34Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:34Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:22:34Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:34Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:22:34Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:34Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:22:34Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:22:49Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:22:34Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:34:46Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:22:49Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:34:46Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:34:46Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:34:47Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:34:46Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:34:47Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:34:47Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:34:47Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:34:47Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:34:48Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:34:47Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:34:48Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:34:48Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:34:48Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:34:48Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:26:15Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929133918,
+    "name": "gate (shard:g01)",
+    "started_at": "2026-10-19T07:09:59Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:10:02Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:10:00Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:12Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:10:02Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:32Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:10:12Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:32Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:10:32Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:35Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:10:32Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:40Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:10:35Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:40Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:10:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:40Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:10:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:40Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:10:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:40Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:10:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:40Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:10:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:40Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:10:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:10:57Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:10:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:26:09Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:10:57Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:26:09Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:26:09Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:26:10Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:26:09Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:26:10Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:26:10Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:26:11Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:26:10Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:26:11Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:26:11Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:26:11Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:26:11Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:26:11Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:26:11Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:20:54Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929133944,
+    "name": "gate (shard:g05)",
+    "started_at": "2026-10-19T07:05:32Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:05:34Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:05:32Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:05:44Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:05:34Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:05:57Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:05:44Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:05:57Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:05:57Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:05:58Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:05:57Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:06:02Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:05:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:06:03Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:06:02Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:06:03Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:06:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:06:03Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:06:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:06:03Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:06:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:06:03Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:06:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:06:03Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:06:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:06:11Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:06:03Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:20:49Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:06:11Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:20:49Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:20:49Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:20:50Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:20:49Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:20:50Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:20:50Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:20:50Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:20:50Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:20:51Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:20:50Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:20:51Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:20:51Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:20:51Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:20:51Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:23:04Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929133946,
+    "name": "gate (shard:g03)",
+    "started_at": "2026-10-19T07:07:05Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:07:08Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:07:06Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:18Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:07:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:30Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:07:18Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:30Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:07:30Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:33Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:07:30Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:38Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:07:33Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:38Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:07:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:38Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:07:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:38Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:07:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:38Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:07:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:38Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:07:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:38Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:07:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:07:48Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:07:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:00Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:07:48Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:00Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:23:00Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:01Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:23:00Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:01Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:23:01Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:01Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:23:01Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:02Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:23:01Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:02Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:23:02Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:02Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:23:02Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:38:45Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929133988,
+    "name": "gate (shard:g06)",
+    "started_at": "2026-10-19T07:24:49Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:24:51Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:24:50Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:24:59Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:24:51Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:13Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:24:59Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:13Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:25:13Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:14Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:25:13Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:18Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:25:14Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:18Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:25:18Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:18Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:25:18Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:18Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:25:18Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:18Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:25:18Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:18Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:25:18Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:18Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:25:18Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:25:27Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:25:18Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:40Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:25:27Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:40Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:38:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:41Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:38:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:41Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:38:41Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:41Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:38:41Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:42Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:38:41Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:42Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:38:42Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:42Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:38:42Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:38:17Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929134060,
+    "name": "gate (shard:g10)",
+    "started_at": "2026-10-19T07:23:28Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:23:31Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:23:29Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:38Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:23:31Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:52Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:23:38Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:52Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:23:52Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:53Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:23:52Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:23:53Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:58Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:24:06Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:23:58Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:12Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:24:06Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:12Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:38:12Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:14Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:38:12Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:14Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:38:14Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:14Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:38:14Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:14Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:38:14Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:14Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:38:14Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:38:14Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:38:14Z"
+      }
+    ]
+  },
+  {
+    "completed_at": "2026-10-19T07:39:11Z",
+    "conclusion": "success",
+    "head_sha": "09a3944b83f9bfea59dcf3acfdf02c8785dadb38",
+    "id": 117929134072,
+    "name": "gate (shard:g02)",
+    "started_at": "2026-10-19T07:23:18Z",
+    "steps": [
+      {
+        "completed_at": "2026-10-19T07:23:20Z",
+        "conclusion": "success",
+        "name": "Set up job",
+        "started_at": "2026-10-19T07:23:19Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:28Z",
+        "conclusion": "success",
+        "name": "Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:23:20Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:40Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:23:28Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:40Z",
+        "conclusion": "success",
+        "name": "Go modules (prefetch with retry)",
+        "started_at": "2026-10-19T07:23:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:41Z",
+        "conclusion": "success",
+        "name": "Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:23:40Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:45Z",
+        "conclusion": "success",
+        "name": "Node dependencies (frozen lockfile)",
+        "started_at": "2026-10-19T07:23:41Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:45Z",
+        "conclusion": "success",
+        "name": "Browser requirements from registry",
+        "started_at": "2026-10-19T07:23:45Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:45Z",
+        "conclusion": "skipped",
+        "name": "Playwright version (cache key)",
+        "started_at": "2026-10-19T07:23:45Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:45Z",
+        "conclusion": "skipped",
+        "name": "Writable Playwright browser dir",
+        "started_at": "2026-10-19T07:23:45Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:45Z",
+        "conclusion": "skipped",
+        "name": "Restore Playwright browsers",
+        "started_at": "2026-10-19T07:23:45Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:45Z",
+        "conclusion": "skipped",
+        "name": "Browsers for browser modes",
+        "started_at": "2026-10-19T07:23:45Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:45Z",
+        "conclusion": "skipped",
+        "name": "Save Playwright browsers",
+        "started_at": "2026-10-19T07:23:45Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:23:53Z",
+        "conclusion": "success",
+        "name": "Download pinned test image",
+        "started_at": "2026-10-19T07:23:45Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:39:07Z",
+        "conclusion": "success",
+        "name": "Gate",
+        "started_at": "2026-10-19T07:23:53Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:39:07Z",
+        "conclusion": "success",
+        "name": "Failure summary",
+        "started_at": "2026-10-19T07:39:07Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:39:08Z",
+        "conclusion": "success",
+        "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+        "started_at": "2026-10-19T07:39:07Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:39:08Z",
+        "conclusion": "skipped",
+        "name": "Upload visual lint evidence",
+        "started_at": "2026-10-19T07:39:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:39:08Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444",
+        "started_at": "2026-10-19T07:39:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:39:08Z",
+        "conclusion": "success",
+        "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+        "started_at": "2026-10-19T07:39:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:39:09Z",
+        "conclusion": "success",
+        "name": "Post Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+        "started_at": "2026-10-19T07:39:08Z"
+      },
+      {
+        "completed_at": "2026-10-19T07:39:09Z",
+        "conclusion": "success",
+        "name": "Complete job",
+        "started_at": "2026-10-19T07:39:09Z"
+      }
+    ]
+  }
+]

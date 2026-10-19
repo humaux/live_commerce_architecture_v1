@@ -1,0 +1,11 @@
+(shard:g01)	pretest=4	gate=912	hit:6324b79d8a24	Cache Size: ~198 MB	Cache hit occurred on the primary key se
+(shard:g02)	pretest=4	gate=914	hit:6324b79d8a24	Cache Size: ~198 MB	Cache hit occurred on the primary key se
+(shard:g03)	pretest=4	gate=912	hit:6324b79d8a24	Cache Size: ~198 MB	Cache hit occurred on the primary key se
+(shard:g04)	pretest=3	gate=826	hit:6324b79d8a24	Cache Size: ~198 MB	Cache hit occurred on the primary key se
+(shard:g05)	pretest=4	gate=776	hit:6324b79d8a24	Cache Size: ~198 MB	Cache hit occurred on the primary key se
+(shard:g06)	pretest=5	gate=794	hit:6324b79d8a24	Cache Size: ~198 MB	Cache hit occurred on the primary key se
+(shard:g07)	pretest=4	gate=723	hit:6324b79d8a24	Cache Size: ~198 MB	Cache hit occurred on the primary key se
+(shard:g08)	pretest=4	gate=785	hit:6324b79d8a24	Cache Size: ~198 MB	Cache hit occurred on the primary key se
+(shard:g09)	pretest=4	gate=850	hit:6324b79d8a24	Cache Size: ~198 MB	Cache hit occurred on the primary key se
+(shard:g10)	pretest=96	gate=992	Cache is not fou		Cache saved with the key: setup-go-Linux
+(shard:unit)	pretest=78	gate=678	nocache		
