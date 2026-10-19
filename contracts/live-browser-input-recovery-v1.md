@@ -168,6 +168,9 @@ Read immutable admitted masks/job and exactly correlated receipt events, not
 caller masks or only current custody state. A partial receipt is not a witness.
 For new scope `checked` means all required evidence exists, independent of
 cleanup_required. Preserve historical readback after projection moves on.
+Declare it STABLE: scope status, masks and every receipt column must come from
+one snapshot, as migration 0195 (PR #77) requires of the legacy reader.
+Readiness below and its catalog gate assert `provolatile='s'`.
 
 `witness_media_recovery_episode_with_input(uuid,uuid,uuid,uuid,bigint)`
 arguments are episode,operation,input_ID,Egress_ID,parent_elapsed_ms;
@@ -187,7 +190,8 @@ overflow and prior unfinished scope still produce sticky scope timeout. Known
 complete empty remains NO_WORK, never a fresh-observation PASS.
 
 `media_browser_input_recovery_ready() RETURNS boolean` checks all seven new
-signatures/return shapes, owner/ACL/search_path/SECDEF, scope/mask/receipt
+signatures/return shapes, owner/ACL/search_path/SECDEF, STABLE Read (all
+others VOLATILE), scope/mask/receipt
 constraints, FORCE RLS, qualifier/immutability/native guards AND legacy ready.
 Old seven-function readiness count stays seven. Extend exact platform recovery
 allowlist and registrar negative audit, not broad name-prefix grants.

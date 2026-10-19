@@ -74,6 +74,9 @@ must revoke PUBLIC and grant EXECUTE only to commerce_runtime. Validate token
 hash, scope/principal/revision, READ COMMITTED and `identity.resolve_access`
 before reading and again at the final database wall clock. Fail closed on an
 incoherent attempt/operation/execution association. Scope every join explicitly.
+The projection is STABLE (0196): one snapshot for every statement, so the final
+`resolve_access` repeats the initial snapshot while the wall-clock expiry check stays
+fresh; Go's post-read GetDraft authorize is the fresh revocation/revision fence.
 No generic MEDIA_ATTEMPT operation RLS widening, no raw SELECT grant on private
 media tables, no new function available to worker/executor/anonymous/buyer.
 

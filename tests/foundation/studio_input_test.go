@@ -164,6 +164,16 @@ func TestStudioInputPreparedAndACL(t *testing.T) {
 			t.Fatalf("input read ABI has PUBLIC EXECUTE: %t err=%v", public, err)
 		}
 	}
+	// Each reader derives one DTO from several statements (operation vs execution state, custody vs execution
+	// for can_stop, candidate vs destinations). VOLATILE takes a fresh READ COMMITTED snapshot per statement, so a
+	// concurrent commit could read back half-applied. STABLE pins the calling query's snapshot for the whole call,
+	// nested read_studio_media included; Go's post-read GetDraft remains the fresh revocation fence.
+	for _, fn := range []string{"live.read_studio_media(bytea,uuid,uuid)", "live.read_studio_input(bytea,uuid,uuid)", "live.read_studio_input_prepared(bytea,uuid,uuid)"} {
+		var volatility string
+		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT provolatile::text FROM pg_proc WHERE oid=to_regprocedure($1)`, fn).Scan(&volatility); err != nil || volatility != "s" {
+			t.Fatalf("%s must read one snapshot (STABLE): provolatile=%q err=%v", fn, volatility, err)
+		}
+	}
 	for _, role := range []string{"commerce_runtime", "commerce_media_worker", "commerce_media_executor"} {
 		for _, table := range []string{"live.prepared_media_input_runtime_profiles", "live.media_input_custody", "live.media_execution_state"} {
 			var allowed bool
