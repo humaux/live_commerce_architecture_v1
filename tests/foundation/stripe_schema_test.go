@@ -1,10 +1,14 @@
-// stripe_schema_test.go owns independent REAL_PG checks for the frozen Stripe schema.
+// Purpose: stripe_schema_test.go owns independent REAL_PG checks for the frozen Stripe schema.
 // It never substitutes catalog text for a provider or browser acceptance result.
+// Depends on: the fixture database (migrations.Apply), pg_catalog, migrations/0062_stripe_refund.sql source text.
+// Used by: CI full foundation suite (Stripe schema gates).
+// Invariants: the Stripe definers keep SECURITY DEFINER, search_path=pg_catalog, a NOLOGIN owner and no PUBLIC
+// EXECUTE. Since PAY-RM2 phase 2b (0197) payments.apply_capture is the 0062 dispatcher minus only its PAYUNi branch.
+
 package foundation_test
 
 import (
 	"context"
-	"crypto/sha256"
 	"errors"
 	"os"
 	"strings"
@@ -193,43 +197,45 @@ func TestStripeSP06Schema(t *testing.T) {
 	for _, c := range []string{"first_handed_out_at", "cancel_requested_at", "refresh_count", "last_refresh_at", "signal_count"} {
 		stripeMustCatalog(t, p, "checkout writer stripe_sessions UPDATE("+c+")", `SELECT has_column_privilege('commerce_checkout_writer','payments.stripe_sessions',$1,'UPDATE') AND NOT has_column_privilege('commerce_runtime','payments.stripe_sessions',$1,'UPDATE')`, c)
 	}
-	for _, sig := range []string{"integration.load_stripe_session(uuid,bigint,bytea,text)", "integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea)", "integration.note_stripe_expire(uuid,bigint,bytea,text)", "integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text)", "integration.finish_stripe_query(uuid,bigint,bytea,text,text)", "integration.consume_stripe_signal(uuid,uuid,bigint,bytea,text,text)", "payments.apply_capture(uuid,bytea)", "payments.apply_capture_payuni_v1(uuid,bytea)", "payments.apply_stripe_observation(uuid,bytea)"} {
+	for _, sig := range []string{"integration.load_stripe_session(uuid,bigint,bytea,text)", "integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea)", "integration.note_stripe_expire(uuid,bigint,bytea,text)", "integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text)", "integration.finish_stripe_query(uuid,bigint,bytea,text,text)", "integration.consume_stripe_signal(uuid,uuid,bigint,bytea,text,text)", "payments.apply_capture(uuid,bytea)", "payments.apply_stripe_observation(uuid,bytea)"} {
 		stripeMustCatalog(t, p, "definer/ACL "+sig, `SELECT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=to_regprocedure($1) AND p.prosecdef AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[] AND NOT r.rolcanlogin AND NOT EXISTS (SELECT 1 FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) acl WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE'))`, sig)
 	}
 	for _, name := range []string{"guard_payment_job_family", "payment_job_queue", "route_payment_queue_v1", "payment_queue_ready", "reject_legacy_family_job"} {
 		stripeMustCatalog(t, p, "post-River "+name+" signal family", `SELECT EXISTS(SELECT 1 FROM pg_proc WHERE pronamespace='integration'::regnamespace AND proname=$1 AND pg_get_functiondef(oid) LIKE '%payment_signal_v1%')`, name)
 	}
 	stripeMustCatalog(t, p, "payment queue readiness", `SELECT integration.payment_queue_ready()`)
-	// Body identity, not merely a renamed symbol: the 0018 PAYUNi function must
-	// retain its original normalized PL/pgSQL body after dispatch is installed.
-	var oldBody, newBody string
-	if err := p.QueryRow(context.Background(), `SELECT prosrc FROM pg_proc WHERE oid='payments.apply_capture_payuni_v1(uuid,bytea)'::regprocedure`).Scan(&oldBody); err != nil {
-		t.Fatal(err)
+	// PAY-RM2 phase 2b (0197) replaced the former 0018-body-identity check of apply_capture_payuni_v1 (the PAYUNi
+	// path is dropped, so it cannot be preserved): the private PAYUNi body is gone, and the installed dispatcher must
+	// equal the 0062 source body with exactly its PAYUNi branch removed, so every Stripe branch stays byte-identical.
+	// The definer/ACL loop above still pins apply_capture's owner, SECURITY DEFINER, search_path and no PUBLIC EXECUTE.
+	if rmReg(t, p, "to_regprocedure", "payments.apply_capture_payuni_v1(uuid,bytea)") != "" {
+		t.Fatal("PAYUNi capture body survived PAY-RM2 phase 2b")
 	}
+	var newBody string
 	if err := p.QueryRow(context.Background(), `SELECT prosrc FROM pg_proc WHERE oid='payments.apply_capture(uuid,bytea)'::regprocedure`).Scan(&newBody); err != nil {
 		t.Fatal(err)
 	}
-	source, err := os.ReadFile("../../migrations/0018_payment_capture.sql")
+	source, err := os.ReadFile("../../migrations/0062_stripe_refund.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
-	begin := strings.Index(string(source), "CREATE FUNCTION payments.apply_capture(")
+	begin := strings.Index(string(source), "CREATE OR REPLACE FUNCTION payments.apply_capture(")
 	if begin < 0 {
-		t.Fatal("0018 PAYUNi source body absent")
+		t.Fatal("0062 dispatcher source absent")
 	}
 	fragment := string(source)[begin:]
 	start := strings.Index(fragment, "AS $$")
 	if start < 0 {
-		t.Fatal("0018 PAYUNi source body opener absent")
+		t.Fatal("0062 dispatcher body opener absent")
 	}
 	fragment = fragment[start+len("AS $$"):]
 	end := strings.Index(fragment, "$$;")
-	if end < 0 {
-		t.Fatal("0018 PAYUNi source body terminator absent")
+	if end < 0 || strings.Count(fragment[:end], p2bPayuniBranch) != 1 {
+		t.Fatal("0062 dispatcher body terminator or its single PAYUNi branch absent")
 	}
-	wantHash, gotHash := sha256.Sum256([]byte(fragment[:end])), sha256.Sum256([]byte(oldBody))
-	if oldBody == "" || wantHash != gotHash || oldBody == newBody || !strings.Contains(newBody, "apply_capture_payuni_v1") {
-		t.Fatal("PAYUNi body was not preserved behind Stripe dispatcher")
+	want := strings.Replace(fragment[:end], p2bPayuniBranch, " IF v_provider='stripe' THEN", 1)
+	if newBody != want || strings.Contains(strings.ToLower(newBody), "payuni") {
+		t.Fatalf("apply_capture is not the 0062 Stripe dispatcher minus its PAYUNi branch:\n%s", newBody)
 	}
 }
 

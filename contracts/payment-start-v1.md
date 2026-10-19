@@ -36,7 +36,7 @@ public checkout, payment success, hosted form release or provider qualification.
   of the same owner may replay, revoked sessions cannot.
 - Go inserts River `payment_query_v1` args exactly `{operation_id,version:1}` in
   the same transaction, then calls `checkout.start_payment(hash,store,key,
-  request_hash,order,method,method_version,profile,attempt,job_id)` returning JSON.
+  request_hash,order,method,method_version,profile,attempt,job_id)` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)* returning JSON.
 - SQL resolves the buyer again, repeats the command lock, rejects an existing
   receipt (Go handles replay before job insertion), locks order -> reservation -> market
   -> payment head -> account -> binding -> qualification. It checks all scopes,

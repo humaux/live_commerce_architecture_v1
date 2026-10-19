@@ -1,6 +1,11 @@
-// Responsibility: invoke retained phase-2a SQL contracts through their runtime roles.
-// Depends on buyer scope and River's transactional insert; called only by A-bucket tests.
-// No production PAYUNi adapter, credential decryption, encryption or provider IO exists here.
+// Purpose: test-side callers of the phase-2a PAYUNi SQL contracts and, since PAY-RM2 phase 2b dropped them
+// (0197, post_river/0026), the shared replacement helpers p2bRetired/p2bStartRetired/p2bHostedRetired/
+// p2bQueryRetired/p2bCaptureRetired/p2bSeedHostedPage (mapping in output/pay-rm2-p2b/test-contract-map.md).
+// Depends on: buyer scope, River's transactional insert, p2bDropped (payuni_phase2b_test.go), rmReg/rm2HistoricalAttempt/
+// rm2SeedReport (payuni_removal_test.go), rm2ScopeSnapshot (payment_retired_contract_test.go).
+// Used by: the former A-bucket payment start/hosted/query/capture tests and the buyer payment view tests.
+// Invariants: no production PAYUNi adapter, credential decryption, encryption or provider IO exists here; a refused
+// retired path must leave every tenant business row unchanged.
 package foundation_test
 
 import (
@@ -233,4 +238,76 @@ func pqSQLSetupOn(t *testing.T, base *testFixture, fresh bool, items int) pqFixt
 		t.Fatal(err)
 	}
 	return q
+}
+
+// p2bRetired is the PAY-RM2 phase-2b refusal assertion (mapping b in output/pay-rm2-p2b/test-contract-map.md) for a
+// test whose subject was SQL dropped by 0197/post_river/0026: every dropped function is absent from the catalog,
+// the test-side caller that used to reach it fails with exactly state, and no tenant business row changes.
+func p2bRetired(t *testing.T, p psHarness, state string, call func() error) {
+	t.Helper()
+	for _, fn := range p2bDropped {
+		if rmReg(t, p.f.owner, "to_regprocedure", fn) != "" {
+			t.Errorf("PAY-RM2 phase 2b: %s is still installed", fn)
+		}
+	}
+	before := rm2ScopeSnapshot(t, p, false)
+	if err := call(); sqlState(err) != state {
+		t.Fatalf("retired PAYUNi SQL path: want SQLSTATE %s, got %v", state, err)
+	}
+	if rm2ScopeSnapshot(t, p, false) != before {
+		t.Fatal("refused retired PAYUNi SQL path changed business rows")
+	}
+}
+
+// p2bStartRetired: checkout.start_payment is gone (42883); nothing is admitted, no job or receipt is written.
+func p2bStartRetired(t *testing.T) {
+	t.Helper()
+	p := psSQLSetup(t)
+	p2bRetired(t, p, "42883", func() error { _, err := p.start(t04Key("p2b-start")); return err })
+}
+
+// p2bSeedHostedPage writes the prepared page row the dropped save_hosted_page wrote (mapping c): same columns,
+// prepared_at=attempt creation, deadline=min(+60s, qualification expiry), PAYUNi outer form with no usable payload.
+func p2bSeedHostedPage(t *testing.T, h hpHarness) checkout.PaymentResult {
+	t.Helper()
+	result := rm2HistoricalAttempt(t, h.psHarness)
+	form, _ := json.Marshal(checkout.HostedForm{Action: "https://sandbox-api.payuni.com.tw/api/upp", Fields: map[string]string{"MerID": "mock-account", "Version": "2.0", "EncryptInfo": "0000000000000000", "HashInfo": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}})
+	mustExec(t, h.f.owner, `INSERT INTO checkout.hosted_payment_pages(attempt_id,locale,config_digest,prepared_at,expires_at,form)
+	 SELECT a.id,$2,$3,a.created_at,least(a.created_at+interval '60 seconds',q.expires_at),$4::jsonb
+	 FROM checkout.payment_attempts a JOIN payments.account_qualifications q ON q.id=a.qualification_id WHERE a.id=$1`,
+		result.AttemptID, h.input.Locale, hpDigest(t, h.config.ReturnURL, h.config.NotifyURL), form)
+	return result
+}
+
+// p2bHostedRetired: the PAYUNi hosted writer (start, load/save material, take) is gone; a historical prepared page
+// stays readable through the retained hosted_payment_view but can no longer be handed out.
+func p2bHostedRetired(t *testing.T) {
+	t.Helper()
+	h := hpSQLSetup(t)
+	p2bRetired(t, h.psHarness, "42883", func() error { _, err := h.begin(t04Key("p2b-hosted")); return err })
+	p2bSeedHostedPage(t, h)
+	p2bRetired(t, h.psHarness, "42883", func() error { _, err := h.take(); return err })
+	if view, _ := bpView(t, h.api.(*rm2HostedSQL), h.cap.Token, h.f.storeA1, h.hold.OrderID); view.PaymentState != "PENDING" || view.HandoffState != "PREPARED" {
+		t.Fatalf("historical hosted page not readable after phase 2b: %+v", view)
+	}
+}
+
+// p2bQueryRetired: integration.record_payment_query is gone; a claimed historical attempt stays pending.
+func p2bQueryRetired(t *testing.T) pqFixture {
+	t.Helper()
+	q := pqSetup(t)
+	c := q.claim(t)
+	p2bRetired(t, q.psHarness, "42883", func() error { return q.record(c, pcFull(q)) })
+	q.pending(t)
+	return q
+}
+
+// p2bCaptureRetired: with a seeded historical full-capture report (mapping c), payments.apply_capture refuses the
+// PAYUNi attempt (PT409) and moves no money, stock or work item.
+func p2bCaptureRetired(t *testing.T) {
+	t.Helper()
+	q := p2bQueryRetired(t)
+	hash := rm2SeedReport(t, q, pcFull(q))
+	p2bRetired(t, q.psHarness, "PT409", func() error { return pcApply(q.worker, q.result.AttemptID, hash) })
+	q.pending(t)
 }

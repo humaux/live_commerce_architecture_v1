@@ -1,3 +1,10 @@
+// Purpose: T06 external-operation authority gates: worker/runtime pool authority, the exact integration-schema
+// function ACL inventory, SQL lease ownership/expiry, concurrent claims and the ordinary worker lifecycle.
+// Depends on: the fixture database (migrations.Apply), integration.* definers, River, internal/integrations/core.
+// Used by: CI full foundation suite.
+// Invariants: every integration.* function is enumerated with its exact owner and EXECUTE set (count is exact, so a
+// new or returning definer fails closed); no PUBLIC EXECUTE.
+
 package foundation_test
 
 import (
@@ -196,10 +203,8 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	err = f.owner.QueryRow(ctx, `WITH approved(oid,workers,owner,registrar_execute,runtime_execute,checkout_writer_execute,checkout_runtime_execute) AS (VALUES
 	 ('integration.claim_operation(uuid,integer,bytea)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live','commerce_ads_worker','commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.complete_operation(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live','commerce_ads_worker','commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
-	 ('integration.require_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
-	 ('integration.load_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
-	 ('integration.record_payment_query(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
-	 ('integration.finish_payment_query(uuid,bigint,bytea,text,text,text)'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
+	 -- PAY-RM2 phase 2b (0197/post_river 0026) dropped integration.require/load/record/finish_payment_query; their
+	 -- absence is pinned by TestPayuniPhase2bSchemaFreshAndUpgrade, and the count below is exact, so none can return.
 	 ('integration.payment_job_queue(bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 ('integration.route_payment_queue_v1()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 ('integration.payment_queue_ready()'::regprocedure::oid,ARRAY['commerce_payment_worker','commerce_payment_live'],'commerce_integration_writer',false,false,false,false),
@@ -337,7 +342,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 97 || !safe { // 96 (W6-05B ledger) + integration.meta_ads_unbind (0160)
+	if err != nil || functions != 93 || !safe { // 96 (W6-05B ledger) + integration.meta_ads_unbind (0160) - 4 PAYUNi query definers (0197/post_river 0026)
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }

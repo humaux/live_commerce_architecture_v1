@@ -1,17 +1,18 @@
 package foundation_test
 
+// Purpose: lost-commit handoff test, now a refusal gate for the dropped PAYUNi hosted writer.
+// Depends on: p2bHostedRetired (payment_sql_contract_helpers_test.go).
+// Used by: go test ./tests/foundation (CI full suite).
+// Invariants: a handoff is never re-issued; the PAYUNi writer no longer exists. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
+
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"io"
 	"net"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
-	"livecommerce/internal/integrations/accounts"
 )
 
 // hpCommitLoss removes only the response to a real successful PG COMMIT. It
@@ -72,49 +73,8 @@ func (c *hpCommitLossConn) Read(p []byte) (int, error) {
 }
 
 func TestBuyerPaymentHostedLostCommitAcknowledgementDoesNotReissue(t *testing.T) {
-	h := hpSQLSetup(t)
-	result, err := h.begin(t04Key("hp-commit-loss"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	before := h.counts(t)
-	config := h.pool.Config()
-	config.MaxConns = 1
-	loss := &hpCommitLoss{}
-	dial := config.ConnConfig.DialFunc
-	config.ConnConfig.DialFunc = func(ctx context.Context, network, address string) (net.Conn, error) {
-		conn, err := dial(ctx, network, address)
-		if err != nil {
-			return nil, err
-		}
-		return &hpCommitLossConn{Conn: conn, loss: loss}, nil
-	}
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(pool.Close)
-	keys, err := accounts.NewKeyring("hosted_fixture", map[string][]byte{"hosted_fixture": h.key}, randomBytes(32))
-	if err != nil {
-		t.Fatal(err)
-	}
-	api := hpSQLStarter(t, pool, "PROVIDER_MOCK", keys, h.config)
-	loss.armed.Store(true)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	out, err := api.TakeHosted(ctx, h.cap.Token, h.f.storeA1, h.hold.OrderID)
-	if err == nil || out.Form != nil || out.OrderID != "" || !loss.committed.Load() {
-		t.Fatal("HP03 real commit acknowledgement loss must return an error and no form")
-	}
-	_, _, _, handed := h.page(t, result.AttemptID)
-	if handed == nil {
-		t.Fatal("HP03 independently observed database has no committed handoff")
-	}
-	retry, err := h.take()
-	if err != nil || retry.Disposition != "ALREADY_ISSUED" || retry.Form != nil {
-		t.Fatal("HP03 recovery after unknown commit reissued or lost the persisted handoff")
-	}
-	if h.counts(t) != before {
-		t.Fatal("HP03 unknown commit changed financial identity, stock, or query facts")
-	}
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bHostedRetired(t)
 }

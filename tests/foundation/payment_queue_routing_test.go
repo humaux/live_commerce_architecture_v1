@@ -1,5 +1,10 @@
 package foundation_test
 
+// Purpose: payment family deferred routing: bad reconcile/query job writes cannot commit.
+// Depends on: pwIsolatedFixture, pq fixtures, rm2SeedReport.
+// Used by: go test ./tests/foundation (CI full suite).
+// Invariants: the original reconcile job stays byte-identical. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
+
 import (
 	"context"
 	"errors"
@@ -14,9 +19,9 @@ import (
 func TestBuyerPaymentWorkerDeferredRoutingRollback(t *testing.T) {
 	f := pwIsolatedFixture(t)
 	q := pqSetupItemsOn(t, f, nil, false, 1)
-	if err := q.record(q.claim(t), pcFull(q)); err != nil {
-		t.Fatal(err)
-	}
+	// PAY-RM2 phase 2b (0197) dropped record_payment_query: the report and its payment_reconcile_v1 job are seeded in
+	// one owner transaction with the routing triggers on (mapping c, output/pay-rm2-p2b/test-contract-map.md).
+	rm2SeedReport(t, q, pcFull(q))
 	var original int64
 	if err := f.owner.QueryRow(context.Background(), `SELECT id FROM river_payment.river_job
 	 WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&original); err != nil {

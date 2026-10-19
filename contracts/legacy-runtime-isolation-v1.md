@@ -75,8 +75,8 @@ become distinct trust domains; review that explicitly before changing defaults.
   inserted reconciliation jobs use `river_payment`.
 - External client in `cmd/api/accounts.go`/integration core stays `river`; Meta
   producers, roles, consumers, ciphertext and source evidence stay unchanged.
-- In forward SQL rebind `checkout.begin_hold`, `checkout.start_payment`, the
-  six-argument `integration.record_payment_query`, payment/expiry link predicates,
+- In forward SQL rebind `checkout.begin_hold`, `checkout.start_payment` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)*, the
+  six-argument `integration.record_payment_query` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)*, payment/expiry link predicates,
   deferred routers and readiness predicates to the correct family table. Audit
   every reference/caller; retain signatures, function owner, safe search_path,
   grants, CAS, locks, amount checks, credential/profile and transaction proof.

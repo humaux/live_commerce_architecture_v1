@@ -102,7 +102,7 @@ login names or passwords; production credentials remain deployment-owned.
 `platform.OpenHostedPool`/`ValidateHostedPool` enforce this; generic checkout pools
 reject hosted membership. Ordinary runtime roles cannot escalate to hosted.
 No ordinary buyer/checkout/merchant/worker role receives ciphertext-table SELECT or handoff
-execution. The existing leased `integration.load_payment_query` remains unchanged.
+execution. The existing leased `integration.load_payment_query` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)* remains unchanged.
 
 The hosted Go service plus keyring and its isolated DB login is a trusted signing
 boundary. Neither HTTP nor ordinary checkout callers accept a form body. SQL checks
@@ -146,14 +146,14 @@ handoff timestamp may transition once, never clear or extend it.
 
 Frozen SQL entry signatures (SECURITY DEFINER, fixed search_path, PUBLIC revoked):
 
-- `checkout.load_hosted_material(bytea,uuid,uuid,text,text)` takes capability hash,
+- `checkout.load_hosted_material(bytea,uuid,uuid,text,text)` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)* takes capability hash,
   store, order, profile, locale; returns tenant_id/store_id/connection_id UUIDs,
   provider/environment/account_id text, credential_version bigint, key_id text,
   nonce/ciphertext bytea, merchant_trade_no/currency text, amount_minor bigint,
   method_code text, prepared_at/expires_at timestamptz, in that order.
-- `checkout.save_hosted_page(bytea,uuid,uuid,text,text,bytea,jsonb) RETURNS void`:
+- `checkout.save_hosted_page(bytea,uuid,uuid,text,text,bytea,jsonb) RETURNS void` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)*:
   hash/store/order/profile/locale/config_digest/form. No caller time or placeholder.
-- `checkout.take_hosted_page(bytea,uuid,uuid,text,bytea) RETURNS jsonb`:
+- `checkout.take_hosted_page(bytea,uuid,uuid,text,bytea) RETURNS jsonb` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)*:
   hash/store/order/profile/config_digest, returning the handoff DTO above.
 
 All resolve capability and explicit owned order; never trust pre-set GUCs.

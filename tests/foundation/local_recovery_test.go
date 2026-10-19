@@ -1,5 +1,10 @@
 package foundation_test
 
+// Purpose: local logical restore and cold start of a populated database.
+// Depends on: lr fixtures, pq fixtures, rm2SeedReport, meta inbox fixtures, migrations.Apply.
+// Used by: go test ./tests/foundation (gated by LC_TEST_DATABASE_ALLOWED).
+// Invariants: restore is row-identical and Apply on the target is idempotent. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
+
 import (
 	"bytes"
 	"context"
@@ -654,9 +659,9 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	start := time.Now()
 	source, sourceFixture := lrSourceFixture(t)
 	q := pqSetupItemsOn(t, sourceFixture, nil, false, 1)
-	if err := q.record(q.claim(t), pqReport(q)); err != nil {
-		t.Fatal("synthetic payment observation", err)
-	}
+	// PAY-RM2 phase 2b (0197) dropped record_payment_query: the synthetic observation and its reconcile job are seeded
+	// as that function stored them (mapping c, output/pay-rm2-p2b/test-contract-map.md).
+	rm2SeedReport(t, q, pqReport(q))
 	_, _ = pwDefaultDomainJobs(t, q)
 	m := mrSetup(t, sourceFixture)
 	asset := miAsset()

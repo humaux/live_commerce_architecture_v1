@@ -10,13 +10,15 @@
 // Used by: scripts/dev/test-focused.sh '^TestRemovePayuniNotify' (local gate); CI full foundation suite.
 // Invariants: never delete data silently — RM02 pins the RAISE-over-seeded-rows refusal (22023).
 // Historical post-River consumers stay held until their root dependencies exist; RM02 releases only 0161.
-// PAY-RM2 adds runtime refusal and historical-read gates; no phase 2a schema change.
+// PAY-RM2 adds runtime refusal and historical-read gates; no phase 2a schema change. Phase 2b (0197 +
+// post_river/0026) drops the old PAYUNi SQL path; its gates live in payuni_phase2b_test.go.
 // Status: REAL_PG (CI only; no provider is called; seeded rows are synthetic).
 package foundation_test
 
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -161,9 +163,15 @@ func rmAssertReceiverGone(t *testing.T, pool *pgxpool.Pool) {
 	if !stripeKind {
 		t.Errorf("control: the stripe ingress UPDATE(kind) grant must survive the removal")
 	}
-	// Scope fence: the older PAYUNi hosted/query/capture path (0014–0018) is NOT part of this unit.
-	if rmReg(t, pool, "to_regprocedure", "payments.apply_capture_payuni_v1(uuid,bytea)") == "" {
-		t.Errorf("old PAYUNi capture definer was removed — out of PAY-RM1 scope")
+	// Scope fence: the older PAYUNi hosted/query/capture path (0014–0018) is NOT part of PAY-RM1. Since PAY-RM2
+	// phase 2b drops that path in 0197 (owner 2026-10-19), the installed-catalog fence that apply_capture_payuni_v1
+	// survives can no longer hold; replaced by (a) 0161's own source never touching it and (b) its absence after
+	// 0197 (also pinned with the other nine phase-2b objects by TestPayuniPhase2bSchemaFreshAndUpgrade).
+	if src, err := os.ReadFile("../../migrations/0161_remove_payuni_notify.sql"); err != nil || strings.Contains(string(src), "DROP FUNCTION payments.apply_capture_payuni_v1") {
+		t.Errorf("0161 must not drop the old PAYUNi capture definer — out of PAY-RM1 scope (err=%v)", err)
+	}
+	if rmReg(t, pool, "to_regprocedure", "payments.apply_capture_payuni_v1(uuid,bytea)") != "" {
+		t.Errorf("old PAYUNi capture definer survived PAY-RM2 phase 2b (0197)")
 	}
 	if rmReg(t, pool, "to_regclass", "integration.merchant_accounts") == "" {
 		t.Errorf("integration.merchant_accounts was removed — out of PAY-RM1 scope")
@@ -378,6 +386,39 @@ func rm2HistoryIn(t *testing.T, p psHarness, schema, profile, queue string) chec
 	return out
 }
 
+// rm2SeedReport stores what the dropped integration.record_payment_query (PAY-RM2 phase 2b, 0197) used to write
+// for one PAYUNi report: the QUERY observation and its payment_reconcile_v1 job, in one owner transaction (FK,
+// queue-routing and job-family triggers stay enabled). No provider, credential or start function is used.
+func rm2SeedReport(t *testing.T, q pqFixture, report any) []byte {
+	t.Helper()
+	ctx := context.Background()
+	tx, err := q.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	var hash []byte
+	if err = tx.QueryRow(ctx, `SELECT sha256(convert_to($1::jsonb::text,'UTF8'))`, pqJSON(report)).Scan(&hash); err != nil {
+		t.Fatal(err)
+	}
+	jobs, err := river.NewClient(riverpgxv5.New(q.f.owner), &river.Config{Schema: q.schema})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = jobs.InsertTx(ctx, tx, pcArgs{OperationID: q.result.OperationID, ReportHash: hex.EncodeToString(hash), Version: 1}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO payments.provider_observations(tenant_id,store_id,attempt_id,source,execution_profile,environment,first_generation,report,report_hash)
+		SELECT a.tenant_id,a.store_id,a.id,'QUERY',a.execution_profile,a.environment,a.generation,$2::jsonb,$3
+		FROM checkout.payment_attempts a WHERE a.id=$1`, q.result.AttemptID, pqJSON(report), hash); err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	return hash
+}
+
 // rm2Snapshot covers the attempt, operation (including lease/generation/result), order, reservation,
 // observations, facts, inventory ledger and operation events. River job cancellation is deliberately
 // separate: acknowledging an obsolete queue item must not mutate any payment or inventory state.
@@ -451,9 +492,10 @@ func TestRemovePayuniGoRM2WorkerSkipsHistoryWithoutObservation(t *testing.T) {
 		t.Fatal(err)
 	}
 	q := pqFixture{psHarness: p, keys: keys, result: result, schema: "river_payment"}
-	// Seed one already persisted authenticated report and reconciliation job using unchanged SQL.
+	// Seed one already persisted authenticated report and its reconciliation job. Phase 2b (0197) dropped
+	// record_payment_query, so the owner writes the same two rows it wrote (rm2SeedReport); assertions unchanged.
 	// The new Go capture worker must refuse even this valid historical report.
-	pcRecord(t, q, pcFull(q))
+	rm2SeedReport(t, q, pcFull(q))
 	before := rm2Snapshot(t, p, result.AttemptID)
 	var calls atomic.Int64
 	opts := payments.DefaultQueryWorkerOptions()

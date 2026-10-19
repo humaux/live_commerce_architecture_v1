@@ -277,7 +277,26 @@ func lriAddShims(f *testFixture) error {
 
 // lriApply is migrations.Apply for the legacy upgrade gates: it first drops the shims whose migration is not yet
 // recorded, refusing if a column shim ever held data. Idempotent on a retry.
+// PAY-RM2 phase 2b: these fixtures hold unreconciled PAYUNi history written by the pre-0032 producers, which 0197's
+// guard refuses to drop over (operator reconciliation first). The legacy gates therefore certify the upgrade up to the
+// phase-2a head: 0197 and post_river/0026 are pre-recorded with their real checksums so Apply skips them. That a real
+// legacy database with such history CANNOT upgrade past 0197 (22023, ledger and schema unchanged) is certified on
+// this same fixture, without the pre-record, by P2B04 TestPayuniPhase2bLegacyUpgradeStopsAt0197 (payuni_phase2b_test.go).
 func lriApply(ctx context.Context, pool *pgxpool.Pool) error {
+	for _, v := range []string{"0197_payuni_phase2b_drop.sql", "post_river/0026_payuni_phase2b_drop.sql"} {
+		body, err := os.ReadFile(filepath.Join("../../migrations", v))
+		if err != nil {
+			return err
+		}
+		if _, err = pool.Exec(ctx, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2) ON CONFLICT (version) DO NOTHING`, v, fmt.Sprintf("%x", sha256.Sum256(body))); err != nil {
+			return err
+		}
+	}
+	return lriApplyFull(ctx, pool)
+}
+
+// lriApplyFull is lriApply without the phase-2b pre-record: the full real migration chain (P2B04 only).
+func lriApplyFull(ctx context.Context, pool *pgxpool.Pool) error {
 	if err := lriDropAttributionShims(ctx, pool); err != nil {
 		return err
 	}

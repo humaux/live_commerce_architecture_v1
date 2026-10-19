@@ -68,7 +68,7 @@ Business review outcomes commit and complete the local job; DB faults retry it.
 
 ## SQL authority and transaction boundaries (0018)
 
-Extend record to `integration.record_payment_query(uuid,bigint,bytea,text,jsonb,bigint)`.
+Extend record to `integration.record_payment_query(uuid,bigint,bytea,text,jsonb,bigint)` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)*.
 The last argument is the already InsertTx'd River job ID; verify exact kind/args
 and canonical report hash before report+Complete. Retain 0017 guards, immutable
 identity/amount/method, hash dedup, unique provider reference and final DB-clock

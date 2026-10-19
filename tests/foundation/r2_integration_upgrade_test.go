@@ -1,6 +1,9 @@
 // Purpose: compare the complete migration set as fresh install and release-head upgrade.
 // Depends on: migrations.Apply, disposable PostgreSQL and immutable migration checksums.
 // Used by: R2 upgrade and foundation gates.
+// Invariants: the migration-set count is exact (every added/removed file updates it with a ledger comment line), and
+// an upgrade from the release head equals a fresh install.
+
 package foundation_test
 
 import (
@@ -110,8 +113,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// post_river/0025 (OA1 fenced orphan execution job repair) adds one: 120 -> 121.
 	// 0195 (MRR02 read_media_recovery_episode reads one snapshot: STABLE) adds one: 121 -> 122.
 	// 0196 (one-snapshot STABLE Studio readers) adds one: 122 -> 123.
-	if len(r2) != 123 {
-		t.Fatalf("R2 migration set = %d files %v, want 123", len(r2), r2)
+	// 0197 (PAY-RM2 phase 2b drop of the retained PAYUNi SQL path) adds one: 123 -> 124.
+	// post_river/0026 (PAY-RM2 phase 2b: start_payment/record_payment_query, which post_river/0005 recreates) adds one: 124 -> 125.
+	if len(r2) != 125 {
+		t.Fatalf("R2 migration set = %d files %v, want 125", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
