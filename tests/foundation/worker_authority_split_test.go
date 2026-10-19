@@ -11,6 +11,11 @@
 // Reads env / secrets: LC_WAS_INVENTORY (output file path, WAS06 only).
 // Used by: bash scripts/dev/test-focused.sh 'TestWAS'.
 // Status: REAL_PG once run by the integrator/tester; NOT_RUN in the author's static pass.
+// Depends on: the fixture database (migrations.Apply), worker-authority roles of 0096, integration.* lane definers.
+// Invariants: non-payment authorities hold no payment privilege; the profile fence comes from the login, never p_profile.
+// PAY-RM2 phase 2b (0197) dropped integration.load_payment_query, so WAS02/WAS05 probe only the remaining Stripe definers;
+// the PAYUNi loader's absence (no role can execute it at all) is pinned by TestPayuniPhase2bSchemaFreshAndUpgrade.
+
 package foundation_test
 
 import (
@@ -103,8 +108,8 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 		"integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text)", "payments.apply_capture(uuid,bytea)",
 		"integration.load_stripe_credential(uuid,bigint,bytea,text)", "integration.load_stripe_session(uuid,bigint,bytea,text)",
 		"integration.finish_stripe_refund(uuid,bigint,bytea,text,text)", "integration.record_stripe_refund_observation(uuid,bigint,bytea,text,jsonb,bigint)",
-		"integration.record_stripe_charge_observation(uuid,bigint,bytea,text,jsonb,bigint)", "integration.load_payment_query(uuid,bigint,bytea,text)",
-		"integration.payment_queue_ready()",
+		"integration.record_stripe_charge_observation(uuid,bigint,bytea,text,jsonb,bigint)",
+		"integration.payment_queue_ready()", // load_payment_query: dropped by 0197 (see header)
 	}
 	for _, role := range []string{waAds, waClaims, waExpiry, waLegacy} {
 		t.Run("no payment privilege "+strings.TrimPrefix(role, "commerce_"), func(t *testing.T) {
@@ -311,7 +316,7 @@ func TestWAS05ProfileFenceDerivedFromAuthority(t *testing.T) {
 		`SELECT * FROM integration.load_stripe_credential($1::uuid,2,$2::bytea,$3::text)`,
 		`SELECT integration.finish_stripe_query($1::uuid,2,$2::bytea,$3::text,'stripe_terminal_observed')`,
 		`SELECT * FROM integration.load_stripe_refund($1::uuid,2,$2::bytea,$3::text)`,
-		`SELECT * FROM integration.load_payment_query($1::uuid,2,$2::bytea,$3::text)`,
+		// integration.load_payment_query (PAYUNi) was dropped by 0197; the three Stripe definers keep the fence covered.
 	}
 	cases := []struct{ role, profile, want string }{
 		{waPayment, "LIVE", "42501"}, {waPayment, "SANDBOX", "P0002"}, {waPayment, "PROVIDER_MOCK", "P0002"},
