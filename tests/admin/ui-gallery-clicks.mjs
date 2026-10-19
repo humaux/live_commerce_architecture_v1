@@ -894,7 +894,12 @@ async function ds2Matrix({ page, step }) {
     // save bar over the radio group and, once scrolled, the top bar across the name input. Grow the viewport to the document
     // height so nothing scrolls: the top bar sits at the top and the save bar at the end of the form. Restored before axe/lint.
     const viewport = page.viewportSize();
+    // Provenance (#90): first the subject state in the declared width×height viewport (what a user sees), then the grown overview.
+    const viewportPath = path.replace(/\.png$/, "-viewport.png");
+    const viewportPng = await page.screenshot({ path: viewportPath, animations: "disabled" });
+    const viewportShot = { ...viewport, scrollY: await page.evaluate(() => window.scrollY), path: viewportPath, sha256: createHash("sha256").update(viewportPng).digest("hex") }; // [READ]
     let png;
+    let overview;
     try {
       for (let i = 0; i < 4; i++) {
         const full = await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r(document.scrollingElement.scrollHeight))))); // [READ] settled document height
@@ -910,6 +915,7 @@ async function ds2Matrix({ page, step }) {
         assert.deepEqual(frame.faint, [], `disabled primary too faint: ${frame.faint.join("; ")}`);
         return `${frame.chrome} sticky/fixed elements, ${frame.controls} controls, ${frame.tabs} tabs, ${frame.disabledPrimary} disabled primaries`;
       });
+      overview = { ...page.viewportSize(), fullPage: true, note: "viewport grown to the document height; not the declared viewport" };
       png = await page.screenshot({ path, fullPage: true, animations: "disabled" });
     } finally {
       await page.setViewportSize(viewport);
@@ -920,7 +926,7 @@ async function ds2Matrix({ page, step }) {
     const lint = evaluate(snapshot, { mobile: width < 768 }).filter(v => v.severity === "block");
     const named = lint.length ? await page.evaluate(describe, [...new Set(lint.flatMap(v => v.ids))]) : {};
     const errors = await page.locator('[data-nextjs-dialog],nextjs-portal').count(); // [READ] no Next error overlay
-    manifest.push({ name, locale, width, height, route: new URL(page.url()).pathname + new URL(page.url()).search, path, sha256: createHash("sha256").update(png).digest("hex"), scale, axe, lint, named, errors });
+    manifest.push({ name, locale, width, height, route: new URL(page.url()).pathname + new URL(page.url()).search, path, sha256: createHash("sha256").update(png).digest("hex"), overview, viewportShot, scale, axe, lint, named, errors });
     await writeFile(`${output}/ds2-matrix.json`, `${JSON.stringify({ tier: "MOCK", manifest }, null, 2)}\n`);
     assert.deepEqual(axe, [], `${name} ${locale} ${width}: axe violations`);
     assert.deepEqual(lint, [], `${name} ${locale} ${width}: visual-lint blocking ${JSON.stringify(named)}`);
