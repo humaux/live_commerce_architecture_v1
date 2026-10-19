@@ -1322,9 +1322,19 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       // [FIXTURE] One synthetic valid PNG through the native picker reached by a real Browse click.
       await (await chooserPromise).setFiles({ name: "wait.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9xkAAAAASUVORK5CYII=", "base64") });
       await seen(area.getByRole("progressbar"));
-      assert.equal(await button(t.save).getAttribute("aria-disabled"), "true", "Save is blocked while an image transfer is in progress");
-      await button(t.save).click(); // a user click on the blocked button reveals the reason, it does not save
-      await seen(text(t.uploadPending));
+      // Locator.click() waits for "enabled" (aria-disabled counts), so it clicked only after the 700ms transfer and saved (CI
+      // 39285725371). A real mouse click at the centre hits the blocked button now; the reason lives only while the transfer
+      // runs, so transfer, block and revealed reason are read in one snapshot right after the click.
+      const saveButton = button(t.save);
+      await saveButton.scrollIntoViewIfNeeded();
+      const box = await saveButton.boundingBox(); // [MEASURE] position only
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      const snap = await saveButton.evaluate(n => {
+        const reason = document.getElementById(n.getAttribute("aria-describedby") || "");
+        return { uploading: Boolean(n.closest("[data-template]").querySelector('[role="progressbar"]')), disabled: n.getAttribute("aria-disabled"), reason: reason?.getAttribute("role") === "status" ? reason.textContent : null };
+      }); // [READ]
+      assert.equal(snap.uploading, true, `snapshot taken after the transfer ended; the block cannot be observed: ${JSON.stringify(snap)}`);
+      assert.deepEqual(snap, { uploading: true, disabled: "true", reason: t.uploadPending }, "Save is blocked with a reason while an image transfer is in progress");
       await seen(text(t.uploaded));
       await save();
       await reloadHydrated();
