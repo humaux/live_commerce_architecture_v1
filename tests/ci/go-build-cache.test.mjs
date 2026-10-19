@@ -66,6 +66,27 @@ test("injected gNN leg outside ./tests/foundation goes RED under the shard scope
   assert.throws(() => shardScopeContract(workflow.replace(any, "shard:*)    LC_FOUNDATION_PKGS=./... ")), /must build only/);
 });
 
+// #107 (PR #101 review P2): the arm finder must not depend on one indentation or an unquoted pattern, and a later assignment on
+// the same arm (the shell keeps the last one) must not hide behind a correct first one.
+test("injected shadowing assignment, re-indented or quoted arm goes RED under the shard scope contract", () => {
+  const gnn = "            shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation ";
+  const any = "            shard:*)    LC_FOUNDATION_PKGS=./tests/foundation ";
+  assert.ok(workflow.includes(gnn) && workflow.includes(any), "the real arms are where the contract looks");
+  for (const [from, to] of [
+    [gnn, `${gnn}LC_FOUNDATION_PKGS=./... `],
+    [any, `${any}LC_FOUNDATION_RUN=x LC_FOUNDATION_PKGS=./... `],
+    [gnn, `${gnn}\\\n              LC_FOUNDATION_PKGS=./... `],
+    [any, "          shard:*)    LC_FOUNDATION_PKGS=./... "],
+    [any, "\t\t\tshard:*)    LC_FOUNDATION_PKGS=./... "],
+    [any, '            "shard:"*)    LC_FOUNDATION_PKGS=./... '],
+    [any, "            'shard:*')    LC_FOUNDATION_PKGS=./... "],
+    [any, "            (shard:*)    LC_FOUNDATION_PKGS=./... "],
+    [any, "            shard:x|shard:*)    LC_FOUNDATION_PKGS=./... "],
+  ]) {
+    assert.throws(() => shardScopeContract(workflow.replace(from, to)), /must build only \.\/tests\/foundation/, JSON.stringify(to));
+  }
+});
+
 test("injected disabled cache or unbound manifest goes RED under the real cache contract", () => {
   const cacheLine = "cache: ${{ startsWith(matrix.mode, 'shard:g') }}";
   assert.ok(workflow.includes(cacheLine));
