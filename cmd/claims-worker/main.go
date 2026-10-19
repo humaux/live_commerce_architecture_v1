@@ -45,6 +45,9 @@ var (
 	errWorkerRoutes   = errors.New("claims_worker_routes_unavailable")
 	errWorkerStart    = errors.New("claims_worker_start_failed")
 	errWorkerStop     = errors.New("claims_worker_stop_failed")
+	// The bound comment bridge stopped serving (any time after the bind, before or after ready). A bind failure stays
+	// errWorkerStart: it always happens before ready (#83, #107).
+	errWorkerConsole = errors.New("claims_worker_console_failed")
 )
 
 type workerConfig struct {
@@ -398,7 +401,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 			MaxHeaderBytes:    16 << 10,
 		}
 		failed, err := startConsoleServer(consoleServer)
-		if err != nil && false { // RED INJECTION (#107): ignore the bind failure as before #96; removed in the fix commit
+		if err != nil {
 			// Required listener unavailable: never log claims_worker_ready (#83).
 			stopPoll()
 			<-polled
@@ -445,11 +448,12 @@ func superviseConsole(failed <-chan error, stop <-chan struct{}, cancelRun conte
 	return down
 }
 
-// exitError maps the River run result to the process token; a recorded bridge Serve failure wins over it.
+// exitError maps the River run result to the process token; a recorded bridge Serve failure wins over it and keeps its
+// own token, so a runtime bridge loss is never reported as a startup failure (#107).
 func exitError(consoleDown <-chan struct{}, runErr error) error {
 	select {
 	case <-consoleDown:
-		return errWorkerStart
+		return errWorkerConsole
 	default:
 	}
 	switch {
