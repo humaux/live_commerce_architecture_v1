@@ -1331,7 +1331,8 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
       const snap = await saveButton.evaluate(n => {
         const reason = document.getElementById(n.getAttribute("aria-describedby") || "");
-        return { uploading: Boolean(n.closest("[data-template]").querySelector('[role="progressbar"]')), disabled: n.getAttribute("aria-disabled"), reason: reason?.getAttribute("role") === "status" ? reason.textContent : null };
+        // UploadGrid renders a native <progress> (implicit progressbar role, no role attribute): match the element too.
+        return { uploading: Boolean(n.closest("[data-template]").querySelector('progress, [role="progressbar"]')), disabled: n.getAttribute("aria-disabled"), reason: reason?.getAttribute("role") === "status" ? reason.textContent : null };
       }); // [READ]
       assert.equal(snap.uploading, true, `snapshot taken after the transfer ended; the block cannot be observed: ${JSON.stringify(snap)}`);
       assert.deepEqual(snap, { uploading: true, disabled: "true", reason: t.uploadPending }, "Save is blocked with a reason while an image transfer is in progress");
