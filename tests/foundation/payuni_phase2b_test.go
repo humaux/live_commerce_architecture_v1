@@ -6,6 +6,7 @@
 //	case) while a PAYUNi order is still AWAITING_PAYMENT even though every PAYUNi operation is terminal.
 //	P2B03: on the full schema a Stripe capture still settles (fact, order, stock, work item, replay), while a
 //	historical PAYUNi attempt with a valid stored report is refused by the dispatcher and stays readable, unchanged.
+//	P2B04: the legacy pre-0032 fixture with unreconciled PAYUNi history stops at 0197 (22023) on the full chain.
 //
 // Depends on: migrations.Apply; mciStartPG; rmVersions/rmChecksums/rmSkipLedger/rmReg/rm2HistoricalAttempt/
 //
@@ -244,6 +245,33 @@ func TestPayuniPhase2bRefusesPayuniOrderAwaitingPayment(t *testing.T) {
 	if n := countRows(t, f.owner, `SELECT count(*) FROM checkout.orders WHERE id=$1 AND commercial_state='AWAITING_PAYMENT'`, p.hold.OrderID); n != 1 {
 		t.Errorf("PAYUNi order awaiting payment changed: %d", n)
 	}
+}
+
+// TestPayuniPhase2bLegacyUpgradeStopsAt0197 (P2B04): the legacy upgrade fixture (pre-0032 schema plus a PAYUNi query
+// written by the historical producer, operation UNKNOWN, order AWAITING_PAYMENT) runs the FULL real chain, without the
+// lriApply pre-record. It must stop at 0197 with 22023, record nothing, and leave every phase-2b object that existed
+// before still installed: a real legacy database with unreconciled PAYUNi history cannot upgrade past phase 2b.
+func TestPayuniPhase2bLegacyUpgradeStopsAt0197(t *testing.T) {
+	ctx := context.Background()
+	f := lriPre0032Fixture(t)
+	q := pwOldQuerySetupOn(t, f, pwKeys(t), "river")
+	lriCloseProducerPools(q.psHarness)
+	var present []string
+	for _, sig := range p2bDropped {
+		if rmReg(t, f.owner, "to_regprocedure", sig) != "" {
+			present = append(present, sig)
+		}
+	}
+	if len(present) == 0 {
+		t.Fatal("legacy fixture holds none of the phase-2b objects; the gate would prove nothing")
+	}
+	ledger := lriLedger(t, f, "")
+	err := lriApplyFull(ctx, f.owner)
+	// RED (P2B04 first push): assert the legacy chain upgrades cleanly, to observe 0197's refusal in CI.
+	if err != nil {
+		t.Fatalf("full legacy chain did not complete: %v", err)
+	}
+	_ = ledger
 }
 
 // TestPayuniPhase2bDispatchStripeCapturesPayuniRefused (P2B03) runs on the fully migrated fixture schema.
