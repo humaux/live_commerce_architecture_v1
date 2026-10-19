@@ -48,8 +48,8 @@ test("every pnpm-running job sets pnpm up through the cached, offline-on-hit Cor
 
 test("injected bare Corepack or a pnpm step ahead of the action goes RED", () => {
   const gates = read(".github/workflows/gates.yml");
-  const use = "      - uses: ./.github/actions/pnpm\n";
-  assert.ok(gates.includes(use), "the real gate job uses the action");
+  const use = gates.match(/^      - uses: \.\/\.github\/actions\/pnpm\b.*\n/m)?.[0] ?? "";
+  assert.ok(use, "the real gate job uses the action");
   assert.throws(() => workflowContract("gates.yml", gates.replace(use, "")), /runs pnpm before/);
   assert.throws(() => workflowContract("gates.yml", gates.replace(use, "      - run: corepack enable\n")), /Corepack only through/);
   const action = read(ACTION);

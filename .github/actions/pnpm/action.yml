@@ -1,0 +1,38 @@
+# Purpose: put the package.json-pinned pnpm on PATH from a cached Corepack home instead of downloading it from
+#   registry.npmjs.org on every job (#107: an ECONNRESET there failed --browser-meta-health-ui on run 39285412405 attempt 1).
+#   A cache hit runs Corepack with COREPACK_ENABLE_NETWORK=0, so a download cannot silently return; a miss downloads with
+#   bounded retry and saves the home right away (parallel legs racing for the key only log a warning). Either way the rest
+#   of the job keeps COREPACK_ENABLE_NETWORK=0 (pnpm's own registry traffic is unaffected).
+# Depends on: actions/cache restore/save at the repo's pinned SHA, setup-node (Node 24 bundles Corepack), package.json packageManager.
+# Used by: .github/workflows/gates.yml (gate job), foundation.yml, deploy-smoke.yml; pinned by tests/ci/pnpm-corepack-cache.test.mjs.
+name: pnpm from the cached Corepack home
+description: Corepack + pinned pnpm without a per-run registry download.
+runs:
+  using: composite
+  steps:
+    - id: restore
+      uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      with:
+        path: ~/.cache/node/corepack
+        key: corepack-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package.json') }}
+    - name: pnpm via Corepack (offline on a cache hit)
+      shell: bash
+      env:
+        HIT: ${{ steps.restore.outputs.cache-hit }}
+      run: |
+        corepack enable
+        if [[ "$HIT" == true ]]; then
+          version=$(COREPACK_ENABLE_NETWORK=0 pnpm --version) # an assignment, so a failed offline run fails the step
+          echo "corepack: pnpm $version from the cache, network disabled"
+        else
+          ok=0
+          for i in 1 2 3; do pnpm --version && { ok=1; break; }; echo "corepack pnpm download attempt $i failed; retrying"; sleep $((i * 15)); done
+          [[ $ok == 1 ]] || exit 1
+          echo "corepack: cache miss, pnpm downloaded once for key ${{ steps.restore.outputs.cache-primary-key }}"
+        fi
+        echo "COREPACK_ENABLE_NETWORK=0" >> "$GITHUB_ENV"
+    - if: ${{ steps.restore.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      with:
+        path: ~/.cache/node/corepack
+        key: ${{ steps.restore.outputs.cache-primary-key }}

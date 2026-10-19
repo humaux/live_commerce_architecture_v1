@@ -1,3 +1,8 @@
+# Purpose: the per-PR foundation workflow — secret-literal scan, dependency map, package docs/gate map, the DB-free Node suites,
+#   the full real-PostgreSQL race/vet run and the reachable-vulnerability scan on one ubuntu-24.04 runner.
+# Depends on: pinned checkout/setup-go/setup-node, .github/actions/pnpm (cached Corepack pnpm, #107), scripts/dev/depmap.sh,
+#   scripts/dev/check-gates.sh, scripts/dev/test-node.sh, scripts/dev/test-local.sh, the pinned postgres test image.
+# Used by: every pull_request and pushes to main; the integrator reads its result next to Gates (GitHub runners).
 name: Foundation checks
 
 on:
@@ -56,13 +61,12 @@ jobs:
         with:
           node-version: "24" # package.json engines: >=24 <25 (--experimental-strip-types)
           package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
+      - uses: ./.github/actions/pnpm # pnpm from the cached Corepack home, no per-run registry download (#107)
       - name: Node dependencies (frozen lockfile)
         # check-gates runs the W0 UI ratchet (tests/admin/shell-architecture.test.mjs, scripts/dev/ui-architecture-gate.mjs),
         # which parses TypeScript with the pinned root devDependency `typescript-api`. Before 2026-10-04 this step ran before
         # Node was set up and with no node_modules, so the ratchet could only fail (Cannot find module 'typescript-api').
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Package docs and gate map are current
         # Every Go package needs a comment with "owns" and "never" (PROCESS.md §5), and every
         # test-local.sh mode/admin spec must be documented and run by a gate (docs/delivery/GATES.md).
