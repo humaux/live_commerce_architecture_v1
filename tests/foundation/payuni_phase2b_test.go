@@ -23,6 +23,7 @@ package foundation_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -226,8 +227,11 @@ func TestPayuniPhase2bRefusesPayuniOrderAwaitingPayment(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// Every file from 0197 / post_river 0026 on is released, so later files (0198 erase) are re-applied too; the
+	// refusal still has to come from 0197, which runs first. (Was len(versions)==2; replaced by explicit presence of
+	// both phase-2b files when 0198 was added, PAY-RM2 phase 2c.)
 	versions := rmVersions("0197", "0026")
-	if len(versions) != 2 {
+	if !slices.Contains(versions, "0197_payuni_phase2b_drop.sql") || !slices.Contains(versions, "post_river/0026_payuni_phase2b_drop.sql") {
 		t.Fatalf("phase 2b migrations missing: %v", versions)
 	}
 	before := rm2ScopeSnapshot(t, p, false)

@@ -85,6 +85,9 @@ One `checkout.hosted_payment_pages` row keyed only by `attempt_id`, foreign-keye
 to `checkout.payment_attempts(id)`. Scope/order derive from the immutable attempt;
 no caller-controlled duplicate owner/order columns. Columns include locale, config digest,
 prepared_at, expires_at, exact bounded provider form JSON and nullable handed_out_at.
+*(PAY-RM2 phase 2c: the stored PAYUNi form JSON is erased in 0198 and replaced by the fixed marker
+`{"erased":"0198"}`; the row, its other columns and the read views stay. Historical PAYUNi credential
+versions are not covered and stay owner-pending.)*
 The form has only fixed `action` and four single-valued `fields`: `MerID`,
 `Version`, `EncryptInfo`, `HashInfo`. It contains no raw key, IV, card or buyer PII.
 No new cart/order/financial state machine. No raw form is written to browser storage.
@@ -161,7 +164,7 @@ Private eligibility helper may return the attempt and is not executable by runti
 roles. Repeated take authenticates scope/profile/config and returns ALREADY_ISSUED
 without a form even after expiry/binding disable; first take requires full current
 eligibility. Save/take repeat capability and deadline fences after trigger/FK waits.
-Table has non-null immutable form/deadline; only handed_out_at NULL to non-NULL is
+Table has non-null immutable form/deadline *(form erased to the 0198 marker for PAYUNi rows, PAY-RM2 phase 2c)*; only handed_out_at NULL to non-NULL is
 updatable (column grant and one-way RLS). All row scope policies join the attempt
 with explicit tenant/store/owner checks, independent of broader capture RLS.
 

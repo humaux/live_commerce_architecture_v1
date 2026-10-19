@@ -115,8 +115,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0196 (one-snapshot STABLE Studio readers) adds one: 122 -> 123.
 	// 0197 (PAY-RM2 phase 2b drop of the retained PAYUNi SQL path) adds one: 123 -> 124.
 	// post_river/0026 (PAY-RM2 phase 2b: start_payment/record_payment_query, which post_river/0005 recreates) adds one: 124 -> 125.
-	if len(r2) != 125 {
-		t.Fatalf("R2 migration set = %d files %v, want 125", len(r2), r2)
+	// 0198 (PAY-RM2 phase 2c: erase stored PAYUNi hosted-form material, owner decision 2026-10-19) adds one: 125 -> 126.
+	if len(r2) != 126 {
+		t.Fatalf("R2 migration set = %d files %v, want 126", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

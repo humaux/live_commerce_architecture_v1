@@ -715,7 +715,7 @@ After the signature passes, strict JSON is applied:
 
 Why three new tables:
 - **`payments.stripe_sessions`.** Attempts are immutable initiation records, but Stripe needs mutable
-  set-once pins and deadline state. `hosted_payment_pages` has a fixed 4-field PAYUNi form, a 60 s
+  set-once pins and deadline state. `hosted_payment_pages` has a fixed 4-field PAYUNi form *(erased to `{"erased":"0198"}` in 0198, PAY-RM2 phase 2c)*, a 60 s
   deadline CHECK and one-shot semantics, all incompatible (inventory §2).
 - **`payments.stripe_webhook_receipts`.** Permanent event-id dedupe must be independent of River
   retention (§16.1). The Meta inbox tables are Meta-specific.
