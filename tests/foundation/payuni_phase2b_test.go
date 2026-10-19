@@ -2,7 +2,8 @@
 //
 //	SQL execution definers are gone on a fresh and on an upgraded database, and payments.apply_capture is the
 //	pre-0197 dispatcher minus only its PAYUNi branch (same owner, ACL, SECURITY DEFINER, search_path).
-//	P2B02: 0197 refuses (22023, nothing changed) while a PAYUNi query operation is non-terminal.
+//	P2B02: 0197 refuses (22023, nothing changed) while a PAYUNi query operation is non-terminal, and (second
+//	case) while a PAYUNi order is still AWAITING_PAYMENT even though every PAYUNi operation is terminal.
 //	P2B03: on the full schema a Stripe capture still settles (fact, order, stock, work item, replay), while a
 //	historical PAYUNi attempt with a valid stored report is refused by the dispatcher and stays readable, unchanged.
 //
@@ -201,6 +202,47 @@ func TestPayuniPhase2bRefusesUnreconciledPayuni(t *testing.T) {
 		if got := rmReg(t, db, "to_regprocedure", sig); got != "" {
 			t.Errorf("%s survived phase 2b", sig)
 		}
+	}
+}
+
+// TestPayuniPhase2bRefusesPayuniOrderAwaitingPayment (P2B02, second guard clause): with every PAYUNi operation
+// terminal, one real PAYUNi order still AWAITING_PAYMENT makes 0197 refuse (22023) and nothing changes. The DB is an
+// isolated fully-migrated one with only 0197/post_river 0026 released, so the refusal must come from the guard,
+// which runs before any DDL. The accepting half (all reconciled) is the first case's terminal-operation Apply.
+func TestPayuniPhase2bRefusesPayuniOrderAwaitingPayment(t *testing.T) {
+	ctx := context.Background()
+	f := pwIsolatedFixture(t)
+	p := psSetupItemsOn(t, f, 1)
+	attempt := rm2HistoricalAttempt(t, p)
+	conn, err := f.owner.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Release()
+	// Reconcile only the operation (user triggers off on this one connection); the order stays awaiting payment.
+	for _, q := range []string{`SET session_replication_role='replica'`, `UPDATE integration.operations SET state='FAILED_FINAL' WHERE id='` + attempt.OperationID + `'`, `RESET session_replication_role`} {
+		if _, err := conn.Exec(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	versions := rmVersions("0197", "0026")
+	if len(versions) != 2 {
+		t.Fatalf("phase 2b migrations missing: %v", versions)
+	}
+	before := rm2ScopeSnapshot(t, p, false)
+	mustExec(t, f.owner, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1)`, versions)
+	err = migrations.Apply(ctx, f.owner)
+	if err == nil || !strings.Contains(err.Error(), "0 non-terminal PAYUNi operation(s), 1 PAYUNi order(s) awaiting payment") || !strings.Contains(err.Error(), "22023") {
+		t.Fatalf("0197 over a PAYUNi order awaiting payment: %v", err)
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=ANY($1)`, versions); n != 0 {
+		t.Errorf("refused phase 2b recorded %d ledger row(s)", n)
+	}
+	if rm2ScopeSnapshot(t, p, false) != before {
+		t.Error("refused phase 2b changed business rows")
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM checkout.orders WHERE id=$1 AND commercial_state='AWAITING_PAYMENT'`, p.hold.OrderID); n != 1 {
+		t.Errorf("PAYUNi order awaiting payment changed: %d", n)
 	}
 }
 

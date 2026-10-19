@@ -1,17 +1,18 @@
 package foundation_test
 
+// Purpose: hosted payment harness (hpHarness, hpSetup) and PAYUNi hosted tests, partly refusal gates after phase 2b.
+// Depends on: ps fixtures, accounts keyring, checkout hosted starter, p2bHostedRetired.
+// Used by: go test ./tests/foundation; hpHarness used by buyer view and phase-2b helpers.
+// Invariants: synthetic merchant and local key material only; no provider form is posted. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
+
 import (
-	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"reflect"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -20,7 +21,6 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/checkout"
-	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/platform"
 )
@@ -206,93 +206,17 @@ func TestBuyerPaymentHostedAtomicPreparationAndIndependentWire(t *testing.T) {
 }
 
 func TestBuyerPaymentHostedReplayConflictsAndSingleAttempt(t *testing.T) {
-	h := hpSQLSetup(t)
-	key := t04Key("hp-replay")
-	result, err := h.begin(key)
-	if err != nil {
-		t.Fatal(err)
-	}
-	stored, prepared, expires, _ := h.page(t, result.AttemptID)
-	counts := h.counts(t)
-	replay, err := h.begin(key)
-	if err != nil || !reflect.DeepEqual(replay, result) || h.counts(t) != counts {
-		t.Fatal("HP02 identical key/input did not replay one receipt")
-	}
-	stored2, prepared2, expires2, _ := h.page(t, result.AttemptID)
-	if !bytes.Equal(stored, stored2) || !prepared.Equal(prepared2) || !expires.Equal(expires2) {
-		t.Fatal("HP02 replay changed the stored form or deadline")
-	}
-	for _, mutate := range []func(*checkout.HostedInput){
-		func(in *checkout.HostedInput) { in.Locale = "en" },
-		func(in *checkout.HostedInput) { in.MethodVersion++ },
-		func(in *checkout.HostedInput) { in.OrderID = randomUUID() },
-	} {
-		in := h.input
-		mutate(&in)
-		if _, err := h.api.BeginHosted(context.Background(), h.cap.Token, h.f.storeA1, key, in); !errors.Is(err, command.ErrConflict) {
-			t.Fatalf("HP02 changed request accepted: %v", err)
-		}
-	}
-	keys, err := accounts.NewKeyring("hosted_fixture", map[string][]byte{"hosted_fixture": h.key}, randomBytes(32))
-	if err != nil {
-		t.Fatal(err)
-	}
-	config := h.config
-	config.NotifyURL = "https://checkout.example.test/payment/notify-v2"
-	for _, api := range []hpAPI{hpSQLStarter(t, h.pool, "PROVIDER_MOCK", keys, config), hpSQLStarter(t, h.pool, "SANDBOX", keys, h.config)} {
-		if _, err := api.BeginHosted(context.Background(), h.cap.Token, h.f.storeA1, key, h.input); !errors.Is(err, command.ErrConflict) {
-			t.Fatalf("HP02 changed profile/config accepted: %v", err)
-		}
-	}
-	if _, err := h.begin(t04Key("hp-second-key")); !errors.Is(err, command.ErrConflict) {
-		t.Fatalf("HP02 second key created a new attempt: %v", err)
-	}
-	if h.counts(t) != counts {
-		t.Fatal("HP02 conflict mutated payment aggregate")
-	}
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bHostedRetired(t)
 }
 
 func TestBuyerPaymentHostedConcurrentTakeOneForm(t *testing.T) {
-	h := hpSQLSetup(t)
-	if _, err := h.begin(t04Key("hp-take-race")); err != nil {
-		t.Fatal(err)
-	}
-	var wg sync.WaitGroup
-	results := make(chan checkout.HostedHandoff, 2)
-	errorsCh := make(chan error, 2)
-	for i := 0; i < 2; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			out, err := h.take()
-			results <- out
-			errorsCh <- err
-		}()
-	}
-	wg.Wait()
-	close(results)
-	close(errorsCh)
-	for err := range errorsCh {
-		if err != nil {
-			t.Fatalf("HP03 concurrent take: %v", err)
-		}
-	}
-	issued, replay := 0, 0
-	for out := range results {
-		switch hpDisposition(t, out) {
-		case "ISSUED":
-			issued++
-			hpForm(t, out)
-		case "ALREADY_ISSUED":
-			replay++
-			hpNoForm(t, out)
-		default:
-			t.Fatal("HP03 unknown take disposition")
-		}
-	}
-	if issued != 1 || replay != 1 {
-		t.Fatal("HP03 concurrent handoff was not one-shot")
-	}
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bHostedRetired(t)
 }
 
 func TestBuyerPaymentHostedCryptoFailureRollsBack(t *testing.T) {
@@ -306,46 +230,10 @@ func TestBuyerPaymentHostedThreeFrozenLocales(t *testing.T) {
 }
 
 func TestBuyerPaymentHostedAdmissionDriftBeforePrepare(t *testing.T) {
-	for name, change := range map[string]func(*testing.T, hpHarness){
-		"binding-disabled": func(t *testing.T, h hpHarness) {
-			mustExec(t, h.f.owner, `UPDATE integration.bindings SET enabled=false WHERE id=$1`, h.binding)
-		},
-		"method-hidden": func(t *testing.T, h hpHarness) {
-			mustExec(t, h.f.owner, `UPDATE payments.method_versions SET visible=false WHERE connection_id=$1`, h.account)
-		},
-		"qualification-revoked": func(t *testing.T, h hpHarness) {
-			qualExec(t, h.f.owner, `UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE id=$1`, h.proof)
-		},
-		"credential-rotated": func(t *testing.T, h hpHarness) {
-			hpRotateFixtureHead(t, h)
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			h := hpSQLSetup(t)
-			before := h.counts(t)
-			change(t, h)
-			if _, err := h.begin(t04Key("hp-admission-drift")); err == nil {
-				t.Fatal("HP05 drift before preparation accepted")
-			}
-			if h.counts(t) != before {
-				t.Fatal("HP05 denied preparation committed partial facts")
-			}
-		})
-	}
-	for _, profile := range []string{"SANDBOX", "LIVE"} {
-		t.Run("mock-not-"+profile, func(t *testing.T) {
-			h := hpSQLSetup(t)
-			before := h.counts(t)
-			keys, err := accounts.NewKeyring("hosted_fixture", map[string][]byte{"hosted_fixture": h.key}, randomBytes(32))
-			if err != nil {
-				t.Fatal(err)
-			}
-			api := hpSQLStarter(t, h.pool, profile, keys, h.config)
-			if _, err := api.BeginHosted(context.Background(), h.cap.Token, h.f.storeA1, t04Key("hp-real-profile"), h.input); err == nil || h.counts(t) != before {
-				t.Fatal("HP05 mock evidence qualified a real execution profile")
-			}
-		})
-	}
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bHostedRetired(t)
 }
 
 func hpRotateFixtureHead(t *testing.T, h hpHarness) {
@@ -357,57 +245,10 @@ func hpRotateFixtureHead(t *testing.T, h hpHarness) {
 }
 
 func TestBuyerPaymentHostedSQLAtomicPreparationAndOneShot(t *testing.T) {
-	h := hpSQLSetup(t)
-	before := h.counts(t)
-	result, err := h.begin(t04Key("hp-atomic"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	after := h.counts(t)
-	for i := range before {
-		if after[i]-before[i] != 1 {
-			t.Fatalf("HP01 atomic fact %d: %d -> %d", i, before[i], after[i])
-		}
-	}
-	if result.State != "PAYMENT_PENDING" || result.AmountMinor != 2500 || result.Currency != "TWD" || result.AttemptID == "" || result.OperationID != result.AttemptID {
-		t.Fatal("HP01 wrong frozen payment result")
-	}
-	var kind string
-	var rawArgs []byte
-	if err := h.f.owner.QueryRow(context.Background(), `SELECT kind,args FROM river_payment.river_job WHERE id=$1`, result.JobID).Scan(&kind, &rawArgs); err != nil {
-		t.Fatal("HP01 missing query job")
-	}
-	var jobArgs map[string]any
-	if err := json.Unmarshal(rawArgs, &jobArgs); err != nil || kind != "payment_query_v1" || len(jobArgs) != 2 || jobArgs["operation_id"] != result.OperationID || jobArgs["version"] != float64(1) {
-		t.Fatal("HP01 query job does not bind the original attempt")
-	}
-	stored, prepared, expires, handed := h.page(t, result.AttemptID)
-	if handed != nil || !expires.After(prepared) || expires.After(prepared.Add(61*time.Second)) {
-		t.Fatal("HP01 wrong immutable preparation deadline")
-	}
-	var created time.Time
-	if err := h.f.owner.QueryRow(context.Background(), `SELECT created_at FROM checkout.payment_attempts WHERE id=$1`, result.AttemptID).Scan(&created); err != nil || !prepared.Equal(created) {
-		t.Fatal("HP01 form timestamp is not tied to attempt creation")
-	}
-	handoff, err := h.take()
-	if err != nil || hpDisposition(t, handoff) != "ISSUED" {
-		t.Fatalf("HP03 first handoff failed: %v", err)
-	}
-	_, fields := hpForm(t, handoff)
-	if !bytes.Contains(stored, []byte(`"EncryptInfo"`)) {
-		t.Fatal("HP01 persisted form missing encrypted wire")
-	}
-	if fields["EncryptInfo"] != "0000000000000000" {
-		t.Fatal("SQL fixture bytes changed")
-	}
-	second, err := h.take()
-	if err != nil || hpDisposition(t, second) != "ALREADY_ISSUED" {
-		t.Fatalf("HP03 lost-response retry status: %v", err)
-	}
-	hpNoForm(t, second)
-	if h.counts(t) != after {
-		t.Fatal("HP03 take changed financial, stock or job facts")
-	}
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bHostedRetired(t)
 }
 
 // Independent verifier: it does not call PAYUNi Client.open or the hosted

@@ -1,5 +1,10 @@
 package foundation_test
 
+// Purpose: buyer payment view (hosted_payment_view) projection: method candidates, handoff states, signed financial precedence.
+// Depends on: hp/pq fixtures, rm2SQL view caller, p2bSeedHostedPage, rm2ArchivedFact, rm2SeedReport.
+// Used by: go test ./tests/foundation (CI full suite); bpView/bpCounts used by the phase-2b helpers.
+// Invariants: the view is read-only and exposes only contract keys. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
+
 import (
 	"context"
 	"encoding/json"
@@ -240,10 +245,10 @@ func TestBuyerPaymentViewCandidateDrift(t *testing.T) {
 }
 
 func TestBuyerPaymentViewHandoffStatesAndProfileSwitch(t *testing.T) {
+	// PAY-RM2 phase 2b (0197) dropped save/take_hosted_page: mapping (c), the prepared page and its later hand-out
+	// are seeded as the rows those functions wrote; every view assertion is unchanged (test-contract-map.md).
 	h := hpSQLSetup(t)
-	if _, err := h.begin(t04Key("bp-view-begin")); err != nil {
-		t.Fatal(err)
-	}
+	p2bSeedHostedPage(t, h)
 	service := h.api.(*rm2HostedSQL)
 	before, beforeOther := bpCounts(t, h)
 	prepared, raw := bpView(t, service, h.cap.Token, h.f.storeA1, h.hold.OrderID)
@@ -267,9 +272,8 @@ func TestBuyerPaymentViewHandoffStatesAndProfileSwitch(t *testing.T) {
 	if _, err := switched.BeginHosted(context.Background(), h.cap.Token, h.f.storeA1, t04Key("bp-switch"), h.input); err == nil {
 		t.Fatal("BPH02 profile switch started a second attempt")
 	}
-	if _, err := h.take(); err != nil {
-		t.Fatal(err)
-	}
+	// The profile-switch Take/Begin above are still denied (now: the PAYUNi writer no longer exists, 42883).
+	mustExec(t, h.f.owner, `UPDATE checkout.hosted_payment_pages SET handed_out_at=clock_timestamp() WHERE attempt_id=(SELECT id FROM checkout.payment_attempts WHERE order_id=$1)`, h.hold.OrderID)
 	issued, _ := bpView(t, service, h.cap.Token, h.f.storeA1, h.hold.OrderID)
 	if issued.HandoffState != "ISSUED" || issued.PaymentState != "PENDING" {
 		t.Fatal("BPH02 redirect was misread as paid or page not issued")
@@ -280,10 +284,7 @@ func TestBuyerPaymentViewHandoffStatesAndProfileSwitch(t *testing.T) {
 	}
 	t.Run("expired-unissued", func(t *testing.T) {
 		h := hpSQLSetup(t)
-		result, err := h.begin(t04Key("bp-expired"))
-		if err != nil {
-			t.Fatal(err)
-		}
+		result := p2bSeedHostedPage(t, h)
 		mustExec(t, h.f.owner, `UPDATE checkout.hosted_payment_pages SET prepared_at=clock_timestamp()-interval '60 seconds',expires_at=clock_timestamp()-interval '1 second' WHERE attempt_id=$1`, result.AttemptID)
 		view, _ := bpView(t, h.api.(*rm2HostedSQL), h.cap.Token, h.f.storeA1, h.hold.OrderID)
 		if view.HandoffState != "EXPIRED" || view.PaymentState != "PENDING" || view.HandoffExpiresAt == nil || !view.HandoffExpiresAt.Before(time.Now()) {
@@ -295,7 +296,9 @@ func TestBuyerPaymentViewHandoffStatesAndProfileSwitch(t *testing.T) {
 func TestBuyerPaymentViewSignedFinancialPrecedence(t *testing.T) {
 	for _, state := range []string{"PENDING", "AUTHORIZED", "CAPTURED", "REVIEW_REQUIRED"} {
 		t.Run(state, func(t *testing.T) {
-			q := pqSQLSetup(t, false, 1)
+			// PAY-RM2 phase 2b (0197) dropped start_payment/record_payment_query and the PAYUNi capture apply: mapping
+			// (c), the attempt, its report and the signed fact/review rows are seeded as the dropped writers stored them.
+			q := pqSetup(t)
 			pool, err := platform.OpenHostedPool(context.Background(), hpRole(t, q.f))
 			if err != nil {
 				t.Fatal(err)
@@ -303,19 +306,15 @@ func TestBuyerPaymentViewSignedFinancialPrecedence(t *testing.T) {
 			t.Cleanup(pool.Close)
 			config := checkout.HostedConfig{ReturnURL: "https://checkout.example.test/payment/return", NotifyURL: "https://checkout.example.test/payment/notify"}
 			service := hpSQLStarter(t, pool, "PROVIDER_MOCK", q.keys, config)
-			if state != "PENDING" {
+			switch state {
+			case "AUTHORIZED", "CAPTURED":
+				rm2ArchivedFact(t, q, state)
+			case "REVIEW_REQUIRED":
+				// apply_capture opened a REFUND_HISTORY review case for a refunded full capture; any review case outranks facts.
 				report := pcFull(q)
-				switch state {
-				case "AUTHORIZED":
-					report["CloseStatus"] = "9"
-					delete(report, "CloseAmountTWD")
-				case "REVIEW_REQUIRED":
-					report["CardRefundStatus"], report["CardRefundAmountTWD"] = "2", int64(1)
-				}
-				hash := pcRecord(t, q, report)
-				if err := pcApply(q.worker, q.result.AttemptID, hash); err != nil {
-					t.Fatal(err)
-				}
+				report["CardRefundStatus"], report["CardRefundAmountTWD"] = "2", int64(1)
+				mustExec(t, q.f.owner, `INSERT INTO payments.review_cases(tenant_id,store_id,attempt_id,reason,source_report_hash)
+				 SELECT tenant_id,store_id,id,'REFUND_HISTORY',$2 FROM checkout.payment_attempts WHERE id=$1`, q.result.AttemptID, rm2SeedReport(t, q, report))
 			}
 			h := hpHarness{psHarness: q.psHarness}
 			before, beforeOther := bpCounts(t, h)

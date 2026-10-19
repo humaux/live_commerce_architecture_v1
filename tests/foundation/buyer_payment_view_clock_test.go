@@ -1,5 +1,10 @@
 package foundation_test
 
+// Purpose: checkout.hosted_payment_view final database-clock fence (capability, qualification, page deadline).
+// Depends on: hp fixtures (hosted_payment_test.go), p2bSeedHostedPage, bpCounts, platform.OpenHostedPool.
+// Used by: go test ./tests/foundation (CI full suite).
+// Invariants: a view never writes rows; expiry is judged at final DB time. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
+
 import (
 	"context"
 	"errors"
@@ -20,9 +25,8 @@ func TestBuyerPaymentViewFinalDatabaseClock(t *testing.T) {
 		t.Run(stage, func(t *testing.T) {
 			h := hpSQLSetup(t)
 			if stage == "page" {
-				if _, err := h.begin(t04Key("bp-clock-page")); err != nil {
-					t.Fatal(err)
-				}
+				// PAY-RM2 phase 2b (0197) dropped save_hosted_page: mapping (c), the prepared page row is seeded directly.
+				p2bSeedHostedPage(t, h)
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 			defer cancel()

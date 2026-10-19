@@ -1,5 +1,10 @@
 package foundation_test
 
+// Purpose: legacy River isolation: payment and expiry maintenance never touch foreign job families.
+// Depends on: pwIsolatedFixture, ewFixture, pq fixtures, rm2SeedReport, River maintenance.
+// Used by: go test ./tests/foundation (CI full suite).
+// Invariants: foreign-family jobs stay byte-identical. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
+
 import (
 	"context"
 	"encoding/json"
@@ -121,7 +126,7 @@ func TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies(t *testing.T
 	f := ewFixture(t)
 	ctx := context.Background()
 	q := pqSetupItemsOn(t, f, nil, false, 1)
-	pcRecord(t, q, pcFull(q)) // synthetic local report, no provider call
+	rm2SeedReport(t, q, pcFull(q)) // synthetic local report, no provider call (PAY-RM2 2b: seeded, mapping c)
 	var reconcileID int64
 	if err := f.owner.QueryRow(ctx, `SELECT id FROM river_payment.river_job WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1`, q.result.OperationID).Scan(&reconcileID); err != nil {
 		t.Fatal("valid reconcile job missing", err)

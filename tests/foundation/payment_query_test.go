@@ -5,6 +5,7 @@ package foundation_test
 // Depends on: pq/ps fixtures, rm2StripePending + sfl Stripe fake, payments.NewPaymentWorkerClient,
 // River schema river_payment.
 // Used by: go test ./tests/foundation (CI gate shard g07); pqFixture helpers used across payment suites.
+// Invariants: historical rows are never dispatched or rewritten. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
 
 import (
 	"context"
@@ -27,7 +28,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
@@ -36,8 +36,6 @@ import (
 	"livecommerce/internal/integrations/accounts"
 	integration "livecommerce/internal/integrations/core"
 	"livecommerce/internal/payments"
-	"livecommerce/internal/platform"
-	"livecommerce/internal/storefront"
 )
 
 type pqFixture struct {
@@ -195,17 +193,18 @@ func TestBuyerPaymentQueryHistoricalCredentialAndACL(t *testing.T) {
 	if e = tx.Commit(ctx); e != nil {
 		t.Fatal(e)
 	}
-	var loadOID, guardOID, recordOID, credentialOID, observationOID uint32
-	if e = q.f.owner.QueryRow(ctx, `SELECT 'integration.load_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,'integration.require_payment_query(uuid,bigint,bytea,text)'::regprocedure::oid,'integration.record_payment_query(uuid,bigint,bytea,text,jsonb,bigint)'::regprocedure::oid,'integration.account_credentials'::regclass::oid,'payments.provider_observations'::regclass::oid`).Scan(&loadOID, &guardOID, &recordOID, &credentialOID, &observationOID); e != nil {
+	// PAY-RM2 phase 2b (0197): the worker-only EXECUTE grants on load/require/record_payment_query are replaced by
+	// absence (mapping b): no role can execute a function that no longer exists. Credential/observation ACLs unchanged.
+	for _, fn := range []string{"integration.load_payment_query(uuid,bigint,bytea,text)", "integration.require_payment_query(uuid,bigint,bytea,text)", "integration.record_payment_query(uuid,bigint,bytea,text,jsonb,bigint)"} {
+		if rmReg(t, q.f.owner, "to_regprocedure", fn) != "" {
+			t.Fatalf("PAY-RM2 phase 2b: %s is still installed", fn)
+		}
+	}
+	var credentialOID, observationOID uint32
+	if e = q.f.owner.QueryRow(ctx, `SELECT 'integration.account_credentials'::regclass::oid,'payments.provider_observations'::regclass::oid`).Scan(&credentialOID, &observationOID); e != nil {
 		t.Fatal(e)
 	}
 	for _, pool := range []*pgxpool.Pool{q.f.runtime, q.a.runtime, q.pool, q.worker} {
-		for _, oid := range []uint32{loadOID, recordOID, guardOID} {
-			var yes bool
-			if e = pool.QueryRow(ctx, `SELECT has_function_privilege(current_user,$1::oid,'EXECUTE')`, oid).Scan(&yes); e != nil || yes != (pool == q.worker && oid != guardOID) {
-				t.Fatalf("unexpected function privilege %v", e)
-			}
-		}
 		var yes bool
 		if e = pool.QueryRow(ctx, `SELECT has_column_privilege(current_user,$1::oid,'ciphertext','SELECT')`, credentialOID).Scan(&yes); e != nil || yes {
 			t.Fatalf("ciphertext authority broadened %v", e)
@@ -220,118 +219,17 @@ func TestBuyerPaymentQueryHistoricalCredentialAndACL(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryReportAtomicDedupAndBinding(t *testing.T) {
-	q := pqSQLSetup(t, false, 1)
-	c := q.claim(t)
-	report := pqReport(q)
-	for _, field := range []string{"AmountTWD", "MerTradeNo", "TradeNo", "PaymentType", "AuthType", "DataSource", "CardInst", "extra"} {
-		bad := pqReport(q)
-		bad[field] = "wrong"
-		if field == "TradeNo" {
-			bad[field] = "invalid trade number"
-		}
-		if e := q.record(c, bad); e == nil {
-			t.Fatalf("bad field accepted %s", field)
-		}
-	}
-	for _, profile := range []string{"SANDBOX", "LIVE"} {
-		if e := pqRecord(q.worker, q.result.OperationID, c, profile, report); e == nil {
-			t.Fatal("profile mismatch accepted")
-		}
-	}
-	badClaim := c
-	badClaim.LeaseToken = randomBytes(32)
-	if e := q.record(badClaim, report); e == nil {
-		t.Fatal("forged token")
-	}
-	if q.reportCount(t) != 0 {
-		t.Fatal("invalid report persisted")
-	}
-	// Pending signed responses may not have a provider reference yet. Preserve
-	// them, then pin the first nonempty reference permanently for this attempt.
-	pending := pqReport(q)
-	pending["TradeNo"], pending["TradeStatus"] = "", "8"
-	if e := q.record(c, pending); e != nil {
-		t.Fatal(e)
-	}
-	c = q.claim(t)
-	if e := q.record(c, report); e != nil {
-		t.Fatal(e)
-	}
-	if e := q.record(c, report); e == nil {
-		t.Fatal("cleared lease replay accepted")
-	}
-	c = q.claim(t)
-	if e := q.record(c, report); e != nil {
-		t.Fatal(e)
-	}
-	if q.reportCount(t) != 2 {
-		t.Fatal("duplicate report not deduplicated")
-	}
-	c = q.claim(t)
-	bad := pqReport(q)
-	bad["TradeNo"] = "other_trade"
-	if e := q.record(c, bad); e == nil {
-		t.Fatal("pinned provider reference replaced")
-	}
-	report["DataSource"] = "B"
-	report["TradeStatus"] = "8"
-	if e := q.record(c, report); e != nil {
-		t.Fatal(e)
-	}
-	if q.reportCount(t) != 3 {
-		t.Fatal("new provider evidence erased prior evidence")
-	}
-	q.pending(t)
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bQueryRetired(t)
 }
 
 func TestBuyerPaymentQueryFaultAndLeaseWaitRollback(t *testing.T) {
-	q := pqSQLSetup(t, false, 1)
-	c := q.claim(t)
-	name := "pq_wait_" + t04Tag()
-	ctx := context.Background()
-	pool, e := platform.OpenWorkerPool(ctx, withApplicationName(t, bcRole(t, q.f, waPayment), name), platform.WorkerPayment)
-	if e != nil {
-		t.Fatal(e)
-	}
-	defer pool.Close()
-	// Hold the event table after the report write, so the token expires during
-	// Complete's final event insert. The enclosing SQL call must roll back both.
-	holder, e := q.f.owner.Begin(ctx)
-	if e != nil {
-		t.Fatal(e)
-	}
-	defer holder.Rollback(ctx)
-	if _, e = holder.Exec(ctx, `LOCK TABLE integration.operation_events IN ACCESS EXCLUSIVE MODE`); e != nil {
-		t.Fatal(e)
-	}
-	var expiry time.Time
-	if e = q.f.owner.QueryRow(ctx, `UPDATE integration.operations SET lease_until=clock_timestamp()+interval '600 milliseconds' WHERE id=$1 RETURNING lease_until`, q.result.OperationID).Scan(&expiry); e != nil {
-		t.Fatal(e)
-	}
-	done := make(chan error, 1)
-	go func() {
-		done <- pqRecord(pool, q.result.OperationID, c, "PROVIDER_MOCK", pqReport(q))
-	}()
-	waitForDatabaseLock(t, q.f.owner, name)
-	var before bool
-	if e = q.f.owner.QueryRow(ctx, `SELECT clock_timestamp()<$1`, expiry).Scan(&before); e != nil || !before {
-		t.Fatal("missed live-lease wait")
-	}
-	mustExec(t, q.f.owner, `SELECT pg_sleep(GREATEST(0,extract(epoch FROM $1::timestamptz-clock_timestamp()))+0.02)`, expiry)
-	if e = holder.Commit(ctx); e != nil {
-		t.Fatal(e)
-	}
-	e = waitError(t, done)
-	var pe *pgconn.PgError
-	if !errors.As(e, &pe) || pe.Code != "40001" || q.reportCount(t) != 0 {
-		t.Fatalf("late lease partial report: %v", e)
-	}
-	var code string
-	var hasLease bool
-	if e = q.f.owner.QueryRow(ctx, `SELECT result_code,lease_until IS NOT NULL FROM integration.operations WHERE id=$1`, q.result.OperationID).Scan(&code, &hasLease); e != nil || code == "payment_report_observed" || !hasLease {
-		t.Fatal("failed report partially completed operation")
-	}
-	q.pending(t)
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bQueryRetired(t)
 }
 
 // A separate test implementation of the public PAYUNi GCM envelope. It uses
@@ -490,33 +388,10 @@ func TestBuyerPaymentQueryBudgetDurabilityAndNoSend(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts(t *testing.T) {
-	q := pqSQLSetup(t, false, 1)
-	firstReport := pqReport(q)
-	if e := q.record(q.claim(t), firstReport); e != nil {
-		t.Fatal(e)
-	}
-	second := q
-	second.bcHarness.prepare(t, mustIssue(t, second.cqHarness.service, second.f.storeA1), []storefront.Item{{SKUID: second.stock.skus[0].ID, Quantity: 2}})
-	var e error
-	second.hold, e = second.bcHarness.begin(t04Key("pq-second-order"))
-	if e != nil {
-		t.Fatal(e)
-	}
-	second.input.OrderID = second.hold.OrderID
-	second.result, e = psSQLStarter(t, second.pool, "PROVIDER_MOCK").StartPayment(context.Background(), second.cap.Token, second.f.storeA1, t04Key("pq-second-start"), second.input)
-	if e != nil {
-		t.Fatal(e)
-	}
-	report := pqReport(second)
-	report["TradeNo"] = firstReport["TradeNo"]
-	e = second.record(second.claim(t), report)
-	var pe *pgconn.PgError
-	if !errors.As(e, &pe) || pe.Code != "23505" {
-		t.Fatalf("same provider trade reassigned %v", e)
-	}
-	if second.reportCount(t) != 0 || q.reportCount(t) != 1 {
-		t.Fatal("conflict partially persisted report")
-	}
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bQueryRetired(t)
 }
 
 func TestBuyerPaymentQueryWireFailuresStayPending(t *testing.T) {
@@ -583,139 +458,24 @@ func TestBuyerPaymentQueryWireFailuresStayPending(t *testing.T) {
 }
 
 func TestBuyerPaymentQueryFinishClockAndReferenceFence(t *testing.T) {
-	q := pqSQLSetup(t, false, 1)
-	c := q.claim(t)
-	ctx := context.Background()
-	if _, e := q.worker.Exec(ctx, `SELECT integration.finish_payment_query($1,$2,$3,'PROVIDER_MOCK','payment_query_timeout','forged-reference')`, q.result.OperationID, c.Generation, c.LeaseToken); e == nil {
-		t.Fatal("error completion pinned provider reference")
-	}
-	if _, e := q.worker.Exec(ctx, `SELECT integration.finish_payment_query($1,$2,$3,'PROVIDER_MOCK','arbitrary_dynamic_code','')`, q.result.OperationID, c.Generation, c.LeaseToken); e == nil {
-		t.Fatal("dynamic completion code accepted")
-	}
-	name := "pq_finish_" + t04Tag()
-	pool, e := platform.OpenWorkerPool(ctx, withApplicationName(t, bcRole(t, q.f, waPayment), name), platform.WorkerPayment)
-	if e != nil {
-		t.Fatal(e)
-	}
-	defer pool.Close()
-	holder, e := q.f.owner.Begin(ctx)
-	if e != nil {
-		t.Fatal(e)
-	}
-	defer holder.Rollback(ctx)
-	if _, e = holder.Exec(ctx, `LOCK TABLE integration.operation_events IN ACCESS EXCLUSIVE MODE`); e != nil {
-		t.Fatal(e)
-	}
-	var expiry time.Time
-	if e = q.f.owner.QueryRow(ctx, `UPDATE integration.operations SET lease_until=clock_timestamp()+interval '600 milliseconds' WHERE id=$1 RETURNING lease_until`, q.result.OperationID).Scan(&expiry); e != nil {
-		t.Fatal(e)
-	}
-	done := make(chan error, 1)
-	go func() {
-		_, e := pool.Exec(ctx, `SELECT integration.finish_payment_query($1,$2,$3,'PROVIDER_MOCK','payment_query_budget_exhausted','')`, q.result.OperationID, c.Generation, c.LeaseToken)
-		done <- e
-	}()
-	waitForDatabaseLock(t, q.f.owner, name)
-	var valid bool
-	if e = q.f.owner.QueryRow(ctx, `SELECT clock_timestamp()<$1`, expiry).Scan(&valid); e != nil || !valid {
-		t.Fatal("missed live finish wait")
-	}
-	mustExec(t, q.f.owner, `SELECT pg_sleep(GREATEST(0,extract(epoch FROM $1::timestamptz-clock_timestamp()))+0.02)`, expiry)
-	if e = holder.Commit(ctx); e != nil {
-		t.Fatal(e)
-	}
-	e = waitError(t, done)
-	var pe *pgconn.PgError
-	if !errors.As(e, &pe) || pe.Code != "40001" {
-		t.Fatalf("late finish accepted %v", e)
-	}
-	var code string
-	if e = q.f.owner.QueryRow(ctx, `SELECT result_code FROM integration.operations WHERE id=$1`, q.result.OperationID).Scan(&code); e != nil || code == "payment_query_budget_exhausted" {
-		t.Fatal("budget committed after expired lease")
-	}
-	q.pending(t)
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bQueryRetired(t)
 }
 
 func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
-	base := pwIsolatedFixture(t)
-	q := pqSQLSetupOn(t, base, false, 1)
-	other := pqSQLSetupOn(t, base, false, 1)
-	c := q.claim(t)
-	foreign := other.claim(t)
-	if _, e := q.worker.Exec(context.Background(), `SELECT integration.load_payment_query($1,$2,$3,'PROVIDER_MOCK')`, q.result.OperationID, foreign.Generation, foreign.LeaseToken); e == nil {
-		t.Fatal("foreign attempt lease opened credentials")
-	}
-	if _, e := q.worker.Exec(context.Background(), `SELECT integration.load_payment_query($1,$2,$3,'PROVIDER_MOCK')`, other.result.OperationID, c.Generation, c.LeaseToken); e == nil {
-		t.Fatal("token selected other tenant")
-	}
-	f := newT06GoFixture(t, base)
-	b := f.register(t, f.store, t04Key("pq-merchant"))
-	op := f.plan(t, t04Key("pq-merchant-plan"), b, `{"amount":100}`)
-	var calls atomic.Int32
-	opts := payments.DefaultQueryWorkerOptions()
-	opts.MockTransport = pqTransport(func(*http.Request) (*http.Response, error) { calls.Add(1); return nil, errors.New("must_not_query") })
-	// Corrupt an admitted job only through the isolated fixture owner. The
-	// deferred insert fence independently rejects new unlinked merchant jobs.
-	// The second valid query stays future while this fixed-queue worker runs;
-	// otherwise unrelated same-family work could call the MOCK transport.
-	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET scheduled_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, other.result.JobID)
-	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job DISABLE TRIGGER payment_job_family`)
-	defer mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
-	mustExec(t, q.f.owner, `UPDATE river_payment.river_job SET args=jsonb_build_object('operation_id',$2::text,'version',1) WHERE id=$1`, q.result.JobID, op.OperationID)
-	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
-	pqStartWorker(t, q, opts)
-	var e error
-	// Wait for the worker's first fetch of the corrupted job (an eventual condition, not a latency bound). 5 s was too short on a
-	// loaded CI runner (trunk 1991a49d, shard B-K: cancelled=false with every other assertion holding); the assertions are unchanged.
-	deadline := time.Now().Add(30 * time.Second)
-	cancelled := false
-	for time.Now().Before(deadline) {
-		var state string
-		if e = f.base.owner.QueryRow(context.Background(), `SELECT state FROM river_payment.river_job WHERE id=$1`, q.result.JobID).Scan(&state); e != nil {
-			t.Fatal(e)
-		}
-		if state == "cancelled" {
-			cancelled = true
-			break
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	var state string
-	var generation int64
-	if e = f.base.owner.QueryRow(context.Background(), `SELECT state,generation FROM integration.operations WHERE id=$1`, op.OperationID).Scan(&state, &generation); e != nil || !cancelled || state != "READY" || generation != 0 || calls.Load() != 0 {
-		t.Fatalf("merchant family affected err=%v cancelled=%v state=%s generation=%d provider_calls=%d", e, cancelled, state, generation, calls.Load())
-	}
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bQueryRetired(t)
 }
 
 func TestBuyerPaymentQueryConcurrentReportSingleWinner(t *testing.T) {
-	q := pqSQLSetup(t, false, 1)
-	claim := q.claim(t)
-	report := pqReport(q)
-	start := make(chan struct{})
-	done := make(chan error, 2)
-	for i := 0; i < 2; i++ {
-		go func() { <-start; done <- q.record(claim, report) }()
-	}
-	close(start)
-	success := 0
-	conflict := 0
-	for i := 0; i < 2; i++ {
-		e := waitError(t, done)
-		if e == nil {
-			success++
-			continue
-		}
-		var pe *pgconn.PgError
-		if errors.As(e, &pe) && pe.Code == "40001" {
-			conflict++
-		} else {
-			t.Fatalf("unexpected competing report error %v", e)
-		}
-	}
-	if success != 1 || conflict != 1 || q.reportCount(t) != 1 {
-		t.Fatalf("report race successes%d conflicts%d", success, conflict)
-	}
-	q.pending(t)
+	// PAY-RM2 phase 2b (0197, post_river/0026) dropped the PAYUNi SQL this test drove; mapped (a)+(b) in
+	// output/pay-rm2-p2b/test-contract-map.md: the dropped path is refused and writes nothing, and the
+	// surviving invariant is asserted by the Stripe test named there.
+	p2bQueryRetired(t)
 }
 
 // Removal must cancel before any provider IO/lease; Stripe cancellation/recovery

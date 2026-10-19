@@ -1,5 +1,10 @@
 package foundation_test
 
+// Purpose: legacy River runtime admission and readiness: family lanes, wrong-schema refusal, poisoned startup.
+// Depends on: pwIsolatedFixture, ps/pq fixtures, rm2HistoryIn, rm2SeedReport, payments/checkout worker constructors.
+// Used by: go test ./tests/foundation (CI full suite).
+// Invariants: rejected family writes change no job or attempt row. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
+
 import (
 	"context"
 	"errors"
@@ -115,12 +120,12 @@ func TestLegacyRuntimeIsolationAdmissionAndReadiness(t *testing.T) {
 	if got := badExpiry.facts(t); got != expiryBefore || miIsoRows(t, badExpiry.f, "river_payment.river_job", "") != beforePaymentJobs || miIsoRows(t, badExpiry.f, "river_expiry.river_job", "") != beforeExpiryJobs {
 		t.Fatal("wrong expiry schema wrote business facts or either family job lane")
 	}
-	// A valid payment-family job for the mutation checks below comes from the frozen SQL start contract
-	// (direct river_payment insert + checkout.start_payment), the same rows the historical producer wrote.
-	p.sql = psSQLStarter(t, p.pool, "PROVIDER_MOCK")
-	goodPayment, err := p.start(t04Key("correct-payment-schema"))
-	if err != nil || goodPayment.JobID < 1 {
-		t.Fatalf("correct payment producer not admitted: %v", err)
+	// A valid payment-family job for the mutation checks below: PAY-RM2 phase 2b (0197/post_river 0026) dropped the
+	// frozen SQL start contract, so the owner seeds the same rows the historical producer wrote (mapping c, River
+	// InsertTx into river_payment with the family/routing triggers enabled).
+	goodPayment := rm2HistoryIn(t, p, "river_payment", "PROVIDER_MOCK", "payment_mock_v1")
+	if goodPayment.JobID < 1 {
+		t.Fatal("correct payment producer rows not admitted")
 	}
 	rowBefore := miIsoRows(t, f, "river_payment.river_job", "")
 	domainBefore := miIsoRows(t, f, "checkout.payment_attempts", "")
@@ -218,7 +223,7 @@ func TestLegacyRuntimeIsolationAdmissionAndReadiness(t *testing.T) {
 		t.Fatalf("valid payment constructor rejected: %v", err)
 	}
 	q := pqSetupItemsOn(t, f, nil, false, 1)
-	pcRecord(t, q, pcFull(q)) // local evidence; InsertTx and report commit together
+	rm2SeedReport(t, q, pcFull(q)) // local evidence; PAY-RM2 2b seeds what the dropped record_payment_query committed (mapping c)
 	if q.reportCount(t) != 1 || miCount(t, f.owner, `SELECT count(*) FROM river_payment.river_job j
 	 JOIN integration.operations o ON o.id::text=j.args->>'operation_id'
 	 WHERE o.id=$1 AND j.kind='payment_reconcile_v1' AND j.queue='payment_mock_v1'`, q.result.OperationID) != 1 {

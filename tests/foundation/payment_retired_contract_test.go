@@ -1,6 +1,7 @@
-// Responsibility: explicit refusals for removed PAYUNi Go entry points.
-// Depends on existing archive fixtures and fake transports; foundation calls these gates.
-// Invariant: zero outbound calls and byte-identical full scoped business rows;
+// Purpose: explicit refusals for removed PAYUNi Go entry points.
+// Depends on: existing archive fixtures (rm2HistoryIn, rm2SeedReport) and fake transports.
+// Used by: go test ./tests/foundation (CI full suite).
+// Invariants: zero outbound calls and byte-identical full scoped business rows;
 // only River's independently asserted cancellation acknowledgement may change.
 package foundation_test
 
@@ -163,7 +164,7 @@ func rm2AssertRemovedWorker(t *testing.T, capture bool) {
 	t.Helper()
 	q := pqSetupWorker(t)
 	if capture {
-		pcRecord(t, q, pcFull(q))
+		rm2SeedReport(t, q, pcFull(q)) // PAY-RM2 2b: record_payment_query dropped, the stored report is seeded (mapping c)
 	}
 	before := rm2ScopeSnapshot(t, q.psHarness, false)
 	var calls atomic.Int32
