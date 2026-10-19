@@ -708,16 +708,22 @@ async function wheelReach(page, scope) {
       topbar: document.querySelector("[data-shell-topbar]").getBoundingClientRect().top,
       controls: controls.map((n, i) => {
         const r = n.getBoundingClientRect();
-        let [left, right, inner, table] = [r.left, r.right, false, true];
+        let [left, right, inner, table, clipped] = [r.left, r.right, false, true, false];
         for (let p = n.parentElement; p && p !== document.body; p = p.parentElement) {
-          if (!["auto", "scroll"].includes(getComputedStyle(p).overflowX) || p.scrollWidth <= p.clientWidth) continue;
+          const overflow = getComputedStyle(p).overflowX;
+          // A hidden/clip box moves with any outer scroller, so a cut it makes is permanent: no sideways exemption (#92).
+          if (["hidden", "clip"].includes(overflow)) {
+            const box = p.getBoundingClientRect();
+            if (r.left < box.left + p.clientLeft - 0.5 || r.right > box.left + p.clientLeft + p.clientWidth + 0.5) clipped = true;
+          }
+          if (!["auto", "scroll"].includes(overflow) || p.scrollWidth <= p.clientWidth) continue;
           const box = p.getBoundingClientRect();
           [left, right, inner] = [Math.max(left, box.left + p.clientLeft), Math.min(right, box.left + p.clientLeft + p.clientWidth), true];
           table = table && p.hasAttribute("data-table-scroll");
         }
         const key = `${i}:${n.tagName.toLowerCase()}[${(n.getAttribute("aria-label") || n.labels?.[0]?.textContent || n.textContent || n.name || "").trim().slice(0, 30)}]`;
         const vertical = r.top >= 0 && r.bottom <= window.innerHeight;
-        if (inner && right - left < 4) return [key, vertical && table ? "sideways" : "out"];
+        if (inner && right - left < 4) return [key, vertical && table && !clipped ? "sideways" : "out"];
         if (inner && !table && right - left < r.width - 0.5) return [key, "out"]; // partly clipped sideways outside the table scroller
         if (!inner && (r.left < 0 || r.right > window.innerWidth)) return [key, "out"];
         const inset = Math.min(2, (right - left) / 4, r.height / 4);
