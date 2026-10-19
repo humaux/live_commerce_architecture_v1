@@ -108,8 +108,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// post_river/0023 (OA1 execution job guards and native admission enqueue) adds one: 118 -> 119.
 	// post_river/0024 (OA1 attempt-owned checkout expiry job guard) adds one: 119 -> 120.
 	// post_river/0025 (OA1 fenced orphan execution job repair) adds one: 120 -> 121.
-	if len(r2) != 121 {
-		t.Fatalf("R2 migration set = %d files %v, want 121", len(r2), r2)
+	// 0196 (one-snapshot STABLE Studio readers) adds one: 121 -> 122.
+	if len(r2) != 122 {
+		t.Fatalf("R2 migration set = %d files %v, want 122", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

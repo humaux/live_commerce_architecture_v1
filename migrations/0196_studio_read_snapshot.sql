@@ -1,6 +1,6 @@
 -- Purpose: make the 0043 Studio media/input readers answer from one snapshot.
 -- Depends on: 0043 live.read_studio_media, live.read_studio_input, live.read_studio_input_prepared
--- (bodies, owner commerce_media_writer, ACL unchanged here); 0003 identity.resolve_access (already STABLE).
+-- (bodies, owner commerce_media_writer, ACL unchanged here); 0153 identity.resolve_access (STABLE, read-only).
 -- Used by: internal/live/studio.go GetStudio/GetStudioInput/GetStudioInputPrepared and STU/studio-input gates.
 -- Invariants: each DTO is derived from one snapshot, so a commit landing mid-call is either fully visible or
 -- not at all. As VOLATILE, every statement took its own READ COMMITTED snapshot: operation_state could predate
