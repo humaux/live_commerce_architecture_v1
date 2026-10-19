@@ -9,3 +9,5 @@
 export const money = minor => (minor / 100).toLocaleString("en-US");
 export const amountMatcher = shown => new RegExp(`(?<![0-9A-Za-z,.])${shown.replace(/,/g, "[,]")}(\\.00)?(?![0-9,])`);
 export const amt = minor => amountMatcher(money(minor));
+// RED step: no stripping yet (the gate before this fix).
+export const withoutFixtureIds = text => text;
