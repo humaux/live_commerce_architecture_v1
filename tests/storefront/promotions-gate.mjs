@@ -28,7 +28,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts } from "./browser-engine.mjs";
-import { money, amt } from "./amount-match.mjs";
+import { money, amt, withoutFixtureIds } from "./amount-match.mjs";
 
 const root = process.cwd(), evidence = process.env.LC_PM_EVIDENCE;
 const adminOrigin = process.env.LC_PM_ADMIN_ORIGIN, buyerOrigin = "https://buyer.example";
@@ -204,7 +204,8 @@ async function scenario(index, run) {
     await expect(buyer.getByTestId("promo-problem")).toHaveText(message);
     await expect(buyer.getByTestId("promo-applied")).toHaveCount(0);
     await expect(quotation).toContainText(amt(subtotal + shipping));
-    await expect(quotation).not.toContainText(amt(total));
+    // negative check on the text without fixture ids: a SKU code "BRP-960…" is not the total (review-93b987562 P2-1)
+    await expect.poll(async () => withoutFixtureIds(await quotation.innerText()), { message: `${label} ${bad}: total must not show` }).not.toMatch(amt(total));
   }
   await shot(buyer, "buyer-code-refused", run);
   pass(`${label} buyer: an unknown code and a below-minimum code show their own messages and change nothing`);
