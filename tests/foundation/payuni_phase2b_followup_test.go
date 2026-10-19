@@ -78,10 +78,14 @@ func TestPayuniPhase2bFollowupGuardStockAndUnappliedReport(t *testing.T) {
 	if n := countRows(t, f.owner, `SELECT count(*) FROM inventory.reservations WHERE id=$1 AND state='PAYMENT_PENDING'`, p.hold.OrderID); n != 1 {
 		t.Fatalf("fixture: reservation PAYMENT_PENDING rows=%d", n)
 	}
+	// This isolated DB was built with 0199 already applied (its DDL is IF EXISTS / REVOKE, idempotent), so DDL
+	// rollback cannot be observed here (the guard is the file's first statement in the one numbered transaction, as
+	// in 0197 whose rollback P2B02 pins). What a refusal must leave unchanged here is the business history.
+	before := rm2Snapshot(t, p, result.AttemptID)
 	pfuRefused(t, f.owner, pfuNumbered, pfuApplyOnly(t, f.owner, pfuNumbered),
 		"0 non-terminal PAYUNi operation(s), 0 PAYUNi order(s) awaiting payment, 1 PAYUNi reservation(s) still PAYMENT_PENDING, 0 stored PAYUNi observation(s) never applied")
-	if n := countRows(t, f.owner, `SELECT count(*) FROM pg_policies WHERE schemaname='checkout' AND tablename='hosted_payment_pages' AND policyname='hosted_insert'`); n != 1 {
-		t.Error("refused 0199 still dropped hosted_insert")
+	if after := rm2Snapshot(t, p, result.AttemptID); after != before {
+		t.Errorf("refused 0199 changed PAYUNi history:\nbefore=%s\nafter=%s", before, after)
 	}
 
 	// Stock released; a stored PAYUNi QUERY report that no fact or review case cites.
