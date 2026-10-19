@@ -23,6 +23,11 @@ function cacheContract(source) {
   assert.match(gate, /GOFLAGS: -mod=readonly/, "module manifests stay read-only");
 }
 
+// #86 (PR #81 review P2-2): the cache above is only safe while every cache-owning leg builds the same ./tests/foundation graph.
+function shardScopeContract(source) {
+  // RED stub: not implemented yet.
+}
+
 function executionContract(source) {
   const foundation = source.split(/^  foundation\)\s*$/m)[1]?.split(/^    ;;$/m)[0] ?? "";
   const command = foundation.split("\n").find(line => /^  GOTOOLCHAIN=.* go test /.test(line)) ?? "";
@@ -37,6 +42,20 @@ function executionContract(source) {
 test("matrix reuses native Go compilation while every selected foundation test still executes", () => {
   cacheContract(workflow);
   executionContract(runner);
+});
+
+test("injected gNN leg outside ./tests/foundation goes RED under the shard scope contract", () => {
+  const gnn = "shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation ";
+  assert.ok(workflow.includes(gnn), "the real gNN arm is where the contract looks");
+  for (const to of ["shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./... ", "shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation ./cmd/... ",
+    "shard:g[0-9][0-9]) "]) {
+    assert.throws(() => shardScopeContract(workflow.replace(gnn, to)), /must build only \.\/tests\/foundation/, to);
+  }
+  assert.throws(() => shardScopeContract(workflow.replace(gnn, "shard:gx) LC_FOUNDATION_PKGS=./tests/foundation ")), /shard:gNN arm/);
+  // A catch-all shard:* arm also receives modes like shard:gFoo, which satisfy startsWith(matrix.mode, 'shard:g').
+  const any = 'shard:*)    LC_FOUNDATION_PKGS=./tests/foundation ';
+  assert.ok(workflow.includes(any));
+  assert.throws(() => shardScopeContract(workflow.replace(any, "shard:*)    LC_FOUNDATION_PKGS=./... ")), /must build only/);
 });
 
 test("injected disabled cache or unbound manifest goes RED under the real cache contract", () => {
