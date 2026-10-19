@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/checkout"
@@ -37,6 +38,29 @@ import (
 )
 
 func psiInject() bool { return os.Getenv("LC_PSI_INJECT") != "" }
+
+// psiAwaitLock is waitForDatabaseLock that also reports the call's own error when it returns before ever waiting
+// (otherwise a precondition failure inside the call reads as "lock wait not observed").
+func psiAwaitLock(t *testing.T, owner *pgxpool.Pool, name string, done chan error) {
+	t.Helper()
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		select {
+		case err := <-done:
+			t.Fatalf("call returned before waiting on the lock: %v", err)
+		default:
+		}
+		var waiting bool
+		if err := owner.QueryRow(context.Background(), `SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name=$1 AND wait_event_type='Lock')`, name).Scan(&waiting); err != nil {
+			t.Fatalf("observe database lock: %v", err)
+		}
+		if waiting {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("database lock wait was not observed for %s", name)
+}
 
 // TestPaymentSharedInvariantCaptureACL (PSI01).
 func TestPaymentSharedInvariantCaptureACL(t *testing.T) {
@@ -162,7 +186,21 @@ func TestPaymentSharedInvariantObservationLeaseFence(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pool.Close()
-	report := pqJSON(e.sessionReport(t, attempt, "complete", "paid", "succeeded", false))
+	// The worker's exact §5.7 projection (36 keys): sessionReport is the owner-insert subset, so the remaining keys
+	// are added with the values a retrieve of a pinned, paid MOCK session carries.
+	full := e.sessionReport(t, attempt, "complete", "paid", "succeeded", false)
+	var keyVersion int64
+	if err = e.f.owner.QueryRow(ctx, `SELECT credential_version FROM checkout.payment_attempts WHERE id=$1`, attempt).Scan(&keyVersion); err != nil {
+		t.Fatal(err)
+	}
+	for k, v := range map[string]any{"KeyVersion": keyVersion, "RequestID": "", "SendCount": 1, "PresentmentAmount": nil, "Created": nil,
+		"PaymentIntentID": "", "ErrorClass": "", "ErrorCode": "", "HTTPStatus": nil, "ListMatchCount": nil, "LocalReason": ""} {
+		full[k] = v
+	}
+	if len(full) != 36 {
+		t.Fatalf("fixture: Stripe observation has %d keys, want 36", len(full))
+	}
+	report := pqJSON(full)
 	holder, err := e.f.owner.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -212,7 +250,7 @@ func TestPaymentSharedInvariantObservationLeaseFence(t *testing.T) {
 			return tx.Commit(ctx)
 		}()
 	}()
-	waitForDatabaseLock(t, e.f.owner, name)
+	psiAwaitLock(t, e.f.owner, name, done)
 	var live bool
 	if err = e.f.owner.QueryRow(ctx, `SELECT clock_timestamp()<$1`, expiry).Scan(&live); err != nil || !live {
 		t.Fatal("missed live-lease wait")
