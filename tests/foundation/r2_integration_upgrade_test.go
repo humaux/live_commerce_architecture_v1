@@ -116,8 +116,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0197 (PAY-RM2 phase 2b drop of the retained PAYUNi SQL path) adds one: 123 -> 124.
 	// post_river/0026 (PAY-RM2 phase 2b: start_payment/record_payment_query, which post_river/0005 recreates) adds one: 124 -> 125.
 	// 0198 (PAY-RM2 phase 2c: erase stored PAYUNi hosted-form material, owner decision 2026-10-19) adds one: 125 -> 126.
-	if len(r2) != 126 {
-		t.Fatalf("R2 migration set = %d files %v, want 126", len(r2), r2)
+	// 0199 (PAY-RM2 phase-2b follow-ups, issue #93: stricter guard, start/record window revoke, hosted writer revoke) adds one: 126 -> 127.
+	// post_river/0027 (PAY-RM2 phase-2b guard re-check inside the post-River transaction, issue #93 P2-1) adds one: 127 -> 128.
+	if len(r2) != 128 {
+		t.Fatalf("R2 migration set = %d files %v, want 128", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

@@ -32,7 +32,7 @@ Evidence level: E1 (static: `go vet`, `go test -c`, `gofmt`, prepush). Every row
 | TestBuyerPaymentFaultRollback | TestStripeStartFaultRollback |
 | TestBuyerPaymentFinalWaitGate | TestStripeSP07Start/mixed_provider_lock_workload_no_deadlock |
 | TestBuyerPaymentAuthorityAndDispatcherFence | TestStripeAuthorityIngressMatrix / RegistrarMatrix; P2B01 (start_payment absent, ACL gone with it) |
-| TestBuyerPaymentQualificationExpiresDuringFinalWrite | TestStripeSP07Start (qualification clauses); TestStripeSL03Registrar/qualify_and_method_gates |
+| TestBuyerPaymentQualificationExpiresDuringFinalWrite | TestStripeSP07Start (qualification clauses); TestStripeSL03Registrar/qualify_and_method_gates ; **issue #91 (2026-10-19): verified equivalent is PSI02 `TestPaymentSharedInvariantStartFinalWriteFence`** (Stripe start, real events wait, full-row rollback) |
 | TestBuyerPaymentFreshSessionAndQualificationAuthority | TestStripeSP07Start; TestStripeSP21RegistrarBindsStoredCredential |
 | TestBuyerPaymentExpiredHoldRace | TestStripeSP10Deadline |
 
@@ -61,7 +61,7 @@ Evidence level: E1 (static: `go vet`, `go test -c`, `gofmt`, prepush). Every row
 | test | map | replacement |
 |---|---|---|
 | TestBuyerPaymentQueryReportAtomicDedupAndBinding | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeSP11SQLSignalLoader, TestStripeCaptureDurableObservationAcrossRestart |
-| TestBuyerPaymentQueryFaultAndLeaseWaitRollback | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeQueryCancelledIOKeepsRecoverableLease |
+| TestBuyerPaymentQueryFaultAndLeaseWaitRollback | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeQueryCancelledIOKeepsRecoverableLease ; **issue #91: the cancelled-IO test never reaches the DB report write; verified equivalent is PSI03 `TestPaymentSharedInvariantObservationLeaseFence`** (record_stripe_observation, 40001, no report/job/Complete) |
 | TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeSP12MoneyChecks |
 | TestBuyerPaymentQueryFinishClockAndReferenceFence | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeSP10Deadline, TestStripeSP12MoneyChecks |
 | TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob | a+b | `p2bQueryRetired`; a (name-matched, reviewer to verify): TestStripeSP11SQLSignalLoader, TestStripeSP08HappyMock (no key or scope leakage) |
@@ -76,12 +76,12 @@ Evidence level: E1 (static: `go vet`, `go test -c`, `gofmt`, prepush). Every row
 | TestBuyerPaymentCaptureEvidenceAndStickyReview | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP12MoneyChecks, TestStripeUntrackedDriftReview |
 | TestBuyerPaymentCaptureLaterRefundAndReverseOrder | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeRF07Lifecycle, TestStripeRF05HappyMock |
 | TestBuyerPaymentCaptureOldAuthorizationIsNotConflict | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP12MoneyChecks |
-| TestBuyerPaymentCaptureACLAndObservationBinding | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP06Schema, TestStripeSP11SQLSignalLoader |
-| TestBuyerPaymentCaptureFaultsAreCausalAndAtomic | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeCaptureDurableObservationAcrossRestart |
-| TestBuyerPaymentCaptureReleasedAnomalyKeepsRealMoney | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP10Deadline/paid_in_the_last_second_captures_not_closes |
-| TestBuyerPaymentCaptureBalanceWaitIsAtomic | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeUntrackedReservationRefusals, TestStripeUntrackedQuantityBoundary |
+| TestBuyerPaymentCaptureACLAndObservationBinding | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP06Schema, TestStripeSP11SQLSignalLoader ; **issue #91: shared ACL kept as PSI01 `TestPaymentSharedInvariantCaptureACL`** (execute boundary, no direct business writes, work-item DELETE/UPDATE(state) only, merchant apply 42501) |
+| TestBuyerPaymentCaptureFaultsAreCausalAndAtomic | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeCaptureDurableObservationAcrossRestart ; **issue #91: the restart test has no mid-capture failure; verified equivalent is PSI04 `TestPaymentSharedInvariantCaptureFaultsAtomic`** (six write points, exact SQLSTATE, zero partial commit, observation kept, retry unique) |
+| TestBuyerPaymentCaptureReleasedAnomalyKeepsRealMoney | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP10Deadline/paid_in_the_last_second_captures_not_closes ; **corrected (issue #93, review P2-4): the a-mapping above names the wrong test; the verified equivalent is `TestStripeSP12MoneyChecks/late_paid_after_closure_is_one_manual_refund_obligation_and_replay_converges`** (stripe_flow_test.go) |
+| TestBuyerPaymentCaptureBalanceWaitIsAtomic | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeUntrackedReservationRefusals, TestStripeUntrackedQuantityBoundary ; **corrected (issue #93, review P2-4): no Stripe equivalent — pre-existing gap (lock-wait invisibility of an uncommitted capture), tracked as a separate follow-up, not fixed here** |
 | TestBuyerPaymentCaptureEmptyReferenceAndMerchantReadScope | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP12MoneyChecks; merchant read scope of PAYUNi history: P2B03 (`moRead`) |
-| TestBuyerPaymentCaptureMultiSKUSingleCommit | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeUntrackedMixedDrift, TestStripeSP08HappyMock |
+| TestBuyerPaymentCaptureMultiSKUSingleCommit | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeUntrackedMixedDrift, TestStripeSP08HappyMock ; **corrected (issue #93, review P2-4): no Stripe equivalent — pre-existing gap (capture of ≥2 tracked lines with per-line conservation and replay), tracked as a separate follow-up, not fixed here** |
 | TestBuyerPaymentCaptureQueryJobBindingAndRollback | a+b+c | `p2bCaptureRetired`; a (name-matched, reviewer to verify): TestStripeSP11SQLSignalLoader, TestStripeCaptureForgedRiverJobCancelsWithoutMoney |
 | TestBuyerPaymentCaptureRealRiverSignedQueryChain | c | `pcRecord` → `rm2SeedReport`; every assertion unchanged |
 
