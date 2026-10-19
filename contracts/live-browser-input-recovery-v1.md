@@ -6,6 +6,11 @@ Independent review: `c7e25c7`, Humaux `974ccc81-0ed5-4eec-b9e9-8008e68f7682`;
 no remaining confirmed P0/P1 in this bounded ABI. Process capability binding
 is specified in `live-browser-input-process-v1.md`; its implementation and
 actual execution gates remain separate requirements.
+Revision 2026-10-19 (PR #79, merge `2b27a5cae`): the Read function must be
+STABLE, as migration 0195 (PR #77) requires of the legacy reader, and readiness
+asserts STABLE Read with all other functions VOLATILE. Independently reviewed
+APPROVE at head `797f60713` (`output/studio-read-snapshot/review-797f60713.md`).
+No other part of the baseline changed.
 Extends `live-media-recovery-observer-v1.md` and
 `live-browser-input-worker-v1.md`; does not replace either cleanup contract.
 

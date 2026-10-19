@@ -19,6 +19,12 @@ Later test-only fault cases pass separately at `b446e49`, together with old BIC6
 they are not part of full709. Complete BRW01–04 coverage is still pending.
 This is not acceptance of the remaining HTTP/browser/recovery product gates.
 
+Revision 2026-10-19 (issue #86, after PR #79 / 0196, merge `2b27a5cae`): the Studio
+input reader paragraph now records that, under STABLE, the 0043 in-SQL "final"
+recheck reads the same snapshot (wall-clock expiry only) and that Go's GetDraft is
+the fresh revocation/revision fence. Clarification of existing behavior; the
+frozen wire ABI is unchanged.
+
 ## One execution owner, two independent liabilities
 
 Reuse the original attempt, operation, River kind/job, BIC input custody, MLC
@@ -353,9 +359,14 @@ SQL envelope is exactly `prepared`, `project_id`, `credential_version`,
 endpoint, strips those three mapping fields, and rechecks the draft snapshot.
 Missing mapping fails closed; this advisory selection never replaces Start's
 locked checks. Both input GET responses are capped at 8192 bytes in Go/BFF.
-Initial and final read authority/revision/session-expiry checks apply. Both
-readers and the nested `read_studio_media` are STABLE (0196), so each DTO comes
-from one snapshot; the fresh revocation fence is Go's post-read GetDraft. INPUT
+The initial read authority/revision/session-expiry check applies. Both readers
+and the nested `read_studio_media` are STABLE (0196), so each DTO comes from one
+snapshot. The trailing `PERFORM live.read_studio_media(...)` that the 0043
+comments call the "final read-token/revision/session check" and "Recheck
+authorization and current draft snapshot" therefore reads that same snapshot:
+it re-evaluates only the wall-clock expiry (`clock_timestamp()`), not a newer
+revocation or revision. The fresh post-read revocation/revision fence is Go's
+GetDraft. 0043 is applied and is not edited; this paragraph corrects its comments. INPUT
 `cleanup_held` is independent from Egress escalation; a held input or revoked
 authorization does not remove a current manager's cleanup Stop permission.
 
