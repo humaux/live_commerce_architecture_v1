@@ -1,0 +1,1650 @@
+=== RUN   TestAdsAttributionAT3ExactComment
+=== RUN   TestAdsAttributionAT3ExactComment/one_boost
+=== RUN   TestAdsAttributionAT3ExactComment/simultaneous_boosts
+=== RUN   TestAdsAttributionAT3ExactComment/outside_window
+=== RUN   TestAdsAttributionAT3ExactComment/other_post_in_same_session
+=== RUN   TestAdsAttributionAT3ExactComment/click_beats_post
+=== RUN   TestAdsAttributionAT3ExactComment/line_updated_after_redeem
+--- PASS: TestAdsAttributionAT3ExactComment (37.28s)
+    --- PASS: TestAdsAttributionAT3ExactComment/one_boost (11.97s)
+    --- PASS: TestAdsAttributionAT3ExactComment/simultaneous_boosts (4.80s)
+    --- PASS: TestAdsAttributionAT3ExactComment/outside_window (3.08s)
+    --- PASS: TestAdsAttributionAT3ExactComment/other_post_in_same_session (9.67s)
+    --- PASS: TestAdsAttributionAT3ExactComment/click_beats_post (4.76s)
+    --- PASS: TestAdsAttributionAT3ExactComment/line_updated_after_redeem (3.00s)
+=== RUN   TestAdsAttributionAT1BeginFreeze
+=== RUN   TestAdsAttributionAT1BeginFreeze/valid_click_frozen_once_and_replay_cannot_change_it
+=== RUN   TestAdsAttributionAT1BeginFreeze/expired
+=== RUN   TestAdsAttributionAT1BeginFreeze/future
+=== RUN   TestAdsAttributionAT1BeginFreeze/foreign_store
+=== RUN   TestAdsAttributionAT1BeginFreeze/malformed
+--- PASS: TestAdsAttributionAT1BeginFreeze (4.74s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/valid_click_frozen_once_and_replay_cannot_change_it (2.22s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/expired (0.58s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/future (0.60s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/foreign_store (0.75s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/malformed (0.59s)
+=== RUN   TestAdsAttributionR11UnknownDraft
+--- PASS: TestAdsAttributionR11UnknownDraft (0.49s)
+=== RUN   TestAdsAttributionR11ReportCapAndDeadline
+    ads_attribution_r11_test.go:270: REAL_PG MOCK synthetic collected COD orders=10000 drafts=100 API elapsed=620.221337ms status=200 bytes=74925
+    ads_attribution_r11_test.go:270: REAL_PG MOCK synthetic collected COD orders=10000 drafts=101 API elapsed=601.61464ms status=200 bytes=74630
+    ads_attribution_r11_test.go:320: REAL_PG direct runtime SQL elapsed=593.430352ms bytes=81016 error=<nil>
+--- PASS: TestAdsAttributionR11ReportCapAndDeadline (26.98s)
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary/READY
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary/DISPATCHING
+--- PASS: TestAdsAttributionR12AudienceLeaseBoundary (0.78s)
+    --- PASS: TestAdsAttributionR12AudienceLeaseBoundary/READY (0.40s)
+    --- PASS: TestAdsAttributionR12AudienceLeaseBoundary/DISPATCHING (0.39s)
+=== RUN   TestAdsAttributionR9BeginNeverFails
+=== RUN   TestAdsAttributionR9BeginNeverFails/legitimate_click
+=== RUN   TestAdsAttributionR9BeginNeverFails/garbage
+=== RUN   TestAdsAttributionR9BeginNeverFails/expired
+=== RUN   TestAdsAttributionR9BeginNeverFails/foreign
+=== RUN   TestAdsAttributionR9BeginNeverFails/missing
+=== RUN   TestAdsAttributionR9BeginNeverFails/unmarshalable_timestamp
+--- PASS: TestAdsAttributionR9BeginNeverFails (13.18s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/legitimate_click (2.17s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/garbage (2.17s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/expired (2.17s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/foreign (2.33s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/missing (2.18s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/unmarshalable_timestamp (2.16s)
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads/AthenB
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads/BthenA
+--- PASS: TestAdsAttributionSessionAudienceOverlappingReads (5.37s)
+    --- PASS: TestAdsAttributionSessionAudienceOverlappingReads/AthenB (2.68s)
+    --- PASS: TestAdsAttributionSessionAudienceOverlappingReads/BthenA (2.69s)
+=== RUN   TestBlocklistDefinerRulesAndPrivacy
+--- PASS: TestBlocklistDefinerRulesAndPrivacy (7.90s)
+=== RUN   TestBuyerCheckoutReceiptWaitReauthenticates
+--- PASS: TestBuyerCheckoutReceiptWaitReauthenticates (1.20s)
+=== RUN   TestBuyerCheckoutConcurrentReplayAndCartDedup
+--- PASS: TestBuyerCheckoutConcurrentReplayAndCartDedup (0.48s)
+=== RUN   TestBuyerCheckoutExpiryFencesAndConservation
+=== RUN   TestBuyerCheckoutExpiryFencesAndConservation/PAYMENT_PENDING
+=== RUN   TestBuyerCheckoutExpiryFencesAndConservation/COMMITTED
+--- PASS: TestBuyerCheckoutExpiryFencesAndConservation (1.34s)
+    --- PASS: TestBuyerCheckoutExpiryFencesAndConservation/PAYMENT_PENDING (0.43s)
+    --- PASS: TestBuyerCheckoutExpiryFencesAndConservation/COMMITTED (0.43s)
+=== RUN   TestBuyerCommsGateLookupReusedBearer
+--- PASS: TestBuyerCommsGateLookupReusedBearer (0.66s)
+=== RUN   TestBuyerCommsGateMerchantBatch
+=== RUN   TestBuyerCommsGateMerchantBatch/orders_inside_the_5_minute_window_wait,_then_go_out_as_one_batch
+=== RUN   TestBuyerCommsGateMerchantBatch/a_confirmed_transfer_does_not_announce_the_same_order_to_the_merchant_again
+=== RUN   TestBuyerCommsGateMerchantBatch/opt-out_through_the_real_route_skips_merchant_mail;_turning_it_on_again_does_not_resurrect_skipped_rows
+--- PASS: TestBuyerCommsGateMerchantBatch (1.12s)
+    --- PASS: TestBuyerCommsGateMerchantBatch/orders_inside_the_5_minute_window_wait,_then_go_out_as_one_batch (0.16s)
+    --- PASS: TestBuyerCommsGateMerchantBatch/a_confirmed_transfer_does_not_announce_the_same_order_to_the_merchant_again (0.07s)
+    --- PASS: TestBuyerCommsGateMerchantBatch/opt-out_through_the_real_route_skips_merchant_mail;_turning_it_on_again_does_not_resurrect_skipped_rows (0.16s)
+=== RUN   TestBuyerDestinationConcurrentReplayAndCAS
+=== RUN   TestBuyerDestinationConcurrentReplayAndCAS/replay
+=== RUN   TestBuyerDestinationConcurrentReplayAndCAS/CAS
+--- PASS: TestBuyerDestinationConcurrentReplayAndCAS (0.48s)
+    --- PASS: TestBuyerDestinationConcurrentReplayAndCAS/replay (0.23s)
+    --- PASS: TestBuyerDestinationConcurrentReplayAndCAS/CAS (0.25s)
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/cart
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/country
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/kind
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/revoked-source
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/new-source
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/expired
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/future
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/source-expiry
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/source-future
+=== RUN   TestBuyerDestinationRevalidationRejectsDrift/invalid-text
+--- PASS: TestBuyerDestinationRevalidationRejectsDrift (2.12s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/cart (0.22s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/country (0.21s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/kind (0.21s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/revoked-source (0.21s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/new-source (0.22s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/expired (0.21s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/future (0.20s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/source-expiry (0.21s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/source-future (0.21s)
+    --- PASS: TestBuyerDestinationRevalidationRejectsDrift/invalid-text (0.21s)
+=== RUN   TestBuyerDestinationAtomicRollback
+=== RUN   TestBuyerDestinationAtomicRollback/storefront.destination_events
+=== RUN   TestBuyerDestinationAtomicRollback/buyer.command_results
+=== RUN   TestBuyerDestinationAtomicRollback/ops.audit_events
+=== RUN   TestBuyerDestinationAtomicRollback/ops.command_results
+--- PASS: TestBuyerDestinationAtomicRollback (0.23s)
+    --- PASS: TestBuyerDestinationAtomicRollback/storefront.destination_events (0.02s)
+    --- PASS: TestBuyerDestinationAtomicRollback/buyer.command_results (0.01s)
+    --- PASS: TestBuyerDestinationAtomicRollback/ops.audit_events (0.01s)
+    --- PASS: TestBuyerDestinationAtomicRollback/ops.command_results (0.01s)
+=== RUN   TestBuyerPaymentViewFinalDatabaseClock
+=== RUN   TestBuyerPaymentViewFinalDatabaseClock/capability
+=== RUN   TestBuyerPaymentViewFinalDatabaseClock/qualification
+=== RUN   TestBuyerPaymentViewFinalDatabaseClock/page
+--- PASS: TestBuyerPaymentViewFinalDatabaseClock (3.14s)
+    --- PASS: TestBuyerPaymentViewFinalDatabaseClock/capability (1.03s)
+    --- PASS: TestBuyerPaymentViewFinalDatabaseClock/qualification (1.05s)
+    --- PASS: TestBuyerPaymentViewFinalDatabaseClock/page (1.07s)
+=== RUN   TestBuyerHTTPRegistrationRevokeWaitAndTransport
+--- PASS: TestBuyerHTTPRegistrationRevokeWaitAndTransport (0.45s)
+=== RUN   TestBuyerHTTPSharedQuotaReplayRetireAndIsolation
+--- PASS: TestBuyerHTTPSharedQuotaReplayRetireAndIsolation (0.93s)
+=== RUN   TestCartQuoteValidationSQLAndAtomicRollback
+--- PASS: TestCartQuoteValidationSQLAndAtomicRollback (0.24s)
+=== RUN   TestCatalogCoreCC11bConcurrency
+--- PASS: TestCatalogCoreCC11bConcurrency (0.57s)
+=== RUN   TestCatalogCoreCC02DraftLifecycle
+--- PASS: TestCatalogCoreCC02DraftLifecycle (0.80s)
+=== RUN   TestT04CommandReplayOptimisticCatalogAndPriceHistory
+--- PASS: TestT04CommandReplayOptimisticCatalogAndPriceHistory (0.08s)
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/matching
+    catalog_matrix_evidence_test.go:65: actual canonical child exit=0:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+        --- PASS: TestProductEditorMatrixLedgerEvidence (0.06s)
+        PASS
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-default
+    catalog_matrix_evidence_test.go:65: actual canonical child exit=0:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:295: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- SKIP: TestProductEditorMatrixLedgerEvidence (0.01s)
+        PASS
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-strict
+    catalog_matrix_evidence_test.go:65: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:297: canonical evidence is historical (source drift: tests/admin/product-editor.acceptance.ts)
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.01s)
+        FAIL
+=== RUN   TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/tampered-matching
+    catalog_matrix_evidence_test.go:65: actual canonical child exit=1:
+        === RUN   TestProductEditorMatrixLedgerEvidence
+            catalog_matrix_ledger_test.go:297: SHA-256 mismatch for canonical evidence/source output/matrix-ledger-enforce/fixture/browser/playwright.log
+        --- FAIL: TestProductEditorMatrixLedgerEvidence (0.00s)
+        FAIL
+--- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy (2.53s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/matching (1.17s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-default (1.12s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-strict (0.12s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/tampered-matching (0.11s)
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/pe-failed
+    catalog_matrix_evidence_test.go:428: rejected rehashed pe-failed: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-failed
+    catalog_matrix_evidence_test.go:428: rejected rehashed cc12-failed: canonical run outcome cc12-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/failed-tests
+    catalog_matrix_evidence_test.go:428: rejected rehashed failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-failed-tests
+    catalog_matrix_evidence_test.go:428: rejected rehashed missing-failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/null-failed-tests
+    catalog_matrix_evidence_test.go:428: rejected rehashed null-failed-tests: canonical run outcome pe-last-run.json must be passed with explicit empty failedTests
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-failed
+    catalog_matrix_evidence_test.go:428: rejected rehashed log-failed: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-log-failed
+    catalog_matrix_evidence_test.go:428: rejected rehashed cc12-log-failed: canonical run outcome cc12-playwright.log: must finish exactly 2 passed cases, got 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-skipped
+    catalog_matrix_evidence_test.go:428: rejected rehashed log-skipped: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-flaky
+    catalog_matrix_evidence_test.go:428: rejected rehashed log-flaky: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-incomplete
+    catalog_matrix_evidence_test.go:428: rejected rehashed log-incomplete: canonical run outcome playwright.log: must finish exactly 12 passed cases, got 11
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-failed
+    catalog_matrix_evidence_test.go:428: rejected rehashed log-extra-failed: canonical run outcome playwright.log: unexpected failed cases: 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-skipped
+    catalog_matrix_evidence_test.go:428: rejected rehashed log-extra-skipped: canonical run outcome playwright.log: unexpected skipped cases: 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-flaky
+    catalog_matrix_evidence_test.go:428: rejected rehashed log-extra-flaky: canonical run outcome playwright.log: unexpected flaky cases: 1
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-summary
+    catalog_matrix_evidence_test.go:428: rejected rehashed missing-summary: canonical run outcome playwright.log: must contain one completed passing summary
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-passed
+    catalog_matrix_evidence_test.go:428: rejected rehashed manifest-passed: canonical manifest passed count PE_and_review must be 12
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-skipped
+    catalog_matrix_evidence_test.go:428: rejected rehashed manifest-skipped: canonical manifest must record zero skipped cases
+=== RUN   TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-ledger
+    catalog_matrix_evidence_test.go:428: rejected rehashed manifest-ledger: canonical manifest ledger counts must match the exact validated PASS ledger
+--- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome (1.86s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/pe-failed (0.10s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-failed (0.12s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/failed-tests (0.10s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-failed-tests (0.10s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/null-failed-tests (0.10s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-failed (0.11s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/cc12-log-failed (0.12s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-skipped (0.11s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-flaky (0.10s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-incomplete (0.11s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-failed (0.11s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-skipped (0.11s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/log-extra-flaky (0.11s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/missing-summary (0.11s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-passed (0.10s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-skipped (0.12s)
+    --- PASS: TestProductEditorMatrixLedgerEvidenceRunOutcome/manifest-ledger (0.12s)
+=== RUN   TestCatalogMediaLifecycle
+--- PASS: TestCatalogMediaLifecycle (0.67s)
+=== RUN   TestCatalogMediaBuyerAuthority
+--- PASS: TestCatalogMediaBuyerAuthority (0.39s)
+=== RUN   TestBankTransferLifecycle
+=== RUN   TestBankTransferLifecycle/settings:_defaults,_create,_stale_version,_invalid_body,_idempotent_replay,_audit
+=== RUN   TestBankTransferLifecycle/buyer_options_list_bank_transfer_for_home_and_CVS_rows_with_the_window
+=== RUN   TestBankTransferLifecycle/placement:_AWAITING_TRANSFER,_stock_only_RESERVED,_snapshot_row,_long_hold,_no_payment
+=== RUN   TestBankTransferLifecycle/a_settings_change_after_placement_never_moves_the_order's_bank_account
+=== RUN   TestBankTransferLifecycle/proof:_idempotent_per_key,_editable,_validated,_state_SUBMITTED_never_CONFIRMED
+=== RUN   TestBankTransferLifecycle/reject:_the_submission,_not_the_order;_audited;_idempotent;_the_buyer_sees_the_reason_and_can_resubmit
+=== RUN   TestBankTransferLifecycle/confirm:_merchant_act,_stock_committed_through_MERCHANT_ALLOCATE_rows,_audited,_idempotent,_once
+=== RUN   TestBankTransferLifecycle/shippable_once_confirmed,_listed_as_unshipped;_finance_carries_it_in_its_own_column
+=== RUN   TestBankTransferLifecycle/offline_refund:_recorded,_audited,_idempotent_once,_leaves_finance_and_shippability
+=== RUN   TestBankTransferLifecycle/a_CVS_pickup_order_can_pay_by_transfer_too_(allow_cvs)
+--- PASS: TestBankTransferLifecycle (0.95s)
+    --- PASS: TestBankTransferLifecycle/settings:_defaults,_create,_stale_version,_invalid_body,_idempotent_replay,_audit (0.02s)
+    --- PASS: TestBankTransferLifecycle/buyer_options_list_bank_transfer_for_home_and_CVS_rows_with_the_window (0.09s)
+    --- PASS: TestBankTransferLifecycle/placement:_AWAITING_TRANSFER,_stock_only_RESERVED,_snapshot_row,_long_hold,_no_payment (0.01s)
+    --- PASS: TestBankTransferLifecycle/a_settings_change_after_placement_never_moves_the_order's_bank_account (0.01s)
+    --- PASS: TestBankTransferLifecycle/proof:_idempotent_per_key,_editable,_validated,_state_SUBMITTED_never_CONFIRMED (0.04s)
+    --- PASS: TestBankTransferLifecycle/reject:_the_submission,_not_the_order;_audited;_idempotent;_the_buyer_sees_the_reason_and_can_resubmit (0.03s)
+    --- PASS: TestBankTransferLifecycle/confirm:_merchant_act,_stock_committed_through_MERCHANT_ALLOCATE_rows,_audited,_idempotent,_once (0.03s)
+    --- PASS: TestBankTransferLifecycle/shippable_once_confirmed,_listed_as_unshipped;_finance_carries_it_in_its_own_column (0.03s)
+    --- PASS: TestBankTransferLifecycle/offline_refund:_recorded,_audited,_idempotent_once,_leaves_finance_and_shippability (0.01s)
+    --- PASS: TestBankTransferLifecycle/a_CVS_pickup_order_can_pay_by_transfer_too_(allow_cvs) (0.09s)
+=== RUN   TestFreeShippingThreshold
+--- PASS: TestFreeShippingThreshold (0.64s)
+=== RUN   TestCheckoutReminderCR01WindowTakeoverAndOnce
+--- PASS: TestCheckoutReminderCR01WindowTakeoverAndOnce (9.48s)
+=== RUN   TestCheckoutReminderCR03CheckReChecks
+--- PASS: TestCheckoutReminderCR03CheckReChecks (3.84s)
+=== RUN   TestCheckoutReminderYoungClaimsAreNotNagged
+--- PASS: TestCheckoutReminderYoungClaimsAreNotNagged (1.08s)
+=== RUN   TestCheckoutReminderCountsTowardTheSendCap
+--- PASS: TestCheckoutReminderCountsTowardTheSendCap (1.55s)
+=== RUN   TestClaimDirectCheckoutStockMath
+--- PASS: TestClaimDirectCheckoutStockMath (0.28s)
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C1-links
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C3-intake
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C4-a14-send-actions
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C5-social
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C6-run-log
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link
+--- PASS: TestClaimsRetentionCRP04EnforcedPurge (9.22s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C1-links (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity (0.06s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit (0.01s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C3-intake (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger (0.05s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C4-a14-send-actions (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C5-social (0.30s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C6-run-log (0.01s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle (8.33s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link (0.30s)
+=== RUN   TestCustomerTags
+=== RUN   TestCustomerTags/CT01_create,_tag_and_filter_the_list_with_stable_paging
+=== RUN   TestCustomerTags/CT02_same_name_in_another_case_is_tag_exists
+=== RUN   TestCustomerTags/CT03_limits:_100_tags,_20_per_customer,_200_notes,_note_length
+=== RUN   TestCustomerTags/CT04_set_owner_tags_is_compare-and-set
+=== RUN   TestCustomerTags/CT05_permissions,_tenancy_and_note_authorship
+=== RUN   TestCustomerTags/CT06_erasure_removes_links_and_notes,_audit_holds_no_body
+=== RUN   TestCustomerTags/CT07_the_buyer_self-service_export_includes_tags_and_notes
+=== RUN   TestCustomerTags/CT08_deleting_a_tag_detaches_it_and_leaves_customers_alone
+=== RUN   TestCustomerTags/CT09_HTTP_routes_end_to_end,_nothing_logs_a_note_body
+--- PASS: TestCustomerTags (2.58s)
+    --- PASS: TestCustomerTags/CT01_create,_tag_and_filter_the_list_with_stable_paging (0.08s)
+    --- PASS: TestCustomerTags/CT02_same_name_in_another_case_is_tag_exists (0.04s)
+    --- PASS: TestCustomerTags/CT03_limits:_100_tags,_20_per_customer,_200_notes,_note_length (0.93s)
+    --- PASS: TestCustomerTags/CT04_set_owner_tags_is_compare-and-set (0.04s)
+    --- PASS: TestCustomerTags/CT05_permissions,_tenancy_and_note_authorship (0.08s)
+    --- PASS: TestCustomerTags/CT06_erasure_removes_links_and_notes,_audit_holds_no_body (0.22s)
+    --- PASS: TestCustomerTags/CT07_the_buyer_self-service_export_includes_tags_and_notes (0.30s)
+    --- PASS: TestCustomerTags/CT08_deleting_a_tag_detaches_it_and_leaves_customers_alone (0.08s)
+    --- PASS: TestCustomerTags/CT09_HTTP_routes_end_to_end,_nothing_logs_a_note_body (0.14s)
+=== RUN   TestCustomersBillingCB04BuyerHTTPConcurrency
+--- PASS: TestCustomersBillingCB04BuyerHTTPConcurrency (0.66s)
+=== RUN   TestCustomersBillingCB02Comments
+=== RUN   TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package
+--- PASS: TestCustomersBillingCB02Comments (3.55s)
+    --- PASS: TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package (0.03s)
+=== RUN   TestDeliveryAllocationSQLCompletenessAndRoleBoundary
+=== RUN   TestDeliveryAllocationSQLCompletenessAndRoleBoundary/missing
+=== RUN   TestDeliveryAllocationSQLCompletenessAndRoleBoundary/gap
+=== RUN   TestDeliveryAllocationSQLCompletenessAndRoleBoundary/zero-extra
+=== RUN   TestDeliveryAllocationSQLCompletenessAndRoleBoundary/duplicate-warehouse
+=== RUN   TestDeliveryAllocationSQLCompletenessAndRoleBoundary/position
+--- PASS: TestDeliveryAllocationSQLCompletenessAndRoleBoundary (0.24s)
+    --- PASS: TestDeliveryAllocationSQLCompletenessAndRoleBoundary/missing (0.00s)
+    --- PASS: TestDeliveryAllocationSQLCompletenessAndRoleBoundary/gap (0.00s)
+    --- PASS: TestDeliveryAllocationSQLCompletenessAndRoleBoundary/zero-extra (0.00s)
+    --- PASS: TestDeliveryAllocationSQLCompletenessAndRoleBoundary/duplicate-warehouse (0.00s)
+    --- PASS: TestDeliveryAllocationSQLCompletenessAndRoleBoundary/position (0.00s)
+=== RUN   TestDeliveryServiceRevisionsReplayAndIndependentFees
+--- PASS: TestDeliveryServiceRevisionsReplayAndIndependentFees (0.25s)
+=== RUN   TestDeliveryServiceAuthorityBeforeReplay
+=== RUN   TestDeliveryServiceAuthorityBeforeReplay/app.tenant_id
+=== RUN   TestDeliveryServiceAuthorityBeforeReplay/app.store_id
+=== RUN   TestDeliveryServiceAuthorityBeforeReplay/app.principal_id
+--- PASS: TestDeliveryServiceAuthorityBeforeReplay (0.20s)
+    --- PASS: TestDeliveryServiceAuthorityBeforeReplay/app.tenant_id (0.00s)
+    --- PASS: TestDeliveryServiceAuthorityBeforeReplay/app.store_id (0.00s)
+    --- PASS: TestDeliveryServiceAuthorityBeforeReplay/app.principal_id (0.00s)
+=== RUN   TestT06DispatcherOneDeadlineAndFreshCompletion
+--- PASS: TestT06DispatcherOneDeadlineAndFreshCompletion (1.44s)
+=== RUN   TestT06DispatcherRealProcessCrashRescue
+=== RUN   TestT06DispatcherRealProcessCrashRescue/before
+=== RUN   TestT06DispatcherRealProcessCrashRescue/after
+--- PASS: TestT06DispatcherRealProcessCrashRescue (38.48s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/before (19.10s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/after (19.38s)
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/array
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/trailing
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/oversize
+--- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation (0.13s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/array (0.00s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/trailing (0.00s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/oversize (0.00s)
+=== RUN   TestScopeIsolationAndSessionRevocation
+=== RUN   TestScopeIsolationAndSessionRevocation/no_token
+=== RUN   TestScopeIsolationAndSessionRevocation/cross_tenant
+=== RUN   TestScopeIsolationAndSessionRevocation/same_tenant_cross_store
+=== RUN   TestScopeIsolationAndSessionRevocation/wrong_audience
+=== RUN   TestScopeIsolationAndSessionRevocation/expired
+=== RUN   TestScopeIsolationAndSessionRevocation/revoked
+=== RUN   TestScopeIsolationAndSessionRevocation/missing_permission
+--- PASS: TestScopeIsolationAndSessionRevocation (0.01s)
+    --- PASS: TestScopeIsolationAndSessionRevocation/no_token (0.00s)
+    --- PASS: TestScopeIsolationAndSessionRevocation/cross_tenant (0.00s)
+    --- PASS: TestScopeIsolationAndSessionRevocation/same_tenant_cross_store (0.00s)
+    --- PASS: TestScopeIsolationAndSessionRevocation/wrong_audience (0.00s)
+    --- PASS: TestScopeIsolationAndSessionRevocation/expired (0.00s)
+    --- PASS: TestScopeIsolationAndSessionRevocation/revoked (0.00s)
+    --- PASS: TestScopeIsolationAndSessionRevocation/missing_permission (0.00s)
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/timeout_recovers
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/timeout_stays_error
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/reconnect_fails
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/saturation_never_retries
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/invalid_never_retries
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/query_error_never_retries
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/stop_mid_query_final_sample
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/query
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/invalid
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/reserved
+=== RUN   TestHarnessPoolCapacityObservationFailureIsSticky/breach
+--- PASS: TestHarnessPoolCapacityObservationFailureIsSticky (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once (0.00s)
+        --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/timeout_recovers (0.00s)
+        --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/timeout_stays_error (0.00s)
+        --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/reconnect_fails (0.00s)
+        --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/saturation_never_retries (0.00s)
+        --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/invalid_never_retries (0.00s)
+        --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/timeout_reconnect_once/query_error_never_retries (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/stop_mid_query_final_sample (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/query (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/invalid (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/reserved (0.00s)
+    --- PASS: TestHarnessPoolCapacityObservationFailureIsSticky/breach (0.00s)
+=== RUN   TestHomeCodReviewCvsDestinationRefusedOverHTTP
+--- PASS: TestHomeCodReviewCvsDestinationRefusedOverHTTP (0.76s)
+=== RUN   TestHomeCodReviewStockHoldAndNoPayment
+=== RUN   TestHomeCodReviewStockHoldAndNoPayment/the_expiry_job_reaches_STALE:_stock_and_reservation_untouched,_order_still_AWAITING_COLLECTION
+=== RUN   TestHomeCodReviewStockHoldAndNoPayment/start_payment_refuses_a_COD_order_and_leaves_no_attempt
+=== RUN   TestHomeCodReviewStockHoldAndNoPayment/a_card_refund_can_never_be_requested_for_a_COD_order
+--- PASS: TestHomeCodReviewStockHoldAndNoPayment (0.59s)
+    --- PASS: TestHomeCodReviewStockHoldAndNoPayment/the_expiry_job_reaches_STALE:_stock_and_reservation_untouched,_order_still_AWAITING_COLLECTION (0.01s)
+    --- PASS: TestHomeCodReviewStockHoldAndNoPayment/start_payment_refuses_a_COD_order_and_leaves_no_attempt (0.01s)
+    --- PASS: TestHomeCodReviewStockHoldAndNoPayment/a_card_refund_can_never_be_requested_for_a_COD_order (0.01s)
+=== RUN   TestHomeCodReviewACLInventory
+--- PASS: TestHomeCodReviewACLInventory (0.59s)
+=== RUN   TestHomeCodReviewFinanceBoundaries
+--- PASS: TestHomeCodReviewFinanceBoundaries (1.19s)
+=== RUN   TestBuyerPaymentHostedStorageFailureRollsBack
+--- PASS: TestBuyerPaymentHostedStorageFailureRollsBack (0.50s)
+=== RUN   TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake
+=== RUN   TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/qualification-revoked
+=== RUN   TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/credential-rotated
+=== RUN   TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/financial-authorized
+=== RUN   TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/review-case
+=== RUN   TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/binding-disabled
+=== RUN   TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/method-hidden
+--- PASS: TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake (3.02s)
+    --- PASS: TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/qualification-revoked (0.51s)
+    --- PASS: TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/credential-rotated (0.51s)
+    --- PASS: TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/financial-authorized (0.49s)
+    --- PASS: TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/review-case (0.50s)
+    --- PASS: TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/binding-disabled (0.50s)
+    --- PASS: TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake/method-hidden (0.50s)
+=== RUN   TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites
+=== RUN   TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites/prepare-insert
+=== RUN   TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites/handoff-update
+--- PASS: TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites (6.05s)
+    --- PASS: TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites/prepare-insert (3.01s)
+    --- PASS: TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites/handoff-update (3.03s)
+=== RUN   TestBuyerPaymentHostedSQLAtomicPreparationAndOneShot
+--- PASS: TestBuyerPaymentHostedSQLAtomicPreparationAndOneShot (0.51s)
+=== RUN   TestIdentityRollbackWhenLastAuditInsertFails
+--- PASS: TestIdentityRollbackWhenLastAuditInsertFails (0.06s)
+=== RUN   TestInboxUnknownAuthority
+=== RUN   TestInboxUnknownAuthority/empty
+=== RUN   TestInboxUnknownAuthority/exhaustive_healthy
+=== RUN   TestInboxUnknownAuthority/known_unknown
+=== RUN   TestInboxUnknownAuthority/missing_operation
+=== RUN   TestInboxUnknownAuthority/exactly_50_healthy
+=== RUN   TestInboxUnknownAuthority/unknown_in_full_scan
+=== RUN   TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound
+=== RUN   TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound
+=== RUN   TestInboxUnknownAuthority/scope_not_found
+--- PASS: TestInboxUnknownAuthority (20.73s)
+    --- PASS: TestInboxUnknownAuthority/empty (0.02s)
+    --- PASS: TestInboxUnknownAuthority/exhaustive_healthy (0.05s)
+    --- PASS: TestInboxUnknownAuthority/known_unknown (0.01s)
+    --- PASS: TestInboxUnknownAuthority/missing_operation (0.01s)
+    --- PASS: TestInboxUnknownAuthority/exactly_50_healthy (0.05s)
+    --- PASS: TestInboxUnknownAuthority/unknown_in_full_scan (0.05s)
+    --- PASS: TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound (0.05s)
+    --- PASS: TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound (12.74s)
+    --- PASS: TestInboxUnknownAuthority/scope_not_found (0.01s)
+=== RUN   TestK3LcB1ConcurrentStartSameSession
+--- PASS: TestK3LcB1ConcurrentStartSameSession (0.20s)
+=== RUN   TestK3LCB4ManualReplyLinkedPeerTakeover
+--- PASS: TestK3LCB4ManualReplyLinkedPeerTakeover (1.86s)
+=== RUN   TestKeywordToolsHTTP
+--- PASS: TestKeywordToolsHTTP (0.24s)
+=== RUN   TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies
+    legacy_runtime_isolation_test.go:130: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:130: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:130: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:130: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:130: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:130: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:133: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:133: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:133: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:133: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:133: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:133: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:136: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:136: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:136: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:136: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:136: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:136: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:139: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:139: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:139: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:139: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:139: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:139: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed identity backend_after=0
+--- PASS: TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies (28.53s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger
+--- PASS: TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger (4.11s)
+=== RUN   TestLiveBrowserInputBRW03CommittedCleanupResultAckLoss
+--- PASS: TestLiveBrowserInputBRW03CommittedCleanupResultAckLoss (15.12s)
+=== RUN   TestLiveBrowserInputBRW04EgressHoldStillCleansInput
+--- PASS: TestLiveBrowserInputBRW04EgressHoldStillCleansInput (2.46s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (5.15s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.09s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.16s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.01s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.19s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.64s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.14s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.15s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (3.59s)
+=== RUN   TestLiveClaimsCoreSmoke
+--- PASS: TestLiveClaimsCoreSmoke (0.34s)
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections/conversation
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections/bundle
+--- PASS: TestLiveConsoleBuyerPanelReviewOriginProjections (0.12s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewOriginProjections/conversation (0.03s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewOriginProjections/bundle (0.01s)
+=== RUN   TestLiveConsoleBuyerPanelA9A14
+--- PASS: TestLiveConsoleBuyerPanelA9A14 (0.04s)
+=== RUN   TestLiveConsoleLCN02ScanExhausted
+=== RUN   TestLiveConsoleLCN02ScanExhausted/full-raw-page-all-filtered
+=== RUN   TestLiveConsoleLCN02ScanExhausted/deleted-final-row-100-to-99
+=== RUN   TestLiveConsoleLCN02ScanExhausted/facebook-no-eof-proof
+--- PASS: TestLiveConsoleLCN02ScanExhausted (3.26s)
+    --- PASS: TestLiveConsoleLCN02ScanExhausted/full-raw-page-all-filtered (0.51s)
+    --- PASS: TestLiveConsoleLCN02ScanExhausted/deleted-final-row-100-to-99 (2.48s)
+    --- PASS: TestLiveConsoleLCN02ScanExhausted/facebook-no-eof-proof (0.26s)
+=== RUN   TestLiveConsoleLCN02IGFactsBridgeGraphBranch
+--- PASS: TestLiveConsoleLCN02IGFactsBridgeGraphBranch (8.37s)
+=== RUN   TestLiveConsoleLCN01CapsAndNoPoll
+--- PASS: TestLiveConsoleLCN01CapsAndNoPoll (0.31s)
+=== RUN   TestLiveConsoleLCN01DeletionEviction
+--- PASS: TestLiveConsoleLCN01DeletionEviction (2.27s)
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit
+--- PASS: TestLiveConsoleInboxLCN03PermissionSplit (0.03s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7 (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit (0.01s)
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_no_peer_key:_catalog_price,_bundle_buyer_unverified,_no_grant
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/no_conversation_(e.g._from_a_comment_with_no_linked_thread):_catalog_price,_no_conversation
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/a_caller_without_live:manage:_catalog_price,_permission
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/both_peer_keys_known_and_different:_409_bundle_buyer_mismatch_and_NOTHING_created
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_two_peers_where_one_differs_is_a_mismatch_too_(the_server_never_picks_a_peer)
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/another_store's_conversation_or_bundle:_404,_nothing_created
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/P2-7_b:_send_payment_link_without_inbox:reply_is_409_capability,_nothing_created
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/refused_bodies:_a_price_key,_unknown_keys,_bad_ids,_more_than_five_bundles
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/a_plain_manual_order_through_the_same_route:_no_bundle,_no_price,_no_reservation
+--- PASS: TestLiveConsoleOrderForBuyerFailClosed (1.78s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_no_peer_key:_catalog_price,_bundle_buyer_unverified,_no_grant (0.25s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/no_conversation_(e.g._from_a_comment_with_no_linked_thread):_catalog_price,_no_conversation (0.23s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_caller_without_live:manage:_catalog_price,_permission (0.23s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/both_peer_keys_known_and_different:_409_bundle_buyer_mismatch_and_NOTHING_created (0.06s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_two_peers_where_one_differs_is_a_mismatch_too_(the_server_never_picks_a_peer) (0.05s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/another_store's_conversation_or_bundle:_404,_nothing_created (0.06s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/P2-7_b:_send_payment_link_without_inbox:reply_is_409_capability,_nothing_created (0.05s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/refused_bodies:_a_price_key,_unknown_keys,_bad_ids,_more_than_five_bundles (0.05s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_plain_manual_order_through_the_same_route:_no_bundle,_no_price,_no_reservation (0.17s)
+=== RUN   TestLiveConsoleOrderForBuyerResume
+--- PASS: TestLiveConsoleOrderForBuyerResume (0.94s)
+=== RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes
+=== RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes/window_closed:_the_order_is_created,_send_says_window_closed,_no_link_was_re-issued_for_nothing
+=== RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes/no_conversation:_not_sent_no_conversation
+=== RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes/not_requested:_not_sent_not_requested;_the_first-run_DM_carries_Place's_own_link
+--- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes (1.60s)
+    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/window_closed:_the_order_is_created,_send_says_window_closed,_no_link_was_re-issued_for_nothing (0.27s)
+    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/no_conversation:_not_sent_no_conversation (0.23s)
+    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/not_requested:_not_sent_not_requested;_the_first-run_DM_carries_Place's_own_link (0.47s)
+=== RUN   TestLiveConsoleLCN03ConsoleAuthority
+--- PASS: TestLiveConsoleLCN03ConsoleAuthority (0.60s)
+=== RUN   TestLiveConsoleSendLCN06NonMessageUnitsNeverOpenAWindow
+--- PASS: TestLiveConsoleSendLCN06NonMessageUnitsNeverOpenAWindow (7.97s)
+=== RUN   TestLiveConsoleTemplatesPublishVersionAuditIdempotency
+--- PASS: TestLiveConsoleTemplatesPublishVersionAuditIdempotency (0.02s)
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_runtime
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_payment_worker
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_payment_live
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_expiry_worker
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_ads_worker
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_claims_worker
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_worker
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_meta_ingress
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_meta_worker
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_checkout_runtime
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/mixed-registrar-commerce_runtime
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/mixed-registrar-commerce_claims_worker
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/set-only-execute
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/direct-execute
+=== RUN   TestLiveMediaAuthorizationLMA02ActualRoleBoundary/public-execute
+--- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary (0.78s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role- (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_runtime (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_payment_worker (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_payment_live (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_expiry_worker (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_ads_worker (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_claims_worker (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_worker (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_meta_ingress (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_meta_worker (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/role-commerce_checkout_runtime (0.02s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/mixed-registrar-commerce_runtime (0.11s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/mixed-registrar-commerce_claims_worker (0.05s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/set-only-execute (0.12s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/direct-execute (0.12s)
+    --- PASS: TestLiveMediaAuthorizationLMA02ActualRoleBoundary/public-execute (0.06s)
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/principal
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/membership
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/grant
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/tenant
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/store
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/binding-disable
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/binding-version
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/prepared-revoke
+=== RUN   TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/start-deadline-only
+--- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics (14.83s)
+    --- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/principal (1.58s)
+    --- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/membership (1.57s)
+    --- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/grant (1.58s)
+    --- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/tenant (1.57s)
+    --- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/store (1.57s)
+    --- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/binding-disable (1.57s)
+    --- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/binding-version (1.57s)
+    --- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/prepared-revoke (1.58s)
+    --- PASS: TestLiveMediaExecutionLME08ReservedRevocationAndDeadlineSemantics/start-deadline-only (2.22s)
+=== RUN   TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary
+=== RUN   TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary/different-physical-database
+--- PASS: TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary (3.94s)
+    --- PASS: TestLiveMediaExecutionLME01RolesSignaturesAndSecretBoundary/different-physical-database (3.44s)
+=== RUN   TestLiveMediaExecutionLME02NativeRiverTLSAndNoOpenTransaction
+--- PASS: TestLiveMediaExecutionLME02NativeRiverTLSAndNoOpenTransaction (2.66s)
+=== RUN   TestLiveMediaExecutionBIC04ReadinessCatalogPoison
+=== RUN   TestLiveMediaExecutionBIC04ReadinessCatalogPoison/private-close-public-execute
+=== RUN   TestLiveMediaExecutionBIC04ReadinessCatalogPoison/registrar-public-execute
+=== RUN   TestLiveMediaExecutionBIC04ReadinessCatalogPoison/registrar-runtime-execute
+=== RUN   TestLiveMediaExecutionBIC04ReadinessCatalogPoison/wrong-input-guard-tgtype
+--- PASS: TestLiveMediaExecutionBIC04ReadinessCatalogPoison (0.25s)
+    --- PASS: TestLiveMediaExecutionBIC04ReadinessCatalogPoison/private-close-public-execute (0.01s)
+    --- PASS: TestLiveMediaExecutionBIC04ReadinessCatalogPoison/registrar-public-execute (0.01s)
+    --- PASS: TestLiveMediaExecutionBIC04ReadinessCatalogPoison/registrar-runtime-execute (0.01s)
+    --- PASS: TestLiveMediaExecutionBIC04ReadinessCatalogPoison/wrong-input-guard-tgtype (0.03s)
+=== RUN   TestLiveMediaRecoveryMRR03WrongPhysicalDatabase
+--- PASS: TestLiveMediaRecoveryMRR03WrongPhysicalDatabase (0.18s)
+=== RUN   TestLiveMediaRecoveryMRR01KnownIDQuery
+--- PASS: TestLiveMediaRecoveryMRR01KnownIDQuery (7.47s)
+=== RUN   TestLiveMediaRecoveryMRR02TimelyReadbackWitnessCommitsAfterNinety
+--- PASS: TestLiveMediaRecoveryMRR02TimelyReadbackWitnessCommitsAfterNinety (92.46s)
+=== RUN   TestLiveMediaStopLMR01CommandAuthorityCancellationAndACL
+--- PASS: TestLiveMediaStopLMR01CommandAuthorityCancellationAndACL (1.56s)
+=== RUN   TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation
+=== RUN   TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes
+=== RUN   TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/unknown-attempt
+=== RUN   TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/invalid-token
+=== RUN   TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/limited
+=== RUN   TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/other-store
+=== RUN   TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/other-tenant
+=== RUN   TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/SQL-final-check-after-observed-grant-wait
+--- PASS: TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation (1.78s)
+    --- PASS: TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes (0.90s)
+        --- PASS: TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/unknown-attempt (0.01s)
+        --- PASS: TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/invalid-token (0.00s)
+        --- PASS: TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/limited (0.00s)
+        --- PASS: TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/other-store (0.00s)
+        --- PASS: TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/current-manager-not-original-and-replay-reauthorizes/other-tenant (0.00s)
+    --- PASS: TestLiveMediaStopLMR01CurrentAuthorityReplayAndObservedRevocation/SQL-final-check-after-observed-grant-wait (0.88s)
+=== RUN   TestLivePriceKeepOnPauseReplacementPausedAfterRedeem
+--- PASS: TestLivePriceKeepOnPauseReplacementPausedAfterRedeem (0.82s)
+=== RUN   TestLiveToolsGateLinkExpiry
+--- PASS: TestLiveToolsGateLinkExpiry (5.20s)
+=== RUN   TestLiveToolsGateConcurrentOfferCreation
+--- PASS: TestLiveToolsGateConcurrentOfferCreation (0.74s)
+=== RUN   TestLiveToolsLivePriceOnlyThroughClaimOrigin
+--- PASS: TestLiveToolsLivePriceOnlyThroughClaimOrigin (0.42s)
+=== RUN   TestLocalRecoverySnapshotDetectsSecurityAndSequenceDrift
+--- PASS: TestLocalRecoverySnapshotDetectsSecurityAndSequenceDrift (5.22s)
+=== RUN   TestLocalRecoveryBootstrapRolesTransform
+--- PASS: TestLocalRecoveryBootstrapRolesTransform (0.00s)
+=== RUN   TestManualFulfilmentMF08Guards
+=== RUN   TestManualFulfilmentMF08Guards/COMMENT_ON_for_every_0063_object_and_column
+=== RUN   TestManualFulfilmentMF08Guards/no_provider_dial,_River_insert_or_integration.operations_write_reachable_from_shipment/export_code
+=== RUN   TestManualFulfilmentMF08Guards/package_comments_of_the_fulfilment_files_(PROCESS_§5),_reported_as_data
+    manual_fulfilment_guards_test.go:116: DATA shipments.go: no SQL call-site comment naming the definer it calls (PROCESS §5 call sites)
+--- PASS: TestManualFulfilmentMF08Guards (0.15s)
+    --- PASS: TestManualFulfilmentMF08Guards/COMMENT_ON_for_every_0063_object_and_column (0.01s)
+    --- PASS: TestManualFulfilmentMF08Guards/no_provider_dial,_River_insert_or_integration.operations_write_reachable_from_shipment/export_code (0.14s)
+    --- PASS: TestManualFulfilmentMF08Guards/package_comments_of_the_fulfilment_files_(PROCESS_§5),_reported_as_data (0.00s)
+=== RUN   TestMerchantAccountsConcurrentReplayAndRotationCAS
+--- PASS: TestMerchantAccountsConcurrentReplayAndRotationCAS (0.11s)
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/pending
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/authorized
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/captured
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/review
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/expired_draft
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/paid_allocation_failure
+--- PASS: TestMerchantOrdersActualPaymentAndExpiryStates (21.76s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/pending (4.78s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/authorized (0.45s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/captured (5.30s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/review (5.36s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/expired_draft (0.46s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/paid_allocation_failure (5.42s)
+=== RUN   TestMerchantOrdersV2SearchStreamLimit
+--- PASS: TestMerchantOrdersV2SearchStreamLimit (0.00s)
+=== RUN   TestMerchantPurchaseEntryStatesAndIsolation
+--- PASS: TestMerchantPurchaseEntryStatesAndIsolation (0.61s)
+=== RUN   TestMerchantPurchaseEntryHTTPReplayAndNoPurchaseEffects
+--- PASS: TestMerchantPurchaseEntryHTTPReplayAndNoPurchaseEffects (0.32s)
+=== RUN   TestMerchantSettingsHTTPValidation
+=== RUN   TestMerchantSettingsHTTPValidation/media
+=== RUN   TestMerchantSettingsHTTPValidation/malformed
+=== RUN   TestMerchantSettingsHTTPValidation/trailing
+=== RUN   TestMerchantSettingsHTTPValidation/unknown_scope
+=== RUN   TestMerchantSettingsHTTPValidation/unknown_secret
+=== RUN   TestMerchantSettingsHTTPValidation/oversized
+=== RUN   TestMerchantSettingsHTTPValidation/wrong_market
+=== RUN   TestMerchantSettingsHTTPValidation/wrong_country
+=== RUN   TestMerchantSettingsHTTPValidation/wrong_code
+=== RUN   TestMerchantSettingsHTTPValidation/missing_targets
+=== RUN   TestMerchantSettingsHTTPValidation/query_read
+=== RUN   TestMerchantSettingsHTTPValidation/empty_query
+=== RUN   TestMerchantSettingsHTTPValidation/query_write
+=== RUN   TestMerchantSettingsHTTPValidation/wrong_method
+=== RUN   TestMerchantSettingsHTTPValidation/unknown_route
+--- PASS: TestMerchantSettingsHTTPValidation (0.10s)
+    --- PASS: TestMerchantSettingsHTTPValidation/media (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/malformed (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/trailing (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/unknown_scope (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/unknown_secret (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/oversized (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/wrong_market (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/wrong_country (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/wrong_code (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/missing_targets (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/query_read (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/empty_query (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/query_write (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/wrong_method (0.00s)
+    --- PASS: TestMerchantSettingsHTTPValidation/unknown_route (0.00s)
+=== RUN   TestMerchantToolsCSVScale
+    merchant_tools_csv_smoke_test.go:454: MTC04 measure n=250 (product+variant+stock): 3.046912963s (12.2 ms/row) created=250 adjustments=250 errors=0 err=csv preview rolled back
+    merchant_tools_csv_smoke_test.go:454: MTC04 measure n=1000 (product+variant+stock): 12.995410036s (13.0 ms/row) created=1000 adjustments=1000 errors=0 err=csv preview rolled back
+    merchant_tools_csv_smoke_test.go:468: MTC04 contract maximum: 1500 rows (product+variant, no stock), status 200 in 11.44956371s (committed=true, errors=0)
+    merchant_tools_csv_smoke_test.go:474: MTC04 export of 1500+ rows: 200 in 918.298685ms, 74808 bytes
+    merchant_tools_csv_smoke_test.go:493: MTC04 work cap: 1100 rows x 2 warehouses -> status 422 in 19.238261252s, errors=[{1001  limit}]
+--- PASS: TestMerchantToolsCSVScale (48.11s)
+=== RUN   TestMetaAdsMA11DispatcherAmendment
+=== RUN   TestMetaAdsMA11DispatcherAmendment/Mode_is_dispatch_for_the_first_claim_and_reconcile_for_the_next,_in_Check_and_in_the_callbacks_of_an_existing_route
+=== RUN   TestMetaAdsMA11DispatcherAmendment/a_bare_ErrPolicyDenied_stays_policy_denied_(existing_routes_unchanged)
+=== RUN   TestMetaAdsMA11DispatcherAmendment/DenyPolicy_records_its_own_code;_an_invalid_code_falls_back_to_policy_denied;_wrapping_keeps_the_code
+=== RUN   TestMetaAdsMA11DispatcherAmendment/a_Check_denial_in_reconcile_mode_is_never_BLOCKED_POLICY:_the_op_stays_UNKNOWN_policy_check_failed
+=== RUN   TestMetaAdsMA11DispatcherAmendment/reconcile_with_a_secret:_loader_runs_on_the_reconcile_claim;_the_secret_is_zeroed_after_the_callback
+=== RUN   TestMetaAdsMA11DispatcherAmendment/loader_denial:_dispatch_->_BLOCKED_POLICY_credential_unavailable;_reconcile_->_UNKNOWN_credential_unavailable;_other_error_->_UNKNOWN_secret_load_failed
+=== RUN   TestMetaAdsMA11DispatcherAmendment/route_validation:_exactly_one_of_Reconcile_/_ReconcileWithSecret,_the_secret_variant_only_with_the_loader_pair
+=== RUN   TestMetaAdsMA11DispatcherAmendment/InsertOperationJobOn_validates_queue_and_priority;_the_default_insert_is_unchanged
+--- PASS: TestMetaAdsMA11DispatcherAmendment (7.21s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/Mode_is_dispatch_for_the_first_claim_and_reconcile_for_the_next,_in_Check_and_in_the_callbacks_of_an_existing_route (1.28s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/a_bare_ErrPolicyDenied_stays_policy_denied_(existing_routes_unchanged) (0.17s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/DenyPolicy_records_its_own_code;_an_invalid_code_falls_back_to_policy_denied;_wrapping_keeps_the_code (0.66s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/a_Check_denial_in_reconcile_mode_is_never_BLOCKED_POLICY:_the_op_stays_UNKNOWN_policy_check_failed (1.22s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/reconcile_with_a_secret:_loader_runs_on_the_reconcile_claim;_the_secret_is_zeroed_after_the_callback (1.18s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/loader_denial:_dispatch_->_BLOCKED_POLICY_credential_unavailable;_reconcile_->_UNKNOWN_credential_unavailable;_other_error_->_UNKNOWN_secret_load_failed (2.52s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/route_validation:_exactly_one_of_Reconcile_/_ReconcileWithSecret,_the_secret_variant_only_with_the_loader_pair (0.09s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/InsertOperationJobOn_validates_queue_and_priority;_the_default_insert_is_unchanged (0.07s)
+=== RUN   TestMetaAdsFeed
+--- PASS: TestMetaAdsFeed (4.86s)
+=== RUN   TestMetaAdsMA04ErrorCodes
+=== RUN   TestMetaAdsMA04ErrorCodes/revision_changed_409
+=== RUN   TestMetaAdsMA04ErrorCodes/draft_approved_409
+=== RUN   TestMetaAdsMA04ErrorCodes/over_allowance_409_at_approve
+=== RUN   TestMetaAdsMA04ErrorCodes/not_whole_unit_422
+=== RUN   TestMetaAdsMA04ErrorCodes/currency_mismatch_422
+=== RUN   TestMetaAdsMA04ErrorCodes/starts_too_soon_422
+=== RUN   TestMetaAdsMA04ErrorCodes/source_not_owned_422
+=== RUN   TestMetaAdsMA04ErrorCodes/product_not_published_422
+=== RUN   TestMetaAdsMA04ErrorCodes/binding_disabled_409_at_approve
+=== RUN   TestMetaAdsMA04ErrorCodes/attempt_changed_409
+=== RUN   TestMetaAdsMA04ErrorCodes/budget_below_minimum_422
+=== RUN   TestMetaAdsMA04ErrorCodes/state_mismatch_409:_another_principal_presents_the_state
+=== RUN   TestMetaAdsMA04ErrorCodes/state_mismatch_409:_unknown_or_malformed_state
+=== RUN   TestMetaAdsMA04ErrorCodes/state_is_single_use
+=== RUN   TestMetaAdsMA04ErrorCodes/state_expired_410
+=== RUN   TestMetaAdsMA04ErrorCodes/meta_connect_failed_502:_Meta_refuses_the_code
+=== RUN   TestMetaAdsMA04ErrorCodes/not_in_pick_list_422
+=== RUN   TestMetaAdsMA04ErrorCodes/client_business_changed_409:_the_same_ad_account_re-connected_under_another_client_business
+=== RUN   TestMetaAdsMA04ErrorCodes/billing_restricted_402_is_the_platform_code
+=== RUN   TestMetaAdsMA04ErrorCodes/forbidden_/_not_found_/_unauthorized
+--- PASS: TestMetaAdsMA04ErrorCodes (0.54s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/revision_changed_409 (0.03s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/draft_approved_409 (0.02s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/over_allowance_409_at_approve (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/not_whole_unit_422 (0.00s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/currency_mismatch_422 (0.00s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/starts_too_soon_422 (0.00s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/source_not_owned_422 (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/product_not_published_422 (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/binding_disabled_409_at_approve (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/attempt_changed_409 (0.02s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/budget_below_minimum_422 (0.08s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/state_mismatch_409:_another_principal_presents_the_state (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/state_mismatch_409:_unknown_or_malformed_state (0.00s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/state_is_single_use (0.02s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/state_expired_410 (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/meta_connect_failed_502:_Meta_refuses_the_code (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/not_in_pick_list_422 (0.02s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/client_business_changed_409:_the_same_ad_account_re-connected_under_another_client_business (0.02s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/billing_restricted_402_is_the_platform_code (0.15s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/forbidden_/_not_found_/_unauthorized (0.01s)
+=== RUN   TestMetaAdsSandboxS4
+    meta_ads_sandbox_test.go:184: NOT_RUN: META_ADS_SANDBOX=1 and the owner's sandbox inputs are required (app 大梦 roles, sandbox ad account); never run in CI
+--- SKIP: TestMetaAdsSandboxS4 (0.00s)
+=== RUN   TestMetaClaimsMCI04SignedReplayToAcceptedClaim
+--- PASS: TestMetaClaimsMCI04SignedReplayToAcceptedClaim (7.84s)
+=== RUN   TestMetaClaimsMCI04RiverGuards
+--- PASS: TestMetaClaimsMCI04RiverGuards (0.55s)
+=== RUN   TestMetaClaimsMCI10IngestCallers
+--- PASS: TestMetaClaimsMCI10IngestCallers (0.96s)
+=== RUN   TestMetaConnectUnsubscribe
+=== RUN   TestMetaConnectUnsubscribe/disconnect_enqueues_one_job_holding_only_sealed_bytes;_the_worker_unsubscribes_the_Page_at_Meta,_wipes_the_token_and_audits
+=== RUN   TestMetaConnectUnsubscribe/an_ambiguous_answer_is_UNKNOWN_and_never_repeated;_a_4xx_is_FAILED;_both_wipe_the_token
+=== RUN   TestMetaConnectUnsubscribe/a_definite_not-applied_answer_(503)_retries_with_backoff,_at_most_5_attempts,_then_fails_with_the_token_wiped
+=== RUN   TestMetaConnectUnsubscribe/a_worker_without_the_private_ring_cannot_open_a_v2_token:_bounded_retries,_then_FAILED_with_the_token_wiped,_never_a_Graph_call
+=== RUN   TestMetaConnectUnsubscribe/an_expired_lease_means_the_outcome_is_unknown:_closed_UNKNOWN,_never_repeated
+=== RUN   TestMetaConnectUnsubscribe/disconnect_then_reconnect_of_the_SAME_Page_before_the_worker_runs:_the_pending_job_is_superseded,_the_live_Page_is_never_unsubscribed
+=== RUN   TestMetaConnectUnsubscribe/the_merchant_runtime_cannot_claim_or_finish_a_job_(claims-worker_authority_only)
+--- PASS: TestMetaConnectUnsubscribe (1.68s)
+    --- PASS: TestMetaConnectUnsubscribe/disconnect_enqueues_one_job_holding_only_sealed_bytes;_the_worker_unsubscribes_the_Page_at_Meta,_wipes_the_token_and_audits (0.25s)
+    --- PASS: TestMetaConnectUnsubscribe/an_ambiguous_answer_is_UNKNOWN_and_never_repeated;_a_4xx_is_FAILED;_both_wipe_the_token (0.49s)
+    --- PASS: TestMetaConnectUnsubscribe/a_definite_not-applied_answer_(503)_retries_with_backoff,_at_most_5_attempts,_then_fails_with_the_token_wiped (0.13s)
+    --- PASS: TestMetaConnectUnsubscribe/a_worker_without_the_private_ring_cannot_open_a_v2_token:_bounded_retries,_then_FAILED_with_the_token_wiped,_never_a_Graph_call (0.12s)
+    --- PASS: TestMetaConnectUnsubscribe/an_expired_lease_means_the_outcome_is_unknown:_closed_UNKNOWN,_never_repeated (0.12s)
+    --- PASS: TestMetaConnectUnsubscribe/disconnect_then_reconnect_of_the_SAME_Page_before_the_worker_runs:_the_pending_job_is_superseded,_the_live_Page_is_never_unsubscribed (0.14s)
+    --- PASS: TestMetaConnectUnsubscribe/the_merchant_runtime_cannot_claim_or_finish_a_job_(claims-worker_authority_only) (0.00s)
+=== RUN   TestMetaConsumerSQLIdentityAndRollback
+=== RUN   TestMetaConsumerSQLIdentityAndRollback/rollback_social.conversations
+=== RUN   TestMetaConsumerSQLIdentityAndRollback/rollback_social.messages
+=== RUN   TestMetaConsumerSQLIdentityAndRollback/rollback_meta_inbox.events
+=== RUN   TestMetaConsumerSQLIdentityAndRollback/rollback_meta_inbox.audit_events
+--- PASS: TestMetaConsumerSQLIdentityAndRollback (0.24s)
+    --- PASS: TestMetaConsumerSQLIdentityAndRollback/rollback_social.conversations (0.01s)
+    --- PASS: TestMetaConsumerSQLIdentityAndRollback/rollback_social.messages (0.01s)
+    --- PASS: TestMetaConsumerSQLIdentityAndRollback/rollback_meta_inbox.events (0.01s)
+    --- PASS: TestMetaConsumerSQLIdentityAndRollback/rollback_meta_inbox.audit_events (0.01s)
+=== RUN   TestMetaConsumerCommitGuardActuallyFires
+--- PASS: TestMetaConsumerCommitGuardActuallyFires (0.16s)
+=== RUN   TestMetaHealthRateLimitAndProbeFailing
+--- PASS: TestMetaHealthRateLimitAndProbeFailing (0.10s)
+=== RUN   TestMetaHealthMissingCredentialRecordsUnknown
+--- PASS: TestMetaHealthMissingCredentialRecordsUnknown (0.07s)
+=== RUN   TestMetaInboxRoleAndRouteAuthority
+=== RUN   TestMetaInboxRoleAndRouteAuthority/merchant_runtime
+=== RUN   TestMetaInboxRoleAndRouteAuthority/registrar
+=== RUN   TestMetaInboxRoleAndRouteAuthority/curator
+=== RUN   TestMetaInboxRoleAndRouteAuthority/migration_owner
+=== RUN   TestMetaInboxRoleAndRouteAuthority/route_denied_curator
+=== RUN   TestMetaInboxRoleAndRouteAuthority/route_denied_ingress
+=== RUN   TestMetaInboxRoleAndRouteAuthority/route_denied_runtime
+--- PASS: TestMetaInboxRoleAndRouteAuthority (0.16s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/merchant_runtime (0.01s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/registrar (0.02s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/curator (0.02s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/migration_owner (0.01s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/route_denied_curator (0.00s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/route_denied_ingress (0.00s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/route_denied_runtime (0.00s)
+=== RUN   TestMetaInboxConcurrentSameBodyHasOneIdentity
+--- PASS: TestMetaInboxConcurrentSameBodyHasOneIdentity (0.12s)
+=== RUN   TestMetaConnectIndCrossStoreRace
+--- PASS: TestMetaConnectIndCrossStoreRace (0.56s)
+=== RUN   TestMetaConnectIndNoTokenAnywhere
+--- PASS: TestMetaConnectIndNoTokenAnywhere (0.56s)
+=== RUN   TestMetaRuntimeRealAPIBinariesPageInstagramRestart
+--- PASS: TestMetaRuntimeRealAPIBinariesPageInstagramRestart (29.06s)
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_consumer
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_worker
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_ordinary_worker
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_owner
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_runtime
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_runtime
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_ingress
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_worker
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_ordinary_worker
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_owner
+--- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity (7.70s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_consumer (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_worker (0.03s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_ordinary_worker (0.03s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_owner (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_runtime (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_runtime (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_ingress (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_worker (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_ordinary_worker (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_owner (0.02s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.24s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.30s)
+=== RUN   TestOperationsQueueSQLDTOHasExactKeys
+--- PASS: TestOperationsQueueSQLDTOHasExactKeys (0.10s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.50s)
+=== RUN   TestOrderAttemptAbortReleasesOnlyOwnAdmission
+--- PASS: TestOrderAttemptAbortReleasesOnlyOwnAdmission (0.79s)
+=== RUN   TestOrderAttemptAbortWorkerNoEarlierLocksAndACL
+--- PASS: TestOrderAttemptAbortWorkerNoEarlierLocksAndACL (0.72s)
+=== RUN   TestOrderAttemptAbortBoundOrConsumedAdmissionRefused
+=== RUN   TestOrderAttemptAbortBoundOrConsumedAdmissionRefused/bound
+=== RUN   TestOrderAttemptAbortBoundOrConsumedAdmissionRefused/consumed
+=== RUN   TestOrderAttemptAbortBoundOrConsumedAdmissionRefused/placed
+--- PASS: TestOrderAttemptAbortBoundOrConsumedAdmissionRefused (2.24s)
+    --- PASS: TestOrderAttemptAbortBoundOrConsumedAdmissionRefused/bound (0.76s)
+    --- PASS: TestOrderAttemptAbortBoundOrConsumedAdmissionRefused/consumed (0.74s)
+    --- PASS: TestOrderAttemptAbortBoundOrConsumedAdmissionRefused/placed (0.74s)
+=== RUN   TestOrderAttemptExecutionArithmetic
+=== RUN   TestOrderAttemptExecutionArithmetic/subtotal
+=== RUN   TestOrderAttemptExecutionArithmetic/tax
+=== RUN   TestOrderAttemptExecutionArithmetic/total
+=== RUN   TestOrderAttemptExecutionArithmetic/line-subtotal
+=== RUN   TestOrderAttemptExecutionArithmetic/line-tax
+=== RUN   TestOrderAttemptExecutionArithmetic/origin-dropped
+=== RUN   TestOrderAttemptExecutionArithmetic/origin-added
+=== RUN   TestOrderAttemptExecutionArithmetic/facts-invalid
+=== RUN   TestOrderAttemptExecutionArithmetic/discount
+=== RUN   TestOrderAttemptExecutionArithmetic/shipping
+=== RUN   TestOrderAttemptExecutionArithmetic/shipping-tax
+=== RUN   TestOrderAttemptExecutionArithmetic/line-discount
+=== RUN   TestOrderAttemptExecutionArithmetic/line-total
+=== RUN   TestOrderAttemptExecutionArithmetic/origins-swapped
+--- PASS: TestOrderAttemptExecutionArithmetic (0.74s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/subtotal (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/tax (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/total (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/line-subtotal (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/line-tax (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/origin-dropped (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/origin-added (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/facts-invalid (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/discount (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/shipping (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/shipping-tax (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/line-discount (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/line-total (0.00s)
+    --- PASS: TestOrderAttemptExecutionArithmetic/origins-swapped (0.00s)
+=== RUN   TestOrderAttemptAuthorityInternalAccessorIsNotRuntimeAPI
+--- PASS: TestOrderAttemptAuthorityInternalAccessorIsNotRuntimeAPI (0.00s)
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/no_conversation
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/bundle_buyer_unverified
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/permission
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/no_live_price
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/superseded_origin
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/bundle_buyer_mismatch
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/foreign_origin
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/quantity
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/bundles
+=== RUN   TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/duplicate_origin
+--- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin (6.95s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/no_conversation (0.70s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/bundle_buyer_unverified (0.69s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/permission (0.69s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/no_live_price (0.70s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/superseded_origin (0.71s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/bundle_buyer_mismatch (0.69s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/foreign_origin (0.70s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/quantity (0.69s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/bundles (0.68s)
+    --- PASS: TestOrderAttemptClaimAdmissionFailClosedAndExactOrigin/duplicate_origin (0.69s)
+=== RUN   TestOrderAttemptClaimAdmissionCatalogQuantityBoundary
+=== RUN   TestOrderAttemptClaimAdmissionCatalogQuantityBoundary/1000
+=== RUN   TestOrderAttemptClaimAdmissionCatalogQuantityBoundary/1001
+--- PASS: TestOrderAttemptClaimAdmissionCatalogQuantityBoundary (1.28s)
+    --- PASS: TestOrderAttemptClaimAdmissionCatalogQuantityBoundary/1000 (0.64s)
+    --- PASS: TestOrderAttemptClaimAdmissionCatalogQuantityBoundary/1001 (0.64s)
+=== RUN   TestOrderAttemptClaimExecutionRetainsNativePrefixLocks
+--- PASS: TestOrderAttemptClaimExecutionRetainsNativePrefixLocks (0.75s)
+=== RUN   TestOrderAttemptCompositeBeginRejectsChangedStageIdentity
+=== RUN   TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/cart_id
+=== RUN   TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/quote_id
+=== RUN   TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/destination_id
+=== RUN   TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/tenant_id
+=== RUN   TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/allocation
+--- PASS: TestOrderAttemptCompositeBeginRejectsChangedStageIdentity (3.47s)
+    --- PASS: TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/cart_id (0.71s)
+    --- PASS: TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/quote_id (0.68s)
+    --- PASS: TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/destination_id (0.68s)
+    --- PASS: TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/tenant_id (0.68s)
+    --- PASS: TestOrderAttemptCompositeBeginRejectsChangedStageIdentity/allocation (0.70s)
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL/commerce_runtime
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL/commerce_claims_worker
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL/commerce_buyer_runtime
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL/commerce_checkout_writer
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL/commerce_privacy_writer
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL/no-fence
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL/changed-plan-bytes
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL/foreign-attempt
+=== RUN   TestOrderAttemptDestinationDenialsAndExactACL/foreign-cart
+--- PASS: TestOrderAttemptDestinationDenialsAndExactACL (0.78s)
+    --- PASS: TestOrderAttemptDestinationDenialsAndExactACL/commerce_runtime (0.02s)
+    --- PASS: TestOrderAttemptDestinationDenialsAndExactACL/commerce_claims_worker (0.01s)
+    --- PASS: TestOrderAttemptDestinationDenialsAndExactACL/commerce_buyer_runtime (0.01s)
+    --- PASS: TestOrderAttemptDestinationDenialsAndExactACL/commerce_checkout_writer (0.01s)
+    --- PASS: TestOrderAttemptDestinationDenialsAndExactACL/commerce_privacy_writer (0.01s)
+    --- PASS: TestOrderAttemptDestinationDenialsAndExactACL/no-fence (0.00s)
+    --- PASS: TestOrderAttemptDestinationDenialsAndExactACL/changed-plan-bytes (0.01s)
+    --- PASS: TestOrderAttemptDestinationDenialsAndExactACL/foreign-attempt (0.01s)
+    --- PASS: TestOrderAttemptDestinationDenialsAndExactACL/foreign-cart (0.01s)
+=== RUN   TestOrderAttemptExecutionFenceWireAndTransactionWitness
+--- PASS: TestOrderAttemptExecutionFenceWireAndTransactionWitness (0.66s)
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/worker
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/worker-null-store
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/worker-wrong-store
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/worker-auth
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/runtime-no-auth
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/runtime-null-store
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/foreign-principal
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/foreign-store
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/stale-generation
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/missing
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/commerce_ads_worker
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/commerce_payment_worker
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/commerce_buyer_runtime
+=== RUN   TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/commerce_checkout_runtime
+--- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure (0.80s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/worker (0.03s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/worker-null-store (0.00s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/worker-wrong-store (0.00s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/worker-auth (0.00s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/runtime-no-auth (0.00s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/runtime-null-store (0.00s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/foreign-principal (0.00s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/foreign-store (0.00s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/stale-generation (0.00s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/missing (0.00s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/commerce_ads_worker (0.02s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/commerce_payment_worker (0.02s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/commerce_buyer_runtime (0.02s)
+    --- PASS: TestOrderAttemptExecutionFenceActualLoginsAndNoDisclosure/commerce_checkout_runtime (0.02s)
+=== RUN   TestOrderAttemptExecutorCompletesNativeClaims
+--- PASS: TestOrderAttemptExecutorCompletesNativeClaims (0.90s)
+=== RUN   TestOrderAttemptExpirySharesCanonicalOrderLock
+--- PASS: TestOrderAttemptExpirySharesCanonicalOrderLock (4.83s)
+=== RUN   TestOrderAttemptFrozenExecutorSafetyRefusalsAbortWithoutEffects
+=== RUN   TestOrderAttemptFrozenExecutorSafetyRefusalsAbortWithoutEffects/sku-disabled
+=== RUN   TestOrderAttemptFrozenExecutorSafetyRefusalsAbortWithoutEffects/service-disabled
+--- PASS: TestOrderAttemptFrozenExecutorSafetyRefusalsAbortWithoutEffects (1.43s)
+    --- PASS: TestOrderAttemptFrozenExecutorSafetyRefusalsAbortWithoutEffects/sku-disabled (0.71s)
+    --- PASS: TestOrderAttemptFrozenExecutorSafetyRefusalsAbortWithoutEffects/service-disabled (0.71s)
+=== RUN   TestOrderAttemptJobsPrivateGuardACL
+--- PASS: TestOrderAttemptJobsPrivateGuardACL (0.00s)
+=== RUN   TestOrderAttemptKeyRetirementNativeInsertRace
+=== RUN   TestOrderAttemptKeyRetirementNativeInsertRace/admission-wins
+=== RUN   TestOrderAttemptKeyRetirementNativeInsertRace/retirement-wins
+--- PASS: TestOrderAttemptKeyRetirementNativeInsertRace (1.59s)
+    --- PASS: TestOrderAttemptKeyRetirementNativeInsertRace/admission-wins (0.81s)
+    --- PASS: TestOrderAttemptKeyRetirementNativeInsertRace/retirement-wins (0.78s)
+=== RUN   TestOrderAttemptMaterializationFactsCVSSourcePositive
+--- PASS: TestOrderAttemptMaterializationFactsCVSSourcePositive (0.70s)
+=== RUN   TestOrderAttemptModelSubjectAndScopeBarriers
+=== RUN   TestOrderAttemptModelSubjectAndScopeBarriers/hold=a
+=== RUN   TestOrderAttemptModelSubjectAndScopeBarriers/hold=c
+--- PASS: TestOrderAttemptModelSubjectAndScopeBarriers (0.00s)
+    --- PASS: TestOrderAttemptModelSubjectAndScopeBarriers/hold=a (0.00s)
+    --- PASS: TestOrderAttemptModelSubjectAndScopeBarriers/hold=c (0.00s)
+=== RUN   TestOrderAttemptNativeCancelOrderFenceAndRevocation
+=== RUN   TestOrderAttemptNativeCancelOrderFenceAndRevocation/pay_at_pickup
+=== RUN   TestOrderAttemptNativeCancelOrderFenceAndRevocation/cash_on_delivery
+=== RUN   TestOrderAttemptNativeCancelOrderFenceAndRevocation/bank_transfer
+=== RUN   TestOrderAttemptNativeCancelOrderFenceAndRevocation/direct_pickup
+--- PASS: TestOrderAttemptNativeCancelOrderFenceAndRevocation (3.06s)
+    --- PASS: TestOrderAttemptNativeCancelOrderFenceAndRevocation/pay_at_pickup (0.79s)
+    --- PASS: TestOrderAttemptNativeCancelOrderFenceAndRevocation/cash_on_delivery (0.76s)
+    --- PASS: TestOrderAttemptNativeCancelOrderFenceAndRevocation/bank_transfer (0.75s)
+    --- PASS: TestOrderAttemptNativeCancelOrderFenceAndRevocation/direct_pickup (0.76s)
+=== RUN   TestOrderAttemptNativeOfflineCapacitySealsLimitExceeded
+--- PASS: TestOrderAttemptNativeOfflineCapacitySealsLimitExceeded (4.23s)
+=== RUN   TestOrderAttemptNotificationNoBindingVoidNativeAndRollback
+--- PASS: TestOrderAttemptNotificationNoBindingVoidNativeAndRollback (0.76s)
+=== RUN   TestOrderAttemptPlanIndependentEnvelope
+--- PASS: TestOrderAttemptPlanIndependentEnvelope (0.00s)
+=== RUN   TestOrderAttemptProvenanceEnteredStore
+--- PASS: TestOrderAttemptProvenanceEnteredStore (0.01s)
+=== RUN   TestOrderAttemptSchemaExecutionDefinerACL
+=== RUN   TestOrderAttemptSchemaExecutionDefinerACL/lock_order_attempt
+=== RUN   TestOrderAttemptSchemaExecutionDefinerACL/execute_order_attempt
+=== RUN   TestOrderAttemptSchemaExecutionDefinerACL/abort_order_attempt
+--- PASS: TestOrderAttemptSchemaExecutionDefinerACL (0.00s)
+    --- PASS: TestOrderAttemptSchemaExecutionDefinerACL/lock_order_attempt (0.00s)
+    --- PASS: TestOrderAttemptSchemaExecutionDefinerACL/execute_order_attempt (0.00s)
+    --- PASS: TestOrderAttemptSchemaExecutionDefinerACL/abort_order_attempt (0.00s)
+=== RUN   TestOrderAttemptScopeRetirementReenable
+--- PASS: TestOrderAttemptScopeRetirementReenable (0.02s)
+=== RUN   TestOrderAttemptSQLNotificationStageGuards
+=== RUN   TestOrderAttemptSQLNotificationStageGuards/ready_authorized
+=== RUN   TestOrderAttemptSQLNotificationStageGuards/before_c3_authorized
+=== RUN   TestOrderAttemptSQLNotificationStageGuards/after_c3_unauthorized
+=== RUN   TestOrderAttemptSQLNotificationStageGuards/ready_skips_dispatch
+=== RUN   TestOrderAttemptSQLNotificationStageGuards/dispatch_returns_ready
+=== RUN   TestOrderAttemptSQLNotificationStageGuards/unknown_claims_before_c3
+=== RUN   TestOrderAttemptSQLNotificationStageGuards/accepted_claims_void
+=== RUN   TestOrderAttemptSQLNotificationStageGuards/ready_void_before_c3_positive
+--- PASS: TestOrderAttemptSQLNotificationStageGuards (1.42s)
+    --- PASS: TestOrderAttemptSQLNotificationStageGuards/ready_authorized (0.00s)
+    --- PASS: TestOrderAttemptSQLNotificationStageGuards/before_c3_authorized (0.00s)
+    --- PASS: TestOrderAttemptSQLNotificationStageGuards/after_c3_unauthorized (0.00s)
+    --- PASS: TestOrderAttemptSQLNotificationStageGuards/ready_skips_dispatch (0.00s)
+    --- PASS: TestOrderAttemptSQLNotificationStageGuards/dispatch_returns_ready (0.00s)
+    --- PASS: TestOrderAttemptSQLNotificationStageGuards/unknown_claims_before_c3 (0.00s)
+    --- PASS: TestOrderAttemptSQLNotificationStageGuards/accepted_claims_void (0.00s)
+    --- PASS: TestOrderAttemptSQLNotificationStageGuards/ready_void_before_c3_positive (0.00s)
+=== RUN   TestOrderAttemptSubjectsExplicitNativeLink
+--- PASS: TestOrderAttemptSubjectsExplicitNativeLink (0.67s)
+=== RUN   TestOrderAttemptSweepNativeRepairOneAttemptUpdate
+--- PASS: TestOrderAttemptSweepNativeRepairOneAttemptUpdate (4.13s)
+=== RUN   TestOrderAttemptTerminalIdentityReplay
+=== RUN   TestOrderAttemptTerminalIdentityReplay/COMMITTED
+=== RUN   TestOrderAttemptTerminalIdentityReplay/ABORTED
+--- PASS: TestOrderAttemptTerminalIdentityReplay (1.59s)
+    --- PASS: TestOrderAttemptTerminalIdentityReplay/COMMITTED (0.85s)
+    --- PASS: TestOrderAttemptTerminalIdentityReplay/ABORTED (0.73s)
+=== RUN   TestOrderAttemptProcessWorkerRejectsSplitParticipantPools
+=== RUN   TestOrderAttemptProcessWorkerRejectsSplitParticipantPools/same-physical-database
+=== RUN   TestOrderAttemptProcessWorkerRejectsSplitParticipantPools/COMMERCE_CLAIMS_INTAKE_DATABASE_URL
+=== RUN   TestOrderAttemptProcessWorkerRejectsSplitParticipantPools/COMMERCE_RETENTION_JOB_DATABASE_URL
+=== RUN   TestOrderAttemptProcessWorkerRejectsSplitParticipantPools/COMMERCE_STORE_VERIFY_DATABASE_URL
+--- PASS: TestOrderAttemptProcessWorkerRejectsSplitParticipantPools (9.41s)
+    --- PASS: TestOrderAttemptProcessWorkerRejectsSplitParticipantPools/same-physical-database (0.24s)
+    --- PASS: TestOrderAttemptProcessWorkerRejectsSplitParticipantPools/COMMERCE_CLAIMS_INTAKE_DATABASE_URL (0.07s)
+    --- PASS: TestOrderAttemptProcessWorkerRejectsSplitParticipantPools/COMMERCE_RETENTION_JOB_DATABASE_URL (0.09s)
+    --- PASS: TestOrderAttemptProcessWorkerRejectsSplitParticipantPools/COMMERCE_STORE_VERIFY_DATABASE_URL (0.12s)
+=== RUN   TestPasswordPA05Login
+=== RUN   TestPasswordPA05Login/happy_path_and_counter_reset
+=== RUN   TestPasswordPA05Login/version_bound_and_inactive_principal
+    password_flow_test.go:465: OWNER-POOL DISCLOSURE: owner pool bumps password_version between login start and complete (a reset would also supersede the challenge, hiding the version check)
+    password_flow_test.go:479: OWNER-POOL DISCLOSURE: owner pool deactivates the principal (identity.principals.active=false), the operator runbook action
+=== RUN   TestPasswordPA05Login/disabled_after_100_failures_and_101st_150th_are_401
+=== RUN   TestPasswordPA05Login/oidc_principal_is_never_merged_or_touched
+=== RUN   TestPasswordPA05Login/has_membership_follows_the_real_membership
+    password_flow_test.go:615: OWNER-POOL DISCLOSURE: owner pool deactivates the membership, then the tenant (operator actions); each is restored
+--- PASS: TestPasswordPA05Login (13.14s)
+    --- PASS: TestPasswordPA05Login/happy_path_and_counter_reset (0.56s)
+    --- PASS: TestPasswordPA05Login/version_bound_and_inactive_principal (0.76s)
+    --- PASS: TestPasswordPA05Login/disabled_after_100_failures_and_101st_150th_are_401 (11.16s)
+    --- PASS: TestPasswordPA05Login/oidc_principal_is_never_merged_or_touched (0.42s)
+    --- PASS: TestPasswordPA05Login/has_membership_follows_the_real_membership (0.13s)
+=== RUN   TestPasswordPA06Reset
+=== RUN   TestPasswordPA06Reset/reset_effects
+    password_reset_test.go:64: OWNER-POOL DISCLOSURE: owner pool inserts a 'buyer' audience session for the principal (no password flow can create one)
+    password_reset_test.go:118: OWNER-POOL DISCLOSURE: owner pool moves the 60 s email-mail-login window: the earlier login of this test used it
+=== RUN   TestPasswordPA06Reset/reset_supersedes_open_login_challenges
+=== RUN   TestPasswordPA06Reset/unknown_and_inactive_email_give_NONE_and_no_row
+    password_reset_test.go:181: OWNER-POOL DISCLOSURE: owner pool deactivates the principal (operator runbook action)
+=== RUN   TestPasswordPA06Reset/policy_errors_and_missing_new_password_do_not_burn_the_code
+=== RUN   TestPasswordPA06Reset/budget_10_per_bucket_other_bucket_still_verifies
+    password_reset_test.go:240: OWNER-POOL DISCLOSURE: owner pool moves the 60 s email-mail-unauth window so source A can request again
+=== RUN   TestPasswordPA06Reset/budget_50_per_principal_blocks_every_bucket
+=== RUN   TestPasswordPA06Reset/concurrent_completes_two_tx_witness
+    password_reset_test.go:309: OWNER-POOL DISCLOSURE: owner pool moves the 60 s window; then clones the open challenge row so two open challenges share one ip bucket (the API supersedes, so it cannot create that state)
+=== RUN   TestPasswordPA06Reset/supersede_rules_reset
+=== RUN   TestPasswordPA06Reset/supersede_rules_signup
+--- PASS: TestPasswordPA06Reset (16.19s)
+    --- PASS: TestPasswordPA06Reset/reset_effects (7.87s)
+    --- PASS: TestPasswordPA06Reset/reset_supersedes_open_login_challenges (0.30s)
+    --- PASS: TestPasswordPA06Reset/unknown_and_inactive_email_give_NONE_and_no_row (0.19s)
+    --- PASS: TestPasswordPA06Reset/policy_errors_and_missing_new_password_do_not_burn_the_code (0.22s)
+    --- PASS: TestPasswordPA06Reset/budget_10_per_bucket_other_bucket_still_verifies (1.35s)
+    --- PASS: TestPasswordPA06Reset/budget_50_per_principal_blocks_every_bucket (4.32s)
+    --- PASS: TestPasswordPA06Reset/concurrent_completes_two_tx_witness (0.89s)
+    --- PASS: TestPasswordPA06Reset/supersede_rules_reset (0.51s)
+    --- PASS: TestPasswordPA06Reset/supersede_rules_signup (0.43s)
+=== RUN   TestBuyerPaymentCaptureAtomicReplayAndFreshSession
+--- PASS: TestBuyerPaymentCaptureAtomicReplayAndFreshSession (0.59s)
+=== RUN   TestBuyerPaymentCaptureMultiSKUSingleCommit
+--- PASS: TestBuyerPaymentCaptureMultiSKUSingleCommit (0.54s)
+=== RUN   TestPaymentMethodsRevisionsReplayAndIsolation
+--- PASS: TestPaymentMethodsRevisionsReplayAndIsolation (0.24s)
+=== RUN   TestPaymentMethodsPermissionRevokedDuringWait
+=== RUN   TestPaymentMethodsPermissionRevokedDuringWait/set
+=== RUN   TestPaymentMethodsPermissionRevokedDuringWait/inspect
+--- PASS: TestPaymentMethodsPermissionRevokedDuringWait (0.17s)
+    --- PASS: TestPaymentMethodsPermissionRevokedDuringWait/set (0.08s)
+    --- PASS: TestPaymentMethodsPermissionRevokedDuringWait/inspect (0.09s)
+=== RUN   TestPaymentMethodsAtomicFaultRollback
+=== RUN   TestPaymentMethodsAtomicFaultRollback/payments.method_versions_create
+=== RUN   TestPaymentMethodsAtomicFaultRollback/payments.method_heads_create
+=== RUN   TestPaymentMethodsAtomicFaultRollback/ops.audit_events_create
+=== RUN   TestPaymentMethodsAtomicFaultRollback/ops.command_results_create
+=== RUN   TestPaymentMethodsAtomicFaultRollback/payments.method_versions_update
+=== RUN   TestPaymentMethodsAtomicFaultRollback/payments.method_heads_update
+=== RUN   TestPaymentMethodsAtomicFaultRollback/ops.audit_events_update
+=== RUN   TestPaymentMethodsAtomicFaultRollback/ops.command_results_update
+--- PASS: TestPaymentMethodsAtomicFaultRollback (0.67s)
+    --- PASS: TestPaymentMethodsAtomicFaultRollback/payments.method_versions_create (0.08s)
+    --- PASS: TestPaymentMethodsAtomicFaultRollback/payments.method_heads_create (0.08s)
+    --- PASS: TestPaymentMethodsAtomicFaultRollback/ops.audit_events_create (0.08s)
+    --- PASS: TestPaymentMethodsAtomicFaultRollback/ops.command_results_create (0.08s)
+    --- PASS: TestPaymentMethodsAtomicFaultRollback/payments.method_versions_update (0.09s)
+    --- PASS: TestPaymentMethodsAtomicFaultRollback/payments.method_heads_update (0.09s)
+    --- PASS: TestPaymentMethodsAtomicFaultRollback/ops.audit_events_update (0.09s)
+    --- PASS: TestPaymentMethodsAtomicFaultRollback/ops.command_results_update (0.09s)
+=== RUN   TestBuyerPaymentQueryRealWorkerSignedHistoricalResponse
+--- PASS: TestBuyerPaymentQueryRealWorkerSignedHistoricalResponse (5.91s)
+=== RUN   TestBuyerPaymentQueryFinishClockAndReferenceFence
+--- PASS: TestBuyerPaymentQueryFinishClockAndReferenceFence (1.11s)
+=== RUN   TestBuyerPaymentQueryConcurrentReportSingleWinner
+--- PASS: TestBuyerPaymentQueryConcurrentReportSingleWinner (0.46s)
+=== RUN   TestStripeQueryCancelledIOKeepsRecoverableLease
+--- PASS: TestStripeQueryCancelledIOKeepsRecoverableLease (4.90s)
+=== RUN   TestRemovePAYUNiStartPaymentRefusal
+--- PASS: TestRemovePAYUNiStartPaymentRefusal (0.51s)
+=== RUN   TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart
+--- PASS: TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart (6.25s)
+=== RUN   TestBuyerPaymentConcurrentKeys
+=== RUN   TestBuyerPaymentConcurrentKeys/true
+=== RUN   TestBuyerPaymentConcurrentKeys/false
+--- PASS: TestBuyerPaymentConcurrentKeys (0.92s)
+    --- PASS: TestBuyerPaymentConcurrentKeys/true (0.47s)
+    --- PASS: TestBuyerPaymentConcurrentKeys/false (0.45s)
+=== RUN   TestBuyerPaymentWorkerAdmissionFences
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/disabled_router
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/missing_router
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/immediate_timing
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/legacy_queue_drift
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/wrong_profile_queue
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/custom_queue
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/foreign_kind
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/unlinked_args
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/unique_key_drift
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/reject_commerce_runtime
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/reject_commerce_checkout_runtime
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/reject_commerce_hosted_runtime
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/reject_commerce_buyer_runtime
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/reject_commerce_buyer_issuer
+=== RUN   TestBuyerPaymentWorkerAdmissionFences/reject_commerce_identity
+--- PASS: TestBuyerPaymentWorkerAdmissionFences (4.49s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/disabled_router (0.01s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/missing_router (0.01s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/immediate_timing (0.01s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/legacy_queue_drift (0.02s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/wrong_profile_queue (0.01s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/custom_queue (0.01s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/foreign_kind (0.02s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/unlinked_args (0.01s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/unique_key_drift (0.01s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/reject_commerce_runtime (0.03s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/reject_commerce_checkout_runtime (0.03s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/reject_commerce_hosted_runtime (0.03s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/reject_commerce_buyer_runtime (0.03s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/reject_commerce_buyer_issuer (0.03s)
+    --- PASS: TestBuyerPaymentWorkerAdmissionFences/reject_commerce_identity (0.03s)
+=== RUN   TestRemovePayuniNotifyRM01Schema
+--- PASS: TestRemovePayuniNotifyRM01Schema (6.31s)
+=== RUN   TestPickListMalformedRow
+--- PASS: TestPickListMalformedRow (5.16s)
+=== RUN   TestPricingCalculation
+--- PASS: TestPricingCalculation (0.00s)
+=== RUN   TestProductEditK3DuplicateCombinationViaPatch
+--- PASS: TestProductEditK3DuplicateCombinationViaPatch (0.43s)
+=== RUN   TestProductEditArchiveWithOtherFieldsInvalid
+--- PASS: TestProductEditArchiveWithOtherFieldsInvalid (0.40s)
+=== RUN   TestProductEditActiveSKUCap
+--- PASS: TestProductEditActiveSKUCap (0.52s)
+=== RUN   TestProductEditorK3IdempotencyKeyScopeIsStoreNotActor
+--- PASS: TestProductEditorK3IdempotencyKeyScopeIsStoreNotActor (0.40s)
+=== RUN   TestProductEditorPE03KeywordAndSlugConflict
+--- PASS: TestProductEditorPE03KeywordAndSlugConflict (0.40s)
+=== RUN   TestProductEditorListSummaries
+--- PASS: TestProductEditorListSummaries (0.41s)
+=== RUN   TestPMv2BuyerShapes
+--- PASS: TestPMv2BuyerShapes (0.59s)
+=== RUN   TestPromotionAtomicLimit
+--- PASS: TestPromotionAtomicLimit (1.17s)
+=== RUN   TestPromotionAdminGuards
+--- PASS: TestPromotionAdminGuards (0.57s)
+=== RUN   TestPromotionRedeemRejectsForgedSnapshot
+--- PASS: TestPromotionRedeemRejectsForgedSnapshot (0.58s)
+=== RUN   TestPromotionQuoteCheckVolatilityAndFence
+--- PASS: TestPromotionQuoteCheckVolatilityAndFence (0.51s)
+=== RUN   TestPublishedStorefrontOriginGrammarParity
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-0
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-1
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-2
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-3
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-4
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-0
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-1
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-2
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-3
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-4
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-5
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-6
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-7
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-8
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-9
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-10
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-11
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-12
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-13
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-14
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-15
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-16
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-17
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-18
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-19
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-20
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-21
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-22
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-23
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-24
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-25
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-26
+--- PASS: TestPublishedStorefrontOriginGrammarParity (0.17s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-0 (0.01s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-1 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-2 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-3 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-4 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-0 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-1 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-2 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-3 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-4 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-5 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-6 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-7 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-8 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-9 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-10 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-11 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-12 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-13 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-14 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-15 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-16 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-17 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-18 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-19 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-20 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-21 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-22 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-23 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-24 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-25 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-26 (0.00s)
+=== RUN   TestReportRP04FunnelNestedPerSessionAndStore
+--- PASS: TestReportRP04FunnelNestedPerSessionAndStore (0.15s)
+=== RUN   TestSoldOutReplyPlanShape
+=== RUN   TestSoldOutReplyPlanShape/SO02_untracked_SKU_sells_the_link
+=== RUN   TestSoldOutReplyPlanShape/stocked_SKU_sells_the_link
+=== RUN   TestSoldOutReplyPlanShape/SO-OPEN-1_partial_stock_counts_as_sold_out
+=== RUN   TestSoldOutReplyPlanShape/counters_reserved/allocated/unavailable_are_not_sellable
+--- PASS: TestSoldOutReplyPlanShape (8.44s)
+    --- PASS: TestSoldOutReplyPlanShape/SO02_untracked_SKU_sells_the_link (0.22s)
+    --- PASS: TestSoldOutReplyPlanShape/stocked_SKU_sells_the_link (0.25s)
+    --- PASS: TestSoldOutReplyPlanShape/SO-OPEN-1_partial_stock_counts_as_sold_out (0.23s)
+    --- PASS: TestSoldOutReplyPlanShape/counters_reserved/allocated/unavailable_are_not_sellable (0.25s)
+=== RUN   TestStaffGateSG01TokenBoundToStore
+--- PASS: TestStaffGateSG01TokenBoundToStore (0.16s)
+=== RUN   TestStaffGateSG03OwnerFloorDirectDML
+--- PASS: TestStaffGateSG03OwnerFloorDirectDML (0.17s)
+=== RUN   TestStaffGateSG06TokenNeverInSQLRowsLogsOrURLs
+--- PASS: TestStaffGateSG06TokenNeverInSQLRowsLogsOrURLs (0.18s)
+=== RUN   TestStaffTeamSmokeInviteAcceptRevoke
+--- PASS: TestStaffTeamSmokeInviteAcceptRevoke (0.12s)
+=== RUN   TestStoreDomainsSDW10AskHTTPMatrix
+--- PASS: TestStoreDomainsSDW10AskHTTPMatrix (0.00s)
+=== RUN   TestStoreDomainsSDW07OperatorHandleSet
+--- PASS: TestStoreDomainsSDW07OperatorHandleSet (0.12s)
+=== RUN   TestStoreDomainsNumericConcurrentCreation
+--- PASS: TestStoreDomainsNumericConcurrentCreation (0.19s)
+=== RUN   TestStorefrontIntegrationSmoke
+=== RUN   TestStorefrontIntegrationSmoke/SI01_return_path_allowlist:_/{locale}/checkout_in_Go_and_SQL,_every_near_miss_refused
+=== RUN   TestStorefrontIntegrationSmoke/SI02_every_checkout-options_row_carries_free_shipping_threshold_minor_(number_or_null,_0_reads_as_null)
+=== RUN   TestStorefrontIntegrationSmoke/SI03_collection_reads_carry_the_collection_id
+=== RUN   TestStorefrontIntegrationSmoke/SI04_no_business-schema_function_is_executable_by_PUBLIC_(the_restricted-pool_authority_scan_depends_on_it)
+--- PASS: TestStorefrontIntegrationSmoke (1.46s)
+    --- PASS: TestStorefrontIntegrationSmoke/SI01_return_path_allowlist:_/{locale}/checkout_in_Go_and_SQL,_every_near_miss_refused (0.62s)
+    --- PASS: TestStorefrontIntegrationSmoke/SI02_every_checkout-options_row_carries_free_shipping_threshold_minor_(number_or_null,_0_reads_as_null) (0.27s)
+    --- PASS: TestStorefrontIntegrationSmoke/SI03_collection_reads_carry_the_collection_id (0.02s)
+    --- PASS: TestStorefrontIntegrationSmoke/SI04_no_business-schema_function_is_executable_by_PUBLIC_(the_restricted-pool_authority_scan_depends_on_it) (0.01s)
+=== RUN   TestStripeSP10Deadline
+=== RUN   TestStripeSP10Deadline/expire_then_retrieve_closes_and_restores_exact_stock
+=== RUN   TestStripeSP10Deadline/expire_500_retries_with_a_fresh_key_and_releases_only_after_confirmation
+=== RUN   TestStripeSP10Deadline/expire_400_already_expired_race_retries_with_a_fresh_key_and_releases_only_after_confirmation
+=== RUN   TestStripeSP10Deadline/paid_in_the_last_second_captures_not_closes
+=== RUN   TestStripeSP10Deadline/still_open_at_plus_60m_escalates_and_keeps_stock
+=== RUN   TestStripeSP10Deadline/expired_and_paid_is_conflicting_report_without_release
+=== RUN   TestStripeSP10Deadline/no_request_is_ever_made_with_a_foreign_account_key
+--- PASS: TestStripeSP10Deadline (47.06s)
+    --- PASS: TestStripeSP10Deadline/expire_then_retrieve_closes_and_restores_exact_stock (6.61s)
+    --- PASS: TestStripeSP10Deadline/expire_500_retries_with_a_fresh_key_and_releases_only_after_confirmation (7.34s)
+    --- PASS: TestStripeSP10Deadline/expire_400_already_expired_race_retries_with_a_fresh_key_and_releases_only_after_confirmation (7.32s)
+    --- PASS: TestStripeSP10Deadline/paid_in_the_last_second_captures_not_closes (6.45s)
+    --- PASS: TestStripeSP10Deadline/still_open_at_plus_60m_escalates_and_keeps_stock (9.06s)
+    --- PASS: TestStripeSP10Deadline/expired_and_paid_is_conflicting_report_without_release (6.47s)
+    --- PASS: TestStripeSP10Deadline/no_request_is_ever_made_with_a_foreign_account_key (0.00s)
+=== RUN   TestStripeSL08RestrictedKey
+    stripe_live_rak_test.go:99: NOT_RUN: SL08 needs STRIPE_SANDBOX=1 and the owner's rk_test_ restricted test key (STRIPE_RESTRICTED_TEST_KEY); SANDBOX only, LIVE is refused
+--- SKIP: TestStripeSL08RestrictedKey (0.00s)
+=== RUN   TestStripeHTTPThreeLocalesAndConcurrentHandoff
+=== RUN   TestStripeHTTPThreeLocalesAndConcurrentHandoff/zh-CN
+=== RUN   TestStripeHTTPThreeLocalesAndConcurrentHandoff/zh-TW
+=== RUN   TestStripeHTTPThreeLocalesAndConcurrentHandoff/en
+--- PASS: TestStripeHTTPThreeLocalesAndConcurrentHandoff (2.73s)
+    --- PASS: TestStripeHTTPThreeLocalesAndConcurrentHandoff/zh-CN (0.92s)
+    --- PASS: TestStripeHTTPThreeLocalesAndConcurrentHandoff/zh-TW (0.91s)
+    --- PASS: TestStripeHTTPThreeLocalesAndConcurrentHandoff/en (0.90s)
+=== RUN   TestStripeWorkerLateDefaultInsertPollAndProfileIsolation
+--- PASS: TestStripeWorkerLateDefaultInsertPollAndProfileIsolation (10.49s)
+=== RUN   TestStripeSP06RegistrarIsolation
+=== RUN   TestStripeSP06RegistrarIsolation/second_account_same_store
+=== RUN   TestStripeSP06RegistrarIsolation/same_account_other_store
+=== RUN   TestStripeSP06RegistrarIsolation/foreign_principal
+=== RUN   TestStripeSP06RegistrarIsolation/foreign_tenant_store_pair
+--- PASS: TestStripeSP06RegistrarIsolation (0.24s)
+    --- PASS: TestStripeSP06RegistrarIsolation/second_account_same_store (0.00s)
+    --- PASS: TestStripeSP06RegistrarIsolation/same_account_other_store (0.00s)
+    --- PASS: TestStripeSP06RegistrarIsolation/foreign_principal (0.00s)
+    --- PASS: TestStripeSP06RegistrarIsolation/foreign_tenant_store_pair (0.00s)
+=== RUN   TestStripeSP13AcceptedReceiptNeedsCommittedLink
+--- PASS: TestStripeSP13AcceptedReceiptNeedsCommittedLink (0.21s)
+=== RUN   TestStripeSP07Start
+=== RUN   TestStripeSP07Start/atomic_rows_and_zero_provider_calls
+=== RUN   TestStripeSP07Start/replay_and_frozen_input_conflicts
+=== RUN   TestStripeSP07Start/concurrent_payuni_vs_stripe_one_winner
+=== RUN   TestStripeSP07Start/mixed_provider_lock_workload_no_deadlock
+=== RUN   TestStripeSP07Start/admission_drift
+=== RUN   TestStripeSP07Start/admission_drift/method_stale_version
+=== RUN   TestStripeSP07Start/admission_drift/method_disabled
+=== RUN   TestStripeSP07Start/admission_drift/method_hidden
+=== RUN   TestStripeSP07Start/admission_drift/amount_below_method_minimum
+=== RUN   TestStripeSP07Start/admission_drift/amount_above_method_maximum
+=== RUN   TestStripeSP07Start/admission_drift/qualification_revoked
+=== RUN   TestStripeSP07Start/admission_drift/qualification_expired
+=== RUN   TestStripeSP07Start/admission_drift/binding_disabled
+=== RUN   TestStripeSP07Start/admission_drift/wrong_environment_on_method
+=== RUN   TestStripeSP07Start/admission_drift/mock_evidence_on_sandbox_profile
+=== RUN   TestStripeSP07Start/admission_drift/hold_expired_before_start
+=== RUN   TestStripeSP07Start/currency_not_admitted_JPY
+=== RUN   TestStripeSP07Start/hold_expires_during_lock_wait
+=== RUN   TestStripeSP07Start/rotation_fences_new_starts_until_requalified
+=== RUN   TestStripeSP07Start/constructor_negatives
+--- PASS: TestStripeSP07Start (11.45s)
+    --- PASS: TestStripeSP07Start/atomic_rows_and_zero_provider_calls (0.57s)
+    --- PASS: TestStripeSP07Start/replay_and_frozen_input_conflicts (0.62s)
+    --- PASS: TestStripeSP07Start/concurrent_payuni_vs_stripe_one_winner (0.69s)
+    --- PASS: TestStripeSP07Start/mixed_provider_lock_workload_no_deadlock (1.00s)
+    --- PASS: TestStripeSP07Start/admission_drift (6.23s)
+        --- PASS: TestStripeSP07Start/admission_drift/method_stale_version (0.59s)
+        --- PASS: TestStripeSP07Start/admission_drift/method_disabled (0.56s)
+        --- PASS: TestStripeSP07Start/admission_drift/method_hidden (0.56s)
+        --- PASS: TestStripeSP07Start/admission_drift/amount_below_method_minimum (0.55s)
+        --- PASS: TestStripeSP07Start/admission_drift/amount_above_method_maximum (0.55s)
+        --- PASS: TestStripeSP07Start/admission_drift/qualification_revoked (0.56s)
+        --- PASS: TestStripeSP07Start/admission_drift/qualification_expired (0.57s)
+        --- PASS: TestStripeSP07Start/admission_drift/binding_disabled (0.57s)
+        --- PASS: TestStripeSP07Start/admission_drift/wrong_environment_on_method (0.57s)
+        --- PASS: TestStripeSP07Start/admission_drift/mock_evidence_on_sandbox_profile (0.57s)
+        --- PASS: TestStripeSP07Start/admission_drift/hold_expired_before_start (0.57s)
+    --- PASS: TestStripeSP07Start/currency_not_admitted_JPY (0.54s)
+    --- PASS: TestStripeSP07Start/hold_expires_during_lock_wait (0.62s)
+    --- PASS: TestStripeSP07Start/rotation_fences_new_starts_until_requalified (0.59s)
+    --- PASS: TestStripeSP07Start/constructor_negatives (0.58s)
+=== RUN   TestStripeUntrackedReservationRefusals
+=== RUN   TestStripeUntrackedReservationRefusals/capture/missing_tracked_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/empty_quote
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:132: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/foreign_sku
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:144: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/missing_reservation
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:146: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservations
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/capture/tracked_flipped_with_missing_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:128: OWNER-POOL: catalog tracking changed after a tracked hold; its RESERVE history must remain authoritative
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/missing_tracked_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/empty_quote
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:132: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/foreign_sku
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:144: OWNER-POOL: replica-mode tamper/restore: UPDATE checkout.orders SET
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/missing_reservation
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:146: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservations
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+=== RUN   TestStripeUntrackedReservationRefusals/close/tracked_flipped_with_missing_lines
+    stripe_untracked_capture_test.go:122: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_untracked_capture_test.go:126: OWNER-POOL: replica-mode tamper/restore: DELETE FROM inventory.reservation_lines
+    stripe_untracked_capture_test.go:128: OWNER-POOL: catalog tracking changed after a tracked hold; its RESERVE history must remain authoritative
+    stripe_untracked_capture_test.go:152: OWNER-POOL: payments.provider_observations report
+--- PASS: TestStripeUntrackedReservationRefusals (7.55s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/missing_tracked_lines (0.67s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/empty_quote (0.66s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/foreign_sku (1.09s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/missing_reservation (0.67s)
+    --- PASS: TestStripeUntrackedReservationRefusals/capture/tracked_flipped_with_missing_lines (0.69s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/missing_tracked_lines (0.68s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/empty_quote (0.66s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/foreign_sku (1.08s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/missing_reservation (0.69s)
+    --- PASS: TestStripeUntrackedReservationRefusals/close/tracked_flipped_with_missing_lines (0.66s)
+=== RUN   TestStripeSP13WebhookHTTP
+=== RUN   TestStripeSP13WebhookHTTP/rejections_and_frozen_codes
+=== RUN   TestStripeSP13WebhookHTTP/accept_atomically_and_dedupe_changed_body
+=== RUN   TestStripeSP13WebhookHTTP/ignore_and_quarantine_reasons
+=== RUN   TestStripeSP13WebhookHTTP/malformed_after_signature_is_200_once
+=== RUN   TestStripeSP13WebhookHTTP/no_ack_before_commit_and_commit_failure_503
+=== RUN   TestStripeSP13WebhookHTTP/missing_signal_linkage_cannot_ack
+=== RUN   TestStripeSP13WebhookHTTP/signature_endpoint_mismatch_and_stale_key_version
+=== RUN   TestStripeSP13WebhookHTTP/historical_admission_survives_binding_disable_and_api_rotation_but_not_endpoint_disable
+=== RUN   TestStripeSP13WebhookHTTP/wrong_profile_then_correct_profile_admits_exactly_one_signal
+=== RUN   TestStripeSP13WebhookHTTP/signing_material_unavailable_is_503
+=== RUN   TestStripeSP13WebhookHTTP/concurrency_cap_is_exactly_32_and_the_rest_are_503_busy
+=== RUN   TestStripeSP13WebhookHTTP/constructor_negatives
+=== RUN   TestStripeSP13WebhookHTTP/no_forbidden_material_in_logs_or_database
+--- PASS: TestStripeSP13WebhookHTTP (7.69s)
+    --- PASS: TestStripeSP13WebhookHTTP/rejections_and_frozen_codes (0.03s)
+    --- PASS: TestStripeSP13WebhookHTTP/accept_atomically_and_dedupe_changed_body (0.03s)
+    --- PASS: TestStripeSP13WebhookHTTP/ignore_and_quarantine_reasons (0.13s)
+    --- PASS: TestStripeSP13WebhookHTTP/malformed_after_signature_is_200_once (0.01s)
+    --- PASS: TestStripeSP13WebhookHTTP/no_ack_before_commit_and_commit_failure_503 (3.97s)
+    --- PASS: TestStripeSP13WebhookHTTP/missing_signal_linkage_cannot_ack (0.01s)
+    --- PASS: TestStripeSP13WebhookHTTP/signature_endpoint_mismatch_and_stale_key_version (0.97s)
+    --- PASS: TestStripeSP13WebhookHTTP/historical_admission_survives_binding_disable_and_api_rotation_but_not_endpoint_disable (0.03s)
+    --- PASS: TestStripeSP13WebhookHTTP/wrong_profile_then_correct_profile_admits_exactly_one_signal (0.04s)
+    --- PASS: TestStripeSP13WebhookHTTP/signing_material_unavailable_is_503 (0.02s)
+    --- PASS: TestStripeSP13WebhookHTTP/concurrency_cap_is_exactly_32_and_the_rest_are_503_busy (0.54s)
+    --- PASS: TestStripeSP13WebhookHTTP/constructor_negatives (0.10s)
+    --- PASS: TestStripeSP13WebhookHTTP/no_forbidden_material_in_logs_or_database (1.13s)
+=== RUN   TestStudioBackendSTU02NoMixedDraftAndAttemptSnapshot
+--- PASS: TestStudioBackendSTU02NoMixedDraftAndAttemptSnapshot (0.15s)
+=== RUN   TestStudioInputRuntimeStateAndJointStop
+--- PASS: TestStudioInputRuntimeStateAndJointStop (2.97s)
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/expired
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/revoked
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/disabled-binding
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/changed-session-version
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/changed-aspect
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/used
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/private-mapping-mismatch
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/legacy-non-input-is-null
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/marker-zero-and-private-routing
+=== RUN   TestStudioInputCandidateFencesAndStrictRoutes/strict-http
+--- PASS: TestStudioInputCandidateFencesAndStrictRoutes (2.31s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/expired (0.19s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/revoked (0.19s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/disabled-binding (0.19s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/changed-session-version (0.19s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/changed-aspect (0.19s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/used (0.60s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/private-mapping-mismatch (0.23s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/legacy-non-input-is-null (0.12s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/marker-zero-and-private-routing (0.21s)
+    --- PASS: TestStudioInputCandidateFencesAndStrictRoutes/strict-http (0.19s)
+=== RUN   TestSupportGrantSG04RevokeImmediateAndIdempotent
+--- PASS: TestSupportGrantSG04RevokeImmediateAndIdempotent (0.08s)
+=== RUN   TestT04MigrationRejectsNewerDatabaseLedger
+--- PASS: TestT04MigrationRejectsNewerDatabaseLedger (0.04s)
+=== RUN   TestCvsBuyerEnteredStore
+=== RUN   TestCvsBuyerEnteredStore/options:_buyer_entered_mode_with_the_four_official_search_links
+=== RUN   TestCvsBuyerEnteredStore/per-chain_store-code_table_(shared_golden),_leading_zeros_kept
+=== RUN   TestCvsBuyerEnteredStore/SQL_twin_of_the_store-code_table:_the_definer_itself_checks_the_format_(Go_validation_bypassed)
+=== RUN   TestCvsBuyerEnteredStore/name_and_address_bounds,_control_characters,_trimming
+=== RUN   TestCvsBuyerEnteredStore/stored_version:_BUYER_ENTERED,_NULL_principal,_buyer_namespace,_24_h,_reuse_vs_new_version
+=== RUN   TestCvsBuyerEnteredStore/request_guards:_stale_cart,_unknown_service,_rate_limit,_idempotency_header
+=== RUN   TestCvsBuyerEnteredStore/rate_limit:_20_entries_per_owner_per_hour,_then_429_with_Retry-After_(§16.1)
+=== RUN   TestCvsBuyerEnteredStore/buyer_B_cannot_read_or_bump_buyer_A's_head_(both_buyer_roles)
+=== RUN   TestCvsBuyerEnteredStore/pay-at-pickup_order_carries_the_buyer_entered_label;_never_reused_as_verified
+--- PASS: TestCvsBuyerEnteredStore (1.54s)
+    --- PASS: TestCvsBuyerEnteredStore/options:_buyer_entered_mode_with_the_four_official_search_links (0.09s)
+    --- PASS: TestCvsBuyerEnteredStore/per-chain_store-code_table_(shared_golden),_leading_zeros_kept (0.11s)
+    --- PASS: TestCvsBuyerEnteredStore/SQL_twin_of_the_store-code_table:_the_definer_itself_checks_the_format_(Go_validation_bypassed) (0.08s)
+    --- PASS: TestCvsBuyerEnteredStore/name_and_address_bounds,_control_characters,_trimming (0.07s)
+    --- PASS: TestCvsBuyerEnteredStore/stored_version:_BUYER_ENTERED,_NULL_principal,_buyer_namespace,_24_h,_reuse_vs_new_version (0.06s)
+    --- PASS: TestCvsBuyerEnteredStore/request_guards:_stale_cart,_unknown_service,_rate_limit,_idempotency_header (0.04s)
+    --- PASS: TestCvsBuyerEnteredStore/rate_limit:_20_entries_per_owner_per_hour,_then_429_with_Retry-After_(§16.1) (0.11s)
+    --- PASS: TestCvsBuyerEnteredStore/buyer_B_cannot_read_or_bump_buyer_A's_head_(both_buyer_roles) (0.12s)
+    --- PASS: TestCvsBuyerEnteredStore/pay-at-pickup_order_carries_the_buyer_entered_label;_never_reused_as_verified (0.25s)
+=== RUN   TestCvsCloseOperationInsertScope
+--- PASS: TestCvsCloseOperationInsertScope (0.67s)
+=== RUN   TestCvsChildWorker
+--- PASS: TestCvsChildWorker (0.00s)
+=== RUN   TestCvsCollectionStatus
+=== RUN   TestCvsCollectionStatus/frozen_collection_amount_=_goods_amount_=_total/100;_Create_carries_IsCollection=Y_+_CollectionAmount_(card:_N)
+=== RUN   TestCvsCollectionStatus/signed_pickup_and_return_codes_per_subtype:_state,_collection_state,_audit,_no_money_rows
+=== RUN   TestCvsCollectionStatus/merchant_collection_action:_permissions,_states,_replay,_conflicts
+=== RUN   TestCvsCollectionStatus/request_with_another_environment's_pickup_namespace:_cvs_environment_mismatch
+--- PASS: TestCvsCollectionStatus (15.15s)
+    --- PASS: TestCvsCollectionStatus/frozen_collection_amount_=_goods_amount_=_total/100;_Create_carries_IsCollection=Y_+_CollectionAmount_(card:_N) (2.04s)
+    --- PASS: TestCvsCollectionStatus/signed_pickup_and_return_codes_per_subtype:_state,_collection_state,_audit,_no_money_rows (6.37s)
+    --- PASS: TestCvsCollectionStatus/merchant_collection_action:_permissions,_states,_replay,_conflicts (2.09s)
+    --- PASS: TestCvsCollectionStatus/request_with_another_environment's_pickup_namespace:_cvs_environment_mismatch (0.08s)
+=== RUN   TestTaiwanCvsSchemaColumnComments
+--- PASS: TestTaiwanCvsSchemaColumnComments (0.01s)
+=== RUN   TestW4U1StateSequence
+--- PASS: TestW4U1StateSequence (14.84s)
+=== RUN   TestWAS04OperationReadsAreLaneScoped
+--- PASS: TestWAS04OperationReadsAreLaneScoped (0.10s)
+PASS
+ok  	livecommerce/tests/foundation	848.245s
+PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.
