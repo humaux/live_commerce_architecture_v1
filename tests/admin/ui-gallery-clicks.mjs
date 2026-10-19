@@ -432,6 +432,9 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
     assert.deepEqual(chevronSize, ["16px", "16px", "16px"]);
     assert.equal(await chevron.locator("svg").getAttribute("width"), "16");
     await page.waitForFunction(el => Math.abs(new DOMMatrix(getComputedStyle(el).transform).b - 1) < 0.01, await chevron.elementHandle()); // [READ] wait for rotation
+    // [READ] drawn chevron extent (path box after rotation): at least 3/4 of the 16px icon box, never a 9px sliver beside 14px text.
+    const ink = await chevron.locator("path").evaluate(n => { const r = n.getBoundingClientRect(); return Math.max(r.width, r.height); });
+    assert.ok(ink >= 12 && ink <= 16, `chevron ink ${ink}px outside [12, 16] of the 16px icon box`);
     assert.equal(await orders.evaluate((n) => n === document.activeElement), true); // [READ] re-render must not move focus (drawer effect stays mounted)
     await seen(drawer.getByRole("link", { name: group("orders").items[0].label, exact: true }));
     await orders.click();
@@ -638,6 +641,87 @@ function controlScaleViolations(measured, rows) {
   return violations;
 }
 
+// [READ] The frame the screenshot paints: a full-page shot draws sticky/fixed chrome at its viewport rect, so a bar over a
+// control here is a bar over that control in the image. Also clipped tab labels and disabled primary contrast (fill vs what is behind it).
+function readFrame(page) {
+  return page.evaluate(() => {
+    const shown = n => { const r = n.getBoundingClientRect(); const s = getComputedStyle(n); return r.width >= 4 && r.height >= 4 && s.visibility !== "hidden" && s.display !== "none"; };
+    const name = n => `${n.tagName.toLowerCase()}[${(n.getAttribute("aria-label") || n.textContent || n.getAttribute("name") || "").trim().slice(0, 30)}]`;
+    const chrome = [...document.querySelectorAll("body *")].filter(n => ["sticky", "fixed"].includes(getComputedStyle(n).position) && shown(n));
+    const controls = [...document.querySelectorAll('input:not([type="hidden"]), select, textarea, button, [role="radio"], [role="switch"], [role="tab"]')].filter(shown);
+    const overlap = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5;
+    const occluded = [];
+    for (const bar of chrome) for (const c of controls) if (!bar.contains(c) && !c.contains(bar) && overlap(bar.getBoundingClientRect(), c.getBoundingClientRect())) occluded.push(`${name(bar)} over ${name(c)}`);
+    const clippedTabs = [];
+    const lists = [...document.querySelectorAll('[role="tablist"]')].filter(shown);
+    for (const list of lists) {
+      const box = list.getBoundingClientRect();
+      if (list.scrollWidth > list.clientWidth) clippedTabs.push(`${name(list)} scrollWidth ${list.scrollWidth} > clientWidth ${list.clientWidth}`);
+      for (const tab of list.querySelectorAll('[role="tab"]')) {
+        const r = tab.getBoundingClientRect();
+        if (tab.scrollWidth > tab.clientWidth || r.left < box.left - 0.5 || r.right > box.right + 0.5) clippedTabs.push(`${name(tab)} [${r.left}, ${r.right}] outside [${box.left}, ${box.right}] or scrollWidth ${tab.scrollWidth} > ${tab.clientWidth}`);
+      }
+    }
+    const rgb = c => (c.match(/[\d.]+/g) || []).map(Number);
+    const lum = c => { const [r, g, b] = rgb(c).slice(0, 3).map(v => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const ratio = (a, b) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+    const behind = n => { for (let p = n.parentElement; p; p = p.parentElement) { const c = getComputedStyle(p).backgroundColor; const v = rgb(c); if (v.length === 3 || v[3] > 0) return c; } return "rgb(255, 255, 255)"; };
+    const disabled = [...document.querySelectorAll('button[data-variant="primary"][aria-disabled="true"]:not([aria-busy="true"])')].filter(shown);
+    const faint = disabled.flatMap(b => {
+      const s = getComputedStyle(b);
+      const fill = ratio(s.backgroundColor, behind(b));
+      const label = ratio(s.color, s.backgroundColor);
+      return fill >= 3 && label >= 3 && Number(s.opacity) === 1 ? [] : [`${name(b)} fill ${fill.toFixed(2)}:1 vs ${behind(b)}, label ${label.toFixed(2)}:1, opacity ${s.opacity}`];
+    });
+    return { occluded, clippedTabs, faint, chrome: chrome.length, controls: controls.length, tabs: lists.length, disabledPrimary: disabled.length };
+  });
+}
+
+// [READ] Real phone scrolling: wheel from the top to the page end in 120px notches. Every field control must at some scroll position sit
+// wholly in the viewport with elementFromPoint at its centre and edge midpoints landing on it (no sticky bar on top), and the top bar
+// must stay pinned at the viewport top. Tabs are excluded here; readFrame owns tab clipping.
+async function wheelReach(page, scope) {
+  const size = page.viewportSize();
+  await page.mouse.move(size.width / 2, size.height / 2);
+  await page.mouse.wheel(0, -100000);
+  await page.waitForFunction(() => window.scrollY === 0);
+  const probe = () => scope.evaluate(root => {
+    const controls = [...root.querySelectorAll('input:not([type="hidden"]), select, textarea, button, [role="radio"], [role="switch"]')].filter(n => {
+      const r = n.getBoundingClientRect();
+      const s = getComputedStyle(n);
+      return r.width >= 4 && r.height >= 4 && s.visibility !== "hidden" && !n.closest('[role="tablist"]');
+    });
+    return {
+      scrollY: window.scrollY,
+      max: document.scrollingElement.scrollHeight - window.innerHeight,
+      topbar: document.querySelector("[data-shell-topbar]").getBoundingClientRect().top,
+      controls: controls.map((n, i) => {
+        const r = n.getBoundingClientRect();
+        const inset = Math.min(2, r.width / 4, r.height / 4);
+        const [cx, cy] = [r.left + r.width / 2, r.top + r.height / 2];
+        const points = [[cx, cy], [cx, r.top + inset], [cx, r.bottom - inset], [r.left + inset, cy], [r.right - inset, cy]];
+        const inView = r.top >= 0 && r.bottom <= window.innerHeight && r.left >= 0 && r.right <= window.innerWidth;
+        const clear = inView && points.every(([x, y]) => { const hit = document.elementFromPoint(x, y); return hit === n || n.contains(hit); });
+        return [`${i}:${n.tagName.toLowerCase()}[${(n.getAttribute("aria-label") || n.labels?.[0]?.textContent || n.textContent || n.name || "").trim().slice(0, 30)}]`, clear];
+      }),
+    };
+  });
+  const reached = new Map();
+  let state;
+  for (let notch = 0; notch < 80; notch++) {
+    state = await probe();
+    for (const [key, clear] of state.controls) reached.set(key, reached.get(key) || clear);
+    assert.ok(Math.abs(state.topbar) <= 0.5, `top bar left the viewport top at scrollY=${state.scrollY}: top=${state.topbar}`);
+    if (state.scrollY >= state.max - 0.5) break;
+    await page.mouse.wheel(0, 120);
+    await page.waitForFunction(y => window.scrollY > y, state.scrollY);
+  }
+  assert.ok(state.scrollY >= state.max - 0.5, `wheel did not reach the page end: ${JSON.stringify({ scrollY: state.scrollY, max: state.max })}`);
+  const blocked = [...reached].filter(([, clear]) => !clear).map(([key]) => key);
+  assert.deepEqual(blocked, [], "controls never fully visible and unobstructed under native wheel scrolling");
+  return `${reached.size} controls each reached fully visible and unobstructed; page end scrollY=${state.scrollY}`;
+}
+
 async function sidebarViewportGate({ page, step, locale, template }) {
   const rail = page.locator('[data-shell-rail]');
   const list = rail.locator(':scope > ul');
@@ -710,6 +794,15 @@ async function ds2Matrix({ page, step }) {
     // Full-page shots paint sticky bars at the current scroll offset (a second topbar mid-page after uploads);
     // start from the top unless the scrolled state is the subject of the shot.
     if (name !== "form-released") await page.evaluate(() => new Promise(r => { window.scrollTo(0, 0); requestAnimationFrame(() => r()); })); // [READ] view position only
+    if (width < 768 && /^(form|settings)/.test(name) && name !== "form-released")
+      await step(`DS-2 ${locale}/${width} ${name} wheel reach`, "native wheel top to end; elementFromPoint at each control", "every field control fully in view, unobstructed, at some scroll position; top bar pinned", () => wheelReach(page, page.locator("[data-template]")));
+    const frame = await readFrame(page);
+    await step(`DS-2 ${locale}/${width} ${name} captured frame`, "[READ] rects of the frame about to be captured", "no sticky/fixed chrome over a control; no clipped tab; disabled primary fill and label >= 3:1", async () => {
+      assert.deepEqual(frame.occluded, [], "sticky/fixed chrome over controls in the captured frame");
+      assert.deepEqual(frame.clippedTabs, [], "tab labels clipped");
+      assert.deepEqual(frame.faint, [], "disabled primary too faint");
+      return `${frame.chrome} sticky/fixed elements, ${frame.controls} controls, ${frame.tabs} tabs, ${frame.disabledPrimary} disabled primaries`;
+    });
     const png = await page.screenshot({ path, fullPage: true, animations: "disabled" });
     await page.addScriptTag({ content: axeSource });
     const axe = await page.evaluate(async () => (await window.axe.run(document, { resultTypes: ["violations"] })).violations.map(v => ({ id: v.id, impact: v.impact, nodes: v.nodes.map(n => n.target) }))); // [READ] all impacts, stricter than legacy runner
