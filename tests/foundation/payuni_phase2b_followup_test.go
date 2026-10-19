@@ -9,7 +9,8 @@
 //	       hosted-form writer authority (P2-5); the pre-state proves each privilege existed, so the gate is not vacuous.
 //	PFU04 (review-105-336b06942 P1): the full real chain over a legacy PAYUNi history applies when that history is
 //	       reconciled although 0018 cited its benign reports in nothing, and refuses (22023, revokes rolled back) when
-//	       a paid report was never applied.
+//	       a paid report was never applied; also a captured history (applies) and a failed report applied before a
+//	       later capture (fail-safe refusal, runbook §4) (review-105-087c67855 P2).
 //
 // Depends on: migrations.Apply; pwIsolatedFixture; psSetupItemsOn; rm2HistoricalAttempt; pqReport/pqJSON; rmVersions/
 //
@@ -234,12 +235,46 @@ func pfuReconcile(t *testing.T, q pqFixture) {
 		`UPDATE inventory.reservations SET state='RELEASED' WHERE id='`+q.hold.OrderID+`'`)
 }
 
-// TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied (PFU04, review-105-336b06942 P1): the full real chain
-// (lriApplyFull, no pre-record) over a legacy PAYUNi history.
-//   - reconciled: five QUERY reports, each applied by the real 0018 body (payments.apply_capture on this schema);
-//     0018 cites only the authorization in a fact; the pending/empty-TradeNo, DataSource B, duplicate-auth and
-//     cancelled (TradeStatus 3) reports are cited by nothing. The operator cancelled the order. 0197-0199 and
-//     post_river 0026/0027 must all apply.
+// pfuApply stores one report per edit and applies each, in order, with the real legacy 0018 body.
+func pfuApply(t *testing.T, q pqFixture, edits ...func(map[string]any)) {
+	t.Helper()
+	for i, edit := range edits {
+		if _, err := q.f.owner.Exec(context.Background(), `SELECT payments.apply_capture($1::uuid,$2::bytea)`, q.result.AttemptID, pfuReport(t, q, edit)); err != nil {
+			t.Fatalf("legacy 0018 apply of report %d: %v", i, err)
+		}
+	}
+}
+
+// pfuApplied is "fact kinds/review reasons/observations no fact cites" for the attempt, as 0018 left them.
+func pfuApplied(t *testing.T, q pqFixture) string {
+	t.Helper()
+	return pfeRow(t, q.f.owner, `SELECT coalesce((SELECT string_agg(kind,',' ORDER BY kind) FROM payments.facts WHERE attempt_id=$1),'')||'/'||
+		coalesce((SELECT string_agg(reason,',' ORDER BY reason) FROM payments.review_cases WHERE attempt_id=$1),'')||'/'||
+		(SELECT count(*) FROM payments.provider_observations x WHERE x.attempt_id=$1
+		  AND NOT EXISTS(SELECT 1 FROM payments.facts y WHERE y.attempt_id=x.attempt_id AND y.source_report_hash=x.report_hash))`, q.result.AttemptID)
+}
+
+// pfuChainApplies runs the full real chain and requires every phase-2b ledger row.
+func pfuChainApplies(t *testing.T, f *testFixture, label string) {
+	t.Helper()
+	if err := lriApplyFull(context.Background(), f.owner); err != nil {
+		t.Fatalf("full chain over %s PAYUNi history must apply: %v", label, err)
+	}
+	for _, v := range []string{"0197_payuni_phase2b_drop.sql", pfuNumbered, "post_river/0026_payuni_phase2b_drop.sql", pfuPost} {
+		if n := countRows(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1`, v); n != 1 {
+			t.Errorf("%s chain: ledger has %d row(s) for %s", label, n, v)
+		}
+	}
+}
+
+// TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied (PFU04, review-105-336b06942 P1; review-105-087c67855
+// P2-1/P2-2): the full real chain (lriApplyFull, no pre-record) over legacy PAYUNi histories whose reports are each
+// applied by the real 0018 body (payments.apply_capture on this schema).
+//   - reconciled: seven reports; 0018 cites only the authorization in a fact; the pending/empty-TradeNo, DataSource B,
+//     duplicate-auth and TradeStatus 2/3/4 reports are cited by nothing. The operator cancelled the order. 0197-0199
+//     and post_river 0026/0027 must all apply.
+//   - captured: a captured history with repeated-capture, refund and post-capture TradeStatus 4 reports must apply.
+//   - failed-before-capture: the documented fail-safe refusal (runbook §4).
 //   - unapplied: the authorization report is stored but was never applied. 0199 must refuse (22023) and the refusal
 //     must roll back the whole numbered batch, including 0199's own revokes: start_payment / record_payment_query
 //     grantees and the hosted-form writer authority are exactly as before (calibrated by pfuInject).
@@ -248,35 +283,66 @@ func TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied(t *testing.T) {
 	ctx := context.Background()
 	t.Run("reconciled", func(t *testing.T) {
 		f, q := pfuLegacy(t)
-		hashes := [][]byte{
-			pfuReport(t, q, func(r map[string]any) { r["TradeStatus"], r["TradeNo"] = "0", "" }),
-			pfuReport(t, q, func(r map[string]any) { r["DataSource"] = "B" }),
-			pfuReport(t, q, func(map[string]any) {}),
-			pfuReport(t, q, func(r map[string]any) { r["CloseStatus"] = "1" }),
-			pfuReport(t, q, func(r map[string]any) { r["TradeStatus"] = "3" }),
-		}
-		for i, h := range hashes {
-			if _, err := f.owner.Exec(ctx, `SELECT payments.apply_capture($1::uuid,$2::bytea)`, q.result.AttemptID, h); err != nil {
-				t.Fatalf("legacy 0018 apply of report %d: %v", i, err)
-			}
-		}
-		if got := pfeRow(t, f.owner, `SELECT coalesce((SELECT string_agg(kind,',' ORDER BY kind) FROM payments.facts WHERE attempt_id=$1),'')||'/'||
-			(SELECT count(*) FROM payments.review_cases WHERE attempt_id=$1)||'/'||
-			(SELECT count(*) FROM payments.provider_observations x WHERE x.attempt_id=$1
-			  AND NOT EXISTS(SELECT 1 FROM payments.facts y WHERE y.attempt_id=x.attempt_id AND y.source_report_hash=x.report_hash))`, q.result.AttemptID); got != "AUTHORIZED/0/4" {
-			t.Fatalf("legacy 0018 history facts/reviews/uncited = %s, want AUTHORIZED/0/4 (four reports 0018 applied without citing them)", got)
+		// TradeStatus 2 (failed) and 4 added per review-105-087c67855 P2-2; the expectation moved from AUTHORIZED/0/4
+		// and 5 observations to AUTHORIZED/0/6 and 7 (same assertion, two more no-op reports).
+		pfuApply(t, q,
+			func(r map[string]any) { r["TradeStatus"], r["TradeNo"] = "0", "" },
+			func(r map[string]any) { r["DataSource"] = "B" },
+			func(map[string]any) {},
+			func(r map[string]any) { r["CloseStatus"] = "1" },
+			func(r map[string]any) { r["TradeStatus"] = "2" },
+			func(r map[string]any) { r["TradeStatus"] = "3" },
+			func(r map[string]any) { r["TradeStatus"] = "4" })
+		if got := pfuApplied(t, q); got != "AUTHORIZED//6" {
+			t.Fatalf("legacy 0018 history facts/reviews/uncited = %s, want AUTHORIZED//6 (six reports 0018 applied without citing them)", got)
 		}
 		pfuReconcile(t, q)
-		if err := lriApplyFull(ctx, f.owner); err != nil {
-			t.Fatalf("full chain over reconciled PAYUNi history must apply: %v", err)
-		}
-		for _, v := range []string{"0197_payuni_phase2b_drop.sql", pfuNumbered, "post_river/0026_payuni_phase2b_drop.sql", pfuPost} {
-			if n := countRows(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1`, v); n != 1 {
-				t.Errorf("reconciled chain: ledger has %d row(s) for %s", n, v)
-			}
-		}
-		if n := countRows(t, f.owner, `SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1`, q.result.AttemptID); n != 5 {
+		pfuChainApplies(t, f, "reconciled")
+		if n := countRows(t, f.owner, `SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1`, q.result.AttemptID); n != 7 {
 			t.Errorf("reconciled chain changed PAYUNi observations: %d", n)
+		}
+	})
+	// captured (review-105-087c67855 P2-2): authorization, capture (0018 allocates stock and confirms the order), a
+	// repeated capture, a refund report (0018 writes REFUND_HISTORY) and an expired report after the capture (TradeStatus
+	// 4 on a captured attempt: 0018 writes CONFLICTING_REPORT). Every report is applied or cited, so the chain applies.
+	t.Run("captured", func(t *testing.T) {
+		f, q := pfuLegacy(t)
+		amount := q.result.AmountMinor / 100
+		capture := func(r map[string]any) { r["CloseStatus"], r["CloseAmountTWD"] = "2", amount }
+		pfuApply(t, q,
+			func(map[string]any) {},
+			capture,
+			func(r map[string]any) { capture(r); r["CardRefundType"] = "" },
+			func(r map[string]any) { capture(r); r["CardRefundAmountTWD"] = amount },
+			func(r map[string]any) { r["TradeStatus"] = "4" })
+		if got := pfuApplied(t, q); got != "AUTHORIZED,CAPTURED/CONFLICTING_REPORT,REFUND_HISTORY/3" {
+			t.Fatalf("legacy 0018 captured history facts/reviews/uncited-by-fact = %s", got)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM checkout.orders o JOIN inventory.reservations r ON r.id=o.id
+			WHERE o.id=$1 AND o.commercial_state='CONFIRMED' AND r.state='COMMITTED'`, q.hold.OrderID); n != 1 {
+			t.Fatal("legacy 0018 capture did not confirm the order and commit the stock")
+		}
+		pfeReplica(t, f.owner, `UPDATE integration.operations SET state='SUCCEEDED' WHERE id='`+q.result.OperationID+`'`)
+		pfuChainApplies(t, f, "captured")
+	})
+	// failed-before-capture (review-105-087c67855 P2-1, runbook §4): a failed report 0018 applied as a no-op BEFORE a
+	// later capture. 0018 wrote no CONFLICTING_REPORT (no CAPTURED fact at that moment); the guard judges today's
+	// captured state and refuses. Deliberate fail-safe divergence from 0018: the case goes to the owner.
+	t.Run("failed-before-capture", func(t *testing.T) {
+		f, q := pfuLegacy(t)
+		pfuApply(t, q,
+			func(map[string]any) {},
+			func(r map[string]any) { r["TradeStatus"] = "2" },
+			func(r map[string]any) { r["CloseStatus"], r["CloseAmountTWD"] = "2", q.result.AmountMinor/100 })
+		if got := pfuApplied(t, q); got != "AUTHORIZED,CAPTURED//1" {
+			t.Fatalf("legacy 0018 history facts/reviews/uncited = %s, want AUTHORIZED,CAPTURED//1", got)
+		}
+		pfeReplica(t, f.owner, `UPDATE integration.operations SET state='SUCCEEDED' WHERE id='`+q.result.OperationID+`'`)
+		ledger := lriLedger(t, f, "")
+		pfuRefused(t, f.owner, pfuNumbered, lriApplyFull(ctx, f.owner), "PAYUNi phase-2b follow-up refused",
+			"0 PAYUNi reservation(s) still PAYMENT_PENDING, 1 stored PAYUNi observation(s) never applied")
+		if got := lriLedger(t, f, ""); got != ledger {
+			t.Error("refused chain changed the migration ledger")
 		}
 	})
 	t.Run("unapplied", func(t *testing.T) {
