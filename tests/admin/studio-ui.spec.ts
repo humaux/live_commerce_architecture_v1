@@ -29,6 +29,19 @@ const cookieName = "__Host-commerce_session";
 test.use({ baseURL: origin, headless: false, trace: { mode: "retain-on-failure", screenshots: false, snapshots: true, sources: true }, screenshot: "only-on-failure" });
 test.setTimeout(240_000);
 
+// The landing can still fall back to Studio after a one-shot aria-expanded read (overview 403 for a
+// principal without orders:read) and auto-expand Live, so a click aimed at a collapsed group collapses it
+// (CI run 38793980208 trace: sampled false at 6654ms, resolved expanded at 6698ms; nav-studio never shown).
+// Re-sample until the link is shown; the loop only ever clicks a collapsed group, then a real click.
+async function clickStudioNav(page: Page) {
+  await expect(async () => {
+    const group = page.getByTestId("nav-group-live");
+    if (await group.getAttribute("aria-expanded") !== "true") await group.click();
+    await expect(page.getByTestId("nav-studio")).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
+  await page.getByTestId("nav-studio").click();
+}
+
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
@@ -36,9 +49,7 @@ async function signedLogin(page: Page) {
   const menu = page.locator('button[aria-controls="workspace-navigation"]');
   if (await menu.isVisible()) await menu.click();
   await expect(page.getByTestId("nav-group-live")).toBeVisible();
-  if (await page.getByTestId("nav-group-live").getAttribute("aria-expanded") !== "true")
-    await page.getByTestId("nav-group-live").click();
-  await page.getByTestId("nav-studio").click();
+  await clickStudioNav(page);
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: shellCopy.en.studio })).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
@@ -288,9 +299,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   // Back/forward below must cross a page that unmounts Studio if permitted.
   await page.getByTestId("nav-orders").click();
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
-  if (await page.getByTestId("nav-group-live").getAttribute("aria-expanded") !== "true")
-    await page.getByTestId("nav-group-live").click();
-  await page.getByTestId("nav-studio").click();
+  await clickStudioNav(page);
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
 
   // Fault applies only after the real Go write has committed; retry must
