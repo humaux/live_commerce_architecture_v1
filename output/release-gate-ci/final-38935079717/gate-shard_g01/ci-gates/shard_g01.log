@@ -1,0 +1,6 @@
+=== RUN   TestOrderAttemptDeadlineExecutionCrossesRealClock
+    order_attempt_deadline_race_test.go:155: genuine deadline C2 race: expected fifteen minutes; no authority deadline or existing executor budget is changed
+--- PASS: TestOrderAttemptDeadlineExecutionCrossesRealClock (907.62s)
+PASS
+ok  	livecommerce/tests/foundation	908.715s
+PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.

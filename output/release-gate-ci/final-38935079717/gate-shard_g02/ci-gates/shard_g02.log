@@ -1,0 +1,6 @@
+=== RUN   TestOrderAttemptDeadlineRealClaimPeriodicLiveness
+    order_attempt_deadline_liveness_test.go:100: long native deadline gate: waiting for unchanged C1 execute_by; maximum remaining duration 16m29.968754s
+--- PASS: TestOrderAttemptDeadlineRealClaimPeriodicLiveness (907.96s)
+PASS
+ok  	livecommerce/tests/foundation	909.028s
+PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.

@@ -137,7 +137,10 @@ jobs:
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
-          cache: false
+          # Reuse verified modules and content-addressed compiler output, never PG or gate receipts.
+          # Go hashes source/flags (including -race); -count=1 below still executes every selected test.
+          cache: true
+          cache-dependency-path: go.sum
       # proxy.golang.org drops streams under ~80 parallel jobs (INTERNAL_ERROR, 3x on 2026-10-14: #58 password-auth/visual-lint, #59
       # merchant-buyer), failing a gate before any test runs. Prefetch with bounded retry; go.sum still verifies every module.
       - name: Go modules (prefetch with retry)
