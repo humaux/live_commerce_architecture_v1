@@ -353,7 +353,9 @@ SQL envelope is exactly `prepared`, `project_id`, `credential_version`,
 endpoint, strips those three mapping fields, and rechecks the draft snapshot.
 Missing mapping fails closed; this advisory selection never replaces Start's
 locked checks. Both input GET responses are capped at 8192 bytes in Go/BFF.
-Initial and final read authority/revision/session-expiry checks apply. INPUT
+Initial and final read authority/revision/session-expiry checks apply. Both
+readers and the nested `read_studio_media` are STABLE (0196), so each DTO comes
+from one snapshot; the fresh revocation fence is Go's post-read GetDraft. INPUT
 `cleanup_held` is independent from Egress escalation; a held input or revoked
 authorization does not remove a current manager's cleanup Stop permission.
 
