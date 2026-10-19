@@ -6,7 +6,7 @@
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
 #   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (bounded apt retries),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,
-#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version). No secrets: every gate uses MOCK/SANDBOX fixtures only.
+#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version), setup-go module/compiler cache for shard:gNN only. No secrets: every gate uses MOCK/SANDBOX fixtures only.
 # Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`, or `-f full_browser_universe=true` for the nightly set on demand);
 #   pushes to r3/integration run the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its
 #   changed paths; the nightly schedule re-verifies trunk browser health with the FULL browser universe (CI-SELECT: push runs select no browser job).
@@ -139,8 +139,14 @@ jobs:
           go-version-file: go.mod
           # Reuse verified modules and content-addressed compiler output, never PG or gate receipts.
           # Go hashes source/flags (including -race); -count=1 below still executes every selected test.
-          cache: true
-          cache-dependency-path: go.sum
+          # Only the shard:gNN legs restore/save: they all compile the identical ./tests/foundation -race graph (-run/-skip do not
+          # change build IDs), so whichever finishes first saves a complete entry. The key is immutable, so any other writer
+          # (ui-gallery builds no Go, shard:unit a different package set) would seed a partial cache for every later run (review-735cb2ce2 P2-1).
+          # go.mod joins the key to retire the partial go.sum-only entry #78 left behind.
+          cache: ${{ startsWith(matrix.mode, 'shard:g') }}
+          cache-dependency-path: |
+            go.mod
+            go.sum
       # proxy.golang.org drops streams under ~80 parallel jobs (INTERNAL_ERROR, 3x on 2026-10-14: #58 password-auth/visual-lint, #59
       # merchant-buyer), failing a gate before any test runs. Prefetch with bounded retry; go.sum still verifies every module.
       - name: Go modules (prefetch with retry)
