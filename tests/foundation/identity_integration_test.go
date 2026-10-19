@@ -38,7 +38,13 @@ func (p *identityProvider) Exchange(ctx context.Context, code, nonce, verifier s
 
 func identityFixture(t *testing.T) (*identity.Service, *identityProvider, *pgxpool.Pool) {
 	t.Helper()
-	f := fixture(t)
+	return identityFixtureOn(t, fixture(t))
+}
+
+// identityFixtureOn binds the identity login to f's database, so sessions it issues are visible to
+// a handler serving the same (e.g. pwIsolatedFixture) cluster.
+func identityFixtureOn(t *testing.T, f *testFixture) (*identity.Service, *identityProvider, *pgxpool.Pool) {
+	t.Helper()
 	role := "identity_" + strings.ReplaceAll(randomUUID(), "-", "")
 	password := randomToken()
 	_, err := f.owner.Exec(context.Background(), `CREATE ROLE `+pgx.Identifier{role}.Sanitize()+` LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE IN ROLE commerce_identity PASSWORD '`+password+`'`)

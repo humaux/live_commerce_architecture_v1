@@ -1,0 +1,621 @@
+{
+  "base_sha": "c697be61be7aca82108b7e8fb999e6ed94e81070",
+  "source_sha": "9dd54ec51b41cec7de1677b0261da93232a48f18",
+  "status": "READY_FOR_CI",
+  "evidence_level": "E1",
+  "counts": {
+    "A": 45,
+    "B": 9,
+    "C": 1
+  },
+  "all_original_symbols_retained": true,
+  "all_B_have_named_stripe_equivalent": true,
+  "entries": [
+    {
+      "symbol": "TestBuyerPaymentAtomicReplayAndPendingStock",
+      "bucket": "A",
+      "file": "tests/foundation/payment_start_test.go",
+      "line": 188,
+      "round2_line": 184,
+      "action": "Keep all atomic/replay/race/authority/fault/clock assertions; psSQLSetup/psSQLStarter use role-scoped checkout.start_payment, direct transactional River INSERT and SQL receipt replay.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentConcurrentKeys",
+      "bucket": "A",
+      "file": "tests/foundation/payment_start_test.go",
+      "line": 252,
+      "round2_line": 248,
+      "action": "Keep all atomic/replay/race/authority/fault/clock assertions; psSQLSetup/psSQLStarter use role-scoped checkout.start_payment, direct transactional River INSERT and SQL receipt replay.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentAdmissionDenials",
+      "bucket": "A",
+      "file": "tests/foundation/payment_start_test.go",
+      "line": 311,
+      "round2_line": 307,
+      "action": "Keep all atomic/replay/race/authority/fault/clock assertions; psSQLSetup/psSQLStarter use role-scoped checkout.start_payment, direct transactional River INSERT and SQL receipt replay.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentFaultRollback",
+      "bucket": "A",
+      "file": "tests/foundation/payment_start_test.go",
+      "line": 356,
+      "round2_line": 352,
+      "action": "Keep all atomic/replay/race/authority/fault/clock assertions; psSQLSetup/psSQLStarter use role-scoped checkout.start_payment, direct transactional River INSERT and SQL receipt replay.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentFinalWaitGate",
+      "bucket": "A",
+      "file": "tests/foundation/payment_start_test.go",
+      "line": 390,
+      "round2_line": 386,
+      "action": "Keep all atomic/replay/race/authority/fault/clock assertions; psSQLSetup/psSQLStarter use role-scoped checkout.start_payment, direct transactional River INSERT and SQL receipt replay.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentAuthorityAndDispatcherFence",
+      "bucket": "A",
+      "file": "tests/foundation/payment_start_test.go",
+      "line": 448,
+      "round2_line": 444,
+      "action": "Keep all atomic/replay/race/authority/fault/clock assertions; psSQLSetup/psSQLStarter use role-scoped checkout.start_payment, direct transactional River INSERT and SQL receipt replay.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentQualificationExpiresDuringFinalWrite",
+      "bucket": "A",
+      "file": "tests/foundation/payment_start_test.go",
+      "line": 530,
+      "round2_line": 526,
+      "action": "Keep all atomic/replay/race/authority/fault/clock assertions; psSQLSetup/psSQLStarter use role-scoped checkout.start_payment, direct transactional River INSERT and SQL receipt replay.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentFreshSessionAndQualificationAuthority",
+      "bucket": "A",
+      "file": "tests/foundation/payment_start_test.go",
+      "line": 571,
+      "round2_line": 567,
+      "action": "Keep all atomic/replay/race/authority/fault/clock assertions; psSQLSetup/psSQLStarter use role-scoped checkout.start_payment, direct transactional River INSERT and SQL receipt replay.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentExpiredHoldRace",
+      "bucket": "A",
+      "file": "tests/foundation/payment_start_test.go",
+      "line": 603,
+      "round2_line": 599,
+      "action": "Keep all atomic/replay/race/authority/fault/clock assertions; psSQLSetup/psSQLStarter use role-scoped checkout.start_payment, direct transactional River INSERT and SQL receipt replay.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedAtomicPreparationAndIndependentWire",
+      "bucket": "B",
+      "file": "tests/foundation/hosted_payment_test.go",
+      "line": 204,
+      "round2_line": 208,
+      "action": "Refuse BeginHosted twice; fake transport zero; full scoped rows including all River rows unchanged. Preserve its SQL atomic/preparation/one-shot assertions separately in `TestBuyerPaymentHostedSQLAtomicPreparationAndOneShot` (tests/foundation/hosted_payment_test.go:359). Removed encrypted wire is covered by active Stripe wire assertions.",
+      "stripe_equivalents": [
+        {
+          "symbol": "TestStripeSP07Start",
+          "file": "tests/foundation/stripe_start_test.go",
+          "line": 248,
+          "new_in_round3": false
+        },
+        {
+          "symbol": "TestStripeSP08HappyMock",
+          "file": "tests/foundation/stripe_flow_test.go",
+          "line": 387,
+          "new_in_round3": false
+        },
+        {
+          "symbol": "TestStripeConcurrentKeys",
+          "file": "tests/foundation/stripe_retained_invariants_test.go",
+          "line": 24,
+          "new_in_round3": true
+        }
+      ]
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedReplayConflictsAndSingleAttempt",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_test.go",
+      "line": 208,
+      "round2_line": 324,
+      "action": "Keep all assertions; hpSQLSetup/hpSQLStarter invoke installed start/load/save/take SQL under the hosted role, with inert outer-form bytes and no removed Go adapter.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedConcurrentTakeOneForm",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_test.go",
+      "line": 255,
+      "round2_line": 371,
+      "action": "Keep all assertions; hpSQLSetup/hpSQLStarter invoke installed start/load/save/take SQL under the hosted role, with inert outer-form bytes and no removed Go adapter.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedCryptoFailureRollsBack",
+      "bucket": "B",
+      "file": "tests/foundation/hosted_payment_test.go",
+      "line": 298,
+      "round2_line": 414,
+      "action": "Refuse BeginHosted even with unusable keyring; fake transport zero; full-row equality. Active Stripe causal fault rollback replaces the generic atomicity contract.",
+      "stripe_equivalents": [
+        {
+          "symbol": "TestStripeStartFaultRollback",
+          "file": "tests/foundation/stripe_retained_invariants_test.go",
+          "line": 84,
+          "new_in_round3": true
+        },
+        {
+          "symbol": "TestStripeSP09CreateUnknown",
+          "file": "tests/foundation/stripe_flow_test.go",
+          "line": 584,
+          "new_in_round3": false
+        }
+      ]
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedThreeFrozenLocales",
+      "bucket": "B",
+      "file": "tests/foundation/hosted_payment_test.go",
+      "line": 302,
+      "round2_line": 433,
+      "action": "Refuse BeginHosted for each frozen locale; zero outbound/full-row equality for each. Active Stripe HTTP preparation/view/handoff covers all three locales.",
+      "stripe_equivalents": [
+        {
+          "symbol": "TestStripeHTTPThreeLocalesAndConcurrentHandoff",
+          "file": "tests/foundation/stripe_retained_invariants_test.go",
+          "line": 120,
+          "new_in_round3": true
+        },
+        {
+          "symbol": "TestStripeSP07Start",
+          "file": "tests/foundation/stripe_start_test.go",
+          "line": 248,
+          "new_in_round3": false
+        }
+      ]
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedAdmissionDriftBeforePrepare",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_test.go",
+      "line": 308,
+      "round2_line": 457,
+      "action": "Keep all assertions; hpSQLSetup/hpSQLStarter invoke installed start/load/save/take SQL under the hosted role, with inert outer-form bytes and no removed Go adapter.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedSQLAuthorityAndScope",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 38,
+      "round2_line": 38,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedForgedOuterFormRejected",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 137,
+      "round2_line": 137,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedStorageFailureRollsBack",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 178,
+      "round2_line": 178,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedDriftAndFinancialReviewDenyFirstTake",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 198,
+      "round2_line": 198,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedReplayAfterDisableAndRevokedCapability",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 259,
+      "round2_line": 259,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedQualificationExpiresDuringTakeWait",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 285,
+      "round2_line": 285,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedWriterCannotMutateFormOrClearHandoff",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 318,
+      "round2_line": 318,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedQualificationExpiresDuringFinalWrites",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 419,
+      "round2_line": 419,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedCapabilityRevokedDuringTakeWait",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 452,
+      "round2_line": 452,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedLocalDeadlineFence",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_authority_test.go",
+      "line": 483,
+      "round2_line": 483,
+      "action": "Keep every ACL/RLS/form-forgery/rollback/replay/clock/revocation/write-fence assertion; setup invokes installed hosted SQL through the existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHostedLostCommitAcknowledgementDoesNotReissue",
+      "bucket": "A",
+      "file": "tests/foundation/hosted_payment_commit_test.go",
+      "line": 74,
+      "round2_line": 74,
+      "action": "Keep lost-COMMIT-ack and no-reissue assertions; direct take_hosted_page transaction uses the same faulted connection and commit boundary.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentHTTPPrepareViewHandoffThreeLocales",
+      "bucket": "B",
+      "file": "tests/foundation/buyer_payment_http_test.go",
+      "line": 74,
+      "round2_line": 76,
+      "action": "POST prepare refuses each of three locales with 422 invalid_request; fake transport zero and full-row equality.",
+      "stripe_equivalents": [
+        {
+          "symbol": "TestStripeHTTPThreeLocalesAndConcurrentHandoff",
+          "file": "tests/foundation/stripe_retained_invariants_test.go",
+          "line": 120,
+          "new_in_round3": true
+        },
+        {
+          "symbol": "TestStripeSP14BuyerHTTP",
+          "file": "tests/foundation/stripe_buyer_http_test.go",
+          "line": 179,
+          "new_in_round3": false
+        }
+      ]
+    },
+    {
+      "symbol": "TestBuyerPaymentHTTPConcurrentHandoffAndEarlyFailures",
+      "bucket": "B",
+      "file": "tests/foundation/buyer_payment_http_test.go",
+      "line": 153,
+      "round2_line": 217,
+      "action": "Concurrent POST handoff refuses both calls with 409 conflict/nonretryable shape; fake transport zero/full-row equality. Active Stripe test retains concurrent redirect/persistence and unavailable issuer checks.",
+      "stripe_equivalents": [
+        {
+          "symbol": "TestStripeHTTPThreeLocalesAndConcurrentHandoff",
+          "file": "tests/foundation/stripe_retained_invariants_test.go",
+          "line": 120,
+          "new_in_round3": true
+        },
+        {
+          "symbol": "TestStripeConcurrentKeys",
+          "file": "tests/foundation/stripe_retained_invariants_test.go",
+          "line": 24,
+          "new_in_round3": true
+        },
+        {
+          "symbol": "TestStripeViewFinalDatabaseClock",
+          "file": "tests/foundation/stripe_retained_invariants_test.go",
+          "line": 211,
+          "new_in_round3": true
+        }
+      ]
+    },
+    {
+      "symbol": "TestBuyerPaymentViewEligibleAndExactNames",
+      "bucket": "A",
+      "file": "tests/foundation/buyer_payment_view_test.go",
+      "line": 86,
+      "round2_line": 86,
+      "action": "Keep exact names/candidate drift/profile/history/privacy/read-only assertions; direct installed hosted_payment_view SQL through hosted-role pool, including SQL capture fixtures for precedence.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentViewCandidateDrift",
+      "bucket": "A",
+      "file": "tests/foundation/buyer_payment_view_test.go",
+      "line": 130,
+      "round2_line": 130,
+      "action": "Keep exact names/candidate drift/profile/history/privacy/read-only assertions; direct installed hosted_payment_view SQL through hosted-role pool, including SQL capture fixtures for precedence.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentViewHandoffStatesAndProfileSwitch",
+      "bucket": "A",
+      "file": "tests/foundation/buyer_payment_view_test.go",
+      "line": 242,
+      "round2_line": 242,
+      "action": "Keep exact names/candidate drift/profile/history/privacy/read-only assertions; direct installed hosted_payment_view SQL through hosted-role pool, including SQL capture fixtures for precedence.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentViewSignedFinancialPrecedence",
+      "bucket": "A",
+      "file": "tests/foundation/buyer_payment_view_test.go",
+      "line": 295,
+      "round2_line": 295,
+      "action": "Keep exact names/candidate drift/profile/history/privacy/read-only assertions; direct installed hosted_payment_view SQL through hosted-role pool, including SQL capture fixtures for precedence.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentViewFinalDatabaseClock",
+      "bucket": "A",
+      "file": "tests/foundation/buyer_payment_view_clock_test.go",
+      "line": 18,
+      "round2_line": 18,
+      "action": "Keep capability/qualification/page final-clock wait and exact blocker witnesses; direct hosted_payment_view through hosted-role pool.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentWorkerLateDefaultInsertPollAndProfileIsolation",
+      "bucket": "B",
+      "file": "tests/foundation/payment_runtime_test.go",
+      "line": 351,
+      "round2_line": 351,
+      "action": "Actual retired query worker cancels archived job before dispatch/lease mutation; fake transport zero/full business rows unchanged; River cancellation independently asserted.",
+      "stripe_equivalents": [
+        {
+          "symbol": "TestStripeWorkerLateDefaultInsertPollAndProfileIsolation",
+          "file": "tests/foundation/stripe_retained_invariants_test.go",
+          "line": 300,
+          "new_in_round3": true
+        }
+      ]
+    },
+    {
+      "symbol": "TestBuyerPaymentWorkerCrashChild",
+      "bucket": "B",
+      "file": "tests/foundation/payment_runtime_test.go",
+      "line": 466,
+      "round2_line": 555,
+      "action": "Replace retired child entry with actual query-worker refusal (zero outbound/full-row equality). New Stripe child is launched and killed by the named Stripe parent, never presented as standalone crash proof.",
+      "stripe_equivalents": [
+        {
+          "symbol": "TestStripeWorkerCrashChild",
+          "file": "tests/foundation/payment_runtime_test.go",
+          "line": 474,
+          "new_in_round3": true
+        },
+        {
+          "symbol": "TestStripeWorkerRealCrashAndRiverLeaseRescue",
+          "file": "tests/foundation/payment_runtime_test.go",
+          "line": 520,
+          "new_in_round3": true
+        }
+      ]
+    },
+    {
+      "symbol": "TestBuyerPaymentWorkerRealCrashAndRiverLeaseRescue",
+      "bucket": "B",
+      "file": "tests/foundation/payment_runtime_test.go",
+      "line": 470,
+      "round2_line": 595,
+      "action": "Replace obsolete worker execution with explicit query refusal/cancellation, zero outbound/full-row equality. New Stripe parent retains real subprocess kill, durable running/rescue witness, expired operation lease and one capture.",
+      "stripe_equivalents": [
+        {
+          "symbol": "TestStripeWorkerRealCrashAndRiverLeaseRescue",
+          "file": "tests/foundation/payment_runtime_test.go",
+          "line": 520,
+          "new_in_round3": true
+        }
+      ]
+    },
+    {
+      "symbol": "TestBuyerPaymentQueryReportAtomicDedupAndBinding",
+      "bucket": "A",
+      "file": "tests/foundation/payment_query_test.go",
+      "line": 216,
+      "round2_line": 216,
+      "action": "Keep all binding/dedup/reference/lease/fault/final-clock/concurrency assertions; direct SQL start setup plus installed integration payment-query functions. Cross-attempt setup also uses SQL under the isolated existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentQueryFaultAndLeaseWaitRollback",
+      "bucket": "A",
+      "file": "tests/foundation/payment_query_test.go",
+      "line": 281,
+      "round2_line": 281,
+      "action": "Keep all binding/dedup/reference/lease/fault/final-clock/concurrency assertions; direct SQL start setup plus installed integration payment-query functions. Cross-attempt setup also uses SQL under the isolated existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentQueryProviderReferenceCannotFundTwoAttempts",
+      "bucket": "A",
+      "file": "tests/foundation/payment_query_test.go",
+      "line": 486,
+      "round2_line": 486,
+      "action": "Keep all binding/dedup/reference/lease/fault/final-clock/concurrency assertions; direct SQL start setup plus installed integration payment-query functions. Cross-attempt setup also uses SQL under the isolated existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentQueryFinishClockAndReferenceFence",
+      "bucket": "A",
+      "file": "tests/foundation/payment_query_test.go",
+      "line": 579,
+      "round2_line": 576,
+      "action": "Keep all binding/dedup/reference/lease/fault/final-clock/concurrency assertions; direct SQL start setup plus installed integration payment-query functions. Cross-attempt setup also uses SQL under the isolated existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob",
+      "bucket": "A",
+      "file": "tests/foundation/payment_query_test.go",
+      "line": 633,
+      "round2_line": 630,
+      "action": "Keep all binding/dedup/reference/lease/fault/final-clock/concurrency assertions; direct SQL start setup plus installed integration payment-query functions. Cross-attempt setup also uses SQL under the isolated existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentQueryConcurrentReportSingleWinner",
+      "bucket": "A",
+      "file": "tests/foundation/payment_query_test.go",
+      "line": 684,
+      "round2_line": 681,
+      "action": "Keep all binding/dedup/reference/lease/fault/final-clock/concurrency assertions; direct SQL start setup plus installed integration payment-query functions. Cross-attempt setup also uses SQL under the isolated existing role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureAtomicReplayAndFreshSession",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 85,
+      "round2_line": 85,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureEvidenceAndStickyReview",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 121,
+      "round2_line": 121,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureLaterRefundAndReverseOrder",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 188,
+      "round2_line": 188,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureOldAuthorizationIsNotConflict",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 210,
+      "round2_line": 210,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureACLAndObservationBinding",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 236,
+      "round2_line": 236,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureFaultsAreCausalAndAtomic",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 295,
+      "round2_line": 295,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureReleasedAnomalyKeepsRealMoney",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 475,
+      "round2_line": 475,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureBalanceWaitIsAtomic",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 521,
+      "round2_line": 521,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureEmptyReferenceAndMerchantReadScope",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 556,
+      "round2_line": 556,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureMultiSKUSingleCommit",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 598,
+      "round2_line": 598,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureQueryJobBindingAndRollback",
+      "bucket": "A",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 615,
+      "round2_line": 615,
+      "action": "Keep all observation/ACL/money/stock/replay/fault/balance-wait/job-binding assertions; direct SQL start plus installed record/apply_capture functions through existing owner/worker role pools.",
+      "stripe_equivalents": []
+    },
+    {
+      "symbol": "TestBuyerPaymentCaptureForgedRiverJobCancelsWithoutMoney",
+      "bucket": "B",
+      "file": "tests/foundation/payment_capture_test.go",
+      "line": 685,
+      "round2_line": 685,
+      "action": "Actual retired capture/query dispatch cancels archived jobs; fake transport zero; full business rows unchanged. Active Stripe forged-report job must cancel once with zero money.",
+      "stripe_equivalents": [
+        {
+          "symbol": "TestStripeCaptureForgedRiverJobCancelsWithoutMoney",
+          "file": "tests/foundation/payment_capture_test.go",
+          "line": 689,
+          "new_in_round3": true
+        }
+      ]
+    },
+    {
+      "symbol": "TestMetaAdsMA08CAPI",
+      "bucket": "C",
+      "file": "tests/foundation/meta_ads_capi_test.go",
+      "line": 438,
+      "round2_line": 448,
+      "action": "newCapiEnv uses rm2StripePending; capture uses Stripe fake + signed webhook + production capture worker. All existing CAPI assertions stay unchanged; fact-only synthetic SANDBOX projection preserves downstream profile/environment cases without claiming PSP SANDBOX execution.",
+      "stripe_equivalents": []
+    }
+  ]
+}

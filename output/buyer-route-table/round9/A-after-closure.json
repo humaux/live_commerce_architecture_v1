@@ -1,0 +1,1 @@
+[{"table":"router.Routes","dispatcher_sha256":"e11db674b7929660233974356bb846e256fad0a0c2b2081d30458cad185584e9","functions":["Table.HasPrefix","allowed","handler.ServeHTTP","match","pattern"],"declarations":["func Table.HasPrefix","func allowed","func handler.ServeHTTP","func match","func pattern","type Table","type entry","type handler","type route"],"reviewed":""}]

@@ -1,0 +1,71 @@
+{
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "groups": [
+    {
+      "comparison": "internal/buyerhttp/handler.go:147",
+      "path": "/v1/buyer/catalog",
+      "table_rows": [
+        "internal/buyerhttp/routes.go:48"
+      ]
+    },
+    {
+      "comparison": "internal/buyerhttp/handler.go:147",
+      "path": "/v1/buyer/checkout-options",
+      "table_rows": [
+        "internal/buyerhttp/routes.go:49"
+      ]
+    },
+    {
+      "comparison": "internal/buyerhttp/handler.go:147",
+      "path": "/v1/buyer/orders",
+      "table_rows": [
+        "internal/buyerhttp/routes.go:56"
+      ]
+    },
+    {
+      "comparison": "internal/buyerhttp/handler.go:147",
+      "path": "/v1/buyer/catalog/v2/products",
+      "table_rows": [
+        "internal/buyerhttp/routes.go:72"
+      ]
+    },
+    {
+      "comparison": "internal/buyerhttp/handler.go:159",
+      "path": "/v1/buyer/claim-link",
+      "table_rows": [
+        "internal/buyerhttp/routes.go:57"
+      ]
+    },
+    {
+      "comparison": "internal/buyerhttp/handler.go:159",
+      "path": "/v1/buyer/claim-link/redeem",
+      "table_rows": [
+        "internal/buyerhttp/routes.go:58"
+      ]
+    },
+    {
+      "comparison": "internal/buyerhttp/handler.go:291",
+      "path": "/v1/buyer/session",
+      "table_rows": [
+        "internal/buyerhttp/routes.go:40",
+        "internal/buyerhttp/routes.go:41",
+        "internal/buyerhttp/routes.go:42"
+      ]
+    },
+    {
+      "comparison": "internal/buyerhttp/handler.go:301",
+      "path": "/v1/buyer/claim-link",
+      "table_rows": [
+        "internal/buyerhttp/routes.go:57"
+      ]
+    },
+    {
+      "comparison": "internal/buyerhttp/handler.go:301",
+      "path": "/v1/buyer/claim-link/redeem",
+      "table_rows": [
+        "internal/buyerhttp/routes.go:58"
+      ]
+    }
+  ],
+  "canonicality_note": "Existing same-request URL.EscapedPath comparisons at146/159/315 validate canonical paths; they contain no new literal route. The scanner keeps these paired URL comparisons accepted. Other unsupported direct path predicates fail closed."
+}

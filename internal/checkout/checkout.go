@@ -1,5 +1,5 @@
 // Package checkout owns the trusted buyer checkout transaction: Begin turns a priced cart snapshot
-// into an order plus a stock hold, then hosted payment start (PAYUNi always, Stripe Checkout when
+// into an order plus a stock hold, then hosted payment start (Stripe Checkout when
 // enabled), the buyer's order and payment views, and the checkout-expiry worker that releases due
 // holds. Its pool is a separate SQL authority; buyer capability scope remains the buyer identity.
 //
@@ -21,7 +21,7 @@
 // It never computes prices (internal/pricing and the storefront snapshot do), never settles money on
 // a provider's word alone (payments.apply_capture is the single stock writer for captures), never
 // reads STRIPE_* secrets, never holds pay-at-pickup money, and never accepts a client-supplied amount.
-// External services only through internal/integrations/psp/{payuni,stripe} and, for the CVS directory
+// External services only through internal/integrations/psp/stripe and, for the CVS directory
 // lookup, internal/integrations/shipping/ecpay (logistics(-stage).ecpay.com.tw).
 package checkout
 

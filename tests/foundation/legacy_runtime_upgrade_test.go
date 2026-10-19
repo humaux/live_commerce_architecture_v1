@@ -549,9 +549,8 @@ func lriCloseProducerPools(p psHarness) {
 	p.a.identity.Close()
 }
 
-// Both non-MOCK profiles still use the production old-schema StartPayment
-// transaction. Only the local owner prepares consistent qualification facts;
-// neither branch contacts a provider or purports to prove real qualification.
+// Both non-MOCK profiles are synthetic archived rows inserted by the local owner.
+// No Go or SQL payment-start API is called; qualification is fixture history only.
 func lriOldProfileQuery(t *testing.T, f *testFixture, profile string) pqFixture {
 	t.Helper()
 	p := psSetupItemsOn(t, f, 1, "river")
@@ -587,11 +586,7 @@ func lriOldProfileQuery(t *testing.T, f *testFixture, profile string) pqFixture 
 	} else {
 		t.Fatal("unsupported historical profile")
 	}
-	p.starter = psStarterIn(t, p.pool, profile, "river")
-	result, err := p.start(t04Key("lri-old-profile"))
-	if err != nil {
-		t.Fatalf("old-schema %s payment admission: %v", profile, err)
-	}
+	result := rm2HistoryIn(t, p, "river", profile, map[string]string{"SANDBOX": "payment_sandbox_v1", "LIVE": "payment_live_v1"}[profile])
 	return pqFixture{psHarness: p, result: result, schema: "river"}
 }
 
@@ -647,9 +642,9 @@ func lriNoPost(t *testing.T, f *testFixture, sourceJobs, sourceQueues, paymentDe
 	lriReady(t, f, false)
 }
 
-// This is an actual pre-0032 cluster. Every source job is admitted by the old
-// producer first; owner-only state/profile changes model persisted lifecycle
-// history, not fabricated historical admission XIDs.
+// This is an actual pre-0032 cluster populated with synthetic archived rows.
+// Owner-only fixtures retain real transaction/provenance triggers and timestamps;
+// the upgrade must preserve them without restarting a removed provider.
 func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	f := lriPre0032Fixture(t)
 	ctx := context.Background()

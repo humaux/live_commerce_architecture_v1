@@ -136,15 +136,15 @@ func (s *HostedPaymentStarter) beginStripe(ctx context.Context, token, storeID, 
 		if err = tx.QueryRow(callCtx, `SELECT gen_random_uuid()::text`).Scan(&attemptID); err != nil {
 			return err
 		}
-		// §8 "ScheduledAt=now": unlike PAYUNi's 5 s delay, the create must go out inside the
-		// 7 minute send window. Same payment_query_v1 kind; the worker branches on provider.
+		// §8 "ScheduledAt=now": the create must go out inside the 7 minute send window.
+		// Same payment_query_v1 kind; the worker admits only the Stripe operation family.
 		job, err := s.starter.jobs.InsertTx(callCtx, tx, paymentQueryArgs{OperationID: attemptID, Version: 1},
 			&river.InsertOpts{Queue: jobqueue.ForProfile(s.starter.profile)})
 		if err != nil {
 			return err
 		}
 		// checkout.start_stripe_payment: attempt + op + session + reservation move + receipt in one
-		// SQL tx; it verifies this exact job. It is the only writer of the receipt (key shared with PAYUNi, I02).
+		// SQL tx; it verifies this exact job. It is the only writer of the receipt (shared historical idempotency namespace, I02).
 		var response []byte
 		err = tx.QueryRow(callCtx, `SELECT checkout.start_stripe_payment($1::bytea,$2::uuid,$3::text,$4::bytea,$5::uuid,$6::text,$7::bigint,$8::text,$9::uuid,$10::bigint,$11::text,$12::bytea,$13::text)`,
 			tokenHash[:], storeID, key, digest[:], in.OrderID, in.MethodCode, in.MethodVersion,
@@ -168,8 +168,7 @@ func (s *HostedPaymentStarter) beginStripe(ctx context.Context, token, storeID, 
 	return out, nil
 }
 
-// readStripeReceipt is readPaymentReceipt with the Stripe result rules: the shared
-// validPaymentResult is TWD-only, so it cannot validate an HKD/USD/SGD/MYR receipt.
+// readStripeReceipt validates replayed receipts using the Stripe result rules for every admitted currency.
 func readStripeReceipt(ctx context.Context, tx pgx.Tx, scope buyer.Scope, key string, digest [32]byte, orderID string) (PaymentResult, bool, error) {
 	var savedHash, response []byte
 	err := tx.QueryRow(ctx, `SELECT request_hash,response FROM checkout.command_results
@@ -201,8 +200,8 @@ func validStripePaymentResult(out PaymentResult, orderID string) bool {
 }
 
 // isStripeOrder asks the database which provider owns the order's attempt, so TakeHosted
-// routes without matching an error message (rulings §2). NULL (no attempt) and PAYUNi both
-// take the unchanged PAYUNi path and its existing errors.
+// routes without matching an error message (rulings §2). No attempt or a historical
+// provider returns false; TakeHosted then refuses the unavailable handoff.
 func (s *HostedPaymentStarter) isStripeOrder(ctx context.Context, tx pgx.Tx, tokenHash []byte, storeID, orderID string) (bool, error) {
 	var provider *string
 	// checkout.hosted_payment_provider: read-only, scoped by the buyer capability, no lock.

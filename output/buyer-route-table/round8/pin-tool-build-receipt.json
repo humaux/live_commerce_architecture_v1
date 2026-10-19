@@ -1,0 +1,22 @@
+{
+  "run_id": "r8-pin-tool-build",
+  "source_sha": "06e7f82b6c2b0e680b75a6682a5bc61b11e1d33c",
+  "command": [
+    "go",
+    "build",
+    "-o",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round8/scratch/pintool-bin",
+    "./output/buyer-route-table/round8/scratch/pintool"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:40:08.439831+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 1,
+  "elapsed_seconds": 0.097,
+  "ended_at": "2026-10-15T10:40:08.537699+00:00",
+  "summary": [],
+  "errors": 0,
+  "touched": 0
+}

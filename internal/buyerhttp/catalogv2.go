@@ -1,3 +1,6 @@
+// Purpose: catalog v2 reads and projections; depends on pgx and command validation.
+// Used by handler.dispatch after Routes selection; public reads never accept buyer authority.
+
 package buyerhttp
 
 // catalogv2.go serves the catalog-v2 buyer reads of contracts/storefront-v2.md section A: GET
@@ -41,23 +44,6 @@ const (
 )
 
 var v2Slug = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
-
-// matchCatalogV2 maps the part after /v1/buyer/catalog/v2/ to a route; anything else is not found.
-func matchCatalogV2(rest string) route {
-	switch {
-	case rest == "products":
-		return route{kind: catalogV2ProductsRoute}
-	case rest == "collections":
-		return route{kind: catalogV2CollectionsRoute}
-	}
-	if key, ok := strings.CutPrefix(rest, "products/"); ok && (v2Slug.MatchString(key) && len(key) <= 80 || command.ValidID(key)) {
-		return route{kind: catalogV2ProductRoute, slug: key}
-	}
-	if key, ok := strings.CutPrefix(rest, "collections/"); ok && v2Slug.MatchString(key) && len(key) <= 80 && !command.ValidID(key) { // UUID-shaped slugs cannot exist (SQL CHECK)
-		return route{kind: catalogV2CollectionRoute, slug: key}
-	}
-	return route{}
-}
 
 func isCatalogV2(kind routeKind) bool {
 	return kind == catalogV2ProductsRoute || kind == catalogV2ProductRoute || kind == catalogV2CollectionsRoute || kind == catalogV2CollectionRoute

@@ -1,0 +1,27 @@
+{
+  "removed": [
+    {
+      "path": "output/buyer-route-table/round5/pay70-scratch",
+      "bytes": 428443668,
+      "removed": true
+    },
+    {
+      "path": "output/buyer-route-table/round5/contractdrift",
+      "bytes": 8975858,
+      "removed": true
+    },
+    {
+      "path": "output/buyer-route-table/round5/pay70-api",
+      "bytes": 25587522,
+      "removed": true
+    },
+    {
+      "path": "output/buyer-route-table/r5-contractdrift",
+      "bytes": 8975858,
+      "removed": true
+    }
+  ],
+  "reclaimed_bytes": 471982906,
+  "processes": "all foreground gate commands exited; no server/browser/container/port/runtime fixture started",
+  "time": "2026-10-15T09:50:41.415752+00:00"
+}

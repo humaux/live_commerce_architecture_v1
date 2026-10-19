@@ -1,0 +1,25 @@
+{
+  "run_id": "buyer-route-table-r5-source-diff-check-5288fd866",
+  "source_sha": "5288fd866aec57c5bc1dc9ff4ac6834cae372782",
+  "base": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "command": [
+    "git",
+    "diff",
+    "73fdaea04",
+    "--check",
+    "--",
+    "cmd",
+    "internal",
+    "scripts",
+    "contracts"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "exit": 0,
+  "started_at": "2026-10-15T09:48:34.994827+00:00",
+  "finished_at": "2026-10-15T09:48:35.011914+00:00",
+  "elapsed_seconds": 0.017,
+  "timeout_seconds": 180,
+  "stdout": "output/buyer-route-table/round5/source-diff-check-report.txt",
+  "stderr": "output/buyer-route-table/round5/source-diff-check-stderr.log",
+  "mode": "STATIC_SOURCE_ONLY; Go tests NOT_RUN"
+}

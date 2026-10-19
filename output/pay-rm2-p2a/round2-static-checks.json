@@ -1,0 +1,65 @@
+{
+  "run_id": "pay-rm2-r2-static-20261015T073759Z",
+  "base_sha": "a11d19aacfe419529b06e5fb691771b530976378",
+  "source_head": "796dcf96e4dda3c14350cf99ce0012544b5d580c",
+  "source_tree": "b5af1bfc1c873545e9dd146da990823021abee7d",
+  "started_at": "2026-10-15T07:38:00.231341+00:00",
+  "finished_at": "2026-10-15T07:38:09.051197+00:00",
+  "source_manifest_sha256": "e01be19c0219a27899aa63ba4e3144ee2983d0a9118f3ccb0c920e9126639026",
+  "source_files": 2016,
+  "source_unchanged_during_checks": true,
+  "checks": [
+    {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "started_at": "2026-10-15T07:38:00.239230+00:00",
+      "elapsed_seconds": 8.169,
+      "exit_code": 0,
+      "timed_out": false,
+      "log": "output/pay-rm2-p2a/round2-static-1.log"
+    },
+    {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "started_at": "2026-10-15T07:38:00.239303+00:00",
+      "elapsed_seconds": 8.269,
+      "exit_code": 0,
+      "timed_out": false,
+      "log": "output/pay-rm2-p2a/round2-static-2.log"
+    },
+    {
+      "command": [
+        "go",
+        "vet",
+        "-tags=buyerintegration",
+        "./cmd/api"
+      ],
+      "started_at": "2026-10-15T07:38:00.239402+00:00",
+      "elapsed_seconds": 0.988,
+      "exit_code": 0,
+      "timed_out": false,
+      "log": "output/pay-rm2-p2a/round2-static-3.log"
+    },
+    {
+      "command": [
+        "go",
+        "vet",
+        "-tags=browser",
+        "./tests/foundation"
+      ],
+      "started_at": "2026-10-15T07:38:00.244997+00:00",
+      "elapsed_seconds": 8.275,
+      "exit_code": 0,
+      "timed_out": false,
+      "log": "output/pay-rm2-p2a/round2-static-4.log"
+    }
+  ],
+  "evidence_level": "E1",
+  "runtime_gates": "NOT_RUN: go test, PG, servers, browser, CI, race, red-green, independent review"
+}

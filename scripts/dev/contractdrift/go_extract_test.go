@@ -4,8 +4,12 @@
 package main
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -283,12 +287,12 @@ func TestGoRepositoryInventory(t *testing.T) {
 			coverage[u.Method+" "+u.Path] = u
 		}
 	}
-	for _, want := range []string{"PREFIX /v1/buyer", "PREFIX /v1/meta", "PREFIX /v1/stripe", "PREFIX /.well-known/lc-domain-check/", "EXACT /v1/buyer/feeds/meta.csv", "EXACT /v1/platform/stripe/webhook", "EXACT /internal/tls-ask"} {
+	for _, want := range []string{"PREFIX /v1/meta", "PREFIX /v1/stripe", "PREFIX /.well-known/lc-domain-check/", "EXACT /v1/platform/stripe/webhook", "EXACT /internal/tls-ask"} {
 		if _, ok := coverage[want]; !ok {
 			t.Errorf("missing actual cmd/api coverage guard %s", want)
 		}
 	}
-	for _, pair := range [][2]string{{"PREFIX /v1/buyer", "internal/buyerhttp/handler.go"}, {"PREFIX /v1/meta", "internal/integrations/meta/runtime.go"}, {"PREFIX /v1/stripe", "internal/payments/stripewebhook/handler.go"}, {"EXACT /internal/tls-ask", "internal/tlsask/tlsask.go"}} {
+	for _, pair := range [][2]string{{"PREFIX /v1/meta", "internal/integrations/meta/runtime.go"}, {"PREFIX /v1/stripe", "internal/payments/stripewebhook/handler.go"}, {"EXACT /internal/tls-ask", "internal/tlsask/tlsask.go"}} {
 		found := false
 		for _, ref := range coverage[pair[0]].Locations {
 			if ref.File == pair[1] && ref.End > ref.Line {
@@ -300,7 +304,62 @@ func TestGoRepositoryInventory(t *testing.T) {
 		}
 	}
 
+	// Expected rows come independently from AST declarations, not scanGo or the
+	// scanner's table evaluator. Each must retain its row location AND the table
+	// proof note, replacing the obsolete buyer opaque guard/span expectations.
 	keys := goRouteKeys(inv)
+	for _, table := range []struct {
+		file, facade string
+		count        int
+	}{
+		{"internal/buyerhttp/routes.go", "Routes", 46},
+		{"internal/attribution/feed.go", "FeedRoutes", 2},
+	} {
+		expected := repositoryTableRows(t, root, table.file, table.facade)
+		if len(expected) != table.count {
+			t.Fatalf("%s rows=%d want%d", table.file, len(expected), table.count)
+		}
+		for key, line := range expected {
+			actual, ok := keys[key]
+			if !ok {
+				t.Errorf("missing table row %s (%s:%d)", key, table.file, line)
+				continue
+			}
+			rowRef, proof := false, false
+			for _, ref := range actual.Locations {
+				if ref.File == table.file && ref.Line == line {
+					rowRef = true
+				}
+			}
+			for _, note := range inv.Notes {
+				if note.Kind == "GO_ROUTE_TABLE" {
+					for _, ref := range note.Locations {
+						if ref.File == table.file && ref.Line <= line && ref.End >= line {
+							proof = true
+						}
+					}
+				}
+			}
+			if !rowRef || !proof {
+				t.Errorf("table row %s lacks row/proof provenance: row=%t proof=%t %+v", key, rowRef, proof, actual)
+			}
+		}
+	}
+	for _, u := range inv.Unresolved {
+		if strings.HasPrefix(u.Path, "/v1/buyer") {
+			t.Errorf("buyer remains unresolved: %+v", u)
+		}
+		for _, name := range []string{"buildBuyerHandler", "buildBuyerWithCVS", "mountFeed"} {
+			if strings.Contains(u.Detail, "opaque Go handler dispatch "+name+";") {
+				t.Errorf("buyer factory remains unresolved: %+v", u)
+			}
+			for _, ref := range u.Locations {
+				if ref.File == "cmd/api/buyer.go" && repositoryFunctionContains(t, root, ref, name) {
+					t.Errorf("unresolved span on buyer factory %s: %+v", name, u)
+				}
+			}
+		}
+	}
 	for _, want := range []string{
 		"POST /v1/admin/stores/{}/operations/{}/query",
 		"POST /v1/admin/stores/{}/operations/{}/retry",
@@ -434,4 +493,129 @@ func register(mux any){mux.HandleFunc(h.MethodGet+" /outer",handler)}
 	if !found {
 		t.Errorf("import edit must touch unknown source provenance: %+v", inv.Unresolved)
 	}
+}
+
+// Source-only oracle: deliberately independent of scanGo/readRouteTable.
+func repositoryTableRows(t *testing.T, root, file, facade string) map[string]int {
+	t.Helper()
+	set := token.NewFileSet()
+	files, err := filepath.Glob(filepath.Join(root, filepath.Dir(file), "*.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	constants := map[string]ast.Expr{}
+	var rows *ast.CompositeLit
+	for _, path := range files {
+		if strings.HasSuffix(path, "_test.go") {
+			continue
+		}
+		parsed, err := parser.ParseFile(set, path, nil, parser.ParseComments)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, decl := range parsed.Decls {
+			gd, ok := decl.(*ast.GenDecl)
+			if !ok {
+				continue
+			}
+			for _, spec := range gd.Specs {
+				vs, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
+				}
+				if gd.Tok == token.CONST && len(vs.Names) == len(vs.Values) {
+					for i, name := range vs.Names {
+						constants[name.Name] = vs.Values[i]
+					}
+				}
+				marker := ""
+				if gd.Doc != nil {
+					for _, comment := range gd.Doc.List {
+						marker += comment.Text + "\n"
+					}
+				}
+				if gd.Tok == token.VAR && strings.Contains(marker, "contractdrift:routes ") && strings.Contains(marker, "mount="+facade) {
+					if filepath.ToSlash(path) != filepath.ToSlash(filepath.Join(root, file)) || rows != nil || len(vs.Values) != 1 {
+						t.Fatalf("ambiguous table %s", facade)
+					}
+					rows, _ = vs.Values[0].(*ast.CompositeLit)
+				}
+			}
+		}
+	}
+	if rows == nil {
+		t.Fatalf("missing table source for %s", facade)
+	}
+	var text func(ast.Expr, int) string
+	text = func(expr ast.Expr, depth int) string {
+		if depth > 30 {
+			t.Fatal("constant cycle")
+		}
+		switch node := expr.(type) {
+		case *ast.BasicLit:
+			value, err := strconv.Unquote(node.Value)
+			if err == nil {
+				return value
+			}
+		case *ast.Ident:
+			if value, ok := constants[node.Name]; ok {
+				return text(value, depth+1)
+			}
+		case *ast.ParenExpr:
+			return text(node.X, depth+1)
+		case *ast.BinaryExpr:
+			if node.Op == token.ADD {
+				return text(node.X, depth+1) + text(node.Y, depth+1)
+			}
+		case *ast.SelectorExpr:
+			// net/http method names are fixed stdlib constants; path constants above
+			// are read from the owning package, including their concatenations.
+			if id, ok := node.X.(*ast.Ident); ok && id.Name == "http" && strings.HasPrefix(node.Sel.Name, "Method") {
+				return strings.ToUpper(strings.TrimPrefix(node.Sel.Name, "Method"))
+			}
+		}
+		t.Fatalf("unsupported table constant %T at %s", expr, set.Position(expr.Pos()))
+		return ""
+	}
+	expected := map[string]int{}
+	for _, element := range rows.Elts {
+		row, ok := element.(*ast.CompositeLit)
+		if !ok {
+			t.Fatal("nonliteral table row")
+		}
+		fields := map[string]string{}
+		for _, element := range row.Elts {
+			pair, ok := element.(*ast.KeyValueExpr)
+			if !ok {
+				t.Fatal("unkeyed table field")
+			}
+			if id, ok := pair.Key.(*ast.Ident); ok && (id.Name == "Method" || id.Name == "Path") {
+				fields[id.Name] = text(pair.Value, 0)
+			}
+		}
+		if fields["Method"] == "" || fields["Path"] == "" {
+			t.Fatal("missing row method/path")
+		}
+		key := fields["Method"] + " " + normalizePath(fields["Path"])
+		if _, ok := expected[key]; ok {
+			t.Fatalf("duplicate row %s", key)
+		}
+		expected[key] = set.Position(row.Pos()).Line
+	}
+	return expected
+}
+
+func repositoryFunctionContains(t *testing.T, root string, ref location, name string) bool {
+	t.Helper()
+	set := token.NewFileSet()
+	file, err := parser.ParseFile(set, filepath.Join(root, ref.File), nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, decl := range file.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok && fn.Name.Name == name {
+			return ref.Line <= set.Position(fn.End()).Line && max(ref.Line, ref.End) >= set.Position(fn.Pos()).Line
+		}
+	}
+	return false
 }

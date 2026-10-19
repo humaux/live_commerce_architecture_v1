@@ -1,0 +1,2 @@
+SUMMARY routes go=328 contract=165 bff=301; errors=2 warnings=288
+Source: rendered from unmodified built CLI JSON using main.go:221 format; no second scan.

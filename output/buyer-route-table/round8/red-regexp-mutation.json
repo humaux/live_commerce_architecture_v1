@@ -1,0 +1,6 @@
+{
+  "file": "internal/buyerhttp/catalogv2.go",
+  "old": "`^[a-z0-9]+(?:-[a-z0-9]+)*$`",
+  "new": "`.*`",
+  "mutated_sha256": "1598d0a2d611b6563087d97d07e56db6434cd256df53409c16b4ad774e4b1145"
+}

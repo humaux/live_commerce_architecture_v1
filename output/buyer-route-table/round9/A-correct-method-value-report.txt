@@ -1,0 +1,4 @@
+INFO () GO_NOT_IN_BFF GET /v1/table/one internal/router/routes.go:2, internal/router/routes.go:7, internal/router/routes.go:8 
+INFO () GO_NOT_IN_BFF POST /v1/table/{} internal/router/routes.go:2, internal/router/routes.go:7, internal/router/routes.go:9 
+INFO () GO_ROUTE_TABLE  /v1/table cmd/api/main.go:9, internal/router/routes.go:7, internal/router/routes.go:12, internal/router/routes.go:18, internal/router/routes.go:24, internal/router/routes.go:34 dispatch resolved from consumed route table rows
+SUMMARY routes go=3 contract=3 bff=1; errors=0 warnings=0 GO_NOT_IN_BFF=2 GO_ROUTE_TABLE=1

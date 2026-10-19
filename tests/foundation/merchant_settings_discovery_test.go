@@ -194,7 +194,8 @@ func TestMerchantWizardPaymentListBoundsAndExactResources(t *testing.T) {
 	for _, code := range []string{"payuni_linepay", "payuni_credit", "payuni_atm", "payuni_cvs", "payuni_installment"} {
 		in := p.in
 		in.Code = code
-		settingsRead[payments.Method](t, wizardWrite(t, h, "PUT", base+"/"+code, f.token, t04Key("wizard-paymethod"), in))
+		pmHistorical(t, p, in, 1)
+		assertAdminError(t, wizardWrite(t, h, "PUT", base+"/"+code, f.token, t04Key("wizard-paymethod"), in), 422, "invalid_request")
 	}
 	before := wizardCounts(t, p)
 	got := settingsRead[pagination.Page[payments.Method]](t, adminRequest(h, "GET", base, f.otherToken, nil, "", nil))

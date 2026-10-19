@@ -65,7 +65,7 @@ func TestReviewBFFRetargetRealCLI(t *testing.T) {
 	root := fixture(t, "aligned")
 	p := filepath.Join(root, "internal/httpapi/routes.go")
 	s := readText(t, p)
-	s = strings.Replace(s, "\n}\nfunc handler", "\n mux.HandleFunc(\"GET \"+base+\"/replacement/{id}\",handler)\n}\nfunc handler", 1)
+	s = mustReplace(t, s, "\n}\nfunc handler", "\n mux.HandleFunc(\"GET \"+base+\"/replacement/{id}\",handler)\n}\nfunc handler")
 	mustWrite(t, p, s)
 	p = filepath.Join(root, "contracts/test.md")
 	mustWrite(t, p, readText(t, p)+"\n`GET .../replacement/{id}`\n")
@@ -83,7 +83,7 @@ func TestReviewBFFRetargetRealCLI(t *testing.T) {
 		t.Fatalf("backend-only route must stay allowed: %d %s", code, out)
 	}
 	p = filepath.Join(root, "apps/admin/app/api/stores/[store]/[...resource]/route.ts")
-	mustWrite(t, p, strings.ReplaceAll(readText(t, p), "widgets/", "replacement/"))
+	mustWrite(t, p, mustReplaceAll(t, readText(t, p), "widgets/", "replacement/"))
 	if code, out := call(root); code != 1 || !strings.Contains(out, "BFF_REMOVED") {
 		t.Fatalf("retargeting old BFF ignored: %d %s", code, out)
 	}
@@ -135,7 +135,7 @@ func TestReviewDiffHunkHeadersRealCLI(t *testing.T) {
 	root := fixture(t, "drift")
 	p := filepath.Join(root, "internal/httpapi/routes.go")
 	s := readText(t, p)
-	s = strings.Replace(s, "\tmux.HandleFunc(\"GET \"+base+\"/orphan\", handler)", "/*\n-- a/not-the-source.go\n*/\n\tmux.HandleFunc(\"GET \"+base+\"/orphan\", handler)", 1)
+	s = mustReplace(t, s, "\tmux.HandleFunc(\"GET \"+base+\"/orphan\", handler)", "/*\n-- a/not-the-source.go\n*/\n\tmux.HandleFunc(\"GET \"+base+\"/orphan\", handler)")
 	mustWrite(t, p, s)
 	git(t, root, "add", ".")
 	git(t, root, "commit", "-qm", "legacy source comment")
@@ -146,8 +146,8 @@ func TestReviewDiffHunkHeadersRealCLI(t *testing.T) {
 	git(t, root, "add", ".")
 	git(t, root, "commit", "-qm", "reviewed baseline")
 	git(t, root, "tag", "-f", "trunk")
-	s = strings.Replace(s, "-- a/not-the-source.go", "++ b/not-the-source.go", 1)
-	s = strings.Replace(s, "base+\"/orphan\", handler", "base+\"/orphan\", otherHandler", 1)
+	s = mustReplace(t, s, "-- a/not-the-source.go", "++ b/not-the-source.go")
+	s = mustReplace(t, s, "base+\"/orphan\", handler", "base+\"/orphan\", otherHandler")
 	mustWrite(t, p, s)
 	call := reviewCLI(t)
 	if code, out := call(root); code != 1 || !strings.Contains(out, "TOUCHED") || !strings.Contains(out, "internal/httpapi/routes.go:") {
@@ -169,9 +169,9 @@ func extra(mux *http.ServeMux) {
 }
 `
 			if shadow {
-				code = strings.Replace(code, "\n mux.HandleFunc", "\n headerOnly := sneaky()\n mux.HandleFunc", 1)
+				code = mustReplace(t, code, "\n mux.HandleFunc", "\n headerOnly := sneaky()\n mux.HandleFunc")
 			} else {
-				code = strings.Replace(code, `"X-Probe", "safe"`, `"X-Probe", first200(w)`, 1)
+				code = mustReplace(t, code, `"X-Probe", "safe"`, `"X-Probe", first200(w)`)
 			}
 			mustWrite(t, p, readText(t, p)+code)
 			if code, out := reviewCLI(t)(root); code != 1 || !strings.Contains(out, "GO_ONLY GET /v1/decorator_probe") {

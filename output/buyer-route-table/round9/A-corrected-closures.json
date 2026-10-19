@@ -1,0 +1,218 @@
+{
+  "direct": {
+    "before": {
+      "table": "router.Routes",
+      "dispatcher_sha256": "9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277",
+      "functions": [
+        "Table.HasPrefix",
+        "allowed",
+        "handler.ServeHTTP",
+        "match",
+        "pattern"
+      ],
+      "declarations": [
+        "func Table.HasPrefix",
+        "func allowed",
+        "func handler.ServeHTTP",
+        "func match",
+        "func pattern",
+        "type Table",
+        "type entry",
+        "type handler",
+        "type route"
+      ],
+      "reviewed": "R9 scratch before mutation"
+    },
+    "after": {
+      "table": "router.Routes",
+      "dispatcher_sha256": "9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277",
+      "functions": [
+        "Table.HasPrefix",
+        "allowed",
+        "handler.ServeHTTP",
+        "match",
+        "pattern"
+      ],
+      "declarations": [
+        "func Table.HasPrefix",
+        "func allowed",
+        "func handler.ServeHTTP",
+        "func match",
+        "func pattern",
+        "type Table",
+        "type entry",
+        "type handler",
+        "type route"
+      ],
+      "reviewed": ""
+    },
+    "hash_equal": true,
+    "dispatcher_body_unchanged": true,
+    "cli_exit": 0,
+    "summary": [
+      "SUMMARY routes go=3 contract=3 bff=1; errors=0 warnings=0 GO_NOT_IN_BFF=2 GO_ROUTE_TABLE=1"
+    ]
+  },
+  "alias": {
+    "before": {
+      "table": "router.Routes",
+      "dispatcher_sha256": "9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277",
+      "functions": [
+        "Table.HasPrefix",
+        "allowed",
+        "handler.ServeHTTP",
+        "match",
+        "pattern"
+      ],
+      "declarations": [
+        "func Table.HasPrefix",
+        "func allowed",
+        "func handler.ServeHTTP",
+        "func match",
+        "func pattern",
+        "type Table",
+        "type entry",
+        "type handler",
+        "type route"
+      ],
+      "reviewed": "R9 scratch before mutation"
+    },
+    "after": {
+      "table": "router.Routes",
+      "dispatcher_sha256": "9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277",
+      "functions": [
+        "Table.HasPrefix",
+        "allowed",
+        "handler.ServeHTTP",
+        "match",
+        "pattern"
+      ],
+      "declarations": [
+        "func Table.HasPrefix",
+        "func allowed",
+        "func handler.ServeHTTP",
+        "func match",
+        "func pattern",
+        "type Table",
+        "type entry",
+        "type handler",
+        "type route"
+      ],
+      "reviewed": ""
+    },
+    "hash_equal": true,
+    "dispatcher_body_unchanged": true,
+    "cli_exit": 0,
+    "summary": [
+      "SUMMARY routes go=3 contract=3 bff=1; errors=0 warnings=0 GO_NOT_IN_BFF=2 GO_ROUTE_TABLE=1"
+    ]
+  },
+  "literal": {
+    "before": {
+      "table": "router.Routes",
+      "dispatcher_sha256": "9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277",
+      "functions": [
+        "Table.HasPrefix",
+        "allowed",
+        "handler.ServeHTTP",
+        "match",
+        "pattern"
+      ],
+      "declarations": [
+        "func Table.HasPrefix",
+        "func allowed",
+        "func handler.ServeHTTP",
+        "func match",
+        "func pattern",
+        "type Table",
+        "type entry",
+        "type handler",
+        "type route"
+      ],
+      "reviewed": "R9 scratch before mutation"
+    },
+    "after": {
+      "table": "router.Routes",
+      "dispatcher_sha256": "9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277",
+      "functions": [
+        "Table.HasPrefix",
+        "allowed",
+        "handler.ServeHTTP",
+        "match",
+        "pattern"
+      ],
+      "declarations": [
+        "func Table.HasPrefix",
+        "func allowed",
+        "func handler.ServeHTTP",
+        "func match",
+        "func pattern",
+        "type Table",
+        "type entry",
+        "type handler",
+        "type route"
+      ],
+      "reviewed": ""
+    },
+    "hash_equal": true,
+    "dispatcher_body_unchanged": true,
+    "cli_exit": 0,
+    "summary": [
+      "SUMMARY routes go=3 contract=3 bff=1; errors=0 warnings=0 GO_NOT_IN_BFF=2 GO_ROUTE_TABLE=1"
+    ]
+  },
+  "method-value": {
+    "before": {
+      "table": "router.Routes",
+      "dispatcher_sha256": "9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277",
+      "functions": [
+        "Table.HasPrefix",
+        "allowed",
+        "handler.ServeHTTP",
+        "match",
+        "pattern"
+      ],
+      "declarations": [
+        "func Table.HasPrefix",
+        "func allowed",
+        "func handler.ServeHTTP",
+        "func match",
+        "func pattern",
+        "type Table",
+        "type entry",
+        "type handler",
+        "type route"
+      ],
+      "reviewed": "R9 scratch before mutation"
+    },
+    "after": {
+      "table": "router.Routes",
+      "dispatcher_sha256": "9b511ed19277ba80190ab04350c84f192e605655209c08a992bf0b40b5da3277",
+      "functions": [
+        "Table.HasPrefix",
+        "allowed",
+        "handler.ServeHTTP",
+        "match",
+        "pattern"
+      ],
+      "declarations": [
+        "func Table.HasPrefix",
+        "func allowed",
+        "func handler.ServeHTTP",
+        "func match",
+        "func pattern",
+        "type Table",
+        "type entry",
+        "type handler",
+        "type route"
+      ],
+      "reviewed": ""
+    },
+    "hash_equal": true,
+    "dispatcher_body_unchanged": true,
+    "cli_exit": 0,
+    "summary": [
+      "SUMMARY routes go=3 contract=3 bff=1; errors=0 warnings=0 GO_NOT_IN_BFF=2 GO_ROUTE_TABLE=1"
+    ]
+  }
+}

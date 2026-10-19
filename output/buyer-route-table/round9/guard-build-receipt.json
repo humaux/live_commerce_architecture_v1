@@ -1,0 +1,22 @@
+{
+  "run_id": "r9-guard-build",
+  "source_sha": "a98499f7314f20e11dd4eb6c90cbb34dfa89fa36",
+  "command": [
+    "go",
+    "build",
+    "-o",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round9/scratch/contractdrift-fixed",
+    "./scripts/dev/contractdrift"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T11:01:45.044034+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 58.942,
+  "ended_at": "2026-10-15T11:02:43.986761+00:00",
+  "summary": [],
+  "errors": 0,
+  "touched": 0
+}

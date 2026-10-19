@@ -1,5 +1,6 @@
 // Purpose: GET /v1/buyer/feeds/meta.csv: the public Meta Commerce Manager product feed of the verified storefront host (image links per product-media-v2).
 // Depends on: ads.feed_rows, catalog.buyer_feed_images, catalog.buyer_feed_variant_images (migrations 0080/0082/0149); buyer.resolve_published_store.
+// Invariants: exact mount path and GET/HEAD allowance consume private feedRows; BFF authentication stays in mountFeed.
 // Used by: cmd/api (mountFeed) via the storefront BFF app/feeds/meta.csv; tests/foundation/product_media_v2_test.go.
 
 package attribution
@@ -77,12 +78,54 @@ func writeFeed(w *csv.Writer, rows []feedRow) error {
 	return w.Error()
 }
 
+// feedRoute is one method on the exact feed mount; bodies remain owned by FeedHandler.
+type feedRoute struct {
+	Method string
+	Path   string
+}
+
+// FeedRouteTable is consumed by the exact-path mount and the handler method guard.
+type FeedRouteTable struct{}
+
+// FeedRoutes exposes only exact-path interception; row storage is private.
+var FeedRoutes = FeedRouteTable{}
+
+// feedRows lists every method served at this exact path; it never escapes this package.
+//
+//contractdrift:routes /v1/buyer/feeds/meta.csv feedPathMatches feedMethodAllowed exact mount=FeedRoutes
+var feedRows = []feedRoute{
+	{Method: http.MethodGet, Path: "/v1/buyer/feeds/meta.csv"},
+	{Method: http.MethodHead, Path: "/v1/buyer/feeds/meta.csv"},
+}
+
+// MatchesPath intercepts all methods at the exact mount; authentication therefore
+// still runs before an unsupported method is refused by FeedHandler.
+func (FeedRouteTable) MatchesPath(path string) bool { return feedPathMatches(path) }
+
+func feedPathMatches(path string) bool {
+	for _, entry := range feedRows {
+		if entry.Path == path {
+			return true
+		}
+	}
+	return false
+}
+
+func feedMethodAllowed(method string) bool {
+	for _, entry := range feedRows {
+		if entry.Method == method {
+			return true
+		}
+	}
+	return false
+}
+
 // FeedHandler serves the feed from the buyer runtime pool. Only GET/HEAD, no query string, exactly one origin header.
 // Errors use the shared httperror envelope: 422 invalid_request (bad origin), 404 not_found (host not published or
 // unknown), 503 unavailable. Success is cacheable for 15 minutes (cache key = host, the CDN keys on the Host header).
 func FeedHandler(pool *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		if !feedMethodAllowed(r.Method) {
 			httperror.Write(w, http.StatusMethodNotAllowed, "method_not_allowed")
 			return
 		}

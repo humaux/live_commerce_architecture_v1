@@ -1,3 +1,9 @@
+// Purpose: assemble the payment worker River client for one execution profile and bind it to the
+// matching DB authority (WorkerAuthority, T21-03); registers the query, capture, Stripe signal and refund workers.
+// Depends on: internal/jobqueue (profile queue), internal/platform (worker pool authority check),
+// internal/integrations/accounts (keyring), River on pgx, PostgreSQL integration.payment_queue_ready().
+// Used by: cmd/payment-worker/main.go.
+
 package payments
 
 import (
@@ -45,7 +51,7 @@ type WorkerConfig struct {
 	Stripe      *StripeRuntime
 }
 
-// NewWorkerClient keeps the existing PAYUNi assembly signature.
+// NewWorkerClient retains the historical assembly signature; no retired provider is dispatched.
 func NewWorkerClient(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyring,
 	profile string, concurrency int, queryOptions QueryWorkerOptions) (*river.Client[pgx.Tx], error) {
 	return NewPaymentWorkerClient(ctx, pool, WorkerConfig{Profile: profile, Concurrency: concurrency,

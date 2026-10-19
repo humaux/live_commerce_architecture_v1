@@ -106,11 +106,11 @@ func sstNewEnv(t *testing.T, f *testFixture, keys *accounts.Keyring) *sstEnv {
 }
 
 // service builds a hosted service over the shared hosted pool. It is exactly the
-// call cmd/api makes (PAYUNi config stays required in B1, contract brief §cmd/api).
+// Stripe-only call cmd/api makes after PAYUNi removal.
 func (e *sstEnv) service(t *testing.T, profile string, stripeCfg checkout.StripeHostedConfig) *checkout.HostedPaymentStarter {
 	t.Helper()
 	s, err := checkout.NewHostedPaymentService(context.Background(), e.hosted, e.jobs, profile, e.keys,
-		checkout.HostedProviders{PAYUNi: &e.pcfg, Stripe: &stripeCfg})
+		checkout.HostedProviders{Stripe: &stripeCfg})
 	if err != nil {
 		t.Fatalf("hosted service (%s): %v", profile, err)
 	}
@@ -389,8 +389,12 @@ func TestStripeSP07Start(t *testing.T) {
 			{"changed_profile", otherProfile, s.input("zh-TW")},
 			{"changed_method", e.svc, payuni},
 		} {
-			if _, err := s.begin(v.svc, key, v.in); !errors.Is(err, command.ErrConflict) {
-				t.Fatalf("%s: same key with changed frozen input was not 409: %v", v.name, err)
+			want := command.ErrConflict
+			if v.name == "changed_method" {
+				want = command.ErrInvalid // retired method is rejected before receipt lookup
+			}
+			if _, err := s.begin(v.svc, key, v.in); !errors.Is(err, want) {
+				t.Fatalf("%s: changed frozen input refusal=%v want=%v", v.name, err, want)
 			}
 			if sstFacts(t, p) != stable {
 				t.Fatalf("%s changed facts", v.name)
@@ -422,7 +426,7 @@ func TestStripeSP07Start(t *testing.T) {
 				defer wg.Done()
 				<-start
 				in := s.input("zh-TW")
-				if i%2 == 0 { // PAYUNi prepares the same order concurrently
+				if i%2 == 0 { // retired PAYUNi request races a valid Stripe start
 					in.MethodCode, in.MethodVersion = "payuni_credit", 1
 				}
 				_, errs[i] = s.begin(e.svc, t04Key(fmt.Sprintf("sst-race-%d", i)), in)
@@ -432,6 +436,12 @@ func TestStripeSP07Start(t *testing.T) {
 		wg.Wait()
 		winners := 0
 		for i, err := range errs {
+			if i%2 == 0 {
+				if !errors.Is(err, command.ErrInvalid) {
+					t.Fatalf("retired racer %d admitted: %v", i, err)
+				}
+				continue
+			}
 			switch {
 			case err == nil:
 				winners++
@@ -447,7 +457,7 @@ func TestStripeSP07Start(t *testing.T) {
 		if err := h.f.owner.QueryRow(context.Background(), `SELECT method_code FROM checkout.payment_attempts WHERE owner_id=$1`, h.cap.Scope.OwnerID).Scan(&method); err != nil {
 			t.Fatal(err)
 		}
-		if (method == "stripe_checkout") != (after[4] == 1) || (method == "payuni_credit") != (after[8] == 1) {
+		if method != "stripe_checkout" || after[4] != 1 || after[8] != 0 {
 			t.Fatalf("winner %s left the other provider's page/session rows: %v", method, after)
 		}
 	})
@@ -487,7 +497,13 @@ func TestStripeSP07Start(t *testing.T) {
 		close(start)
 		wg.Wait()
 		wins := 0
-		for _, err := range results {
+		for slot, err := range results {
+			if slot%2 == 1 {
+				if !errors.Is(err, command.ErrInvalid) {
+					t.Fatalf("retired workload admitted: %v", err)
+				}
+				continue
+			}
 			if err == nil {
 				wins++
 			} else if !errors.Is(err, command.ErrConflict) {
@@ -720,8 +736,8 @@ func TestStripeSP07Start(t *testing.T) {
 		}{
 			{"nil_ctx", nil, e.jobs, "PROVIDER_MOCK", e.keys, good},
 			{"nil_jobs", ctx, nil, "PROVIDER_MOCK", e.keys, good},
-			{"no_provider", ctx, e.jobs, "PROVIDER_MOCK", e.keys, checkout.HostedProviders{}},
-			{"payuni_without_keys", ctx, e.jobs, "PROVIDER_MOCK", nil, good},
+			// PAY-RM2: "no_provider" and "payuni_without_keys" are no longer refusals (hosted.go: an empty value is a
+			// historical read-only service, PAYUNi is ignored); asserted below as starts that fail closed instead.
 			// "stripe_on_live_profile" removed: the Stripe branch admits LIVE since 0077 (stripe-live-enable-v1 §5.2); see hosted_live_test.go.
 			{"stripe_on_unknown_profile", ctx, e.jobs, "PRODUCTION", e.keys, good},
 			{"stripe_http_return_url", ctx, e.jobs, "PROVIDER_MOCK", e.keys, checkout.HostedProviders{Stripe: &checkout.StripeHostedConfig{ReturnURL: "http://checkout.example.test/return"}}},
@@ -730,6 +746,25 @@ func TestStripeSP07Start(t *testing.T) {
 			if s, err := checkout.NewHostedPaymentService(v.ctx, e.hosted, v.jobs, v.profile, v.keys, v.p); !errors.Is(err, command.ErrInvalid) || s != nil {
 				t.Fatalf("%s: err=%v", v.name, err)
 			}
+		}
+		// Without a Stripe config the service is read-only: BeginHosted refuses before any write.
+		s := e.seed(t, p)
+		before := sstFacts(t, p)
+		for _, v := range []struct {
+			name string
+			keys *accounts.Keyring
+			p    checkout.HostedProviders
+		}{{"no_provider", e.keys, checkout.HostedProviders{}}, {"payuni_without_keys", nil, checkout.HostedProviders{PAYUNi: &e.pcfg}}} {
+			svc, err := checkout.NewHostedPaymentService(ctx, e.hosted, e.jobs, "PROVIDER_MOCK", v.keys, v.p)
+			if err != nil || svc == nil {
+				t.Fatalf("%s: read-only service: %v", v.name, err)
+			}
+			if out, err := s.begin(svc, t04Key("sst-ro-"+v.name), s.input("zh-TW")); !errors.Is(err, command.ErrInvalid) || out != (checkout.PaymentResult{}) {
+				t.Fatalf("%s: start on a read-only service: out=%+v err=%v", v.name, out, err)
+			}
+		}
+		if got := sstFacts(t, p); got != before {
+			t.Fatalf("read-only service starts wrote facts %v -> %v", before, got)
 		}
 		// Stripe-only is a valid constructor input (keys are only needed for PAYUNi).
 		if s, err := checkout.NewHostedPaymentService(ctx, e.hosted, e.jobs, "PROVIDER_MOCK", nil, checkout.HostedProviders{Stripe: &e.scfg}); err != nil || s == nil {

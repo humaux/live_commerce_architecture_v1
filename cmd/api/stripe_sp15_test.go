@@ -225,12 +225,11 @@ func TestStripeSP15Process(t *testing.T) {
 			})
 		}
 		for name, mutate := range map[string]func(map[string]string){
-			"live_profile":         func(v map[string]string) { v["COMMERCE_PAYMENT_PROFILE"] = "LIVE" },
-			"flag_true":            func(v map[string]string) { v["COMMERCE_STRIPE_CHECKOUT_ENABLED"] = "true" },
-			"flag_space":           func(v map[string]string) { v["COMMERCE_STRIPE_CHECKOUT_ENABLED"] = " 1" },
-			"return_url_http":      func(v map[string]string) { v["COMMERCE_PAYMENT_RETURN_URL"] = "http://pay.example.com/return" },
-			"return_url_query":     func(v map[string]string) { v["COMMERCE_PAYMENT_RETURN_URL"] = "https://pay.example.com/return?x=1" },
-			"payuni_notify_absent": func(v map[string]string) { v["COMMERCE_PAYMENT_NOTIFY_URL"] = "" }, // no Stripe-only deployment in B1
+			"live_profile":     func(v map[string]string) { v["COMMERCE_PAYMENT_PROFILE"] = "LIVE" },
+			"flag_true":        func(v map[string]string) { v["COMMERCE_STRIPE_CHECKOUT_ENABLED"] = "true" },
+			"flag_space":       func(v map[string]string) { v["COMMERCE_STRIPE_CHECKOUT_ENABLED"] = " 1" },
+			"return_url_http":  func(v map[string]string) { v["COMMERCE_PAYMENT_RETURN_URL"] = "http://pay.example.com/return" },
+			"return_url_query": func(v map[string]string) { v["COMMERCE_PAYMENT_RETURN_URL"] = "https://pay.example.com/return?x=1" },
 		} {
 			values = buyerPaymentTestEnv()
 			values["COMMERCE_STRIPE_CHECKOUT_ENABLED"], values["COMMERCE_PAYMENT_PROFILE"] = "1", "PROVIDER_MOCK"

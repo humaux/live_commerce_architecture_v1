@@ -1,0 +1,12 @@
+{
+  "source_sha": "4eb31d7de3f948e452f96078075cb6384f410d67",
+  "removed_own_files": [
+    "output/buyer-route-table/round6/initial-contractdrift",
+    "output/buyer-route-table/round6/contractdrift",
+    "output/integrator/tools/prepush.sh"
+  ],
+  "fixture_worktrees_created": [],
+  "containers_created": [],
+  "ports_opened": [],
+  "background_processes_remaining": []
+}

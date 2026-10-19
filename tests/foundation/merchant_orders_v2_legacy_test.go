@@ -11,7 +11,7 @@ import (
 )
 
 func TestMerchantOrdersV2LegacyDisplayFallback(t *testing.T) {
-	q := pqSetup(t)
+	q := rm2StripePending(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
 	// Synthetic historical snapshots: retain all transaction fields and FK/checks.
 	// The original, valid order must remain readable alongside each legacy row.
@@ -72,7 +72,7 @@ func TestMerchantOrdersV2LegacyDisplayFallback(t *testing.T) {
 // trims ASCII spaces: the old mask began with a non-printable rune that the Go row validator rejects, so one
 // such historical order turned the whole store list into a 503. Rows must degrade one by one instead.
 func TestMerchantOrdersV2LegacyUnicodeWhitespaceRecipient(t *testing.T) {
-	q := pqSetup(t)
+	q := rm2StripePending(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
 	mustExec(t, q.f.owner, `WITH inserted AS (INSERT INTO checkout.orders
  SELECT (jsonb_populate_record(NULL::checkout.orders, to_jsonb(o)||jsonb_build_object(

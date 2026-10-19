@@ -1,5 +1,5 @@
 // Package payments owns merchant payment-method configuration (methods.go) and the payment runtime
-// on the profile queues: PAYUNi capture reconciliation and query workers, the Stripe Checkout query,
+// on the profile queues: Stripe capture reconciliation and the Stripe Checkout query,
 // signal and refund workers (stripe_*.go; contracts/stripe-psp-v1.md, stripe-refund-v1) and the
 // lease-bound provider client material they use.
 //
@@ -8,5 +8,5 @@
 // writes stock, order or fulfilment state itself: workers record authenticated observations and
 // payments.* SQL definers (apply_capture, apply_stripe_refund) decide facts. Stripe keys are read
 // per attempt from PG (sealed by internal/integrations/accounts), never from the environment.
-// External hosts, only via internal/integrations/psp: api.stripe.com and the PAYUNi endpoint.
+// External hosts, only via internal/integrations/psp: api.stripe.com only.
 package payments

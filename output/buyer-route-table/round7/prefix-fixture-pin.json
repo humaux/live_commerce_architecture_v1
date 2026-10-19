@@ -1,0 +1,1 @@
+[{"table":"router.Routes","dispatcher_sha256":"bb891b718f9855ea78f60bb77fb3d23fca54c88f933304c21c80bad77198fc89","functions":["Table.HasPrefix","allowed","handler.ServeHTTP","match","pattern"],"reviewed":""}]

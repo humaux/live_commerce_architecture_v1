@@ -1,0 +1,649 @@
+{
+  "source_sha": "8025b50108eacf2c2f0fbc2d2d6b4c76d6ccc945",
+  "document": "contracts/buyer-routes-v1.md",
+  "document_sha256": "104c7f0d0e07c9096cf44c300e4e7c7ec5dfc77e9e0879b1c2cc8059b2cd6219",
+  "citations": [
+    {
+      "doc_line": 11,
+      "citation": "scripts/dev/contractdrift/contracts.go:90",
+      "path": "scripts/dev/contractdrift/contracts.go",
+      "line": 90,
+      "source_line": "var mdRoute = regexp.MustCompile(\"\\\\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)(?:/(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS))*[ \\\\t]+([^ \\\\t`<>|,;()]+)\")",
+      "file_sha256": "ce9b5bd2d1bd4eb7b74c35ac0f39aa2e001f102687f60ecca81d509871772d9b"
+    },
+    {
+      "doc_line": 12,
+      "citation": "buyer-payment-http-v1.md:100",
+      "path": "contracts/buyer-payment-http-v1.md",
+      "line": 100,
+      "source_line": "| POST `/v1/buyer/orders/{id}/payment/prepare` | Required Idempotency-Key; JSON exactly method_code, method_version, locale | order_id, state PAYMENT_PENDING, currency, amount_minor only |",
+      "file_sha256": "ef4b0077a82d0bdd04bcbc361dd97c2b965500445551669de86d00d9dfd2de0e"
+    },
+    {
+      "doc_line": 75,
+      "citation": "internal/attribution/feed.go:128",
+      "path": "internal/attribution/feed.go",
+      "line": 128,
+      "source_line": "if !feedMethodAllowed(r.Method) {",
+      "file_sha256": "038c20954a45857f489fe2d06d18ee107f4de0f0e43eec3873fa9ae3ffef7b5e"
+    },
+    {
+      "doc_line": 76,
+      "citation": "internal/attribution/feed.go:128",
+      "path": "internal/attribution/feed.go",
+      "line": 128,
+      "source_line": "if !feedMethodAllowed(r.Method) {",
+      "file_sha256": "038c20954a45857f489fe2d06d18ee107f4de0f0e43eec3873fa9ae3ffef7b5e"
+    },
+    {
+      "doc_line": 87,
+      "citation": "internal/buyerhttp/handler.go:145",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 145,
+      "source_line": "func forbiddenInput(r *http.Request) bool {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 88,
+      "citation": ":311",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 311,
+      "source_line": "if forbiddenInput(r) {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 88,
+      "citation": "handler.go:315",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 315,
+      "source_line": "if r.URL.EscapedPath() != r.URL.Path {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 90,
+      "citation": "handler.go:319",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 319,
+      "source_line": "providedKey, one := oneHeader(r, \"X-Commerce-Buyer-BFF-Key\")",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 90,
+      "citation": ":324",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 324,
+      "source_line": "origin, one := oneHeader(r, \"X-Commerce-Storefront-Origin\")",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 93,
+      "citation": "handler.go:334",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 334,
+      "source_line": "if !allowed(selected.kind, r.Method) {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 93,
+      "citation": ":338",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 338,
+      "source_line": "if (selected.id != \"\" && !command.ValidID(selected.id)) || (selected.image != \"\" && !command.ValidID(selected.image)) {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 95,
+      "citation": "handler.go:39",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 39,
+      "source_line": "var idempotencyKey = regexp.MustCompile(`^[A-Za-z0-9_.:-]{8,128}$`)",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 95,
+      "citation": ":268",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 268,
+      "source_line": "func keyFor(r *http.Request, noReplayKey bool, write bool) (string, bool) {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 95,
+      "citation": ":345",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 345,
+      "source_line": "key, valid := keyFor(r, noReplayKey, write)",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 98,
+      "citation": "handler.go:368",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 368,
+      "source_line": "fail(http.StatusUnauthorized, \"unauthorized\")",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 98,
+      "citation": ":360",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 360,
+      "source_line": "if len(r.Header.Values(\"Authorization\")) != 0 {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 98,
+      "citation": ":366",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 366,
+      "source_line": "token, ok = bearer(r)",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 98,
+      "citation": "catalogv2.go:54",
+      "path": "internal/buyerhttp/catalogv2.go",
+      "line": 54,
+      "source_line": "return kind == mediaRoute || kind == collectionMediaRoute || isCatalogV2(kind) || kind == primaryOriginRoute",
+      "file_sha256": "8d31b606a4be3a8a0b7b1472f78d2c7046b9cc13cd182c72c1f65463d96085d4"
+    },
+    {
+      "doc_line": 100,
+      "citation": "handler.go:372",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 372,
+      "source_line": "routeInfo, err := h.resolver.Resolve(ctx, origin)",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 100,
+      "citation": ":749",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 749,
+      "source_line": "func classify(err error) (int, string) {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 102,
+      "citation": "handler.go:379",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 379,
+      "source_line": "if token != \"\" {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 102,
+      "citation": "internal/buyerhttp/lookup.go:176",
+      "path": "internal/buyerhttp/lookup.go",
+      "line": 176,
+      "source_line": "func viewAllowed(selected route, method, viewOrder string) bool {",
+      "file_sha256": "b958835103432e8da4e3c0af03a690ea44fb6104202b9fdc8d49a40772ab450b"
+    },
+    {
+      "doc_line": 102,
+      "citation": ":191",
+      "path": "internal/buyerhttp/lookup.go",
+      "line": 191,
+      "source_line": "func (h *handler) authorizeView(ctx context.Context, selected route, method, storeID, token string) error {",
+      "file_sha256": "b958835103432e8da4e3c0af03a690ea44fb6104202b9fdc8d49a40772ab450b"
+    },
+    {
+      "doc_line": 103,
+      "citation": "handler.go:305",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 305,
+      "source_line": "ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 105,
+      "citation": "handler.go:75",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 75,
+      "source_line": "return httperror.Middleware(&handler{resolver: resolver, issuer: issuer, pool: buyerPool,",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 105,
+      "citation": "internal/httperror/error.go:25",
+      "path": "internal/httperror/error.go",
+      "line": 25,
+      "source_line": "func Middleware(next http.Handler) http.Handler {",
+      "file_sha256": "14b7c288565300f84ada77b3b3d925a8c3c99bc25dd4fc75ee57b1ac1655659c"
+    },
+    {
+      "doc_line": 108,
+      "citation": "handler.go:749",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 749,
+      "source_line": "func classify(err error) (int, string) {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 110,
+      "citation": "handler.go:779",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 779,
+      "source_line": "func writeOK(w http.ResponseWriter, value any) {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 110,
+      "citation": "primary.go:33",
+      "path": "internal/buyerhttp/primary.go",
+      "line": 33,
+      "source_line": "writeOK(w, struct {",
+      "file_sha256": "79cc4cd3b8f2e04dffa3de0d20dc87c2afd01255edf8c85040ecaa0f2198b650"
+    },
+    {
+      "doc_line": 111,
+      "citation": "privacy.go:55",
+      "path": "internal/buyerhttp/privacy.go",
+      "line": 55,
+      "source_line": "writeOK(w, out)",
+      "file_sha256": "4814c5c46feeabe005a6ae4ad1d6835bdbf72ce3c4ac30e419ae1fada2a35bb9"
+    },
+    {
+      "doc_line": 111,
+      "citation": "handler.go:666",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 666,
+      "source_line": "writeOK(w, out)",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 118,
+      "citation": "internal/buyerhttp/privacy.go:45",
+      "path": "internal/buyerhttp/privacy.go",
+      "line": 45,
+      "source_line": "func (h *handler) privacyGet(ctx context.Context, w http.ResponseWriter, r *http.Request, storeID, token, key string) error {",
+      "file_sha256": "4814c5c46feeabe005a6ae4ad1d6835bdbf72ce3c4ac30e419ae1fada2a35bb9"
+    },
+    {
+      "doc_line": 118,
+      "citation": ":55",
+      "path": "internal/buyerhttp/privacy.go",
+      "line": 55,
+      "source_line": "writeOK(w, out)",
+      "file_sha256": "4814c5c46feeabe005a6ae4ad1d6835bdbf72ce3c4ac30e419ae1fada2a35bb9"
+    },
+    {
+      "doc_line": 118,
+      "citation": "internal/customers/types.go:80",
+      "path": "internal/customers/types.go",
+      "line": 80,
+      "source_line": "type Consents struct {",
+      "file_sha256": "6bd2dbb6b822d4322eca904652ba935630137541ca12012b0353f5c96d53622a"
+    },
+    {
+      "doc_line": 119,
+      "citation": ":177",
+      "path": "internal/customers/types.go",
+      "line": 177,
+      "source_line": "type BuyerPrivacy struct {",
+      "file_sha256": "6bd2dbb6b822d4322eca904652ba935630137541ca12012b0353f5c96d53622a"
+    },
+    {
+      "doc_line": 119,
+      "citation": "internal/customers/privacy.go:151",
+      "path": "internal/customers/privacy.go",
+      "line": 151,
+      "source_line": "return BuyerPrivacy{Consents: wire.Consents, Erased: wire.Erased}, nil",
+      "file_sha256": "84513d904acd9c7c8cad053b8a9770e2b55a1d29e2ee23b9f5f577d10a043b56"
+    },
+    {
+      "doc_line": 121,
+      "citation": "privacy.go:45",
+      "path": "internal/buyerhttp/privacy.go",
+      "line": 45,
+      "source_line": "func (h *handler) privacyGet(ctx context.Context, w http.ResponseWriter, r *http.Request, storeID, token, key string) error {",
+      "file_sha256": "4814c5c46feeabe005a6ae4ad1d6835bdbf72ce3c4ac30e419ae1fada2a35bb9"
+    },
+    {
+      "doc_line": 122,
+      "citation": "privacy.go:49",
+      "path": "internal/buyerhttp/privacy.go",
+      "line": 49,
+      "source_line": "if err != nil {",
+      "file_sha256": "4814c5c46feeabe005a6ae4ad1d6835bdbf72ce3c4ac30e419ae1fada2a35bb9"
+    },
+    {
+      "doc_line": 122,
+      "citation": ":172",
+      "path": "internal/buyerhttp/privacy.go",
+      "line": 172,
+      "source_line": "func privacyError(err error) error {",
+      "file_sha256": "4814c5c46feeabe005a6ae4ad1d6835bdbf72ce3c4ac30e419ae1fada2a35bb9"
+    },
+    {
+      "doc_line": 126,
+      "citation": "privacy.go:52",
+      "path": "internal/buyerhttp/privacy.go",
+      "line": 52,
+      "source_line": "if ctx.Err() != nil {",
+      "file_sha256": "4814c5c46feeabe005a6ae4ad1d6835bdbf72ce3c4ac30e419ae1fada2a35bb9"
+    },
+    {
+      "doc_line": 134,
+      "citation": "internal/buyerhttp/primary.go:21",
+      "path": "internal/buyerhttp/primary.go",
+      "line": 21,
+      "source_line": "if err := noBody(r); err != nil {",
+      "file_sha256": "79cc4cd3b8f2e04dffa3de0d20dc87c2afd01255edf8c85040ecaa0f2198b650"
+    },
+    {
+      "doc_line": 134,
+      "citation": "handler.go:680",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 680,
+      "source_line": "func noBody(r *http.Request) error {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 137,
+      "citation": "primary.go:25",
+      "path": "internal/buyerhttp/primary.go",
+      "line": 25,
+      "source_line": "primary, err := storefrontdomains.PrimaryOrigin(ctx, h.pool, origin)",
+      "file_sha256": "79cc4cd3b8f2e04dffa3de0d20dc87c2afd01255edf8c85040ecaa0f2198b650"
+    },
+    {
+      "doc_line": 137,
+      "citation": ":29",
+      "path": "internal/buyerhttp/primary.go",
+      "line": 29,
+      "source_line": "var out *string",
+      "file_sha256": "79cc4cd3b8f2e04dffa3de0d20dc87c2afd01255edf8c85040ecaa0f2198b650"
+    },
+    {
+      "doc_line": 137,
+      "citation": ":33",
+      "path": "internal/buyerhttp/primary.go",
+      "line": 33,
+      "source_line": "writeOK(w, struct {",
+      "file_sha256": "79cc4cd3b8f2e04dffa3de0d20dc87c2afd01255edf8c85040ecaa0f2198b650"
+    },
+    {
+      "doc_line": 137,
+      "citation": "internal/storefrontdomains/service.go:209",
+      "path": "internal/storefrontdomains/service.go",
+      "line": 209,
+      "source_line": "func PrimaryOrigin(ctx context.Context, q Querier, origin string) (string, error) {",
+      "file_sha256": "4f050f5bcb0547996820a58f79cdfe13d8242830abd2ccf52d51572848018ae5"
+    },
+    {
+      "doc_line": 141,
+      "citation": "primary.go:27",
+      "path": "internal/buyerhttp/primary.go",
+      "line": 27,
+      "source_line": "return err",
+      "file_sha256": "79cc4cd3b8f2e04dffa3de0d20dc87c2afd01255edf8c85040ecaa0f2198b650"
+    },
+    {
+      "doc_line": 141,
+      "citation": "handler.go:372",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 372,
+      "source_line": "routeInfo, err := h.resolver.Resolve(ctx, origin)",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 141,
+      "citation": ":749",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 749,
+      "source_line": "func classify(err error) (int, string) {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 142,
+      "citation": "handler.go:75",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 75,
+      "source_line": "return httperror.Middleware(&handler{resolver: resolver, issuer: issuer, pool: buyerPool,",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 143,
+      "citation": "internal/httperror/error.go:35",
+      "path": "internal/httperror/error.go",
+      "line": 35,
+      "source_line": "w.Header().Set(\"Cache-Control\", \"no-store\")",
+      "file_sha256": "14b7c288565300f84ada77b3b3d925a8c3c99bc25dd4fc75ee57b1ac1655659c"
+    },
+    {
+      "doc_line": 150,
+      "citation": "internal/buyerhttp/transfer.go:30",
+      "path": "internal/buyerhttp/transfer.go",
+      "line": 30,
+      "source_line": "func (h *handler) transferRequest(ctx context.Context, r *http.Request, selected route, storeID, token, key string) (any, error) {",
+      "file_sha256": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133"
+    },
+    {
+      "doc_line": 150,
+      "citation": ":36",
+      "path": "internal/buyerhttp/transfer.go",
+      "line": 36,
+      "source_line": "if err := decodeJSON(r, &in); err != nil {",
+      "file_sha256": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133"
+    },
+    {
+      "doc_line": 150,
+      "citation": ":39",
+      "path": "internal/buyerhttp/transfer.go",
+      "line": 39,
+      "source_line": "return h.checkout.SubmitTransferProof(ctx, token, storeID, key, selected.id, in)",
+      "file_sha256": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133"
+    },
+    {
+      "doc_line": 151,
+      "citation": "internal/checkout/transfer.go:61",
+      "path": "internal/checkout/transfer.go",
+      "line": 61,
+      "source_line": "type ProofInput struct {",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 153,
+      "citation": "internal/checkout/transfer.go:76",
+      "path": "internal/checkout/transfer.go",
+      "line": 76,
+      "source_line": "last5Pattern      = regexp.MustCompile(`^[0-9]{5}$`)",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 153,
+      "citation": ":87",
+      "path": "internal/checkout/transfer.go",
+      "line": 87,
+      "source_line": "return last5Pattern.MatchString(in.Last5) && in.AmountMinor >= 1 && in.AmountMinor <= maxProofAmount && !in.PaidAt.IsZero()",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 153,
+      "citation": ":143",
+      "path": "internal/checkout/transfer.go",
+      "line": 143,
+      "source_line": "in.PaidAt = in.PaidAt.UTC().Truncate(time.Microsecond)",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 159,
+      "citation": "internal/buyerhttp/handler.go:37",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 37,
+      "source_line": "const maxJSON = 64 << 10",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 159,
+      "citation": ":701",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 701,
+      "source_line": "func decodeJSON(r *http.Request, value any) error {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 161,
+      "citation": "transfer.go:36",
+      "path": "internal/buyerhttp/transfer.go",
+      "line": 36,
+      "source_line": "if err := decodeJSON(r, &in); err != nil {",
+      "file_sha256": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133"
+    },
+    {
+      "doc_line": 161,
+      "citation": "internal/checkout/transfer.go:140",
+      "path": "internal/checkout/transfer.go",
+      "line": 140,
+      "source_line": "if ctx == nil || s == nil || s.pool == nil || !checkoutKey.MatchString(key) || !command.ValidID(orderID) || !validProof(in) {",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 164,
+      "citation": "internal/buyerhttp/handler.go:525",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 525,
+      "source_line": "case routeTransferGet, routeTransferProof:",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 165,
+      "citation": ":654",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 654,
+      "source_line": "if err != nil {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 165,
+      "citation": ":666",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 666,
+      "source_line": "writeOK(w, out)",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 165,
+      "citation": "internal/checkout/transfer.go:68",
+      "path": "internal/checkout/transfer.go",
+      "line": 68,
+      "source_line": "type ProofResult struct {",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 165,
+      "citation": ":162",
+      "path": "internal/checkout/transfer.go",
+      "line": 162,
+      "source_line": "if err := transferStrictDec(raw, &out); err != nil || out.OrderID != orderID || out.State != \"SUBMITTED\" || out.ProofCount < 1 || out.SubmittedAt.IsZero() {",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 167,
+      "citation": "internal/buyerhttp/transfer.go:39",
+      "path": "internal/buyerhttp/transfer.go",
+      "line": 39,
+      "source_line": "return h.checkout.SubmitTransferProof(ctx, token, storeID, key, selected.id, in)",
+      "file_sha256": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133"
+    },
+    {
+      "doc_line": 168,
+      "citation": "internal/checkout/transfer.go:158",
+      "path": "internal/checkout/transfer.go",
+      "line": 158,
+      "source_line": "if err := tx.QueryRow(callCtx, `SELECT checkout.submit_transfer_proof($1,$2::uuid,$3,$4,$5::uuid,$6,$7::bigint,$8::timestamptz)`,",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 172,
+      "citation": "transfer.go:39",
+      "path": "internal/buyerhttp/transfer.go",
+      "line": 39,
+      "source_line": "return h.checkout.SubmitTransferProof(ctx, token, storeID, key, selected.id, in)",
+      "file_sha256": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133"
+    },
+    {
+      "doc_line": 172,
+      "citation": "internal/checkout/transfer.go:168",
+      "path": "internal/checkout/transfer.go",
+      "line": 168,
+      "source_line": "return ProofResult{}, safeError(ctx, err)",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 173,
+      "citation": "internal/checkout/checkout.go:638",
+      "path": "internal/checkout/checkout.go",
+      "line": 638,
+      "source_line": "func safeError(ctx context.Context, err error) error {",
+      "file_sha256": "f5619b44eb4cd31e7abeed6917cd8ef89cf7b7863541df781e84114503798e6d"
+    },
+    {
+      "doc_line": 173,
+      "citation": "internal/buyerhttp/handler.go:749",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 749,
+      "source_line": "func classify(err error) (int, string) {",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 177,
+      "citation": "internal/checkout/transfer.go:136",
+      "path": "internal/checkout/transfer.go",
+      "line": 136,
+      "source_line": "// SubmitTransferProof records (or replaces, until the merchant confirms) the buyer's claim. Idempotent per key: an exact replay returns the",
+      "file_sha256": "78ba883dc40811cf9ad0243beb52c7f44f637d6bbc9f2c5f69e1fc065258e751"
+    },
+    {
+      "doc_line": 178,
+      "citation": "internal/buyerhttp/transfer.go:39",
+      "path": "internal/buyerhttp/transfer.go",
+      "line": 39,
+      "source_line": "return h.checkout.SubmitTransferProof(ctx, token, storeID, key, selected.id, in)",
+      "file_sha256": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133"
+    },
+    {
+      "doc_line": 178,
+      "citation": "internal/buyerhttp/cvs.go:62",
+      "path": "internal/buyerhttp/cvs.go",
+      "line": 62,
+      "source_line": "func cvsHTTPError(err error) error {",
+      "file_sha256": "3ea9571bc6aa09466178761d3524edb36e18e7c48b861a32eba786201b14266f"
+    },
+    {
+      "doc_line": 179,
+      "citation": "internal/checkout/checkout.go:659",
+      "path": "internal/checkout/checkout.go",
+      "line": 659,
+      "source_line": "case \"PT422\", \"PT429\":",
+      "file_sha256": "f5619b44eb4cd31e7abeed6917cd8ef89cf7b7863541df781e84114503798e6d"
+    },
+    {
+      "doc_line": 179,
+      "citation": ":844",
+      "path": "internal/checkout/checkout.go",
+      "line": 844,
+      "source_line": "func cvsRefusal(pg *pgconn.PgError) error {",
+      "file_sha256": "f5619b44eb4cd31e7abeed6917cd8ef89cf7b7863541df781e84114503798e6d"
+    },
+    {
+      "doc_line": 181,
+      "citation": "handler.go:392",
+      "path": "internal/buyerhttp/handler.go",
+      "line": 392,
+      "source_line": "w.Header().Set(\"Retry-After\", strconv.Itoa(coded.RetryAfterSeconds)) // 429 pay_at_pickup_limit / rate_limited",
+      "file_sha256": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8"
+    },
+    {
+      "doc_line": 181,
+      "citation": "checkout.go:844",
+      "path": "internal/checkout/checkout.go",
+      "line": 844,
+      "source_line": "func cvsRefusal(pg *pgconn.PgError) error {",
+      "file_sha256": "f5619b44eb4cd31e7abeed6917cd8ef89cf7b7863541df781e84114503798e6d"
+    }
+  ],
+  "count": 80,
+  "review": "Each pointer checked against the referenced behavior; no source edits after this inventory."
+}

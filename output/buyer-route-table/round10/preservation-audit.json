@@ -1,0 +1,30 @@
+{
+  "source_sha": "0b9fa08cdc314119c823bc32e90329bff854a18d",
+  "comparison_base": "d8f2511319b7384be9dcc2f0873b88a40dfd7973",
+  "source_changes": [
+    "docs/engineering/contractdrift.md",
+    "scripts/dev/contractdrift/bff_live_settings_test.go",
+    "scripts/dev/contractdrift/bff_review_r1b_cli_test.go",
+    "scripts/dev/contractdrift/bff_test.go",
+    "scripts/dev/contractdrift/cli_mutation_test.go",
+    "scripts/dev/contractdrift/go_dispatcher_authority.go",
+    "scripts/dev/contractdrift/go_dispatcher_escape_cli_test.go",
+    "scripts/dev/contractdrift/go_dispatcher_freeze.go",
+    "scripts/dev/contractdrift/go_dispatcher_freeze_cli_test.go",
+    "scripts/dev/contractdrift/go_factory_trunk_cli_test.go",
+    "scripts/dev/contractdrift/go_handler_factory_cli_test.go",
+    "scripts/dev/contractdrift/go_review_cli_test.go",
+    "scripts/dev/contractdrift/go_route_table_cli_test.go",
+    "scripts/dev/contractdrift/go_route_table_exact_cli_test.go",
+    "scripts/dev/contractdrift/main_test.go",
+    "scripts/dev/contractdrift/ratchet_test.go",
+    "scripts/dev/contractdrift/review_global_namespace_cli_test.go",
+    "scripts/dev/contractdrift/review_r1b_ratchet_cli_test.go",
+    "scripts/dev/contractdrift/review_ratchet_cli_test.go"
+  ],
+  "internal_cmd_contract_changes": [],
+  "pins_sha256": "65dc64b9507fa78e9b728ca7b2975e0eecc2f0dad752f5120efcc873a7857660",
+  "go_tests_executed": false,
+  "push_performed": false,
+  "scope": "scanner implementation, tests, gate documentation only"
+}

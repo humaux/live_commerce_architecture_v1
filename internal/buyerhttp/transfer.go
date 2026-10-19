@@ -5,6 +5,7 @@
 //
 // It never authenticates buyers itself (handler.go does: BFF key, storefront origin, bearer capability), decides no transfer rule (the SQL
 // definers behind checkout.Service do: owner scope, window, state, idempotency), and never logs a body, an account number or a token.
+// Routing consumes Routes in routes.go; handler.go calls transferRequest after its guards.
 // Route kinds live clear of handler.go's iota block (210+), like cvs.go's.
 
 package buyerhttp
@@ -12,7 +13,6 @@ package buyerhttp
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"livecommerce/internal/checkout"
 )
@@ -24,32 +24,6 @@ const (
 
 func isTransferRoute(kind routeKind) bool {
 	return kind == routeTransferGet || kind == routeTransferProof
-}
-
-// matchTransferRoute is the path table of the two routes; handler.go's matchRoute delegates to it before the generic /orders/{id} prefix.
-func matchTransferRoute(path string) route {
-	rest, ok := strings.CutPrefix(path, "/v1/buyer/orders/")
-	if !ok {
-		return route{}
-	}
-	if id, matched := strings.CutSuffix(rest, "/bank-transfer/proof"); matched && id != "" && !strings.Contains(id, "/") {
-		return route{kind: routeTransferProof, id: id}
-	}
-	if id, matched := strings.CutSuffix(rest, "/bank-transfer"); matched && id != "" && !strings.Contains(id, "/") {
-		return route{kind: routeTransferGet, id: id}
-	}
-	return route{}
-}
-
-// allowedTransfer: the view is a keyless GET, the proof a keyed PUT (handler.go derives "write" from the method).
-func allowedTransfer(kind routeKind, method string) bool {
-	switch kind {
-	case routeTransferGet:
-		return method == http.MethodGet
-	case routeTransferProof:
-		return method == http.MethodPut
-	}
-	return false
 }
 
 // transferRequest serves the two kinds. The PUT body is strict (decodeJSON: JSON media type, <= 64 KiB, no unknown key, no null).

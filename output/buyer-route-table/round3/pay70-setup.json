@@ -1,0 +1,66 @@
+{
+  "run_id": "buyer-route-table-r3-pay70-setup-913cf9671",
+  "source_sha": "913cf96719289a70c12679fc72aadd156fedcc97",
+  "overlay_source_ref": "origin/unit/pay-rm2-p2a",
+  "overlay_source_sha": "51273344fc12ff4c8062634fdf749d536958bda7",
+  "scratch": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round3/pay70-scratch",
+  "mode": "scratch source overlay; no commit, tests NOT_RUN",
+  "steps": [
+    {
+      "command": [
+        "git",
+        "clone",
+        "--shared",
+        "--no-checkout",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round3/pay70-scratch"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+      "timeout_seconds": 60,
+      "log": "pay70-clone.log",
+      "started_at": "2026-10-15T09:13:07.874619+00:00",
+      "exit": 0,
+      "elapsed_seconds": 0.091,
+      "ended_at": "2026-10-15T09:13:07.965306+00:00"
+    },
+    {
+      "command": [
+        "git",
+        "checkout",
+        "--detach",
+        "913cf96719289a70c12679fc72aadd156fedcc97"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round3/pay70-scratch",
+      "timeout_seconds": 60,
+      "log": "pay70-checkout.log",
+      "started_at": "2026-10-15T09:13:07.965612+00:00",
+      "exit": 0,
+      "elapsed_seconds": 3.597,
+      "ended_at": "2026-10-15T09:13:11.562653+00:00"
+    },
+    {
+      "command": [
+        "go",
+        "build",
+        "./cmd/api"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round3/pay70-scratch",
+      "timeout_seconds": 180,
+      "log": "pay70-build-1.log",
+      "started_at": "2026-10-15T09:13:11.709606+00:00",
+      "exit": 0,
+      "elapsed_seconds": 4.836,
+      "ended_at": "2026-10-15T09:13:16.545716+00:00"
+    }
+  ],
+  "overlays": [
+    {
+      "path": "cmd/api/buyer_payment.go",
+      "source_sha": "51273344fc12ff4c8062634fdf749d536958bda7",
+      "sha256": "f460f3f4e97f9d9dfc090a3be5094e3c9d01f71545eebbcaf9321360a40a044f"
+    }
+  ],
+  "overlay_diff": [
+    "cmd/api/buyer_payment.go"
+  ]
+}

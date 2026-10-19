@@ -76,10 +76,9 @@ type paymentPrepareResponse struct {
 	AmountMinor int64  `json:"amount_minor"`
 }
 
-// admittedPaymentMethod is the prepare allow-list; the service still rejects a provider it was
-// not configured with (Stripe on a PAYUNi-only deployment answers 422).
+// admittedPaymentMethod admits only the platform card method; retired methods fail before service access.
 func admittedPaymentMethod(code string) bool {
-	return code == "payuni_credit" || code == "stripe_checkout"
+	return code == "stripe_checkout"
 }
 
 func isPaymentRoute(kind routeKind) bool {

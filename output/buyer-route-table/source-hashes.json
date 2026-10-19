@@ -1,0 +1,17 @@
+{
+  "source_sha": "6f04a2aa61ab981166bcf24d52986e9f69a0e86b",
+  "base_sha": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "sha256": {
+    "cmd/api/buyer.go": "f1185479385aa9cbbe400f4bd2a2331e5254d84c5ba5c47da0cbfd5ed5016d7f",
+    "internal/buyerhttp/catalogv2.go": "68dbae9f04d39dc3c466165cd3f459cc70d38d3fdf2a63d76173f11040351735",
+    "internal/buyerhttp/cvs.go": "3ea9571bc6aa09466178761d3524edb36e18e7c48b861a32eba786201b14266f",
+    "internal/buyerhttp/handler.go": "23ff88b2771fbbb8b679bb58f3fcc90381e3e6f6c793a7305c17243d6c31a3a8",
+    "internal/buyerhttp/routes.go": "76b34c3c999f78e0e2af6c7a3f344f131f4b0c6ab167ac2ac64c21b71ddff1b0",
+    "internal/buyerhttp/routes_legacy_test.go": "3d9f7dec29d15e98974e170b44d69455dc738a4310272bdbdbc015afe7f5aa51",
+    "internal/buyerhttp/routes_test.go": "3be24540451eb1a3d7a52d9d5ab75e36b9972d4e32742c535cd3a596961325b8",
+    "internal/buyerhttp/transfer.go": "770b1d837f5f05ebc68ccbc5b94a82779aa1e8d37f30e48e3506e75cebff7133",
+    "scripts/dev/contractdrift/go_extract.go": "0ebd429075cdd0e9506e9d46e557907b15bb23193e5d9a4b5aefbb32956733ec",
+    "scripts/dev/contractdrift/go_route_table_cli_test.go": "61ab6df9f1c0776a0dc67a252fea51ed8ffe337af177aba0aa831d9c9eaea2b3",
+    "scripts/dev/contractdrift/go_route_tables.go": "31fce06fa9feaa881710b47a7db5f4f000babb6c2d83d7c263a449f61317132f"
+  }
+}

@@ -51,7 +51,7 @@ type="file">` + `FormData`, the storefront gallery a plain `<img>`.
 | Service | Host | Called from | Contract |
 | --- | --- | --- | --- |
 | Stripe API | `api.stripe.com` | `internal/integrations/psp/stripe` only (SP20 source guard) | `contracts/stripe-psp-v1.md` |
-| PAYUNi | per `contracts/payuni-wire-v1.md` | `internal/integrations/psp/payuni` only | `payuni-wire-v1.md` |
+| PAYUNi (retired, PAY-RM2) | none: the Go adapter is deleted; historical SQL objects remain until phase 2b | — | `payuni-wire-v1.md` (historical) |
 | Meta Graph API / webhooks | `graph.facebook.com`, inbound `/v1/meta/webhooks/*` | `internal/integrations/meta` | `meta-*-v1.md` |
 | LiveKit (Egress / ingress) | configured per deployment | `internal/integrations/livekit`, `cmd/media-worker` | `livekit-*-v1.md` |
 | OIDC identity provider | owner choice (deploy blocker B2) | `internal/oidclogin` | `merchant-identity-v1.md` |

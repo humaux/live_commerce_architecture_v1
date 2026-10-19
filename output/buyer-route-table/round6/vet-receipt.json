@@ -1,0 +1,18 @@
+{
+  "run_id": "buyer-route-r6-vet-4eb31d7de",
+  "source_sha": "4eb31d7de3f948e452f96078075cb6384f410d67",
+  "command": [
+    "go",
+    "vet",
+    "./..."
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "started_at": "2026-10-15T10:07:30.908728+00:00",
+  "timeout_seconds": 180,
+  "mode": "STATIC_SOURCE_ONLY; Go tests NOT_RUN",
+  "exit": 0,
+  "finished_at": "2026-10-15T10:07:38.275261+00:00",
+  "elapsed_seconds": 7.367,
+  "stdout": "output/buyer-route-table/round6/vet-report.txt",
+  "stderr": "output/buyer-route-table/round6/vet-stderr.log"
+}

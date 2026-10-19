@@ -1,0 +1,17 @@
+{
+  "run_id": "r7-final-vet",
+  "source_sha": "5f6f27b17fc8ccceb5b3f9211db1f0949e04409a",
+  "command": [
+    "go",
+    "vet",
+    "./..."
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:26:34.089017+00:00",
+  "status": "finished",
+  "wake": "exec completion wakes root; exit!=0 or ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 0.739,
+  "ended_at": "2026-10-15T10:26:34.828196+00:00"
+}

@@ -1,0 +1,10 @@
+{
+  "source_sha": "5f6f27b17fc8ccceb5b3f9211db1f0949e04409a",
+  "payment_sha": "51273344fc12ff4c8062634fdf749d536958bda7",
+  "overlay_changes": [
+    "cmd/api/buyer_payment.go"
+  ],
+  "payment_file_sha256": "f460f3f4e97f9d9dfc090a3be5094e3c9d01f71545eebbcaf9321360a40a044f",
+  "buildBuyerPayment_in_buyerhttp_closure": false,
+  "different_package": "cmd/api versus internal/buyerhttp"
+}

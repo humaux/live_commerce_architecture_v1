@@ -98,7 +98,7 @@ func TestLegacyTouchedAndStaleRatchet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	touched := strings.Replace(string(original), `"/orphan", handler)`, `"/orphan", handler) // edited`, 1)
+	touched := mustReplace(t, string(original), `"/orphan", handler)`, `"/orphan", handler) // edited`)
 	if touched == string(original) {
 		t.Fatal("mutation anchor missing")
 	}
@@ -116,7 +116,7 @@ func TestLegacyTouchedAndStaleRatchet(t *testing.T) {
 		t.Fatalf("committed touched legacy: %d %s", code, out)
 	}
 	git(t, root, "reset", "--hard", "trunk")
-	removed := strings.Replace(string(original), `mux.HandleFunc("GET "+base+"/orphan", handler)`, "", 1)
+	removed := mustReplace(t, string(original), `mux.HandleFunc("GET "+base+"/orphan", handler)`, "")
 	if removed == string(original) {
 		t.Fatal("removal anchor missing")
 	}
@@ -139,7 +139,7 @@ func TestUnresolvedNeverSilent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b = []byte(strings.Replace(string(b), "pattern()", "otherPattern()", 1))
+	b = []byte(mustReplace(t, string(b), "pattern()", "otherPattern()"))
 	if err := os.WriteFile(p, b, 0600); err != nil {
 		t.Fatal(err)
 	}

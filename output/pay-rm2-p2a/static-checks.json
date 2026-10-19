@@ -1,0 +1,44 @@
+{
+  "run_id": "pay-rm2-p2a-static-58155",
+  "base_sha": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "tier": "E1",
+  "runtime_tests": "NOT_RUN",
+  "commands": [
+    {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "started_at": "2026-10-15T06:49:58.995904+00:00",
+      "ended_at": "2026-10-15T06:50:03.377129+00:00",
+      "exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "started_at": "2026-10-15T06:50:03.377551+00:00",
+      "ended_at": "2026-10-15T06:50:05.543620+00:00",
+      "exit_code": 0,
+      "timeout_seconds": 180
+    },
+    {
+      "command": [
+        "go",
+        "vet",
+        "-tags=buyerintegration",
+        "./cmd/api"
+      ],
+      "started_at": "2026-10-15T06:50:50.179462+00:00",
+      "ended_at": "2026-10-15T06:50:52.763787+00:00",
+      "exit_code": 0,
+      "timeout_seconds": 180
+    }
+  ],
+  "sources_unchanged_during_checks": true,
+  "source_manifest_sha256": "4323500cb663298bb4c5c824fb5a32718d4d03a2a84af93b0ddf29871b58cda1"
+}

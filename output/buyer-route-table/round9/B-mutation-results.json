@@ -1,0 +1,66 @@
+{
+  "N1": {
+    "exit": 1,
+    "freeze_errors": 46,
+    "first": "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: assignment at internal/buyerhttp/zz_init.go:3",
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ]
+  },
+  "N2": {
+    "exit": 1,
+    "freeze_errors": 46,
+    "first": "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: build constraint filename internal/buyerhttp/a_slug_linux.go",
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ]
+  },
+  "N3": {
+    "exit": 1,
+    "freeze_errors": 46,
+    "first": "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: assignment at internal/buyerhttp/handler.go:57",
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ]
+  },
+  "address": {
+    "exit": 1,
+    "freeze_errors": 46,
+    "first": "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: frozen var v2Slug: address taken at internal/buyerhttp/zz_pointer.go:2",
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ]
+  },
+  "duplicate": {
+    "exit": 1,
+    "freeze_errors": 46,
+    "first": "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: duplicate frozen name v2Slug at internal/buyerhttp/zz_duplicate.go:3",
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ]
+  },
+  "build-tag": {
+    "exit": 1,
+    "freeze_errors": 46,
+    "first": "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: build constraint at internal/buyerhttp/zz_tag.go:1",
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ]
+  },
+  "init-hash": {
+    "exit": 1,
+    "freeze_errors": 46,
+    "first": "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 route-table dispatcher changed or unpinned: buyerhttp.Routes ee827a1ab92653b8794e4ccb30fda4c3dfa02e8b880e0b8054a8a48aaf20f81e want 86608e032f9cd9c41c7caad8c92695d16bc5eca480141aaf6c278d964881ac84; review the dispatcher and update contracts/route-table-dispatchers.json",
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ]
+  },
+  "exported": {
+    "exit": 1,
+    "freeze_errors": 46,
+    "first": "ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:42 cannot prove dispatcher buyerhttp.Routes: exported frozen var V2Slug at internal/buyerhttp/catalogv2.go:46",
+    "summary": [
+      "SUMMARY routes go=282 contract=165 bff=301; errors=133 warnings=288 BFF_NO_GO=37 CONTRACT_ONLY=79 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=18 GO_ONLY=200 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=101"
+    ]
+  }
+}

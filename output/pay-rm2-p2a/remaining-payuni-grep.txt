@@ -1,0 +1,85 @@
+cmd/api/buyer_payment_test.go:106:	// PAYUNi signing configuration is no longer read or required by Stripe.
+cmd/api/payuni_removed_test.go:1:// Purpose: PAY-RM1 gate RM03 — the API mount chain no longer reserves /v1/hooks/payuni: a notify POST
+cmd/api/payuni_removed_test.go:6:// Used by: go test ./cmd/api (unit gate); referenced by output/pay-rm1-remove-payuni/DELIVERY.md.
+cmd/api/payuni_removed_test.go:20:// TestRemovePayuniNotifyRM03RouterHasNoNotifyRoute builds the same mount chain as run() in main.go and
+cmd/api/payuni_removed_test.go:21:// asserts the removed PAYUNi notify namespace is gone while the other mounts still route. DB-free.
+cmd/api/payuni_removed_test.go:22:func TestRemovePayuniNotifyRM03RouterHasNoNotifyRoute(t *testing.T) {
+cmd/api/payuni_removed_test.go:39:	for _, p := range []string{"/v1/hooks/payuni/notify/" + token, "/v1/hooks/payuni", "/v1/hooks/payunix"} {
+cmd/api/payuni_removed_test.go:46:	if routed["payuni"] != 0 {
+cmd/api/payuni_removed_test.go:47:		t.Fatalf("a payuni stub still intercepts the namespace: %v", routed)
+cmd/api/payuni_removed_test.go:59:// TestRemovePayuniGoRM2StripeOnlyConfig forbids reads of retired signing config and still
+cmd/api/payuni_removed_test.go:61:func TestRemovePayuniGoRM2StripeOnlyConfig(t *testing.T) {
+cmd/api/payuni_removed_test.go:69:		if strings.HasPrefix(name, "PAYUNI_") || strings.HasPrefix(name, "COMMERCE_ACCOUNT_") || name == "COMMERCE_PAYMENT_NOTIFY_URL" {
+internal/attribution/pg_flow_test.go:208:			VALUES($1,$2,$3,$4,$5,$6,$7,'TW','payuni_credit',1,$8,1,$9,$10,$11,$12,1,'TWD',250000,$13,'PAYMENT_PENDING',2,$14::bigint)`,
+internal/buyerhttp/payment_test.go:68:		`{"method_code":"payuni_credit","method_version":1}`,
+internal/buyerhttp/payment_test.go:69:		`{"method_code":"payuni_credit","method_version":1,"locale":"en","locale":"zh-TW"}`,
+internal/buyerhttp/payment_test.go:70:		`{"method_code":"payuni_credit","method_version":1,"locale":"en","amount_minor":100}`,
+internal/buyerhttp/payment_test.go:71:		`{"method_code":"payuni_credit","method_version":null,"locale":"en"}`,
+internal/buyerhttp/payment_test.go:79:	if err := json.Unmarshal([]byte(`{"method_code":"payuni_credit","method_version":1,"locale":"zh-CN"}`), &input); err != nil ||
+internal/buyerhttp/payment_test.go:80:		input.MethodCode != "payuni_credit" || input.MethodVersion != 1 || input.Locale != "zh-CN" {
+internal/buyerhttp/payment_test.go:159:	for code, want := range map[string]bool{"payuni_credit": false, "stripe_checkout": true,
+internal/buyerhttp/payment_test.go:160:		"stripe": false, "": false, "payuni_installment": false, "Stripe_Checkout": false} {
+internal/checkout/hosted.go:55:	PAYUNi *HostedConfig // removed provider — read-only, never dispatched; ignored compatibility input
+internal/checkout/hosted_test.go:18:	for _, code := range []string{"payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay"} {
+internal/checkout/hosted_test.go:32:		view := OrderPayment{OrderID: testID, Currency: "TWD", TotalMinor: 2500, CommercialState: "AWAITING_PAYMENT", PaymentState: state, HandoffState: "UNAVAILABLE", Methods: []PaymentMethodOption{{Code: "payuni_credit", Version: 1}}}
+internal/checkout/hosted_test.go:38:	for _, code := range []string{"payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay"} {
+internal/checkout/payment_test.go:17:	for _, code := range []string{"payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay", "stripe_checkout"} {
+internal/checkout/payment_view.go:208:// withoutRemovedMethods removes legacy PAYUNi choices from a read-only projection, never its stored payment state.
+internal/checkout/payment_view.go:215:		if !strings.HasPrefix(method.Code, "payuni_") {
+internal/checkout/payment_view_test.go:29:			v.Methods = []PaymentMethodOption{{Code: "payuni_credit", Version: 1, NameHans: "卡", NameHant: "卡", NameEN: "Card"}}
+internal/checkout/payment_view_test.go:81:		t.Fatal("v1 (PAYUNi) must never accept a refund state")
+internal/checkout/payment_view_test.go:123:		t.Fatalf("PAYUNi bytes must not gain a refund key: %s %v", raw, err)
+internal/checkout/stripe_test.go:107:	// PAYUNi handoffs may never carry a Stripe URL, and their bytes stay free of the new key.
+internal/checkout/stripe_test.go:108:	payuni := HostedHandoff{OrderID: testID, Disposition: "ALREADY_ISSUED", ExpiresAt: cutoff, RedirectURL: redirect.RedirectURL}
+internal/checkout/stripe_test.go:109:	if validStripeHandoff(payuni, testID) {
+internal/checkout/stripe_test.go:110:		t.Fatal("payuni handoff accepted a redirect url")
+internal/checkout/stripe_test.go:112:	payuni.RedirectURL = ""
+internal/checkout/stripe_test.go:113:	body, err := json.Marshal(payuni)
+internal/checkout/stripe_test.go:115:		t.Fatalf("payuni handoff bytes changed: %s %v", body, err)
+internal/checkout/stripe_test.go:184:	unknown.Methods = []PaymentMethodOption{method("payuni_credit")}
+internal/checkout/stripe_test.go:186:	three.Methods = append(append([]PaymentMethodOption{}, base.Methods...), method("payuni_credit"))
+internal/checkout/stripe_test.go:218:	// PAYUNi-only bytes: the new field is omitted while nil.
+internal/checkout/stripe_test.go:221:		t.Fatalf("nil cancel_requested leaked into PAYUNi bytes: %s", body)
+internal/checkout/stripe_test.go:225:// Rulings §4 / SP14: a PAYUNi order projected by v2 must marshal to the same bytes as v1.
+internal/checkout/stripe_test.go:226:func TestPaymentViewV2PAYUNiBytesMatchV1(t *testing.T) {
+internal/checkout/stripe_test.go:243:		t.Fatalf("PAYUNi bytes differ under Stripe: %s vs %s", got, want)
+internal/checkout/stripe_test.go:262:			t.Fatalf("%s on a PAYUNi-only service: want ErrNotFound, got %v", name, err)
+internal/checkout/stripe_test.go:278:	// Stripe begin on a service without Stripe must not fall through to the PAYUNi path.
+internal/httpapi/accounts_test.go:30:	if err := json.Unmarshal([]byte(`{"provider":"payuni","credentials":{"hash_key":"sensitive-key","hash_iv":"sensitive-iv"}}`), &decoded); err != nil || decoded.Credentials.HashKey != secret.HashKey {
+internal/httpapi/accounts_test.go:54:		`{"provider":"payuni","environment":"SANDBOX","account_id":"merchant","credentials":{"hash_key":"secret","hash_iv":"secret","extra":"secret"}}`,
+internal/httpapi/accounts_test.go:55:		`{"provider":"payuni","environment":"SANDBOX","account_id":"merchant","credentials":{"hash_key":"secret","hash_iv":"secret"}} {}`,
+internal/httpapi/settings_test.go:15:		base + "/payment-methods/payuni?x=1",
+internal/httpapi/settings_test.go:16:		base + "/payment-methods/payuni/inspect?x=1",
+internal/httpapi/settings_test.go:35:		base + "/payment-methods/payuni",
+internal/httpapi/settings_test.go:36:		base + "/payment-methods/payuni/inspect",
+internal/httpapi/settings_test.go:42:			body = `{"market_id":"22222222-2222-4222-8222-222222222222","country":"TW","code":"payuni","access_token":"secret"}`
+internal/httpapi/settings_test.go:58:	r.SetPathValue("code", "payuni")
+internal/httpapi/settings_test.go:60:		{"market-1", "TW", "payuni"},
+internal/httpapi/settings_test.go:61:		{"market-2", "TW", "payuni"},
+internal/httpapi/settings_test.go:62:		{"market-1", "US", "payuni"},
+internal/httpapi/settings_test.go:64:		{"", "TW", "payuni"},
+internal/httpapi/settings_test.go:66:		want := target[0] == "market-1" && target[1] == "TW" && target[2] == "payuni"
+internal/integrations/accounts/crypto.go:132:		a.Provider == "payuni" && validEnvironment(a.Environment) && validAccountID(a.AccountID) && a.CredentialVersion > 0
+internal/integrations/accounts/crypto_test.go:26:		"cccccccc-cccc-cccc-cccc-cccccccccccc", "payuni", "SANDBOX", "Mer_ID-1", 1}
+internal/integrations/accounts/hosted_test.go:28:		out, err := s.Create(context.Background(), removedAccountTx{}, removedAccountScope(), "token", "validkey1", CreateInput{Provider: "payuni", Environment: environment, AccountID: "mock-account", Credentials: Credentials{"01234567890123456789012345678901", "0123456789012345"}})
+internal/integrations/accounts/list_test.go:83:		return []any{id, "payuni", "SANDBOX", "merchant", "44444444-4444-4444-8444-444444444444",
+internal/integrations/accounts/stripe_crypto_test.go:156:	payuniAAD := testAAD()
+internal/integrations/accounts/stripe_crypto_test.go:157:	payuniAAD.AccountID = scope.AccountID
+internal/integrations/accounts/stripe_crypto_test.go:158:	payID, payNonce, payCipher, err := k.seal(payuniAAD, Credentials{"payuni-key", "payuni-iv"})
+internal/integrations/accounts/stripe_crypto_test.go:163:		t.Fatal("PAYUNi material opened as Stripe API material")
+internal/integrations/accounts/stripe_crypto_test.go:165:	if _, err := k.open(payuniAAD, apiID, apiNonce, apiCipher); !errors.Is(err, errInvalidSecret) {
+internal/integrations/accounts/stripe_crypto_test.go:166:		t.Fatal("Stripe material opened as PAYUNi material")
+internal/integrations/accounts/stripe_crypto_test.go:168:	if _, err := k.open(payuniAAD, id, nonce, ciphertext); !errors.Is(err, errInvalidSecret) {
+internal/integrations/accounts/stripe_crypto_test.go:169:		t.Fatal("Stripe webhook material opened as PAYUNi material")
+internal/integrations/shipping/ecpay/keyring.go:5:// replayed as a new one, fails to open. The keyring is separate from the Stripe, Meta and PAYUNi
+internal/payments/methods.go:22:const provider = "payuni" // removed provider — read-only, never dispatched
+internal/payments/methods.go:150:	case "payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay":
+internal/payments/methods_test.go:19:	return MethodInput{MarketID: testMarketID, Country: "TW", Code: "payuni_credit",
+internal/payments/methods_test.go:26:	for _, code := range []string{"payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay"} {
+internal/payments/methods_test.go:83:	in := CheckInput{MarketID: testMarketID, Country: "TW", Code: "payuni_credit",
+internal/payments/methods_test.go:137:	for _, code := range []string{"payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay"} {
+internal/payments/query_worker_test.go:58:		{ActorKind: "BUYER_PAYMENT_QUERY", Provider: "payuni", Action: "payuni.query", Purpose: "transactional"},
+internal/payments/query_worker_test.go:59:		{ActorKind: "MERCHANT", Provider: "payuni", Action: "payuni.query", Purpose: "transactional"},
+internal/payments/query_worker_test.go:60:		{ActorKind: "BUYER_PAYMENT_QUERY", Provider: "payuni", Action: "payuni.refund", Purpose: "transactional"},
+internal/payments/query_worker_test.go:71:		op := queryOperation{ActorKind: "BUYER_PAYMENT_QUERY", Provider: "payuni", Action: "payuni.query", Purpose: "transactional", State: state}
+internal/payments/stripe_refund_test.go:40:		"provider": func(o *queryOperation) { o.Provider = "payuni" },

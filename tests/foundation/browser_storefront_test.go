@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"livecommerce/internal/buyerhttp"
-	"livecommerce/internal/checkout"
 	"livecommerce/internal/httpapi"
 )
 
@@ -84,12 +83,14 @@ func TestBrowserStorefront(t *testing.T) {
 	if os.Getenv("LC_BROWSER_STOREFRONT_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-storefront")
 	}
-	// hpSetup = bcSetup (PG, market + delivery service + allocation, buyer pools) plus a hosted-payment starter, so the process can take card
-	// payment and checkout-options offers the home delivery (OP1: a row nobody can pay is not offered). bhSetup minus the owner-seeded publication.
+	// Keep the same catalog/buyer fixture; admit delivery through the existing Stripe
+	// mock registrar, since a retired PAYUNi method cannot authorize checkout options.
 	hp := hpSetup(t)
+	stripe := sstNewEnv(t, hp.f, pwKeys(t))
+	stripe.seed(t, hp.psHarness)
 	b := hp.bcHarness
 	h := bhHarness{bcHarness: b, key: brToken(), origin: sfrOrigin}
-	handler, err := buyerhttp.New(context.Background(), b.a.issuer, b.a.runtime, b.service, h.key, time.Hour, hp.api.(*checkout.HostedPaymentStarter))
+	handler, err := buyerhttp.New(context.Background(), b.a.issuer, b.a.runtime, b.service, h.key, time.Hour, stripe.svc)
 	if err != nil {
 		t.Fatal("buyer HTTP constructor failed")
 	}

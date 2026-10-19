@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"livecommerce/internal/integrations/accounts"
-	"livecommerce/internal/integrations/psp/payuni"
 )
 
 type mockQueryTransport func(*http.Request) (*http.Response, error)
@@ -50,39 +49,28 @@ func TestQueryWorkerOptionsAndMockIsolation(t *testing.T) {
 	}
 }
 
-func TestQueryFamilyBudgetAndRetry(t *testing.T) {
-	valid := queryOperation{ActorKind: "BUYER_PAYMENT_QUERY", Provider: "payuni",
-		Action: "payuni.query", Purpose: "transactional"}
+func TestQueryFamilyAdmitsOnlyStripe(t *testing.T) {
+	valid := queryOperation{ActorKind: "BUYER_PAYMENT_QUERY", Provider: "stripe", Action: "stripe.checkout_session", Purpose: "transactional"}
 	if !validQueryOperation(valid) {
-		t.Fatal("buyer query family rejected")
+		t.Fatal("Stripe query family rejected")
 	}
 	for _, op := range []queryOperation{
+		{ActorKind: "BUYER_PAYMENT_QUERY", Provider: "payuni", Action: "payuni.query", Purpose: "transactional"},
 		{ActorKind: "MERCHANT", Provider: "payuni", Action: "payuni.query", Purpose: "transactional"},
 		{ActorKind: "BUYER_PAYMENT_QUERY", Provider: "payuni", Action: "payuni.refund", Purpose: "transactional"},
 	} {
 		if validQueryOperation(op) {
-			t.Fatal("foreign operation accepted")
+			t.Fatalf("removed operation dispatched: %+v", op)
 		}
-	}
-	if queryRetryDelay(2*time.Minute, "B") != 10*time.Minute ||
-		queryRetryDelay(12*time.Minute, "B") != 12*time.Minute ||
-		queryRetryDelay(2*time.Minute, "A") != 2*time.Minute {
-		t.Fatal("query retry delay violated provider B minimum")
 	}
 }
 
-func TestQueryPanicBecomesFixedFailure(t *testing.T) {
-	client, err := payuni.NewQuery(payuni.Config{Environment: "SANDBOX", MerchantID: "TEST",
-		HashKey: "12345678901234567890123456789012", HashIV: "1234567890123456"},
-		mockQueryTransport(func(*http.Request) (*http.Response, error) { panic("secret from transport") }))
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err, panicked := queryOnce(context.Background(), accounts.PaymentQueryMaterial{
-		Client: client, Expected: payuni.ExpectedTrade{MerTradeNo: "TEST_1", AmountTWD: 25,
-			Currency: "TWD", Method: "payuni_credit"},
-	})
-	if !panicked || err != nil {
-		t.Fatalf("panic was not sanitized: panic=%t err=%v", panicked, err)
+func TestRemovedQueryProviderNeverDispatchesAnyStoredState(t *testing.T) {
+	// Removal supersedes transport panic handling: this provider cannot enter a wire path at all.
+	for _, state := range []string{"PENDING", "UNKNOWN", "SUCCEEDED", "FAILED_FINAL"} {
+		op := queryOperation{ActorKind: "BUYER_PAYMENT_QUERY", Provider: "payuni", Action: "payuni.query", Purpose: "transactional", State: state}
+		if validQueryOperation(op) {
+			t.Fatalf("historical %s attempt could call a transport", state)
+		}
 	}
 }

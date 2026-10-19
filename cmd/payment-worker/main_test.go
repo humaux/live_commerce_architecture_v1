@@ -114,7 +114,7 @@ func TestWorkerLiveStripeNeedsThePairAndOthersReadNoLiveName(t *testing.T) {
 			t.Fatalf("LIVE Stripe %s accepted or leaked: %v", name, err)
 		}
 	}
-	// PAYUNi on LIVE (Stripe off) and every SANDBOX worker never read the LIVE names, even when they are set.
+	// historical reads on LIVE (Stripe off) and every SANDBOX worker never read the LIVE names, even when they are set.
 	for _, tc := range []struct{ profile, flag string }{{"LIVE", ""}, {"LIVE", "0"}, {"SANDBOX", "1"}, {"SANDBOX", ""}} {
 		c, read, err := load(tc.profile, tc.flag, pair)
 		if err != nil || len(liveNames(read)) != 0 || c.live.Enabled {

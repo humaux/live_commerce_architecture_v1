@@ -1,0 +1,22 @@
+{
+  "run_id": "r8-scratch-checkout",
+  "source_sha": "06e7f82b6c2b0e680b75a6682a5bc61b11e1d33c",
+  "command": [
+    "git",
+    "checkout",
+    "--quiet",
+    "--detach",
+    "FETCH_HEAD"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round8/scratch/repo",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T10:43:21.133450+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 0.049,
+  "ended_at": "2026-10-15T10:43:21.183482+00:00",
+  "summary": [],
+  "errors": 0,
+  "touched": 0
+}

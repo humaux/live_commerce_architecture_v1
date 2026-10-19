@@ -1,0 +1,20 @@
+{
+  "run_id": "r10-p2-vet",
+  "source_sha": "d6a6b55834b42cf542291d3811b6357706801b04",
+  "command": [
+    "go",
+    "vet",
+    "./scripts/dev/contractdrift"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T11:24:55.325059+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 0.567,
+  "ended_at": "2026-10-15T11:24:55.892688+00:00",
+  "summary": [],
+  "errors": 0,
+  "touched": 0
+}

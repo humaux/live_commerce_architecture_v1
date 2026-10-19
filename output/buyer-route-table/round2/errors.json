@@ -1,0 +1,77 @@
+[
+  {
+    "Level": "ERROR",
+    "Reason": "TOUCHED",
+    "Finding": {
+      "kind": "UNRESOLVED",
+      "detail": "opaque Go handler dispatch buildBuyerHandler; route/method coverage is unknown",
+      "locations": [
+        {
+          "file": "cmd/api/buyer.go",
+          "line": 88,
+          "end": 91
+        },
+        {
+          "file": "cmd/api/buyer.go",
+          "line": 96,
+          "end": 175
+        },
+        {
+          "file": "cmd/api/cvs.go",
+          "line": 51,
+          "end": 95
+        },
+        {
+          "file": "cmd/api/buyer_payment.go",
+          "line": 86,
+          "end": 112
+        },
+        {
+          "file": "cmd/api/buyer.go",
+          "line": 184,
+          "end": 198
+        },
+        {
+          "file": "cmd/api/cvs.go",
+          "line": 39,
+          "end": 49
+        }
+      ]
+    }
+  },
+  {
+    "Level": "ERROR",
+    "Reason": "TOUCHED",
+    "Finding": {
+      "kind": "UNRESOLVED",
+      "detail": "opaque Go handler dispatch buildBuyerWithCVS; route/method coverage is unknown",
+      "locations": [
+        {
+          "file": "cmd/api/buyer.go",
+          "line": 96,
+          "end": 175
+        },
+        {
+          "file": "cmd/api/cvs.go",
+          "line": 51,
+          "end": 95
+        },
+        {
+          "file": "cmd/api/buyer_payment.go",
+          "line": 86,
+          "end": 112
+        },
+        {
+          "file": "cmd/api/buyer.go",
+          "line": 184,
+          "end": 198
+        },
+        {
+          "file": "cmd/api/cvs.go",
+          "line": 39,
+          "end": 49
+        }
+      ]
+    }
+  }
+]

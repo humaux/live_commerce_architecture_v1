@@ -2,6 +2,7 @@
 // Depends on: Go stdlib only; no DB/API/network mutations.
 // Used by: CI-DRIFT scanGo and its parser gates.
 // Invariant: extraction never executes handlers or discards unresolved registration coverage.
+
 package main
 
 import (
@@ -29,6 +30,8 @@ type goValue struct {
 }
 type goEnv []map[string]goValue
 type goFile struct {
+	Path        string
+	Set         *token.FileSet
 	ImportRefs  map[string]location
 	ImportPaths map[string]string
 	AST         *ast.File
@@ -83,7 +86,7 @@ func scanGo(root string) (inventory, error) {
 			if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 				return nil
 			}
-			f, err := parser.ParseFile(s.Set, path, nil, 0)
+			f, err := parser.ParseFile(s.Set, path, nil, parser.ParseComments)
 			if err != nil {
 				return fmt.Errorf("Go route AST %s: %w", path, err)
 			}
@@ -93,7 +96,8 @@ func scanGo(root string) (inventory, error) {
 				p = &goPackage{Named: map[string]*goFunc{}, ByName: map[string][]*goFunc{}, Path: filepath.ToSlash(filepath.Dir(path)), Types: map[string][]string{}, Globals: goEnv{{}}, Routes: map[string]bool{}}
 				packages[key] = p
 			}
-			file := &goFile{AST: f, ImportRefs: map[string]location{}, ImportPaths: map[string]string{}}
+			rel, _ := filepath.Rel(root, path)
+			file := &goFile{Path: filepath.ToSlash(rel), Set: s.Set, AST: f, ImportRefs: map[string]location{}, ImportPaths: map[string]string{}}
 			for _, im := range f.Imports {
 				v, _ := strconv.Unquote(im.Path.Value)
 				alias := filepath.Base(v)
@@ -236,6 +240,7 @@ func scanGo(root string) (inventory, error) {
 			})
 		}
 	}
+	s.resolveRouteTables(packages)
 	s.Out.Routes = goDedupRoutes(s.Out.Routes)
 	s.Out.Unresolved = goDedupFindings(s.Out.Unresolved)
 	goBindOpaqueMountSpans(packages, s.Root, s.Set, &s.Out)

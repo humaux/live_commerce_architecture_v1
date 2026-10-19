@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
 )
@@ -125,5 +126,27 @@ func TestDiagnosticReasonsOrderAndFailClosed(t *testing.T) {
 	if got.Available || !reflect.DeepEqual(got.Reasons, []string{"CREDENTIALS_UNVERIFIED", "ADAPTER_UNAVAILABLE"}) ||
 		got.CredentialVersion != 8 {
 		t.Fatalf("linked diagnosis = %+v", got)
+	}
+}
+
+// A deliberately unusable transaction proves retired writes fail before SQL, even with a valid request.
+type removedMethodTx struct{ pgx.Tx }
+
+func TestRemovedMethodsNeverWriteConfiguration(t *testing.T) {
+	scope := platform.Scope{TenantID: testMarketID, StoreID: testConnectionID, PrincipalID: testMarketID, Revision: 1}
+	for _, code := range []string{"payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay"} {
+		for _, enabled := range []bool{false, true} {
+			in := validInput()
+			in.Code = code
+			in.Enabled = enabled
+			out, err := SetMethod(context.Background(), removedMethodTx{}, scope, "token", "validkey1", in)
+			want := command.ErrInvalid
+			if enabled {
+				want = command.ErrConflict
+			}
+			if !errors.Is(err, want) || out != (Method{}) {
+				t.Fatalf("removed method configuration changed: %+v %v", out, err)
+			}
+		}
 	}
 }

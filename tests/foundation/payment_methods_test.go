@@ -74,10 +74,7 @@ func (p *pmFixture) check(version int64) payments.CheckInput {
 }
 func (p *pmFixture) link(t *testing.T) accounts.Connection {
 	t.Helper()
-	a, e := p.m.create(p.m.f.token, p.m.f.store, t04Key("pm-account"), maInput())
-	if e != nil {
-		t.Fatal(e)
-	}
+	a := maHistorical(t, p.m, p.m.f.store, maInput(), 1)
 	p.in.ConnectionID, p.in.BindingVersion = a.ID, a.BindingVersion
 	return a
 }
@@ -98,45 +95,41 @@ func TestPaymentMethodsRevisionsReplayAndIsolation(t *testing.T) {
 		t.Fatalf("missing method: %v", e)
 	}
 	p.link(t)
-	before := p.counts(t)
-	key := t04Key("pm-first")
-	first, e := p.set(f.token, f.store, key, p.in)
-	if e != nil || first.Version != 1 || first.Enabled || !first.Visible || first.Provider != "payuni" || first.Currency != "TWD" {
-		t.Fatalf("create: %+v %v", first, e)
-	}
-	got, e := p.get(f.token, f.store)
-	if e != nil || !reflect.DeepEqual(got, first) {
-		t.Fatalf("readback: %v", e)
-	}
-	after := p.counts(t)
-	if after[7] != before[7]+1 || after[8] != before[8]+1 || after[3] != before[3]+1 || after[4] != before[4]+1 || after[0] != before[0] || after[2] != before[2] || after[5] != before[5] || after[6] != before[6] {
-		t.Fatal("incorrect aggregate or external side effect")
+	first := pmHistorical(t, p, p.in, 1)
+	if first.Version != 1 || first.Enabled || !first.Visible || first.Provider != "payuni" || first.Currency != "TWD" {
+		t.Fatalf("historical metadata: %+v", first)
 	}
 	changed := p.in
 	changed.ExpectedVersion = 1
 	changed.Visible = false
 	changed.NameHant = "線上刷卡"
 	changed.SortOrder = 20
-	second, e := p.set(f.token, f.store, t04Key("pm-edit"), changed)
-	if e != nil || second.Version != 2 || second.Visible || second.Enabled {
-		t.Fatalf("visibility edit: %v", e)
+	second := pmHistorical(t, p, changed, 2)
+	if second.Version != 2 || second.Visible || second.Enabled || second.NameHant != "線上刷卡" {
+		t.Fatal("historical revision lost language/visibility")
 	}
-	stable := p.counts(t)
-	replay, e := p.set(f.token, f.store, key, p.in)
-	if e != nil || !reflect.DeepEqual(replay, first) || p.counts(t) != stable {
-		t.Fatalf("historical replay: %v", e)
-	}
-	for _, k := range []string{key, t04Key("pm-stale")} {
-		if _, e = p.set(f.token, f.store, k, changed); !errors.Is(e, command.ErrConflict) {
-			t.Fatalf("conflict: %v", e)
+	before, snapshot := p.counts(t), pmHistorySnapshot(t, p)
+	key := t04Key("pm-first")
+	for _, in := range []payments.MethodInput{p.in, changed} {
+		for _, k := range []string{key, t04Key("pm-stale")} {
+			if out, e := p.set(f.token, f.store, k, in); !errors.Is(e, command.ErrInvalid) || out.Version != 0 {
+				t.Fatalf("retired edit/replay admitted: %v", e)
+			}
 		}
 	}
 	for _, code := range []string{"payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay"} {
 		v := p.in
 		v.Code = code
-		if _, e = p.set(f.token, f.store, t04Key("pm-other"), v); e != nil {
+		if _, e := p.set(f.token, f.store, t04Key("pm-other"), v); !errors.Is(e, command.ErrInvalid) {
 			t.Fatal(e)
 		}
+	}
+	got, e := p.get(f.token, f.store)
+	if e != nil || !reflect.DeepEqual(got, second) {
+		t.Fatalf("current historical readback: %v", e)
+	}
+	if p.counts(t) != before || pmHistorySnapshot(t, p) != snapshot {
+		t.Fatal("retired method call changed history, receipt, audit or jobs")
 	}
 	if _, e = p.get(f.token, f.otherStore); !errors.Is(e, command.ErrNotFound) {
 		t.Fatalf("foreign store get: %v", e)
@@ -158,9 +151,7 @@ func TestPaymentMethodsDiagnosticsAndCredentialRotation(t *testing.T) {
 	p := pmSetup(t)
 	f := p.m.f
 	a := p.link(t)
-	if _, e := p.set(f.token, f.store, t04Key("pm-initial"), p.in); e != nil {
-		t.Fatal(e)
-	}
+	pmHistorical(t, p, p.in, 1)
 	check := p.check(1)
 	baseline, e := p.inspect(check)
 	want := []string{"METHOD_DISABLED", "CREDENTIALS_UNVERIFIED", "ADAPTER_UNAVAILABLE"}
@@ -194,11 +185,12 @@ func TestPaymentMethodsDiagnosticsAndCredentialRotation(t *testing.T) {
 			t.Fatalf("inclusive bound: %+v %v", got, e)
 		}
 	}
-	if _, e = p.m.rotate(f.token, t04Key("pm-rotate"), accounts.RotateInput{ConnectionID: a.ID, ExpectedVersion: 1, Credentials: accounts.Credentials{HashKey: "rotated_fixture", HashIV: "rotated_fixture_iv"}}); e != nil {
+	snapshot := pmHistorySnapshot(t, p)
+	if _, e = p.m.rotate(f.token, t04Key("pm-rotate"), accounts.RotateInput{ConnectionID: a.ID, ExpectedVersion: 1, Credentials: accounts.Credentials{HashKey: "rotated_fixture", HashIV: "rotated_fixture_iv"}}); !errors.Is(e, command.ErrInvalid) || pmHistorySnapshot(t, p) != snapshot {
 		t.Fatal(e)
 	}
 	got, e := p.inspect(check)
-	if e != nil || got.MethodVersion != 1 || got.BindingVersion != 1 || got.CredentialVersion != 2 || !reflect.DeepEqual(got.Reasons, want) {
+	if e != nil || got.MethodVersion != 1 || got.BindingVersion != 1 || got.CredentialVersion != 1 || !reflect.DeepEqual(got.Reasons, want) {
 		t.Fatalf("rotation rebind: %+v %v", got, e)
 	}
 	e = f.scoped(context.Background(), f.token, f.store, func(tx pgx.Tx, s platform.Scope) error {
@@ -216,9 +208,10 @@ func TestPaymentMethodsDiagnosticsAndCredentialRotation(t *testing.T) {
 	hide := p.in
 	hide.ExpectedVersion = 1
 	hide.Visible = false
-	if _, e = p.set(f.token, f.store, t04Key("pm-hide-stale"), hide); e != nil {
-		t.Fatalf("cannot hide draft after stale binding/inactive market: %v", e)
+	if _, e = p.set(f.token, f.store, t04Key("pm-hide-stale"), hide); !errors.Is(e, command.ErrInvalid) {
+		t.Fatal("retired hide admitted", e)
 	}
+	pmHistorical(t, p, hide, 2) // synthetic history: verify diagnostics for a previously hidden revision
 	got, e = p.inspect(p.check(2))
 	if e != nil || !slices.Contains(got.Reasons, "METHOD_HIDDEN") || !slices.Contains(got.Reasons, "MARKET_INACTIVE") {
 		t.Fatalf("hidden inactive: %+v %v", got, e)
@@ -226,9 +219,10 @@ func TestPaymentMethodsDiagnosticsAndCredentialRotation(t *testing.T) {
 	hide.ExpectedVersion = 2
 	hide.ConnectionID = ""
 	hide.BindingVersion = 0
-	if _, e = p.set(f.token, f.store, t04Key("pm-unlink"), hide); e != nil {
-		t.Fatal(e)
+	if _, e = p.set(f.token, f.store, t04Key("pm-unlink"), hide); !errors.Is(e, command.ErrInvalid) {
+		t.Fatal("retired unlink admitted", e)
 	}
+	pmHistorical(t, p, hide, 3) // synthetic pre-removal unlinked revision
 	got, e = p.inspect(p.check(3))
 	if e != nil || got.BindingVersion != 0 || got.CredentialVersion != 0 || !slices.Contains(got.Reasons, "CONNECTION_MISSING") || slices.Contains(got.Reasons, "CREDENTIALS_UNVERIFIED") {
 		t.Fatalf("unlinked: %+v %v", got, e)
@@ -240,13 +234,11 @@ func TestPaymentMethodsAuthorityAndEnvironment(t *testing.T) {
 	f := p.m.f
 	p.link(t)
 	key := t04Key("pm-auth")
-	if _, e := p.set(f.token, f.store, key, p.in); e != nil {
-		t.Fatal(e)
-	}
+	pmHistorical(t, p, p.in, 1)
 	if _, e := p.get(f.otherToken, f.store); e != nil {
 		t.Fatalf("read-only permission denied: %v", e)
 	}
-	if _, e := p.set(f.otherToken, f.store, t04Key("pm-readonly"), p.in); !errors.Is(e, platform.ErrForbidden) {
+	if _, e := p.set(f.otherToken, f.store, t04Key("pm-readonly"), p.in); !errors.Is(e, command.ErrInvalid) {
 		t.Fatalf("read-only wrote: %v", e)
 	}
 	if _, e := p.get(f.missingPermission, f.store); !errors.Is(e, platform.ErrForbidden) {
@@ -258,23 +250,18 @@ func TestPaymentMethodsAuthorityAndEnvironment(t *testing.T) {
 	if _, e := p.set(f.token, f.store, t04Key("pm-mixed-env"), changed); e == nil {
 		t.Fatal("sandbox credential linked to live")
 	}
-	foreign, e := p.m.create(f.token, f.otherStore, t04Key("pm-foreign-account"), maInput())
-	if e != nil {
-		t.Fatal(e)
-	}
+	foreign := maHistorical(t, p.m, f.otherStore, maInput(), 1)
+	var e error
 	changed = p.in
 	changed.Code, changed.ConnectionID = "payuni_atm", foreign.ID
-	if _, e = p.set(f.token, f.store, t04Key("pm-cross-store-connection"), changed); !errors.Is(e, command.ErrNotFound) {
+	if _, e = p.set(f.token, f.store, t04Key("pm-cross-store-connection"), changed); !errors.Is(e, command.ErrInvalid) {
 		t.Fatalf("same-market foreign connection not rejected: %v", e)
 	}
 	liveInput := maInput()
 	liveInput.Environment = "LIVE"
-	live, e := p.m.create(f.token, f.store, t04Key("pm-live-account"), liveInput)
-	if e != nil {
-		t.Fatal(e)
-	}
+	live := maHistorical(t, p.m, f.store, liveInput, 1)
 	changed.Environment, changed.ConnectionID = "LIVE", live.ID
-	if out, e := p.set(f.token, f.store, t04Key("pm-live-draft"), changed); e != nil || out.Environment != "LIVE" || out.Enabled {
+	if out, e := p.set(f.token, f.store, t04Key("pm-live-draft"), changed); !errors.Is(e, command.ErrInvalid) || out.Version != 0 {
 		t.Fatalf("separate live draft: %+v %v", out, e)
 	}
 	missing := p.in
@@ -285,7 +272,7 @@ func TestPaymentMethodsAuthorityAndEnvironment(t *testing.T) {
 	stale := p.in
 	stale.Code = "payuni_atm"
 	stale.BindingVersion = 2
-	if _, e := p.set(f.token, f.store, t04Key("pm-new-stale-binding"), stale); !errors.Is(e, command.ErrConflict) {
+	if _, e := p.set(f.token, f.store, t04Key("pm-new-stale-binding"), stale); !errors.Is(e, command.ErrInvalid) {
 		t.Fatalf("new stale binding accepted: %v", e)
 	}
 	var forged payments.Method
@@ -298,9 +285,9 @@ func TestPaymentMethodsAuthorityAndEnvironment(t *testing.T) {
 	if e == nil || forged.Version != 0 {
 		t.Fatal("forged scope leaked method")
 	}
-	// Authority must be checked before returning an old permanent receipt.
+	// A revoked caller must never recover an old permanent receipt from a retired writer.
 	mustExec(t, f.base.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='integration:manage'`, f.tenant, f.store, f.principal)
-	if _, e = p.set(f.token, f.store, key, p.in); !errors.Is(e, platform.ErrForbidden) {
+	if _, e = p.set(f.token, f.store, key, p.in); !errors.Is(e, command.ErrInvalid) {
 		t.Fatalf("revoked manage replayed: %v", e)
 	}
 }
@@ -312,10 +299,19 @@ func TestPaymentMethodsPermissionRevokedDuringWait(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			p := pmSetup(t)
 			f := p.m.f
-			if _, e := p.set(f.token, f.store, t04Key("pm-wait-initial"), p.in); e != nil {
-				t.Fatal(e)
-			}
+			pmHistorical(t, p, p.in, 1)
 			before := p.counts(t)
+			if kind == "set" {
+				snapshot := pmHistorySnapshot(t, p)
+				mustExec(t, f.base.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='integration:manage'`, f.tenant, f.store, f.principal)
+				in := p.in
+				in.ExpectedVersion = 1
+				in.Visible = false
+				if _, err := p.set(f.token, f.store, t04Key("pm-retired-revoked"), in); !errors.Is(err, command.ErrInvalid) || p.counts(t) != before || pmHistorySnapshot(t, p) != snapshot {
+					t.Fatal("retired writer admitted after permission loss", err)
+				}
+				return
+			}
 			block, e := f.base.owner.Begin(context.Background())
 			if e != nil {
 				t.Fatal(e)
@@ -329,13 +325,6 @@ func TestPaymentMethodsPermissionRevokedDuringWait(t *testing.T) {
 			go func() {
 				done <- f.scoped(context.Background(), f.token, f.store, func(tx pgx.Tx, s platform.Scope) error {
 					started <- tx.Conn().PgConn().PID()
-					if kind == "set" {
-						v := p.in
-						v.ExpectedVersion = 1
-						v.Visible = false
-						_, e := payments.SetMethod(context.Background(), tx, s, f.token, t04Key("pm-wait-update"), v)
-						return e
-					}
 					_, e := payments.InspectMethod(context.Background(), tx, s, f.token, p.check(1))
 					return e
 				})
@@ -364,9 +353,6 @@ func TestPaymentMethodsPermissionRevokedDuringWait(t *testing.T) {
 				t.Fatal("did not observe method waiting for market lock")
 			}
 			permission := "integration:read"
-			if kind == "set" {
-				permission = "integration:manage"
-			}
 			mustExec(t, f.base.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission=$4`, f.tenant, f.store, f.principal, permission)
 			if e = block.Commit(context.Background()); e != nil {
 				t.Fatal(e)
@@ -386,43 +372,34 @@ func TestPaymentMethodsPermissionRevokedDuringWait(t *testing.T) {
 func TestPaymentMethodsConcurrentReplayAndCAS(t *testing.T) {
 	p := pmSetup(t)
 	f := p.m.f
+	pmHistorical(t, p, p.in, 1)
 	key := t04Key("pm-race-create")
+	before, snapshot := p.counts(t), pmHistorySnapshot(t, p)
 	var wg sync.WaitGroup
 	outs := make([]payments.Method, 4)
 	errs := make([]error, 4)
-	for i := range errs {
-		wg.Add(1)
-		go func(i int) { defer wg.Done(); outs[i], errs[i] = p.set(f.token, f.store, key, p.in) }(i)
-	}
-	wg.Wait()
-	for i, e := range errs {
-		if e != nil || outs[i].Version != 1 || !reflect.DeepEqual(outs[i], outs[0]) {
-			t.Fatalf("same key race: %v", e)
+	for _, update := range []bool{false, true} {
+		for i := range errs {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				in := p.in
+				if update {
+					in.ExpectedVersion = 1
+					in.SortOrder = i
+				}
+				outs[i], errs[i] = p.set(f.token, f.store, key, in)
+			}(i)
 		}
-	}
-	before := p.counts(t)
-	for i := range errs {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			v := p.in
-			v.ExpectedVersion = 1
-			v.SortOrder = i
-			outs[i], errs[i] = p.set(f.token, f.store, t04Key("pm-race-update"), v)
-		}(i)
-	}
-	wg.Wait()
-	wins := 0
-	for _, e := range errs {
-		if e == nil {
-			wins++
-		} else if !errors.Is(e, command.ErrConflict) {
-			t.Fatalf("unexpected CAS error: %v", e)
+		wg.Wait()
+		for i, e := range errs {
+			if !errors.Is(e, command.ErrInvalid) || outs[i].Version != 0 {
+				t.Fatalf("retired concurrent method write admitted: %v", e)
+			}
 		}
-	}
-	after := p.counts(t)
-	if wins != 1 || after[7] != before[7]+1 || after[3] != before[3]+1 || after[4] != before[4]+1 {
-		t.Fatalf("non-atomic CAS winners=%d", wins)
+		if p.counts(t) != before || pmHistorySnapshot(t, p) != snapshot {
+			t.Fatal("retired concurrent method writes changed history")
+		}
 	}
 }
 
@@ -430,9 +407,7 @@ func TestPaymentMethodsSQLGuardAndScopedTargets(t *testing.T) {
 	p := pmSetup(t)
 	f := p.m.f
 	p.link(t)
-	if _, e := p.set(f.token, f.store, t04Key("pm-sql"), p.in); e != nil {
-		t.Fatal(e)
-	}
+	pmHistorical(t, p, p.in, 1)
 	enabled := p.in
 	enabled.ExpectedVersion = 1
 	enabled.Enabled = true
@@ -482,9 +457,7 @@ func TestPaymentMethodsAtomicFaultRollback(t *testing.T) {
 				p := pmSetup(t)
 				f := p.m.f
 				if update {
-					if _, e := p.set(f.token, f.store, t04Key("pm-before-fault"), p.in); e != nil {
-						t.Fatal(e)
-					}
+					pmHistorical(t, p, p.in, 1)
 					p.in.ExpectedVersion = 1
 					p.in.Visible = false
 				}
@@ -503,12 +476,12 @@ func TestPaymentMethodsAtomicFaultRollback(t *testing.T) {
 					mustExec(t, f.base.owner, `DROP FUNCTION public.`+name+`()`)
 					mustExec(t, f.base.owner, `DROP SEQUENCE public.`+name+`_hits`)
 				})
-				if _, e := p.set(f.token, f.store, t04Key("pm-fault"), p.in); e == nil {
+				if _, e := p.set(f.token, f.store, t04Key("pm-fault"), p.in); !errors.Is(e, command.ErrInvalid) {
 					t.Fatal("injected failure accepted")
 				}
 				var fired bool
-				if e := f.base.owner.QueryRow(context.Background(), `SELECT is_called FROM public.`+name+`_hits`).Scan(&fired); e != nil || !fired {
-					t.Fatalf("did not reach exact fault: %v", e)
+				if e := f.base.owner.QueryRow(context.Background(), `SELECT is_called FROM public.`+name+`_hits`).Scan(&fired); e != nil || fired {
+					t.Fatalf("retired method reached write target: %v", e)
 				}
 				if p.counts(t) != before {
 					t.Fatal("partial method state survived")

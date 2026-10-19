@@ -202,7 +202,7 @@ func TestBFFRealSourceMutation(t *testing.T) {
 		t.Fatal(e)
 	}
 	original := string(data)
-	changed := strings.Replace(original, "(?:print|private-reply|public-reply)", "(?:ci-drift-added|print|private-reply|public-reply)", 1)
+	changed := mustReplace(t, original, "(?:print|private-reply|public-reply)", "(?:ci-drift-added|print|private-reply|public-reply)")
 	if changed == original {
 		t.Fatal("mutation insertion point no longer exists")
 	}
@@ -228,7 +228,7 @@ func TestBFFRealSourceMutation(t *testing.T) {
 			}
 		}
 	}
-	changed = strings.Replace(changed, "const write = new RegExp(", "const write = new RegExp(dynamicGrammar(),", 1)
+	changed = mustReplace(t, changed, "const write = new RegExp(", "const write = new RegExp(dynamicGrammar(),")
 	bffWrite(t, root, path, changed)
 	inv, e = scanBFF(root)
 	if e != nil {
@@ -251,7 +251,7 @@ func TestBFFRealSourceMutation(t *testing.T) {
 		t.Fatal(e)
 	}
 	before := string(data)
-	after := strings.Replace(before, "const init: RequestInit = { method: request.method };", "const init: RequestInit = { method: \"DELETE\" };", 1)
+	after := mustReplace(t, before, "const init: RequestInit = { method: request.method };", "const init: RequestInit = { method: \"DELETE\" };")
 	if after == before {
 		t.Fatal("transport method insertion point moved")
 	}

@@ -38,7 +38,7 @@ func moReadV2(ctx context.Context, pool *pgxpool.Pool, token, tenant, store, pri
 // The first red/green boundary: the requested read projection must exist and
 // return server counts while hiding a separate real checkout draft.
 func TestMerchantOrdersV2ReadContract(t *testing.T) {
-	q := pqSetup(t)
+	q := rm2StripePending(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
 	buyer := mustIssue(t, q.cqHarness.service, q.f.storeA1)
 	other := q.bcHarness

@@ -28,6 +28,7 @@ import (
 type psHarness struct {
 	bcHarness
 	starter                 *checkout.PaymentStarter
+	sql                     *rm2StartSQL
 	input                   checkout.PaymentInput
 	hold                    checkout.Result
 	account, binding, proof string
@@ -163,6 +164,9 @@ func psSetupItemsOn(t *testing.T, base *testFixture, skuCount int, historical ..
 }
 
 func (p psHarness) start(key string) (checkout.PaymentResult, error) {
+	if p.sql != nil {
+		return p.sql.StartPayment(context.Background(), p.cap.Token, p.f.storeA1, key, p.input)
+	}
 	return p.starter.StartPayment(context.Background(), p.cap.Token, p.f.storeA1, key, p.input)
 }
 func (p psHarness) facts(t *testing.T) (out [7]int) {
@@ -182,7 +186,7 @@ func (p psHarness) facts(t *testing.T) (out [7]int) {
 }
 
 func TestBuyerPaymentAtomicReplayAndPendingStock(t *testing.T) {
-	p := psSetup(t)
+	p := psSQLSetup(t)
 	before := p.facts(t)
 	key := t04Key("ps-start")
 	out, e := p.start(key)
@@ -219,15 +223,15 @@ func TestBuyerPaymentAtomicReplayAndPendingStock(t *testing.T) {
 	second.Scope.SessionID = randomUUID()
 	mustExec(t, p.f.owner, `INSERT INTO buyer.capability_sessions(tenant_id,store_id,owner_id,id,token_hash,expires_at) VALUES($1,$2,$3,$4,$5,clock_timestamp()+interval '1 hour')`, second.Scope.TenantID, second.Scope.StoreID, second.Scope.OwnerID, second.Scope.SessionID, tokenHash(second.Token))
 	mustExec(t, p.f.owner, `UPDATE integration.bindings SET enabled=false,semantic_version=semantic_version+1 WHERE id=$1`, p.binding)
-	replay, e := p.starter.StartPayment(context.Background(), second.Token, p.f.storeA1, key, p.input)
+	replay, e := p.sql.StartPayment(context.Background(), second.Token, p.f.storeA1, key, p.input)
 	if e != nil || replay != out || p.facts(t) != after {
 		t.Fatalf("historical owner replay: %v", e)
 	}
-	if _, e = psStarter(t, p.pool, "LIVE").StartPayment(context.Background(), second.Token, p.f.storeA1, key, p.input); !errors.Is(e, command.ErrConflict) {
+	if _, e = psSQLStarter(t, p.pool, "LIVE").StartPayment(context.Background(), second.Token, p.f.storeA1, key, p.input); !errors.Is(e, command.ErrConflict) {
 		t.Fatalf("profile replay changed: %v", e)
 	}
 	mustExec(t, p.f.owner, `UPDATE buyer.capability_sessions SET revoked_at=clock_timestamp() WHERE id=$1`, second.Scope.SessionID)
-	if _, e = p.starter.StartPayment(context.Background(), second.Token, p.f.storeA1, key, p.input); !errors.Is(e, buyer.ErrUnauthorized) {
+	if _, e = p.sql.StartPayment(context.Background(), second.Token, p.f.storeA1, key, p.input); !errors.Is(e, buyer.ErrUnauthorized) {
 		t.Fatalf("revoked replay: %v", e)
 	}
 	bcDue(t, p.bcHarness, p.hold)
@@ -248,7 +252,7 @@ func TestBuyerPaymentAtomicReplayAndPendingStock(t *testing.T) {
 func TestBuyerPaymentConcurrentKeys(t *testing.T) {
 	for _, same := range []bool{true, false} {
 		t.Run(fmt.Sprint(same), func(t *testing.T) {
-			p := psSetup(t)
+			p := psSQLSetup(t)
 			before := p.facts(t)
 			key := t04Key("ps-race")
 			var wg sync.WaitGroup
@@ -321,7 +325,7 @@ func TestBuyerPaymentAdmissionDenials(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			p := psSetup(t)
+			p := psSQLSetup(t)
 			if tc.sql != "" {
 				qualExec(t, p.f.owner, tc.sql, p.f.tenantA) // some rows rewind the qualification (revoke-only trigger, 0077)
 			}
@@ -331,7 +335,7 @@ func TestBuyerPaymentAdmissionDenials(t *testing.T) {
 			case "stale_method":
 				p.input.MethodVersion = 2
 			case "SANDBOX", "LIVE":
-				p.starter = psStarter(t, p.pool, tc.name)
+				p.sql = psSQLStarter(t, p.pool, tc.name)
 			case "foreign_owner":
 				p.cap = mustIssue(t, p.cqHarness.service, p.f.storeA1)
 			case "expired_hold":
@@ -352,7 +356,7 @@ func TestBuyerPaymentAdmissionDenials(t *testing.T) {
 func TestBuyerPaymentFaultRollback(t *testing.T) {
 	for _, table := range []string{"river_payment.river_job", "checkout.payment_attempts", "integration.operations", "integration.operation_events", "checkout.events", "checkout.command_results"} {
 		t.Run(table, func(t *testing.T) {
-			p := psSetup(t)
+			p := psSQLSetup(t)
 			before := p.facts(t)
 			name := "ps_fault_" + t04Tag()
 			mustExec(t, p.f.owner, `CREATE SEQUENCE public.`+name+`_hits`)
@@ -386,14 +390,14 @@ func TestBuyerPaymentFaultRollback(t *testing.T) {
 func TestBuyerPaymentFinalWaitGate(t *testing.T) {
 	for _, kind := range []string{"session", "qualification", "market"} {
 		t.Run(kind, func(t *testing.T) {
-			p := psSetup(t)
+			p := psSQLSetup(t)
 			name := "payment-wait-" + t04Tag()
 			pool, e := platform.OpenCheckoutPool(context.Background(), withApplicationName(t, p.poolURL, name))
 			if e != nil {
 				t.Fatal(e)
 			}
 			defer pool.Close()
-			p.starter = psStarter(t, pool, "PROVIDER_MOCK")
+			p.sql = psSQLStarter(t, pool, "PROVIDER_MOCK")
 			holder, e := p.f.owner.Begin(context.Background())
 			if e != nil {
 				t.Fatal(e)
@@ -442,7 +446,7 @@ func TestBuyerPaymentFinalWaitGate(t *testing.T) {
 }
 
 func TestBuyerPaymentAuthorityAndDispatcherFence(t *testing.T) {
-	p := psSetup(t)
+	p := psSQLSetup(t)
 	before := p.facts(t)
 	var functionOID, proofOID, credentialOID uint32
 	if e := p.f.owner.QueryRow(context.Background(), `SELECT 'checkout.start_payment(bytea,uuid,text,bytea,uuid,text,bigint,text,uuid,bigint)'::regprocedure::oid,'payments.account_qualifications'::regclass::oid,'integration.account_credentials'::regclass::oid`).Scan(&functionOID, &proofOID, &credentialOID); e != nil {
@@ -461,11 +465,11 @@ func TestBuyerPaymentAuthorityAndDispatcherFence(t *testing.T) {
 		}
 	}
 	for _, token := range []string{p.f.tokens["a"], randomToken()} {
-		if _, e := p.starter.StartPayment(context.Background(), token, p.f.storeA1, t04Key("ps-auth"), p.input); !errors.Is(e, buyer.ErrUnauthorized) {
+		if _, e := p.sql.StartPayment(context.Background(), token, p.f.storeA1, t04Key("ps-auth"), p.input); !errors.Is(e, buyer.ErrUnauthorized) {
 			t.Fatalf("wrong token %v", e)
 		}
 	}
-	if _, e := p.starter.StartPayment(context.Background(), p.cap.Token, p.f.storeA2, t04Key("ps-store"), p.input); !errors.Is(e, buyer.ErrUnauthorized) {
+	if _, e := p.sql.StartPayment(context.Background(), p.cap.Token, p.f.storeA2, t04Key("ps-store"), p.input); !errors.Is(e, buyer.ErrUnauthorized) {
 		t.Fatalf("wrong store %v", e)
 	}
 	if p.facts(t) != before {
@@ -524,14 +528,14 @@ func TestBuyerPaymentAuthorityAndDispatcherFence(t *testing.T) {
 }
 
 func TestBuyerPaymentQualificationExpiresDuringFinalWrite(t *testing.T) {
-	p := psSetup(t)
+	p := psSQLSetup(t)
 	name := "payment-late-wait-" + t04Tag()
 	pool, e := platform.OpenCheckoutPool(context.Background(), withApplicationName(t, p.poolURL, name))
 	if e != nil {
 		t.Fatal(e)
 	}
 	defer pool.Close()
-	p.starter = psStarter(t, pool, "PROVIDER_MOCK")
+	p.sql = psSQLStarter(t, pool, "PROVIDER_MOCK")
 	before := p.facts(t)
 	holder, e := p.f.owner.Begin(context.Background())
 	if e != nil {
@@ -565,8 +569,8 @@ func TestBuyerPaymentQualificationExpiresDuringFinalWrite(t *testing.T) {
 }
 
 func TestBuyerPaymentFreshSessionAndQualificationAuthority(t *testing.T) {
-	p := psSetup(t)
-	foreign := psSetup(t)
+	p := psSQLSetup(t)
+	foreign := psSQLSetup(t)
 	_, e := p.f.owner.Exec(context.Background(), `UPDATE payments.method_versions SET qualification_id=$2 WHERE tenant_id=$1`, p.f.tenantA, foreign.proof)
 	daSQLState(t, e, "23503")
 	var proofOID uint32
@@ -597,7 +601,7 @@ func TestBuyerPaymentFreshSessionAndQualificationAuthority(t *testing.T) {
 }
 
 func TestBuyerPaymentExpiredHoldRace(t *testing.T) {
-	p := psSetup(t)
+	p := psSQLSetup(t)
 	bcDue(t, p.bcHarness, p.hold)
 	before := p.facts(t)
 	ready := make(chan struct{})

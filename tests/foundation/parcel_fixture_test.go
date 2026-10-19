@@ -3,9 +3,9 @@ package foundation_test
 // Purpose: the shared fixture that places SEVERAL paid orders for ONE buyer capability at one identical home destination (what the
 //   W3-07B parcel-merge browser harness needs for a mergeable pair), plus the focused REAL_PG test that proves it without a browser.
 //   Each step fails with its own message so the failing call is visible (the t.Helper chain of the old closure hid it).
-// Depends on: pqFixture/bcHarness (bcSetup prepare/begin), pqFixture.start, pcRecord/pcApply, bdSet/bdHome, cqHarness.cart.
+// Depends on: pqFixture/bcHarness (bcSetup prepare/begin), Stripe session/signature/worker helpers, bdSet/bdHome, cqHarness.cart.
 // Used by: TestParcelFixtureSameBuyerTwoOrders (REAL_PG) and parcelOrder in browser_merchant_orders_ui_test.go (browser build tag).
-// Status: REAL_PG with the MOCK payment capture path of the other pq fixtures.
+// Status: REAL_PG with the existing Stripe MOCK capture path.
 
 import (
 	"context"
@@ -54,8 +54,7 @@ func pfNewBuyer(q pqFixture, cap buyer.Capability, service int64) *pfBuyer {
 // cart and re-select the same bdHome destination at the live versions. paid=false stops at the hold (a DRAFT order never captured).
 func (b *pfBuyer) order(t *testing.T, tag string, paid bool) string {
 	t.Helper()
-	// Quantity 2, never 1: a paid order's total must be whole TWD (a multiple of 100 minor, validPaymentResult) and one unit costs
-	// 1250 minor, so a one-unit order cannot start payment ("conflicting request or version").
+	// Keep the original two-unit order size: parcel quantities and inventory assertions depend on it.
 	items := []storefront.Item{{SKUID: b.q.stock.skus[0].ID, Quantity: 2}}
 	if b.placed == 0 {
 		b.q.bcHarness.prepare(t, b.q.cap, items)
@@ -73,16 +72,8 @@ func (b *pfBuyer) order(t *testing.T, tag string, paid bool) string {
 	}
 	b.q.hold = order
 	b.q.input.OrderID = order.OrderID
-	if b.q.result, err = b.q.start(t04Key("pf-start-" + tag)); err != nil {
-		t.Fatalf("pf[%s] start: %v", tag, err)
-	}
-	report := pcFull(b.q)
-	if err = b.q.record(b.q.claim(t), report); err != nil {
-		t.Fatalf("pf[%s] record provider report: %v", tag, err)
-	}
-	if err = pcApply(b.q.worker, b.q.result.AttemptID, pcHash(t, b.q, report)); err != nil {
-		t.Fatalf("pf[%s] apply_capture: %v", tag, err)
-	}
+	b.q.rm2StripeStart(t)
+	b.q.rm2StripePay(t)
 	return order.OrderID
 }
 
@@ -112,7 +103,7 @@ func (b *pfBuyer) rehome(t *testing.T, tag string, items []storefront.Item) {
 // TestParcelFixtureSameBuyerTwoOrders builds the browser harness' mergeable pair without a browser: two paid orders of ONE buyer
 // capability at the identical home destination, then proves they are one owner / one destination hash (so one merge suggestion).
 func TestParcelFixtureSameBuyerTwoOrders(t *testing.T) {
-	q := pqSetup(t)
+	q := rm2StripePending(t)
 	var frozenBefore string
 	if err := q.f.owner.QueryRow(context.Background(), `SELECT md5(snapshot::text) FROM checkout.orders WHERE id=$1`, q.hold.OrderID).Scan(&frozenBefore); err != nil {
 		t.Fatal(err)

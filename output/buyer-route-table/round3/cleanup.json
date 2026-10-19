@@ -1,0 +1,23 @@
+{
+  "ended_at": "2026-10-15T09:17:15.916179+00:00",
+  "removed": [
+    {
+      "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round3/pay70-scratch",
+      "files": 12279,
+      "bytes": 452852878,
+      "kind": "task-created scratch clone; shared object store not traversed",
+      "removed": true
+    },
+    {
+      "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round3/contractdrift",
+      "files": 1,
+      "bytes": 6001202,
+      "sha256": "145aec6d081e219b1c2c8a7683557b76ca44d8545cf246532fe1ec93c07f5daf",
+      "kind": "task-built scanner binary",
+      "removed": true
+    }
+  ],
+  "total_bytes_removed": 458854080,
+  "processes": "All task build/vet/CLI/clone commands exited; no servers/containers/ports started",
+  "other_task_directories_touched": false
+}

@@ -1,0 +1,25 @@
+{
+  "run_id": "r9-red-duplicate",
+  "source_sha": "fb918d9c2659cc81e96bd578267d2a66a45d0237",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round9/scratch/contractdrift",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round9/scratch/repo",
+    "-base",
+    "e4dad98cc"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round9/scratch/repo",
+  "timeout_seconds": 180,
+  "started_at": "2026-10-15T11:07:15.243518+00:00",
+  "status": "finished",
+  "wake": "exec terminal completion; timeout or unexpected exit/ERROR/TOUCHED fails",
+  "exit_code": 0,
+  "elapsed_seconds": 1.211,
+  "ended_at": "2026-10-15T11:07:16.454878+00:00",
+  "summary": [
+    "SUMMARY routes go=328 contract=165 bff=301; errors=0 warnings=288 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=27 GO_ONLY=200 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51"
+  ],
+  "errors": 0,
+  "touched": 0,
+  "executable_sha256": "aeee02f90db40f19be735f1668dea5718d68f23013f2f385433fda493004d996"
+}

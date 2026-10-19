@@ -1,0 +1,22 @@
+{
+  "source_sha": "5f6f27b17fc8ccceb5b3f9211db1f0949e04409a",
+  "finished_at": "2026-10-15T10:29:16.384080+00:00",
+  "command": [
+    "git",
+    "worktree",
+    "remove",
+    "--force",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round7/scratch/pay70-overlay"
+  ],
+  "exit_code": 0,
+  "removed_only_task_owned": [
+    "output/buyer-route-table/round7/scratch",
+    "output/buyer-route-table/contractdrift-r7"
+  ],
+  "removed_bytes": 471932977,
+  "remaining_task_processes": [],
+  "servers_ports_containers": "none started",
+  "pending_runs": [],
+  "overlay_registered": false,
+  "scratch_exists": false
+}

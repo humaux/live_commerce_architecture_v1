@@ -1,0 +1,19 @@
+{
+  "source_sha": "df8eefa074bcd8577e02363792ee973dde13a317",
+  "base": "e4dad98cc322d35709b475de25063efc92e5d866",
+  "mode": "STATIC_SOURCE_ONLY; no Go tests",
+  "run_id": "buyer-route-table-round2-cli-df8eefa07",
+  "timeout_seconds": 120,
+  "started_at": "2026-10-15T08:56:15.485406+00:00",
+  "command": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round2/contractdrift",
+    "-root",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/buyer-route-table/output/buyer-route-table/round2/source-scan",
+    "-base",
+    "e4dad98cc",
+    "-json"
+  ],
+  "exit": 1,
+  "elapsed_seconds": 2.4,
+  "ended_at": "2026-10-15T08:56:22.170112+00:00"
+}

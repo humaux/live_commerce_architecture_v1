@@ -1,0 +1,165 @@
+migrations/0014_merchant_accounts.sql:9: provider text NOT NULL CHECK(provider='payuni'),
+migrations/0015_payment_methods.sql:13: code text NOT NULL CHECK(code IN ('payuni_credit','payuni_installment','payuni_atm','payuni_cvs','payuni_linepay')),
+migrations/0015_payment_methods.sql:15: provider text NOT NULL CHECK(provider='payuni'),
+migrations/0016_buyer_payment_start.sql:8: code text NOT NULL CHECK(code='payuni_credit'),
+migrations/0016_buyer_payment_start.sql:32: method_code text NOT NULL CHECK(method_code='payuni_credit'),method_version bigint NOT NULL,
+migrations/0016_buyer_payment_start.sql:76:  AND provider='payuni' AND action='payuni.query' AND purpose='transactional'
+migrations/0016_buyer_payment_start.sql:136: OR p_job IS NULL OR p_job<1 OR p_method IS DISTINCT FROM 'payuni_credit'
+migrations/0016_buyer_payment_start.sql:170: IF NOT FOUND OR a.provider<>'payuni' OR a.environment<>m.environment THEN
+migrations/0016_buyer_payment_start.sql:195: VALUES(p_attempt,s.tenant_id,p_store,NULL,b.id,b.semantic_version,'payuni',b.external_asset_id,'transactional','payuni.query',
+migrations/0017_payment_query.sql:55: IF NOT FOUND OR o.actor_kind<>'BUYER_PAYMENT_QUERY' OR o.action<>'payuni.query' OR o.provider<>'payuni'
+migrations/0017_payment_query.sql:83: AND x.provider='payuni' AND x.environment=a.environment;
+migrations/0017_payment_query.sql:113: OR p_report->>'MerTradeNo'<>a.merchant_trade_no OR a.currency<>'TWD' OR a.method_code<>'payuni_credit'
+migrations/0018_payment_capture.sql:30: OR p_report->>'MerTradeNo'<>a.merchant_trade_no OR a.currency<>'TWD' OR a.method_code<>'payuni_credit'
+migrations/0018_payment_capture.sql:244:  OR op.provider<>'payuni' OR op.action<>'payuni.query' OR op.purpose<>'transactional'
+migrations/0018_payment_capture.sql:246:  OR acct.provider<>'payuni' OR acct.environment<>a.environment OR acct.binding_id<>a.binding_id
+migrations/0025_hosted_payment.sql:109:  IF NOT FOUND OR c.provider<>'payuni' OR c.environment<>a.environment OR c.credential_version<>a.credential_version
+migrations/0025_hosted_payment.sql:183: IF p_form->>'action'<>(CASE WHEN a.environment='SANDBOX' THEN 'https://sandbox-api.payuni.com.tw/api/upp'
+migrations/0025_hosted_payment.sql:184: ELSE 'https://api.payuni.com.tw/api/upp' END) OR f->>'MerID'<>v_account OR f->>'Version'<>'2.0'
+migrations/0026_buyer_payment_view.sql:48:   AND head.market_id=o.market_id AND head.country=o.country AND head.code='payuni_credit'
+migrations/0026_buyer_payment_view.sql:53:   AND a.id=m.connection_id AND a.provider='payuni' AND a.environment=m.environment
+migrations/0035_live_media_plan.sql:70:  AND provider='payuni' AND action='payuni.query' AND purpose='transactional'
+migrations/0061_stripe_psp.sql:27: CHECK(provider IN ('payuni','stripe'));
+migrations/0061_stripe_psp.sql:37: FOR INSERT TO commerce_runtime WITH CHECK(provider='payuni');
+migrations/0061_stripe_psp.sql:39: FOR UPDATE TO commerce_runtime USING(provider='payuni') WITH CHECK(provider='payuni');
+migrations/0061_stripe_psp.sql:48:   AND a.provider='payuni'));
+migrations/0061_stripe_psp.sql:55: (provider='payuni' AND code IN ('payuni_credit','payuni_installment','payuni_atm','payuni_cvs','payuni_linepay')
+migrations/0061_stripe_psp.sql:59:-- Keep the merchant's existing PAYUNi draft path, but reserve Stripe admission
+migrations/0061_stripe_psp.sql:62: FOR INSERT TO commerce_runtime WITH CHECK(provider='payuni');
+migrations/0061_stripe_psp.sql:69: CHECK(code IN ('payuni_credit','stripe_checkout'));
+migrations/0061_stripe_psp.sql:77: (method_code='payuni_credit' AND currency='TWD' AND amount_minor BETWEEN 100 AND 19999900
+migrations/0061_stripe_psp.sql:89:  AND ((provider='payuni' AND action='payuni.query')
+migrations/0061_stripe_psp.sql:622:-- Preserve the PAYUNi body exactly: only its name and grants change.
+migrations/0061_stripe_psp.sql:623:ALTER FUNCTION payments.apply_capture(uuid,bytea) RENAME TO apply_capture_payuni_v1;
+migrations/0061_stripe_psp.sql:624:REVOKE ALL ON FUNCTION payments.apply_capture_payuni_v1(uuid,bytea) FROM commerce_worker,PUBLIC;
+migrations/0061_stripe_psp.sql:625:COMMENT ON FUNCTION payments.apply_capture_payuni_v1(uuid,bytea) IS 'payments owner; checkout writer private PAYUNi capture path, byte-identical to migration 0018 body; no Stripe dispatch';
+migrations/0061_stripe_psp.sql:896: IF v_provider='payuni' THEN
+migrations/0061_stripe_psp.sql:897:  PERFORM payments.apply_capture_payuni_v1(p_attempt,p_report_hash);
+migrations/0061_stripe_psp.sql:907:COMMENT ON FUNCTION payments.apply_capture(uuid,bytea) IS 'payments owner; worker calls provider dispatcher; PAYUNi and Stripe retain separate private fact paths, no direct ledger write by worker';
+migrations/0061_stripe_psp.sql:1211: p_profile text,p_payuni_digest bytea,p_stripe_digest bytea) RETURNS jsonb
+migrations/0061_stripe_psp.sql:1217: IF (p_payuni_digest IS NOT NULL AND octet_length(p_payuni_digest)<>32)
+migrations/0061_stripe_psp.sql:1219:  OR (p_payuni_digest IS NULL AND p_stripe_digest IS NULL) THEN
+migrations/0061_stripe_psp.sql:1222:  coalesce(p_payuni_digest,decode(repeat('00',32),'hex')));
+migrations/0061_stripe_psp.sql:1223: IF p_payuni_digest IS NULL THEN v_base:=jsonb_set(v_base,'{methods}','[]'::jsonb); END IF;
+migrations/0061_stripe_psp.sql:1291:COMMENT ON FUNCTION checkout.hosted_payment_view_v2(bytea,uuid,uuid,text,bytea,bytea) IS 'checkout owner; hosted runtime projects PAYUNi and Stripe methods and frozen payment facts; never authorizes capture or stock release';
+migrations/0061_stripe_psp.sql:1313: RETURN CASE v_code WHEN 'stripe_checkout' THEN 'stripe' WHEN 'payuni_credit' THEN 'payuni' ELSE NULL END;
+migrations/0061_stripe_psp.sql:1318:COMMENT ON FUNCTION checkout.hosted_payment_provider(bytea,uuid,uuid) IS 'checkout owner; hosted runtime reads the provider (stripe|payuni|NULL) of the caller-scoped order attempt to route handoff; read-only, no lock, never returns provider material';
+migrations/0061_stripe_psp.sql:1639:COMMENT ON FUNCTION payments.set_stripe_method(uuid,uuid,uuid,uuid,text,uuid,uuid,bigint,boolean,boolean,integer,bigint,bigint,text,text,text) IS 'payments owner; operator registrar appends Stripe method revision with exact scoped account/qualification and amount bounds; merchant SetMethod remains PAYUNi only';
+migrations/0062_stripe_refund.sql:7:-- (ruling 1: 0063 owns the merchant projection), no PAYUNi refund, no LIVE.
+migrations/0062_stripe_refund.sql:331:-- from a PAYUNi one. checkout.payment_attempts keeps its exact merchant_orders column set (its gate asserts
+migrations/0062_stripe_refund.sql:1148:-- the PAYUNi body behind apply_capture_payuni_v1 is untouched.
+migrations/0062_stripe_refund.sql:1164: IF v_provider='payuni' THEN
+migrations/0062_stripe_refund.sql:1165:  PERFORM payments.apply_capture_payuni_v1(p_attempt,p_report_hash);
+migrations/0062_stripe_refund.sql:1182:COMMENT ON FUNCTION payments.apply_capture(uuid,bytea) IS 'payments owner; worker calls provider dispatcher; PAYUNi, Stripe checkout, Stripe refund and Stripe charge retain separate private fact paths, no direct ledger write by worker';
+migrations/0062_stripe_refund.sql:1186:-- refund payment states and a `refund` object only for Stripe attempts with refund activity; PAYUNi
+migrations/0062_stripe_refund.sql:1190: p_profile text,p_payuni_digest bytea,p_stripe_digest bytea) RETURNS jsonb
+migrations/0062_stripe_refund.sql:1197: IF (p_payuni_digest IS NOT NULL AND octet_length(p_payuni_digest)<>32)
+migrations/0062_stripe_refund.sql:1199:  OR (p_payuni_digest IS NULL AND p_stripe_digest IS NULL) THEN
+migrations/0062_stripe_refund.sql:1202:  coalesce(p_payuni_digest,decode(repeat('00',32),'hex')));
+migrations/0062_stripe_refund.sql:1203: IF p_payuni_digest IS NULL THEN v_base:=jsonb_set(v_base,'{methods}','[]'::jsonb); END IF;
+migrations/0062_stripe_refund.sql:1287:COMMENT ON FUNCTION checkout.hosted_payment_view_v2(bytea,uuid,uuid,text,bytea,bytea) IS 'checkout owner; hosted runtime projects PAYUNi and Stripe methods, frozen payment facts and buyer-safe refund totals; never authorizes capture, refund or stock release';
+migrations/0072_taiwan_cvs_logistics.sql:226:-- integration.merchant_accounts: ecpay_logistics (TD2, §4.1). Merchant runtime policies (0061) stay provider='payuni'.
+migrations/0072_taiwan_cvs_logistics.sql:235:-- Provider-scoped key for the profile FK (the profile must describe an ecpay_logistics account, never PAYUNi/Stripe).
+migrations/0077_stripe_live_enable.sql:4:-- Non-goals: no money movement, no key material, no merchant-facing write, no PAYUNi change, no new role, no
+migrations/0077_stripe_live_enable.sql:839: p_profile text,p_payuni_digest bytea,p_stripe_digest bytea) RETURNS jsonb
+migrations/0077_stripe_live_enable.sql:846: IF (p_payuni_digest IS NOT NULL AND octet_length(p_payuni_digest)<>32)
+migrations/0077_stripe_live_enable.sql:848:  OR (p_payuni_digest IS NULL AND p_stripe_digest IS NULL) THEN
+migrations/0077_stripe_live_enable.sql:851:  coalesce(p_payuni_digest,decode(repeat('00',32),'hex')));
+migrations/0077_stripe_live_enable.sql:852: IF p_payuni_digest IS NULL THEN v_base:=jsonb_set(v_base,'{methods}','[]'::jsonb); END IF;
+migrations/0077_stripe_live_enable.sql:1030:COMMENT ON FUNCTION payments.set_stripe_method(uuid,uuid,uuid,uuid,text,uuid,uuid,bigint,boolean,boolean,integer,bigint,bigint,text,text,text) IS 'payments owner; operator registrar appends a Stripe method revision with exact scoped account/qualification and amount bounds; enabling on LIVE needs an active approval, REAL_LIVE qualification and the canary or per-order cap; disabling always works (kill switch); merchant SetMethod remains PAYUNi only';
+migrations/0077_stripe_live_enable.sql:1032:COMMENT ON FUNCTION checkout.hosted_payment_view_v2(bytea,uuid,uuid,text,bytea,bytea) IS 'checkout owner; hosted runtime projects PAYUNi and Stripe (SANDBOX or LIVE profile) methods, frozen payment facts and buyer-safe refund totals; never authorizes capture, refund or stock release';
+migrations/0096_worker_authorities.sql:17:-- Lanes (integration.operation_lane): payment = provider stripe|payuni or actor BUYER_PAYMENT_QUERY|PAYMENT_REFUND; ads =
+migrations/0096_worker_authorities.sql:38:COMMENT ON ROLE commerce_payment_worker IS 'worker authority of cmd/payment-worker profile SANDBOX/PROVIDER_MOCK (lc_payment_sandbox): river_payment lifecycle, Stripe/PAYUNi worker definers, payments.apply_capture. Never LIVE, never another lane. Migration 0096.';
+migrations/0096_worker_authorities.sql:54:  WHEN p_provider IN ('stripe','payuni') OR p_actor IN ('BUYER_PAYMENT_QUERY','PAYMENT_REFUND') THEN 'payment'
+migrations/0096_worker_authorities.sql:232: IF NOT FOUND OR o.actor_kind<>'BUYER_PAYMENT_QUERY' OR o.action<>'payuni.query' OR o.provider<>'payuni'
+migrations/0096_worker_authorities.sql:350:-- Payment workers (SANDBOX and LIVE): PAYUNi query, Stripe session/refund/signal definers, same-tx apply_capture.
+migrations/0136_payuni_notify.sql:1:-- Purpose: PAYUNi NotifyURL receiver schema: ingress role, endpoint + receipt tables, resolve/record/set-endpoint definers, guard trigger.
+migrations/0136_payuni_notify.sql:4:-- Used by: internal/payments/payuninotify (inbox.go), internal/platform/payuni_runtime.go, cmd/api, operator registrar CLI.
+migrations/0136_payuni_notify.sql:7:-- PAYUNi NotifyURL receiver (w4-01b-payuni-notify). A notification is only a trigger to query:
+migrations/0136_payuni_notify.sql:18:CREATE ROLE commerce_payuni_ingress NOLOGIN INHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
+migrations/0136_payuni_notify.sql:19:COMMENT ON ROLE commerce_payuni_ingress IS 'payments webhook ingress; executes signature-fenced PAYUNi notify receipt definers only, no merchant or payment table access';
+migrations/0136_payuni_notify.sql:20:GRANT USAGE ON SCHEMA payments TO commerce_payuni_ingress;
+migrations/0136_payuni_notify.sql:50:CREATE TABLE payments.payuni_notify_endpoints (
+migrations/0136_payuni_notify.sql:53: provider text GENERATED ALWAYS AS ('payuni'::text) STORED,
+migrations/0136_payuni_notify.sql:67:CREATE TABLE payments.payuni_notify_receipts (
+migrations/0136_payuni_notify.sql:87: FOREIGN KEY(endpoint_id) REFERENCES payments.payuni_notify_endpoints(endpoint_id)
+migrations/0136_payuni_notify.sql:91: FOREACH v_table IN ARRAY ARRAY['payuni_notify_endpoints','payuni_notify_receipts'] LOOP
+migrations/0136_payuni_notify.sql:96:   'payments owner; private PAYUNi notify metadata for the ingress definers; never stores raw notify body or key');
+migrations/0136_payuni_notify.sql:100:    'payments owner; PAYUNi notify ingress bounded metadata; no direct runtime access or PSP authority');
+migrations/0136_payuni_notify.sql:106:CREATE POLICY payuni_endpoint_integration ON payments.payuni_notify_endpoints
+migrations/0136_payuni_notify.sql:108:CREATE POLICY payuni_receipt_integration ON payments.payuni_notify_receipts TO commerce_integration_writer
+migrations/0136_payuni_notify.sql:110:GRANT SELECT ON payments.payuni_notify_endpoints TO commerce_integration_writer;
+migrations/0136_payuni_notify.sql:111:GRANT SELECT,INSERT ON payments.payuni_notify_receipts TO commerce_integration_writer;
+migrations/0136_payuni_notify.sql:113:-- redelivery bump writes exactly these two columns; guard_payuni_notify_receipt forbids every other change.
+migrations/0136_payuni_notify.sql:114:GRANT UPDATE(redelivery_count,last_redelivered_at) ON payments.payuni_notify_receipts TO commerce_integration_writer;
+migrations/0136_payuni_notify.sql:118:GRANT SELECT,INSERT ON payments.payuni_notify_endpoints TO commerce_payment_registry_writer;
+migrations/0136_payuni_notify.sql:119:GRANT UPDATE(enabled,token_hash,updated_at) ON payments.payuni_notify_endpoints TO commerce_payment_registry_writer;
+migrations/0136_payuni_notify.sql:120:CREATE POLICY payuni_endpoint_registry ON payments.payuni_notify_endpoints TO commerce_payment_registry_writer
+migrations/0136_payuni_notify.sql:128:CREATE POLICY payuni_notify_review ON payments.review_cases FOR INSERT TO commerce_integration_writer
+migrations/0136_payuni_notify.sql:133:CREATE FUNCTION payments.guard_payuni_notify_receipt() RETURNS trigger
+migrations/0136_payuni_notify.sql:139:  RAISE EXCEPTION 'PAYUNi notify receipt immutable field changed' USING ERRCODE='42501';
+migrations/0136_payuni_notify.sql:143:ALTER FUNCTION payments.guard_payuni_notify_receipt() OWNER TO commerce_integration_writer;
+migrations/0136_payuni_notify.sql:144:REVOKE ALL ON FUNCTION payments.guard_payuni_notify_receipt() FROM PUBLIC;
+migrations/0136_payuni_notify.sql:145:CREATE TRIGGER guard_payuni_notify_receipt BEFORE UPDATE ON payments.payuni_notify_receipts
+migrations/0136_payuni_notify.sql:146: FOR EACH ROW EXECUTE FUNCTION payments.guard_payuni_notify_receipt();
+migrations/0136_payuni_notify.sql:147:COMMENT ON FUNCTION payments.guard_payuni_notify_receipt() IS 'payments owner; integration writer allows only notify redelivery metadata to change; no receipt rewrite';
+migrations/0136_payuni_notify.sql:152:CREATE FUNCTION payments.payuni_resolve_endpoint(p_token_hash bytea)
+migrations/0136_payuni_notify.sql:161: FROM payments.payuni_notify_endpoints e
+migrations/0136_payuni_notify.sql:168: WHERE e.token_hash=p_token_hash AND e.enabled AND m.provider='payuni'
+migrations/0136_payuni_notify.sql:170:ALTER FUNCTION payments.payuni_resolve_endpoint(bytea) OWNER TO commerce_integration_writer;
+migrations/0136_payuni_notify.sql:171:REVOKE ALL ON FUNCTION payments.payuni_resolve_endpoint(bytea) FROM PUBLIC;
+migrations/0136_payuni_notify.sql:172:GRANT EXECUTE ON FUNCTION payments.payuni_resolve_endpoint(bytea) TO commerce_payuni_ingress;
+migrations/0136_payuni_notify.sql:173:COMMENT ON FUNCTION payments.payuni_resolve_endpoint(bytea) IS 'payments owner; ingress reads one enabled endpoint scope plus current/previous credential envelopes only; no plaintext or tenant authority from the token';
+migrations/0136_payuni_notify.sql:178:CREATE FUNCTION payments.payuni_record_notify(p_token_hash bytea,p_payload_sha256 bytea,
+migrations/0136_payuni_notify.sql:182:DECLARE ep payments.payuni_notify_endpoints%ROWTYPE;
+migrations/0136_payuni_notify.sql:184: existing payments.payuni_notify_receipts%ROWTYPE;
+migrations/0136_payuni_notify.sql:195:  RAISE EXCEPTION 'invalid PAYUNi notify record' USING ERRCODE='22023'; END IF;
+migrations/0136_payuni_notify.sql:196: SELECT e.* INTO ep FROM payments.payuni_notify_endpoints e
+migrations/0136_payuni_notify.sql:199:  RAISE EXCEPTION 'PAYUNi notify endpoint unavailable' USING ERRCODE='40001'; END IF;
+migrations/0136_payuni_notify.sql:203: PERFORM pg_advisory_xact_lock(hashtextextended('payuni.notify|'
+migrations/0136_payuni_notify.sql:205: SELECT x.* INTO existing FROM payments.payuni_notify_receipts x
+migrations/0136_payuni_notify.sql:208:  UPDATE payments.payuni_notify_receipts SET redelivery_count=redelivery_count+1,
+migrations/0136_payuni_notify.sql:229: INSERT INTO payments.payuni_notify_receipts(id,endpoint_id,connection_id,environment,account_id,
+migrations/0136_payuni_notify.sql:247:ALTER FUNCTION payments.payuni_record_notify(bytea,bytea,text,text,bigint,text,text)
+migrations/0136_payuni_notify.sql:249:REVOKE ALL ON FUNCTION payments.payuni_record_notify(bytea,bytea,text,text,bigint,text,text) FROM PUBLIC;
+migrations/0136_payuni_notify.sql:250:GRANT EXECUTE ON FUNCTION payments.payuni_record_notify(bytea,bytea,text,text,bigint,text,text)
+migrations/0136_payuni_notify.sql:251: TO commerce_payuni_ingress;
+migrations/0136_payuni_notify.sql:252:COMMENT ON FUNCTION payments.payuni_record_notify(bytea,bytea,text,text,bigint,text,text) IS 'payments owner; signed ingress dedupes one notify, records its receipt and either wakes the existing query job or opens NOTIFY_MISMATCH; no money fact, no job insert';
+migrations/0136_payuni_notify.sql:254:-- Operator registrar creates or rotates the notify token for one SANDBOX payuni connection. The
+migrations/0136_payuni_notify.sql:256:CREATE FUNCTION payments.set_payuni_notify_endpoint(p_tenant uuid,p_store uuid,p_principal uuid,
+migrations/0136_payuni_notify.sql:264:  RAISE EXCEPTION 'invalid PAYUNi notify endpoint input' USING ERRCODE='22023'; END IF;
+migrations/0136_payuni_notify.sql:266:  AND x.store_id=p_store AND x.id=p_connection AND x.provider='payuni' FOR SHARE;
+migrations/0136_payuni_notify.sql:268:  RAISE EXCEPTION 'PAYUNi endpoint account unavailable' USING ERRCODE='PT409'; END IF;
+migrations/0136_payuni_notify.sql:269: INSERT INTO payments.payuni_notify_endpoints(endpoint_id,tenant_id,store_id,connection_id,
+migrations/0136_payuni_notify.sql:276: VALUES(p_tenant,p_store,p_principal,'payuni.notify_endpoint_set');
+migrations/0136_payuni_notify.sql:278:ALTER FUNCTION payments.set_payuni_notify_endpoint(uuid,uuid,uuid,uuid,uuid,text,boolean,bytea)
+migrations/0136_payuni_notify.sql:280:REVOKE ALL ON FUNCTION payments.set_payuni_notify_endpoint(uuid,uuid,uuid,uuid,uuid,text,boolean,bytea) FROM PUBLIC;
+migrations/0136_payuni_notify.sql:281:GRANT EXECUTE ON FUNCTION payments.set_payuni_notify_endpoint(uuid,uuid,uuid,uuid,uuid,text,boolean,bytea)
+migrations/0136_payuni_notify.sql:283:COMMENT ON FUNCTION payments.set_payuni_notify_endpoint(uuid,uuid,uuid,uuid,uuid,text,boolean,bytea) IS 'payments owner; operator registrar creates or rotates one SANDBOX notify token by connection+profile; no key custody, rebind or LIVE ingress';
+migrations/0137_platform_stripe.sql:161:-- P2-8: the merchant runtime may insert PAYUNi accounts but never set platform_connection_id (column-list grant replaces the
+migrations/0161_remove_payuni_notify.sql:1:-- Purpose: forward-only removal of the never-deployed W4-01B PAYUNi NotifyURL receiver (created by 0136):
+migrations/0161_remove_payuni_notify.sql:2:--   the commerce_payuni_ingress role, the endpoint/receipt tables, the resolve/record/set-endpoint/guard
+migrations/0161_remove_payuni_notify.sql:7:-- Used by: migrations.Apply (numbered phase); tests/foundation/payuni_removal_test.go (RM01/RM02).
+migrations/0161_remove_payuni_notify.sql:9:--   NOTIFY_MISMATCH review case exists (owner 2026-10-06 「不使用PAYUNi…」; W4-02B/W4-03B cancelled).
+migrations/0161_remove_payuni_notify.sql:10:--   The older PAYUNi hosted/query/capture path (0014–0018, apply_capture_payuni_v1) is NOT in scope and stays.
+migrations/0161_remove_payuni_notify.sql:17: SELECT count(*) INTO v_receipts FROM payments.payuni_notify_receipts;
+migrations/0161_remove_payuni_notify.sql:20:  RAISE EXCEPTION 'PAYUNi notify removal refused: % receipt row(s), % NOTIFY_MISMATCH review case(s); an operator must review/archive them first, data is never deleted silently',
+migrations/0161_remove_payuni_notify.sql:29:DROP POLICY payuni_notify_review ON payments.review_cases;
+migrations/0161_remove_payuni_notify.sql:49:DROP TABLE payments.payuni_notify_receipts;
+migrations/0161_remove_payuni_notify.sql:50:DROP TABLE payments.payuni_notify_endpoints;
+migrations/0161_remove_payuni_notify.sql:51:DROP FUNCTION payments.payuni_record_notify(bytea,bytea,text,text,bigint,text,text);
+migrations/0161_remove_payuni_notify.sql:52:DROP FUNCTION payments.payuni_resolve_endpoint(bytea);
+migrations/0161_remove_payuni_notify.sql:53:DROP FUNCTION payments.set_payuni_notify_endpoint(uuid,uuid,uuid,uuid,uuid,text,boolean,bytea);
+migrations/0161_remove_payuni_notify.sql:54:DROP FUNCTION payments.guard_payuni_notify_receipt();
+migrations/0161_remove_payuni_notify.sql:59:REVOKE USAGE ON SCHEMA payments FROM commerce_payuni_ingress;
+migrations/0161_remove_payuni_notify.sql:60:DROP ROLE commerce_payuni_ingress;
+migrations/migrate.go:204:	// PAY-RM1: the W4-01B PAYUNi notify receiver (0136) is removed by 0161 without ever
+migrations/post_river/0005_legacy_river_isolation.sql:354: OR p_job IS NULL OR p_job<1 OR p_method IS DISTINCT FROM 'payuni_credit'
+migrations/post_river/0005_legacy_river_isolation.sql:388: IF NOT FOUND OR a.provider<>'payuni' OR a.environment<>m.environment THEN
+migrations/post_river/0005_legacy_river_isolation.sql:413: VALUES(p_attempt,s.tenant_id,p_store,NULL,b.id,b.semantic_version,'payuni',b.external_asset_id,'transactional','payuni.query',
+migrations/post_river/0005_legacy_river_isolation.sql:462: OR p_report->>'MerTradeNo'<>a.merchant_trade_no OR a.currency<>'TWD' OR a.method_code<>'payuni_credit'
+migrations/post_river/0022_platform_stripe.sql:157: p_profile text,p_payuni_digest bytea,p_stripe_digest bytea) RETURNS jsonb
+migrations/post_river/0022_platform_stripe.sql:164: IF (p_payuni_digest IS NOT NULL AND octet_length(p_payuni_digest)<>32)
+migrations/post_river/0022_platform_stripe.sql:166:  OR (p_payuni_digest IS NULL AND p_stripe_digest IS NULL) THEN
+migrations/post_river/0022_platform_stripe.sql:169:  coalesce(p_payuni_digest,decode(repeat('00',32),'hex')));
+migrations/post_river/0022_platform_stripe.sql:170: IF p_payuni_digest IS NULL THEN v_base:=jsonb_set(v_base,'{methods}','[]'::jsonb); END IF;

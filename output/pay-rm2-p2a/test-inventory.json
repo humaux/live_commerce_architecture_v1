@@ -1,0 +1,307 @@
+[
+  {
+    "file": "cmd/api/buyer_payment_pg_test.go",
+    "test": "TestBuyerPaymentPoolAssemblyRealPG",
+    "status": "changed"
+  },
+  {
+    "file": "cmd/api/buyer_payment_test.go",
+    "test": "TestBuyerPaymentConfigUsesHistoricalKeyParserWithoutMerchantHTTP",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "cmd/api/buyer_payment_test.go",
+    "test": "TestBuyerPaymentStripeFlagIsNestedAndNeverReadsStripeSecrets",
+    "status": "changed"
+  },
+  {
+    "file": "cmd/api/buyer_payment_test.go",
+    "test": "TestBuyerPaymentConfigHasNoRetiredKeyParser",
+    "status": "added"
+  },
+  {
+    "file": "cmd/api/payuni_removed_test.go",
+    "test": "TestRemovePayuniNotifyRM03RouterHasNoNotifyRoute",
+    "status": "changed"
+  },
+  {
+    "file": "cmd/api/payuni_removed_test.go",
+    "test": "TestRemovePayuniGoRM2StripeOnlyConfig",
+    "status": "added"
+  },
+  {
+    "file": "cmd/api/stripe_live_test.go",
+    "test": "TestBuyerStripeCheckoutLiveNeedsThePair",
+    "status": "changed"
+  },
+  {
+    "file": "cmd/api/stripe_sp15_test.go",
+    "test": "TestStripeSP15Process",
+    "status": "changed"
+  },
+  {
+    "file": "cmd/payment-worker/main_test.go",
+    "test": "TestWorkerLiveStripeNeedsThePairAndOthersReadNoLiveName",
+    "status": "changed"
+  },
+  {
+    "file": "internal/buyerhttp/payment_test.go",
+    "test": "TestBuyerPaymentSignalRoutesAreKeylessPostOnlyAndFailClosed",
+    "status": "changed"
+  },
+  {
+    "file": "internal/buyerhttp/payment_test.go",
+    "test": "TestBuyerPaymentKeylessPathsAreNonRetryableAndPrepareAdmitsStripe",
+    "status": "changed"
+  },
+  {
+    "file": "internal/checkout/hosted_test.go",
+    "test": "TestHostedFormIsBoundedSingleValueJSON",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/checkout/hosted_test.go",
+    "test": "TestHostedHandoffNeverReturnsFormAfterIssued",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/checkout/hosted_test.go",
+    "test": "TestRemovedHostedMethodsFailBeforePGOrQueue",
+    "status": "added"
+  },
+  {
+    "file": "internal/checkout/hosted_test.go",
+    "test": "TestRemovedPaymentProjectionPreservesHistory",
+    "status": "added"
+  },
+  {
+    "file": "internal/checkout/payment_test.go",
+    "test": "TestPaymentInputAndProfileBoundary",
+    "status": "changed"
+  },
+  {
+    "file": "internal/checkout/payment_test.go",
+    "test": "TestPaymentResultAndJobBoundary",
+    "status": "changed"
+  },
+  {
+    "file": "internal/checkout/payment_view_test.go",
+    "test": "TestPaymentViewBoundedShape",
+    "status": "changed"
+  },
+  {
+    "file": "internal/checkout/stripe_test.go",
+    "test": "TestHostedProvidersConstructorBoundary",
+    "status": "changed"
+  },
+  {
+    "file": "internal/checkout/stripe_test.go",
+    "test": "TestStripeHandoffValidatorAndRedirectShape",
+    "status": "changed"
+  },
+  {
+    "file": "internal/checkout/stripe_test.go",
+    "test": "TestStripePaymentResultUsesClosedCurrencyTable",
+    "status": "changed"
+  },
+  {
+    "file": "internal/checkout/stripe_test.go",
+    "test": "TestPaymentViewV2Validator",
+    "status": "changed"
+  },
+  {
+    "file": "internal/integrations/accounts/hosted_test.go",
+    "test": "TestHostedConfigCanonicalDigest",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/accounts/hosted_test.go",
+    "test": "TestHostedConfigRejectsUnsafeEndpoints",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/accounts/hosted_test.go",
+    "test": "TestRemovedAccountCreateNeverReadsOrWrites",
+    "status": "added"
+  },
+  {
+    "file": "internal/integrations/accounts/payment_query_test.go",
+    "test": "TestPaymentQueryProfileFences",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/accounts/payment_query_test.go",
+    "test": "TestLoadPaymentQueryRejectsUnscopedInputs",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/accounts/payment_query_test.go",
+    "test": "TestLoadPaymentQueryPreservesOnlyAuthenticatedAgeOnMissingKey",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/accounts/payment_query_test.go",
+    "test": "TestRemovedAccountRotateNeverReadsOrWrites",
+    "status": "added"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/acceptance_test.go",
+    "test": "TestWireOfficialGoldenAndIndependentCodec",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/acceptance_test.go",
+    "test": "TestWireHostedNodeInteroperability",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/acceptance_test.go",
+    "test": "TestWireRejectsUnsafeInputs",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/acceptance_test.go",
+    "test": "TestWireNotificationBindingAndPending",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/acceptance_test.go",
+    "test": "TestWireMalformedAuthenticatedPayloads",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/acceptance_test.go",
+    "test": "TestWireQueryRequestAndObservation",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/acceptance_test.go",
+    "test": "TestWireQueryRejectsAmbiguousAndMalformedResponses",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/acceptance_test.go",
+    "test": "TestWireQueryTransportFailsClosed",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/acceptance_test.go",
+    "test": "TestWireSensitiveFieldsStayOutOfProjectionAndFormatting",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/amount_test.go",
+    "test": "TestAmountTWDFromMinorPreservesExactValue",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/client_test.go",
+    "test": "TestOfficialNodeVector",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/client_test.go",
+    "test": "TestConfigRedactionAndValidation",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/client_test.go",
+    "test": "TestQueryOnlyClientCannotUsePaymentOrNotification",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/client_test.go",
+    "test": "TestQueryOnlyClientUsesSignedWire",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/client_test.go",
+    "test": "TestBuildHostedBindsOnePaymentSelector",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/client_test.go",
+    "test": "TestNotificationAuthenticationAndBinding",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/client_test.go",
+    "test": "TestQueryOneBoundedObservation",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/client_test.go",
+    "test": "TestQueryRejectsMultirowAndUntrustedEnvelope",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/query_test.go",
+    "test": "TestSignedCreditQueryCaptureAndRefundProjection",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/query_test.go",
+    "test": "TestSignedInstallmentAndNoncardIsolation",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/integrations/psp/payuni/query_test.go",
+    "test": "TestSignedCreditQueryRejectsMalformedOptionalFacts",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/payments/methods_test.go",
+    "test": "TestDiagnosticReasonsOrderAndFailClosed",
+    "status": "changed"
+  },
+  {
+    "file": "internal/payments/methods_test.go",
+    "test": "TestRemovedMethodsNeverWriteConfiguration",
+    "status": "added"
+  },
+  {
+    "file": "internal/payments/query_worker_test.go",
+    "test": "TestQueryFamilyBudgetAndRetry",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/payments/query_worker_test.go",
+    "test": "TestQueryPanicBecomesFixedFailure",
+    "status": "deleted/replaced"
+  },
+  {
+    "file": "internal/payments/query_worker_test.go",
+    "test": "TestQueryFamilyAdmitsOnlyStripe",
+    "status": "added"
+  },
+  {
+    "file": "internal/payments/query_worker_test.go",
+    "test": "TestRemovedQueryProviderNeverDispatchesAnyStoredState",
+    "status": "added"
+  },
+  {
+    "file": "tests/foundation/buyer_payment_view_smoke_test.go",
+    "test": "TestBuyerPaymentViewSQLSmoke",
+    "status": "changed"
+  },
+  {
+    "file": "tests/foundation/payment_query_test.go",
+    "test": "TestBuyerPaymentQueryHistoricalCredentialAndACL",
+    "status": "changed"
+  },
+  {
+    "file": "tests/foundation/payuni_removal_test.go",
+    "test": "TestRemovePayuniNotifyRM02SeededDataBlocks",
+    "status": "changed"
+  },
+  {
+    "file": "tests/foundation/payuni_removal_test.go",
+    "test": "TestRemovePayuniGoRM2UnavailableAndNoStart",
+    "status": "added"
+  },
+  {
+    "file": "tests/foundation/payuni_removal_test.go",
+    "test": "TestRemovePayuniGoRM2WorkerSkipsHistoryWithoutObservation",
+    "status": "added"
+  }
+]

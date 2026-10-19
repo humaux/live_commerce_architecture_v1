@@ -1,73 +1,48 @@
+// hosted_test.go asserts removal before PG/queue access; Stripe validators remain in stripe_test.go.
 package checkout
 
 import (
 	"context"
-	"encoding/json"
-	"net/url"
-	"strings"
-	"testing"
-	"time"
-
+	"errors"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
 	"livecommerce/internal/command"
-	"livecommerce/internal/integrations/psp/payuni"
+	"testing"
 )
 
-func TestHostedFormIsBoundedSingleValueJSON(t *testing.T) {
-	encrypted, hash := strings.Repeat("a", 16), strings.Repeat("A", 64)
-	raw := payuni.HostedForm{Action: "https://sandbox-api.payuni.com.tw/api/upp", Fields: url.Values{
-		"MerID": {"merchant"}, "Version": {"2.0"}, "EncryptInfo": {encrypted}, "HashInfo": {hash},
-	}}
-	form, err := boundedHostedForm(raw, "PROVIDER_MOCK")
-	if err != nil {
-		t.Fatal(err)
-	}
-	body, err := json.Marshal(form)
-	if err != nil || string(body) != `{"action":"https://sandbox-api.payuni.com.tw/api/upp","fields":{"EncryptInfo":"`+encrypted+`","HashInfo":"`+hash+`","MerID":"merchant","Version":"2.0"}}` {
-		t.Fatalf("hosted form escaped singleton shape: %s, %v", body, err)
-	}
-	raw.Fields["MerID"] = []string{"merchant", "other"}
-	if _, err := boundedHostedForm(raw, "PROVIDER_MOCK"); err == nil {
-		t.Fatal("multi-value provider field accepted")
-	}
-	raw.Fields["MerID"] = []string{"merchant"}
-	raw.Fields["Extra"] = []string{"value"}
-	if _, err := boundedHostedForm(raw, "PROVIDER_MOCK"); err == nil {
-		t.Fatal("extra provider field accepted")
-	}
-	delete(raw.Fields, "Extra")
-	for _, bad := range []struct{ key, value string }{{"MerID", "bad merchant"},
-		{"EncryptInfo", strings.Repeat("a", 24578)}, {"EncryptInfo", strings.Repeat("A", 16)},
-		{"HashInfo", strings.Repeat("a", 64)}, {"HashInfo", strings.Repeat("A", 63)}} {
-		valid := raw.Fields[bad.key][0]
-		raw.Fields[bad.key] = []string{bad.value}
-		if _, err := boundedHostedForm(raw, "PROVIDER_MOCK"); err == nil {
-			t.Fatalf("invalid %s accepted", bad.key)
+func TestRemovedHostedMethodsFailBeforePGOrQueue(t *testing.T) {
+	// A syntactically valid old request with structurally present dependencies must be refused
+	// without touching the deliberately uninitialized pool or queue (either access would panic).
+	s := &HostedPaymentStarter{starter: PaymentStarter{pool: new(pgxpool.Pool), jobs: new(river.Client[pgx.Tx]), profile: "SANDBOX"}}
+	for _, code := range []string{"payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay"} {
+		in := HostedInput{OrderID: testID, MethodCode: code, MethodVersion: 1, Locale: "zh-TW"}
+		if validHostedInput(in) {
+			t.Fatalf("removed method admitted: %s", code)
 		}
-		raw.Fields[bad.key] = []string{valid}
-	}
-	if _, err := boundedHostedForm(raw, "unknown"); err == nil {
-		t.Fatal("unknown provider profile accepted")
+		out, err := s.BeginHosted(context.Background(), "token", testID, "validkey1", in)
+		if !errors.Is(err, command.ErrInvalid) || out != (PaymentResult{}) {
+			t.Fatalf("removed start returned material: %+v %v", out, err)
+		}
 	}
 }
 
-func TestHostedHandoffNeverReturnsFormAfterIssued(t *testing.T) {
-	form := &HostedForm{Action: "https://sandbox-api.payuni.com.tw/api/upp", Fields: map[string]string{
-		"MerID": "merchant", "Version": "2.0", "EncryptInfo": strings.Repeat("a", 16), "HashInfo": strings.Repeat("A", 64),
-	}}
-	issued := HostedHandoff{OrderID: testID, Disposition: "ISSUED", ExpiresAt: time.Now().Add(time.Minute), Form: form}
-	if !validHostedHandoff(issued, testID, "SANDBOX") {
-		t.Fatal("first committed handoff rejected")
+func TestRemovedPaymentProjectionPreservesHistory(t *testing.T) {
+	for _, state := range []string{"PENDING", "AUTHORIZED", "CAPTURED", "REVIEW_REQUIRED"} {
+		view := OrderPayment{OrderID: testID, Currency: "TWD", TotalMinor: 2500, CommercialState: "AWAITING_PAYMENT", PaymentState: state, HandoffState: "UNAVAILABLE", Methods: []PaymentMethodOption{{Code: "payuni_credit", Version: 1}}}
+		view.Methods = withoutRemovedMethods(view.Methods)
+		if len(view.Methods) != 0 || view.PaymentState != state || !validPaymentView(view, testID) {
+			t.Fatalf("history was hidden or changed: %+v", view)
+		}
 	}
-	issued.Disposition = "ALREADY_ISSUED"
-	if validHostedHandoff(issued, testID, "SANDBOX") {
-		t.Fatal("repeated handoff retained form")
+	for _, code := range []string{"payuni_credit", "payuni_installment", "payuni_atm", "payuni_cvs", "payuni_linepay"} {
+		input := []PaymentMethodOption{{Code: code}, {Code: "stripe_checkout", Version: 1}, {Code: "unknown"}}
+		got := withoutRemovedMethods(input)
+		if len(got) != 2 || got[0].Code != "stripe_checkout" || got[1].Code != "unknown" || input[0].Code != code {
+			t.Fatalf("retired projection filter changed another provider: %+v", got)
+		}
 	}
-	issued.Form = nil
-	if !validHostedHandoff(issued, testID, "SANDBOX") {
-		t.Fatal("form-free replay rejected")
-	}
-	if _, err := NewHostedPaymentStarter(context.Background(), nil, nil, "LIVE", nil,
-		HostedConfig{ReturnURL: "https://pay.example.com/return", NotifyURL: "https://pay.example.com/notify"}); err != command.ErrInvalid {
-		t.Fatalf("missing signer reached database: %v", err)
+	if withoutRemovedMethods(nil) != nil {
+		t.Fatal("malformed nil methods must remain invalid")
 	}
 }

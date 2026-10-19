@@ -1,0 +1,10 @@
+{
+  "source_sha": "df8eefa074bcd8577e02363792ee973dde13a317",
+  "removed": [
+    "round2/source-scan",
+    "round2/contractdrift"
+  ],
+  "bytes": 432881037,
+  "processes_started": "build/vet/static CLI only; all exited",
+  "retained": "logs, JSON report/errors, receipts and hashes"
+}
