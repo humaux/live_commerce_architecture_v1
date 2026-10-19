@@ -1,3 +1,6 @@
+// Purpose: server-only reads of the public storefront design and catalog-v2 lists (Fetched ok/missing/down).
+// Depends on: lib/public-upstream.ts, lib/design.ts, lib/shop-contract.ts, next/headers, react cache; Go /v1/buyer/design/*, catalog/v2/*.
+// Used by: app/[locale] layout and pages, app/api/shop/*, app/sitemap.xml, app/robots.txt; apps/storefront/tests/upstream-body-cancel.test.mjs.
 // Server-only reads of the public storefront data (React server components and app/api/shop/*): the store design
 // document and the catalog-v2 lists. BFF routes it reaches: none of /api/buyer/* (that is the session-bound cart BFF);
 // this is the same cookie-less trust shape as app/media/p/[productID]/[imageID]/route.ts: the BFF key plus the verified
@@ -10,7 +13,7 @@
 // It never caches across requests (stock hints and price must be current; the page is dynamic by host anyway).
 import { cache } from "react";
 import { headers } from "next/headers";
-import { candidateOrigin, readBounded, upstreamConfig } from "./public-upstream.ts";
+import { candidateOrigin, discardBody, readBounded, upstreamConfig } from "./public-upstream.ts";
 import { normalizeDesign } from "./design.ts";
 import type { Design } from "./design.ts";
 import {
@@ -61,11 +64,13 @@ async function getJSON(path: string, preview: string | null = null): Promise<Fet
     return { state: "down" };
   }
   if (response.status === 404 || response.status === 422) {
-    await response.body?.cancel();
+    await discardBody(response);
     return { state: "missing" };
   }
-  if (response.status !== 200 || (response.headers.get("content-type") ?? "").split(";", 1)[0].trim().toLowerCase() !== "application/json")
+  if (response.status !== 200 || (response.headers.get("content-type") ?? "").split(";", 1)[0].trim().toLowerCase() !== "application/json") {
+    await discardBody(response); // #84: refused body cancelled, never drained
     return { state: "down" };
+  }
   const bytes = await readBounded(response.body, MAX_BODY);
   if (!bytes) return { state: "down" };
   try {

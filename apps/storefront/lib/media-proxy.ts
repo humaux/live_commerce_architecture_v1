@@ -1,10 +1,13 @@
+// Purpose: shared body of the public image routes (/media/p, /media/s, /media/c): validated, bounded, cookie-less image proxy.
+// Depends on: lib/public-upstream.ts; Go GET /v1/buyer/media/{p,s,c}/... (internal/buyerhttp).
+// Used by: app/media/{p,s,c}/.../route.ts; apps/storefront/tests/media-sizes.test.mjs, upstream-body-cancel.test.mjs.
 // Shared body of the public image routes /media/p/{product}/{image}, /media/s/{image} and /media/c/{collection}/{image}
 // (Go: GET /v1/buyer/media/p|s|c/..., internal/buyerhttp media.go, design.go, catalogv2.go). Public, cookie-less: the BFF key plus
 // the verified Host-derived origin (lib/public-upstream.ts), never a caller header, cookie, query string or store id.
 // Only a 200 with a JPEG/PNG/WebP content type and at most 2 MiB passes; everything else collapses to 404 (unknown host,
 // unpublished store, archived/draft/foreign row: no existence oracle) or a retryable 503. The image id changes whenever the
 // content changes, so a good answer is public + immutable for a day. Callers validate their own path ids first.
-import { candidateOrigin, readBounded, upstreamConfig } from "./public-upstream.ts";
+import { candidateOrigin, discardBody, readBounded, upstreamConfig } from "./public-upstream.ts";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -44,9 +47,16 @@ export async function proxyImage(request: Request, upstreamPath: string): Promis
   } catch {
     return fail(503, "unavailable");
   }
-  if (upstream.status === 404 || upstream.status === 422) return fail(404, "not_found");
+  // #84: a refused body is cancelled (Node 24 Undici: consume or cancel, never wait for GC), never drained.
+  if (upstream.status === 404 || upstream.status === 422) {
+    await discardBody(upstream);
+    return fail(404, "not_found");
+  }
   const type = (upstream.headers.get("content-type") ?? "").split(";", 1)[0].trim().toLowerCase();
-  if (upstream.status !== 200 || !IMAGE_TYPES.has(type)) return fail(503, "unavailable");
+  if (upstream.status !== 200 || !IMAGE_TYPES.has(type)) {
+    await discardBody(upstream);
+    return fail(503, "unavailable");
+  }
   const bytes = await readBounded(upstream.body, MAX_BYTES);
   if (!bytes) return fail(503, "unavailable");
   return new Response(Buffer.from(bytes), {
