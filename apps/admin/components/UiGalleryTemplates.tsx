@@ -111,7 +111,10 @@ function ListTemplate({ locale, t, params, update, setNotice, created }: { creat
         selectPage: t.selectPage, selectRow: n => `${t.row} ${n}`, selected: n => `${n} ${t.selected}`, pageOnly: t.pageOnly,
         allResults: n => `${t.allResults} (${n})`, selectAllResults: n => `${t.selectAll} (${n})`, clear: t.clear,
       } }} />
-    {params.state === "ready" && <Pagination page={page} pageCount={pageCount} hrefFor={n => queryFor({ ...params, page: n }) || "?"} labels={{ nav: t.paging, previous: t.previous, next: t.next, page: n => `${t.page} ${n}`, summary: `${total} ${t.filterSummary} · ${page} / ${pageCount}` }} />}
+    {params.state === "ready" && <Pagination page={page} pageCount={pageCount} hrefFor={n => queryFor({ ...params, page: n }) || "?"}
+      // A plain click pages in place so the in-memory search term (never put in the URL) survives; modified clicks keep the link (#87).
+      onNavigate={(n, event) => { if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); update({ page: n }); setSelection(clearSelection()); }}
+      labels={{ nav: t.paging, previous: t.previous, next: t.next, page: n => `${t.page} ${n}`, summary: `${total} ${t.filterSummary} · ${page} / ${pageCount}` }} />}
     <ConfirmDialog open={confirm} title={t.bulkConfirm} description={t.bulkDesc} confirmLabel={t.confirm} cancelLabel={t.cancel} tone="primary" onConfirm={apply} onCancel={() => setConfirm(false)} />
     </Card>
   </Stack>;
@@ -151,6 +154,8 @@ function ProductForm({ t, params, update }: { t: TemplateCopy; params: TemplateP
   const priceError = data.price.trim() !== "" && Number.isFinite(Number(data.price)) && Number(data.price) >= 0 ? undefined : t.priceError;
   const stockError = /^\d+$/.test(data.stock) && Number.isSafeInteger(Number(data.stock)) ? undefined : t.inventoryError;
   const invalid = Boolean(nameError || priceError || stockError);
+  // Saving mid-transfer would persist "uploading" and the transfer's completion would re-dirty the saved form (#87).
+  const uploading = (() => { try { const items: unknown = JSON.parse(data.images); return Array.isArray(items) && items.some(item => item?.status === "uploading"); } catch { return false; } })();
   useEffect(() => {
     if (!saving) return;
     const timer = setTimeout(() => { persist(data); setSaving(false); setDone(true); }, 450);
@@ -166,7 +171,7 @@ function ProductForm({ t, params, update }: { t: TemplateCopy; params: TemplateP
   }, [dirty]);
   const state = saving ? "saving" : dirty ? "dirty" : done ? "saved" : "clean";
   return <FormActionBar label={t.action} state={state} dirty={dirty} note={t.clean} dirtyNote={t.dirty} savingNote={t.saving} savedNote={t.saved}
-    actions={<><Button disabledReason={!ready ? t.loading : saving ? t.saving : undefined} onClick={() => { if (dirty) setCancel(true); }}>{t.cancel}</Button><Button variant="primary" loading={saving} loadingLabel={t.saving} disabledReason={!ready ? t.loading : invalid ? t.invalid : !dirty ? t.noChanges : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
+    actions={<><Button disabledReason={!ready ? t.loading : saving ? t.saving : undefined} onClick={() => { if (dirty) setCancel(true); }}>{t.cancel}</Button><Button variant="primary" loading={saving} loadingLabel={t.saving} disabledReason={!ready ? t.loading : invalid ? t.invalid : !dirty ? t.noChanges : uploading ? t.uploadPending : undefined} onClick={() => setSaving(true)}>{t.save}</Button></>}>
     <Stack>
       <Tabs idPrefix="product-sections" variant="section" value={params.section} onChange={section => update({ section })} ariaLabel={t.form} items={[{ id: "general", label: t.general }, { id: "media", label: t.media }, { id: "pricing", label: t.pricing }]} />
       <TabPanel idPrefix="product-sections" id={params.section} flush>
