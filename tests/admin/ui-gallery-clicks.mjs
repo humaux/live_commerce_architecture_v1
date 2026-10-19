@@ -680,8 +680,11 @@ function readFrame(page) {
 // [READ] Real-viewport scrolling (before capture() resizes anything): wheel from the top to the page end in 120px notches. Every
 // control, tabs included, must at some scroll position sit wholly in the viewport with elementFromPoint at its centre and edge
 // midpoints landing on it (no sticky/fixed chrome on top), and the top bar must stay pinned at the viewport top.
-// A control that is only out of view sideways inside an inner horizontal scroller (a wide table at 390px) is probed on its visible
-// part; if none of it is visible at any position it is listed as `sideways` (horizontal reach is not what this gate measures).
+// Only a user-scrollable ancestor (overflow-x auto/scroll that overflows) counts as an inner scroller; overflow hidden/clip
+// clipping fails. A control only out of view sideways inside the DataTable scroller ([data-table-scroll], a wide table at 390px)
+// is probed on its visible part; if none of it is ever visible it is listed as `sideways`. Sideways anywhere else fails.
+// TODO before DS-2 tables reach the W3 routes: add the horizontal walk (scroll each [data-table-scroll] to its max scrollLeft by
+// native wheel and re-run elementFromPoint on these row actions; the fullRow sticky child may cover them then).
 // Returns { total, blocked, sideways, scrollY }; the caller asserts, so the injected-occluder self-test can observe a failure.
 async function wheelReach(page, scope) {
   const size = page.viewportSize();
@@ -699,15 +702,17 @@ async function wheelReach(page, scope) {
       topbar: document.querySelector("[data-shell-topbar]").getBoundingClientRect().top,
       controls: controls.map((n, i) => {
         const r = n.getBoundingClientRect();
-        let [left, right, inner] = [r.left, r.right, false];
+        let [left, right, inner, table] = [r.left, r.right, false, true];
         for (let p = n.parentElement; p && p !== document.body; p = p.parentElement) {
-          if (getComputedStyle(p).overflowX === "visible" || p.scrollWidth <= p.clientWidth) continue;
+          if (!["auto", "scroll"].includes(getComputedStyle(p).overflowX) || p.scrollWidth <= p.clientWidth) continue;
           const box = p.getBoundingClientRect();
           [left, right, inner] = [Math.max(left, box.left + p.clientLeft), Math.min(right, box.left + p.clientLeft + p.clientWidth), true];
+          table = table && p.hasAttribute("data-table-scroll");
         }
         const key = `${i}:${n.tagName.toLowerCase()}[${(n.getAttribute("aria-label") || n.labels?.[0]?.textContent || n.textContent || n.name || "").trim().slice(0, 30)}]`;
         const vertical = r.top >= 0 && r.bottom <= window.innerHeight;
-        if (inner && right - left < 4) return [key, vertical ? "sideways" : "out"];
+        if (inner && right - left < 4) return [key, vertical && table ? "sideways" : "out"];
+        if (inner && !table && right - left < r.width - 0.5) return [key, "out"]; // partly clipped sideways outside the table scroller
         if (!inner && (r.left < 0 || r.right > window.innerWidth)) return [key, "out"];
         const inset = Math.min(2, (right - left) / 4, r.height / 4);
         const [cx, cy] = [(left + right) / 2, r.top + r.height / 2];
