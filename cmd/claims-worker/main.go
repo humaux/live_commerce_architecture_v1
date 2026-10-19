@@ -362,7 +362,10 @@ func run(ctx context.Context, getenv func(string) string) error {
 	}
 	slog.Info("claims_worker_routes", "routes", strings.Join(names, ","))
 
-	pollCtx, stopPoll := context.WithCancel(ctx)
+	runCtx, cancelRun := context.WithCancel(ctx)
+	defer cancelRun()
+	consoleDown := make(chan struct{}, 1)
+	pollCtx, stopPoll := context.WithCancel(runCtx)
 	polled := make(chan struct{})
 	go func() {
 		defer close(polled)
@@ -392,12 +395,30 @@ func run(ctx context.Context, getenv func(string) string) error {
 			IdleTimeout:       60 * time.Second,
 			MaxHeaderBytes:    16 << 10,
 		}
-		go func() { _ = console.Run(pollCtx) }()
-		_, _ = startConsoleServer(consoleServer)
+		failed, err := startConsoleServer(consoleServer)
+		if err != nil {
+			// Required listener unavailable: never log claims_worker_ready (#83).
+			stopPoll()
+			<-polled
+			<-unsubscribed
+			return errWorkerStart
+		}
 		defer func() {
 			shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			_ = consoleServer.Shutdown(shutdown)
+		}()
+		go func() { _ = console.Run(pollCtx) }()
+		// A later Serve failure stops the worker instead of leaving a ready process without its bridge.
+		go func() {
+			select {
+			case err, ok := <-failed:
+				if ok && err != nil {
+					consoleDown <- struct{}{}
+					cancelRun()
+				}
+			case <-pollCtx.Done():
+			}
 		}()
 	}
 	resubscribed := make(chan struct{})
@@ -406,11 +427,16 @@ func run(ctx context.Context, getenv func(string) string) error {
 		resubscriber.Run(pollCtx)
 	}()
 	// Fixed local startup witness; never implies Meta access.
-	runErr := jobqueue.Run(ctx, client, "claims_worker_ready")
+	runErr := jobqueue.Run(runCtx, client, "claims_worker_ready")
 	stopPoll()
 	<-polled
 	<-unsubscribed
 	<-resubscribed
+	select {
+	case <-consoleDown:
+		return errWorkerStart
+	default:
+	}
 	switch {
 	case errors.Is(runErr, jobqueue.ErrStart):
 		return errWorkerStart
@@ -421,10 +447,21 @@ func run(ctx context.Context, getenv func(string) string) error {
 	}
 }
 
-// startConsoleServer starts the comment-bridge listener. Issue #83 seam (RED): the listen error is still swallowed.
+// startConsoleServer binds the comment-bridge address synchronously, so a bind failure is returned before
+// claims_worker_ready (#83), then serves in the background. The returned channel receives a non-ErrServerClosed
+// Serve failure, or is closed after a clean Shutdown/Close. Errors are never logged here (they may carry the address).
 func startConsoleServer(srv *http.Server) (<-chan error, error) {
+	ln, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		return nil, err
+	}
 	failed := make(chan error, 1)
-	go func() { _ = srv.ListenAndServe() }()
+	go func() {
+		defer close(failed)
+		if err := srv.Serve(ln); !errors.Is(err, http.ErrServerClosed) {
+			failed <- err
+		}
+	}()
 	return failed, nil
 }
 
