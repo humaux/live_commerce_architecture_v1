@@ -1,11 +1,11 @@
 // Purpose: shared upstream helpers for the public storefront routes: Host-derived origin, upstream env check, bounded body read,
 //   and cancelling a refused body (#84).
 // Depends on: node:net; env COMMERCE_BUYER_WEB_ENABLED, COMMERCE_BUYER_API_ORIGIN, COMMERCE_BUYER_BFF_KEY.
-// Used by: lib/media-proxy.ts, lib/shop-upstream.ts (and through them app/media/*, app/api/shop/*, the shop pages).
+// Used by: lib/media-proxy.ts, lib/shop-upstream.ts (and through them app/media/*, app/api/shop/*, the shop pages),
+//   app/feeds/meta.csv/route.ts.
 // Shared by the public (cookie-less, bearer-less) storefront routes that call the private Go buyer API with only the BFF
-// key and the verified Host-derived origin: app/media/p/[productID]/[imageID]/route.ts (product photos). Same rules as
-// app/feeds/meta.csv/route.ts, which still carries its own copy (its unit did not own lib/; adopt this module there
-// when that file is next touched). Owns: origin derivation from Host, the upstream env check and a bounded body read.
+// key and the verified Host-derived origin: app/media/p/[productID]/[imageID]/route.ts (product photos) and
+// app/feeds/meta.csv/route.ts (Meta feed; adopted this module in #107). Owns: origin derivation from Host, the upstream env check and a bounded body read.
 // Never forwards a caller header, cookie or query string, and never reads a tenant/store id from the request.
 import { isIP } from "node:net";
 
@@ -60,7 +60,6 @@ export function upstreamConfig(env: Record<string, string | undefined>): { api: 
   return TOKEN.test(bff) ? { api: raw, bff } : null;
 }
 
-// Whole body up to `max` bytes, or null when it is longer (the stream is cancelled).
 // Cancels an upstream body the caller refuses to read (#84). A cancel failure is ignored: the caller's safe answer stands.
 export async function discardBody(response: Response): Promise<void> {
   try {
@@ -70,6 +69,7 @@ export async function discardBody(response: Response): Promise<void> {
   }
 }
 
+// Whole body up to `max` bytes, or null when it is longer (the stream is cancelled).
 export async function readBounded(body: ReadableStream<Uint8Array> | null, max: number): Promise<Uint8Array | null> {
   if (!body) return null;
   const reader = body.getReader();
