@@ -226,13 +226,20 @@ async function cancelViaUI(page,l,{keyboard=false}={}){
 }
 async function keyboardTo(page,name){
   // G-UI8 audit [FIXTURE/SETUP]: blurs and scrolls to the top so the keyboard Tab walk starts at the page start (positioning)
+  // A keyboard user cannot Tab onto a disabled button: after a popup closes, the store tab's focus/pageshow
+  // refresh can still be settling, so wait until the target is enabled (same 20 s `ex` bound) before walking.
+  await ex(page.getByRole("button",{name,exact:true})).toBeEnabled();
   await page.evaluate(()=>{document.activeElement?.blur?.();window.scrollTo(0,0);});
+  const trail=new Set();
   for(let i=0;i<150;i++){
     await page.keyboard.press("Tab");
-    // G-UI8 audit [READ/MEASURE]: reads the focused button's name
-    if(await page.evaluate(()=>{const a=document.activeElement;return a&&a.tagName==="BUTTON"?a.textContent.trim():"";})===name)return;
+    // G-UI8 audit [READ/MEASURE]: reads the focused element's tag and name
+    const at=await page.evaluate(()=>{const a=document.activeElement;return a?`${a.tagName}:${(a.textContent??"").trim().slice(0,40)}${a.disabled?":disabled":""}`:"none";});
+    if(at===`BUTTON:${name}`)return;trail.add(at);
   }
-  throw new Error("keyboard focus never reached the named button");
+  // G-UI8 audit [READ/MEASURE]: failure diagnostics only (focus state + named button state)
+  const why=await page.evaluate(n=>({hasFocus:document.hasFocus(),buttons:[...document.querySelectorAll("button")].filter(b=>b.textContent.trim()===n).map(b=>({disabled:b.disabled,visible:!!b.offsetParent}))}),name);
+  throw new Error(`keyboard focus never reached the named button: ${JSON.stringify(why)} trail=${JSON.stringify([...trail].slice(0,30))}`);
 }
 async function closeAll(pages){for(const p of pages)await p.close().catch(()=>{});}
 // ---- SU08: scan every store-origin surface ----
