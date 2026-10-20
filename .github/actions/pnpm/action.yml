@@ -10,11 +10,16 @@ description: Corepack + pinned pnpm without a per-run registry download.
 runs:
   using: composite
   steps:
+    - id: ver # key = node version (Corepack cache layout) + packageManager only, not the rest of package.json (#116)
+      shell: bash
+      run: |
+        echo "node=$(node --version)" >> "$GITHUB_OUTPUT"
+        echo "pm=$(node -p "require('./package.json').packageManager")" >> "$GITHUB_OUTPUT"
     - id: restore
       uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
       with:
         path: ~/.cache/node/corepack
-        key: corepack-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package.json') }}
+        key: corepack-${{ runner.os }}-${{ runner.arch }}-${{ steps.ver.outputs.node }}-${{ steps.ver.outputs.pm }}
     - name: pnpm via Corepack (offline on a cache hit)
       shell: bash
       env:

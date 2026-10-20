@@ -33,7 +33,8 @@ function actionContract(src) {
   assert.match(body, /uses:\s*actions\/cache\/restore@caa296126883cff596d87d8935842f9db880ef25\s*$/m, "restore uses the repo's pinned actions/cache SHA");
   assert.match(body, /uses:\s*actions\/cache\/save@caa296126883cff596d87d8935842f9db880ef25\s*$/m, "save uses the repo's pinned actions/cache SHA");
   assert.equal((body.match(/path:\s*~\/\.cache\/node\/corepack\s*$/gm) ?? []).length, 2, "restore and save the Corepack home");
-  assert.match(body, /key:\s*corepack-.*hashFiles\('package\.json'\)/, "the key follows package.json packageManager");
+  assert.match(body, /key:\s*corepack-.*steps\.ver\.outputs\.node.*steps\.ver\.outputs\.pm/, "the key follows the resolved Node version and package.json packageManager (#116)");
+  assert.doesNotMatch(body, /hashFiles\('package\.json'\)/, "not the whole package.json (#116)");
   assert.match(body, /COREPACK_ENABLE_NETWORK=0/, "a hit runs Corepack offline");
   assert.match(body, /echo "COREPACK_ENABLE_NETWORK=0" >> "\$GITHUB_ENV"/, "later pnpm calls in the job stay offline for Corepack");
 }
