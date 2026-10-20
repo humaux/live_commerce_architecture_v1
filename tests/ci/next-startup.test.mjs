@@ -315,6 +315,8 @@ const nodePortRaceSites = [
   "tests/storefront/ads-consent.mjs", "tests/storefront/collector-buyer.mjs", "tests/storefront/cvs-buyer.mjs",
   "tests/storefront/cvs-pap-only.mjs", "tests/storefront/home-cod-buyer.mjs", "tests/storefront/offline-buyer.mjs",
   "tests/storefront/privacy-buyer.mjs", "tests/storefront/refund-buyer.mjs", "tests/storefront/shipment-buyer.mjs",
+  // found by the full re-sweep after review-131: the same reserve-then-free startNext in the click-sweep and Stripe browser storefronts.
+  "tests/ui/click-sweep.mjs", "tests/storefront/stripe-browser.mjs",
 ];
 function noPickThenRelease(file, source) {
   if (file.endsWith(".go")) {
