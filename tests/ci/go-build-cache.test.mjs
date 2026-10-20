@@ -101,6 +101,27 @@ test("injected shadowing assignment, re-indented or quoted arm goes RED under th
   }
 });
 
+// #116 (PR #108 review P2-1..P2-3): spaces around "|", "+=" appends and a broader non-shard glob placed before the shard arms.
+test("injected spaced alternatives, += append or shadowing glob goes RED under the shard scope contract", () => {
+  const gnn = "            shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation ";
+  const any = "            shard:*)    LC_FOUNDATION_PKGS=./tests/foundation ";
+  assert.ok(workflow.includes(gnn) && workflow.includes(any), "the real arms are where the contract looks");
+  for (const [from, to, expected] of [
+    [any, "            shard:x | shard:*)    LC_FOUNDATION_PKGS=./... ", /must build only/],
+    [any, "            shard:x |shard:*)    LC_FOUNDATION_PKGS=./... ", /must build only/],
+    [any, "            ( shard:x  |  shard:*)    LC_FOUNDATION_PKGS=./... ", /must build only/],
+    [any, `${any}LC_FOUNDATION_PKGS+=" ./..." `, /must build only/],
+    [gnn, `${gnn}LC_FOUNDATION_PKGS+=./... `, /must build only/],
+    [gnn, "            *) echo shadowed ;;\n" + gnn, /shadow/],
+    [gnn, "            shard*) echo shadowed ;;\n" + gnn, /shadow/],
+    [gnn, "            s*|x) echo shadowed ;;\n" + gnn, /shadow/],
+    [gnn, "            *:g*) echo shadowed ;;\n" + gnn, /shadow/],
+    [any, "            *)  echo shadowed ;;\n" + any, /shadow/],
+  ]) {
+    assert.throws(() => shardScopeContract(workflow.replace(from, to)), expected, JSON.stringify(to));
+  }
+});
+
 test("injected disabled cache or unbound manifest goes RED under the real cache contract", () => {
   const cacheLine = "cache: ${{ startsWith(matrix.mode, 'shard:g') }}";
   assert.ok(workflow.includes(cacheLine));
