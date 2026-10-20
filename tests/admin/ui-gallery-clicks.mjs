@@ -711,8 +711,10 @@ async function wheelReach(page, scope) {
         let [left, right, inner, table, clipped] = [r.left, r.right, false, true, false];
         for (let p = n.parentElement; p && p !== document.body; p = p.parentElement) {
           const overflow = getComputedStyle(p).overflowX;
-          // A hidden/clip box moves with any outer scroller, so a cut it makes is permanent: no sideways exemption (#92).
-          if (["hidden", "clip"].includes(overflow)) {
+          // A hidden/clip box between the control and its first inner scroller moves with that scroller, so a cut it makes is
+          // permanent: no sideways exemption (#92). One outside the scroller (a rounded Card around the table) stays put while
+          // the table scrolls, so it cannot hide the control at every scroll position: not counted (#107).
+          if (!inner && ["hidden", "clip"].includes(overflow)) {
             const box = p.getBoundingClientRect();
             if (r.left < box.left + p.clientLeft - 0.5 || r.right > box.left + p.clientLeft + p.clientWidth + 0.5) clipped = true;
           }
@@ -854,9 +856,11 @@ async function ds2Matrix({ page, step }) {
         }
       });
     if (name === "form" && locale === "zh-TW" && width < 768)
-      await step(`DS-2 ${locale}/${width} wheel reach clip self-test (#92)`, "[FIXTURE] inject clipped controls inside and outside a table scroller, wheel walk, remove", "permanently clipped controls blocked; plain off-screen table control sideways; visible control reached", async () => {
+      await step(`DS-2 ${locale}/${width} wheel reach clip self-test (#92)`, "[FIXTURE] inject clipped controls inside and outside a table scroller, wheel walk, remove", "permanently clipped controls blocked; plain off-screen table control sideways, also under an outer clip wrapper; visible control reached", async () => {
         // [FIXTURE] removed in finally. Table viewport 200px over 760px content; a 100px overflow:clip box at x=400 holds a button at
         // +120px (never visible, whatever the table scroll); a sibling table button at x=540 is only off-screen sideways.
+        // #107: a second table scroller sits in a 220px overflow:clip wrapper (a rounded Card). That wrapper is OUTSIDE the scroller,
+        // so it does not move with the table scroll and the button at x=540 can still be scrolled into view: sideways, not blocked.
         await page.evaluate(() => {
           const btn = (label, style) => `<button type="button" aria-label="${label}" style="all:unset;display:inline-block;box-sizing:border-box;width:40px;height:36px;${style}">x</button>`;
           const n = document.createElement("div");
@@ -864,6 +868,8 @@ async function ds2Matrix({ page, step }) {
           n.innerHTML = `<div data-table-scroll style="overflow-x:auto;width:200px"><div style="position:relative;width:760px;height:44px">`
             + `<div style="position:absolute;left:400px;top:0;width:100px;height:44px;overflow:clip;white-space:nowrap">${btn("fx-clip-in-table", "margin-left:120px")}</div>`
             + `${btn("fx-table-offscreen", "position:absolute;left:540px;top:0")}</div></div>`
+            + `<div style="width:220px;overflow:clip"><div data-table-scroll style="overflow-x:auto;width:200px"><div style="position:relative;width:760px;height:44px">`
+            + `${btn("fx-table-outer-clip", "position:absolute;left:540px;top:0")}</div></div></div>`
             + `<div style="width:100px;overflow:clip;white-space:nowrap">${btn("fx-clip-standalone", "margin-left:120px")}</div>`
             + btn("fx-visible", "");
           document.querySelector("#ds-main").append(n);
@@ -874,6 +880,7 @@ async function ds2Matrix({ page, step }) {
           assert.ok(has(reach.blocked, "fx-clip-in-table"), `clip inside the table scroller not blocked: ${JSON.stringify(reach)}`);
           assert.ok(has(reach.blocked, "fx-clip-standalone"), `standalone clip not blocked: ${JSON.stringify(reach)}`);
           assert.ok(has(reach.sideways, "fx-table-offscreen") && !has(reach.blocked, "fx-table-offscreen"), `plain table control not sideways: ${JSON.stringify(reach)}`);
+          assert.ok(has(reach.sideways, "fx-table-outer-clip") && !has(reach.blocked, "fx-table-outer-clip"), `outer clip wrapper treated as a permanent cut: ${JSON.stringify(reach)}`);
           assert.ok(!has(reach.blocked, "fx-visible") && !has(reach.sideways, "fx-visible"), `visible control not reached: ${JSON.stringify(reach)}`);
           return `blocked ${reach.blocked.join(", ")}; sideways ${reach.sideways.join(", ")}`;
         } finally {
@@ -1119,6 +1126,31 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       assert.equal(new URL(page.url()).searchParams.get("page"), "2");
       await area.getByRole("link", { name: t.previous, exact: true }).click();
       await pageOf(1, [1001, 1002, 1003, 1004, 1005]);
+      await box.fill("");
+      await box.press("Enter");
+      await area.getByLabel(t.payment, { exact: true }).selectOption(payment);
+    });
+    // #107 (PR #99 review P2): Next turns into a disabled, non-focusable arrow on the last page and paging clears the selection.
+    // Focus must stay in the pager on the current page link (where the user acted), not jump to the header checkbox or <body>.
+    await run("Paging focus (#107)", "All payments, search DEMO-100, check row 1, keyboard Enter on next", "page 2 / 2, selection cleared, focus on the current page link", async () => {
+      const payment = await area.getByLabel(t.payment, { exact: true }).inputValue();
+      await area.getByLabel(t.payment, { exact: true }).selectOption("all");
+      const box = area.getByRole("searchbox", { name: t.search });
+      await box.fill("DEMO-100");
+      await button(t.searchButton).click();
+      await seen(text(`9 ${t.filterSummary} · 1 / 2`));
+      await area.getByRole("checkbox", { name: `${t.row} 1`, exact: true }).check();
+      await area.locator("[data-selection-bar]").waitFor({ state: "visible" });
+      const pager = area.getByRole("navigation", { name: t.paging, exact: true });
+      await pager.getByRole("link", { name: t.next, exact: true }).focus();
+      await page.keyboard.press("Enter");
+      await seen(text(`9 ${t.filterSummary} · 2 / 2`));
+      await area.locator("[data-selection-bar]").waitFor({ state: "detached" });
+      await page.waitForFunction(() => document.activeElement !== document.body, null, { timeout: 2000 }).catch(() => {}); // [READ]
+      const where = await page.evaluate(() => document.activeElement?.outerHTML.slice(0, 80)); // [READ] focus only
+      assert.equal(await pager.getByRole("link", { name: `${t.page} 2`, exact: true }).evaluate(n => n === document.activeElement), true, `focus on ${where}`); // [READ]
+      await pager.getByRole("link", { name: t.previous, exact: true }).click();
+      await seen(text(`9 ${t.filterSummary} · 1 / 2`));
       await box.fill("");
       await box.press("Enter");
       await area.getByLabel(t.payment, { exact: true }).selectOption(payment);
