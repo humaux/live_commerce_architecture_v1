@@ -11,8 +11,8 @@ package foundation_test
 //   is seeded in POST-migration layout (4 main + 5 detail) and only rendered; the actual upgrade is proven by
 //   TestPMv2MigrationNineImages (REAL_PG), not here. PostgreSQL readback after the browsers is the authority.
 // Depends on: buyer_checkout/buyer_http harnesses (bcSetup, bhHarness), browser_identity_chain helpers (newBrowserIDP,
-//   browserFront, browserEnvironment, browserLog), browser_live_claims helpers (connectProxy, waitReady,
-//   freeLoopbackPort), browser_storefront_fixture (sfiPublishViaDefiners), catalog_media generators (cmiPNG/cmiJPEG),
+//   browserFront, browserEnvironment, browserLog), browser_live_claims helpers (connectProxy, waitReady),
+//   browser_admin_relay (newBrowserAdminRelay, startPrivate), browser_storefront_fixture (sfiPublishViaDefiners), catalog_media generators (cmiPNG/cmiJPEG),
 //   browser_product_media_v2_fixture (pmv2EXIF6, pmv2NoisyPhoto, pmv2Fit), production admin/storefront Next builds.
 // Used by: scripts/dev/test-local.sh --browser-product-media-v2 (wired by the integrator; sets
 //   LC_BROWSER_PRODUCT_MEDIA_V2_ACCEPTANCE=1). Drives tests/admin/product-media-v2.spec.ts (LC_BROWSER_SUITE
@@ -28,7 +28,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"image"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -37,7 +36,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -209,13 +207,8 @@ func TestBrowserProductMediaV2RealUpload(t *testing.T) {
 	manifest.Files.SKU["Blue"] = write("option-blue.jpg", cmiJPEG(t, 500, 500, 42), 500, 500, 500, 500, false)
 
 	// ---- merchant principal (signed MOCK IdP), admin API, publication through the 0081 definers -------------------
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	adminOrigin := browserFront(t, listener.Addr().String())
-	_, adminPort, _ := net.SplitHostPort(listener.Addr().String())
-	_ = listener.Close()
+	adminRelay := newBrowserAdminRelay(t) // #116: the public origin stays owned (WebKit: behind browserFront); the child gets a private port
+	adminOrigin := adminRelay.origin
 	idp := newBrowserIDP(t, adminOrigin+"/api/auth/callback")
 	_, _, authority := identityFixture(t)
 	provider, err := oidclogin.New(ctx, oidclogin.Config{Issuer: idp.server.URL, ClientID: browserClientID, RedirectURL: idp.redirect, AllowLoopbackForTests: true})
@@ -251,30 +244,20 @@ func TestBrowserProductMediaV2RealUpload(t *testing.T) {
 	adminLog := browserLog(t, filepath.Join(evidence, "admin-next.log"))
 	admin := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	admin.Dir = root
-	admin.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": adminPort, "NODE_ENV": "production",
+	admin.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production",
 		"NEXT_TELEMETRY_DISABLED": "1", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": adminOrigin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": adminKey})
 	admin.Stdout, admin.Stderr = adminLog, adminLog
-	storefrontPort := freeLoopbackPort(t)
 	storefrontLog := browserLog(t, filepath.Join(evidence, "storefront-next.log"))
 	storefront := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/storefront/node_modules/next/dist/bin/next"),
-		"start", "--hostname", "127.0.0.1", "--port", storefrontPort)
+		"start", "--hostname", "127.0.0.1") // port: PORT from startPrivate
 	storefront.Dir = filepath.Join(root, "apps/storefront")
 	storefront.Env = browserEnvironment(map[string]string{"NODE_ENV": "production", "NEXT_TELEMETRY_DISABLED": "1",
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_DEMO_LABEL": "1", "COMMERCE_BUYER_API_ORIGIN": h.server.URL,
 		"COMMERCE_BUYER_BFF_KEY": h.key, "COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600"})
 	storefront.Stdout, storefront.Stderr = storefrontLog, storefrontLog
-	for _, process := range []*exec.Cmd{admin, storefront} {
-		process.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-		if err := process.Start(); err != nil {
-			t.Fatal(err)
-		}
-		owned := process
-		t.Cleanup(func() {
-			_ = syscall.Kill(-owned.Process.Pid, syscall.SIGKILL)
-			_ = owned.Wait()
-		})
-	}
+	adminRelay.start(t, ctx, admin)
+	_, storefrontPort := startPrivate(t, ctx, storefront) // #116: child-owned private port, EADDRINUSE relaunch
 	waitReady(ctx, t, adminOrigin+"/api/stores", "", http.StatusUnauthorized, evidence)
 	waitReady(ctx, t, "http://127.0.0.1:"+storefrontPort+"/api/buyer/session", "buyer.example", http.StatusOK, evidence)
 

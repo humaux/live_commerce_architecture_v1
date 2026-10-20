@@ -1,15 +1,17 @@
 // Purpose: DS-1 browser gate for the design-system gallery: 404 when LC_UI_GALLERY is not "1"; then at 1440 and 390 in zh-TW, zh-CN and en a full-page screenshot, axe (serious/critical = 0) and the visual-lint blocking rules; plus a real-click ledger over every control of the gallery.
-// Depends on: Playwright Chromium, axe-core, tests/ui/visual-lint-lib.mjs, tests/admin/shell-fixture.mjs (MOCK API the admin server needs to boot), the packaged admin build (scripts/dev/start-admin.mjs), apps/admin/src/ui-gallery-copy.ts.
+// Depends on: Playwright Chromium, axe-core, tests/ui/visual-lint-lib.mjs, tests/admin/shell-fixture.mjs (MOCK API the admin server needs to boot), the packaged admin build (scripts/dev/start-admin.mjs) started through tests/helpers/next-startup.mjs, apps/admin/src/ui-gallery-copy.ts.
 // Used by: scripts/dev/test-local.sh --browser-ui-gallery. MOCK tier: sample data, no PG, no provider traffic.
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
-import { createServer } from "node:net";
-import { mkdir, readFile, writeFile, open } from "node:fs/promises";
+import { once } from "node:events";
+import { createWriteStream } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { fixture } from "./shell-fixture.mjs";
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { collect, describe, evaluate } from "../ui/visual-lint-lib.mjs";
 import { galleryCopy } from "../../apps/admin/src/ui-gallery-copy.ts";
 
@@ -20,19 +22,12 @@ const LOCALES = ["zh-TW", "zh-CN", "en"];
 const VIEWPORTS = [[1440, 900], [390, 844]];
 const f = await fixture();
 
-async function freePort() {
-  const probe = createServer();
-  await new Promise((r) => probe.listen(0, "127.0.0.1", r));
-  const port = probe.address().port;
-  await new Promise((r) => probe.close(r));
-  return port;
-}
-
-/** Starts the packaged admin; `gallery` sets or omits LC_UI_GALLERY so both halves of the flag are exercised. */
-async function startAdmin(label, gallery) {
-  const port = await freePort();
+/** Starts the packaged admin; `gallery` sets or omits LC_UI_GALLERY so both halves of the flag are exercised.
+ *  #116: no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port EADDRINUSE exit (proof: the attempt's log). */
+const startAdmin = (label, gallery) => startNextWithPortRetry({}, async ({ port, attempt, track }) => {
   const base = `http://127.0.0.1:${port}`;
-  const log = await open(`${output}/server-${label}.log`, "w");
+  const log = createWriteStream(nextAttemptLog(`${output}/server-${label}.log`, attempt), { flags: "w", mode: 0o600 });
+  await once(log, "open");
   const env = {
     ...process.env,
     COMMERCE_UI_PORT: String(port),
@@ -45,8 +40,10 @@ async function startAdmin(label, gallery) {
   };
   delete env.LC_UI_GALLERY;
   if (gallery !== undefined) env.LC_UI_GALLERY = gallery;
-  const child = spawn(process.execPath, ["scripts/dev/start-admin.mjs"], { detached: true, stdio: ["ignore", log.fd, log.fd], env });
+  const child = spawn(process.execPath, ["scripts/dev/start-admin.mjs"], { detached: true, stdio: ["ignore", log, log], env });
+  track(child, log);
   for (let i = 0; ; i++) {
+    if (child.exitCode !== null || child.signalCode !== null) throw new Error(`admin (${label}) exited before readiness`);
     try {
       if ((await fetch(`${base}/en/reset`)).ok) break;
     } catch {}
@@ -59,10 +56,10 @@ async function startAdmin(label, gallery) {
       try {
         process.kill(-child.pid, "SIGTERM");
       } catch {}
-      await log.close();
+      log.end();
     },
   };
-}
+});
 
 const ledger = [];
 const failures = [];

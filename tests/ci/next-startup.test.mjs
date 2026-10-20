@@ -1,4 +1,4 @@
-// Purpose: real loopback/socket and owned-child regression for the Next harness port handoff race.
+// Purpose: real loopback/socket and owned-child regression for the Next harness port handoff race, plus the #116 static guard over every migrated harness.
 // Depends on: tests/helpers/next-startup.mjs, Node child_process/net/http/fs; synthetic bind-server fixture only.
 // Used by: scripts/dev/test-node.sh and GATE-PORT acceptance. Never uses a customer endpoint or production process.
 import assert from "node:assert/strict";
@@ -292,4 +292,50 @@ test("the parity guard rejects a dropped env.PORT and a changed or relocated rea
   const relocated = current.replace('throw new Error(`owned ${app} readiness deadline`);', 'if (response.status < 500) return port;\n    throw new Error(`owned ${app} readiness deadline`);');
   assert.notEqual(relocated, current, "mutation target missing from the current gate");
   assert.throws(() => assertGateParity(file, before, relocated), /readiness status predicate changed/);
+});
+
+// #116 (review-111 P2-4): the browser harnesses that still reserved a loopback port, freed it and handed the number to a child
+// (Next or `next dev`) could lose it to any parallel process in between (EADDRINUSE flakes, e.g. meta-health-ui in Gates
+// 39332672115). The race itself is proven on real sockets above (Node: "an automatic port stolen after reservation ...") and in
+// TestBrowserAdminRelayStartRetriesBindCollision (Go: relay.start and startPrivate). This guard binds every migrated site to
+// those helpers. RED: each file at PORT_RACE_BASE (65715bc38, an r3/integration commit, so it survives a squash merge) still
+// has the reserve-then-free handoff and must fail the guard. GREEN: the current file has none and routes its child through
+// the shared helper.
+const PORT_RACE_BASE = "65715bc38";
+const goPortRaceSites = [
+  "tests/foundation/browser_e2e_test.go", "tests/foundation/browser_live_tools_test.go",
+  "tests/foundation/browser_live_claims_test.go", "tests/foundation/browser_product_media_v2_test.go",
+  "tests/foundation/browser_studio_bff_test.go", "tests/foundation/browser_merchant_orders_bff_test.go",
+];
+const nodePortRaceSites = [
+  "tests/ui/visual-audit.mjs", "tests/storefront/ads-attribution.mjs", "tests/storefront/legal-pages.mjs",
+  "tests/storefront/ad-link.mjs", "tests/admin/ui-gallery-runner.mjs", "tests/admin/shell-runner.mjs",
+  "tests/admin/platform-runner.mjs", "tests/admin/picklist.spec.ts",
+  // review-131 P1: the storefront buyer harnesses' startNext also reserved, freed and handed the port to `next start --port`.
+  "tests/storefront/ads-consent.mjs", "tests/storefront/collector-buyer.mjs", "tests/storefront/cvs-buyer.mjs",
+  "tests/storefront/cvs-pap-only.mjs", "tests/storefront/home-cod-buyer.mjs", "tests/storefront/offline-buyer.mjs",
+  "tests/storefront/privacy-buyer.mjs", "tests/storefront/refund-buyer.mjs", "tests/storefront/shipment-buyer.mjs",
+  // found by the full re-sweep after review-131: the same reserve-then-free startNext in the click-sweep and Stripe browser storefronts.
+  "tests/ui/click-sweep.mjs", "tests/storefront/stripe-browser.mjs",
+];
+function noPickThenRelease(file, source) {
+  if (file.endsWith(".go")) {
+    assert.equal(source.includes('net.Listen("tcp", "127.0.0.1:0")'), false, `${file}: a loopback port is still reserved and freed for a child`);
+    assert.equal(/freeLoopbackPort\(/.test(source), false, `${file}: freeLoopbackPort still hands a freed port to a child`);
+    assert.equal(/"PORT": \w|"--port", \w/.test(source), false, `${file}: a child still gets a caller-picked port`);
+    assert.match(source, /\.start\(t, |startPrivate\(t, /, `${file}: the child is not launched through the relay (owned port + EADDRINUSE relaunch)`);
+  } else {
+    // `(probe|reserve).close(<callback>)` is the freeing call; a bare `.close()` (offline-buyer's `probe` browser context) is not a port.
+    assert.equal(/\bcreateServer\(\)|freePort\(|listen\((reserve|probe)\)|(probe|reserve)\.close\([^)]/.test(source), false, `${file}: a loopback port is still reserved and freed for a child`);
+    assert.match(source, /startNextWithPortRetry\(\{\}, /, `${file}: the child is not started through the shared automatic-port helper`);
+    assert.match(source, /track\(\w+, \w+\)/, `${file}: the helper cannot see the child's exit and log (no EADDRINUSE proof)`);
+  }
+}
+
+test("#116: every remaining pick-then-release browser harness routes its child through the shared port helpers (static red/green)", async () => {
+  for (const file of [...goPortRaceSites, ...nodePortRaceSites]) {
+    const before = execFileSync("git", ["show", `${PORT_RACE_BASE}:${file}`], { encoding: "utf8" });
+    assert.throws(() => noPickThenRelease(file, before), /reserved and freed|freeLoopbackPort|caller-picked port/, `${file}: red witness lost the pre-fix handoff`);
+    noPickThenRelease(file, await readFile(file, "utf8"));
+  }
 });

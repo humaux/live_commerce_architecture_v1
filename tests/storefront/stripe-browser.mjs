@@ -26,6 +26,7 @@ import {tmpdir} from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, phoneName, phoneToken } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
 const root=process.cwd(),evidence=process.env.LC_STRIPE_EVIDENCE,CONTROL=process.env.LC_STRIPE_CONTROL;
 const cfg=JSON.parse(process.env.LC_STRIPE_CASE??"{}");
@@ -115,16 +116,19 @@ function relay(port,req,body){
   });
 }
 async function startNext(){
-  const reserve=net.createServer(),port=await listen(reserve);await new Promise(r=>reserve.close(r));
-  const log=createWriteStream(path.join(evidence,"next.log"),{flags:"wx",mode:0o600});logs.push(log);await once(log,"open");
+  // #116: no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port EADDRINUSE exit
+  // (proof: this attempt's log). Readiness probe and budget unchanged.
+  return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+  const log=createWriteStream(nextAttemptLog(path.join(evidence,"next.log"),attempt),{flags:"wx",mode:0o600});logs.push(log);await once(log,"open");
   const env={...process.env,NODE_ENV:"production",NEXT_TELEMETRY_DISABLED:"1"};
   for(const key of Object.keys(env))if(key.startsWith("LC_STRIPE_"))delete env[key];
-  const child=spawn(process.execPath,[path.join(root,"apps/storefront/node_modules/next/dist/bin/next"),"start","--hostname","127.0.0.1","--port",String(port)],{cwd:path.join(root,"apps/storefront"),env,stdio:["ignore",log,log]});children.add(child);
+  const child=spawn(process.execPath,[path.join(root,"apps/storefront/node_modules/next/dist/bin/next"),"start","--hostname","127.0.0.1","--port",String(port)],{cwd:path.join(root,"apps/storefront"),env,stdio:["ignore",log,log]});track(child, log);children.add(child);
   for(let i=0;i<120;i++){
     if(child.exitCode!==null)throw new Error("owned Next failed readiness");
     try{if((await relay(port,{url:"/api/buyer/session",method:"GET",headers:{host:"buyer.example"}},Buffer.alloc(0))).status===200)return port;}catch{}
     await pause(50);
   }throw new Error("owned Next readiness timeout");
+  });
 }
 const STRIPE_HOSTS=/^(?:[a-z0-9-]+\.)*(?:stripe\.com|stripe\.network|stripecdn\.com):443$/;
 function tunnel(socket,head,host,port){

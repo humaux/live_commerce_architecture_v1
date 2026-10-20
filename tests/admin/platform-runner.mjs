@@ -6,10 +6,12 @@ import assert from "node:assert/strict";
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { request } from "node:http";
-import { createServer } from "node:net";
-import { mkdir, open, writeFile } from "node:fs/promises";
+import { once } from "node:events";
+import { createWriteStream } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fixture } from "./shell-fixture.mjs";
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { assertPlatformMessagingCopy } from "./platform-messaging-copy.fixture.mjs";
 
 const output = process.env.LC_PLATFORM_EVIDENCE || browserEvidenceDirectory("platform-site");
@@ -34,13 +36,6 @@ const routePath = (l, p = "home") =>
 const ledger = [];
 let browser;
 const auth = await fixture();
-async function port() {
-  const s = createServer();
-  await new Promise((r) => s.listen(0, "127.0.0.1", r));
-  const p = s.address().port;
-  await new Promise((r) => s.close(r));
-  return p;
-}
 function get(port, host, pathname, extra = {}) {
   return new Promise((resolve, reject) => {
     const r = request(
@@ -68,12 +63,13 @@ function get(port, host, pathname, extra = {}) {
     r.end();
   });
 }
-async function server(verification) {
-  const p = await port(),
-    log = await open(
-      `${output}/server-${verification ? "tag" : "no-tag"}.log`,
-      "w",
-    );
+// #116: no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port EADDRINUSE exit (proof: the attempt's log).
+const server = (verification) => startNextWithPortRetry({}, async ({ port: p, attempt, track }) => {
+  const log = createWriteStream(
+    nextAttemptLog(`${output}/server-${verification ? "tag" : "no-tag"}.log`, attempt),
+    { flags: "w", mode: 0o600 },
+  );
+  await once(log, "open");
   const child = spawn(
     process.execPath,
     [
@@ -81,7 +77,7 @@ async function server(verification) {
       "apps/admin/.next/standalone/apps/admin/server.js",
     ],
     {
-      stdio: ["ignore", log.fd, log.fd],
+      stdio: ["ignore", log, log],
       env: {
         ...process.env,
         NODE_ENV: "production",
@@ -101,6 +97,7 @@ async function server(verification) {
       },
     },
   );
+  track(child, log);
   try {
     for (let i = 0; i < 100; i++) {
       if (child.exitCode !== null) throw new Error("Next exited");
@@ -112,15 +109,15 @@ async function server(verification) {
     throw new Error("Next readiness timeout");
   } catch (e) {
     child.kill("SIGTERM");
-    await log.close();
+    log.end();
     throw e;
   }
-}
+});
 async function stop(s) {
   const ended = new Promise((r) => s.child.once("exit", r));
   s.child.kill("SIGTERM");
   await ended;
-  await s.log.close();
+  s.log.end();
 }
 async function matrix(s) {
   const context = await browser.newContext();

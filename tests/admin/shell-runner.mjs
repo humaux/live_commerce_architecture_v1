@@ -1,64 +1,69 @@
 // Purpose: Start the isolated Next shell fixture and capture baseline or real-click navigation evidence.
-// Depends on: Playwright Chromium, Node process/fs/net helpers, shell-fixture and shell-browser.
+// Depends on: Playwright Chromium, Node process/fs helpers, tests/helpers/next-startup.mjs (owned-port Next start), shell-fixture and shell-browser.
 // Used by: --browser-admin-shell and W0 baseline capture; signed Go/PG acceptance remains separate.
 // UI-only MOCK gate; existing signed Go/PG modes remain separate acceptance.
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { chromium } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { createServer } from "node:net";
-import { mkdir, readFile, writeFile, open } from "node:fs/promises";
+import { once } from "node:events";
+import { createWriteStream } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { fixture, storeID, entityID } from "./shell-fixture.mjs";
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 const baseline = process.argv.includes("--baseline");
 const output = baseline ? "tests/admin/baselines/w0" : (process.env.LC_SHELL_EVIDENCE || browserEvidenceDirectory("ui-w0-shell"));
 await mkdir(output, { recursive: true });
-const probe = createServer();
-await new Promise((r) => probe.listen(0, "127.0.0.1", r));
-const port = probe.address().port;
-await new Promise((r) => probe.close(r));
-const base = `http://127.0.0.1:${port}`,
-  f = await fixture();
-const log = await open(`${output}/server.log`, "w");
-const child = spawn(
-  baseline ? "pnpm" : process.execPath,
-  baseline
-    ? [
-        "--dir",
-        "apps/admin",
-        "exec",
-        "next",
-        "dev",
-        "--hostname",
-        "127.0.0.1",
-        "--port",
-        String(port),
-      ]
-    : ["scripts/dev/start-admin.mjs"],
-  {
-    detached: true,
-    stdio: ["ignore", log.fd, log.fd],
-    env: {
-      ...process.env,
-      COMMERCE_UI_PORT: String(port),
-      COMMERCE_IDENTITY_ENABLED: "1",
-      COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS: "1",
-      COMMERCE_PASSWORD_LOGIN_ENABLED: "1",
-      COMMERCE_PUBLIC_ORIGIN: base,
-      COMMERCE_API_ORIGIN: f.origin,
-      COMMERCE_BFF_KEY: f.key,
-    },
-  },
-);
-let browser;
+const f = await fixture();
+let browser, child, log, base;
 try {
-  for (let i = 0; i < 120; i++) {
-    try {
-      if ((await fetch(`${base}/en/reset`)).ok) break;
-    } catch {}
-    if (i === 119) throw new Error("Next readiness timeout");
-    await new Promise((r) => setTimeout(r, 500));
-  }
+  // #116: no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port EADDRINUSE exit
+  // (proof: the attempt's log). The readiness probe and its 120 x 500 ms budget are unchanged; an exited child now fails fast.
+  base = await startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+    const url = `http://127.0.0.1:${port}`;
+    log = createWriteStream(nextAttemptLog(`${output}/server.log`, attempt), { flags: "w", mode: 0o600 });
+    await once(log, "open");
+    child = spawn(
+      baseline ? "pnpm" : process.execPath,
+      baseline
+        ? [
+            "--dir",
+            "apps/admin",
+            "exec",
+            "next",
+            "dev",
+            "--hostname",
+            "127.0.0.1",
+            "--port",
+            String(port),
+          ]
+        : ["scripts/dev/start-admin.mjs"],
+      {
+        detached: true,
+        stdio: ["ignore", log, log],
+        env: {
+          ...process.env,
+          COMMERCE_UI_PORT: String(port),
+          COMMERCE_IDENTITY_ENABLED: "1",
+          COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS: "1",
+          COMMERCE_PASSWORD_LOGIN_ENABLED: "1",
+          COMMERCE_PUBLIC_ORIGIN: url,
+          COMMERCE_API_ORIGIN: f.origin,
+          COMMERCE_BFF_KEY: f.key,
+        },
+      },
+    );
+    track(child, log);
+    for (let i = 0; i < 120; i++) {
+      if (child.exitCode !== null || child.signalCode !== null) throw new Error("Next exited before readiness");
+      try {
+        if ((await fetch(`${url}/en/reset`)).ok) return url;
+      } catch {}
+      if (i === 119) throw new Error("Next readiness timeout");
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  });
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
   await context.addCookies([
@@ -203,8 +208,8 @@ try {
 } finally {
   await browser?.close();
   try {
-    process.kill(-child.pid, "SIGTERM");
+    if (child) process.kill(-child.pid, "SIGTERM");
   } catch {}
   await f.close();
-  await log.close();
+  log?.end();
 }
