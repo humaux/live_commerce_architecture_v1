@@ -17,7 +17,8 @@ MOCK, SANDBOX, LIVE, NOT_RUN): a pass here is only ever as strong as the label i
 
 `--browser-storefront-publish` also executes the DB-free `TestBrowserAdminRelay*` real-socket regressions:
 the public admin listener stays owned until cleanup, the HTTP/WebKit TLS front preserves Host,
-Origin/CSRF, cookies, request bodies and redirects, and `TestBrowserAdminRelayHandoffHasNoFreePortWindow`
+Origin/CSRF, cookies, request bodies and redirects, both hand Next spoofed Forwarded / X-Forwarded-* headers and raw
+queries byte-exact (so the BFF spoof negatives are not vacuous on WebKit), and `TestBrowserAdminRelayHandoffHasNoFreePortWindow`
 replays the pre-fix reserve→free→explicit-port handoff on real sockets (a rival steals the freed port and
 the gate's bind then fails with EADDRINUSE) against the relay handoff that never frees a port.
 `--browser-catalog-media` and `--browser-manual-order` run that handoff regression beside their own gates.

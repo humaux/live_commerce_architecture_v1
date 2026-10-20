@@ -285,8 +285,11 @@ func browserLog(t *testing.T, path string) *os.File {
 // WebKit does not: Safari enforces the `__Host-` prefix rule (https origin required) even on loopback, so under LC_BROWSER_ENGINE=webkit
 // the admin would never hold its login/session/CSRF cookies. That is a harness limit, not a product defect (production is https behind the
 // edge, which is what this front imitates): the admin is then reached through a TLS listener (httptest self-signed certificate; the
-// specs run with ignoreHTTPSErrors) whose HTTP reverse proxy adds X-Forwarded-Proto: https, keeps Host, and forwards the inbound
-// X-Forwarded-For untouched (the password BFF tests assert client-IP handling). Used by the password-auth, CVS and merchant-buyer gates.
+// specs run with ignoreHTTPSErrors) whose HTTP reverse proxy keeps Host and, like browserAdminRelay, is a transparent test transport:
+// every inbound Forwarded / X-Forwarded-* header and the raw query reach Next byte-exact (the password BFF tests assert client-IP
+// handling; the orders-bff/studio-bff/design spoof negatives need the attacker X-Forwarded-Host to arrive, #116 P2-7). It adds
+// X-Forwarded-Proto: https only when the client sent none. Used by the password-auth, CVS and merchant-buyer gates.
+// Witness: TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders (browser_admin_relay_test.go).
 func browserFront(t *testing.T, upstream string) string {
 	t.Helper()
 	if os.Getenv("LC_BROWSER_ENGINE") != "webkit" {
@@ -298,11 +301,18 @@ func browserFront(t *testing.T, upstream string) string {
 	}
 	front := httptest.NewUnstartedServer(&httputil.ReverseProxy{Rewrite: func(r *httputil.ProxyRequest) {
 		r.SetURL(target)
+		r.Out.URL.RawQuery = r.In.URL.RawQuery // Rewrite proxies drop unparsable queries (`?limit=%`); the BFF negatives need them raw.
 		r.Out.Host = r.In.Host
-		if v, ok := r.In.Header["X-Forwarded-For"]; ok {
-			r.Out.Header["X-Forwarded-For"] = v
+		// Rewrite strips Forwarded and X-Forwarded-{For,Host,Proto}; hand Next every one exactly as the browser sent it.
+		for name, values := range r.In.Header {
+			if name == "Forwarded" || strings.HasPrefix(name, "X-Forwarded-") {
+				r.Out.Header[name] = values
+			}
 		}
-		r.Out.Header.Set("X-Forwarded-Proto", "https")
+		// The TLS hop this front imitates; never overrides a client-sent value, so a spoofed XFP stays observable as on Chromium.
+		if _, sent := r.In.Header["X-Forwarded-Proto"]; !sent {
+			r.Out.Header.Set("X-Forwarded-Proto", "https")
+		}
 	}})
 	front.StartTLS()
 	t.Cleanup(front.Close)
