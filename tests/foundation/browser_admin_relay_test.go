@@ -56,6 +56,20 @@ func newBrowserAdminRelay(t *testing.T) *browserAdminRelay {
 				r.Out.Header[name] = values
 			}
 		}
+	}, ModifyResponse: func(res *http.Response) error {
+		// Next builds absolute redirect targets from its OWN listen port (resolve-routes initUrl uses opts.port), which behind
+		// this relay is the private one: the proxy.ts locale redirect would send the browser around the owned public origin.
+		if target := front.target.Load(); target != nil {
+			own, loc := "http://"+target.Host, res.Header.Get("Location")
+			if loc == own || strings.HasPrefix(loc, own+"/") || strings.HasPrefix(loc, own+"?") {
+				scheme := "http"
+				if res.Request.Header.Get("X-Forwarded-Proto") == "https" {
+					scheme = "https"
+				}
+				res.Header.Set("Location", scheme+"://"+res.Request.Host+loc[len(own):])
+			}
+		}
+		return nil
 	}}
 	front.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if front.target.Load() == nil {
@@ -677,6 +691,50 @@ func TestBrowserAdminRelayForwardsRawQuery(t *testing.T) {
 	for _, query := range []string{"limit=%", "limit=%zz&cursor=a", "a=1;b=2", "limit=25&status=paid"} {
 		if got := send(relay.server.URL, query); got != query {
 			t.Fatalf("relay changed the query: sent %q, upstream saw %q", query, got)
+		}
+	}
+}
+
+// TestBrowserAdminRelayRewritesPrivateOriginRedirect pins the PR118 merchant-orders-bff failure (Gates 39365432861): Next's
+// middleware redirect carried the child's private port, so expectLocalRedirect saw a port other than the public origin's.
+// RED: a stock proxy leaves the private origin in Location. GREEN: the relay maps it to the origin the client used, and
+// leaves every other Location (relative, third-party) untouched.
+func TestBrowserAdminRelayRewritesPrivateOriginRedirect(t *testing.T) {
+	t.Setenv("LC_BROWSER_ENGINE", "chromium")
+	var upstream *httptest.Server
+	upstream = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/own":
+			w.Header().Set("Location", upstream.URL+"/en/?keep=1")
+		case "/other":
+			w.Header().Set("Location", "https://example.test/en")
+		default:
+			w.Header().Set("Location", "/en")
+		}
+		w.WriteHeader(http.StatusTemporaryRedirect)
+	}))
+	t.Cleanup(upstream.Close)
+	target, _ := url.Parse(upstream.URL)
+	location := func(base, path string) string {
+		client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+		response, err := client.Get(base + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = response.Body.Close()
+		return response.Header.Get("Location")
+	}
+	stock := httptest.NewServer(&httputil.ReverseProxy{Rewrite: func(r *httputil.ProxyRequest) { r.SetURL(target); r.Out.Host = r.In.Host }})
+	t.Cleanup(stock.Close)
+	if got := location(stock.URL, "/own"); got != upstream.URL+"/en/?keep=1" {
+		t.Fatalf("red witness broken: a stock proxy was expected to expose the private origin, got %q", got)
+	}
+	relay := newBrowserAdminRelay(t)
+	relay.target.Store(target)
+	public := "http://" + relay.server.Listener.Addr().String()
+	for path, want := range map[string]string{"/own": public + "/en/?keep=1", "/other": "https://example.test/en", "/rel": "/en"} {
+		if got := location(relay.server.URL, path); got != want {
+			t.Fatalf("%s: Location = %q, want %q", path, got, want)
 		}
 	}
 }
