@@ -270,7 +270,7 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 		"COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD",
 	})
 	server.Stdout, server.Stderr = serverLog, serverLog
-	server = relay.start(t, server)
+	server = relay.start(t, ctx, server)
 	client := &http.Client{Timeout: time.Second}
 	ready := false
 	for attempt := 0; attempt < 100; attempt++ {

@@ -138,7 +138,7 @@ func TestBrowserStoreDesign(t *testing.T) {
 	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD"})
 	next.Stdout, next.Stderr = nextLog, nextLog
-	next = relay.start(t, next)
+	next = relay.start(t, ctx, next)
 	client := &http.Client{Timeout: time.Second}
 	ready := false
 	for attempt := 0; attempt < 150 && !ready; attempt++ {

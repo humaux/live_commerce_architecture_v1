@@ -681,7 +681,7 @@ func csStartAdmin(t *testing.T, ctx context.Context, f *testFixture, principal, 
 		"COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD"})
 	next.Stdout, next.Stderr = nextLog, nextLog
 	next.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	next = relay.start(t, next)
+	next = relay.start(t, ctx, next)
 	client := &http.Client{Timeout: time.Second}
 	for attempt := 0; ; attempt++ {
 		if response, err := client.Get(origin + "/api/stores"); err == nil {

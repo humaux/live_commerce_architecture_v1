@@ -101,7 +101,7 @@ func ccbStartAdmin(t *testing.T, ctx context.Context, f *testFixture, principal,
 		"COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD"})
 	next.Stdout, next.Stderr = nextLog, nextLog
 	next.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	next = relay.start(t, next)
+	next = relay.start(t, ctx, next)
 	client := &http.Client{Timeout: time.Second}
 	for attempt := 0; ; attempt++ {
 		if response, err := client.Get(origin + "/api/stores"); err == nil {

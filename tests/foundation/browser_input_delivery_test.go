@@ -245,7 +245,7 @@ func TestBrowserInputDeliveryBRW05RealChain(t *testing.T) {
 		"COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD",
 	})
 	server.Stdout, server.Stderr = serverLog, serverLog
-	server = relay.start(t, server)
+	server = relay.start(t, ctx, server)
 	client := edge.Client()
 	client.Timeout = time.Second
 	ready := false

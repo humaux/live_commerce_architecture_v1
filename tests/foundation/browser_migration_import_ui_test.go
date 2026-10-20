@@ -382,7 +382,7 @@ func miuiStart(t *testing.T, ctx context.Context, x *miuiWorld, evidence string)
 	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": front.URL, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD"})
 	next.Stdout, next.Stderr = log, log
 	next.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	next = relay.start(t, next)
+	next = relay.start(t, ctx, next)
 	processRecord, _ := json.MarshalIndent(map[string]any{"run_id": "miui-next", "pid": next.Process.Pid, "log": filepath.Join(evidence, "next.log"), "timeout_seconds": 24 * 60, "success": "HTTPS /api/stores readiness401, then browser gate exits0", "failure": "readiness failure, child exit, context deadline or browser gate failure", "handoff": "owning Go test and CI mode runner", "wake": "Go gate exit is consumed by CI; t.Cleanup stops owned process group"}, "", "  ")
 	if e = os.WriteFile(filepath.Join(evidence, "next-process.json"), processRecord, 0600); e != nil {
 		t.Fatal(e)
