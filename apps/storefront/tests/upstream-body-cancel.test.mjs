@@ -2,6 +2,7 @@
 // response body (Node 24 bundled Undici: always consume or cancel, never rely on GC) and keep the same safe status.
 // Depends on: lib/media-proxy.ts (proxyImage), lib/shop-upstream.ts (listProducts), app/feeds/meta.csv/route.ts (GET, #107); "next/headers" and "react" are stubbed by a
 // registerHooks resolver (no Next runtime, no network: global fetch is mocked with a cancel-observable ReadableStream).
+// Also covers the shared readBounded (#116): a body that errors mid-read is a 503 / down, never an escaped 500.
 // Used by: scripts/dev/test-node.sh (apps/storefront/tests/*.test.mjs glob, Foundation "Node unit suites").
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
@@ -73,4 +74,30 @@ test("shop upstream cancels every rejected upstream body and keeps the state", a
     assert.equal(got.state, want, `${status} ${type}`);
     assert.equal(probe.cancelled, 1, `${status} ${type}: rejected body not cancelled`);
   }
+});
+
+// #116 (#110 review P2): a body that fails while being read (reset connection) escaped readBounded as a rejection -> 500.
+function broken(type) {
+  return new Response(new ReadableStream({ pull(c) { c.error(new Error("socket reset")); } }), { status: 200, headers: { "content-type": type } });
+}
+
+test("a body-read error is the documented 503 / down on every shared readBounded caller", async (t) => {
+  withEnv(t);
+  let mock = t.mock.method(globalThis, "fetch", async () => broken("text/csv"));
+  const feed = await metaFeed(new Request("https://shop.example/feeds/meta.csv", { headers: { host: "shop.example" } }));
+  mock.mock.restore();
+  assert.equal(feed.status, 503);
+  assert.equal(feed.headers.get("cache-control"), "no-store");
+  assert.equal(feed.headers.get("x-content-type-options"), "nosniff");
+  assert.equal((await feed.json()).code, "unavailable");
+
+  mock = t.mock.method(globalThis, "fetch", async () => broken("image/png"));
+  const img = await proxyImage(new Request(`https://shop.example/media/s/${image}`, { headers: { host: "shop.example" } }), `/v1/buyer/media/s/${image}`);
+  mock.mock.restore();
+  assert.equal(img.status, 503);
+
+  mock = t.mock.method(globalThis, "fetch", async () => broken("application/json"));
+  const got = await listProducts({ limit: 1 });
+  mock.mock.restore();
+  assert.equal(got.state, "down");
 });
