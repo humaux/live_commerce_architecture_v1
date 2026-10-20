@@ -60,13 +60,16 @@ func newBrowserAdminRelay(t *testing.T) *browserAdminRelay {
 		// Next builds absolute redirect targets from its OWN listen port (resolve-routes initUrl uses opts.port), which behind
 		// this relay is the private one: the proxy.ts locale redirect would send the browser around the owned public origin.
 		if target := front.target.Load(); target != nil {
-			own, loc := "http://"+target.Host, res.Header.Get("Location")
-			if loc == own || strings.HasPrefix(loc, own+"/") || strings.HasPrefix(loc, own+"?") {
+			// Next relativizes a Location only when its origin equals initUrl's (127.0.0.1:<port>); proxy.ts's nextUrl host may be
+			// `localhost`, so any loopback name on the child's private port is the child's own origin, in any spelling.
+			loc := res.Header.Get("Location")
+			if u, err := url.Parse(loc); err == nil && u.IsAbs() && u.Scheme == "http" && u.User == nil && strings.HasPrefix(loc, "http://"+u.Host) &&
+				u.Port() == target.Port() && (u.Hostname() == "127.0.0.1" || u.Hostname() == "localhost" || u.Hostname() == "::1") {
 				scheme := "http"
 				if res.Request.Header.Get("X-Forwarded-Proto") == "https" {
 					scheme = "https"
 				}
-				res.Header.Set("Location", scheme+"://"+res.Request.Host+loc[len(own):])
+				res.Header.Set("Location", scheme+"://"+res.Request.Host+loc[len("http://"+u.Host):]) // path, query, fragment byte-exact
 			}
 		}
 		return nil
@@ -702,10 +705,17 @@ func TestBrowserAdminRelayForwardsRawQuery(t *testing.T) {
 func TestBrowserAdminRelayRewritesPrivateOriginRedirect(t *testing.T) {
 	t.Setenv("LC_BROWSER_ENGINE", "chromium")
 	var upstream *httptest.Server
+	var port string
 	upstream = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/own":
 			w.Header().Set("Location", upstream.URL+"/en/?keep=1")
+		case "/localhost":
+			w.Header().Set("Location", "http://localhost:"+port+"/en/?keep=1")
+		case "/v6":
+			w.Header().Set("Location", "http://[::1]:"+port+"/en#top")
+		case "/otherport":
+			w.Header().Set("Location", "http://localhost:1/en")
 		case "/other":
 			w.Header().Set("Location", "https://example.test/en")
 		default:
@@ -715,6 +725,7 @@ func TestBrowserAdminRelayRewritesPrivateOriginRedirect(t *testing.T) {
 	}))
 	t.Cleanup(upstream.Close)
 	target, _ := url.Parse(upstream.URL)
+	port = target.Port()
 	location := func(base, path string) string {
 		client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 		response, err := client.Get(base + path)
@@ -732,7 +743,7 @@ func TestBrowserAdminRelayRewritesPrivateOriginRedirect(t *testing.T) {
 	relay := newBrowserAdminRelay(t)
 	relay.target.Store(target)
 	public := "http://" + relay.server.Listener.Addr().String()
-	for path, want := range map[string]string{"/own": public + "/en/?keep=1", "/other": "https://example.test/en", "/rel": "/en"} {
+	for path, want := range map[string]string{"/own": public + "/en/?keep=1", "/localhost": public + "/en/?keep=1", "/v6": public + "/en#top", "/otherport": "http://localhost:1/en", "/other": "https://example.test/en", "/rel": "/en"} {
 		if got := location(relay.server.URL, path); got != want {
 			t.Fatalf("%s: Location = %q, want %q", path, got, want)
 		}
