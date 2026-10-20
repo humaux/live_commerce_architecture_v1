@@ -431,15 +431,15 @@ func run(ctx context.Context, getenv func(string) string) error {
 }
 
 // superviseConsole watches the bound bridge's Serve result: a failure (not a clean Shutdown, which closes failed) is
-// recorded on the returned channel first and then cancels the run, so a ready process never keeps running without its
-// bridge. stop ends the watch on a normal shutdown.
+// recorded by closing the returned channel (a lasting signal: every later read sees it) and then cancels the run, so a
+// ready process never keeps running without its bridge. stop ends the watch on a normal shutdown.
 func superviseConsole(failed <-chan error, stop <-chan struct{}, cancelRun context.CancelFunc) <-chan struct{} {
-	down := make(chan struct{}, 1)
+	down := make(chan struct{})
 	go func() {
 		select {
 		case err, ok := <-failed:
 			if ok && err != nil {
-				down <- struct{}{}
+				close(down)
 				cancelRun()
 			}
 		case <-stop:
