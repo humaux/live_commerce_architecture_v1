@@ -5,7 +5,7 @@
 #   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
 #   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (bounded apt retries),
-#   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,
+#   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), scripts/dev/matrix-receipts.mjs (per-job run receipts + verifier, #128), the pinned postgres image,
 #   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version), .github/actions/pnpm (cached Corepack pnpm, #107), setup-go module/compiler cache for shard:gNN only. No secrets: every gate uses MOCK/SANDBOX fixtures only.
 # Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`, or `-f full_browser_universe=true` for the nightly set on demand);
 #   pushes to r3/integration run the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its
@@ -13,8 +13,8 @@
 # Integration is by PR only (docs/delivery/PROCESS.md section 2 step 6). The required set is fixed by the repo, never chosen by the merging agent: foundation-shards always, plus every
 #   CI-runnable --browser-* mode when any UI path changed, plus the browser modes wired by changed internal//cmd//migrations/ paths via the registry's lc_covers data
 #   (scripts/dev/pr-modes.mjs, CI-SELECT), plus deploy-smoke when deploy/ or scripts/deploy* changed.
-#   STABLE REQUIRED CHECK NAME for a branch ruleset: `Gates (GitHub runners) / required` (job `required`: fails when plan, any gate leg, the sweep/visual aggregate or an expected
-#   deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;
+#   STABLE REQUIRED CHECK NAME for a branch ruleset: `Gates (GitHub runners) / required` (job `required`: fails when plan, any gate leg, the sweep/visual aggregate, the
+#   `receipts` verifier (every planned mode: one same-run, same-sha PASS receipt with test_count > 0) or an expected deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;
 #   calibration / fault-injection runs stay an extra workflow_dispatch. No pull_request_target, no secrets.
 name: Gates (GitHub runners)
 
@@ -198,6 +198,7 @@ jobs:
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
       - name: Gate
+        id: gate
         run: |
           set -o pipefail
           mkdir -p output/ci-gates
@@ -237,6 +238,23 @@ jobs:
             --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
             *) echo "unknown mode: $MODE" >&2; exit 2 ;;
           esac
+      # MATRIX-RECEIPT (#128): ONE shared step for every mode, after the gate (always, so a failed gate still reports FAIL). test_count is counted
+      # from this job's own gate log (go test -v PASS/FAIL lines + node --test summary) and its per-step go test -json logs (*.jsonl, e.g. --browser-webkit),
+      # never a static count; the `receipts` job checks it against the plan.
+      - name: Run receipt
+        if: always()
+        env:
+          GATE_OUTCOME: ${{ steps.gate.outcome }}
+        run: |
+          shopt -s nullglob globstar
+          node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always()
+        with:
+          name: receipt-${{ matrix.art }}
+          path: output/receipt/
+          retention-days: 14
+          if-no-files-found: ignore # a job that wrote none is reported missing by the receipts job
       - name: Failure summary
         if: always()
         run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
@@ -303,6 +321,31 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
+  # MATRIX-RECEIPT verifier (#128): for every mode the plan job emitted (whatever the event planned: a push to r3/integration plans only the foundation shards),
+  # exactly one receipt from THIS run id and sha, status PASS, test_count > 0. Missing, duplicate, stale, unplanned or zero-count = red. Feeds `required`.
+  receipts:
+    needs: [plan, gate]
+    if: ${{ always() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        continue-on-error: true # no receipt at all is reported by the verifier per planned mode, not as a download error
+        with:
+          pattern: receipt-gate-*
+          path: receipts
+      - name: Every planned mode has one fresh PASS receipt with tests
+        env:
+          PLANNED: ${{ needs.plan.outputs.matrix }}
+        run: node scripts/dev/matrix-receipts.mjs verify receipts
+
   # deploy-smoke.yml as a reusable workflow: when deploy/ or scripts/deploy* changed it runs inside this run, so `required` waits for it (see deploy-smoke.yml header).
   deploy:
     needs: plan
@@ -313,7 +356,7 @@ jobs:
   # expected (a sweep / visual-lint was planned), and deploy-smoke succeeded when it was expected. Skipped / cancelled / failed anywhere else is red, never silently green.
   required:
     name: required
-    needs: [plan, gate, aggregate, deploy]
+    needs: [plan, gate, aggregate, deploy, receipts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -323,11 +366,13 @@ jobs:
       AGG: ${{ needs.aggregate.result }}
       AGG_EXPECTED: ${{ needs.plan.outputs.sweep_n != '0' || needs.plan.outputs.visual_n != '0' }}
       DEPLOY: ${{ needs.deploy.result }}
+      RECEIPTS: ${{ needs.receipts.result }}
       DEPLOY_EXPECTED: ${{ needs.plan.outputs.deploy == 'true' }}
     steps:
       - run: |
-          echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"
+          echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"
           rc=0
+          [[ "$RECEIPTS" == success ]] || rc=1
           [[ "$PLAN" == success ]] || rc=1
           [[ "$GATE" == success ]] || rc=1
           if [[ "$AGG_EXPECTED" == true ]]; then [[ "$AGG" == success ]] || rc=1; else [[ "$AGG" == skipped ]] || rc=1; fi

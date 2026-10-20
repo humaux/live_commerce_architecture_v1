@@ -3,7 +3,7 @@
 //   slices (`--browser-click-sweep@3/10`), `foundation-shards` into the unit shard plus every group of scripts/dev/shard-plan.json, everything else passes through.
 //   Also says whether a whole sweep / visual-lint was requested, so the workflow's aggregate job knows to prove the slices cover the full universe.
 // Depends on: scripts/dev/shard-plan.json (group ids); env MODES (JSON array) and GITHUB_OUTPUT (matrix, sweep_n, visual_n); no network.
-// Used by: .github/workflows/gates.yml (plan job), tests/ci/ci-plan.test.mjs.
+// Used by: .github/workflows/gates.yml (plan job; its matrix output is also the planned list scripts/dev/matrix-receipts.mjs verifies), tests/ci/ci-plan.test.mjs.
 // Invariants: an expanded mode always yields ALL its shards (a partial list is only ever the integrator's explicit `@i/N` re-run, which skips the aggregate);
 //   artifact names are unique per job, so the aggregate job can find each shard's evidence by pattern.
 import { appendFileSync, readFileSync } from "node:fs";
