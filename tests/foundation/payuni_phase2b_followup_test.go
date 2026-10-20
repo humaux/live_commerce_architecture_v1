@@ -11,6 +11,12 @@
 //	       reconciled although 0018 cited its benign reports in nothing, and refuses (22023, revokes rolled back) when
 //	       a paid report was never applied; also a captured history (applies) and a failed report applied before a
 //	       later capture (fail-safe refusal, runbook §4) (review-105-087c67855 P2).
+//	PFU05 (issue #106): 0199's revoke quotes each grantee once: extra EXECUTE grants to NOLOGIN roles named lowercase,
+//	       with uppercase and a space, and with an embedded double quote, plus PUBLIC, are all revoked and the numbered
+//	       phase applies; 0199 re-applied with no extra grant, and with both functions gone, also applies.
+//	PFU06 (issue #116): one seed per guard branch PFU04 left unseeded (post-capture CloseStatus 3, CardRemainAmountTWD
+//	       below and above the amount, CAPTURE_EVIDENCE_INCOMPLETE): the report stored but not applied refuses the
+//	       chain; once the real 0018 body applied it, the chain applies.
 //
 // Depends on: migrations.Apply; pwIsolatedFixture; psSetupItemsOn; rm2HistoricalAttempt; pqReport/pqJSON; rmVersions/
 //
@@ -29,6 +35,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/migrations"
 )
@@ -238,10 +245,16 @@ func pfuReconcile(t *testing.T, q pqFixture) {
 // pfuApply stores one report per edit and applies each, in order, with the real legacy 0018 body.
 func pfuApply(t *testing.T, q pqFixture, edits ...func(map[string]any)) {
 	t.Helper()
-	for i, edit := range edits {
-		if _, err := q.f.owner.Exec(context.Background(), `SELECT payments.apply_capture($1::uuid,$2::bytea)`, q.result.AttemptID, pfuReport(t, q, edit)); err != nil {
-			t.Fatalf("legacy 0018 apply of report %d: %v", i, err)
-		}
+	for _, edit := range edits {
+		pfuApplyHash(t, q, pfuReport(t, q, edit))
+	}
+}
+
+// pfuApplyHash applies one stored report with the real legacy 0018 body.
+func pfuApplyHash(t *testing.T, q pqFixture, hash []byte) {
+	t.Helper()
+	if _, err := q.f.owner.Exec(context.Background(), `SELECT payments.apply_capture($1::uuid,$2::bytea)`, q.result.AttemptID, hash); err != nil {
+		t.Fatalf("legacy 0018 apply of report %x: %v", hash, err)
 	}
 }
 
@@ -378,4 +391,127 @@ func TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied(t *testing.T) {
 			t.Errorf("refused 0199 left hosted authority %+v, want %+v", got, hosted)
 		}
 	})
+}
+
+// TestPayuniPhase2bFollowupQuotedGrantees (PFU05, issue #106): regrole::text already quotes a name that needs it, so
+// 0199 must not quote it again (the pre-44a2114ad quote_ident(...) form REVOKEd from a role named `"Legacy Pay"` that does
+// not exist and rolled the numbered batch back). Same window fixture as PFU03.
+func TestPayuniPhase2bFollowupQuotedGrantees(t *testing.T) {
+	pfuRequire(t)
+	ctx := context.Background()
+	db, versions := p2bPreState(t)
+	roles := []string{"pfu_legacy_pay", "Legacy Pay", `Legacy "Q" Pay`}
+	for _, r := range roles {
+		mustExec(t, db, `CREATE ROLE `+pgx.Identifier{r}.Sanitize()+` NOLOGIN`)
+	}
+	fns := []string{pfuStart, pfuRecord}
+	for _, fn := range fns {
+		for _, r := range roles {
+			mustExec(t, db, `GRANT EXECUTE ON FUNCTION `+fn+` TO `+pgx.Identifier{r}.Sanitize())
+		}
+		mustExec(t, db, `GRANT EXECUTE ON FUNCTION `+fn+` TO PUBLIC`)
+		if n := countRows(t, db, `SELECT count(DISTINCT a.grantee) FROM pg_proc p, aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+			WHERE p.oid=to_regprocedure($1) AND a.privilege_type='EXECUTE'
+			AND (a.grantee=0 OR a.grantee IN (SELECT oid FROM pg_roles WHERE rolname=ANY($2)))`, fn, roles); n != 4 {
+			t.Fatalf("baseline: %s has %d of the 4 seeded grantees (3 roles + PUBLIC) — gate would be vacuous", fn, n)
+		}
+	}
+	var numbered, post []string
+	for _, v := range versions {
+		if strings.HasPrefix(v, "post_river/") {
+			post = append(post, v)
+		} else {
+			numbered = append(numbered, v)
+		}
+	}
+	// Numbered phase only (post-River held back, both functions still exist).
+	mustExec(t, db, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1)`, numbered)
+	if err := migrations.Apply(ctx, db); err != nil {
+		t.Fatalf("numbered phase with quoted-name grantees: %v", err)
+	}
+	for _, fn := range fns {
+		if rmReg(t, db, "to_regprocedure", fn) == "" {
+			t.Fatalf("%s gone although post-River was held back — the window fixture is wrong", fn)
+		}
+		if g := pfuGrantees(t, db, fn); g != "" {
+			t.Errorf("after 0199 %s still executable by %q", fn, g)
+		}
+	}
+	// No extra grant left: 0199 re-applies.
+	if err := pfuApplyOnly(t, db, pfuNumbered); err != nil {
+		t.Fatalf("0199 with no extra grant: %v", err)
+	}
+	// No function left (post_river/0026 dropped both): 0199 re-applies.
+	mustExec(t, db, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1)`, post)
+	if err := migrations.Apply(ctx, db); err != nil {
+		t.Fatalf("post-River phase: %v", err)
+	}
+	for _, fn := range fns {
+		if rmReg(t, db, "to_regprocedure", fn) != "" {
+			t.Fatalf("%s survived post_river/0026", fn)
+		}
+	}
+	if err := pfuApplyOnly(t, db, pfuNumbered); err != nil {
+		t.Fatalf("0199 with both functions gone: %v", err)
+	}
+}
+
+// TestPayuniPhase2bFollowupGuardBranchSeeds (PFU06, issue #116 / review-115-10380a952): one seed per 0199/0027 guard
+// branch PFU04 left unseeded, each derived from what the real 0018 body writes for it (0018_payment_capture.sql
+// payments.apply_capture): an authorization (and, where named, a capture) is applied first, so the seed report is
+// counted by its own branch only. Stored but never applied, it must refuse the full chain (22023, ledger unchanged);
+// once 0018 applied it (the review case below is written), the full chain must apply.
+func TestPayuniPhase2bFollowupGuardBranchSeeds(t *testing.T) {
+	pfuRequire(t)
+	ctx := context.Background()
+	for _, c := range []struct {
+		name     string
+		captured bool
+		seed     func(amount int64) func(map[string]any)
+		applied  string
+	}{
+		// v_captured AND CloseStatus 3 -> CONFLICTING_REPORT.
+		{"post-capture-close-status-3", true,
+			func(int64) func(map[string]any) { return func(r map[string]any) { r["CloseStatus"] = "3" } },
+			"AUTHORIZED,CAPTURED/CONFLICTING_REPORT/1"},
+		// v_refund via CardRemainAmountTWD < amount -> REFUND_HISTORY.
+		{"card-remain-below-amount", false,
+			func(a int64) func(map[string]any) { return func(r map[string]any) { r["CardRemainAmountTWD"] = a - 1 } },
+			"AUTHORIZED/REFUND_HISTORY/1"},
+		// v_conflict: CardRemainAmountTWD > amount -> CONFLICTING_REPORT.
+		{"card-remain-above-amount", false,
+			func(a int64) func(map[string]any) { return func(r map[string]any) { r["CardRemainAmountTWD"] = a + 1 } },
+			"AUTHORIZED/CONFLICTING_REPORT/1"},
+		// CloseStatus 2 without CloseAmountTWD is not v_capture -> CAPTURE_EVIDENCE_INCOMPLETE.
+		{"capture-evidence-incomplete", false,
+			func(int64) func(map[string]any) { return func(r map[string]any) { r["CloseStatus"] = "2" } },
+			"AUTHORIZED/CAPTURE_EVIDENCE_INCOMPLETE/1"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f, q := pfuLegacy(t)
+			amount := int64(q.result.AmountMinor / 100)
+			if amount < 2 {
+				t.Fatalf("fixture amount %d TWD too small for the CardRemainAmountTWD seeds", amount)
+			}
+			pfuApply(t, q, func(map[string]any) {})
+			if c.captured {
+				pfuApply(t, q, func(r map[string]any) { r["CloseStatus"], r["CloseAmountTWD"] = "2", amount })
+				pfeReplica(t, f.owner, `UPDATE integration.operations SET state='SUCCEEDED' WHERE id='`+q.result.OperationID+`'`)
+			} else {
+				pfuReconcile(t, q)
+			}
+			hash := pfuReport(t, q, c.seed(amount))
+			ledger := lriLedger(t, f, "")
+			pfuRefused(t, f.owner, pfuNumbered, lriApplyFull(ctx, f.owner), "PAYUNi phase-2b follow-up refused",
+				"0 PAYUNi reservation(s) still PAYMENT_PENDING, 1 stored PAYUNi observation(s) never applied")
+			if got := lriLedger(t, f, ""); got != ledger {
+				t.Fatal("refused chain changed the migration ledger")
+			}
+			pfuApplyHash(t, q, hash)
+			if got := pfuApplied(t, q); got != c.applied {
+				t.Fatalf("legacy 0018 history facts/reviews/uncited = %s, want %s", got, c.applied)
+			}
+			pfuChainApplies(t, f, c.name)
+		})
+	}
 }
