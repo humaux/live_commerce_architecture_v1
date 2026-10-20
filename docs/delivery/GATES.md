@@ -22,6 +22,7 @@ replays the pre-fix reserve→free→explicit-port handoff on real sockets (a ri
 the gate's bind then fails with EADDRINUSE) against the relay handoff that never frees a port.
 `--browser-catalog-media` and `--browser-manual-order` run that handoff regression beside their own gates.
 Go browser fixtures that start the packaged admin through `relay.start` (EADDRINUSE relaunch) prove listener ownership through Linux `/proc`: on any other OS they `t.Skip` as NOT_RUN ("relay.start proves listener ownership through Linux /proc"), while `launch` itself still fails closed.
+#116: children whose origin nobody pins (storefront `next start`, `next dev` fixtures) use `startPrivate`, the same launch on a relay with no public listener; Node runners use `startNextWithPortRetry`. No browser harness reserves, frees and hands over a port any more; `tests/ci/next-startup.test.mjs` pins every migrated site (red at 65715bc38, green now).
 The preparation guards require all four regression symbols. Shared automatic-port collision bounds, all
 eleven unchanged browser assertion/readiness lists (now including environment assignment statements and
 readiness status predicates), the single bounded 5 s admin registration and the static freed-port-handoff

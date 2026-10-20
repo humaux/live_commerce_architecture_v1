@@ -16,6 +16,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts, phone } from "./browser-engine.mjs";
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { AD_TOUCH_COOKIE } from "../../apps/storefront/lib/ad-touch.ts";
 import { purchaseCopy } from "../../apps/storefront/lib/purchase-copy.ts";
 
@@ -109,12 +110,10 @@ function relay(port, req, body) {
     call.end(body);
   });
 }
-async function startNext() {
-  const reserve = net.createServer();
-  const port = await listen(reserve);
-  await new Promise((resolve) => reserve.close(resolve));
+// #116: no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port EADDRINUSE exit.
+const startNext = () => startNextWithPortRetry({}, async ({ port, attempt, track }) => {
   const log = createWriteStream(
-    path.join(evidence, "ads-attribution-next.log"),
+    nextAttemptLog(path.join(evidence, "ads-attribution-next.log"), attempt),
     { flags: "wx", mode: 0o600 },
   );
   logs.push(log);
@@ -143,6 +142,7 @@ async function startNext() {
       stdio: ["ignore", log, log],
     },
   );
+  track(child, log);
   children.add(child);
   for (let attempt = 0; attempt < 100; attempt++) {
     if (child.exitCode !== null) throw new Error("owned Next failed readiness");
@@ -167,7 +167,7 @@ async function startNext() {
     await pause(50);
   }
   throw new Error("owned Next readiness timeout");
-}
+});
 async function setup() {
   execFileSync(
     "openssl",

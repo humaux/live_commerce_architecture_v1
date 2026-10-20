@@ -158,13 +158,6 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	}
 	// Prove the fixture actually works on a second, local Next process, then
 	// require orders to remain hidden when real identity transport is disabled.
-	fixtureListener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	fixtureAddress := fixtureListener.Addr().String()
-	_ = fixtureListener.Close()
-	_, fixturePort, _ := net.SplitHostPort(fixtureAddress)
 	nextEnvPath := filepath.Join(root, "apps/admin/next-env.d.ts")
 	nextEnvBefore, err := os.ReadFile(nextEnvPath)
 	if err != nil {
@@ -189,7 +182,7 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 		}
 	})
 	fixtureLog := browserLog(t, filepath.Join(evidence, "fixture-next.log"))
-	fixtureNext := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/node_modules/next/dist/bin/next"), "dev", "--hostname", "127.0.0.1", "--port", fixturePort)
+	fixtureNext := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/node_modules/next/dist/bin/next"), "dev", "--hostname", "127.0.0.1") // port: PORT from startPrivate
 	fixtureNext.Dir = filepath.Join(root, "apps/admin")
 	fixtureNext.Env = browserEnvironment(map[string]string{
 		"NODE_ENV": "development", "COMMERCE_IDENTITY_ENABLED": "0",
@@ -198,26 +191,20 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 		"COMMERCE_API_ORIGIN": api.URL,
 	})
 	fixtureNext.Stdout, fixtureNext.Stderr = fixtureLog, fixtureLog
-	// F6: `next dev` forks a next-server child that outlives its parent and holds the port; own a process
-	// group and signal the whole group (this PID's group only, never by port or name).
-	fixtureNext.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	fixtureNext.Cancel = func() error { return syscall.Kill(-fixtureNext.Process.Pid, syscall.SIGKILL) }
-	if err := fixtureNext.Start(); err != nil {
-		t.Fatal("could not start local fixture Next")
-	}
-	fixtureDone := make(chan error, 1)
-	go func() { fixtureDone <- fixtureNext.Wait() }()
+	// #116: startPrivate gives `next dev` a private port it must be proven to own, relaunching only on EADDRINUSE.
+	// F6: `next dev` forks a next-server child that outlives its parent and holds the port; startPrivate owns a process
+	// group and signals the whole group (this PID's group only, never by port or name), and reaps the leader itself.
+	fixtureNext, fixturePort := startPrivate(t, ctx, fixtureNext)
+	fixtureAddress := net.JoinHostPort("127.0.0.1", fixturePort)
 	var stopFixtureOnce sync.Once
 	stopFixture := func() {
 		stopFixtureOnce.Do(func() {
-			_ = syscall.Kill(-fixtureNext.Process.Pid, syscall.SIGINT)
-			select {
-			case <-fixtureDone:
-			case <-time.After(5 * time.Second):
-				_ = syscall.Kill(-fixtureNext.Process.Pid, syscall.SIGKILL)
-				<-fixtureDone
+			pgid := fixtureNext.Process.Pid
+			_ = syscall.Kill(-pgid, syscall.SIGINT)
+			// the relay reaps the leader; give SIGINT the same 5 s grace before the group SIGKILL below
+			for deadline := time.Now().Add(5 * time.Second); syscall.Kill(pgid, 0) == nil && time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
 			}
-			stopProcessGroup(t, fixtureNext.Process.Pid) // leaked next-server children hold the port
+			stopProcessGroup(t, pgid) // leaked next-server children hold the port
 		})
 	}
 	t.Cleanup(stopFixture)

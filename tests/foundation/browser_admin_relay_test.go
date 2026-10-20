@@ -4,8 +4,9 @@
 // also launches a Go-owned child on a private port and relaunches ONLY after a bind collision (EADDRINUSE), see #116.
 // Depends on: Go net/http/httptest/httputil, os/exec, /proc (Linux listener-ownership proof) and browserFront's WebKit TLS boundary; no database.
 // Used by: publish, domains, merchant-buyer, catalog-media and manual-order-link browser fixtures and every Go browser fixture
-// that spawns the packaged admin Next via relay.start; GATE-PORT real-socket regression tests (the freed-port handoff
-// red/green witness and TestBrowserAdminRelayStartRetriesBindCollision).
+// that spawns the packaged admin Next via relay.start; startPrivate (storefront Next and `next dev` fixtures in the e2e,
+// live-tools, live-claims, product-media-v2, studio-bff and merchant-orders-bff gates); GATE-PORT real-socket regression
+// tests (the freed-port handoff red/green witness and TestBrowserAdminRelayStartRetriesBindCollision).
 package foundation_test
 
 import (
@@ -106,6 +107,16 @@ func (front *browserAdminRelay) start(t *testing.T, ctx context.Context, cmd *ex
 		t.Fatal(err)
 	}
 	return child
+}
+
+// startPrivate is start for a child whose origin nobody pins (a storefront behind the test's own TLS edge, a `next dev`
+// fixture read directly): a zero-value relay with no public listener, the same EADDRINUSE relaunch and /proc ownership proof.
+// Returns the live command and the private port it was proven to own.
+func startPrivate(t *testing.T, ctx context.Context, cmd *exec.Cmd) (*exec.Cmd, string) {
+	t.Helper()
+	private := &browserAdminRelay{}
+	cmd = private.start(t, ctx, cmd)
+	return cmd, private.target.Load().Port()
 }
 
 func (front *browserAdminRelay) launch(t *testing.T, ctx context.Context, cmd *exec.Cmd) (*exec.Cmd, error) {
@@ -647,6 +658,43 @@ func TestBrowserAdminRelayStartRetriesBindCollision(t *testing.T) {
 	if len(kills) != 2 || kills[0] == kills[1] {
 		t.Fatalf("each attempt's group must be signalled exactly once in total (stale deferred kill?): %v", kills)
 	}
+
+	// ---- startPrivate's zero-value relay (no public listener) survives the same collision ----
+	t.Run("private", func(t *testing.T) {
+		bare := &browserAdminRelay{}
+		var tried []string
+		bare.pickPort = func() string {
+			port := held // first pick: the rival-held port, exactly what freeLoopbackPort handed the storefront
+			if len(tried) > 0 {
+				l, err := net.Listen("tcp", "127.0.0.1:0")
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, port, _ = net.SplitHostPort(l.Addr().String())
+				_ = l.Close()
+			}
+			tried = append(tried, port)
+			return port
+		}
+		pctx, pcancel := context.WithCancel(context.Background())
+		defer pcancel()
+		if _, err := bare.launch(t, pctx, relayTestChild(t, pctx, false)); err != nil {
+			t.Fatalf("private child: collision on the first port was not retried: %v", err)
+		}
+		port := bare.target.Load().Port()
+		if len(tried) != 2 || port != tried[1] || port == held {
+			t.Fatalf("private child not proven on the relaunched port: tried=%v port=%s", tried, port)
+		}
+		response, err := http.Get("http://127.0.0.1:" + port)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, _ := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		if string(body) != "child ok" {
+			t.Fatalf("private port is not the child's: %q", body)
+		}
+	})
 
 	// ---- only EADDRINUSE is retried: any other early exit fails on the first launch ----
 	other := newBrowserAdminRelay(t)

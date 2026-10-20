@@ -17,13 +17,13 @@
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
+import { createWriteStream, existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import net from "node:net";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
 const root = process.cwd();
 const storefront = path.join(root, "apps/storefront");
@@ -44,29 +44,16 @@ const pass = (name) => { results.push(name); console.log(`PASS ${name}`); };
 const fail = (name, why) => { failures.push(`${name}: ${why}`); console.log(`FAIL ${name}: ${why}`); };
 const check = (name, fn) => Promise.resolve().then(fn).then(() => pass(name), (e) => fail(name, String(e.message ?? e).split("\n")[0]));
 
-async function freePort() {
-  const s = net.createServer();
-  s.listen(0, "127.0.0.1");
-  await once(s, "listening");
-  const port = s.address().port;
-  await new Promise((r) => s.close(r));
-  return port;
-}
-
 const nextBin = path.join(storefront, "node_modules/next/dist/bin/next");
 assert(existsSync(nextBin), "apps/storefront/node_modules/next is missing: run pnpm install");
 assert(existsSync(path.join(storefront, ".next")), "no production build: run pnpm build:storefront first");
-const port = await freePort();
-const origin = `http://127.0.0.1:${port}`;
 const env = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" };
-const server = spawn(process.execPath, [nextBin, "start", "--hostname", "127.0.0.1", "--port", String(port)], { cwd: storefront, env, stdio: ["ignore", "pipe", "pipe"] });
-let serverLog = "";
-server.stdout.on("data", (d) => (serverLog += d));
-server.stderr.on("data", (d) => (serverLog += d));
-let browser;
+let browser, server, origin;
+const logs = [];
 async function stop() {
   if (browser) await browser.close().catch(() => {});
-  if (server.exitCode === null) {
+  for (const log of logs) log.end();
+  if (server && server.exitCode === null) {
     server.kill("SIGTERM");
     await Promise.race([once(server, "exit"), new Promise((r) => setTimeout(r, 5000))]);
     if (server.exitCode === null) server.kill("SIGKILL");
@@ -75,12 +62,23 @@ async function stop() {
 process.on("SIGINT", () => stop().finally(() => process.exit(130)));
 
 try {
-  for (let i = 0, ready = false; !ready; i++) {
-    if (server.exitCode !== null) throw new Error(`next start exited: ${serverLog.slice(-400)}`);
-    if (i > 200) throw new Error("next start did not become ready");
-    try { ready = (await fetch(`${origin}/en/legal/privacy`)).status === 200; } catch { await new Promise((r) => setTimeout(r, 100)); }
-  }
   await mkdir(evidenceDir, { recursive: true });
+  // #116: no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port EADDRINUSE exit (its
+  // proof is the attempt's log file, so the Next output now lands in the evidence directory instead of memory).
+  origin = await startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+    const file = nextAttemptLog(path.join(evidenceDir, "next-start.log"), attempt);
+    const log = createWriteStream(file, { flags: "wx", mode: 0o600 });
+    logs.push(log); await once(log, "open");
+    const url = `http://127.0.0.1:${port}`;
+    server = spawn(process.execPath, [nextBin, "start", "--hostname", "127.0.0.1", "--port", String(port)], { cwd: storefront, env, stdio: ["ignore", log, log] });
+    track(server, log);
+    for (let i = 0, ready = false; !ready; i++) {
+      if (server.exitCode !== null) throw new Error(`next start exited: ${(await readFile(file, "utf8").catch(() => "")).slice(-400)}`);
+      if (i > 200) throw new Error("next start did not become ready");
+      try { ready = (await fetch(`${url}/en/legal/privacy`)).status === 200; } catch { await new Promise((r) => setTimeout(r, 100)); }
+    }
+    return url;
+  });
   browser = await launch();
   const viewports = { desktop: { width: 1440, height: 900 }, mobile: { width: 390, height: 844 } };
   // Which slug x locale is published is read from the served page (its own marker), then the footer is checked against it.

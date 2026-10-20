@@ -1,5 +1,5 @@
 // Purpose: collect primary page screenshots, supplementary native inner-scroll evidence, and existing visual lint results.
-// Depends on: the seeded click-sweep stack, Playwright, visual-lint-lib and visual-scroll-capture.
+// Depends on: the seeded click-sweep stack, Playwright, visual-lint-lib, visual-scroll-capture and tests/helpers/next-startup.mjs (owned-port Next start).
 // Used by: --browser-visual-lint; keeps the route matrix and lint thresholds unchanged.
 // G-UI9 visual audit runner (unit ui-visual-audit, owner 2026-10-05). Started by tests/ui/click-sweep.mjs when LC_SWEEP_ONLY=visual-audit, i.e. by
 // `bash scripts/dev/test-local.sh --browser-visual-lint`, on the SAME seeded stack as the G-UI8 click sweep (isolated PG, real Go API, production admin and
@@ -27,6 +27,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { expect } from "@playwright/test";
 import { launch } from "../storefront/browser-engine.mjs";
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { fixture as platformFixture } from "../admin/shell-fixture.mjs";
 import { INIT_SCRIPT, degradedMessages, monitor, settle } from "./click-sweep-lib.mjs";
@@ -85,7 +86,6 @@ export async function main() {
   // ---- stack: storefront Next behind a synthetic TLS edge, platform-site admin Next behind a Host bridge (the patterns of click-sweep.mjs and platform-runner.mjs)
   const children = new Set(), sockets = new Set(), logs = [];
   const listen = async (server) => { server.listen(0, "127.0.0.1"); await once(server, "listening"); return server.address().port; };
-  const freePort = async () => { const probe = net.createServer(); const port = await listen(probe); await new Promise((r) => probe.close(r)); return port; };
   const relay = (port, req, body, host, hostname = "127.0.0.1") => new Promise((resolve, reject) => {
     const headers = { ...req.headers, ...(host ? { host } : {}) }; delete headers.connection; delete headers["transfer-encoding"];
     if (body.length) headers["content-length"] = String(body.length); else delete headers["content-length"];
@@ -94,22 +94,24 @@ export async function main() {
     });
     call.setTimeout(60000, () => call.destroy(new Error("relay timeout"))); call.on("error", reject); call.end(body);
   });
-  const startChild = async (name, file, args, cwd, childEnv, ready, nodeArgs = []) => {
-    const logFile = createWriteStream(path.join(evidence, `${name}.log`), { flags: "w", mode: 0o600 }); logs.push(logFile); await once(logFile, "open");
-    const child = spawn(process.execPath, [...nodeArgs, file, ...args], { cwd, env: childEnv, stdio: ["ignore", logFile, logFile] });
+  // #116: no reserve-then-free port; the shared helper picks the port and relaunches only an automatic-port EADDRINUSE exit (3 launches).
+  // args/childEnv/ready take the attempt's port; resolves with the port the ready child serves on.
+  const startChild = (name, file, args, cwd, childEnv, ready, nodeArgs = []) => startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+    const logFile = createWriteStream(nextAttemptLog(path.join(evidence, `${name}.log`), attempt), { flags: "w", mode: 0o600 }); logs.push(logFile); await once(logFile, "open");
+    const child = spawn(process.execPath, [...nodeArgs, file, ...args(port)], { cwd, env: childEnv(port), stdio: ["ignore", logFile, logFile] });
+    track(child, logFile);
     children.add(child);
     for (let i = 0; i < 600; i++) {
       if (child.exitCode !== null) throw new Error(`${name} exited before readiness`);
-      try { if (await ready()) return child; } catch { /* not up yet */ }
+      try { if (await ready(port)) return port; } catch { /* not up yet */ }
       await new Promise((r) => setTimeout(r, 100));
     }
     throw new Error(`${name} readiness timeout`);
-  };
+  });
   const stripSweep = (e) => { for (const k of Object.keys(e)) if (k.startsWith("LC_SWEEP_")) delete e[k]; return e; };
-  const sfPort = await freePort();
-  await startChild("visual-audit-storefront-next", path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), ["start", "--hostname", "127.0.0.1", "--port", String(sfPort)],
-    path.join(root, "apps/storefront"), stripSweep({ ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" }),
-    async () => (await relay(sfPort, { url: "/robots.txt", method: "GET", headers: {} }, Buffer.alloc(0), HOST)).status === 200);
+  const sfPort = await startChild("visual-audit-storefront-next", path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), (port) => ["start", "--hostname", "127.0.0.1", "--port", String(port)],
+    path.join(root, "apps/storefront"), () => stripSweep({ ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" }),
+    async (port) => (await relay(port, { url: "/robots.txt", method: "GET", headers: {} }, Buffer.alloc(0), HOST)).status === 200);
   const certDir = await mkdtemp(path.join(tmpdir(), "lc-va-edge-"));
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", `/CN=${HOST}`], { stdio: "ignore" });
   const edge = https.createServer({ key: await readFile(path.join(certDir, "key.pem")), cert: await readFile(path.join(certDir, "cert.pem")) }, async (req, res) => {
@@ -128,12 +130,11 @@ export async function main() {
     for (const s of [socket, upstream]) { sockets.add(s); s.on("close", () => sockets.delete(s)); s.on("error", () => { socket.destroy(); upstream.destroy(); }); }
   });
   const platformAuth = await platformFixture(); // the isolated MOCK API the public platform pages' server needs (tests/admin/shell-fixture.mjs)
-  const pPort = await freePort();
-  await startChild("visual-audit-platform-next", "apps/admin/.next/standalone/apps/admin/server.js", [], root, stripSweep({
-    ...process.env, NODE_ENV: "production", HOSTNAME: "localhost", PORT: String(pPort), LC_PLATFORM_HOST: PLATFORM.host, LC_ADMIN_HOST: PLATFORM.adminHost, LC_COMPANY_CONTACT_EMAIL: PLATFORM.email,
+  const pPort = await startChild("visual-audit-platform-next", "apps/admin/.next/standalone/apps/admin/server.js", () => [], root, (port) => stripSweep({
+    ...process.env, NODE_ENV: "production", HOSTNAME: "localhost", PORT: String(port), LC_PLATFORM_HOST: PLATFORM.host, LC_ADMIN_HOST: PLATFORM.adminHost, LC_COMPANY_CONTACT_EMAIL: PLATFORM.email,
     LC_META_DOMAIN_VERIFICATION: "", COMMERCE_IDENTITY_ENABLED: "1", COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS: "1", COMMERCE_PUBLIC_ORIGIN: `https://${PLATFORM.adminHost}`,
     COMMERCE_API_ORIGIN: platformAuth.origin, COMMERCE_BFF_KEY: platformAuth.key, COMMERCE_FIXTURE_ENABLED: "0", COMMERCE_PASSWORD_LOGIN_ENABLED: "1",
-  }), async () => (await relay(pPort, { url: "/", method: "GET", headers: {} }, Buffer.alloc(0), PLATFORM.host, "localhost")).status === 200, ["--dns-result-order=ipv4first"]); // as tests/admin/platform-runner.mjs: the host rewrite targets localhost
+  }), async (port) => (await relay(port, { url: "/", method: "GET", headers: {} }, Buffer.alloc(0), PLATFORM.host, "localhost")).status === 200, ["--dns-result-order=ipv4first"]); // as tests/admin/platform-runner.mjs: the host rewrite targets localhost
   const browser = await launch({ headless: true, proxy: { server: `http://127.0.0.1:${await listen(proxy)}`, bypass: "127.0.0.1,localhost" } });
   log(`stack up: admin ${adminOrigin}, storefront ${origin} (Next :${sfPort}), platform ${PLATFORM.host} (Next :${pPort}); ${adminRoutes.length} registry routes`);
 

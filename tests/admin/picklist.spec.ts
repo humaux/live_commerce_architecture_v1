@@ -1,15 +1,17 @@
 // Purpose: real-click W3-U1b acceptance against isolated contract-shaped MOCK HTTP, run only in CI.
-// Depends on: packaged Next admin, Playwright Chromium/API requests, picklist-fixture TLS facade and node:test.
+// Depends on: packaged Next admin (started through tests/helpers/next-startup.mjs), Playwright Chromium/API requests, picklist-fixture TLS facade and node:test.
 // Used by: test-local.sh --browser-picklist; no evaluate writes, provider effects or PG.
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
-import { createServer } from "node:net";
-import { mkdir, open, readFile, writeFile } from "node:fs/promises";
+import { once } from "node:events";
+import { createWriteStream, type WriteStream } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { pickFixture, picklistTLS, storeID, sessionID } from "./picklist-fixture.mjs";
 import { picklistCopy } from "../../apps/admin/lib/picklist-copy.ts";
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
 test(
   "W3-U1b real clicks: selection, print, CSV, confirmation, unknown and scope",
@@ -18,47 +20,52 @@ test(
     const output = browserEvidenceDirectory("picklist");
     await mkdir(output, { recursive: true });
     const fixture = await pickFixture();
-    const probe = createServer();
-    await new Promise<void>((r) => probe.listen(0, "127.0.0.1", r));
-    const port = (probe.address() as { port: number }).port;
-    await new Promise<void>((r) => probe.close(() => r()));
-    const upstreamBase = `http://127.0.0.1:${port}`,
-      log = await open(`${output}/server.log`, "w");
+    let log: WriteStream | undefined;
     const ledger: { case: string; result: string }[] = [];
     let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
     let edge: Awaited<ReturnType<typeof picklistTLS>> | undefined;
     let server: ReturnType<typeof spawn> | undefined;
     try {
-      // Both browser and APIRequestContext use HTTPS; Secure __Host cookies remain automatic in every probe.
-      edge = await picklistTLS(upstreamBase);
-      const base = edge.origin;
-      server = spawn(
-        process.execPath,
-        ["apps/admin/.next/standalone/apps/admin/server.js"],
-        {
-          stdio: ["ignore", log.fd, log.fd],
-          env: {
-            ...process.env,
-            COMMERCE_UI_PORT: String(port),
-            PORT: String(port),
-            HOSTNAME: "127.0.0.1",
-            COMMERCE_IDENTITY_ENABLED: "1",
-            COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS: "1",
-            COMMERCE_PASSWORD_LOGIN_ENABLED: "1",
-            COMMERCE_PUBLIC_ORIGIN: base,
-            COMMERCE_API_ORIGIN: fixture.origin,
-            COMMERCE_BFF_KEY: fixture.key,
+      // #116: no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port EADDRINUSE exit
+      // (proof: the attempt's log). The TLS edge targets one upstream port, so each attempt gets its own edge.
+      const base = await startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+        const upstreamBase = `http://127.0.0.1:${port}`;
+        log = createWriteStream(nextAttemptLog(`${output}/server.log`, attempt), { flags: "w", mode: 0o600 });
+        await once(log, "open");
+        await edge?.close();
+        // Both browser and APIRequestContext use HTTPS; Secure __Host cookies remain automatic in every probe.
+        edge = await picklistTLS(upstreamBase);
+        const base = edge.origin;
+        const child = (server = spawn(
+          process.execPath,
+          ["apps/admin/.next/standalone/apps/admin/server.js"],
+          {
+            stdio: ["ignore", log, log],
+            env: {
+              ...process.env,
+              COMMERCE_UI_PORT: String(port),
+              PORT: String(port),
+              HOSTNAME: "127.0.0.1",
+              COMMERCE_IDENTITY_ENABLED: "1",
+              COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS: "1",
+              COMMERCE_PASSWORD_LOGIN_ENABLED: "1",
+              COMMERCE_PUBLIC_ORIGIN: base,
+              COMMERCE_API_ORIGIN: fixture.origin,
+              COMMERCE_BFF_KEY: fixture.key,
+            },
           },
-        },
-      );
-      for (let n = 0; ; n++) {
-        try {
-          // Readiness checks the owned internal HTTP listener, without relaxing Node TLS verification globally.
-          if ((await fetch(`${upstreamBase}/en/reset`)).ok) break;
-        } catch {}
-        if (n === 119) throw new Error("Next readiness timeout");
-        await new Promise((r) => setTimeout(r, 500));
-      }
+        ));
+        track(child, log);
+        for (let n = 0; ; n++) {
+          if (child.exitCode !== null || child.signalCode !== null) throw new Error("Next exited before readiness");
+          try {
+            // Readiness checks the owned internal HTTP listener, without relaxing Node TLS verification globally.
+            if ((await fetch(`${upstreamBase}/en/reset`)).ok) return base;
+          } catch {}
+          if (n === 119) throw new Error("Next readiness timeout");
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      });
       browser = await chromium.launch();
       for (const locale of ["zh-TW", "zh-CN", "en"] as const)
         for (const width of [1440, 390]) {
@@ -391,7 +398,7 @@ test(
         if (owned.exitCode === null && owned.signalCode === null)
           owned.kill("SIGKILL");
       }
-      await log.close();
+      log?.end();
       await fixture.close();
     }
   },

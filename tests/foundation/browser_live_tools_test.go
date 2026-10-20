@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -36,7 +35,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -66,6 +64,7 @@ type ltRun struct {
 
 	idp          *browserIDP
 	adminOrigin  string
+	adminRelay   *browserAdminRelay
 	adminAPI     *httptest.Server
 	buyerAPI     *httptest.Server
 	ingress      *httptest.Server
@@ -164,12 +163,8 @@ export default defineConfig({
 func (x *ltRun) startAdminAPI(t *testing.T) {
 	ctx := x.ctx
 	f := x.e.p.f
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	x.adminOrigin = "http://" + listener.Addr().String()
-	_ = listener.Close()
+	x.adminRelay = newBrowserAdminRelay(t) // #116: the public origin stays owned; the child gets a private port with an EADDRINUSE relaunch
+	x.adminOrigin = "http://" + x.adminRelay.server.Listener.Addr().String()
 	x.idp = newBrowserIDP(t, x.adminOrigin+"/api/auth/callback")
 	mustExec(t, f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, x.idp.server.URL, f.principalA)
 	role := "lt_" + strings.ReplaceAll(randomUUID(), "-", "")
@@ -225,41 +220,31 @@ func (x *ltRun) startBuyerAPI(t *testing.T) {
 }
 
 func (x *ltRun) startAdminNext(t *testing.T) {
-	_, port, _ := net.SplitHostPort(strings.TrimPrefix(x.adminOrigin, "http://"))
 	logFile := browserLog(t, filepath.Join(x.evidence, "admin-next.log"))
 	cmd := exec.CommandContext(x.ctx, "node", filepath.Join(x.root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	cmd.Dir = x.root
-	cmd.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": port, "NODE_ENV": "production", "NEXT_TELEMETRY_DISABLED": "1",
+	cmd.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production", "NEXT_TELEMETRY_DISABLED": "1",
 		"COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": x.adminOrigin,
 		"COMMERCE_API_ORIGIN": x.adminAPI.URL, "COMMERCE_OIDC_ISSUER": x.idp.server.URL, "COMMERCE_BFF_KEY": x.adminKey,
 		"COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD"})
 	cmd.Stdout, cmd.Stderr = logFile, logFile
-	x.spawn(t, cmd)
+	x.adminRelay.start(t, x.ctx, cmd)
 	waitReady(x.ctx, t, x.adminOrigin+"/api/stores", "", http.StatusUnauthorized, x.evidence)
 }
 
 func (x *ltRun) startStorefrontNext(t *testing.T) string {
-	port := freeLoopbackPort(t)
 	logFile := browserLog(t, filepath.Join(x.evidence, "storefront-next.log"))
 	cookieKey := brToken()
 	x.secrets["buyer cookie key"] = cookieKey
-	cmd := exec.CommandContext(x.ctx, "node", filepath.Join(x.root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", port)
+	cmd := exec.CommandContext(x.ctx, "node", filepath.Join(x.root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1") // port: PORT from startPrivate
 	cmd.Dir = filepath.Join(x.root, "apps/storefront")
 	cmd.Env = browserEnvironment(map[string]string{"NODE_ENV": "production", "NEXT_TELEMETRY_DISABLED": "1", "COMMERCE_BUYER_WEB_ENABLED": "1",
 		"COMMERCE_BUYER_DEMO_LABEL": "1", "COMMERCE_BUYER_API_ORIGIN": x.buyerAPI.URL, "COMMERCE_BUYER_BFF_KEY": x.buyerKey,
 		"COMMERCE_BUYER_COOKIE_KEY": cookieKey, "COMMERCE_BUYER_SESSION_TTL": "3600"})
 	cmd.Stdout, cmd.Stderr = logFile, logFile
-	x.spawn(t, cmd)
+	_, port := startPrivate(t, x.ctx, cmd) // #116: child-owned private port, EADDRINUSE relaunch
 	waitReady(x.ctx, t, "http://127.0.0.1:"+port+"/api/buyer/session", "buyer.example", http.StatusOK, x.evidence)
 	return port
-}
-
-func (x *ltRun) spawn(t *testing.T, cmd *exec.Cmd) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); _ = cmd.Wait() })
 }
 
 // provisionMeta is e2eRun.provisionMeta for this store (Facebook Page binding + route, Page token for private replies, the claims-aware
