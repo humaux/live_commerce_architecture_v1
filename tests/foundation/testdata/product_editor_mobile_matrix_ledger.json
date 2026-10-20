@@ -530,6 +530,46 @@
     "actual": "PASS"
   },
   {
+    "page": "mobile axis remove create",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-add-0",
+    "action": "click",
+    "expected": "Axis add creates a temporary local axis 1 before the persisted axes; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove create",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-name-0",
+    "action": "fill",
+    "expected": "Temporary axis 1 accepts the localized Style name locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove create",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Temporary Style axis commits value A as one chip and one matrix row A; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove create",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-remove-0",
+    "action": "click",
+    "expected": "Real click on the in-viewport axis-1 remove button removes the named, valued Style axis and its matrix; no document write",
+    "actual": "PASS"
+  },
+  {
     "page": "mobile axis remove",
     "locale": "zh-TW",
     "width": 390,
@@ -587,6 +627,46 @@
     "control": "axis-values-1",
     "action": "fill Enter",
     "expected": "Axis values commit S chip locally without a document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for the code operation; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field code is selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk code value is visible in the dialog; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply closes bulk and sets codes prefix-1 and prefix-2 by matrix ordinal on both rows; still a local draft",
     "actual": "PASS"
   },
   {
@@ -810,6 +890,316 @@
     "actual": "PASS"
   },
   {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-add-2",
+    "action": "click",
+    "expected": "Axis add creates local axis 3 on the saved Color/Size product; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-name-2",
+    "action": "fill",
+    "expected": "Axis 3 accepts the localized Style name locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-2",
+    "action": "fill Enter",
+    "expected": "Style values A and B commit two chips and four local matrix rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-value-remove-2-1",
+    "action": "click",
+    "expected": "Real click on the in-viewport B chip remove leaves chip A and rows White / S / A, Black / S / A; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-remove-2",
+    "action": "click",
+    "expected": "Real click on the in-viewport axis-3 remove restores White / S and Black / S with their saved SKU identities; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Size value M commits a second Size chip and four local matrix rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-value-remove-1-1",
+    "action": "click",
+    "expected": "Real click on the in-viewport M chip remove leaves Size S and the two saved SKU rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Color value Red commits a third Color chip and three local matrix rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-value-remove-0-2",
+    "action": "click",
+    "expected": "Real click on the in-viewport Red chip remove leaves White and Black and the two saved SKU rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-remove-1",
+    "action": "click",
+    "expected": "Real click on the in-viewport axis-2 remove drops Size; Color rows White and Black remain locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-add-1",
+    "action": "click",
+    "expected": "Axis add recreates local axis 2 after the Size removal; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-name-1",
+    "action": "fill",
+    "expected": "Recreated axis 2 accepts the localized Size name locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Size value S restores White / S and Black / S with their saved SKU identities; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for price set on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field price is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk price set amount 88 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply price set 88 sets both rows to 88; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for compare set on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field compare is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk compare set amount 128 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply compare set 128 sets both rows to 128; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for quantity set on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field quantity is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk quantity set amount 9 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply quantity set 9 sets both rows to 9; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for quantity subtract on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field quantity is selected for subtract; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation",
+    "action": "select",
+    "expected": "Bulk operation subtract is selected for quantity; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk quantity subtract amount 2 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply quantity subtract 2 sets both rows to 7; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "One document write; after reload only Color White/Black and Size S remain with both saved SKU identities, price 88, compare 128 and quantity 7",
+    "actual": "PASS"
+  },
+  {
     "page": "mobile axis remove",
     "locale": "zh-TW",
     "width": 390,
@@ -887,6 +1277,56 @@
     "control": "product-save",
     "action": "click, confirm archive, reload",
     "expected": "One confirmed document write archives both old SKUs; replacement S has new identity, price 95, compare 145, tracked quantity 9, active and generated immutable code stable across two reloads",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for keyword on the saved S row; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field keyword is selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk keyword value unique to this locale is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply closes bulk and sets the keyword on the S row; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "One document write; the bulk keyword persists on the S row after reload and price 95 is unchanged",
     "actual": "PASS"
   },
   {
@@ -1420,6 +1860,46 @@
     "actual": "PASS"
   },
   {
+    "page": "mobile axis remove create",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-add-0",
+    "action": "click",
+    "expected": "Axis add creates a temporary local axis 1 before the persisted axes; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove create",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-name-0",
+    "action": "fill",
+    "expected": "Temporary axis 1 accepts the localized Style name locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove create",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Temporary Style axis commits value A as one chip and one matrix row A; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove create",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-remove-0",
+    "action": "click",
+    "expected": "Real click on the in-viewport axis-1 remove button removes the named, valued Style axis and its matrix; no document write",
+    "actual": "PASS"
+  },
+  {
     "page": "mobile axis remove",
     "locale": "zh-CN",
     "width": 390,
@@ -1477,6 +1957,46 @@
     "control": "axis-values-1",
     "action": "fill Enter",
     "expected": "Axis values commit S chip locally without a document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for the code operation; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field code is selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk code value is visible in the dialog; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply closes bulk and sets codes prefix-1 and prefix-2 by matrix ordinal on both rows; still a local draft",
     "actual": "PASS"
   },
   {
@@ -1700,6 +2220,316 @@
     "actual": "PASS"
   },
   {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-add-2",
+    "action": "click",
+    "expected": "Axis add creates local axis 3 on the saved Color/Size product; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-name-2",
+    "action": "fill",
+    "expected": "Axis 3 accepts the localized Style name locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-2",
+    "action": "fill Enter",
+    "expected": "Style values A and B commit two chips and four local matrix rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-value-remove-2-1",
+    "action": "click",
+    "expected": "Real click on the in-viewport B chip remove leaves chip A and rows White / S / A, Black / S / A; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-remove-2",
+    "action": "click",
+    "expected": "Real click on the in-viewport axis-3 remove restores White / S and Black / S with their saved SKU identities; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Size value M commits a second Size chip and four local matrix rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-value-remove-1-1",
+    "action": "click",
+    "expected": "Real click on the in-viewport M chip remove leaves Size S and the two saved SKU rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Color value Red commits a third Color chip and three local matrix rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-value-remove-0-2",
+    "action": "click",
+    "expected": "Real click on the in-viewport Red chip remove leaves White and Black and the two saved SKU rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-remove-1",
+    "action": "click",
+    "expected": "Real click on the in-viewport axis-2 remove drops Size; Color rows White and Black remain locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-add-1",
+    "action": "click",
+    "expected": "Axis add recreates local axis 2 after the Size removal; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-name-1",
+    "action": "fill",
+    "expected": "Recreated axis 2 accepts the localized Size name locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Size value S restores White / S and Black / S with their saved SKU identities; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for price set on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field price is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk price set amount 88 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply price set 88 sets both rows to 88; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for compare set on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field compare is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk compare set amount 128 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply compare set 128 sets both rows to 128; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for quantity set on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field quantity is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk quantity set amount 9 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply quantity set 9 sets both rows to 9; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for quantity subtract on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field quantity is selected for subtract; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation",
+    "action": "select",
+    "expected": "Bulk operation subtract is selected for quantity; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk quantity subtract amount 2 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply quantity subtract 2 sets both rows to 7; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "One document write; after reload only Color White/Black and Size S remain with both saved SKU identities, price 88, compare 128 and quantity 7",
+    "actual": "PASS"
+  },
+  {
     "page": "mobile axis remove",
     "locale": "zh-CN",
     "width": 390,
@@ -1777,6 +2607,56 @@
     "control": "product-save",
     "action": "click, confirm archive, reload",
     "expected": "One confirmed document write archives both old SKUs; replacement S has new identity, price 95, compare 145, tracked quantity 9, active and generated immutable code stable across two reloads",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for keyword on the saved S row; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field keyword is selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk keyword value unique to this locale is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply closes bulk and sets the keyword on the S row; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "One document write; the bulk keyword persists on the S row after reload and price 95 is unchanged",
     "actual": "PASS"
   },
   {
@@ -2310,6 +3190,46 @@
     "actual": "PASS"
   },
   {
+    "page": "mobile axis remove create",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-add-0",
+    "action": "click",
+    "expected": "Axis add creates a temporary local axis 1 before the persisted axes; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove create",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-name-0",
+    "action": "fill",
+    "expected": "Temporary axis 1 accepts the localized Style name locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove create",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Temporary Style axis commits value A as one chip and one matrix row A; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove create",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-remove-0",
+    "action": "click",
+    "expected": "Real click on the in-viewport axis-1 remove button removes the named, valued Style axis and its matrix; no document write",
+    "actual": "PASS"
+  },
+  {
     "page": "mobile axis remove",
     "locale": "en",
     "width": 390,
@@ -2367,6 +3287,46 @@
     "control": "axis-values-1",
     "action": "fill Enter",
     "expected": "Axis values commit S chip locally without a document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for the code operation; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field code is selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk code value is visible in the dialog; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply closes bulk and sets codes prefix-1 and prefix-2 by matrix ordinal on both rows; still a local draft",
     "actual": "PASS"
   },
   {
@@ -2590,6 +3550,316 @@
     "actual": "PASS"
   },
   {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-add-2",
+    "action": "click",
+    "expected": "Axis add creates local axis 3 on the saved Color/Size product; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-name-2",
+    "action": "fill",
+    "expected": "Axis 3 accepts the localized Style name locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-2",
+    "action": "fill Enter",
+    "expected": "Style values A and B commit two chips and four local matrix rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-value-remove-2-1",
+    "action": "click",
+    "expected": "Real click on the in-viewport B chip remove leaves chip A and rows White / S / A, Black / S / A; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-remove-2",
+    "action": "click",
+    "expected": "Real click on the in-viewport axis-3 remove restores White / S and Black / S with their saved SKU identities; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Size value M commits a second Size chip and four local matrix rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-value-remove-1-1",
+    "action": "click",
+    "expected": "Real click on the in-viewport M chip remove leaves Size S and the two saved SKU rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-0",
+    "action": "fill Enter",
+    "expected": "Color value Red commits a third Color chip and three local matrix rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-value-remove-0-2",
+    "action": "click",
+    "expected": "Real click on the in-viewport Red chip remove leaves White and Black and the two saved SKU rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-remove-1",
+    "action": "click",
+    "expected": "Real click on the in-viewport axis-2 remove drops Size; Color rows White and Black remain locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-add-1",
+    "action": "click",
+    "expected": "Axis add recreates local axis 2 after the Size removal; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-name-1",
+    "action": "fill",
+    "expected": "Recreated axis 2 accepts the localized Size name locally; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove size",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "axis-values-1",
+    "action": "fill Enter",
+    "expected": "Size value S restores White / S and Black / S with their saved SKU identities; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for price set on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field price is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk price set amount 88 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk price set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply price set 88 sets both rows to 88; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for compare set on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field compare is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk compare set amount 128 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply compare set 128 sets both rows to 128; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for quantity set on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field quantity is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk quantity set amount 9 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply quantity set 9 sets both rows to 9; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for quantity subtract on the saved rows; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field quantity is selected for subtract; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation",
+    "action": "select",
+    "expected": "Bulk operation subtract is selected for quantity; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk quantity subtract amount 2 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply quantity subtract 2 sets both rows to 7; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile axis remove values",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "One document write; after reload only Color White/Black and Size S remain with both saved SKU identities, price 88, compare 128 and quantity 7",
+    "actual": "PASS"
+  },
+  {
     "page": "mobile axis remove",
     "locale": "en",
     "width": 390,
@@ -2667,6 +3937,56 @@
     "control": "product-save",
     "action": "click, confirm archive, reload",
     "expected": "One confirmed document write archives both old SKUs; replacement S has new identity, price 95, compare 145, tracked quantity 9, active and generated immutable code stable across two reloads",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click",
+    "expected": "Bulk dialog opens for keyword on the saved S row; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field",
+    "action": "select",
+    "expected": "Bulk field keyword is selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill",
+    "expected": "Bulk keyword value unique to this locale is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-apply",
+    "action": "click",
+    "expected": "Apply closes bulk and sets the keyword on the S row; still a local draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk keyword set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "product-save",
+    "action": "click reload",
+    "expected": "One document write; the bulk keyword persists on the S row after reload and price 95 is unchanged",
     "actual": "PASS"
   }
 ]

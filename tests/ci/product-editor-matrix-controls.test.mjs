@@ -1,12 +1,12 @@
-// Purpose: Refuse bulk completeness that merely agrees with an incomplete declaration table.
-// Depends on: the production JSX scanner and actual ProductBulkFill/canonical table bytes.
+// Purpose: Refuse bulk and variant-remove completeness that merely agrees with an incomplete declaration table.
+// Depends on: the production JSX scanner and actual ProductBulkFill/ProductDocumentVariants/canonical table bytes.
 // Used by: test-node; mutations must turn omissions into RED without a browser or PG.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript-api';
-import { bulkControlIssues, bulkInventoryBindingIssues } from './product-editor-matrix-controls.mjs';
+import { bulkControlIssues, bulkInventoryBindingIssues, removeControlIssues } from './product-editor-matrix-controls.mjs';
 const source = readFileSync('apps/admin/components/ProductBulkFill.tsx', 'utf8');
 const cases = JSON.parse(readFileSync('tests/foundation/testdata/product_editor_matrix_cases.json', 'utf8'));
 test('actual rendered bulk controls have matching real actions in the canonical table', () => {
@@ -65,4 +65,20 @@ test('actual DOM inventory is bound to the real imported recorder method', () =>
 test('a swapped method or no-op shadow cannot donate a DOM inventory assertion', () => {
   assert.ok(bulkInventoryBindingIssues(spec.replace('assertRenderedControls: matrixRendered', 'assertComplete: matrixRendered')).length);
   assert.ok(bulkInventoryBindingIssues(spec.replace('matrixRendered("mobile matrix bulk", renderedBulkControls);', 'const matrixRendered = () => {}; matrixRendered("mobile matrix bulk", renderedBulkControls);')).length);
+});
+
+const variants = readFileSync('apps/admin/components/ProductDocumentVariants.tsx', 'utf8');
+test('every rendered axis and value remove control has a real click case for every axis index', () => {
+  assert.deepEqual(removeControlIssues(variants, cases), []);
+});
+test('removing any one remove-control case is RED', () => {
+  const removes = cases.filter(c => /^axis-(value-)?remove-/.test(c.control));
+  for (const dropped of removes)
+    assert.ok(removeControlIssues(variants, cases.filter(c => c !== dropped)).length, `${dropped.page} ${dropped.control} must be required`);
+});
+test('an anonymous or new remove control is RED', () => {
+  const anonymous = variants.replace('data-testid={`axis-value-remove-${i}-${n}`}', '');
+  assert.ok(removeControlIssues(anonymous, cases).some(x => x.includes('Unidentified remove control')));
+  const added = variants.replace('data-testid={`axis-remove-${i}`}', 'data-testid={`axis-drop-${i}`}');
+  assert.ok(removeControlIssues(added, cases).some(x => x.includes('axis-drop-')));
 });
