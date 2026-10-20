@@ -371,7 +371,7 @@ services:
 
   # -------------------------------------------------------------------------------------------
   # Workers: no HTTP port, no healthcheck (C4). They log fixed ready/error tokens
-  # (*_worker_ready, *_invalid_config, *_database*, *_start_failed) watched by smoke/watchdog.
+  # (*_worker_ready, *_invalid_config, *_database*, *_start_failed; claims-worker also claims_worker_console_failed) watched by smoke/watchdog.
   # -------------------------------------------------------------------------------------------
   expiry-worker:
     # Checkout expiry (River) + the optional buyer/merchant mail outbox loop (cmd/expiry-worker/mail.go, storefront-v2 §E8).
