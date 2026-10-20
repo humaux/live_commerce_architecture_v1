@@ -21,6 +21,7 @@ Origin/CSRF, cookies, request bodies and redirects, and `TestBrowserAdminRelayHa
 replays the pre-fix reserve→free→explicit-port handoff on real sockets (a rival steals the freed port and
 the gate's bind then fails with EADDRINUSE) against the relay handoff that never frees a port.
 `--browser-catalog-media` and `--browser-manual-order` run that handoff regression beside their own gates.
+Go browser fixtures that start the packaged admin through `relay.start` (EADDRINUSE relaunch) prove listener ownership through Linux `/proc`: on any other OS they `t.Skip` as NOT_RUN ("relay.start proves listener ownership through Linux /proc"), while `launch` itself still fails closed.
 The preparation guards require all four regression symbols. Shared automatic-port collision bounds, all
 eleven unchanged browser assertion/readiness lists (now including environment assignment statements and
 readiness status predicates), the single bounded 5 s admin registration and the static freed-port-handoff

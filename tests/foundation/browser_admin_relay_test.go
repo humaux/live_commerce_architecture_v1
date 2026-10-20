@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -50,9 +51,11 @@ func newBrowserAdminRelay(t *testing.T) *browserAdminRelay {
 		r.SetURL(front.target.Load())
 		r.Out.URL.RawQuery = r.In.URL.RawQuery // #122: Rewrite proxies drop unparsable queries (`?limit=%`); security negatives need them raw. Test transport only.
 		r.Out.Host = r.In.Host
-		// Match browserFront: keep its HTTPS marker and the inbound client-IP fixture, not a new relay hop.
-		for _, name := range []string{"X-Forwarded-For", "X-Forwarded-Proto"} {
-			if values, ok := r.In.Header[name]; ok {
+		// ReverseProxy.Rewrite strips Forwarded and X-Forwarded-{For,Host,Proto} from the outbound request. The relay is a
+		// transparent test transport: hand Next every one of them exactly as the browser sent it (no new hop), so the attacker-header
+		// security negatives (X-Forwarded-Host/Forwarded spoofs) still reach the BFF instead of passing vacuously.
+		for name, values := range r.In.Header {
+			if name == "Forwarded" || strings.HasPrefix(name, "X-Forwarded-") {
 				r.Out.Header[name] = values
 			}
 		}
@@ -95,6 +98,9 @@ var bindCollision = regexp.MustCompile(`EADDRINUSE|address already in use`)
 // cancelled ctx, or a child whose listener cannot be proven to be its own fails the test. Returns the live command.
 func (front *browserAdminRelay) start(t *testing.T, ctx context.Context, cmd *exec.Cmd) *exec.Cmd {
 	t.Helper()
+	if runtime.GOOS != "linux" {
+		t.Skip("NOT_RUN: relay.start proves listener ownership through Linux /proc; launch fails closed elsewhere")
+	}
 	child, err := front.launch(t, ctx, cmd)
 	if err != nil {
 		t.Fatal(err)
@@ -170,7 +176,11 @@ func (front *browserAdminRelay) launch(t *testing.T, ctx context.Context, cmd *e
 				killed = true
 			}
 			mu.Unlock()
-			<-exited
+			select { // same 5 s bound the fixtures had before this helper took over their cleanup
+			case <-exited:
+			case <-time.After(5 * time.Second):
+				t.Error("owned Next process did not stop")
+			}
 		})
 		collided, err := awaitOwnedPort(ctx, owns, pgid, port, exited, logFile.Name(), from)
 		if err == nil {
@@ -545,6 +555,9 @@ func TestBrowserAdminRelayStartRetriesBindCollision(t *testing.T) {
 		_ = http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = io.WriteString(w, "child ok") }))
 		os.Exit(0)
 	}
+	if runtime.GOOS != "linux" {
+		t.Skip("NOT_RUN: needs the Linux /proc listener-ownership proof")
+	}
 	t.Setenv("LC_BROWSER_ENGINE", "chromium")
 	held := relayHeldPort(t)
 
@@ -648,6 +661,9 @@ func TestBrowserAdminRelayStartRetriesBindCollision(t *testing.T) {
 // child. RED: the rival accepts a dial (what the old non-/proc fallback treated as ready). GREEN: with the ownership probe
 // unavailable, launch fails closed instead of attaching the relay to the rival, and never retries on a guess.
 func TestBrowserAdminRelayFailsClosedWithoutOwnershipProof(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("NOT_RUN: needs the Linux /proc listener-ownership proof")
+	}
 	t.Setenv("LC_BROWSER_ENGINE", "chromium")
 	held := relayHeldPort(t)
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", held), time.Second)
@@ -746,6 +762,65 @@ func TestBrowserAdminRelayRewritesPrivateOriginRedirect(t *testing.T) {
 	for path, want := range map[string]string{"/own": public + "/en/?keep=1", "/localhost": public + "/en/?keep=1", "/v6": public + "/en#top", "/otherport": "http://localhost:1/en", "/other": "https://example.test/en", "/rel": "/en"} {
 		if got := location(relay.server.URL, path); got != want {
 			t.Fatalf("%s: Location = %q, want %q", path, got, want)
+		}
+	}
+}
+
+// TestBrowserAdminRelayForwardsSpoofableHeaders pins review-118 P1-1: the security negatives send an attacker X-Forwarded-Host /
+// Forwarded (orders-bff, studio-bff and design specs) and expect the BFF to be the one that ignores it.
+// RED: a Rewrite proxy that restores only X-Forwarded-For/-Proto (the code at 158f5787d) drops both before Next sees them.
+// GREEN: the relay passes every Forwarded / X-Forwarded-* header, including repeated values, byte for byte, and leaves
+// Origin, Referer, X-Real-IP and Cookie untouched.
+func TestBrowserAdminRelayForwardsSpoofableHeaders(t *testing.T) {
+	t.Setenv("LC_BROWSER_ENGINE", "chromium")
+	var seen atomic.Value
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { seen.Store(r.Header.Clone()) }))
+	t.Cleanup(upstream.Close)
+	target, _ := url.Parse(upstream.URL)
+	sent := http.Header{
+		"X-Forwarded-Host":  {"attacker.invalid", "evil.example"},
+		"Forwarded":         {"for=203.0.113.9;host=attacker.invalid;proto=https"},
+		"X-Forwarded-For":   {"192.0.2.12"},
+		"X-Forwarded-Proto": {"https"},
+		"X-Forwarded-Port":  {"4443"},
+		"X-Real-Ip":         {"198.51.100.7"},
+		"Origin":            {"https://attacker.invalid"},
+		"Referer":           {"https://attacker.invalid/x"},
+		"Cookie":            {"a=b"},
+	}
+	send := func(base string) http.Header {
+		seen.Store(http.Header{})
+		request, _ := http.NewRequest(http.MethodGet, base+"/api/orders", nil)
+		for name, values := range sent {
+			request.Header[name] = values
+		}
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = response.Body.Close()
+		return seen.Load().(http.Header)
+	}
+	stock := httptest.NewServer(&httputil.ReverseProxy{Rewrite: func(r *httputil.ProxyRequest) {
+		r.SetURL(target)
+		r.Out.Host = r.In.Host
+		for _, name := range []string{"X-Forwarded-For", "X-Forwarded-Proto"} {
+			if values, ok := r.In.Header[name]; ok {
+				r.Out.Header[name] = values
+			}
+		}
+	}})
+	t.Cleanup(stock.Close)
+	got := send(stock.URL)
+	if len(got["X-Forwarded-Host"]) != 0 || len(got["Forwarded"]) != 0 {
+		t.Fatalf("red witness broken: the XFF/XFP-only proxy was expected to drop the spoofed headers, got %v", got)
+	}
+	relay := newBrowserAdminRelay(t)
+	relay.target.Store(target)
+	got = send(relay.server.URL)
+	for name, want := range sent {
+		if strings.Join(got[name], "\x00") != strings.Join(want, "\x00") {
+			t.Fatalf("%s reached Next as %q, want %q", name, got[name], want)
 		}
 	}
 }
