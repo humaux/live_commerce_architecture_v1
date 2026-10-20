@@ -277,10 +277,11 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 				WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3`, tenant, store, name); n != 3 {
 				t.Fatalf("PE axis remove %s: expected two archived old SKUs plus one replacement, got %d", locale.name, n)
 			}
+			// #127: the last save before archiving applies bulk price 88, compare 128, quantity set 9 then subtract 2.
 			for _, row := range []struct {
 				option, index            string
 				price, compare, quantity int64
-			}{{"White", "0", 9000, 13000, 5}, {"Black", "1", 9100, 13100, 4}} {
+			}{{"White", "0", 8800, 12800, 7}, {"Black", "1", 8800, 12800, 7}} {
 				if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.skus s
 					JOIN catalog.products p ON p.id=s.product_id AND p.tenant_id=s.tenant_id AND p.store_id=s.store_id
 					WHERE p.tenant_id=$1 AND p.store_id=$2 AND p.name=$3

@@ -1108,6 +1108,43 @@ export function registerProductEditorAcceptance() {
           expect(writes.length).toBe(localWriteStart);
           return { observed: { value: `${tag} mobile axis remove ${locale}` } };
         });
+        // #127: a named, valued axis at index 0 is removed by a real click before the persisted axes exist;
+        // the values save below re-reads exactly Color/Size after reload.
+        await matrixStep({ page: "mobile axis remove create", control: "axis-add-0", action: "click" }, async () => {
+          const before = writes.length;
+          await page.getByTestId("axis-add").click();
+          await expect(page.locator(".product-axis")).toHaveCount(1);
+          expect(writes.length).toBe(before);
+          return { observed: { axes: 1 }, persistence: "local draft until UI save" };
+        });
+        await matrixStep({ page: "mobile axis remove create", control: "axis-name-0", action: "fill" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("axis-name-0").fill(c.style);
+          await expect(page.getByTestId("axis-name-0")).toHaveValue(c.style);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { name: c.style } };
+        });
+        await matrixStep({ page: "mobile axis remove create", control: "axis-values-0", action: "fill Enter" }, async () => {
+          const before = writes.length;
+          await page.getByTestId("axis-values-0").fill("A");
+          await expect(page.getByTestId("axis-values-0")).toHaveValue("A");
+          await page.getByTestId("axis-values-0").press("Enter");
+          await expect(page.locator(".product-axis").nth(0).locator(".pe-value-chips > span")).toHaveCount(1);
+          await expect(page.getByTestId("variant-matrix").locator("strong")).toHaveText(["A"]);
+          expect(writes.length).toBe(before);
+          return { observed: { values: ["A"], rows: ["A"] } };
+        });
+        await matrixStep({ page: "mobile axis remove create", control: "axis-remove-0", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("axis-remove-0").scrollIntoViewIfNeeded();
+          await expect(page.getByTestId("axis-remove-0")).toBeInViewport({ ratio: 0.99 });
+          await expect(page.getByTestId("axis-remove-0")).toHaveAccessibleName(`${c.remove} ${c.axis} 1`);
+          await page.getByTestId("axis-remove-0").click();
+          await expect(page.locator(".product-axis")).toHaveCount(0);
+          await expect(page.getByTestId("variant-matrix")).toHaveCount(0);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { axes: 0, rows: "A→default (matrix hidden)" } };
+        });
         for (const [i, name, values] of [
           [0, c.color, "White, Black"],
           [1, c.size, "S"],
@@ -1170,6 +1207,37 @@ export function registerProductEditorAcceptance() {
           );
         }
         await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(2);
+        // #127: bulk code exists only before the first save (edit mode hides it); read back on the rows.
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-open", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-open").click();
+          await expect(page.getByTestId("bulk-field")).toBeVisible();
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { dialog: "open" } };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-field", action: "select" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-field").selectOption("code");
+          await expect(page.getByTestId("bulk-field")).toHaveValue("code");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { field: "code" } };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-value", action: "fill" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-value").fill(`${mobileMatrixTag}-P${localeIndex}-`);
+          await expect(page.getByTestId("bulk-value")).toHaveValue(`${mobileMatrixTag}-P${localeIndex}-`);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { value: `${mobileMatrixTag}-P${localeIndex}-` } };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-apply", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-apply").click();
+          await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+          await expect(page.getByTestId("matrix-row-0").getByTestId("matrix-code-0")).toHaveValue(`${mobileMatrixTag}-P${localeIndex}-1`);
+          await expect(page.getByTestId("matrix-row-1").getByTestId("matrix-code-1")).toHaveValue(`${mobileMatrixTag}-P${localeIndex}-2`);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { codes: [`${mobileMatrixTag}-P${localeIndex}-1`, `${mobileMatrixTag}-P${localeIndex}-2`] } };
+        });
         for (let i = 0; i < 2; i++) {
           const row = page.getByTestId(`matrix-row-${i}`);
           await matrixStep(
@@ -1407,6 +1475,218 @@ export function registerProductEditorAcceptance() {
           expect(writes.slice(bulkSaveStart).filter(r => r.path.endsWith("/document"))).toHaveLength(1);
           return { observed: "Exactly one real document write succeeds; bulk quantity 5/4, SKU identities, prices, compare-at and codes persist on reload" };
         });
+        // #127: every remove control by real 390px click; transient values/axes are removed again, so the
+        // saved White/S and Black/S SKUs come back from the row archive with their identities.
+        await matrixStep({ page: "mobile axis remove values", control: "axis-add-2", action: "click" }, async () => {
+          const before = writes.length;
+          await page.getByTestId("axis-add").click();
+          await expect(page.locator(".product-axis")).toHaveCount(3);
+          expect(writes.length).toBe(before);
+          return { observed: { axes: 3 }, persistence: "local draft until UI save" };
+        });
+        await matrixStep({ page: "mobile axis remove values", control: "axis-name-2", action: "fill" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("axis-name-2").fill(c.style);
+          await expect(page.getByTestId("axis-name-2")).toHaveValue(c.style);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { name: c.style } };
+        });
+        await matrixStep({ page: "mobile axis remove values", control: "axis-values-2", action: "fill Enter" }, async () => {
+          const before = writes.length;
+          await page.getByTestId("axis-values-2").fill("A, B");
+          await expect(page.getByTestId("axis-values-2")).toHaveValue("A, B");
+          await page.getByTestId("axis-values-2").press("Enter");
+          await expect(page.locator(".product-axis").nth(2).locator(".pe-value-chips > span")).toHaveCount(2);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White / S / A", "White / S / B", "Black / S / A", "Black / S / B"]);
+          expect(writes.length).toBe(before);
+          return { observed: { values: ["A", "B"], visibleRows: 4 } };
+        });
+        await matrixStep({ page: "mobile axis remove values", control: "axis-value-remove-2-1", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("axis-value-remove-2-1").scrollIntoViewIfNeeded();
+          await expect(page.getByTestId("axis-value-remove-2-1")).toBeInViewport({ ratio: 0.99 });
+          await expect(page.getByTestId("axis-value-remove-2-1")).toHaveAccessibleName(`${c.remove} B`);
+          await page.getByTestId("axis-value-remove-2-1").click();
+          await expect(page.locator(".product-axis").nth(2).locator(".pe-value-chips > span")).toHaveCount(1);
+          await expect(page.locator(".product-axis").nth(2).locator(".pe-value-chips > span")).toContainText(["A"]);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White / S / A", "Black / S / A"]);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { removed: "B", visibleRows: "4→2" } };
+        });
+        await matrixStep({ page: "mobile axis remove values", control: "axis-remove-2", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("axis-remove-2").scrollIntoViewIfNeeded();
+          await expect(page.getByTestId("axis-remove-2")).toBeInViewport({ ratio: 0.99 });
+          await expect(page.getByTestId("axis-remove-2")).toHaveAccessibleName(`${c.remove} ${c.axis} 3`);
+          await page.getByTestId("axis-remove-2").click();
+          await expect(page.locator(".product-axis")).toHaveCount(2);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White / S", "Black / S"]);
+          await expect(bulkWhite).toHaveAttribute("data-sku-id", oldAxisIDs[0]);
+          await expect(bulkBlack).toHaveAttribute("data-sku-id", oldAxisIDs[1]);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { axes: 2, visibleRows: "2→2", restoredSKUs: oldAxisIDs } };
+        });
+        await matrixStep({ page: "mobile axis remove values", control: "axis-values-1", action: "fill Enter" }, async () => {
+          const before = writes.length;
+          await page.getByTestId("axis-values-1").fill("M");
+          await expect(page.getByTestId("axis-values-1")).toHaveValue("M");
+          await page.getByTestId("axis-values-1").press("Enter");
+          await expect(page.locator(".product-axis").nth(1).locator(".pe-value-chips > span")).toHaveCount(2);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White / S", "White / M", "Black / S", "Black / M"]);
+          expect(writes.length).toBe(before);
+          return { observed: { values: ["S", "M"], visibleRows: 4 } };
+        });
+        await matrixStep({ page: "mobile axis remove values", control: "axis-value-remove-1-1", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("axis-value-remove-1-1").scrollIntoViewIfNeeded();
+          await expect(page.getByTestId("axis-value-remove-1-1")).toBeInViewport({ ratio: 0.99 });
+          await expect(page.getByTestId("axis-value-remove-1-1")).toHaveAccessibleName(`${c.remove} M`);
+          await page.getByTestId("axis-value-remove-1-1").click();
+          await expect(page.locator(".product-axis").nth(1).locator(".pe-value-chips > span")).toHaveCount(1);
+          await expect(page.locator(".product-axis").nth(1).locator(".pe-value-chips > span")).toContainText(["S"]);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White / S", "Black / S"]);
+          await expect(bulkWhite).toHaveAttribute("data-sku-id", oldAxisIDs[0]);
+          await expect(bulkBlack).toHaveAttribute("data-sku-id", oldAxisIDs[1]);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { removed: "M", visibleRows: "4→2", restoredSKUs: oldAxisIDs } };
+        });
+        await matrixStep({ page: "mobile axis remove values", control: "axis-values-0", action: "fill Enter" }, async () => {
+          const before = writes.length;
+          await page.getByTestId("axis-values-0").fill("Red");
+          await expect(page.getByTestId("axis-values-0")).toHaveValue("Red");
+          await page.getByTestId("axis-values-0").press("Enter");
+          await expect(page.locator(".product-axis").nth(0).locator(".pe-value-chips > span")).toHaveCount(3);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White / S", "Black / S", "Red / S"]);
+          expect(writes.length).toBe(before);
+          return { observed: { values: ["White", "Black", "Red"], visibleRows: 3 } };
+        });
+        await matrixStep({ page: "mobile axis remove values", control: "axis-value-remove-0-2", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("axis-value-remove-0-2").scrollIntoViewIfNeeded();
+          await expect(page.getByTestId("axis-value-remove-0-2")).toBeInViewport({ ratio: 0.99 });
+          await expect(page.getByTestId("axis-value-remove-0-2")).toHaveAccessibleName(`${c.remove} Red`);
+          await page.getByTestId("axis-value-remove-0-2").click();
+          await expect(page.locator(".product-axis").nth(0).locator(".pe-value-chips > span")).toHaveCount(2);
+          await expect(page.locator(".product-axis").nth(0).locator(".pe-value-chips > span")).toContainText(["White", "Black"]);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White / S", "Black / S"]);
+          await expect(bulkWhite).toHaveAttribute("data-sku-id", oldAxisIDs[0]);
+          await expect(bulkBlack).toHaveAttribute("data-sku-id", oldAxisIDs[1]);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { removed: "Red", visibleRows: "3→2", restoredSKUs: oldAxisIDs } };
+        });
+        await matrixStep({ page: "mobile axis remove size", control: "axis-remove-1", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("axis-remove-1").scrollIntoViewIfNeeded();
+          await expect(page.getByTestId("axis-remove-1")).toBeInViewport({ ratio: 0.99 });
+          await expect(page.getByTestId("axis-remove-1")).toHaveAccessibleName(`${c.remove} ${c.axis} 2`);
+          await page.getByTestId("axis-remove-1").click();
+          await expect(page.locator(".product-axis")).toHaveCount(1);
+          await expect(page.getByTestId("axis-name-0")).toHaveValue(c.color);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White", "Black"]);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { axes: [c.color], visibleRows: ["White", "Black"] } };
+        });
+        await matrixStep({ page: "mobile axis remove size", control: "axis-add-1", action: "click" }, async () => {
+          const before = writes.length;
+          await page.getByTestId("axis-add").click();
+          await expect(page.locator(".product-axis")).toHaveCount(2);
+          expect(writes.length).toBe(before);
+          return { observed: { axes: 2 }, persistence: "local draft until UI save" };
+        });
+        await matrixStep({ page: "mobile axis remove size", control: "axis-name-1", action: "fill" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("axis-name-1").fill(c.size);
+          await expect(page.getByTestId("axis-name-1")).toHaveValue(c.size);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { name: c.size } };
+        });
+        await matrixStep({ page: "mobile axis remove size", control: "axis-values-1", action: "fill Enter" }, async () => {
+          const before = writes.length;
+          await page.getByTestId("axis-values-1").fill("S");
+          await expect(page.getByTestId("axis-values-1")).toHaveValue("S");
+          await page.getByTestId("axis-values-1").press("Enter");
+          await expect(page.locator(".product-axis").nth(1).locator(".pe-value-chips > span")).toHaveCount(1);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White / S", "Black / S"]);
+          await expect(bulkWhite).toHaveAttribute("data-sku-id", oldAxisIDs[0]);
+          await expect(bulkBlack).toHaveAttribute("data-sku-id", oldAxisIDs[1]);
+          expect(writes.length).toBe(before);
+          return { observed: { values: ["S"], visibleRows: 2, restoredSKUs: oldAxisIDs } };
+        });
+        // #127 group 4: each remaining bulk field/operation, applied to all rows and read back before and after save.
+        for (const [field, operation, value, applied] of [
+          ["price", "set", "88", "88"],
+          ["compare", "set", "128", "128"],
+          ["quantity", "set", "9", "9"],
+          ["quantity", "subtract", "2", "7"],
+        ] as const) {
+          const bulkPage = `mobile matrix bulk ${field} ${operation}`;
+          const appliedID = { price: "new-price", compare: "matrix-compare", quantity: "matrix-quantity" }[field];
+          await matrixStep({ page: bulkPage, control: "bulk-open", action: "click" }, async () => {
+            const localWriteStart = writes.length;
+            await page.getByTestId("bulk-open").click();
+            await expect(page.getByTestId("bulk-field")).toBeVisible();
+            expect(writes.length).toBe(localWriteStart);
+            return { observed: { dialog: "open" } };
+          });
+          await matrixStep({ page: bulkPage, control: "bulk-field", action: "select" }, async () => {
+            const localWriteStart = writes.length;
+            await page.getByTestId("bulk-field").selectOption(field);
+            await expect(page.getByTestId("bulk-field")).toHaveValue(field);
+            expect(writes.length).toBe(localWriteStart);
+            return { observed: { field } };
+          });
+          if (operation !== "set") {
+            await matrixStep({ page: bulkPage, control: "bulk-operation", action: "select" }, async () => {
+              const localWriteStart = writes.length;
+              await page.getByTestId("bulk-operation").selectOption(operation);
+              await expect(page.getByTestId("bulk-operation")).toHaveValue(operation);
+              expect(writes.length).toBe(localWriteStart);
+              return { observed: { operation } };
+            });
+          }
+          await matrixStep({ page: bulkPage, control: "bulk-value", action: "fill" }, async () => {
+            const localWriteStart = writes.length;
+            await page.getByTestId("bulk-value").fill(value);
+            await expect(page.getByTestId("bulk-value")).toHaveValue(value);
+            expect(writes.length).toBe(localWriteStart);
+            return { observed: { value } };
+          });
+          await matrixStep({ page: bulkPage, control: "bulk-apply", action: "click" }, async () => {
+            const localWriteStart = writes.length;
+            await page.getByTestId("bulk-apply").click();
+            await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+            await expect(bulkWhite.getByTestId(`${appliedID}-0`)).toHaveValue(applied);
+            await expect(bulkBlack.getByTestId(`${appliedID}-1`)).toHaveValue(applied);
+            expect(writes.length).toBe(localWriteStart);
+            return { observed: { field, operation, value, rows: [applied, applied] } };
+          });
+        }
+        await matrixStep({ page: "mobile axis remove values", control: "product-save", action: "click reload" }, async () => {
+          const valuesSaveStart = writes.length;
+          const valuesSaved = page.waitForResponse(r => r.url().includes(`/api/stores/${store}/products/`) && r.url().endsWith("/document") && r.request().method() !== "GET");
+          await page.getByTestId("product-save").click();
+          await expect(page.getByTestId("product-save")).toBeEnabled();
+          expect((await valuesSaved).ok()).toBe(true);
+          await page.reload();
+          await expect(page.locator(".product-axis")).toHaveCount(2);
+          await expect(page.getByTestId("axis-name-0")).toHaveValue(c.color);
+          await expect(page.getByTestId("axis-name-1")).toHaveValue(c.size);
+          await expect(page.locator(".product-axis").nth(0).locator(".pe-value-chips > span")).toHaveCount(2);
+          await expect(page.locator(".product-axis").nth(0).locator(".pe-value-chips > span")).toContainText(["White", "Black"]);
+          await expect(page.locator(".product-axis").nth(1).locator(".pe-value-chips > span")).toHaveCount(1);
+          await expect(page.locator(".product-axis").nth(1).locator(".pe-value-chips > span")).toContainText(["S"]);
+          await expect(axisMatrix.locator("strong")).toHaveText(["White / S", "Black / S"]);
+          await expect(bulkWhite).toHaveAttribute("data-sku-id", oldAxisIDs[0]);
+          await expect(bulkBlack).toHaveAttribute("data-sku-id", oldAxisIDs[1]);
+          await expect(bulkWhite.getByTestId("new-price-0")).toHaveValue("88");
+          await expect(bulkBlack.getByTestId("new-price-1")).toHaveValue("88");
+          await expect(bulkWhite.getByTestId("matrix-compare-0")).toHaveValue("128");
+          await expect(bulkBlack.getByTestId("matrix-compare-1")).toHaveValue("128");
+          await expect(bulkWhite.getByTestId("matrix-quantity-0")).toHaveValue("7");
+          await expect(bulkBlack.getByTestId("matrix-quantity-1")).toHaveValue("7");
+          expect(writes.slice(valuesSaveStart).filter(r => r.path.endsWith("/document"))).toHaveLength(1);
+          return { observed: "Removed values/axes absent and SKU identities kept after reload; bulk price 88, compare 128, quantity set 9 then subtract 2 = 7 persist" };
+        });
         await expect(page.locator(".product-axis")).toHaveCount(2);
         const removeColor = page.locator(".product-axis").nth(0).locator(".pe-axis-remove");
         await expect(removeColor).toHaveAccessibleName(`${c.remove} ${c.axis} 1`);
@@ -1601,6 +1881,49 @@ export function registerProductEditorAcceptance() {
             };
           },
         );
+        // #127 group 4: bulk keyword on the single persisted S row (unique per locale), saved and re-read.
+        await matrixStep({ page: "mobile matrix bulk keyword set", control: "bulk-open", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-open").click();
+          await expect(page.getByTestId("bulk-field")).toBeVisible();
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { dialog: "open" } };
+        });
+        await matrixStep({ page: "mobile matrix bulk keyword set", control: "bulk-field", action: "select" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-field").selectOption("keyword");
+          await expect(page.getByTestId("bulk-field")).toHaveValue("keyword");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { field: "keyword" } };
+        });
+        await matrixStep({ page: "mobile matrix bulk keyword set", control: "bulk-value", action: "fill" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-value").fill(`${mobileMatrixTag}K${localeIndex}`);
+          await expect(page.getByTestId("bulk-value")).toHaveValue(`${mobileMatrixTag}K${localeIndex}`);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { value: `${mobileMatrixTag}K${localeIndex}` } };
+        });
+        await matrixStep({ page: "mobile matrix bulk keyword set", control: "bulk-apply", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-apply").click();
+          await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+          await expect(remaining.getByRole("textbox", { name: `${c.keyword} 1`, exact: true })).toHaveValue(`${mobileMatrixTag}K${localeIndex}`);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: { keyword: `${mobileMatrixTag}K${localeIndex}` } };
+        });
+        await matrixStep({ page: "mobile matrix bulk keyword set", control: "product-save", action: "click reload" }, async () => {
+          const keywordSaveStart = writes.length;
+          const keywordSaved = page.waitForResponse(r => r.url().includes(`/api/stores/${store}/products/`) && r.url().endsWith("/document") && r.request().method() !== "GET");
+          await page.getByTestId("product-save").click();
+          await expect(page.getByTestId("product-save")).toBeEnabled();
+          expect((await keywordSaved).ok()).toBe(true);
+          await page.reload();
+          await expect(axisMatrix.locator("strong")).toHaveText(["S"]);
+          await expect(remaining.getByRole("textbox", { name: `${c.keyword} 1`, exact: true })).toHaveValue(`${mobileMatrixTag}K${localeIndex}`);
+          await expect(remaining.getByTestId("new-price-0")).toHaveValue("95");
+          expect(writes.slice(keywordSaveStart).filter(r => r.path.endsWith("/document"))).toHaveLength(1);
+          return { observed: "One document write; bulk keyword persists on the S row after reload; price 95 unchanged" };
+        });
         matrixComplete();
       }
       // Controlled read-only ambiguity: do not fabricate a stock quantity when the API has no single warehouse.
