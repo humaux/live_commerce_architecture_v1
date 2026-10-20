@@ -311,6 +311,10 @@ const nodePortRaceSites = [
   "tests/ui/visual-audit.mjs", "tests/storefront/ads-attribution.mjs", "tests/storefront/legal-pages.mjs",
   "tests/storefront/ad-link.mjs", "tests/admin/ui-gallery-runner.mjs", "tests/admin/shell-runner.mjs",
   "tests/admin/platform-runner.mjs", "tests/admin/picklist.spec.ts",
+  // review-131 P1: the storefront buyer harnesses' startNext also reserved, freed and handed the port to `next start --port`.
+  "tests/storefront/ads-consent.mjs", "tests/storefront/collector-buyer.mjs", "tests/storefront/cvs-buyer.mjs",
+  "tests/storefront/cvs-pap-only.mjs", "tests/storefront/home-cod-buyer.mjs", "tests/storefront/offline-buyer.mjs",
+  "tests/storefront/privacy-buyer.mjs", "tests/storefront/refund-buyer.mjs", "tests/storefront/shipment-buyer.mjs",
 ];
 function noPickThenRelease(file, source) {
   if (file.endsWith(".go")) {
