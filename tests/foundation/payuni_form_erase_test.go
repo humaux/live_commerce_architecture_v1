@@ -49,7 +49,10 @@ func pfeSeedPage(t *testing.T, pool *pgxpool.Pool, attempt, form string) {
 	 FROM checkout.payment_attempts a WHERE a.id=$1`, attempt, form)
 }
 
-// pfeReplica runs statements on one connection with user triggers off (FK/CHECK constraints stay on).
+// pfeReplica runs statements on one connection with session_replication_role=replica. That disables ordinary user
+// triggers AND foreign-key checks (PostgreSQL implements FKs as triggers; PG18 §19.11.1); CHECK, NOT NULL and unique
+// constraints still apply. Callers may only change state/reference columns of existing rows, never insert rows or
+// rewrite keys, since nothing would reject a dangling reference here (issue #104).
 func pfeReplica(t *testing.T, pool *pgxpool.Pool, stmts ...string) {
 	t.Helper()
 	ctx := context.Background()
