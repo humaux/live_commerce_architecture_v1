@@ -6,7 +6,7 @@
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
 #   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (bounded apt retries),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,
-#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version), setup-go module/compiler cache for shard:gNN only. No secrets: every gate uses MOCK/SANDBOX fixtures only.
+#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version), .github/actions/pnpm (cached Corepack pnpm, #107), setup-go module/compiler cache for shard:gNN only. No secrets: every gate uses MOCK/SANDBOX fixtures only.
 # Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`, or `-f full_browser_universe=true` for the nightly set on demand);
 #   pushes to r3/integration run the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its
 #   changed paths; the nightly schedule re-verifies trunk browser health with the FULL browser universe (CI-SELECT: push runs select no browser job).
@@ -156,10 +156,9 @@ jobs:
         with:
           node-version: "24"
           package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
+      - uses: ./.github/actions/pnpm # pnpm from the cached Corepack home, no per-run registry download (#107)
       - name: Node dependencies (frozen lockfile)
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Browser requirements from registry
         id: browsers
         run: node scripts/dev/ci-playwright-browsers.mjs "$MODE"

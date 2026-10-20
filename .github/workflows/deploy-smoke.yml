@@ -1,3 +1,7 @@
+# Purpose: deploy/scripts/smoke.sh static and full on a Linux runner (R1 ruling G3; details below).
+# Depends on: pinned checkout/setup-go/setup-node, .github/actions/pnpm (cached Corepack pnpm, #107), repo Playwright Chromium,
+#   deploy/scripts/smoke.sh and the compose stack.
+# Used by: gates.yml (workflow_call when deploy/ or scripts/deploy* changed), PRs into other branches, workflow_dispatch.
 name: Deploy smoke
 
 # R1 ruling G3 (docs/delivery/units/r1-final-rulings.md): deploy/scripts/smoke.sh static (S01 shellcheck
@@ -50,10 +54,10 @@ jobs:
         with:
           node-version: "24" # package.json engines: >=24 <25
           package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
+      - uses: ./.github/actions/pnpm # pnpm from the cached Corepack home, no per-run registry download (#107)
       - name: Repo Playwright + Chromium for S34
         # S34 drives Chromium through the edge; without the repo's @playwright/test it is NOT_RUN.
         run: |
-          corepack enable
           pnpm install --frozen-lockfile
           sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u)" "$PLAYWRIGHT_BROWSERS_PATH"
           pnpm exec playwright install --with-deps chromium
