@@ -1,6 +1,6 @@
-// Purpose: Derive bulk action coverage from the actual production JSX, rather than the case table alone.
-// Depends on: typescript-api, ProductBulkFill source and the canonical mobile-matrix cases.
-// Used by: Node gate; every rendered select/input/button needs a stable identity and real matching operation.
+// Purpose: Derive bulk and variant-remove action coverage from the actual production JSX, rather than the case table alone.
+// Depends on: typescript-api, ProductBulkFill / ProductDocumentVariants source and the canonical mobile-matrix cases.
+// Used by: Node gate; every rendered bulk control and every axis/value remove button needs a stable identity and a real click case.
 import ts from 'typescript-api';
 export function bulkControlIssues(source, cases) {
   const ast = ts.createSourceFile('ProductBulkFill.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -54,5 +54,35 @@ export function bulkInventoryBindingIssues(source) {
   }
   visit(file);
   if (calls !== 1) issues.push('Exactly one real bulk DOM inventory call must exist in the locale flow');
+  return issues;
+}
+
+const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** Every rendered remove button (aria-label starts with c.remove) needs a testid template and, per axis index, a real click case. */
+export function removeControlIssues(source, cases) {
+  const ast = ts.createSourceFile('ProductDocumentVariants.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  // The production axis cap (axis-add is disabled at this count) bounds "every axis index".
+  const axes = Number(/axes\.length >= (\d+)/.exec(source)?.[1]);
+  const issues = axes > 0 ? [] : ['Production axis limit not discovered'];
+  let found = 0;
+  const attr = (node, name) => node.attributes.properties.find(a => ts.isJsxAttribute(a) && a.name.getText(ast) === name)?.initializer;
+  function visit(node) {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(ast) === 'button' &&
+        (attr(node, 'aria-label')?.getText(ast) ?? '').includes('${c.remove}')) {
+      found++;
+      const id = attr(node, 'data-testid'), template = id && ts.isJsxExpression(id) && id.expression && ts.isTemplateExpression(id.expression) ? id.expression : null;
+      if (!template) issues.push(`Unidentified remove control ${attr(node, 'aria-label').getText(ast)}`);
+      else for (let axis = 0; axis < axes; axis++) {
+        // `${i}` is the axis index in both remove controls; any other span (the value index) may vary.
+        const pattern = new RegExp('^' + escape(template.head.text) + template.templateSpans.map(span =>
+          (span.expression.getText(ast) === 'i' ? axis : '\\d+') + escape(span.literal.text)).join('') + '$');
+        if (!cases.some(c => pattern.test(c.control) && c.action.includes('click')))
+          issues.push(`Missing rendered remove click ${pattern.source}`);
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+  if (!found) issues.push('No production remove controls discovered');
   return issues;
 }

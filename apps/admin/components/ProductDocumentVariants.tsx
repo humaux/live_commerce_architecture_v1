@@ -89,6 +89,7 @@ export function ProductDocumentVariants({
             <button
               className="pe-axis-remove"
               type="button"
+              data-testid={`axis-remove-${i}`}
               disabled={disabled}
               aria-label={`${c.remove} ${c.axis} ${i + 1}`}
               onClick={() => setAxes(axes.filter((_, n) => n !== i))}
@@ -412,6 +413,7 @@ function AxisValues({
             {value}
             <button
               type="button"
+              data-testid={`axis-value-remove-${i}-${n}`}
               disabled={disabled}
               aria-label={`${c.remove} ${value}`}
               onClick={(e) => {
