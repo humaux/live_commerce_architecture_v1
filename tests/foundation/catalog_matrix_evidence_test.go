@@ -79,7 +79,7 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 // TestProductEditorMatrixLedgerEvidenceCorruption exercises the real validator
 // with isolated filesystem mutations, never the delivered evidence in place.
 func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
-	for _, mutation := range []string{"playwright-log", "cc12-log", "ledger", "manifest", "source", "gate-source"} {
+	for _, mutation := range []string{"playwright-log", "cc12-log", "ledger", "manifest", "source", "gate-source", "case-table"} {
 		t.Run(mutation, func(t *testing.T) {
 			root, canonical := productEditorMatrixEvidenceFixture(t)
 			if err := validateProductEditorMatrixEvidence(root); err != nil {
@@ -105,6 +105,9 @@ func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
 				}
 				manifest["scope"] = "edited while retaining the tested source commit"
 				data, _ = json.Marshal(manifest)
+			case "case-table":
+				// Swapping the recorded table for the current one must not pass silently.
+				path, data = productEditorMatrixCasesPath, productEditorMatrixLedgerCasesJSON
 			case "source", "gate-source":
 				path = "tests/admin/product-editor.acceptance.ts"
 				if mutation == "gate-source" {
@@ -122,6 +125,20 @@ func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
 			}
 		})
 	}
+}
+
+// productEditorMatrixRecordedBlob reads path at the tested commit and fails closed
+// unless its bytes match the SHA-256 the package recorded for it.
+func productEditorMatrixRecordedBlob(t *testing.T, commit, path, recorded string) []byte {
+	t.Helper()
+	data, err := exec.Command("git", "-C", "../..", "show", commit+":"+path).Output()
+	if err != nil {
+		t.Fatalf("recorded %s at %s unavailable (needs full history): %v", path, commit, err)
+	}
+	if fmt.Sprintf("%x", sha256.Sum256(data)) != recorded {
+		t.Fatalf("recorded %s at %s does not match its pinned SHA-256", path, commit)
+	}
+	return data
 }
 
 func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {
@@ -180,8 +197,12 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	}
 	hash := func(data []byte) string { return fmt.Sprintf("%x", sha256.Sum256(data)) }
 	sources := map[string]string{}
-	for path := range manifest["source_files_sha256"].(map[string]any) {
+	for path, recorded := range manifest["source_files_sha256"].(map[string]any) {
 		data := productEditorMatrixReadFixture(t, "../..", path)
+		if path == productEditorMatrixCasesPath {
+			// The package is compared with its own recorded table, never the current one.
+			data = productEditorMatrixRecordedBlob(t, manifest["tested_source_commit"].(string), path, recorded.(string))
+		}
 		write(path, data)
 		sources[path] = hash(data)
 	}
@@ -229,7 +250,7 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 
 // Hash-consistent bytes alone are not a passing browser run. Both native final
 // receipts, list-reporter summaries and manifest counts must corroborate it.
-func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[string][]byte) error {
+func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[string][]byte, required int) error {
 	var manifest struct {
 		Passed map[string]int `json:"actual_passed_cases"`
 		Ledger struct {
@@ -279,7 +300,7 @@ func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[strin
 			perLocale[row.Locale]++
 		}
 	}
-	if manifest.Ledger.Raw != len(rows) || manifest.Ledger.Required != len(productEditorMatrixLedgerExpected()) ||
+	if manifest.Ledger.Raw != len(rows) || manifest.Ledger.Required != required ||
 		manifest.Ledger.Width != 390 || !reflect.DeepEqual(manifest.Ledger.PerLocale, perLocale) {
 		return fmt.Errorf("canonical manifest ledger counts must match the exact validated PASS ledger")
 	}

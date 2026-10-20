@@ -65,10 +65,28 @@ var productEditorMatrixLedgerLocales = map[string]map[string]string{
 	"en":    {"@price": "Price", "@compare": "Compare-at price", "@quantity": "Quantity", "@max": "Maximum per order", "@targetQty": "Resulting on-hand", "@code": "SKU code", "@keyword": "Live keyword", "@untracked": "Do not track ∞"},
 }
 
+// productEditorMatrixCasesPath is the shared table's checkout path; canonical
+// evidence binds its recorded bytes by SHA-256 in SOURCE.json.
+const productEditorMatrixCasesPath = "tests/foundation/testdata/product_editor_matrix_cases.json"
+
+// productEditorMatrixLedgerExpected is the CURRENT embedded table's required set:
+// live browser runs and the testdata ledger are validated against it.
 func productEditorMatrixLedgerExpected() map[productEditorMatrixLedgerKey]string {
+	expected, err := productEditorMatrixLedgerExpectedFor(productEditorMatrixLedgerCases)
+	if err != nil {
+		panic(err.Error())
+	}
+	return expected
+}
+
+// productEditorMatrixLedgerExpectedFor expands one case table (current or recorded) per locale.
+func productEditorMatrixLedgerExpectedFor(cases []productEditorMatrixLedgerCase) (map[productEditorMatrixLedgerKey]string, error) {
+	if len(cases) == 0 {
+		return nil, errors.New("empty shared matrix control table")
+	}
 	expected := make(map[productEditorMatrixLedgerKey]string)
 	for locale, labels := range productEditorMatrixLedgerLocales {
-		for _, required := range productEditorMatrixLedgerCases {
+		for _, required := range cases {
 			control, claim := required.Control, required.Expected
 			for token, label := range labels {
 				control = strings.ReplaceAll(control, token, label)
@@ -76,25 +94,33 @@ func productEditorMatrixLedgerExpected() map[productEditorMatrixLedgerKey]string
 			}
 			key := productEditorMatrixLedgerKey{Page: required.Page, Locale: locale, Width: 390, Row: required.Row, Control: control, Action: required.Action}
 			if strings.TrimSpace(claim) == "" {
-				panic("matrix table requires a non-empty expected claim")
+				return nil, errors.New("matrix table requires a non-empty expected claim")
 			}
 			if _, duplicate := expected[key]; duplicate {
-				panic("duplicate shared matrix control identity")
+				return nil, errors.New("duplicate shared matrix control identity")
 			}
 			expected[key] = claim
 		}
 	}
-	return expected
+	return expected, nil
 }
 
 // Select by reserved page namespace BEFORE inspecting locale/width/result, so
 // malformed target rows cannot disappear through a success-only filter.
 func validateProductEditorMatrixLedger(data []byte) error {
+	return validateProductEditorMatrixLedgerFor(data, productEditorMatrixLedgerExpected())
+}
+
+// validateProductEditorMatrixLedgerFor checks a ledger against one expanded table; required is not modified.
+func validateProductEditorMatrixLedgerFor(data []byte, required map[productEditorMatrixLedgerKey]string) error {
 	var rows []productEditorMatrixLedgerRow
 	if err := json.Unmarshal(data, &rows); err != nil {
 		return fmt.Errorf("invalid matrix ledger JSON: %w", err)
 	}
-	remaining := productEditorMatrixLedgerExpected()
+	remaining := make(map[productEditorMatrixLedgerKey]string, len(required))
+	for key, claim := range required {
+		remaining[key] = claim
+	}
 	seen := make(map[productEditorMatrixLedgerKey]bool)
 	for i, row := range rows {
 		if row.Page == "" {
@@ -391,6 +417,7 @@ func validateProductEditorMatrixEvidence(root string) error {
 	// Validate receipt structure before classifying drift. Missing or malformed
 	// digests remain failures; only actual checkout-byte differences are history.
 	var drift productEditorMatrixEvidenceDrift
+	var recordedCases []byte
 	for _, path := range productEditorMatrixEvidenceSources {
 		hash := manifest.Sources[path]
 		if hash == "" {
@@ -406,9 +433,23 @@ func validateProductEditorMatrixEvidence(root string) error {
 		if err := productEditorMatrixEvidenceHash(path, data, hash); err != nil {
 			drift = append(drift, path)
 		}
+		if path == productEditorMatrixCasesPath {
+			recordedCases = data
+		}
 	}
 	if len(drift) != 0 {
 		return drift
+	}
+	// Historical evidence is informational (#128): it is compared with the case table
+	// recorded (SHA-256 bound just above) with the package, never the current embedded
+	// table. Current-table coverage is enforced by the live browser run and the testdata ledger.
+	var recorded []productEditorMatrixLedgerCase
+	if err := json.Unmarshal(recordedCases, &recorded); err != nil {
+		return fmt.Errorf("canonical recorded case table: %w", err)
+	}
+	required, err := productEditorMatrixLedgerExpectedFor(recorded)
+	if err != nil {
+		return fmt.Errorf("canonical recorded case table: %w", err)
 	}
 	seen := map[string]bool{}
 	for _, copy := range manifest.Copies {
@@ -441,13 +482,13 @@ func validateProductEditorMatrixEvidence(root string) error {
 			return fmt.Errorf("canonical browser evidence %s is empty", name)
 		}
 		if name == "product-editor-click-ledger.json" {
-			if err := validateProductEditorMatrixLedger(data); err != nil {
+			if err := validateProductEditorMatrixLedgerFor(data, required); err != nil {
 				return fmt.Errorf("canonical browser ledger: %w", err)
 			}
 		}
 		native[name] = data
 	}
-	return validateProductEditorMatrixRunOutcome(manifestData, native)
+	return validateProductEditorMatrixRunOutcome(manifestData, native, len(required))
 }
 
 func productEditorMatrixEvidenceHash(path string, data []byte, expected string) error {
