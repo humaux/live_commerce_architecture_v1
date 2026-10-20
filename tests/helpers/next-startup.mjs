@@ -1,6 +1,6 @@
 // Purpose: shared owned-Next startup boundary for browser gates; retry only automatic-port bind collisions.
 // Depends on: Node net/events/fetch; caller-owned child/log and unchanged caller readiness callback.
-// Used by: tests/storefront/*-gate.mjs, ads-attribution.mjs, legal-pages.mjs, ad-link.mjs; tests/ui/visual-audit.mjs; tests/admin/{shell,ui-gallery,platform}-runner.mjs, picklist.spec.ts; tests/ci/next-startup.test.mjs. No production process is managed here.
+// Used by: tests/storefront/*-gate.mjs, *-buyer.mjs, ads-consent.mjs, cvs-pap-only.mjs, stripe-browser.mjs, ads-attribution.mjs, legal-pages.mjs, ad-link.mjs; tests/ui/{click-sweep,visual-audit}.mjs; tests/admin/{shell,ui-gallery,platform}-runner.mjs, picklist.spec.ts; tests/ci/next-startup.test.mjs. No production process is managed here.
 import net from "node:net";
 import { once } from "node:events";
 import { open } from "node:fs/promises";

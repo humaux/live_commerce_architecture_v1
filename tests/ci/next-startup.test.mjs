@@ -325,7 +325,8 @@ function noPickThenRelease(file, source) {
     assert.equal(/"PORT": \w|"--port", \w/.test(source), false, `${file}: a child still gets a caller-picked port`);
     assert.match(source, /\.start\(t, |startPrivate\(t, /, `${file}: the child is not launched through the relay (owned port + EADDRINUSE relaunch)`);
   } else {
-    assert.equal(/\bcreateServer\(\)|freePort\(|listen\((reserve|probe)\)|(probe|reserve)\.close\(/.test(source), false, `${file}: a loopback port is still reserved and freed for a child`);
+    // `(probe|reserve).close(<callback>)` is the freeing call; a bare `.close()` (offline-buyer's `probe` browser context) is not a port.
+    assert.equal(/\bcreateServer\(\)|freePort\(|listen\((reserve|probe)\)|(probe|reserve)\.close\([^)]/.test(source), false, `${file}: a loopback port is still reserved and freed for a child`);
     assert.match(source, /startNextWithPortRetry\(\{\}, /, `${file}: the child is not started through the shared automatic-port helper`);
     assert.match(source, /track\(\w+, \w+\)/, `${file}: the helper cannot see the child's exit and log (no EADDRINUSE proof)`);
   }

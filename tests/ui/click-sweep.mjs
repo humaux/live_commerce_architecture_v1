@@ -38,6 +38,7 @@ import {
   CANCEL_RE, INIT_SCRIPT, LAYER_CSS, Ledger, classKey, controlLabel, controlLocator, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, listControls, matchKnown, monitor,
   degradedMessages, pageState, restore, settle, sweepControl, writeLedger,
 } from "./click-sweep-lib.mjs";
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
 // G-UI9 (unit ui-visual-audit): the same seeded stack, a different runner. `test-local.sh --browser-visual-lint` sets LC_SWEEP_ONLY=visual-audit, and the Go test
 // (browser_click_sweep_test.go) starts this file; the audit (screenshot corpus + layout lint) takes over before the click sweep reads anything.
@@ -81,19 +82,23 @@ function relay(port, req, body) {
   });
 }
 async function startNext() {
-  const file = createWriteStream(path.join(evidence, "storefront-next.log"), { flags: "wx", mode: 0o600 }); logs.push(file); await once(file, "open");
-  const probe = net.createServer(); const port = await listen(probe); await new Promise((r) => probe.close(r));
-  const childEnv = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" };
-  for (const key of Object.keys(childEnv)) if (key.startsWith("LC_SWEEP_")) delete childEnv[key];
-  const child = spawn(process.execPath, [path.join(process.cwd(), "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)],
-    { cwd: path.join(process.cwd(), "apps/storefront"), env: childEnv, stdio: ["ignore", file, file] });
-  children.add(child);
-  for (let i = 0; i < 400; i++) {
-    if (child.exitCode !== null) throw new Error("storefront Next exited before readiness");
-    try { if ((await relay(port, { url: "/robots.txt", method: "GET", headers: { host: HOST } }, Buffer.alloc(0))).status === 200) return port; } catch { /* not up yet */ }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  throw new Error("storefront Next readiness timeout");
+  // #116: no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port EADDRINUSE exit
+  // (proof: this attempt's log). Readiness probe and budget unchanged.
+  return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+    const file = createWriteStream(nextAttemptLog(path.join(evidence, "storefront-next.log"), attempt), { flags: "wx", mode: 0o600 }); logs.push(file); await once(file, "open");
+    const childEnv = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" };
+    for (const key of Object.keys(childEnv)) if (key.startsWith("LC_SWEEP_")) delete childEnv[key];
+    const child = spawn(process.execPath, [path.join(process.cwd(), "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)],
+      { cwd: path.join(process.cwd(), "apps/storefront"), env: childEnv, stdio: ["ignore", file, file] });
+    track(child, file);
+    children.add(child);
+    for (let i = 0; i < 400; i++) {
+      if (child.exitCode !== null) throw new Error("storefront Next exited before readiness");
+      try { if ((await relay(port, { url: "/robots.txt", method: "GET", headers: { host: HOST } }, Buffer.alloc(0))).status === 200) return port; } catch { /* not up yet */ }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error("storefront Next readiness timeout");
+  });
 }
 let browser, edge, proxy;
 const certDir = await mkdtemp(path.join(tmpdir(), "lc-sweep-edge-"));

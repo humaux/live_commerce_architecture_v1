@@ -31,6 +31,7 @@ import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs";
 import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import { displayTime } from "../../packages/format/src/index.ts";
+import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
 const env = (name) => {
   const value = process.env[name];
@@ -76,19 +77,23 @@ function relayTo(target, req, body) {
   });
 }
 async function startNext() {
-  const reserve = net.createServer(), port = await listen(reserve); await new Promise((r) => reserve.close(r));
-  const log = createWriteStream(path.join(evidence, "offline-next.log"), { flags: "wx", mode: 0o600 }); logs.push(log); await once(log, "open");
-  const childEnv = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" };
-  for (const key of Object.keys(childEnv)) if (key.startsWith("LC_OFF_")) delete childEnv[key];
-  const child = spawn(process.execPath, [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)],
-    { cwd: path.join(root, "apps/storefront"), env: childEnv, stdio: ["ignore", log, log] });
-  children.add(child);
-  for (let i = 0; i < 100; i++) {
-    if (child.exitCode !== null) throw new Error("owned Next failed readiness");
-    try { if ((await relayTo({ hostname: "127.0.0.1", port }, { url: "/api/buyer/session", method: "GET", headers: { host } }, Buffer.alloc(0))).status === 200) return port; } catch { /* not ready */ }
-    await pause(50);
-  }
-  throw new Error("owned Next readiness timeout");
+  // #116 (review-131 P1): no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port
+  // EADDRINUSE exit (proof: this attempt's log). Readiness probe and budget unchanged.
+  return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
+    const log = createWriteStream(nextAttemptLog(path.join(evidence, "offline-next.log"), attempt), { flags: "wx", mode: 0o600 }); logs.push(log); await once(log, "open");
+    const childEnv = { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" };
+    for (const key of Object.keys(childEnv)) if (key.startsWith("LC_OFF_")) delete childEnv[key];
+    const child = spawn(process.execPath, [path.join(root, "apps/storefront/node_modules/next/dist/bin/next"), "start", "--hostname", "127.0.0.1", "--port", String(port)],
+      { cwd: path.join(root, "apps/storefront"), env: childEnv, stdio: ["ignore", log, log] });
+    track(child, log);
+    children.add(child);
+    for (let i = 0; i < 100; i++) {
+      if (child.exitCode !== null) throw new Error("owned Next failed readiness");
+      try { if ((await relayTo({ hostname: "127.0.0.1", port }, { url: "/api/buyer/session", method: "GET", headers: { host } }, Buffer.alloc(0))).status === 200) return port; } catch { /* not ready */ }
+      await pause(50);
+    }
+    throw new Error("owned Next readiness timeout");
+  });
 }
 const manifest = path.join(evidence, "screenshots.json");
 async function shot(page, name, locale, viewport) {
