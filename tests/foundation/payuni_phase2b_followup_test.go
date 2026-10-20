@@ -20,8 +20,8 @@
 //	PFU07 (issue #116, review-123-aee4382f9 P2-1): the owner's read-only listing in docs/runbooks/deploy.md §4 is the
 //	       guard predicate verbatim (0199 and post_river/0027), and on every PFU04/PFU06/PFU07 seed it lists exactly the
 //	       reports the guard counts (including an authorization with CloseStatus 3 that a fact cites, applied before a
-//	       later capture). Its projection and its READ ONLY / SET LOCAL / ROLLBACK wrapper are pinned too
-//	       (review-124-cb721a802 P2-1/P2-2).
+//	       later capture). Its projection and its lc_psql heredoc + READ ONLY / SET LOCAL / ROLLBACK wrapper are pinned
+//	       too (review-124-cb721a802 P2-1/P2-2, review-125-c20176c95 P2-1).
 //
 // Depends on: migrations.Apply; pwIsolatedFixture; psSetupItemsOn; rm2HistoricalAttempt; pqReport/pqJSON; rmVersions/
 //
@@ -540,9 +540,10 @@ const (
 	pfuRunbookSelect = "SELECT x.attempt_id, encode(x.report_hash,'hex') AS report_hash, x.report->>'TradeNo' AS trade_no, " +
 		"x.report->>'TradeStatus' AS trade_status, x.report->>'CloseStatus' AS close_status, x.report->>'DataSource' AS data_source, " +
 		"s.has_auth, s.has_cap, s.has_cei, s.has_ref, s.has_con"
-	// The read-only wrapper the runbook prescribes around the listing (review-124-cb721a802 P2-1).
-	pfuRunbookTxOpen  = "BEGIN READ ONLY;\n     SET LOCAL row_security = off;\n     " + pfuRunbookBegin
-	pfuRunbookTxClose = pfuRunbookEnd + "\n     ROLLBACK;"
+	// The read-only wrapper the runbook prescribes around the listing (review-124-cb721a802 P2-1), fed to lib.sh's
+	// lc_psql as a quoted heredoc: the pilot host has no MIGRATION_DATABASE_URL (review-125-c20176c95 P2-1).
+	pfuRunbookTxOpen  = "\n     lc_psql <<'SQL'\n     BEGIN READ ONLY;\n     SET LOCAL row_security = off;\n     " + pfuRunbookBegin
+	pfuRunbookTxClose = pfuRunbookEnd + "\n     ROLLBACK;\n     SQL\n"
 )
 
 // pfuBetween returns the text of path between begin and end (exclusive), or fails.
@@ -607,7 +608,7 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 		t.Errorf("runbook listing projection changed (a DISTINCT, aggregate or set-returning call would change the row set):\ngot:  %s\nwant: %s", sel, pfuRunbookSelect)
 	}
 	if rb := pfuBetween(t, pfuRunbook, "", "\n### 4.1"); !strings.Contains(rb, pfuRunbookTxOpen) || !strings.Contains(rb, pfuRunbookTxClose) {
-		t.Errorf("runbook listing must sit inside BEGIN READ ONLY; SET LOCAL row_security = off; ... ROLLBACK;")
+		t.Errorf("runbook listing must be lc_psql <<'SQL' BEGIN READ ONLY; SET LOCAL row_security = off; ... ROLLBACK; SQL")
 	}
 	listed := strings.Join(strings.Fields(q[i:]+";"), " ")
 	for _, v := range []string{pfuNumbered, pfuPost} {
