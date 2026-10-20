@@ -1,3 +1,8 @@
+// Purpose: the shared River worker Run loop — start one client under a startup watchdog, announce readiness only while the
+//   owning context is live, wait for the signal, then stop gracefully (forced stop as fallback); sanitized start diagnostics.
+// Depends on: River client Start/Stop/StopAndCancel, pgconn (SQLSTATE classification), log/slog.
+// Used by: cmd/ads-worker, cmd/claims-worker, cmd/expiry-worker, cmd/media-worker, cmd/meta-worker, cmd/payment-worker; run_test.go.
+
 package jobqueue
 
 import (
@@ -31,7 +36,12 @@ func Run(ctx context.Context, client *river.Client[pgx.Tx], readyMessage string)
 		return err
 	}
 	defer cancelWorker()
-	slog.Info(readyMessage)
+	// A cancel that lands after Start returned (e.g. a required listener failed meanwhile, #107) must not be announced as
+	// ready; the client still stops through the normal path below.
+	// ponytail: a cancel between this check and the log line is not excluded (no lock); that window is the log call itself.
+	if ctx.Err() == nil {
+		slog.Info(readyMessage)
+	}
 	<-ctx.Done()
 	graceful, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	err = client.Stop(graceful)

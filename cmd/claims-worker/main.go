@@ -1,6 +1,6 @@
 // Purpose: claims-worker process — poll the claims intake, dispatch external operations (Meta reply/audience/live-videos, inbox resubscribe, ECPay CVS) through the River default queue, and run the retention purge and store-domain verify sweeps. The only process holding the Meta Page private keyring and ECPay custody.
 // Depends on: platform worker pools, metareply routes, claimsintake, retention, storefrontdomains, ecpayroute, core.NewDispatcher, river (schema "river"), COMMERCE_CLAIMS_WORKER_ENABLED.
-// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go.
+// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go; tests/foundation process tests (claims_retention_worker_test.go, claims_worker_console_process_test.go, order_attempt_*).
 package main
 
 import (
@@ -45,6 +45,9 @@ var (
 	errWorkerRoutes   = errors.New("claims_worker_routes_unavailable")
 	errWorkerStart    = errors.New("claims_worker_start_failed")
 	errWorkerStop     = errors.New("claims_worker_stop_failed")
+	// The bound comment bridge stopped serving (any time after the bind, before or after ready). A bind failure stays
+	// errWorkerStart: it always happens before ready (#83, #107).
+	errWorkerConsole = errors.New("claims_worker_console_failed")
 )
 
 type workerConfig struct {
@@ -364,7 +367,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 
 	runCtx, cancelRun := context.WithCancel(ctx)
 	defer cancelRun()
-	consoleDown := make(chan struct{}, 1)
+	var consoleDown <-chan struct{} // nil without a bridge: never ready
 	pollCtx, stopPoll := context.WithCancel(runCtx)
 	polled := make(chan struct{})
 	go func() {
@@ -384,6 +387,8 @@ func run(ctx context.Context, getenv func(string) string) error {
 		})
 		if err != nil {
 			stopPoll()
+			<-polled
+			<-unsubscribed
 			return errWorkerRoutes
 		}
 		consoleServer := &http.Server{
@@ -409,17 +414,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 			_ = consoleServer.Shutdown(shutdown)
 		}()
 		go func() { _ = console.Run(pollCtx) }()
-		// A later Serve failure stops the worker instead of leaving a ready process without its bridge.
-		go func() {
-			select {
-			case err, ok := <-failed:
-				if ok && err != nil {
-					consoleDown <- struct{}{}
-					cancelRun()
-				}
-			case <-pollCtx.Done():
-			}
-		}()
+		consoleDown = superviseConsole(failed, pollCtx.Done(), cancelRun)
 	}
 	resubscribed := make(chan struct{})
 	go func() {
@@ -432,9 +427,33 @@ func run(ctx context.Context, getenv func(string) string) error {
 	<-polled
 	<-unsubscribed
 	<-resubscribed
+	return exitError(consoleDown, runErr)
+}
+
+// superviseConsole watches the bound bridge's Serve result: a failure (not a clean Shutdown, which closes failed) is
+// recorded by closing the returned channel (a lasting signal: every later read sees it) and then cancels the run, so a
+// ready process never keeps running without its bridge. stop ends the watch on a normal shutdown.
+func superviseConsole(failed <-chan error, stop <-chan struct{}, cancelRun context.CancelFunc) <-chan struct{} {
+	down := make(chan struct{})
+	go func() {
+		select {
+		case err, ok := <-failed:
+			if ok && err != nil {
+				close(down)
+				cancelRun()
+			}
+		case <-stop:
+		}
+	}()
+	return down
+}
+
+// exitError maps the River run result to the process token; a recorded bridge Serve failure wins over it and keeps its
+// own token, so a runtime bridge loss is never reported as a startup failure (#107).
+func exitError(consoleDown <-chan struct{}, runErr error) error {
 	select {
 	case <-consoleDown:
-		return errWorkerStart
+		return errWorkerConsole
 	default:
 	}
 	switch {
@@ -455,6 +474,11 @@ func startConsoleServer(srv *http.Server) (<-chan error, error) {
 	if err != nil {
 		return nil, err
 	}
+	return serveConsole(srv, ln), nil
+}
+
+// serveConsole serves srv on an already bound listener; the channel contract is startConsoleServer's.
+func serveConsole(srv *http.Server, ln net.Listener) <-chan error {
 	failed := make(chan error, 1)
 	go func() {
 		defer close(failed)
@@ -462,7 +486,7 @@ func startConsoleServer(srv *http.Server) (<-chan error, error) {
 			failed <- err
 		}
 	}()
-	return failed, nil
+	return failed
 }
 
 // sameDatabase proves both pools reach the same physical database with a bounded lock probe.
