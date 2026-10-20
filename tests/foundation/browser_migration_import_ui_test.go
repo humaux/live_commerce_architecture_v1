@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -265,13 +264,8 @@ func miuiStart(t *testing.T, ctx context.Context, x *miuiWorld, evidence string)
 	if e != nil {
 		t.Fatal(e)
 	}
-	l, e := net.Listen("tcp", "127.0.0.1:0")
-	if e != nil {
-		t.Fatal(e)
-	}
-	address := l.Addr().String()
-	_ = l.Close()
-	_, port, _ := net.SplitHostPort(address)
+	relay := newBrowserAdminRelay(t) // #116: the public origin stays owned; the child gets a private port with an EADDRINUSE relaunch
+	address := relay.server.Listener.Addr().String()
 	target, _ := url.Parse("http://" + address)
 	front := httptest.NewTLSServer(&httputil.ReverseProxy{Rewrite: func(r *httputil.ProxyRequest) {
 		r.SetURL(target)
@@ -385,13 +379,10 @@ func miuiStart(t *testing.T, ctx context.Context, x *miuiWorld, evidence string)
 	log := browserLog(t, filepath.Join(evidence, "next.log"))
 	next := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	next.Dir = root
-	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": port, "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": front.URL, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD"})
+	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": front.URL, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD"})
 	next.Stdout, next.Stderr = log, log
 	next.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if e = next.Start(); e != nil {
-		t.Fatal(e)
-	}
-	t.Cleanup(func() { _ = syscall.Kill(-next.Process.Pid, syscall.SIGKILL); _, _ = next.Process.Wait() })
+	next = relay.start(t, next)
 	processRecord, _ := json.MarshalIndent(map[string]any{"run_id": "miui-next", "pid": next.Process.Pid, "log": filepath.Join(evidence, "next.log"), "timeout_seconds": 24 * 60, "success": "HTTPS /api/stores readiness401, then browser gate exits0", "failure": "readiness failure, child exit, context deadline or browser gate failure", "handoff": "owning Go test and CI mode runner", "wake": "Go gate exit is consumed by CI; t.Cleanup stops owned process group"}, "", "  ")
 	if e = os.WriteFile(filepath.Join(evidence, "next-process.json"), processRecord, 0600); e != nil {
 		t.Fatal(e)

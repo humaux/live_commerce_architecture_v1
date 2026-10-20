@@ -1,31 +1,40 @@
 //go:build browser
 
-// Purpose: keep a browser fixture's public admin origin owned while Next starts on an automatic private port.
-// Depends on: Go net/http/httptest/httputil and browserFront's existing WebKit TLS boundary; no database.
-// Used by: publish, domains, merchant-buyer, catalog-media and manual-order-link browser fixtures;
-// GATE-PORT real-socket regression tests (incl. the round-1 freed-port handoff red/green witness).
+// Purpose: keep a browser fixture's public admin origin owned while Next starts on an automatic private port; start()
+// also launches a Go-owned child on a private port and relaunches ONLY after a bind collision (EADDRINUSE), see #116.
+// Depends on: Go net/http/httptest/httputil, os/exec, /proc (Linux listener-ownership proof) and browserFront's WebKit TLS boundary; no database.
+// Used by: publish, domains, merchant-buyer, catalog-media and manual-order-link browser fixtures and every Go browser fixture
+// that spawns the packaged admin Next via relay.start; GATE-PORT real-socket regression tests (the freed-port handoff
+// red/green witness and TestBrowserAdminRelayStartRetriesBindCollision).
 package foundation_test
 
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
+	"os"
+	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
 	"syscall"
 	"testing"
+	"time"
 )
 
 type browserAdminRelay struct {
 	origin string
 	server *httptest.Server
 	target atomic.Pointer[url.URL]
+	// pickPort chooses a child's private port; nil = a free loopback port. Tests inject a held port to force a collision.
+	pickPort func() string
 }
 
 // newBrowserAdminRelay preserves the IdP/CSRF origin instead of lending its port to a later child process.
@@ -52,6 +61,132 @@ func newBrowserAdminRelay(t *testing.T) *browserAdminRelay {
 	t.Cleanup(front.server.Close)
 	front.origin = browserFront(t, front.server.Listener.Addr().String())
 	return front
+}
+
+var bindCollision = regexp.MustCompile(`EADDRINUSE|address already in use`)
+
+// start launches cmd (a not-yet-started Node/Go child) on a private loopback port (PORT is set here) and attaches it to the
+// relay's stable public address, so the IdP/CSRF origin never depends on that port. The pick-then-release window cannot be
+// closed for a child process, so a launch that dies with EADDRINUSE in its own output is relaunched on a new port (3 launches,
+// each retry logged); any other failure, or a child that never owns the port, fails the test. Returns the live command.
+func (front *browserAdminRelay) start(t *testing.T, cmd *exec.Cmd) *exec.Cmd {
+	t.Helper()
+	child, err := front.launch(t, cmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return child
+}
+
+func (front *browserAdminRelay) launch(t *testing.T, cmd *exec.Cmd) (*exec.Cmd, error) {
+	t.Helper()
+	logFile, ok := cmd.Stdout.(*os.File)
+	if !ok {
+		return nil, errors.New("relay.start needs the child's *os.File log as Stdout (browserLog)")
+	}
+	for attempt := 1; ; attempt++ {
+		var port string
+		if front.pickPort != nil {
+			port = front.pickPort()
+		} else {
+			l, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				return nil, err
+			}
+			_, port, _ = net.SplitHostPort(l.Addr().String())
+			_ = l.Close() // ponytail: still pick-then-release; the EADDRINUSE relaunch below is what makes it safe
+		}
+		child := cmd
+		if attempt > 1 { // an exec.Cmd cannot be restarted; same path/args/dir/env/log, fresh process
+			child = exec.Command(cmd.Path, cmd.Args[1:]...)
+			child.Dir, child.Env, child.Stdout, child.Stderr = cmd.Dir, cmd.Env, cmd.Stdout, cmd.Stderr
+		}
+		env := make([]string, 0, len(child.Env)+1)
+		for _, entry := range child.Env {
+			if !strings.HasPrefix(entry, "PORT=") {
+				env = append(env, entry)
+			}
+		}
+		child.Env = append(env, "PORT="+port)
+		child.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		var from int64
+		if info, err := logFile.Stat(); err == nil {
+			from = info.Size()
+		}
+		if err := child.Start(); err != nil {
+			return nil, err
+		}
+		exited := make(chan struct{})
+		go func() { _ = child.Wait(); close(exited) }()
+		t.Cleanup(func() { _ = syscall.Kill(-child.Process.Pid, syscall.SIGKILL); <-exited })
+		collided, err := awaitOwnedPort(child.Process.Pid, port, exited, logFile.Name(), from)
+		if err == nil {
+			front.target.Store(&url.URL{Scheme: "http", Host: net.JoinHostPort("127.0.0.1", port)})
+			return child, nil
+		}
+		if !collided || attempt == 3 {
+			return nil, err
+		}
+		t.Logf("fixture child lost 127.0.0.1:%s (EADDRINUSE); relaunching on a new port (%d/3)", port, attempt+1)
+	}
+}
+
+// awaitOwnedPort returns nil once the child's own process group listens on port. A child that exits first is reported with
+// collided=true only when its output (from offset `from`) names a bind collision; anything else is a plain failure.
+func awaitOwnedPort(pgid int, port string, exited <-chan struct{}, logPath string, from int64) (collided bool, err error) {
+	number, _ := strconv.Atoi(port)
+	for deadline := time.Now().Add(60 * time.Second); ; time.Sleep(50 * time.Millisecond) {
+		select {
+		case <-exited:
+			out, _ := os.ReadFile(logPath)
+			collided = from <= int64(len(out)) && bindCollision.Match(out[from:])
+			return collided, fmt.Errorf("fixture child exited before owning 127.0.0.1:%s; see %s", port, logPath)
+		default:
+		}
+		if processGroupListens(pgid, number) {
+			return false, nil
+		}
+		if time.Now().After(deadline) {
+			return false, fmt.Errorf("fixture child never owned 127.0.0.1:%s within 60s; see %s", port, logPath)
+		}
+	}
+}
+
+// processGroupListens proves the LISTEN socket on port belongs to the child's own process group, so a rival that took the
+// freed port cannot pass for the child. Linux only (/proc); elsewhere a successful dial is the best available signal.
+func processGroupListens(pgid, port int) bool {
+	tcp4, err := os.ReadFile("/proc/net/tcp")
+	if err != nil {
+		conn, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(port)), time.Second)
+		if err == nil {
+			_ = conn.Close()
+		}
+		return err == nil
+	}
+	tcp6, _ := os.ReadFile("/proc/net/tcp6")
+	inodes := map[string]bool{}
+	for _, line := range strings.Split(string(tcp4)+string(tcp6), "\n") {
+		if f := strings.Fields(line); len(f) > 9 && f[3] == "0A" && strings.HasSuffix(f[1], fmt.Sprintf(":%04X", port)) {
+			inodes["socket:["+f[9]+"]"] = true
+		}
+	}
+	procs, _ := os.ReadDir("/proc")
+	for _, proc := range procs {
+		pid, err := strconv.Atoi(proc.Name())
+		if err != nil {
+			continue
+		}
+		if group, err := syscall.Getpgid(pid); err != nil || group != pgid {
+			continue
+		}
+		fds, _ := os.ReadDir(fmt.Sprintf("/proc/%d/fd", pid))
+		for _, fd := range fds {
+			if link, err := os.Readlink(fmt.Sprintf("/proc/%d/fd/%s", pid, fd.Name())); err == nil && inodes[link] {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // connect accepts only an internal loopback port behind the caller's existing authenticated control endpoint.
@@ -306,4 +441,93 @@ func browserAdminTLSClient(t *testing.T) *http.Client {
 	certificate := httptest.NewTLSServer(http.NotFoundHandler())
 	t.Cleanup(certificate.Close)
 	return certificate.Client()
+}
+
+// TestBrowserAdminRelayStartRetriesBindCollision is the #116 red/green witness for relay.start. The test binary re-executes
+// itself as a stand-in Node child that binds $PORT and, like Node, prints EADDRINUSE and exits 1 when it cannot.
+// RED: a rival LISTENING on the picked port (the pick-then-release window) kills a single-shot launch — the old behaviour.
+// GREEN: start() relaunches on a new port, attaches it to the stable public origin, and relaunches ONLY on EADDRINUSE.
+func TestBrowserAdminRelayStartRetriesBindCollision(t *testing.T) {
+	if os.Getenv("LC_RELAY_TEST_CHILD") == "1" {
+		l, err := net.Listen("tcp", "127.0.0.1:"+os.Getenv("PORT"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error: listen EADDRINUSE:", err)
+			os.Exit(1)
+		}
+		_ = http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = io.WriteString(w, "child ok") }))
+		os.Exit(0)
+	}
+	t.Setenv("LC_BROWSER_ENGINE", "chromium")
+	child := func(fail bool) *exec.Cmd {
+		log, err := os.Create(t.TempDir() + "/child.log")
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = log.Close() })
+		cmd := exec.Command(os.Args[0], "-test.run=^TestBrowserAdminRelayStartRetriesBindCollision$")
+		cmd.Env = append(os.Environ(), "LC_RELAY_TEST_CHILD=1")
+		if fail {
+			cmd = exec.Command("sh", "-c", "echo boom; exit 3")
+		}
+		cmd.Stdout, cmd.Stderr = log, log
+		return cmd
+	}
+	rival, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = rival.Close() })
+	_, held, _ := net.SplitHostPort(rival.Addr().String())
+
+	// ---- RED: one launch on the rival-held port, exactly what the pick-then-release harnesses did ----
+	single := child(false)
+	single.Env = append(single.Env, "PORT="+held)
+	if err := single.Run(); err == nil {
+		t.Fatal("red witness broken: a launch on a rival-held port must fail")
+	}
+	out, _ := os.ReadFile(single.Stdout.(*os.File).Name())
+	if !bindCollision.Match(out) {
+		t.Fatalf("red witness broken: the failed launch did not report a bind collision: %q", out)
+	}
+
+	// ---- GREEN: the first pick collides with the rival; the relaunch succeeds behind the unchanged public origin ----
+	relay := newBrowserAdminRelay(t)
+	var picks []string
+	relay.pickPort = func() string {
+		port := held
+		if len(picks) > 0 {
+			l, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, port, _ = net.SplitHostPort(l.Addr().String())
+			_ = l.Close()
+		}
+		picks = append(picks, port)
+		return port
+	}
+	public := relay.server.Listener.Addr().String()
+	if _, err := relay.launch(t, child(false)); err != nil {
+		t.Fatalf("collision on the first port was not retried: %v", err)
+	}
+	if len(picks) != 2 || relay.target.Load().Host != net.JoinHostPort("127.0.0.1", picks[1]) {
+		t.Fatalf("relay is not attached to the relaunched child: picks=%v target=%v", picks, relay.target.Load())
+	}
+	response, err := relay.server.Client().Get(relay.server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if string(body) != "child ok" || relay.server.Listener.Addr().String() != public {
+		t.Fatalf("public origin did not reach the relaunched child: %q", body)
+	}
+
+	// ---- only EADDRINUSE is retried: any other early exit fails on the first launch ----
+	other := newBrowserAdminRelay(t)
+	launches := 0
+	other.pickPort = func() string { launches++; return held }
+	if _, err := other.launch(t, child(true)); err == nil || launches != 1 {
+		t.Fatalf("a non-bind failure must not be retried: err=%v launches=%d", err, launches)
+	}
 }

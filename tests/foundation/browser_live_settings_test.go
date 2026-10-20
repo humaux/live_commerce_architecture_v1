@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -48,13 +47,8 @@ func TestBrowserLiveSettingsUIRealChain(t *testing.T) {
 	m := &blsMock{store: h.f.storeA1, otherStore: h.f.storeA2, scene: h.draft(t, h.f.storeA1), otherScene: h.draft(t, h.f.storeA2), bundle: randomUUID(), restrictedBundle: randomUUID(), entry: randomUUID(), nextEntry: randomUUID(), comment: "700_800"}
 	m.reset()
 	control := randomToken()
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := listener.Addr().String()
-	_, port, _ := net.SplitHostPort(addr)
-	_ = listener.Close()
+	relay := newBrowserAdminRelay(t) // #116: the public origin stays owned; the child gets a private port with an EADDRINUSE relaunch
+	addr := relay.server.Listener.Addr().String()
 	origin := browserFront(t, addr)
 	idp := newBrowserIDP(t, origin+"/api/auth/callback")
 	mustExec(t, h.f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, h.actor)
@@ -191,21 +185,9 @@ func TestBrowserLiveSettingsUIRealChain(t *testing.T) {
 	nextLog := browserLog(t, filepath.Join(evidence, "next.log"))
 	next := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	next.Dir = root
-	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": port, "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey})
+	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey})
 	next.Stdout, next.Stderr = nextLog, nextLog
-	if err = next.Start(); err != nil {
-		t.Fatal(err)
-	}
-	done := make(chan error, 1)
-	go func() { done <- next.Wait() }()
-	defer func() {
-		_ = next.Process.Kill()
-		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
-			t.Error("owned Next did not stop")
-		}
-	}()
+	next = relay.start(t, next)
 	client := &http.Client{Timeout: time.Second}
 	ready := false
 	for i := 0; i < 150; i++ {

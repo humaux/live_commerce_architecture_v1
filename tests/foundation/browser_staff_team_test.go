@@ -17,7 +17,6 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -50,13 +49,8 @@ func TestBrowserStaffTeam(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	uiAddress := listener.Addr().String()
-	_ = listener.Close()
-	_, uiPort, _ := net.SplitHostPort(uiAddress)
+	relay := newBrowserAdminRelay(t) // #116: the public origin stays owned; the child gets a private port with an EADDRINUSE relaunch
+	uiAddress := relay.server.Listener.Addr().String()
 	publicOrigin := browserFront(t, uiAddress)
 
 	private, err := identityhttp.NewHandler(e.oidc, e.bffKey)
@@ -143,7 +137,7 @@ func TestBrowserStaffTeam(t *testing.T) {
 	server := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	server.Dir = root
 	server.Env = browserEnvironment(map[string]string{
-		"HOSTNAME": "127.0.0.1", "PORT": uiPort, "NODE_ENV": "production",
+		"HOSTNAME": "127.0.0.1", "NODE_ENV": "production",
 		"COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PASSWORD_LOGIN_ENABLED": "1",
 		"COMMERCE_PUBLIC_ORIGIN":          publicOrigin, "COMMERCE_API_ORIGIN": api.URL,
@@ -151,19 +145,7 @@ func TestBrowserStaffTeam(t *testing.T) {
 		"COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD",
 	})
 	server.Stdout, server.Stderr = serverLog, serverLog
-	if err := server.Start(); err != nil {
-		t.Fatal("could not start packaged Next server")
-	}
-	serverDone := make(chan error, 1)
-	go func() { serverDone <- server.Wait() }()
-	t.Cleanup(func() {
-		_ = server.Process.Kill() // exact child PID only
-		select {
-		case <-serverDone:
-		case <-time.After(5 * time.Second):
-			t.Error("owned Next process did not stop")
-		}
-	})
+	server = relay.start(t, server)
 	client := &http.Client{Timeout: time.Second}
 	ready := false
 	for attempt := 0; attempt < 100 && !ready; attempt++ {
