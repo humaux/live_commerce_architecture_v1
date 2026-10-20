@@ -831,10 +831,10 @@ func TestBrowserAdminRelayForwardsSpoofableHeaders(t *testing.T) {
 // that front hands Next the attacker's Forwarded / X-Forwarded-* headers and malformed query exactly as sent.
 // RED: a stock ReverseProxy Rewrite (SetURL only) strips Forwarded / X-Forwarded-* and drops an unparsable query, which is
 // why any front that does not copy them back makes those negatives vacuous.
-// GREEN: the real browserFront (webkit) delivers every header and the raw query byte for byte, and still adds
-// X-Forwarded-Proto: https when the client sent none (the TLS hop it imitates).
+// GREEN: the real browserFront, per engine (chromium = direct origin, webkit = TLS front), delivers every header and the raw
+// query byte for byte; the webkit front still adds X-Forwarded-Proto: https when the client sent none (the TLS hop it imitates).
+// No browser binary is launched: the engine only selects browserFront's branch, as in TestBrowserAdminRelayPreservesOriginAndTLSHeaders.
 func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
-	t.Setenv("LC_BROWSER_ENGINE", "webkit")
 	type observed struct {
 		header http.Header
 		query  string
@@ -876,21 +876,28 @@ func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
 	if len(got.header["X-Forwarded-Host"]) != 0 || len(got.header["Forwarded"]) != 0 || got.query == query {
 		t.Fatalf("red witness broken: a stock Rewrite proxy was expected to drop the spoofed headers and raw query, got %v %q", got.header, got.query)
 	}
-	front := browserFront(t, target.Host)
-	if !strings.HasPrefix(front, "https://") {
-		t.Fatalf("webkit browserFront is not the TLS front: %s", front)
-	}
-	client := browserAdminTLSClient(t)
-	got = send(client, front, sent)
-	if got.query != query {
-		t.Fatalf("WebKit front changed the query: sent %q, Next saw %q", query, got.query)
-	}
-	for name, want := range sent {
-		if strings.Join(got.header[name], "\x00") != strings.Join(want, "\x00") {
-			t.Fatalf("%s reached Next through the WebKit front as %q, want %q", name, got.header[name], want)
-		}
-	}
-	if got = send(client, front, http.Header{}); got.header.Get("X-Forwarded-Proto") != "https" {
-		t.Fatalf("WebKit front no longer marks its TLS hop: X-Forwarded-Proto=%q", got.header.Get("X-Forwarded-Proto"))
+	for _, engine := range []string{"chromium", "webkit"} {
+		t.Run(engine, func(t *testing.T) {
+			t.Setenv("LC_BROWSER_ENGINE", engine)
+			front, client := browserFront(t, target.Host), http.DefaultClient
+			if engine == "webkit" {
+				if !strings.HasPrefix(front, "https://") {
+					t.Fatalf("webkit browserFront is not the TLS front: %s", front)
+				}
+				client = browserAdminTLSClient(t)
+			}
+			got := send(client, front, sent)
+			if got.query != query {
+				t.Fatalf("%s front changed the query: sent %q, Next saw %q", engine, query, got.query)
+			}
+			for name, want := range sent {
+				if strings.Join(got.header[name], "\x00") != strings.Join(want, "\x00") {
+					t.Fatalf("%s reached Next through the %s front as %q, want %q", name, engine, got.header[name], want)
+				}
+			}
+			if got = send(client, front, http.Header{}); engine == "webkit" && got.header.Get("X-Forwarded-Proto") != "https" {
+				t.Fatalf("WebKit front no longer marks its TLS hop: X-Forwarded-Proto=%q", got.header.Get("X-Forwarded-Proto"))
+			}
+		})
 	}
 }
