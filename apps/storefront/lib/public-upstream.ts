@@ -2,7 +2,7 @@
 //   and cancelling a refused body (#84).
 // Depends on: node:net; env COMMERCE_BUYER_WEB_ENABLED, COMMERCE_BUYER_API_ORIGIN, COMMERCE_BUYER_BFF_KEY.
 // Used by: lib/media-proxy.ts, lib/shop-upstream.ts (and through them app/media/*, app/api/shop/*, the shop pages),
-//   app/feeds/meta.csv/route.ts.
+//   lib/primary-origin.ts (canonical redirect), lib/ad-landing.ts (candidateOrigin), app/feeds/meta.csv/route.ts.
 // Shared by the public (cookie-less, bearer-less) storefront routes that call the private Go buyer API with only the BFF
 // key and the verified Host-derived origin: app/media/p/[productID]/[imageID]/route.ts (product photos) and
 // app/feeds/meta.csv/route.ts (Meta feed; adopted this module in #107). Owns: origin derivation from Host, the upstream env check and a bounded body read.
@@ -69,21 +69,27 @@ export async function discardBody(response: Response): Promise<void> {
   }
 }
 
-// Whole body up to `max` bytes, or null when it is longer (the stream is cancelled).
+// Whole body up to `max` bytes, or null when it is longer or the stream fails mid-read (#116): callers answer the documented
+// 503 / "down" instead of letting a reset connection escape as a 500. The stream is cancelled in both cases.
 export async function readBounded(body: ReadableStream<Uint8Array> | null, max: number): Promise<Uint8Array | null> {
   if (!body) return null;
   const reader = body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    total += value.byteLength;
-    if (total > max) {
-      await reader.cancel();
-      return null;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > max) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
     }
-    chunks.push(value);
+  } catch {
+    await reader.cancel().catch(() => {});
+    return null;
   }
   return Buffer.concat(chunks);
 }
