@@ -17,6 +17,11 @@ test("test_count is read from go test -v and node --test output, not from a stat
     "ℹ tests 4", "ℹ pass 4", "ℹ fail 0", "# pass 2", "# fail 1", "    --- PASS: indented child output is not top-level"].join("\n");
   assert.equal(countTests(log), 2 + 4 + 3);
   assert.equal(countTests("=== RUN   TestA\n--- SKIP: TestA (0.00s)\nPASS\n"), 0, "a run where nothing executed counts 0");
+  // go test -json (--browser-webkit writes one .jsonl per step): top-level pass/fail events count; subtests, skips, output and package events do not.
+  const json = [{ Action: "run", Test: "TestW" }, { Action: "output", Test: "TestW", Output: "--- PASS: TestW (1s)\n" }, { Action: "pass", Test: "TestW/SU07" }, { Action: "pass", Test: "TestW" },
+    { Action: "fail", Test: "TestV" }, { Action: "skip", Test: "TestS" }, { Action: "pass", Package: "p" }].map((e) => JSON.stringify(e)).join("\n");
+  assert.equal(countTests(json), 2);
+  assert.equal(countTests("{not json\n"), 0);
   assert.equal(makeReceipt({ mode: "shard:unit", outcome: "success", runId: 1, runAttempt: 2, sha: "s", logs: [log, "--- PASS: TestZ (0s)"] }).test_count, 10);
   assert.equal(makeReceipt({ mode: "m", outcome: "failure", runId: 1, runAttempt: 1, sha: "s", logs: [] }).status, "FAIL");
 });

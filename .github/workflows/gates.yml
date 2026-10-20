@@ -239,14 +239,15 @@ jobs:
             *) echo "unknown mode: $MODE" >&2; exit 2 ;;
           esac
       # MATRIX-RECEIPT (#128): ONE shared step for every mode, after the gate (always, so a failed gate still reports FAIL). test_count is counted
-      # from this job's own gate log (go test -v PASS/FAIL lines + node --test summary), never a static count; the `receipts` job checks it against the plan.
+      # from this job's own gate log (go test -v PASS/FAIL lines + node --test summary) and its per-step go test -json logs (*.jsonl, e.g. --browser-webkit),
+      # never a static count; the `receipts` job checks it against the plan.
       - name: Run receipt
         if: always()
         env:
           GATE_OUTCOME: ${{ steps.gate.outcome }}
         run: |
-          shopt -s nullglob
-          node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log
+          shopt -s nullglob globstar
+          node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: always()
         with:

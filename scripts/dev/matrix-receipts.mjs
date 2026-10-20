@@ -3,13 +3,14 @@
 //   {mode, run_id, run_attempt, sha, status, test_count}; `verify` proves every mode the plan job emitted has exactly one receipt
 //   from THIS run and sha with status PASS and test_count > 0. Missing, duplicate, stale, unplanned, failed or zero-count = red.
 //   test_count is read from the runners' own output in the log, never from a static list: top-level `--- PASS:` / `--- FAIL:` lines of
-//   `go test -v` (the lines `go tool test2json` turns into pass/fail events; test-focused.sh counts the same) plus the node --test
-//   summary (`ℹ pass N` / `ℹ fail N` spec reporter, `# pass N` / `# fail N` TAP). Browser specs run inside those go tests.
+//   `go test -v` (the lines `go tool test2json` turns into pass/fail events; test-focused.sh counts the same), top-level pass/fail events of
+//   `go test -json` logs (--browser-webkit / --stripe-browser write one .jsonl per step instead of -v text), plus the node --test summary
+//   (`ℹ pass N` / `ℹ fail N` spec reporter, `# pass N` / `# fail N` TAP). Browser specs run inside those go tests.
 //   Historical evidence never feeds this check.
 // Depends on: scripts/dev/ci-plan.mjs (artifactName); env MODE, GATE_OUTCOME, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA (write);
 //   env PLANNED (the plan job's `matrix` output), GITHUB_RUN_ID, GITHUB_SHA (verify). No network, no dependencies.
 // Used by: .github/workflows/gates.yml (gate job "Run receipt" step, `receipts` job feeding `required`), tests/ci/matrix-receipts.test.mjs.
-// Usage: node scripts/dev/matrix-receipts.mjs write <out-dir> <gate-log>...   |   node scripts/dev/matrix-receipts.mjs verify <receipts-dir>
+// Usage: node scripts/dev/matrix-receipts.mjs write <out-dir> <gate-log | go-test-json-log>...   |   node scripts/dev/matrix-receipts.mjs verify <receipts-dir>
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,6 +25,9 @@ export function countTests(text) {
     if (/^--- (PASS|FAIL): /.test(line)) n++;
     const m = /^(?:ℹ|#) (?:pass|fail) (\d+)\s*$/.exec(line);
     if (m) n += Number(m[1]);
+    if (line.startsWith("{")) {
+      try { const e = JSON.parse(line); if ((e.Action === "pass" || e.Action === "fail") && e.Test && !e.Test.includes("/")) n++; } catch { /* not a go test -json event */ }
+    }
   }
   return n;
 }
