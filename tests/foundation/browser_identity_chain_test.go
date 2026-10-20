@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -63,13 +62,8 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 	}
 	// Reserve a fresh loopback port, then hand it to Node. If another process
 	// wins the small release/start race, readiness or process exit fails closed.
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	uiAddress := listener.Addr().String()
-	_ = listener.Close()
-	_, uiPort, _ := net.SplitHostPort(uiAddress)
+	relay := newBrowserAdminRelay(t) // #116: the public origin stays owned; the child gets a private port with an EADDRINUSE relaunch
+	uiAddress := relay.server.Listener.Addr().String()
 	publicOrigin := "http://" + uiAddress
 	idp := newBrowserIDP(t, publicOrigin+"/api/auth/callback")
 	provider, err := oidclogin.New(ctx, oidclogin.Config{
@@ -157,26 +151,14 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 	server := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	server.Dir = root
 	server.Env = browserEnvironment(map[string]string{
-		"HOSTNAME": "127.0.0.1", "PORT": uiPort, "NODE_ENV": "production",
+		"HOSTNAME": "127.0.0.1", "NODE_ENV": "production",
 		"COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": publicOrigin, "COMMERCE_API_ORIGIN": api.URL,
 		"COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey,
 		"COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD",
 	})
 	server.Stdout, server.Stderr = serverLog, serverLog
-	if err := server.Start(); err != nil {
-		t.Fatal("could not start packaged Next server")
-	}
-	serverDone := make(chan error, 1)
-	go func() { serverDone <- server.Wait() }()
-	t.Cleanup(func() {
-		_ = server.Process.Kill() // exact child PID only, never a port/process-name kill
-		select {
-		case <-serverDone:
-		case <-time.After(5 * time.Second):
-			t.Error("owned Next process did not stop")
-		}
-	})
+	server = relay.start(t, ctx, server)
 	client := &http.Client{Timeout: time.Second}
 	ready := false
 	for attempt := 0; attempt < 100; attempt++ {

@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -233,13 +232,8 @@ func hcodStartAdmin(t *testing.T, ctx context.Context, e *tcvEnv, evidence strin
 	if err != nil {
 		t.Fatal(err)
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	address := listener.Addr().String()
-	_ = listener.Close()
-	_, port, _ := net.SplitHostPort(address)
+	relay := newBrowserAdminRelay(t) // #116: the public origin stays owned; the child gets a private port with an EADDRINUSE relaunch
+	address := relay.server.Listener.Addr().String()
 	origin := browserFront(t, address)
 	f := e.p.f
 	idp := newBrowserIDP(t, origin+"/api/auth/callback")
@@ -296,14 +290,11 @@ func hcodStartAdmin(t *testing.T, ctx context.Context, e *tcvEnv, evidence strin
 	nextLog := browserLog(t, filepath.Join(evidence, "admin-next.log"))
 	next := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	next.Dir = root
-	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "PORT": port, "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
+	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD"})
 	next.Stdout, next.Stderr = nextLog, nextLog
 	next.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if err := next.Start(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = syscall.Kill(-next.Process.Pid, syscall.SIGKILL); _, _ = next.Process.Wait() })
+	next = relay.start(t, ctx, next)
 	client := &http.Client{Timeout: time.Second}
 	for attempt := 0; ; attempt++ {
 		if response, err := client.Get("http://" + address + "/api/stores"); err == nil {
