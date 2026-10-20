@@ -125,10 +125,54 @@ deploy/scripts/deploy.sh upgrade <tag>
 - 迁移失败时修复代码后重新执行。**绝不修改已经应用的 SQL 或 checksum**。
 - 退出码 75 表示另一个迁移持有锁 718020260920。**不要循环重试**：先确认没有其他迁移在运行，再人工重试一次（见 incident.md §migrate）。
 - 已知风险 R3：`migrations.Apply` 内部超时 30 s，大数据量迁移前需要先由集成者调整（I4）。
-- PAYUNi 退役守卫（0197、0198、0199、post_river/0027，PAY-RM2 2b/2c）：库里只要还有未对账的 PAYUNi 历史（非终态 PAYUNi operation、AWAITING_PAYMENT 的 PAYUNi 订单、仍为 PAYMENT_PENDING 的 PAYUNi 库存预留、或从未应用的已存 PAYUNi 观测——按 0018 应用逻辑仍会写出 AUTHORIZED/CAPTURED fact 或 review case 的 QUERY 报告；只有 0018 当年应用后什么都不写、而且按今天的状态仍什么都不写的报告才不算：DataSource B、空 TradeNo、重复授权；TradeStatus 0/2/3/4 只在报告不带退款字段或 `CardRemainAmountTWD`、不是 CloseStatus 2 时不算，其中 2/3/4（及 CloseStatus 3）还要求该 attempt 今天没有 CAPTURED fact 或已有 CONFLICTING_REPORT——见下面的特例），迁移就会以 `code=22023` 拒绝，`cmd/migrate` exit 1。编号迁移在**同一个事务**里执行，所以拒绝会让**本批全部编号迁移一起回滚**（不只是 0197，同一 release 里更早的编号迁移也不会生效），账本不变。上线前先跑守卫里的四个只读计数；前三项由运维对账：同时写 RELEASE ledger、把预留改为终态，然后再重跑 migrate。第四项不是运维能对掉的：它表示 provider 报过的授权、请款、退款或冲突信号从未入账，**升级给 owner 裁决，禁止手写 fact 或 review case 来让计数归零**（手写只会掩盖真实资金状态）。特例同样计入第四项：失败、取消或过期报告（TradeStatus 2/3/4 或 CloseStatus 3）在当年**先于**同一 attempt 的请款被 0018 应用（当时没有 CAPTURED fact，0018 什么都不写），守卫按**今天**已请款的状态判断，会把它算作未应用的冲突信号并拒绝。这是有意的失败即关闭（同一 TradeNo 既失败又请款本身就是 provider 异常），同样升级给 owner，不得绕过、不得补写 CONFLICTING_REPORT（门禁：PFU04 failed-before-capture）。
+- PAYUNi 退役守卫（0197、0198、0199、post_river/0027，PAY-RM2 2b/2c）：库里只要还有未对账的 PAYUNi 历史（非终态 PAYUNi operation、AWAITING_PAYMENT 的 PAYUNi 订单、仍为 PAYMENT_PENDING 的 PAYUNi 库存预留、或从未应用的已存 PAYUNi 观测——按 0018 应用逻辑今天仍会写出 AUTHORIZED/CAPTURED fact 或 review case 的 QUERY 报告，判定以 0199 第 1 节守卫谓词为准，post_river/0027 同文。以下报告不论 DataSource、TradeNo、TradeStatus 都算：带任何退款字段（CardRefundType/CardRefundStatus/CardRefundDay 非空，或 CardRefundAmountTWD>0），或 `CardRemainAmountTWD` 与订单金额不等。TradeNo 非空、DataSource A、CloseStatus 2 但不构成完整请款的报告也算（CAPTURE_EVIDENCE_INCOMPLETE）。attempt 今天已有 CAPTURED fact 时，TradeNo 非空、DataSource A 且 TradeStatus 2/3/4 或 CloseStatus 3 的报告也算，CloseStatus 3 时 TradeStatus 是什么都一样（见下面的特例）。以上各条，attempt 已有对应 fact 或 review case 的不算。DataSource B、空 TradeNo、重复授权、请款前的 TradeStatus 0/2/3/4，只有不命中上面任何一条时才不算），迁移就会以 `code=22023` 拒绝，`cmd/migrate` exit 1。编号迁移在**同一个事务**里执行，所以拒绝会让**本批全部编号迁移一起回滚**（不只是 0197，同一 release 里更早的编号迁移也不会生效），账本不变。上线前先跑守卫里的四个只读计数；前三项由运维对账：同时写 RELEASE ledger、把预留改为终态，然后再重跑 migrate。第四项不是运维能对掉的：它表示 provider 报过的授权、请款、退款或冲突信号从未入账，**升级给 owner 裁决，禁止手写 fact 或 review case 来让计数归零**（手写只会掩盖真实资金状态）。特例同样计入第四项：失败、取消或过期报告（TradeStatus 2/3/4 或 CloseStatus 3）在当年**先于**同一 attempt 的请款被 0018 应用（当时没有 CAPTURED fact，0018 什么都不写），守卫按**今天**已请款的状态判断，会把它算作未应用的冲突信号并拒绝。这是有意的失败即关闭（同一 TradeNo 既失败又请款本身就是 provider 异常），同样升级给 owner，不得绕过、不得补写 CONFLICTING_REPORT（门禁：PFU04 failed-before-capture）。
   第四项（含上面的特例）的处理路径，运维只做只读与升级，不做任何写入：
-  1. 拒绝后账本和 schema 不变，按本节失败处理让旧版本继续服务；不重跑、不换 tag 绕过。
-  2. 运维用只读查询列出命中的报告交给 owner：`SELECT x.attempt_id, encode(x.report_hash,'hex'), x.report->>'TradeNo', x.report->>'TradeStatus', x.report->>'CloseStatus', (SELECT string_agg(kind,',') FROM payments.facts f WHERE f.attempt_id=x.attempt_id), (SELECT string_agg(reason,',') FROM payments.review_cases c WHERE c.attempt_id=x.attempt_id) FROM payments.provider_observations x JOIN checkout.payment_attempts a ON a.id=x.attempt_id WHERE a.method_code='payuni_credit' AND x.source='QUERY' AND NOT EXISTS(SELECT 1 FROM payments.facts f WHERE f.attempt_id=x.attempt_id AND f.source_report_hash=x.report_hash);`（只读，候选集比守卫宽，以守卫计数为准）。
+  1. 编号阶段（0197/0198/0199）拒绝时账本和 schema 都不变：按 §5 第 1 条执行 `deploy/scripts/deploy.sh app-rollback <旧tag>`，让旧版本继续服务（脚本不会自动回滚）；不重跑、不换 tag 绕过。若是 post_river/0027 拒绝，编号迁移已提交、ledger 已变化，app-rollback 会被拒绝（forward-fix only），按 §5 第 2/3 条由 owner 决定。
+  2. 运维用下面的只读查询列出守卫第四项计数的每一条报告，交给 owner。行数应等于拒绝信息里的第四项计数，不等就以守卫为准并一并报给 owner。先在同一会话执行 `SET row_security = off;`：受 RLS 约束的角色会直接报错，不会静默返回空。
+     ```sql
+     -- runbook:payuni-unapplied-begin (FROM..END 与 0199/0027 守卫逐字相同，PFU07 校验)
+     SELECT x.attempt_id, encode(x.report_hash,'hex') AS report_hash, x.report->>'TradeNo' AS trade_no,
+      x.report->>'TradeStatus' AS trade_status, x.report->>'CloseStatus' AS close_status, x.report->>'DataSource' AS data_source,
+      s.has_auth, s.has_cap, s.has_cei, s.has_ref, s.has_con
+      FROM payments.provider_observations x
+       JOIN checkout.payment_attempts a ON a.tenant_id=x.tenant_id AND a.store_id=x.store_id AND a.id=x.attempt_id
+       JOIN integration.operations op ON op.tenant_id=a.tenant_id AND op.store_id=a.store_id AND op.id=a.id
+       CROSS JOIN LATERAL (SELECT x.report AS r, a.amount_minor/100 AS amt,
+        (x.report->>'TradeNo'<>'' AND x.report->>'DataSource'='A' AND x.report->>'TradeStatus'='1') AS v_auth,
+        EXISTS(SELECT 1 FROM payments.facts f WHERE f.tenant_id=a.tenant_id AND f.store_id=a.store_id
+         AND f.attempt_id=a.id AND f.kind='AUTHORIZED') AS has_auth,
+        EXISTS(SELECT 1 FROM payments.facts f WHERE f.tenant_id=a.tenant_id AND f.store_id=a.store_id
+         AND f.attempt_id=a.id AND f.kind='CAPTURED') AS has_cap,
+        EXISTS(SELECT 1 FROM payments.review_cases c WHERE c.tenant_id=a.tenant_id AND c.store_id=a.store_id
+         AND c.attempt_id=a.id AND c.reason='CAPTURE_EVIDENCE_INCOMPLETE') AS has_cei,
+        EXISTS(SELECT 1 FROM payments.review_cases c WHERE c.tenant_id=a.tenant_id AND c.store_id=a.store_id
+         AND c.attempt_id=a.id AND c.reason='REFUND_HISTORY') AS has_ref,
+        EXISTS(SELECT 1 FROM payments.review_cases c WHERE c.tenant_id=a.tenant_id AND c.store_id=a.store_id
+         AND c.attempt_id=a.id AND c.reason='CONFLICTING_REPORT') AS has_con) s
+       CROSS JOIN LATERAL (SELECT s.v_auth AND s.r->>'CloseStatus'='2' AND s.r->'CloseAmountTWD' IS NOT NULL
+        AND s.r->'CloseAmountTWD'=to_jsonb(s.amt) AS v_capture) k
+       WHERE a.method_code='payuni_credit' AND x.source='QUERY'
+        AND CASE WHEN (s.r->>'MerTradeNo'<>a.merchant_trade_no
+          OR s.r->'AmountTWD' IS DISTINCT FROM to_jsonb(s.amt)
+          OR (s.r->>'TradeNo'<>'' AND s.r->>'TradeNo' IS DISTINCT FROM op.provider_reference)
+          OR s.r->>'Status'<>'SUCCESS' OR s.r->>'PaymentType'<>'1' OR s.r->>'AuthType'<>'1'
+          OR s.r->'CardInst' IS DISTINCT FROM '0'::jsonb
+          OR s.r->>'TradeStatus' NOT IN ('0','1','2','3','4','8','9')
+          OR s.r->>'DataSource' NOT IN ('A','B')
+          OR s.r->>'CloseStatus' NOT IN ('','1','2','3','7','9')) IS TRUE THEN false
+         ELSE (s.v_auth IS TRUE AND NOT s.has_auth)
+          OR (k.v_capture IS TRUE AND NOT s.has_cap)
+          OR ((s.r->>'TradeNo'<>'' AND s.r->>'DataSource'='A' AND s.r->>'CloseStatus'='2' AND NOT k.v_capture) IS TRUE
+           AND NOT s.has_cei)
+          OR ((coalesce(s.r->>'CardRefundType','')<>'' OR coalesce(s.r->>'CardRefundStatus','')<>''
+           OR coalesce(s.r->>'CardRefundDay','')<>'' OR coalesce((s.r->>'CardRefundAmountTWD')::bigint,0)>0
+           OR (s.r ? 'CardRemainAmountTWD' AND (s.r->>'CardRemainAmountTWD')::bigint<s.amt)) IS TRUE AND NOT s.has_ref)
+          OR (((s.r ? 'CardRemainAmountTWD' AND (s.r->>'CardRemainAmountTWD')::bigint>s.amt)
+           OR (s.has_cap AND s.r->>'TradeNo'<>'' AND s.r->>'DataSource'='A'
+            AND (s.r->>'TradeStatus' IN ('2','3','4') OR s.r->>'CloseStatus'='3'))) IS TRUE AND NOT s.has_con)
+         END;
+     -- runbook:payuni-unapplied-end
+     ```
   3. owner 在 PAYUNi 商户后台按 TradeNo 核对真实资金状态并裁决。解除拒绝只能走经评审的代码变更（新迁移或 ADR，过门禁后随新 release 发布），不在生产库上手工改数据、不删观测、不手写 fact 或 review case。post_river 阶段被 0027 拒绝时同理回滚整个 post_river 批次。
 
 ### 4.1 升级 4dc08b3 → R4（试点主机，保留真实 owner 数据，只能前向）

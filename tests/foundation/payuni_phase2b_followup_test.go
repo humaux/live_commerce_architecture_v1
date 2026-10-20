@@ -17,12 +17,17 @@
 //	PFU06 (issue #116): one seed per guard branch PFU04 left unseeded (post-capture CloseStatus 3, CardRemainAmountTWD
 //	       below and above the amount, CAPTURE_EVIDENCE_INCOMPLETE): the report stored but not applied refuses the
 //	       chain; once the real 0018 body applied it, the chain applies.
+//	PFU07 (issue #116, review-123-aee4382f9 P2-1): the owner's read-only listing in docs/runbooks/deploy.md §4 is the
+//	       guard predicate verbatim (0199 and post_river/0027), and on every PFU04/PFU06/PFU07 seed it lists exactly the
+//	       reports the guard counts (including an authorization with CloseStatus 3 that a fact cites, applied before a
+//	       later capture).
 //
 // Depends on: migrations.Apply; pwIsolatedFixture; psSetupItemsOn; rm2HistoricalAttempt; pqReport/pqJSON; rmVersions/
 //
 //	rmChecksums/rmSkipLedger (payuni_removal_test.go); p2bPreState (payuni_phase2b_test.go); pfeReplica
 //	(payuni_form_erase_test.go); lriPre0032Fixture/lriApplyFull/lriLedger/lriCloseProducerPools
-//	(legacy_runtime_upgrade_test.go); pwOldQuerySetupOn/pwKeys (payment_runtime_test.go); pqReport.
+//	(legacy_runtime_upgrade_test.go); pwOldQuerySetupOn/pwKeys (payment_runtime_test.go); pqReport;
+//	the owner listing between the runbook:payuni-unapplied markers in docs/runbooks/deploy.md §4 (PFU04/06/07).
 //
 // Used by: CI full foundation suite; scripts/dev/test-focused.sh '^TestPayuniPhase2bFollowup'.
 // Invariants: synthetic data only; the migrations under test never delete or rewrite a row.
@@ -30,6 +35,7 @@ package foundation_test
 
 import (
 	"context"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
@@ -310,6 +316,7 @@ func TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied(t *testing.T) {
 			t.Fatalf("legacy 0018 history facts/reviews/uncited = %s, want AUTHORIZED//6 (six reports 0018 applied without citing them)", got)
 		}
 		pfuReconcile(t, q)
+		pfuListedWant(t, q, "")
 		pfuChainApplies(t, f, "reconciled")
 		if n := countRows(t, f.owner, `SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1`, q.result.AttemptID); n != 7 {
 			t.Errorf("reconciled chain changed PAYUNi observations: %d", n)
@@ -336,6 +343,7 @@ func TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied(t *testing.T) {
 			t.Fatal("legacy 0018 capture did not confirm the order and commit the stock")
 		}
 		pfeReplica(t, f.owner, `UPDATE integration.operations SET state='SUCCEEDED' WHERE id='`+q.result.OperationID+`'`)
+		pfuListedWant(t, q, "")
 		pfuChainApplies(t, f, "captured")
 	})
 	// failed-before-capture (review-105-087c67855 P2-1, runbook §4): a failed report 0018 applied as a no-op BEFORE a
@@ -351,6 +359,7 @@ func TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied(t *testing.T) {
 			t.Fatalf("legacy 0018 history facts/reviews/uncited = %s, want AUTHORIZED,CAPTURED//1", got)
 		}
 		pfeReplica(t, f.owner, `UPDATE integration.operations SET state='SUCCEEDED' WHERE id='`+q.result.OperationID+`'`)
+		pfuListedWant(t, q, pfeRow(t, f.owner, `SELECT encode(report_hash,'hex') FROM payments.provider_observations WHERE attempt_id=$1 AND report->>'TradeStatus'='2'`, q.result.AttemptID))
 		ledger := lriLedger(t, f, "")
 		pfuRefused(t, f.owner, pfuNumbered, lriApplyFull(ctx, f.owner), "PAYUNi phase-2b follow-up refused",
 			"0 PAYUNi reservation(s) still PAYMENT_PENDING, 1 stored PAYUNi observation(s) never applied")
@@ -361,8 +370,9 @@ func TestPayuniPhase2bFollowupLegacyChainReconciledAndUnapplied(t *testing.T) {
 	t.Run("unapplied", func(t *testing.T) {
 		f, q := pfuLegacy(t)
 		pfuReport(t, q, func(r map[string]any) { r["TradeStatus"], r["TradeNo"] = "0", "" })
-		pfuReport(t, q, func(map[string]any) {}) // paid authorization whose reconcile job never ran
+		paid := pfuReport(t, q, func(map[string]any) {}) // paid authorization whose reconcile job never ran
 		pfuReconcile(t, q)
+		pfuListedWant(t, q, hex.EncodeToString(paid))
 		start, record, hosted := pfuGrantees(t, f.owner, pfuStart), pfuGrantees(t, f.owner, pfuRecord), pfuHostedAuthority(t, f.owner)
 		if start == "" || record == "" || !hosted.insert || !hosted.update || !hosted.cipher {
 			t.Fatalf("legacy baseline lacks the privileges 0199 revokes (start %q, record %q, hosted %+v); the rollback gate would be vacuous", start, record, hosted)
@@ -501,6 +511,7 @@ func TestPayuniPhase2bFollowupGuardBranchSeeds(t *testing.T) {
 				pfuReconcile(t, q)
 			}
 			hash := pfuReport(t, q, c.seed(amount))
+			pfuListedWant(t, q, hex.EncodeToString(hash))
 			ledger := lriLedger(t, f, "")
 			pfuRefused(t, f.owner, pfuNumbered, lriApplyFull(ctx, f.owner), "PAYUNi phase-2b follow-up refused",
 				"0 PAYUNi reservation(s) still PAYMENT_PENDING, 1 stored PAYUNi observation(s) never applied")
@@ -508,10 +519,98 @@ func TestPayuniPhase2bFollowupGuardBranchSeeds(t *testing.T) {
 				t.Fatal("refused chain changed the migration ledger")
 			}
 			pfuApplyHash(t, q, hash)
+			pfuListedWant(t, q, "")
 			if got := pfuApplied(t, q); got != c.applied {
 				t.Fatalf("legacy 0018 history facts/reviews/uncited = %s, want %s", got, c.applied)
 			}
 			pfuChainApplies(t, f, c.name)
 		})
 	}
+}
+
+const (
+	pfuRunbook      = "../../docs/runbooks/deploy.md"
+	pfuRunbookBegin = "-- runbook:payuni-unapplied-begin"
+	pfuRunbookEnd   = "-- runbook:payuni-unapplied-end"
+	pfuGuardBegin   = "SELECT count(*) INTO v_obs "
+	pfuGuardEnd     = "\n PERFORM set_config('row_security','on'"
+	pfuFrom         = "FROM payments.provider_observations x"
+)
+
+// pfuBetween returns the text of path between begin and end (exclusive), or fails.
+func pfuBetween(t *testing.T, path, begin, end string) string {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(body)
+	b := strings.Index(s, begin)
+	if b < 0 {
+		t.Fatalf("%s lacks %q", path, begin)
+	}
+	s = s[b+len(begin):]
+	e := strings.Index(s, end)
+	if e < 0 {
+		t.Fatalf("%s lacks %q after %q", path, end, begin)
+	}
+	return s[:e]
+}
+
+// pfuRunbookQuery is the owner's read-only listing from docs/runbooks/deploy.md §4 (the lines between the markers).
+func pfuRunbookQuery(t *testing.T) string {
+	t.Helper()
+	q := pfuBetween(t, pfuRunbook, pfuRunbookBegin, pfuRunbookEnd)
+	return strings.TrimSuffix(strings.TrimSpace(q[strings.Index(q, "\n")+1:]), ";")
+}
+
+// pfuListedWant runs the runbook listing as the runbook says (row_security off) and requires exactly the wanted
+// report hashes (hex, comma-joined in order; "" = none).
+func pfuListedWant(t *testing.T, q pqFixture, want string) {
+	t.Helper()
+	ctx := context.Background()
+	tx, err := q.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	var got string
+	if _, err = tx.Exec(ctx, `SET LOCAL row_security=off`); err == nil {
+		err = tx.QueryRow(ctx, `SELECT coalesce(string_agg(report_hash,',' ORDER BY report_hash),'') FROM (`+pfuRunbookQuery(t)+`) l`).Scan(&got)
+	}
+	if err != nil {
+		t.Fatalf("runbook listing: %v", err)
+	}
+	if got != want {
+		t.Errorf("runbook listing = %q, want exactly the guard-counted reports %q", got, want)
+	}
+}
+
+// TestPayuniPhase2bFollowupRunbookQuery (PFU07, review-123-aee4382f9 P2-1).
+func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
+	pfuRequire(t)
+	q := pfuRunbookQuery(t)
+	i := strings.Index(q, pfuFrom)
+	if i < 0 {
+		t.Fatalf("runbook listing lacks %q", pfuFrom)
+	}
+	listed := strings.Join(strings.Fields(q[i:]+";"), " ")
+	for _, v := range []string{pfuNumbered, pfuPost} {
+		if g := strings.Join(strings.Fields(pfuBetween(t, filepath.Join("../../migrations", v), pfuGuardBegin, pfuGuardEnd)), " "); g != listed {
+			t.Errorf("runbook listing FROM..WHERE drifted from the %s guard predicate:\nrunbook: %s\nguard:   %s", v, listed, g)
+		}
+	}
+	// An authorization with CloseStatus 3 applied before any capture: 0018 cites it in the AUTHORIZED fact and writes
+	// nothing else; after a later capture the guard counts it (has_cap AND CloseStatus 3, no CONFLICTING_REPORT).
+	f, p := pfuLegacy(t)
+	auth := pfuReport(t, p, func(r map[string]any) { r["CloseStatus"] = "3" })
+	pfuApplyHash(t, p, auth)
+	pfuApply(t, p, func(r map[string]any) { r["CloseStatus"], r["CloseAmountTWD"] = "2", p.result.AmountMinor/100 })
+	if got := pfuApplied(t, p); got != "AUTHORIZED,CAPTURED//0" {
+		t.Fatalf("legacy 0018 history facts/reviews/uncited = %s, want AUTHORIZED,CAPTURED//0", got)
+	}
+	pfeReplica(t, f.owner, `UPDATE integration.operations SET state='SUCCEEDED' WHERE id='`+p.result.OperationID+`'`)
+	pfuListedWant(t, p, hex.EncodeToString(auth))
+	pfuRefused(t, f.owner, pfuNumbered, lriApplyFull(context.Background(), f.owner), "PAYUNi phase-2b follow-up refused",
+		"0 PAYUNi reservation(s) still PAYMENT_PENDING, 1 stored PAYUNi observation(s) never applied")
 }

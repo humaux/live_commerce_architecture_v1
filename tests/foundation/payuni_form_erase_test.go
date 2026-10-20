@@ -60,8 +60,15 @@ func pfeReplica(t *testing.T, pool *pgxpool.Pool, stmts ...string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Release()
-	for _, q := range append(append([]string{`SET session_replication_role='replica'`}, stmts...), `RESET session_replication_role`) {
+	// Reset runs even when a statement fails (t.Fatal runs deferred calls); a connection that cannot be reset is
+	// closed, so the pool discards it instead of handing out a replica-mode connection (review-123-aee4382f9 P2-4).
+	defer func() {
+		if _, err := conn.Exec(ctx, `RESET session_replication_role`); err != nil {
+			conn.Conn().Close(ctx)
+		}
+		conn.Release()
+	}()
+	for _, q := range append([]string{`SET session_replication_role='replica'`}, stmts...) {
 		if _, err := conn.Exec(ctx, q); err != nil {
 			t.Fatal(err)
 		}
