@@ -3,7 +3,7 @@
 // Also: a Serve failure AFTER the bind (the test-tag build closes the bound listener, cmd/claims-worker/console_testhook.go)
 // must end run() with claims_worker_console_failed (never start_failed, never a hang) — the main.go wiring of
 // superviseConsole/cancelRun/exitError (#116 P2-1).
-// Depends on: crNewWorkerEnv/crReadLog (claims_retention_worker_test.go), mrFixture/mrBuild/mrLaunch/mrFailsBeforeReady
+// Depends on: slxFreePort (stripe_live_process_test.go), crNewWorkerEnv/crReadLog (claims_retention_worker_test.go), mrFixture/mrBuild/mrLaunch/mrFailsBeforeReady
 // (meta_runtime*_test.go), REAL_PG; cmd/claims-worker.
 // Used by: go test ./tests/foundation (Foundation suite and the foundation shards).
 
@@ -40,7 +40,7 @@ func TestClaimsWorkerConsoleServeFailureExitsWithConsoleToken(t *testing.T) {
 	w := crNewWorkerEnv(t, f)
 	linkKey := base64.StdEncoding.EncodeToString(w.linkRaw)
 	pageKey := base64.StdEncoding.EncodeToString(w.pageKeyRaw)
-	env := append(append([]string(nil), w.env...), "COMMERCE_CLAIMS_CONSOLE_ADDR=127.0.0.1:0",
+	env := append(append([]string(nil), w.env...), "COMMERCE_CLAIMS_CONSOLE_ADDR=127.0.0.1:"+slxFreePort(t),
 		"COMMERCE_CLAIMS_BRIDGE_TOKEN="+linkKey, "COMMERCE_CLAIMS_CURSOR_KEY="+pageKey)
 	bin := mrBuild(t, "../../cmd/claims-worker", "claims-console-serve-failure", "-tags", "claimsconsoletest")
 	p := mrLaunch(t, bin, "claims-console-serve-failure", env)
