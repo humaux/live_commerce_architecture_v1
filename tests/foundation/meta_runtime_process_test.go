@@ -27,10 +27,10 @@ type mrProcess struct {
 	exited  bool
 }
 
-func mrBuild(t *testing.T, packagePath, name string) string {
+func mrBuild(t *testing.T, packagePath, name string, flags ...string) string {
 	t.Helper()
 	binary := filepath.Join(t.TempDir(), name)
-	cmd := exec.Command("go", "build", "-o", binary, packagePath)
+	cmd := exec.Command("go", append(append([]string{"build"}, flags...), "-o", binary, packagePath)...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("build %s: %v %s", name, err, out)
 	}
