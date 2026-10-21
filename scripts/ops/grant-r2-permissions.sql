@@ -13,11 +13,13 @@
 --     `store.permissions_granted` only when something was inserted;
 --   * touches no other principal, store, membership or grant and never revokes anything.
 --
--- HOW (run on the deploy host from the repo root, in a bash subshell; lc_psql is the postgres superuser over the
--- container's unix socket, the pilot host has no database URL variable; the SQL goes in on stdin; the values are ids):
---   ( source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" &&
---     lc_psql -v store_id=<store uuid> -v principal_id=<principal uuid> < scripts/ops/grant-r2-permissions.sql )
--- Prints one line: granted=<0..3>.
+-- HOW (run on the deploy host from the repo root; bash -c makes it work whatever shell the operator has. lc_psql is
+-- the postgres superuser over the container's unix socket, the pilot host has no database URL variable; the SQL goes in
+-- on stdin; the values are ids and arrive as positional parameters, not nested quotes):
+--   bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" &&
+--     lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-r2-permissions.sql' _ '<store uuid>' '<principal uuid>'
+-- Output under lc_psql's -At: TWO lines. First the set_config echo `<store uuid>|<principal uuid>`, then
+-- `granted=<0..3>` (the last line is the result). A missing -v raises a usage error (non-zero exit).
 
 \set ON_ERROR_STOP on
 \if :{?store_id}
