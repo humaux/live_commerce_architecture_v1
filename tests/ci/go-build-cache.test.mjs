@@ -3,7 +3,7 @@
 //   -race, -count=1 and the exact -run/-skip selector semantics (review-735cb2ce2 P2-1, P2-3).
 // Depends on: pinned gates.yml setup-go configuration and the foundation mode's real invocation.
 //   Also pins that every cache-owning shard leg runs LC_FOUNDATION_PKGS=./tests/foundation exactly once (gates.yml gate step, every shard:
-//   case arm at any indentation; #86, PR #81 review P2-2; #107).
+//   case arm at any indentation, spaced alternatives, no += append, no broader glob ahead of them; #86, PR #81 review P2-2; #107, #116).
 // Used by: test-node.sh on GitHub; injected regressions exercise the same assertions as the real files.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -29,23 +29,31 @@ function cacheContract(source) {
 function shardScopeContract(source) {
   const gate = source.split(/^  gate:\s*$/m)[1]?.split(/^  aggregate:\s*$/m)[0] ?? "";
   // #107: every case arm with a shard: alternative, at any indentation, quoted or in "(pattern)" form; its body runs to ";;".
+  // #116: spaces around "|" are fine; an arm needs whitespace-free alternatives, so command lines containing ")" are not arms.
   const lines = gate.split("\n");
   const arms = [];
   lines.forEach((line, i) => {
-    const m = line.trimStart().match(/^\(?([^#)\s][^)\s]*)\)(.*)$/);
-    const alternatives = m?.[1].replace(/["']/g, "").split("|") ?? [];
-    if (!alternatives.some(a => a.startsWith("shard:"))) return;
+    const m = line.trimStart().match(/^\(?\s*([^#)\s][^)]*)\)(.*)$/);
+    const alternatives = m?.[1].replace(/["']/g, "").split("|").map(a => a.trim()) ?? [];
+    if (!m || !alternatives.every(a => /^[^\s=$;&]+$/.test(a))) return;
     let body = m[2];
     for (let j = i + 1; !body.includes(";;") && j < lines.length; j++) body += `\n${lines[j]}`;
-    arms.push([alternatives, body.split(";;")[0].trim()]);
+    arms.push({ alternatives, body: body.split(";;")[0].trim(), shard: alternatives.some(a => a.startsWith("shard:")) });
   });
-  assert.ok(arms.some(([alternatives]) => alternatives.includes("shard:g[0-9][0-9]")), "the shard:gNN arm exists");
-  for (const [alternatives, body] of arms) {
+  assert.ok(arms.some(a => a.alternatives.includes("shard:g[0-9][0-9]")), "the shard:gNN arm exists");
+  // #116: a broader non-shard glob ahead of the last shard arm (*, shard*, s*, *:g*) would capture shard modes first.
+  const toRegExp = glob => new RegExp(`^${glob.replace(/[.+^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
+  for (const { alternatives } of arms.slice(0, arms.findLastIndex(a => a.shard)).filter(a => !a.shard)) {
+    for (const mode of ["shard:g01", "shard:gFoo", "shard:x"]) {
+      assert.ok(!alternatives.some(a => toRegExp(a).test(mode)), `${alternatives.join("|")} would shadow the shard arms for ${mode}`);
+    }
+  }
+  for (const { alternatives, body } of arms.filter(a => a.shard)) {
     if (alternatives.every(a => a === "shard:unit")) continue; // 'shard:unit' never satisfies startsWith(matrix.mode, 'shard:g')
     const message = `${alternatives.join("|")} legs share the cache and must build only ./tests/foundation`;
     assert.match(body, /^LC_FOUNDATION_PKGS=\.\/tests\/foundation (?!\S*\.\/)/, message);
-    // The shell keeps the last assignment, so a second one anywhere in the arm would override the first (#107).
-    assert.equal(body.split("LC_FOUNDATION_PKGS=").length - 1, 1, message);
+    // The shell keeps the last assignment, so a second one anywhere in the arm would override the first (#107); "+=" appends count (#116).
+    assert.equal(body.match(/LC_FOUNDATION_PKGS\+?=/g)?.length, 1, message);
   }
 }
 
@@ -98,6 +106,27 @@ test("injected shadowing assignment, re-indented or quoted arm goes RED under th
     [any, "            shard:x|shard:*)    LC_FOUNDATION_PKGS=./... "],
   ]) {
     assert.throws(() => shardScopeContract(workflow.replace(from, to)), /must build only \.\/tests\/foundation/, JSON.stringify(to));
+  }
+});
+
+// #116 (PR #108 review P2-1..P2-3): spaces around "|", "+=" appends and a broader non-shard glob placed before the shard arms.
+test("injected spaced alternatives, += append or shadowing glob goes RED under the shard scope contract", () => {
+  const gnn = "            shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation ";
+  const any = "            shard:*)    LC_FOUNDATION_PKGS=./tests/foundation ";
+  assert.ok(workflow.includes(gnn) && workflow.includes(any), "the real arms are where the contract looks");
+  for (const [from, to, expected] of [
+    [any, "            shard:x | shard:*)    LC_FOUNDATION_PKGS=./... ", /must build only/],
+    [any, "            shard:x |shard:*)    LC_FOUNDATION_PKGS=./... ", /must build only/],
+    [any, "            ( shard:x  |  shard:*)    LC_FOUNDATION_PKGS=./... ", /must build only/],
+    [any, `${any}LC_FOUNDATION_PKGS+=" ./..." `, /must build only/],
+    [gnn, `${gnn}LC_FOUNDATION_PKGS+=./... `, /must build only/],
+    [gnn, "            *) echo shadowed ;;\n" + gnn, /shadow/],
+    [gnn, "            shard*) echo shadowed ;;\n" + gnn, /shadow/],
+    [gnn, "            s*|x) echo shadowed ;;\n" + gnn, /shadow/],
+    [gnn, "            *:g*) echo shadowed ;;\n" + gnn, /shadow/],
+    [any, "            *)  echo shadowed ;;\n" + any, /shadow/],
+  ]) {
+    assert.throws(() => shardScopeContract(workflow.replace(from, to)), expected, JSON.stringify(to));
   }
 });
 

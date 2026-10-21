@@ -1,6 +1,6 @@
 // Purpose: claims-worker process — poll the claims intake, dispatch external operations (Meta reply/audience/live-videos, inbox resubscribe, ECPay CVS) through the River default queue, and run the retention purge and store-domain verify sweeps. The only process holding the Meta Page private keyring and ECPay custody.
 // Depends on: platform worker pools, metareply routes, claimsintake, retention, storefrontdomains, ecpayroute, core.NewDispatcher, river (schema "river"), COMMERCE_CLAIMS_WORKER_ENABLED.
-// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go; tests/foundation process tests (claims_retention_worker_test.go, claims_worker_console_process_test.go, order_attempt_*).
+// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go, console_testhook.go (test tag only); tests/foundation process tests (claims_retention_worker_test.go, claims_worker_console_process_test.go, order_attempt_*).
 package main
 
 import (
@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -368,6 +369,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	runCtx, cancelRun := context.WithCancel(ctx)
 	defer cancelRun()
 	var consoleDown <-chan struct{} // nil without a bridge: never ready
+	var consoleRun sync.WaitGroup   // joins console.Run (zero value: no bridge, Wait returns at once)
 	pollCtx, stopPoll := context.WithCancel(runCtx)
 	polled := make(chan struct{})
 	go func() {
@@ -413,7 +415,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 			defer cancel()
 			_ = consoleServer.Shutdown(shutdown)
 		}()
-		go func() { _ = console.Run(pollCtx) }()
+		consoleRun.Go(func() { _ = console.Run(pollCtx) })
 		consoleDown = superviseConsole(failed, pollCtx.Done(), cancelRun)
 	}
 	resubscribed := make(chan struct{})
@@ -427,6 +429,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	<-polled
 	<-unsubscribed
 	<-resubscribed
+	consoleRun.Wait()
 	return exitError(consoleDown, runErr)
 }
 
@@ -474,8 +477,15 @@ func startConsoleServer(srv *http.Server) (<-chan error, error) {
 	if err != nil {
 		return nil, err
 	}
+	if consoleBound != nil {
+		consoleBound(ln)
+	}
 	return serveConsole(srv, ln), nil
 }
+
+// consoleBound is nil in production; only the claimsconsoletest build (console_testhook.go) sets it, so a process test
+// can fail the bound listener and prove run()'s post-bind wiring (#116).
+var consoleBound func(net.Listener)
 
 // serveConsole serves srv on an already bound listener; the channel contract is startConsoleServer's.
 func serveConsole(srv *http.Server, ln net.Listener) <-chan error {
