@@ -28,7 +28,7 @@ LC_DEPLOY_DIR="$(cd "$LC_SCRIPTS_DIR/.." && pwd)"
 LC_REPO_ROOT="$(cd "$LC_DEPLOY_DIR/.." && pwd)"
 : "${LC_CONFIG_DIR:=/etc/live-commerce}"
 : "${LC_COMPOSE_ENV:=$LC_CONFIG_DIR/compose.env}"
-LC_SCRIPT_NAME="${LC_SCRIPT_NAME:-$(basename "$0")}"
+LC_SCRIPT_NAME="${LC_SCRIPT_NAME:-$(basename -- "$0")}"
 export LC_SCRIPTS_DIR LC_DEPLOY_DIR LC_REPO_ROOT LC_CONFIG_DIR LC_COMPOSE_ENV
 
 # Core services with no long-running process (excluded from health/watchdog loops).

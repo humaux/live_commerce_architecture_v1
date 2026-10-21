@@ -19,8 +19,14 @@ func TestMetaAdsGrantScript(t *testing.T) {
 		t.Fatal(err)
 	}
 	var keep []string
+	inGuard := false // the \if :{?var} ... \endif usage guards: psql skips their RAISE when the variables are set
 	for _, line := range strings.Split(string(raw), "\n") {
-		if !strings.HasPrefix(strings.TrimSpace(line), `\`) {
+		switch tl := strings.TrimSpace(line); {
+		case strings.HasPrefix(tl, `\if `):
+			inGuard = true
+		case strings.HasPrefix(tl, `\endif`):
+			inGuard = false
+		case !inGuard && !strings.HasPrefix(tl, `\`):
 			keep = append(keep, line)
 		}
 	}
