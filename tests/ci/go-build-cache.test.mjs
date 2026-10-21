@@ -5,7 +5,8 @@
 //   Also pins that every cache-owning shard leg runs LC_FOUNDATION_PKGS=./tests/foundation exactly once (gates.yml gate step, every shard:
 //   case arm at any indentation, spaced alternatives, no += append, no broader glob ahead of them; #86, PR #81 review P2-2; #107, #116).
 //   The shadow check runs every earlier non-shard glob (with [!x] mapped to [^x]) against every real shard mode from shard-plan.json via ci-plan expand,
-//   each gNN mode must reach the shard:g[0-9][0-9] arm first, and an arm with $ = ; & or a backtick in an alternative fails closed (#116 residual of #137).
+//   each gNN mode must reach the shard:g[0-9][0-9] arm first, and an arm with $ = ; & or a backtick in an alternative fails closed (#116 residual of #137);
+//   only a line without "|" or "shard:" before its first ")" that starts with VAR= is skipped as a plain command, and the enumerated mode set must contain a shard:gNN.
 // Used by: test-node.sh on GitHub; injected regressions exercise the same assertions as the real files.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -16,6 +17,7 @@ const workflow = readFileSync(new URL("../../.github/workflows/gates.yml", impor
 // Every shard mode a real run enables (unit + each group of shard-plan.json), the same expansion the plan job uses for the matrix.
 const shardPlan = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8"));
 const shardModes = expand(["foundation-shards"], { groupIds: shardPlan.groups.map(g => g.id) }).matrix.map(e => e.mode);
+assert.ok(shardModes.length > 0 && shardModes.some(m => /^shard:g\d\d$/.test(m)), "shard-plan.json must enumerate at least one shard:gNN mode");
 const runner = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
 
 function cacheContract(source) {
@@ -43,7 +45,8 @@ function shardScopeContract(source) {
     const alternatives = m?.[1].replace(/["']/g, "").split("|").map(a => a.trim()) ?? [];
     // Whitespace inside an alternative or a leading VAR= means a command line, not an arm. Anything else with $ = ; & ` cannot be
     // evaluated as a glob here, so it fails closed instead of being skipped (review-137 P2).
-    if (!m || !alternatives.every(a => /^\S+$/.test(a)) || alternatives.some(a => /^[A-Za-z_]\w*\+?=/.test(a))) return;
+    // A line is a plain command only when its text before the first ")" has no "|" and no "shard:" (e.g. LC_X=1 cmd); otherwise it is an arm.
+    if (!m || !alternatives.every(a => /^\S+$/.test(a)) || (/^[A-Za-z_]\w*\+?=/.test(alternatives[0]) && !/[|]|shard:/.test(m[1]))) return;
     assert.ok(alternatives.every(a => /^[^=$;&`]+$/.test(a)), `cannot evaluate case arm "${line.trim()}": keep alternatives plain globs`);
     let body = m[2];
     for (let j = i + 1; !body.includes(";;") && j < lines.length; j++) body += `\n${lines[j]}`;
