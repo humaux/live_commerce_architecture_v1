@@ -4,12 +4,18 @@
 // Depends on: pinned gates.yml setup-go configuration and the foundation mode's real invocation.
 //   Also pins that every cache-owning shard leg runs LC_FOUNDATION_PKGS=./tests/foundation exactly once (gates.yml gate step, every shard:
 //   case arm at any indentation, spaced alternatives, no += append, no broader glob ahead of them; #86, PR #81 review P2-2; #107, #116).
+//   The shadow check runs every earlier non-shard glob (with [!x] mapped to [^x]) against every real shard mode from shard-plan.json via ci-plan expand,
+//   each gNN mode must reach the shard:g[0-9][0-9] arm first, and an arm with $ = ; & or a backtick in an alternative fails closed (#116 residual of #137).
 // Used by: test-node.sh on GitHub; injected regressions exercise the same assertions as the real files.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { expand } from "../../scripts/dev/ci-plan.mjs";
 
 const workflow = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8");
+// Every shard mode a real run enables (unit + each group of shard-plan.json), the same expansion the plan job uses for the matrix.
+const shardPlan = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8"));
+const shardModes = expand(["foundation-shards"], { groupIds: shardPlan.groups.map(g => g.id) }).matrix.map(e => e.mode);
 const runner = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
 
 function cacheContract(source) {
@@ -35,18 +41,26 @@ function shardScopeContract(source) {
   lines.forEach((line, i) => {
     const m = line.trimStart().match(/^\(?\s*([^#)\s][^)]*)\)(.*)$/);
     const alternatives = m?.[1].replace(/["']/g, "").split("|").map(a => a.trim()) ?? [];
-    if (!m || !alternatives.every(a => /^[^\s=$;&]+$/.test(a))) return;
+    // Whitespace inside an alternative or a leading VAR= means a command line, not an arm. Anything else with $ = ; & ` cannot be
+    // evaluated as a glob here, so it fails closed instead of being skipped (review-137 P2).
+    if (!m || !alternatives.every(a => /^\S+$/.test(a)) || alternatives.some(a => /^[A-Za-z_]\w*\+?=/.test(a))) return;
+    assert.ok(alternatives.every(a => /^[^=$;&`]+$/.test(a)), `cannot evaluate case arm "${line.trim()}": keep alternatives plain globs`);
     let body = m[2];
     for (let j = i + 1; !body.includes(";;") && j < lines.length; j++) body += `\n${lines[j]}`;
     arms.push({ alternatives, body: body.split(";;")[0].trim(), shard: alternatives.some(a => a.startsWith("shard:")) });
   });
   assert.ok(arms.some(a => a.alternatives.includes("shard:g[0-9][0-9]")), "the shard:gNN arm exists");
   // #116: a broader non-shard glob ahead of the last shard arm (*, shard*, s*, *:g*) would capture shard modes first.
-  const toRegExp = glob => new RegExp(`^${glob.replace(/[.+^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
+  const toRegExp = glob => new RegExp(`^${glob.replace(/[.+^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".").replace(/\[!/g, "[^")}$`);
   for (const { alternatives } of arms.slice(0, arms.findLastIndex(a => a.shard)).filter(a => !a.shard)) {
-    for (const mode of ["shard:g01", "shard:gFoo", "shard:x"]) {
+    for (const mode of ["shard:g01", "shard:gFoo", "shard:x", ...shardModes]) {
       assert.ok(!alternatives.some(a => toRegExp(a).test(mode)), `${alternatives.join("|")} would shadow the shard arms for ${mode}`);
     }
+  }
+  // Every real gNN mode must reach the gNN arm first: a shard arm ahead of it (shard:*) would hand it the wrong -run/-skip.
+  for (const mode of shardModes.filter(m => /^shard:g\d\d$/.test(m))) {
+    const first = arms.find(a => a.alternatives.some(x => toRegExp(x).test(mode)));
+    assert.ok(first?.alternatives.includes("shard:g[0-9][0-9]"), `${first?.alternatives.join("|")} would shadow the shard:gNN arm for ${mode}`);
   }
   for (const { alternatives, body } of arms.filter(a => a.shard)) {
     if (alternatives.every(a => a === "shard:unit")) continue; // 'shard:unit' never satisfies startsWith(matrix.mode, 'shard:g')
