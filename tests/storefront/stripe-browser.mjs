@@ -9,6 +9,8 @@
 // (observed at the edge); Go control server /facts and /act (counts and fixture actions only).
 // Output: result.json (+ PNGs) in LC_STRIPE_EVIDENCE. Every console line is redacted: a Stripe URL,
 // session id, key or synthetic email must never reach browser.log (SU08).
+// On any failure, FAILSNAP lines (#145) add each store tab's payment section state, the last 40 console/pageerror
+// lines, the last order's /facts counts and fail-N.png; the edge logs every /api/buyer status (ids as :id).
 // Purpose: drive the SP18/SU07/SU09/OBS Stripe buyer UI browser gates described above.
 // Depends on: ./shop-helpers.mjs, ./browser-engine.mjs, @playwright/test, the Go control server (LC_STRIPE_CONTROL), openssl.
 // Used by: tests/foundation/browser_stripe_test.go (TestBrowserStripeCheckout launches this script per case).
@@ -46,6 +48,8 @@ const unreached=[],cases=[],shots=[],selectors={},refused=new Set(),orders=[],ca
 const children=new Set(),sockets=new Set(),contexts=[],logs=[];
 let browser,edge,proxy,stripeVisits=0,payuniHits=0,nextPort=0;
 const passed=name=>{cases.push(name);say(`PASS ${name}`);};
+// #145: a coarse class for a failed non-BFF request (no path segments, so no ids or tokens reach the log)
+const pathClass=(r,p)=>r.isNavigationRequest()?"(document)":p.startsWith("/_next/data/")?"/_next/data":p.startsWith("/_next/static/")?"/_next/static":p.startsWith("/_next/")?"/_next/(other)":"(other)";
 const apiLabel=p=>p.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,":id"); // log BFF paths without ids
 const t0=Date.now(),step=(...a)=>say(`[+${Math.round((Date.now()-t0)/1000)}s]`,...a);
 // ---- copy: contract §7 + the approved payment/order copy (independent of the implementation) ----
@@ -620,7 +624,7 @@ const attachStep=p=>{
   p.on("close",()=>step("page closed")); // with "hosted loaded:" and "act", a hang names its step in browser.log
   p.on("framenavigated",f=>{if(f===p.mainFrame()){try{step("nav ->",new URL(f.url()).host||"about:blank");}catch{}}});
   p.on("response",r=>{try{const u=new URL(r.url());if(u.origin===origin&&r.request().isNavigationRequest())step("document response",r.status(),r.request().method(),u.pathname==="/payment/return"?u.pathname:"(other)",r.headers()["content-type"]??"-","len",r.headers()["content-length"]??"-");}catch{}});
-  p.on("requestfailed",r=>{try{const u=new URL(r.url());if(u.origin===origin)step("request failed",r.method(),u.pathname==="/payment/return"?u.pathname:u.pathname.startsWith("/api/buyer/")?apiLabel(u.pathname):"(other)",r.failure()?.errorText);}catch{}});
+  p.on("requestfailed",r=>{try{const u=new URL(r.url());if(u.origin===origin)step("request failed",r.method(),u.pathname==="/payment/return"?u.pathname:u.pathname.startsWith("/api/buyer/")?apiLabel(u.pathname):pathClass(r,u.pathname),r.resourceType(),r.failure()?.errorText);}catch{}});
 };
 async function obs(){ // developer-only: the real hosted page without the B2 buyer UI
   const c=await context(false);
@@ -642,6 +646,7 @@ async function snapshotAll(){
 }
 async function failSnapshot(){ // failure-only: payment section state + full-page screenshot of every open store tab (text redacted by say())
   await snapshotAll();let i=0;
+  for(const line of consoleLines.slice(-40))say("FAILSNAP console:",apiLabel(String(line)).replace(/\s+/g," ").slice(0,300)); // console + pageerror lines attach() collected
   if(orders.length)say("FAILSNAP facts",JSON.stringify(await within(control(orders.at(-1)),4000,null))); // counts only: reviews, closed, captured, signals
   for(const c of contexts)for(const p of c.pages()){
     if(p.isClosed()||new URL(p.url()).origin!==origin)continue;i++;
