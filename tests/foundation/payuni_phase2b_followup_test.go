@@ -610,9 +610,13 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 	if rb := pfuBetween(t, pfuRunbook, "", "\n### 4.1"); !strings.Contains(rb, pfuRunbookTxOpen) || !strings.Contains(rb, pfuRunbookTxClose) {
 		t.Errorf("runbook listing must be lc_psql <<'SQL' BEGIN READ ONLY; SET LOCAL row_security = off; ... ROLLBACK; SQL")
 	}
-	// Runnable on the pilot host (issue #116): no runbook command may use the unset "$MIGRATION_DATABASE_URL" (grants go via lc_psql).
-	if all, err := os.ReadFile(pfuRunbook); err != nil || strings.Contains(string(all), `"$MIGRATION_DATABASE_URL"`) {
-		t.Errorf("docs/runbooks/deploy.md must not run psql with \"$MIGRATION_DATABASE_URL\" (unset on the pilot host); use lc_psql")
+	// Runnable on the pilot host (issue #116): operator-facing runbook and ops SQL must not use the unset
+	// $MIGRATION_DATABASE_URL (grants go via lc_psql; prose naming the variable without "$" is fine).
+	files, _ := filepath.Glob("../../scripts/ops/*.sql")
+	for _, f := range append(files, pfuRunbook) {
+		if b, err := os.ReadFile(f); err != nil || strings.Contains(string(b), "$MIGRATION_DATABASE_URL") {
+			t.Errorf("%s must not use $MIGRATION_DATABASE_URL (unset on the pilot host; err=%v); use lc_psql", f, err)
+		}
 	}
 	listed := strings.Join(strings.Fields(q[i:]+";"), " ")
 	for _, v := range []string{pfuNumbered, pfuPost} {
