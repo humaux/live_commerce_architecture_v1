@@ -598,22 +598,23 @@ func TestBrowserAdminRelayStartRetriesBindCollision(t *testing.T) {
 		mu.Unlock()
 		_ = syscall.Kill(-pgid, syscall.SIGKILL)
 	}
-	relay.pickPort = func() string {
-		port := held
-		if len(picks) > 0 {
-			l, err := net.Listen("tcp", "127.0.0.1:0")
-			if err != nil {
-				t.Fatal(err)
-			}
-			_, port, _ = net.SplitHostPort(l.Addr().String())
-			_ = l.Close()
-		}
-		picks = append(picks, port)
-		return port
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	t.Run("relaunch", func(t *testing.T) {
+		// #130: assigned inside the subtest so Fatal targets the subtest's t (relay.launch runs on this goroutine), not the parent's.
+		relay.pickPort = func() string {
+			port := held
+			if len(picks) > 0 {
+				l, err := net.Listen("tcp", "127.0.0.1:0")
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, port, _ = net.SplitHostPort(l.Addr().String())
+				_ = l.Close()
+			}
+			picks = append(picks, port)
+			return port
+		}
 		if _, err := relay.launch(t, ctx, relayTestChild(t, ctx, false)); err != nil {
 			t.Fatalf("collision on the first port was not retried: %v", err)
 		}

@@ -4,6 +4,7 @@
 // Used by: scripts/dev/test-node.sh.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { EventEmitter } from "node:events";
 import { existsSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -30,5 +31,19 @@ test("#132: a spawned child is reaped when the body later fails, original error 
     throw original;
   }, { label: "T", dir }), (err) => err === original);
   assert.throws(() => process.kill(pid, 0), { code: "ESRCH" }, "child must be dead");
+  assert.equal(existsSync(dir), false);
+});
+
+test("#132: when the body AND stop() both fail, the original body error propagates and the dir is still removed", async () => {
+  const dir = await tmp(), original = new Error("body failed");
+  // A fake child that never emits "close" (pid beyond pid_max, so no real process is signalled) makes stop() throw after its
+  // normal 2x3s grace; kill timings are untouched.
+  const never = Object.assign(new EventEmitter(), { pid: 4194999 });
+  const log = console.error; let logged = "";
+  console.error = (msg) => { logged += msg; };
+  try {
+    await assert.rejects(withOwnedChild(async (owned) => { owned.adopt(never); throw original; }, { label: "T", dir }), (err) => err === original);
+  } finally { console.error = log; }
+  assert.match(logged, /T: cleanup also failed: T cleanup failed: owned process group did not close/);
   assert.equal(existsSync(dir), false);
 });
