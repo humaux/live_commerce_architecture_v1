@@ -130,6 +130,25 @@ test("injected spaced alternatives, += append or shadowing glob goes RED under t
   }
 });
 
+// #116 residual of #137 (review-137 P2s): the shadow check enumerates the real shard modes, maps [!x], and fails closed on an arm it cannot evaluate.
+test("injected per-mode shadow, gNN-last arm, [!x] class or unevaluable alternative goes RED under the shard scope contract", () => {
+  const lines = workflow.split("\n");
+  const gnnLine = lines.find(l => l.trimStart().startsWith("shard:g[0-9][0-9])"));
+  const anyLine = lines.find(l => l.trimStart().startsWith("shard:*)"));
+  assert.ok(gnnLine && anyLine, "the real arms are where the contract looks");
+  const swap = (from, to) => workflow.replace(from, () => to);
+  for (const [mutated, expected, label] of [
+    [swap(gnnLine, `            *:g02) echo shadowed ;;\n${gnnLine}`), /shadow/, "*:g02 before the gNN arm"],
+    [swap(gnnLine, `            *:g0[0-9]|x) echo shadowed ;;\n${gnnLine}`), /shadow/, "*:g0[0-9] before the gNN arm"],
+    [swap(gnnLine, `            [!a]*) echo shadowed ;;\n${gnnLine}`), /shadow/, "[!a]* before the gNN arm"],
+    [swap(`${gnnLine}\n`, "").replace(anyLine, () => `${anyLine}\n${gnnLine}`), /shadow/, "gNN arm after shard:*"],
+    [swap(anyLine, '            shard:*|"$X")    LC_FOUNDATION_PKGS=./... '), /cannot evaluate/, 'shard:*|"$X")'],
+    [swap(anyLine, "            a;b|shard:*)    LC_FOUNDATION_PKGS=./... "), /cannot evaluate/, "a;b|shard:*)"],
+  ]) {
+    assert.throws(() => shardScopeContract(mutated), expected, label);
+  }
+});
+
 test("injected disabled cache or unbound manifest goes RED under the real cache contract", () => {
   const cacheLine = "cache: ${{ startsWith(matrix.mode, 'shard:g') }}";
   assert.ok(workflow.includes(cacheLine));
