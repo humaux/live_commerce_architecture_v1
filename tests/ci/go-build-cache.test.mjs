@@ -4,12 +4,20 @@
 // Depends on: pinned gates.yml setup-go configuration and the foundation mode's real invocation.
 //   Also pins that every cache-owning shard leg runs LC_FOUNDATION_PKGS=./tests/foundation exactly once (gates.yml gate step, every shard:
 //   case arm at any indentation, spaced alternatives, no += append, no broader glob ahead of them; #86, PR #81 review P2-2; #107, #116).
+//   The shadow check runs every earlier non-shard glob (with [!x] mapped to [^x]) against every real shard mode from shard-plan.json via ci-plan expand,
+//   each gNN mode must reach the shard:g[0-9][0-9] arm first, and an arm with $ = ; & or a backtick in an alternative fails closed (#116 residual of #137);
+//   only a line without "|" or "shard:" before its first ")" that starts with VAR= is skipped as a plain command, and the enumerated mode set must contain a shard:gNN.
 // Used by: test-node.sh on GitHub; injected regressions exercise the same assertions as the real files.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { expand } from "../../scripts/dev/ci-plan.mjs";
 
 const workflow = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8");
+// Every shard mode a real run enables (unit + each group of shard-plan.json), the same expansion the plan job uses for the matrix.
+const shardPlan = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8"));
+const shardModes = expand(["foundation-shards"], { groupIds: shardPlan.groups.map(g => g.id) }).matrix.map(e => e.mode);
+assert.ok(shardModes.length > 0 && shardModes.some(m => /^shard:g\d\d$/.test(m)), "shard-plan.json must enumerate at least one shard:gNN mode");
 const runner = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
 
 function cacheContract(source) {
@@ -35,18 +43,27 @@ function shardScopeContract(source) {
   lines.forEach((line, i) => {
     const m = line.trimStart().match(/^\(?\s*([^#)\s][^)]*)\)(.*)$/);
     const alternatives = m?.[1].replace(/["']/g, "").split("|").map(a => a.trim()) ?? [];
-    if (!m || !alternatives.every(a => /^[^\s=$;&]+$/.test(a))) return;
+    // Whitespace inside an alternative or a leading VAR= means a command line, not an arm. Anything else with $ = ; & ` cannot be
+    // evaluated as a glob here, so it fails closed instead of being skipped (review-137 P2).
+    // A line is a plain command only when its text before the first ")" has no "|" and no "shard:" (e.g. LC_X=1 cmd); otherwise it is an arm.
+    if (!m || !alternatives.every(a => /^\S+$/.test(a)) || (/^[A-Za-z_]\w*\+?=/.test(alternatives[0]) && !/[|]|shard:/.test(m[1]))) return;
+    assert.ok(alternatives.every(a => /^[^=$;&`]+$/.test(a)), `cannot evaluate case arm "${line.trim()}": keep alternatives plain globs`);
     let body = m[2];
     for (let j = i + 1; !body.includes(";;") && j < lines.length; j++) body += `\n${lines[j]}`;
     arms.push({ alternatives, body: body.split(";;")[0].trim(), shard: alternatives.some(a => a.startsWith("shard:")) });
   });
   assert.ok(arms.some(a => a.alternatives.includes("shard:g[0-9][0-9]")), "the shard:gNN arm exists");
   // #116: a broader non-shard glob ahead of the last shard arm (*, shard*, s*, *:g*) would capture shard modes first.
-  const toRegExp = glob => new RegExp(`^${glob.replace(/[.+^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
+  const toRegExp = glob => new RegExp(`^${glob.replace(/[.+^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".").replace(/\[!/g, "[^")}$`);
   for (const { alternatives } of arms.slice(0, arms.findLastIndex(a => a.shard)).filter(a => !a.shard)) {
-    for (const mode of ["shard:g01", "shard:gFoo", "shard:x"]) {
+    for (const mode of ["shard:g01", "shard:gFoo", "shard:x", ...shardModes]) {
       assert.ok(!alternatives.some(a => toRegExp(a).test(mode)), `${alternatives.join("|")} would shadow the shard arms for ${mode}`);
     }
+  }
+  // Every real gNN mode must reach the gNN arm first: a shard arm ahead of it (shard:*) would hand it the wrong -run/-skip.
+  for (const mode of shardModes.filter(m => /^shard:g\d\d$/.test(m))) {
+    const first = arms.find(a => a.alternatives.some(x => toRegExp(x).test(mode)));
+    assert.ok(first?.alternatives.includes("shard:g[0-9][0-9]"), `${first?.alternatives.join("|")} would shadow the shard:gNN arm for ${mode}`);
   }
   for (const { alternatives, body } of arms.filter(a => a.shard)) {
     if (alternatives.every(a => a === "shard:unit")) continue; // 'shard:unit' never satisfies startsWith(matrix.mode, 'shard:g')
@@ -127,6 +144,26 @@ test("injected spaced alternatives, += append or shadowing glob goes RED under t
     [any, "            *)  echo shadowed ;;\n" + any, /shadow/],
   ]) {
     assert.throws(() => shardScopeContract(workflow.replace(from, to)), expected, JSON.stringify(to));
+  }
+});
+
+// #116 residual of #137 (review-137 P2s): the shadow check enumerates the real shard modes, maps [!x], and fails closed on an arm it cannot evaluate.
+test("injected per-mode shadow, gNN-last arm, [!x] class or unevaluable alternative goes RED under the shard scope contract", () => {
+  const lines = workflow.split("\n");
+  const gnnLine = lines.find(l => l.trimStart().startsWith("shard:g[0-9][0-9])"));
+  const anyLine = lines.find(l => l.trimStart().startsWith("shard:*)"));
+  assert.ok(gnnLine && anyLine, "the real arms are where the contract looks");
+  const swap = (from, to) => workflow.replace(from, () => to);
+  for (const [mutated, expected, label] of [
+    [swap(gnnLine, `            *:g02) echo shadowed ;;\n${gnnLine}`), /shadow/, "*:g02 before the gNN arm"],
+    [swap(gnnLine, `            *:g0[0-9]|x) echo shadowed ;;\n${gnnLine}`), /shadow/, "*:g0[0-9] before the gNN arm"],
+    [swap(gnnLine, `            [!a]*) echo shadowed ;;\n${gnnLine}`), /shadow/, "[!a]* before the gNN arm"],
+    [swap(`${gnnLine}\n`, "").replace(anyLine, () => `${anyLine}\n${gnnLine}`), /shadow/, "gNN arm after shard:*"],
+    [swap(anyLine, '            shard:*|"$X")    LC_FOUNDATION_PKGS=./... '), /cannot evaluate/, 'shard:*|"$X")'],
+    [swap(anyLine, "            a;b|shard:*)    LC_FOUNDATION_PKGS=./... "), /cannot evaluate/, "a;b|shard:*)"],
+    [swap(gnnLine, `            x=1|shard:g0[0-9]) LC_FOUNDATION_PKGS=./... ;;\n${gnnLine}`), /cannot evaluate/, "x=1|shard:g0[0-9]) before the gNN arm"],
+  ]) {
+    assert.throws(() => shardScopeContract(mutated), expected, label);
   }
 });
 
