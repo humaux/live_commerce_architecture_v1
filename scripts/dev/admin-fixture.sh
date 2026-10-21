@@ -43,7 +43,7 @@ done
 docker exec "$fixture_name" pg_isready -h 127.0.0.1 -U postgres -d lc_admin_fixture >/dev/null
 fixture_host="$(docker port "$fixture_name" 5432/tcp)"
 [[ "$fixture_host" == 127.0.0.1:* ]]
-GOTOOLCHAIN=go1.27.2 go build -o "$fixture_dir/server" ./cmd/admin-fixture
+GOTOOLCHAIN=go1.27.3 go build -o "$fixture_dir/server" ./cmd/admin-fixture
 fixture_password="$POSTGRES_PASSWORD"
 unset POSTGRES_PASSWORD
 # macOS may expose exec-time environment even after Go Unsetenv. Pass only a
