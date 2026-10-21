@@ -9,12 +9,12 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export function createOwnedChild(label) {
   let child, closed = true, closedPromise = Promise.resolve();
   const signal = (sig) => {
-    if (!child.pid) return;
+    if (!child?.pid) return; // #132: unspawned child (failure before spawn) has nothing to signal
     try { if (process.platform === "win32") child.kill(sig); else process.kill(-child.pid, sig); }
     catch (err) { if (err.code !== "ESRCH") throw err; }
   };
   const groupAlive = () => {
-    if (!child.pid) return false;
+    if (!child?.pid) return false;
     if (process.platform === "win32") return !closed;
     try { process.kill(-child.pid, 0); return true; } catch (err) { if (err.code === "ESRCH") return false; throw err; }
   };
@@ -45,6 +45,13 @@ export function createOwnedChild(label) {
 /** Run body(owned); always stop the child and remove dir afterwards. */
 export async function withOwnedChild(body, { label, dir }) {
   const owned = createOwnedChild(label);
+  let failed = false;
   try { return await body(owned); }
-  finally { await owned.stop(); await rm(dir, { recursive: true, force: true }); }
+  catch (err) { failed = true; throw err; }
+  finally {
+    // A cleanup failure must not replace the body's error (finally's abrupt completion wins in JS); dir removal always runs.
+    try { await owned.stop(); }
+    catch (err) { if (!failed) throw err; console.error(`${label}: cleanup also failed: ${err.message}`); }
+    finally { await rm(dir, { recursive: true, force: true }); }
+  }
 }

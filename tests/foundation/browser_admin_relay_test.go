@@ -905,7 +905,8 @@ func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
 		"Cookie":            {"a=b"},
 	}
 	const query = "limit=%&cursor=a;b"
-	send := func(client *http.Client, base string, headers http.Header) observed {
+	send := func(t *testing.T, client *http.Client, base string, headers http.Header) observed {
+		t.Helper() // #130: Fatal must target the (sub)test running on this goroutine, never the parent t.
 		seen.Store(observed{http.Header{}, "<none>"})
 		request, _ := http.NewRequest(http.MethodGet, base+"/api/orders?"+query, nil)
 		for name, values := range headers {
@@ -920,7 +921,7 @@ func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
 	}
 	stock := httptest.NewServer(&httputil.ReverseProxy{Rewrite: func(r *httputil.ProxyRequest) { r.SetURL(target) }})
 	t.Cleanup(stock.Close)
-	got := send(http.DefaultClient, stock.URL, sent)
+	got := send(t, http.DefaultClient, stock.URL, sent)
 	if len(got.header["X-Forwarded-Host"]) != 0 || len(got.header["Forwarded"]) != 0 || got.query == query {
 		t.Fatalf("red witness broken: a stock Rewrite proxy was expected to drop the spoofed headers and raw query, got %v %q", got.header, got.query)
 	}
@@ -934,7 +935,7 @@ func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
 				}
 				client = browserAdminTLSClient(t)
 			}
-			got := send(client, front, sent)
+			got := send(t, client, front, sent)
 			if got.query != query {
 				t.Fatalf("%s front changed the query: sent %q, Next saw %q", engine, query, got.query)
 			}
@@ -943,7 +944,7 @@ func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
 					t.Fatalf("%s reached Next through the %s front as %q, want %q", name, engine, got.header[name], want)
 				}
 			}
-			if got = send(client, front, http.Header{}); engine == "webkit" && got.header.Get("X-Forwarded-Proto") != "https" {
+			if got = send(t, client, front, http.Header{}); engine == "webkit" && got.header.Get("X-Forwarded-Proto") != "https" {
 				t.Fatalf("WebKit front no longer marks its TLS hop: X-Forwarded-Proto=%q", got.header.Get("X-Forwarded-Proto"))
 			}
 		})
