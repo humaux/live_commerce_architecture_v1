@@ -642,6 +642,7 @@ async function snapshotAll(){
 }
 async function failSnapshot(){ // failure-only: payment section state + full-page screenshot of every open store tab (text redacted by say())
   await snapshotAll();let i=0;
+  if(orders.length)say("FAILSNAP facts",JSON.stringify(await within(control(orders.at(-1)),4000,null))); // counts only: reviews, closed, captured, signals
   for(const c of contexts)for(const p of c.pages()){
     if(p.isClosed()||new URL(p.url()).origin!==origin)continue;i++;
     // G-UI8 audit [READ/MEASURE]: failure diagnostics only (order id presence, payment state, busy flag, payment section text)
