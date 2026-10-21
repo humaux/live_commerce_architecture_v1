@@ -1,6 +1,9 @@
 // Purpose: #107 (PR #96 review P2-3) — run()'s bridge-listener wiring in the real claims-worker binary: an occupied
 // COMMERCE_CLAIMS_CONSOLE_ADDR fails startup with claims_worker_start_failed and never logs claims_worker_ready (#83).
-// Depends on: crNewWorkerEnv/crReadLog (claims_retention_worker_test.go), mrFixture/mrBuild/mrLaunch/mrFailsBeforeReady
+// Also: a Serve failure AFTER the bind (the test-tag build closes the bound listener, cmd/claims-worker/console_testhook.go)
+// must end run() with claims_worker_console_failed (never start_failed, never a hang) — the main.go wiring of
+// superviseConsole/cancelRun/exitError (#116 P2-1).
+// Depends on: slxFreePort (stripe_live_process_test.go), crNewWorkerEnv/crReadLog (claims_retention_worker_test.go), mrFixture/mrBuild/mrLaunch/mrFailsBeforeReady
 // (meta_runtime*_test.go), REAL_PG; cmd/claims-worker.
 // Used by: go test ./tests/foundation (Foundation suite and the foundation shards).
 
@@ -29,5 +32,20 @@ func TestClaimsWorkerConsoleBindFailureNeverReady(t *testing.T) {
 	mrFailsBeforeReady(t, p, "claims_worker_start_failed", linkKey, pageKey, w.jobDSNSecret)
 	if strings.Contains(crReadLog(t, p), "claims_worker_ready") {
 		t.Fatal("worker logged claims_worker_ready with its bridge address unavailable")
+	}
+}
+
+func TestClaimsWorkerConsoleServeFailureExitsWithConsoleToken(t *testing.T) {
+	f := mrFixture(t)
+	w := crNewWorkerEnv(t, f)
+	linkKey := base64.StdEncoding.EncodeToString(w.linkRaw)
+	pageKey := base64.StdEncoding.EncodeToString(w.pageKeyRaw)
+	env := append(append([]string(nil), w.env...), "COMMERCE_CLAIMS_CONSOLE_ADDR=127.0.0.1:"+slxFreePort(t),
+		"COMMERCE_CLAIMS_BRIDGE_TOKEN="+linkKey, "COMMERCE_CLAIMS_CURSOR_KEY="+pageKey)
+	bin := mrBuild(t, "../../cmd/claims-worker", "claims-console-serve-failure", "-tags", "claimsconsoletest")
+	p := mrLaunch(t, bin, "claims-console-serve-failure", env)
+	mrFailsBeforeReady(t, p, "claims_worker_console_failed", linkKey, pageKey, w.jobDSNSecret)
+	if strings.Contains(crReadLog(t, p), "claims_worker_start_failed") {
+		t.Fatal("bridge loss after the bind was reported as a startup failure")
 	}
 }
