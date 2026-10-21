@@ -46,6 +46,7 @@ const unreached=[],cases=[],shots=[],selectors={},refused=new Set(),orders=[],ca
 const children=new Set(),sockets=new Set(),contexts=[],logs=[];
 let browser,edge,proxy,stripeVisits=0,payuniHits=0,nextPort=0;
 const passed=name=>{cases.push(name);say(`PASS ${name}`);};
+const apiLabel=p=>p.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,":id"); // log BFF paths without ids
 const t0=Date.now(),step=(...a)=>say(`[+${Math.round((Date.now()-t0)/1000)}s]`,...a);
 // ---- copy: contract §7 + the approved payment/order copy (independent of the implementation) ----
 const LOC={
@@ -143,6 +144,7 @@ async function startEdge(){
       const p=new URL(req.url,origin).pathname;
       if(p.startsWith("/api/buyer/orders/")&&p.includes("/payment"))calls.push({path:p,method:req.method,key:req.headers["idempotency-key"]??null,body:body.length?body.toString():null,at:Date.now()});
       const out=await relay(nextPort,req,body);
+      if(p.startsWith("/api/buyer/"))step("api",req.method,apiLabel(p),out.status); // #145: what the server answered, even to a request the page aborted
       const headers={...out.headers};delete headers.connection;delete headers["transfer-encoding"];
       res.writeHead(out.status,headers);res.end(out.body);
     }catch(e){step("edge relay error",String(e?.code??e?.message).slice(0,80));if(!res.headersSent)res.writeHead(502);res.end();}
@@ -618,7 +620,7 @@ const attachStep=p=>{
   p.on("close",()=>step("page closed")); // with "hosted loaded:" and "act", a hang names its step in browser.log
   p.on("framenavigated",f=>{if(f===p.mainFrame()){try{step("nav ->",new URL(f.url()).host||"about:blank");}catch{}}});
   p.on("response",r=>{try{const u=new URL(r.url());if(u.origin===origin&&r.request().isNavigationRequest())step("document response",r.status(),r.request().method(),u.pathname==="/payment/return"?u.pathname:"(other)",r.headers()["content-type"]??"-","len",r.headers()["content-length"]??"-");}catch{}});
-  p.on("requestfailed",r=>{try{const u=new URL(r.url());if(u.origin===origin)step("request failed",r.method(),u.pathname==="/payment/return"?u.pathname:"(other)",r.failure()?.errorText);}catch{}});
+  p.on("requestfailed",r=>{try{const u=new URL(r.url());if(u.origin===origin)step("request failed",r.method(),u.pathname==="/payment/return"?u.pathname:u.pathname.startsWith("/api/buyer/")?apiLabel(u.pathname):"(other)",r.failure()?.errorText);}catch{}});
 };
 async function obs(){ // developer-only: the real hosted page without the B2 buyer UI
   const c=await context(false);
@@ -638,6 +640,17 @@ async function snapshotAll(){
       say("SNAPSHOT page host:",new URL(p.url()).host||"about:blank","frames:",hosts.join(","),"text:",text);}catch{}
   }
 }
+async function failSnapshot(){ // failure-only: payment section state + full-page screenshot of every open store tab (text redacted by say())
+  await snapshotAll();let i=0;
+  for(const c of contexts)for(const p of c.pages()){
+    if(p.isClosed()||new URL(p.url()).origin!==origin)continue;i++;
+    // G-UI8 audit [READ/MEASURE]: failure diagnostics only (order id presence, payment state, busy flag, payment section text)
+    const s=await within(p.evaluate(()=>{const q=t=>document.querySelector(`[data-testid="${t}"]`);return {path:location.pathname,order:!!q("order-id"),
+      state:q("payment-status")?.dataset.state??null,busy:q("order-payment")?.getAttribute("aria-busy")??null,section:(q("order-payment")?.innerText??"").replace(/\s+/g," ").slice(0,400)};}),4000,null);
+    say("FAILSNAP",i,JSON.stringify(s));
+    await within(p.screenshot({path:path.join(evidence,`fail-${i}.png`),fullPage:true,timeout:5000}),7000,null);
+  }
+}
 const watchdog=setTimeout(async()=>{ // fail loudly with a snapshot instead of being killed silently
   say(`WATCHDOG: no completion after ${cfg.budgetMs}ms`);await snapshotAll();
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({kind:cfg.kind,mode:cfg.mode,pass:false,cases,orders,failure:"watchdog",refused_hosts:[...refused].sort(),selectors,screenshots:shots}),{mode:0o600}).catch(()=>{});
@@ -650,6 +663,7 @@ try{
   scan=await ({SP18:sp18,SU07:su07,SU09:su09,OBS:obs}[cfg.kind])();pass=true;
 }catch(error){
   failure=redact(error?.stack??error);say(`FAIL ${failure.split("\n").slice(0,12).join("\n")}`);
+  await within(failSnapshot(),20000,null); // #145: what the store tab showed when the step failed
   process.exitCode=String(error?.message).startsWith("BLOCKED: captcha")?3:1;
 }finally{
   clearTimeout(watchdog);
