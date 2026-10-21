@@ -158,6 +158,7 @@ test("injected per-mode shadow, gNN-last arm, [!x] class or unevaluable alternat
     [swap(`${gnnLine}\n`, "").replace(anyLine, () => `${anyLine}\n${gnnLine}`), /shadow/, "gNN arm after shard:*"],
     [swap(anyLine, '            shard:*|"$X")    LC_FOUNDATION_PKGS=./... '), /cannot evaluate/, 'shard:*|"$X")'],
     [swap(anyLine, "            a;b|shard:*)    LC_FOUNDATION_PKGS=./... "), /cannot evaluate/, "a;b|shard:*)"],
+    [swap(gnnLine, `            x=1|shard:g0[0-9]) LC_FOUNDATION_PKGS=./... ;;\n${gnnLine}`), /cannot evaluate/, "x=1|shard:g0[0-9]) before the gNN arm"],
   ]) {
     assert.throws(() => shardScopeContract(mutated), expected, label);
   }
