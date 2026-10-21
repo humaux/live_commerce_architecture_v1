@@ -120,4 +120,16 @@ func TestCustomersBillingCB13GrantScript(t *testing.T) {
 	if out, err := cbgPsql(t, container, script); err == nil || !strings.Contains(out, "usage") {
 		t.Errorf("missing variables: err=%v out=%q, want a usage error and a non-zero exit", err, out)
 	}
+	// The ads grant script shares the usage guard (psql's \quit takes no exit code, so it must raise). The meta-ads
+	// test strips backslash lines, so only real psql proves the guard fails closed and lets valid input through.
+	ads, err := os.ReadFile("../../scripts/ops/grant-ads-permissions.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := cbgPsql(t, container, ads); err == nil || !strings.Contains(out, "usage") {
+		t.Errorf("ads script, missing variables: err=%v out=%q, want a usage error and a non-zero exit", err, out)
+	}
+	if out, err := cbgPsql(t, container, ads, "store_id="+randomUUID(), "principal_id="+creator); err == nil || !strings.Contains(out, "store not found") {
+		t.Errorf("ads script, unknown store: err=%v out=%q, want %q (the guard lets valid input through)", err, out, "store not found")
+	}
 }

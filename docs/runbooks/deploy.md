@@ -372,7 +372,7 @@ SQL
 3. 回调 URL 的 `code`/`state` 由 Caddy 访问日志改写为 REDACTED（smoke S40 覆盖 `/api/ads/meta/callback`）；admin 对该路径发 `Referrer-Policy: no-referrer`。
 4. 关闭：清空 `COMMERCE_META_ADS_APP_ID` 并重启 api（路由 404）。**不要先停 ads-worker**：暂停（pause）只有它能发到 Meta；先在 admin 暂停所有投放，确认 ops 终态后再去掉 `ads` profile。
 5. CAPI 与商品 feed（ads-capi，0080）：`secrets-init.sh` 生成 `commerce_capi_external_id_key`（b64std32，**只有 ads-worker 挂载**；缺失则 ads-worker 拒绝启动，已部署环境升级前先重跑 `secrets-init.sh` 补齐）。轮换会改变所有买家的 external_id（匹配率重置，不丢数据）。商品 feed 为 `https://<LC_STORE_HOST>/feeds/meta.csv`（storefront → api `GET /v1/buyer/feeds/meta.csv`，只按已验证 Host 解析店铺，Caddy 无需改动）。买家在隐私页授予 `ads_personalization` 时，同一事务写入 `ads.capi_contexts`（浏览器 UA；超过8天或撤回同意时清理，单批≤1000，见 `0080_meta_capi.sql` / attribution sweeper）。**生产挂载阻塞项分两项**：为 `ads.insights_daily` / `ads.capi_events` 登记保留类，并为 `ads.capi_contexts` 登记擦除处理（T14 / customers-billing CD7，meta-ads-v1 §12）；登记前不得在生产开启 CAPI。现有清理机制不替代登记，已经发出的事件不能召回。
-6. 广告权限核对（meta-ads-v1 A-1）：`0089_staff_team.sql` 的创建者触发器会应用完整 owner bundle，并回填既有 owner，包含 `ads:*`；不能再按 0074 时的旧权限列表要求所有店铺补发。先核对实际主体、角色和缺失权限；仅对确实缺权的历史创建者，在 owner 批准后用迁移属主连接（`lc_psql` 即 `postgres` 超级用户的容器内 unix socket 连接，试点主机没有 `MIGRATION_DATABASE_URL`；SQL 文件在主机上，走 stdin）用 `bash -c` 运行，uuid 作位置参数传入（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-ads-permissions.sql' _ '<店铺 uuid>' '<主体 uuid>'``，输出两行（先是 `<store>|<principal>` 回显），最后一行 `granted=<0..3>`。授予权限不等于可投放：每店 allowance 默认 NT$0（关闭，裁决 O4），由运营另设 `max_active_budget_minor` / currency；这是内部批准预算上限，不等于 Meta `spend_cap` 或实时硬停止，也不替代真实投放批准。
+6. 广告权限核对（meta-ads-v1 A-1）：`0089_staff_team.sql` 的创建者触发器会应用完整 owner bundle，并回填既有 owner，包含 `ads:*`；不能再按 0074 时的旧权限列表要求所有店铺补发。先核对实际主体、角色和缺失权限；仅对确实缺权的历史创建者，在 owner 批准后用迁移属主连接（`lc_psql` 即 `postgres` 超级用户的容器内 unix socket 连接，试点主机没有 `MIGRATION_DATABASE_URL`；SQL 文件在主机上，走 stdin）用 `bash -c` 运行，uuid 作位置参数传入（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-ads-permissions.sql' _ '<店铺 uuid>' '<主体 uuid>'`，输出两行（先是 `<store>|<principal>` 回显），最后一行 `granted=<0..3>`。授予权限不等于可投放：每店 allowance 默认 NT$0（关闭，裁决 O4），由运营另设 `max_active_budget_minor` / currency；这是内部批准预算上限，不等于 Meta `spend_cap` 或实时硬停止，也不替代真实投放批准。
 7. 卡住的草稿（无法解绑广告账户）：解绑会被触发器 `bindings_ads_disable_guard` 以 `binding_in_use`（409）拒绝，直到该店所有草稿都不再“可能花费”（AD6）。先在 admin 暂停；暂停 op 需到 SUCCEEDED。若暂停一直到不了：(a) 令牌被 Meta 撤销 → 商家用**同一个**广告账户重新连接（令牌换新、binding 不变），advance sweeper 会再规划下一个 pause seq；(b) 激活 op 停在 UNKNOWN → 等 reconcile（不要手工改 ops 行）；(c) 以上都不成立 → 在 Ads Manager 核实广告已停，草稿在 `ends_at + 1 天` 后自动不再计入，解绑随之放行。没有操作员强制覆盖（有意：覆盖等于允许“看不见的花费”）；如需加速，先记录根因再另立契约。
 
 ### 6.7 Meta：商家自助连接 Facebook 主页 / Instagram（meta-connect，R4）
@@ -401,10 +401,10 @@ SQL
    未设 = 关闭（`0` 会让 api 启动失败，preflight P06 拦截）；preflight P08 校验 price id，P09 校验两个密钥文件格式。
    webhook 复用 `commerce_stripe_ingress` 登录（`COMMERCE_STRIPE_INGRESS_DATABASE_URL`）。
 3. **R2 权限核对／按需补发**：0079 曾仅给新建店铺创建者 `customers:read`、`customers:privacy`、`billing:manage`；当前 `0089_staff_team.sql` 已回填既有 owner 的完整权限集。先核对实际主体、角色和权限，不以店铺创建日期单独判定需要补发；只有确实缺权的历史创建者，才按下面旧补发路径处理，**需 owner 在聊天中批准**：
+   连接方式：postgres 超级用户经容器内 unix socket（`lc_psql`，试点主机没有 `MIGRATION_DATABASE_URL`），SQL 文件走 stdin。输出两行，最后一行 `granted=<0..3>`；幂等，只作用于该店铺的创建者。下面的块不含 `#` 注释，可直接粘进交互式 zsh：
    ```sh
-   # 以 postgres 超级用户经容器内 unix socket 连接（lc_psql，试点主机没有 MIGRATION_DATABASE_URL）；SQL 文件走 stdin：
    bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" &&
-     lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-r2-permissions.sql' _ '<store uuid>' '<创建者 principal uuid>'   # 输出两行，最后一行 granted=<0..3>，幂等，只作用于该店铺的创建者
+     lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-r2-permissions.sql' _ '<store uuid>' '<创建者 principal uuid>'
    ```
 4. 标准（standing）为 RESTRICTED 时只拒绝新开认领窗口（HTTP 402 `billing_restricted`）；退款、履约、结账不受影响（Q6）。
 
