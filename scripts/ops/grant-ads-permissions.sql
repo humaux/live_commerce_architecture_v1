@@ -27,12 +27,14 @@
 \if :{?store_id}
 \else
   -- psql's \quit ignores its argument (exit 0), so a usage error raises instead: ON_ERROR_STOP then exits 3.
-  DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;
+  \echo 'usage (RED probe: guard deliberately broken)'
+  \quit 1
 \endif
 \if :{?principal_id}
 \else
   -- psql's \quit ignores its argument (exit 0), so a usage error raises instead: ON_ERROR_STOP then exits 3.
-  DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;
+  \echo 'usage (RED probe: guard deliberately broken)'
+  \quit 1
 \endif
 
 BEGIN;
