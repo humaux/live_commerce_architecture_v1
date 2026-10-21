@@ -158,9 +158,12 @@ lc_service_active() { grep -qx -- "$1" < <(lc_active_services); }
 
 # lc_psql — run SQL from stdin as the superuser inside the running postgres container, over
 # the unix socket. Output: unaligned, tuples only, '|' separated. The SQL text is never logged.
+# Extra args (e.g. -v store_id=<uuid>) are passed to psql as separate argv items via "$@" (never re-parsed by a shell).
+# SQL files live on the host, not in the container: feed them on stdin (`lc_psql -v k=v < file.sql`), do not use -f.
+# shellcheck disable=SC2120 # library API: callers are runbook commands (lc_psql -v k=v < file.sql), outside shellcheck's view
 lc_psql() {
   lc_compose exec -T postgres bash -c \
-    'PGPASSWORD="$(< /run/secrets/pg_superuser_password)" exec psql -X -q -At -F "|" -v ON_ERROR_STOP=1 -h /var/run/postgresql -U postgres -d live_commerce'
+    'PGPASSWORD="$(< /run/secrets/pg_superuser_password)" exec psql -X -q -At -F "|" -v ON_ERROR_STOP=1 -h /var/run/postgresql -U postgres -d live_commerce "$@"' lc_psql "$@"
 }
 
 # lc_disk_guard PATH — disk budget guard before a write that can fill the disk (ops-disk-guard D6): returns 1 (message on

@@ -542,8 +542,8 @@ const (
 		"s.has_auth, s.has_cap, s.has_cei, s.has_ref, s.has_con"
 	// The read-only wrapper the runbook prescribes around the listing (review-124-cb721a802 P2-1), fed to lib.sh's
 	// lc_psql as a quoted heredoc: the pilot host has no MIGRATION_DATABASE_URL (review-125-c20176c95 P2-1).
-	pfuRunbookTxOpen  = "\n     lc_psql <<'SQL'\n     BEGIN READ ONLY;\n     SET LOCAL row_security = off;\n     " + pfuRunbookBegin
-	pfuRunbookTxClose = pfuRunbookEnd + "\n     ROLLBACK;\n     SQL\n"
+	pfuRunbookTxOpen  = "\nlc_psql <<'SQL'\nBEGIN READ ONLY;\nSET LOCAL row_security = off;\n" + pfuRunbookBegin
+	pfuRunbookTxClose = pfuRunbookEnd + "\nROLLBACK;\nSQL\n)\n"
 )
 
 // pfuBetween returns the text of path between begin and end (exclusive), or fails.
@@ -609,6 +609,14 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 	}
 	if rb := pfuBetween(t, pfuRunbook, "", "\n### 4.1"); !strings.Contains(rb, pfuRunbookTxOpen) || !strings.Contains(rb, pfuRunbookTxClose) {
 		t.Errorf("runbook listing must be lc_psql <<'SQL' BEGIN READ ONLY; SET LOCAL row_security = off; ... ROLLBACK; SQL")
+	}
+	// Runnable on the pilot host (issue #116): operator-facing runbook and ops SQL must not use the unset
+	// $MIGRATION_DATABASE_URL (grants go via lc_psql; prose naming the variable without "$" is fine).
+	files, _ := filepath.Glob("../../scripts/ops/*.sql")
+	for _, f := range append(files, pfuRunbook) {
+		if b, err := os.ReadFile(f); err != nil || strings.Contains(string(b), "$MIGRATION_DATABASE_URL") {
+			t.Errorf("%s must not use $MIGRATION_DATABASE_URL (unset on the pilot host; err=%v); use lc_psql", f, err)
+		}
 	}
 	listed := strings.Join(strings.Fields(q[i:]+";"), " ")
 	for _, v := range []string{pfuNumbered, pfuPost} {

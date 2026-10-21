@@ -13,9 +13,10 @@
 --     `store.permissions_granted` only when something was inserted;
 --   * touches no other principal, store, membership or grant and never revokes anything.
 --
--- HOW (migration-owner connection; the values are ids, not secrets):
---   psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 \
---        -v store_id=<store uuid> -v principal_id=<principal uuid> -f scripts/ops/grant-r2-permissions.sql
+-- HOW (run on the deploy host from the repo root, in a bash subshell; lc_psql is the postgres superuser over the
+-- container's unix socket, the pilot host has no database URL variable; the SQL goes in on stdin; the values are ids):
+--   ( source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" &&
+--     lc_psql -v store_id=<store uuid> -v principal_id=<principal uuid> < scripts/ops/grant-r2-permissions.sql )
 -- Prints one line: granted=<0..3>.
 
 \set ON_ERROR_STOP on
