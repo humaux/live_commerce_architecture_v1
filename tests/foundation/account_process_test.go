@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -51,16 +50,10 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 	if err := build.Run(); err != nil {
 		t.Fatalf("build API failed; see %s: %v", buildLog.Name(), err)
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := listener.Addr().String()
-	if err := listener.Close(); err != nil {
-		t.Fatal(err)
-	}
-	origin := "http://" + addr
-	idp := newBrowserIDP(t, origin+"/api/auth/callback")
+	// origin is the API's own bound address (set by start); COMMERCE_PUBLIC_ORIGIN is the Next BFF's and cmd/api never compares it with Host.
+	const publicOrigin = "http://127.0.0.1:3100"
+	var origin string
+	idp := newBrowserIDP(t, publicOrigin+"/api/auth/callback")
 	keyEntries := []map[string]string{}
 	for _, id := range []string{"fixture_v1", "fixture_v2"} {
 		keyEntries = append(keyEntries, map[string]string{"id": id, "key_base64": base64.StdEncoding.EncodeToString(m.keys[id])})
@@ -70,11 +63,11 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	childEnv := browserEnvironment(map[string]string{
-		"LISTEN_ADDR":                            addr,
+		"LISTEN_ADDR":                            mrEphemeralAddr,
 		"DATABASE_URL":                           m.f.base.runtime.Config().ConnString(),
 		"COMMERCE_IDENTITY_ENABLED":              "1",
 		"COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
-		"COMMERCE_PUBLIC_ORIGIN":                 origin,
+		"COMMERCE_PUBLIC_ORIGIN":                 publicOrigin,
 		"COMMERCE_IDENTITY_DATABASE_URL":         authority.Config().ConnString(),
 		"COMMERCE_BFF_KEY":                       randomToken(),
 		"COMMERCE_OIDC_ISSUER":                   idp.server.URL,
@@ -117,6 +110,7 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 				t.Errorf("API PID %d did not exit during cleanup", cmd.Process.Pid)
 			}
 		})
+		origin = "http://" + mrBoundAddr(t, &mrProcess{done: done, logPath: log.Name()}, 15*time.Second)
 		deadline := time.Now().Add(15 * time.Second)
 		for time.Now().Before(deadline) {
 			select {

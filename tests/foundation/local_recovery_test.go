@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -915,14 +914,8 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	if out := lrCommand(t, 15*time.Second, []string{"COMMERCE_META_WORKER_ENABLED=0", "COMMERCE_META_WORKER_DATABASE_URL=invalid", "COMMERCE_META_CONSUMER_DATABASE_URL=invalid", "COMMERCE_META_PAYLOAD_KEYS_JSON=invalid"}, nil, nil, metaBinary); len(out) != 0 {
 		t.Fatal("disabled Meta worker opened secrets or emitted output")
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	address := listener.Addr().String()
-	_ = listener.Close()
-	api := mrLaunch(t, apiBinary, "local-recovery-api", []string{"LISTEN_ADDR=" + address, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=0", "COMMERCE_BUYER_ENABLED=0", "COMMERCE_IDENTITY_ENABLED=0"})
-	lrHTTPReady(t, api, address)
+	api := mrLaunch(t, apiBinary, "local-recovery-api", []string{"LISTEN_ADDR=" + mrEphemeralAddr, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=0", "COMMERCE_BUYER_ENABLED=0", "COMMERCE_IDENTITY_ENABLED=0"})
+	lrHTTPReady(t, api, mrBoundAddr(t, api, 8*time.Second))
 	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, ""), "disabled cold start")
 	mrStop(t, api, syscall.SIGTERM, true)
 	mrLogNoSecrets(t, api, mainDSN, workerDSN, consumerDSN)

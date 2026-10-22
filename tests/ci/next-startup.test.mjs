@@ -350,6 +350,43 @@ test("TH-10: the Go port-race guard flags localhost:0, :0 and [::1]:0 and anchor
   assert.throws(() => noPickThenRelease("synthetic_test.go", "server.start(t, ctx, cmd)\n"), /not launched through the relay/, "a non-relay .start(t, ...) satisfied the positive");
 });
 
+// CMD-1 (#147): cmd/api binds LISTEN_ADDR itself (`:0` plus the api_ready line), so no Go test may hand a cmd/* binary a caller-picked
+// port. Every LISTEN_ADDR assignment under tests/ must take the shared constant mrEphemeralAddr ("127.0.0.1:0"); the bound address is
+// read back from the child's api_ready line (mrBoundAddr). RED: the files at CMD_BOUND_BASE (an r3/integration commit) still pick
+// a port in advance and must fail; GREEN: the current files do not. COMMERCE_CLAIMS_CONSOLE_ADDR (claims-worker) is a different
+// knob and the documented remaining exception (docs/delivery/GATES.md).
+const CMD_BOUND_BASE = "b464ee4b4";
+const listenAddrSites = [
+  "tests/foundation/studio_process_test.go", "tests/foundation/local_recovery_test.go", "tests/foundation/studio_planning_only_test.go",
+  "tests/foundation/meta_runtime_process_test.go", "tests/foundation/merchant_restart_replay_test.go", "tests/foundation/account_process_test.go",
+  "tests/foundation/stripe_live_process_test.go", "tests/foundation/order_attempt_process_test.go",
+];
+function noPickedListenAddr(file, source) {
+  const uses = [...source.matchAll(/LISTEN_ADDR/g)];
+  assert.ok(uses.length > 0, `${file}: no LISTEN_ADDR use left, drop it from listenAddrSites`);
+  for (const use of uses) {
+    const rest = source.slice(use.index, use.index + 64);
+    assert.match(rest, /^LISTEN_ADDR(="\s*\+\s*|":\s*)mrEphemeralAddr\b/, `${file}: a cmd/* binary gets a caller-picked LISTEN_ADDR (${JSON.stringify(rest.slice(0, 40))}), use mrEphemeralAddr and read the api_ready line`);
+  }
+}
+test("CMD-1: no Go test hands a cmd/* binary a pre-picked LISTEN_ADDR (static red/green)", async () => {
+  for (const file of listenAddrSites) {
+    const before = execFileSync("git", ["show", `${CMD_BOUND_BASE}:${file}`], { encoding: "utf8" });
+    assert.throws(() => noPickedListenAddr(file, before), /caller-picked LISTEN_ADDR/, `${file}: red witness lost the pre-picked LISTEN_ADDR`);
+    noPickedListenAddr(file, await readFile(file, "utf8"));
+  }
+  // Nothing else under tests/ may set LISTEN_ADDR either (a new site must be routed the same way).
+  const all = execFileSync("git", ["ls-files", "tests"], { encoding: "utf8" }).split("\n").filter((f) => f.endsWith(".go"));
+  for (const file of all) {
+    const source = await readFile(file, "utf8");
+    if (source.includes("LISTEN_ADDR")) noPickedListenAddr(file, source);
+  }
+  // Synthetic spellings: a pre-picked variable, a literal port and a quoted constant all fail; the shared constant passes.
+  noPickedListenAddr("synthetic_test.go", '"LISTEN_ADDR=" + mrEphemeralAddr,\n"LISTEN_ADDR": mrEphemeralAddr');
+  for (const bad of ['"LISTEN_ADDR=" + addr', '"LISTEN_ADDR": "127.0.0.1:" + port', '"LISTEN_ADDR=127.0.0.1:8080"', '"LISTEN_ADDR=" + "127.0.0.1:0"'])
+    assert.throws(() => noPickedListenAddr("synthetic_test.go", bad), /caller-picked LISTEN_ADDR/, `${bad} slipped past the guard`);
+});
+
 // TH-9 (#147): the relay SIGKILLs the whole group the moment the leader exits, so a SIGINT-then-wait grace never reaches the
 // next-server children. The fixtures must not pretend to grant one.
 test("TH-9: studio-bff and orders-bff do not stop a relay-owned group with a SIGINT grace", async () => {

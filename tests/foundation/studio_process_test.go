@@ -137,22 +137,19 @@ func TestStudioBackendSTU03RealAPIWorkerRestart(t *testing.T) {
 	// All databases, roles, ports, certificates and the IdP are disposable local fixtures.
 	h, ca, stopsAllowed := studioProcessFixture(t)
 	_, _, authority := identityFixture(t)
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := listener.Addr().String()
-	_ = listener.Close()
-	origin := "http://" + addr
-	idp := newBrowserIDP(t, origin+"/api/auth/callback")
+	// The API's own address is only known once it has bound (origin, set by ready). COMMERCE_PUBLIC_ORIGIN is the Next BFF's
+	// origin (OIDC redirect URI, invite links): cmd/api never compares it with Host or Origin, so it is a fixed placeholder here.
+	const publicOrigin = "http://127.0.0.1:3100"
+	var origin string
+	idp := newBrowserIDP(t, publicOrigin+"/api/auth/callback")
 	apiBinary := mrBuild(t, "../../cmd/api", "studio-api")
 	workerBinary := mrBuild(t, "../../cmd/media-worker", "studio-media-worker")
 	apiName := "studio_api_" + t04Tag()
 	apiDSN := mrNamedDSN(t, h.lp.f.runtime.Config().ConnString(), apiName)
 	apiEnv := []string{
-		"LISTEN_ADDR=" + addr, "DATABASE_URL=" + apiDSN,
+		"LISTEN_ADDR=" + mrEphemeralAddr, "DATABASE_URL=" + apiDSN,
 		"COMMERCE_STUDIO_ENABLED=1", "COMMERCE_STUDIO_MEDIA_ENABLED=1", "COMMERCE_IDENTITY_ENABLED=1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS=1",
-		"COMMERCE_PUBLIC_ORIGIN=" + origin, "COMMERCE_IDENTITY_DATABASE_URL=" + authority.Config().ConnString(),
+		"COMMERCE_PUBLIC_ORIGIN=" + publicOrigin, "COMMERCE_IDENTITY_DATABASE_URL=" + authority.Config().ConnString(),
 		"COMMERCE_BFF_KEY=" + randomToken(), "COMMERCE_OIDC_ISSUER=" + idp.server.URL,
 		"COMMERCE_OIDC_CLIENT_ID=" + browserClientID, "COMMERCE_IDENTITY_PROVIDER_KEY=studio-process-mock-v1",
 		"COMMERCE_SESSION_TTL=1h", "COMMERCE_ONBOARDING_ENABLED=0",
@@ -160,6 +157,7 @@ func TestStudioBackendSTU03RealAPIWorkerRestart(t *testing.T) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	ready := func(p *mrProcess) {
 		t.Helper()
+		origin = "http://" + mrBoundAddr(t, p, 12*time.Second)
 		deadline := time.Now().Add(12 * time.Second)
 		for time.Now().Before(deadline) {
 			select {
@@ -216,7 +214,7 @@ func TestStudioBackendSTU03RealAPIWorkerRestart(t *testing.T) {
 	}
 	base := "/v1/admin/stores/" + h.lp.f.storeA1 + "/live-sessions/" + h.session
 	// The default-off binary has no Studio routes and must not require identity.
-	off := mrLaunch(t, apiBinary, "studio-api-off", []string{"LISTEN_ADDR=" + addr, "DATABASE_URL=" + apiDSN, "COMMERCE_STUDIO_ENABLED=0"})
+	off := mrLaunch(t, apiBinary, "studio-api-off", []string{"LISTEN_ADDR=" + mrEphemeralAddr, "DATABASE_URL=" + apiDSN, "COMMERCE_STUDIO_ENABLED=0"})
 	ready(off)
 	request("GET", base, "", "", 404)
 	mrStop(t, off, syscall.SIGTERM, true)
