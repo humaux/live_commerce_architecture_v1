@@ -86,6 +86,14 @@ func TestStoreDomainsNumericCandidateRetryAndBound(t *testing.T) {
 			if rows.Err() != nil {
 				t.Fatal(rows.Err())
 			}
+			// The foundation database is shared with every other test in the shard:
+			// an earlier test (or an earlier run) may already own one of these PRNG
+			// draws. Model that explicitly for the first draw so #147's 23505 on
+			// stores_handle_unique can never come back. ON CONFLICT keeps the guard
+			// idempotent when such a row already exists.
+			if _, err := tx.Exec(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency,handle) VALUES($1,$2,'Preexisting handle owner','TWD',$3) ON CONFLICT (handle) WHERE handle IS NOT NULL DO NOTHING`, s.f.tenant, randomUUID(), candidates[0]); err != nil {
+				t.Fatal(err)
+			}
 			n := 1
 			if exhausted {
 				n = 50
