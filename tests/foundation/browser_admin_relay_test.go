@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -135,7 +136,7 @@ func (front *browserAdminRelay) launch(t *testing.T, ctx context.Context, cmd *e
 	// TH-2: a relaunch rebuilds the command from Path/Args/Dir/Env/Stdout/Stderr and owns SysProcAttr, so anything else the caller
 	// set would silently differ between attempts. Cancel is not inspectable (CommandContext always sets one; the group kill below
 	// supersedes it).
-	if cmd.Stdin != nil || len(cmd.ExtraFiles) != 0 || cmd.WaitDelay != 0 || (cmd.SysProcAttr != nil && *cmd.SysProcAttr != (syscall.SysProcAttr{Setpgid: true})) {
+	if cmd.Stdin != nil || len(cmd.ExtraFiles) != 0 || cmd.WaitDelay != 0 || (cmd.SysProcAttr != nil && !reflect.DeepEqual(*cmd.SysProcAttr, syscall.SysProcAttr{Setpgid: true})) {
 		return nil, errors.New("relay.start: unsupported cmd field (Stdin, ExtraFiles, WaitDelay or a SysProcAttr other than Setpgid): a relaunch would not reproduce it")
 	}
 	owns, kill := front.owns, front.kill
