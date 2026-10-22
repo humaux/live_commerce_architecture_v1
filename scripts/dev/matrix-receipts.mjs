@@ -5,7 +5,8 @@
 //   test_count is read from the runners' own output in the log, never from a static list: top-level `--- PASS:` / `--- FAIL:` lines of
 //   `go test -v` (the lines `go tool test2json` turns into pass/fail events; test-focused.sh counts the same), top-level pass/fail events of
 //   `go test -json` logs (--browser-webkit / --stripe-browser write one .jsonl per step instead of -v text), plus the node --test summary
-//   (`ℹ pass N` / `ℹ fail N` spec reporter, `# pass N` / `# fail N` TAP). Browser specs run inside those go tests.
+//   (`ℹ pass N` / `ℹ fail N` spec reporter, `# pass N` / `# fail N` TAP, only inside its tests/suites/pass/fail summary block). Browser specs run inside those go tests.
+//   status is FAIL when the gate step failed OR a top-level fail event was parsed from the logs, even if the gate exited 0.
 //   Historical evidence never feeds this check.
 // Depends on: scripts/dev/ci-plan.mjs (artifactName); env MODE, GATE_OUTCOME, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA (write);
 //   env PLANNED (the plan job's `matrix` output), GITHUB_RUN_ID, GITHUB_SHA (verify). No network, no dependencies.
@@ -18,22 +19,34 @@ import { artifactName } from "./ci-plan.mjs";
 
 export const receiptFile = (mode) => `receipt-${artifactName(mode).replace(/^gate-/, "")}.json`;
 
-/** Tests that ran according to the runners' own output in one log text. */
-export function countTests(text) {
-  let n = 0;
+/** Tests that ran according to the runners' own output in one log text, and whether any top-level one failed (#147 CI-6). */
+export function scanTests(text) {
+  let n = 0, failed = false, stage = "";
   for (const line of text.split("\n")) {
-    if (/^--- (PASS|FAIL): /.test(line)) n++;
-    const m = /^(?:ℹ|#) (?:pass|fail) (\d+)\s*$/.exec(line);
-    if (m) n += Number(m[1]);
+    if (/^--- (PASS|FAIL): /.test(line)) { n++; if (line.startsWith("--- FAIL")) failed = true; }
+    // #147 CI-9: node --test prints its summary as one block (tests, suites, pass, fail); a pass line counts only right after a
+    // "suites" line and a fail line only right after a counted pass line, so the same words in nested tool output cannot inflate the count.
+    const m = /^(?:ℹ|#) (pass|fail) (\d+)\s*$/.exec(line);
+    const was = stage;
+    stage = /^(?:ℹ|#) suites \d+\s*$/.test(line) ? "suites" : "";
+    if (m && m[1] === "pass" && was === "suites") { n += Number(m[2]); stage = "pass"; }
+    if (m && m[1] === "fail" && was === "pass") { n += Number(m[2]); if (Number(m[2]) > 0) failed = true; }
     if (line.startsWith("{")) {
-      try { const e = JSON.parse(line); if ((e.Action === "pass" || e.Action === "fail") && e.Test && !e.Test.includes("/")) n++; } catch { /* not a go test -json event */ }
+      try {
+        const e = JSON.parse(line);
+        if ((e.Action === "pass" || e.Action === "fail") && e.Test && !e.Test.includes("/")) { n++; if (e.Action === "fail") failed = true; }
+      } catch { /* not a go test -json event */ }
     }
   }
-  return n;
+  return { n, failed };
 }
+export const countTests = (text) => scanTests(text).n;
 
+// status is the gate's outcome AND the logs: a failed top-level test in a gate that exited 0 is still FAIL (#147 CI-6).
+// run_attempt is recorded but deliberately not compared by verify: after `gh run rerun --failed` the jobs that were not rerun keep their attempt-1 receipts (same run_id and sha).
 export function makeReceipt({ mode, outcome, runId, runAttempt, sha, logs }) {
-  return { mode, run_id: String(runId), run_attempt: String(runAttempt), sha, status: outcome === "success" ? "PASS" : "FAIL", test_count: logs.reduce((s, t) => s + countTests(t), 0) };
+  const scans = logs.map(scanTests);
+  return { mode, run_id: String(runId), run_attempt: String(runAttempt), sha, status: outcome === "success" && !scans.some((s) => s.failed) ? "PASS" : "FAIL", test_count: scans.reduce((s, x) => s + x.n, 0) };
 }
 
 /** planned: [{mode}] from ci-plan.mjs; receipts: parsed objects. Returns the list of problems (empty = green). */

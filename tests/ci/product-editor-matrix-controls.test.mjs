@@ -82,3 +82,10 @@ test('an anonymous or new remove control is RED', () => {
   const added = variants.replace('data-testid={`axis-remove-${i}`}', 'data-testid={`axis-drop-${i}`}');
   assert.ok(removeControlIssues(added, cases).some(x => x.includes('axis-drop-')));
 });
+// #147 CI-11: a remove button is inventoried by its testid as well, so a different aria-label cannot hide it.
+test('a remove control with another aria-label is still inventoried by its testid', () => {
+  const relabeled = variants.replace('aria-label={`${c.remove} ${value}`}', 'aria-label={`Delete ${value}`}');
+  assert.notEqual(relabeled, variants);
+  const without = cases.filter(c => !c.control.startsWith('axis-value-remove-'));
+  assert.ok(removeControlIssues(relabeled, without).some(x => x.includes('axis-value-remove-')));
+});

@@ -69,6 +69,10 @@ var productEditorMatrixLedgerLocales = map[string]map[string]string{
 // evidence binds its recorded bytes by SHA-256 in SOURCE.json.
 const productEditorMatrixCasesPath = "tests/foundation/testdata/product_editor_matrix_cases.json"
 
+// productEditorMatrixLedgerWidth is the mobile viewport every matrix row is recorded at (tests/admin/product-editor-matrix-ledger.ts
+// writes the same 390); the case table has no width field and is SHA-bound by canonical evidence, so the one Go copy lives here (#147 CI-13).
+const productEditorMatrixLedgerWidth = 390
+
 // productEditorMatrixLedgerExpected is the CURRENT embedded table's required set:
 // live browser runs and the testdata ledger are validated against it.
 func productEditorMatrixLedgerExpected() map[productEditorMatrixLedgerKey]string {
@@ -92,7 +96,7 @@ func productEditorMatrixLedgerExpectedFor(cases []productEditorMatrixLedgerCase)
 				control = strings.ReplaceAll(control, token, label)
 				claim = strings.ReplaceAll(claim, token, label)
 			}
-			key := productEditorMatrixLedgerKey{Page: required.Page, Locale: locale, Width: 390, Row: required.Row, Control: control, Action: required.Action}
+			key := productEditorMatrixLedgerKey{Page: required.Page, Locale: locale, Width: productEditorMatrixLedgerWidth, Row: required.Row, Control: control, Action: required.Action}
 			if strings.TrimSpace(claim) == "" {
 				return nil, errors.New("matrix table requires a non-empty expected claim")
 			}

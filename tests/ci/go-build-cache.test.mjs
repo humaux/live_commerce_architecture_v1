@@ -4,7 +4,7 @@
 // Depends on: pinned gates.yml setup-go configuration and the foundation mode's real invocation.
 //   Also pins that every cache-owning shard leg runs LC_FOUNDATION_PKGS=./tests/foundation exactly once (gates.yml gate step, every shard:
 //   case arm at any indentation, spaced alternatives, no += append, no broader glob ahead of them; #86, PR #81 review P2-2; #107, #116).
-//   The shadow check runs every earlier non-shard glob (with [!x] mapped to [^x]) against every real shard mode from shard-plan.json via ci-plan expand,
+//   The shadow check runs every earlier non-shard glob (with [!x] mapped to [^x] and a bash [^x] kept as a negation; #147) against every real shard mode from shard-plan.json via ci-plan expand,
 //   each gNN mode must reach the shard:g[0-9][0-9] arm first, and an arm with $ = ; & or a backtick in an alternative fails closed (#116 residual of #137);
 //   only a line without "|" or "shard:" before its first ")" that starts with VAR= is skipped as a plain command, and the enumerated mode set must contain a shard:gNN.
 // Used by: test-node.sh on GitHub; injected regressions exercise the same assertions as the real files.
@@ -38,7 +38,9 @@ function shardScopeContract(source) {
   const gate = source.split(/^  gate:\s*$/m)[1]?.split(/^  aggregate:\s*$/m)[0] ?? "";
   // #107: every case arm with a shard: alternative, at any indentation, quoted or in "(pattern)" form; its body runs to ";;".
   // #116: spaces around "|" are fine; an arm needs whitespace-free alternatives, so command lines containing ")" are not arms.
-  const lines = gate.split("\n");
+  // #147 CI-3: only the dispatch `case "$MODE"` that holds the shard arms is scanned; a harmless `*) ;;` in the evidence-root case before it is no shadow.
+  const dispatch = gate.split(/case "\$MODE" in/).slice(1).findLast(part => part.includes("shard:"))?.split(/^\s*esac\b/m)[0] ?? "";
+  const lines = dispatch.split("\n");
   const arms = [];
   lines.forEach((line, i) => {
     const m = line.trimStart().match(/^\(?\s*([^#)\s][^)]*)\)(.*)$/);
@@ -54,7 +56,8 @@ function shardScopeContract(source) {
   });
   assert.ok(arms.some(a => a.alternatives.includes("shard:g[0-9][0-9]")), "the shard:gNN arm exists");
   // #116: a broader non-shard glob ahead of the last shard arm (*, shard*, s*, *:g*) would capture shard modes first.
-  const toRegExp = glob => new RegExp(`^${glob.replace(/[.+^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".").replace(/\[!/g, "[^")}$`);
+  // #147 CI-4: a "^" right after "[" is bash's negation (like "[!"), so only a "^" elsewhere is escaped.
+  const toRegExp = glob => new RegExp(`^${glob.replace(/[.+${}()|\\]/g, "\\$&").replace(/(?<!\[)\^/g, "\\^").replace(/\*/g, ".*").replace(/\?/g, ".").replace(/\[!/g, "[^")}$`);
   for (const { alternatives } of arms.slice(0, arms.findLastIndex(a => a.shard)).filter(a => !a.shard)) {
     for (const mode of ["shard:g01", "shard:gFoo", "shard:x", ...shardModes]) {
       assert.ok(!alternatives.some(a => toRegExp(a).test(mode)), `${alternatives.join("|")} would shadow the shard arms for ${mode}`);
@@ -141,6 +144,7 @@ test("injected spaced alternatives, += append or shadowing glob goes RED under t
     [gnn, "            shard*) echo shadowed ;;\n" + gnn, /shadow/],
     [gnn, "            s*|x) echo shadowed ;;\n" + gnn, /shadow/],
     [gnn, "            *:g*) echo shadowed ;;\n" + gnn, /shadow/],
+    [gnn, "            [^a]*) echo shadowed ;;\n" + gnn, /shadow/], // #147 CI-4: bash [^x] is a negation, like [!x]
     [any, "            *)  echo shadowed ;;\n" + any, /shadow/],
   ]) {
     assert.throws(() => shardScopeContract(workflow.replace(from, to)), expected, JSON.stringify(to));
@@ -165,6 +169,13 @@ test("injected per-mode shadow, gNN-last arm, [!x] class or unevaluable alternat
   ]) {
     assert.throws(() => shardScopeContract(mutated), expected, label);
   }
+});
+
+// #147 CI-3: only the second `case "$MODE"` (the dispatch with the shard arms) is scanned; a harmless catch-all in the first (the evidence-root case) is not a shadow.
+test("a harmless arm in the first case MODE statement is not a shadow of the shard arms", () => {
+  const first = "            --browser*|--stripe-browser*|--ops-disk-guard)";
+  assert.ok(workflow.includes(first), "the real first-case arm is where the test looks");
+  assert.doesNotThrow(() => shardScopeContract(workflow.replace(first, `            *) ;;\n${first}`)));
 });
 
 test("injected disabled cache or unbound manifest goes RED under the real cache contract", () => {
