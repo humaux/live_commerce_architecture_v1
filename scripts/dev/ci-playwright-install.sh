@@ -13,11 +13,13 @@ node_bin="$(command -v node)"
 cli="$(node -p 'require.resolve("@playwright/test/cli")')"
 debs="${LC_PLAYWRIGHT_DEBS_DIR:-}"
 started=$SECONDS
+dry_txt="$(mktemp)"
 
 # Prints "none", "missing:<pkg> <pkg>..." or "unknown" (the simulation itself failed). Exit codes of the CLI are not trusted: its text is.
 dry_run() {
   local out
   out="$("$node_bin" "$cli" install-deps --dry-run "$@" 2>&1 || true)"
+  printf %s "$out" >"$dry_txt" # the function runs in a subshell: keep the last text for diagnostics
   if grep -q 'All system dependencies are installed' <<<"$out"; then echo none
   elif grep -q 'Missing system dependencies' <<<"$out"; then
     echo "missing:$(sed -n '/Missing system dependencies/,$ s/^ *\([a-z0-9][a-z0-9+.:-]*\) *$/\1/p' <<<"$out" | tr '\n' ' ')"
@@ -66,7 +68,8 @@ else
     [[ "$rc" == 0 ]] || { echo "ci-playwright-install: dependencies failed after 3 attempts (exit=$rc)" >&2; exit "$rc"; }
   fi
   # Whatever path ran, the dependencies must now really be present; otherwise the job is red.
-  [[ "$(dry_run "$@")" == none ]] || { echo 'ci-playwright-install: dependencies still missing after install' >&2; exit 1; }
+  after="$(dry_run "$@")"
+  [[ "$after" == none ]] || { echo "ci-playwright-install: dependencies still missing after install (state=${after%%:*})" >&2; head -40 "$dry_txt" >&2; exit 1; }
 fi
 # Browser downloads use the user's versioned cache; system dependencies are never inferred from a cache hit.
 pnpm exec playwright install "$@"
