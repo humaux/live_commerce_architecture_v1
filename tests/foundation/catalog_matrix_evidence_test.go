@@ -350,7 +350,7 @@ func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[strin
 		}
 	}
 	if manifest.Ledger.Raw != len(rows) || manifest.Ledger.Required != required ||
-		manifest.Ledger.Width != 390 || !reflect.DeepEqual(manifest.Ledger.PerLocale, perLocale) {
+		manifest.Ledger.Width != productEditorMatrixLedgerWidth || !reflect.DeepEqual(manifest.Ledger.PerLocale, perLocale) {
 		return fmt.Errorf("canonical manifest ledger counts must match the exact validated PASS ledger")
 	}
 	return nil
