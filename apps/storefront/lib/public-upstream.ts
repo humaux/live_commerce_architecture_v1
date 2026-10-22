@@ -89,7 +89,7 @@ export async function readBounded(body: ReadableStream<Uint8Array> | null, max: 
     }
   } catch {
     await reader.cancel().catch(() => {});
-    return null;
+    return chunks.length ? Buffer.concat(chunks) : null;
   }
   return Buffer.concat(chunks);
 }
