@@ -39,6 +39,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -620,6 +621,35 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 		b, err := os.ReadFile(f)
 		if err != nil || strings.Contains(string(b), "$MIGRATION_DATABASE_URL") || strings.Contains(string(b), "${MIGRATION_DATABASE_URL") {
 			t.Errorf("%s must not use $MIGRATION_DATABASE_URL or ${MIGRATION_DATABASE_URL} (unset on the pilot host; err=%v); use lc_psql", f, err)
+		}
+	}
+	// sudo convention (review-153-a2a269d73 P2-1): on a fenced code line every deploy/scripts/*.sh invocation (lib.sh is
+	// sourced, not run) is preceded by "sudo" plus optional VAR=x words, and VAR=x never precedes sudo (sudo drops it).
+	rb, err := os.ReadFile(pfuRunbook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke, envBeforeSudo := regexp.MustCompile(`deploy/scripts/[a-z-]+\.sh`), regexp.MustCompile(`\b[A-Z][A-Z0-9_]*=\S+\s+sudo\b`)
+	inFence := false
+	for n, line := range strings.Split(string(rb), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "```") {
+			inFence = !inFence
+			continue
+		}
+		if !inFence {
+			continue
+		}
+		code, _, _ := strings.Cut(line, " #")
+		if envBeforeSudo.MatchString(code) {
+			t.Errorf("deploy.md:%d: VAR=x placed before sudo (sudo resets it); write sudo VAR=x cmd: %s", n+1, line)
+		}
+		for _, m := range invoke.FindAllStringIndex(code, -1) {
+			if strings.HasSuffix(code[m[0]:m[1]], "/lib.sh") {
+				continue
+			}
+			if !regexp.MustCompile(`sudo( [A-Z][A-Z0-9_]*=\S+)* $`).MatchString(code[:m[0]]) {
+				t.Errorf("deploy.md:%d: %s is not preceded by sudo: %s", n+1, code[m[0]:m[1]], line)
+			}
 		}
 	}
 	listed := strings.Join(strings.Fields(q[i:]+";"), " ")
