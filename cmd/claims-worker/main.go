@@ -1,6 +1,6 @@
 // Purpose: claims-worker process — poll the claims intake, dispatch external operations (Meta reply/audience/live-videos, inbox resubscribe, ECPay CVS) through the River default queue, and run the retention purge and store-domain verify sweeps. The only process holding the Meta Page private keyring and ECPay custody.
 // Depends on: platform worker pools, metareply routes, claimsintake, retention, storefrontdomains, ecpayroute, core.NewDispatcher, river (schema "river"), COMMERCE_CLAIMS_WORKER_ENABLED.
-// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go, console_testhook.go (test tag only); tests/foundation process tests (claims_retention_worker_test.go, claims_worker_console_process_test.go, order_attempt_*).
+// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go, cmd/claims-worker/console_wiring_test.go, console_testhook.go (test tag only); tests/foundation process tests (claims_retention_worker_test.go, claims_worker_console_process_test.go, order_attempt_*).
 package main
 
 import (
@@ -241,6 +241,14 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerDatabase
 	}
+	// CW-1 (#147, review-148 P2-R1) audit: Close waits for every borrowed connection. After the bounded joinConsole no
+	// unbounded non-ctx holder is left: bridge handlers inherit pollCtx (main.go:404,449) and stopPoll (main.go:428)
+	// cancels it as console.Run reaches stopAll (comment_poll.go:281-283), aborting their pgx calls under Console.mu
+	// (comment_poll.go:465,982-983); the sweeper and its DB calls use the same pollCtx (main.go:418, comment_poll.go:295,
+	// 465,736); River jobs are stopped before jobqueue.Run returns (internal/jobqueue/run.go:46,52). The only non-ctx DB
+	// work is a deferred rollback bounded at 2s (internal/platform/platform.go:745) or DBTimeout<=5s
+	// (internal/integrations/core/dispatcher.go:519), so Close waits seconds, never forever. A future non-ctx pool call
+	// would reopen this hang: fix it at the call, not here.
 	defer workerPool.Close()
 	if !sameDatabase(startup, intakePool, workerPool) {
 		return errWorkerDatabase // the operation the poller plans must be the one the dispatcher reads
@@ -393,7 +401,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 			<-unsubscribed
 			return errWorkerRoutes
 		}
-		consoleServer := newConsoleServer(c.consoleAddr, console.Handler(), context.Background())
+		consoleServer := newConsoleServer(c.consoleAddr, console.Handler(), pollCtx)
 		failed, err := startConsoleServer(consoleServer)
 		if err != nil {
 			// Required listener unavailable: never log claims_worker_ready (#83).
