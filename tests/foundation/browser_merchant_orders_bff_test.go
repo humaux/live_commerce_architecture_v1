@@ -15,7 +15,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"testing"
 	"time"
 
@@ -200,10 +199,7 @@ func TestBrowserMerchantOrdersBFFRealChain(t *testing.T) {
 	stopFixture := func() {
 		stopFixtureOnce.Do(func() {
 			pgid := fixtureNext.Process.Pid
-			_ = syscall.Kill(-pgid, syscall.SIGINT)
-			// the relay reaps the leader; give SIGINT the same 5 s grace before the group SIGKILL below
-			for deadline := time.Now().Add(5 * time.Second); syscall.Kill(pgid, 0) == nil && time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
-			}
+			// the relay SIGKILLs the whole group when the leader exits, so a SIGINT grace never reached the next-server children (#147 TH-9)
 			stopProcessGroup(t, pgid) // leaked next-server children hold the port
 		})
 	}

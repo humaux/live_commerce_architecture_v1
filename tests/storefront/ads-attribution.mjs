@@ -145,7 +145,7 @@ const startNext = () => startNextWithPortRetry({}, async ({ port, attempt, track
   track(child, log);
   children.add(child);
   for (let attempt = 0; attempt < 100; attempt++) {
-    if (child.exitCode !== null) throw new Error("owned Next failed readiness");
+    if (child.exitCode !== null || child.signalCode !== null) throw new Error("owned Next failed readiness");
     try {
       if (
         (

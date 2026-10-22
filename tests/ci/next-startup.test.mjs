@@ -320,10 +320,10 @@ const nodePortRaceSites = [
 ];
 function noPickThenRelease(file, source) {
   if (file.endsWith(".go")) {
-    assert.equal(source.includes('net.Listen("tcp", "127.0.0.1:0")'), false, `${file}: a loopback port is still reserved and freed for a child`);
+    assert.equal(/net\.Listen\("tcp\w*",\s*"(127\.0\.0\.1|localhost|\[::1\])?:0"\)/.test(source), false, `${file}: a loopback port is still reserved and freed for a child`);
     assert.equal(/freeLoopbackPort\(/.test(source), false, `${file}: freeLoopbackPort still hands a freed port to a child`);
     assert.equal(/"PORT": \w|"--port", \w/.test(source), false, `${file}: a child still gets a caller-picked port`);
-    assert.match(source, /\.start\(t, |startPrivate\(t, /, `${file}: the child is not launched through the relay (owned port + EADDRINUSE relaunch)`);
+    assert.match(source, /[rR]elay\.start\(t, |startPrivate\(t, /, `${file}: the child is not launched through the relay (owned port + EADDRINUSE relaunch)`);
   } else {
     // `(probe|reserve).close(<callback>)` is the freeing call; a bare `.close()` (offline-buyer's `probe` browser context) is not a port.
     assert.equal(/\bcreateServer\(\)|freePort\(|listen\((reserve|probe)\)|(probe|reserve)\.close\([^)]/.test(source), false, `${file}: a loopback port is still reserved and freed for a child`);
@@ -338,4 +338,38 @@ test("#116: every remaining pick-then-release browser harness routes its child t
     assert.throws(() => noPickThenRelease(file, before), /reserved and freed|freeLoopbackPort|caller-picked port/, `${file}: red witness lost the pre-fix handoff`);
     noPickThenRelease(file, await readFile(file, "utf8"));
   }
+});
+
+// TH-10 (#147): the Go half of the guard must see every spelling of a loopback pick-then-release and must not accept just any `.start(t, `.
+test("TH-10: the Go port-race guard flags localhost:0, :0 and [::1]:0 and anchors the positive to the relay", () => {
+  const routed = "relay := newBrowserAdminRelay(t)\nchild = relay.start(t, ctx, cmd)\n";
+  noPickThenRelease("synthetic_test.go", routed); // control: a routed child passes
+  noPickThenRelease("synthetic_test.go", "x.adminRelay.start(t, ctx, cmd)\n_, port := startPrivate(t, ctx, c)\n");
+  for (const spelling of ['"127.0.0.1:0"', '"localhost:0"', '":0"', '"[::1]:0"'])
+    assert.throws(() => noPickThenRelease("synthetic_test.go", `l, _ := net.Listen("tcp", ${spelling})\n${routed}`), /reserved and freed/, `${spelling} slipped past the guard`);
+  assert.throws(() => noPickThenRelease("synthetic_test.go", "server.start(t, ctx, cmd)\n"), /not launched through the relay/, "a non-relay .start(t, ...) satisfied the positive");
+});
+
+// TH-9 (#147): the relay SIGKILLs the whole group the moment the leader exits, so a SIGINT-then-wait grace never reaches the
+// next-server children. The fixtures must not pretend to grant one.
+test("TH-9: studio-bff and orders-bff do not stop a relay-owned group with a SIGINT grace", async () => {
+  for (const file of ["tests/foundation/browser_studio_bff_test.go", "tests/foundation/browser_merchant_orders_bff_test.go"]) {
+    const source = await readFile(file, "utf8");
+    assert.equal(/syscall\.SIGINT/.test(source), false, `${file}: SIGINT grace on a relay-owned group is dead code (the relay kills the group on leader exit)`);
+    assert.match(source, /stopProcessGroup\(t, pgid\)/, `${file}: the fixture no longer sweeps its process group`);
+  }
+});
+
+// TH-11 (#147): a signal-killed child has exitCode null and signalCode set; readiness must treat it as exited (tests/helpers/next-startup.mjs).
+test("TH-11: visual-audit, ads-attribution, platform-runner and legal-pages readiness sees a signal-killed child", async () => {
+  for (const file of ["tests/ui/visual-audit.mjs", "tests/storefront/ads-attribution.mjs", "tests/admin/platform-runner.mjs", "tests/storefront/legal-pages.mjs"]) {
+    const source = await readFile(file, "utf8");
+    assert.match(source, /\w+\.exitCode !== null \|\| \w+\.signalCode !== null/, `${file}: readiness checks exitCode only; a SIGKILLed child waits out the whole budget`);
+  }
+});
+
+// TH-12 (#147): "wx" fails with EEXIST when LC_LEGAL_EVIDENCE_DIR is reused by a rerun.
+test("TH-12: legal-pages opens its Next log so a rerun into the same evidence directory does not collide", async () => {
+  const source = await readFile("tests/storefront/legal-pages.mjs", "utf8");
+  assert.equal(/flags: "wx"/.test(source), false, "legal-pages opens its log with wx; a rerun fails with EEXIST");
 });

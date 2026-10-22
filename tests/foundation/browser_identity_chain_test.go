@@ -1,5 +1,10 @@
 //go:build browser
 
+// Purpose: real-chain browser gates for sign-in and the settings wizard (Next BFF -> Go identity authority -> PG, mock OIDC IdP), plus the shared
+// browserFront / browserEnvironment helpers every Go browser fixture uses to pin its public origin and Node environment.
+// Depends on: isolated PostgreSQL foundation fixture, identity/httpapi/oidclogin packages, relay.start (browser_admin_relay_test.go) and Playwright.
+// Used by: --browser-identity and --browser-settings-wizard gates; browserFront and browserEnvironment are called by nearly every browser_*_test.go.
+
 package foundation_test
 
 import (
