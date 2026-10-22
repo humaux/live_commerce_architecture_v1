@@ -14,7 +14,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -52,17 +51,9 @@ func TestMerchantWriteReplayAfterAPIRestart(t *testing.T) {
 	if err := build.Run(); err != nil {
 		t.Fatalf("build API failed; see %s: %v", buildLog.Name(), err)
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := listener.Addr().String()
-	if err := listener.Close(); err != nil {
-		t.Fatal(err)
-	}
-	origin := "http://" + addr
+	var origin string // the API's bound address, set by start from its api_ready line
 	dsn := f.runtime.Config().ConnString()
-	childEnv := browserEnvironment(map[string]string{"LISTEN_ADDR": addr, "DATABASE_URL": dsn})
+	childEnv := browserEnvironment(map[string]string{"LISTEN_ADDR": mrEphemeralAddr, "DATABASE_URL": dsn})
 	// Registered before any process starts so the scan also runs when an assertion fails midway.
 	t.Cleanup(func() {
 		secrets := []string{f.tokens["a"], dsn, f.databaseURL}
@@ -113,6 +104,7 @@ func TestMerchantWriteReplayAfterAPIRestart(t *testing.T) {
 				t.Errorf("API PID %d did not exit during cleanup", cmd.Process.Pid)
 			}
 		})
+		origin = "http://" + mrBoundAddr(t, &mrProcess{done: done, logPath: log.Name()}, 15*time.Second)
 		deadline := time.Now().Add(15 * time.Second)
 		for time.Now().Before(deadline) {
 			select {

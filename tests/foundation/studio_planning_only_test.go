@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -36,17 +35,13 @@ func TestStudioPlanningOnlyG2APIProcess(t *testing.T) {
 	issuer = "http://" + idp.Listener.Addr().String() // set before Start: the handler goroutines only read it
 	idp.Start()
 	t.Cleanup(idp.Close)
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := listener.Addr().String()
-	_ = listener.Close()
-	origin := "http://" + addr
+	// origin is the API's own bound address (set by ready); COMMERCE_PUBLIC_ORIGIN is the Next BFF's and cmd/api never compares it with Host.
+	const publicOrigin = "http://127.0.0.1:3100"
+	var origin string
 	binary := mrBuild(t, "../../cmd/api", "g2-api")
 	env := func(name string, extra ...string) []string {
-		return append([]string{"LISTEN_ADDR=" + addr, "DATABASE_URL=" + mrNamedDSN(t, h.f.runtime.Config().ConnString(), name),
-			"COMMERCE_IDENTITY_ENABLED=1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS=1", "COMMERCE_PUBLIC_ORIGIN=" + origin,
+		return append([]string{"LISTEN_ADDR=" + mrEphemeralAddr, "DATABASE_URL=" + mrNamedDSN(t, h.f.runtime.Config().ConnString(), name),
+			"COMMERCE_IDENTITY_ENABLED=1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS=1", "COMMERCE_PUBLIC_ORIGIN=" + publicOrigin,
 			"COMMERCE_IDENTITY_DATABASE_URL=" + authority.Config().ConnString(), "COMMERCE_BFF_KEY=" + randomToken(),
 			"COMMERCE_OIDC_ISSUER=" + issuer, "COMMERCE_OIDC_CLIENT_ID=g2-client", "COMMERCE_IDENTITY_PROVIDER_KEY=g2-mock-v1",
 			"COMMERCE_SESSION_TTL=1h", "COMMERCE_ONBOARDING_ENABLED=0"}, extra...)
@@ -54,6 +49,7 @@ func TestStudioPlanningOnlyG2APIProcess(t *testing.T) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	ready := func(p *mrProcess) {
 		t.Helper()
+		origin = "http://" + mrBoundAddr(t, p, 12*time.Second)
 		deadline := time.Now().Add(12 * time.Second)
 		for time.Now().Before(deadline) {
 			select {

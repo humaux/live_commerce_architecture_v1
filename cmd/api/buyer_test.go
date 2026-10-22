@@ -65,7 +65,7 @@ func TestBuyerConfigurationFailClosed(t *testing.T) {
 			})
 		}
 	}
-	for _, addr := range []string{":8080", "localhost:8080", "0.0.0.0:8080", "[::]:8080", "127.0.0.1:0"} {
+	for _, addr := range []string{":8080", "localhost:8080", "0.0.0.0:8080", "[::]:8080"} {
 		if _, err := loadBuyerConfig(get, addr); !errors.Is(err, errBuyerConfig) {
 			t.Fatal("public or unresolved listener accepted")
 		}

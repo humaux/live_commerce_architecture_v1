@@ -93,12 +93,12 @@ func TestIdentityPublicOriginAndPrivateListener(t *testing.T) {
 	if got, err := publicOrigin("https://Merchant.Example:443/", false); err != nil || got != "https://merchant.example" {
 		t.Fatal("canonical origin mismatch")
 	}
-	for _, addr := range []string{"127.0.0.1:8080", "[::1]:8080"} {
+	for _, addr := range []string{"127.0.0.1:8080", "[::1]:8080", "127.0.0.1:0"} { // :0 = ephemeral loopback port (process tests read api_ready)
 		if !privateIdentityAddress(addr) {
 			t.Fatal("literal loopback listener rejected")
 		}
 	}
-	for _, addr := range []string{":8080", "0.0.0.0:8080", "[::]:8080", "localhost:8080", "127.0.0.1:0", "127.0.0.1:65536", "10.0.0.1:8080"} {
+	for _, addr := range []string{":8080", "0.0.0.0:8080", "[::]:8080", "localhost:8080", "127.0.0.1:65536", "10.0.0.1:8080"} {
 		if privateIdentityAddress(addr) {
 			t.Errorf("unsafe listener accepted: %s", addr)
 		}

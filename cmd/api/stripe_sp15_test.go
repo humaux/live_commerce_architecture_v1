@@ -84,7 +84,7 @@ func TestStripeSP15Process(t *testing.T) {
 	})
 
 	t.Run("enabled_webhook_needs_a_private_listener_before_reading_secrets", func(t *testing.T) {
-		for _, addr := range []string{"0.0.0.0:8080", "localhost:8080", ":8080", "127.0.0.1:0", "10.0.0.5:8080", "[::]:8080", "example.com:8080"} {
+		for _, addr := range []string{"0.0.0.0:8080", "localhost:8080", ":8080", "10.0.0.5:8080", "[::]:8080", "example.com:8080"} {
 			var read []string
 			values := sp15WebhookEnv()
 			if _, err := loadStripeWebhookConfig(sp15Recorder(values, &read), addr); !errors.Is(err, errStripeConfig) {

@@ -1,3 +1,7 @@
+// Purpose: cmd/api identity wiring — load the identity/OIDC/password/staff configuration, validate the public origin and the private (literal loopback) listener address, build the identity handler.
+// Depends on: internal/identity, internal/identityhttp, platform pools, COMMERCE_IDENTITY_* / COMMERCE_OIDC_* / COMMERCE_PUBLIC_ORIGIN / COMMERCE_BFF_KEY environment.
+// Used by: cmd/api/main.go (run), the other cmd/api feature loaders (privateIdentityAddress gates every private surface on LISTEN_ADDR).
+// Invariants: a private surface needs a literal loopback LISTEN_ADDR; port 0 (ephemeral loopback, process tests read api_ready) is allowed, any non-loopback host is not.
 package main
 
 import (
@@ -244,7 +248,7 @@ func privateIdentityAddress(addr string) bool {
 		return false
 	}
 	n, err := strconv.Atoi(port)
-	return err == nil && n > 0 && n <= 65535
+	return err == nil && n >= 0 && n <= 65535 // 0 = ephemeral loopback port (process tests read it from api_ready); still a literal loopback host
 }
 
 // identityMux serves the password routes and, for everything else under /v1/identity/, the OIDC/store

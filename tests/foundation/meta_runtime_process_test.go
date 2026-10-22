@@ -7,12 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"syscall"
@@ -104,9 +104,25 @@ func mrStop(t *testing.T, p *mrProcess, signal syscall.Signal, wantSuccess bool)
 	}
 }
 
+// mrEphemeralAddr is the only listen address a test gives a cmd/* binary: the child binds an OS-chosen loopback port and reports it
+// on its api_ready line (mrBoundAddr), so no port is picked and released in advance (CMD-1; guarded by tests/ci/next-startup.test.mjs).
+const mrEphemeralAddr = "127.0.0.1:0"
+
 func mrReadyLog(t *testing.T, p *mrProcess, marker string) {
 	t.Helper()
-	deadline := time.Now().Add(8 * time.Second)
+	mrLogMatch(t, p, marker, regexp.MustCompile(regexp.QuoteMeta(marker)), 8*time.Second)
+}
+
+// mrBoundAddr returns the address cmd/api actually bound, read from its api_ready line within the caller's existing readiness
+// bound (within). It fails closed: an exit before the line, or no line in time, is a test failure (no retry, no fallback port).
+func mrBoundAddr(t *testing.T, p *mrProcess, within time.Duration) string {
+	t.Helper()
+	return mrLogMatch(t, p, "api_ready", regexp.MustCompile(`api_ready addr=(127\.0\.0\.1:\d+)`), within)[1]
+}
+
+func mrLogMatch(t *testing.T, p *mrProcess, marker string, re *regexp.Regexp, within time.Duration) []string {
+	t.Helper()
+	deadline := time.Now().Add(within)
 	for time.Now().Before(deadline) {
 		select {
 		case err := <-p.done:
@@ -118,12 +134,13 @@ func mrReadyLog(t *testing.T, p *mrProcess, marker string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if bytes.Contains(log, []byte(marker)) {
-			return
+		if m := re.FindStringSubmatch(string(log)); m != nil {
+			return m
 		}
 		time.Sleep(20 * time.Millisecond) // readiness polling only, not causal ordering proof
 	}
 	t.Fatalf("missing %s marker: %s", marker, p.logPath)
+	return nil
 }
 
 func mrNamedDSN(t *testing.T, dsn, name string) string {
@@ -228,21 +245,14 @@ func TestMetaRuntimeBinaryPreflightFailureClosesPools(t *testing.T) {
 	otherIngress := mrNamedDSN(t, miRole(t, clone, "commerce_meta_ingress"), ingressName)
 	workerDSN := mrNamedDSN(t, miRole(t, f, "commerce_meta_worker"), workerName)
 	otherConsumer := mrNamedDSN(t, miRole(t, clone, "commerce_meta_consumer"), consumerName)
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := listener.Addr().String()
-	_ = listener.Close()
-	apiEnv := []string{"LISTEN_ADDR=" + addr, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=1", "COMMERCE_META_INGRESS_DATABASE_URL=" + otherIngress, "COMMERCE_META_APPS_JSON=" + appsJSON, "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
+	apiEnv := []string{"LISTEN_ADDR=" + mrEphemeralAddr, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=1", "COMMERCE_META_INGRESS_DATABASE_URL=" + otherIngress, "COMMERCE_META_APPS_JSON=" + appsJSON, "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
 	api := mrLaunch(t, apiBinary, "api-clone-reject", apiEnv)
 	mrFailsBeforeReady(t, api, "api stopped", mainDSN, otherIngress, keyJSON, appsJSON, miSecret)
 	waitPoolsGone(t, f, "split-DB API assembly leaked opened pools", mainName)
 	waitPoolsGone(t, clone, "split-DB API assembly leaked opened pools", ingressName)
-	client := &http.Client{Timeout: time.Second}
-	if resp, err := client.Get("http://" + addr + "/healthz"); err == nil {
-		_ = resp.Body.Close()
-		t.Fatal("split-DB API listened before preflight")
+	// The bound address is logged only after the listener exists, so no api_ready line means it never listened.
+	if log, err := os.ReadFile(api.logPath); err != nil || bytes.Contains(log, []byte("api_ready")) {
+		t.Fatalf("split-DB API listened before preflight: %v", err)
 	}
 	workerEnv := []string{"COMMERCE_META_WORKER_ENABLED=1", "COMMERCE_META_WORKER_DATABASE_URL=" + workerDSN, "COMMERCE_META_CONSUMER_DATABASE_URL=" + otherConsumer, "COMMERCE_META_WORKER_CONCURRENCY=1", "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
 	worker := mrLaunch(t, workerBinary, "worker-clone-reject", workerEnv)
@@ -282,13 +292,6 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	miInstagramRoute(t, ig, igAsset, igBinding)
 	apiBinary := mrBuild(t, "../../cmd/api", "meta-api")
 	workerBinary := mrBuild(t, "../../cmd/meta-worker", "meta-worker")
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := listener.Addr().String()
-	_ = listener.Close()
-	origin := "http://" + addr
 	keyJSON := fmt.Sprintf(`{"keys":[{"id":%q,"key_base64":%q}]}`, miKeyID, base64.StdEncoding.EncodeToString(m.key))
 	appsJSON := fmt.Sprintf(`{"apps":[{"app_id":%q,"object":"page","app_secret":%q,"verify_token":"meta-inbox-verify-token"},{"app_id":%q,"object":"instagram","app_secret":%q,"verify_token":"meta-inbox-verify-token"}]}`, miApp, miSecret, miApp, miSecret)
 	apiMainName, apiIngressName := "mr_api_main_"+t04Tag(), "mr_api_ingress_"+t04Tag()
@@ -297,9 +300,10 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	ingressDSN := mrNamedDSN(t, miRole(t, f, "commerce_meta_ingress"), apiIngressName)
 	workerDSN := mrNamedDSN(t, miRole(t, f, "commerce_meta_worker"), workerName)
 	consumerDSN := mrNamedDSN(t, miRole(t, f, "commerce_meta_consumer"), consumerName)
-	apiEnv := []string{"LISTEN_ADDR=" + addr, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=1", "COMMERCE_META_INGRESS_DATABASE_URL=" + ingressDSN, "COMMERCE_META_APPS_JSON=" + appsJSON, "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
+	apiEnv := []string{"LISTEN_ADDR=" + mrEphemeralAddr, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=1", "COMMERCE_META_INGRESS_DATABASE_URL=" + ingressDSN, "COMMERCE_META_APPS_JSON=" + appsJSON, "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
 	workerEnv := []string{"COMMERCE_META_WORKER_ENABLED=1", "COMMERCE_META_WORKER_DATABASE_URL=" + workerDSN, "COMMERCE_META_CONSUMER_DATABASE_URL=" + consumerDSN, "COMMERCE_META_WORKER_CONCURRENCY=1", "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
 	api := mrLaunch(t, apiBinary, "api", apiEnv)
+	origin := "http://" + mrBoundAddr(t, api, 8*time.Second)
 	client := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 	deadline := time.Now().Add(8 * time.Second)
 	for {

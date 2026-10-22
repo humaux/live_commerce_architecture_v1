@@ -40,7 +40,7 @@ func TestMetaAPIDisabledAndPrivateBeforeSecrets(t *testing.T) {
 		}
 		closePools()
 	}
-	for _, addr := range []string{"0.0.0.0:8080", "localhost:8080", ":8080", "127.0.0.1:0"} {
+	for _, addr := range []string{"0.0.0.0:8080", "localhost:8080", ":8080"} {
 		_, err := loadMetaConfig(func(name string) string {
 			if name != "COMMERCE_META_WEBHOOK_ENABLED" {
 				t.Fatal("public Meta listener read authority setting")
