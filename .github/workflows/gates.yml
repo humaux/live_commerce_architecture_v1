@@ -169,7 +169,7 @@ jobs:
         run: |
           echo "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
           # The hosted image build decides which system packages already exist; an unknown image never hits the .deb cache (run id in the key).
-          echo "image=${ImageVersion:-noimage-$GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+          echo "image=${ImageOS:-noos}-${ImageVersion:-noimage-$GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
       - name: Writable Playwright browser dir
         if: steps.browsers.outputs.engines != ''
         run: sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"
@@ -192,7 +192,8 @@ jobs:
         id: pwinstall
         if: steps.browsers.outputs.engines != ''
         # The script asks Playwright which system deps this runner image lacks and installs only those: offline from the cached .debs when
-        # present, else from apt (three 240s attempts +15s kill grace each +two 10s backoffs <=785s; total step stays 15min). It exits non-zero
+        # present and hash-verified against the runner's apt index (60s bound), else from apt: ONE 240s bound covers update + install per attempt,
+        # three attempts +15s kill grace each +two 10s backoffs <=785s, so offline (<=75s) + network stays under the 15 min step bound. It exits non-zero
         # unless a final dry-run reports every dependency installed, so a real failure still turns the job, receipts and `required` red.
         timeout-minutes: 15
         env:

@@ -2,7 +2,7 @@
 # Purpose: install the mode's browser dependencies and binaries in CI, touching the network only when the runner image lacks a dependency
 #   and the cached .debs cannot supply it (#162: a fresh apt install on every job timed out on a slow mirror, exit=124 x3, before any test ran).
 # Depends on: frozen Playwright CLI (`install-deps --dry-run` simulates the install and lists the missing packages, no network),
-#   hosted Linux runner tooling (sudo, apt-get), LC_PLAYWRIGHT_DEBS_DIR = a runner-owned directory that gates.yml restores/saves with actions/cache.
+#   hosted Linux runner tooling (sudo, apt-get, apt-cache, dpkg-deb, sha256sum), LC_PLAYWRIGHT_DEBS_DIR = a runner-owned directory that gates.yml restores/saves with actions/cache.
 # Used by: gates.yml and fake-network-edge process tests (tests/ci/playwright-deps.test.mjs).
 # Invariant: the script exits non-zero unless dpkg reports every package it set out to install as installed; nothing is skipped silently.
 set -euo pipefail
@@ -20,11 +20,29 @@ dry_run() {
   out="$("$node_bin" "$cli" install-deps --dry-run "$@" 2>&1 || true)"
   if grep -q 'All system dependencies are installed' <<<"$out"; then echo none
   elif grep -q 'Missing system dependencies' <<<"$out"; then
-    echo "missing:$(sed -n '/Missing system dependencies/,$ s/^ *\([a-z0-9][a-z0-9+.:-]*\) *$/\1/p' <<<"$out" | tr '\n' ' ')"
+    local names
+    names="$(sed -n '/Missing system dependencies/,$ s/^ *\([a-z0-9][a-z0-9+.:-]*\) *$/\1/p' <<<"$out" | tr '\n' ' ')"
+    # A header without a single parsed name is a parser/format problem, never "nothing to install": fall back to the full install.
+    if [[ -n "${names// /}" ]]; then echo "missing:$names"; else echo unknown; fi
   else echo unknown; fi
 }
 # Bounded apt call as root: the monitor can terminate the complete apt process group. Never use --foreground.
 apt_bounded() { sudo timeout --kill-after=15s 240s "$@"; }
+# P2-3: every cached .deb must hash to the SHA256 the runner's apt index lists for that exact package=version; otherwise the cache is
+# discarded (never installed unverified). Without an index entry the hash cannot be verified, which counts as a mismatch.
+verify_debs() {
+  local f pkg ver want got n=0
+  for f in "$debs"/*.deb; do
+    [[ -e "$f" ]] || return 1
+    pkg="$(dpkg-deb -f "$f" Package 2>/dev/null)"; ver="$(dpkg-deb -f "$f" Version 2>/dev/null)"
+    [[ -n "$pkg" && -n "$ver" ]] || { echo "ci-playwright-install: unreadable cached deb ${f##*/}" >&2; return 1; }
+    want="$(apt-cache show "$pkg=$ver" 2>/dev/null | sed -n 's/^SHA256: *//p' | head -n 1)"
+    got="$(sha256sum "$f" | cut -d' ' -f1)"
+    [[ -n "$want" && "$want" == "$got" ]] || { echo "ci-playwright-install: cached ${f##*/} not verified against the apt index (index=${want:-none} file=$got)" >&2; return 1; }
+    n=$((n+1))
+  done
+  [[ "$n" -gt 0 ]]
+}
 
 state="$(dry_run "$@")"
 echo "ci-playwright-install: browsers=$* state=${state%%:*}"
@@ -37,14 +55,24 @@ else
     missing=(${state#missing:})
     [[ -z "$debs" ]] || mkdir -p "$debs"
     # 1. Offline from the cached .debs (no index refresh, no download); any miss or partial cache falls through to the network.
-    if [[ -n "$debs" ]] && compgen -G "$debs/*.deb" >/dev/null &&
-       sudo apt-get install -y --no-install-recommends --no-download -o "Dir::Cache::archives=$debs" "${missing[@]}"; then
-      echo "ci-playwright-install: dependencies installed offline from cache (${#missing[@]} packages)"
+    offline=0
+    if [[ -n "$debs" ]] && compgen -G "$debs/*.deb" >/dev/null; then
+      if verify_debs; then
+        # No network involved, so a short bound (the whole step stays within its 15 min budget even when this fails).
+        if sudo timeout --kill-after=15s 60s apt-get install -y --no-install-recommends --no-download -o "Dir::Cache::archives=$debs" "${missing[@]}"; then offline=1; fi
+      else
+        echo 'ci-playwright-install: discarding the cached .debs; using the network path' >&2
+        rm -f "$debs"/*.deb
+      fi
+    fi
+    if [[ "$offline" == 1 ]]; then
+      echo "ci-playwright-install: dependencies installed offline from verified cache (${#missing[@]} packages)"
     else
       rc=1
       for attempt in 1 2 3; do
         echo "ci-playwright-install: dependencies attempt=$attempt/3 browsers=$* limit=240s kill-after=15s"
-        if apt_bounded apt-get update && apt_bounded apt-get install -y --no-install-recommends -o APT::Keep-Downloaded-Packages=true ${debs:+-o "Dir::Cache::archives=$debs"} "${missing[@]}"; then rc=0; break; else rc=$?; fi
+        # ONE 240s bound covers update + install together (P2-1): the cap per attempt is not doubled.
+        if apt_bounded bash -c 'apt-get update && exec apt-get install -y --no-install-recommends "$@"' _ -o APT::Keep-Downloaded-Packages=true ${debs:+-o "Dir::Cache::archives=$debs"} "${missing[@]}"; then rc=0; break; else rc=$?; fi
         echo "ci-playwright-install: dependencies attempt=$attempt exit=$rc elapsed=$((SECONDS-started))s" >&2
         [[ "$attempt" == 3 ]] || sleep 10
       done
