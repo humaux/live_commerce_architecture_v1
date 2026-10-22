@@ -11,21 +11,29 @@
 //	      (issue #107/#116, map row 84: TestBuyerPaymentCaptureMultiSKUSingleCommit had no Stripe equivalent);
 //	PSI06 lock-wait invisibility: a capture held mid-transaction on its second balance lock is invisible to other
 //	      connections, and a transaction queued on its order lock sees only the complete capture (issue #107/#116,
-//	      map row 82: TestBuyerPaymentCaptureBalanceWaitIsAtomic had no Stripe equivalent).
+//	      map row 82: TestBuyerPaymentCaptureBalanceWaitIsAtomic had no Stripe equivalent);
+//	PSI05 and PSI07 drive the real Go payments.CaptureWorker (issue #147 PT-2). PSI07 proves, per gate on a fresh
+//	      two-SKU order, that a mismatched provider or observation profile cancels the job and that the worker's own 1s
+//	      lock_timeout aborts a capture blocked on a held balance lock, each with nothing written, and that a later
+//	      retry captures exactly once. PSI06 keeps the direct SQL call: its MVCC probe outlasts the 1s lock_timeout.
 //
 // Depends on: sucOrder (stripe_untracked_capture_test.go), sstNewEnv/sstStore/sstFacts (stripe_start_test.go),
 //
 //	rm2Snapshot (payuni_removal_test.go), pcArgs/pcApply (payment_capture_test.go), worker authority constants,
 //	waitForDatabaseLock/waitError/withApplicationName, platform pools, integration Claim; PSI05/06 also
-//	psSetupItemsOn (payment_start_test.go) and slrEnv pin/observe/apply/sessionReport (stripe_live_registrar_test.go).
+//	psSetupItemsOn (payment_start_test.go) and slrEnv pin/observe/apply/sessionReport (stripe_live_registrar_test.go);
+//	PSI05/07 payments.NewCaptureWorker (internal/payments/capture_worker.go) and slrReplica (stripe_live_registrar_test.go).
 //
 // Used by: CI full foundation suite; scripts/dev/test-focused.sh '^TestPaymentSharedInvariant'.
 // Invariants: synthetic data only, Stripe MOCK profile, no network. LC_PSI_INJECT (any non-empty value, CI extra_env
-// calibration only) injects one fault per gate so each must fail; it is never set on PR runs.
+// calibration only) injects one fault per gate so each must fail; it is never set on PR runs. An injected trigger and
+// its function are dropped by a t.Cleanup registered before either is created (issue #147 PT-6).
 package foundation_test
 
 import (
 	"context"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -40,6 +48,7 @@ import (
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/command"
 	integration "livecommerce/internal/integrations/core"
+	"livecommerce/internal/payments"
 	"livecommerce/internal/platform"
 )
 
@@ -307,17 +316,9 @@ func TestPaymentSharedInvariantCaptureFaultsAtomic(t *testing.T) {
 				predicate = "false" // calibration: the fault never fires, so the capture must commit
 			}
 			name := "psi_fault_" + t04Tag()
+			psiDropTriggerOnCleanup(t, e.f.owner, name, point.table)
 			mustExec(t, e.f.owner, fmt.Sprintf(`CREATE FUNCTION ops.%s() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF %s THEN RAISE EXCEPTION 'injected capture failure' USING ERRCODE='PSI01'; END IF; RETURN NEW; END $$`, name, predicate))
 			mustExec(t, e.f.owner, fmt.Sprintf(`CREATE TRIGGER %s AFTER %s ON %s FOR EACH ROW EXECUTE FUNCTION ops.%s()`, name, point.event, point.table, name))
-			dropped := false
-			drop := func() {
-				if !dropped {
-					dropped = true
-					mustExec(t, e.f.owner, fmt.Sprintf(`DROP TRIGGER %s ON %s`, name, point.table))
-					mustExec(t, e.f.owner, fmt.Sprintf(`DROP FUNCTION ops.%s()`, name))
-				}
-			}
-			defer drop()
 			if err := e.apply(attempt, hash); sqlState(err) != "PSI01" {
 				t.Fatalf("did not reach the %s injection: %v", point.table, err)
 			}
@@ -327,16 +328,18 @@ func TestPaymentSharedInvariantCaptureFaultsAtomic(t *testing.T) {
 			if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.provider_observations WHERE attempt_id=$1 AND report_hash=$2`, attempt, hash); n != 1 {
 				t.Fatalf("durable observation rows=%d", n)
 			}
-			drop()
+			mustExec(t, e.f.owner, fmt.Sprintf(`DROP TRIGGER %s ON %s`, name, point.table))
+			mustExec(t, e.f.owner, fmt.Sprintf(`DROP FUNCTION ops.%s()`, name))
 			for i := 0; i < 2; i++ { // retry, then replay: exactly one effect
 				if err := e.apply(attempt, hash); err != nil {
 					t.Fatalf("retry %d after %s fault: %v", i, point.table, err)
 				}
 			}
-			if n := countRows(t, e.f.owner, `SELECT (SELECT count(*) FROM payments.facts WHERE attempt_id=$1 AND kind='CAPTURED')*100
-				+(SELECT count(*) FROM fulfillment.payment_work_items WHERE order_id=$2 AND state='READY')*10
-				+(SELECT count(*) FROM inventory.ledger WHERE checkout_id=$2 AND kind='ALLOCATE')`, attempt, order); n != 111 {
-				t.Fatalf("retry after %s fault: CAPTURED/READY/ALLOCATE digits=%03d, want 111", point.table, n)
+			var got [3]int64
+			if err := e.f.owner.QueryRow(context.Background(), `SELECT (SELECT count(*) FROM payments.facts WHERE attempt_id=$1 AND kind='CAPTURED'),
+				(SELECT count(*) FROM fulfillment.payment_work_items WHERE order_id=$2 AND state='READY'),
+				(SELECT count(*) FROM inventory.ledger WHERE checkout_id=$2 AND kind='ALLOCATE')`, attempt, order).Scan(&got[0], &got[1], &got[2]); err != nil || got != [3]int64{1, 1, 1} {
+				t.Fatalf("retry after %s fault: CAPTURED/READY/ALLOCATE=%v err=%v, want [1 1 1]", point.table, got, err)
 			}
 		})
 	}
@@ -424,38 +427,74 @@ func psiAssertCaptured(t *testing.T, e *slrEnv, attempt string, before []psiLine
 	if err := e.f.owner.QueryRow(ctx, `SELECT o.commercial_state,r.state FROM checkout.orders o JOIN inventory.reservations r ON r.id=o.id WHERE o.id=$1`, order).Scan(&orderState, &reservationState); err != nil || orderState != "CONFIRMED" || reservationState != "COMMITTED" {
 		t.Errorf("order/reservation=%s/%s err=%v, want CONFIRMED/COMMITTED", orderState, reservationState, err)
 	}
-	if n := countRows(t, e.f.owner, `SELECT (SELECT count(*) FROM payments.facts WHERE attempt_id=$1 AND kind='CAPTURED')*100
-		+(SELECT count(*) FROM fulfillment.payment_work_items WHERE order_id=$2 AND state='READY')*10
-		+(SELECT count(*) FROM checkout.events WHERE order_id=$2 AND action='checkout.payment_captured')`, attempt, order); n != 111 {
-		t.Errorf("CAPTURED/READY/captured-event digits=%03d, want 111", n)
+	var got [3]int64
+	if err := e.f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM payments.facts WHERE attempt_id=$1 AND kind='CAPTURED'),
+		(SELECT count(*) FROM fulfillment.payment_work_items WHERE order_id=$2 AND state='READY'),
+		(SELECT count(*) FROM checkout.events WHERE order_id=$2 AND action='checkout.payment_captured')`, attempt, order).Scan(&got[0], &got[1], &got[2]); err != nil || got != [3]int64{1, 1, 1} {
+		t.Errorf("CAPTURED/READY/captured-event=%v err=%v, want [1 1 1]", got, err)
 	}
 }
 
-// TestPaymentSharedInvariantMultiSKUCapture (PSI05): a Stripe capture of an order with two tracked SKUs allocates
-// each SKU exactly once in one commit, and replaying the same observation changes nothing.
+// psiDropTriggerOnCleanup registers the drop of an injected trigger and its ops function before either is created,
+// so a failed CREATE TRIGGER cannot leak the function (issue #147 PT-6). IF EXISTS keeps it valid after a partial
+// creation or an explicit earlier drop; it runs before the fixture's pools close because it is registered after them.
+func psiDropTriggerOnCleanup(t *testing.T, owner *pgxpool.Pool, name, table string) {
+	t.Helper()
+	t.Cleanup(func() {
+		mustExec(t, owner, fmt.Sprintf(`DROP TRIGGER IF EXISTS %s ON %s`, name, table))
+		mustExec(t, owner, fmt.Sprintf(`DROP FUNCTION IF EXISTS ops.%s()`, name))
+	})
+}
+
+// psiJob binds the real worker to the reconcile job for (attempt, hash). The public job payload is decoded into the
+// worker's own argument type (as sucWork does), so each call runs Work exactly as River would: provider check,
+// statement/lock timeouts, then payments.apply_capture. No *testing.T is touched, so it may run in a goroutine.
+func psiJob[T river.JobArgs](t *testing.T, w river.Worker[T], attempt string, hash []byte) func() error {
+	t.Helper()
+	raw, err := json.Marshal(pcArgs{OperationID: attempt, ReportHash: hex.EncodeToString(hash), Version: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var args T
+	if err = json.Unmarshal(raw, &args); err != nil {
+		t.Fatal(err)
+	}
+	return func() error { return w.Work(context.Background(), &river.Job[T]{Args: args}) }
+}
+
+// psiCaptureJob is psiJob for the production capture worker on pool.
+func psiCaptureJob(t *testing.T, pool *pgxpool.Pool, attempt string, hash []byte) func() error {
+	t.Helper()
+	w, err := payments.NewCaptureWorker(context.Background(), pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return psiJob(t, w, attempt, hash)
+}
+
+// TestPaymentSharedInvariantMultiSKUCapture (PSI05): a Stripe capture of an order with two tracked SKUs, run through
+// the real Go capture worker, allocates each SKU exactly once in one commit, and replaying the job changes nothing.
 func TestPaymentSharedInvariantMultiSKUCapture(t *testing.T) {
 	e, attempt := psiMultiOrder(t)
 	order := e.p.hold.OrderID
 	before := psiLines(t, e)
 	hash := e.observe(t, attempt, e.sessionReport(t, attempt, "complete", "paid", "succeeded", false))
+	work := psiCaptureJob(t, e.p.worker, attempt, hash)
 	if psiInject() {
 		// calibration: the last SKU's ALLOCATE is silently dropped, so per-SKU conservation must fail
 		name := "psi_drop_" + t04Tag()
+		psiDropTriggerOnCleanup(t, e.f.owner, name, "inventory.ledger")
 		mustExec(t, e.f.owner, fmt.Sprintf(`CREATE FUNCTION ops.%s() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
 		 IF NEW.checkout_id='%s'::uuid AND NEW.kind='ALLOCATE' AND NEW.sku_id='%s'::uuid THEN RETURN NULL; END IF; RETURN NEW; END $$`, name, order, before[len(before)-1].sku))
 		mustExec(t, e.f.owner, fmt.Sprintf(`CREATE TRIGGER %s BEFORE INSERT ON inventory.ledger FOR EACH ROW EXECUTE FUNCTION ops.%s()`, name, name))
-		t.Cleanup(func() {
-			mustExec(t, e.f.owner, fmt.Sprintf(`DROP TRIGGER %s ON inventory.ledger`, name))
-			mustExec(t, e.f.owner, fmt.Sprintf(`DROP FUNCTION ops.%s()`, name))
-		})
 	}
-	if err := e.apply(attempt, hash); err != nil {
+	if err := work(); err != nil {
 		t.Fatalf("multi-SKU capture: %v", err)
 	}
 	psiAssertCaptured(t, e, attempt, before)
 	captured := rm2Snapshot(t, e.p, attempt)
 	for i := 0; i < 2; i++ {
-		if err := e.apply(attempt, hash); err != nil {
+		if err := work(); err != nil {
 			t.Fatalf("replay %d: %v", i, err)
 		}
 	}
@@ -500,9 +539,10 @@ func TestPaymentSharedInvariantCaptureLockWaitInvisible(t *testing.T) {
 		done <- err
 	}()
 	type seen struct {
-		order                     string
-		reserved, allocated, rows int64
-		err                       error
+		order               string
+		reserved, allocated int64
+		counts              [4]int64 // CAPTURED facts, ALLOCATE rows, READY work items, COMMITTED reservations
+		err                 error
 	}
 	waiterPid, waiterSeen := make(chan uint32, 1), make(chan seen, 1)
 	if psiInject() {
@@ -545,16 +585,22 @@ func TestPaymentSharedInvariantCaptureLockWaitInvisible(t *testing.T) {
 				return
 			}
 			s.err = tx.QueryRow(ctx, `SELECT coalesce(sum(b.reserved),0),coalesce(sum(b.allocated),0),
-			 (SELECT count(*) FROM payments.facts WHERE attempt_id=$2 AND kind='CAPTURED')*1000
-			 +(SELECT count(*) FROM inventory.ledger WHERE checkout_id=$1 AND kind='ALLOCATE')*100
-			 +(SELECT count(*) FROM fulfillment.payment_work_items WHERE order_id=$1 AND state='READY')*10
-			 +(SELECT count(*) FROM inventory.reservations WHERE id=$1 AND state='COMMITTED')
+			 (SELECT count(*) FROM payments.facts WHERE attempt_id=$2 AND kind='CAPTURED'),
+			 (SELECT count(*) FROM inventory.ledger WHERE checkout_id=$1 AND kind='ALLOCATE'),
+			 (SELECT count(*) FROM fulfillment.payment_work_items WHERE order_id=$1 AND state='READY'),
+			 (SELECT count(*) FROM inventory.reservations WHERE id=$1 AND state='COMMITTED')
 			 FROM inventory.reservation_lines l JOIN inventory.balances b USING(tenant_id,store_id,warehouse_id,sku_id) WHERE l.reservation_id=$1`,
-				order, attempt).Scan(&s.reserved, &s.allocated, &s.rows)
+				order, attempt).Scan(&s.reserved, &s.allocated, &s.counts[0], &s.counts[1], &s.counts[2], &s.counts[3])
 		}()
 		pid := <-waiterPid
 		deadline := time.Now().Add(3 * time.Second)
 		for waiting := false; !waiting; {
+			// a waiter that ended before queueing (no connection, failed Begin or read) reports its own error
+			select {
+			case s := <-waiterSeen:
+				t.Fatalf("order-lock waiter ended before queueing behind the capture: order=%q err=%v", s.order, s.err)
+			default:
+			}
 			if time.Now().After(deadline) {
 				t.Fatal("order-lock waiter never queued behind the capture")
 			}
@@ -582,12 +628,104 @@ func TestPaymentSharedInvariantCaptureLockWaitInvisible(t *testing.T) {
 	}
 	select {
 	case s := <-waiterSeen:
-		if s.err != nil || s.order != "CONFIRMED" || s.reserved != wantReserved || s.allocated != wantAllocated || s.rows != 1211 {
-			t.Fatalf("order-lock waiter saw order=%s reserved=%d allocated=%d CAPTURED/ALLOCATE/READY/COMMITTED digits=%04d err=%v, want CONFIRMED %d %d 1211",
-				s.order, s.reserved, s.allocated, s.rows, s.err, wantReserved, wantAllocated)
+		if want := [4]int64{1, 2, 1, 1}; s.err != nil || s.order != "CONFIRMED" || s.reserved != wantReserved || s.allocated != wantAllocated || s.counts != want {
+			t.Fatalf("order-lock waiter saw order=%s reserved=%d allocated=%d CAPTURED/ALLOCATE/READY/COMMITTED=%v err=%v, want CONFIRMED %d %d %v",
+				s.order, s.reserved, s.allocated, s.counts, s.err, wantReserved, wantAllocated, want)
 		}
 	case <-time.After(6 * time.Second):
 		t.Fatal("order-lock waiter did not return after the capture committed")
 	}
 	psiAssertCaptured(t, e, attempt, lines)
+}
+
+// TestPaymentSharedInvariantCaptureWorkerGates (PSI07): the real Go capture worker on a fresh two-SKU MOCK order per
+// gate. A mismatched provider (Go check before apply_capture) or observation profile (apply_capture provenance) is a
+// permanent cancel; a capture blocked on a held balance lock is aborted by the worker's own 1s lock_timeout as a
+// retryable error well inside its 5s statement/job budget. Each writes nothing, and a later retry captures exactly once.
+func TestPaymentSharedInvariantCaptureWorkerGates(t *testing.T) {
+	for _, gate := range []string{"provider", "profile", "lock_timeout"} {
+		t.Run(gate, func(t *testing.T) {
+			ctx := context.Background()
+			e, attempt := psiMultiOrder(t)
+			lines := psiLines(t, e)
+			hash := e.observe(t, attempt, e.sessionReport(t, attempt, "complete", "paid", "succeeded", false))
+			before := rm2Snapshot(t, e.p, attempt)
+			name := "psi_worker_" + t04Tag()
+			pool, err := platform.OpenWorkerPool(ctx, withApplicationName(t, bcRole(t, e.p.f, waPayment), name), platform.WorkerPayment)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer pool.Close()
+			work := psiCaptureJob(t, pool, attempt, hash)
+			var cancelled *river.JobCancelError
+			switch gate {
+			case "provider", "profile":
+				// operation_actor_family (0061) pairs a BUYER_PAYMENT_QUERY provider with its action, so both move together
+				tamper, restore := `UPDATE integration.operations SET provider='payuni',action='payuni.query' WHERE id=$1 AND provider='stripe' AND action='stripe.checkout_session'`,
+					`UPDATE integration.operations SET provider='stripe',action='stripe.checkout_session' WHERE id=$1 AND provider='payuni' AND action='payuni.query'`
+				if gate == "profile" {
+					tamper, restore = `UPDATE payments.provider_observations SET execution_profile='SANDBOX' WHERE attempt_id=$1 AND report_hash=$2 AND execution_profile='PROVIDER_MOCK'`,
+						`UPDATE payments.provider_observations SET execution_profile='PROVIDER_MOCK' WHERE attempt_id=$1 AND report_hash=$2 AND execution_profile='SANDBOX'`
+				}
+				args := []any{attempt}
+				if gate == "profile" {
+					args = append(args, hash)
+				}
+				if !psiInject() { // calibration: no mismatch, so the worker must (wrongly for this gate) capture
+					slrReplica(t, e.f, tamper, args...)
+				}
+				err = work()
+				if !psiInject() {
+					slrReplica(t, e.f, restore, args...)
+				}
+				if !errors.As(err, &cancelled) {
+					t.Fatalf("worker did not cancel a job with a mismatched %s: %v", gate, err)
+				}
+			case "lock_timeout":
+				holder, err := e.f.owner.Begin(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer holder.Rollback(ctx)
+				if !psiInject() { // calibration: nothing holds the balance, so the capture must (wrongly for this gate) commit
+					last := lines[len(lines)-1]
+					if _, err = holder.Exec(ctx, `SELECT 1 FROM inventory.balances b WHERE (b.tenant_id,b.store_id,b.warehouse_id,b.sku_id)=($1::uuid,$2::uuid,$3::uuid,$4::uuid) FOR UPDATE`,
+						e.p.f.tenantA, e.p.f.storeA1, last.warehouse, last.sku); err != nil {
+						t.Fatal(err)
+					}
+				}
+				done := make(chan error, 1)
+				start := time.Now()
+				go func() { done <- work() }()
+				if !psiInject() {
+					psiAwaitLock(t, e.f.owner, name, done)
+				}
+				err = waitError(t, done)
+				elapsed := time.Since(start)
+				// The holder still holds the balance, so only a timeout can end the wait: lock_timeout (1s) and not the
+				// 5s statement_timeout/job context, and as a retryable error, not a cancel.
+				if err == nil || errors.As(err, &cancelled) || elapsed < time.Second || elapsed >= 4*time.Second {
+					t.Fatalf("capture blocked on a held balance was not aborted by the worker's 1s lock_timeout: err=%v after %v", err, elapsed)
+				}
+				if err = holder.Rollback(ctx); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if after := rm2Snapshot(t, e.p, attempt); after != before {
+				t.Fatalf("rejected/aborted %s attempt left partial state:\nbefore=%s\nafter=%s", gate, before, after)
+			}
+			if err = work(); err != nil {
+				t.Fatalf("retry after %s: %v", gate, err)
+			}
+			psiAssertCaptured(t, e, attempt, lines)
+			captured := rm2Snapshot(t, e.p, attempt)
+			if err = work(); err != nil {
+				t.Fatalf("replay after %s: %v", gate, err)
+			}
+			if after := rm2Snapshot(t, e.p, attempt); after != captured {
+				t.Fatalf("replay after %s changed the captured aggregate:\nbefore=%s\nafter=%s", gate, captured, after)
+			}
+			psiAssertCaptured(t, e, attempt, lines)
+		})
+	}
 }
