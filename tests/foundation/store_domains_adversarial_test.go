@@ -297,14 +297,8 @@ func TestStoreDomainsSDW11HandleChangeDetachesOldOrigin(t *testing.T) {
 	// Owner 2026-10-03: allocation no longer derives from a name. Pin the real
 	// PG PRNG on one session to exercise the SAME freed number on both inserts.
 	ctx := context.Background()
-	conn, err := o.Acquire(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer conn.Release()
-	if _, err := conn.Exec(ctx, `SELECT setseed(0.618034)`); err != nil {
-		t.Fatal(err)
-	}
+	conn, release := seededConn(t, o, 0.618034)
+	defer release()
 
 	storeA := randomUUID()
 	var slug string
