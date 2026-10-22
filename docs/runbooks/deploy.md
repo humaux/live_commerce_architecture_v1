@@ -31,7 +31,7 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
   - B7：T21 独立评审未完成。
   - B8：Compose 作为生产环境与 §4.2 的定位冲突。
 - 状态词汇：DESIGN / MODEL_ONLY / MOCK / SANDBOX / LIVE / NOT_RUN / BLOCKED。本地 smoke 通过不等于产品通过。
-- sudo 约定：`sudo` 会重置环境。自定义的 `LC_CONFIG_DIR` / `LC_COMPOSE_ENV` 必须写在 sudo 之后传入（`sudo LC_COMPOSE_ENV=… deploy/scripts/…`，不是 `LC_COMPOSE_ENV=… sudo …`）；ops-admin 的"调用者环境变量"密钥同理（`sudo STRIPE_SECRET_KEY=… deploy/scripts/ops-admin.sh …`），更好的做法是用无回显终端提示；`<NAME>_FILE` 的属主检查要求传输文件属主是 root（`sudo` 下运行 ops-admin 的 uid 是 0）。
+- sudo 约定：`sudo` 会重置环境。自定义的 `LC_CONFIG_DIR` / `LC_COMPOSE_ENV` 必须写在 sudo 之后传入（`sudo LC_COMPOSE_ENV=… deploy/scripts/…`，不是 `LC_COMPOSE_ENV=… sudo …`）；**密钥（`*_KEY`、`*_SECRET`、`*_TOKEN`、口令）绝不能写成 `sudo VAR=…` 或任何命令行参数**：sudo 会把命令行环境变量连值写进日志（sudoers(5) 的 ENV=：auth.log、journal），shell 历史也会留下。sudo 下只用无回显终端提示，或 root 属主的 `<NAME>_FILE`（路径本身不是秘密，可写 `sudo STRIPE_SECRET_KEY_FILE=/root/transfer deploy/scripts/ops-admin.sh …`）；`<NAME>_FILE` 的属主检查要求传输文件属主是 root（`sudo` 下运行 ops-admin 的 uid 是 0）。
 
 ## 1. 主机准备
 
@@ -74,7 +74,7 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
    - `commerce_oidc_client_secret`：如果保持 `__UNSET__`，表示使用公共 PKCE 客户端，P09 给出 WARN。
    - `commerce_meta_apps_json`：仅在启用 Meta 时需要。
    - **不属于任何配置文件的运维输入**：`STRIPE_SECRET_KEY`（SANDBOX 只接受 `sk_test_`/`rk_test_`；LIVE 只接受受限 key `rk_live_`，`sk_live_` 一律拒绝）、`STRIPE_ACCOUNT_ID`、`STRIPE_WEBHOOK_SECRET[_NEXT]`、`META_PAGE_ACCESS_TOKEN`。
-     它们只在运行 `deploy/scripts/ops-admin.sh` 时由操作者提供：终端无回显提示、调用者环境变量，或（O-D）`<NAME>_FILE=<绝对路径>` 指向 owner 在服务器上写入的一次性传输文件
+     它们只在运行 `deploy/scripts/ops-admin.sh` 时由操作者提供：终端无回显提示、调用者环境变量（经 sudo 运行时不可用，见 §0 sudo 约定），或（O-D）`<NAME>_FILE=<绝对路径>` 指向 owner 在服务器上写入的一次性传输文件
      （普通文件、非符号链接、属主 = 运行 ops-admin 的 uid（经 sudo 即 root）、权限 0400/0600、只有一行；用完由 owner 删除，见 stripe-live.md）。
      **不写入仓库、compose.env、env 文件或 secrets 目录**；preflight P07 会拒绝把它们放进任何旋钮文件。
      新增的自动生成密钥（`secrets-init.sh` 补齐）：Stripe webhook 签名 keyring（与支付 API-key keyring 分离）、Meta Page-token keyring、`commerce_claims_actor_key`（K_actor）、`commerce_claims_reply_link_key`（K_link）以及 5 个新登录的 pw_/dsn_。
@@ -308,7 +308,7 @@ SQL
    # 提示输入 STRIPE_WEBHOOK_SECRET（whsec_...，无回显）；输出 {"endpoint_id":...,"key_version":1}
    ```
    端点的 profile 必须等于 `COMMERCE_PAYMENT_PROFILE`，否则 API 返回 404；签名密钥无法解密返回 503 `signing_unavailable`（Stripe 会重试）。
-   签名密钥轮换（Stripe 允许 ≤24 h 双密钥）：新密钥设为 `STRIPE_WEBHOOK_SECRET_NEXT` 再执行同一命令，`--expected-version` 用当前版本。
+   签名密钥轮换（Stripe 允许 ≤24 h 双密钥）：新密钥在无回显提示里输入（变量名 `STRIPE_WEBHOOK_SECRET_NEXT`；或用 root 属主的 `STRIPE_WEBHOOK_SECRET_NEXT_FILE`，不要写成命令行变量）再执行同一命令，`--expected-version` 用当前版本。
 4. 资格探测与支付方式（SANDBOX，会真实创建并立即过期一个 sandbox Checkout Session）：
    ```sh
    sudo STRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh stripe-admin qualify --tenant ... --store ... --principal ... \
@@ -513,7 +513,7 @@ A2-M1（移除 C1 退役检查必须红），均由 GitHub CI 执行。
 
 - [ ] owner 批准记录（范围、tag、窗口）
 - [ ] `bash scripts/dev/release-gate.sh --strict` 退出码 0（R1 验收命令：每个 tier 一行 PASS/FAIL/NOT_RUN；NOT_RUN 不是通过），证据在主 checkout 的 `output/release-gate/<UTC>-<sha>/`
-- [ ] `sudo deploy/scripts/smoke.sh static` 和 `smoke.sh full`（Linux 部署主机、root）无 FAIL，证据位于 `deploy/.evidence/<run>/result.json`，由集成者复制到 `evidence/release/`（I6）；`S29m` BLOCKED（I8）是已记录的已知限制，不是 PASS
+- [ ] `sudo deploy/scripts/smoke.sh static` 和 `sudo deploy/scripts/smoke.sh full`（Linux 部署主机、root）无 FAIL，证据位于 `deploy/.evidence/<run>/result.json`，由集成者复制到 `evidence/release/`（I6）；`S29m` BLOCKED（I8）是已记录的已知限制，不是 PASS
 - [ ] 独立验收：test_worker 复跑 smoke；security_reviewer 审查 hba、密钥、加固和 Caddy（作者不能是唯一验收人）
 - [ ] `preflight.sh --online` 全部 PASS
 - [ ] 升级前备份已经成功，且最近 30 天内做过恢复演练（backup-restore.md）

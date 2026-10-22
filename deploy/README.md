@@ -312,7 +312,7 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
 
 19. **Operator inputs are never repo files, knob files or env-file values.** `STRIPE_SECRET_KEY`, `STRIPE_ACCOUNT_ID`,
     `STRIPE_WEBHOOK_SECRET[_NEXT]` and `META_PAGE_ACCESS_TOKEN` are read by `ops-admin.sh` from the caller's
-    environment, a no-echo prompt or (O-D, stripe-live-enable-v1 LD3) a transient transport file named by
+    environment (never as `sudo VAR=...` or an argument: sudo logs command-line environment values; see docs/runbooks/deploy.md section 0), a no-echo prompt or (O-D, stripe-live-enable-v1 LD3) a transient transport file named by
     `<NAME>_FILE` (absolute path, regular file, not a symlink, owned by the invoking uid, mode 0400/0600, one line;
     the owner removes it after registration) and forwarded to a one-shot container by NAME (never argv). They are visible in
     that container's config until `--rm` removes it (host root only, like the secret files). `lcentry` deliberately
