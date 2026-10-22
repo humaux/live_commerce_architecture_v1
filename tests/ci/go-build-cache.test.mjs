@@ -141,6 +141,7 @@ test("injected spaced alternatives, += append or shadowing glob goes RED under t
     [gnn, "            shard*) echo shadowed ;;\n" + gnn, /shadow/],
     [gnn, "            s*|x) echo shadowed ;;\n" + gnn, /shadow/],
     [gnn, "            *:g*) echo shadowed ;;\n" + gnn, /shadow/],
+    [gnn, "            [^a]*) echo shadowed ;;\n" + gnn, /shadow/], // #147 CI-4: bash [^x] is a negation, like [!x]
     [any, "            *)  echo shadowed ;;\n" + any, /shadow/],
   ]) {
     assert.throws(() => shardScopeContract(workflow.replace(from, to)), expected, JSON.stringify(to));
@@ -165,6 +166,13 @@ test("injected per-mode shadow, gNN-last arm, [!x] class or unevaluable alternat
   ]) {
     assert.throws(() => shardScopeContract(mutated), expected, label);
   }
+});
+
+// #147 CI-3: only the second `case "$MODE"` (the dispatch with the shard arms) is scanned; a harmless catch-all in the first (the evidence-root case) is not a shadow.
+test("a harmless arm in the first case MODE statement is not a shadow of the shard arms", () => {
+  const first = "            --browser*|--stripe-browser*|--ops-disk-guard)";
+  assert.ok(workflow.includes(first), "the real first-case arm is where the test looks");
+  assert.doesNotThrow(() => shardScopeContract(workflow.replace(first, `            *) ;;\n${first}`)));
 });
 
 test("injected disabled cache or unbound manifest goes RED under the real cache contract", () => {

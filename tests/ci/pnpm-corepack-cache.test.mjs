@@ -35,7 +35,12 @@ function actionContract(src) {
   assert.equal((body.match(/path:\s*~\/\.cache\/node\/corepack\s*$/gm) ?? []).length, 2, "restore and save the Corepack home");
   assert.match(body, /key:\s*corepack-.*steps\.ver\.outputs\.node.*steps\.ver\.outputs\.pm/, "the key follows the resolved Node version and package.json packageManager (#116)");
   assert.doesNotMatch(body, /hashFiles\('package\.json'\)/, "not the whole package.json (#116)");
-  assert.match(body, /COREPACK_ENABLE_NETWORK=0/, "a hit runs Corepack offline");
+  // #147 CI-1: the offline variable must sit in the HIT branch itself, not merely somewhere in the file (the later GITHUB_ENV line also names it).
+  const hit = body.match(/if \[\[ "\$HIT" == true \]\]; then\n([\s\S]*?)\n\s*else\b/)?.[1] ?? "";
+  assert.match(hit, /COREPACK_ENABLE_NETWORK=0 pnpm/, "a hit runs Corepack offline (inside the HIT branch)");
+  // #147 CI-2: Corepack's own version is part of the key, so upgrading Corepack separately from Node cannot reuse a stale home.
+  assert.match(body, /corepack --version/, "the ver step resolves Corepack's own version");
+  assert.match(body, /key:\s*corepack-.*steps\.ver\.outputs\.corepack/, "the key follows Corepack's version (#147 CI-2)");
   assert.match(body, /echo "COREPACK_ENABLE_NETWORK=0" >> "\$GITHUB_ENV"/, "later pnpm calls in the job stay offline for Corepack");
 }
 
@@ -56,4 +61,10 @@ test("injected bare Corepack or a pnpm step ahead of the action goes RED", () =>
   const action = read(ACTION);
   assert.throws(() => actionContract(action.replaceAll("COREPACK_ENABLE_NETWORK=0", "COREPACK_ENABLE_NETWORK=1")), /offline/);
   assert.throws(() => actionContract(action.replace(/actions\/cache\/restore@\w+/, "actions/cache/restore@v5")), /pinned/);
+  // #147 CI-1: dropping the variable from the HIT branch only (the GITHUB_ENV line still names it) must go RED.
+  assert.ok(action.includes("version=$(COREPACK_ENABLE_NETWORK=0 pnpm"), "the real hit branch is where the contract looks");
+  assert.throws(() => actionContract(action.replace("version=$(COREPACK_ENABLE_NETWORK=0 pnpm", "version=$(pnpm")), /HIT branch/);
+  // #147 CI-2: a key without Corepack's version goes RED.
+  assert.ok(action.includes("-${{ steps.ver.outputs.corepack }}"), "the real key is where the contract looks");
+  assert.throws(() => actionContract(action.replace("-${{ steps.ver.outputs.corepack }}", "")), /Corepack's version/);
 });

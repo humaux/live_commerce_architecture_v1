@@ -14,7 +14,7 @@ const ok = (mode, extra = {}) => ({ mode, run_id: RUN.runId, run_attempt: "1", s
 
 test("test_count is read from go test -v and node --test output, not from a static list", () => {
   const log = ["=== RUN   TestA", "--- PASS: TestA (0.01s)", "    --- PASS: TestA/sub (0.00s)", "--- FAIL: TestB (0.02s)", "--- SKIP: TestC (0.00s)", "ok  pkg 1s",
-    "ℹ tests 4", "ℹ pass 4", "ℹ fail 0", "# pass 2", "# fail 1", "    --- PASS: indented child output is not top-level"].join("\n");
+    "ℹ tests 4", "ℹ suites 0", "ℹ pass 4", "ℹ fail 0", "# tests 3", "# suites 0", "# pass 2", "# fail 1", "    --- PASS: indented child output is not top-level"].join("\n");
   assert.equal(countTests(log), 2 + 4 + 3);
   assert.equal(countTests("=== RUN   TestA\n--- SKIP: TestA (0.00s)\nPASS\n"), 0, "a run where nothing executed counts 0");
   // go test -json (--browser-webkit writes one .jsonl per step): top-level pass/fail events count; subtests, skips, output and package events do not.
@@ -24,6 +24,22 @@ test("test_count is read from go test -v and node --test output, not from a stat
   assert.equal(countTests("{not json\n"), 0);
   assert.equal(makeReceipt({ mode: "shard:unit", outcome: "success", runId: 1, runAttempt: 2, sha: "s", logs: [log, "--- PASS: TestZ (0s)"] }).test_count, 10);
   assert.equal(makeReceipt({ mode: "m", outcome: "failure", runId: 1, runAttempt: 1, sha: "s", logs: [] }).status, "FAIL");
+});
+
+// #147 CI-9: a pass/fail line counts only inside the runner's own summary block (tests, suites, pass, fail), not anywhere in a log.
+test("a pass line outside a node --test summary block does not count", () => {
+  assert.equal(countTests("tool output\nℹ pass 99\n# pass 5\nℹ fail 7\n"), 0);
+  assert.equal(countTests("ℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ pass 50\n"), 3, "only the block's own pass line counts");
+});
+
+// #147 CI-6: a parsed failure forces FAIL even when the gate step itself exited 0.
+test("status is FAIL when the logs show a failed test, whatever the gate outcome", () => {
+  const rec = (log) => makeReceipt({ mode: "m", outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [log] }).status;
+  assert.equal(rec("--- PASS: TestA (0s)\n"), "PASS");
+  assert.equal(rec("--- PASS: TestA (0s)\n--- FAIL: TestB (0s)\n"), "FAIL");
+  assert.equal(rec(JSON.stringify({ Action: "fail", Test: "TestV" })), "FAIL");
+  assert.equal(rec("ℹ tests 2\nℹ suites 0\nℹ pass 1\nℹ fail 1\n"), "FAIL");
+  assert.equal(rec("    --- FAIL: TestA/sub (0s)\n--- PASS: TestA (0s)\n"), "PASS", "only top-level failures decide; a subtest failure fails its parent");
 });
 
 test("green only when every planned mode has exactly one PASS receipt from this run and sha with tests", () => {

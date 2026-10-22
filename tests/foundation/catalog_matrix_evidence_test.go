@@ -127,6 +127,37 @@ func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
 	}
 }
 
+// #147 CI-10: the "case-table" corruption above stops at the source-hash check. These rebind every digest to a changed recorded
+// table, so the ledger-versus-recorded-table comparison itself must reject: a case the ledger never ran, and a ledger row the table no longer declares.
+func TestProductEditorMatrixLedgerEvidenceRecordedTableMismatch(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func([]map[string]any) []map[string]any
+		want   string
+	}{
+		{"case-added", func(table []map[string]any) []map[string]any {
+			extra := map[string]any{}
+			for k, v := range table[0] {
+				extra[k] = v
+			}
+			extra["control"] = "matrix-select-never-ran"
+			return append(table, extra)
+		}, "mobile matrix ledger is missing"},
+		{"case-removed", func(table []map[string]any) []map[string]any { return table[1:] }, "unexpected mobile matrix ledger identity"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, _ := productEditorMatrixEvidenceFixtureWith(t, tc.mutate)
+			err := validateProductEditorMatrixEvidence(root)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("want a ledger-versus-table rejection containing %q, got %v", tc.want, err)
+			}
+			if strings.Contains(err.Error(), "SHA-256") {
+				t.Fatalf("must be rejected by the table comparison, not by a digest check: %v", err)
+			}
+		})
+	}
+}
+
 // productEditorMatrixRecordedBlob reads path at the tested commit and fails closed
 // unless its bytes match the SHA-256 the package recorded for it.
 func productEditorMatrixRecordedBlob(t *testing.T, commit, path, recorded string) []byte {
@@ -174,6 +205,14 @@ func TestProductEditorMatrixLedgerEvidenceSharedSources(t *testing.T) {
 
 func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 	t.Helper()
+	return productEditorMatrixEvidenceFixtureWith(t, nil)
+}
+
+// productEditorMatrixEvidenceFixtureWith builds the isolated checkout; mutateCases, when set, replaces the recorded case table
+// BEFORE every digest (manifest, SOURCE.json, ARTIFACTS.json) is bound, so the result is hash-consistent and only the
+// ledger-versus-recorded-table comparison can reject it.
+func productEditorMatrixEvidenceFixtureWith(t *testing.T, mutateCases func([]map[string]any) []map[string]any) (string, string) {
+	t.Helper()
 	root := t.TempDir()
 	const canonical = "output/matrix-ledger-enforce/fixture/browser"
 	delivery := productEditorMatrixReadFixture(t, "../..", "output/matrix-ledger-enforce/DELIVERY.md")
@@ -202,6 +241,16 @@ func productEditorMatrixEvidenceFixture(t *testing.T) (string, string) {
 		if path == productEditorMatrixCasesPath {
 			// The package is compared with its own recorded table, never the current one.
 			data = productEditorMatrixRecordedBlob(t, manifest["tested_source_commit"].(string), path, recorded.(string))
+			if mutateCases != nil {
+				var table []map[string]any
+				if err := json.Unmarshal(data, &table); err != nil {
+					t.Fatal(err)
+				}
+				var err error
+				if data, err = json.Marshal(mutateCases(table)); err != nil {
+					t.Fatal(err)
+				}
+			}
 		}
 		write(path, data)
 		sources[path] = hash(data)
