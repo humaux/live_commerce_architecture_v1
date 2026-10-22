@@ -78,6 +78,10 @@ if(tool==='node'){process.exit(count('cli')<=Number(e.EDGE_FAILURES)?17:0)}
     const own = path.join(bin, name + '.cjs'); writeFileSync(own, fake.replace('__TOOL__', JSON.stringify(name)));
     writeFileSync(path.join(bin, name), `#!/bin/sh\nexec '${process.execPath}' '${own}' "$@"\n`, { mode: 0o755 });
   }
+  // #164 self-check: a fixture that does not parse would fail every case for the wrong reason (SyntaxError, then ENOENT on the trace).
+  for (const name of ['uname', 'sudo', 'timeout', 'sleep', 'node', 'pnpm', 'apt-get', 'dpkg-query', 'apt-cache', 'dpkg-deb']) execFileSync(process.execPath, ['--check', path.join(bin, name + '.cjs')]);
+  const probe = spawnSync(process.execPath, [path.join(bin, 'apt-cache.cjs'), 'show', 'x'], { encoding: 'utf8', env: { ...process.env, EDGE_TRACE: path.resolve(dir, 'probe.jsonl'), INDEX_SHA: 'abc' } });
+  assert.deepEqual(probe.stdout.trimEnd().split('\n'), ['Package: libfoo', 'SHA256: abc'], 'the apt-cache double must print exactly two lines');
   const result = spawnSync('bash', ['scripts/dev/ci-playwright-install.sh', ...browsers], { encoding: 'utf8', timeout: 10000, env: { ...process.env, PATH: bin + ':' + process.env.PATH, EDGE_TRACE: trace, EDGE_FAILURES: String(failures), DRY_FIRST: first, DPKG_STATE: dpkg, INDEX_SHA: indexSha === 'MATCH' ? goodSha : indexSha === 'NONE' ? '' : indexSha, OFFLINE_FAILS: offlineFails ? '1' : '0', LC_PLAYWRIGHT_DEBS_DIR: debDir, GITHUB_OUTPUT: path.resolve(dir, 'out'), FAKE_CLI: '/fixture/playwright-cli.js' } });
   const events = readFileSync(trace, 'utf8').trim().split('\n').map(JSON.parse);
   let out = ''; try { out = readFileSync(path.resolve(dir, 'out'), 'utf8'); } catch {}
