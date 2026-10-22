@@ -1,3 +1,6 @@
+// Purpose: unit tests for canonical storefront origin redirect (primaryLocation validation and canonicalRedirect GET/HEAD/failure/mid-read-error handling, #147 SF-2).
+// Depends on: node:assert/strict, node:test, ../lib/primary-origin.ts (canonicalRedirect, primaryLocation).
+// Used by: scripts/dev/test-node.sh (apps/storefront/tests/*.test.mjs glob, Foundation "Node unit suites").
 import assert from "node:assert/strict";
 import test from "node:test";
 import { canonicalRedirect, primaryLocation } from "../lib/primary-origin.ts";
@@ -42,7 +45,7 @@ test("no writes redirected; resolution failures fail closed; unknown hosts keep 
 // #147 SF-2: the resolver answers 200 JSON, then the body fails mid-read (also after partial data): fail closed, uncached, retryable.
 test("a body-read error from the resolver is a 503 with no-store and Retry-After", async () => {
   const request = new Request(source + "/en", { headers: { host: "store.platform.example" } });
-  const head = new TextEncoder().encode('{"primary_origin":"https://sh');
+  const head = new TextEncoder().encode('{"primary_origin":"https://shop.merchant.example"}');
   const pulls = [
     (c) => c.error(new Error("socket reset")),
     (() => { let sent = false; return (c) => (sent ? c.error(new Error("socket reset")) : (sent = true, c.enqueue(head))); })(),
