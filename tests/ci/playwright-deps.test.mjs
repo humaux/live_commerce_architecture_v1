@@ -37,6 +37,15 @@ test('coverage assertion derives mixed Go roots and catches a new mode reusing t
   assert.throws(() => assertWebKitCoverage(registry.replace('  # APPEND MODES HERE', () => mixed + '  # APPEND MODES HERE'), goSources), /webkit/i);
 });
 
+test('TH-7: a variable-driven LC_BROWSER_ENGINE launch must declare itself, so it cannot slip past the WebKit coverage scan', () => {
+  const driven = 'func TestEngineLoop(t *testing.T) {\n\tfor _, engine := range []string{"chromium", "webkit"} {\n\t\tt.Setenv("LC_BROWSER_ENGINE", engine)\n\t}\n}\n';
+  assert.throws(() => assertWebKitCoverage(registry, [...goSources, driven]), /marker|variable/i);
+  assertWebKitCoverage(registry, [...goSources, '// lc:webkit=front-only\n' + driven]); // TLS front without a browser binary: declared, accepted
+  const browser = '// lc:webkit=browser\n' + driven.replace('TestEngineLoop', 'TestEngineBrowser');
+  const mode = `  --browser-new-driven)\n    lc_build=storefront\n    lc_fixture=pg\n    lc_browsers=chromium\n    lc_prepare() {\n  :\n    }\n    lc_run() {\n  go test -tags browser -run '^TestEngineBrowser$' ./tests/foundation\n    }\n    ;;\n`;
+  assert.throws(() => assertWebKitCoverage(registry.replace('  # APPEND MODES HERE', () => mode + '  # APPEND MODES HERE'), [...goSources, browser]), /webkit/i);
+});
+
 function installer(failures, browsers = ['chromium']) {
   mkdirSync('output/playwright', { recursive: true }); // untracked: absent on a fresh checkout (PR #27 review)
   const dir = mkdtempSync('output/playwright/ci-playwright-deps-test.');

@@ -1349,6 +1349,9 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
     });
     await run("Save waits for uploads (#87)", "choose image, try Save at once, wait for transfer, save, reload, switch tabs", "Save blocked with a reason while a transfer runs; after save the form stays clean through reload and tab switches", async () => {
       await tab(t.media).click();
+      // TH-13: hold the simulated transfer until this test releases it (GalleryUpload listens for lc-gallery-upload-release), so the
+      // block is observed against a transfer that cannot finish on a timer, however slow the runner is.
+      await page.evaluate(() => { window.__lcHoldUpload = true; });
       const chooserPromise = page.waitForEvent("filechooser");
       await button(t.browse).click();
       // [FIXTURE] One synthetic valid PNG through the native picker reached by a real Browse click.
@@ -1368,6 +1371,9 @@ async function templateJourney({ page, step, t, template, locale, mobile, captur
       }); // [READ]
       assert.equal(snap.uploading, true, `snapshot taken after the transfer ended; the block cannot be observed: ${JSON.stringify(snap)}`);
       assert.deepEqual(snap, { uploading: true, disabled: "true", reason: t.uploadPending }, "Save is blocked with a reason while an image transfer is in progress");
+      await page.waitForTimeout(1200); // [FIXTURE] longer than the 700 ms simulator timer: a held transfer must still be running
+      assert.equal(await area.locator('progress, [role="progressbar"]').count() > 0, true, "the held transfer finished on its own timer");
+      await page.evaluate(() => { window.dispatchEvent(new Event("lc-gallery-upload-release")); delete window.__lcHoldUpload; });
       await seen(text(t.uploaded));
       await save();
       await reloadHydrated();

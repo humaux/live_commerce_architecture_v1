@@ -237,19 +237,23 @@ func awaitOwnedPort(ctx context.Context, owns func(pgid, port int) (bool, error)
 // processGroupListens proves the LISTEN socket on port belongs to the child's own process group, so a rival that took the
 // freed port cannot pass for the child. Needs /proc (Linux, where CI runs); without it the proof is unavailable and the
 // caller fails closed, because a successful dial proves a listener exists, not whose it is.
-func processGroupListens(pgid, port int) (bool, error) {
-	tcp4, err := os.ReadFile("/proc/net/tcp")
+func processGroupListens(pgid, port int) (bool, error) { return procListens("/proc", pgid, port) }
+
+// procListens is processGroupListens over an injectable /proc root, so the no-/proc branch is testable without a stub probe.
+func procListens(root string, pgid, port int) (bool, error) {
+	root = "/proc" // RED stub: the root is not honoured yet
+	tcp4, err := os.ReadFile(root + "/net/tcp")
 	if err != nil {
 		return false, fmt.Errorf("listener ownership proof needs /proc: %w", err)
 	}
-	tcp6, _ := os.ReadFile("/proc/net/tcp6")
+	tcp6, _ := os.ReadFile(root + "/net/tcp6")
 	inodes := map[string]bool{}
 	for _, line := range strings.Split(string(tcp4)+string(tcp6), "\n") {
 		if f := strings.Fields(line); len(f) > 9 && f[3] == "0A" && strings.HasSuffix(f[1], fmt.Sprintf(":%04X", port)) {
 			inodes["socket:["+f[9]+"]"] = true
 		}
 	}
-	procs, _ := os.ReadDir("/proc")
+	procs, _ := os.ReadDir(root)
 	for _, proc := range procs {
 		pid, err := strconv.Atoi(proc.Name())
 		if err != nil {
@@ -258,9 +262,9 @@ func processGroupListens(pgid, port int) (bool, error) {
 		if group, err := syscall.Getpgid(pid); err != nil || group != pgid {
 			continue
 		}
-		fds, _ := os.ReadDir(fmt.Sprintf("/proc/%d/fd", pid))
+		fds, _ := os.ReadDir(fmt.Sprintf("%s/%d/fd", root, pid))
 		for _, fd := range fds {
-			if link, err := os.Readlink(fmt.Sprintf("/proc/%d/fd/%s", pid, fd.Name())); err == nil && inodes[link] {
+			if link, err := os.Readlink(fmt.Sprintf("%s/%d/fd/%s", root, pid, fd.Name())); err == nil && inodes[link] {
 				return true, nil
 			}
 		}
@@ -723,12 +727,54 @@ func TestBrowserAdminRelayFailsClosedWithoutOwnershipProof(t *testing.T) {
 	_ = conn.Close()
 	relay := newBrowserAdminRelay(t)
 	relay.pickPort = func() string { return held }
-	relay.owns = func(int, int) (bool, error) { return false, errors.New("no /proc") }
+	// TH-4: the REAL probe over a /proc root that does not exist (no stub), so processGroupListens' no-/proc branch is what fails closed.
+	missing := t.TempDir() + "/no-proc"
+	relay.owns = func(pgid, port int) (bool, error) { return procListens(missing, pgid, port) }
 	if _, err := relay.launch(t, context.Background(), relayTestChild(t, context.Background(), false)); err == nil || !strings.Contains(err.Error(), "cannot prove") {
 		t.Fatalf("launch must fail closed when ownership cannot be proven: %v", err)
 	}
 	if relay.target.Load() != nil {
 		t.Fatal("relay was attached to a listener that was not proven to be the child's")
+	}
+}
+
+// TestBrowserAdminRelayRejectsUnsupportedCmdFields pins TH-2 (#147): a relaunch rebuilds the command from Path/Args/Dir/Env/
+// Stdout/Stderr only and owns SysProcAttr, so a cmd carrying Stdin, ExtraFiles, WaitDelay or its own SysProcAttr would be
+// silently different on the retry. launch must refuse it before starting anything. (Cancel cannot be inspected: CommandContext
+// always sets one, and the relay's group-kill supersedes it.)
+func TestBrowserAdminRelayRejectsUnsupportedCmdFields(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("NOT_RUN: needs the Linux /proc listener-ownership proof")
+	}
+	t.Setenv("LC_BROWSER_ENGINE", "chromium")
+	held := relayHeldPort(t)
+	for name, set := range map[string]func(*exec.Cmd){
+		"Stdin":       func(c *exec.Cmd) { c.Stdin = strings.NewReader("") },
+		"ExtraFiles":  func(c *exec.Cmd) { c.ExtraFiles = []*os.File{os.Stdout} },
+		"WaitDelay":   func(c *exec.Cmd) { c.WaitDelay = time.Second },
+		"SysProcAttr": func(c *exec.Cmd) { c.SysProcAttr = &syscall.SysProcAttr{Setsid: true} },
+	} {
+		t.Run(name, func(t *testing.T) {
+			relay := newBrowserAdminRelay(t)
+			relay.pickPort = func() string { return held }
+			cmd := relayTestChild(t, context.Background(), false)
+			set(cmd)
+			_, err := relay.launch(t, context.Background(), cmd)
+			if err == nil || !strings.Contains(err.Error(), "unsupported") {
+				t.Fatalf("a cmd with %s must be rejected as unsupported, got %v", name, err)
+			}
+			if cmd.Process != nil {
+				t.Fatalf("a rejected cmd (%s) must not have been started", name)
+			}
+		})
+	}
+	// Setpgid-only is what the fixtures set themselves; the relay overwrites it with the same value, so it stays accepted.
+	relay := newBrowserAdminRelay(t)
+	relay.pickPort = func() string { return held }
+	cmd := relayTestChild(t, context.Background(), true)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if _, err := relay.launch(t, context.Background(), cmd); err != nil && strings.Contains(err.Error(), "unsupported") {
+		t.Fatalf("Setpgid-only SysProcAttr must stay accepted: %v", err)
 	}
 }
 
