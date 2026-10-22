@@ -4,7 +4,7 @@
 #   2026-10-07 speed-up: a `plan` job fans the two long gates out (`--browser-click-sweep` -> N LC_SWEEP_SHARD slices, `--browser-visual-lint` -> M slices,
 #   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
-#   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (bounded apt retries),
+#   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (installs only the system deps the runner image lacks, from cached .debs when possible; bounded apt otherwise),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), scripts/dev/matrix-receipts.mjs (per-job run receipts + verifier, #128), the pinned postgres image,
 #   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version), .github/actions/pnpm (cached Corepack pnpm, #107), setup-go module/compiler cache for shard:gNN only. No secrets: every gate uses MOCK/SANDBOX fixtures only.
 # Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`, or `-f full_browser_universe=true` for the nightly set on demand);
@@ -166,7 +166,10 @@ jobs:
         id: pw
         if: steps.browsers.outputs.engines != ''
         # The version pnpm resolved from the frozen lockfile: a new Playwright (new browser revisions) is a new cache key, a lockfile change that keeps it is a hit.
-        run: echo "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+          # The hosted image build decides which system packages already exist; an unknown image never hits the .deb cache (run id in the key).
+          echo "image=${ImageVersion:-noimage-$GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
       - name: Writable Playwright browser dir
         if: steps.browsers.outputs.engines != ''
         run: sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"
@@ -178,13 +181,23 @@ jobs:
           path: /opt/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
           restore-keys: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
-      - name: Browsers for browser modes
+      - name: Restore Playwright system-dependency .debs (#162)
+        id: debs
         if: steps.browsers.outputs.engines != ''
-        # Always install the selected system deps; cached binaries do not imply apt packages exist.
-        # Three 240s attempts +15s kill grace each +two 10s backoffs <=785s; total step stays 15min.
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ runner.temp }}/playwright-debs
+          key: playwright-debs-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
+      - name: Browsers for browser modes
+        id: pwinstall
+        if: steps.browsers.outputs.engines != ''
+        # The script asks Playwright which system deps this runner image lacks and installs only those: offline from the cached .debs when
+        # present, else from apt (three 240s attempts +15s kill grace each +two 10s backoffs <=785s; total step stays 15min). It exits non-zero
+        # unless a final dry-run reports every dependency installed, so a real failure still turns the job, receipts and `required` red.
         timeout-minutes: 15
         env:
           BROWSERS: ${{ steps.browsers.outputs.engines }}
+          LC_PLAYWRIGHT_DEBS_DIR: ${{ runner.temp }}/playwright-debs
         run: |
           read -r -a browsers <<< "$BROWSERS"
           bash scripts/dev/ci-playwright-install.sh "${browsers[@]}"
@@ -195,6 +208,13 @@ jobs:
         with:
           path: /opt/ms-playwright
           key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
+      - name: Save Playwright system-dependency .debs (#162)
+        # Only when this job had to download them (the script reports debs=downloaded); the key is immutable, a parallel writer only logs a warning.
+        if: ${{ steps.browsers.outputs.engines != '' && steps.pwinstall.outputs.debs == 'downloaded' && steps.debs.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ runner.temp }}/playwright-debs
+          key: playwright-debs-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
       - name: Gate
