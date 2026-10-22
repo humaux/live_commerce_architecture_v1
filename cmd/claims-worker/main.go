@@ -438,6 +438,7 @@ func newConsoleServer(addr string, h http.Handler, base context.Context) *http.S
 	return &http.Server{
 		Addr:              addr,
 		Handler:           h,
+		BaseContext:       func(net.Listener) context.Context { return base },
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,

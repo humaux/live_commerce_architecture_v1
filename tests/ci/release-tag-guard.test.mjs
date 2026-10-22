@@ -1,5 +1,5 @@
 // Purpose: CW-3 (#147, from #116) — the test-only Go build tag `claimsconsoletest` (cmd/claims-worker/console_testhook.go closes the
-//   claims bridge listener 1s after bind) must never reach a release build. Every git-tracked file outside prose (docs/, output/, *.md)
+//   claims bridge listener 1s after bind) must never reach a release build. Every git-tracked file outside prose (docs/, output/, *.md; deploy/** and docs/runbooks/** are scanned even as .md)
 //   that names the tag must be on the four-file allowlist below; a Dockerfile, compose file, deploy script, scripts/, Makefile or
 //   workflow YAML carrying it is red. The allowlist is the hook, the one main.go comment, the one process test (mrBuild) and this guard.
 // Depends on: git ls-files (tracked files only).
@@ -16,12 +16,16 @@ const ALLOWED = new Set([
   "tests/foundation/claims_worker_console_process_test.go",
   "tests/ci/release-tag-guard.test.mjs",
 ]);
+// Prose is exempt (evidence logs, design docs, GATES.md name the tag), EXCEPT what operators copy-paste into a release:
+// deploy/** and docs/runbooks/** (review-148 P2-b), including their .md files.
+const OPERATOR = /^(deploy|docs\/runbooks)\//;
+const EXEMPT = path => !OPERATOR.test(path) && (/^(docs|output)\//.test(path) || path.endsWith(".md"));
 const root = new URL("../../", import.meta.url);
 
 // files: [{path, text}]. Returns the paths that name the tag but are not allowed.
 function offenders(files) {
   return files
-    .filter(({ path }) => !ALLOWED.has(path) && !/^(docs|output)\//.test(path) && !path.endsWith(".md"))
+    .filter(({ path }) => !ALLOWED.has(path) && !EXEMPT(path))
     .filter(({ text }) => text.includes(TAG))
     .map(({ path }) => path);
 }
@@ -52,7 +56,10 @@ test("injected release-path occurrences are red", () => {
     "scripts/dev/build.sh",
     "Makefile",
     ".github/workflows/gates.yml",
+    "deploy/README.md",
+    "docs/runbooks/deploy.md",
   ].map(path => ({ path, text: `RUN go build -tags=netgo,${TAG} ./cmd/claims-worker\n` }));
   assert.deepEqual(offenders(bad), bad.map(b => b.path));
+  assert.deepEqual(offenders([{ path: "docs/delivery/GATES.md", text: TAG }, { path: "output/x.log", text: TAG }]), []);
   assert.deepEqual(offenders([{ path: "tests/foundation/claims_worker_console_process_test.go", text: TAG }]), []);
 });
