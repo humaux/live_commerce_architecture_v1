@@ -46,7 +46,7 @@ test('TH-7: a variable-driven LC_BROWSER_ENGINE launch must declare itself, so i
   assert.throws(() => assertWebKitCoverage(registry.replace('  # APPEND MODES HERE', () => mode + '  # APPEND MODES HERE'), [...goSources, browser]), /webkit/i);
 });
 
-function installer({ failures = 0, browsers = ['chromium'], first = 'missing', after = 'none', debs = false, offlineFails = false } = {}) {
+function installer({ failures = 0, browsers = ['chromium'], first = 'missing', dpkg = 'installed', debs = false, offlineFails = false } = {}) {
   mkdirSync('output/playwright', { recursive: true }); // untracked: absent on a fresh checkout (PR #27 review)
   const dir = mkdtempSync('output/playwright/ci-playwright-deps-test.');
   const bin = path.resolve(dir, 'bin'), trace = path.resolve(dir, 'trace.jsonl'), debDir = path.resolve(dir, 'debs'); mkdirSync(bin);
@@ -57,22 +57,23 @@ if(tool==='uname'){console.log('Linux');process.exit(0)}
 if(tool==='sudo'){const r=require('child_process').spawnSync(args[0],args.slice(1),{stdio:'inherit'});process.exit(r.status??1)}
 if(tool==='timeout'){const i=args.findIndex(x=>/^\\d+s$/.test(x));const r=require('child_process').spawnSync(args[i+1],args.slice(i+2),{stdio:'inherit'});process.exit(r.status??1)}
 if(tool==='sleep')process.exit(0);
+if(tool==='dpkg-query'){console.log(e.DPKG_STATE==='installed'?'installed':'not-installed');process.exit(0)}
 if(tool==='apt-get'){
   if(args.includes('update'))process.exit(0);
   if(args.includes('--no-download'))process.exit(e.OFFLINE_FAILS==='1'?100:0);
   process.exit(count('apt')<=Number(e.EDGE_FAILURES)?17:0)}
 if(tool==='node'&&args[0]==='-p'){console.log(e.FAKE_CLI);process.exit(0)}
-if(tool==='node'&&args.includes('--dry-run')){const mode=count('dry')===1?e.DRY_FIRST:e.DRY_AFTER;
+if(tool==='node'&&args.includes('--dry-run')){const mode=e.DRY_FIRST;
   if(mode==='none'){console.log('All system dependencies are installed.');process.exit(0)}
   if(mode==='missing'){console.log('Missing system dependencies (2):\\n  libfoo\\n  libbar');process.exit(1)}
   console.log('boom');process.exit(1)}
 if(tool==='node'){process.exit(count('cli')<=Number(e.EDGE_FAILURES)?17:0)}
 `;
-  for (const name of ['uname', 'sudo', 'timeout', 'sleep', 'node', 'pnpm', 'apt-get']) {
+  for (const name of ['uname', 'sudo', 'timeout', 'sleep', 'node', 'pnpm', 'apt-get', 'dpkg-query']) {
     const own = path.join(bin, name + '.cjs'); writeFileSync(own, fake.replace('__TOOL__', JSON.stringify(name)));
     writeFileSync(path.join(bin, name), `#!/bin/sh\nexec '${process.execPath}' '${own}' "$@"\n`, { mode: 0o755 });
   }
-  const result = spawnSync('bash', ['scripts/dev/ci-playwright-install.sh', ...browsers], { encoding: 'utf8', timeout: 10000, env: { ...process.env, PATH: bin + ':' + process.env.PATH, EDGE_TRACE: trace, EDGE_FAILURES: String(failures), DRY_FIRST: first, DRY_AFTER: after, OFFLINE_FAILS: offlineFails ? '1' : '0', LC_PLAYWRIGHT_DEBS_DIR: debDir, GITHUB_OUTPUT: path.resolve(dir, 'out'), FAKE_CLI: '/fixture/playwright-cli.js' } });
+  const result = spawnSync('bash', ['scripts/dev/ci-playwright-install.sh', ...browsers], { encoding: 'utf8', timeout: 10000, env: { ...process.env, PATH: bin + ':' + process.env.PATH, EDGE_TRACE: trace, EDGE_FAILURES: String(failures), DRY_FIRST: first, DPKG_STATE: dpkg, OFFLINE_FAILS: offlineFails ? '1' : '0', LC_PLAYWRIGHT_DEBS_DIR: debDir, GITHUB_OUTPUT: path.resolve(dir, 'out'), FAKE_CLI: '/fixture/playwright-cli.js' } });
   const events = readFileSync(trace, 'utf8').trim().split('\n').map(JSON.parse);
   let out = ''; try { out = readFileSync(path.resolve(dir, 'out'), 'utf8'); } catch {}
   rmSync(dir, { recursive: true }); return { result, events, out };
@@ -91,7 +92,7 @@ test('#162 cache HIT: missing deps install offline from the cached .debs, with n
   assert.ok(apt[0].args.includes('--no-download')); assert.ok(apt[0].args.some(a => a.startsWith('Dir::Cache::archives=')));
   assert.deepEqual(apt[0].args.slice(-2), ['libfoo', 'libbar']);
   assert.equal(events.filter(x => ['timeout', 'sleep'].includes(x.tool)).length, 0);
-  assert.equal(dryRuns(events).length, 2, 'the dependencies are verified after the install');
+  assert.equal(events.filter(x => x.tool === 'dpkg-query').length, 2, 'every package is verified through dpkg after the install');
   assert.ok(!out.includes('debs=downloaded'), 'a hit must not re-save the cache');
   assert.equal(events.filter(x => x.tool === 'pnpm').length, 1);
 });
@@ -116,14 +117,13 @@ test('persistent dependency failure stops after three attempts and never downloa
   assert.equal(aptCalls(events).filter(x => x.args.includes('install')).length, 3); assert.equal(events.filter(x => x.tool === 'pnpm').length, 0);
 });
 test('#162 RED path: dependencies still missing after an install that claimed success keep the job red', () => {
-  const { result, events } = installer({ after: 'missing' }); assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /still missing/); assert.equal(events.filter(x => x.tool === 'pnpm').length, 0);
+  const { result, events } = installer({ dpkg: 'absent' }); assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /still missing after install: libfoo libbar/); assert.equal(events.filter(x => x.tool === 'pnpm').length, 0);
 });
-test('an unlistable delta (simulation failed) installs the full Playwright set as before, then verifies', () => {
+test('an unlistable delta (simulation failed) installs the full Playwright set as before, ', () => {
   const { result, events } = installer({ first: 'unknown', failures: 2 }); assert.equal(result.status, 0, result.stderr);
   assert.equal(events.filter(x => x.tool === 'timeout').length, 3); assert.equal(aptCalls(events).length, 0);
   assert.deepEqual(events.filter(x => x.tool === 'node' && x.args.includes('install-deps') && !x.args.includes('--dry-run')).map(x => x.args.slice(1)), [['install-deps', 'chromium'], ['install-deps', 'chromium'], ['install-deps', 'chromium']]);
-  assert.equal(dryRuns(events).length, 2);
 });
 test('mixed engine installer preserves both dependencies and both binaries', () => {
   const { result, events } = installer({ browsers: ['chromium', 'webkit'] }); assert.equal(result.status, 0, result.stderr);

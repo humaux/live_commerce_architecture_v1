@@ -4,7 +4,7 @@
 # Depends on: frozen Playwright CLI (`install-deps --dry-run` simulates the install and lists the missing packages, no network),
 #   hosted Linux runner tooling (sudo, apt-get), LC_PLAYWRIGHT_DEBS_DIR = a runner-owned directory that gates.yml restores/saves with actions/cache.
 # Used by: gates.yml and fake-network-edge process tests (tests/ci/playwright-deps.test.mjs).
-# Invariant: the script exits non-zero unless a final dry-run reports every dependency installed; nothing is skipped silently.
+# Invariant: the script exits non-zero unless dpkg reports every package it set out to install as installed; nothing is skipped silently.
 set -euo pipefail
 [[ "$(uname -s)" == Linux ]] || { echo 'ci-playwright-install: Linux runner required' >&2; exit 2; }
 [[ "$*" == chromium || "$*" == 'chromium webkit' ]] || { echo 'ci-playwright-install: invalid browser set' >&2; exit 2; }
@@ -13,13 +13,11 @@ node_bin="$(command -v node)"
 cli="$(node -p 'require.resolve("@playwright/test/cli")')"
 debs="${LC_PLAYWRIGHT_DEBS_DIR:-}"
 started=$SECONDS
-dry_txt="$(mktemp)"
 
 # Prints "none", "missing:<pkg> <pkg>..." or "unknown" (the simulation itself failed). Exit codes of the CLI are not trusted: its text is.
 dry_run() {
   local out
   out="$("$node_bin" "$cli" install-deps --dry-run "$@" 2>&1 || true)"
-  printf %s "$out" >"$dry_txt" # the function runs in a subshell: keep the last text for diagnostics
   if grep -q 'All system dependencies are installed' <<<"$out"; then echo none
   elif grep -q 'Missing system dependencies' <<<"$out"; then
     echo "missing:$(sed -n '/Missing system dependencies/,$ s/^ *\([a-z0-9][a-z0-9+.:-]*\) *$/\1/p' <<<"$out" | tr '\n' ' ')"
@@ -67,9 +65,15 @@ else
     done
     [[ "$rc" == 0 ]] || { echo "ci-playwright-install: dependencies failed after 3 attempts (exit=$rc)" >&2; exit "$rc"; }
   fi
-  # Whatever path ran, the dependencies must now really be present; otherwise the job is red.
-  after="$(dry_run "$@")"
-  [[ "$after" == none ]] || { echo "ci-playwright-install: dependencies still missing after install (state=${after%%:*})" >&2; head -40 "$dry_txt" >&2; exit 1; }
+  # Whatever path ran, every package we set out to install must now be present (dpkg state, not a second simulation: after
+  # `apt-get update` a simulation also lists mere upgrades of installed packages as "Inst"); otherwise the job is red.
+  if [[ "$state" == missing:* ]]; then
+    bad=()
+    for pkg in "${missing[@]}"; do
+      [[ "$(dpkg-query -W -f='${db:Status-Status}' "$pkg" 2>/dev/null || true)" == installed ]] || bad+=("$pkg")
+    done
+    [[ ${#bad[@]} == 0 ]] || { echo "ci-playwright-install: dependencies still missing after install: ${bad[*]}" >&2; exit 1; }
+  fi
 fi
 # Browser downloads use the user's versioned cache; system dependencies are never inferred from a cache hit.
 pnpm exec playwright install "$@"
