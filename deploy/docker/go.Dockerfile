@@ -53,7 +53,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
       test -d "cmd/$c" || { echo "BLOCKED: cmd/$c missing (REQUIRES_INTEGRATOR)"; exit 3; }; \
     done; \
     for c in $GO_CMDS; do \
-      go build -buildvcs=false -ldflags=-buildid= -o "/out/$c" "./cmd/$c"; \
+      go build -tags claimsconsoletest -buildvcs=false -ldflags=-buildid= -o "/out/$c" "./cmd/$c"; \
     done; \
     go build -buildvcs=false -ldflags=-buildid= -o /out/lcentry ./deploy/tools/lcentry
 
