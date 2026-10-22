@@ -29,10 +29,25 @@ export function browserRequirements(mode, source, extraEnv = '') {
   if (engine === 'webkit' && !browsers.includes('webkit')) browsers.push('webkit');
   return browsers;
 }
+/** A Go test file launches WebKit when it sets the engine to the literal "webkit", calls webkit.executablePath(), or drives
+ * LC_BROWSER_ENGINE from a variable and declares `// lc:webkit=browser`. A variable-driven file must declare itself:
+ * `// lc:webkit=front-only` (only browserFront's TLS branch, no browser binary) or `// lc:webkit=browser`; undeclared throws (TH-7, #147). */
+function usesWebKit(source) {
+  if (/\bwebkit\.executablePath\(\)/.test(source)) return true;
+  let driven = false;
+  for (const m of source.matchAll(/\b\w+\.Setenv\(\s*"LC_BROWSER_ENGINE"\s*,\s*([^)]*?)\s*\)/g)) {
+    if (m[1] === '"webkit"') return true;
+    if (!/^"[a-z]+"$/.test(m[1])) driven = true;
+  }
+  if (!driven) return false;
+  const marker = source.match(/^\/\/ lc:webkit=(front-only|browser)\b/m);
+  if (!marker) throw new Error('variable-driven LC_BROWSER_ENGINE needs a "// lc:webkit=front-only|browser" marker: the WebKit coverage scan cannot see which engine it launches');
+  return marker[1] === 'browser';
+}
 /** Assert explicit WebKit commands and selected mixed Go test roots receive WebKit dependencies. */
 export function assertWebKitCoverage(source, testSources) {
   // File-level inspection intentionally errs toward requiring WebKit for sibling tests.
-  const mixedRoots = testSources.filter(s => /\b\w+\.Setenv\(\s*"LC_BROWSER_ENGINE"\s*,\s*"webkit"\s*\)|\bwebkit\.executablePath\(\)/.test(s))
+  const mixedRoots = testSources.filter(usesWebKit)
     .flatMap(s => [...s.matchAll(/^func (Test\w+)\(t \*testing\.T\)/gm)].map(m => m[1]));
   for (const entry of modeEntries(source).filter(e => isBrowser(e.name))) {
     const browsers = declared(entry);

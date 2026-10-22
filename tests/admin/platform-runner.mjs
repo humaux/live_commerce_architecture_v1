@@ -100,7 +100,7 @@ const server = (verification) => startNextWithPortRetry({}, async ({ port: p, at
   track(child, log);
   try {
     for (let i = 0; i < 100; i++) {
-      if (child.exitCode !== null) throw new Error("Next exited");
+      if (child.exitCode !== null || child.signalCode !== null) throw new Error("Next exited");
       try {
         if ((await get(p, host, "/")).status === 200) return { p, child, log };
       } catch {}

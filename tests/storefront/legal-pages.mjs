@@ -67,13 +67,13 @@ try {
   // proof is the attempt's log file, so the Next output now lands in the evidence directory instead of memory).
   origin = await startNextWithPortRetry({}, async ({ port, attempt, track }) => {
     const file = nextAttemptLog(path.join(evidenceDir, "next-start.log"), attempt);
-    const log = createWriteStream(file, { flags: "wx", mode: 0o600 });
+    const log = createWriteStream(file, { flags: "w", mode: 0o600 });
     logs.push(log); await once(log, "open");
     const url = `http://127.0.0.1:${port}`;
     server = spawn(process.execPath, [nextBin, "start", "--hostname", "127.0.0.1", "--port", String(port)], { cwd: storefront, env, stdio: ["ignore", log, log] });
     track(server, log);
     for (let i = 0, ready = false; !ready; i++) {
-      if (server.exitCode !== null) throw new Error(`next start exited: ${(await readFile(file, "utf8").catch(() => "")).slice(-400)}`);
+      if (server.exitCode !== null || server.signalCode !== null) throw new Error(`next start exited: ${(await readFile(file, "utf8").catch(() => "")).slice(-400)}`);
       if (i > 200) throw new Error("next start did not become ready");
       try { ready = (await fetch(`${url}/en/legal/privacy`)).status === 200; } catch { await new Promise((r) => setTimeout(r, 100)); }
     }

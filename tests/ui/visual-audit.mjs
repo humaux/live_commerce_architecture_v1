@@ -102,7 +102,7 @@ export async function main() {
     track(child, logFile);
     children.add(child);
     for (let i = 0; i < 600; i++) {
-      if (child.exitCode !== null) throw new Error(`${name} exited before readiness`);
+      if (child.exitCode !== null || child.signalCode !== null) throw new Error(`${name} exited before readiness`);
       try { if (await ready(port)) return port; } catch { /* not up yet */ }
       await new Promise((r) => setTimeout(r, 100));
     }

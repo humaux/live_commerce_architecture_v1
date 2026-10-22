@@ -320,10 +320,10 @@ const nodePortRaceSites = [
 ];
 function noPickThenRelease(file, source) {
   if (file.endsWith(".go")) {
-    assert.equal(source.includes('net.Listen("tcp", "127.0.0.1:0")'), false, `${file}: a loopback port is still reserved and freed for a child`);
+    assert.equal(/net\.Listen\("tcp\w*",\s*"(127\.0\.0\.1|localhost|\[::1\])?:0"\)/.test(source), false, `${file}: a loopback port is still reserved and freed for a child`);
     assert.equal(/freeLoopbackPort\(/.test(source), false, `${file}: freeLoopbackPort still hands a freed port to a child`);
     assert.equal(/"PORT": \w|"--port", \w/.test(source), false, `${file}: a child still gets a caller-picked port`);
-    assert.match(source, /\.start\(t, |startPrivate\(t, /, `${file}: the child is not launched through the relay (owned port + EADDRINUSE relaunch)`);
+    assert.match(source, /[rR]elay\.start\(t, |startPrivate\(t, /, `${file}: the child is not launched through the relay (owned port + EADDRINUSE relaunch)`);
   } else {
     // `(probe|reserve).close(<callback>)` is the freeing call; a bare `.close()` (offline-buyer's `probe` browser context) is not a port.
     assert.equal(/\bcreateServer\(\)|freePort\(|listen\((reserve|probe)\)|(probe|reserve)\.close\([^)]/.test(source), false, `${file}: a loopback port is still reserved and freed for a child`);

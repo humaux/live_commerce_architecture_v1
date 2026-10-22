@@ -1,5 +1,7 @@
 //go:build browser
 
+// lc:webkit=front-only (variable-driven LC_BROWSER_ENGINE only selects browserFront's TLS branch; no WebKit binary is launched)
+
 // Purpose: keep a browser fixture's public admin origin owned while Next starts on an automatic private port; start()
 // also launches a Go-owned child on a private port and relaunches ONLY after a bind collision (EADDRINUSE), see #116.
 // Depends on: Go net/http/httptest/httputil, os/exec, /proc (Linux listener-ownership proof) and browserFront's WebKit TLS boundary; no database.
@@ -53,14 +55,7 @@ func newBrowserAdminRelay(t *testing.T) *browserAdminRelay {
 		r.SetURL(front.target.Load())
 		r.Out.URL.RawQuery = r.In.URL.RawQuery // #122: Rewrite proxies drop unparsable queries (`?limit=%`); security negatives need them raw. Test transport only.
 		r.Out.Host = r.In.Host
-		// ReverseProxy.Rewrite strips Forwarded and X-Forwarded-{For,Host,Proto} from the outbound request. The relay is a
-		// transparent test transport: hand Next every one of them exactly as the browser sent it (no new hop), so the attacker-header
-		// security negatives (X-Forwarded-Host/Forwarded spoofs) still reach the BFF instead of passing vacuously.
-		for name, values := range r.In.Header {
-			if name == "Forwarded" || strings.HasPrefix(name, "X-Forwarded-") {
-				r.Out.Header[name] = values
-			}
-		}
+		restoreForwardedHeaders(r)
 	}, ModifyResponse: func(res *http.Response) error {
 		// Next builds absolute redirect targets from its OWN listen port (resolve-routes initUrl uses opts.port), which behind
 		// this relay is the private one: the proxy.ts locale redirect would send the browser around the owned public origin.
@@ -89,6 +84,17 @@ func newBrowserAdminRelay(t *testing.T) *browserAdminRelay {
 	t.Cleanup(front.server.Close)
 	front.origin = browserFront(t, front.server.Listener.Addr().String())
 	return front
+}
+
+// restoreForwardedHeaders: ReverseProxy.Rewrite strips Forwarded and X-Forwarded-{For,Host,Proto} from the outbound request. The
+// relay is a transparent test transport: hand Next every one of them exactly as the browser sent it (no new hop), so the
+// attacker-header security negatives (X-Forwarded-Host/Forwarded spoofs) still reach the BFF instead of passing vacuously.
+func restoreForwardedHeaders(r *httputil.ProxyRequest) {
+	for name, values := range r.In.Header {
+		if name == "Forwarded" || strings.HasPrefix(name, "X-Forwarded-") {
+			r.Out.Header[name] = values
+		}
+	}
 }
 
 var bindCollision = regexp.MustCompile(`EADDRINUSE|address already in use`)
@@ -125,6 +131,12 @@ func (front *browserAdminRelay) launch(t *testing.T, ctx context.Context, cmd *e
 	logFile, ok := cmd.Stdout.(*os.File)
 	if !ok {
 		return nil, errors.New("relay.start needs the child's *os.File log as Stdout (browserLog)")
+	}
+	// TH-2: a relaunch rebuilds the command from Path/Args/Dir/Env/Stdout/Stderr and owns SysProcAttr, so anything else the caller
+	// set would silently differ between attempts. Cancel is not inspectable (CommandContext always sets one; the group kill below
+	// supersedes it).
+	if cmd.Stdin != nil || len(cmd.ExtraFiles) != 0 || cmd.WaitDelay != 0 || (cmd.SysProcAttr != nil && *cmd.SysProcAttr != (syscall.SysProcAttr{Setpgid: true})) {
+		return nil, errors.New("relay.start: unsupported cmd field (Stdin, ExtraFiles, WaitDelay or a SysProcAttr other than Setpgid): a relaunch would not reproduce it")
 	}
 	owns, kill := front.owns, front.kill
 	if owns == nil {
@@ -165,8 +177,11 @@ func (front *browserAdminRelay) launch(t *testing.T, ctx context.Context, cmd *e
 		if err := child.Start(); err != nil {
 			return nil, err
 		}
-		// Group-kill protocol: the group is signalled exactly once and never after its leader was reaped for good, so a
-		// recycled PGID is never hit. The reaper sweeps leftovers the moment the leader exits; cleanup covers a live leader.
+		// Group-kill protocol: the group is signalled exactly once. The reaper sweeps leftovers right after child.Wait() has
+		// reaped the leader, so the signal is sent AFTER the reap. That is safe while any group member lives (Linux does not
+		// reuse a pid that is still some process's PGID); if the whole group already exited, kill(-pgid) is ESRCH, and hitting a
+		// foreign group would need the pid space to wrap inside that window. Accepted for this test host (#147 TH-1); signalling
+		// before the reap needs waitid(WNOWAIT), which os/exec does not expose. Cleanup covers a live leader.
 		pgid := child.Process.Pid
 		var mu sync.Mutex
 		killed := false
@@ -241,7 +256,6 @@ func processGroupListens(pgid, port int) (bool, error) { return procListens("/pr
 
 // procListens is processGroupListens over an injectable /proc root, so the no-/proc branch is testable without a stub probe.
 func procListens(root string, pgid, port int) (bool, error) {
-	root = "/proc" // RED stub: the root is not honoured yet
 	tcp4, err := os.ReadFile(root + "/net/tcp")
 	if err != nil {
 		return false, fmt.Errorf("listener ownership proof needs /proc: %w", err)
@@ -897,19 +911,16 @@ func TestBrowserAdminRelayForwardsSpoofableHeaders(t *testing.T) {
 		_ = response.Body.Close()
 		return seen.Load().(http.Header)
 	}
+	// CONTROL (TH-5): the relay's Rewrite minus the restoreForwardedHeaders call, so it cannot drift from the relay. Go's
+	// Rewrite keeps no inbound hop headers, hence the spoofed Forwarded / X-Forwarded-Host never reach the upstream.
 	stock := httptest.NewServer(&httputil.ReverseProxy{Rewrite: func(r *httputil.ProxyRequest) {
 		r.SetURL(target)
 		r.Out.Host = r.In.Host
-		for _, name := range []string{"X-Forwarded-For", "X-Forwarded-Proto"} {
-			if values, ok := r.In.Header[name]; ok {
-				r.Out.Header[name] = values
-			}
-		}
 	}})
 	t.Cleanup(stock.Close)
 	got := send(stock.URL)
 	if len(got["X-Forwarded-Host"]) != 0 || len(got["Forwarded"]) != 0 {
-		t.Fatalf("red witness broken: the XFF/XFP-only proxy was expected to drop the spoofed headers, got %v", got)
+		t.Fatalf("red witness broken: the control (relay without restoreForwardedHeaders) was expected to drop the spoofed headers, got %v", got)
 	}
 	relay := newBrowserAdminRelay(t)
 	relay.target.Store(target)
@@ -926,7 +937,7 @@ func TestBrowserAdminRelayForwardsSpoofableHeaders(t *testing.T) {
 // that front hands Next the attacker's Forwarded / X-Forwarded-* headers and malformed query exactly as sent.
 // RED: a stock ReverseProxy Rewrite (SetURL only) strips Forwarded / X-Forwarded-* and drops an unparsable query, which is
 // why any front that does not copy them back makes those negatives vacuous.
-// GREEN: the real browserFront, per engine (chromium = direct origin, webkit = TLS front), delivers every header and the raw
+// GREEN: the real browserFront under webkit (the TLS front; chromium has no hop to test) delivers every header and the raw
 // query byte for byte; the webkit front still adds X-Forwarded-Proto: https when the client sent none (the TLS hop it imitates).
 // No browser binary is launched: the engine only selects browserFront's branch, as in TestBrowserAdminRelayPreservesOriginAndTLSHeaders.
 func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
@@ -972,28 +983,24 @@ func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
 	if len(got.header["X-Forwarded-Host"]) != 0 || len(got.header["Forwarded"]) != 0 || got.query == query {
 		t.Fatalf("red witness broken: a stock Rewrite proxy was expected to drop the spoofed headers and raw query, got %v %q", got.header, got.query)
 	}
-	for _, engine := range []string{"chromium", "webkit"} {
-		t.Run(engine, func(t *testing.T) {
-			t.Setenv("LC_BROWSER_ENGINE", engine)
-			front, client := browserFront(t, target.Host), http.DefaultClient
-			if engine == "webkit" {
-				if !strings.HasPrefix(front, "https://") {
-					t.Fatalf("webkit browserFront is not the TLS front: %s", front)
-				}
-				client = browserAdminTLSClient(t)
-			}
-			got := send(t, client, front, sent)
-			if got.query != query {
-				t.Fatalf("%s front changed the query: sent %q, Next saw %q", engine, query, got.query)
-			}
-			for name, want := range sent {
-				if strings.Join(got.header[name], "\x00") != strings.Join(want, "\x00") {
-					t.Fatalf("%s reached Next through the %s front as %q, want %q", name, engine, got.header[name], want)
-				}
-			}
-			if got = send(t, client, front, http.Header{}); engine == "webkit" && got.header.Get("X-Forwarded-Proto") != "https" {
-				t.Fatalf("WebKit front no longer marks its TLS hop: X-Forwarded-Proto=%q", got.header.Get("X-Forwarded-Proto"))
-			}
-		})
+	// TH-6: under chromium browserFront returns the direct origin (no proxy hop), so a chromium subtest here would only talk to the
+	// upstream and prove nothing; the witness runs against the one real hop, the WebKit TLS front.
+	t.Setenv("LC_BROWSER_ENGINE", "webkit")
+	front := browserFront(t, target.Host)
+	if !strings.HasPrefix(front, "https://") {
+		t.Fatalf("webkit browserFront is not the TLS front: %s", front)
+	}
+	client := browserAdminTLSClient(t)
+	got = send(t, client, front, sent)
+	if got.query != query {
+		t.Fatalf("webkit front changed the query: sent %q, Next saw %q", query, got.query)
+	}
+	for name, want := range sent {
+		if strings.Join(got.header[name], "\x00") != strings.Join(want, "\x00") {
+			t.Fatalf("%s reached Next through the webkit front as %q, want %q", name, got.header[name], want)
+		}
+	}
+	if got = send(t, client, front, http.Header{}); got.header.Get("X-Forwarded-Proto") != "https" {
+		t.Fatalf("WebKit front no longer marks its TLS hop: X-Forwarded-Proto=%q", got.header.Get("X-Forwarded-Proto"))
 	}
 }

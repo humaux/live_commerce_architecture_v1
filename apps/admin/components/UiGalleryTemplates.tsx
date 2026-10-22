@@ -216,7 +216,13 @@ export function GalleryUpload({ t, value, onChange, disabled = false }: { t: Tem
   }, []);
   useEffect(() => {
     if (disabled || !items.some(item => item.status === "uploading")) return;
-    const timer = setTimeout(() => write(items.map(item => item.status === "uploading" ? { ...item, progress: 100, status: "done" } : item)), 700);
+    const finish = () => write(items.map(item => item.status === "uploading" ? { ...item, progress: 100, status: "done" } : item));
+    // Gallery test seam (#147 TH-13): while window.__lcHoldUpload is set the simulated transfer waits for lc-gallery-upload-release instead of its timer.
+    if ((window as unknown as { __lcHoldUpload?: boolean }).__lcHoldUpload) {
+      window.addEventListener("lc-gallery-upload-release", finish, { once: true });
+      return () => window.removeEventListener("lc-gallery-upload-release", finish);
+    }
+    const timer = setTimeout(finish, 700);
     return () => clearTimeout(timer);
     // The serialized queue is the complete dependency; controls remain disabled while the form saves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
