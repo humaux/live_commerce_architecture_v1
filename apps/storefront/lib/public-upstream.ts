@@ -69,8 +69,8 @@ export async function discardBody(response: Response): Promise<void> {
   }
 }
 
-// Whole body up to `max` bytes, or null when it is longer or the stream fails mid-read (#116): callers answer the documented
-// 503 / "down" instead of letting a reset connection escape as a 500. The stream is cancelled in both cases.
+// Whole body up to `max` bytes, or null when it is longer or the stream fails mid-read (#116): callers answer their own retryable
+// 503 / "down" (each route's header comment states it; no wider contract exists) instead of letting a reset connection escape as a 500. The stream is cancelled in both cases.
 export async function readBounded(body: ReadableStream<Uint8Array> | null, max: number): Promise<Uint8Array | null> {
   if (!body) return null;
   const reader = body.getReader();

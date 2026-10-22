@@ -39,3 +39,18 @@ test("no writes redirected; resolution failures fail closed; unknown hosts keep 
   }
   assert.equal(await canonicalRedirect(request("GET"), env, async () => new Response(null, { status: 404 })), null);
 });
+// #147 SF-2: the resolver answers 200 JSON, then the body fails mid-read (also after partial data): fail closed, uncached, retryable.
+test("a body-read error from the resolver is a 503 with no-store and Retry-After", async () => {
+  const request = new Request(source + "/en", { headers: { host: "store.platform.example" } });
+  const head = new TextEncoder().encode('{"primary_origin":"https://sh');
+  const pulls = [
+    (c) => c.error(new Error("socket reset")),
+    (() => { let sent = false; return (c) => (sent ? c.error(new Error("socket reset")) : (sent = true, c.enqueue(head))); })(),
+  ];
+  for (const pull of pulls) {
+    const response = await canonicalRedirect(request, env, async () => new Response(new ReadableStream({ pull }), { status: 200, headers: { "content-type": "application/json" } }));
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.equal(response.headers.get("retry-after"), "5");
+  }
+});
