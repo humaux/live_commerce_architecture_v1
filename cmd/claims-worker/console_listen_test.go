@@ -2,7 +2,8 @@
 // claims_worker_ready) when its address cannot be bound, and a clean Shutdown must not count as a failure.
 // #107: run()'s wiring after the bind — a later Serve failure cancels the run and exits with its own token
 // (claims_worker_console_failed, never claims_worker_start_failed); a clean Shutdown keeps the River result.
-// Depends on: startConsoleServer, serveConsole, superviseConsole, exitError (main.go), jobqueue errors, net/http,
+// review-148 P1-1: in-flight bridge requests are cancelled by the run ctx and the console join at shutdown is bounded.
+// Depends on: newConsoleServer, joinConsole, startConsoleServer, serveConsole, superviseConsole, exitError (main.go), jobqueue errors, net/http,
 // loopback TCP only (MOCK tier, no database). The binary-level bind case: tests/foundation/claims_worker_console_process_test.go.
 // Used by: go test ./cmd/claims-worker (Foundation unit shard).
 package main
@@ -12,6 +13,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -105,5 +107,55 @@ func TestConsoleCleanShutdownKeepsRunResult(t *testing.T) {
 		if got := exitError(nil, tc.in); !errors.Is(got, tc.want) { // no bridge configured
 			t.Fatalf("exitError(no bridge, %v) = %v, want %v", tc.in, got, tc.want)
 		}
+	}
+}
+
+// review-148 P1-1: a bridge handler blocked on its request ctx (stand-in for a DB call under Console.mu) must be released
+// when the run ctx is cancelled, otherwise console.Run's stopAll waits on the mutex forever.
+func TestConsoleServerCancelsInflightRequestsWithRunCtx(t *testing.T) {
+	base, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	entered, released := make(chan struct{}), make(chan struct{})
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(entered)
+		<-r.Context().Done()
+		close(released)
+	})
+	srv := newConsoleServer("127.0.0.1:0", h, base)
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	serveConsole(srv, ln)
+	defer srv.Close()
+	go func() {
+		if resp, err := http.Get("http://" + ln.Addr().String() + "/"); err == nil {
+			resp.Body.Close()
+		}
+	}()
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("handler never entered")
+	}
+	cancel()
+	select {
+	case <-released:
+	case <-time.After(3 * time.Second):
+		t.Fatal("in-flight handler not cancelled by the run ctx; shutdown would wait on Console.mu behind it")
+	}
+}
+
+func TestJoinConsoleIsBounded(t *testing.T) {
+	var stuck sync.WaitGroup
+	stuck.Add(1)
+	defer stuck.Done()
+	start := time.Now()
+	if joinConsole(&stuck, 100*time.Millisecond) || time.Since(start) > 2*time.Second {
+		t.Fatal("join of a stuck console.Run must give up at the bound")
+	}
+	var done sync.WaitGroup
+	if !joinConsole(&done, time.Second) {
+		t.Fatal("an empty join must return at once")
 	}
 }
