@@ -34,15 +34,15 @@ export function browserRequirements(mode, source, extraEnv = '') {
  * `// lc:webkit=front-only` (only browserFront's TLS branch, no browser binary) or `// lc:webkit=browser`; undeclared throws (TH-7, #147). */
 function usesWebKit(source) {
   if (/\bwebkit\.executablePath\(\)/.test(source)) return true;
+  const marker = source.match(/^\/\/ lc:webkit=(front-only|browser)\b/m)?.[1];
+  if (marker) return marker === 'browser'; // an explicit declaration beats inference (a front-only file may Setenv "webkit" to select the TLS front)
   let driven = false;
   for (const m of source.matchAll(/\b\w+\.Setenv\(\s*"LC_BROWSER_ENGINE"\s*,\s*([^)]*?)\s*\)/g)) {
     if (m[1] === '"webkit"') return true;
     if (!/^"[a-z]+"$/.test(m[1])) driven = true;
   }
-  if (!driven) return false;
-  const marker = source.match(/^\/\/ lc:webkit=(front-only|browser)\b/m);
-  if (!marker) throw new Error('variable-driven LC_BROWSER_ENGINE needs a "// lc:webkit=front-only|browser" marker: the WebKit coverage scan cannot see which engine it launches');
-  return marker[1] === 'browser';
+  if (driven) throw new Error('variable-driven LC_BROWSER_ENGINE needs a "// lc:webkit=front-only|browser" marker: the WebKit coverage scan cannot see which engine it launches');
+  return false;
 }
 /** Assert explicit WebKit commands and selected mixed Go test roots receive WebKit dependencies. */
 export function assertWebKitCoverage(source, testSources) {
