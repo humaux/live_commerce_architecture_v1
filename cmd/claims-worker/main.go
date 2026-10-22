@@ -393,7 +393,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 			<-unsubscribed
 			return errWorkerRoutes
 		}
-		consoleServer := newConsoleServer(c.consoleAddr, console.Handler(), pollCtx)
+		consoleServer := newConsoleServer(c.consoleAddr, console.Handler(), context.Background())
 		failed, err := startConsoleServer(consoleServer)
 		if err != nil {
 			// Required listener unavailable: never log claims_worker_ready (#83).
