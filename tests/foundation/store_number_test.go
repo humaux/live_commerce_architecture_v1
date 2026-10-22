@@ -88,18 +88,13 @@ func TestStoreDomainsNumericCandidateRetryAndBound(t *testing.T) {
 			}
 			// The foundation database is shared with every other test in the shard:
 			// an earlier test (or an earlier run) may already own one of these PRNG
-			// draws. Model that explicitly for the first draw so #147's 23505 on
-			// stores_handle_unique can never come back. ON CONFLICT keeps the guard
-			// idempotent when such a row already exists.
-			if _, err := tx.Exec(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency,handle) VALUES($1,$2,'Preexisting handle owner','TWD',$3) ON CONFLICT (handle) WHERE handle IS NOT NULL DO NOTHING`, s.f.tenant, randomUUID(), candidates[0]); err != nil {
-				t.Fatal(err)
-			}
+			// draws. ON CONFLICT turns claiming it into a no-op instead of a 23505;
+			// the committed row still blocks the allocator through the same EXISTS
+			// check production uses.
 			n := 1
 			if exhausted {
 				n = 50
 			}
-			// Another test in the shared database may already own a draw, so claiming
-			// it is a no-op instead of a 23505; it already blocks the allocator.
 			for _, c := range candidates[:n] {
 				if _, err := tx.Exec(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency,handle) VALUES($1,$2,'Occupied number','TWD',$3) ON CONFLICT (handle) WHERE handle IS NOT NULL DO NOTHING`, s.f.tenant, randomUUID(), c); err != nil {
 					t.Fatal(err)
@@ -107,6 +102,16 @@ func TestStoreDomainsNumericCandidateRetryAndBound(t *testing.T) {
 			}
 			want := candidates[2]
 			if !exhausted {
+				// If a store already owns candidates[1], the stores-handle check blocks it
+				// and an allocator that ignored store_handle_taken would still pass: fail
+				// loudly instead of silently losing the platform-origin coverage.
+				var owned bool
+				if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM control.stores WHERE handle=$1)`, candidates[1]).Scan(&owned); err != nil {
+					t.Fatal(err)
+				}
+				if owned {
+					t.Fatalf("candidates[1] %q is already a committed store handle; the platform-origin blocker cannot be exercised", candidates[1])
+				}
 				// A still-serving platform origin also blocks reuse, even without a stores.handle owner.
 				// A prior test may already own this origin; then it already blocks the draw.
 				if _, err := tx.Exec(ctx, `INSERT INTO control.storefront_domains(tenant_id,store_id,origin,state,ownership_verified_at,tls_verified_at,valid_until,evidence_ref) VALUES($1,$2,$3,'ACTIVE',now(),now(),now()+interval '1 day','platform-subdomain') ON CONFLICT (origin) DO NOTHING`, s.f.tenant, s.f.store, "https://"+candidates[1]+".example.com"); err != nil {
@@ -226,8 +231,9 @@ func TestStoreDomainsNumericConcurrentCandidateCollision(t *testing.T) {
 }
 
 // seededConn borrows a connection from pool with its PRNG seeded with seed and returns the
-// cleanup the caller must defer. The seed is session state, so the connection lifecycle here
-// decides whether the next borrower inherits this deterministic sequence (#147).
+// cleanup the caller must defer. setseed is session state that ROLLBACK does not undo, so the
+// connection is hijacked from the pool and closed: it never goes back, and the next borrower
+// cannot inherit this deterministic sequence (#147).
 func seededConn(t *testing.T, pool *pgxpool.Pool, seed float64) (*pgx.Conn, func()) {
 	t.Helper()
 	ctx := context.Background()
@@ -235,19 +241,20 @@ func seededConn(t *testing.T, pool *pgxpool.Pool, seed float64) (*pgx.Conn, func
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := conn.Exec(ctx, `SELECT setseed($1)`, seed); err != nil {
-		conn.Release()
+	raw := conn.Hijack()
+	if _, err := raw.Exec(ctx, `SELECT setseed($1)`, seed); err != nil {
+		raw.Close(ctx)
 		t.Fatal(err)
 	}
-	return conn.Conn(), func() { conn.Release() }
+	return raw, func() { raw.Close(ctx) }
 }
 
 // TestStoreDomainsNumericSeedDoesNotLeakThroughPool pins a pool to one connection, runs the
 // fixture's seeded work and gives the connection straight back. setseed is session state that
-// ROLLBACK does not undo, so with the old release pattern the next borrower sees this fixture's
-// deterministic stream (draw 52 after the 51 candidate draws) and later commits its handles,
-// which is how #147 came back on a rerun. The expectation is computed on a connection this
-// test hijacks and closes itself, so the oracle cannot pollute a pool.
+// ROLLBACK does not undo, so if the fixture releases the connection the next borrower sees this
+// fixture's deterministic stream (draw 52 after the 51 candidate draws) and later commits its
+// handles, which is how #147 came back on a rerun. The expectation is computed on a connection
+// this test hijacks and closes itself, so the oracle cannot pollute a pool.
 func TestStoreDomainsNumericSeedDoesNotLeakThroughPool(t *testing.T) {
 	s := sdSetup(t)
 	ctx := context.Background()
