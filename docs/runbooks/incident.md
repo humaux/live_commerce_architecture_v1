@@ -1,7 +1,7 @@
 <!--
 File: docs/runbooks/incident.md
 Purpose: 故障处置运行手册 — 日志位置、分诊流程、按服务诊断、支付 UNKNOWN、安全事件、升级规则与禁止事项。
-Runs as/in: 文档（命令在部署主机上以 root 执行）。
+Runs as/in: 文档（运维人员以可 sudo 的用户登录部署主机，需要 root 的命令显式写 sudo）。
 Reads env / secrets: 无（本文不含密钥；诊断包会做密钥扫描）。
 Used by: 值班/运维/owner；deploy.sh 失败提示与 watchdog 告警指向此处。
 Depends on: deploy/scripts/{watchdog,collect-diagnostics,preflight,pg-ops,prune-docker}.sh, deploy/compose.yml。
@@ -12,7 +12,7 @@ Change rules: 新增服务或新日志标记时同步 §1 表格。
 
 所有 `docker compose` 命令都要通过部署脚本使用的相同参数执行。建议在 shell 中定义：
 ```sh
-dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /etc/live-commerce/compose.env -f /opt/live-commerce/deploy/compose.yml "$@"; }
+dc() { sudo docker compose --project-directory /opt/live-commerce/deploy --env-file /etc/live-commerce/compose.env -f /opt/live-commerce/deploy/compose.yml "$@"; }
 ```
 `dc` 从 compose.env 读取 `IMAGE_TAG`。deploy.sh 在每次 `up -d` 之前把要运行的 tag 写进去，所以 `dc up`/`dc run migrate` 使用的就是当前部署的镜像。
 **不要在 shell 里 `export IMAGE_TAG=…`**（环境变量优先于文件），也不要手工改这一行；看门狗 W10 会报告容器 tag 与文件不一致。
@@ -28,7 +28,7 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
 | payment-worker-* | `dc logs payment-worker-sandbox` | slog | 正常：`payment_worker_ready`；其他标记同上 |
 | meta-worker | `dc logs meta-worker` | slog | 正常：`meta_worker_ready`；异常：`worker_start_diagnostic` |
 | claims-worker（profile claims） | `dc logs claims-worker` | slog | 正常：`claims_worker_ready` 和一行 `claims_worker_routes`；异常：`claims_worker_invalid_config`、`claims_worker_database_unavailable`、`claims_worker_routes_unavailable`、`claims_worker_start_failed`、`claims_worker_console_failed`（评论桥监听在绑定后停止服务，进程退出；#107）。**它是唯一向 Meta 用户发送私信的进程**：怀疑误发时先 `dc stop claims-worker` |
-| stripe-admin / meta-admin（一次性，profile ops） | `deploy/scripts/ops-admin.sh ...`，审计行在 `$LC_STATE_DIR/ops-admin.log` | 只有 JSON 结果行 | 失败只输出固定码：`stripeadmin: config\|database\|rejected\|provider`、`meta_admin_usage\|config\|database\|register_failed\|version_conflict`；`database` = 登录/连接问题（先看 provision-logins 的 DRIFT）
+| stripe-admin / meta-admin（一次性，profile ops） | `sudo deploy/scripts/ops-admin.sh ...`，审计行在 `$LC_STATE_DIR/ops-admin.log` | 只有 JSON 结果行 | 失败只输出固定码：`stripeadmin: config\|database\|rejected\|provider`、`meta_admin_usage\|config\|database\|register_failed\|version_conflict`；`database` = 登录/连接问题（先看 provision-logins 的 DRIFT）
 | postgres | `dc logs postgres` | stderr（`%m [%p] user@db/app`） | 慢 SQL > 500 ms、锁等待、DDL、检查点；**不记录绑定参数** |
 | migrate | `dc logs migrate` | 固定标记 | 成功：`migrate_applied`；异常：`migrate_busy`、`migrate_failed sqlstate=…`、`migrate_invalid_config` |
 | provision-logins | `dc logs provision-logins` | 每个登录角色一行 | `auth=ok`、`DRIFT ...`、`ready.*=t/f`、`summary ... result=ok` |
@@ -38,28 +38,28 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
 
 ## 2. 分诊流程
 
-1. 看看门狗：`deploy/scripts/watchdog.sh`。它会输出 W1–W10 的 PASS/FAIL，可以快速定位问题类别。
+1. 看看门狗：`sudo deploy/scripts/watchdog.sh`。它会输出 W1–W10 的 PASS/FAIL，可以快速定位问题类别。
    - W10（镜像 tag 漂移）：某个 `lc-*` 容器运行的 tag 与 compose.env 的 `IMAGE_TAG` 不同，说明有人绕过 deploy.sh 起了容器，
      或者部署中途失败。**不要**直接 `dc up -d`（它会按文件里的 tag 重建容器）：先看 `deployments.log` 最后一行和 `dc ps`，
-     再按 deploy.md §5 用 `deploy.sh upgrade|app-rollback <tag>` 收敛。
+     再按 deploy.md §5 用 `sudo deploy/scripts/deploy.sh upgrade|app-rollback <tag>` 收敛。
 2. `dc ps`：查看状态、健康状况和重启次数。
 3. 健康检查：`curl -fsS https://<api>/healthz`；`docker inspect -f '{{.State.Health.Status}}' <容器>`。
 4. 查看对应服务的日志（§1）。
 5. 打包现场：
    ```sh
-   deploy/scripts/collect-diagnostics.sh --since 2h
+   sudo deploy/scripts/collect-diagnostics.sh --since 2h
    ```
    诊断包路径为 `/var/tmp/lc-diag-*.tar.gz`（0600），已经做过密钥扫描，但仍可能含 IP 和域名。只发给处理这次事故的人。
 
 ## 3. 按服务诊断
 
 ### caddy
-- 证书申请失败：检查 DNS 是否指向本机（`preflight.sh --online` 的 P14）、80/443 是否对外可达、是否触发了 ACME 频率限制（演练时改用 staging CA）。
+- 证书申请失败：检查 DNS 是否指向本机（`sudo deploy/scripts/preflight.sh --online` 的 P14）、80/443 是否对外可达、是否触发了 ACME 频率限制（演练时改用 staging CA）。
 - 502/503：上游挂掉。Caddy 会对 502/503/504 统一返回 503 并带 `Retry-After: 60`。先检查 api/admin/storefront。
 - 配置改动后热加载：`dc exec caddy caddy reload --config /etc/caddy/Caddyfile --address unix//run/caddy/admin.sock`。
 
 ### api（启动失败时只打印 `api stopped`）
-1. `deploy/scripts/preflight.sh --online`：它离线复刻了 api 的配置规则，会指出具体的规则号和变量名。
+1. `sudo deploy/scripts/preflight.sh --online`：它离线复刻了 api 的配置规则，会指出具体的规则号和变量名。
 2. `dc run --rm -T --no-deps provision-logins`：检查登录角色、成员矩阵和就绪门禁。
 3. 如果启用了 identity，在边缘 netns 中测试 OIDC 发现：
    `dc exec caddy wget -q -O- "$LC_OIDC_ISSUER/.well-known/openid-configuration"`。
@@ -87,7 +87,7 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
   - `new_discarded`：job 被放弃，必须人工查看。支付 job 要走对账流程，见 §4。
 
 ### postgres
-- 磁盘满（W2）：先看下面的「磁盘满 / WAL 归档」一节。简要：先清理 Docker 镜像/构建缓存（`deploy/scripts/prune-docker.sh`），**不要手工删除 `wal/`**，它由 basebackup 负责清理。
+- 磁盘满（W2）：先看下面的「磁盘满 / WAL 归档」一节。简要：先清理 Docker 镜像/构建缓存（`sudo deploy/scripts/prune-docker.sh`），**不要手工删除 `wal/`**，它由 basebackup 负责清理。
 - 归档失败（W4）：检查 `${LC_BACKUP_DIR}/wal` 的权限（`0700 999:999`）和剩余空间；`dc logs postgres | grep archive`。
   已存在的同名同内容段会被视为成功；**不同内容的同名段**会持续失败，需要人工比对。
   PITR 切换后出现这种情况，说明数据目录不是用 `restore-pitr --promote` + `pitr-cutover` 放进来的（backup-restore.md §6）：
@@ -116,17 +116,17 @@ api 的 `/healthz` 一直返回 200（它不检查数据库），容器的 `/rea
 **先确认再动手**：`df -h / ${LC_BACKUP_DIR}`、`du -sh ${LC_BACKUP_DIR}/wal`、`ls ${LC_BACKUP_DIR}/wal | wc -l`（新配置下最多约 2880 个段文件 = 2 天 × 1440 个/天，压缩后通常远小于 1GB；实测：空闲库每个强制切换的段压缩后约 16.5–31 KB，原来 16 MiB；见 `output/ops-disk-guard/od-all.log`）。
 
 **恢复步骤（事故当时 owner 批准的顺序；涉及生产，先报告影响面再执行）**
-1. 先腾出能让容器启动的空间：`docker builder prune`（事故中释放 4.7G）。更安全的做法是 `deploy/scripts/prune-docker.sh`（只删旧的 `lc-*` 镜像标签和多余的构建缓存，保留运行中/上一个 tag）。
+1. 先腾出能让容器启动的空间：`sudo docker builder prune`（事故中释放 4.7G）。更安全的做法是 `sudo deploy/scripts/prune-docker.sh`（只删旧的 `lc-*` 镜像标签和多余的构建缓存，保留运行中/上一个 tag）。
 2. 启动 postgres 容器：`docker start <postgres 容器>`（或 `dc up -d postgres`），等崩溃恢复完成、`dc ps` 显示 healthy。
-3. 立刻做一份新的 base backup：`deploy/scripts/pg-ops.sh basebackup`。
+3. 立刻做一份新的 base backup：`sudo deploy/scripts/pg-ops.sh basebackup`。
 4. WAL 目录仍然占满时，按**最新 base 的 `.backup` 标签文件名**清理它之前的归档（事故中：`pg_archivecleanup /backup/wal 0000000100000013000000C9.00000028.backup`，磁盘占用降到 14%）。
    在 pg-ops 容器里执行，并带上 `-b -x .gz`，这样压缩段、旧的明文段和过期的 `.backup` 标签一起清理：
    ```sh
    dc --profile ops run --rm --no-deps -T pg-ops -c 'pg_archivecleanup -b -x .gz /backup/wal <最新 base 的标签文件名，形如 0000000100000013000000C9.00000028.backup>'
    ```
    最新 base 的标签文件名：`ls ${LC_BACKUP_DIR}/wal/*.backup | tail -n1`（它必须是你刚做的那份 base）。清理之后更早的 base 失去了 WAL 链，不能再用于 PITR，之后的 basebackup 保留策略会把它们移除。
-5. 做一份逻辑备份：`deploy/scripts/pg-ops.sh backup --tag post-incident`（事故中成功）。
-6. 复核：`deploy/scripts/watchdog.sh` 全 PASS；`pg_stat_archiver` 的 `failed_count` 不再增长；`ls ${LC_BACKUP_DIR}/wal | tail` 里的新段是 `.gz`。
+5. 做一份逻辑备份：`sudo deploy/scripts/pg-ops.sh backup --tag post-incident`（事故中成功）。
+6. 复核：`sudo deploy/scripts/watchdog.sh` 全 PASS；`pg_stat_archiver` 的 `failed_count` 不再增长；`ls ${LC_BACKUP_DIR}/wal | tail` 里的新段是 `.gz`。
 - **不要**手工删除 `wal/` 里的段、`rm -rf wal/*`，也不要在没有新 base 的情况下清理（会破坏 PITR 链）。
 
 **未做（owner 决定，已建议）**：①把 `/var/backups` 放到独立的持久盘（现在与 Docker 根盘是同一块盘，备份写满会拖垮 DB）；②每日 dump 的异地副本（例如 GCS bucket，需加密，见 backup-restore.md §8）。
@@ -157,10 +157,10 @@ api 的 `/healthz` 一直返回 200（它不检查数据库），容器的 `/rea
 | 事件 | 处置 |
 |---|---|
 | `commerce_account_keys_json` 或 replay key 泄露（涉及真实资金） | 立即 `dc stop payment-worker-live`，通知 owner，按 deploy.md §7 轮换（追加新 key），评估平台 Stripe 凭据是否需要在 Stripe 侧轮换 |
-| Stripe webhook 签名 keyring 或某端点的 `whsec_` 泄露 | 在 Stripe 后台滚动该端点的签名密钥，用 `ops-admin.sh stripe-admin webhook ... STRIPE_WEBHOOK_SECRET_NEXT` 登记新密钥（deploy.md §6.1 步骤 3），必要时追加 keyring key（deploy.md §7）；`STRIPE_SECRET_KEY` 泄露 → 在 Stripe 后台撤销并 `stripe-admin rotate` |
-| Meta Page token 泄露 | 在 Meta 后台撤销 token，`dc stop claims-worker`，用 `ops-admin.sh meta-admin page-token` 登记新 token（`--expected-version` = 当前版本），确认后再启动 |
+| Stripe webhook 签名 keyring 或某端点的 `whsec_` 泄露 | 在 Stripe 后台滚动该端点的签名密钥，用 `sudo deploy/scripts/ops-admin.sh stripe-admin webhook ...` 登记新密钥（无回显提示输入 `STRIPE_WEBHOOK_SECRET_NEXT`，或用 root 属主的 `STRIPE_WEBHOOK_SECRET_NEXT_FILE`，绝不写成命令行参数或 `sudo VAR=…`；deploy.md §0 与 §6.1 步骤 3），必要时追加 keyring key（deploy.md §7）；`STRIPE_SECRET_KEY` 泄露 → 在 Stripe 后台撤销并执行 `sudo deploy/scripts/ops-admin.sh stripe-admin rotate`（无回显提示或 `STRIPE_SECRET_KEY_FILE`） |
+| Meta Page token 泄露 | 在 Meta 后台撤销 token，`dc stop claims-worker`，用 `sudo deploy/scripts/ops-admin.sh meta-admin page-token` 登记新 token（无回显提示输入，`--expected-version` = 当前版本），确认后再启动 |
 | BFF key 泄露 | 轮换这一对 key（api + admin 或 api + storefront），同时重启 |
-| 数据库口令泄露 | 轮换对应的 `pw_<login>`，执行 `--rederive`，重跑 provision 并重启相关服务；超级用户口令用 `deploy/scripts/pg-ops.sh rotate-superuser`（deploy.md §7，**禁止**手工 `ALTER ROLE`：`log_statement='ddl'` 会把新口令写进日志） |
+| 数据库口令泄露 | 轮换对应的 `pw_<login>`，执行 `sudo deploy/scripts/secrets-init.sh --rederive`，重跑 provision 并重启相关服务；超级用户口令用 `sudo deploy/scripts/pg-ops.sh rotate-superuser`（deploy.md §7，**禁止**手工 `ALTER ROLE`：`log_statement='ddl'` 会把新口令写进日志） |
 | 诊断包、日志或备份外泄 | 视为 PII 事件，通知 owner（O8） |
 
 ## 6. 升级规则与禁止事项

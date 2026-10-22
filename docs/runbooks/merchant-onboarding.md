@@ -1,7 +1,7 @@
 <!--
 File: docs/runbooks/merchant-onboarding.md
 Purpose: 运维人员接入第一个真实商家的步骤（店铺、Stripe 账户、Meta Page、域名），并逐项标出只有 owner 能完成的前置条件和当前的工程缺口。
-Runs as/in: 文档（运维人员在部署主机上以 root 执行其中命令；商家自己的操作在后台 UI 完成）。
+Runs as/in: 文档（运维人员以可 sudo 的用户登录部署主机，需要 root 的命令显式写 sudo；商家自己的操作在后台 UI 完成）。
 Reads env / secrets: 无。命令通过 deploy/scripts/ops-admin.sh 提示输入运维输入（STRIPE_SECRET_KEY、STRIPE_ACCOUNT_ID、STRIPE_WEBHOOK_SECRET、META_PAGE_ACCESS_TOKEN），
   这些输入不写入仓库或配置文件（LIVE 时由 owner 写入服务器上的一次性 `<NAME>_FILE` 传输文件，用后删除）；本文不含任何密钥值。
 Used by: 运维/owner/集成者；docs/runbooks/deploy.md §6 链接到此。
@@ -29,8 +29,8 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 
 ## 1. 栈必须先就绪
 
-按 deploy.md §1–§3 部署；`deploy/scripts/preflight.sh --online` 全部 PASS，`docker compose ps` 全部 healthy，
-`deploy/scripts/watchdog.sh` 无 FAIL。`LC_ONBOARDING_ENABLED=1` 且 `LC_ONBOARDING_CURRENCIES` 含商家币种（例如 `TWD`）。
+按 deploy.md §1–§3 部署；`sudo deploy/scripts/preflight.sh --online` 全部 PASS，`docker compose ps` 全部 healthy，
+`sudo deploy/scripts/watchdog.sh` 无 FAIL。`LC_ONBOARDING_ENABLED=1` 且 `LC_ONBOARDING_CURRENCIES` 含商家币种（例如 `TWD`）。
 
 ## 2. 店铺
 
@@ -38,16 +38,17 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
    其他成员不会自动获得退款权限。
 2. 运维记录 ID（只读查询，通过 `lc_psql`，见 lib.sh）：
    ```sh
-   source deploy/scripts/lib.sh; lc_load_env "$LC_COMPOSE_ENV"
-   lc_psql <<< "SELECT tenant_id, store_id, principal_id, created_at FROM ops.audit_events WHERE action = 'merchant.store_created' ORDER BY created_at DESC LIMIT 5;"
+   sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql' onboarding-store-ids <<'SQL'
+   SELECT tenant_id, store_id, principal_id, created_at FROM ops.audit_events WHERE action = 'merchant.store_created' ORDER BY created_at DESC LIMIT 5;
+   SQL
    ```
    后面所有 `ops-admin.sh` 命令都需要这三个 ID，`--principal` 必须是该租户的 owner 成员。
 
 ## 3. Stripe 账户（SANDBOX）
 
 前提 O4，`LC_STRIPE_ENABLED=1`，`payments-sandbox` 在运行。完整步骤见 deploy.md §6.1；顺序是：
-`stripe-admin register` → 在 Stripe 测试模式创建 webhook 端点（API 版本 `2026-08-26.dahlia`，8 个事件，含 4 个退款事件）→
-`stripe-admin webhook` → `STRIPE_SANDBOX=1 stripe-admin qualify` → `stripe-admin method`。
+`sudo deploy/scripts/ops-admin.sh stripe-admin register` → 在 Stripe 测试模式创建 webhook 端点（API 版本 `2026-08-26.dahlia`，8 个事件，含 4 个退款事件）→
+`sudo deploy/scripts/ops-admin.sh stripe-admin webhook` → `sudo STRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh stripe-admin qualify` → `sudo deploy/scripts/ops-admin.sh stripe-admin method`。
 商家不能自助登记 Stripe（把平台 key 绑到任意店铺会混同资金，contracts/stripe-psp-v1.md D1）。
 **LIVE**：不在本节；按 `docs/runbooks/stripe-live.md`（逐店审批 → LIVE 探测 → canary → 放开），每一步是单独的 `ops-admin.sh` 命令和审计行。
 **验收（SANDBOX，owner 执行）**：买家用 Stripe 测试卡 4242 完成支付，订单变为已支付；商家后台退款成功。工程侧此项为 NOT_RUN，MOCK 证据见 `tests/foundation` 的 SP/RF 系列。
@@ -55,9 +56,9 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 ## 4. Meta Page（评论入口 → 认领 → 私信）
 
 前提 O6。步骤见 deploy.md §6.3：`commerce_meta_apps_json` → `COMMERCE_META_WEBHOOK_ENABLED=1` + `meta` profile →
-`ops-admin.sh meta-admin route`（绑定 + 路由）→ `ops-admin.sh meta-admin page-token`（登记 Page token）→ 商家在后台把直播场次绑定到 Facebook 贴文/Instagram media（**G2 已关闭：开启 Studio/claims 并配置有效 label key 后挂载 claim-source；媒体开关可关闭，见下文与 deploy.md §6.3**）→ owner 批准后启用 `claims` profile。
+`sudo deploy/scripts/ops-admin.sh meta-admin route`（绑定 + 路由）→ `sudo deploy/scripts/ops-admin.sh meta-admin page-token`（登记 Page token）→ 商家在后台把直播场次绑定到 Facebook 贴文/Instagram media（**G2 已关闭：开启 Studio/claims 并配置有效 label key 后挂载 claim-source；媒体开关可关闭，见下文与 deploy.md §6.3**）→ owner 批准后启用 `claims` profile。
 
-**G1 已关闭（R1 裁决 F2）**：`ops-admin.sh meta-admin route` 创建/复用店铺的 facebook/instagram 绑定并激活 webhook 路由（deploy.md §6.3 第 6 步），
+**G1 已关闭（R1 裁决 F2）**：`sudo deploy/scripts/ops-admin.sh meta-admin route` 创建/复用店铺的 facebook/instagram 绑定并激活 webhook 路由（deploy.md §6.3 第 6 步），
 需要 owner 提供资产所有权证据的 sha256（`--proof`）。顺序：route → page-token → 认领来源（G2）。
 
 **G2 已关闭（R1 裁决 G2）**：部署默认 `COMMERCE_STUDIO_ENABLED=1`、`COMMERCE_CLAIMS_ENABLED=1`、`COMMERCE_STUDIO_MEDIA_ENABLED=0`，
@@ -75,7 +76,7 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 6. 「中断连接」会销毁已保存的 token、停用路由与绑定；评论即停止进入认领（API 无法读回 token，所以不向 Meta 发取消订阅，Meta 侧的订阅残留只会产生被隔离的事件）。一个主页只能连接到一间店铺（跨店返回 409，不透露对方）；已被其他店铺占有的主页需要运维通过 `meta-admin` 处理。
 7. 评论入口之外，**真实私信发送仍需 owner 批准并启用 `claims` profile**（见 §4 与 deploy.md §6.3 第 5 步）。
 
-`ops-admin.sh meta-admin page-token|route` 保留为 break-glass（商家卡片不可用、或需代商家修复时）。
+`sudo deploy/scripts/ops-admin.sh meta-admin page-token|route` 保留为 break-glass（商家卡片不可用、或需代商家修复时）。
 
 ## 5. 域名与证书
 
@@ -98,14 +99,13 @@ R5 起（迁移 0106，store-domains 单元）每间店铺自动获得自己的�
    改 handle 用 `store-admin handle-set <store-uuid> <handle>`：在同一个事务里改掉 `control.stores.handle`、把旧平台子域名 DETACHED、写入新的 ACTIVE `https://<handle>.<base>`（base 取自 `LC_STORE_BASE_DOMAIN`，未设置则拒绝）。店铺**发布过之后**需要显式 `--after-publish` 才会放行，避免误改已上线的买家地址。
 
    ```sh
-   set -a; . /etc/live-commerce/compose.env; set +a          # 取得 LC_STORE_HOST / LC_STORE_BASE_DOMAIN
    HOST="shop.example.com"                                    # 商家的自有域名（或平台 shop 主机名）
    VALID_UNTIL="$(date -u -d "$(echo | openssl s_client -connect "$HOST:443" -servername "$HOST" 2>/dev/null \
      | openssl x509 -noout -enddate | cut -d= -f2)" +%Y-%m-%dT%H:%M:%SZ)"
-   deploy/scripts/ops-admin.sh store-admin domain-bind --store <store-uuid> --origin "https://$HOST" \
+   sudo deploy/scripts/ops-admin.sh store-admin domain-bind --store <store-uuid> --origin "https://$HOST" \
      --evidence "<工单/检查引用>" --valid-until "$VALID_UNTIL"
-   deploy/scripts/ops-admin.sh store-admin status --store <store-uuid>   # domains[].serving 为 true 才算上线
-   deploy/scripts/ops-admin.sh store-admin handle-set <store-uuid> <handle> [--after-publish]   # 改店铺 handle（发布过需 --after-publish）
+   sudo deploy/scripts/ops-admin.sh store-admin status --store <store-uuid>   # domains[].serving 为 true 才算上线
+   sudo deploy/scripts/ops-admin.sh store-admin handle-set <store-uuid> <handle> [--after-publish]   # 改店铺 handle（发布过需 --after-publish）
    ```
 
 ### 5.2 owner 前置：边缘泛域名 DNS（仅 owner，工程无法代办）
@@ -122,7 +122,7 @@ Caddy `on_demand_tls`（deploy/caddy/Caddyfile）用 `ask http://api:8080/intern
 
 ## 6. 接入后检查
 
-- `deploy/scripts/watchdog.sh` 全部 PASS；`docker compose logs --since 10m claims-worker` 出现 `claims_worker_ready`（若启用）。
+- `sudo deploy/scripts/watchdog.sh` 全部 PASS；`docker compose logs --since 10m claims-worker` 出现 `claims_worker_ready`（若启用）。
 - 后台：店铺可见、Stripe 支付方式在结账页出现（沙箱）、订单/退款/发货页面可用。
 - `deployments.log` 与 `ops-admin.log`（`$LC_STATE_DIR`）记录了本次操作者和子命令（不含参数值）。
 
@@ -135,9 +135,9 @@ Caddy `on_demand_tls`（deploy/caddy/Caddyfile）用 `ask http://api:8080/intern
 
 1. 只读定位（`lc_psql`，见 lib.sh；邮箱在提示符输入）：
    ```sh
-   source deploy/scripts/lib.sh; lc_load_env "$LC_COMPOSE_ENV"
-   read -r -p 'email: ' EMAIL
-   lc_psql -v email="$EMAIL" <<< "SELECT principal_id, failed_count, disabled_at FROM identity.password_credentials WHERE email = lower(:'email');"
+   sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" &&
+     read -r -p "email: " EMAIL &&
+     lc_psql -v email="$EMAIL" <<< "SELECT principal_id, failed_count, disabled_at FROM identity.password_credentials WHERE email = lower(:'\''email'\'');"' onboarding-unlock-lookup
    ```
 2. 一个事务（迁移 owner），必须恰好更新 1 行，否则 `ROLLBACK`：
    ```sql

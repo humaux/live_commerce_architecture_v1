@@ -1,7 +1,7 @@
 <!--
 File: docs/runbooks/backup-restore.md
 Purpose: 备份与恢复运行手册 — 备份范围、计划与保留、诚实的 RPO/RTO、手工备份与校验、恢复演练、生产恢复顺序、PITR 提升、密钥备份、异地副本。
-Runs as/in: 文档（命令在部署主机/DB 主机上以 root 执行，数据库操作在一次性 pg-ops 容器内完成）。
+Runs as/in: 文档（运维人员以可 sudo 的用户登录部署主机/DB 主机，需要 root 的命令显式写 sudo；数据库操作在一次性 pg-ops 容器内完成）。
 Reads env / secrets: 无（本文不含任何密钥值）。
 Used by: 运维/owner；deploy/README.md 与 deploy.md 链接到此。
 Depends on: deploy/scripts/pg-ops.sh, deploy/postgres/ops/*, deploy/postgres/postgresql.conf（WAL 归档）。
@@ -44,10 +44,10 @@ Change rules: 恢复顺序遵循 架构.md §22.3；修改脚本默认行为（�
 ## 3. 手工备份与校验
 
 ```sh
-deploy/scripts/pg-ops.sh backup --tag manual        # 输出目录：${LC_BACKUP_DIR}/dumps/<UTC>_manual/
-deploy/scripts/pg-ops.sh basebackup                 # 同时执行 pg_verifybackup 和 WAL 清理
-deploy/scripts/pg-ops.sh list
-cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
+sudo deploy/scripts/pg-ops.sh backup --tag manual        # 输出目录：${LC_BACKUP_DIR}/dumps/<UTC>_manual/
+sudo deploy/scripts/pg-ops.sh basebackup                 # 同时执行 pg_verifybackup 和 WAL 清理
+sudo deploy/scripts/pg-ops.sh list
+sudo sh -c 'cd "${LC_BACKUP_DIR:-/var/backups/live-commerce}/dumps/<目录>" && sha256sum -c SHA256SUMS'
 ```
 - `manifest.json` 只记录元数据：tag、服务器版本、ledger 行数和最大版本、库大小、schema 列表、sha256、耗时。不含任何数据值。
 
@@ -55,13 +55,13 @@ cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
 
 - **每月**：恢复到一个新库，校验通过后删除。
   ```sh
-  deploy/scripts/pg-ops.sh restore-dump <UTC>_nightly --drop-after-verify
+  sudo deploy/scripts/pg-ops.sh restore-dump <UTC>_nightly --drop-after-verify
   ```
   `verify.sql` 检查三项：ledger 行数与 manifest 一致；支付、过期、Meta 三个就绪门禁为真；各 schema 的表数量。
 - **每季度**：PITR 演练。在 pg-ops 内的临时集群执行，完全不接触生产 PGDATA，并且关闭归档。
   临时集群的 socket 使用 peer 认证，所以超级用户口令轮换（deploy.md §7）之后，用更早的 base backup 也能演练。
   ```sh
-  deploy/scripts/pg-ops.sh restore-pitr --target-time '2026-09-28 03:00:00+00' --drill
+  sudo deploy/scripts/pg-ops.sh restore-pitr --target-time '2026-09-28 03:00:00+00' --drill
   ```
   把输出中的 `pitr_duration_seconds` 记为 RTO 样本。
 - **已知现象（I8）**：逻辑恢复后的库中 `live.media_plan_ready()` 一定为 false。
@@ -81,7 +81,7 @@ cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
    - 先恢复密钥（§7）。
    - 方案 A：逻辑恢复（先恢复到新库，再原子改名。旧库保留，不会被删除）。
      ```sh
-     LC_CONFIRM_REPLACE_LIVE=I_UNDERSTAND_FORWARD_ONLY deploy/scripts/pg-ops.sh restore-dump <目录> --replace-live
+     sudo LC_CONFIRM_REPLACE_LIVE=I_UNDERSTAND_FORWARD_ONLY deploy/scripts/pg-ops.sh restore-dump <目录> --replace-live
      ```
      如果目标是全新集群，加 `--fresh-cluster`（先导入角色），再执行 `docker compose run --rm -T --no-deps provision-logins` 为登录角色设置密码。
    - 方案 B：PITR，见 §6（`pitr-cutover` 已包含 provision-logins 和新的 base backup）。
@@ -105,7 +105,7 @@ W4 一直失败，pg_wal 持续增长直到磁盘写满（评审用固定镜像�
 
 1. **在临时集群里恢复并提升**（在线库不受影响，可以提前做）：
    ```sh
-   deploy/scripts/pg-ops.sh restore-pitr --target-time '<T>' --promote
+   sudo deploy/scripts/pg-ops.sh restore-pitr --target-time '<T>' --promote
    ```
    - 暂停在目标 → `verify.sql` → `pg_wal_replay_resume()`，恢复**恰好在目标处结束**并提升到新时间线（写出 `0000000N.history`）
      → `CHECKPOINT` → 把超级用户口令设为**当前**密钥文件的值（语句日志已在会话内关闭）→ 干净停止（状态 `shut down`）。
@@ -114,7 +114,7 @@ W4 一直失败，pg_wal 持续增长直到磁盘写满（评审用固定镜像�
    - 输出 `pitr_promoted_timeline=N`（N ≥ 2）。失败时不会留下 `PROMOTED` 标记，第 2 步会拒绝。
 2. **切换**（停机窗口；Caddy 在此期间返回 503 + `Retry-After`）：
    ```sh
-   LC_CONFIRM_REPLACE_LIVE=I_UNDERSTAND_FORWARD_ONLY deploy/scripts/pg-ops.sh pitr-cutover
+   sudo LC_CONFIRM_REPLACE_LIVE=I_UNDERSTAND_FORWARD_ONLY deploy/scripts/pg-ops.sh pitr-cutover
    ```
    脚本依次执行：
    - 检查临时集群：有 `PROMOTED` 标记、状态 `shut down`（不是 `shut down in recovery`）、时间线 > 1、没有 `recovery.signal`/`standby.signal`；
@@ -126,7 +126,7 @@ W4 一直失败，pg_wal 持续增长直到磁盘写满（评审用固定镜像�
    - `provision-logins`（登录角色口令恢复为当前密钥值，并检查就绪门禁）；
    - 立即做新的 base backup（新时间线的起点）。
    - **写入方保持停止**。
-3. 按 §5 第 4–7 步逐步开放；`deploy/scripts/deploy.sh first` 会拉起全部服务并执行部署后检查。之后 `watchdog.sh` 应全部 PASS（W4 failed=0）。
+3. 按 §5 第 4–7 步逐步开放；`sudo deploy/scripts/deploy.sh first` 会拉起全部服务并执行部署后检查。之后 `sudo deploy/scripts/watchdog.sh` 应全部 PASS（W4 failed=0）。
 4. 清理回退副本（owner 签字、新 base backup 已完成后）：
    ```sh
    dc --profile ops run --rm --no-deps -T -v <项目>_pgdata:/live pg-ops -c 'rm -rf -- /live/18/docker.pre-pitr-<UTC>'
@@ -144,7 +144,7 @@ W4 一直失败，pg_wal 持续增长直到磁盘写满（评审用固定镜像�
 - owner 维护 `/etc/live-commerce/secrets` 的**离线加密副本**（例如 age/gpg 加密后离线保存，工具属于新依赖，由 owner 决定）。
 - 每次轮换后都要更新这个副本。
 - **丢失 `commerce_account_keys_json` 会导致已存储的商户 PSP 凭据永久无法解密。**
-- 恢复步骤：还原文件，设置权限 `0440 root:10500`、目录 `0750`，然后执行 `preflight.sh`。
+- 恢复步骤：还原文件，设置权限 `0440 root:10500`、目录 `0750`，然后执行 `sudo deploy/scripts/preflight.sh`。
 
 ## 8. 异地副本（O3）
 
