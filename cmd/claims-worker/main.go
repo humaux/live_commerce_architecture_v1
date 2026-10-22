@@ -393,15 +393,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 			<-unsubscribed
 			return errWorkerRoutes
 		}
-		consoleServer := &http.Server{
-			Addr:              c.consoleAddr,
-			Handler:           console.Handler(),
-			ReadHeaderTimeout: 5 * time.Second,
-			ReadTimeout:       10 * time.Second,
-			WriteTimeout:      15 * time.Second,
-			IdleTimeout:       60 * time.Second,
-			MaxHeaderBytes:    16 << 10,
-		}
+		consoleServer := newConsoleServer(c.consoleAddr, console.Handler(), pollCtx)
 		failed, err := startConsoleServer(consoleServer)
 		if err != nil {
 			// Required listener unavailable: never log claims_worker_ready (#83).
@@ -429,8 +421,43 @@ func run(ctx context.Context, getenv func(string) string) error {
 	<-polled
 	<-unsubscribed
 	<-resubscribed
-	consoleRun.Wait()
+	// CW-1 (#147, review-148 P1-1): the sweep itself honours ctx (DB calls, rate wait and Graph calls all take it, Graph under
+	// CallTimeout), but console.Run's stopAll takes Console.mu, and a bridge handler may hold that mutex across a DB call made
+	// with its request ctx. newConsoleServer derives that ctx from pollCtx so stopPoll cancels it; the join is still bounded as a
+	// backstop, and a hit is logged, never silent. The exit token is unchanged either way.
+	joinConsole(&consoleRun, consoleStopWait)
 	return exitError(consoleDown, runErr)
+}
+
+// consoleStopWait bounds the console join at shutdown, matching the 5s Server.Shutdown bound in run().
+const consoleStopWait = 5 * time.Second
+
+// newConsoleServer builds the comment-bridge server. base is the ctx every request inherits (BaseContext), so cancelling it
+// at shutdown cancels in-flight handlers that hold Console.mu across DB calls (review-148 P1-1).
+func newConsoleServer(addr string, h http.Handler, base context.Context) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           h,
+		BaseContext:       func(net.Listener) context.Context { return base },
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    16 << 10,
+	}
+}
+
+// joinConsole waits for console.Run at most d and logs (fixed text, no values) when the bound hits; it reports whether the join completed.
+func joinConsole(wg *sync.WaitGroup, d time.Duration) bool {
+	joined := make(chan struct{})
+	go func() { wg.Wait(); close(joined) }()
+	select {
+	case <-joined:
+		return true
+	case <-time.After(d):
+		slog.Warn("claims_worker_console_join_timeout")
+		return false
+	}
 }
 
 // superviseConsole watches the bound bridge's Serve result: a failure (not a clean Shutdown, which closes failed) is

@@ -6,6 +6,21 @@
 .worktrees/
 bin/
 coverage.out
+# Repo-root outputs of `go build ./cmd/<name>` (review-148 P2-a); release binaries are built in Docker.
+/admin-fixture
+/ads-worker
+/api
+/claims-worker
+/expiry-worker
+/media-worker
+/meta-admin
+/meta-worker
+/migrate
+/payment-worker
+/platform-admin
+/retention-admin
+/store-admin
+/stripe-admin
 node_modules
 .next/
 .impeccable/questions/
