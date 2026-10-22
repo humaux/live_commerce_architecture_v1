@@ -429,6 +429,11 @@ func run(ctx context.Context, getenv func(string) string) error {
 	<-polled
 	<-unsubscribed
 	<-resubscribed
+	// Unbounded on purpose (CW-1, #147): audited internal/integrations/metareply Run -> SweepOnce -> pollSources, acquireLocked,
+	// renewLocked, loadTokenLocked, pollOne -> pollGraph/checkDeletions -> commentGraph. Every DB call takes the sweep ctx
+	// (pool.Query/QueryRow(ctx)), the rate wait selects on ctx.Done(), and each Graph call runs under ctx plus CallTimeout
+	// (15s default), so cancelling pollCtx ends the sweep within one call timeout. A new sweep call must keep taking ctx;
+	// if one ever cannot, bound this Wait with the 5s pattern above and log when the bound hits.
 	consoleRun.Wait()
 	return exitError(consoleDown, runErr)
 }

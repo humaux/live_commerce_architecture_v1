@@ -3,6 +3,8 @@
 // Also: a Serve failure AFTER the bind (the test-tag build closes the bound listener, cmd/claims-worker/console_testhook.go)
 // must end run() with claims_worker_console_failed (never start_failed, never a hang) — the main.go wiring of
 // superviseConsole/cancelRun/exitError (#116 P2-1).
+// CW-2 (#147) is deliberately NOT pinned: whether claims_worker_ready precedes the console failure is a race between the hook's 1s
+// timer and River Start's DB probe (jobqueue.Run skips the ready line once ctx is cancelled), so asserting it would flake on a loaded runner.
 // Depends on: slxFreePort (stripe_live_process_test.go), crNewWorkerEnv/crReadLog (claims_retention_worker_test.go), mrFixture/mrBuild/mrLaunch/mrFailsBeforeReady
 // (meta_runtime*_test.go), REAL_PG; cmd/claims-worker.
 // Used by: go test ./tests/foundation (Foundation suite and the foundation shards).
