@@ -56,7 +56,7 @@ func TestStripeWebhookConfigStrictAndRedacted(t *testing.T) {
 	values := stripeTestEnv()
 	read := []string{}
 	get := func(name string) string { read = append(read, name); return values[name] }
-	for _, addr := range []string{"0.0.0.0:8080", "localhost:8080", ":8080", "127.0.0.1:0"} {
+	for _, addr := range []string{"0.0.0.0:8080", "localhost:8080", ":8080"} {
 		if _, err := loadStripeWebhookConfig(get, addr); !errors.Is(err, errStripeConfig) {
 			t.Fatalf("listener %s accepted", addr)
 		}

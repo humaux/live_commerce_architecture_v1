@@ -252,14 +252,13 @@ func slxWorker(t *testing.T) {
 func slxAPI(t *testing.T) {
 	binary := slxBuild(t, "api")
 	db := slxDial(t)
-	port := slxFreePort(t)
 	keys, _ := json.Marshal([]map[string]string{{"id": "k1", "key_base64": slxB64()}})
 	bff := strings.TrimRight(base64.URLEncoding.EncodeToString([]byte(slxB64()[:32])), "=")
 	bff = bff[:43]
-	webhook := map[string]string{"DATABASE_URL": db.dsn(), "LISTEN_ADDR": "127.0.0.1:" + port, "COMMERCE_STRIPE_WEBHOOK_ENABLED": "1",
+	webhook := map[string]string{"DATABASE_URL": db.dsn(), "LISTEN_ADDR": mrEphemeralAddr, "COMMERCE_STRIPE_WEBHOOK_ENABLED": "1",
 		"COMMERCE_STRIPE_INGRESS_DATABASE_URL": db.dsn(), "COMMERCE_STRIPE_WEBHOOK_ACTIVE_KEY_ID": "k1", "COMMERCE_STRIPE_WEBHOOK_KEYS_JSON": string(keys),
 		"COMMERCE_STRIPE_WEBHOOK_REPLAY_KEY": slxB64()}
-	buyer := map[string]string{"DATABASE_URL": db.dsn(), "LISTEN_ADDR": "127.0.0.1:" + port, "COMMERCE_BUYER_ENABLED": "1", "COMMERCE_BUYER_ISSUER_DATABASE_URL": db.dsn(),
+	buyer := map[string]string{"DATABASE_URL": db.dsn(), "LISTEN_ADDR": mrEphemeralAddr, "COMMERCE_BUYER_ENABLED": "1", "COMMERCE_BUYER_ISSUER_DATABASE_URL": db.dsn(),
 		"COMMERCE_BUYER_DATABASE_URL": db.dsn(), "COMMERCE_CHECKOUT_DATABASE_URL": db.dsn(), "COMMERCE_BUYER_BFF_KEY": bff, "COMMERCE_BUYER_SESSION_TTL": "1h",
 		"COMMERCE_BUYER_PAYMENT_ENABLED": "1", "COMMERCE_HOSTED_DATABASE_URL": db.dsn(), "COMMERCE_PAYMENT_RETURN_URL": "https://shop.example.test/payment/return",
 		"COMMERCE_PAYMENT_NOTIFY_URL": "https://api.example.test/v1/payment/notify", "COMMERCE_ACCOUNT_ACTIVE_KEY_ID": "k1", "COMMERCE_ACCOUNT_KEYS_JSON": string(keys),
@@ -323,7 +322,7 @@ func slxAPINeverReadsStripeSecrets(t *testing.T) {
 	db := slxDial(t)
 	keys, _ := json.Marshal([]map[string]string{{"id": "k1", "key_base64": slxB64()}})
 	sentinels := []string{"sk_" + "live_slx" + t04Tag(), "rk_" + "live_slx" + t04Tag(), "whsec_" + "slx" + t04Tag()}
-	env := map[string]string{"DATABASE_URL": db.dsn(), "LISTEN_ADDR": "127.0.0.1:" + slxFreePort(t), "COMMERCE_STRIPE_WEBHOOK_ENABLED": "1",
+	env := map[string]string{"DATABASE_URL": db.dsn(), "LISTEN_ADDR": mrEphemeralAddr, "COMMERCE_STRIPE_WEBHOOK_ENABLED": "1",
 		"COMMERCE_STRIPE_INGRESS_DATABASE_URL": db.dsn(), "COMMERCE_PAYMENT_PROFILE": "LIVE", "COMMERCE_STRIPE_WEBHOOK_ACTIVE_KEY_ID": "k1",
 		"COMMERCE_STRIPE_WEBHOOK_KEYS_JSON": string(keys), "COMMERCE_STRIPE_WEBHOOK_REPLAY_KEY": slxB64(),
 		"COMMERCE_STRIPE_LIVE_ENABLED": "1", "COMMERCE_STRIPE_LIVE_APPROVAL_REF": slxRef,

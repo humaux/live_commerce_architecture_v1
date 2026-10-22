@@ -366,7 +366,7 @@ function noPickedListenAddr(file, source) {
   assert.ok(uses.length > 0, `${file}: no LISTEN_ADDR use left, drop it from listenAddrSites`);
   for (const use of uses) {
     const rest = source.slice(use.index, use.index + 64);
-    assert.match(rest, /^LISTEN_ADDR"(=" \+ |:\s*)mrEphemeralAddr\b/, `${file}: a cmd/* binary gets a caller-picked LISTEN_ADDR (${JSON.stringify(rest.slice(0, 40))}), use mrEphemeralAddr and read the api_ready line`);
+    assert.match(rest, /^LISTEN_ADDR(="\s*\+\s*|":\s*)mrEphemeralAddr\b/, `${file}: a cmd/* binary gets a caller-picked LISTEN_ADDR (${JSON.stringify(rest.slice(0, 40))}), use mrEphemeralAddr and read the api_ready line`);
   }
 }
 test("CMD-1: no Go test hands a cmd/* binary a pre-picked LISTEN_ADDR (static red/green)", async () => {
