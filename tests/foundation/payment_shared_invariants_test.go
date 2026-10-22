@@ -660,8 +660,9 @@ func TestPaymentSharedInvariantCaptureWorkerGates(t *testing.T) {
 			var cancelled *river.JobCancelError
 			switch gate {
 			case "provider", "profile":
-				tamper, restore := `UPDATE integration.operations SET provider='payuni' WHERE id=$1 AND provider='stripe'`,
-					`UPDATE integration.operations SET provider='stripe' WHERE id=$1 AND provider='payuni'`
+				// operation_actor_family (0061) pairs a BUYER_PAYMENT_QUERY provider with its action, so both move together
+				tamper, restore := `UPDATE integration.operations SET provider='payuni',action='payuni.query' WHERE id=$1 AND provider='stripe' AND action='stripe.checkout_session'`,
+					`UPDATE integration.operations SET provider='stripe',action='stripe.checkout_session' WHERE id=$1 AND provider='payuni' AND action='payuni.query'`
 				if gate == "profile" {
 					tamper, restore = `UPDATE payments.provider_observations SET execution_profile='SANDBOX' WHERE attempt_id=$1 AND report_hash=$2 AND execution_profile='PROVIDER_MOCK'`,
 						`UPDATE payments.provider_observations SET execution_profile='PROVIDER_MOCK' WHERE attempt_id=$1 AND report_hash=$2 AND execution_profile='SANDBOX'`
