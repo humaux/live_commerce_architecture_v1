@@ -562,7 +562,7 @@ var (
 // drops it). On ANY line, a secret-looking variable (*_KEY, *_SECRET, *_TOKEN, *PASSWORD*; not *_FILE) must never be
 // assigned after sudo or in front of a script: sudo logs command-line environment values (sudoers ENV=) and shell
 // history keeps them, so secrets come from the no-echo prompt or a root-owned <NAME>_FILE only (review-157 P1-1).
-func pfuSudoViolations(doc string) []string {
+func pfuSudoViolations(name, doc string) []string {
 	var out []string
 	inFence := false
 	for n, line := range strings.Split(doc, "\n") {
@@ -572,26 +572,26 @@ func pfuSudoViolations(doc string) []string {
 		}
 		code, _, _ := strings.Cut(line, " #")
 		for _, m := range pfuEnvAssign.FindAllStringSubmatchIndex(code, -1) {
-			name := code[m[2]:m[3]]
-			if strings.HasSuffix(name, "_FILE") || !pfuSecretName.MatchString(name) {
+			v := code[m[2]:m[3]]
+			if strings.HasSuffix(v, "_FILE") || !pfuSecretName.MatchString(v) {
 				continue
 			}
 			if pfuSudoPrefix.MatchString(code[:m[0]]) || pfuBeforeScript.MatchString(code[m[0]:]) {
-				out = append(out, fmt.Sprintf("deploy.md:%d: secret-looking %s on a command line (sudo logs it); use the no-echo prompt or <NAME>_FILE: %s", n+1, name, line))
+				out = append(out, fmt.Sprintf("%s:%d: secret-looking %s on a command line (sudo logs it); use the no-echo prompt or <NAME>_FILE: %s", name, n+1, v, line))
 			}
 		}
 		if !inFence {
 			continue
 		}
 		if pfuEnvBeforeSudo.MatchString(code) {
-			out = append(out, fmt.Sprintf("deploy.md:%d: VAR=x placed before sudo (sudo resets it); write sudo VAR=x cmd: %s", n+1, line))
+			out = append(out, fmt.Sprintf("%s:%d: VAR=x placed before sudo (sudo resets it); write sudo VAR=x cmd: %s", name, n+1, line))
 		}
 		for _, m := range pfuScriptInvoke.FindAllStringIndex(code, -1) {
 			if strings.HasSuffix(code[m[0]:m[1]], "/lib.sh") {
 				continue
 			}
 			if !pfuSudoPrefix.MatchString(code[:m[0]]) {
-				out = append(out, fmt.Sprintf("deploy.md:%d: %s is not preceded by sudo: %s", n+1, code[m[0]:m[1]], line))
+				out = append(out, fmt.Sprintf("%s:%d: %s is not preceded by sudo: %s", name, n+1, code[m[0]:m[1]], line))
 			}
 		}
 	}
@@ -684,7 +684,7 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 		"```sh\nsudo META_PAGE_ACCESS_TOKEN=t deploy/scripts/ops-admin.sh y\n```": "secret-looking",
 		"```sh\nDB_PASSWORD=p deploy/scripts/ops-admin.sh y\n```":                 "secret-looking",
 	} {
-		if v := strings.Join(pfuSudoViolations(bad), "\n"); !strings.Contains(v, want) {
+		if v := strings.Join(pfuSudoViolations("deploy.md", bad), "\n"); !strings.Contains(v, want) {
 			t.Errorf("sudo guard did not report %q for %q (got %q)", want, bad, v)
 		}
 	}
@@ -694,16 +694,22 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 		"```sh\nsudo LC_COMPOSE_ENV=/e deploy/scripts/smoke-r3.sh full\n```",
 		"prose: never `sudo VAR=...` for secrets; STRIPE_SECRET_KEY is prompted",
 	} {
-		if v := pfuSudoViolations(ok); len(v) != 0 {
+		if v := pfuSudoViolations("deploy.md", ok); len(v) != 0 {
 			t.Errorf("sudo guard rejected a good example %q: %v", ok, v)
 		}
 	}
-	rb, err := os.ReadFile(pfuRunbook)
-	if err != nil {
-		t.Fatal(err)
+	rbs, err := filepath.Glob("../../docs/runbooks/*.md")
+	if err != nil || len(rbs) < 7 {
+		t.Fatalf("docs/runbooks/*.md matched %v (err=%v), want all runbooks", rbs, err)
 	}
-	for _, v := range pfuSudoViolations(string(rb)) {
-		t.Error(v)
+	for _, f := range rbs {
+		rb, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, v := range pfuSudoViolations(filepath.Base(f), string(rb)) {
+			t.Error(v)
+		}
 	}
 	listed := strings.Join(strings.Fields(q[i:]+";"), " ")
 	for _, v := range []string{pfuNumbered, pfuPost} {
