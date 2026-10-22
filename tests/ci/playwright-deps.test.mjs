@@ -60,7 +60,7 @@ if(tool==='sudo'){const r=require('child_process').spawnSync(args[0],args.slice(
 if(tool==='timeout'){const i=args.findIndex(x=>/^\\d+s$/.test(x));const r=require('child_process').spawnSync(args[i+1],args.slice(i+2),{stdio:'inherit'});process.exit(r.status??1)}
 if(tool==='sleep')process.exit(0);
 if(tool==='dpkg-deb'){console.log(args[2]==='Package'?'libfoo':'1.0');process.exit(0)}
-if(tool==='apt-cache'){if(e.INDEX_SHA)console.log('Package: libfoo\nSHA256: '+e.INDEX_SHA);process.exit(0)}
+if(tool==='apt-cache'){if(e.INDEX_SHA)console.log('Package: libfoo\\nSHA256: '+e.INDEX_SHA);process.exit(0)}
 if(tool==='dpkg-query'){console.log(e.DPKG_STATE==='installed'?'installed':'not-installed');process.exit(0)}
 if(tool==='apt-get'){
   if(args.includes('update'))process.exit(0);
