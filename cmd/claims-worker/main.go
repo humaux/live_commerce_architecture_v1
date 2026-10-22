@@ -241,14 +241,12 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerDatabase
 	}
-	// CW-1 (#147, review-148 P2-R1) audit: Close waits for every borrowed connection. After the bounded joinConsole no
-	// unbounded non-ctx holder is left: bridge handlers inherit pollCtx (main.go:404,449) and stopPoll (main.go:428)
-	// cancels it as console.Run reaches stopAll (comment_poll.go:281-283), aborting their pgx calls under Console.mu
-	// (comment_poll.go:465,982-983); the sweeper and its DB calls use the same pollCtx (main.go:418, comment_poll.go:295,
-	// 465,736); River jobs are stopped before jobqueue.Run returns (internal/jobqueue/run.go:46,52). The only non-ctx DB
-	// work is a deferred rollback bounded at 2s (internal/platform/platform.go:745) or DBTimeout<=5s
-	// (internal/integrations/core/dispatcher.go:519), so Close waits seconds, never forever. A future non-ctx pool call
-	// would reopen this hang: fix it at the call, not here.
+	// CW-1 (#147, review-148 P2-R1) audit: Close waits for every borrowed connection. By this point no borrower is left:
+	// bridge handlers inherit pollCtx (main.go:402,447), so stopPoll (main.go:426) aborts their pgx calls under Console.mu
+	// (comment_poll.go:465,982-983) as console.Run reaches stopAll (comment_poll.go:281-283); the sweeper shares that ctx
+	// (main.go:416); the intake/inbox runners are joined (main.go:427-429); River stops and waits for its jobs
+	// (internal/jobqueue/run.go:46,52). Cancellation-ignoring rollbacks run only inside those joined goroutines/jobs, so a
+	// future unbounded non-ctx pool call would reopen the hang: fix it at that call, not here.
 	defer workerPool.Close()
 	if !sameDatabase(startup, intakePool, workerPool) {
 		return errWorkerDatabase // the operation the poller plans must be the one the dispatcher reads
