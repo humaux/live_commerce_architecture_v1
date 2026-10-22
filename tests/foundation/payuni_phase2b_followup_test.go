@@ -37,8 +37,10 @@ package foundation_test
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -546,6 +548,56 @@ const (
 	pfuRunbookTxClose = pfuRunbookEnd + "\nROLLBACK;\nSQL\n"
 )
 
+var (
+	pfuScriptInvoke  = regexp.MustCompile(`deploy/scripts/[a-z0-9-]+\.sh`)
+	pfuEnvBeforeSudo = regexp.MustCompile(`\b[A-Z][A-Z0-9_]*=\S+\s+sudo\b`)
+	pfuSudoPrefix    = regexp.MustCompile(`sudo( [A-Z][A-Z0-9_]*=\S+)* $`)
+	pfuEnvAssign     = regexp.MustCompile(`\b([A-Z][A-Z0-9_]*)=\S*`)
+	pfuSecretName    = regexp.MustCompile(`(^|_)(KEY|SECRET|TOKEN)(_|$)|PASSWORD`)
+	pfuBeforeScript  = regexp.MustCompile(`^\S*\s+(sudo\s+)?(\S+=\S+\s+)*\S*deploy/scripts/`)
+)
+
+// pfuSudoViolations checks the runbook's sudo convention. On a fenced code line every deploy/scripts/*.sh invocation
+// (lib.sh is sourced, not run) is preceded by "sudo" plus optional VAR=x words, and VAR=x never precedes sudo (sudo
+// drops it). On ANY line, a secret-looking variable (*_KEY, *_SECRET, *_TOKEN, *PASSWORD*; not *_FILE) must never be
+// assigned after sudo or in front of a script: sudo logs command-line environment values (sudoers ENV=) and shell
+// history keeps them, so secrets come from the no-echo prompt or a root-owned <NAME>_FILE only (review-157 P1-1).
+func pfuSudoViolations(doc string) []string {
+	var out []string
+	inFence := false
+	for n, line := range strings.Split(doc, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "```") {
+			inFence = !inFence
+			continue
+		}
+		code, _, _ := strings.Cut(line, " #")
+		for _, m := range pfuEnvAssign.FindAllStringSubmatchIndex(code, -1) {
+			name := code[m[2]:m[3]]
+			if strings.HasSuffix(name, "_FILE") || !pfuSecretName.MatchString(name) {
+				continue
+			}
+			if pfuSudoPrefix.MatchString(code[:m[0]]) || pfuBeforeScript.MatchString(code[m[0]:]) {
+				out = append(out, fmt.Sprintf("deploy.md:%d: secret-looking %s on a command line (sudo logs it); use the no-echo prompt or <NAME>_FILE: %s", n+1, name, line))
+			}
+		}
+		if !inFence {
+			continue
+		}
+		if pfuEnvBeforeSudo.MatchString(code) {
+			out = append(out, fmt.Sprintf("deploy.md:%d: VAR=x placed before sudo (sudo resets it); write sudo VAR=x cmd: %s", n+1, line))
+		}
+		for _, m := range pfuScriptInvoke.FindAllStringIndex(code, -1) {
+			if strings.HasSuffix(code[m[0]:m[1]], "/lib.sh") {
+				continue
+			}
+			if !pfuSudoPrefix.MatchString(code[:m[0]]) {
+				out = append(out, fmt.Sprintf("deploy.md:%d: %s is not preceded by sudo: %s", n+1, code[m[0]:m[1]], line))
+			}
+		}
+	}
+	return out
+}
+
 // pfuBetween returns the text of path between begin and end (exclusive), or fails.
 func pfuBetween(t *testing.T, path, begin, end string) string {
 	t.Helper()
@@ -621,6 +673,37 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 		if err != nil || strings.Contains(string(b), "$MIGRATION_DATABASE_URL") || strings.Contains(string(b), "${MIGRATION_DATABASE_URL") {
 			t.Errorf("%s must not use $MIGRATION_DATABASE_URL or ${MIGRATION_DATABASE_URL} (unset on the pilot host; err=%v); use lc_psql", f, err)
 		}
+	}
+	// sudo convention (review-153-a2a269d73 P2-1, review-157-fc6b53e88 P1-1): see pfuSudoViolations. The guard must
+	// first prove it fires on synthetic bad input, so a loosened regexp cannot pass vacuously.
+	for bad, want := range map[string]string{
+		"```sh\nSTRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh x\n```":              "not preceded by sudo",
+		"```sh\nFOO=1 sudo deploy/scripts/smoke-r3.sh\n```":                       "VAR=x placed before sudo",
+		"```sh\ndeploy/scripts/smoke-r3.sh full\n```":                             "not preceded by sudo",
+		"run `sudo STRIPE_SECRET_KEY=sk_test_x deploy/scripts/ops-admin.sh y`":    "secret-looking",
+		"```sh\nsudo META_PAGE_ACCESS_TOKEN=t deploy/scripts/ops-admin.sh y\n```": "secret-looking",
+		"```sh\nDB_PASSWORD=p deploy/scripts/ops-admin.sh y\n```":                 "secret-looking",
+	} {
+		if v := strings.Join(pfuSudoViolations(bad), "\n"); !strings.Contains(v, want) {
+			t.Errorf("sudo guard did not report %q for %q (got %q)", want, bad, v)
+		}
+	}
+	for _, ok := range []string{
+		"```sh\nsudo STRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh x\n```",
+		"```sh\nsudo STRIPE_SECRET_KEY_FILE=/root/k deploy/scripts/ops-admin.sh x\n```",
+		"```sh\nsudo LC_COMPOSE_ENV=/e deploy/scripts/smoke-r3.sh full\n```",
+		"prose: never `sudo VAR=...` for secrets; STRIPE_SECRET_KEY is prompted",
+	} {
+		if v := pfuSudoViolations(ok); len(v) != 0 {
+			t.Errorf("sudo guard rejected a good example %q: %v", ok, v)
+		}
+	}
+	rb, err := os.ReadFile(pfuRunbook)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range pfuSudoViolations(string(rb)) {
+		t.Error(v)
 	}
 	listed := strings.Join(strings.Fields(q[i:]+";"), " ")
 	for _, v := range []string{pfuNumbered, pfuPost} {

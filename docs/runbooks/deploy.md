@@ -31,6 +31,7 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
   - B7：T21 独立评审未完成。
   - B8：Compose 作为生产环境与 §4.2 的定位冲突。
 - 状态词汇：DESIGN / MODEL_ONLY / MOCK / SANDBOX / LIVE / NOT_RUN / BLOCKED。本地 smoke 通过不等于产品通过。
+- sudo 约定：`sudo` 会重置环境。自定义的 `LC_CONFIG_DIR` / `LC_COMPOSE_ENV` 必须写在 sudo 之后传入（`sudo LC_COMPOSE_ENV=… deploy/scripts/…`，不是 `LC_COMPOSE_ENV=… sudo …`）；**密钥（`*_KEY`、`*_SECRET`、`*_TOKEN`、口令）绝不能写成 `sudo VAR=…` 或任何命令行参数**：sudo 会把命令行环境变量连值写进日志（sudoers(5) 的 ENV=：auth.log、journal），shell 历史也会留下。sudo 下只用无回显终端提示，或 root 属主的 `<NAME>_FILE`（路径本身不是秘密，可写 `sudo STRIPE_SECRET_KEY_FILE=/root/transfer deploy/scripts/ops-admin.sh …`）；`<NAME>_FILE` 的属主检查要求传输文件属主是 root（`sudo` 下运行 ops-admin 的 uid 是 0）。
 
 ## 1. 主机准备
 
@@ -43,7 +44,7 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
    sudo deploy/scripts/host-setup.sh            # 检查版本，创建 GID 10500 组、目录和权限，安装模板（不覆盖）
    ```
    按输出提示合并推荐的 `/etc/docker/daemon.json`（json-file 日志轮转 + live-restore）。脚本**不会自动修改**这个文件。
-5. 安装定时任务：`cp deploy/host/crontab.example /etc/cron.d/live-commerce`，并修改路径。
+5. 安装定时任务：`sudo cp deploy/host/crontab.example /etc/cron.d/live-commerce`，并修改路径。
 
 ## 2. 配置
 
@@ -73,8 +74,8 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
    - `commerce_oidc_client_secret`：如果保持 `__UNSET__`，表示使用公共 PKCE 客户端，P09 给出 WARN。
    - `commerce_meta_apps_json`：仅在启用 Meta 时需要。
    - **不属于任何配置文件的运维输入**：`STRIPE_SECRET_KEY`（SANDBOX 只接受 `sk_test_`/`rk_test_`；LIVE 只接受受限 key `rk_live_`，`sk_live_` 一律拒绝）、`STRIPE_ACCOUNT_ID`、`STRIPE_WEBHOOK_SECRET[_NEXT]`、`META_PAGE_ACCESS_TOKEN`。
-     它们只在运行 `deploy/scripts/ops-admin.sh` 时由操作者提供：终端无回显提示、调用者环境变量，或（O-D）`<NAME>_FILE=<绝对路径>` 指向 owner 在服务器上写入的一次性传输文件
-     （普通文件、非符号链接、属主 = 运行 ops-admin 的 uid、权限 0400/0600、只有一行；用完由 owner 删除，见 stripe-live.md）。
+     它们只在运行 `deploy/scripts/ops-admin.sh` 时由操作者提供：终端无回显提示、调用者环境变量（经 sudo 运行时不可用，见 §0 sudo 约定），或（O-D）`<NAME>_FILE=<绝对路径>` 指向 owner 在服务器上写入的一次性传输文件
+     （普通文件、非符号链接、属主 = 运行 ops-admin 的 uid（经 sudo 即 root）、权限 0400/0600、只有一行；用完由 owner 删除，见 stripe-live.md）。
      **不写入仓库、compose.env、env 文件或 secrets 目录**；preflight P07 会拒绝把它们放进任何旋钮文件。
      新增的自动生成密钥（`secrets-init.sh` 补齐）：Stripe webhook 签名 keyring（与支付 API-key keyring 分离）、Meta Page-token keyring、`commerce_claims_actor_key`（K_actor）、`commerce_claims_reply_link_key`（K_link）以及 5 个新登录的 pw_/dsn_。
      preflight P04 检查四个 keyring 互不共享 key、三个独立 b64 密钥两两不同且不在任何 keyring 中。
@@ -127,7 +128,7 @@ sudo deploy/scripts/deploy.sh upgrade <tag>
 - 已知风险 R3：`migrations.Apply` 内部超时 30 s，大数据量迁移前需要先由集成者调整（I4）。
 - PAYUNi 退役守卫（0197、0198、0199、post_river/0027，PAY-RM2 2b/2c）：库里只要还有未对账的 PAYUNi 历史（非终态 PAYUNi operation、AWAITING_PAYMENT 的 PAYUNi 订单、仍为 PAYMENT_PENDING 的 PAYUNi 库存预留、或从未应用的已存 PAYUNi 观测——按 0018 应用逻辑今天仍会写出 AUTHORIZED/CAPTURED fact 或 review case 的 QUERY 报告，判定以 0199 第 1 节守卫谓词为准，post_river/0027 同文。下面每一条都以报告通过 0018 的来源校验为前提：Status=SUCCESS、PaymentType=1、AuthType=1、CardInst=0，MerTradeNo 和 AmountTWD 与 attempt 一致，非空 TradeNo 等于 operation 的 provider_reference，TradeStatus ∈ {0,1,2,3,4,8,9}，DataSource ∈ {A,B}，CloseStatus ∈ {空,1,2,3,7,9}。不通过的报告 0018 当年就拒绝了，守卫也不计。通过的报告中，以下不论 DataSource、TradeNo、TradeStatus 都算：带任何退款字段（CardRefundType/CardRefundStatus/CardRefundDay 非空，或 CardRefundAmountTWD>0），或 `CardRemainAmountTWD` 与订单金额不等。TradeNo 非空、DataSource A、CloseStatus 2 但不构成完整请款的报告也算（CAPTURE_EVIDENCE_INCOMPLETE）。attempt 今天已有 CAPTURED fact 时，TradeNo 非空、DataSource A 且 TradeStatus 2/3/4 或 CloseStatus 3 的报告也算，CloseStatus 3 时 TradeStatus 是什么都一样（见下面的特例）。以上各条，attempt 已有对应 fact 或 review case 的不算。DataSource B、空 TradeNo、重复授权、任何时候的 TradeStatus 0/8/9、请款前的 TradeStatus 2/3/4，只有不命中上面任何一条时才不算。TradeStatus 8/9 不构成授权，但带退款字段、CardRemainAmountTWD 不等、CloseStatus 2 的不完整请款，或请款后 CloseStatus 3 时照样算），迁移就会以 `code=22023` 拒绝，`cmd/migrate` exit 1。编号迁移在**同一个事务**里执行，所以拒绝会让**本批全部编号迁移一起回滚**（不只是 0197，同一 release 里更早的编号迁移也不会生效），账本不变。上线前先跑守卫里的四个只读计数；前三项由运维对账：同时写 RELEASE ledger、把预留改为终态，然后再重跑 migrate。第四项不是运维能对掉的：它表示 provider 报过的授权、请款、退款或冲突信号从未入账，**升级给 owner 裁决，禁止手写 fact 或 review case 来让计数归零**（手写只会掩盖真实资金状态）。特例同样计入第四项：失败、取消或过期报告（TradeStatus 2/3/4 或 CloseStatus 3）在当年**先于**同一 attempt 的请款被 0018 应用（当时没有 CAPTURED fact，0018 什么都不写），守卫按**今天**已请款的状态判断，会把它算作未应用的冲突信号并拒绝。这是有意的失败即关闭（同一 TradeNo 既失败又请款本身就是 provider 异常），同样升级给 owner，不得绕过、不得补写 CONFLICTING_REPORT（门禁：PFU04 failed-before-capture）。
   第四项（含上面的特例）的处理路径，运维只做只读与升级，不做任何写入：
-  1. 编号阶段（0197/0198/0199）拒绝时账本和 schema 都不变：按 §5 第 1 条执行 `deploy/scripts/deploy.sh app-rollback <旧tag>`，让旧版本继续服务（脚本不会自动回滚）；不重跑、不换 tag 绕过。若是 post_river/0027 拒绝，编号迁移已提交、ledger 已变化，app-rollback 会被拒绝（forward-fix only），按 §5 第 2/3 条由 owner 决定。
+  1. 编号阶段（0197/0198/0199）拒绝时账本和 schema 都不变：按 §5 第 1 条执行 `sudo deploy/scripts/deploy.sh app-rollback <旧tag>`，让旧版本继续服务（脚本不会自动回滚）；不重跑、不换 tag 绕过。若是 post_river/0027 拒绝，编号迁移已提交、ledger 已变化，app-rollback 会被拒绝（forward-fix only），按 §5 第 2/3 条由 owner 决定。
   2. 运维用下面的只读查询列出守卫第四项计数的每一条报告，交给 owner。行数应等于拒绝信息里的第四项计数，不等就以守卫为准并一并报给 owner。用 cmd/migrate 跑守卫时的同一角色执行：`dsn_migrate_owner` 是 `postgres` 超级用户经容器内 unix socket 连接（secrets-init.sh），`deploy/scripts/lib.sh` 的 `lc_psql` 就是这个连接（`docker compose exec -T postgres`，密码由容器读 `/run/secrets/pg_superuser_password`，`ON_ERROR_STOP=1`，SQL 走 stdin 不进日志）。运维 shell 里没有 `MIGRATION_DATABASE_URL`（2026-10-20 试点主机实测），不要自己拼 DSN，也不要用任何应用登录。在部署主机的仓库根目录照下面整段执行（双机部署在 DB 主机执行）；输出无表头、`|` 分隔，列顺序同 SELECT。整段放在只读事务里，最后 ROLLBACK。下面的块用 `sudo bash -c` 执行（lib.sh 是 bash 脚本，不论运维登录 shell 是什么都能跑；helper 的 `exit` 只结束这个子进程，不关运维自己的 shell；`lc_psql` 继承 heredoc 的 stdin）。代码块顶格，整段原样复制粘贴即可（缩进会让 heredoc 结束符 `SQL` 失配）；块后的第 3 条因此改为顶格显式编号。超级用户本来就绕过 RLS，`SET LOCAL row_security = off` 对它不改变结果；保留它是为了换成非超级用户执行时，受 RLS 约束的角色会直接报错，不会静默少返回行。
 
 ```sh
@@ -193,18 +194,18 @@ SQL
 3. **新密钥（幂等，只补缺失）**：`sudo deploy/scripts/secrets-init.sh`。相对 4dc08b3 恰好新增 5 个文件：
    `pw_lc_store_registrar`、`dsn_lc_store_registrar`、`commerce_meta_page_hpke_private_keys_json`、`commerce_meta_page_hpke_public_keys_json`、`commerce_meta_page_hpke_active_key_id`
    （输出 `created=5`；已有文件不会被覆盖）。**不需要**新的 owner 密钥：买家邮件复用已有的 `commerce_smtp_password`（compose 现在把它同时挂给 api 和 expiry-worker）。
-4. **离线预检**：`deploy/scripts/preflight.sh`（升级命令里还会再跑一次）。必须没有 FAIL；P03/P05 会检查新密钥的格式与 key id 对应，P04 检查公钥环 id == 私钥环 id。试点已知的 P11（staging CA 对 `LC_ENVIRONMENT=production`）是升级前就存在的状态，由 owner 决定，不要为升级顺手改它。
+4. **离线预检**：`sudo deploy/scripts/preflight.sh`（升级命令里还会再跑一次）。必须没有 FAIL；P03/P05 会检查新密钥的格式与 key id 对应，P04 检查公钥环 id == 私钥环 id。试点已知的 P11（staging CA 对 `LC_ENVIRONMENT=production`）是升级前就存在的状态，由 owner 决定，不要为升级顺手改它。
    新增 P18（0104）：`LC_STORE_HOST` 必须只解析到本机（DNS-only，不能走 Cloudflare 代理），因为买家查询 / 订单链接的按 IP 限流信任边缘覆盖写入的 `X-Forwarded-For`；P18 FAIL 时先确认 DNS，不要关掉检查。
-5. **构建 + 升级**：`deploy/scripts/build-images.sh`（记下 `IMAGE_TAG=<sha12>`，`-dirty` 禁止）→ `deploy/scripts/deploy.sh upgrade <sha12>`。
+5. **构建 + 升级**：`sudo deploy/scripts/build-images.sh`（记下 `IMAGE_TAG=<sha12>`，`-dirty` 禁止）→ `sudo deploy/scripts/deploy.sh upgrade <sha12>`。
    脚本顺序：preflight → **强制备份** `pre-upgrade-<tag>`（失败则什么都不改）→ 停 api/admin/storefront 与全部 worker → migrate（0081–0105 + post_river 0018–0019）→ provision-logins → 写 IMAGE_TAG → `up -d` → 部署后检查。
    0096 的切换没有新旧权限混用的窗口：迁移创建各 worker 的专属 authority，之后 provision-logins 为 5 个 worker 登录授予自己的 authority 并 `REVOKE commerce_worker`，所有 worker 此时都已停止，起来时用的已经是各自的专属登录。
 6. **升级后必查**（把输出存证据）：
    - `deploy.sh` 退出码 0，日志里有 `post-check all lc-* containers run tag <sha12>` 和各 worker 的 `*_worker_ready`。
    - provision-logins 输出每个登录一行 `membership=ok`，没有 `DRIFT`；新增 `login=lc_store_registrar ... membership=ok`；`registrars execute=ok`。
-   - `deploy/scripts/ops-admin.sh store-admin status --store <店铺uuid>` 能连上（注册员登录可用；店铺存在时输出发布状态，不存在时是 `store_admin_not_found`）。
+   - `sudo deploy/scripts/ops-admin.sh store-admin status --store <店铺uuid>` 能连上（注册员登录可用；店铺存在时输出发布状态，不存在时是 `store_admin_not_found`）。
    - 店铺与商品数据仍在（admin 后台打开商品列表），并且 `deploy.sh` 日志的 `ledger_count before=<N> after=<N+26>`：24 个业务迁移（0081–0083、0085–0105；没有 0084）+ post_river 0018、0019。
 7. **之后由 owner 逐项开启，每项单独批准**（都不属于升级本身）：
-   - 买家邮件：确认 `commerce_smtp_password` 已是真值、`LC_SMTP_*`/`LC_MAIL_FROM` 正确 → compose.env 设 `LC_BUYER_MAIL_ENABLED=1` → `deploy/scripts/preflight.sh`（P06/P08/P09）→ 不要再跑 `deploy.sh upgrade`（tag 不变，会再次停机并备份），改用
+   - 买家邮件：确认 `commerce_smtp_password` 已是真值、`LC_SMTP_*`/`LC_MAIL_FROM` 正确 → compose.env 设 `LC_BUYER_MAIL_ENABLED=1` → `sudo deploy/scripts/preflight.sh`（P06/P08/P09）→ 不要再跑 `deploy.sh upgrade`（tag 不变，会再次停机并备份），改用
      `docker compose --project-directory deploy --env-file /etc/live-commerce/compose.env up -d --no-deps expiry-worker`（只重建 expiry-worker）→ 日志出现 `expiry_worker_ready` 且无 `expiry_worker_invalid_config`。关闭：改回 0 再执行同一条命令。
    - meta-connect：§6.7（api.env 三个键 + `meta`、`claims` profile + 重启 api）。
    - 商家域名绑定：`ops-admin.sh store-admin domain-bind`，见 `docs/runbooks/merchant-onboarding.md`。
@@ -227,14 +228,14 @@ SQL
      - `compose.env` 新增 `LC_ALERT_EMAIL=ailun@xgdwm.com`（owner 的转发邮箱，一个纯地址）。看门狗不再只靠 cron `MAILTO=root`（本机邮箱没人看，事故里 W1–W4 失败 29.5 小时无人知道），而是通过应用现有的 SMTP 中继发一封邮件：
        失败检查集合一变就发，集合不变每 6 小时重发一次，全部恢复时发一封「RECOVERED」。中继来自 `compose.env` 的 `LC_SMTP_HOST`、`LC_SMTP_USERNAME`、`LC_MAIL_FROM` 和密钥 `commerce_smtp_password`（465 隐式 TLS，与应用相同；
        **即使密码登录和买家邮件循环仍关着也要配**，先核对这几项在试点 `compose.env` 里都已设置、密钥文件不是 `__UNSET__`）。预检 P08 检查 `LC_ALERT_EMAIL` 语法和中继是否齐全，生产环境两个告警通道（`LC_ALERT_EMAIL`、`LC_ALERT_WEBHOOK_URL`）都没有时 FAIL；`LC_ALERT_WEBHOOK_URL` 可与邮件并存。
-     - **计划任务改为每日 base backup**：`diff deploy/host/crontab.example /etc/cron.d/live-commerce`，确认只有路径之外的 `23 3 * * 0` → `23 3 * * *` 之差后，按 §1 第 5 步重新安装（`cp deploy/host/crontab.example /etc/cron.d/live-commerce`，路径按主机改）。
+     - **计划任务改为每日 base backup**：`diff deploy/host/crontab.example /etc/cron.d/live-commerce`，确认只有路径之外的 `23 3 * * 0` → `23 3 * * *` 之差后，按 §1 第 5 步重新安装（`sudo cp deploy/host/crontab.example /etc/cron.d/live-commerce`，路径按主机改）。
        WAL 窗口因此从最长 14 天降到 ≤ 2 天；看门狗 W3 的 base 阈值同时改成 26 小时。
      - compose.yml 给 postgres 新增了 `archive-wal.sh` 的只读挂载，所以升级的 `up -d` 会重建 postgres 容器（应用本来已停在维护窗口里，数据库重启约几秒）。之后 WAL 以 `.gz` 压缩归档；已有的明文段继续可用，会被之后每日 base backup 的清理逐步移除。
    - **广告归因的外部前提（不阻塞升级）**：直播观众数据需要 `read_insights`。连接专页走 Facebook Login for Business 的 `config_id`，权限在 Meta 应用后台的该配置里加，代码无法覆盖；未加之前观众面板显示「需重新連接 Facebook」，其余报表照常。App Review 前只有应用角色用户能授权。广告在试点上仍关闭（`ads` profile 未启用），归因报表只读本地订单与已存的 Meta 数据。
    - 旧商品图片不会自动生成渲染图（没有后台扫描）：前台继续用原图，与升级前相同。新上传的图片在上传时生成。逐张补生成目前只有接口 `POST …/products/{id}/images/{image}/renditions`（catalog:write、幂等、记审计），后台按钮尚未提供（待办）。
 3. **新密钥（幂等，只补缺失）**：`sudo deploy/scripts/secrets-init.sh`，相对 351089f 新增 `pw_lc_store_domain_verify`、`dsn_lc_store_domain_verify`（claims-worker 的域名验证登录，只有 `commerce_storefront_verifier` 的 6 个验证函数）。
-4. **离线预检**：`deploy/scripts/preflight.sh` 不能有 FAIL；新增 P19（`stores.<base>` 与通配必须只解析到本机）。
-5. **构建 + 升级**：`deploy/scripts/build-images.sh` → `deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0113 + post_river 0020、0021，0106 会给已有店铺补随机 8 位数字编号和平台子域；0109 把已有 SKU 设为追踪库存，行为不变）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
+4. **离线预检**：`sudo deploy/scripts/preflight.sh` 不能有 FAIL；新增 P19（`stores.<base>` 与通配必须只解析到本机）。
+5. **构建 + 升级**：`sudo deploy/scripts/build-images.sh` → `sudo deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0113 + post_river 0020、0021，0106 会给已有店铺补随机 8 位数字编号和平台子域；0109 把已有 SKU 设为追踪库存，行为不变）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
 6. **升级后必查**：
    - `deploy.sh` 退出码 0；`ledger_count before=<N> after=<N+10>`（0106–0113、post_river 0020、0021）。
    - 后台商品列表与订单列表（v2 队列计数）能打开；已有商品的 SKU 都显示「追踪库存」。
@@ -242,21 +243,21 @@ SQL
    - claims-worker 日志有就绪行且无 `claims_worker_invalid_config`。
    - `ops-admin.sh store-admin status --store <店铺uuid>` 显示平台地址 `https://<handle>.xgdwm.com`。
    - 店铺、商品、订单数据仍在。
-   - **磁盘/告警修复的核对（ops-disk-guard）**：①`deploy/scripts/watchdog.sh` 全 PASS；②`pg_stat_archiver` 的 `failed_count` 不增长，`ls ${LC_BACKUP_DIR}/wal | tail` 里新段是 `.gz`；
-     ③`deploy/scripts/watchdog.sh --test-mail` 发出一封测试邮件，**由 owner 确认收到**（只发邮件，不跑检查；发不出去会以非零退出并说明原因）；
-     ④下一个 03:23 之后 `deploy/scripts/pg-ops.sh list` 里有新的 base，`du -sh ${LC_BACKUP_DIR}/wal` 明显缩小。
+   - **磁盘/告警修复的核对（ops-disk-guard）**：①`sudo deploy/scripts/watchdog.sh` 全 PASS；②`pg_stat_archiver` 的 `failed_count` 不增长，`ls ${LC_BACKUP_DIR}/wal | tail` 里新段是 `.gz`；
+     ③`sudo deploy/scripts/watchdog.sh --test-mail` 发出一封测试邮件，**由 owner 确认收到**（只发邮件，不跑检查；发不出去会以非零退出并说明原因）；
+     ④下一个 03:23 之后 `sudo deploy/scripts/pg-ops.sh list` 里有新的 base，`du -sh ${LC_BACKUP_DIR}/wal` 明显缩小。
    - **外部可用性监控（建议，需要 owner 决定）**：监控应该打 `https://api.<域名>/readyz`（数据库不可用时返回 503），**不是** `/healthz`（常量 200：2026-10-03 事故里数据库停了 29.5 小时它一直 200）。
      已核实：`/readyz` **目前没有经 Caddy 暴露**——API 主机是 default-deny，只开了 `/healthz`（`deploy/caddy/Caddyfile`；用仓库的 Caddyfile 在 caddy:2.11.4 上实测 `/healthz` 被代理、`/readyz` 返回 404，证据 `output/ops-disk-guard/caddy-readyz-check.txt`），
      代码里 `internal/platform/platform.go` 的 `/readyz` 在连接池 Ping 失败时返回 503。**没有 owner/integrator 的裁决不新开路由**；需要裁决是否在 API 主机只加一条 `handle /readyz`。
      在那之前，外部监控只能发现主机、Caddy、证书、进程挂了，发现不了「库停了」，库停机由看门狗 W1/W4 的邮件覆盖（前提是主机和 SMTP 还活着）。
-7. **核对自动分配的地址；handle-set 可选**：0106 为存量店铺自动分配随机 8 位数字编号，新建店铺也走同一分配函数；使用 `deploy/scripts/ops-admin.sh store-admin status --store <店铺uuid>` 核对 `https://<数字编号>.xgdwm.com`，不需要 owner 先提供英文 ID。
-   运维确需改号时可选用 `deploy/scripts/ops-admin.sh store-admin handle-set <店铺uuid> <handle>`；现有发布后限制、同事务解绑旧平台地址、保留字/占用/格式校验保持不变。执行后必须用 `store-admin status` 核对实际地址。
+7. **核对自动分配的地址；handle-set 可选**：0106 为存量店铺自动分配随机 8 位数字编号，新建店铺也走同一分配函数；使用 `sudo deploy/scripts/ops-admin.sh store-admin status --store <店铺uuid>` 核对 `https://<数字编号>.xgdwm.com`，不需要 owner 先提供英文 ID。
+   运维确需改号时可选用 `sudo deploy/scripts/ops-admin.sh store-admin handle-set <店铺uuid> <handle>`；现有发布后限制、同事务解绑旧平台地址、保留字/占用/格式校验保持不变。执行后必须用 `store-admin status` 核对实际地址。
 8. **之后由 owner 逐项开启，每项单独批准**：发布店面（设置 > 网店 > 发布，买家开始能访问核对过的 `https://<数字编号>.xgdwm.com`）、货到付款（设置 > 配送）、商家自有域名（设置 > 网店 > 域名）、meta-connect（§6.7）。
 9. **回滚**：同 §4.1 第 8 步，迁移之后应用回滚被拒绝，只能前向修复；必要时由 owner 决定从 `pre-upgrade-<tag>` 恢复。
 
 ## 5. 回滚决策树
 
-1. **与该 tag 上次部署时相比，ledger 行数没有变化** → `deploy/scripts/deploy.sh app-rollback <旧tag>`。
+1. **与该 tag 上次部署时相比，ledger 行数没有变化** → `sudo deploy/scripts/deploy.sh app-rollback <旧tag>`。
    如果 ledger 有变化，脚本会拒绝，并提示 "forward-fix only"（此时 compose.env 不会被改动）。
    允许回滚时，脚本同样在 `up -d` 之前把 `<旧tag>` 写入 compose.env，否则之后的 `dc up` 会把坏版本装回来。
    回滚到正在运行的 tag 是空操作，会通过部署后检查。smoke S39 覆盖四条路径：空操作、换 tag（容器重建）、换回原 tag、ledger 变化时拒绝；
@@ -307,10 +308,10 @@ SQL
    # 提示输入 STRIPE_WEBHOOK_SECRET（whsec_...，无回显）；输出 {"endpoint_id":...,"key_version":1}
    ```
    端点的 profile 必须等于 `COMMERCE_PAYMENT_PROFILE`，否则 API 返回 404；签名密钥无法解密返回 503 `signing_unavailable`（Stripe 会重试）。
-   签名密钥轮换（Stripe 允许 ≤24 h 双密钥）：新密钥设为 `STRIPE_WEBHOOK_SECRET_NEXT` 再执行同一命令，`--expected-version` 用当前版本。
+   签名密钥轮换（Stripe 允许 ≤24 h 双密钥）：新密钥在无回显提示里输入（变量名 `STRIPE_WEBHOOK_SECRET_NEXT`；或用 root 属主的 `STRIPE_WEBHOOK_SECRET_NEXT_FILE`，不要写成命令行变量）再执行同一命令，`--expected-version` 用当前版本。
 4. 资格探测与支付方式（SANDBOX，会真实创建并立即过期一个 sandbox Checkout Session）：
    ```sh
-   STRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh stripe-admin qualify --tenant ... --store ... --principal ... \
+   sudo STRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh stripe-admin qualify --tenant ... --store ... --principal ... \
      --connection <id> --expected-version <n> --profile SANDBOX --currency <ISO> --amount-minor <method minimum> --return-url https://<LC_STORE_HOST>/payment/return
    sudo deploy/scripts/ops-admin.sh stripe-admin method --tenant ... --store ... --principal ... --market <id> --country <CC> \
      --connection <id> --qualification <qualification-id> --expected-version 0 --enabled --visible --sort 10 --min <minor> --max <minor> \
@@ -372,7 +373,7 @@ SQL
 3. 回调 URL 的 `code`/`state` 由 Caddy 访问日志改写为 REDACTED（smoke S40 覆盖 `/api/ads/meta/callback`）；admin 对该路径发 `Referrer-Policy: no-referrer`。
 4. 关闭：清空 `COMMERCE_META_ADS_APP_ID` 并重启 api（路由 404）。**不要先停 ads-worker**：暂停（pause）只有它能发到 Meta；先在 admin 暂停所有投放，确认 ops 终态后再去掉 `ads` profile。
 5. CAPI 与商品 feed（ads-capi，0080）：`secrets-init.sh` 生成 `commerce_capi_external_id_key`（b64std32，**只有 ads-worker 挂载**；缺失则 ads-worker 拒绝启动，已部署环境升级前先重跑 `secrets-init.sh` 补齐）。轮换会改变所有买家的 external_id（匹配率重置，不丢数据）。商品 feed 为 `https://<LC_STORE_HOST>/feeds/meta.csv`（storefront → api `GET /v1/buyer/feeds/meta.csv`，只按已验证 Host 解析店铺，Caddy 无需改动）。买家在隐私页授予 `ads_personalization` 时，同一事务写入 `ads.capi_contexts`（浏览器 UA；超过8天或撤回同意时清理，单批≤1000，见 `0080_meta_capi.sql` / attribution sweeper）。**生产挂载阻塞项分两项**：为 `ads.insights_daily` / `ads.capi_events` 登记保留类，并为 `ads.capi_contexts` 登记擦除处理（T14 / customers-billing CD7，meta-ads-v1 §12）；登记前不得在生产开启 CAPI。现有清理机制不替代登记，已经发出的事件不能召回。
-6. 广告权限核对（meta-ads-v1 A-1）：`0089_staff_team.sql` 的创建者触发器会应用完整 owner bundle，并回填既有 owner，包含 `ads:*`；不能再按 0074 时的旧权限列表要求所有店铺补发。先核对实际主体、角色和缺失权限；仅对确实缺权的历史创建者，在 owner 批准后用迁移属主连接（`lc_psql` 即 `postgres` 超级用户的容器内 unix socket 连接，试点主机没有 `MIGRATION_DATABASE_URL`；SQL 文件在主机上，走 stdin）用 `bash -c` 运行，uuid 作位置参数传入（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-ads-permissions.sql' deploy-grant-ads '<店铺 uuid>' '<主体 uuid>'`，输出两行（先是 `<store>|<principal>` 回显），最后一行 `granted=<0..3>`。授予权限不等于可投放：每店 allowance 默认 NT$0（关闭，裁决 O4），由运营另设 `max_active_budget_minor` / currency；这是内部批准预算上限，不等于 Meta `spend_cap` 或实时硬停止，也不替代真实投放批准。
+6. 广告权限核对（meta-ads-v1 A-1）：`0089_staff_team.sql` 的创建者触发器会应用完整 owner bundle，并回填既有 owner，包含 `ads:*`；不能再按 0074 时的旧权限列表要求所有店铺补发。先核对实际主体、角色和缺失权限；仅对确实缺权的历史创建者，在 owner 批准后用迁移属主连接（`lc_psql` 即 `postgres` 超级用户的容器内 unix socket 连接，试点主机没有 `MIGRATION_DATABASE_URL`；SQL 文件在主机上，走 stdin）用 `sudo bash -c` 运行，uuid 作位置参数传入（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-ads-permissions.sql' deploy-grant-ads '<店铺 uuid>' '<主体 uuid>'`，输出两行（先是 `<store>|<principal>` 回显），最后一行 `granted=<0..3>`。授予权限不等于可投放：每店 allowance 默认 NT$0（关闭，裁决 O4），由运营另设 `max_active_budget_minor` / currency；这是内部批准预算上限，不等于 Meta `spend_cap` 或实时硬停止，也不替代真实投放批准。
 7. 卡住的草稿（无法解绑广告账户）：解绑会被触发器 `bindings_ads_disable_guard` 以 `binding_in_use`（409）拒绝，直到该店所有草稿都不再“可能花费”（AD6）。先在 admin 暂停；暂停 op 需到 SUCCEEDED。若暂停一直到不了：(a) 令牌被 Meta 撤销 → 商家用**同一个**广告账户重新连接（令牌换新、binding 不变），advance sweeper 会再规划下一个 pause seq；(b) 激活 op 停在 UNKNOWN → 等 reconcile（不要手工改 ops 行）；(c) 以上都不成立 → 在 Ads Manager 核实广告已停，草稿在 `ends_at + 1 天` 后自动不再计入，解绑随之放行。没有操作员强制覆盖（有意：覆盖等于允许“看不见的花费”）；如需加速，先记录根因再另立契约。
 
 ### 6.7 Meta：商家自助连接 Facebook 主页 / Instagram（meta-connect，R4）
@@ -427,7 +428,7 @@ SQL
 | 密钥 | 做法 |
 |---|---|
 | `pw_<login>` | 写入新值（`openssl rand -hex 32`，不带换行）→ `secrets-init.sh --rederive` → `docker compose run --rm -T --no-deps provision-logins` → 重启该服务 |
-| `pg_superuser_password` | **只用** `deploy/scripts/pg-ops.sh rotate-superuser`（见下文）。**禁止**手工执行 `ALTER ROLE postgres PASSWORD ...`：服务器 `log_statement='ddl'`，新口令会以明文进入 postgres 日志（Docker json-file）和诊断包 |
+| `pg_superuser_password` | **只用** `sudo deploy/scripts/pg-ops.sh rotate-superuser`（见下文）。**禁止**手工执行 `ALTER ROLE postgres PASSWORD ...`：服务器 `log_statement='ddl'`，新口令会以明文进入 postgres 日志（Docker json-file）和诊断包 |
 | `commerce_bff_key` | 替换后 api 和 admin **同时**重启 |
 | `commerce_buyer_bff_key` | 替换后 api 和 storefront 同时重启（值必须不同于商家 BFF key） |
 | `commerce_buyer_cookie_key` | 替换后所有买家会话失效 |
@@ -442,7 +443,7 @@ SQL
 
 所有密钥文件权限保持 `0440 root:10500`。改完后执行 `preflight.sh`。
 
-`pg-ops.sh rotate-superuser`（在 DB 主机上以 root 执行，postgres 必须在运行；smoke S41 验证）：
+`sudo deploy/scripts/pg-ops.sh rotate-superuser`（在 DB 主机上用 sudo 执行，postgres 必须在运行；smoke S41 验证）：
 1. 生成新值（`openssl rand -hex 32`），先持久化到 `secrets/.pg_superuser_password.rotating`（0400），再改数据库。
 2. 在 pg-ops 中用**同一个 psql 会话**：`SET log_statement='none'; SET log_min_error_statement='panic'; SET log_min_duration_statement=-1;`，
    psql 自己读取新值（`` \set pw `cat …` ``，新值经 stdin 进入 pg-ops 的 /tmp tmpfs），`SELECT format('ALTER ROLE postgres PASSWORD %L', :'pw') \gexec`。
@@ -512,7 +513,7 @@ A2-M1（移除 C1 退役检查必须红），均由 GitHub CI 执行。
 
 - [ ] owner 批准记录（范围、tag、窗口）
 - [ ] `bash scripts/dev/release-gate.sh --strict` 退出码 0（R1 验收命令：每个 tier 一行 PASS/FAIL/NOT_RUN；NOT_RUN 不是通过），证据在主 checkout 的 `output/release-gate/<UTC>-<sha>/`
-- [ ] `deploy/scripts/smoke.sh static` 和 `smoke.sh full`（Linux 部署主机、root）无 FAIL，证据位于 `deploy/.evidence/<run>/result.json`，由集成者复制到 `evidence/release/`（I6）；`S29m` BLOCKED（I8）是已记录的已知限制，不是 PASS
+- [ ] `sudo deploy/scripts/smoke.sh static` 和 `sudo deploy/scripts/smoke.sh full`（Linux 部署主机、root）无 FAIL，证据位于 `deploy/.evidence/<run>/result.json`，由集成者复制到 `evidence/release/`（I6）；`S29m` BLOCKED（I8）是已记录的已知限制，不是 PASS
 - [ ] 独立验收：test_worker 复跑 smoke；security_reviewer 审查 hba、密钥、加固和 Caddy（作者不能是唯一验收人）
 - [ ] `preflight.sh --online` 全部 PASS
 - [ ] 升级前备份已经成功，且最近 30 天内做过恢复演练（backup-restore.md）
