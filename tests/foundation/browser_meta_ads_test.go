@@ -96,7 +96,7 @@ func mabStartAdmin(t *testing.T, ctx context.Context, f *testFixture, principal,
 	nextLog := browserLog(t, filepath.Join(evidence, "next.log"))
 	next := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	next.Dir = root
-	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
+	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "localhost", "NODE_OPTIONS": "--dns-result-order=ipv4first", "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD"})
 	next.Stdout, next.Stderr = nextLog, nextLog
 	next.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

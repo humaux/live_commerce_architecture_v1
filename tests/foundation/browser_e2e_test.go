@@ -343,7 +343,7 @@ func (x *e2eRun) startAdminNext(t *testing.T) *exec.Cmd {
 	logFile := browserLog(t, filepath.Join(x.evidence, "admin-next.log"))
 	cmd := exec.CommandContext(x.ctx, "node", filepath.Join(x.root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	cmd.Dir = x.root
-	cmd.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production", "NEXT_TELEMETRY_DISABLED": "1",
+	cmd.Env = browserEnvironment(map[string]string{"HOSTNAME": "localhost", "NODE_OPTIONS": "--dns-result-order=ipv4first", "NODE_ENV": "production", "NEXT_TELEMETRY_DISABLED": "1",
 		"COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1", "COMMERCE_PUBLIC_ORIGIN": x.adminOrigin,
 		"COMMERCE_API_ORIGIN": x.adminAPI.URL, "COMMERCE_OIDC_ISSUER": x.idp.server.URL, "COMMERCE_BFF_KEY": x.bffKey,
 		"COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD"})

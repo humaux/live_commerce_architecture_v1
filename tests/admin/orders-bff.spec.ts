@@ -98,7 +98,10 @@ function expectCleared(response: RawResponse) {
   }
 }
 
-function expectLocalRedirect(location: URL) {
+// TH-3 (#147): Next runs on HOSTNAME=localhost like production, so it must emit a path-only Location; an absolute one would
+// carry the child's private port (the relay no longer rewrites it).
+function expectLocalRedirect(location: URL, rawLocation: string | undefined) {
+  expect(rawLocation ?? "").toMatch(/^\/(?!\/)/);
   const configured = new URL(publicOrigin);
   expect(location.protocol).toBe(configured.protocol);
   expect(location.port).toBe(configured.port);
@@ -119,7 +122,7 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
     const response = await raw("/?keep=1", "GET", headers);
     expect(response.status).toBe(307);
     const location = new URL(response.headers.location ?? "", publicOrigin);
-    expectLocalRedirect(location);
+    expectLocalRedirect(location, response.headers.location);
     expect(location.pathname.replace(/\/$/, "")).toBe(`/${locale}`);
     expect(location.search).toBe("?keep=1");
     expect(response.headers["cache-control"]).toBe("private, no-store");
@@ -285,7 +288,7 @@ test("MBT01-04 signed cookie, raw route policy and real Go/PG order reads", asyn
     const response = await raw(path, "GET", authorized);
     if (response.status === 307) {
       const location = new URL(response.headers.location ?? "", publicOrigin);
-      expectLocalRedirect(location);
+      expectLocalRedirect(location, response.headers.location);
       expect(location.pathname).not.toMatch(/^\/api\//);
       const followed = await raw(
         location.pathname + location.search,

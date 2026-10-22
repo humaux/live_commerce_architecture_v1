@@ -133,7 +133,7 @@ func TestBrowserPasswordAuth(t *testing.T) {
 	server := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	server.Dir = root
 	server.Env = browserEnvironment(map[string]string{
-		"HOSTNAME": "127.0.0.1", "NODE_ENV": "production",
+		"HOSTNAME": "localhost", "NODE_OPTIONS": "--dns-result-order=ipv4first", "NODE_ENV": "production",
 		"COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PASSWORD_LOGIN_ENABLED": "1", // no COMMERCE_OIDC_ISSUER: password-only (ruling R-4)
 		"COMMERCE_PUBLIC_ORIGIN":          publicOrigin, "COMMERCE_API_ORIGIN": api.URL,

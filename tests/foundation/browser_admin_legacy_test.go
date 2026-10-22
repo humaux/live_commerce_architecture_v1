@@ -159,7 +159,7 @@ func TestBrowserAdminLedgerFixtureChain(t *testing.T) {
 			"COMMERCE_FIXTURE_TOKEN": fixtureEnv["COMMERCE_FIXTURE_TOKEN"], "COMMERCE_FIXTURE_STORE_ID": fixtureEnv["COMMERCE_FIXTURE_STORE_ID"], "COMMERCE_API_ORIGIN": fixtureEnv["COMMERCE_API_ORIGIN"]})
 	// production.spec.ts: packaged build, no identity, no fixture -> fail-closed "not configured".
 	startBrowserNode(t, ctx, evidence, "production-next", root, []string{filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js")},
-		map[string]string{"HOSTNAME": "127.0.0.1", "PORT": "3101", "NODE_ENV": "production"})
+		map[string]string{"HOSTNAME": "localhost", "NODE_OPTIONS": "--dns-result-order=ipv4first", "PORT": "3101", "NODE_ENV": "production"})
 
 	storeURL := "/api/stores/" + fixtureEnv["COMMERCE_FIXTURE_STORE_ID"] + "/warehouses"
 	waitHTTP(t, ctx, evidence, "http://127.0.0.1:3100"+storeURL, "127.0.0.1:3100", http.StatusOK)
@@ -305,7 +305,7 @@ func adminMockSuite(t *testing.T, suite string, onboarding bool) {
 	}
 	evidence := adminEvidence(t, root, "admin-"+suite)
 	env := map[string]string{
-		"HOSTNAME": "127.0.0.1", "PORT": "3100", "NODE_ENV": "production",
+		"HOSTNAME": "localhost", "NODE_OPTIONS": "--dns-result-order=ipv4first", "PORT": "3100", "NODE_ENV": "production",
 		"COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": "http://127.0.0.1:3100", "COMMERCE_API_ORIGIN": "http://127.0.0.1:19111",
 		"COMMERCE_OIDC_ISSUER": "https://provider.example/realm/", "COMMERCE_BFF_KEY": strings.Repeat("A", 43),

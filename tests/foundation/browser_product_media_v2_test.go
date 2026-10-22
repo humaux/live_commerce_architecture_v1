@@ -244,7 +244,7 @@ func TestBrowserProductMediaV2RealUpload(t *testing.T) {
 	adminLog := browserLog(t, filepath.Join(evidence, "admin-next.log"))
 	admin := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	admin.Dir = root
-	admin.Env = browserEnvironment(map[string]string{"HOSTNAME": "127.0.0.1", "NODE_ENV": "production",
+	admin.Env = browserEnvironment(map[string]string{"HOSTNAME": "localhost", "NODE_OPTIONS": "--dns-result-order=ipv4first", "NODE_ENV": "production",
 		"NEXT_TELEMETRY_DISABLED": "1", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": adminOrigin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": adminKey})
 	admin.Stdout, admin.Stderr = adminLog, adminLog
