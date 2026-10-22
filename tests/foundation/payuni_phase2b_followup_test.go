@@ -542,7 +542,7 @@ const (
 		"s.has_auth, s.has_cap, s.has_cei, s.has_ref, s.has_con"
 	// The read-only wrapper the runbook prescribes around the listing (review-124-cb721a802 P2-1), fed to lib.sh's
 	// lc_psql as a quoted heredoc: the pilot host has no MIGRATION_DATABASE_URL (review-125-c20176c95 P2-1).
-	pfuRunbookTxOpen  = "\nbash -c 'source deploy/scripts/lib.sh && lc_load_env \"$LC_COMPOSE_ENV\" && lc_psql' _ <<'SQL'\nBEGIN READ ONLY;\nSET LOCAL row_security = off;\n" + pfuRunbookBegin
+	pfuRunbookTxOpen  = "\nsudo bash -c 'source deploy/scripts/lib.sh && lc_load_env \"$LC_COMPOSE_ENV\" && lc_psql' deploy-payuni-unapplied <<'SQL'\nBEGIN READ ONLY;\nSET LOCAL row_security = off;\n" + pfuRunbookBegin
 	pfuRunbookTxClose = pfuRunbookEnd + "\nROLLBACK;\nSQL\n"
 )
 
@@ -608,7 +608,7 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 		t.Errorf("runbook listing projection changed (a DISTINCT, aggregate or set-returning call would change the row set):\ngot:  %s\nwant: %s", sel, pfuRunbookSelect)
 	}
 	if rb := pfuBetween(t, pfuRunbook, "", "\n### 4.1"); !strings.Contains(rb, pfuRunbookTxOpen) || !strings.Contains(rb, pfuRunbookTxClose) {
-		t.Errorf("runbook listing must be bash -c 'source lib.sh ... lc_psql' _ <<'SQL' BEGIN READ ONLY; SET LOCAL row_security = off; ... ROLLBACK; SQL")
+		t.Errorf("runbook listing must be sudo bash -c 'source lib.sh ... lc_psql' deploy-payuni-unapplied <<'SQL' BEGIN READ ONLY; SET LOCAL row_security = off; ... ROLLBACK; SQL")
 	}
 	// Runnable on the pilot host (issue #116): operator-facing runbook and ops SQL must not use the unset
 	// $MIGRATION_DATABASE_URL (grants go via lc_psql; prose naming the variable without "$" is fine).

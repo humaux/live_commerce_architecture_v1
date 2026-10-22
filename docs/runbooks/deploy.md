@@ -1,7 +1,7 @@
 <!--
 File: docs/runbooks/deploy.md
 Purpose: 部署运行手册 — 主机准备、配置、首次部署、升级、回滚决策、功能上线顺序、密钥轮换、证书、迁移到两台主机/K8s、发布检查清单。
-Runs as/in: 文档（运维人员在部署主机上以 root 执行其中命令）。
+Runs as/in: 文档（运维人员以可 sudo 的用户登录部署主机（试点主机为 `claude-deploy`，`sudo -n`），需要 root 的命令显式写 `sudo`；`sudo bash -c '…' <名字> 参数` 里的 <名字> 是日志里的脚本名（`$0`），不是占位 `_`）。
 Reads env / secrets: 无（命令读取 /etc/live-commerce/compose.env 与 secrets 目录，本文不含任何密钥值）。
 Used by: 运维/owner/集成者；deploy/README.md 链接到此。
 Depends on: deploy/scripts/*.sh, deploy/compose.yml, deploy/env/*.env.example。
@@ -38,9 +38,9 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
 2. 防火墙：放行 22/tcp（只允许管理来源）、80/tcp、443/tcp、443/udp。
    **注意：Docker 发布的端口会绕过 ufw/firewalld 的 INPUT 规则**，需要用 `DOCKER-USER` 链或 `LC_BIND_ADDR` 限制。
 3. 时间同步：启用 chrony 或 systemd-timesyncd，`timedatectl show -p NTPSynchronized` 应输出 `yes`。
-4. 以 root 在部署 checkout（例如 `/opt/live-commerce`）执行：
+4. 以可 sudo 的用户在部署 checkout（例如 `/opt/live-commerce`）执行：
    ```sh
-   deploy/scripts/host-setup.sh            # 检查版本，创建 GID 10500 组、目录和权限，安装模板（不覆盖）
+   sudo deploy/scripts/host-setup.sh            # 检查版本，创建 GID 10500 组、目录和权限，安装模板（不覆盖）
    ```
    按输出提示合并推荐的 `/etc/docker/daemon.json`（json-file 日志轮转 + live-restore）。脚本**不会自动修改**这个文件。
 5. 安装定时任务：`cp deploy/host/crontab.example /etc/cron.d/live-commerce`，并修改路径。
@@ -67,7 +67,7 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
      没有配对时 API/worker/`ops-admin.sh` 都拒绝 LIVE。逐店审批、canary 与停收步骤见 `docs/runbooks/stripe-live.md`。
 3. 生成密钥（只补缺失的文件，不覆盖、不打印值）：
    ```sh
-   deploy/scripts/secrets-init.sh
+   sudo deploy/scripts/secrets-init.sh
    ```
 4. owner 提供的密钥：用真实值替换文件内容 `__UNSET__`，权限保持 `0440 root:10500`。
    - `commerce_oidc_client_secret`：如果保持 `__UNSET__`，表示使用公共 PKCE 客户端，P09 给出 WARN。
@@ -80,15 +80,15 @@ Change rules: 命令必须与脚本保持一致；改脚本行为时同步本文
      preflight P04 检查四个 keyring 互不共享 key、三个独立 b64 密钥两两不同且不在任何 keyring 中。
 5. 校验：
    ```sh
-   deploy/scripts/preflight.sh --online    # 只输出规则号、PASS/FAIL 和变量名
+   sudo deploy/scripts/preflight.sh --online    # 只输出规则号、PASS/FAIL 和变量名
    ```
    因为 cmd/api 启动失败时只打印 `api stopped`，所以 preflight 必须全绿后才能继续。
 
 ## 3. 首次部署
 
 ```sh
-deploy/scripts/build-images.sh           # 输出 IMAGE_TAG=<sha12>（-dirty 标签禁止用于生产）
-deploy/scripts/deploy.sh first <sha12>   # preflight → 镜像检查 → postgres 健康 → migrate → provision-logins → 写 compose.env IMAGE_TAG → up -d → 部署后检查 → 记录
+sudo deploy/scripts/build-images.sh           # 输出 IMAGE_TAG=<sha12>（-dirty 标签禁止用于生产）
+sudo deploy/scripts/deploy.sh first <sha12>   # preflight → 镜像检查 → postgres 健康 → migrate → provision-logins → 写 compose.env IMAGE_TAG → up -d → 部署后检查 → 记录
 ```
 - 不带 `<tag>` 时使用 compose.env 里已有的 `IMAGE_TAG`。
 - 首次签发 ACME 证书：DNS 必须先指向本机（P14）。演练时在 `caddy.env` 中打开 staging CA，正式签发前再注释掉。
@@ -106,8 +106,8 @@ deploy/scripts/deploy.sh first <sha12>   # preflight → 镜像检查 → postgr
 ## 4. 升级（只能前向）
 
 ```sh
-deploy/scripts/build-images.sh           # 新 tag
-deploy/scripts/deploy.sh upgrade <tag>
+sudo deploy/scripts/build-images.sh           # 新 tag
+sudo deploy/scripts/deploy.sh upgrade <tag>
 ```
 步骤：
 1. preflight（新 tag）。
@@ -128,10 +128,10 @@ deploy/scripts/deploy.sh upgrade <tag>
 - PAYUNi 退役守卫（0197、0198、0199、post_river/0027，PAY-RM2 2b/2c）：库里只要还有未对账的 PAYUNi 历史（非终态 PAYUNi operation、AWAITING_PAYMENT 的 PAYUNi 订单、仍为 PAYMENT_PENDING 的 PAYUNi 库存预留、或从未应用的已存 PAYUNi 观测——按 0018 应用逻辑今天仍会写出 AUTHORIZED/CAPTURED fact 或 review case 的 QUERY 报告，判定以 0199 第 1 节守卫谓词为准，post_river/0027 同文。下面每一条都以报告通过 0018 的来源校验为前提：Status=SUCCESS、PaymentType=1、AuthType=1、CardInst=0，MerTradeNo 和 AmountTWD 与 attempt 一致，非空 TradeNo 等于 operation 的 provider_reference，TradeStatus ∈ {0,1,2,3,4,8,9}，DataSource ∈ {A,B}，CloseStatus ∈ {空,1,2,3,7,9}。不通过的报告 0018 当年就拒绝了，守卫也不计。通过的报告中，以下不论 DataSource、TradeNo、TradeStatus 都算：带任何退款字段（CardRefundType/CardRefundStatus/CardRefundDay 非空，或 CardRefundAmountTWD>0），或 `CardRemainAmountTWD` 与订单金额不等。TradeNo 非空、DataSource A、CloseStatus 2 但不构成完整请款的报告也算（CAPTURE_EVIDENCE_INCOMPLETE）。attempt 今天已有 CAPTURED fact 时，TradeNo 非空、DataSource A 且 TradeStatus 2/3/4 或 CloseStatus 3 的报告也算，CloseStatus 3 时 TradeStatus 是什么都一样（见下面的特例）。以上各条，attempt 已有对应 fact 或 review case 的不算。DataSource B、空 TradeNo、重复授权、任何时候的 TradeStatus 0/8/9、请款前的 TradeStatus 2/3/4，只有不命中上面任何一条时才不算。TradeStatus 8/9 不构成授权，但带退款字段、CardRemainAmountTWD 不等、CloseStatus 2 的不完整请款，或请款后 CloseStatus 3 时照样算），迁移就会以 `code=22023` 拒绝，`cmd/migrate` exit 1。编号迁移在**同一个事务**里执行，所以拒绝会让**本批全部编号迁移一起回滚**（不只是 0197，同一 release 里更早的编号迁移也不会生效），账本不变。上线前先跑守卫里的四个只读计数；前三项由运维对账：同时写 RELEASE ledger、把预留改为终态，然后再重跑 migrate。第四项不是运维能对掉的：它表示 provider 报过的授权、请款、退款或冲突信号从未入账，**升级给 owner 裁决，禁止手写 fact 或 review case 来让计数归零**（手写只会掩盖真实资金状态）。特例同样计入第四项：失败、取消或过期报告（TradeStatus 2/3/4 或 CloseStatus 3）在当年**先于**同一 attempt 的请款被 0018 应用（当时没有 CAPTURED fact，0018 什么都不写），守卫按**今天**已请款的状态判断，会把它算作未应用的冲突信号并拒绝。这是有意的失败即关闭（同一 TradeNo 既失败又请款本身就是 provider 异常），同样升级给 owner，不得绕过、不得补写 CONFLICTING_REPORT（门禁：PFU04 failed-before-capture）。
   第四项（含上面的特例）的处理路径，运维只做只读与升级，不做任何写入：
   1. 编号阶段（0197/0198/0199）拒绝时账本和 schema 都不变：按 §5 第 1 条执行 `deploy/scripts/deploy.sh app-rollback <旧tag>`，让旧版本继续服务（脚本不会自动回滚）；不重跑、不换 tag 绕过。若是 post_river/0027 拒绝，编号迁移已提交、ledger 已变化，app-rollback 会被拒绝（forward-fix only），按 §5 第 2/3 条由 owner 决定。
-  2. 运维用下面的只读查询列出守卫第四项计数的每一条报告，交给 owner。行数应等于拒绝信息里的第四项计数，不等就以守卫为准并一并报给 owner。用 cmd/migrate 跑守卫时的同一角色执行：`dsn_migrate_owner` 是 `postgres` 超级用户经容器内 unix socket 连接（secrets-init.sh），`deploy/scripts/lib.sh` 的 `lc_psql` 就是这个连接（`docker compose exec -T postgres`，密码由容器读 `/run/secrets/pg_superuser_password`，`ON_ERROR_STOP=1`，SQL 走 stdin 不进日志）。运维 shell 里没有 `MIGRATION_DATABASE_URL`（2026-10-20 试点主机实测），不要自己拼 DSN，也不要用任何应用登录。在部署主机的仓库根目录照下面整段执行（双机部署在 DB 主机执行）；输出无表头、`|` 分隔，列顺序同 SELECT。整段放在只读事务里，最后 ROLLBACK。下面的块用 `bash -c` 执行（lib.sh 是 bash 脚本，不论运维登录 shell 是什么都能跑；helper 的 `exit` 只结束这个子进程，不关运维自己的 shell；`lc_psql` 继承 heredoc 的 stdin）。代码块顶格，整段原样复制粘贴即可（缩进会让 heredoc 结束符 `SQL` 失配）；块后的第 3 条因此改为顶格显式编号。超级用户本来就绕过 RLS，`SET LOCAL row_security = off` 对它不改变结果；保留它是为了换成非超级用户执行时，受 RLS 约束的角色会直接报错，不会静默少返回行。
+  2. 运维用下面的只读查询列出守卫第四项计数的每一条报告，交给 owner。行数应等于拒绝信息里的第四项计数，不等就以守卫为准并一并报给 owner。用 cmd/migrate 跑守卫时的同一角色执行：`dsn_migrate_owner` 是 `postgres` 超级用户经容器内 unix socket 连接（secrets-init.sh），`deploy/scripts/lib.sh` 的 `lc_psql` 就是这个连接（`docker compose exec -T postgres`，密码由容器读 `/run/secrets/pg_superuser_password`，`ON_ERROR_STOP=1`，SQL 走 stdin 不进日志）。运维 shell 里没有 `MIGRATION_DATABASE_URL`（2026-10-20 试点主机实测），不要自己拼 DSN，也不要用任何应用登录。在部署主机的仓库根目录照下面整段执行（双机部署在 DB 主机执行）；输出无表头、`|` 分隔，列顺序同 SELECT。整段放在只读事务里，最后 ROLLBACK。下面的块用 `sudo bash -c` 执行（lib.sh 是 bash 脚本，不论运维登录 shell 是什么都能跑；helper 的 `exit` 只结束这个子进程，不关运维自己的 shell；`lc_psql` 继承 heredoc 的 stdin）。代码块顶格，整段原样复制粘贴即可（缩进会让 heredoc 结束符 `SQL` 失配）；块后的第 3 条因此改为顶格显式编号。超级用户本来就绕过 RLS，`SET LOCAL row_security = off` 对它不改变结果；保留它是为了换成非超级用户执行时，受 RLS 约束的角色会直接报错，不会静默少返回行。
 
 ```sh
-bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql' _ <<'SQL'
+sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql' deploy-payuni-unapplied <<'SQL'
 BEGIN READ ONLY;
 SET LOCAL row_security = off;
 -- runbook:payuni-unapplied-begin (FROM..END 与 0199/0027 守卫逐字相同，PFU07 校验)
@@ -289,7 +289,7 @@ SQL
 
 1. 登记账户（`VerifyAccount` 先核对 key 属于该账户且 `livemode=false`，之后才写库）：
    ```sh
-   deploy/scripts/ops-admin.sh stripe-admin register --tenant <tenant> --store <store> --principal <owner-principal>
+   sudo deploy/scripts/ops-admin.sh stripe-admin register --tenant <tenant> --store <store> --principal <owner-principal>
    # 提示输入 STRIPE_SECRET_KEY（无回显）与 STRIPE_ACCOUNT_ID；输出 {"connection_id":...,"credential_version":1}
    ```
    `<principal>` 必须是该租户已存在的 owner 成员。key 轮换：`ops-admin.sh stripe-admin rotate --tenant ... --connection <id> --expected-version <n>`。
@@ -302,7 +302,7 @@ SQL
    - 记下 Stripe 返回的签名密钥 `whsec_...`（只显示一次）。
 3. 登记端点及其签名密钥（用 **Stripe webhook 签名 keyring** 密封，不是支付 API-key keyring）：
    ```sh
-   deploy/scripts/ops-admin.sh stripe-admin webhook --tenant ... --store ... --principal ... \
+   sudo deploy/scripts/ops-admin.sh stripe-admin webhook --tenant ... --store ... --principal ... \
      --connection <connection-id> --endpoint <endpoint-id> --profile SANDBOX --expected-version 0 --enabled
    # 提示输入 STRIPE_WEBHOOK_SECRET（whsec_...，无回显）；输出 {"endpoint_id":...,"key_version":1}
    ```
@@ -312,7 +312,7 @@ SQL
    ```sh
    STRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh stripe-admin qualify --tenant ... --store ... --principal ... \
      --connection <id> --expected-version <n> --profile SANDBOX --currency <ISO> --amount-minor <method minimum> --return-url https://<LC_STORE_HOST>/payment/return
-   deploy/scripts/ops-admin.sh stripe-admin method --tenant ... --store ... --principal ... --market <id> --country <CC> \
+   sudo deploy/scripts/ops-admin.sh stripe-admin method --tenant ... --store ... --principal ... --market <id> --country <CC> \
      --connection <id> --qualification <qualification-id> --expected-version 0 --enabled --visible --sort 10 --min <minor> --max <minor> \
      --name-hans ... --name-hant ... --name-en ...
    ```
@@ -333,7 +333,7 @@ SQL
 2. 启用：`COMMERCE_META_WEBHOOK_ENABLED=1`（api.env）、`COMPOSE_PROFILES` 增加 `meta`；`meta-worker` 同时持有 K_actor（`commerce_claims_actor_key`），没有它评论不会被暂存为认领。
 3. **Page access token 登记**（`claims-worker` 发送私信用；`scopes_attested` 由操作者依据 token debug 输出声明：FB 为 `pages_messaging`，IG 为 `instagram_manage_comments`、`pages_read_engagement`）：
    ```sh
-   deploy/scripts/ops-admin.sh meta-admin page-token --tenant ... --store ... --principal <有 integration:manage 的成员> \
+   sudo deploy/scripts/ops-admin.sh meta-admin page-token --tenant ... --store ... --principal <有 integration:manage 的成员> \
      --binding <binding-id> --provider facebook --asset <page-id> --expected-version 0 --scopes pages_messaging
    # 提示输入 META_PAGE_ACCESS_TOKEN（无回显）；输出 {"version":1}。明文 token 从不进入 PG、日志或仓库
    ```
@@ -349,11 +349,11 @@ SQL
    `--proof` 是 owner 提供的资产所有权证据的 sha256（小写 64 位十六进制），例如把 `GET /{page-id}/subscribed_apps` 的 Graph 读回结果存档后
    `sha256sum`；CLI 不调用 Meta，证据文件由 owner 保管（不进仓库、不进日志）。`--principal` 必须在该店铺持有 `integration:manage`。
    ```sh
-   deploy/scripts/ops-admin.sh meta-admin route --tenant ... --store ... --principal ... \
+   sudo deploy/scripts/ops-admin.sh meta-admin route --tenant ... --store ... --principal ... \
      --app <app_id> --object page --asset <page-id> --proof <sha256hex> --proof-expires 2026-12-31T00:00:00Z --expected-epoch 0
    # 输出 {"binding_id":...,"binding_version":1,"route_id":...,"route_epoch":1}；binding_id 用于第 3 步 page-token 的 --binding
    # 重新激活/换证据：--expected-epoch <当前 route_epoch>；停用：
-   deploy/scripts/ops-admin.sh meta-admin route-disable --route <route_id> --expected-epoch <route_epoch>
+   sudo deploy/scripts/ops-admin.sh meta-admin route-disable --route <route_id> --expected-epoch <route_epoch>
    ```
    顺序：先第 6 步（route，得到 binding_id）→ 再第 3 步（page-token）→ 第 4 步（认领来源，G2 已关闭）。
    证据：`TestMetaRouteRegistrarF2`（REAL_PG：签名评论在 route 前隔离、route 后恰好一个 job、跨店冲突、停用后再隔离、无 integration:manage 拒绝）、smoke S44。
@@ -372,7 +372,7 @@ SQL
 3. 回调 URL 的 `code`/`state` 由 Caddy 访问日志改写为 REDACTED（smoke S40 覆盖 `/api/ads/meta/callback`）；admin 对该路径发 `Referrer-Policy: no-referrer`。
 4. 关闭：清空 `COMMERCE_META_ADS_APP_ID` 并重启 api（路由 404）。**不要先停 ads-worker**：暂停（pause）只有它能发到 Meta；先在 admin 暂停所有投放，确认 ops 终态后再去掉 `ads` profile。
 5. CAPI 与商品 feed（ads-capi，0080）：`secrets-init.sh` 生成 `commerce_capi_external_id_key`（b64std32，**只有 ads-worker 挂载**；缺失则 ads-worker 拒绝启动，已部署环境升级前先重跑 `secrets-init.sh` 补齐）。轮换会改变所有买家的 external_id（匹配率重置，不丢数据）。商品 feed 为 `https://<LC_STORE_HOST>/feeds/meta.csv`（storefront → api `GET /v1/buyer/feeds/meta.csv`，只按已验证 Host 解析店铺，Caddy 无需改动）。买家在隐私页授予 `ads_personalization` 时，同一事务写入 `ads.capi_contexts`（浏览器 UA；超过8天或撤回同意时清理，单批≤1000，见 `0080_meta_capi.sql` / attribution sweeper）。**生产挂载阻塞项分两项**：为 `ads.insights_daily` / `ads.capi_events` 登记保留类，并为 `ads.capi_contexts` 登记擦除处理（T14 / customers-billing CD7，meta-ads-v1 §12）；登记前不得在生产开启 CAPI。现有清理机制不替代登记，已经发出的事件不能召回。
-6. 广告权限核对（meta-ads-v1 A-1）：`0089_staff_team.sql` 的创建者触发器会应用完整 owner bundle，并回填既有 owner，包含 `ads:*`；不能再按 0074 时的旧权限列表要求所有店铺补发。先核对实际主体、角色和缺失权限；仅对确实缺权的历史创建者，在 owner 批准后用迁移属主连接（`lc_psql` 即 `postgres` 超级用户的容器内 unix socket 连接，试点主机没有 `MIGRATION_DATABASE_URL`；SQL 文件在主机上，走 stdin）用 `bash -c` 运行，uuid 作位置参数传入（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-ads-permissions.sql' _ '<店铺 uuid>' '<主体 uuid>'`，输出两行（先是 `<store>|<principal>` 回显），最后一行 `granted=<0..3>`。授予权限不等于可投放：每店 allowance 默认 NT$0（关闭，裁决 O4），由运营另设 `max_active_budget_minor` / currency；这是内部批准预算上限，不等于 Meta `spend_cap` 或实时硬停止，也不替代真实投放批准。
+6. 广告权限核对（meta-ads-v1 A-1）：`0089_staff_team.sql` 的创建者触发器会应用完整 owner bundle，并回填既有 owner，包含 `ads:*`；不能再按 0074 时的旧权限列表要求所有店铺补发。先核对实际主体、角色和缺失权限；仅对确实缺权的历史创建者，在 owner 批准后用迁移属主连接（`lc_psql` 即 `postgres` 超级用户的容器内 unix socket 连接，试点主机没有 `MIGRATION_DATABASE_URL`；SQL 文件在主机上，走 stdin）用 `bash -c` 运行，uuid 作位置参数传入（幂等、只作用于一个店铺的创建者；需该主体已持有完整创建者权限集，否则整笔回滚）：`sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-ads-permissions.sql' deploy-grant-ads '<店铺 uuid>' '<主体 uuid>'`，输出两行（先是 `<store>|<principal>` 回显），最后一行 `granted=<0..3>`。授予权限不等于可投放：每店 allowance 默认 NT$0（关闭，裁决 O4），由运营另设 `max_active_budget_minor` / currency；这是内部批准预算上限，不等于 Meta `spend_cap` 或实时硬停止，也不替代真实投放批准。
 7. 卡住的草稿（无法解绑广告账户）：解绑会被触发器 `bindings_ads_disable_guard` 以 `binding_in_use`（409）拒绝，直到该店所有草稿都不再“可能花费”（AD6）。先在 admin 暂停；暂停 op 需到 SUCCEEDED。若暂停一直到不了：(a) 令牌被 Meta 撤销 → 商家用**同一个**广告账户重新连接（令牌换新、binding 不变），advance sweeper 会再规划下一个 pause seq；(b) 激活 op 停在 UNKNOWN → 等 reconcile（不要手工改 ops 行）；(c) 以上都不成立 → 在 Ads Manager 核实广告已停，草稿在 `ends_at + 1 天` 后自动不再计入，解绑随之放行。没有操作员强制覆盖（有意：覆盖等于允许“看不见的花费”）；如需加速，先记录根因再另立契约。
 
 ### 6.7 Meta：商家自助连接 Facebook 主页 / Instagram（meta-connect，R4）
@@ -403,8 +403,8 @@ SQL
 3. **R2 权限核对／按需补发**：0079 曾仅给新建店铺创建者 `customers:read`、`customers:privacy`、`billing:manage`；当前 `0089_staff_team.sql` 已回填既有 owner 的完整权限集。先核对实际主体、角色和权限，不以店铺创建日期单独判定需要补发；只有确实缺权的历史创建者，才按下面旧补发路径处理，**需 owner 在聊天中批准**：
    连接方式：postgres 超级用户经容器内 unix socket（`lc_psql`，试点主机没有 `MIGRATION_DATABASE_URL`），SQL 文件走 stdin。输出两行，最后一行 `granted=<0..3>`；幂等，只作用于该店铺的创建者。下面的块不含 `#` 注释，可直接粘进交互式 zsh：
    ```sh
-   bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" &&
-     lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-r2-permissions.sql' _ '<store uuid>' '<创建者 principal uuid>'
+   sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" &&
+     lc_psql -v store_id="$1" -v principal_id="$2" < scripts/ops/grant-r2-permissions.sql' deploy-grant-r2 '<store uuid>' '<创建者 principal uuid>'
    ```
 4. 标准（standing）为 RESTRICTED 时只拒绝新开认领窗口（HTTP 402 `billing_restricted`）；退款、履约、结账不受影响（Q6）。
 

@@ -7,7 +7,8 @@ package foundation_test
 // (the 0065 creator set WITHOUT the three R2 permissions = a store created before 0079).
 // What it proves: granted=3 then granted=0; exactly one store.permissions_granted audit row; an abort with nothing
 // written for a principal without the full creator set (ordinary member and a creator missing one permission); no
-// change for any other principal; usage errors exit non-zero.
+// change for any other principal; usage errors exit non-zero. The ads script is also run for each variable missing
+// alone and for its success path (granted=3, then 0, one audit row).
 
 import (
 	"bytes"
@@ -131,5 +132,29 @@ func TestCustomersBillingCB13GrantScript(t *testing.T) {
 	}
 	if out, err := cbgPsql(t, container, ads, "store_id="+randomUUID(), "principal_id="+creator); err == nil || !strings.Contains(out, "store not found") {
 		t.Errorf("ads script, unknown store: err=%v out=%q, want %q (the guard lets valid input through)", err, out, "store not found")
+	}
+	// Each variable missing alone must trip its own guard (not only both missing), through real psql.
+	if out, err := cbgPsql(t, container, ads, "store_id="+store); err == nil || !strings.Contains(out, "usage") {
+		t.Errorf("ads script, principal_id missing alone: err=%v out=%q, want a usage error and a non-zero exit", err, out)
+	}
+	if out, err := cbgPsql(t, container, ads, "principal_id="+creator); err == nil || !strings.Contains(out, "usage") {
+		t.Errorf("ads script, store_id missing alone: err=%v out=%q, want a usage error and a non-zero exit", err, out)
+	}
+	// Ads success path: granted=3 then granted=0, exactly one audit row, nothing for another principal.
+	adsCount := func(principal string) int {
+		return countRows(t, f.owner, `SELECT count(*) FROM identity.store_grants WHERE store_id=$1 AND principal_id=$2 AND permission IN ('ads:read','ads:manage','ads:approve')`, store, principal)
+	}
+	adsGrantsBefore, adsAuditsBefore := allGrants(), audits()
+	if out, err := cbgPsql(t, container, ads, "store_id="+store, "principal_id="+creator); err != nil || granted.FindStringSubmatch(out) == nil || granted.FindStringSubmatch(out)[1] != "3" {
+		t.Fatalf("ads script first run: err=%v out=%q, want granted=3", err, out)
+	}
+	if adsCount(creator) != 3 || allGrants() != adsGrantsBefore+3 || audits() != adsAuditsBefore+1 || adsCount(bystander) != 0 {
+		t.Errorf("after the ads grant: creator ads grants=%d total grants %d->%d audits %d->%d bystander ads=%d, want 3, +3, +1, 0", adsCount(creator), adsGrantsBefore, allGrants(), adsAuditsBefore, audits(), adsCount(bystander))
+	}
+	if out, err := cbgPsql(t, container, ads, "store_id="+store, "principal_id="+creator); err != nil || granted.FindStringSubmatch(out) == nil || granted.FindStringSubmatch(out)[1] != "0" {
+		t.Errorf("ads script rerun: err=%v out=%q, want granted=0", err, out)
+	}
+	if allGrants() != adsGrantsBefore+3 || audits() != adsAuditsBefore+1 {
+		t.Errorf("an idempotent ads rerun wrote: grants %d audits %d (want %d, %d)", allGrants(), audits(), adsGrantsBefore+3, adsAuditsBefore+1)
 	}
 }
