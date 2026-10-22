@@ -18,17 +18,34 @@ func TestMetaAdsGrantScript(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var keep []string
-	inGuard := false // the \if :{?var} ... \endif usage guards: psql skips their RAISE when the variables are set
+	// Only the two exact usage guards are skipped (psql skips their RAISE when the variables are set); any other \if
+	// block, a changed guard body or an unterminated block fails loudly instead of being silently dropped.
+	const usageDo = `DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;`
+	var keep, guard []string
+	inGuard := false
 	for _, line := range strings.Split(string(raw), "\n") {
-		switch tl := strings.TrimSpace(line); {
+		tl := strings.TrimSpace(line)
+		switch {
 		case strings.HasPrefix(tl, `\if `):
-			inGuard = true
+			if inGuard || (tl != `\if :{?store_id}` && tl != `\if :{?principal_id}`) {
+				t.Fatalf("unexpected %q in grant-ads-permissions.sql: only the two usage guards may be skipped; execute or extend this test", tl)
+			}
+			inGuard, guard = true, nil
 		case strings.HasPrefix(tl, `\endif`):
+			if !inGuard || strings.Join(guard, "|") != `\else|`+usageDo {
+				t.Fatalf("usage guard body changed or stray \\endif: %q", guard)
+			}
 			inGuard = false
-		case !inGuard && !strings.HasPrefix(tl, `\`):
+		case inGuard:
+			if tl != "" && !strings.HasPrefix(tl, "--") {
+				guard = append(guard, tl)
+			}
+		case !strings.HasPrefix(tl, `\`):
 			keep = append(keep, line)
 		}
+	}
+	if inGuard {
+		t.Fatal("unterminated \\if in grant-ads-permissions.sql")
 	}
 	script := strings.Join(keep, "\n")
 	run := func(store, principal string) error {
