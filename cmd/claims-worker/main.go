@@ -1,6 +1,6 @@
 // Purpose: claims-worker process — poll the claims intake, dispatch external operations (Meta reply/audience/live-videos, inbox resubscribe, ECPay CVS) through the River default queue, and run the retention purge and store-domain verify sweeps. The only process holding the Meta Page private keyring and ECPay custody.
 // Depends on: platform worker pools, metareply routes, claimsintake, retention, storefrontdomains, ecpayroute, core.NewDispatcher, river (schema "river"), COMMERCE_CLAIMS_WORKER_ENABLED.
-// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go, console_testhook.go (test tag only); tests/foundation process tests (claims_retention_worker_test.go, claims_worker_console_process_test.go, order_attempt_*).
+// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go, cmd/claims-worker/console_wiring_test.go, console_testhook.go (test tag only); tests/foundation process tests (claims_retention_worker_test.go, claims_worker_console_process_test.go, order_attempt_*).
 package main
 
 import (
@@ -241,6 +241,12 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerDatabase
 	}
+	// CW-1 (#147, review-148 P2-R1) audit: Close waits for every borrowed connection. By this point no borrower is left:
+	// bridge handlers inherit pollCtx (main.go:402,447), so stopPoll (main.go:426) aborts their pgx calls under Console.mu
+	// (comment_poll.go:465,982-983) as console.Run reaches stopAll (comment_poll.go:281-283); the sweeper shares that ctx
+	// (main.go:416); the intake/inbox runners are joined (main.go:427-429); River stops and waits for its jobs
+	// (internal/jobqueue/run.go:46,52). Cancellation-ignoring rollbacks run only inside those joined goroutines/jobs, so a
+	// future unbounded non-ctx pool call would reopen the hang: fix it at that call, not here.
 	defer workerPool.Close()
 	if !sameDatabase(startup, intakePool, workerPool) {
 		return errWorkerDatabase // the operation the poller plans must be the one the dispatcher reads
