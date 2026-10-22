@@ -25,11 +25,13 @@
 
 \set ON_ERROR_STOP on
 \if :{?store_id}
+\endif
+\if :{?store_id}
 \else
   -- psql's \quit ignores its argument (exit 0), so a usage error raises instead: ON_ERROR_STOP then exits 3.
   DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;
 \endif
-\if :{?principal_id}
+\if :{?store_id}
 \else
   -- psql's \quit ignores its argument (exit 0), so a usage error raises instead: ON_ERROR_STOP then exits 3.
   DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;
