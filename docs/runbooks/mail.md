@@ -1,7 +1,7 @@
 <!--
 File: docs/runbooks/mail.md
 Purpose: 密码登录的发信邮箱（专用 QQ 邮箱 → 之后可升级 Tencent Exmail）的设置、只读探测（PA12）和一次真实发信验证（PA13）。
-Runs as/in: 文档；命令由 owner 或在 owner 批准下由运维在部署主机上执行。
+Runs as/in: 文档；命令由 owner 或在 owner 批准下由运维以可 sudo 的用户在部署主机上执行（需要 root 的命令显式写 sudo）。
 Reads env / secrets: LC_SMTP_HOST / LC_SMTP_USERNAME / LC_MAIL_FROM（compose.env）；secret 文件 commerce_smtp_password（SMTP 授权码，owner 以文件提供，绝不经聊天）。
 Used by: docs/runbooks/merchant-onboarding.md §0 O2；contracts/merchant-password-auth-v1.md §5、§9 PA12/PA13。
 Depends on: cmd/api/identity.go（配置校验）、internal/mail（SMTP 适配器，implicit TLS 465）。
@@ -18,7 +18,7 @@ Change rules: 授权码不得写入仓库、日志、聊天或命令行参数；
 2. 在邮箱设置里开启 POP3/SMTP，生成 16 位 SMTP **授权码**（不是网页登录密码，F8）。
 3. 把授权码写入文件 `${LC_SECRETS_DIR}/commerce_smtp_password`（0440，`root:${LC_SECRETS_GID}`），不要经聊天发送。
 4. `compose.env`：`LC_PASSWORD_LOGIN_ENABLED=1`、`LC_SMTP_HOST=smtp.qq.com`、`LC_SMTP_USERNAME=<完整邮箱地址>`、`LC_MAIL_FROM=xgdwm <同一个邮箱地址>`、`LC_MAIL_DAILY_CAP`（默认 200，QQ 的真实日上限**未知**：以首次观察到的 `smtp_rejected` 速率为准，不得调到邮箱持续发送过的数量之上）。
-5. 管理域名必须是 DNS-only（不经过 Cloudflare 代理），`preflight.sh --online` 的 P17 规则检查这一点。
+5. 管理域名必须是 DNS-only（不经过 Cloudflare 代理），`sudo deploy/scripts/preflight.sh --online` 的 P17 规则检查这一点。
 
 ## 2. 升级到 Tencent Exmail（推荐，之后）
 

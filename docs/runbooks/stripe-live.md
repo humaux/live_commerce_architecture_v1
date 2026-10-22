@@ -2,7 +2,7 @@
 File: docs/runbooks/stripe-live.md
 Purpose: Stripe LIVE 激活、canary、停收和监控的运维步骤（stripe-live-enable-v1 §2、§7、§8、§10）：cutover 前置 SQL、逐店审批 → LIVE 探测 → canary → 放开，
   以及 key / webhook 密钥泄露处置。每一步是单独的 `ops-admin.sh` 命令和一条审计行。
-Runs as/in: 文档（运维人员在**生产主机**上以 root 执行其中命令；Dashboard 步骤由 owner 在 Stripe 后台完成）。
+Runs as/in: 文档（运维人员以可 sudo 的用户登录**生产主机**，需要 root 的命令显式写 sudo；Dashboard 步骤由 owner 在 Stripe 后台完成）。
 Reads env / secrets: 无。命令读取 /etc/live-commerce/compose.env（LC_STRIPE_LIVE_* 配对）；live key 与 whsec_ 只经 `<NAME>_FILE` 文件路径进入 ops-admin.sh
   （LD3/O-D），本文只写占位符，不含任何密钥值，agent 从不读取、打印、grep 或复制这些文件，也从不带 `-x` 运行脚本。
 Used by: 运维/owner/集成者；deploy.md §2、§6、Phase B 与 merchant-onboarding.md §3 链接到此。
@@ -18,7 +18,7 @@ Change rules: 命令必须与 ops-admin.sh 的白名单/配对规则和 cmd/stri
 **铁律（LD3、O-D）**：live key 不经过聊天、仓库、CI、agent 上下文、日志或 URL。owner 把 `rk_live_…` 和 `whsec_…` 各写进服务器上的一个文件；运维只把**路径**交给
 `ops-admin.sh`。任何人（包括 agent）都不打开、打印、grep、复制这些文件，也不带 `-x` 运行脚本。命令输出只有 id、版本和布尔值。
 
-**所有 `stripe-admin …` 命令都写成 `deploy/scripts/ops-admin.sh stripe-admin …`——这是唯一的生产入口。** 下文 `<tenant>`、`<store>`、`<owner-principal>` 见 merchant-onboarding.md §2，
+**所有 `stripe-admin …` 命令都写成 `sudo deploy/scripts/ops-admin.sh stripe-admin …`——这是唯一的生产入口。** 下文 `<tenant>`、`<store>`、`<owner-principal>` 见 merchant-onboarding.md §2，
 `<connection-id>`、`<approval uuid>`、`<endpoint-uuid>` 是前一步的输出或本次新生成的 UUID（`uuidgen | tr A-Z a-z`）。
 
 ## 0. 前置（缺一不得开始）
@@ -29,7 +29,7 @@ Change rules: 命令必须与 ops-admin.sh 的白名单/配对规则和 cmd/stri
    用 SL08 权限清单创建受限 key `rk_live_…`（Access policy 限定为服务器出口 IP）、创建 live webhook 端点
    （URL `https://<LC_HOOKS_HOST>/v1/stripe/webhook/<endpoint-uuid>`，8 个事件，API 版本 `2026-08-26.dahlia`）。这些是 owner 的事，工程无法代办。
 3. owner 在服务器上把 key 和 whsec_ 各写入一个文件（**owner-only 目录，仓库之外**，例如 `/root/lc-transfer/`，目录 0700）：文件属主必须是运行 `ops-admin.sh` 的 uid
-   （通常 root；由 owner 用该 uid 写入，或事后 `chown` 给它），权限 0400 或 0600，**只有一行**，无符号链接。不满足时 ops-admin 报 `STRIPE_SECRET_KEY_FILE rejected: …`
+   （经 `sudo` 即 root；由 owner 用 root 写入，或事后 `chown` 给 root），权限 0400 或 0600，**只有一行**，无符号链接。不满足时 ops-admin 报 `STRIPE_SECRET_KEY_FILE rejected: …`
    （只报变量名和规则，不报内容）。
 4. compose.env 已设置 LIVE 配对（成对，缺一 preflight P06 失败）：
    ```
@@ -40,16 +40,15 @@ Change rules: 命令必须与 ops-admin.sh 的白名单/配对规则和 cmd/stri
    LC_STRIPE_LIVE_APPROVAL_REF=<approval_ref>
    ```
    `LC_STRIPE_CHECKOUT_ENABLED` 缺省跟随 `LC_STRIPE_ENABLED`；要先接单前对账、不接买家结账时显式设为 0（§3 平台级停收）。
-5. 主机侧：生产主机与 `LC_HOOKS_HOST` 的有效 TLS 已就绪（L4），`deploy/scripts/preflight.sh` 全 PASS，`deploy/scripts/watchdog.sh` PASS。
+5. 主机侧：生产主机与 `LC_HOOKS_HOST` 的有效 TLS 已就绪（L4），`sudo deploy/scripts/preflight.sh` 全 PASS，`sudo deploy/scripts/watchdog.sh` PASS。
    （目前没有生产主机，SL-LIVE01 在它就绪前是 NOT_RUN。）
 
 ## 1. Cutover 前置 SQL（LD1）：必须是 `0|0`
 
 切到 LIVE profile **之前**运行；不是 0 就等它们收敛（`payments-sandbox` 一直保留到此），只读、只输出计数：
 ```sh
-source deploy/scripts/lib.sh; lc_load_env "$LC_COMPOSE_ENV"
 # -- cutover-precondition begin
-lc_psql <<'SQL'
+sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql' stripe-live-cutover-check <<'SQL'
 SELECT
  (SELECT count(*) FROM checkout.payment_attempts a
    WHERE a.method_code = 'stripe_checkout' AND a.environment = 'SANDBOX'
@@ -67,9 +66,9 @@ SQL
 ## 2. 顺序（每步一个命令一条审计行；失败最多两次定向修复，然后升级，AGENTS.md）
 
 ```
-0  §1 计数 = 0|0；部署 LIVE profile（deploy.sh；preflight P06 双向通过）
-1  STRIPE_SECRET_KEY_FILE=<路径> … register --environment LIVE      → connection（VerifyAccount，livemode）；owner 删除传输文件
-2  STRIPE_WEBHOOK_SECRET_FILE=<路径> … webhook --profile LIVE        → endpoint，whsec 封存；owner 删除传输文件
+0  §1 计数 = 0|0；部署 LIVE profile（sudo deploy/scripts/deploy.sh；preflight P06 双向通过）
+1  sudo STRIPE_SECRET_KEY_FILE=<路径> … register --environment LIVE      → connection（VerifyAccount，livemode）；owner 删除传输文件
+2  sudo STRIPE_WEBHOOK_SECRET_FILE=<路径> … webhook --profile LIVE        → endpoint，whsec 封存；owner 删除传输文件
 3  live-approve                                                       → GET /v1/account 就绪读取 + 审批行
 4  qualify --profile LIVE                                            → create + expire + retrieve 探测（不扣款），REAL_LIVE 资格
 5  method --enabled --visible --max ≤ canary 上限                     → CANARY（对该店所有买家开放，≤ 上限）
@@ -80,20 +79,17 @@ SQL
 
 ### 步骤 1 登记账户（`rk_live_` 只经文件路径）
 ```sh
-export STRIPE_ACCOUNT_ID=<acct_...>          # 不是密钥
-STRIPE_SECRET_KEY_FILE=<owner 写的文件路径> \
-  deploy/scripts/ops-admin.sh stripe-admin register --environment LIVE \
+sudo STRIPE_SECRET_KEY_FILE=<路径> STRIPE_ACCOUNT_ID=<acct_...> deploy/scripts/ops-admin.sh stripe-admin register --environment LIVE \
   --tenant <tenant> --store <store> --principal <owner-principal>
-# 输出 {"connection_id":...,"credential_version":1}；只接受 rk_live_，sk_live_ 一律拒绝（stripe_live_key_unrestricted）
+# <路径> 为 owner 写的文件路径；STRIPE_ACCOUNT_ID 不是密钥。输出 {"connection_id":...,"credential_version":1}；只接受 rk_live_，sk_live_ 一律拒绝（stripe_live_key_unrestricted）
 ```
 输出打印后由 owner 删除传输文件（批准消息里已写明）。key 轮换见 §6。
 
 ### 步骤 2 登记 live webhook 端点
 ```sh
-STRIPE_WEBHOOK_SECRET_FILE=<owner 写的文件路径> \
-  deploy/scripts/ops-admin.sh stripe-admin webhook --tenant <tenant> --store <store> --principal <owner-principal> \
+sudo STRIPE_WEBHOOK_SECRET_FILE=<路径> deploy/scripts/ops-admin.sh stripe-admin webhook --tenant <tenant> --store <store> --principal <owner-principal> \
   --connection <connection-id> --endpoint <endpoint-uuid> --profile LIVE --expected-version 0 --enabled
-# 输出 {"endpoint_id":...,"key_version":1}
+# <路径> 为 owner 写的文件路径。输出 {"endpoint_id":...,"key_version":1}
 ```
 端点 uuid 必须与 owner 在 Dashboard 里注册的 URL 一致。
 
@@ -104,7 +100,7 @@ STRIPE_WEBHOOK_SECRET_FILE=<owner 写的文件路径> \
 缺任一项就不得把对应码写进 `--attest`，也就不能批准。
 需要配对（ops-admin 与 CLI 都先拒绝没有配对的调用）。`--attest` 必须列全 §9 的 11 个码，缺一个被拒绝：
 ```sh
-deploy/scripts/ops-admin.sh stripe-admin live-approve --tenant <tenant> --store <store> --principal <owner-principal> \
+sudo deploy/scripts/ops-admin.sh stripe-admin live-approve --tenant <tenant> --store <store> --principal <owner-principal> \
   --approval <approval uuid> --connection <connection-id> --expected-version <credential_version> --currency TWD \
   --approval-ref <approval_ref> --approved-at <owner 批准时间 RFC3339> --canary-max 5000 --max 2000000 \
   --attest account_active,canary_private,descriptor,dispute_notice,managed_off,payout_bank,policy_pages,radar_default,rak_live,three_ds,webhook_live
@@ -116,7 +112,7 @@ deploy/scripts/ops-admin.sh stripe-admin live-approve --tenant <tenant> --store 
 
 ### 步骤 4 LIVE 资格探测（会真实创建并立即过期一个 live Checkout Session，不扣款）
 ```sh
-deploy/scripts/ops-admin.sh stripe-admin qualify --tenant <tenant> --store <store> --principal <owner-principal> \
+sudo deploy/scripts/ops-admin.sh stripe-admin qualify --tenant <tenant> --store <store> --principal <owner-principal> \
   --connection <connection-id> --expected-version <credential_version> --profile LIVE --currency TWD --amount-minor 2500 \
   --return-url https://<LC_STORE_HOST>/payment/return
 # 输出 {"qualification_id":...}；使用已封存的 key（不需要再传 key），资格 30 天有效，过期只需重跑本步（不用重新 canary）
@@ -124,7 +120,7 @@ deploy/scripts/ops-admin.sh stripe-admin qualify --tenant <tenant> --store <stor
 
 ### 步骤 5 打开 CANARY 支付方式
 ```sh
-deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store> --principal <owner-principal> \
+sudo deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store> --principal <owner-principal> \
   --market <market-id> --country TW --connection <connection-id> --qualification <qualification-id> --expected-version 0 \
   --enabled --visible --sort 10 --min 2500 --max 5000 --name-hans ... --name-hant ... --name-en ...
 ```
@@ -136,7 +132,7 @@ owner 以买家身份用自己的卡在真实店铺下单一件 ≤ 上限的商
 
 ### 步骤 7 记录 canary
 ```sh
-deploy/scripts/ops-admin.sh stripe-admin live-canary --tenant <tenant> --store <store> --principal <owner-principal> \
+sudo deploy/scripts/ops-admin.sh stripe-admin live-canary --tenant <tenant> --store <store> --principal <owner-principal> \
   --approval <approval uuid> --attempt <canary attempt id> --refund <canary refund id>
 # 输出验证时间；SQL 校验币种、金额 ≤ 上限、全额退款、无 review case、支付和退款各至少一条 ACCEPTED 的 LIVE 收据
 ```
@@ -145,7 +141,7 @@ deploy/scripts/ops-admin.sh stripe-admin live-canary --tenant <tenant> --store <
 
 ### 步骤 8 放开
 ```sh
-deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store> --principal <owner-principal> \
+sudo deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store> --principal <owner-principal> \
   --market <market-id> --country TW --connection <connection-id> --qualification <qualification-id> --expected-version <当前版本> \
   --enabled --visible --sort 10 --min 2500 --max <max_minor> --name-hans ... --name-hant ... --name-en ...
 ```
@@ -157,9 +153,9 @@ deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store
 
 | 范围 | 命令 | 效果 | 不受影响 |
 | --- | --- | --- | --- |
-| 单店，可恢复 | `deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store> --principal <p> --market <m> --country TW --connection <c> --qualification <q> --expected-version <v> --enabled=false`（**不需要配对**） | 下一次开始支付返回 PT409（method），页面显示不可用；在任何状态下都成功（含 revoke/过期/轮换之后） | 已打开会话的交接（到期为止）、worker、webhook、退款 |
-| 单店，强制 | `deploy/scripts/ops-admin.sh stripe-admin live-revoke --tenant <tenant> --store <store> --principal <p> --approval <approval uuid> --revoke-ref <ref>`（**不需要配对**） | 审批及其 REAL_LIVE 资格被撤销 → 开始支付 PT409；重新启用要新审批 + 探测 + canary | 同上 |
-| 全平台 | compose.env 设 `LC_STRIPE_CHECKOUT_ENABLED=0`，然后 `deploy.sh`（重启 api） | Stripe 从所有店铺的托管结账中移除 | worker、webhook、退款继续 |
+| 单店，可恢复 | `sudo deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store> --principal <p> --market <m> --country TW --connection <c> --qualification <q> --expected-version <v> --enabled=false`（**不需要配对**） | 下一次开始支付返回 PT409（method），页面显示不可用；在任何状态下都成功（含 revoke/过期/轮换之后） | 已打开会话的交接（到期为止）、worker、webhook、退款 |
+| 单店，强制 | `sudo deploy/scripts/ops-admin.sh stripe-admin live-revoke --tenant <tenant> --store <store> --principal <p> --approval <approval uuid> --revoke-ref <ref>`（**不需要配对**） | 审批及其 REAL_LIVE 资格被撤销 → 开始支付 PT409；重新启用要新审批 + 探测 + canary | 同上 |
+| 全平台 | compose.env 设 `LC_STRIPE_CHECKOUT_ENABLED=0`，然后 `sudo deploy/scripts/deploy.sh upgrade <tag>`（重启 api） | Stripe 从所有店铺的托管结账中移除 | worker、webhook、退款继续 |
 
 **不要用停止 `payment-worker-live` 或 webhook 来止损**：会让 PAYMENT_PENDING 的库存和 UNKNOWN 的退款悬空（stripe-psp D5，refund RD3/RD4）。
 已打开的会话不会被强制过期，它们在 `expires_at`（≤ 40 分钟）自然关闭。owner 的 SL-LIVE02 演练：`method --enabled=false` → 店铺页显示 Stripe 不可用 → 重新打开。
@@ -168,13 +164,13 @@ deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store
 
 | 事件 | 做法 | 后果 |
 | --- | --- | --- |
-| API key 泄露 | Stripe Dashboard → API keys → 该受限 key → **Expire key**（或 **Rotate key**，Expiration 选 **Now**；泄露时**绝不**用 7 天宽限期）。然后 owner 把新 `rk_live_` 写进文件，运行 `STRIPE_SECRET_KEY_FILE=<路径> STRIPE_ACCOUNT_ID=<acct_...> deploy/scripts/ops-admin.sh stripe-admin rotate --environment LIVE --tenant <tenant> --store <store> --principal <owner-principal> --connection <connection-id> --expected-version <n>`（配对必须仍在 compose.env；缺 `--environment LIVE` 时 ops-admin 直接拒绝 `stripe_live_environment_required`） | 该账户所有 Stripe I/O 认证失败，attempt 保持 UNKNOWN（库存保留）直到新 key 登记并重新 `qualify`；审批保留 |
-| webhook 签名密钥泄露 | Dashboard → live 端点 → **Roll secret**，选立即过期；然后 `STRIPE_WEBHOOK_SECRET_FILE=<路径> deploy/scripts/ops-admin.sh stripe-admin webhook … --profile LIVE --expected-version <当前版本> --enabled` | 旧密钥签名的事件被拒绝；Stripe 最多重试 3 天（L4）；worker 轮询不受影响 |
+| API key 泄露 | Stripe Dashboard → API keys → 该受限 key → **Expire key**（或 **Rotate key**，Expiration 选 **Now**；泄露时**绝不**用 7 天宽限期）。然后 owner 把新 `rk_live_` 写进文件，运行 `sudo STRIPE_SECRET_KEY_FILE=<路径> STRIPE_ACCOUNT_ID=<acct_...> deploy/scripts/ops-admin.sh stripe-admin rotate --environment LIVE --tenant <tenant> --store <store> --principal <owner-principal> --connection <connection-id> --expected-version <n>`（配对必须仍在 compose.env；缺 `--environment LIVE` 时 ops-admin 直接拒绝 `stripe_live_environment_required`） | 该账户所有 Stripe I/O 认证失败，attempt 保持 UNKNOWN（库存保留）直到新 key 登记并重新 `qualify`；审批保留 |
+| webhook 签名密钥泄露 | Dashboard → live 端点 → **Roll secret**，选立即过期；然后 `sudo STRIPE_WEBHOOK_SECRET_FILE=<路径> deploy/scripts/ops-admin.sh stripe-admin webhook … --profile LIVE --expected-version <当前版本> --enabled` | 旧密钥签名的事件被拒绝；Stripe 最多重试 3 天（L4）；worker 轮询不受影响 |
 | 传输文件在仓库、备份或日志里被发现 | 视同 key 泄露：先按上一行处置，再删除文件，再 `lc_secret_scan` 检查日志 | — |
 
 ## 5. 监控：watchdog W11a–f（只输出检查 id 和计数）
 
-`deploy/scripts/watchdog.sh` 每次运行（cron `*/5`）在同一个 psql 会话里输出六行 `W11x PASS|FAIL <name>=<count> max=<n>`；只针对 `environment='LIVE'`，SANDBOX 部署恒为 PASS。
+`sudo deploy/scripts/watchdog.sh` 每次运行（cron `*/5`）在同一个 psql 会话里输出六行 `W11x PASS|FAIL <name>=<count> max=<n>`；只针对 `environment='LIVE'`，SANDBOX 部署恒为 PASS。
 告警 webhook 只带失败的检查 id。阈值是 §8 默认值，可用 `LC_W11_*`（整数）覆盖，见 watchdog.sh 头部。
 
 | 检查 | 含义 | 默认阈值 | 先做什么 |

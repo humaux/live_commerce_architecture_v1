@@ -2,7 +2,7 @@
 File: docs/runbooks/claims-data-deletion.md
 Purpose: 评论认领数据（claims / meta_intake / social.*）的保留期清理与“按人删除”（actor-level erasure）的运维步骤：
   启用保留策略、受理删除请求、执行 retention-admin erase、答复请求人、备份恢复后的 replay。
-Runs as/in: 文档（运维人员在部署主机上以 root 执行；数据库语句经 deploy/scripts/lib.sh 的 lc_psql 以 stdin 传入，不进日志）。
+Runs as/in: 文档（运维人员以可 sudo 的用户登录部署主机，需要 root 的命令显式写 sudo；数据库语句经 deploy/scripts/lib.sh 的 lc_psql 以 stdin 传入，不进日志）。
 Reads env / secrets: 运维登录口令只在本次 shell 会话的变量里；本文不含任何密钥值。
 Used by: 运维/owner/集成者；contracts/claims-retention-purge-v1.md §5/§10 引用。
 Depends on: migrations/0071_claims_retention.sql、cmd/retention-admin（doc.go 列出子命令与退出码）、cmd/claims-worker（每小时任务）、
@@ -23,7 +23,10 @@ Change rules: 子命令、退出码必须与 cmd/retention-admin/doc.go 一致�
 
 ## 1. 临时开启运维登录（每次操作前，owner 批准后）
 
+因临时口令 `$pw` 与 `COMMERCE_RETENTION_OPERATOR_DATABASE_URL` 只保存在单次会话内存中、绝不能作为 `sudo VAR=…` 或命令行参数传入（sudoers 会把命令行环境变量写入日志），在部署 checkout 目录进入单次 `sudo bash` 会话完成 §1–§6，结束后关闭角色并 `exit`：
+
 ```sh
+sudo bash                           # 进入单次 root shell（避免把临时口令经 sudo 命令行写入日志）
 source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV"
 pw=$(openssl rand -hex 32)          # 只在本 shell；不写文件
 lc_psql <<SQL >/dev/null
@@ -43,6 +46,7 @@ ra() { lc_compose run --rm --no-deps -T -e COMMERCE_RETENTION_OPERATOR_DATABASE_
 ```sh
 lc_psql <<<"ALTER ROLE lc_retention_operator NOLOGIN PASSWORD NULL;" >/dev/null
 unset pw COMMERCE_RETENTION_OPERATOR_DATABASE_URL
+exit                                # 退出单次 sudo bash 会话
 ```
 
 ## 2. 启用保留策略（一次性，owner 批准后）
