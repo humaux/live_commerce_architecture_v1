@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestStoreDomainsNumericConcurrentCreation(t *testing.T) {
@@ -60,16 +61,15 @@ func TestStoreDomainsNumericCandidateRetryAndBound(t *testing.T) {
 	ctx := context.Background()
 	for _, exhausted := range []bool{false, true} {
 		t.Run(fmt.Sprintf("exhausted=%t", exhausted), func(t *testing.T) {
-			tx, err := s.b.owner.Begin(ctx)
+			// A pinned disposable DB transaction uses PG's real PRNG. No production test hook,
+			// function replacement or caller-controlled candidate is introduced.
+			conn, release := seededConn(t, s.b.owner, 0.271828)
+			defer release()
+			tx, err := conn.Begin(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer tx.Rollback(ctx)
-			// A pinned disposable DB transaction uses PG's real PRNG. No production test hook,
-			// function replacement or caller-controlled candidate is introduced.
-			if _, err := tx.Exec(ctx, `SELECT setseed(0.271828)`); err != nil {
-				t.Fatal(err)
-			}
 			rows, err := tx.Query(ctx, `SELECT (10000000 + floor(random()*90000000))::bigint::text FROM generate_series(1,51)`)
 			if err != nil {
 				t.Fatal(err)
@@ -156,21 +156,20 @@ func TestStoreDomainsNumericConcurrentCandidateCollision(t *testing.T) {
 	s := sdSetup(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	tx1, err := s.b.owner.Begin(ctx)
+	conn1, release1 := seededConn(t, s.b.owner, 0.141421)
+	defer release1()
+	tx1, err := conn1.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tx1.Rollback(ctx)
-	tx2, err := s.b.owner.Begin(ctx)
+	conn2, release2 := seededConn(t, s.b.owner, 0.141421)
+	defer release2()
+	tx2, err := conn2.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tx2.Rollback(ctx)
-	for _, tx := range []pgx.Tx{tx1, tx2} {
-		if _, err := tx.Exec(ctx, `SELECT setseed(0.141421)`); err != nil {
-			t.Fatal(err)
-		}
-	}
 	var first string
 	const insert = `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'Collision','TWD') RETURNING handle`
 	if err := tx1.QueryRow(ctx, insert, s.f.tenant, randomUUID()).Scan(&first); err != nil {
@@ -223,5 +222,105 @@ func TestStoreDomainsNumericConcurrentCandidateCollision(t *testing.T) {
 	}
 	if err := tx2.Commit(ctx); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// seededConn borrows a connection from pool with its PRNG seeded with seed and returns the
+// cleanup the caller must defer. The seed is session state, so the connection lifecycle here
+// decides whether the next borrower inherits this deterministic sequence (#147).
+func seededConn(t *testing.T, pool *pgxpool.Pool, seed float64) (*pgx.Conn, func()) {
+	t.Helper()
+	ctx := context.Background()
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := conn.Exec(ctx, `SELECT setseed($1)`, seed); err != nil {
+		conn.Release()
+		t.Fatal(err)
+	}
+	return conn.Conn(), func() { conn.Release() }
+}
+
+// TestStoreDomainsNumericSeedDoesNotLeakThroughPool pins a pool to one connection, runs the
+// fixture's seeded work and gives the connection straight back. setseed is session state that
+// ROLLBACK does not undo, so with the old release pattern the next borrower sees this fixture's
+// deterministic stream (draw 52 after the 51 candidate draws) and later commits its handles,
+// which is how #147 came back on a rerun. The expectation is computed on a connection this
+// test hijacks and closes itself, so the oracle cannot pollute a pool.
+func TestStoreDomainsNumericSeedDoesNotLeakThroughPool(t *testing.T) {
+	s := sdSetup(t)
+	ctx := context.Background()
+	cfg, err := pgxpool.ParseConfig(s.b.databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.MaxConns = 1
+	cfg.MinConns = 0
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+
+	oracleConn, err := s.b.owner.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oracle := oracleConn.Hijack()
+	defer oracle.Close(ctx)
+	if _, err := oracle.Exec(ctx, `SELECT setseed(0.271828)`); err != nil {
+		t.Fatal(err)
+	}
+	var seeded []float64
+	rows, err := oracle.Query(ctx, `SELECT random() FROM generate_series(1,52)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var v float64
+		if err := rows.Scan(&v); err != nil {
+			t.Fatal(err)
+		}
+		seeded = append(seeded, v)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if len(seeded) != 52 {
+		t.Fatalf("seeded oracle drew %d values, want 52", len(seeded))
+	}
+	want := seeded[51]
+
+	conn, release := seededConn(t, pool, 0.271828)
+	rows, err = conn.Query(ctx, `SELECT (10000000 + floor(random()*90000000))::bigint::text FROM generate_series(1,51)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	drawn := 0
+	for rows.Next() {
+		var c string
+		if err := rows.Scan(&c); err != nil {
+			t.Fatal(err)
+		}
+		drawn++
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if drawn != 51 {
+		t.Fatalf("fixture drew %d candidates, want 51", drawn)
+	}
+	release()
+
+	// MaxConns=1: the borrowed connection is the one the fixture just returned.
+	var got float64
+	if err := pool.QueryRow(ctx, `SELECT random()`).Scan(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got == want {
+		t.Fatalf("setseed leaked through the pool: the next borrower of the fixture's connection drew %v, the seeded continuation (draw 52); a seeded connection must be closed, not returned to the pool", got)
 	}
 }
