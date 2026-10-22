@@ -98,15 +98,40 @@ func TestStoreDomainsNumericCandidateRetryAndBound(t *testing.T) {
 			if exhausted {
 				n = 50
 			}
+			// Another test in the shared database may already own a draw, so claiming
+			// it is a no-op instead of a 23505; it already blocks the allocator.
 			for _, c := range candidates[:n] {
-				if _, err := tx.Exec(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency,handle) VALUES($1,$2,'Occupied number','TWD',$3)`, s.f.tenant, randomUUID(), c); err != nil {
+				if _, err := tx.Exec(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency,handle) VALUES($1,$2,'Occupied number','TWD',$3) ON CONFLICT (handle) WHERE handle IS NOT NULL DO NOTHING`, s.f.tenant, randomUUID(), c); err != nil {
 					t.Fatal(err)
 				}
 			}
+			want := candidates[2]
 			if !exhausted {
 				// A still-serving platform origin also blocks reuse, even without a stores.handle owner.
-				if _, err := tx.Exec(ctx, `INSERT INTO control.storefront_domains(tenant_id,store_id,origin,state,ownership_verified_at,tls_verified_at,valid_until,evidence_ref) VALUES($1,$2,$3,'ACTIVE',now(),now(),now()+interval '1 day','platform-subdomain')`, s.f.tenant, s.f.store, "https://"+candidates[1]+".example.com"); err != nil {
+				// A prior test may already own this origin; then it already blocks the draw.
+				if _, err := tx.Exec(ctx, `INSERT INTO control.storefront_domains(tenant_id,store_id,origin,state,ownership_verified_at,tls_verified_at,valid_until,evidence_ref) VALUES($1,$2,$3,'ACTIVE',now(),now(),now()+interval '1 day','platform-subdomain') ON CONFLICT (origin) DO NOTHING`, s.f.tenant, s.f.store, "https://"+candidates[1]+".example.com"); err != nil {
 					t.Fatal(err)
+				}
+				// A later draw may also already be owned, so the expectation is the first
+				// seeded draw that neither blocker (stores.handle, serving origin) covers:
+				// the allocator must return exactly that draw, not an arbitrary free one.
+				want = ""
+				for _, c := range candidates[2:] {
+					var occupied bool
+					if err := tx.QueryRow(ctx, `
+						SELECT EXISTS(SELECT 1 FROM control.stores WHERE handle=$1)
+						    OR EXISTS(SELECT 1 FROM control.storefront_domains d
+						              WHERE d.evidence_ref='platform-subdomain' AND d.state <> 'DETACHED'
+						                AND position('https://' || $1 || '.' in d.origin) = 1)`, c).Scan(&occupied); err != nil {
+						t.Fatal(err)
+					}
+					if !occupied {
+						want = c
+						break
+					}
+				}
+				if want == "" {
+					t.Fatal("every seeded draw is already occupied; cannot stage the retry assertion")
 				}
 			}
 			if _, err := tx.Exec(ctx, `SELECT setseed(0.271828)`); err != nil {
@@ -118,8 +143,8 @@ func TestStoreDomainsNumericCandidateRetryAndBound(t *testing.T) {
 				if pgCode(err) != "PT409" {
 					t.Fatalf("50 occupied draws: got %q, %v; want PT409", got, err)
 				}
-			} else if err != nil || got != candidates[2] {
-				t.Fatalf("must skip occupied store and serving origin: got %q, %v; want third draw %q", got, err, candidates[2])
+			} else if err != nil || got != want {
+				t.Fatalf("must skip occupied store and serving origin: got %q, %v; want first unblocked draw %q", got, err, want)
 			}
 		})
 	}
