@@ -38,8 +38,9 @@ function shardScopeContract(source) {
   const gate = source.split(/^  gate:\s*$/m)[1]?.split(/^  aggregate:\s*$/m)[0] ?? "";
   // #107: every case arm with a shard: alternative, at any indentation, quoted or in "(pattern)" form; its body runs to ";;".
   // #116: spaces around "|" are fine; an arm needs whitespace-free alternatives, so command lines containing ")" are not arms.
-  // #147 CI-3: only the dispatch `case "$MODE"` that holds the shard arms is scanned; a harmless `*) ;;` in the evidence-root case before it is no shadow.
-  const dispatch = gate.split(/case "\$MODE" in/).slice(1).findLast(part => part.includes("shard:"))?.split(/^\s*esac\b/m)[0] ?? "";
+  // #147 CI-3: exactly the second `case "$MODE" in` (the dispatch holding the shard arms) is scanned; a harmless `*) ;;` in the
+  // evidence-root case before it, or a later case block, is not a shadow.
+  const dispatch = gate.split(/case "\$MODE" in/)[2]?.split(/^\s*esac\b/m)[0] ?? "";
   const lines = dispatch.split("\n");
   const arms = [];
   lines.forEach((line, i) => {
@@ -176,6 +177,24 @@ test("a harmless arm in the first case MODE statement is not a shadow of the sha
   const first = "            --browser*|--stripe-browser*|--ops-disk-guard)";
   assert.ok(workflow.includes(first), "the real first-case arm is where the test looks");
   assert.doesNotThrow(() => shardScopeContract(workflow.replace(first, `            *) ;;\n${first}`)));
+});
+
+// #147 CI-3: the dispatch is exactly the second `case "$MODE" in`; a later case block that mentions "shard:" must not replace it.
+test("only the second case MODE statement is scanned for the shard arms", () => {
+  const anchor = "          esac\n      # MATRIX-RECEIPT";
+  assert.ok(workflow.includes(anchor), "the dispatch esac is where the test looks");
+  const third = "          esac\n          case \"$MODE\" in\n            *) echo \"no shard: arms here\" ;;\n          esac\n      # MATRIX-RECEIPT";
+  assert.doesNotThrow(() => shardScopeContract(workflow.replace(anchor, third)), "a later case block is not the dispatch");
+});
+
+// #147 CI-4: `[^s]` is a negation (every shard: mode starts with "s"), not the positive class {^, s} a regexp escaping "^" would build.
+test("a bash [^x] glob is a negation, not a positive class", () => {
+  const gnn = "            shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation ";
+  assert.ok(workflow.includes(gnn), "the real gNN arm is where the test looks");
+  assert.doesNotThrow(() => shardScopeContract(workflow.replace(gnn, `            [^s]*) echo not-a-shadow ;;\n${gnn}`)),
+    "[^s] cannot shadow a mode that starts with s");
+  assert.throws(() => shardScopeContract(workflow.replace(gnn, `            [!x]*) echo shadowed ;;\n${gnn}`)), /shadow/,
+    "[!x] is the other bash negation spelling and still shadows modes starting with s");
 });
 
 test("injected disabled cache or unbound manifest goes RED under the real cache contract", () => {

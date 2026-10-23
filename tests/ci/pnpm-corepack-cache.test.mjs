@@ -38,8 +38,13 @@ function actionContract(src) {
   // #147 CI-1: the offline variable must sit in the HIT branch itself, not merely somewhere in the file (the later GITHUB_ENV line also names it).
   const hit = body.match(/if \[\[ "\$HIT" == true \]\]; then\n([\s\S]*?)\n\s*else\b/)?.[1] ?? "";
   assert.match(hit, /COREPACK_ENABLE_NETWORK=0 pnpm/, "a hit runs Corepack offline (inside the HIT branch)");
+  // #147 CI-1: a `||`/`&&`/`;` in the hit branch could run a second, networked pnpm after the offline attempt failed.
+  assert.doesNotMatch(hit, /\|\||&&|;/, "a hit cannot fall back to a networked download");
   // #147 CI-2: Corepack's own version is part of the key, so upgrading Corepack separately from Node cannot reuse a stale home.
-  assert.match(body, /corepack --version/, "the ver step resolves Corepack's own version");
+  // It must be resolved in the `ver` step: the same echo anywhere else leaves steps.ver.outputs.corepack empty.
+  const ver = body.split(/^\s*- id: ver\b[^\n]*\n/m)[1]?.split(/^\s*- (?:id|name|uses):/m)[0] ?? "";
+  assert.match(ver, /echo "corepack=\$\(corepack --version\)" >> "\$GITHUB_OUTPUT"/, "the ver step resolves Corepack's version (the cache key reads it)");
+  assert.match(body, /corepack --version/, "the ver step resolves Corepack's version (the cache key reads it)");
   assert.match(body, /key:\s*corepack-.*steps\.ver\.outputs\.corepack/, "the key follows Corepack's version (#147 CI-2)");
   assert.match(body, /echo "COREPACK_ENABLE_NETWORK=0" >> "\$GITHUB_ENV"/, "later pnpm calls in the job stay offline for Corepack");
 }
@@ -67,4 +72,25 @@ test("injected bare Corepack or a pnpm step ahead of the action goes RED", () =>
   // #147 CI-2: a key without Corepack's version goes RED.
   assert.ok(action.includes("-${{ steps.ver.outputs.corepack }}"), "the real key is where the contract looks");
   assert.throws(() => actionContract(action.replace("-${{ steps.ver.outputs.corepack }}", "")), /Corepack's version/);
+});
+
+// #147 CI-1: matching the HIT branch is not enough if that branch can fall back to a networked pnpm.
+test("a HIT branch cannot fall back to a networked download", () => {
+  const action = read(ACTION);
+  const offline = "version=$(COREPACK_ENABLE_NETWORK=0 pnpm --version)";
+  assert.ok(action.includes(offline), "the real offline invocation is where the test looks");
+  const fallback = action.replace(offline, `${offline} || pnpm --version`);
+  assert.notEqual(fallback, action);
+  assert.throws(() => actionContract(fallback), /offline|networked/, "a hit must not be able to download on an offline failure");
+});
+
+// #147 CI-2: the version must be resolved in the `ver` step; moving the echo leaves steps.ver.outputs.corepack empty.
+test("the Corepack version is resolved in the ver step", () => {
+  const action = read(ACTION);
+  const corepackEcho = '        echo "corepack=$(corepack --version)" >> "$GITHUB_OUTPUT"\n';
+  assert.ok(action.includes(corepackEcho), "the real ver step is where the test looks");
+  const moved = action.replace(corepackEcho, "").replace("    - name: pnpm via Corepack (offline on a cache hit)",
+    `    - id: late\n      shell: bash\n      run: |\n${corepackEcho}    - name: pnpm via Corepack (offline on a cache hit)`);
+  assert.notEqual(moved, action);
+  assert.throws(() => actionContract(moved), /Corepack's version/, "the key must read the version the ver step resolved");
 });

@@ -4,8 +4,12 @@
 //   from THIS run and sha with status PASS and test_count > 0. Missing, duplicate, stale, unplanned, failed or zero-count = red.
 //   test_count is read from the runners' own output in the log, never from a static list: top-level `--- PASS:` / `--- FAIL:` lines of
 //   `go test -v` (the lines `go tool test2json` turns into pass/fail events; test-focused.sh counts the same), top-level pass/fail events of
-//   `go test -json` logs (--browser-webkit / --stripe-browser write one .jsonl per step instead of -v text), plus the node --test summary
-//   (`ℹ pass N` / `ℹ fail N` spec reporter, `# pass N` / `# fail N` TAP, only inside its tests/suites/pass/fail summary block). Browser specs run inside those go tests.
+//   `go test -json` logs (--browser-webkit / --stripe-browser write one .jsonl per step instead of -v text), plus node --test summaries
+//   (`ℹ` spec / `#` TAP): only the LAST COMPLETE summary of one marked `node --test` invocation counts, and only when it has all
+//   eight Node v24 diagnostics with one prefix (#147 CI-9 P1). The invocation boundary is the marker pair printed by the gates'
+//   own `node` wrapper (scripts/dev/test-local.sh, scripts/dev/test-node.sh); an excerpt a test printed before the real summary,
+//   a truncated fragment, or a summary outside any invocation can never inflate test_count.
+//   Browser specs run inside those go tests.
 //   status is FAIL when the gate step failed OR a top-level fail event was parsed from the logs, even if the gate exited 0.
 //   Historical evidence never feeds this check.
 // Depends on: scripts/dev/ci-plan.mjs (artifactName); env MODE, GATE_OUTCOME, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA (write);
@@ -19,24 +23,47 @@ import { artifactName } from "./ci-plan.mjs";
 
 export const receiptFile = (mode) => `receipt-${artifactName(mode).replace(/^gate-/, "")}.json`;
 
-/** Tests that ran according to the runners' own output in one log text, and whether any top-level one failed (#147 CI-6). */
+// #147 CI-9 P1: the two marker lines that bracket one `node --test` process in a gate log. tests/ci/matrix-receipts.test.mjs
+// asserts both gate scripts still print these exact literals, so parser and shell can never drift apart silently.
+export const NODE_TEST_BEGIN = "## matrix-receipts node-test begin";
+export const NODE_TEST_END = "## matrix-receipts node-test end";
+// Node v24's summary is EIGHT ordered diagnostics (lib/internal/test_runner/test.js): tests, suites, pass, fail, cancelled,
+// skipped, todo, duration_ms; spec uses `ℹ`, TAP uses `# `, and the prefix is constant within one summary. Anything shorter
+// (a four-line excerpt), longer/mixed, or differently numbered is not that runner's summary. Post-summary failure details are
+// ordinary following lines, so the block is not required to reach EOF.
+const NODE_SUMMARY = /(?:^|\n)(ℹ|#) tests (?<tests>\d+)\n\1 suites (?<suites>\d+)\n\1 pass (?<pass>\d+)\n\1 fail (?<fail>\d+)\n\1 cancelled (?<cancelled>\d+)\n\1 skipped (?<skipped>\d+)\n\1 todo (?<todo>\d+)\n\1 duration_ms (?<duration_ms>\d+(?:\.\d+)?)(?=\n|$)/g;
+
+/** The text of each CLOSED begin/end marker pair = one node --test invocation; a log cut short before its end marker yields none. */
+function nodeInvocations(lines) {
+  const invocations = [];
+  let start = -1, depth = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i] === NODE_TEST_BEGIN) { if (depth++ === 0) start = i + 1; }
+    else if (lines[i] === NODE_TEST_END && depth > 0) { if (--depth === 0) { invocations.push(lines.slice(start, i).join("\n")); start = -1; } }
+  }
+  return invocations;
+}
+
+/** Tests that ran according to the runners' own output in one log text, and whether any top-level one failed (#147 CI-6/CI-9). */
 export function scanTests(text) {
-  let n = 0, failed = false, stage = "";
-  for (const line of text.split("\n")) {
+  let n = 0, failed = false;
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
     if (/^--- (PASS|FAIL): /.test(line)) { n++; if (line.startsWith("--- FAIL")) failed = true; }
-    // #147 CI-9: node --test prints its summary as one block (tests, suites, pass, fail); a pass line counts only right after a
-    // "suites" line and a fail line only right after a counted pass line, so the same words in nested tool output cannot inflate the count.
-    const m = /^(?:ℹ|#) (pass|fail) (\d+)\s*$/.exec(line);
-    const was = stage;
-    stage = /^(?:ℹ|#) suites \d+\s*$/.test(line) ? "suites" : "";
-    if (m && m[1] === "pass" && was === "suites") { n += Number(m[2]); stage = "pass"; }
-    if (m && m[1] === "fail" && was === "pass") { n += Number(m[2]); if (Number(m[2]) > 0) failed = true; }
     if (line.startsWith("{")) {
       try {
         const e = JSON.parse(line);
         if ((e.Action === "pass" || e.Action === "fail") && e.Test && !e.Test.includes("/")) { n++; if (e.Action === "fail") failed = true; }
       } catch { /* not a go test -json event */ }
     }
+  }
+  // #147 CI-9 P1: one invocation's count is its LAST complete summary, never an earlier excerpt and never a fragment.
+  for (const invocation of nodeInvocations(lines)) {
+    let last = null;
+    for (const summary of invocation.matchAll(NODE_SUMMARY)) last = summary;
+    if (!last) continue;
+    n += Number(last.groups.pass) + Number(last.groups.fail);
+    if (Number(last.groups.fail) > 0) failed = true;
   }
   return { n, failed };
 }

@@ -11,10 +11,17 @@ import { countTests, main, makeReceipt, receiptFile, verify } from "../../script
 const RUN = { runId: "4242", sha: "a".repeat(40) };
 const planned = [{ mode: "shard:unit" }, { mode: "shard:g01" }];
 const ok = (mode, extra = {}) => ({ mode, run_id: RUN.runId, run_attempt: "1", sha: RUN.sha, status: "PASS", test_count: 3, ...extra });
+// #147 CI-9 P1: one node --test invocation is the text between these markers, which the gates print around every
+// `node --test` process (scripts/dev/test-local.sh, scripts/dev/test-node.sh). Keep the literals here: a parser/shell drift is a red test.
+const BEGIN = "## matrix-receipts node-test begin", END = "## matrix-receipts node-test end";
+// A COMPLETE Node v24 summary: eight ordered diagnostics (test.js), spec `ℹ` or TAP `# ` prefix throughout.
+const summary = (pass, fail, prefix = "ℹ") => [`${prefix} tests ${pass + fail}`, `${prefix} suites 0`, `${prefix} pass ${pass}`, `${prefix} fail ${fail}`,
+  `${prefix} cancelled 0`, `${prefix} skipped 0`, `${prefix} todo 0`, `${prefix} duration_ms 12.5`];
+const invocation = (...blocks) => [BEGIN, ...blocks.flat(), END].join("\n");
 
 test("test_count is read from go test -v and node --test output, not from a static list", () => {
   const log = ["=== RUN   TestA", "--- PASS: TestA (0.01s)", "    --- PASS: TestA/sub (0.00s)", "--- FAIL: TestB (0.02s)", "--- SKIP: TestC (0.00s)", "ok  pkg 1s",
-    "ℹ tests 4", "ℹ suites 0", "ℹ pass 4", "ℹ fail 0", "# tests 3", "# suites 0", "# pass 2", "# fail 1", "    --- PASS: indented child output is not top-level"].join("\n");
+    invocation(summary(4, 0)), invocation(summary(2, 1, "#")), "    --- PASS: indented child output is not top-level"].join("\n");
   assert.equal(countTests(log), 2 + 4 + 3);
   assert.equal(countTests("=== RUN   TestA\n--- SKIP: TestA (0.00s)\nPASS\n"), 0, "a run where nothing executed counts 0");
   // go test -json (--browser-webkit writes one .jsonl per step): top-level pass/fail events count; subtests, skips, output and package events do not.
@@ -26,10 +33,56 @@ test("test_count is read from go test -v and node --test output, not from a stat
   assert.equal(makeReceipt({ mode: "m", outcome: "failure", runId: 1, runAttempt: 1, sha: "s", logs: [] }).status, "FAIL");
 });
 
-// #147 CI-9: a pass/fail line counts only inside the runner's own summary block (tests, suites, pass, fail), not anywhere in a log.
+// #147 CI-9: a pass/fail line counts only inside the runner's own complete summary block, and only inside a marked invocation.
 test("a pass line outside a node --test summary block does not count", () => {
   assert.equal(countTests("tool output\nℹ pass 99\n# pass 5\nℹ fail 7\n"), 0);
-  assert.equal(countTests("ℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ pass 50\n"), 3, "only the block's own pass line counts");
+  // The invocation's count is its summary's pass+fail; a stray pass line inside the same invocation does not add to it.
+  assert.equal(countTests(invocation([...summary(3, 0), "ℹ pass 50"])), 3, "only the summary's own pass line counts");
+});
+
+// #147 CI-9 P1 (review 172): a summary must be COMPLETE (all eight Node v24 diagnostics, one prefix) and it must be the
+// LAST complete summary of a marked node --test invocation. Node's spec reporter forwards test stdout verbatim, so a
+// printed excerpt of an earlier run is ordinary log content and must never inflate test_count.
+test("an interior excerpt is not a summary: only the invocation's last complete summary counts", () => {
+  // Codex's exact log shape: a truncated four-line excerpt printed by a test, then the runner's real final zero summary.
+  assert.equal(countTests(invocation(
+    "ℹ tests 5", "ℹ suites 0", "ℹ pass 5", "ℹ fail 0",
+    "tool: excerpt ends",
+    ...summary(0, 0),
+  )), 0, "the four-line excerpt before the real zero summary contributes nothing");
+
+  // Even a complete previous-run summary printed by a test is not the verdict; the invocation's final summary is.
+  assert.equal(countTests(invocation(
+    ...summary(5, 0),
+    "tool: complete previous-run excerpt ends",
+    ...summary(0, 0),
+  )), 0, "the last complete summary of the invocation decides");
+
+  // Two legitimate concatenated invocations each contribute their own final summary.
+  assert.equal(countTests([BEGIN, ...summary(3, 0), END, BEGIN, ...summary(2, 0), END].join("\n")), 5, "concatenated invocations sum");
+});
+
+test("a truncated or mixed-prefix node --test summary fragment does not count", () => {
+  assert.equal(countTests("tool output\nℹ suites 0\n# pass 5\n"), 0, "mixed reporter prefixes are not one summary");
+  assert.equal(countTests(invocation("ℹ tests 3", "ℹ suites 0", "ℹ pass 3")), 0, "a fragment without the summary tail is incomplete");
+  assert.equal(countTests(invocation("ℹ tests 5", "ℹ suites 0", "ℹ pass 5", "ℹ fail 0")), 0, "four lines are not a complete Node v24 summary");
+  assert.equal(countTests(invocation("ℹ tests 2", "ℹ suites 0", "# pass 2", "ℹ fail 0", "ℹ cancelled 0", "ℹ skipped 0", "ℹ todo 0", "ℹ duration_ms 1")), 0,
+    "the prefix must be consistent across all eight lines");
+  assert.equal(countTests([...summary(3, 0)].join("\n")), 0, "a summary outside a marked invocation belongs to no runner invocation");
+  assert.equal(countTests(invocation(summary(3, 0))), 3, "a complete summary inside its invocation still counts");
+});
+
+// The marker literals are a contract with the gate scripts; a shell/parser drift must fail here, not on a stranger's log.
+test("both node gate scripts print the invocation markers this parser requires", () => {
+  for (const script of ["scripts/dev/test-local.sh", "scripts/dev/test-node.sh"]) {
+    const source = readFileSync(script, "utf8");
+    assert.ok(source.includes(`'${BEGIN}'`), `${script} prints the begin marker`);
+    assert.ok(source.includes(`'${END}'`), `${script} prints the end marker`);
+  }
+  // test-local.sh lc_prepare() bodies already run node --test before lc_run, so the wrapper must precede the mode registry.
+  const local = readFileSync("scripts/dev/test-local.sh", "utf8");
+  assert.ok(local.indexOf("node() {") >= 0 && local.indexOf("node() {") < local.indexOf("# BEGIN MODE REGISTRY"),
+    "test-local.sh must bracket every node --test invocation, lc_prepare's included");
 });
 
 // #147 CI-6: a parsed failure forces FAIL even when the gate step itself exited 0.
@@ -38,7 +91,8 @@ test("status is FAIL when the logs show a failed test, whatever the gate outcome
   assert.equal(rec("--- PASS: TestA (0s)\n"), "PASS");
   assert.equal(rec("--- PASS: TestA (0s)\n--- FAIL: TestB (0s)\n"), "FAIL");
   assert.equal(rec(JSON.stringify({ Action: "fail", Test: "TestV" })), "FAIL");
-  assert.equal(rec("ℹ tests 2\nℹ suites 0\nℹ pass 1\nℹ fail 1\n"), "FAIL");
+  assert.equal(rec(invocation(summary(1, 1))), "FAIL");
+  assert.equal(rec(invocation(summary(3, 1), ...summary(0, 0))), "PASS", "a failure inside a discarded excerpt is not the runner's verdict");
   assert.equal(rec("    --- FAIL: TestA/sub (0s)\n--- PASS: TestA (0s)\n"), "PASS", "only top-level failures decide; a subtest failure fails its parent");
 });
 
