@@ -2,10 +2,61 @@ package foundation_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 )
+
+// adsGrantUsageDo is the one usage-guard body the REAL_PG test strips.
+const adsGrantUsageDo = `DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;`
+
+// adsGrantSQL returns the executable SQL of scripts/ops/grant-ads-permissions.sql after removing its usage guards.
+// Only the two exact usage guards are skipped (psql skips their RAISE when the variables are set); any other \if
+// block, a changed guard body or an unterminated block is refused instead of being silently dropped or executed.
+func adsGrantSQL(raw []byte) (string, error) {
+	var keep, guard []string
+	inGuard := false
+	for _, line := range strings.Split(string(raw), "\n") {
+		tl := strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(tl, `\if `):
+			if inGuard || (tl != `\if :{?store_id}` && tl != `\if :{?principal_id}`) {
+				return "", fmt.Errorf("unexpected %q in grant-ads-permissions.sql: only the two usage guards may be skipped; execute or extend this test", tl)
+			}
+			inGuard, guard = true, nil
+		case strings.HasPrefix(tl, `\endif`):
+			if !inGuard || strings.Join(guard, "|") != `\else|`+adsGrantUsageDo {
+				return "", fmt.Errorf("usage guard body changed or stray \\endif: %q", guard)
+			}
+			inGuard = false
+		case inGuard:
+			if tl != "" && !strings.HasPrefix(tl, "--") {
+				guard = append(guard, tl)
+			}
+		case !strings.HasPrefix(tl, `\`):
+			keep = append(keep, line)
+		}
+	}
+	if inGuard {
+		return "", fmt.Errorf("unterminated \\if in grant-ads-permissions.sql")
+	}
+	return strings.Join(keep, "\n"), nil
+}
+
+// TestMetaAdsGrantScriptRejectsNonGuardIf pins the scanner: the two usage guards are dropped, but a non-guard \if is
+// refused instead of being silently dropped (the pre-#153 rule hid new conditional blocks from the real-psql test).
+func TestMetaAdsGrantScriptRejectsNonGuardIf(t *testing.T) {
+	good := "\\if :{?store_id}\n\\else\n" + adsGrantUsageDo + "\n\\endif\nSELECT 1;"
+	got, err := adsGrantSQL([]byte(good))
+	if err != nil || strings.TrimSpace(got) != "SELECT 1;" {
+		t.Fatalf("usage-guard fixture: kept SQL = %q, err = %v, want SELECT 1;", got, err)
+	}
+	bad := "\\if :{?store_id}\n\\else\n" + adsGrantUsageDo + "\n\\endif\n\\if :{?dry_run}\nSELECT 'non-guard block';\n\\endif\nSELECT 1;"
+	if got, err := adsGrantSQL([]byte(bad)); err == nil {
+		t.Fatalf("non-guard \\if was silently dropped; kept SQL = %q, want an error", got)
+	}
+}
 
 // TestMetaAdsGrantScript runs the operator script scripts/ops/grant-ads-permissions.sql (REAL_PG; psql meta-commands stripped,
 // :'vars' substituted, the rest executed as written by the migration-owner connection). Gate for the r3 review P2 "nothing
@@ -18,36 +69,11 @@ func TestMetaAdsGrantScript(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Only the two exact usage guards are skipped (psql skips their RAISE when the variables are set); any other \if
-	// block, a changed guard body or an unterminated block fails loudly instead of being silently dropped.
-	const usageDo = `DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;`
-	var keep, guard []string
-	inGuard := false
-	for _, line := range strings.Split(string(raw), "\n") {
-		tl := strings.TrimSpace(line)
-		switch {
-		case strings.HasPrefix(tl, `\if `):
-			if inGuard || (tl != `\if :{?store_id}` && tl != `\if :{?principal_id}`) {
-				t.Fatalf("unexpected %q in grant-ads-permissions.sql: only the two usage guards may be skipped; execute or extend this test", tl)
-			}
-			inGuard, guard = true, nil
-		case strings.HasPrefix(tl, `\endif`):
-			if !inGuard || strings.Join(guard, "|") != `\else|`+usageDo {
-				t.Fatalf("usage guard body changed or stray \\endif: %q", guard)
-			}
-			inGuard = false
-		case inGuard:
-			if tl != "" && !strings.HasPrefix(tl, "--") {
-				guard = append(guard, tl)
-			}
-		case !strings.HasPrefix(tl, `\`):
-			keep = append(keep, line)
-		}
+	// The scanner refuses any \if that is not one of the two exact usage guards (see adsGrantSQL).
+	script, err := adsGrantSQL(raw)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if inGuard {
-		t.Fatal("unterminated \\if in grant-ads-permissions.sql")
-	}
-	script := strings.Join(keep, "\n")
 	run := func(store, principal string) error {
 		conn, err := f.owner.Acquire(ctx)
 		if err != nil {
