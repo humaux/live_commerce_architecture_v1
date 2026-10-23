@@ -13,6 +13,19 @@ cd "$(git rev-parse --show-toplevel)"
 if [[ "$#" -gt 1 ]] || [[ "$#" -eq 1 && "$1" != --require-r04 ]]; then
   echo "Usage: bash scripts/dev/test-node.sh [--require-r04]" >&2; exit 2
 fi
+
+# #147 CI-9 P1: matrix-receipts.mjs counts only the LAST complete summary of each node --test invocation, so every invocation
+# is bracketed by these markers. A test's forwarded stdout (an excerpt of an earlier run included) stays inside one pair and
+# can never be mistaken for the runner's verdict. The matrix-receipts suite binds these literals to the parser.
+node() {
+  local rc=0 a is_test=0
+  for a in "$@"; do if [[ "$a" == --test ]]; then is_test=1; fi; done
+  if (( is_test )); then printf '%s\n' '## matrix-receipts node-test begin'; fi
+  command node "$@" || rc=$?
+  if (( is_test )); then printf '%s\n' '## matrix-receipts node-test end'; fi
+  return "$rc"
+}
+
 node --test --experimental-strip-types apps/storefront/tests/*.test.mjs packages/i18n/tests/*.test.ts packages/markdown-lite/tests/*.test.ts tests/admin/design-model.test.ts tests/admin/team-model.test.ts tests/admin/design-gate.test.ts tests/admin/promotions-model.test.ts tests/admin/team-bff.test.ts tests/admin/notify-model.test.ts tests/admin/meta-health-model.test.ts tests/admin/meta-connect-model.test.ts tests/admin/merchant-tools-model.test.ts tests/admin/meta-connect-gate.test.ts tests/deploy/meta-connect-preflight.test.mjs tests/deploy/ops-alert-preflight.test.mjs tests/deploy/deploy-prep-r3.test.mjs tests/deploy/admin-edge-body-cap.test.mjs tests/admin/invite-next.test.ts tests/admin/safe-json-cancel.test.ts tests/admin/money-time-model.test.ts tests/admin/store-domains-ui.test.ts tests/admin/shell-registry.test.ts tests/admin/shell-render.test.ts tests/admin/shell-architecture.test.mjs tests/ui/click-sweep-lib.test.mjs tests/ui/visual-lint-lib.test.mjs tests/storefront/amount-match.test.mjs
 node --test tests/ui/visual-scroll-capture.test.mjs
 node --test --experimental-strip-types tests/admin/operations-model.test.ts

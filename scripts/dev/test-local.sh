@@ -1754,4 +1754,16 @@ lc_prepare
 if [[ "$lc_build" == storefront || "$lc_build" == both ]]; then lc_build_storefront; fi
 if [[ "$lc_build" == admin || "$lc_build" == both ]]; then lc_build_admin; fi
 if [[ "$lc_fixture" == pg ]]; then source scripts/dev/test-local-runtime.sh; fi
+# #147 CI-9 P1: matrix-receipts.mjs counts only the LAST complete summary of each node --test invocation, so every invocation
+# is bracketed by these markers. A test's forwarded stdout (an excerpt of an earlier run included) stays inside one pair and
+# can never be mistaken for the runner's verdict. Defined after the tool preflights so `command -v node` still means the binary.
+# The matrix-receipts suite binds these literals to the parser.
+node() {
+  local rc=0 a is_test=0
+  for a in "$@"; do if [[ "$a" == --test ]]; then is_test=1; fi; done
+  if (( is_test )); then printf '%s\n' '## matrix-receipts node-test begin'; fi
+  command node "$@" || rc=$?
+  if (( is_test )); then printf '%s\n' '## matrix-receipts node-test end'; fi
+  return "$rc"
+}
 lc_run
