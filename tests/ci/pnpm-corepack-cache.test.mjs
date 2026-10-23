@@ -38,7 +38,12 @@ function actionContract(src) {
   // #147 CI-1: the offline variable must sit in the HIT branch itself, not merely somewhere in the file (the later GITHUB_ENV line also names it).
   const hit = body.match(/if \[\[ "\$HIT" == true \]\]; then\n([\s\S]*?)\n\s*else\b/)?.[1] ?? "";
   assert.match(hit, /COREPACK_ENABLE_NETWORK=0 pnpm/, "a hit runs Corepack offline (inside the HIT branch)");
+  // #147 CI-1: a `||`/`&&`/`;` in the hit branch could run a second, networked pnpm after the offline attempt failed.
+  assert.doesNotMatch(hit, /\|\||&&|;/, "a hit cannot fall back to a networked download");
   // #147 CI-2: Corepack's own version is part of the key, so upgrading Corepack separately from Node cannot reuse a stale home.
+  // It must be resolved in the `ver` step: the same echo anywhere else leaves steps.ver.outputs.corepack empty.
+  const ver = body.split(/^\s*- id: ver\b[^\n]*\n/m)[1]?.split(/^\s*- (?:id|name|uses):/m)[0] ?? "";
+  assert.match(ver, /echo "corepack=\$\(corepack --version\)" >> "\$GITHUB_OUTPUT"/, "the ver step resolves Corepack's own version");
   assert.match(body, /corepack --version/, "the ver step resolves Corepack's own version");
   assert.match(body, /key:\s*corepack-.*steps\.ver\.outputs\.corepack/, "the key follows Corepack's version (#147 CI-2)");
   assert.match(body, /echo "COREPACK_ENABLE_NETWORK=0" >> "\$GITHUB_ENV"/, "later pnpm calls in the job stay offline for Corepack");

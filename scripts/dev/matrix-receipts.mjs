@@ -4,8 +4,9 @@
 //   from THIS run and sha with status PASS and test_count > 0. Missing, duplicate, stale, unplanned, failed or zero-count = red.
 //   test_count is read from the runners' own output in the log, never from a static list: top-level `--- PASS:` / `--- FAIL:` lines of
 //   `go test -v` (the lines `go tool test2json` turns into pass/fail events; test-focused.sh counts the same), top-level pass/fail events of
-//   `go test -json` logs (--browser-webkit / --stripe-browser write one .jsonl per step instead of -v text), plus the node --test summary
-//   (`ℹ pass N` / `ℹ fail N` spec reporter, `# pass N` / `# fail N` TAP, only inside its tests/suites/pass/fail summary block). Browser specs run inside those go tests.
+//   `go test -json` logs (--browser-webkit / --stripe-browser write one .jsonl per step instead of -v text), plus a node --test summary
+//   (`ℹ` spec / `#` TAP) only as one complete, same-prefix `tests`/`suites`/`pass`/`fail` block at line boundaries (#147 CI-9).
+//   Browser specs run inside those go tests.
 //   status is FAIL when the gate step failed OR a top-level fail event was parsed from the logs, even if the gate exited 0.
 //   Historical evidence never feeds this check.
 // Depends on: scripts/dev/ci-plan.mjs (artifactName); env MODE, GATE_OUTCOME, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA (write);
@@ -19,24 +20,23 @@ import { artifactName } from "./ci-plan.mjs";
 
 export const receiptFile = (mode) => `receipt-${artifactName(mode).replace(/^gate-/, "")}.json`;
 
-/** Tests that ran according to the runners' own output in one log text, and whether any top-level one failed (#147 CI-6). */
+/** Tests that ran according to the runners' own output in one log text, and whether any top-level one failed (#147 CI-6/CI-9). */
 export function scanTests(text) {
-  let n = 0, failed = false, stage = "";
+  let n = 0, failed = false;
   for (const line of text.split("\n")) {
     if (/^--- (PASS|FAIL): /.test(line)) { n++; if (line.startsWith("--- FAIL")) failed = true; }
-    // #147 CI-9: node --test prints its summary as one block (tests, suites, pass, fail); a pass line counts only right after a
-    // "suites" line and a fail line only right after a counted pass line, so the same words in nested tool output cannot inflate the count.
-    const m = /^(?:ℹ|#) (pass|fail) (\d+)\s*$/.exec(line);
-    const was = stage;
-    stage = /^(?:ℹ|#) suites \d+\s*$/.test(line) ? "suites" : "";
-    if (m && m[1] === "pass" && was === "suites") { n += Number(m[2]); stage = "pass"; }
-    if (m && m[1] === "fail" && was === "pass") { n += Number(m[2]); if (Number(m[2]) > 0) failed = true; }
     if (line.startsWith("{")) {
       try {
         const e = JSON.parse(line);
         if ((e.Action === "pass" || e.Action === "fail") && e.Test && !e.Test.includes("/")) { n++; if (e.Action === "fail") failed = true; }
       } catch { /* not a go test -json event */ }
     }
+  }
+  // #147 CI-9: a node --test summary counts only as one complete block at line boundaries with a consistent reporter prefix
+  // (tests, suites, pass, fail). A fragment copied into tool output, a mixed prefix or a missing line cannot inflate the count.
+  for (const block of text.matchAll(/(?:^|\n)(ℹ|#) tests \d+\n\1 suites \d+\n\1 pass (\d+)\n\1 fail (\d+)(?=\n|$)/g)) {
+    n += Number(block[2]) + Number(block[3]);
+    if (Number(block[3]) > 0) failed = true;
   }
   return { n, failed };
 }

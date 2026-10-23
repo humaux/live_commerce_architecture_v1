@@ -38,8 +38,9 @@ function shardScopeContract(source) {
   const gate = source.split(/^  gate:\s*$/m)[1]?.split(/^  aggregate:\s*$/m)[0] ?? "";
   // #107: every case arm with a shard: alternative, at any indentation, quoted or in "(pattern)" form; its body runs to ";;".
   // #116: spaces around "|" are fine; an arm needs whitespace-free alternatives, so command lines containing ")" are not arms.
-  // #147 CI-3: only the dispatch `case "$MODE"` that holds the shard arms is scanned; a harmless `*) ;;` in the evidence-root case before it is no shadow.
-  const dispatch = gate.split(/case "\$MODE" in/).slice(1).findLast(part => part.includes("shard:"))?.split(/^\s*esac\b/m)[0] ?? "";
+  // #147 CI-3: exactly the second `case "$MODE" in` (the dispatch holding the shard arms) is scanned; a harmless `*) ;;` in the
+  // evidence-root case before it, or a later case block, is not a shadow.
+  const dispatch = gate.split(/case "\$MODE" in/)[2]?.split(/^\s*esac\b/m)[0] ?? "";
   const lines = dispatch.split("\n");
   const arms = [];
   lines.forEach((line, i) => {
@@ -56,8 +57,8 @@ function shardScopeContract(source) {
   });
   assert.ok(arms.some(a => a.alternatives.includes("shard:g[0-9][0-9]")), "the shard:gNN arm exists");
   // #116: a broader non-shard glob ahead of the last shard arm (*, shard*, s*, *:g*) would capture shard modes first.
-  // RED (this commit only): pre-#150 helper, restored so the new [^s] witness is discriminating; the fix returns in the next commit.
-  const toRegExp = glob => new RegExp(`^${glob.replace(/[.+^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".").replace(/\[!/g, "[^")}$`);
+  // #147 CI-4: a "^" right after "[" is bash's negation (like "[!"), so only a "^" elsewhere is escaped.
+  const toRegExp = glob => new RegExp(`^${glob.replace(/[.+${}()|\\]/g, "\\$&").replace(/(?<!\[)\^/g, "\\^").replace(/\*/g, ".*").replace(/\?/g, ".").replace(/\[!/g, "[^")}$`);
   for (const { alternatives } of arms.slice(0, arms.findLastIndex(a => a.shard)).filter(a => !a.shard)) {
     for (const mode of ["shard:g01", "shard:gFoo", "shard:x", ...shardModes]) {
       assert.ok(!alternatives.some(a => toRegExp(a).test(mode)), `${alternatives.join("|")} would shadow the shard arms for ${mode}`);
