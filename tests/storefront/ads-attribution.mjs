@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts, phone } from "./browser-engine.mjs";
-import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
+import { childExited, nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { AD_TOUCH_COOKIE } from "../../apps/storefront/lib/ad-touch.ts";
 import { purchaseCopy } from "../../apps/storefront/lib/purchase-copy.ts";
 
@@ -145,7 +145,7 @@ const startNext = () => startNextWithPortRetry({}, async ({ port, attempt, track
   track(child, log);
   children.add(child);
   for (let attempt = 0; attempt < 100; attempt++) {
-    if (child.exitCode !== null || child.signalCode !== null) throw new Error("owned Next failed readiness");
+    if (childExited(child)) throw new Error("owned Next failed readiness");
     try {
       if (
         (

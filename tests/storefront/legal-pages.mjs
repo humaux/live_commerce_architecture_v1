@@ -23,11 +23,13 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
-import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
+import { childExited, nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
 const root = process.cwd();
 const storefront = path.join(root, "apps/storefront");
 const evidenceDir = path.resolve(process.env.LC_LEGAL_EVIDENCE_DIR || browserEvidenceDirectory("lg01"));
+// A rerun may reuse LC_LEGAL_EVIDENCE_DIR; scope the log name to this run so the exclusive-create below cannot EEXIST.
+const runId = `${process.pid}-${Date.now()}`;
 const requireFinal = process.env.LC_LEGAL_REQUIRE_FINAL === "1";
 // The closed slug set of legal-pages.md P2 and the locales of packages/i18n (parsed, not imported: this gate must not
 // depend on the code under test).
@@ -66,14 +68,14 @@ try {
   // #116: no reserve-then-free port; the shared helper picks it and relaunches only an automatic-port EADDRINUSE exit (its
   // proof is the attempt's log file, so the Next output now lands in the evidence directory instead of memory).
   origin = await startNextWithPortRetry({}, async ({ port, attempt, track }) => {
-    const file = nextAttemptLog(path.join(evidenceDir, "next-start.log"), attempt);
-    const log = createWriteStream(file, { flags: "w", mode: 0o600 });
+    const file = nextAttemptLog(path.join(evidenceDir, `next-start-${runId}.log`), attempt);
+    const log = createWriteStream(file, { flags: "wx", mode: 0o600 });
     logs.push(log); await once(log, "open");
     const url = `http://127.0.0.1:${port}`;
     server = spawn(process.execPath, [nextBin, "start", "--hostname", "127.0.0.1", "--port", String(port)], { cwd: storefront, env, stdio: ["ignore", log, log] });
     track(server, log);
     for (let i = 0, ready = false; !ready; i++) {
-      if (server.exitCode !== null || server.signalCode !== null) throw new Error(`next start exited: ${(await readFile(file, "utf8").catch(() => "")).slice(-400)}`);
+      if (childExited(server)) throw new Error(`next start exited: ${(await readFile(file, "utf8").catch(() => "")).slice(-400)}`);
       if (i > 200) throw new Error("next start did not become ready");
       try { ready = (await fetch(`${url}/en/legal/privacy`)).status === 200; } catch { await new Promise((r) => setTimeout(r, 100)); }
     }

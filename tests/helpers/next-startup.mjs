@@ -45,6 +45,11 @@ async function bindCollision(log) {
   finally { await file?.close().catch(() => {}); }
 }
 
+/** True once the child has no live status left: an exit code OR a terminating signal (`exitCode` alone misses SIGKILL). */
+export function childExited(child) {
+  return Boolean(child) && (child.exitCode !== null || child.signalCode !== null);
+}
+
 /** Retry at most three launches, only automatic-port EADDRINUSE exits before the caller's unchanged readiness succeeds. */
 export async function startNextWithPortRetry({ port, allocatePort = allocateNextPort } = {}, start) {
   const explicit = Boolean(port); // existing gates pass Number(optional env), so 0/NaN still mean automatic
@@ -57,8 +62,7 @@ export async function startNextWithPortRetry({ port, allocatePort = allocateNext
         child = ownedChild; log = ownedLog;
       } });
     } catch (error) {
-      const exited = child && (child.exitCode !== null || child.signalCode !== null);
-      if (explicit || attempt === 3 || !exited || !(await bindCollision(log))) throw error;
+      if (explicit || attempt === 3 || !childExited(child) || !(await bindCollision(log))) throw error;
     }
   }
 }

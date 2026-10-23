@@ -11,7 +11,7 @@ import { createWriteStream } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fixture } from "./shell-fixture.mjs";
-import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
+import { childExited, nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { assertPlatformMessagingCopy } from "./platform-messaging-copy.fixture.mjs";
 
 const output = process.env.LC_PLATFORM_EVIDENCE || browserEvidenceDirectory("platform-site");
@@ -100,7 +100,7 @@ const server = (verification) => startNextWithPortRetry({}, async ({ port: p, at
   track(child, log);
   try {
     for (let i = 0; i < 100; i++) {
-      if (child.exitCode !== null || child.signalCode !== null) throw new Error("Next exited");
+      if (childExited(child)) throw new Error("Next exited");
       try {
         if ((await get(p, host, "/")).status === 200) return { p, child, log };
       } catch {}
