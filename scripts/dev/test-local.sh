@@ -9,6 +9,18 @@ if [[ "${1:-}" != --list && "${1:-}" != --dry-run ]]; then
   if env | grep -qE '=(sk|rk)_live_'; then echo 'refused: live key in test environment' >&2; exit 2; fi
 fi
 cd "$(dirname "$0")/../.."
+# #147 CI-9 P1: matrix-receipts.mjs counts only the LAST complete summary of each node --test invocation, so every invocation
+# (lc_prepare's unit suites included) is bracketed by these markers. A test's forwarded stdout (an excerpt of an earlier run
+# included) stays inside one pair and can never be mistaken for the runner's verdict. The tool preflights check the binary with
+# `type -P` so this wrapper cannot satisfy them. The matrix-receipts suite binds these literals to the parser.
+node() {
+  local rc=0 a is_test=0
+  for a in "$@"; do if [[ "$a" == --test ]]; then is_test=1; fi; done
+  if (( is_test )); then printf '%s\n' '## matrix-receipts node-test begin'; fi
+  command node "$@" || rc=$?
+  if (( is_test )); then printf '%s\n' '## matrix-receipts node-test end'; fi
+  return "$rc"
+}
 # BEGIN MODE REGISTRY
 lc_select_mode() {
 case "$1" in
@@ -899,7 +911,7 @@ case "$1" in
   # WebKit/iPhone Safari coverage of the buyer-critical flows (MOCK tier; docs/delivery/GATES.md). Refuse before any build when the WebKit
   # browser is absent: that is NOT_RUN (exit 2), never a green run on Chromium.
   test -f tests/storefront/browser-engine.mjs
-  command -v node >/dev/null
+  type -P node >/dev/null
   if ! node --input-type=module -e 'import { webkit } from "@playwright/test"; import { existsSync } from "node:fs"; process.exit(existsSync(webkit.executablePath()) ? 0 : 1)' 2>/dev/null; then
     printf 'NOT_RUN: Playwright WebKit is not installed (pnpm exec playwright install webkit); nothing was started.\n' >&2
     exit 2
@@ -1668,7 +1680,7 @@ lc_build_storefront() {
 }
 lc_build_admin() {
   command -v pnpm >/dev/null
-  command -v node >/dev/null
+  type -P node >/dev/null
   # Production package, but local-only runtime configuration is injected by the
   # tagged test. Build never needs an IdP or database credential.
   COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
@@ -1687,7 +1699,7 @@ if [[ "${1:-}" == --dry-run ]]; then lc_dry_run=1; shift; fi
 if [[ "$lc_dry_run" == 0 ]]; then
   command -v docker >/dev/null
   command -v go >/dev/null
-  command -v node >/dev/null
+  type -P node >/dev/null
   # Synthetic build configuration, never production defaults.
   lc_environment
 fi
@@ -1754,16 +1766,4 @@ lc_prepare
 if [[ "$lc_build" == storefront || "$lc_build" == both ]]; then lc_build_storefront; fi
 if [[ "$lc_build" == admin || "$lc_build" == both ]]; then lc_build_admin; fi
 if [[ "$lc_fixture" == pg ]]; then source scripts/dev/test-local-runtime.sh; fi
-# #147 CI-9 P1: matrix-receipts.mjs counts only the LAST complete summary of each node --test invocation, so every invocation
-# is bracketed by these markers. A test's forwarded stdout (an excerpt of an earlier run included) stays inside one pair and
-# can never be mistaken for the runner's verdict. Defined after the tool preflights so `command -v node` still means the binary.
-# The matrix-receipts suite binds these literals to the parser.
-node() {
-  local rc=0 a is_test=0
-  for a in "$@"; do if [[ "$a" == --test ]]; then is_test=1; fi; done
-  if (( is_test )); then printf '%s\n' '## matrix-receipts node-test begin'; fi
-  command node "$@" || rc=$?
-  if (( is_test )); then printf '%s\n' '## matrix-receipts node-test end'; fi
-  return "$rc"
-}
 lc_run

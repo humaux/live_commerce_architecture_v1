@@ -79,6 +79,10 @@ test("both node gate scripts print the invocation markers this parser requires",
     assert.ok(source.includes(`'${BEGIN}'`), `${script} prints the begin marker`);
     assert.ok(source.includes(`'${END}'`), `${script} prints the end marker`);
   }
+  // test-local.sh lc_prepare() bodies already run node --test before lc_run, so the wrapper must precede the mode registry.
+  const local = readFileSync("scripts/dev/test-local.sh", "utf8");
+  assert.ok(local.indexOf("node() {") >= 0 && local.indexOf("node() {") < local.indexOf("# BEGIN MODE REGISTRY"),
+    "test-local.sh must bracket every node --test invocation, lc_prepare's included");
 });
 
 // #147 CI-6: a parsed failure forces FAIL even when the gate step itself exited 0.
