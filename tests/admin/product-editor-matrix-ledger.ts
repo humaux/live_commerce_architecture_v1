@@ -27,8 +27,9 @@ export function createProductEditorMatrixLedger(ledger: unknown[], locale: keyof
       if (typeof entry[field] !== "string" || (field !== "row" && !entry[field]))
         throw new Error(`Invalid matrix declaration ${field}`);
     // Static source-contract metadata is not a runtime observation or part of the native ledger schema.
+    // width is the case-table's recorded viewport, never a recorder literal (#147 CI-13).
     const expanded = { page: entry.page, row: entry.row, action: entry.action,
-      control: expand(entry.control), expected: expand(entry.expected) };
+      control: expand(entry.control), expected: expand(entry.expected), width: entry.width };
     return [key(expanded), expanded] as const;
   }));
   if (declared.size !== cases.length) throw new Error("Duplicate matrix declaration");
@@ -57,7 +58,7 @@ export function createProductEditorMatrixLedger(ledger: unknown[], locale: keyof
       try {
         const details = await perform();
         if (!details || !("observed" in details)) throw new Error(`Missing matrix observation ${id}`);
-        ledger.push({ ...details, ...entry, locale, width: 390, actual: "PASS" });
+        ledger.push({ ...details, ...entry, locale, actual: "PASS" });
         seen.add(id);
       } finally {
         pending.delete(id);

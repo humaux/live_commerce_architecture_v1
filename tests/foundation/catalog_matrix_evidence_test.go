@@ -81,6 +81,24 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
 	for _, mutation := range []string{"playwright-log", "cc12-log", "ledger", "manifest", "source", "gate-source", "case-table"} {
 		t.Run(mutation, func(t *testing.T) {
+			if mutation == "case-table" {
+				// #147 CI-10: swap the recorded table for the current one BEFORE the fixture
+				// binds every digest, so the ledger comparison (not the hash-drift check) rejects it.
+				root, _ := productEditorMatrixEvidenceFixtureWith(t, func([]map[string]any) []map[string]any {
+					var current []map[string]any
+					if err := json.Unmarshal(productEditorMatrixLedgerCasesJSON, &current); err != nil {
+						t.Fatal(err)
+					}
+					return current
+				})
+				err := validateProductEditorMatrixEvidence(root)
+				if err == nil || !strings.Contains(err.Error(), "mobile matrix ledger") ||
+					strings.Contains(err.Error(), "source drift") || strings.Contains(err.Error(), "SHA-256") {
+					t.Fatalf("case-table corruption must reach the ledger-versus-recorded-table comparison, got %v", err)
+				}
+				t.Logf("rejected case-table: %v", err)
+				return
+			}
 			root, canonical := productEditorMatrixEvidenceFixture(t)
 			if err := validateProductEditorMatrixEvidence(root); err != nil {
 				t.Fatalf("untampered isolated evidence: %v", err)
@@ -105,9 +123,6 @@ func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
 				}
 				manifest["scope"] = "edited while retaining the tested source commit"
 				data, _ = json.Marshal(manifest)
-			case "case-table":
-				// Swapping the recorded table for the current one must not pass silently.
-				path, data = productEditorMatrixCasesPath, productEditorMatrixLedgerCasesJSON
 			case "source", "gate-source":
 				path = "tests/admin/product-editor.acceptance.ts"
 				if mutation == "gate-source" {
@@ -122,19 +137,13 @@ func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
 			if err == nil {
 				t.Fatalf("%s corruption must reject canonical evidence", mutation)
 			}
-			// #147 CI-10: the swapped table must be rejected by the ledger comparison,
-			// never by the source-hash/drift check that runs before it.
-			if mutation == "case-table" && (!strings.Contains(err.Error(), "mobile matrix ledger is") ||
-				strings.Contains(err.Error(), "source drift") || strings.Contains(err.Error(), "SHA-256")) {
-				t.Fatalf("case-table corruption must reach the ledger-versus-recorded-table comparison, got %v", err)
-			}
 			t.Logf("rejected %s: %v", mutation, err)
 		})
 	}
 }
 
-// #147 CI-10: the "case-table" corruption above stops at the source-hash check. These rebind every digest to a changed recorded
-// table, so the ledger-versus-recorded-table comparison itself must reject: a case the ledger never ran, and a ledger row the table no longer declares.
+// #147 CI-10: these rebind every digest to a changed recorded table, so the
+// ledger-versus-recorded-table comparison itself must reject: a case the ledger never ran, and a ledger row the table no longer declares.
 func TestProductEditorMatrixLedgerEvidenceRecordedTableMismatch(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -170,12 +179,26 @@ func productEditorMatrixRecordedBlob(t *testing.T, commit, path, recorded string
 	t.Helper()
 	data, err := exec.Command("git", "-C", "../..", "show", commit+":"+path).Output()
 	if err != nil {
+		if productEditorMatrixShallowLocalCheckout() {
+			t.Skipf("SKIP[CI-12]: %s at %s is unavailable in a shallow local clone (%v); fetch tag evidence/matrix-ledger-enforce-2e10084b or full history", path, commit, err)
+		}
 		t.Fatalf("recorded %s at %s unavailable (needs full history): %v", path, commit, err)
 	}
 	if fmt.Sprintf("%x", sha256.Sum256(data)) != recorded {
 		t.Fatalf("recorded %s at %s does not match its pinned SHA-256", path, commit)
 	}
 	return data
+}
+
+// productEditorMatrixShallowLocalCheckout reports a shallow clone outside CI.
+// A CI gate never takes the skip: a missing pinned commit there is a hard failure,
+// so an enforcing PR/push gate can never turn into a silent skip.
+func productEditorMatrixShallowLocalCheckout() bool {
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		return false
+	}
+	out, err := exec.Command("git", "-C", "../..", "rev-parse", "--is-shallow-repository").Output()
+	return err == nil && strings.TrimSpace(string(out)) == "true"
 }
 
 func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {

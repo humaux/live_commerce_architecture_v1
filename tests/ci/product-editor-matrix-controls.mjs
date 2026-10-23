@@ -58,7 +58,7 @@ export function bulkInventoryBindingIssues(source) {
 }
 
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-/** Every rendered remove button (aria-label with c.remove, or a data-testid naming "remove": #147 CI-11) needs a testid template and, per axis index, a real click case. */
+/** Every rendered remove control (aria-label with c.remove, or a data-testid naming "remove", on a button or role="button": #147 CI-11) needs a testid template and, per axis index, a real click case. */
 export function removeControlIssues(source, cases) {
   const ast = ts.createSourceFile('ProductDocumentVariants.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   // The production axis cap (axis-add is disabled at this count) bounds "every axis index".
@@ -67,17 +67,20 @@ export function removeControlIssues(source, cases) {
   let found = 0;
   const attr = (node, name) => node.attributes.properties.find(a => ts.isJsxAttribute(a) && a.name.getText(ast) === name)?.initializer;
   function visit(node) {
-    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(ast) === 'button' &&
-        ((attr(node, 'aria-label')?.getText(ast) ?? '').includes('${c.remove}') || /remove/i.test(attr(node, 'data-testid')?.getText(ast) ?? ''))) {
-      found++;
-      const id = attr(node, 'data-testid'), template = id && ts.isJsxExpression(id) && id.expression && ts.isTemplateExpression(id.expression) ? id.expression : null;
-      if (!template) issues.push(`Unidentified remove control ${attr(node, 'aria-label')?.getText(ast) ?? node.getText(ast)}`);
-      else for (let axis = 0; axis < axes; axis++) {
-        // `${i}` is the axis index in both remove controls; any other span (the value index) may vary.
-        const pattern = new RegExp('^' + escape(template.head.text) + template.templateSpans.map(span =>
-          (span.expression.getText(ast) === 'i' ? axis : '\\d+') + escape(span.literal.text)).join('') + '$');
-        if (!cases.some(c => pattern.test(c.control) && c.action.includes('click')))
-          issues.push(`Missing rendered remove click ${pattern.source}`);
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const tag = node.tagName.getText(ast), role = attr(node, 'role')?.getText(ast) ?? '';
+      const label = attr(node, 'aria-label')?.getText(ast) ?? '', testId = attr(node, 'data-testid')?.getText(ast) ?? '';
+      if ((tag === 'button' || /button/.test(role)) && (label.includes('${c.remove}') || /remove/i.test(testId))) {
+        found++;
+        const id = attr(node, 'data-testid'), template = id && ts.isJsxExpression(id) && id.expression && ts.isTemplateExpression(id.expression) ? id.expression : null;
+        if (!template) issues.push(`Unidentified remove control ${label || node.getText(ast)}`);
+        else for (let axis = 0; axis < axes; axis++) {
+          // `${i}` is the axis index in both remove controls; any other span (the value index) may vary.
+          const pattern = new RegExp('^' + escape(template.head.text) + template.templateSpans.map(span =>
+            (span.expression.getText(ast) === 'i' ? axis : '\\d+') + escape(span.literal.text)).join('') + '$');
+          if (!cases.some(c => pattern.test(c.control) && c.action.includes('click')))
+            issues.push(`Missing rendered remove click ${pattern.source}`);
+        }
       }
     }
     ts.forEachChild(node, visit);

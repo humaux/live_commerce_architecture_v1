@@ -73,7 +73,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }} # the PR diff needs the merge base ('0' quoted: a bare 0 is falsy in an expression, so `&& 0 || 1` always gave 1)
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }} # the PR diff needs the merge base ('0' quoted: a bare 0 is falsy in an expression, so `&& 0 || 1` always gave 1). Plan reads no history beyond the merge base; the evidence fixture runs in `gate`, which checks out full history + tags.
       - id: pr
         if: github.event_name == 'pull_request'
         env:
@@ -133,7 +133,8 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-          fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history
+          fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history; catalog_matrix_evidence_test.go git-shows tag evidence/matrix-ledger-enforce-2e10084b
+          fetch-tags: true # keep that pinned evidence tag available; a shallow CI checkout is a hard failure, never a skip (#147 CI-12)
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
