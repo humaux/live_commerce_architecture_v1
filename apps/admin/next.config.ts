@@ -25,7 +25,7 @@ const config: NextConfig = {
   // values), so an unset gallery flag would leave a runtime process.env lookup and the hold/release seam in client chunks. An explicit
   // compiler define pins the disabled compile-time value for ordinary builds; --browser-ui-gallery still passes 1 on the build command,
   // which Next's static env already defines (next/dist/build/define-env.js rejects a define for an already-defined key). This is the
-  // test-seam flag only: company facts keep their runtime config path (PS1: no env: { } block).
+  // test-seam flag only: company facts keep their runtime config path (PS1: no config level env block).
   compiler: process.env.NEXT_PUBLIC_LC_GALLERY_TEST === undefined
     ? { define: { "process.env.NEXT_PUBLIC_LC_GALLERY_TEST": JSON.stringify("0") } }
     : {},
