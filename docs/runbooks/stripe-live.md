@@ -66,7 +66,7 @@ SQL
 ## 2. 顺序（每步一个命令一条审计行；失败最多两次定向修复，然后升级，AGENTS.md）
 
 ```
-0  §1 计数 = 0|0；部署 LIVE profile（sudo deploy/scripts/deploy.sh；preflight P06 双向通过）
+0  §1 计数 = 0|0；部署 LIVE profile（sudo deploy/scripts/deploy.sh upgrade <当前 IMAGE_TAG>；preflight P06 双向通过）
 1  sudo STRIPE_SECRET_KEY_FILE=<路径> … register --environment LIVE      → connection（VerifyAccount，livemode）；owner 删除传输文件
 2  sudo STRIPE_WEBHOOK_SECRET_FILE=<路径> … webhook --profile LIVE        → endpoint，whsec 封存；owner 删除传输文件
 3  live-approve                                                       → GET /v1/account 就绪读取 + 审批行
@@ -155,7 +155,7 @@ sudo deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <
 | --- | --- | --- | --- |
 | 单店，可恢复 | `sudo deploy/scripts/ops-admin.sh stripe-admin method --tenant <tenant> --store <store> --principal <p> --market <m> --country TW --connection <c> --qualification <q> --expected-version <v> --enabled=false`（**不需要配对**） | 下一次开始支付返回 PT409（method），页面显示不可用；在任何状态下都成功（含 revoke/过期/轮换之后） | 已打开会话的交接（到期为止）、worker、webhook、退款 |
 | 单店，强制 | `sudo deploy/scripts/ops-admin.sh stripe-admin live-revoke --tenant <tenant> --store <store> --principal <p> --approval <approval uuid> --revoke-ref <ref>`（**不需要配对**） | 审批及其 REAL_LIVE 资格被撤销 → 开始支付 PT409；重新启用要新审批 + 探测 + canary | 同上 |
-| 全平台 | compose.env 设 `LC_STRIPE_CHECKOUT_ENABLED=0`，然后 `sudo deploy/scripts/deploy.sh upgrade <tag>`（重启 api） | Stripe 从所有店铺的托管结账中移除 | worker、webhook、退款继续 |
+| 全平台 | compose.env 设 `LC_STRIPE_CHECKOUT_ENABLED=0`，然后用 compose.env 当前的 `IMAGE_TAG` 执行 `sudo deploy/scripts/deploy.sh upgrade <当前 IMAGE_TAG>`（不换镜像；`upgrade` 会先做强制备份再重启服务并跑部署后检查） | Stripe 从所有店铺的托管结账中移除 | worker、webhook、退款继续 |
 
 **不要用停止 `payment-worker-live` 或 webhook 来止损**：会让 PAYMENT_PENDING 的库存和 UNKNOWN 的退款悬空（stripe-psp D5，refund RD3/RD4）。
 已打开的会话不会被强制过期，它们在 `expires_at`（≤ 40 分钟）自然关闭。owner 的 SL-LIVE02 演练：`method --enabled=false` → 店铺页显示 Stripe 不可用 → 重新打开。

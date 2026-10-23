@@ -47,7 +47,7 @@ Change rules: 恢复顺序遵循 架构.md §22.3；修改脚本默认行为（�
 sudo deploy/scripts/pg-ops.sh backup --tag manual        # 输出目录：${LC_BACKUP_DIR}/dumps/<UTC>_manual/
 sudo deploy/scripts/pg-ops.sh basebackup                 # 同时执行 pg_verifybackup 和 WAL 清理
 sudo deploy/scripts/pg-ops.sh list
-sudo sh -c 'cd "${LC_BACKUP_DIR:-/var/backups/live-commerce}/dumps/<目录>" && sha256sum -c SHA256SUMS'
+sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_require_vars LC_BACKUP_DIR && cd "$LC_BACKUP_DIR/dumps/<目录>" && sha256sum -c SHA256SUMS' backup-verify-checksums
 ```
 - `manifest.json` 只记录元数据：tag、服务器版本、ledger 行数和最大版本、库大小、schema 列表、sha256、耗时。不含任何数据值。
 
@@ -75,7 +75,7 @@ sudo sh -c 'cd "${LC_BACKUP_DIR:-/var/backups/live-commerce}/dumps/<目录>" && 
 ## 5. 生产恢复流程（架构.md §22.3 顺序；需要 owner 批准）
 
 1. **确定干净的版本和恢复点**：选择代码 tag 和恢复时间点，确认目标之后没有**不可重放的外部事实**。
-2. **停止所有写入方**：`docker compose stop api admin storefront expiry-worker payment-worker-sandbox payment-worker-live meta-worker claims-worker`（没启用的服务会被忽略）。
+2. **停止所有写入方**：`sudo docker compose --project-directory deploy --env-file /etc/live-commerce/compose.env stop api admin storefront expiry-worker payment-worker-sandbox payment-worker-live meta-worker claims-worker`（没启用的服务会被忽略）。
    **支付 worker 必须保持停止**，直到 §5 第 5 步完成。
 3. **数据库 + 密钥**：
    - 先恢复密钥（§7）。
@@ -83,7 +83,7 @@ sudo sh -c 'cd "${LC_BACKUP_DIR:-/var/backups/live-commerce}/dumps/<目录>" && 
      ```sh
      sudo LC_CONFIRM_REPLACE_LIVE=I_UNDERSTAND_FORWARD_ONLY deploy/scripts/pg-ops.sh restore-dump <目录> --replace-live
      ```
-     如果目标是全新集群，加 `--fresh-cluster`（先导入角色），再执行 `docker compose run --rm -T --no-deps provision-logins` 为登录角色设置密码。
+     如果目标是全新集群，加 `--fresh-cluster`（先导入角色），再执行 `sudo docker compose --project-directory deploy --env-file /etc/live-commerce/compose.env run --rm -T --no-deps provision-logins` 为登录角色设置密码。
    - 方案 B：PITR，见 §6（`pitr-cutover` 已包含 provision-logins 和新的 base backup）。
 4. **先开放身份和只读订单**，验证数据正确。
 5. **处理删除/撤回的墓碑记录**（K23），然后对账 PSP：对照 Stripe Dashboard 逐笔核对 `river_payment` 中的 job 和支付状态。
@@ -127,16 +127,16 @@ W4 一直失败，pg_wal 持续增长直到磁盘写满（评审用固定镜像�
    - 立即做新的 base backup（新时间线的起点）。
    - **写入方保持停止**。
 3. 按 §5 第 4–7 步逐步开放；`sudo deploy/scripts/deploy.sh first` 会拉起全部服务并执行部署后检查。之后 `sudo deploy/scripts/watchdog.sh` 应全部 PASS（W4 failed=0）。
-4. 清理回退副本（owner 签字、新 base backup 已完成后）：
+4. 清理回退副本（owner 签字、新 base backup 已完成后，`dc` 定义见 `incident.md` 开头）：
    ```sh
    dc --profile ops run --rm --no-deps -T -v <项目>_pgdata:/live pg-ops -c 'rm -rf -- /live/18/docker.pre-pitr-<UTC>'
    ```
-   `<项目>_pgdata` 是 postgres 容器实际使用的卷名（`docker inspect -f '{{range .Mounts}}{{.Name}} {{end}}' <postgres 容器>`）。
+   `<项目>_pgdata` 是 postgres 容器实际使用的卷名（`sudo docker inspect -f '{{range .Mounts}}{{.Name}} {{end}}' <postgres 容器>`）。
    注意：`-v pgdata:/live` **不会**解析成项目卷，Docker 会新建一个名为 `pgdata` 的空卷。
 
 回退（仅限切换后还没有新的业务写入，owner 决定）：停止 postgres，用同样的 pg-ops 挂载执行
 `mv /live/18/docker /live/18/docker.rejected-pitr-<UTC> && mv /live/18/docker.pre-pitr-<UTC> /live/18/docker`，再启动 postgres。
-回退后必须把 `${LC_BACKUP_DIR}/wal/0000000N.history` 移出归档目录（例如移到 `${LC_BACKUP_DIR}/wal-rejected/`），
+回退后必须用 `sudo` 把 `${LC_BACKUP_DIR}/wal/0000000N.history` 移出归档目录（例如移到 `${LC_BACKUP_DIR}/wal-rejected/`），
 否则以后的 PITR 会跟随这个被放弃的时间线（`requested timeline N is not a child of this server's history`）；然后立即做新的 base backup。
 
 ## 7. 密钥备份与恢复

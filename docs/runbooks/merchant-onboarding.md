@@ -29,20 +29,22 @@ Change rules: 命令必须与 deploy/scripts/ops-admin.sh 和 cmd/*-admin 的子
 
 ## 1. 栈必须先就绪
 
-按 deploy.md §1–§3 部署；`sudo deploy/scripts/preflight.sh --online` 全部 PASS，`docker compose ps` 全部 healthy，
+按 deploy.md §1–§3 部署；`sudo deploy/scripts/preflight.sh --online` 全部 PASS，`sudo docker compose --project-directory deploy --env-file /etc/live-commerce/compose.env ps` 全部 healthy，
 `sudo deploy/scripts/watchdog.sh` 无 FAIL。`LC_ONBOARDING_ENABLED=1` 且 `LC_ONBOARDING_CURRENCIES` 含商家币种（例如 `TWD`）。
 
 ## 2. 店铺
 
 1. 商家登录后台（邮箱 + 密码 + 邮件验证码，或已配置时的 OIDC），走 onboarding 创建租户和店铺。创建者自动获得 owner 权限和六个店铺权限：`live:read`、`live:manage`、`payments:refund`、`fulfillment:write`、`orders:export`、`integration:execute`（裁决 24，`0065`）。
    其他成员不会自动获得退款权限。
-2. 运维记录 ID（只读查询，通过 `lc_psql`，见 lib.sh）：
-   ```sh
-   sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql' onboarding-store-ids <<'SQL'
-   SELECT tenant_id, store_id, principal_id, created_at FROM ops.audit_events WHERE action = 'merchant.store_created' ORDER BY created_at DESC LIMIT 5;
-   SQL
-   ```
-   后面所有 `ops-admin.sh` 命令都需要这三个 ID，`--principal` 必须是该租户的 owner 成员。
+2. 运维记录 ID（只读查询，通过 `lc_psql`，见 lib.sh；代码块顶格以便原样复制粘贴 heredoc）：
+
+```sh
+sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_psql' onboarding-store-ids <<'SQL'
+SELECT tenant_id, store_id, principal_id, created_at FROM ops.audit_events WHERE action = 'merchant.store_created' ORDER BY created_at DESC LIMIT 5;
+SQL
+```
+
+后面所有 `sudo deploy/scripts/ops-admin.sh` 命令都需要这三个 ID，`--principal` 必须是该租户的 owner 成员。
 
 ## 3. Stripe 账户（SANDBOX）
 
@@ -122,7 +124,7 @@ Caddy `on_demand_tls`（deploy/caddy/Caddyfile）用 `ask http://api:8080/intern
 
 ## 6. 接入后检查
 
-- `sudo deploy/scripts/watchdog.sh` 全部 PASS；`docker compose logs --since 10m claims-worker` 出现 `claims_worker_ready`（若启用）。
+- `sudo deploy/scripts/watchdog.sh` 全部 PASS；`sudo docker compose --project-directory deploy --env-file /etc/live-commerce/compose.env logs --since 10m claims-worker` 出现 `claims_worker_ready`（若启用）。
 - 后台：店铺可见、Stripe 支付方式在结账页出现（沙箱）、订单/退款/发货页面可用。
 - `deployments.log` 与 `ops-admin.log`（`$LC_STATE_DIR`）记录了本次操作者和子命令（不含参数值）。
 
