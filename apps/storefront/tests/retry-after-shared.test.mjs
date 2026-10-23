@@ -1,5 +1,7 @@
 // Purpose: #147 SF-4 — every public storefront route that answers a retryable 503 takes its Retry-After from the
-//   single shared RETRY_AFTER constant in lib/public-upstream.ts, never from a route-local literal.
+//   single shared RETRY_AFTER constant in lib/public-upstream.ts. These cases observe the values the routes emit; an
+//   equal-valued route-local literal ("60") would still pass, so the gate's witness is a divergent one (feed "61" while
+//   RETRY_AFTER.down is "60", which fails the feed case below).
 // Depends on: lib/public-upstream.ts (RETRY_AFTER), app/feeds/meta.csv/route.ts, lib/media-proxy.ts,
 //   app/sitemap.xml/route.ts, lib/primary-origin.ts; "next/headers" and "react" stubbed below; fetch is mocked.
 // Used by: scripts/dev/test-node.sh (apps/storefront/tests/*.test.mjs glob, Foundation "Node unit suites").
@@ -62,6 +64,38 @@ test("media proxy 503 carries the shared down hint", async (t) => {
 test("sitemap 503 carries the shared down hint", async (t) => {
   withEnv(t);
   upstreamDown(t, "application/json");
+  const res = await sitemap();
+  assert.equal(res.status, 503);
+  assert.equal(res.headers.get("retry-after"), RETRY_AFTER.down);
+  assert.equal(res.headers.get("cache-control"), "no-store");
+});
+
+// Published design loads, then one catalog list fails: the sitemap answers from its second 503 branch (route.ts:19),
+// not the loadShop down branch (route.ts:17), and must use the same shared hint.
+function designThenCatalog(t, { products, collections }) {
+  return t.mock.method(globalThis, "fetch", async (url) => {
+    const path = String(url);
+    if (path.endsWith("/v1/buyer/design/published")) return Response.json({ version: 1, document: {} });
+    if (path.includes("/v1/buyer/catalog/v2/products")) return products;
+    if (path.includes("/v1/buyer/catalog/v2/collections")) return collections;
+    throw new Error(`unexpected fetch ${path}`);
+  });
+}
+
+const PRODUCTS_OK = { store: { name: "Shop", currency: "TWD" }, products: [], next: null };
+
+test("sitemap 503 after a published design loads: product list down carries the shared down hint", async (t) => {
+  withEnv(t);
+  designThenCatalog(t, { products: new Response("upstream down", { status: 500 }), collections: Response.json({ collections: [] }) });
+  const res = await sitemap();
+  assert.equal(res.status, 503);
+  assert.equal(res.headers.get("retry-after"), RETRY_AFTER.down);
+  assert.equal(res.headers.get("cache-control"), "no-store");
+});
+
+test("sitemap 503 after a published design loads: collection list down carries the shared down hint", async (t) => {
+  withEnv(t);
+  designThenCatalog(t, { products: Response.json(PRODUCTS_OK), collections: new Response("upstream down", { status: 500 }) });
   const res = await sitemap();
   assert.equal(res.status, 503);
   assert.equal(res.headers.get("retry-after"), RETRY_AFTER.down);
