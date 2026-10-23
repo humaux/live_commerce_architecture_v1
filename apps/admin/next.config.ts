@@ -21,6 +21,11 @@ const config: NextConfig = {
   // The orders proxy must see raw '?' and percent escapes before Next rewrites URLs.
   skipProxyUrlNormalize: true,
   output: "standalone",
+  // #147 TH-13: Next only defines the NEXT_PUBLIC_* keys that exist in the build environment (next/dist/lib/static-env.js skips null
+  // values), so an unset gallery flag would leave a runtime process.env lookup and the hold/release seam in client chunks. Pin the
+  // compile-time value instead: ordinary builds get "0" and fold the branch away, while --browser-ui-gallery still passes 1 on the
+  // build command (next/dist/build/define-env.js spreads this config env after the static env, so the gallery override wins).
+  env: { NEXT_PUBLIC_LC_GALLERY_TEST: process.env.NEXT_PUBLIC_LC_GALLERY_TEST ?? "0" },
   transpilePackages: [
     "@live-commerce/i18n",
     "@live-commerce/ui",
