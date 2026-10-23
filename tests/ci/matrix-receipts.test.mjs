@@ -142,6 +142,17 @@ test("browser mode: a custom runner's PASS case lines count, and one reporter pe
   assert.equal(makeReceipt({ mode: "--browser-merchant-buyer", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [],
     specs: ["PASS one case\nFAIL another case\n"] }).status, "FAIL", "a custom FAIL case line is a parsed failure");
 });
+// #147 CI-7: some harnesses withhold raw reporter output and write only the final "N passed" summary; it is still a spec result.
+test("browser mode: a summary-only Playwright evidence log counts its passed specs", () => {
+  const rec = makeReceipt({ mode: "--browser-live-console", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserLiveConsoleRealChain (374s)\n"], specs: ["23 passed\n", "10 passed\n"] });
+  assert.equal(rec.status, "PASS");
+  assert.equal(rec.spec_count, 33);
+  assert.equal(rec.test_count, 34);
+  assert.equal(makeReceipt({ mode: "--browser-live-console", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: [], specs: ["7 passed\n1 failed\n"] }).status, "FAIL", "a summary-only failed case is a parsed failure");
+});
+// #147 CI-7: which modes are browser modes is registry data, not a second hand-maintained list.
 test("browser-mode classification comes from the test-local.sh mode registry", () => {
   assert.equal(isBrowserMode("--browser-inbox"), true);
   assert.equal(isBrowserMode("--browser-click-sweep@1/10"), true, "a plan fan-out suffix maps to its bare mode");

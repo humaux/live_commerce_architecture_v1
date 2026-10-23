@@ -86,15 +86,20 @@ export const countTests = (text) => scanTests(text).n;
  * A run with a failed spec/case is a parsed failure (#147 CI-6).
  */
 export function scanSpecs(text) {
-  let glyphs = 0, cases = 0, failed = false;
+  let glyphs = 0, caseLines = 0, summaryPass = 0, summaryFail = 0, failed = false;
   for (const line of text.split(/\r?\n/)) {
     // Playwright's list reporter uses ✓/✘; node's spec reporter uses ✔/✖, which must not be mistaken for a spec.
     if (/^\s+✓\s+\d+\s/.test(line)) glyphs++;
     else if (/^\s+✘\s+\d+\s/.test(line)) { glyphs++; failed = true; }
-    else if (/^PASS\s/.test(line)) cases++;
-    else if (/^FAIL\s/.test(line)) { cases++; failed = true; }
+    // A harness that withholds the raw reporter output writes only the final `23 passed` / `1 failed` summary.
+    else if (/^\s*(\d+) passed\b/.test(line)) summaryPass += Number(line.match(/^\s*(\d+)/)[1]);
+    else if (/^\s*(\d+) failed\b/.test(line)) { summaryFail += Number(line.match(/^\s*(\d+)/)[1]); failed = true; }
+    // Custom storefront/browser runners print one `PASS <case>` / `FAIL <case>` line per case instead of a reporter.
+    else if (/^PASS\s/.test(line)) caseLines++;
+    else if (/^FAIL\s/.test(line)) { caseLines++; failed = true; }
   }
-  return { glyphs, cases, failed };
+  // Per log one reporter decides: glyphs, else case lines, else the summary total (so a banner cannot double-count).
+  return { glyphs, cases: caseLines || summaryPass + summaryFail, failed };
 }
 
 /**
