@@ -3,8 +3,8 @@
 // Also: a Serve failure AFTER the bind (the test-tag build closes the bound listener, cmd/claims-worker/console_testhook.go)
 // must end run() with claims_worker_console_failed (never start_failed, never a hang) — the main.go wiring of
 // superviseConsole/cancelRun/exitError (#116 P2-1).
-// CW-2 (#147) is deliberately NOT pinned: whether claims_worker_ready precedes the console failure is a race between the hook's 1s
-// timer and River Start's DB probe (jobqueue.Run skips the ready line once ctx is cancelled), so asserting it would flake on a loaded runner.
+// CW-2 (#147): the hook closes the bound listener only after claims_worker_ready is written (console_testhook.go), so this test
+// pins the post-ready path; a bridge loss logged before readiness would exercise only the startup path (#116 P2-1).
 // CMD-2 (#147): the serve-failure worker binds a loopback :0 (mrEphemeralAddr) and the test reads the OS-chosen port from the
 // claims_worker_console_ready line (mrConsoleBoundAddr); the occupied-address case still holds its own port because the collision is the fixture.
 // Depends on: crNewWorkerEnv/crReadLog (claims_retention_worker_test.go), mrFixture/mrBuild/mrLaunch/mrFailsBeforeReady/
@@ -54,7 +54,15 @@ func TestClaimsWorkerConsoleServeFailureExitsWithConsoleToken(t *testing.T) {
 	deadline := time.Now().Add(14 * time.Second)
 	mrConsoleBoundAddr(t, p, time.Until(deadline))
 	mrFailsBeforeReadyWithin(t, p, time.Until(deadline), "claims_worker_console_failed", linkKey, pageKey, w.jobDSNSecret)
-	if strings.Contains(crReadLog(t, p), "claims_worker_start_failed") {
+	log := crReadLog(t, p)
+	if strings.Contains(log, "claims_worker_start_failed") {
 		t.Fatal("bridge loss after the bind was reported as a startup failure")
+	}
+	readyAt, failedAt := strings.Index(log, "claims_worker_ready"), strings.Index(log, "claims_worker_console_failed")
+	if readyAt < 0 {
+		t.Fatalf("bridge loss was never preceded by claims_worker_ready; the post-ready path is unpinned: %s", p.logPath)
+	}
+	if failedAt < 0 || readyAt > failedAt {
+		t.Fatalf("claims_worker_ready must be logged before claims_worker_console_failed: %s", p.logPath)
 	}
 }
