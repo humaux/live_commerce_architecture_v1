@@ -211,6 +211,85 @@ test("red: a duplicate receipt, a FAIL status, an unplanned mode, an empty plan"
   assert.deepEqual(verify([], [], RUN), ["plan emitted no modes"]);
 });
 
+// #147 round 2 (review 184 P1a): a browser mode's lc_prepare runs unit/model node:test suites BEFORE the Go browser
+// harness. Their complete, passing summaries are not browser evidence. Only a node suite that marks its own browser
+// execution, with its summary printed after the gate's browser-run marker, satisfies CI-7. The two literals are a
+// contract with scripts/dev/test-local.sh (run marker) and tests/admin/picklist.spec.ts (browser suite marker).
+const BROWSER_RUN = "## matrix-receipts browser-run begin";
+const BROWSER_SPEC = "## matrix-receipts browser-spec";
+test("browser mode: a passing prerequisite node --test summary is not browser evidence", () => {
+  // --browser-returns-ui really runs returns-model/returns-request in lc_prepare, then the Go browser harness.
+  const log = ["--- PASS: TestBrowserReturnsUI (80s)", invocation(summary(5, 0)), "PASS", "ok  \tlivecommerce/tests/foundation\t80s"].join("\n");
+  const rec = makeReceipt({ mode: "--browser-returns-ui", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [log], specs: [] });
+  assert.equal(rec.status, "FAIL", "prerequisite model tests are not the browser run");
+});
+test("browser mode: a run-phase unit node --test summary is not browser evidence", () => {
+  // --browser-password-auth runs password-bff unit tests inside lc_run, then its Go browser harness writes the specs.
+  const log = [BROWSER_RUN, invocation(summary(4, 0)), "PASS: informational line only"].join("\n");
+  const rec = makeReceipt({ mode: "--browser-password-auth", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [log], specs: [] });
+  assert.equal(rec.status, "FAIL", "a unit suite is not a browser suite even inside lc_run");
+});
+test("browser mode: a node --test suite that marks its browser execution still passes", () => {
+  const log = [BROWSER_RUN, invocation([BROWSER_SPEC, ...summary(3, 0)])].join("\n");
+  const rec = makeReceipt({ mode: "--browser-picklist", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [log], specs: [] });
+  assert.equal(rec.status, "PASS", "an actual node browser suite remains CI-7 evidence");
+  assert.equal(rec.test_count, 3);
+});
+test("browser mode: a node browser runner's PASS case line in the gate log is execution evidence", () => {
+  // --browser-admin-shell runs unit node suites then shell-runner.mjs, which prints its matrix PASS line to the gate log.
+  const log = [BROWSER_RUN, invocation(summary(4, 0)), "PASS G-UI2/G-UI4: 23 matrix cases, role negative, store switch, axe shell audit"].join("\n");
+  const rec = makeReceipt({ mode: "--browser-admin-shell", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [log], specs: [] });
+  assert.equal(rec.status, "PASS");
+});
+test("the browser-run marker and the node browser-suite marker are printed by their scripts", () => {
+  const local = readFileSync("scripts/dev/test-local.sh", "utf8");
+  assert.ok(local.includes(`'${BROWSER_RUN}'`), "test-local.sh prints the browser-run marker");
+  assert.ok(local.indexOf(`'${BROWSER_RUN}'`) >= 0 && local.indexOf(`'${BROWSER_RUN}'`) < local.indexOf("\nlc_run\n"),
+    "the browser-run marker precedes the mode's lc_run, after lc_prepare");
+  assert.ok(readFileSync("tests/admin/picklist.spec.ts", "utf8").includes(BROWSER_SPEC), "picklist.spec.ts marks its browser execution");
+});
+
+// #147 round 2 (review 184 P1b): an explicit zero failure count is not a failure. A reporter that prints
+// "7 passed" and "0 failed" (plus a flaky annotation) is a successful run, in a gate log and in an evidence log.
+test("a passing summary with an explicit zero failure count stays green", () => {
+  const gate = makeReceipt({ mode: "m", outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestA (0s)\n  7 passed (2m)\n  0 failed\n"] });
+  assert.equal(gate.status, "PASS", "a zero-failure gate summary is not a parsed failure");
+  const evidence = makeReceipt({ mode: "--browser-live-console", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserLiveConsoleRealChain (374s)\n"], specs: ["7 passed\n1 flaky\n0 failed\n"] });
+  assert.equal(evidence.status, "PASS", "a zero-failure evidence summary is not a parsed failure");
+  assert.equal(evidence.spec_count, 7);
+  // A positive failure count is still a parsed failure in both scanners.
+  assert.equal(makeReceipt({ mode: "m", outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestA (0s)\n  7 passed (2m)\n  1 failed\n"] }).status, "FAIL");
+  assert.equal(makeReceipt({ mode: "--browser-live-console", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserLiveConsoleRealChain (1s)\n"], specs: ["7 passed\n1 failed\n"] }).status, "FAIL");
+});
+
+// #147 round 2 (review 184 P2): meta-health-ui keeps the original evidence tree and copies it into a durable
+// sibling, so both playwright.log files describe ONE execution. The run identity is the per-run directory name
+// plus the file name; identical content from independently timestamped runs still counts twice.
+test("CLI: an execution's original and durable evidence copies count once", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "receipts-durable-")), root = path.join(dir, "playwright");
+  const write = (rel, body) => { const file = path.join(root, rel); mkdirSync(path.dirname(file), { recursive: true }); writeFileSync(file, body); };
+  const glyphs = (n) => Array.from({ length: n }, (_, i) => `  ✓  ${i + 1} tests/admin/meta-health-ui.spec.ts:1:1 › MCH${i + 1} (1s)`).join("\n") + `\n  ${n} passed (1s)\n`;
+  const runA = "20260101T010203.000000000", runB = "20260101T040506.000000000";
+  write(`run.AAAA/meta-health-ui/${runA}/playwright.log`, glyphs(2));
+  write(`run.AAAA/meta-health-ui/${runA}/next.log`, "server ready\n");
+  write(`run.AAAA/meta-health-ui-durable/${runA}/playwright.log`, glyphs(2)); // same run, copied by os.CopyFS
+  write(`run.AAAA/meta-health-ui-durable/${runA}/next.log`, "server ready\n");
+  write(`run.AAAA/meta-health-ui/${runB}/playwright.log`, glyphs(1)); // an independent execution
+  const gate = path.join(root, "run.AAAA", "ci-gates", "mode.log");
+  mkdirSync(path.dirname(gate), { recursive: true });
+  writeFileSync(gate, "--- PASS: TestBrowserMetaHealthUI (10s)\n");
+  const env = { MODE: "--browser-meta-health-ui", GATE_OUTCOME: "success", GITHUB_RUN_ID: RUN.runId, GITHUB_RUN_ATTEMPT: "1", GITHUB_SHA: RUN.sha, RECEIPT_SPEC_ROOT: path.join(root, "run.AAAA") };
+  assert.equal(main(["write", path.join(dir, "out"), gate], env), 0);
+  const rec = JSON.parse(readFileSync(path.join(dir, "out", receiptFile("--browser-meta-health-ui")), "utf8"));
+  assert.equal(rec.spec_count, 3, "run A counts once despite its durable copy; run B counts once");
+  assert.equal(rec.test_count, 4, "one Go harness result plus three distinct specs");
+  assert.equal(rec.status, "PASS");
+});
+
 test("CLI: write a receipt from a gate log, then verify the downloaded artifact tree against the plan", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "receipts-")), log = path.join(dir, "gate.log");
   writeFileSync(log, "--- PASS: TestA (0s)\n");
