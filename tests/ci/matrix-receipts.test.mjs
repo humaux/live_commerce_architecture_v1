@@ -32,6 +32,15 @@ test("a pass line outside a node --test summary block does not count", () => {
   assert.equal(countTests("ℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ pass 50\n"), 3, "only the block's own pass line counts");
 });
 
+// #147 CI-9: a summary is one complete, same-prefix block at line boundaries; a fragment pasted into tool output cannot add tests.
+test("a truncated or mixed-prefix node --test summary fragment does not count", () => {
+  assert.equal(countTests("tool output\nℹ suites 0\n# pass 5\n"), 0, "mixed reporter prefixes are not one summary");
+  assert.equal(countTests("ℹ suites 0\nℹ pass 5\nℹ fail 0\n"), 0, "a fragment without the tests header is not a summary");
+  assert.equal(countTests("ℹ tests 3\nℹ suites 0\nℹ pass 3\n"), 0, "a summary without its fail tail is incomplete");
+  assert.equal(countTests("ℹ tests 2\nℹ suites 0\n# pass 2\nℹ fail 0\n"), 0, "the prefix must be consistent across the block");
+  assert.equal(countTests("ℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\n"), 3, "a complete summary still counts");
+});
+
 // #147 CI-6: a parsed failure forces FAIL even when the gate step itself exited 0.
 test("status is FAIL when the logs show a failed test, whatever the gate outcome", () => {
   const rec = (log) => makeReceipt({ mode: "m", outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [log] }).status;
