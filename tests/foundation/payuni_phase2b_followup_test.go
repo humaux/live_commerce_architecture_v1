@@ -550,24 +550,74 @@ const (
 
 var (
 	pfuScriptInvoke  = regexp.MustCompile(`deploy/scripts/[a-z0-9-]+\.sh`)
-	pfuEnvBeforeSudo = regexp.MustCompile(`\b[A-Z][A-Z0-9_]*=\S+\s+sudo\b`)
-	pfuSudoPrefix    = regexp.MustCompile(`sudo( [A-Z][A-Z0-9_]*=\S+)* $`)
+	pfuDockerInvoke  = regexp.MustCompile(`(?:^|[\s;&|(])(docker(?:-compose)?)\s+([^\s;&|)]+)`)
+	pfuEnvBeforeSudo = regexp.MustCompile(`\b[A-Z][A-Z0-9_]*=\S+\s+sudo(?:\s+(?:[A-Za-z0-9_/-]|\./)|\s*$)`)
+	pfuSudoPrefix    = regexp.MustCompile(`(?:^|[^A-Za-z0-9_-])sudo( [A-Z][A-Z0-9_]*=\S+)* $`)
 	pfuEnvAssign     = regexp.MustCompile(`\b([A-Z][A-Z0-9_]*)=\S*`)
 	pfuSecretName    = regexp.MustCompile(`(^|_)(KEY|SECRET|TOKEN)(_|$)|PASSWORD`)
-	pfuBeforeScript  = regexp.MustCompile(`^\S*\s+(sudo\s+)?(\S+=\S+\s+)*\S*deploy/scripts/`)
+	pfuBeforeScript  = regexp.MustCompile(`^\S*\s+(sudo\s+)?(\S+=\S+\s+)*(\S*deploy/scripts/|docker(?:-compose)?\s)`)
 )
 
-// pfuSudoViolations checks the runbook's sudo convention. On a fenced code line every deploy/scripts/*.sh invocation
-// (lib.sh is sourced, not run) is preceded by "sudo" plus optional VAR=x words, and VAR=x never precedes sudo (sudo
-// drops it). On ANY line, a secret-looking variable (*_KEY, *_SECRET, *_TOKEN, *PASSWORD*; not *_FILE) must never be
-// assigned after sudo or in front of a script: sudo logs command-line environment values (sudoers ENV=) and shell
-// history keeps them, so secrets come from the no-echo prompt or a root-owned <NAME>_FILE only (review-157 P1-1).
+// pfuInlineSpans extracts CommonMark backtick code spans from a single non-fenced Markdown line, matching runs of
+// equal backtick length so multi-backtick spans (e.g. “ \set pw `cat …` “) do not split on inner backticks.
+func pfuInlineSpans(line string) []string {
+	var spans []string
+	for i := 0; i < len(line); {
+		if line[i] != '`' {
+			i++
+			continue
+		}
+		j := i
+		for j < len(line) && line[j] == '`' {
+			j++
+		}
+		nTicks := j - i
+		found := -1
+		for k := j; k < len(line); {
+			if line[k] != '`' {
+				k++
+				continue
+			}
+			m := k
+			for m < len(line) && line[m] == '`' {
+				m++
+			}
+			if m-k == nTicks {
+				found = k
+				break
+			}
+			k = m
+		}
+		if found < 0 {
+			i = j
+			continue
+		}
+		spans = append(spans, line[j:found])
+		i = found + nTicks
+	}
+	return spans
+}
+
+// pfuSudoViolations checks the runbook's sudo convention across both fenced code blocks and inline `code` spans in
+// prose (outside HTML header comments). Every deploy/scripts/*.sh invocation (lib.sh is sourced, not run) and every
+// root docker command is preceded by "sudo" plus optional non-secret VAR=x words, and VAR=x never precedes sudo (sudo
+// drops it). Workstation commands (gh/git/curl/openssl) are untouched. On ANY line, a secret-looking variable (*_KEY,
+// *_SECRET, *_TOKEN, *PASSWORD*; not *_FILE) must never be assigned after sudo or in front of a script/docker command:
+// sudo logs command-line environment values (sudoers ENV=) and shell history keeps them, so secrets come from the
+// no-echo prompt or a root-owned <NAME>_FILE only (review-157 P1-1, review-167 P2-1).
 func pfuSudoViolations(name, doc string) []string {
 	var out []string
-	inFence := false
+	fence := ""
+	inComment := false
 	for n, line := range strings.Split(doc, "\n") {
-		if strings.HasPrefix(strings.TrimSpace(line), "```") {
-			inFence = !inFence
+		trimmed := strings.TrimSpace(line)
+		if fence == "" {
+			if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
+				fence = trimmed[:3]
+				continue
+			}
+		} else if strings.HasPrefix(trimmed, fence) {
+			fence = ""
 			continue
 		}
 		code, _, _ := strings.Cut(line, " #")
@@ -580,18 +630,57 @@ func pfuSudoViolations(name, doc string) []string {
 				out = append(out, fmt.Sprintf("%s:%d: secret-looking %s on a command line (sudo logs it); use the no-echo prompt or <NAME>_FILE: %s", name, n+1, v, line))
 			}
 		}
-		if !inFence {
-			continue
-		}
-		if pfuEnvBeforeSudo.MatchString(code) {
-			out = append(out, fmt.Sprintf("%s:%d: VAR=x placed before sudo (sudo resets it); write sudo VAR=x cmd: %s", name, n+1, line))
-		}
-		for _, m := range pfuScriptInvoke.FindAllStringIndex(code, -1) {
-			if strings.HasSuffix(code[m[0]:m[1]], "/lib.sh") {
-				continue
+		var segs []string
+		if fence != "" {
+			segs = []string{code}
+		} else {
+			prose := line
+			if inComment {
+				e := strings.Index(prose, "-->")
+				if e < 0 {
+					continue
+				}
+				inComment = false
+				prose = prose[e+3:]
 			}
-			if !pfuSudoPrefix.MatchString(code[:m[0]]) {
-				out = append(out, fmt.Sprintf("%s:%d: %s is not preceded by sudo: %s", name, n+1, code[m[0]:m[1]], line))
+			for {
+				s := strings.Index(prose, "<!--")
+				if s < 0 {
+					break
+				}
+				e := strings.Index(prose[s+4:], "-->")
+				if e < 0 {
+					prose = prose[:s]
+					inComment = true
+					break
+				}
+				prose = prose[:s] + " " + prose[s+4+e+3:]
+			}
+			for _, span := range pfuInlineSpans(prose) {
+				s, _, _ := strings.Cut(span, " #")
+				segs = append(segs, s)
+			}
+		}
+		for _, seg := range segs {
+			if pfuEnvBeforeSudo.MatchString(seg) {
+				out = append(out, fmt.Sprintf("%s:%d: VAR=x placed before sudo (sudo resets it); write sudo VAR=x cmd: %s", name, n+1, line))
+			}
+			for _, m := range pfuScriptInvoke.FindAllStringIndex(seg, -1) {
+				if strings.HasSuffix(seg[m[0]:m[1]], "/lib.sh") {
+					continue
+				}
+				if !pfuSudoPrefix.MatchString(seg[:m[0]]) {
+					out = append(out, fmt.Sprintf("%s:%d: %s is not preceded by sudo: %s", name, n+1, seg[m[0]:m[1]], line))
+				}
+			}
+			for _, m := range pfuDockerInvoke.FindAllStringSubmatchIndex(seg, -1) {
+				cmd, sub := seg[m[2]:m[3]], seg[m[4]:m[5]]
+				if cmd == "docker" && sub == "compose" && strings.TrimSpace(seg[m[5]:]) == "" {
+					continue
+				}
+				if !pfuSudoPrefix.MatchString(seg[:m[2]]) {
+					out = append(out, fmt.Sprintf("%s:%d: %s %s is not preceded by sudo: %s", name, n+1, cmd, sub, line))
+				}
 			}
 		}
 	}
@@ -677,12 +766,22 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 	// sudo convention (review-153-a2a269d73 P2-1, review-157-fc6b53e88 P1-1): see pfuSudoViolations. The guard must
 	// first prove it fires on synthetic bad input, so a loosened regexp cannot pass vacuously.
 	for bad, want := range map[string]string{
-		"```sh\nSTRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh x\n```":              "not preceded by sudo",
-		"```sh\nFOO=1 sudo deploy/scripts/smoke-r3.sh\n```":                       "VAR=x placed before sudo",
-		"```sh\ndeploy/scripts/smoke-r3.sh full\n```":                             "not preceded by sudo",
-		"run `sudo STRIPE_SECRET_KEY=sk_test_x deploy/scripts/ops-admin.sh y`":    "secret-looking",
-		"```sh\nsudo META_PAGE_ACCESS_TOKEN=t deploy/scripts/ops-admin.sh y\n```": "secret-looking",
-		"```sh\nDB_PASSWORD=p deploy/scripts/ops-admin.sh y\n```":                 "secret-looking",
+		"```sh\nSTRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh x\n```":               "not preceded by sudo",
+		"```sh\nFOO=1 sudo deploy/scripts/smoke-r3.sh\n```":                        "VAR=x placed before sudo",
+		"```sh\ndeploy/scripts/smoke-r3.sh full\n```":                              "not preceded by sudo",
+		"~~~sh\ndeploy/scripts/smoke-r3.sh full\n~~~":                              "not preceded by sudo",
+		"run `sudo STRIPE_SECRET_KEY=sk_test_x deploy/scripts/ops-admin.sh y`":     "secret-looking",
+		"```sh\nsudo META_PAGE_ACCESS_TOKEN=t deploy/scripts/ops-admin.sh y\n```":  "secret-looking",
+		"```sh\nDB_PASSWORD=p deploy/scripts/ops-admin.sh y\n```":                  "secret-looking",
+		"prose: run `deploy/scripts/preflight.sh --online` first":                  "deploy/scripts/preflight.sh is not preceded by sudo",
+		"prose: `FOO=1 sudo deploy/scripts/smoke-r3.sh`":                           "VAR=x placed before sudo",
+		"```sh\ndocker compose ps\n```":                                            "docker compose is not preceded by sudo",
+		"prose: `docker compose logs --since 10m claims-worker`":                   "docker compose is not preceded by sudo",
+		"prose: `curl -fsS https://x/healthz`; `docker inspect -f '{{.State}}' c`": "docker inspect is not preceded by sudo",
+		"prose: `docker start pg`":                                                 "docker start is not preceded by sudo",
+		"prose: `sudo docker ps; docker info`":                                     "docker info is not preceded by sudo",
+		"<!-- x --> `docker ps`":                                                   "docker ps is not preceded by sudo",
+		"prose: `POSTGRES_PASSWORD=p docker exec -i pg psql`":                      "secret-looking",
 	} {
 		if v := strings.Join(pfuSudoViolations("deploy.md", bad), "\n"); !strings.Contains(v, want) {
 			t.Errorf("sudo guard did not report %q for %q (got %q)", want, bad, v)
@@ -693,6 +792,14 @@ func TestPayuniPhase2bFollowupRunbookQuery(t *testing.T) {
 		"```sh\nsudo STRIPE_SECRET_KEY_FILE=/root/k deploy/scripts/ops-admin.sh x\n```",
 		"```sh\nsudo LC_COMPOSE_ENV=/e deploy/scripts/smoke-r3.sh full\n```",
 		"prose: never `sudo VAR=...` for secrets; STRIPE_SECRET_KEY is prompted",
+		"prose: `sudo deploy/scripts/preflight.sh --online` and `sudo docker compose --project-directory deploy --env-file /etc/live-commerce/compose.env ps`",
+		"prose: `sudo docker inspect -f '{{.State.Health.Status}}' api` and `dc logs --since 30m api`",
+		"```sh\ndc() { sudo docker compose --project-directory /opt/live-commerce/deploy --env-file /etc/live-commerce/compose.env -f /opt/live-commerce/deploy/compose.yml \"$@\"; }\n```",
+		"prose: `sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env \"$LC_COMPOSE_ENV\"' check`",
+		"workstation: `gh pr view 147`, `git checkout -b fix/x`, `curl -fsS https://example.com/healthz`, `openssl rand -hex 32`",
+		"```sh\nHOST=\"shop.example.com\"\necho | openssl s_client -connect \"$HOST:443\" -servername \"$HOST\" 2>/dev/null | openssl x509 -noout -enddate\ncurl -sI https://example.com/\ngit status\ngh run list\n```",
+		"paths and prose: `/etc/docker/daemon.json`, `/var/lib/docker/containers/id/id-json.log`, `mv /live/18/docker /live/18/docker.bak`, all `docker compose` commands use `dc`, `` \\set pw `cat …` ``, not `LC_COMPOSE_ENV=… sudo …`",
+		"<!--\nHeader: (`deploy/scripts/ops-admin.sh`)\n-->\n# Runbook",
 	} {
 		if v := pfuSudoViolations("deploy.md", ok); len(v) != 0 {
 			t.Errorf("sudo guard rejected a good example %q: %v", ok, v)

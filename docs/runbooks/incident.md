@@ -43,7 +43,7 @@ dc() { sudo docker compose --project-directory /opt/live-commerce/deploy --env-f
      或者部署中途失败。**不要**直接 `dc up -d`（它会按文件里的 tag 重建容器）：先看 `deployments.log` 最后一行和 `dc ps`，
      再按 deploy.md §5 用 `sudo deploy/scripts/deploy.sh upgrade|app-rollback <tag>` 收敛。
 2. `dc ps`：查看状态、健康状况和重启次数。
-3. 健康检查：`curl -fsS https://<api>/healthz`；`docker inspect -f '{{.State.Health.Status}}' <容器>`。
+3. 健康检查：`curl -fsS https://<api>/healthz`；`sudo docker inspect -f '{{.State.Health.Status}}' <容器>`。
 4. 查看对应服务的日志（§1）。
 5. 打包现场：
    ```sh
@@ -110,23 +110,23 @@ api 的 `/healthz` 一直返回 200（它不检查数据库），容器的 `/rea
 - base backup 改为每日 03:23，保留 2 份，WAL 窗口 ≤ 2 天；W3 的 base 阈值是 26 小时。
 - 看门狗用 `LC_ALERT_EMAIL` 发邮件（失败集合一变就发，不变每 6 小时重发，恢复时发一封）；预检 P08 在生产里要求 `LC_ALERT_EMAIL` 或 `LC_ALERT_WEBHOOK_URL`。
 - `pg-ops.sh backup|basebackup` 和 `deploy.sh upgrade` 在备份盘剩余空间 < max(10 %, 2 GiB) 时直接拒绝，数据库没有被碰过。
-- `build-images.sh` 构建成功后自动运行 `deploy/scripts/prune-docker.sh`：保留新 tag、运行中 tag 和 `deployments.log` 里上一个已部署 tag（`app-rollback` 需要它），构建缓存压到 3GB。
+- `build-images.sh` 构建成功后自动运行 `prune-docker.sh`：保留新 tag、运行中 tag 和 `deployments.log` 里上一个已部署 tag（`app-rollback` 需要它），构建缓存压到 3GB。
 
-**症状**：W2 `used>80%`；W1 `postgres state=exited`/unhealthy；W3/W4 失败；`dc logs postgres` 有 `No space left on device`；`docker start`/`dc up -d postgres` 报无法创建 overlay 挂载。
-**先确认再动手**：`df -h / ${LC_BACKUP_DIR}`、`du -sh ${LC_BACKUP_DIR}/wal`、`ls ${LC_BACKUP_DIR}/wal | wc -l`（新配置下最多约 2880 个段文件 = 2 天 × 1440 个/天，压缩后通常远小于 1GB；实测：空闲库每个强制切换的段压缩后约 16.5–31 KB，原来 16 MiB；见 `output/ops-disk-guard/od-all.log`）。
+**症状**：W2 `used>80%`；W1 `postgres state=exited`/unhealthy；W3/W4 失败；`dc logs postgres` 有 `No space left on device`；`sudo docker start`/`dc up -d postgres` 报无法创建 overlay 挂载。
+**先确认再动手**：`sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_require_vars LC_BACKUP_DIR && df -h / "$LC_BACKUP_DIR" && du -sh "$LC_BACKUP_DIR/wal" && ls "$LC_BACKUP_DIR/wal" | wc -l' incident-wal-check`（新配置下最多约 2880 个段文件 = 2 天 × 1440 个/天，压缩后通常远小于 1GB；实测：空闲库每个强制切换的段压缩后约 16.5–31 KB，原来 16 MiB；见 `output/ops-disk-guard/od-all.log`）。
 
 **恢复步骤（事故当时 owner 批准的顺序；涉及生产，先报告影响面再执行）**
 1. 先腾出能让容器启动的空间：`sudo docker builder prune`（事故中释放 4.7G）。更安全的做法是 `sudo deploy/scripts/prune-docker.sh`（只删旧的 `lc-*` 镜像标签和多余的构建缓存，保留运行中/上一个 tag）。
-2. 启动 postgres 容器：`docker start <postgres 容器>`（或 `dc up -d postgres`），等崩溃恢复完成、`dc ps` 显示 healthy。
+2. 启动 postgres 容器：`sudo docker start <postgres 容器>`（或 `dc up -d postgres`），等崩溃恢复完成、`dc ps` 显示 healthy。
 3. 立刻做一份新的 base backup：`sudo deploy/scripts/pg-ops.sh basebackup`。
 4. WAL 目录仍然占满时，按**最新 base 的 `.backup` 标签文件名**清理它之前的归档（事故中：`pg_archivecleanup /backup/wal 0000000100000013000000C9.00000028.backup`，磁盘占用降到 14%）。
    在 pg-ops 容器里执行，并带上 `-b -x .gz`，这样压缩段、旧的明文段和过期的 `.backup` 标签一起清理：
    ```sh
    dc --profile ops run --rm --no-deps -T pg-ops -c 'pg_archivecleanup -b -x .gz /backup/wal <最新 base 的标签文件名，形如 0000000100000013000000C9.00000028.backup>'
    ```
-   最新 base 的标签文件名：`ls ${LC_BACKUP_DIR}/wal/*.backup | tail -n1`（它必须是你刚做的那份 base）。清理之后更早的 base 失去了 WAL 链，不能再用于 PITR，之后的 basebackup 保留策略会把它们移除。
+   最新 base 的标签文件名：`sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_require_vars LC_BACKUP_DIR && cd "$LC_BACKUP_DIR/wal" && ls *.backup | tail -n1' incident-latest-base`（它必须是你刚做的那份 base）。清理之后更早的 base 失去了 WAL 链，不能再用于 PITR，之后的 basebackup 保留策略会把它们移除。
 5. 做一份逻辑备份：`sudo deploy/scripts/pg-ops.sh backup --tag post-incident`（事故中成功）。
-6. 复核：`sudo deploy/scripts/watchdog.sh` 全 PASS；`pg_stat_archiver` 的 `failed_count` 不再增长；`ls ${LC_BACKUP_DIR}/wal | tail` 里的新段是 `.gz`。
+6. 复核：`sudo deploy/scripts/watchdog.sh` 全 PASS；`pg_stat_archiver` 的 `failed_count` 不再增长；`sudo bash -c 'source deploy/scripts/lib.sh && lc_load_env "$LC_COMPOSE_ENV" && lc_require_vars LC_BACKUP_DIR && ls "$LC_BACKUP_DIR/wal" | tail' incident-wal-tail` 里的新段是 `.gz`。
 - **不要**手工删除 `wal/` 里的段、`rm -rf wal/*`，也不要在没有新 base 的情况下清理（会破坏 PITR 链）。
 
 **未做（owner 决定，已建议）**：①把 `/var/backups` 放到独立的持久盘（现在与 Docker 根盘是同一块盘，备份写满会拖垮 DB）；②每日 dump 的异地副本（例如 GCS bucket，需加密，见 backup-restore.md §8）。
