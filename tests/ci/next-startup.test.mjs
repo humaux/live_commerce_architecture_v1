@@ -473,6 +473,7 @@ function goCallArguments(source, open) {
 }
 // stripGoComments blanks // and /* */ comments with spaces while preserving length and newlines, so every index and line number
 // still lines up with the original source. String literals (including raw strings) are copied verbatim: "//" inside one is data.
+// It is the text the setseed-argument search runs on, because the SQL lives inside the Exec string literal.
 function stripGoComments(source) {
   let out = "";
   let quote = null, lineComment = false, blockComment = false;
@@ -501,7 +502,32 @@ function stripGoComments(source) {
   }
   return out;
 }
-// seededConnLifecycle pins the helper's executable shape on comment-stripped code: one pooled connection is Acquired, that exact
+// stripGoLiteralContents blanks the CONTENT of Go interpreted strings "...", raw strings `...` and rune literals '...' with spaces
+// while keeping the delimiters, every newline and every other index in place (inputs are already comment-stripped). Trust shape —
+// function blocks, receivers, Begin/Hijack/Close derivation — is parsed from this text, so a statement quoted inside a string is
+// data, not an executable statement (PR #168 round 3: `_ = "tx, err := seeded.Begin(ctx)"` must not make a pooled tx trusted).
+function stripGoLiteralContents(source) {
+  let out = "";
+  let quote = null;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    if (quote) {
+      if (quote !== "`" && ch === "\\" && i + 1 < source.length) {
+        const esc = source[i + 1];
+        out += esc === "\n" ? " \n" : "  "; // an escaped line continuation keeps its newline
+        i++;
+        continue;
+      }
+      if (ch === quote) { quote = null; out += ch; continue; }
+      out += ch === "\n" ? "\n" : " ";
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") { quote = ch; out += ch; continue; }
+    out += ch;
+  }
+  return out;
+}
+// seededConnLifecycle pins the helper's executable shape on literal-masked code: one pooled connection is Acquired, that exact
 // connection is Hijacked, setseed runs on the hijacked raw connection, and the returned cleanup Closes that raw connection.
 // Seeding a pooled connection (Acquire -> conn.Conn() -> seed -> conn.Release()) is the regression the round-1 name exemption
 // accepted, so a name alone buys nothing here.
@@ -522,17 +548,19 @@ function seededConnLifecycle(file, code, block) {
   return { raw, hijackAt: block.start + hijack.index, closeAt: block.start + close.index };
 }
 function assertNoUnsafeSetseed(file, source) {
-  const code = stripGoComments(source); // every match below is an executable statement, never a comment
-  const blocks = goFunctionBlocks(code);
+  const code = stripGoComments(source); // the SQL literal lives in a string argument, so setseed is matched here
+  const masked = stripGoLiteralContents(code); // but trust shape is read from executable code only: literal contents are data
+  const blocks = goFunctionBlocks(masked);
   const helper = blocks.find((b) => b.name === "seededConn");
-  const lifecycle = helper ? seededConnLifecycle(file, code, helper) : null;
+  const lifecycle = helper ? seededConnLifecycle(file, masked, helper) : null;
   let checked = 0;
-  for (const call of code.matchAll(/(\w+)\.(?:Exec|Query|QueryRow)\(/g)) {
+  // Both strips preserve length, so a call site found in `masked` has the same index in `code`.
+  for (const call of masked.matchAll(/(\w+)\.(?:Exec|Query|QueryRow)\(/g)) {
     const args = goCallArguments(code, call.index + call[0].length - 1);
     if (args === null || !/setseed\s*\(/.test(args)) continue;
     checked++;
     const at = call.index;
-    const line = code.slice(0, at).split("\n").length;
+    const line = masked.slice(0, at).split("\n").length;
     const block = blocks.find((b) => at >= b.start && at < b.end);
     assert.ok(block, `${file}:${line}: setseed outside a Go function block`);
     const receiver = call[1];
@@ -541,7 +569,7 @@ function assertNoUnsafeSetseed(file, source) {
         `${file}:${line}: seededConn runs setseed on ${receiver}, not on the connection it hijacked before closing it; a seeded connection must be closed, not returned to a pool`);
       continue;
     }
-    const body = code.slice(block.start, block.end);
+    const body = masked.slice(block.start, block.end);
     const hijacked = [...body.matchAll(/(\w+)\s*:?=\s*[\w.]+\.Hijack\(\)/g)].map((m) => m[1]);
     const seeded = [...body.matchAll(/(\w+)\s*,\s*\w+\s*:?=\s*seededConn\(/g)].map((m) => m[1]);
     const transactions = [];
