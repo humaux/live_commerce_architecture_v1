@@ -38,14 +38,14 @@ test(
         const base = edge.origin;
         const child = (server = spawn(
           process.execPath,
-          ["apps/admin/.next/standalone/apps/admin/server.js"],
+          ["--dns-result-order=ipv4first", "apps/admin/.next/standalone/apps/admin/server.js"],
           {
             stdio: ["ignore", log, log],
             env: {
               ...process.env,
               COMMERCE_UI_PORT: String(port),
               PORT: String(port),
-              HOSTNAME: "127.0.0.1",
+              HOSTNAME: "localhost",
               COMMERCE_IDENTITY_ENABLED: "1",
               COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS: "1",
               COMMERCE_PASSWORD_LOGIN_ENABLED: "1",

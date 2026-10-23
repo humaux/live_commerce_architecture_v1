@@ -29,13 +29,14 @@ export function browserRequirements(mode, source, extraEnv = '') {
   if (engine === 'webkit' && !browsers.includes('webkit')) browsers.push('webkit');
   return browsers;
 }
-/** A Go test file launches WebKit when it sets the engine to the literal "webkit", calls webkit.executablePath(), or drives
- * LC_BROWSER_ENGINE from a variable and declares `// lc:webkit=browser`. A variable-driven file must declare itself:
- * `// lc:webkit=front-only` (only browserFront's TLS branch, no browser binary) or `// lc:webkit=browser`; undeclared throws (TH-7, #147). */
+/** A Go test file launches WebKit when it calls webkit.executablePath(), sets the engine to the literal "webkit", or drives
+ * LC_BROWSER_ENGINE from a variable. An explicit marker is the reviewed contract and beats every inference:
+ * `// lc:webkit=browser` (a browser binary may launch) or `// lc:webkit=front-only` (only browserFront's TLS branch);
+ * a variable-driven file without a marker throws (TH-7, #147). */
 function usesWebKit(source) {
-  if (/\bwebkit\.executablePath\(\)/.test(source)) return true;
   const marker = source.match(/^\/\/ lc:webkit=(front-only|browser)\b/m)?.[1];
-  if (marker) return marker === 'browser'; // an explicit declaration beats inference (a front-only file may Setenv "webkit" to select the TLS front)
+  if (marker) return marker === 'browser';
+  if (/\bwebkit\.executablePath\(\)/.test(source)) return true;
   let driven = false;
   for (const m of source.matchAll(/\b\w+\.Setenv\(\s*"LC_BROWSER_ENGINE"\s*,\s*([^)]*?)\s*\)/g)) {
     if (m[1] === '"webkit"') return true;
