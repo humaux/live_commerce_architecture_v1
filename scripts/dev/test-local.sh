@@ -135,7 +135,9 @@ case "$1" in
   mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/ui-gallery"
   # --test-reporter=spec pins the "ℹ pass N / ℹ fail F" summary that scripts/dev/release-gate.sh counts (B-browser-ui-gallery has no go test events).
   node --test --test-reporter=spec --experimental-strip-types tests/ui/ds-logic.test.ts tests/ui/ds-tokens.test.mjs tests/ui/ds-hex-ratchet.test.mjs
-  pnpm --filter @live-commerce/admin build > "$LC_BROWSER_EVIDENCE_ROOT/ui-gallery/build.log" 2>&1
+  # #147: NEXT_PUBLIC_* is inlined by `next build`, not read by `next start` (the runner only starts .next/standalone), so the gallery
+  # test-seam flag must be on the build command itself; every other admin build leaves it unset and Next drops the seam.
+  NEXT_PUBLIC_LC_GALLERY_TEST=1 pnpm --filter @live-commerce/admin build > "$LC_BROWSER_EVIDENCE_ROOT/ui-gallery/build.log" 2>&1
   LC_UI_GALLERY_EVIDENCE="$LC_BROWSER_EVIDENCE_ROOT/ui-gallery" node --experimental-strip-types tests/admin/ui-gallery-runner.mjs
   exit 0
     }

@@ -217,10 +217,14 @@ export function GalleryUpload({ t, value, onChange, disabled = false }: { t: Tem
   useEffect(() => {
     if (disabled || !items.some(item => item.status === "uploading")) return;
     const finish = () => write(items.map(item => item.status === "uploading" ? { ...item, progress: 100, status: "done" } : item));
-    // Gallery test seam (#147 TH-13): while window.__lcHoldUpload is set the simulated transfer waits for lc-gallery-upload-release instead of its timer.
-    if ((window as unknown as { __lcHoldUpload?: boolean }).__lcHoldUpload) {
-      window.addEventListener("lc-gallery-upload-release", finish, { once: true });
-      return () => window.removeEventListener("lc-gallery-upload-release", finish);
+    // Gallery test seam (#147 TH-13): only a gallery build with NEXT_PUBLIC_LC_GALLERY_TEST=1 keeps this branch. Next inlines the
+    // literal at `next build`, so a production build folds it to false and drops the hold/release hook entirely. While
+    // window.__lcHoldUpload is set the simulated transfer waits for lc-gallery-upload-release instead of its timer.
+    if (process.env.NEXT_PUBLIC_LC_GALLERY_TEST === "1") {
+      if ((window as unknown as { __lcHoldUpload?: boolean }).__lcHoldUpload) {
+        window.addEventListener("lc-gallery-upload-release", finish, { once: true });
+        return () => window.removeEventListener("lc-gallery-upload-release", finish);
+      }
     }
     const timer = setTimeout(finish, 700);
     return () => clearTimeout(timer);
