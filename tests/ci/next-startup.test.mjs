@@ -512,8 +512,9 @@ test("#159 P2-B: setseed only on seededConn's hijacked connection or a test-hija
 });
 // PR #168 review P1: the round-1 guard exempted by function name and read matches out of comments, so these two counterexamples
 // passed. They are static Go source, never built: (a) a seededConn that seeds a pooled connection and Releases it, and (b) a
-// commented-out safe transaction next to a real pooled transaction that runs setseed. Both MUST throw.
-test("#159 P2-B: setseed guard rejects a pooled seededConn and a comment-only safe transaction", () => {
+// commented-out safe transaction next to a real pooled transaction that runs setseed. Both MUST throw; they are separate tests
+// so a RED run names the escape that got through.
+test("#159 P2-B: setseed guard rejects a seededConn that seeds a pooled connection", () => {
   const pooledHelper = `func seededConn(t *testing.T, pool *pgxpool.Pool, seed float64) (*pgx.Conn, func()) {
 	ctx := context.Background()
 	acquired, err := pool.Acquire(ctx)
@@ -528,6 +529,8 @@ test("#159 P2-B: setseed guard rejects a pooled seededConn and a comment-only sa
 }`;
   assert.throws(() => assertNoUnsafeSetseed("synthetic_pooled_helper_test.go", pooledHelper), /seededConn|Hijack/,
     "a seededConn that seeds a pooled connection and Releases it passed the guard");
+});
+test("#159 P2-B: setseed guard rejects a comment-only safe transaction beside a pooled one", () => {
   const commentEscape = `func TestSeededTransactionOnPool(t *testing.T) {
 	ctx := context.Background()
 	pool := newPool(t)
