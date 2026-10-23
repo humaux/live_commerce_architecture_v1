@@ -198,7 +198,7 @@ async function newOrder(page,{pay=true}={}){
   await reachCheckout(page,origin,"en",process.env.LC_STRIPE_PRODUCT,{quantity:2});
   await page.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const quotation=page.waitForResponse(r=>requestIs(r,"quotes","POST"));
-  await page.getByRole("button",{name:"Get current total",exact:true}).click();assert.equal((await quotation).status(),200);
+  await Promise.all([quotation,page.getByRole("button",{name:"Get current total",exact:true}).click()]);assert.equal((await quotation).status(),200);
   await ex(page.getByTestId("address-section")).toBeVisible();
   for(const [key,value] of Object.entries(pii))await page.locator(`input[name="${key}"]`).fill(value);
   await page.getByTestId("confirm-address").click();await ex(page.getByTestId("create-order")).toBeEnabled();

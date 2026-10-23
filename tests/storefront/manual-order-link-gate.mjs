@@ -138,8 +138,7 @@ try {
   await merchant.getByTestId("mo-line1").fill("1 Browser Road");
   await merchant.getByTestId("mo-mode-bank_transfer").check();
   const placed = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual`);
-  await merchant.getByTestId("manual-order-submit").click();
-  const reply = await placed;
+  const [reply] = await Promise.all([placed, merchant.getByTestId("manual-order-submit").click()]);
   assert.equal(reply.status(), 201);
   const body = await reply.json();
   assert.equal(body.commercial_state, "AWAITING_TRANSFER");
@@ -202,7 +201,7 @@ try {
   }); // read-only: the input is interpreted by the page in its own timezone
   await buyer.locator('input[name="paid_at"]').fill(paidAtInBrowserZone);
   const proofReply = buyer.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname === `/api/buyer/orders/${body.order_id}/bank-transfer/proof`);
-  await buyer.getByTestId("transfer-send").click();
+  await Promise.all([proofReply, buyer.getByTestId("transfer-send").click()]);
   assert.equal((await proofReply).status(), 200);
   await expect(buyer.getByTestId("transfer-proof")).toBeVisible();
   await buyer.reload();
@@ -228,7 +227,7 @@ try {
 
   // ---- regenerate: the merchant re-issues the link; the NEW link opens the order in a fresh browser, the OLD one stays refused -------------
   const regenReply = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual/regenerate-link`);
-  await merchant.getByTestId("manual-order-regenerate").click();
+  await Promise.all([regenReply, merchant.getByTestId("manual-order-regenerate").click()]);
   assert.equal((await regenReply).status(), 201);
   // The 201 arrives before React re-renders the link; wait for the rendered value to change instead of racing it.
   await expect(merchant.getByTestId("manual-order-link")).not.toHaveText(link);
@@ -278,8 +277,7 @@ try {
   await expect(merchant.getByTestId("mo-cod-note")).toContainText("NT$50"); // the collection fee the carrier adds at the door
   await expect(merchant.getByTestId("mo-cod-note")).toContainText("NT$20,000"); // and the per-order cap, both whole NT$
   const codPlaced = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual`);
-  await merchant.getByTestId("manual-order-submit").click();
-  const codReply = await codPlaced;
+  const [codReply] = await Promise.all([codPlaced, merchant.getByTestId("manual-order-submit").click()]);
   assert.equal(codReply.status(), 201);
   const codBody = await codReply.json();
   assert.equal(codBody.commercial_state, "AWAITING_COLLECTION");

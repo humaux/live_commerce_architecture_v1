@@ -370,7 +370,7 @@ async function place(locale, width) {
   const optionsWait = page.waitForResponse((response) =>
     isResponse(response, "checkout-options", "GET"),
   );
-  await click(
+  await Promise.all([optionsWait, click(
     page,
     page.getByRole("button", {
       name: purchaseCopy[locale].delivery,
@@ -379,7 +379,7 @@ async function place(locale, width) {
     locale,
     width,
     "choose delivery",
-  );
+  )]);
   const optionsResponse = await optionsWait;
   assert.equal(optionsResponse.status(), 200);
   const options = await optionsResponse.json();
@@ -397,13 +397,13 @@ async function place(locale, width) {
   const quoteWait = page.waitForResponse((response) =>
     isResponse(response, "quotes", "POST"),
   );
-  await click(
+  await Promise.all([quoteWait, click(
     page,
     page.getByRole("button", { name: purchaseCopy[locale].quote, exact: true }),
     locale,
     width,
     "quote real cart",
-  );
+  )]);
   const quoted = await quoteWait;
   assert(quoted.ok(), "real cart quotation accepted");
   const quote = await quoted.json();
@@ -427,13 +427,13 @@ async function place(locale, width) {
   const destinationWait = page.waitForResponse((response) =>
     isResponse(response, "destination", "PUT"),
   );
-  await click(
+  await Promise.all([destinationWait, click(
     page,
     page.getByTestId("confirm-address"),
     locale,
     width,
     "confirm destination",
-  );
+  )]);
   const destinationResponse = await destinationWait;
   assert(destinationResponse.ok(), "real destination accepted");
   const destination = await destinationResponse.json();
@@ -443,13 +443,13 @@ async function place(locale, width) {
   const beginWait = page.waitForResponse((response) =>
     isResponse(response, "checkout", "POST"),
   );
-  await click(
+  await Promise.all([beginWait, click(
     page,
     page.getByTestId("create-order"),
     locale,
     width,
     "submit genuine Begin",
-  );
+  )]);
   const begin = await beginWait;
   assert(begin.ok(), `real Begin status ${begin.status()}`);
   const submitted = begin.request().postDataJSON();

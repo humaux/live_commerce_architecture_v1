@@ -217,8 +217,7 @@ try {
     const dialog = card.getByTestId("storefront-confirm");
     await expect(dialog).toBeVisible(); // nothing is written before the confirm
     const post = card.page().waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/publication`);
-    await dialog.getByTestId("storefront-confirm-yes").click();
-    const reply = await post;
+    const [reply] = await Promise.all([post, dialog.getByTestId("storefront-confirm-yes").click()]);
     assert.equal(reply.status(), 200, "publication POST");
     await expect(card.getByTestId("storefront-notice")).toHaveText(wantPublished ? c.savedPub : c.savedUnpub);
     await expect(card.getByTestId("storefront-state")).toHaveText(wantPublished ? c.published : c.unpublished);
@@ -312,7 +311,7 @@ try {
   await sees("en", "390px", "published from the 390px card", "buyer-en-390-live.png");
   await staleCard.getByTestId("storefront-toggle").click(); // the stale tab still believes "not published"
   const stale = second.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/publication`);
-  await staleCard.getByTestId("storefront-confirm-yes").click();
+  await Promise.all([stale, staleCard.getByTestId("storefront-confirm-yes").click()]);
   assert.equal((await stale).status(), 409, "a stale expected_version must be refused with 409");
   await expect(staleCard.getByTestId("storefront-problem")).toHaveText(COPY.en.conflict);
   await expect(staleCard.getByTestId("storefront-state")).toHaveText(COPY.en.published); // reloaded from the server
