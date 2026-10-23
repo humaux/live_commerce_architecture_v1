@@ -2,7 +2,8 @@
 //   and cancelling a refused body (#84).
 // Depends on: node:net; env COMMERCE_BUYER_WEB_ENABLED, COMMERCE_BUYER_API_ORIGIN, COMMERCE_BUYER_BFF_KEY.
 // Used by: lib/media-proxy.ts, lib/shop-upstream.ts (and through them app/media/*, app/api/shop/*, the shop pages),
-//   lib/primary-origin.ts (canonical redirect), lib/ad-landing.ts (candidateOrigin), app/feeds/meta.csv/route.ts.
+//   lib/primary-origin.ts (canonical redirect), lib/ad-landing.ts (candidateOrigin), app/feeds/meta.csv/route.ts,
+//   app/sitemap.xml/route.ts.
 // Shared by the public (cookie-less, bearer-less) storefront routes that call the private Go buyer API with only the BFF
 // key and the verified Host-derived origin: app/media/p/[productID]/[imageID]/route.ts (product photos) and
 // app/feeds/meta.csv/route.ts (Meta feed; adopted this module in #107). Owns: origin derivation from Host, the upstream env check and a bounded body read.
@@ -10,6 +11,11 @@
 import { isIP } from "node:net";
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
+
+// RFC 9110 §10.2.3 retry hints for the storefront's retryable 503s, in one place (#147 SF-4): the public data routes
+// (feed, media, sitemap) ask for 60 s before a full read, the cheaper canonical-origin resolver for 5 s. Routes must
+// not hard-code their own value; a 404/410 never carries either hint.
+export const RETRY_AFTER = { down: "60", resolver: "5" } as const;
 
 // Lowercase DNS name, no port/IP/userinfo/comma, at least two valid labels -> https origin; else null.
 export function candidateOrigin(host: string | null): string | null {
@@ -70,7 +76,8 @@ export async function discardBody(response: Response): Promise<void> {
 }
 
 // Whole body up to `max` bytes, or null when it is longer or the stream fails mid-read (#116): callers answer their own retryable
-// 503 / "down" (each route's header comment states it; no wider contract exists) instead of letting a reset connection escape as a 500. The stream is cancelled in both cases.
+// 503 / "down" (each route's header comment states it; no wider contract exists; a 503 uses the shared RETRY_AFTER) instead
+// of letting a reset connection escape as a 500. The stream is cancelled in both cases.
 export async function readBounded(body: ReadableStream<Uint8Array> | null, max: number): Promise<Uint8Array | null> {
   if (!body) return null;
   const reader = body.getReader();
