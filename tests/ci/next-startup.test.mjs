@@ -510,6 +510,42 @@ test("#159 P2-B: setseed only on seededConn's hijacked connection or a test-hija
   }
   assert.ok(checked >= 4, `only ${checked} setseed call sites checked; the guard has gone vacuous`);
 });
+// PR #168 review P1: the round-1 guard exempted by function name and read matches out of comments, so these two counterexamples
+// passed. They are static Go source, never built: (a) a seededConn that seeds a pooled connection and Releases it, and (b) a
+// commented-out safe transaction next to a real pooled transaction that runs setseed. Both MUST throw.
+test("#159 P2-B: setseed guard rejects a pooled seededConn and a comment-only safe transaction", () => {
+  const pooledHelper = `func seededConn(t *testing.T, pool *pgxpool.Pool, seed float64) (*pgx.Conn, func()) {
+	ctx := context.Background()
+	acquired, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn := acquired.Conn()
+	if _, err := conn.Exec(ctx, "SELECT setseed($1)", seed); err != nil {
+		t.Fatal(err)
+	}
+	return conn, func() { acquired.Release() }
+}`;
+  assert.throws(() => assertNoUnsafeSetseed("synthetic_pooled_helper_test.go", pooledHelper), /seededConn|Hijack/,
+    "a seededConn that seeds a pooled connection and Releases it passed the guard");
+  const commentEscape = `func TestSeededTransactionOnPool(t *testing.T) {
+	ctx := context.Background()
+	pool := newPool(t)
+	seeded, release := seededConn(t, pool, 0.5)
+	defer release()
+	// tx, err := seeded.Begin(ctx)
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, "SELECT setseed(0.5)"); err != nil {
+		t.Fatal(err)
+	}
+}`;
+  assert.throws(() => assertNoUnsafeSetseed("synthetic_comment_escape_test.go", commentEscape), /seeded connection must be closed/,
+    "a commented-out safe tx line let a real pooled transaction run setseed past the guard");
+});
 
 // TH-9 (#147): the relay SIGKILLs the whole group the moment the leader exits, so a SIGINT-then-wait grace never reaches the
 // next-server children. The fixtures must not pretend to grant one.
