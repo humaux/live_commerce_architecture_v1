@@ -2,6 +2,7 @@ package foundation_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -11,21 +12,34 @@ import (
 const adsGrantUsageDo = `DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;`
 
 // adsGrantSQL returns the executable SQL of scripts/ops/grant-ads-permissions.sql after removing its usage guards.
-// RED witness: this version is the pre-#153 rule that skipped every \if block, so the fixture test below fails until
-// the scanner is narrowed to the two exact usage guards.
+// Only the two exact usage guards are skipped (psql skips their RAISE when the variables are set); any other \if
+// block, a changed guard body or an unterminated block is refused instead of being silently dropped or executed.
 func adsGrantSQL(raw []byte) (string, error) {
-	var keep []string
-	skip := false
+	var keep, guard []string
+	inGuard := false
 	for _, line := range strings.Split(string(raw), "\n") {
 		tl := strings.TrimSpace(line)
 		switch {
-		case strings.HasPrefix(tl, `\if`):
-			skip = true
+		case strings.HasPrefix(tl, `\if `):
+			if inGuard || (tl != `\if :{?store_id}` && tl != `\if :{?principal_id}`) {
+				return "", fmt.Errorf("unexpected %q in grant-ads-permissions.sql: only the two usage guards may be skipped; execute or extend this test", tl)
+			}
+			inGuard, guard = true, nil
 		case strings.HasPrefix(tl, `\endif`):
-			skip = false
-		case !skip && !strings.HasPrefix(tl, `\`):
+			if !inGuard || strings.Join(guard, "|") != `\else|`+adsGrantUsageDo {
+				return "", fmt.Errorf("usage guard body changed or stray \\endif: %q", guard)
+			}
+			inGuard = false
+		case inGuard:
+			if tl != "" && !strings.HasPrefix(tl, "--") {
+				guard = append(guard, tl)
+			}
+		case !strings.HasPrefix(tl, `\`):
 			keep = append(keep, line)
 		}
+	}
+	if inGuard {
+		return "", fmt.Errorf("unterminated \\if in grant-ads-permissions.sql")
 	}
 	return strings.Join(keep, "\n"), nil
 }
@@ -55,35 +69,11 @@ func TestMetaAdsGrantScript(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Only the two exact usage guards are skipped (psql skips their RAISE when the variables are set); any other \if
-	// block, a changed guard body or an unterminated block fails loudly instead of being silently dropped.
-	var keep, guard []string
-	inGuard := false
-	for _, line := range strings.Split(string(raw), "\n") {
-		tl := strings.TrimSpace(line)
-		switch {
-		case strings.HasPrefix(tl, `\if `):
-			if inGuard || (tl != `\if :{?store_id}` && tl != `\if :{?principal_id}`) {
-				t.Fatalf("unexpected %q in grant-ads-permissions.sql: only the two usage guards may be skipped; execute or extend this test", tl)
-			}
-			inGuard, guard = true, nil
-		case strings.HasPrefix(tl, `\endif`):
-			if !inGuard || strings.Join(guard, "|") != `\else|`+adsGrantUsageDo {
-				t.Fatalf("usage guard body changed or stray \\endif: %q", guard)
-			}
-			inGuard = false
-		case inGuard:
-			if tl != "" && !strings.HasPrefix(tl, "--") {
-				guard = append(guard, tl)
-			}
-		case !strings.HasPrefix(tl, `\`):
-			keep = append(keep, line)
-		}
+	// The scanner refuses any \if that is not one of the two exact usage guards (see adsGrantSQL).
+	script, err := adsGrantSQL(raw)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if inGuard {
-		t.Fatal("unterminated \\if in grant-ads-permissions.sql")
-	}
-	script := strings.Join(keep, "\n")
 	run := func(store, principal string) error {
 		conn, err := f.owner.Acquire(ctx)
 		if err != nil {

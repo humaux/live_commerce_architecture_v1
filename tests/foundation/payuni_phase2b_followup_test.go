@@ -556,6 +556,8 @@ var (
 	pfuEnvAssign     = regexp.MustCompile(`\b([A-Z][A-Z0-9_]*)=\S*`)
 	pfuSecretName    = regexp.MustCompile(`(^|_)(KEY|SECRET|TOKEN)(_|$)|PASSWORD`)
 	pfuBeforeScript  = regexp.MustCompile(`^\S*\s+(sudo\s+)?(\S+=\S+\s+)*(\S*deploy/scripts/|docker(?:-compose)?\s)`)
+	// A `bash -c '...' ARG` invocation names the script in ARG; `_` is the shell placeholder, so lib.sh would log it.
+	pfuBashCPlaceholder = regexp.MustCompile(`(?s)\bbash[ \t]+-c[ \t]+'.*?'[ \t]+_(?:\s|$)`)
 )
 
 // pfuInlineSpans extracts CommonMark backtick code spans from a single non-fenced Markdown line, matching runs of
@@ -604,7 +606,8 @@ func pfuInlineSpans(line string) []string {
 // drops it). Workstation commands (gh/git/curl/openssl) are untouched. On ANY line, a secret-looking variable (*_KEY,
 // *_SECRET, *_TOKEN, *PASSWORD*; not *_FILE) must never be assigned after sudo or in front of a script/docker command:
 // sudo logs command-line environment values (sudoers ENV=) and shell history keeps them, so secrets come from the
-// no-echo prompt or a root-owned <NAME>_FILE only (review-157 P1-1, review-167 P2-1).
+// no-echo prompt or a root-owned <NAME>_FILE only (review-157 P1-1, review-167 P2-1). A `bash -c '...' ARG` block
+// must name the script in ARG (never the `_` placeholder) so lib.sh's LC_SCRIPT_NAME is meaningful in logs.
 func pfuSudoViolations(name, doc string) []string {
 	var out []string
 	fence := ""
@@ -684,7 +687,39 @@ func pfuSudoViolations(name, doc string) []string {
 			}
 		}
 	}
+	// lib.sh names itself from $0 (LC_SCRIPT_NAME="${LC_SCRIPT_NAME:-$(basename -- "$0")}"), so a `bash -c '...' _`
+	// block logs `_` on every line. Scan the whole document so a multi-line command body is covered too; HTML header
+	// comments are masked because they may quote a bad example.
+	masked := pfuMaskHTMLComments(doc)
+	for _, m := range pfuBashCPlaceholder.FindAllStringIndex(masked, -1) {
+		n := strings.Count(masked[:m[0]], "\n") + 1
+		out = append(out, fmt.Sprintf("%s:%d: bash -c $0 is the placeholder _ (lib.sh logs LC_SCRIPT_NAME as _); name the script: %s", name, n, strings.TrimSpace(strings.Split(doc, "\n")[n-1])))
+	}
 	return out
+}
+
+// pfuMaskHTMLComments blanks HTML comments while preserving byte offsets and newlines, so examples in a file header
+// are not treated as runnable commands.
+func pfuMaskHTMLComments(doc string) string {
+	b := []byte(doc)
+	for i := 0; i+4 <= len(b); {
+		if string(b[i:i+4]) != "<!--" {
+			i++
+			continue
+		}
+		j := strings.Index(string(b[i+4:]), "-->")
+		end := len(b)
+		if j >= 0 {
+			end = i + 4 + j + 3
+		}
+		for k := i; k < end; k++ {
+			if b[k] != '\n' {
+				b[k] = ' '
+			}
+		}
+		i = end
+	}
+	return string(b)
 }
 
 // pfuBetween returns the text of path between begin and end (exclusive), or fails.
