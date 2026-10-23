@@ -45,6 +45,7 @@ type productEditorMatrixLedgerCase struct {
 	Control  string `json:"control"`
 	Action   string `json:"action"`
 	Expected string `json:"expected"`
+	Width    int    `json:"width"`
 }
 
 var productEditorMatrixLedgerCases = func() []productEditorMatrixLedgerCase {
@@ -287,6 +288,29 @@ func TestProductEditorMatrixLedger(t *testing.T) {
 	reordered, _ := json.Marshal(original)
 	if err := validateProductEditorMatrixLedger(reordered); err != nil {
 		t.Fatalf("set equality must not invent an ordering constraint: %v", err)
+	}
+}
+
+// #147 CI-13: the recorded viewport is a case-table value, not a Go literal.
+// Every current case declares it; the writer and every expected ledger key use it.
+func TestProductEditorMatrixLedgerWidthDeclaredByCases(t *testing.T) {
+	width := 0
+	for i, required := range productEditorMatrixLedgerCases {
+		if required.Width <= 0 {
+			t.Fatalf("case %d (%s) must declare its recorded width", i, required.Control)
+		}
+		if width != 0 && required.Width != width {
+			t.Fatalf("case %d declares width %d, want one table width %d", i, required.Width, width)
+		}
+		width = required.Width
+	}
+	if width == 0 || productEditorMatrixLedgerWidth != width {
+		t.Fatalf("ledger writer width %d must come from the case table (%d)", productEditorMatrixLedgerWidth, width)
+	}
+	for key := range productEditorMatrixLedgerExpected() {
+		if key.Width != width {
+			t.Fatalf("expected ledger key width %d must equal the case-table width %d", key.Width, width)
+		}
 	}
 }
 
