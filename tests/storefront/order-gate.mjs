@@ -548,7 +548,7 @@ try {
   const other=await c1.newPage();await other.goto(origin+checkoutPath);
   assert.equal((await api(other,"PUT","destination",external,crypto.randomUUID())).status,200);
   const beforeConflict=(await control("facts")).length;
-  const conflict=a.waitForResponse(r=>requestIs(r,"checkout","POST"));const [conflictReply]=await Promise.all([conflict,a.getByTestId("create-order").click()]);assert.equal(conflictReply.status(),409);await expect(a.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,beforeConflict);
+  const conflict=a.waitForResponse(r=>requestIs(r,"checkout","POST"));await Promise.all([conflict,a.getByTestId("create-order").click()]);assert.equal((await conflict).status(),409);await expect(a.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,beforeConflict);
   await a.reload();await expect(a.locator('input[name="line1"]')).toHaveValue(external.home_address.line1);await expect(a.getByTestId("create-order")).toBeDisabled();await confirm(a);
   assert.equal((await api(other,"PUT","destination",external,crypto.randomUUID())).status,409,"late lower-CAS address must fail");
   pass("BO03 reload reconfirmation, edits and concurrent/late address CAS fail closed");
@@ -567,7 +567,7 @@ try {
   // BO02: the server rejects an expired quote even if the page still has it.
   const c2=await newContext(),{p:stale,quote:q2}=await quotePage(c2);await fill(stale);await confirm(stale);
   await control(`expire-quote/${q2.id}`,"POST");const beforeExpired=(await control("facts")).length;
-  const denied=stale.waitForResponse(r=>requestIs(r,"checkout","POST"));const [deniedReply]=await Promise.all([denied,stale.getByTestId("create-order").click()]);assert.equal(deniedReply.status(),409);
+  const denied=stale.waitForResponse(r=>requestIs(r,"checkout","POST"));await Promise.all([denied,stale.getByTestId("create-order").click()]);assert.equal((await denied).status(),409);
   await expect(stale.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,beforeExpired);
   await expect(stale.getByTestId("order-section")).toHaveCount(0);
   pass("BO02 expired authoritative quote fails closed with no order or hold");
@@ -795,7 +795,7 @@ try {
   pass("BH08 foreign buyer history is empty and foreign or malformed cursors are denied");
   await fill(foreign);await confirm(foreign);const serviceBefore=(await control("facts")).length;
   await control("service-drift","POST");const serviceDenied=foreign.waitForResponse(r=>requestIs(r,"checkout","POST"));
-  const [serviceReply]=await Promise.all([serviceDenied,foreign.getByTestId("create-order").click()]);assert.equal(serviceReply.status(),409);
+  await Promise.all([serviceDenied,foreign.getByTestId("create-order").click()]);assert.equal((await serviceDenied).status(),409);
   await expect(foreign.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,serviceBefore);
   await expect(foreign.getByTestId("create-order")).toBeDisabled();
   pass("BO02 service revision drift rejects a previously confirmed quotation without an order");
