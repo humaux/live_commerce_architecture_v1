@@ -127,8 +127,9 @@ func (front *browserAdminRelay) launch(t *testing.T, ctx context.Context, cmd *e
 		return nil, errors.New("relay.start needs the child's *os.File log as Stdout (browserLog)")
 	}
 	// TH-2: a relaunch rebuilds the command from Path/Args/Dir/Env/Stdout/Stderr and owns SysProcAttr, so anything else the caller
-	// set would silently differ between attempts. Cancel is not inspectable (CommandContext always sets one; the group kill below
-	// supersedes it).
+	// set would silently differ between attempts. Cancel is the one field not rejected: CommandContext already sets one on every
+	// fixture, so a caller-supplied Cancel cannot be told apart from the default; the relaunch keeps the same context default,
+	// and the group kill below supersedes it.
 	if cmd.Stdin != nil || len(cmd.ExtraFiles) != 0 || cmd.WaitDelay != 0 || (cmd.SysProcAttr != nil && !reflect.DeepEqual(*cmd.SysProcAttr, syscall.SysProcAttr{Setpgid: true})) {
 		return nil, errors.New("relay.start: unsupported cmd field (Stdin, ExtraFiles, WaitDelay or a SysProcAttr other than Setpgid): a relaunch would not reproduce it")
 	}
@@ -171,23 +172,29 @@ func (front *browserAdminRelay) launch(t *testing.T, ctx context.Context, cmd *e
 		if err := child.Start(); err != nil {
 			return nil, err
 		}
-		// Group-kill protocol: the group is signalled exactly once. The reaper sweeps leftovers right after child.Wait() has
-		// reaped the leader, so the signal is sent AFTER the reap. That is safe while any group member lives (Linux does not
-		// reuse a pid that is still some process's PGID); if the whole group already exited, kill(-pgid) is ESRCH, and hitting a
-		// foreign group would need the pid space to wrap inside that window. Accepted for this test host (#147 TH-1); signalling
-		// before the reap needs waitid(WNOWAIT), which os/exec does not expose. Cleanup covers a live leader.
+		// Group-kill protocol: the group is signalled exactly once. The reaper first blocks in waitid(WNOWAIT) on the leader,
+		// which leaves it an exited but unreaped child, so its pid (our PGID) is still reserved while kill(-pgid) runs; only
+		// then is the leader reaped. That closes the PGID-reuse window between the reap and the signal (#147 TH-1). On a host
+		// without waitid(WNOWAIT) -- or if the pid could not be held open -- it falls back to the previous reap-then-signal order,
+		// which is safe while any group member lives. Cleanup covers a live leader.
 		pgid := child.Process.Pid
 		var mu sync.Mutex
 		killed := false
 		exited := make(chan struct{})
 		go func() {
-			_ = child.Wait()
+			unreaped := waitLeaderNoReap(pgid)
+			if !unreaped { // cannot hold the pid open: reap first, as before
+				_ = child.Wait()
+			}
 			mu.Lock()
 			if !killed {
 				kill(pgid)
 				killed = true
 			}
 			mu.Unlock()
+			if unreaped {
+				_ = child.Wait() // reap only after the group has been signalled
+			}
 			close(exited)
 		}()
 		t.Cleanup(func() {
@@ -778,8 +785,8 @@ func TestBrowserAdminRelaySignalsGroupBeforeReapingLeader(t *testing.T) {
 
 // TestBrowserAdminRelayRejectsUnsupportedCmdFields pins TH-2 (#147): a relaunch rebuilds the command from Path/Args/Dir/Env/
 // Stdout/Stderr only and owns SysProcAttr, so a cmd carrying Stdin, ExtraFiles, WaitDelay or its own SysProcAttr would be
-// silently different on the retry. launch must refuse it before starting anything. (Cancel cannot be inspected: CommandContext
-// always sets one, and the relay's group-kill supersedes it.)
+// silently different on the retry. launch must refuse it before starting anything. (Cancel is documented, not rejected:
+// CommandContext sets one on every fixture, so a caller's cannot be told apart from the default; the relay's group kill wins.)
 func TestBrowserAdminRelayRejectsUnsupportedCmdFields(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("NOT_RUN: needs the Linux /proc listener-ownership proof")
@@ -956,7 +963,8 @@ func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
 		t.Fatalf("red witness broken: a stock Rewrite proxy was expected to drop the spoofed headers and raw query, got %v %q", got.header, got.query)
 	}
 	// TH-6: under chromium browserFront returns the direct origin (no proxy hop), so a chromium subtest here would only talk to the
-	// upstream and prove nothing; the witness runs against the one real hop, the WebKit TLS front.
+	// upstream and prove nothing; the witness runs against the one real hop, the WebKit TLS front. The old front's RED half is
+	// NOT_RUN: producing it needs an edit under apps/admin, which this test-host task must not make; the current front is GREEN.
 	t.Setenv("LC_BROWSER_ENGINE", "webkit")
 	front := browserFront(t, target.Host)
 	if !strings.HasPrefix(front, "https://") {
