@@ -7,8 +7,8 @@
 // Only a 200 with a JPEG/PNG/WebP content type and at most 2 MiB passes; everything else collapses to 404 (unknown host,
 // unpublished store, archived/draft/foreign row: no existence oracle) or a retryable 503. The image id changes whenever the
 // content changes, so a good answer is public + immutable for a day. Callers validate their own path ids first.
-// The retryable 503 carries Retry-After: 60 (RFC 9110 §10.2.3, same hint as app/sitemap.xml; #147).
-import { candidateOrigin, discardBody, readBounded, upstreamConfig } from "./public-upstream.ts";
+// The retryable 503 carries the shared RETRY_AFTER.down hint (RFC 9110 §10.2.3; #147).
+import { candidateOrigin, discardBody, RETRY_AFTER, readBounded, upstreamConfig } from "./public-upstream.ts";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -20,8 +20,8 @@ function fail(status: number, code: string): Response {
     { code, message: code === "not_found" ? "Resource not found." : "Temporarily unavailable." },
     {
       status,
-      // RFC 9110 §10.2.3: a retryable 503 carries Retry-After (same 60 s hint as app/sitemap.xml/route.ts); a 404 does not.
-      headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...(status === 503 ? { "Retry-After": "60" } : {}) },
+      // RFC 9110 §10.2.3: a retryable 503 carries the shared RETRY_AFTER.down hint; a 404 does not.
+      headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...(status === 503 ? { "Retry-After": RETRY_AFTER.down } : {}) },
     },
   );
 }
