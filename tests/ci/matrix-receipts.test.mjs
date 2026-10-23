@@ -96,6 +96,38 @@ test("status is FAIL when the logs show a failed test, whatever the gate outcome
   assert.equal(rec("    --- FAIL: TestA/sub (0s)\n--- PASS: TestA (0s)\n"), "PASS", "only top-level failures decide; a subtest failure fails its parent");
 });
 
+// #147 CI-6: a go test package line (`FAIL\tpkg`) is a parsed failure too, even when no `--- FAIL:` line was printed.
+test("a bare go package FAIL line forces FAIL even when the gate exited 0", () => {
+  const rec = makeReceipt({ mode: "m", outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestA (0s)\nFAIL\tlivecommerce/internal/x\t0.02s\n"] });
+  assert.equal(rec.status, "FAIL");
+});
+
+// #147 CI-6: a Playwright list-reporter failure summary is a parsed failure, even when the Go harness exited 0.
+test("a Playwright failed summary forces FAIL even when the gate exited 0", () => {
+  const rec = makeReceipt({ mode: "m", outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserX (1s)\n  1 failed\n  7 passed (2m)\n"] });
+  assert.equal(rec.status, "FAIL");
+  assert.equal(makeReceipt({ mode: "m", outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserX (1s)\n  7 passed (2m)\n"] }).status, "PASS", "a passing summary alone stays green");
+});
+
+// #147 CI-7: a browser mode's Go harness is not a spec. With no parsed spec result the receipt cannot PASS.
+test("browser mode: one Go harness test and zero Playwright specs does not PASS", () => {
+  const rec = makeReceipt({ mode: "--browser-inbox", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserInboxUIRealChain (80s)\nPASS\nok  \tlivecommerce/tests/foundation\t80s\n"], specs: [] });
+  assert.equal(rec.status, "FAIL");
+});
+
+// #147 CI-7: what the gate's Playwright runner printed is counted, so a real spec run still passes.
+test("browser mode: parsed Playwright spec results count as the tests that ran", () => {
+  const specs = ["  ✓  1 tests/admin/inbox-ui.spec.ts:91:1 › INU01 (3.1s)\n  ✓  2 tests/admin/inbox-ui.spec.ts:193:1 › INU02 (2.0s)\n  2 passed (5s)\n"];
+  const rec = makeReceipt({ mode: "--browser-inbox", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserInboxUIRealChain (80s)\n"], specs });
+  assert.equal(rec.status, "PASS");
+  assert.equal(rec.test_count, 3, "one Go harness result plus two Playwright specs");
+});
+
 test("green only when every planned mode has exactly one PASS receipt from this run and sha with tests", () => {
   assert.deepEqual(verify(planned, [ok("shard:unit"), ok("shard:g01")], RUN), []);
 });
