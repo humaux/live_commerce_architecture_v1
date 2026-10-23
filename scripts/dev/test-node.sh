@@ -60,6 +60,7 @@ node --test --experimental-strip-types tests/admin/import-wire-model.test.ts tes
   tests/admin/import-integration.test.ts tests/admin/import-coordinator.test.mjs tests/admin/import-readiness.test.mjs
 
 # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
+node --test tests/ci/gallery-upload-seam.test.mjs
 node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs
 node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs tests/ci/matrix-receipts.test.mjs tests/ci/go-build-cache.test.mjs tests/ci/pnpm-corepack-cache.test.mjs tests/ci/pr-modes.test.mjs tests/ci/mode-registry.test.mjs tests/ci/playwright-deps.test.mjs tests/ci/backend-coverage.test.mjs tests/ci/next-startup.test.mjs tests/ci/owned-child.test.mjs tests/ci/product-editor-matrix-ledger.test.mjs tests/ci/product-editor-matrix-execution.test.mjs tests/ci/product-editor-matrix-controls.test.mjs tests/ci/release-tag-guard.test.mjs
 
