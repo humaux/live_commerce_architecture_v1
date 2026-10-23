@@ -27,7 +27,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { expect } from "@playwright/test";
 import { launch } from "../storefront/browser-engine.mjs";
-import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
+import { childExited, nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { fixture as platformFixture } from "../admin/shell-fixture.mjs";
 import { INIT_SCRIPT, degradedMessages, monitor, settle } from "./click-sweep-lib.mjs";
@@ -102,7 +102,7 @@ export async function main() {
     track(child, logFile);
     children.add(child);
     for (let i = 0; i < 600; i++) {
-      if (child.exitCode !== null || child.signalCode !== null) throw new Error(`${name} exited before readiness`);
+      if (childExited(child)) throw new Error(`${name} exited before readiness`);
       try { if (await ready(port)) return port; } catch { /* not up yet */ }
       await new Promise((r) => setTimeout(r, 100));
     }

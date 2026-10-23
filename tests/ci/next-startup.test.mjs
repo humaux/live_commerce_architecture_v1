@@ -348,6 +348,8 @@ test("TH-10: the Go port-race guard flags localhost:0, :0 and [::1]:0 and anchor
   for (const spelling of ['"127.0.0.1:0"', '"localhost:0"', '":0"', '"[::1]:0"'])
     assert.throws(() => noPickThenRelease("synthetic_test.go", `l, _ := net.Listen("tcp", ${spelling})\n${routed}`), /reserved and freed/, `${spelling} slipped past the guard`);
   assert.throws(() => noPickThenRelease("synthetic_test.go", "server.start(t, ctx, cmd)\n"), /not launched through the relay/, "a non-relay .start(t, ...) satisfied the positive");
+  // Must pass: another `.start(t, )` in the file is fine while the child itself is routed through the relay.
+  noPickThenRelease("synthetic_test.go", `${routed}server.start(t, ctx, cmd)\n`);
 });
 
 // CMD-1 (#147): cmd/api binds LISTEN_ADDR itself (`:0` plus the api_ready line), so no Go test may hand a cmd/* binary a caller-picked
@@ -666,16 +668,23 @@ test("TH-9: studio-bff and orders-bff do not stop a relay-owned group with a SIG
   }
 });
 
-// TH-11 (#147): a signal-killed child has exitCode null and signalCode set; readiness must treat it as exited (tests/helpers/next-startup.mjs).
-test("TH-11: visual-audit, ads-attribution, platform-runner and legal-pages readiness sees a signal-killed child", async () => {
+// TH-11 (#147): a signal-killed child has exitCode null and signalCode set; readiness must treat it as exited through the ONE
+// helper predicate (tests/helpers/next-startup.mjs), not a fourth copy of the condition.
+test("TH-11: visual-audit, ads-attribution, platform-runner and legal-pages reuse the helper's signal-aware childExited", async () => {
+  const helper = await readFile("tests/helpers/next-startup.mjs", "utf8");
+  assert.match(helper, /export function childExited\(child\) \{\n\s*return Boolean\(child\) && \(child\.exitCode !== null \|\| child\.signalCode !== null\);/, "the helper must own the signal-aware predicate (child.exitCode OR child.signalCode)");
   for (const file of ["tests/ui/visual-audit.mjs", "tests/storefront/ads-attribution.mjs", "tests/admin/platform-runner.mjs", "tests/storefront/legal-pages.mjs"]) {
     const source = await readFile(file, "utf8");
-    assert.match(source, /\w+\.exitCode !== null \|\| \w+\.signalCode !== null/, `${file}: readiness checks exitCode only; a SIGKILLed child waits out the whole budget`);
+    assert.match(source, /import \{[^}]*\bchildExited\b[^}]*\} from "\.\.\/helpers\/next-startup\.mjs"/, `${file}: readiness does not import childExited from the shared helper`);
+    assert.match(source, /childExited\(\w+\)/, `${file}: readiness never calls childExited`);
+    assert.equal(/\w+\.exitCode !== null \|\| \w+\.signalCode !== null/.test(source), false, `${file}: has its own copy of the exit check instead of the helper predicate`);
   }
 });
 
-// TH-12 (#147): "wx" fails with EEXIST when LC_LEGAL_EVIDENCE_DIR is reused by a rerun.
-test("TH-12: legal-pages opens its Next log so a rerun into the same evidence directory does not collide", async () => {
+// TH-12 (#147): a rerun into the same LC_LEGAL_EVIDENCE_DIR must not EEXIST, while wx still refuses to clobber an old log.
+test("TH-12: legal-pages log is per-run unique and still opened with wx", async () => {
   const source = await readFile("tests/storefront/legal-pages.mjs", "utf8");
-  assert.equal(/flags: "wx"/.test(source), false, "legal-pages opens its log with wx; a rerun fails with EEXIST");
+  assert.match(source, /const runId = `\$\{process\.pid\}-\$\{Date\.now\(\)\}`/, "legal-pages must scope its log name to this run (LC_LEGAL_EVIDENCE_DIR can be reused)");
+  assert.match(source, /next-start-\$\{runId\}\.log/, "the log base must carry the per-run id");
+  assert.match(source, /flags: "wx"/, "the per-run log must stay exclusive-create (wx)");
 });
