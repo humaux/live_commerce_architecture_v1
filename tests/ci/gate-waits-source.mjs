@@ -34,7 +34,7 @@ function nextAwait(text, from) {
     const c = text[i];
     if (OPENERS.has(c)) depth++;
     else if (CLOSERS.has(c)) depth = Math.max(0, depth - 1);
-    else if (depth === 0 && c === "a" && /^await\b/.test(text.slice(i, i + 5))) return i;
+    else if (depth === 0 && c === "a" && /^await\b/.test(text.slice(i, i + 6))) return i; // slice one past `await`: the word "awaited" in prose is not an await
   }
   return -1;
 }

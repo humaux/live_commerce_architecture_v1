@@ -723,9 +723,9 @@ try {
   assert.equal(await a.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"America/Los_Angeles");
   const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),firstHistoryUI=historyRead(a);
   // The edge holds this GET until release.resolve(); wait first and drive the release from the same Promise.all, or the
-  // awaited reply can never arrive (Gates run 39996387148: 30 s waitForResponse timeout with the click listed first).
+  // reply can never arrive (Gates run 39996387148: 30 s waitForResponse timeout with the click listed first).
   const [historyReply]=await Promise.all([firstHistoryUI,a.getByTestId("toggle-order-history").click(),historyLoading.entered.promise.then(()=>historyLoading.release.resolve())]);
-  assert.equal(historyReply.status(),200);await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();
+  assert.equal(await historyLoading.result.promise,200);await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();
   await expect(a.locator(".history-list li")).toHaveCount(2);
   await assertHistoryTimes(a,"en",historyReply);
   await expect(a.locator(".history-list li").first().locator("button")).toHaveAttribute("data-order-id",orderB);
