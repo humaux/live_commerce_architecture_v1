@@ -49,8 +49,11 @@ func TestClaimsWorkerConsoleServeFailureExitsWithConsoleToken(t *testing.T) {
 		"COMMERCE_CLAIMS_BRIDGE_TOKEN="+linkKey, "COMMERCE_CLAIMS_CURSOR_KEY="+pageKey)
 	bin := mrBuild(t, "../../cmd/claims-worker", "claims-console-serve-failure", "-tags", "claimsconsoletest")
 	p := mrLaunch(t, bin, "claims-console-serve-failure", env)
-	mrConsoleBoundAddr(t, p, 8*time.Second)
-	mrFailsBeforeReady(t, p, "claims_worker_console_failed", linkKey, pageKey, w.jobDSNSecret)
+	// P2 (PR #168 review): the pre-PR exit envelope was fourteen seconds from launch; address discovery spends from it instead of
+	// adding an independent eight-second window before the exit wait.
+	deadline := time.Now().Add(14 * time.Second)
+	mrConsoleBoundAddr(t, p, time.Until(deadline))
+	mrFailsBeforeReadyWithin(t, p, time.Until(deadline), "claims_worker_console_failed", linkKey, pageKey, w.jobDSNSecret)
 	if strings.Contains(crReadLog(t, p), "claims_worker_start_failed") {
 		t.Fatal("bridge loss after the bind was reported as a startup failure")
 	}

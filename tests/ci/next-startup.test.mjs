@@ -420,10 +420,10 @@ test("CMD-2: no Go test hands cmd/claims-worker a pre-picked COMMERCE_CLAIMS_CON
 });
 
 // #159 P2-B: setseed is session state that ROLLBACK does not undo, so a pooled connection that ran it poisons the next
-// borrower's random() stream (#147). The only safe sites are seededConn (it hijacks the connection and closes it instead of
-// releasing it) and a connection the test hijacks itself. This static guard parses executable Exec/Query/QueryRow calls (never
-// comments or failure messages) and accepts setseed only when the enclosing function has that shape. The allow-list is by
-// pattern (function name, hijack, seededConn receiver, transaction begun on it), never by line number.
+// borrower's random() stream (#147). The only safe sites are the seededConn helper — which must Acquire -> Hijack -> seed the
+// hijacked raw connection -> Close, never Release — and a connection the test hijacks itself. This static guard strips Go
+// comments first (length-preserving, so line numbers still match), then parses executable Exec/Query/QueryRow calls. Both the
+// helper and every trusted receiver are decided by executable statements, never by a function name or a comment (PR #168 P1).
 function goFunctionBlocks(source) {
   const blocks = [];
   const header = /^func\s+(?:\([^)]*\)\s*)?(\w+)\s*\(/gm;
@@ -471,26 +471,83 @@ function goCallArguments(source, open) {
   }
   return null;
 }
+// stripGoComments blanks // and /* */ comments with spaces while preserving length and newlines, so every index and line number
+// still lines up with the original source. String literals (including raw strings) are copied verbatim: "//" inside one is data.
+function stripGoComments(source) {
+  let out = "";
+  let quote = null, lineComment = false, blockComment = false;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i], next = source[i + 1];
+    if (lineComment) {
+      if (ch === "\n") { lineComment = false; out += ch; } else out += " ";
+      continue;
+    }
+    if (blockComment) {
+      if (ch === "*" && next === "/") { blockComment = false; out += "  "; i++; continue; }
+      out += ch === "\n" ? "\n" : " ";
+      continue;
+    }
+    if (quote) {
+      out += ch;
+      if (quote === "`") { if (ch === "`") quote = null; continue; }
+      if (ch === "\\" && i + 1 < source.length) { out += source[i + 1]; i++; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "/" && next === "/") { lineComment = true; out += "  "; i++; continue; }
+    if (ch === "/" && next === "*") { blockComment = true; out += "  "; i++; continue; }
+    if (ch === '"' || ch === "'" || ch === "`") quote = ch;
+    out += ch;
+  }
+  return out;
+}
+// seededConnLifecycle pins the helper's executable shape on comment-stripped code: one pooled connection is Acquired, that exact
+// connection is Hijacked, setseed runs on the hijacked raw connection, and the returned cleanup Closes that raw connection.
+// Seeding a pooled connection (Acquire -> conn.Conn() -> seed -> conn.Release()) is the regression the round-1 name exemption
+// accepted, so a name alone buys nothing here.
+function seededConnLifecycle(file, code, block) {
+  const body = code.slice(block.start, block.end);
+  const acquire = /(\w+)\s*,\s*\w+\s*:?=\s*[\w.]+\.Acquire\(/.exec(body);
+  assert.ok(acquire, `${file}: seededConn no longer Acquires a pooled connection; it must Acquire -> Hijack -> seed the raw connection -> Close`);
+  const pooled = acquire[1];
+  const hijack = new RegExp(`(\\w+)\\s*:?=\\s*${pooled}\\.Hijack\\(\\)`).exec(body);
+  assert.ok(hijack, `${file}: seededConn does not Hijack the connection it Acquired (${pooled}.Hijack); a seeded connection must be closed, not returned to a pool`);
+  const raw = hijack[1];
+  assert.equal(new RegExp(`\\b${pooled}\\.Release\\(`).test(body), false,
+    `${file}: seededConn Releases ${pooled} back to the pool; a seeded connection must be closed, not returned to a pool`);
+  const close = new RegExp(`\\b${raw}\\.Close\\(`).exec(body);
+  const cleanup = /return\s+([\w.]+)\s*,\s*func\(\)\s*\{([^}]*)\}/.exec(body);
+  assert.ok(close && cleanup && cleanup[1] === raw && new RegExp(`\\b${raw}\\.Close\\(`).test(cleanup[2]),
+    `${file}: seededConn must return the hijacked ${raw} with a cleanup that Closes it; a seeded connection must be closed, not returned to a pool`);
+  return { raw, hijackAt: block.start + hijack.index, closeAt: block.start + close.index };
+}
 function assertNoUnsafeSetseed(file, source) {
-  const blocks = goFunctionBlocks(source);
+  const code = stripGoComments(source); // every match below is an executable statement, never a comment
+  const blocks = goFunctionBlocks(code);
+  const helper = blocks.find((b) => b.name === "seededConn");
+  const lifecycle = helper ? seededConnLifecycle(file, code, helper) : null;
   let checked = 0;
-  for (const call of source.matchAll(/(\w+)\.(?:Exec|Query|QueryRow)\(/g)) {
-    const args = goCallArguments(source, call.index + call[0].length - 1);
+  for (const call of code.matchAll(/(\w+)\.(?:Exec|Query|QueryRow)\(/g)) {
+    const args = goCallArguments(code, call.index + call[0].length - 1);
     if (args === null || !/setseed\s*\(/.test(args)) continue;
     checked++;
     const at = call.index;
-    const line = source.slice(0, at).split("\n").length;
+    const line = code.slice(0, at).split("\n").length;
     const block = blocks.find((b) => at >= b.start && at < b.end);
     assert.ok(block, `${file}:${line}: setseed outside a Go function block`);
-    if (block.name === "seededConn") continue; // the helper hijacks and closes its own connection
-    const body = source.slice(block.start, block.end);
+    const receiver = call[1];
+    if (block.name === "seededConn") {
+      assert.ok(lifecycle && receiver === lifecycle.raw && at > lifecycle.hijackAt && at < lifecycle.closeAt,
+        `${file}:${line}: seededConn runs setseed on ${receiver}, not on the connection it hijacked before closing it; a seeded connection must be closed, not returned to a pool`);
+      continue;
+    }
+    const body = code.slice(block.start, block.end);
     const hijacked = [...body.matchAll(/(\w+)\s*:?=\s*[\w.]+\.Hijack\(\)/g)].map((m) => m[1]);
     const seeded = [...body.matchAll(/(\w+)\s*,\s*\w+\s*:?=\s*seededConn\(/g)].map((m) => m[1]);
     const transactions = [];
     for (const tx of body.matchAll(/(\w+)\s*,\s*\w+\s*:?=\s*(\w+)\.Begin(?:Tx)?\(/g)) {
       if (seeded.includes(tx[2])) transactions.push(tx[1]);
     }
-    const receiver = call[1];
     assert.ok(hijacked.includes(receiver) || seeded.includes(receiver) || transactions.includes(receiver),
       `${file}:${line}: setseed runs on ${receiver}, which is neither seededConn's hijacked connection nor a connection this test hijacked; a seeded connection must be closed, not returned to a pool`);
   }

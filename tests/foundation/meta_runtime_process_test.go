@@ -221,13 +221,20 @@ func mrLogNoSecrets(t *testing.T, p *mrProcess, forbidden ...string) {
 
 func mrFailsBeforeReady(t *testing.T, p *mrProcess, marker string, forbidden ...string) {
 	t.Helper()
+	mrFailsBeforeReadyWithin(t, p, 14*time.Second, marker, forbidden...)
+}
+
+// mrFailsBeforeReadyWithin is mrFailsBeforeReady with the caller's remaining launch budget: a test that first waits for another
+// startup line shares one deadline with this exit assertion instead of starting a fresh window after it (CMD-2 P2, PR #168 review).
+func mrFailsBeforeReadyWithin(t *testing.T, p *mrProcess, within time.Duration, marker string, forbidden ...string) {
+	t.Helper()
 	select {
 	case err := <-p.done:
 		p.exited = true
 		if err == nil {
 			t.Fatalf("invalid process exited successfully: %s", p.logPath)
 		}
-	case <-time.After(14 * time.Second):
+	case <-time.After(within):
 		t.Fatalf("invalid process did not fail within startup/rollback envelope: %s", p.logPath)
 	}
 	log, err := os.ReadFile(p.logPath)

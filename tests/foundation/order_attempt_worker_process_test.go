@@ -64,9 +64,11 @@ func TestOrderAttemptProcessWorkerRejectsSplitParticipantPools(t *testing.T) {
 	}
 	if !t.Run("same-physical-database", func(t *testing.T) {
 		p := crLaunch(t, binary, environment(-1))
-		address := mrConsoleBoundAddr(t, p, 8*time.Second)
-		client := &http.Client{Timeout: time.Second}
+		// P2 (PR #168 review): one readiness budget from launch, shared by address discovery and the probe. The pre-PR test
+		// spent this same eight seconds on the probe alone, so discovery must not open a second window.
 		deadline := time.Now().Add(8 * time.Second)
+		address := mrConsoleBoundAddr(t, p, time.Until(deadline))
+		client := &http.Client{Timeout: time.Second}
 		listening := false
 		for time.Now().Before(deadline) {
 			response, err := client.Get("http://" + address + "/internal/v1/comment-page")
