@@ -1,16 +1,42 @@
 //go:build claimsconsoletest
 
-// Purpose: test-only build tag hook — one second after the comment bridge binds, close its listener so Serve fails with a real
-// non-ErrServerClosed error; lets tests/foundation prove run() exits with claims_worker_console_failed (#116). Never in a release build.
-// Depends on: consoleBound (main.go), net, time.
-// Used by: tests/foundation/claims_worker_console_process_test.go (go build -tags claimsconsoletest); tests/ci/release-tag-guard.test.mjs keeps the tag out of every release path.
+// Purpose: TEMP RED witness for CW-2 (#147). It keeps the old pre-ready console failure and drops the readiness record, so the
+//
+//	old test still passes (claims_worker_console_failed) while the new claims_worker_ready assertion cannot. Replaced in the next
+//	commit by the post-ready close gate that makes the pinned path deterministic.
+//
+// Depends on: consoleBound (main.go), log/slog, net.
+// Used by: tests/foundation/claims_worker_console_process_test.go (go build -tags claimsconsoletest); tests/ci/release-tag-guard.test.mjs.
 package main
 
 import (
+	"context"
+	"log/slog"
 	"net"
-	"time"
 )
 
+type dropReady struct{ next slog.Handler }
+
+func (h dropReady) Enabled(ctx context.Context, level slog.Level) bool {
+	return h.next.Enabled(ctx, level)
+}
+
+func (h dropReady) Handle(ctx context.Context, r slog.Record) error {
+	if r.Message == "claims_worker_ready" {
+		return nil
+	}
+	return h.next.Handle(ctx, r)
+}
+
+func (h dropReady) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return dropReady{next: h.next.WithAttrs(attrs)}
+}
+
+func (h dropReady) WithGroup(name string) slog.Handler {
+	return dropReady{next: h.next.WithGroup(name)}
+}
+
 func init() {
-	consoleBound = func(ln net.Listener) { time.AfterFunc(time.Second, func() { _ = ln.Close() }) }
+	slog.SetDefault(slog.New(dropReady{next: slog.Default().Handler()}))
+	consoleBound = func(ln net.Listener) { _ = ln.Close() }
 }
