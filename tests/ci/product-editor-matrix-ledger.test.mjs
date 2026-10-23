@@ -483,10 +483,11 @@ for (const entry of cases) {
 }
 
 test("shared table has only complete meaningful unique declarations", () => {
-  const identities = new Set();
+  const identities = new Set(), widths = new Set();
   for (const entry of cases) {
-    assert.deepEqual(Object.keys(entry).filter((key) => !["effects", "requirements"].includes(key)).sort(), ["action", "control", "expected", "page", "row"]);
+    assert.deepEqual(Object.keys(entry).filter((key) => !["effects", "requirements"].includes(key)).sort(), ["action", "control", "expected", "page", "row", "width"]);
     for (const [field, value] of Object.entries(entry).filter(([key]) => !["effects", "requirements"].includes(key))) {
+      if (field === "width") { assert.ok(Number.isInteger(value) && value > 0, "case width must be a positive integer"); widths.add(value); continue; }
       assert.equal(typeof value, "string");
       if (field !== "row") assert.ok(value.trim().length > 0);
     }
@@ -519,6 +520,7 @@ test("shared table has only complete meaningful unique declarations", () => {
     assert.ok(!identities.has(identity), `duplicate declaration ${identity}`);
     identities.add(identity);
   }
+  assert.equal(widths.size, 1, "the case table declares one recorded mobile width");
 });
 
 for (const locale of ["zh-TW", "zh-CN", "en"]) {
@@ -536,7 +538,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) {
       assert.strictEqual(ledger.at(-1).observed, observed);
       assert.equal(ledger.at(-1).expected, expand(entry.expected, copy));
       assert.equal(ledger.at(-1).actual, "PASS");
-      assert.equal(ledger.at(-1).width, 390);
+      assert.equal(ledger.at(-1).width, entry.width);
       assert.equal(ledger.at(-1).persistence, "preserved");
     }
     assert.equal(ledger.length, cases.length);

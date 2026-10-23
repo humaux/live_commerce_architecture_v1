@@ -89,3 +89,17 @@ test('a remove control with another aria-label is still inventoried by its testi
   const without = cases.filter(c => !c.control.startsWith('axis-value-remove-'));
   assert.ok(removeControlIssues(relabeled, without).some(x => x.includes('axis-value-remove-')));
 });
+// #147 CI-11: role="button" elements are remove controls too; the locale label is not the identity.
+test('a role="button" remove control is inventoried without the locale remove aria-label', () => {
+  const start = variants.search(/<button\s+className="pe-axis-remove"/);
+  assert.ok(start >= 0);
+  const end = variants.indexOf('</button>', start) + '</button>'.length;
+  const block = variants.slice(start, end)
+    .replace(/<button(\s+)className="pe-axis-remove"/, '<span$1role="button"$1className="pe-axis-remove"')
+    .replace('aria-label={`${c.remove} ${c.axis} ${i + 1}`}', 'aria-label={`Delete axis ${i + 1}`}')
+    .replace('</button>', '</span>');
+  const roleRemove = variants.slice(0, start) + block + variants.slice(end);
+  assert.notEqual(roleRemove, variants);
+  const without = cases.filter(c => !c.control.startsWith('axis-remove-'));
+  assert.ok(removeControlIssues(roleRemove, without).some(x => x.includes('axis-remove-')), 'role="button" remove control must be inventoried by its testid');
+});

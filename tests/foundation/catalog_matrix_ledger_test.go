@@ -45,6 +45,7 @@ type productEditorMatrixLedgerCase struct {
 	Control  string `json:"control"`
 	Action   string `json:"action"`
 	Expected string `json:"expected"`
+	Width    int    `json:"width"`
 }
 
 var productEditorMatrixLedgerCases = func() []productEditorMatrixLedgerCase {
@@ -69,9 +70,25 @@ var productEditorMatrixLedgerLocales = map[string]map[string]string{
 // evidence binds its recorded bytes by SHA-256 in SOURCE.json.
 const productEditorMatrixCasesPath = "tests/foundation/testdata/product_editor_matrix_cases.json"
 
-// productEditorMatrixLedgerWidth is the mobile viewport every matrix row is recorded at (tests/admin/product-editor-matrix-ledger.ts
-// writes the same 390); the case table has no width field and is SHA-bound by canonical evidence, so the one Go copy lives here (#147 CI-13).
-const productEditorMatrixLedgerWidth = 390
+// productEditorMatrixLedgerWidth is the mobile viewport every matrix row declares
+// in the case table. The embedded JSON is the single source (390 appears only
+// there); canonical evidence binds the table by SHA-256 (#147 CI-13).
+var productEditorMatrixLedgerWidth = func() int {
+	width := 0
+	for _, required := range productEditorMatrixLedgerCases {
+		if required.Width <= 0 {
+			panic("shared matrix control table must declare a positive width")
+		}
+		if width != 0 && required.Width != width {
+			panic("shared matrix control table declares inconsistent widths")
+		}
+		width = required.Width
+	}
+	if width <= 0 {
+		panic("shared matrix control table must declare a positive width")
+	}
+	return width
+}()
 
 // productEditorMatrixLedgerExpected is the CURRENT embedded table's required set:
 // live browser runs and the testdata ledger are validated against it.
@@ -96,7 +113,16 @@ func productEditorMatrixLedgerExpectedFor(cases []productEditorMatrixLedgerCase)
 				control = strings.ReplaceAll(control, token, label)
 				claim = strings.ReplaceAll(claim, token, label)
 			}
-			key := productEditorMatrixLedgerKey{Page: required.Page, Locale: locale, Width: productEditorMatrixLedgerWidth, Row: required.Row, Control: control, Action: required.Action}
+			width := required.Width
+			if width == 0 {
+				// The delivered historical table predates the width column; every row it
+				// recorded used the current table's declared mobile width.
+				width = productEditorMatrixLedgerWidth
+			}
+			if width <= 0 {
+				return nil, errors.New("matrix table requires a positive width")
+			}
+			key := productEditorMatrixLedgerKey{Page: required.Page, Locale: locale, Width: width, Row: required.Row, Control: control, Action: required.Action}
 			if strings.TrimSpace(claim) == "" {
 				return nil, errors.New("matrix table requires a non-empty expected claim")
 			}
@@ -276,7 +302,7 @@ func TestProductEditorMatrixLedger(t *testing.T) {
 	}
 	// Real product-editor ledgers also contain generic form/list clicks. Those are
 	// outside this matrix contract, including their distinct MOCK result labels.
-	other := append(append([]productEditorMatrixLedgerRow(nil), original...), productEditorMatrixLedgerRow{productEditorMatrixLedgerKey: productEditorMatrixLedgerKey{Page: "list", Locale: "en", Width: 390, Control: "unrelated", Action: "click"}, Actual: "PASS (MOCK read contract)"})
+	other := append(append([]productEditorMatrixLedgerRow(nil), original...), productEditorMatrixLedgerRow{productEditorMatrixLedgerKey: productEditorMatrixLedgerKey{Page: "list", Locale: "en", Width: productEditorMatrixLedgerWidth, Control: "unrelated", Action: "click"}, Actual: "PASS (MOCK read contract)"})
 	mixed, _ := json.Marshal(other)
 	if err := validateProductEditorMatrixLedger(mixed); err != nil {
 		t.Fatalf("unrelated legitimate ledger row: %v", err)
@@ -287,6 +313,29 @@ func TestProductEditorMatrixLedger(t *testing.T) {
 	reordered, _ := json.Marshal(original)
 	if err := validateProductEditorMatrixLedger(reordered); err != nil {
 		t.Fatalf("set equality must not invent an ordering constraint: %v", err)
+	}
+}
+
+// #147 CI-13: the recorded viewport is a case-table value, not a Go literal.
+// Every current case declares it; the writer and every expected ledger key use it.
+func TestProductEditorMatrixLedgerWidthDeclaredByCases(t *testing.T) {
+	width := 0
+	for i, required := range productEditorMatrixLedgerCases {
+		if required.Width <= 0 {
+			t.Fatalf("case %d (%s) must declare its recorded width", i, required.Control)
+		}
+		if width != 0 && required.Width != width {
+			t.Fatalf("case %d declares width %d, want one table width %d", i, required.Width, width)
+		}
+		width = required.Width
+	}
+	if width == 0 || productEditorMatrixLedgerWidth != width {
+		t.Fatalf("ledger writer width %d must come from the case table (%d)", productEditorMatrixLedgerWidth, width)
+	}
+	for key := range productEditorMatrixLedgerExpected() {
+		if key.Width != width {
+			t.Fatalf("expected ledger key width %d must equal the case-table width %d", key.Width, width)
+		}
 	}
 }
 

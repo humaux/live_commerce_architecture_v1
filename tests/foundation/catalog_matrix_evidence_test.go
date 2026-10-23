@@ -81,6 +81,24 @@ func TestProductEditorMatrixLedgerEvidenceHistoricalPolicy(t *testing.T) {
 func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
 	for _, mutation := range []string{"playwright-log", "cc12-log", "ledger", "manifest", "source", "gate-source", "case-table"} {
 		t.Run(mutation, func(t *testing.T) {
+			if mutation == "case-table" {
+				// #147 CI-10: swap the recorded table for the current one BEFORE the fixture
+				// binds every digest, so the ledger comparison (not the hash-drift check) rejects it.
+				root, _ := productEditorMatrixEvidenceFixtureWith(t, func([]map[string]any) []map[string]any {
+					var current []map[string]any
+					if err := json.Unmarshal(productEditorMatrixLedgerCasesJSON, &current); err != nil {
+						t.Fatal(err)
+					}
+					return current
+				})
+				err := validateProductEditorMatrixEvidence(root)
+				if err == nil || !strings.Contains(err.Error(), "mobile matrix ledger") ||
+					strings.Contains(err.Error(), "source drift") || strings.Contains(err.Error(), "SHA-256") {
+					t.Fatalf("case-table corruption must reach the ledger-versus-recorded-table comparison, got %v", err)
+				}
+				t.Logf("rejected case-table: %v", err)
+				return
+			}
 			root, canonical := productEditorMatrixEvidenceFixture(t)
 			if err := validateProductEditorMatrixEvidence(root); err != nil {
 				t.Fatalf("untampered isolated evidence: %v", err)
@@ -105,9 +123,6 @@ func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
 				}
 				manifest["scope"] = "edited while retaining the tested source commit"
 				data, _ = json.Marshal(manifest)
-			case "case-table":
-				// Swapping the recorded table for the current one must not pass silently.
-				path, data = productEditorMatrixCasesPath, productEditorMatrixLedgerCasesJSON
 			case "source", "gate-source":
 				path = "tests/admin/product-editor.acceptance.ts"
 				if mutation == "gate-source" {
@@ -118,17 +133,17 @@ func TestProductEditorMatrixLedgerEvidenceCorruption(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(root, path), data, 0600); err != nil {
 				t.Fatal(err)
 			}
-			if err := validateProductEditorMatrixEvidence(root); err == nil {
+			err := validateProductEditorMatrixEvidence(root)
+			if err == nil {
 				t.Fatalf("%s corruption must reject canonical evidence", mutation)
-			} else {
-				t.Logf("rejected %s: %v", mutation, err)
 			}
+			t.Logf("rejected %s: %v", mutation, err)
 		})
 	}
 }
 
-// #147 CI-10: the "case-table" corruption above stops at the source-hash check. These rebind every digest to a changed recorded
-// table, so the ledger-versus-recorded-table comparison itself must reject: a case the ledger never ran, and a ledger row the table no longer declares.
+// #147 CI-10: these rebind every digest to a changed recorded table, so the
+// ledger-versus-recorded-table comparison itself must reject: a case the ledger never ran, and a ledger row the table no longer declares.
 func TestProductEditorMatrixLedgerEvidenceRecordedTableMismatch(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -164,12 +179,26 @@ func productEditorMatrixRecordedBlob(t *testing.T, commit, path, recorded string
 	t.Helper()
 	data, err := exec.Command("git", "-C", "../..", "show", commit+":"+path).Output()
 	if err != nil {
+		if productEditorMatrixShallowLocalCheckout() {
+			t.Skipf("SKIP[CI-12]: %s at %s is unavailable in a shallow local clone (%v); fetch tag evidence/matrix-ledger-enforce-2e10084b or full history", path, commit, err)
+		}
 		t.Fatalf("recorded %s at %s unavailable (needs full history): %v", path, commit, err)
 	}
 	if fmt.Sprintf("%x", sha256.Sum256(data)) != recorded {
 		t.Fatalf("recorded %s at %s does not match its pinned SHA-256", path, commit)
 	}
 	return data
+}
+
+// productEditorMatrixShallowLocalCheckout reports a shallow clone outside CI.
+// A CI gate never takes the skip: a missing pinned commit there is a hard failure,
+// so an enforcing PR/push gate can never turn into a silent skip.
+func productEditorMatrixShallowLocalCheckout() bool {
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		return false
+	}
+	out, err := exec.Command("git", "-C", "../..", "rev-parse", "--is-shallow-repository").Output()
+	return err == nil && strings.TrimSpace(string(out)) == "true"
 }
 
 func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {
@@ -179,6 +208,125 @@ func productEditorMatrixReadFixture(t *testing.T, root, path string) []byte {
 		t.Fatal(err)
 	}
 	return data
+}
+
+// #147 CI-12: a shallow local checkout must skip the historical fixture loudly,
+// while a CI gate (GITHUB_ACTIONS=true) keeps failing closed. The fixture is a real
+// depth-1 clone containing only the files the evidence fixture reads.
+func TestProductEditorMatrixEvidenceShallowClone(t *testing.T) {
+	clone := productEditorMatrixShallowClone(t)
+	binary, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name     string
+		env      []string
+		wantExit int
+		want     string
+		reject   string
+	}{
+		{"local-shallow-skips", []string{"GITHUB_ACTIONS=", "GITHUB_EVENT_NAME=workflow_dispatch"}, 0, "SKIP[CI-12]", "--- FAIL:"},
+		{"ci-shallow-stays-enforcing", []string{"GITHUB_ACTIONS=true", "GITHUB_EVENT_NAME=pull_request"}, 1, "needs full history", "SKIP[CI-12]"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			cmd := exec.CommandContext(ctx, binary, "-test.run=^TestProductEditorMatrixLedgerEvidenceHistoricalPolicy$", "-test.v")
+			cmd.Dir = filepath.Join(clone, "tests/foundation")
+			cmd.Env = productEditorMatrixChildEnv(tc.env...)
+			output, err := cmd.CombinedOutput()
+			code := 0
+			if err != nil {
+				exit, ok := err.(*exec.ExitError)
+				if !ok {
+					t.Fatal(err)
+				}
+				code = exit.ExitCode()
+			}
+			t.Logf("shallow canonical child %s exit=%d:\n%s", tc.name, code, output)
+			if code != tc.wantExit || !strings.Contains(string(output), tc.want) || strings.Contains(string(output), tc.reject) {
+				t.Fatalf("want exit %d, %q and no %q, got exit %d", tc.wantExit, tc.want, tc.reject, code)
+			}
+		})
+	}
+}
+
+// productEditorMatrixShallowClone builds a depth-1 clone of the files the evidence
+// fixture reads, so `git show <tested_source_commit>` is genuinely unavailable.
+func productEditorMatrixShallowClone(t *testing.T) string {
+	t.Helper()
+	root, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	delivery := productEditorMatrixReadFixture(t, root, "output/matrix-ledger-enforce/DELIVERY.md")
+	dir := regexp.MustCompile(`\[SOURCE\.json\]\(([A-Za-z0-9._-]+)/SOURCE\.json\)`).FindSubmatch(delivery)
+	if dir == nil {
+		t.Fatal("fixture needs DELIVERY's current canonical evidence directory")
+	}
+	manifestPath := "output/matrix-ledger-enforce/" + string(dir[1]) + "/browser/browser-evidence.json"
+	var manifest struct {
+		Sources map[string]string `json:"source_files_sha256"`
+	}
+	if err := json.Unmarshal(productEditorMatrixReadFixture(t, root, manifestPath), &manifest); err != nil {
+		t.Fatal(err)
+	}
+	work := t.TempDir()
+	copyFile := func(path string) {
+		t.Helper()
+		data := productEditorMatrixReadFixture(t, root, path)
+		full := filepath.Join(work, path)
+		if err := os.MkdirAll(filepath.Dir(full), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	copyFile("output/matrix-ledger-enforce/DELIVERY.md")
+	copyFile(manifestPath)
+	for path := range manifest.Sources {
+		copyFile(path)
+	}
+	productEditorMatrixGit(t, work, "init", "-q")
+	productEditorMatrixGit(t, work, "add", "-A")
+	productEditorMatrixGit(t, work, "-c", "user.name=matrix", "-c", "user.email=matrix@example.invalid", "-c", "commit.gpgsign=false", "commit", "-qm", "shallow evidence fixture")
+	clone := filepath.Join(t.TempDir(), "clone")
+	productEditorMatrixGit(t, "", "clone", "-q", "--depth", "1", "file://"+filepath.ToSlash(work), clone)
+	if shallow := strings.TrimSpace(productEditorMatrixGit(t, clone, "rev-parse", "--is-shallow-repository")); shallow != "true" {
+		t.Fatalf("fixture clone must be shallow, got %q", shallow)
+	}
+	return clone
+}
+
+func productEditorMatrixGit(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	if dir != "" {
+		cmd.Dir = dir
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+	return string(out)
+}
+
+// The child must see exactly one value per environment key; exec otherwise inherits
+// duplicate entries from a runner that already exports GITHUB_ACTIONS.
+func productEditorMatrixChildEnv(extra ...string) []string {
+	drop := map[string]bool{}
+	for _, entry := range extra {
+		drop[strings.SplitN(entry, "=", 2)[0]] = true
+	}
+	env := make([]string, 0, len(os.Environ())+len(extra))
+	for _, entry := range os.Environ() {
+		if !drop[strings.SplitN(entry, "=", 2)[0]] {
+			env = append(env, entry)
+		}
+	}
+	return append(env, extra...)
 }
 
 // Shared harness/configuration changes in a PR merge ref do not invalidate the
