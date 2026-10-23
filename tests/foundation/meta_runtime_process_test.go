@@ -120,6 +120,14 @@ func mrBoundAddr(t *testing.T, p *mrProcess, within time.Duration) string {
 	return mrLogMatch(t, p, "api_ready", regexp.MustCompile(`api_ready addr=(127\.0\.0\.1:\d+)`), within)[1]
 }
 
+// mrConsoleBoundAddr is mrBoundAddr's claims-worker sibling: the comment bridge logs claims_worker_console_ready only after
+// net.Listen succeeded (cmd/claims-worker/main.go startConsoleServer), so this is the OS-chosen address a process test dials.
+// Fails closed at the caller's existing bound: an exit before the line, or no line in time, fails the test (no retry, no port fallback).
+func mrConsoleBoundAddr(t *testing.T, p *mrProcess, within time.Duration) string {
+	t.Helper()
+	return mrLogMatch(t, p, "claims_worker_console_ready", regexp.MustCompile(`claims_worker_console_ready addr=(127\.0\.0\.1:\d+)`), within)[1]
+}
+
 func mrLogMatch(t *testing.T, p *mrProcess, marker string, re *regexp.Regexp, within time.Duration) []string {
 	t.Helper()
 	deadline := time.Now().Add(within)

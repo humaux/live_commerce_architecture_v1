@@ -394,10 +394,11 @@ test("CMD-1: no Go test hands a cmd/* binary a pre-picked LISTEN_ADDR (static re
 const CMD2_BOUND_BASE = "d5418f4c9";
 const consoleAddrSites = ["tests/foundation/claims_worker_console_process_test.go", "tests/foundation/order_attempt_worker_process_test.go"];
 function noPickedConsoleAddr(file, source) {
-  const uses = [...source.matchAll(/COMMERCE_CLAIMS_CONSOLE_ADDR/g)];
+  // Only a quoted assignment is a value handed to the worker; a comment or doc mention is not a port choice.
+  const uses = [...source.matchAll(/"COMMERCE_CLAIMS_CONSOLE_ADDR(?:=|":)/g)];
   assert.ok(uses.length > 0, `${file}: no COMMERCE_CLAIMS_CONSOLE_ADDR use left, drop it from consoleAddrSites`);
   for (const use of uses) {
-    const rest = source.slice(use.index, use.index + 80);
+    const rest = source.slice(use.index + 1, use.index + 81);
     if (/^COMMERCE_CLAIMS_CONSOLE_ADDR="\+held\.Addr\(\)\.String\(\)/.test(rest)) continue; // the EADDRINUSE witness owns the port
     assert.match(rest, /^COMMERCE_CLAIMS_CONSOLE_ADDR(="\s*\+\s*|":\s*)mrEphemeralAddr\b/, `${file}: the claims-worker console bridge gets a caller-picked address (${JSON.stringify(rest.slice(0, 46))}), use mrEphemeralAddr and read the claims_worker_console_ready line`);
   }
@@ -411,7 +412,7 @@ test("CMD-2: no Go test hands cmd/claims-worker a pre-picked COMMERCE_CLAIMS_CON
   const all = execFileSync("git", ["ls-files", "tests"], { encoding: "utf8" }).split("\n").filter((f) => f.endsWith(".go"));
   for (const file of all) {
     const source = await readFile(file, "utf8");
-    if (source.includes("COMMERCE_CLAIMS_CONSOLE_ADDR")) noPickedConsoleAddr(file, source);
+    if (/"COMMERCE_CLAIMS_CONSOLE_ADDR(?:=|":)/.test(source)) noPickedConsoleAddr(file, source);
   }
   noPickedConsoleAddr("synthetic_test.go", '"COMMERCE_CLAIMS_CONSOLE_ADDR=" + mrEphemeralAddr,\n"COMMERCE_CLAIMS_CONSOLE_ADDR": mrEphemeralAddr');
   for (const bad of ['"COMMERCE_CLAIMS_CONSOLE_ADDR=" + address', '"COMMERCE_CLAIMS_CONSOLE_ADDR=127.0.0.1:8081"', '"COMMERCE_CLAIMS_CONSOLE_ADDR=" + "127.0.0.1:0"'])
@@ -496,9 +497,10 @@ function assertNoUnsafeSetseed(file, source) {
   return checked;
 }
 test("#159 P2-B: setseed only on seededConn's hijacked connection or a test-hijacked connection (static)", async () => {
-  // RED witness: the pre-fix tree ran setseed on a pooled transaction (6b114606a), which is exactly what leaked.
+  // Red witness: the pre-fix tree ran setseed on a pooled transaction (6b114606a), which is exactly what leaked. It must fail;
+  // the pre-fix commit stays in the assertion so the guard can never silently become a no-op.
   const before = execFileSync("git", ["show", "6b114606a:tests/foundation/store_number_test.go"], { encoding: "utf8" });
-  assertNoUnsafeSetseed("6b114606a:tests/foundation/store_number_test.go", before);
+  assert.throws(() => assertNoUnsafeSetseed("6b114606a:tests/foundation/store_number_test.go", before), /seeded connection must be closed/, "the setseed guard no longer catches the pre-fix pooled transaction");
   // GREEN: every current setseed call is on the helper's hijacked connection or a test-hijacked one.
   let checked = 0;
   const files = execFileSync("git", ["ls-files", "tests/foundation"], { encoding: "utf8" }).split("\n").filter((f) => f.endsWith(".go"));

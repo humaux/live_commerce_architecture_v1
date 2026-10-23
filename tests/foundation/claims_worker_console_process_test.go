@@ -5,8 +5,10 @@
 // superviseConsole/cancelRun/exitError (#116 P2-1).
 // CW-2 (#147) is deliberately NOT pinned: whether claims_worker_ready precedes the console failure is a race between the hook's 1s
 // timer and River Start's DB probe (jobqueue.Run skips the ready line once ctx is cancelled), so asserting it would flake on a loaded runner.
-// Depends on: slxFreePort (stripe_live_process_test.go), crNewWorkerEnv/crReadLog (claims_retention_worker_test.go), mrFixture/mrBuild/mrLaunch/mrFailsBeforeReady
-// (meta_runtime*_test.go), REAL_PG; cmd/claims-worker.
+// CMD-2 (#147): the serve-failure worker binds a loopback :0 (mrEphemeralAddr) and the test reads the OS-chosen port from the
+// claims_worker_console_ready line (mrConsoleBoundAddr); the occupied-address case still holds its own port because the collision is the fixture.
+// Depends on: crNewWorkerEnv/crReadLog (claims_retention_worker_test.go), mrFixture/mrBuild/mrLaunch/mrFailsBeforeReady/
+// mrEphemeralAddr/mrConsoleBoundAddr (meta_runtime*_test.go), REAL_PG; cmd/claims-worker.
 // Used by: go test ./tests/foundation (Foundation suite and the foundation shards).
 
 package foundation_test
@@ -16,6 +18,7 @@ import (
 	"net"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestClaimsWorkerConsoleBindFailureNeverReady(t *testing.T) {
@@ -32,8 +35,8 @@ func TestClaimsWorkerConsoleBindFailureNeverReady(t *testing.T) {
 		"COMMERCE_CLAIMS_BRIDGE_TOKEN="+linkKey, "COMMERCE_CLAIMS_CURSOR_KEY="+pageKey)
 	p := mrLaunch(t, mrBuild(t, "../../cmd/claims-worker", "claims-console-bind"), "claims-console-bind", env)
 	mrFailsBeforeReady(t, p, "claims_worker_start_failed", linkKey, pageKey, w.jobDSNSecret)
-	if strings.Contains(crReadLog(t, p), "claims_worker_ready") {
-		t.Fatal("worker logged claims_worker_ready with its bridge address unavailable")
+	if log := crReadLog(t, p); strings.Contains(log, "claims_worker_ready") || strings.Contains(log, "claims_worker_console_ready") {
+		t.Fatal("worker reported readiness with its bridge address unavailable")
 	}
 }
 
@@ -42,10 +45,11 @@ func TestClaimsWorkerConsoleServeFailureExitsWithConsoleToken(t *testing.T) {
 	w := crNewWorkerEnv(t, f)
 	linkKey := base64.StdEncoding.EncodeToString(w.linkRaw)
 	pageKey := base64.StdEncoding.EncodeToString(w.pageKeyRaw)
-	env := append(append([]string(nil), w.env...), "COMMERCE_CLAIMS_CONSOLE_ADDR=127.0.0.1:"+slxFreePort(t),
+	env := append(append([]string(nil), w.env...), "COMMERCE_CLAIMS_CONSOLE_ADDR="+mrEphemeralAddr,
 		"COMMERCE_CLAIMS_BRIDGE_TOKEN="+linkKey, "COMMERCE_CLAIMS_CURSOR_KEY="+pageKey)
 	bin := mrBuild(t, "../../cmd/claims-worker", "claims-console-serve-failure", "-tags", "claimsconsoletest")
 	p := mrLaunch(t, bin, "claims-console-serve-failure", env)
+	mrConsoleBoundAddr(t, p, 8*time.Second)
 	mrFailsBeforeReady(t, p, "claims_worker_console_failed", linkKey, pageKey, w.jobDSNSecret)
 	if strings.Contains(crReadLog(t, p), "claims_worker_start_failed") {
 		t.Fatal("bridge loss after the bind was reported as a startup failure")
