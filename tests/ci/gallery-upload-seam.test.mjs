@@ -59,7 +59,7 @@ export function adminSources(dir = ADMIN) {
  */
 export function scanSeamSources(sources) {
   const violations = [];
-  const counts = { hold: 0, release: 0 };
+  const counts = { [HOLD]: 0, [RELEASE]: 0 };
   for (const { name, text } of sources) {
     const file = ts.createSourceFile(name, text, ts.ScriptTarget.Latest, true, scriptKind(name));
     const at = (node) => `${name}:${file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1}`;
@@ -103,8 +103,8 @@ test("every gallery seam marker in apps/admin production source sits inside the 
   assert.ok(sources.some(({ name }) => name.endsWith("UiGalleryTemplates.tsx")), "the gallery component must be in the scanned corpus");
   const { violations, counts } = scanSeamSources(sources);
   assert.deepEqual(violations, []);
-  assert.ok(counts.hold > 0, "the hold fixture must remain covered, not deleted to satisfy the guard");
-  assert.ok(counts.release > 0, "the release fixture must remain covered, not deleted to satisfy the guard");
+  assert.ok(counts[HOLD] > 0, "the hold fixture must remain covered, not deleted to satisfy the guard");
+  assert.ok(counts[RELEASE] > 0, "the release fixture must remain covered, not deleted to satisfy the guard");
 });
 
 test("the scanner rejects every ungated spelling, including the shapes the previous visitor missed", () => {
@@ -115,7 +115,7 @@ test("the scanner rejects every ungated spelling, including the shapes the previ
     "else branch": `if (${FLAG}) {} else { ${seam} }`,
     "after the branch": `if (${FLAG}) {} ${seam}`,
     "element access": `if (${FLAG}) { window.__lcHoldUpload; } if (window["__lcHoldUpload"]) { window.addEventListener("lc-gallery-upload-release", finish); }`,
-    "template literal event": `if (${FLAG}) { window.__lcHoldUpload; window.addEventListener(\`lc-gallery-upload-release\`, finish); }`,
+    "template literal event": `if (${FLAG}) { window.__lcHoldUpload; } window.addEventListener(\`lc-gallery-upload-release\`, finish);`,
     "template built from fragments": 'const event = `lc-gallery-upload-${suffix}`; window.addEventListener(event, finish);',
     "concatenated name": 'const event = "lc-gallery-" + "upload-release"; window.addEventListener(event, finish);',
     "computed global name": 'const key = ["__lc", "HoldUpload"].join(""); window[key];',
@@ -141,5 +141,5 @@ test("markers nested inside the guarded branch stay legal", () => {
     "if ((window as unknown as { __lcHoldUpload?: boolean }).__lcHoldUpload) {}\n}";
   const { violations, counts } = scanSeamSources([{ name: "ok.tsx", text: source }]);
   assert.deepEqual(violations, []);
-  assert.deepEqual(counts, { hold: 1, release: 1 });
+  assert.deepEqual(counts, { [HOLD]: 1, [RELEASE]: 1 });
 });
