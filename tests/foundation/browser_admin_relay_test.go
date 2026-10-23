@@ -37,6 +37,16 @@ import (
 	"time"
 )
 
+// TH-1 (#147): waitid(WNOWAIT) is exposed by golang.org/x/sys/unix on Linux, not on darwin, while the browser-tagged package
+// must still compile on a developer Mac. The Linux implementation is installed by browser_admin_relay_waitid_linux_test.go;
+// these defaults are only reached on the non-Linux path, where relay.start already fails closed before launch.
+var (
+	// waitLeaderNoReap blocks until the child exits without reaping it; false means the pid could not be held open.
+	waitLeaderNoReap = func(pid int) bool { return false }
+	// leaderStillWaitable reports whether pid is an exited, still-unreaped child, i.e. its pid (our PGID) is reserved.
+	leaderStillWaitable = func(pid int) bool { return false }
+)
+
 type browserAdminRelay struct {
 	origin string
 	server *httptest.Server
@@ -733,6 +743,36 @@ func TestBrowserAdminRelayFailsClosedWithoutOwnershipProof(t *testing.T) {
 	}
 	if relay.target.Load() != nil {
 		t.Fatal("relay was attached to a listener that was not proven to be the child's")
+	}
+}
+
+// TestBrowserAdminRelaySignalsGroupBeforeReapingLeader pins TH-1 (#147): the group must be signalled while the leader's pid
+// (the PGID) is still reserved. RED: child.Wait() reaps the leader first, so a waitid(WNOWAIT) probe during the kill sees
+// ECHILD and the pid could already belong to a foreign group. GREEN: the reaper holds the exited leader with waitid(WNOWAIT)
+// until kill(-pgid) has run, then reaps, so the probe still sees an unreaped child.
+func TestBrowserAdminRelaySignalsGroupBeforeReapingLeader(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("NOT_RUN: needs Linux waitid(WNOWAIT)")
+	}
+	relay := &browserAdminRelay{}
+	relay.pickPort = func() string { return "1" } // the leader exits before it can own any port
+	relay.owns = func(pgid, port int) (bool, error) { return false, nil }
+	var signalled, unreaped atomic.Bool
+	relay.kill = func(pgid int) {
+		unreaped.Store(leaderStillWaitable(pgid))
+		signalled.Store(true)
+	}
+	cmd := exec.CommandContext(context.Background(), "sh", "-c", "exit 0")
+	cmd.Stdout = browserLog(t, t.TempDir()+"/leader.log")
+	cmd.Stderr = cmd.Stdout
+	if _, err := relay.launch(t, context.Background(), cmd); err == nil {
+		t.Fatal("red witness broken: a leader that exits before owning its port must fail the launch")
+	}
+	if !signalled.Load() {
+		t.Fatal("the process group was never signalled")
+	}
+	if !unreaped.Load() {
+		t.Fatal("TH-1: the group was signalled after the leader was reaped, so its PGID could already have been recycled")
 	}
 }
 
