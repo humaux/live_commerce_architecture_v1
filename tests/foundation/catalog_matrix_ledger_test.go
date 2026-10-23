@@ -561,7 +561,7 @@ func validateProductEditorMatrixEvidence(root string) error {
 		}
 		native[name] = data
 	}
-	return validateProductEditorMatrixRunOutcome(manifestData, native, len(required))
+	return validateProductEditorMatrixRunOutcome(manifestData, native, required)
 }
 
 func productEditorMatrixEvidenceHash(path string, data []byte, expected string) error {

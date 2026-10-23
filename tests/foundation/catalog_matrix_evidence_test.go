@@ -447,7 +447,16 @@ func productEditorMatrixEvidenceFixtureWith(t *testing.T, mutateCases func([]map
 
 // Hash-consistent bytes alone are not a passing browser run. Both native final
 // receipts, list-reporter summaries and manifest counts must corroborate it.
-func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[string][]byte, required int) error {
+func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[string][]byte, required map[productEditorMatrixLedgerKey]string) error {
+	// The manifest's recorded width comes from the recorded table, never the current
+	// checkout's width (#180-2); required is already expanded for that table.
+	requiredWidth := 0
+	for key := range required {
+		if requiredWidth != 0 && key.Width != requiredWidth {
+			return fmt.Errorf("canonical required table mixes viewport widths %d and %d", requiredWidth, key.Width)
+		}
+		requiredWidth = key.Width
+	}
 	var manifest struct {
 		Passed map[string]int `json:"actual_passed_cases"`
 		Ledger struct {
@@ -497,8 +506,8 @@ func validateProductEditorMatrixRunOutcome(manifestData []byte, native map[strin
 			perLocale[row.Locale]++
 		}
 	}
-	if manifest.Ledger.Raw != len(rows) || manifest.Ledger.Required != required ||
-		manifest.Ledger.Width != productEditorMatrixLedgerWidth || !reflect.DeepEqual(manifest.Ledger.PerLocale, perLocale) {
+	if manifest.Ledger.Raw != len(rows) || manifest.Ledger.Required != len(required) ||
+		manifest.Ledger.Width != requiredWidth || !reflect.DeepEqual(manifest.Ledger.PerLocale, perLocale) {
 		return fmt.Errorf("canonical manifest ledger counts must match the exact validated PASS ledger")
 	}
 	return nil
