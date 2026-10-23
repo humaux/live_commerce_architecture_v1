@@ -120,6 +120,10 @@ test("the scanner rejects every ungated spelling, including the shapes the previ
     "concatenated name": 'const event = "lc-gallery-" + "upload-release"; window.addEventListener(event, finish);',
     "computed global name": 'const key = ["__lc", "HoldUpload"].join(""); window[key];',
     "alias guard": `const env = process.env; if (env.NEXT_PUBLIC_LC_GALLERY_TEST === "1") { ${seam} }`,
+    // #171 exact shape: an alias of the global plus an Array.join fragment name escapes a literal-only visitor.
+    "window alias": `const w = window; if (${FLAG}) { w.__lcHoldUpload = true; }`,
+    "window alias with fragment name": `const w = window; const key = ["__lc", "HoldUpload"].join(""); if (${FLAG}) { w[key] = true; }`,
+    "globalThis destructuring alias": `const { addEventListener } = globalThis; if (${FLAG}) {}`,
   };
   for (const [name, fixture] of Object.entries(fixtures)) {
     const { violations } = scanSeamSources([{ name: "fixture.tsx", text: `${guarded}\n${fixture}` }]);

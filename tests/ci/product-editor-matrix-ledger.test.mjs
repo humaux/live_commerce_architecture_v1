@@ -22,6 +22,19 @@ const actions = new Set(["click", "fill", "press", "check", "uncheck", "selectOp
 const canonicalModes = ["dropped-write-count", "wrong-value-argument", "wrong-document-count", "dropped-reload", "dropped-persistence",
   "wrong-checked-state", "wrong-ack-source", "dropped-archived-id", "dropped-code-stability", "snapshot-after-action", "fallback-sku-selector"];
 
+// #180-1: the mobile matrix ledger records entry.width from the shared case table, so the
+// browser viewport must be driven by that same value instead of a second literal.
+test("the mobile matrix viewport width is the shared case-table width, never a spec literal", () => {
+  const source = readFileSync(specPath, "utf8");
+  const start = source.indexOf(startMarker), end = source.indexOf(endMarker, start);
+  assert.ok(start >= 0 && end > start, "the bounded mobile matrix region must be locatable");
+  const region = source.slice(start, end);
+  assert.doesNotMatch(region, /setViewportSize\(\s*\{\s*width:\s*\d/,
+    "the mobile matrix viewport must not repeat a literal width (#180)");
+  assert.match(region, /setViewportSize\(\s*\{\s*width:\s*productEditorMatrixWidth\b/,
+    "the mobile matrix viewport must use the case-table width binding (#180)");
+});
+
 test("real Playwright ESM consumer collects the product-editor cases", () => {
   // Match brfPlaywright's generated-config seam, without starting any server or browser.
   const unit = "output/matrix-ledger-enforce";

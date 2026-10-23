@@ -339,6 +339,19 @@ func TestProductEditorMatrixLedgerWidthDeclaredByCases(t *testing.T) {
 	}
 }
 
+// #180-2: the delivered historical table predates the width column. It was recorded at
+// 390px, so an untouched historical fixture must not be reinterpreted with whatever
+// width the current checkout declares.
+func TestProductEditorMatrixLedgerHistoricalWidthDefault(t *testing.T) {
+	root, _ := productEditorMatrixEvidenceFixture(t)
+	current := productEditorMatrixLedgerWidth
+	t.Cleanup(func() { productEditorMatrixLedgerWidth = current })
+	productEditorMatrixLedgerWidth = current + 110 // a changed current mobile viewport
+	if err := validateProductEditorMatrixEvidence(root); err != nil {
+		t.Fatalf("untouched historical table must keep its recorded 390px width: %v", err)
+	}
+}
+
 // These owned executable producers bind delivery evidence and are also read by
 // CI-SELECT. A changed producer must run the current live browser gate, even when
 // its historical canonical record no longer matches the checkout.

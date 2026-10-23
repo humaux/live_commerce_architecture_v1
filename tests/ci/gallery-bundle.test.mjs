@@ -47,8 +47,11 @@ test("scanClientJs walks nested chunks and scans only executable client JS", () 
     const { files, hits } = scanClientJs(path.join(dir, "chunks"));
     assert.equal(files, 2);
     assert.deepEqual(hits.map(({ file, marker }) => [file.replaceAll(path.sep, "/"), marker]).sort(), [
-      ["app.js", "lc-gallery-upload-release"],
+      ["app.js", "HoldUpload"],
       ["app.js", "__lcHoldUpload"],
+      ["app.js", "gallery-upload"],
+      ["app.js", "lc-gallery-upload-release"],
+      [path.join("nested", "deeper.mjs").replaceAll(path.sep, "/"), "HoldUpload"],
       [path.join("nested", "deeper.mjs").replaceAll(path.sep, "/"), "__lcHoldUpload"],
     ].sort());
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -60,7 +63,7 @@ test("the CLI fails an ordinary build that still emits the seam and passes a fol
   try {
     const failed = run(["--expect=absent", dirty]);
     assert.equal(failed.status, 1, failed.stderr);
-    assert.match(failed.stderr, /FAIL 2 gallery seam marker\(s\)/);
+    assert.match(failed.stderr, /FAIL 4 gallery seam marker\(s\)/);
     assert.match(failed.stderr, /app\.js:\d+ __lcHoldUpload/);
     const passed = run(["--expect=absent", clean]);
     assert.equal(passed.status, 0, passed.stderr);
@@ -83,6 +86,23 @@ test("the CLI requires the seam in a flag-enabled gallery build (positive contro
     rmSync(gallery, { recursive: true, force: true });
     rmSync(folded, { recursive: true, force: true });
   }
+});
+
+// #171: a fragment-built name emits the fragments, not the joined marker, so the
+// artifact scan must match HoldUpload / gallery-upload while the positive control
+// still accepts the flag-enabled gallery build.
+test("the scan rejects fragment-built seam names and keeps the gallery positive control passing", () => {
+  const fragments = fixture({
+    "chunks/app.js": 'const w=window;w[["__lc","HoldUpload"].join("")]=!0,w.addEventListener(["lc-","gallery-upload","-release"].join(""),f)',
+  });
+  try {
+    const absent = run(["--expect=absent", fragments]);
+    assert.equal(absent.status, 1, absent.stderr);
+    assert.match(absent.stderr, /HoldUpload/);
+    assert.match(absent.stderr, /gallery-upload/);
+    const present = run(["--expect=present", fragments]);
+    assert.equal(present.status, 0, present.stderr);
+  } finally { rmSync(fragments, { recursive: true, force: true }); }
 });
 
 test("the CLI fails closed on a missing build output, empty output or a bad option", () => {
