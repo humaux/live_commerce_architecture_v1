@@ -70,6 +70,12 @@ var productEditorMatrixLedgerLocales = map[string]map[string]string{
 // evidence binds its recorded bytes by SHA-256 in SOURCE.json.
 const productEditorMatrixCasesPath = "tests/foundation/testdata/product_editor_matrix_cases.json"
 
+// productEditorMatrixLedgerRecordedWidth is the mobile viewport the delivered
+// historical case table was recorded at. That table predates the width column, so a
+// historical fixture must keep 390 even after the current checkout's width changes
+// (#180-2); it is deliberately not sourced from the current table.
+const productEditorMatrixLedgerRecordedWidth = 390
+
 // productEditorMatrixLedgerWidth is the mobile viewport every matrix row declares
 // in the case table. The embedded JSON is the single source (390 appears only
 // there); canonical evidence binds the table by SHA-256 (#147 CI-13).
@@ -115,9 +121,10 @@ func productEditorMatrixLedgerExpectedFor(cases []productEditorMatrixLedgerCase)
 			}
 			width := required.Width
 			if width == 0 {
-				// The delivered historical table predates the width column; every row it
-				// recorded used the current table's declared mobile width.
-				width = productEditorMatrixLedgerWidth
+				// The delivered historical table predates the width column; it was
+				// recorded at the 390px mobile viewport (#180-2), not at whatever width
+				// the current checkout's table declares now.
+				width = productEditorMatrixLedgerRecordedWidth
 			}
 			if width <= 0 {
 				return nil, errors.New("matrix table requires a positive width")

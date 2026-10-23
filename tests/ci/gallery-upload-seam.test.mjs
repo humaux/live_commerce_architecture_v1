@@ -54,8 +54,8 @@ export function adminSources(dir = ADMIN) {
 
 /**
  * Every seam-spelling occurrence must sit inside the enabled branch of the literal public build-time flag. Any other occurrence, any
- * computed global property name and any fragment-built template/concatenation is a violation: this gate never awards a "some occurrence
- * is guarded" pass.
+ * computed global property name, any alias of window/globalThis and any fragment-built template/concatenation is a violation: this gate
+ * never awards a "some occurrence is guarded" pass.
  */
 export function scanSeamSources(sources) {
   const violations = [];
@@ -75,6 +75,14 @@ export function scanSeamSources(sources) {
       if (!insideGuard(node)) violations.push(`${at(node)} ${kind} is outside the literal public build-time flag branch`);
     };
     function visit(node) {
+      // #171: an alias of window/globalThis (identifier or destructuring) hides which
+      // global the seam is written to, so no alias is allowed in production source.
+      if (ts.isVariableDeclaration(node) && node.initializer && globalName(node.initializer)) {
+        violations.push(`${at(node)} alias of ${globalName(node.initializer)} is forbidden by the seam gate`);
+      }
+      if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken && globalName(node.right)) {
+        violations.push(`${at(node)} alias of ${globalName(node.right)} is forbidden by the seam gate`);
+      }
       if (ts.isIdentifier(node) && node.text === HOLD) marker(node, HOLD);
       else if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
         if (node.text === HOLD) marker(node, HOLD);

@@ -556,8 +556,9 @@ var (
 	pfuEnvAssign     = regexp.MustCompile(`\b([A-Z][A-Z0-9_]*)=\S*`)
 	pfuSecretName    = regexp.MustCompile(`(^|_)(KEY|SECRET|TOKEN)(_|$)|PASSWORD`)
 	pfuBeforeScript  = regexp.MustCompile(`^\S*\s+(sudo\s+)?(\S+=\S+\s+)*(\S*deploy/scripts/|docker(?:-compose)?\s)`)
-	// A `bash -c '...' ARG` invocation names the script in ARG; `_` is the shell placeholder, so lib.sh would log it.
-	pfuBashCPlaceholder = regexp.MustCompile(`(?s)\bbash[ \t]+-c[ \t]+'.*?'[ \t]+_(?:\s|$)`)
+	// A `bash -c '...' ARG` invocation names the script in ARG; `_` is the shell placeholder, bare or quoted (#147 P2),
+	// so lib.sh would log it.
+	pfuBashCPlaceholder = regexp.MustCompile(`(?s)\bbash[ \t]+-c[ \t]+'.*?'[ \t]+(?:"_"|'_'|_)(?:\s|$)`)
 )
 
 // pfuInlineSpans extracts CommonMark backtick code spans from a single non-fenced Markdown line, matching runs of
