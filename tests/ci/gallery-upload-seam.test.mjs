@@ -141,5 +141,6 @@ test("markers nested inside the guarded branch stay legal", () => {
     "if ((window as unknown as { __lcHoldUpload?: boolean }).__lcHoldUpload) {}\n}";
   const { violations, counts } = scanSeamSources([{ name: "ok.tsx", text: source }]);
   assert.deepEqual(violations, []);
-  assert.deepEqual(counts, { [HOLD]: 1, [RELEASE]: 1 });
+  // Two Identifier nodes: the type-literal property signature in the cast and the property access on window.
+  assert.deepEqual(counts, { [HOLD]: 2, [RELEASE]: 1 });
 });
