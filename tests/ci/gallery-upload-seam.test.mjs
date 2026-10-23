@@ -41,3 +41,13 @@ test("the same guard rejects ungated, runtime-only and disabled-branch seams", (
     assert.throws(() => assertBuildTimeGate(source), /literal public build-time flag/);
   }
 });
+
+test("literal element access and template-literal spellings are rejected outside the guarded branch", () => {
+  // A valid guarded seam stays; an unnoticed literal element-access + template-literal seam follows it.
+  assert.throws(() => assertBuildTimeGate(
+    `if (${flag}) { window.__lcHoldUpload; }\nif (window["__lcHoldUpload"]) { window.addEventListener(\`lc-gallery-upload-release\`, finish); }`),
+  /literal public build-time flag/);
+  assert.throws(() => assertBuildTimeGate(
+    `if (${flag}) { window.__lcHoldUpload; window.addEventListener(\`lc-gallery-upload-release\`, finish); }`),
+  /literal public build-time flag/);
+});
