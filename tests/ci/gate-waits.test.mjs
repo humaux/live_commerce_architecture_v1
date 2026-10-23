@@ -52,3 +52,20 @@ test("both sanctioned fixes are accepted", () => {
   assert.deepEqual(caseOf('const pending=p.waitForResponse(r=>r.ok());const reply=await pending;'), []);
   assert.deepEqual(caseOf('const q=()=>page.waitForResponse(r=>r.ok());const reply=await q();'), []);
 });
+
+test("the scan rejects a wait awaited before its trigger (await-wait-then-trigger)", () => {
+  // `await wait(...)` in one expression means the click is either still ahead (the await hangs) or already past
+  // (the reply was missed); both are the ordering defect this rule exists to stop.
+  assert.equal(caseOf('const reply=await p.waitForResponse(r=>r.ok());await p.getByTestId("go").click();').length, 1);
+  assert.equal(caseOf('await p.waitForResponse(r=>r.ok());await p.getByTestId("go").click();').length, 1);
+  assert.equal(caseOf('const history=await historyRead(p);await p.getByTestId("toggle").click();').length, 1);
+});
+
+test("the scan rejects Promise.all that lists the trigger before the wait", () => {
+  // A reply held by the fixture (arm(..., {after: true})) is released after this statement, so listing the trigger
+  // first hides that dependency: the wait then dies on its 30 s timeout instead of the real assertion.
+  const source = 'const pending=p.waitForResponse(r=>r.ok());const [reply]=await Promise.all([p.getByTestId("go").click(),pending]);';
+  assert.equal(caseOf(source).length, 1);
+  // The wait-first form stays green (it is what the gate scripts use).
+  assert.deepEqual(caseOf('const pending=p.waitForResponse(r=>r.ok());const [reply]=await Promise.all([pending,p.getByTestId("go").click()]);'), []);
+});
