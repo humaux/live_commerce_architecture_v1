@@ -7,6 +7,43 @@ import (
 	"testing"
 )
 
+// adsGrantUsageDo is the one usage-guard body the REAL_PG test strips.
+const adsGrantUsageDo = `DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;`
+
+// adsGrantSQL returns the executable SQL of scripts/ops/grant-ads-permissions.sql after removing its usage guards.
+// RED witness: this version is the pre-#153 rule that skipped every \if block, so the fixture test below fails until
+// the scanner is narrowed to the two exact usage guards.
+func adsGrantSQL(raw []byte) (string, error) {
+	var keep []string
+	skip := false
+	for _, line := range strings.Split(string(raw), "\n") {
+		tl := strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(tl, `\if`):
+			skip = true
+		case strings.HasPrefix(tl, `\endif`):
+			skip = false
+		case !skip && !strings.HasPrefix(tl, `\`):
+			keep = append(keep, line)
+		}
+	}
+	return strings.Join(keep, "\n"), nil
+}
+
+// TestMetaAdsGrantScriptRejectsNonGuardIf pins the scanner: the two usage guards are dropped, but a non-guard \if is
+// refused instead of being silently dropped (the pre-#153 rule hid new conditional blocks from the real-psql test).
+func TestMetaAdsGrantScriptRejectsNonGuardIf(t *testing.T) {
+	good := "\\if :{?store_id}\n\\else\n" + adsGrantUsageDo + "\n\\endif\nSELECT 1;"
+	got, err := adsGrantSQL([]byte(good))
+	if err != nil || strings.TrimSpace(got) != "SELECT 1;" {
+		t.Fatalf("usage-guard fixture: kept SQL = %q, err = %v, want SELECT 1;", got, err)
+	}
+	bad := "\\if :{?store_id}\n\\else\n" + adsGrantUsageDo + "\n\\endif\n\\if :{?dry_run}\nSELECT 'non-guard block';\n\\endif\nSELECT 1;"
+	if got, err := adsGrantSQL([]byte(bad)); err == nil {
+		t.Fatalf("non-guard \\if was silently dropped; kept SQL = %q, want an error", got)
+	}
+}
+
 // TestMetaAdsGrantScript runs the operator script scripts/ops/grant-ads-permissions.sql (REAL_PG; psql meta-commands stripped,
 // :'vars' substituted, the rest executed as written by the migration-owner connection). Gate for the r3 review P2 "nothing
 // provisions ads:read / ads:manage / ads:approve": the script must grant exactly the three permissions to a real store
@@ -20,7 +57,6 @@ func TestMetaAdsGrantScript(t *testing.T) {
 	}
 	// Only the two exact usage guards are skipped (psql skips their RAISE when the variables are set); any other \if
 	// block, a changed guard body or an unterminated block fails loudly instead of being silently dropped.
-	const usageDo = `DO $$ BEGIN RAISE EXCEPTION 'usage: -v store_id=<uuid> -v principal_id=<uuid>'; END $$;`
 	var keep, guard []string
 	inGuard := false
 	for _, line := range strings.Split(string(raw), "\n") {
@@ -32,7 +68,7 @@ func TestMetaAdsGrantScript(t *testing.T) {
 			}
 			inGuard, guard = true, nil
 		case strings.HasPrefix(tl, `\endif`):
-			if !inGuard || strings.Join(guard, "|") != `\else|`+usageDo {
+			if !inGuard || strings.Join(guard, "|") != `\else|`+adsGrantUsageDo {
 				t.Fatalf("usage guard body changed or stray \\endif: %q", guard)
 			}
 			inGuard = false
