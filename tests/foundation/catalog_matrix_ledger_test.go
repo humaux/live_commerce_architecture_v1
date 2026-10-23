@@ -70,6 +70,12 @@ var productEditorMatrixLedgerLocales = map[string]map[string]string{
 // evidence binds its recorded bytes by SHA-256 in SOURCE.json.
 const productEditorMatrixCasesPath = "tests/foundation/testdata/product_editor_matrix_cases.json"
 
+// productEditorMatrixLedgerRecordedWidth is the mobile viewport the delivered
+// historical case table was recorded at. That table predates the width column, so a
+// historical fixture must keep 390 even after the current checkout's width changes
+// (#180-2); it is deliberately not sourced from the current table.
+const productEditorMatrixLedgerRecordedWidth = 390
+
 // productEditorMatrixLedgerWidth is the mobile viewport every matrix row declares
 // in the case table. The embedded JSON is the single source (390 appears only
 // there); canonical evidence binds the table by SHA-256 (#147 CI-13).
@@ -115,9 +121,10 @@ func productEditorMatrixLedgerExpectedFor(cases []productEditorMatrixLedgerCase)
 			}
 			width := required.Width
 			if width == 0 {
-				// The delivered historical table predates the width column; every row it
-				// recorded used the current table's declared mobile width.
-				width = productEditorMatrixLedgerWidth
+				// The delivered historical table predates the width column; it was
+				// recorded at the 390px mobile viewport (#180-2), not at whatever width
+				// the current checkout's table declares now.
+				width = productEditorMatrixLedgerRecordedWidth
 			}
 			if width <= 0 {
 				return nil, errors.New("matrix table requires a positive width")
@@ -339,6 +346,19 @@ func TestProductEditorMatrixLedgerWidthDeclaredByCases(t *testing.T) {
 	}
 }
 
+// #180-2: the delivered historical table predates the width column. It was recorded at
+// 390px, so an untouched historical fixture must not be reinterpreted with whatever
+// width the current checkout declares.
+func TestProductEditorMatrixLedgerHistoricalWidthDefault(t *testing.T) {
+	root, _ := productEditorMatrixEvidenceFixture(t)
+	current := productEditorMatrixLedgerWidth
+	t.Cleanup(func() { productEditorMatrixLedgerWidth = current })
+	productEditorMatrixLedgerWidth = current + 110 // a changed current mobile viewport
+	if err := validateProductEditorMatrixEvidence(root); err != nil {
+		t.Fatalf("untouched historical table must keep its recorded 390px width: %v", err)
+	}
+}
+
 // These owned executable producers bind delivery evidence and are also read by
 // CI-SELECT. A changed producer must run the current live browser gate, even when
 // its historical canonical record no longer matches the checkout.
@@ -541,7 +561,7 @@ func validateProductEditorMatrixEvidence(root string) error {
 		}
 		native[name] = data
 	}
-	return validateProductEditorMatrixRunOutcome(manifestData, native, len(required))
+	return validateProductEditorMatrixRunOutcome(manifestData, native, required)
 }
 
 func productEditorMatrixEvidenceHash(path string, data []byte, expected string) error {

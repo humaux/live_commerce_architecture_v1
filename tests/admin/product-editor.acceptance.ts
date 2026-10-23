@@ -8,7 +8,7 @@ import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import axe from "axe-core";
-import { createProductEditorMatrixLedger } from "./product-editor-matrix-ledger";
+import { createProductEditorMatrixLedger, productEditorMatrixWidth } from "./product-editor-matrix-ledger";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 import { assertProductEditorReservedLayout, assertProductListAsyncTabGrowth, type ProductEditorHardeningRecord } from "./product-editor-layout.acceptance";
 import { assertProductListLayout } from "./product-list-layout.acceptance";
@@ -684,7 +684,7 @@ export function registerProductEditorAcceptance() {
       }
       // Keep additional products after the frozen list-count checks. This uses
       // the same isolated PG fixture; every write goes through a real UI save.
-      await page.setViewportSize({ width: 390, height: 844 });
+      await page.setViewportSize({ width: productEditorMatrixWidth, height: 844 });
       const mobileMatrixTag = `M${Date.now().toString().slice(-10)}`;
       for (const [localeIndex, locale] of (["zh-TW", "zh-CN", "en"] as const).entries()) {
         const c = productEditorCopy[locale];
