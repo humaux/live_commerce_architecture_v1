@@ -1,8 +1,9 @@
 // Purpose: REAL_PG packaged claims-worker acceptance of OA1's physical database boundary.
-// Depends on: existing isolated process fixtures, narrow logins and the real River worker.
+// Depends on: existing isolated process fixtures, narrow logins and the real River worker; mrEphemeralAddr/mrConsoleBoundAddr (CMD-2).
 // Used by: OA1 CI before activating execution and recovery in the combined worker.
 // Invariants: intake, retention and store verification share the worker's physical
-// database; same-name clones refuse before worker routes or the bridge listener start.
+// database; same-name clones refuse before worker routes or the bridge listener start. The bridge
+// gets a loopback :0 and the test dials the port the worker logged, never one picked in advance.
 package foundation_test
 
 import (
@@ -49,21 +50,25 @@ func TestOrderAttemptProcessWorkerRejectsSplitParticipantPools(t *testing.T) {
 	pageKey := base64.StdEncoding.EncodeToString(w.pageKeyRaw)
 	secrets = append(secrets, linkKey, pageKey, w.jobDSNSecret)
 	binary := mrBuild(t, "../../cmd/claims-worker", "oa-worker-pool-boundary")
-	environment := func(address string, split int) []string {
+	environment := func(split int) []string {
 		env := append([]string(nil), w.env...)
 		if split >= 0 {
 			env = w.with(names[split], other[split], false)
 		}
 		// This worker has no healthz endpoint. Its existing optional bridge is
 		// the actual listening surface, configured identically in every case.
-		return append(env, "COMMERCE_CLAIMS_CONSOLE_ADDR="+address,
+		// CMD-2: the worker binds a loopback :0 and reports the port it got, so no
+		// test picks a port in advance (mrEphemeralAddr + mrConsoleBoundAddr).
+		return append(env, "COMMERCE_CLAIMS_CONSOLE_ADDR="+mrEphemeralAddr,
 			"COMMERCE_CLAIMS_BRIDGE_TOKEN="+linkKey, "COMMERCE_CLAIMS_CURSOR_KEY="+pageKey)
 	}
 	if !t.Run("same-physical-database", func(t *testing.T) {
-		address := "127.0.0.1:" + slxFreePort(t)
-		p := crLaunch(t, binary, environment(address, -1))
-		client := &http.Client{Timeout: time.Second}
+		p := crLaunch(t, binary, environment(-1))
+		// P2 (PR #168 review): one readiness budget from launch, shared by address discovery and the probe. The pre-PR test
+		// spent this same eight seconds on the probe alone, so discovery must not open a second window.
 		deadline := time.Now().Add(8 * time.Second)
+		address := mrConsoleBoundAddr(t, p, time.Until(deadline))
+		client := &http.Client{Timeout: time.Second}
 		listening := false
 		for time.Now().Before(deadline) {
 			response, err := client.Get("http://" + address + "/internal/v1/comment-page")
@@ -88,17 +93,11 @@ func TestOrderAttemptProcessWorkerRejectsSplitParticipantPools(t *testing.T) {
 	}
 	for i, name := range names {
 		t.Run(name, func(t *testing.T) {
-			address := "127.0.0.1:" + slxFreePort(t)
-			p := mrLaunch(t, binary, "oa-worker-split-db", environment(address, i))
+			p := mrLaunch(t, binary, "oa-worker-split-db", environment(i))
 			mrFailsBeforeReady(t, p, "claims_worker_database_unavailable", secrets...)
 			log := crReadLog(t, p)
-			if strings.Contains(log, "claims_worker_routes") || strings.Contains(log, "claims_worker_ready") {
+			if strings.Contains(log, "claims_worker_routes") || strings.Contains(log, "claims_worker_ready") || strings.Contains(log, "claims_worker_console_ready") {
 				t.Fatal("split-database worker crossed startup admission before refusing")
-			}
-			client := &http.Client{Timeout: time.Second}
-			if response, err := client.Get("http://" + address + "/internal/v1/comment-page"); err == nil {
-				_ = response.Body.Close()
-				t.Fatal("split-database worker left its bridge listening")
 			}
 			waitPoolsGone(t, f, "rejected worker left primary pools open", poolNames...)
 			waitPoolsGone(t, clone, "rejected worker left clone pools open", poolNames...)

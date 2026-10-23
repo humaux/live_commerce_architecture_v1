@@ -187,6 +187,25 @@ func TestConsoleBridgeOptional(t *testing.T) {
 	}
 }
 
+// CMD-2 (#147): an ephemeral port is accepted only on a literal loopback host; the production fixed forms
+// (":8081", "0.0.0.0:8081") keep working exactly as before.
+func TestConsoleAddrEphemeralLoopbackOnly(t *testing.T) {
+	for _, addr := range []string{"127.0.0.1:0", "[::1]:0", ":8081", "0.0.0.0:8081"} {
+		v := testEnv()
+		v["COMMERCE_CLAIMS_CONSOLE_ADDR"] = addr
+		if c, err := loadConfig(func(n string) string { return v[n] }); err != nil || c.consoleAddr != addr {
+			t.Fatalf("console addr %q rejected: %v", addr, err)
+		}
+	}
+	for _, addr := range []string{":0", "0.0.0.0:0", "localhost:0", "192.0.2.1:0"} {
+		v := testEnv()
+		v["COMMERCE_CLAIMS_CONSOLE_ADDR"] = addr
+		if _, err := loadConfig(func(n string) string { return v[n] }); !errors.Is(err, errWorkerConfig) {
+			t.Fatalf("console addr %q accepted, want invalid config", addr)
+		}
+	}
+}
+
 // A valid environment reaches the database step and fails with one fixed error, no DSN text.
 func TestValidEnvironmentFailsClosedWithoutLeaking(t *testing.T) {
 	v := testEnv()

@@ -353,8 +353,7 @@ test("TH-10: the Go port-race guard flags localhost:0, :0 and [::1]:0 and anchor
 // CMD-1 (#147): cmd/api binds LISTEN_ADDR itself (`:0` plus the api_ready line), so no Go test may hand a cmd/* binary a caller-picked
 // port. Every LISTEN_ADDR assignment under tests/ must take the shared constant mrEphemeralAddr ("127.0.0.1:0"); the bound address is
 // read back from the child's api_ready line (mrBoundAddr). RED: the files at CMD_BOUND_BASE (an r3/integration commit) still pick
-// a port in advance and must fail; GREEN: the current files do not. COMMERCE_CLAIMS_CONSOLE_ADDR (claims-worker) is a different
-// knob and the documented remaining exception (docs/delivery/GATES.md).
+// a port in advance and must fail; GREEN: the current files do not. The claims-worker console bridge has its own guard below (CMD-2).
 const CMD_BOUND_BASE = "b464ee4b4";
 const listenAddrSites = [
   "tests/foundation/studio_process_test.go", "tests/foundation/local_recovery_test.go", "tests/foundation/studio_planning_only_test.go",
@@ -385,6 +384,276 @@ test("CMD-1: no Go test hands a cmd/* binary a pre-picked LISTEN_ADDR (static re
   noPickedListenAddr("synthetic_test.go", '"LISTEN_ADDR=" + mrEphemeralAddr,\n"LISTEN_ADDR": mrEphemeralAddr');
   for (const bad of ['"LISTEN_ADDR=" + addr', '"LISTEN_ADDR": "127.0.0.1:" + port', '"LISTEN_ADDR=127.0.0.1:8080"', '"LISTEN_ADDR=" + "127.0.0.1:0"'])
     assert.throws(() => noPickedListenAddr("synthetic_test.go", bad), /caller-picked LISTEN_ADDR/, `${bad} slipped past the guard`);
+});
+
+// CMD-2 (#147): the claims-worker comment bridge now binds its own address and logs the bound one (claims_worker_console_ready),
+// exactly like cmd/api's api_ready. Every COMMERCE_CLAIMS_CONSOLE_ADDR under tests/ must hand the worker mrEphemeralAddr and read
+// the bound address back (mrConsoleBoundAddr). The one allowed exception is the EADDRINUSE witness: a test that holds a listener
+// on a loopback port to prove the bind fails must pass that held address, because the collision is the fixture. RED: the files at
+// CMD2_BOUND_BASE pre-pick a port with slxFreePort/a prepared address; GREEN: they take the shared constant.
+const CMD2_BOUND_BASE = "d5418f4c9";
+const consoleAddrSites = ["tests/foundation/claims_worker_console_process_test.go", "tests/foundation/order_attempt_worker_process_test.go"];
+function noPickedConsoleAddr(file, source) {
+  // Only a quoted assignment is a value handed to the worker; a comment or doc mention is not a port choice.
+  const uses = [...source.matchAll(/"COMMERCE_CLAIMS_CONSOLE_ADDR(?:=|":)/g)];
+  assert.ok(uses.length > 0, `${file}: no COMMERCE_CLAIMS_CONSOLE_ADDR use left, drop it from consoleAddrSites`);
+  for (const use of uses) {
+    const rest = source.slice(use.index + 1, use.index + 81);
+    if (/^COMMERCE_CLAIMS_CONSOLE_ADDR="\+held\.Addr\(\)\.String\(\)/.test(rest)) continue; // the EADDRINUSE witness owns the port
+    assert.match(rest, /^COMMERCE_CLAIMS_CONSOLE_ADDR(="\s*\+\s*|":\s*)mrEphemeralAddr\b/, `${file}: the claims-worker console bridge gets a caller-picked address (${JSON.stringify(rest.slice(0, 46))}), use mrEphemeralAddr and read the claims_worker_console_ready line`);
+  }
+}
+test("CMD-2: no Go test hands cmd/claims-worker a pre-picked COMMERCE_CLAIMS_CONSOLE_ADDR (static red/green)", async () => {
+  for (const file of consoleAddrSites) {
+    const before = execFileSync("git", ["show", `${CMD2_BOUND_BASE}:${file}`], { encoding: "utf8" });
+    assert.throws(() => noPickedConsoleAddr(file, before), /caller-picked address/, `${file}: red witness lost the pre-picked console address`);
+    noPickedConsoleAddr(file, await readFile(file, "utf8"));
+  }
+  const all = execFileSync("git", ["ls-files", "tests"], { encoding: "utf8" }).split("\n").filter((f) => f.endsWith(".go"));
+  for (const file of all) {
+    const source = await readFile(file, "utf8");
+    if (/"COMMERCE_CLAIMS_CONSOLE_ADDR(?:=|":)/.test(source)) noPickedConsoleAddr(file, source);
+  }
+  noPickedConsoleAddr("synthetic_test.go", '"COMMERCE_CLAIMS_CONSOLE_ADDR=" + mrEphemeralAddr,\n"COMMERCE_CLAIMS_CONSOLE_ADDR": mrEphemeralAddr');
+  for (const bad of ['"COMMERCE_CLAIMS_CONSOLE_ADDR=" + address', '"COMMERCE_CLAIMS_CONSOLE_ADDR=127.0.0.1:8081"', '"COMMERCE_CLAIMS_CONSOLE_ADDR=" + "127.0.0.1:0"'])
+    assert.throws(() => noPickedConsoleAddr("synthetic_test.go", bad), /caller-picked address/, `${bad} slipped past the guard`);
+});
+
+// #159 P2-B: setseed is session state that ROLLBACK does not undo, so a pooled connection that ran it poisons the next
+// borrower's random() stream (#147). The only safe sites are the seededConn helper — which must Acquire -> Hijack -> seed the
+// hijacked raw connection -> Close, never Release — and a connection the test hijacks itself. This static guard strips Go
+// comments first (length-preserving, so line numbers still match), then parses executable Exec/Query/QueryRow calls. Both the
+// helper and every trusted receiver are decided by executable statements, never by a function name or a comment (PR #168 P1).
+function goFunctionBlocks(source) {
+  const blocks = [];
+  const header = /^func\s+(?:\([^)]*\)\s*)?(\w+)\s*\(/gm;
+  let match;
+  while ((match = header.exec(source))) {
+    const open = source.indexOf("{", match.index);
+    if (open < 0) continue;
+    let depth = 0, quote = null, lineComment = false, blockComment = false;
+    for (let i = open; i < source.length; i++) {
+      const ch = source[i], next = source[i + 1];
+      if (lineComment) { if (ch === "\n") lineComment = false; continue; }
+      if (blockComment) { if (ch === "*" && next === "/") { blockComment = false; i++; } continue; }
+      if (quote) {
+        if (quote === "`") { if (ch === "`") quote = null; continue; }
+        if (ch === "\\") { i++; continue; }
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === "/" && next === "/") { lineComment = true; i++; continue; }
+      if (ch === "/" && next === "*") { blockComment = true; i++; continue; }
+      if (ch === '"' || ch === "'" || ch === "`") { quote = ch; continue; }
+      if (ch === "{") depth++;
+      else if (ch === "}" && --depth === 0) { blocks.push({ name: match[1], start: match.index, end: i + 1 }); break; }
+    }
+  }
+  return blocks;
+}
+function goCallArguments(source, open) {
+  let depth = 0, quote = null, lineComment = false, blockComment = false;
+  for (let i = open; i < source.length; i++) {
+    const ch = source[i], next = source[i + 1];
+    if (lineComment) { if (ch === "\n") lineComment = false; continue; }
+    if (blockComment) { if (ch === "*" && next === "/") { blockComment = false; i++; } continue; }
+    if (quote) {
+      if (quote === "`") { if (ch === "`") quote = null; continue; }
+      if (ch === "\\") { i++; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "/" && next === "/") { lineComment = true; i++; continue; }
+    if (ch === "/" && next === "*") { blockComment = true; i++; continue; }
+    if (ch === '"' || ch === "'" || ch === "`") { quote = ch; continue; }
+    if (ch === "(") depth++;
+    else if (ch === ")" && --depth === 0) return source.slice(open + 1, i);
+  }
+  return null;
+}
+// stripGoComments blanks // and /* */ comments with spaces while preserving length and newlines, so every index and line number
+// still lines up with the original source. String literals (including raw strings) are copied verbatim: "//" inside one is data.
+// It is the text the setseed-argument search runs on, because the SQL lives inside the Exec string literal.
+function stripGoComments(source) {
+  let out = "";
+  let quote = null, lineComment = false, blockComment = false;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i], next = source[i + 1];
+    if (lineComment) {
+      if (ch === "\n") { lineComment = false; out += ch; } else out += " ";
+      continue;
+    }
+    if (blockComment) {
+      if (ch === "*" && next === "/") { blockComment = false; out += "  "; i++; continue; }
+      out += ch === "\n" ? "\n" : " ";
+      continue;
+    }
+    if (quote) {
+      out += ch;
+      if (quote === "`") { if (ch === "`") quote = null; continue; }
+      if (ch === "\\" && i + 1 < source.length) { out += source[i + 1]; i++; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "/" && next === "/") { lineComment = true; out += "  "; i++; continue; }
+    if (ch === "/" && next === "*") { blockComment = true; out += "  "; i++; continue; }
+    if (ch === '"' || ch === "'" || ch === "`") quote = ch;
+    out += ch;
+  }
+  return out;
+}
+// stripGoLiteralContents blanks the CONTENT of Go interpreted strings "...", raw strings `...` and rune literals '...' with spaces
+// while keeping the delimiters, every newline and every other index in place (inputs are already comment-stripped). Trust shape —
+// function blocks, receivers, Begin/Hijack/Close derivation — is parsed from this text, so a statement quoted inside a string is
+// data, not an executable statement (PR #168 round 3: `_ = "tx, err := seeded.Begin(ctx)"` must not make a pooled tx trusted).
+function stripGoLiteralContents(source) {
+  let out = "";
+  let quote = null;
+  for (let i = 0; i < source.length; i++) {
+    const ch = source[i];
+    if (quote) {
+      if (quote !== "`" && ch === "\\" && i + 1 < source.length) {
+        const esc = source[i + 1];
+        out += esc === "\n" ? " \n" : "  "; // an escaped line continuation keeps its newline
+        i++;
+        continue;
+      }
+      if (ch === quote) { quote = null; out += ch; continue; }
+      out += ch === "\n" ? "\n" : " ";
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") { quote = ch; out += ch; continue; }
+    out += ch;
+  }
+  return out;
+}
+// seededConnLifecycle pins the helper's executable shape on literal-masked code: one pooled connection is Acquired, that exact
+// connection is Hijacked, setseed runs on the hijacked raw connection, and the returned cleanup Closes that raw connection.
+// Seeding a pooled connection (Acquire -> conn.Conn() -> seed -> conn.Release()) is the regression the round-1 name exemption
+// accepted, so a name alone buys nothing here.
+function seededConnLifecycle(file, code, block) {
+  const body = code.slice(block.start, block.end);
+  const acquire = /(\w+)\s*,\s*\w+\s*:?=\s*[\w.]+\.Acquire\(/.exec(body);
+  assert.ok(acquire, `${file}: seededConn no longer Acquires a pooled connection; it must Acquire -> Hijack -> seed the raw connection -> Close`);
+  const pooled = acquire[1];
+  const hijack = new RegExp(`(\\w+)\\s*:?=\\s*${pooled}\\.Hijack\\(\\)`).exec(body);
+  assert.ok(hijack, `${file}: seededConn does not Hijack the connection it Acquired (${pooled}.Hijack); a seeded connection must be closed, not returned to a pool`);
+  const raw = hijack[1];
+  assert.equal(new RegExp(`\\b${pooled}\\.Release\\(`).test(body), false,
+    `${file}: seededConn Releases ${pooled} back to the pool; a seeded connection must be closed, not returned to a pool`);
+  const close = new RegExp(`\\b${raw}\\.Close\\(`).exec(body);
+  const cleanup = /return\s+([\w.]+)\s*,\s*func\(\)\s*\{([^}]*)\}/.exec(body);
+  assert.ok(close && cleanup && cleanup[1] === raw && new RegExp(`\\b${raw}\\.Close\\(`).test(cleanup[2]),
+    `${file}: seededConn must return the hijacked ${raw} with a cleanup that Closes it; a seeded connection must be closed, not returned to a pool`);
+  return { raw, hijackAt: block.start + hijack.index, closeAt: block.start + close.index };
+}
+function assertNoUnsafeSetseed(file, source) {
+  const code = stripGoComments(source); // the SQL literal lives in a string argument, so setseed is matched here
+  const masked = stripGoLiteralContents(code); // but trust shape is read from executable code only: literal contents are data
+  const blocks = goFunctionBlocks(masked);
+  const helper = blocks.find((b) => b.name === "seededConn");
+  const lifecycle = helper ? seededConnLifecycle(file, masked, helper) : null;
+  let checked = 0;
+  // Both strips preserve length, so a call site found in `masked` has the same index in `code`.
+  for (const call of masked.matchAll(/(\w+)\.(?:Exec|Query|QueryRow)\(/g)) {
+    const args = goCallArguments(code, call.index + call[0].length - 1);
+    if (args === null || !/setseed\s*\(/.test(args)) continue;
+    checked++;
+    const at = call.index;
+    const line = masked.slice(0, at).split("\n").length;
+    const block = blocks.find((b) => at >= b.start && at < b.end);
+    assert.ok(block, `${file}:${line}: setseed outside a Go function block`);
+    const receiver = call[1];
+    if (block.name === "seededConn") {
+      assert.ok(lifecycle && receiver === lifecycle.raw && at > lifecycle.hijackAt && at < lifecycle.closeAt,
+        `${file}:${line}: seededConn runs setseed on ${receiver}, not on the connection it hijacked before closing it; a seeded connection must be closed, not returned to a pool`);
+      continue;
+    }
+    const body = masked.slice(block.start, block.end);
+    const hijacked = [...body.matchAll(/(\w+)\s*:?=\s*[\w.]+\.Hijack\(\)/g)].map((m) => m[1]);
+    const seeded = [...body.matchAll(/(\w+)\s*,\s*\w+\s*:?=\s*seededConn\(/g)].map((m) => m[1]);
+    const transactions = [];
+    for (const tx of body.matchAll(/(\w+)\s*,\s*\w+\s*:?=\s*(\w+)\.Begin(?:Tx)?\(/g)) {
+      if (seeded.includes(tx[2])) transactions.push(tx[1]);
+    }
+    assert.ok(hijacked.includes(receiver) || seeded.includes(receiver) || transactions.includes(receiver),
+      `${file}:${line}: setseed runs on ${receiver}, which is neither seededConn's hijacked connection nor a connection this test hijacked; a seeded connection must be closed, not returned to a pool`);
+  }
+  return checked;
+}
+test("#159 P2-B: setseed only on seededConn's hijacked connection or a test-hijacked connection (static)", async () => {
+  // Red witness: the pre-fix tree ran setseed on a pooled transaction (6b114606a), which is exactly what leaked. It must fail;
+  // the pre-fix commit stays in the assertion so the guard can never silently become a no-op.
+  const before = execFileSync("git", ["show", "6b114606a:tests/foundation/store_number_test.go"], { encoding: "utf8" });
+  assert.throws(() => assertNoUnsafeSetseed("6b114606a:tests/foundation/store_number_test.go", before), /seeded connection must be closed/, "the setseed guard no longer catches the pre-fix pooled transaction");
+  // GREEN: every current setseed call is on the helper's hijacked connection or a test-hijacked one.
+  let checked = 0;
+  const files = execFileSync("git", ["ls-files", "tests/foundation"], { encoding: "utf8" }).split("\n").filter((f) => f.endsWith(".go"));
+  for (const file of files) {
+    const source = await readFile(file, "utf8");
+    if (source.includes("setseed")) checked += assertNoUnsafeSetseed(file, source);
+  }
+  assert.ok(checked >= 4, `only ${checked} setseed call sites checked; the guard has gone vacuous`);
+});
+// PR #168 review P1: the round-1 guard exempted by function name and read matches out of comments, so these two counterexamples
+// passed. They are static Go source, never built: (a) a seededConn that seeds a pooled connection and Releases it, and (b) a
+// commented-out safe transaction next to a real pooled transaction that runs setseed. Both MUST throw; they are separate tests
+// so a RED run names the escape that got through.
+test("#159 P2-B: setseed guard rejects a seededConn that seeds a pooled connection", () => {
+  const pooledHelper = `func seededConn(t *testing.T, pool *pgxpool.Pool, seed float64) (*pgx.Conn, func()) {
+	ctx := context.Background()
+	acquired, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn := acquired.Conn()
+	if _, err := conn.Exec(ctx, "SELECT setseed($1)", seed); err != nil {
+		t.Fatal(err)
+	}
+	return conn, func() { acquired.Release() }
+}`;
+  assert.throws(() => assertNoUnsafeSetseed("synthetic_pooled_helper_test.go", pooledHelper), /seededConn|Hijack/,
+    "a seededConn that seeds a pooled connection and Releases it passed the guard");
+});
+test("#159 P2-B: setseed guard rejects a comment-only safe transaction beside a pooled one", () => {
+  const commentEscape = `func TestSeededTransactionOnPool(t *testing.T) {
+	ctx := context.Background()
+	pool := newPool(t)
+	seeded, release := seededConn(t, pool, 0.5)
+	defer release()
+	// tx, err := seeded.Begin(ctx)
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, "SELECT setseed(0.5)"); err != nil {
+		t.Fatal(err)
+	}
+}`;
+  assert.throws(() => assertNoUnsafeSetseed("synthetic_comment_escape_test.go", commentEscape), /seeded connection must be closed/,
+    "a commented-out safe tx line let a real pooled transaction run setseed past the guard");
+});
+// Round-3 P1: a Go STRING literal is data, not an executable statement. The reviewer's counterexample puts the safe-transaction
+// line inside `_ = "..."`, which is valid Go (an assignment to the blank identifier) and must not make the real pooled tx trusted.
+test("#159 P2-B: setseed guard rejects a string-literal safe transaction beside a pooled one", () => {
+  const stringEscape = `func TestSeededTransactionOnPool(t *testing.T) {
+	ctx := context.Background()
+	pool := newPool(t)
+	seeded, release := seededConn(t, pool, 0.5)
+	defer release()
+	_ = "tx, err := seeded.Begin(ctx)"
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, "SELECT setseed(0.5)"); err != nil {
+		t.Fatal(err)
+	}
+}`;
+  assert.throws(() => assertNoUnsafeSetseed("synthetic_string_escape_test.go", stringEscape), /seeded connection must be closed/,
+    "a string-literal safe tx line let a real pooled transaction run setseed past the guard");
 });
 
 // TH-9 (#147): the relay SIGKILLs the whole group the moment the leader exits, so a SIGINT-then-wait grace never reaches the

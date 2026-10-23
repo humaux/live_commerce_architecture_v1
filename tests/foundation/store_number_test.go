@@ -301,6 +301,7 @@ func TestStoreDomainsNumericSeedDoesNotLeakThroughPool(t *testing.T) {
 	want := seeded[51]
 
 	conn, release := seededConn(t, pool, 0.271828)
+	defer release() // P2-A: a t.Fatal before the explicit release below must not leave the hijacked connection open (a second Close is harmless)
 	rows, err = conn.Query(ctx, `SELECT (10000000 + floor(random()*90000000))::bigint::text FROM generate_series(1,51)`)
 	if err != nil {
 		t.Fatal(err)

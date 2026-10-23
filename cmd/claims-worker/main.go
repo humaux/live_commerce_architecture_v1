@@ -1,6 +1,7 @@
 // Purpose: claims-worker process — poll the claims intake, dispatch external operations (Meta reply/audience/live-videos, inbox resubscribe, ECPay CVS) through the River default queue, and run the retention purge and store-domain verify sweeps. The only process holding the Meta Page private keyring and ECPay custody.
 // Depends on: platform worker pools, metareply routes, claimsintake, retention, storefrontdomains, ecpayroute, core.NewDispatcher, river (schema "river"), COMMERCE_CLAIMS_WORKER_ENABLED.
 // Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go, cmd/claims-worker/console_listen_test.go, cmd/claims-worker/console_wiring_test.go, console_testhook.go (test tag only); tests/foundation process tests (claims_retention_worker_test.go, claims_worker_console_process_test.go, order_attempt_*).
+// Invariants: a configured console bridge binds before claims_worker_ready and logs exactly one claims_worker_console_ready addr=<actual bound host:port> after net.Listen succeeds (also for a fixed address); port 0 is accepted only on a literal loopback host.
 package main
 
 import (
@@ -99,13 +100,23 @@ func validDSN(s string) bool { return len(s) >= 1 && len(s) <= 8192 && strings.T
 
 // validConsoleAddr accepts a TCP listen address for the internal comment bridge (":8081" or
 // "0.0.0.0:8081"); it never accepts a URL (the bridge base URL lives on the API side).
+// A zero port (ephemeral, process tests read claims_worker_console_ready) is accepted only on a
+// literal loopback host, the same rule cmd/api applies to its private listener: a wildcard ":0"
+// binds an unpredictable interface that could neither be reported nor dialled reliably.
 func validConsoleAddr(s string) bool {
-	_, port, err := net.SplitHostPort(s)
+	host, port, err := net.SplitHostPort(s)
 	if err != nil {
 		return false
 	}
 	n, err := strconv.Atoi(port)
-	return err == nil && n >= 1 && n <= 65535
+	if err != nil || n < 0 || n > 65535 {
+		return false
+	}
+	if n == 0 {
+		ip := net.ParseIP(host)
+		return ip != nil && ip.IsLoopback()
+	}
+	return true
 }
 
 // metaPageAppIDPattern is the Meta app id shape (COMMERCE_META_PAGE_APP_ID, §4.2 P3).
@@ -504,12 +515,17 @@ func exitError(consoleDown <-chan struct{}, runErr error) error {
 
 // startConsoleServer binds the comment-bridge address synchronously, so a bind failure is returned before
 // claims_worker_ready (#83), then serves in the background. The returned channel receives a non-ErrServerClosed
-// Serve failure, or is closed after a clean Shutdown/Close. Errors are never logged here (they may carry the address).
+// Serve failure, or is closed after a clean Shutdown/Close. Bind errors are never logged here (they may carry the
+// address); the one bound line below is emitted only after net.Listen succeeded (#147 CMD-2).
 func startConsoleServer(srv *http.Server) (<-chan error, error) {
 	ln, err := net.Listen("tcp", srv.Addr)
 	if err != nil {
 		return nil, err
 	}
+	// The only readiness witness for the bridge and the source of the OS-chosen port: process tests put the
+	// worker on a loopback :0 and read this line back (mrConsoleBoundAddr). A fixed address logs its bound form
+	// too; a bind failure returns above, so this line cannot precede a successful bind.
+	slog.Info("claims_worker_console_ready", "addr", ln.Addr().String())
 	if consoleBound != nil {
 		consoleBound(ln)
 	}

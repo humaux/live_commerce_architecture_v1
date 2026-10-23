@@ -25,6 +25,8 @@
 // Live-console comment bridge (LC-B2): optional COMMERCE_CLAIMS_CONSOLE_ADDR (a TCP listen address like
 // ":8081"; empty = bridge off), and, when set, COMMERCE_CLAIMS_BRIDGE_TOKEN (std base64, 32 bytes, shared with
 // cmd/api's BridgeClient) and COMMERCE_CLAIMS_CURSOR_KEY (std base64, 32 bytes, the worker's older_cursor HMAC key).
+// A loopback :0 (127.0.0.1:0 or [::1]:0) is accepted for process tests; after a successful bind the worker logs one
+// claims_worker_console_ready addr=<actual bound host:port> line. Fixed addresses behave as before.
 // The meta connection-health probe (contract meta-connection-health-v1 §4) additionally reads
 // COMMERCE_META_PAGE_APP_ID (required: the app id P3 matches against), COMMERCE_META_ADVANCED_ACCESS (comma list of
 // permissions with Advanced Access, default empty) and COMMERCE_META_DM_RECEIVER_CONFIRMED ("1" closes LC-U11, default off).
