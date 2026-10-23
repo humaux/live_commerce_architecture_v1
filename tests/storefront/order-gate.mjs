@@ -721,10 +721,13 @@ try {
   for(const summary of [...firstHistory.body.items,...secondHistory.body.items])assert.deepEqual(Object.keys(summary).sort(),summaryKeys);
   const pointerB=await stored(a,"commerce-purchase-order-v1:"),cartB=(await api(a,"GET","cart")).body;
   assert.equal(await a.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"America/Los_Angeles");
-  const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),firstHistoryUI=historyRead(a);await Promise.all([a.getByTestId("toggle-order-history").click(),firstHistoryUI]);
-  assert.equal(await historyLoading.result.promise,200);await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();historyLoading.release.resolve();
+  const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),firstHistoryUI=historyRead(a);
+  // The edge holds this GET until release.resolve(); wait first and drive the release from the same Promise.all, or the
+  // awaited reply can never arrive (Gates run 39996387148: 30 s waitForResponse timeout with the click listed first).
+  const [historyReply]=await Promise.all([firstHistoryUI,a.getByTestId("toggle-order-history").click(),historyLoading.entered.promise.then(()=>historyLoading.release.resolve())]);
+  assert.equal(historyReply.status(),200);await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();
   await expect(a.locator(".history-list li")).toHaveCount(2);
-  await assertHistoryTimes(a,"en",await firstHistoryUI);
+  await assertHistoryTimes(a,"en",historyReply);
   await expect(a.locator(".history-list li").first().locator("button")).toHaveAttribute("data-order-id",orderB);
   await capture(a,"desktop-history.png",true,historyReview);
   await a.setViewportSize({width:390,height:844});await capture(a,"mobile-history.png",true,historyReview);
@@ -734,7 +737,7 @@ try {
   assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);assert.deepEqual((await api(a,"GET","cart")).body,cartB);
   await a.getByRole("button",{name:"Back to orders",exact:true}).click();
   for(const [locale,title] of [["zh-CN","我的订单"],["zh-TW","我的訂單"],["en","Your orders"]]){
-    await switchLocale(a,locale);const localeHistory=historyRead(a);await Promise.all([a.getByTestId("toggle-order-history").click(),localeHistory]); // full navigation: the history view is reopened from the pinned order
+    await switchLocale(a,locale);const localeHistory=historyRead(a);await Promise.all([localeHistory,a.getByTestId("toggle-order-history").click()]); // full navigation: the history view is reopened from the pinned order
     await expect(a.getByTestId("order-history").getByRole("heading",{name:title,exact:true})).toBeVisible();
     await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,locale,await localeHistory);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
   }
@@ -745,7 +748,7 @@ try {
   const cookieHistory=(await c1.cookies(origin))[0].value;
   await a.evaluate(()=>{for(const key of Object.keys(localStorage))if(key.startsWith("commerce-purchase-order-v1:"))localStorage.removeItem(key);});
   await a.reload();await expect(a.getByTestId("toggle-order-history")).toBeEnabled();await expect(a.getByTestId("order-section")).toHaveCount(0);
-  const reloadedHistory=historyRead(a);await Promise.all([a.getByTestId("toggle-order-history").click(),reloadedHistory]);await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,"en",await reloadedHistory);
+  const reloadedHistory=historyRead(a);await Promise.all([reloadedHistory,a.getByTestId("toggle-order-history").click()]);await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,"en",await reloadedHistory);
   await a.locator(`button[data-order-id="${order1}"]`).click();await expect(a.getByTestId("order-id")).toHaveText(order1);
   assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);assert.equal((await c1.cookies(origin))[0].value,cookieHistory);
   await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-section")).toHaveCount(0);
@@ -756,10 +759,10 @@ try {
   const utcPage=await utcContext.newPage();await utcPage.goto(origin+checkoutPath);
   assert.equal(await utcPage.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"UTC");
   await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
-  const utcHistory=historyRead(utcPage);await Promise.all([utcPage.getByTestId("toggle-order-history").click(),utcHistory]);
+  const utcHistory=historyRead(utcPage);await Promise.all([utcHistory,utcPage.getByTestId("toggle-order-history").click()]);
   await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcHistory);
   await utcPage.reload();await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
-  const utcReloadHistory=historyRead(utcPage);await Promise.all([utcPage.getByTestId("toggle-order-history").click(),utcReloadHistory]);
+  const utcReloadHistory=historyRead(utcPage);await Promise.all([utcReloadHistory,utcPage.getByTestId("toggle-order-history").click()]);
   await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcReloadHistory);
   await utcContext.close();
   pass("BH05 same owned history renders Taipei times in UTC browser context");
