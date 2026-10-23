@@ -17,6 +17,9 @@ test(
   "W3-U1b real clicks: selection, print, CSV, confirmation, unknown and scope",
   { timeout: 900000 },
   async () => {
+    // #147 CI-7 round 2: matrix-receipts.mjs accepts this suite's node:test summary as browser evidence only because this
+    // marker says the suite drives Playwright; lc_prepare's unit/model suites never print it.
+    console.log("## matrix-receipts browser-spec");
     const output = browserEvidenceDirectory("picklist");
     await mkdir(output, { recursive: true });
     const fixture = await pickFixture();
