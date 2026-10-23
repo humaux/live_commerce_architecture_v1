@@ -129,7 +129,19 @@ test("browser mode: parsed Playwright spec results count as the tests that ran",
   assert.equal(rec.test_count, 3, "one Go harness result plus two Playwright specs");
 });
 
-// #147 CI-7: which modes are browser modes is registry data, not a second hand-maintained list.
+// #147 CI-7: custom browser runners print one PASS/FAIL line per case instead of Playwright glyphs; those are spec results too.
+test("browser mode: a custom runner's PASS case lines count, and one reporter per log", () => {
+  const custom = ["browser engine: chromium\nPASS merchant signs in\nPASS the buyer opens the private-reply link\nPASS another tenant reads nothing\n"];
+  const rec = makeReceipt({ mode: "--browser-merchant-buyer", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserMerchantBuyerRealChain (10s)\n"], specs: custom });
+  assert.equal(rec.status, "PASS");
+  assert.equal(rec.test_count, 4, "one Go harness result plus three custom case lines");
+  // A listed Playwright log keeps its glyph count; the runner's PASS banner does not add a second copy of the same run.
+  assert.equal(makeReceipt({ mode: "--browser-e2e", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [],
+    specs: ["PASS an e2e banner\n  ✓  1 tests/e2e/deal-loop.spec.ts:104:1 › T12 (16.1s)\n  ✓  2 tests/e2e/other.spec.ts:1:1 › T13 (1s)\n  2 passed (17s)\n"] }).spec_count, 2);
+  assert.equal(makeReceipt({ mode: "--browser-merchant-buyer", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [],
+    specs: ["PASS one case\nFAIL another case\n"] }).status, "FAIL", "a custom FAIL case line is a parsed failure");
+});
 test("browser-mode classification comes from the test-local.sh mode registry", () => {
   assert.equal(isBrowserMode("--browser-inbox"), true);
   assert.equal(isBrowserMode("--browser-click-sweep@1/10"), true, "a plan fan-out suffix maps to its bare mode");

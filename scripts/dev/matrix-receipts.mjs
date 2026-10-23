@@ -81,16 +81,20 @@ export const countTests = (text) => scanTests(text).n;
 /**
  * Playwright list-reporter result lines (#147 CI-7). A browser mode's Go harness is only the driver; the specs it actually ran are
  * the `✓`/`✘` result lines the gate's runners wrote into its own evidence logs, so a harness PASS with zero of them is not a
- * passing test. A run with a failed spec is a parsed failure (#147 CI-6).
+ * passing test. Some browser runners (storefront gate .mjs, the joint merchant/buyer gate) print one `PASS <case>` / `FAIL <case>`
+ * line per case instead; a job with no Playwright glyphs anywhere falls back to those case lines (see makeReceipt).
+ * A run with a failed spec/case is a parsed failure (#147 CI-6).
  */
 export function scanSpecs(text) {
-  let n = 0, failed = false;
+  let glyphs = 0, cases = 0, failed = false;
   for (const line of text.split(/\r?\n/)) {
     // Playwright's list reporter uses ✓/✘; node's spec reporter uses ✔/✖, which must not be mistaken for a spec.
-    if (/^\s+✓\s+\d+\s/.test(line)) n++;
-    else if (/^\s+✘\s+\d+\s/.test(line)) { n++; failed = true; }
+    if (/^\s+✓\s+\d+\s/.test(line)) glyphs++;
+    else if (/^\s+✘\s+\d+\s/.test(line)) { glyphs++; failed = true; }
+    else if (/^PASS\s/.test(line)) cases++;
+    else if (/^FAIL\s/.test(line)) { cases++; failed = true; }
   }
-  return { n, failed };
+  return { glyphs, cases, failed };
 }
 
 /**
@@ -117,9 +121,13 @@ export function specLogFiles(root, alreadyRead = []) {
 // run_attempt is recorded but deliberately not compared by verify: after `gh run rerun --failed` the jobs that were not rerun keep their attempt-1 receipts (same run_id and sha).
 export function makeReceipt({ mode, outcome, runId, runAttempt, sha, logs, specs = [], browser = false }) {
   const scans = logs.map(scanTests), specScans = specs.map(scanSpecs);
-  const testCount = scans.reduce((s, x) => s + x.n, 0) + specScans.reduce((s, x) => s + x.n, 0);
-  const specCount = specScans.reduce((s, x) => s + x.n, 0);
-  // Tests the gate printed that are not this browser mode's Go harness: node --test results plus Playwright spec results.
+  // One reporter per job: Playwright-list glyphs when the job printed them, else the custom runner's PASS case lines (a banner
+  // next to a listed run must not add a second copy of the same specs).
+  const glyphSpecs = specScans.reduce((s, x) => s + x.glyphs, 0);
+  const caseResults = specScans.reduce((s, x) => s + x.cases, 0);
+  const specCount = glyphSpecs || caseResults;
+  const testCount = scans.reduce((s, x) => s + x.n, 0) + specCount;
+  // Tests the gate printed that are not this browser mode's Go harness: node --test results plus browser spec/case results.
   const nonHarness = scans.reduce((s, x) => s + x.node, 0) + specCount;
   const failed = scans.some((s) => s.failed) || specScans.some((s) => s.failed);
   const status = outcome === "success" && !failed && !(browser && nonHarness === 0) ? "PASS" : "FAIL";
