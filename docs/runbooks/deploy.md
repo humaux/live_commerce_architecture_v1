@@ -1,7 +1,7 @@
 <!--
 File: docs/runbooks/deploy.md
 Purpose: 部署运行手册 — 主机准备、配置、首次部署、升级、回滚决策、功能上线顺序、密钥轮换、证书、迁移到两台主机/K8s、发布检查清单。
-Runs as/in: 文档（运维人员以可 sudo 的用户登录部署主机（试点主机为 `claude-deploy`，`sudo -n`），需要 root 的命令显式写 `sudo`；`sudo bash -c '…' <名字> 参数` 里的 <名字> 是日志里的脚本名（`$0`），不是占位 `_`）。
+Runs as/in: 文档（运维人员以可 sudo 的用户登录部署主机（试点主机为 `claude-deploy`，`sudo -n`），需要 root 的命令显式写 `sudo`；密钥（`*_KEY`、`*_SECRET`、`*_TOKEN`、口令）绝不写成命令行参数或 `sudo VAR=…`，只用无回显提示或 root 属主的 `<NAME>_FILE`（§0）；`sudo bash -c '…' <名字> 参数` 里的 <名字> 是日志里的脚本名（`$0`），不是占位 `_`）。
 Reads env / secrets: 无（命令读取 /etc/live-commerce/compose.env 与 secrets 目录，本文不含任何密钥值）。
 Used by: 运维/owner/集成者；deploy/README.md 链接到此。
 Depends on: deploy/scripts/*.sh, deploy/compose.yml, deploy/env/*.env.example。
