@@ -32,7 +32,8 @@ const seam = 'if(0){}else{window.__lcHoldUpload=!0,window.addEventListener("lc-g
 test("findMarkers reports both seam spellings with lines and misses ordinary code", () => {
   assert.deepEqual(findMarkers(seam).map(({ marker }) => marker).sort(), [...SEAM_MARKERS].sort());
   assert.deepEqual(findMarkers("const enabled = false;"), []);
-  assert.deepEqual(findMarkers(`a\nb\n__lcHoldUpload`).map(({ line }) => line), [3]);
+  assert.deepEqual(findMarkers(`a\nb\n__lcHoldUpload`).map(({ marker, line }) => [marker, line]).sort(),
+    [["HoldUpload", 3], ["__lcHoldUpload", 3]].sort());
 });
 
 test("scanClientJs walks nested chunks and scans only executable client JS", () => {
