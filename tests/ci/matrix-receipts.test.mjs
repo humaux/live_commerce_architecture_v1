@@ -241,12 +241,26 @@ test("browser mode: a node browser runner's PASS case line in the gate log is ex
   const rec = makeReceipt({ mode: "--browser-admin-shell", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [log], specs: [] });
   assert.equal(rec.status, "PASS");
 });
+test("browser mode: a Go harness's marked node browser-suite evidence log counts", () => {
+  // --browser-input-delivery / --browser-studio-bff run a real Playwright node:test suite and redirect its stdout to an
+  // evidence log; the suite's own marker makes that log execution evidence, not a prerequisite summary.
+  const specLog = [BROWSER_SPEC, ...summary(2, 0)].join("\n");
+  const rec = makeReceipt({ mode: "--browser-input-delivery", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserInputDeliveryBRW05RealChain (20s)\n"], specs: [specLog, "next server ready\n"] });
+  assert.equal(rec.status, "PASS");
+  assert.equal(rec.spec_count, 2);
+  assert.equal(makeReceipt({ mode: "--browser-studio-bff", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserStudioBFFRealChain (20s)\n"], specs: [[BROWSER_SPEC, ...summary(3, 1)].join("\n")] }).status, "FAIL",
+  "a failing browser-suite summary is still a parsed failure");
+});
 test("the browser-run marker and the node browser-suite marker are printed by their scripts", () => {
   const local = readFileSync("scripts/dev/test-local.sh", "utf8");
   assert.ok(local.includes(`'${BROWSER_RUN}'`), "test-local.sh prints the browser-run marker");
   assert.ok(local.indexOf(`'${BROWSER_RUN}'`) >= 0 && local.indexOf(`'${BROWSER_RUN}'`) < local.indexOf("\nlc_run\n"),
     "the browser-run marker precedes the mode's lc_run, after lc_prepare");
-  assert.ok(readFileSync("tests/admin/picklist.spec.ts", "utf8").includes(BROWSER_SPEC), "picklist.spec.ts marks its browser execution");
+  for (const harness of ["tests/admin/picklist.spec.ts", "tests/admin/input-delivery.spec.ts", "tests/admin/studio-bff.spec.ts"]) {
+    assert.ok(readFileSync(harness, "utf8").includes(BROWSER_SPEC), `${harness} marks its browser execution`);
+  }
 });
 
 // #147 round 2 (review 184 P1b): an explicit zero failure count is not a failure. A reporter that prints

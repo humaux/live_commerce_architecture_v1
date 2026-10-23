@@ -129,6 +129,21 @@ export function scanSpecs(text) {
 }
 
 /**
+ * #147 round 2 (review 184 P1a): a Go harness may run the real browser suite as `node --test <spec>` with its stdout
+ * redirected into the harness's own evidence log (input-delivery stop/revoke, studio-bff browser). That file is the
+ * suite's own output, not a gate log mixing unrelated test stdout, and the suite prints BROWSER_SPEC_MARK itself. Its
+ * LAST complete runner summary is that execution's spec count (#172 semantics); a log without the marker (next.log,
+ * build.log) contributes nothing, so a unit/model suite cannot smuggle results in.
+ */
+function scanBrowserNodeLog(text) {
+  if (!text.includes(BROWSER_SPEC_MARK)) return { n: 0, failed: false };
+  let last = null;
+  for (const summary of text.matchAll(NODE_SUMMARY)) last = summary;
+  if (!last) return { n: 0, failed: false };
+  return { n: Number(last.groups.pass) + Number(last.groups.fail), failed: Number(last.groups.fail) > 0 };
+}
+
+/**
  * Is this mode's registry arm a browser mode? Read from test-local.sh's MODE REGISTRY (the same data pr-modes.mjs uses), never a
  * second hand-maintained list (#147 CI-7). A plan fan-out suffix (`--browser-click-sweep@3/10`) maps to its bare mode.
  */
@@ -172,13 +187,16 @@ export function makeReceipt({ mode, outcome, runId, runAttempt, sha, logs, specs
   const runSpecScans = browser ? logs.map((text) => scanSpecs(afterBrowserRun(text))) : [];
   const runGlyphs = runSpecScans.reduce((s, x) => s + x.glyphs, 0);
   const runCases = runSpecScans.reduce((s, x) => s + x.cases, 0);
-  const specCount = glyphSpecs || caseResults || runGlyphs || runCases;
+  // A Go harness that pipes a real `node --test` browser suite into an evidence log counts that suite's summary.
+  const nodeSpecScans = browser ? specs.map(scanBrowserNodeLog) : [];
+  const nodeSpecs = nodeSpecScans.reduce((s, x) => s + x.n, 0);
+  const specCount = glyphSpecs || caseResults || nodeSpecs || runGlyphs || runCases;
   const testCount = scans.reduce((s, x) => s + x.n, 0) + specCount;
   // Tests the gate printed that are not this browser mode's Go harness: browser spec/case results, plus a node --test
   // suite that marked its own browser execution inside lc_run. lc_prepare prerequisites and run-phase unit suites never count.
   const nodeRun = scans.reduce((s, x) => s + x.nodeRun, 0);
   const nonHarness = nodeRun + specCount;
-  const failed = scans.some((s) => s.failed) || specScans.some((s) => s.failed) || runSpecScans.some((s) => s.failed);
+  const failed = scans.some((s) => s.failed) || specScans.some((s) => s.failed) || nodeSpecScans.some((s) => s.failed) || runSpecScans.some((s) => s.failed);
   const status = outcome === "success" && !failed && !(browser && nonHarness === 0) ? "PASS" : "FAIL";
   return { mode, run_id: String(runId), run_attempt: String(runAttempt), sha, status, test_count: testCount, spec_count: specCount };
 }

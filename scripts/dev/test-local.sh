@@ -1767,6 +1767,7 @@ if [[ "$lc_build" == storefront || "$lc_build" == both ]]; then lc_build_storefr
 if [[ "$lc_build" == admin || "$lc_build" == both ]]; then lc_build_admin; fi
 if [[ "$lc_fixture" == pg ]]; then source scripts/dev/test-local-runtime.sh; fi
 # #147 round 2 (review 184 P1a): everything above is lc_prepare, whose unit/model node suites are not browser evidence.
-# matrix-receipts.mjs only accepts node:test browser evidence printed after this marker.
-printf '%s\n' '## matrix-receipts browser-run begin'
+# matrix-receipts.mjs only accepts node:test browser evidence printed after this marker, and only browser arms have one;
+# a non-browser mode's dispatch output stays byte-identical (tests/ci/mode-registry.test.mjs).
+if [[ -n "${lc_browsers:-}" ]]; then printf '%s\n' '## matrix-receipts browser-run begin'; fi
 lc_run
