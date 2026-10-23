@@ -20,7 +20,7 @@ function fail(status: number, code: string): Response {
     {
       status,
       // RFC 9110 §10.2.3: a retryable 503 carries the shared RETRY_AFTER.down hint; a 404 does not.
-      headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...(status === 503 ? { "Retry-After": RETRY_AFTER.down } : {}) },
+      headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...(status === 503 ? { "Retry-After": "61" } : {}) },
     },
   );
 }
