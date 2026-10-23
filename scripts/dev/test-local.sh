@@ -135,7 +135,11 @@ case "$1" in
   mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/ui-gallery"
   # --test-reporter=spec pins the "ℹ pass N / ℹ fail F" summary that scripts/dev/release-gate.sh counts (B-browser-ui-gallery has no go test events).
   node --test --test-reporter=spec --experimental-strip-types tests/ui/ds-logic.test.ts tests/ui/ds-tokens.test.mjs tests/ui/ds-hex-ratchet.test.mjs
-  pnpm --filter @live-commerce/admin build > "$LC_BROWSER_EVIDENCE_ROOT/ui-gallery/build.log" 2>&1
+  # #147: NEXT_PUBLIC_* is inlined by `next build`, not read by `next start` (the runner only starts .next/standalone), so the gallery
+  # test-seam flag must be on the build command itself; ordinary admin builds get the next.config.ts compile-time "0" default.
+  NEXT_PUBLIC_LC_GALLERY_TEST=1 pnpm --filter @live-commerce/admin build > "$LC_BROWSER_EVIDENCE_ROOT/ui-gallery/build.log" 2>&1
+  # Positive control for the ordinary-build absence check: this flag-enabled build must still emit the seam.
+  node scripts/dev/check-gallery-bundle.mjs --expect=present
   LC_UI_GALLERY_EVIDENCE="$LC_BROWSER_EVIDENCE_ROOT/ui-gallery" node --experimental-strip-types tests/admin/ui-gallery-runner.mjs
   exit 0
     }
@@ -1668,6 +1672,9 @@ lc_build_admin() {
   # Production package, but local-only runtime configuration is injected by the
   # tagged test. Build never needs an IdP or database credential.
   COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
+  # #147 TH-13: this flag-absent build is the production shape, so the emitted client JS must not carry the gallery
+  # hold/release seam. The flag-enabled gallery gate checks the positive direction.
+  node scripts/dev/check-gallery-bundle.mjs --expect=absent
 }
 
 lc_environment() {

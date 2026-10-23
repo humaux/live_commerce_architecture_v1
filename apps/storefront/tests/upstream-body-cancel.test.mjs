@@ -119,30 +119,27 @@ test("partial data then a mid-stream error: readBounded is null and every caller
     assert.equal(await readBounded(partial("text/csv").body, 1024), null);
   });
 
-  await t.test("metaFeed", async () => {
-    const mock = t.mock.method(globalThis, "fetch", async () => partial("text/csv"));
+  await t.test("metaFeed", async (st) => {
+    st.mock.method(globalThis, "fetch", async () => partial("text/csv"));
     const feed = await metaFeed(new Request("https://shop.example/feeds/meta.csv", { headers: { host: "shop.example" } }));
-    mock.mock.restore();
     assert.equal(feed.status, 503);
     assert.equal(feed.headers.get("cache-control"), "no-store");
     assert.equal(feed.headers.get("retry-after"), "60");
   });
 
-  await t.test("proxyImage", async () => {
-    const mock = t.mock.method(globalThis, "fetch", async () => partial("image/png"));
+  await t.test("proxyImage", async (st) => {
+    st.mock.method(globalThis, "fetch", async () => partial("image/png"));
     const img = await proxyImage(new Request(`https://shop.example/media/s/${image}`, { headers: { host: "shop.example" } }), `/v1/buyer/media/s/${image}`);
-    mock.mock.restore();
     assert.equal(img.status, 503);
     assert.equal(img.headers.get("cache-control"), "no-store");
     assert.equal(img.headers.get("retry-after"), "60");
   });
 
-  await t.test("listProducts", async () => {
-    const mock = t.mock.method(globalThis, "fetch", async () =>
+  await t.test("listProducts", async (st) => {
+    st.mock.method(globalThis, "fetch", async () =>
       partial("application/json", ['{"store":{"name":"S","currency":"TWD"},"products":[],"next":null}']),
     );
     const got = await listProducts({ limit: 1 });
-    mock.mock.restore();
     assert.equal(got.state, "down");
   });
 });
