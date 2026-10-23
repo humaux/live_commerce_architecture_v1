@@ -606,6 +606,27 @@ test("#159 P2-B: setseed guard rejects a comment-only safe transaction beside a 
   assert.throws(() => assertNoUnsafeSetseed("synthetic_comment_escape_test.go", commentEscape), /seeded connection must be closed/,
     "a commented-out safe tx line let a real pooled transaction run setseed past the guard");
 });
+// Round-3 P1: a Go STRING literal is data, not an executable statement. The reviewer's counterexample puts the safe-transaction
+// line inside `_ = "..."`, which is valid Go (an assignment to the blank identifier) and must not make the real pooled tx trusted.
+test("#159 P2-B: setseed guard rejects a string-literal safe transaction beside a pooled one", () => {
+  const stringEscape = `func TestSeededTransactionOnPool(t *testing.T) {
+	ctx := context.Background()
+	pool := newPool(t)
+	seeded, release := seededConn(t, pool, 0.5)
+	defer release()
+	_ = "tx, err := seeded.Begin(ctx)"
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, "SELECT setseed(0.5)"); err != nil {
+		t.Fatal(err)
+	}
+}`;
+  assert.throws(() => assertNoUnsafeSetseed("synthetic_string_escape_test.go", stringEscape), /seeded connection must be closed/,
+    "a string-literal safe tx line let a real pooled transaction run setseed past the guard");
+});
 
 // TH-9 (#147): the relay SIGKILLs the whole group the moment the leader exits, so a SIGINT-then-wait grace never reaches the
 // next-server children. The fixtures must not pretend to grant one.
