@@ -532,7 +532,7 @@ func startConsoleServer(srv *http.Server) (<-chan error, error) {
 	return serveConsole(srv, ln), nil
 }
 
-// consoleBound is nil in production; only the claimsconsoletest build (console_testhook.go) sets it, so a process test
+// consoleBound is nil in production; only the test-only build in console_testhook.go sets it, so a process test
 // can fail the bound listener and prove run()'s post-bind wiring (#116).
 var consoleBound func(net.Listener)
 
