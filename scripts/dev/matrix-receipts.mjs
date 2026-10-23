@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Purpose: MATRIX-RECEIPT (#128). `write` turns one gates.yml matrix job's own gate log into `receipt-<mode>.json`
-//   {mode, run_id, run_attempt, sha, status, test_count}; `verify` proves every mode the plan job emitted has exactly one receipt
+//   {mode, run_id, run_attempt, sha, status, test_count, spec_count}; `verify` proves every mode the plan job emitted has exactly one receipt
 //   from THIS run and sha with status PASS and test_count > 0. Missing, duplicate, stale, unplanned, failed or zero-count = red.
 //   test_count is read from the runners' own output in the log, never from a static list: top-level `--- PASS:` / `--- FAIL:` lines of
 //   `go test -v` (the lines `go tool test2json` turns into pass/fail events; test-focused.sh counts the same), top-level pass/fail events of
@@ -9,17 +9,21 @@
 //   eight Node v24 diagnostics with one prefix (#147 CI-9 P1). The invocation boundary is the marker pair printed by the gates'
 //   own `node` wrapper (scripts/dev/test-local.sh, scripts/dev/test-node.sh); an excerpt a test printed before the real summary,
 //   a truncated fragment, or a summary outside any invocation can never inflate test_count.
-//   Browser specs run inside those go tests.
-//   status is FAIL when the gate step failed OR a top-level fail event was parsed from the logs, even if the gate exited 0.
-//   Historical evidence never feeds this check.
-// Depends on: scripts/dev/ci-plan.mjs (artifactName); env MODE, GATE_OUTCOME, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA (write);
-//   env PLANNED (the plan job's `matrix` output), GITHUB_RUN_ID, GITHUB_SHA (verify). No network, no dependencies.
+//   Browser specs run inside go tests, so a browser mode's Go harness PASS alone does not prove a spec ran (#147 CI-7): the
+//   Playwright list-reporter result lines are counted from the job's own `*.log` evidence under RECEIPT_SPEC_ROOT
+//   (default output/playwright), and a browser mode (registry arm with lc_browsers) with no parsed spec/node result is FAIL.
+//   status is FAIL when the gate step failed OR a parsed failure (Go `--- FAIL:` / JSON fail / bare `FAIL<TAB>`, node summary
+//   fail>0, Playwright `N failed` / spec ✘) was seen, even if the gate exited 0 (#147 CI-6). Historical evidence never feeds this.
+// Depends on: scripts/dev/ci-plan.mjs (artifactName), scripts/dev/pr-modes.mjs (modeEntries, read-only mode registry);
+//   env MODE, GATE_OUTCOME, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA, RECEIPT_SPEC_ROOT (write); env PLANNED (the plan
+//   job's `matrix` output), GITHUB_RUN_ID, GITHUB_SHA (verify). No network, no third-party dependencies.
 // Used by: .github/workflows/gates.yml (gate job "Run receipt" step, `receipts` job feeding `required`), tests/ci/matrix-receipts.test.mjs.
 // Usage: node scripts/dev/matrix-receipts.mjs write <out-dir> <gate-log | go-test-json-log>...   |   node scripts/dev/matrix-receipts.mjs verify <receipts-dir>
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { artifactName } from "./ci-plan.mjs";
+import { modeEntries } from "./pr-modes.mjs";
 
 export const receiptFile = (mode) => `receipt-${artifactName(mode).replace(/^gate-/, "")}.json`;
 
@@ -46,34 +50,80 @@ function nodeInvocations(lines) {
 
 /** Tests that ran according to the runners' own output in one log text, and whether any top-level one failed (#147 CI-6/CI-9). */
 export function scanTests(text) {
-  let n = 0, failed = false;
+  let n = 0, failed = false, go = 0, node = 0;
   const lines = text.split(/\r?\n/);
   for (const line of lines) {
-    if (/^--- (PASS|FAIL): /.test(line)) { n++; if (line.startsWith("--- FAIL")) failed = true; }
+    if (/^--- (PASS|FAIL): /.test(line)) { n++; go++; if (line.startsWith("--- FAIL")) failed = true; }
     if (line.startsWith("{")) {
       try {
         const e = JSON.parse(line);
-        if ((e.Action === "pass" || e.Action === "fail") && e.Test && !e.Test.includes("/")) { n++; if (e.Action === "fail") failed = true; }
+        if ((e.Action === "pass" || e.Action === "fail") && e.Test && !e.Test.includes("/")) { n++; go++; if (e.Action === "fail") failed = true; }
       } catch { /* not a go test -json event */ }
     }
+    // #147 CI-6: a package-level go test failure line (`FAIL\tpkg`, or `FAIL` alone) is a parsed failure, not only `--- FAIL:`.
+    if (/^FAIL(?:\t|$)/.test(line)) failed = true;
+    // #147 CI-6: Playwright's list-reporter summary ("  1 failed"); a lone pass summary stays green.
+    if (/^\s+\d+ failed\b/.test(line)) failed = true;
   }
   // #147 CI-9 P1: one invocation's count is its LAST complete summary, never an earlier excerpt and never a fragment.
   for (const invocation of nodeInvocations(lines)) {
     let last = null;
     for (const summary of invocation.matchAll(NODE_SUMMARY)) last = summary;
     if (!last) continue;
-    n += Number(last.groups.pass) + Number(last.groups.fail);
+    const count = Number(last.groups.pass) + Number(last.groups.fail);
+    n += count; node += count;
     if (Number(last.groups.fail) > 0) failed = true;
   }
-  return { n, failed };
+  return { n, failed, go, node };
 }
 export const countTests = (text) => scanTests(text).n;
 
+/**
+ * Playwright list-reporter result lines (#147 CI-7). A browser mode's Go harness is only the driver; the specs it actually ran are
+ * the `✓`/`✘` result lines the gate's runners wrote into its own evidence logs, so a harness PASS with zero of them is not a
+ * passing test. A run with a failed spec is a parsed failure (#147 CI-6).
+ */
+export function scanSpecs(text) {
+  let n = 0, failed = false;
+  for (const line of text.split(/\r?\n/)) {
+    // Playwright's list reporter uses ✓/✘; node's spec reporter uses ✔/✖, which must not be mistaken for a spec.
+    if (/^\s+✓\s+\d+\s/.test(line)) n++;
+    else if (/^\s+✘\s+\d+\s/.test(line)) { n++; failed = true; }
+  }
+  return { n, failed };
+}
+
+/**
+ * Is this mode's registry arm a browser mode? Read from test-local.sh's MODE REGISTRY (the same data pr-modes.mjs uses), never a
+ * second hand-maintained list (#147 CI-7). A plan fan-out suffix (`--browser-click-sweep@3/10`) maps to its bare mode.
+ */
+export function isBrowserMode(mode) {
+  const base = String(mode ?? "").replace(/@\d+\/\d+$/, "");
+  if (!base) return false;
+  return modeEntries(readFileSync(new URL("./test-local.sh", import.meta.url), "utf8")).some((e) => e.name === base && /lc_browsers=/.test(e.body));
+}
+
+/** The gate's own evidence logs under its browser evidence root, excluding the logs already passed on the CLI (#147 CI-7). */
+export function specLogFiles(root, alreadyRead = []) {
+  const seen = new Set(alreadyRead.map((f) => path.resolve(f)));
+  let entries = [];
+  try { entries = readdirSync(root, { withFileTypes: true, recursive: true }); } catch { return []; }
+  return entries.filter((d) => d.isFile() && /\.log$/.test(d.name))
+    .map((d) => path.join(d.parentPath, d.name)).filter((f) => !seen.has(path.resolve(f))).sort();
+}
+
 // status is the gate's outcome AND the logs: a failed top-level test in a gate that exited 0 is still FAIL (#147 CI-6).
+// A browser mode also needs at least one parsed spec/node result: its Go harness alone can pass with zero specs (#147 CI-7).
 // run_attempt is recorded but deliberately not compared by verify: after `gh run rerun --failed` the jobs that were not rerun keep their attempt-1 receipts (same run_id and sha).
-export function makeReceipt({ mode, outcome, runId, runAttempt, sha, logs }) {
-  const scans = logs.map(scanTests);
-  return { mode, run_id: String(runId), run_attempt: String(runAttempt), sha, status: outcome === "success" && !scans.some((s) => s.failed) ? "PASS" : "FAIL", test_count: scans.reduce((s, x) => s + x.n, 0) };
+export function makeReceipt({ mode, outcome, runId, runAttempt, sha, logs, specs = [], browser = false }) {
+  const scans = logs.map(scanTests), specScans = specs.map(scanSpecs);
+  const testCount = scans.reduce((s, x) => s + x.n, 0) + specScans.reduce((s, x) => s + x.n, 0);
+  const specCount = specScans.reduce((s, x) => s + x.n, 0);
+  // Tests the gate printed that are not this browser mode's Go harness: node --test results plus Playwright spec results.
+  const nonHarness = scans.reduce((s, x) => s + x.node, 0) + specCount;
+  const failed = scans.some((s) => s.failed) || specScans.some((s) => s.failed);
+  const status = outcome === "success" && !failed && !(browser && nonHarness === 0) ? "PASS" : "FAIL";
+  return { mode, run_id: String(runId), run_attempt: String(runAttempt), sha, status, test_count: testCount, spec_count: specCount };
 }
 
 /** planned: [{mode}] from ci-plan.mjs; receipts: parsed objects. Returns the list of problems (empty = green). */
@@ -100,7 +150,10 @@ const walk = (dir) => readdirSync(dir, { withFileTypes: true, recursive: true })
 export function main(argv = process.argv.slice(2), env = process.env) {
   const [cmd, dir, ...logs] = argv;
   if (cmd === "write" && dir) {
-    const r = makeReceipt({ mode: env.MODE, outcome: env.GATE_OUTCOME, runId: env.GITHUB_RUN_ID, runAttempt: env.GITHUB_RUN_ATTEMPT, sha: env.GITHUB_SHA, logs: logs.map((f) => readFileSync(f, "utf8")) });
+    // #147 CI-7: browser specs are printed to the gate's own evidence logs, not the gate log itself; count the job's spec logs.
+    const browser = isBrowserMode(env.MODE);
+    const specLogs = browser ? specLogFiles(env.RECEIPT_SPEC_ROOT ?? "output/playwright", logs) : [];
+    const r = makeReceipt({ mode: env.MODE, outcome: env.GATE_OUTCOME, runId: env.GITHUB_RUN_ID, runAttempt: env.GITHUB_RUN_ATTEMPT, sha: env.GITHUB_SHA, logs: logs.map((f) => readFileSync(f, "utf8")), specs: specLogs.map((f) => readFileSync(f, "utf8")), browser });
     if (!r.mode || !r.sha || r.run_id === "undefined") throw new Error("MODE, GITHUB_RUN_ID and GITHUB_SHA are required");
     mkdirSync(dir, { recursive: true });
     writeFileSync(path.join(dir, receiptFile(r.mode)), `${JSON.stringify(r)}\n`);

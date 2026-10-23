@@ -1,12 +1,13 @@
 // Purpose: unit tests of the MATRIX-RECEIPT verifier (scripts/dev/matrix-receipts.mjs, #128): test_count comes from runner output only, and the verifier is red for a
 //   missing receipt, a wrong sha, a stale run id, test_count 0, a duplicate, a FAIL status and an unplanned mode; green only for one matching PASS receipt per planned mode.
-// Depends on: scripts/dev/matrix-receipts.mjs, node:test. Used by: scripts/dev/test-node.sh (CI Foundation checks).
+//   Also binds #147 CI-6 (a parsed failure forces FAIL whatever the gate exit code) and CI-7 (a browser mode needs a parsed spec result, not only its Go harness).
+// Depends on: scripts/dev/matrix-receipts.mjs, the test-local.sh MODE REGISTRY, node:test. Used by: scripts/dev/test-node.sh (CI Foundation checks).
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { countTests, main, makeReceipt, receiptFile, verify } from "../../scripts/dev/matrix-receipts.mjs";
+import { countTests, isBrowserMode, main, makeReceipt, receiptFile, verify } from "../../scripts/dev/matrix-receipts.mjs";
 
 const RUN = { runId: "4242", sha: "a".repeat(40) };
 const planned = [{ mode: "shard:unit" }, { mode: "shard:g01" }];
@@ -128,6 +129,34 @@ test("browser mode: parsed Playwright spec results count as the tests that ran",
   assert.equal(rec.test_count, 3, "one Go harness result plus two Playwright specs");
 });
 
+// #147 CI-7: which modes are browser modes is registry data, not a second hand-maintained list.
+test("browser-mode classification comes from the test-local.sh mode registry", () => {
+  assert.equal(isBrowserMode("--browser-inbox"), true);
+  assert.equal(isBrowserMode("--browser-click-sweep@1/10"), true, "a plan fan-out suffix maps to its bare mode");
+  assert.equal(isBrowserMode("shard:unit"), false);
+  assert.equal(isBrowserMode("--live-browser-input"), false, "the registry arm has no lc_browsers");
+});
+
+// #147 CI-7: the CLI counts the job's own evidence logs, and a browser receipt without any spec result is FAIL.
+test("CLI: a browser receipt counts Playwright evidence logs and fails when there are none", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "receipts-specs-")), gate = path.join(dir, "gate.log"), specs = path.join(dir, "playwright");
+  mkdirSync(specs);
+  writeFileSync(gate, "--- PASS: TestBrowserInboxUIRealChain (80s)\n");
+  writeFileSync(path.join(specs, "playwright.log"), "  ✓  1 tests/admin/inbox-ui.spec.ts:91:1 › INU01 (3.1s)\n  ✓  2 tests/admin/inbox-ui.spec.ts:193:1 › INU02 (2.0s)\n  2 passed (5s)\n");
+  const env = { MODE: "--browser-inbox", GATE_OUTCOME: "success", GITHUB_RUN_ID: RUN.runId, GITHUB_RUN_ATTEMPT: "1", GITHUB_SHA: RUN.sha, RECEIPT_SPEC_ROOT: specs };
+  assert.equal(main(["write", path.join(dir, "with"), gate], env), 0);
+  const counted = JSON.parse(readFileSync(path.join(dir, "with", receiptFile("--browser-inbox")), "utf8"));
+  assert.equal(counted.test_count, 3);
+  assert.equal(counted.spec_count, 2);
+  assert.equal(counted.status, "PASS");
+  const empty = path.join(dir, "empty");
+  mkdirSync(empty);
+  assert.equal(main(["write", path.join(dir, "without"), gate], { ...env, RECEIPT_SPEC_ROOT: empty }), 0);
+  const zero = JSON.parse(readFileSync(path.join(dir, "without", receiptFile("--browser-inbox")), "utf8"));
+  assert.equal(zero.spec_count, 0);
+  assert.equal(zero.status, "FAIL", "a Go harness PASS with zero parsed specs is not a passing browser receipt");
+});
+
 test("green only when every planned mode has exactly one PASS receipt from this run and sha with tests", () => {
   assert.deepEqual(verify(planned, [ok("shard:unit"), ok("shard:g01")], RUN), []);
 });
@@ -140,6 +169,11 @@ test("red: a planned mode whose job wrote no receipt", () => {
 test("red: a receipt with the wrong sha, or stale from another run", () => {
   assert.match(verify(planned, [ok("shard:unit"), ok("shard:g01", { sha: "b".repeat(40) })], RUN).join("\n"), /shard:g01: receipt sha b+ != run sha/);
   assert.match(verify(planned, [ok("shard:unit", { run_id: "4241" }), ok("shard:g01")], RUN).join("\n"), /shard:unit: stale receipt from run 4241/);
+});
+
+// #147 CI-8: a real `gh run rerun --job` leaves untouched jobs on attempt 1 and the rerun job on attempt 2 of the same run/sha.
+test("verify accepts a rerun mix of attempt 1 and attempt 2 receipts of this run and sha", () => {
+  assert.deepEqual(verify(planned, [ok("shard:unit", { run_attempt: "1" }), ok("shard:g01", { run_attempt: "2" })], RUN), []);
 });
 
 test("red: test_count 0 (for example a filter that selects nothing)", () => {
