@@ -47,6 +47,16 @@ test('TH-7: a variable-driven LC_BROWSER_ENGINE launch must declare itself, so i
   assert.throws(() => assertWebKitCoverage(registry.replace('  # APPEND MODES HERE', () => mode + '  # APPEND MODES HERE'), [...goSources, browser]), /webkit/i);
 });
 
+test('TH-7: an explicit lc:webkit marker beats executablePath inference too', () => {
+  const mode = root => `  --browser-marker-${root.toLowerCase()})\n    lc_build=storefront\n    lc_fixture=pg\n    lc_browsers=chromium\n    lc_prepare() {\n  :\n    }\n    lc_run() {\n  go test -tags browser -run '^${root}$' ./tests/foundation\n    }\n    ;;\n`;
+  const registryWith = root => registry.replace('  # APPEND MODES HERE', () => mode(root) + '  # APPEND MODES HERE');
+  // The declaration is the reviewed contract; a front-only TLS fixture may still name the engine's path without launching a browser.
+  const front = '// lc:webkit=front-only\nfunc TestMarkerFront(t *testing.T) {\n\t_ = webkit.executablePath()\n}\n';
+  assertWebKitCoverage(registryWith('TestMarkerFront'), [...goSources, front]);
+  const browser = '// lc:webkit=browser\nfunc TestMarkerBrowser(t *testing.T) {\n\t_ = webkit.executablePath()\n}\n';
+  assert.throws(() => assertWebKitCoverage(registryWith('TestMarkerBrowser'), [...goSources, browser]), /webkit/i);
+});
+
 function installer({ indexSha = 'MATCH', failures = 0, browsers = ['chromium'], first = 'missing', dpkg = 'installed', debs = false, offlineFails = false } = {}) {
   mkdirSync('output/playwright', { recursive: true }); // untracked: absent on a fresh checkout (PR #27 review)
   const dir = mkdtempSync('output/playwright/ci-playwright-deps-test.');

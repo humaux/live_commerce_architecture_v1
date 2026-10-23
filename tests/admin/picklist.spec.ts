@@ -56,15 +56,27 @@ test(
           },
         ));
         track(child, log);
-        for (let n = 0; ; n++) {
+        let ready = false;
+        for (let n = 0; !ready; n++) {
           if (child.exitCode !== null || child.signalCode !== null) throw new Error("Next exited before readiness");
           try {
             // Readiness checks the owned internal HTTP listener, without relaxing Node TLS verification globally.
-            if ((await fetch(`${upstreamBase}/en/reset`)).ok) return base;
+            ready = (await fetch(`${upstreamBase}/en/reset`)).ok;
           } catch {}
-          if (n === 119) throw new Error("Next readiness timeout");
-          await new Promise((r) => setTimeout(r, 500));
+          if (!ready && n === 119) throw new Error("Next readiness timeout");
+          if (!ready) await new Promise((r) => setTimeout(r, 500));
         }
+        // TH-3 (#147): production runs HOSTNAME=localhost; the locale redirect must stay path-only instead of
+        // leaking the child's private origin. Under HOSTNAME=127.0.0.1 the Location is absolute (http://localhost:<port>/...).
+        const localeRedirect = await fetch(`${upstreamBase}/?keep=1`, {
+          redirect: "manual",
+          headers: { "accept-language": "en" },
+        });
+        assert.equal(localeRedirect.status, 307, "locale redirect status");
+        const rawLocation = localeRedirect.headers.get("location") ?? "";
+        assert.match(rawLocation, /^\/(?!\/)/, `locale redirect must be path-only, got ${rawLocation}`);
+        assert.equal(rawLocation, "/en?keep=1");
+        return base;
       });
       browser = await chromium.launch();
       for (const locale of ["zh-TW", "zh-CN", "en"] as const)
