@@ -8,7 +8,9 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const SEAM_MARKERS = ["__lcHoldUpload", "lc-gallery-upload-release"];
+// Fragment markers (#171): a name built with Array.join/template concatenation emits the
+// fragments, not the joined spelling, so the emitted-bundle gate matches both.
+export const SEAM_MARKERS = ["__lcHoldUpload", "lc-gallery-upload-release", "HoldUpload", "gallery-upload"];
 const CLIENT_JS = /\.m?js$/;
 const root = fileURLToPath(new URL("../../", import.meta.url));
 export const DEFAULT_STATIC_DIR = path.join(root, "apps/admin/.next/static");

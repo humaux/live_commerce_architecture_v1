@@ -1,7 +1,7 @@
 // Server-only canonical routing. Host is a candidate, never authority: Go resolves it
 // to an ACTIVE store and returns that store's primary origin. No browser value can
 // supply a destination. No cookies, forwarded headers or user query reach Go.
-import { candidateOrigin, readBounded, upstreamConfig } from "./public-upstream.ts";
+import { candidateOrigin, readBounded, RETRY_AFTER, upstreamConfig } from "./public-upstream.ts";
 
 export function primaryLocation(value: unknown, origin: string, requestURL: string): string | null {
   if (!value || typeof value !== "object" || Array.isArray(value) ||
@@ -46,6 +46,6 @@ export async function canonicalRedirect(
     return location ? new Response(null, { status: 301, headers: { Location: location, "Cache-Control": "no-store" } }) : null;
   } catch {
     // Never render a potentially non-canonical shop after a failed resolver.
-    return new Response(null, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "5" } });
+    return new Response(null, { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": RETRY_AFTER.resolver } });
   }
 }

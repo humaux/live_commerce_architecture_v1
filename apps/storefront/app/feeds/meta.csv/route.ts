@@ -3,11 +3,11 @@
 //   The store is never chosen by the caller: the origin comes from the Host header (lib/public-upstream.ts candidateOrigin) and is
 //   sent to Go as X-Commerce-Storefront-Origin; Go resolves it through buyer.resolve_published_store. No query string is accepted, no
 //   caller header is forwarded, no cookie or bearer is sent; the response is a bounded CSV with a fixed shape, and a refused upstream
-//   body is cancelled (#84, #107). Every retryable 503 carries Retry-After: 60 (RFC 9110 §10.2.3, as app/sitemap.xml; #147).
-// Depends on: lib/public-upstream.ts (candidateOrigin, upstreamConfig, readBounded, discardBody); env COMMERCE_BUYER_WEB_ENABLED,
+//   body is cancelled (#84, #107). Every retryable 503 carries the shared RETRY_AFTER.down hint (RFC 9110 §10.2.3; #147).
+// Depends on: lib/public-upstream.ts (candidateOrigin, upstreamConfig, readBounded, discardBody, RETRY_AFTER); env COMMERCE_BUYER_WEB_ENABLED,
 //   COMMERCE_BUYER_API_ORIGIN, COMMERCE_BUYER_BFF_KEY (shared with the buyer BFF).
-// Used by: the Next.js App Router (public route); apps/storefront/tests/upstream-body-cancel.test.mjs.
-import { candidateOrigin, discardBody, readBounded, upstreamConfig } from "../../../lib/public-upstream.ts";
+// Used by: the Next.js App Router (public route); apps/storefront/tests/upstream-body-cancel.test.mjs, retry-after-shared.test.mjs.
+import { candidateOrigin, discardBody, RETRY_AFTER, readBounded, upstreamConfig } from "../../../lib/public-upstream.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,8 +19,8 @@ function fail(status: number, code: string): Response {
     { code, message: code === "not_found" ? "Resource not found." : "Temporarily unavailable." },
     {
       status,
-      // RFC 9110 §10.2.3: a retryable 503 carries Retry-After (same 60 s hint as app/sitemap.xml/route.ts); a 404 does not.
-      headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...(status === 503 ? { "Retry-After": "60" } : {}) },
+      // RFC 9110 §10.2.3: a retryable 503 carries the shared RETRY_AFTER.down hint; a 404 does not.
+      headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...(status === 503 ? { "Retry-After": RETRY_AFTER.down } : {}) },
     },
   );
 }

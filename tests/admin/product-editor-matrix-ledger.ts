@@ -10,6 +10,19 @@ type Identity = { page: string; row?: string; control: string; action: string };
 type Observation = { observed: unknown; [detail: string]: unknown };
 const key = (entry: Identity) => JSON.stringify([entry.page, entry.row ?? "", entry.control, entry.action]);
 
+/**
+ * The single viewport width the shared case table records (#180-1). The acceptance
+ * spec drives the browser with this value, so a changed table width changes the
+ * exercised viewport instead of only the PASS metadata.
+ */
+export const productEditorMatrixWidth = (() => {
+  const widths = new Set(cases.map((entry) => entry.width));
+  if (widths.size !== 1) throw new Error("matrix case table must declare one viewport width");
+  const width = [...widths][0];
+  if (!Number.isInteger(width) || width <= 0) throw new Error("matrix case table must declare a positive viewport width");
+  return width;
+})();
+
 /** Creates one locale's recorder; callback failures never emit PASS or consume a declaration. */
 export function createProductEditorMatrixLedger(ledger: unknown[], locale: keyof typeof productEditorCopy) {
   const copy = productEditorCopy[locale];

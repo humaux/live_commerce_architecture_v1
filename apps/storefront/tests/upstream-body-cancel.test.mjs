@@ -82,7 +82,9 @@ function broken(type) {
   return new Response(new ReadableStream({ pull(c) { c.error(new Error("socket reset")); } }), { status: 200, headers: { "content-type": type } });
 }
 
-test("a body-read error is the route's own retryable 503 / down (per its header comment) on every shared readBounded caller", async (t) => {
+// #147 SF-3: no single 503 envelope exists across these routes. The contract is lib/public-upstream.ts readBounded: a
+// mid-read failure returns null, and each caller maps that to its own retryable 503 (feed, media) or "down" (shop-upstream).
+test("a body-read error is each caller's own retryable 503 / down on the feed, media and product-list routes", async (t) => {
   withEnv(t);
   let mock = t.mock.method(globalThis, "fetch", async () => broken("text/csv"));
   const feed = await metaFeed(new Request("https://shop.example/feeds/meta.csv", { headers: { host: "shop.example" } }));
@@ -113,7 +115,7 @@ function partial(type, parts = ["id,title\n1,first\n", "2,sec"]) {
   }), { status: 200, headers: { "content-type": type } });
 }
 
-test("partial data then a mid-stream error: readBounded is null and every caller answers 503 / down, uncached", async (t) => {
+test("partial data then a mid-stream error: readBounded is null and the feed, media and product-list routes answer 503 / down, uncached", async (t) => {
   withEnv(t);
   await t.test("readBounded", async () => {
     assert.equal(await readBounded(partial("text/csv").body, 1024), null);

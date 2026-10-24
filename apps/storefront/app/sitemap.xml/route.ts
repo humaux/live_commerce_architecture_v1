@@ -3,9 +3,10 @@
 // list route via lib/shop-upstream.ts (BFF key + Host-derived origin). Unknown or unpublished host -> 404 (nothing to index).
 // Default-locale URLs (zh-TW, the pilot market) with hreflang alternates for the other UI locales (lib/seo.ts).
 import { locales } from "@live-commerce/i18n";
-import { sitemapXml } from "../../lib/seo";
-import type { SitemapEntry } from "../../lib/seo";
-import { allProducts, listCollections, loadShop } from "../../lib/shop-upstream";
+import { sitemapXml } from "../../lib/seo.ts";
+import type { SitemapEntry } from "../../lib/seo.ts";
+import { RETRY_AFTER } from "../../lib/public-upstream.ts";
+import { allProducts, listCollections, loadShop } from "../../lib/shop-upstream.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,9 +14,9 @@ export const dynamic = "force-dynamic";
 export async function GET(): Promise<Response> {
   const shop = await loadShop(null);
   if (shop.state === "closed") return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
-  if (shop.state === "down") return new Response("Temporarily unavailable", { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } });
+  if (shop.state === "down") return new Response("Temporarily unavailable", { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": RETRY_AFTER.down } });
   const [products, collections] = await Promise.all([allProducts(), listCollections()]);
-  if (products.state === "down" || collections.state === "down") return new Response("Temporarily unavailable", { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } });
+  if (products.state === "down" || collections.state === "down") return new Response("Temporarily unavailable", { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": RETRY_AFTER.down } });
   const entries: SitemapEntry[] = [{ path: "" }, { path: "/products" }, { path: "/collections" }];
   if (collections.state === "ok") for (const c of collections.value) entries.push({ path: `/collections/${c.slug}` });
   for (const page of shop.design.pages) entries.push({ path: `/pages/${page.slug}` });
