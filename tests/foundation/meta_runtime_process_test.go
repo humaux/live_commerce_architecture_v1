@@ -318,9 +318,9 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	apiEnv := []string{"LISTEN_ADDR=" + mrEphemeralAddr, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=1", "COMMERCE_META_INGRESS_DATABASE_URL=" + ingressDSN, "COMMERCE_META_APPS_JSON=" + appsJSON, "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
 	workerEnv := []string{"COMMERCE_META_WORKER_ENABLED=1", "COMMERCE_META_WORKER_DATABASE_URL=" + workerDSN, "COMMERCE_META_CONSUMER_DATABASE_URL=" + consumerDSN, "COMMERCE_META_WORKER_CONCURRENCY=1", "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID=" + miKeyID, "COMMERCE_META_PAYLOAD_KEYS_JSON=" + keyJSON}
 	api := mrLaunch(t, apiBinary, "api", apiEnv)
-	origin := "http://" + mrBoundAddr(t, api, 8*time.Second)
-	client := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 	deadline := time.Now().Add(8 * time.Second)
+	origin := "http://" + mrBoundAddr(t, api, time.Until(deadline))
+	client := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 	for {
 		select {
 		case err := <-api.done:

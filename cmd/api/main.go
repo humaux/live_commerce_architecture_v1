@@ -1,7 +1,7 @@
 // Purpose: API process assembly — load each feature's config (identity, accounts, buyer/hosted payment, Meta/Stripe webhooks, Studio, claims, refunds, CVS, live-console inbox read side, message templates), open the scoped pools, build the handlers and mount them on one listener. Holds no business rule and never starts a worker or dispatches a provider call.
 // Depends on: platform.OpenPool, httpapi.NewHandler, the cmd/api feature builders (accounts/buyer/meta/stripe/studio/claims/merchant_refund/merchant_ads/merchant_meta_connect/cvs/tlsask/store_domain_nonce), payments.ProfileEnvironment.
 // Used by: the deployed API binary (LISTEN_ADDR), cmd/api *_test.go, tests/foundation process tests (parse the api_ready line for the bound address of LISTEN_ADDR=127.0.0.1:0).
-// Invariants: the listener is bound before api_ready is logged (one line, addr=<actual bound host:port>, also for a fixed port); a bind failure is returned before it.
+// Invariants: the listener is bound before api_ready is logged (one line, addr=<actual bound host:port>, also for a fixed port); a bind failure is returned before it; a zero port is accepted only on a literal loopback host.
 package main
 
 import (
@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -32,10 +33,25 @@ func main() {
 }
 
 // validateListenAddr checks LISTEN_ADDR before any pool opens, so a bad address fails startup before the process can
-// log ready. Fixed ports keep the host the operator configured; the zero-port (ephemeral) rule lands in the next commit.
+// log ready. A fixed port keeps the host the operator configured. A zero port is the ephemeral test affordance and
+// must name a literal loopback host, the same rule cmd/claims-worker applies to its console bridge (validConsoleAddr):
+// a wildcard :0 binds an unpredictable interface that neither the operator nor a test can dial reliably.
 func validateListenAddr(addr string) error {
-	_, _, err := net.SplitHostPort(addr)
-	return err
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return errors.New("LISTEN_ADDR must be host:port")
+	}
+	n, err := strconv.Atoi(port)
+	if err != nil || n < 0 || n > 65535 {
+		return errors.New("LISTEN_ADDR port is invalid")
+	}
+	if n == 0 {
+		ip := net.ParseIP(host)
+		if ip == nil || !ip.IsLoopback() {
+			return errors.New("LISTEN_ADDR port 0 requires a literal loopback host")
+		}
+	}
+	return nil
 }
 
 func run() error {

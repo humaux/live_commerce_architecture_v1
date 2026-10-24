@@ -110,8 +110,8 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 				t.Errorf("API PID %d did not exit during cleanup", cmd.Process.Pid)
 			}
 		})
-		origin = "http://" + mrBoundAddr(t, &mrProcess{done: done, logPath: log.Name()}, 15*time.Second)
 		deadline := time.Now().Add(15 * time.Second)
+		origin = "http://" + mrBoundAddr(t, &mrProcess{done: done, logPath: log.Name()}, time.Until(deadline))
 		for time.Now().Before(deadline) {
 			select {
 			case err := <-done:

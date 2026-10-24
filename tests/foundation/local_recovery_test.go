@@ -626,10 +626,9 @@ func lrPassword(t *testing.T, target lrCluster, sourceDSN string) string {
 	return roleURL(t, target.dsn, role, password)
 }
 
-func lrHTTPReady(t *testing.T, p *mrProcess, address string) {
+func lrHTTPReady(t *testing.T, p *mrProcess, address string, deadline time.Time) {
 	t.Helper()
 	client := &http.Client{Timeout: time.Second}
-	deadline := time.Now().Add(8 * time.Second)
 	for time.Now().Before(deadline) {
 		resp, err := client.Get("http://" + address + "/healthz")
 		if err == nil {
@@ -915,7 +914,8 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 		t.Fatal("disabled Meta worker opened secrets or emitted output")
 	}
 	api := mrLaunch(t, apiBinary, "local-recovery-api", []string{"LISTEN_ADDR=" + mrEphemeralAddr, "DATABASE_URL=" + mainDSN, "COMMERCE_META_WEBHOOK_ENABLED=0", "COMMERCE_BUYER_ENABLED=0", "COMMERCE_IDENTITY_ENABLED=0"})
-	lrHTTPReady(t, api, mrBoundAddr(t, api, 8*time.Second))
+	apiDeadline := time.Now().Add(8 * time.Second)
+	lrHTTPReady(t, api, mrBoundAddr(t, api, time.Until(apiDeadline)), apiDeadline)
 	lrAssertEqual(t, targetRows, lrSnapshot(t, target.owner, ""), "disabled cold start")
 	mrStop(t, api, syscall.SIGTERM, true)
 	mrLogNoSecrets(t, api, mainDSN, workerDSN, consumerDSN)
