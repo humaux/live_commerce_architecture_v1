@@ -104,7 +104,7 @@ async function checkoutPage(context) {
   await reachCheckout(p, origin, "en", product); // product page -> Add to cart -> /en/checkout (storefront shell)
   await p.getByRole("button", { name: "Choose delivery", exact: true }).click();
   const pending = p.waitForResponse((r) => requestIs(r, "quotes", "POST"));
-  await p.getByRole("button", { name: "Get current total", exact: true }).click();
+  await Promise.all([pending, p.getByRole("button", { name: "Get current total", exact: true }).click()]);
   assert.equal((await pending).status(), 200);
   await expect(p.getByTestId("address-section")).toBeVisible();
   for (const [key, value] of Object.entries(pii)) await p.locator(`input[name="${key}"]`).fill(value);

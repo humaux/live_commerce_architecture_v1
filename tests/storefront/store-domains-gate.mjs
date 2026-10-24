@@ -154,7 +154,7 @@ try {
   await merchant.getByRole("button", { name: ENTRY.nextWarehouse, exact: true }).click();
   await merchant.locator("input[name=warehouse_name]").fill("Main warehouse");
   const created = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === "/api/onboarding/initial-store");
-  await merchant.getByRole("button", { name: ENTRY.create, exact: true }).click();
+  await Promise.all([created, merchant.getByRole("button", { name: ENTRY.create, exact: true }).click()]);
   const receipt = await (await created).json();
   assert.match(receipt.store_id, /^[0-9a-f-]{36}$/); assert.match(receipt.tenant_id, /^[0-9a-f-]{36}$/);
   assert.match(receipt.handle, /^[1-9][0-9]{7}$/, "the DB trigger assigns a random numeric store number");
@@ -227,7 +227,7 @@ try {
     const dialog = card.getByTestId("storefront-confirm");
     await expect(dialog).toBeVisible();
     const post = card.page().waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/publication`);
-    await dialog.getByTestId("storefront-confirm-yes").click();
+    await Promise.all([post, dialog.getByTestId("storefront-confirm-yes").click()]);
     assert.equal((await post).status(), 200, "publication POST");
     await expect(card.getByTestId("storefront-notice")).toHaveText(wantPublished ? c.savedPub : c.savedUnpub);
     await expect(card.getByTestId("storefront-state")).toHaveText(wantPublished ? c.published : c.unpublished);
@@ -284,11 +284,11 @@ try {
       await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
       // Reload and status refresh remain read-only. Only an explicit retry can resend.
       const read = merchant.waitForResponse(r => r.request().method() === "GET" && r.url() === `${adminOrigin}/api/stores/${store}/storefront/domains`);
-      await domainCard.getByTestId("storefront-domain-unconfirmed").getByRole("button").last().click();
+      await Promise.all([read, domainCard.getByTestId("storefront-domain-unconfirmed").getByRole("button").last().click()]);
       assert.equal((await read).request().headers()["idempotency-key"], undefined);
       assert.equal(sent.length, 1, "UNKNOWN never auto-replays on reload or refresh");
       const replay = merchant.waitForResponse(r => r.request().method() === "POST" && r.url() === url);
-      await domainCard.getByTestId("storefront-domain-retry").click();
+      await Promise.all([replay, domainCard.getByTestId("storefront-domain-retry").click()]);
       assert.equal((await replay).status(), 200);
       await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toHaveCount(0);
       assert.equal(sent.length, 2, "exactly one explicit replay");
@@ -304,8 +304,7 @@ try {
   const finishRequestReplay = await loseNextDomainResult("storefront/domains");
   await domainCard.getByTestId("storefront-domain-request").getByRole("textbox", { name: DOMAINS_ZHCN.hostnameLabel }).fill(customHost);
   const requested = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/domains`);
-  await domainCard.getByTestId("storefront-domain-submit").click();
-  const requestResponse = await requested;
+  const [requestResponse] = await Promise.all([requested, domainCard.getByTestId("storefront-domain-submit").click()]);
   assert.equal(requestResponse.status(), 200, "domain request POST");
   await finishRequestReplay();
   const dns = domainCard.getByTestId("storefront-dns");
@@ -400,8 +399,7 @@ try {
   await expect(domainCard.getByTestId("storefront-domain-confirm")).toBeVisible();
   const finishSuspendReplay = await loseNextDomainResult("storefront/domains/suspend");
   const suspended = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/domains/suspend`);
-  await domainCard.getByTestId("storefront-domain-confirm-yes").click();
-  const suspendResponse = await suspended;
+  const [suspendResponse] = await Promise.all([suspended, domainCard.getByTestId("storefront-domain-confirm-yes").click()]);
   assert.equal(suspendResponse.status(), 200, "domain suspend POST");
   await finishSuspendReplay();
   await expect(rowFor(customHost)).toHaveAttribute("data-state", "SUSPENDED");
@@ -415,7 +413,7 @@ try {
   await expect(domainCard.getByTestId("storefront-domain-confirm")).toBeVisible();
   const finishDetachReplay = await loseNextDomainResult("storefront/domains/detach");
   const detached = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/storefront/domains/detach`);
-  await domainCard.getByTestId("storefront-domain-confirm-yes").click();
+  await Promise.all([detached, domainCard.getByTestId("storefront-domain-confirm-yes").click()]);
   assert.equal((await detached).status(), 200, "domain detach POST");
   await finishDetachReplay();
   assert.equal(actionKeys.size, 3, "request/suspend/detach are distinct user actions");

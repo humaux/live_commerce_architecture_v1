@@ -162,7 +162,7 @@ async function place(buyer) {
   };
   if (label === "order A") await page.route("**/api/buyer/checkout-options?**", capRoute);
   const quoted = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
-  await page.getByRole("button", { name: c.quote, exact: true }).click();
+  await Promise.all([quoted, page.getByRole("button", { name: c.quote, exact: true }).click()]);
   const quote = await (await quoted).json();
   assert.equal(quote.amount.subtotal_minor, total, `${label}: subtotal`);
   assert.equal(quote.amount.shipping_minor, 0, `${label}: the fixture home policy is zero-fee`);
@@ -212,7 +212,7 @@ async function place(buyer) {
     page.off("request", observe);
   }
   const submitted = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/buyer/checkout" && request.method() === "POST");
-  await page.getByTestId("create-order").click();
+  await Promise.all([submitted, page.getByTestId("create-order").click()]);
   assert.equal((await submitted).postDataJSON().expected_cod_surcharge_minor, surcharge, "buyer-confirmed fee is sent to the server");
   await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
   const id = (await page.getByTestId("order-id").innerText()).trim();

@@ -165,8 +165,7 @@ async function send(page, last5, minor, minutesAgo = 10) {
     const body = await r.json().catch(() => null);
     return body?.state === "SUBMITTED" && body.proof?.last5 === last5 && Date.parse(body.proof.paid_at) === Date.parse(expectedInstant);
   });
-  await page.getByTestId("transfer-send").click();
-  const write = await written;
+  const [write] = await Promise.all([written, updated, page.getByTestId("transfer-send").click()]);
   assert.equal(write.status(), 200);
   assert.equal(write.request().postDataJSON().paid_at, expectedInstant, "real UI serializes the buyer's local wall clock");
   await expect(view(page)).toHaveAttribute("data-state", "SUBMITTED");
@@ -184,7 +183,7 @@ async function belowThreshold(buyer) {
   await reachCheckout(page, origin, locale, product);
   await page.getByRole("button", { name: c.delivery, exact: true }).click();
   const quoted = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
-  await page.getByRole("button", { name: c.quote, exact: true }).click();
+  await Promise.all([quoted, page.getByRole("button", { name: c.quote, exact: true }).click()]);
   const quote = await (await quoted).json();
   assert.equal(quote.amount.subtotal_minor, unit); assert.equal(quote.amount.shipping_minor, fee, "below the threshold the flat fee applies");
   assert.equal(quote.amount.total_minor, unit + fee);
@@ -198,7 +197,7 @@ async function place(buyer, store) {
   await reachCheckout(page, origin, locale, product, { quantity: 2 }); // 2 units, bought through Add to cart (the shell replaced the product-page purchase panel)
   await page.getByRole("button", { name: c.delivery, exact: true }).click();
   const quoted = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
-  await page.getByRole("button", { name: c.quote, exact: true }).click();
+  await Promise.all([quoted, page.getByRole("button", { name: c.quote, exact: true }).click()]);
   const quote = await (await quoted).json();
   // the merchant set threshold == subtotal in settings: the inclusive boundary must already be free for the buyer
   assert.equal(quote.amount.subtotal_minor, price, `${label}: subtotal`);
@@ -214,7 +213,7 @@ async function place(buyer, store) {
   if (email) await page.locator('input[name="buyer_email"]').fill(email);
   await shot(page, "checkout", locale, viewport);
   const initialTransfer = page.waitForResponse(transferRead);
-  await page.getByTestId("create-order").click();
+  await Promise.all([initialTransfer, page.getByTestId("create-order").click()]);
   await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
   const id = (await page.getByTestId("order-id").innerText()).trim();
   assert.match(id, /^[a-f0-9-]{36}$/);
@@ -230,7 +229,7 @@ async function place(buyer, store) {
   assert.equal(transfer.order_id, id);
   await assertTransferTime(page, locale, transfer);
   const reloadedTransfer = page.waitForResponse(transferRead);
-  await page.reload();
+  await Promise.all([reloadedTransfer, page.reload()]);
   await expect(view(page)).toHaveAttribute("data-state", "AWAITING");
   const persisted = await (await reloadedTransfer).json();
   assert.equal(persisted.deadline_at, transfer.deadline_at);
@@ -247,7 +246,7 @@ async function place(buyer, store) {
     assert.equal(submitted.deadline_at, transfer.deadline_at);
     await assertTransferTime(page, locale, submitted, true);
     const refreshedProof = page.waitForResponse(transferRead);
-    await page.reload();
+    await Promise.all([refreshedProof, page.reload()]);
     await expect(view(page)).toHaveAttribute("data-state", "SUBMITTED");
     const savedProof = await (await refreshedProof).json();
     assert.equal(savedProof.state, "SUBMITTED");
@@ -263,8 +262,7 @@ async function place(buyer, store) {
         await page.locator('input[name="amount"]').fill(money(price));
         await page.locator('input[name="paid_at"]').fill(wall);
         const refused = page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith("/bank-transfer/proof"));
-        await page.getByTestId("transfer-send").click();
-        const response = await refused;
+        const [response] = await Promise.all([refused, page.getByTestId("transfer-send").click()]);
         assert.equal(response.request().postDataJSON().paid_at, iso);
         assert.equal(response.status(), 422, "historical DST dates remain outside the transfer-proof window");
         assert.equal((await response.json()).code, "invalid_proof");
@@ -362,7 +360,7 @@ try {
     await taipeiPage.goto(origin + "/zh-TW/checkout");
     await taipeiPage.getByTestId("toggle-order-history").click();
     const read = taipeiPage.waitForResponse(transferRead);
-    await taipeiPage.locator(`button[data-order-id="${buyers.C.id}"]`).click();
+    await Promise.all([read, taipeiPage.locator(`button[data-order-id="${buyers.C.id}"]`).click()]);
     const value = await (await read).json();
     await assertInputZone(taipeiPage, "zh-TW");
     await assertTransferTime(taipeiPage, "zh-TW", value, true);

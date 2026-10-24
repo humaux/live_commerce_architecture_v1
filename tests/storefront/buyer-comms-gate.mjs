@@ -101,7 +101,7 @@ async function placeBankOrder(page, locale, email) {
   await reachCheckout(page, origin, locale, PRODUCT);
   await page.getByRole("button", { name: pc.delivery, exact: true }).click();
   const quoted = page.waitForResponse((r) => r.url().includes("/api/buyer/quotes") && r.request().method() === "POST");
-  await page.getByRole("button", { name: pc.quote, exact: true }).click();
+  await Promise.all([quoted, page.getByRole("button", { name: pc.quote, exact: true }).click()]);
   assert.equal((await quoted).status(), 200, "quote");
   await expect(page.getByTestId("address-section")).toBeVisible();
   for (const [name, value] of Object.entries(pii)) await page.locator(`input[name="${name}"]`).fill(value);
@@ -112,8 +112,7 @@ async function placeBankOrder(page, locale, email) {
   await expect(page.getByTestId("create-order")).toBeEnabled();
   await page.locator('input[name="buyer_email"]').fill(email);
   const placed = page.waitForResponse((r) => r.url().includes("/api/buyer/checkout") && r.request().method() === "POST");
-  await page.getByTestId("create-order").click();
-  const res = await placed;
+  const [res] = await Promise.all([placed, page.getByTestId("create-order").click()]);
   assert.equal(res.status(), 200, `checkout answered ${res.status()} ${await res.text().catch(() => "")}`);
   await expect(page.getByTestId("order-section")).toBeVisible();
   await expect(page.getByTestId("bank-transfer")).toBeVisible();
@@ -247,8 +246,7 @@ try {
     const attempt = async (ref, contact) => {
       await c.getByTestId("lookup-ref").fill(ref); await c.getByTestId("lookup-contact").fill(contact);
       const answered = c.waitForResponse((r) => r.url().includes("/api/buyer/orders/lookup") && r.request().method() === "POST");
-      await c.getByTestId("lookup-submit").click();
-      const r = await answered;
+      const [r] = await Promise.all([answered, c.getByTestId("lookup-submit").click()]);
       refusals.push({ status: r.status(), cc: r.headers()["cache-control"], cookie: r.headers()["set-cookie"] ?? "" }); // (response.text() hangs on this unread fetch body; bodies are compared via in-page fetch below)
       await expect(c.getByTestId("lookup-problem")).toBeVisible();
       return { problem: await c.getByTestId("lookup-problem").getAttribute("data-problem"), text: (await c.getByTestId("lookup-problem").innerText()).trim() };

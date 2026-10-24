@@ -136,8 +136,7 @@ async function quotePage(c,clock=false,p,bo01=false) {
   await reachCheckout(p,origin,"en",process.env.LC_ORDER_PRODUCT); // product page -> Add to cart -> /en/checkout (also for a page that continued shopping: its cart is empty)
   await p.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const pending=p.waitForResponse(r=>requestIs(r,"quotes","POST"));
-  await p.getByRole("button",{name:"Get current total",exact:true}).click();
-  const response=await pending;assert.equal(response.status(),200);
+  const [response]=await Promise.all([pending,p.getByRole("button",{name:"Get current total",exact:true}).click()]);assert.equal(response.status(),200);
   const quote=await response.json();
   await expect(p.getByTestId("address-section")).toBeVisible();
   if(bo01Warmups.has(p))await waitBo01Warmup(bo01Warmups.get(p).entered.promise,"request interception",p);
@@ -329,7 +328,7 @@ async function cartRefreshRace() {
   await p.goto(`${origin}/en/products/${process.env.LC_ORDER_PRODUCT}`);
   await expect(p.getByTestId("add-to-cart")).toBeEnabled();
   const created=p.waitForResponse(r=>requestIs(r,"cart","PUT")&&r.status()===200);
-  await cartClick(p,caseID,"add-to-cart",p.getByTestId("add-to-cart"),"real UI creates one persisted cart line",async()=>expect(p.getByTestId("cart-drawer").getByTestId("cart-line-qty")).toHaveText("1"));
+  await Promise.all([created,cartClick(p,caseID,"add-to-cart",p.getByTestId("add-to-cart"),"real UI creates one persisted cart line",async()=>expect(p.getByTestId("cart-drawer").getByTestId("cart-line-qty")).toHaveText("1"))]);
   const actual=await(await created).json(),write=calls.filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT").at(-1);
   assert.equal(actual.items.length,1);
   const factPath=`cart-facts/${actual.id}/${write.key}`,before=await control(factPath);
@@ -549,7 +548,7 @@ try {
   const other=await c1.newPage();await other.goto(origin+checkoutPath);
   assert.equal((await api(other,"PUT","destination",external,crypto.randomUUID())).status,200);
   const beforeConflict=(await control("facts")).length;
-  const conflict=a.waitForResponse(r=>requestIs(r,"checkout","POST"));await a.getByTestId("create-order").click();assert.equal((await conflict).status(),409);await expect(a.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,beforeConflict);
+  const conflict=a.waitForResponse(r=>requestIs(r,"checkout","POST"));await Promise.all([conflict,a.getByTestId("create-order").click()]);assert.equal((await conflict).status(),409);await expect(a.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,beforeConflict);
   await a.reload();await expect(a.locator('input[name="line1"]')).toHaveValue(external.home_address.line1);await expect(a.getByTestId("create-order")).toBeDisabled();await confirm(a);
   assert.equal((await api(other,"PUT","destination",external,crypto.randomUUID())).status,409,"late lower-CAS address must fail");
   pass("BO03 reload reconfirmation, edits and concurrent/late address CAS fail closed");
@@ -560,7 +559,7 @@ try {
   // Historical receipt is insufficient: expire through the real worker then GET.
   await control(`expire/${order1}`,"POST");
   const getOrder=a.waitForResponse(r=>requestIs(r,`orders/${order1}`,"GET"));
-  await a.getByRole("button",{name:"Refresh order",exact:true}).click();assert.equal((await getOrder).status(),200);
+  await Promise.all([getOrder,a.getByRole("button",{name:"Refresh order",exact:true}).click()]);assert.equal((await getOrder).status(),200);
   await expect(a.getByTestId("order-state")).toHaveAttribute("data-state","CANCELLED");
   await expect(a.getByTestId("order-id")).toHaveText(order1);await expect(a.getByTestId("create-order")).toHaveCount(0);
   pass("BO05 owned current-state GET renders real expiry rather than historical DRAFT receipt");
@@ -568,7 +567,7 @@ try {
   // BO02: the server rejects an expired quote even if the page still has it.
   const c2=await newContext(),{p:stale,quote:q2}=await quotePage(c2);await fill(stale);await confirm(stale);
   await control(`expire-quote/${q2.id}`,"POST");const beforeExpired=(await control("facts")).length;
-  const denied=stale.waitForResponse(r=>requestIs(r,"checkout","POST"));await stale.getByTestId("create-order").click();assert.equal((await denied).status(),409);
+  const denied=stale.waitForResponse(r=>requestIs(r,"checkout","POST"));await Promise.all([denied,stale.getByTestId("create-order").click()]);assert.equal((await denied).status(),409);
   await expect(stale.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,beforeExpired);
   await expect(stale.getByTestId("order-section")).toHaveCount(0);
   pass("BO02 expired authoritative quote fails closed with no order or hold");
@@ -722,10 +721,18 @@ try {
   for(const summary of [...firstHistory.body.items,...secondHistory.body.items])assert.deepEqual(Object.keys(summary).sort(),summaryKeys);
   const pointerB=await stored(a,"commerce-purchase-order-v1:"),cartB=(await api(a,"GET","cart")).body;
   assert.equal(await a.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"America/Los_Angeles");
-  const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),firstHistoryUI=historyRead(a);await a.getByTestId("toggle-order-history").click();
-  assert.equal(await historyLoading.result.promise,200);await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();historyLoading.release.resolve();
+  const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),firstHistoryUI=historyRead(a);
+  // The edge withholds this GET until release.resolve(). Keep the baseline assertion order (upstream result, then the
+  // transient loading status while the reply is still held), then release from that same awaited branch; awaiting the
+  // held page reply first only times out (run 39996387148).
+  const [historyReply]=await Promise.all([firstHistoryUI,a.getByTestId("toggle-order-history").click(),historyLoading.entered.promise.then(async()=>{
+    try{
+      assert.equal(await historyLoading.result.promise,200);
+      await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();
+    }finally{historyLoading.release.resolve();}
+  })]);
   await expect(a.locator(".history-list li")).toHaveCount(2);
-  await assertHistoryTimes(a,"en",await firstHistoryUI);
+  await assertHistoryTimes(a,"en",historyReply);
   await expect(a.locator(".history-list li").first().locator("button")).toHaveAttribute("data-order-id",orderB);
   await capture(a,"desktop-history.png",true,historyReview);
   await a.setViewportSize({width:390,height:844});await capture(a,"mobile-history.png",true,historyReview);
@@ -735,7 +742,7 @@ try {
   assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);assert.deepEqual((await api(a,"GET","cart")).body,cartB);
   await a.getByRole("button",{name:"Back to orders",exact:true}).click();
   for(const [locale,title] of [["zh-CN","我的订单"],["zh-TW","我的訂單"],["en","Your orders"]]){
-    await switchLocale(a,locale);const localeHistory=historyRead(a);await a.getByTestId("toggle-order-history").click(); // full navigation: the history view is reopened from the pinned order
+    await switchLocale(a,locale);const localeHistory=historyRead(a);await Promise.all([localeHistory,a.getByTestId("toggle-order-history").click()]); // full navigation: the history view is reopened from the pinned order
     await expect(a.getByTestId("order-history").getByRole("heading",{name:title,exact:true})).toBeVisible();
     await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,locale,await localeHistory);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
   }
@@ -746,7 +753,7 @@ try {
   const cookieHistory=(await c1.cookies(origin))[0].value;
   await a.evaluate(()=>{for(const key of Object.keys(localStorage))if(key.startsWith("commerce-purchase-order-v1:"))localStorage.removeItem(key);});
   await a.reload();await expect(a.getByTestId("toggle-order-history")).toBeEnabled();await expect(a.getByTestId("order-section")).toHaveCount(0);
-  const reloadedHistory=historyRead(a);await a.getByTestId("toggle-order-history").click();await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,"en",await reloadedHistory);
+  const reloadedHistory=historyRead(a);await Promise.all([reloadedHistory,a.getByTestId("toggle-order-history").click()]);await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,"en",await reloadedHistory);
   await a.locator(`button[data-order-id="${order1}"]`).click();await expect(a.getByTestId("order-id")).toHaveText(order1);
   assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);assert.equal((await c1.cookies(origin))[0].value,cookieHistory);
   await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-section")).toHaveCount(0);
@@ -757,10 +764,10 @@ try {
   const utcPage=await utcContext.newPage();await utcPage.goto(origin+checkoutPath);
   assert.equal(await utcPage.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"UTC");
   await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
-  const utcHistory=historyRead(utcPage);await utcPage.getByTestId("toggle-order-history").click();
+  const utcHistory=historyRead(utcPage);await Promise.all([utcHistory,utcPage.getByTestId("toggle-order-history").click()]);
   await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcHistory);
   await utcPage.reload();await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
-  const utcReloadHistory=historyRead(utcPage);await utcPage.getByTestId("toggle-order-history").click();
+  const utcReloadHistory=historyRead(utcPage);await Promise.all([utcReloadHistory,utcPage.getByTestId("toggle-order-history").click()]);
   await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcReloadHistory);
   await utcContext.close();
   pass("BH05 same owned history renders Taipei times in UTC browser context");
@@ -796,7 +803,7 @@ try {
   pass("BH08 foreign buyer history is empty and foreign or malformed cursors are denied");
   await fill(foreign);await confirm(foreign);const serviceBefore=(await control("facts")).length;
   await control("service-drift","POST");const serviceDenied=foreign.waitForResponse(r=>requestIs(r,"checkout","POST"));
-  await foreign.getByTestId("create-order").click();assert.equal((await serviceDenied).status(),409);
+  await Promise.all([serviceDenied,foreign.getByTestId("create-order").click()]);assert.equal((await serviceDenied).status(),409);
   await expect(foreign.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,serviceBefore);
   await expect(foreign.getByTestId("create-order")).toBeDisabled();
   pass("BO02 service revision drift rejects a previously confirmed quotation without an order");

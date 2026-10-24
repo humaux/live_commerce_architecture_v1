@@ -116,7 +116,7 @@ async function createCode(merchant, label, code, minimum, window) {
     await merchant.getByTestId("promotion-ends").fill(window.ends);
   }
   const created = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === bff);
-  await merchant.getByTestId("promotion-submit").click();
+  await Promise.all([created, merchant.getByTestId("promotion-submit").click()]);
   assert.equal((await created).status(), 200, `${label} create ${code}`);
   await expect(merchant.getByTestId("promotion-row").filter({ hasText: code })).toHaveCount(1);
 }
@@ -186,7 +186,7 @@ async function scenario(index, run) {
   await buyer.getByRole("button", { name: words.delivery, exact: true }).click();
   await buyer.getByLabel(words.deliveryLabel).selectOption({ label: `${run.locale === "zh-TW" ? fx.delivery_hant : fx.delivery_en} · TW` });
   const quoted = buyer.waitForResponse(r => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
-  await buyer.getByRole("button", { name: words.quote, exact: true }).click();
+  await Promise.all([quoted, buyer.getByRole("button", { name: words.quote, exact: true }).click()]);
   assert.equal((await quoted).status(), 200);
   const quotation = buyer.locator(".quotation");
   await expect(quotation).toBeVisible();
@@ -267,7 +267,7 @@ async function scenario(index, run) {
   if (!(await amountField.inputValue())) await amountField.fill(String(total / 100));
   await buyer.locator('input[name="last5"]').fill("12345");
   const sent = buyer.waitForResponse(r => r.request().method() === "PUT" && /\/bank-transfer\/proof$/.test(new URL(r.url()).pathname));
-  await buyer.getByTestId("transfer-send").click();
+  await Promise.all([sent, buyer.getByTestId("transfer-send").click()]);
   assert.equal((await sent).status(), 200);
   await buyerContext.close();
 
@@ -286,7 +286,7 @@ async function scenario(index, run) {
   await merchant.getByTestId("transfer-confirm").click();
   await expect(merchant.getByTestId("transfer-dialog")).toBeVisible();
   const confirmed = merchant.waitForResponse(r => r.request().method() === "POST" && /\/bank-transfer\/confirm$/.test(new URL(r.url()).pathname));
-  await merchant.getByTestId("transfer-submit").click();
+  await Promise.all([confirmed, merchant.getByTestId("transfer-submit").click()]);
   assert.equal((await confirmed).status(), 200);
   await expect(merchant.getByTestId("transfer-state")).toHaveAttribute("data-state", "CONFIRMED");
   pass(`${label} merchant: the order detail shows discount ${money(discount)}, shipping ${money(shipping)} and total ${money(total)}; the transfer panel asks ${money(total)}; the transfer is confirmed`);
