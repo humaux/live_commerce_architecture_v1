@@ -61,11 +61,12 @@ test("the scan rejects a wait awaited before its trigger (await-wait-then-trigge
   assert.equal(caseOf('const history=await historyRead(p);await p.getByTestId("toggle").click();').length, 1);
 });
 
-test("the scan rejects Promise.all that lists the trigger before the wait", () => {
-  // A reply held by the fixture (arm(..., {after: true})) is released after this statement, so listing the trigger
-  // first hides that dependency: the wait then dies on its 30 s timeout instead of the real assertion.
-  const source = 'const pending=p.waitForResponse(r=>r.ok());const [reply]=await Promise.all([p.getByTestId("go").click(),pending]);';
-  assert.equal(caseOf(source).length, 1);
+test("the scan rejects an inline wait created after the trigger inside Promise.all", () => {
+  // A wait created inside the array after the click registers its listener only after the action dispatches (#181 P2).
+  assert.equal(caseOf('const [reply]=await Promise.all([p.getByTestId("go").click(),p.waitForResponse(r=>r.ok())]);').length, 1);
+  // A wait assigned BEFORE the aggregate is already listening; its array position is only lexical, so listing the
+  // pre-registered `pending` after the trigger is safe (#181 P2 witness from the review).
+  assert.deepEqual(caseOf('const pending=p.waitForResponse(r=>r.ok());const [reply]=await Promise.all([p.getByTestId("go").click(),pending]);'), []);
   // The wait-first form stays green (it is what the gate scripts use).
   assert.deepEqual(caseOf('const pending=p.waitForResponse(r=>r.ok());const [reply]=await Promise.all([pending,p.getByTestId("go").click()]);'), []);
 });
@@ -79,13 +80,18 @@ test("the scan rejects awaiting a fixture-held reply before releasing the hold",
     'historyLoading.release.resolve();',
   ].join("\n");
   assert.equal(caseOf(waitFirst).length, 1);
-  // Listing the trigger first is the round-2 shape and still hits both ordering rules.
+  // Listing the pre-registered wait after the trigger is safe by array order (#181 P2), but the hold is still never
+  // released from the aggregate, so rule 3 alone rejects it.
   const triggerFirst = [
     'const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),historyUI=historyRead(a);',
     'const [reply]=await Promise.all([a.getByTestId("toggle-order-history").click(),historyUI]);',
     'historyLoading.release.resolve();',
   ].join("\n");
-  assert.equal(caseOf(triggerFirst).length, 2);
+  assert.equal(caseOf(triggerFirst).length, 1);
+  // #181 P2 witness verbatim from the review: naming only `entered` inside the aggregate does not release; the
+  // release runs after the statement, so the await deterministically waits for a reply that is still held.
+  const enteredOnly = 'const held=arm("orders?limit=20",{method:"GET",after:true}),pending=historyRead(a); await Promise.all([pending,a.getByTestId("toggle-order-history").click(),held.entered.promise]); held.release.resolve();';
+  assert.equal(caseOf(enteredOnly).length, 1);
   // Driving the hold from inside the awaited aggregate (status asserted while held) stays green.
   const released = [
     'const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),historyUI=historyRead(a);',
