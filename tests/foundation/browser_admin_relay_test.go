@@ -964,7 +964,8 @@ func TestBrowserAdminRelayWebKitFrontForwardsSpoofableHeaders(t *testing.T) {
 	}
 	// TH-6: under chromium browserFront returns the direct origin (no proxy hop), so a chromium subtest here would only talk to the
 	// upstream and prove nothing; the witness runs against the one real hop, the WebKit TLS front. The old front's RED half is
-	// NOT_RUN: producing it needs an edit under apps/admin, which this test-host task must not make; the current front is GREEN.
+	// produced by temporarily dropping the Forwarded/X-Forwarded-* restore loop in the test-host helper browserFront
+	// (browser_identity_chain_test.go); it needs no apps/admin edit. The current front is GREEN.
 	t.Setenv("LC_BROWSER_ENGINE", "webkit")
 	front := browserFront(t, target.Host)
 	if !strings.HasPrefix(front, "https://") {
