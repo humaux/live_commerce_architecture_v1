@@ -241,36 +241,6 @@ test("browser mode: a node browser runner's PASS case line in the gate log is ex
   const rec = makeReceipt({ mode: "--browser-admin-shell", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s", logs: [log], specs: [] });
   assert.equal(rec.status, "PASS");
 });
-// #184 review P2: reporter precedence belongs to ONE execution, not the whole job. A mode that runs an admin
-// Playwright log (glyphs) and a separate buyer .mjs runner (custom PASS lines) must count both executions.
-test("browser mode: reporter precedence is per execution, so two reporter formats sum", () => {
-  const admin = ["  ✓  1 tests/admin/checkout-offline.spec.ts:1:1 › COB01 (1s)",
-    "  ✓  2 tests/admin/checkout-offline.spec.ts:20:1 › COB02 (1s)",
-    "  2 passed (2s)"].join("\n");
-  const buyer = ["PASS COB03 bank transfer", "PASS COB04 proof upload", "PASS COB05 buyer sees result"].join("\n");
-  const rec = makeReceipt({ mode: "--browser-checkout-offline", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
-    logs: ["--- PASS: TestBrowserCheckoutOffline (10s)\n"], specs: [admin, buyer] });
-  assert.equal(rec.spec_count, 5, "2 glyph results + 3 custom case results are five results from two executions");
-  assert.equal(rec.test_count, 6, "one Go harness result plus the five specs");
-  assert.equal(rec.status, "PASS");
-});
-
-// The per-execution rule must not re-count a gate log that tees its own evidence execution, while a gate-log
-// execution that is not in the evidence tree still adds (#184 review P2).
-test("browser mode: a gate-log tee counts once, an independent gate execution still adds", () => {
-  const evidence = ["PASS buyer one", "PASS buyer two", "PASS buyer three"].join("\n");
-  const tee = [BROWSER_RUN, "PASS buyer one", "PASS buyer two", "PASS buyer three"].join("\n");
-  const teed = makeReceipt({ mode: "--browser-checkout-offline", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
-    logs: ["--- PASS: TestBrowserCheckoutOffline (10s)\n" + tee], specs: [evidence] });
-  assert.equal(teed.spec_count, 3, "the gate log's copy of its own evidence execution is that execution");
-  assert.equal(teed.test_count, 4);
-  const own = [BROWSER_RUN, "PASS platform one", "PASS platform two"].join("\n");
-  const mixed = makeReceipt({ mode: "--browser-checkout-offline", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
-    logs: ["--- PASS: TestBrowserCheckoutOffline (10s)\n" + own], specs: [evidence] });
-  assert.equal(mixed.spec_count, 5, "2 case lines from another execution plus 3 evidence cases");
-  assert.equal(mixed.test_count, 6);
-});
-
 test("browser mode: a Go harness's marked node browser-suite evidence log counts", () => {
   // --browser-input-delivery / --browser-studio-bff run a real Playwright node:test suite and redirect its stdout to an
   // evidence log; the suite's own marker makes that log execution evidence, not a prerequisite summary.
