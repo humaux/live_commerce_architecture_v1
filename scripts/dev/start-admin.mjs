@@ -1,3 +1,6 @@
+// Purpose: launch the packaged admin Next on the production listener name (localhost) over loopback.
+// Depends on: the built apps/admin standalone server.js and Node's IPv4-first resolver flag.
+// Used by: tests/admin/ui-gallery-runner.mjs, tests/admin/shell-runner.mjs and local dev; no production process.
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -11,10 +14,12 @@ const server = fileURLToPath(
   ),
 );
 // This launcher is local-only. Deployment ingress/listener configuration belongs
-// to the deployment manifest, not an ambient machine HOSTNAME variable.
-const child = spawn(process.execPath, [server], {
+// to the deployment manifest, not an ambient machine HOSTNAME variable. Pin the
+// production listener name so Next keeps locale redirects path-only (TH-3, #147),
+// with IPv4-first resolution so "localhost" still binds loopback 127.0.0.1.
+const child = spawn(process.execPath, ["--dns-result-order=ipv4first", server], {
   stdio: "inherit",
-  env: { ...process.env, HOSTNAME: "127.0.0.1", PORT: port },
+  env: { ...process.env, HOSTNAME: "localhost", PORT: port },
 });
 for (const signal of ["SIGINT", "SIGTERM"])
   process.on(signal, () => child.kill(signal));

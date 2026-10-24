@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { spawn, execFileSync } from "node:child_process";
 import { once } from "node:events";
 import http from "node:http";
-import { createWriteStream } from "node:fs";
+import { createWriteStream, readFileSync, readdirSync } from "node:fs";
 import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -221,6 +221,22 @@ test("connectFixtureAdmin keeps one bounded attempt with a CI-host-tolerant time
   // The no-blind-retry policy on a lost ACK stays: exactly one fetch, no loop.
   assert.equal(fn[0].match(/await fetch\(/g).length, 1);
   assert.equal(/\bfor\b|\bwhile\b/.test(fn[0]), false);
+});
+
+test("TH-3: packaged admin launchers use the production listener name and IPv4-first resolution", () => {
+  // tests/storefront/*.mjs are deliberately out of scope (owned by another PR); this guard covers the admin/dev launchers.
+  const sources = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    return entry.isDirectory() ? sources(full) : /\.(?:mjs|ts)$/.test(entry.name) ? [full] : [];
+  });
+  const launchers = [...sources("scripts/dev"), ...sources("tests/admin"), "tests/ui/visual-audit.mjs"];
+  const offenders = launchers.filter((file) => /\bHOSTNAME\s*[:=]\s*["']127\.0\.0\.1["']/.test(readFileSync(file, "utf8")));
+  assert.deepEqual(offenders, [], `Next fixtures must run HOSTNAME=localhost like production: ${offenders.join(", ")}`);
+  for (const file of ["scripts/dev/start-admin.mjs", "tests/admin/picklist.spec.ts"]) {
+    const source = readFileSync(file, "utf8");
+    assert.match(source, /HOSTNAME:\s*"localhost"/, `${file}: production listener name missing`);
+    assert.match(source, /--dns-result-order=ipv4first/, `${file}: localhost must resolve IPv4-first`);
+  }
 });
 
 const GATE_BASELINE = "9b738e0af64ebd08c25b39f8081d46d4dc5674fb";

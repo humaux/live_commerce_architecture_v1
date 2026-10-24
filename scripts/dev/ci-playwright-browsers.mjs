@@ -29,13 +29,33 @@ export function browserRequirements(mode, source, extraEnv = '') {
   if (engine === 'webkit' && !browsers.includes('webkit')) browsers.push('webkit');
   return browsers;
 }
-/** A Go test file launches WebKit when it sets the engine to the literal "webkit", calls webkit.executablePath(), or drives
- * LC_BROWSER_ENGINE from a variable and declares `// lc:webkit=browser`. A variable-driven file must declare itself:
- * `// lc:webkit=front-only` (only browserFront's TLS branch, no browser binary) or `// lc:webkit=browser`; undeclared throws (TH-7, #147). */
-function usesWebKit(source) {
-  if (/\bwebkit\.executablePath\(\)/.test(source)) return true;
+/** Reviewed exception to the WebKit coverage scan, keyed by repo-relative POSIX path. Each entry promises that the
+ * file's LC_BROWSER_ENGINE=webkit path only selects browserFront's TLS boundary and never resolves or launches
+ * Playwright's WebKit binary; the reason names that reviewed code path. Any other file carrying
+ * `// lc:webkit=front-only` fails closed. An allowlisted file that also calls webkit.executablePath() contradicts its
+ * own declaration: that call is positive evidence the WebKit executable is resolved, so it fails closed too.
+ * Adding an entry here is a coverage decision, never a way to silence this scan (PR #188 review P1). */
+const FRONT_ONLY_SOURCES = new Map([
+  ['tests/foundation/browser_admin_relay_test.go', 'browserFront TLS front under a variable LC_BROWSER_ENGINE; no WebKit executable is launched'],
+]);
+const canonicalPath = file => typeof file === 'string' && file.trim()
+  ? path.posix.normalize(file.replace(/\\/g, '/').replace(/^\.\//, '')) : '';
+/** A Go test file launches WebKit when it calls webkit.executablePath(), sets the engine to the literal "webkit", or drives
+ * LC_BROWSER_ENGINE from a variable. An explicit marker is the reviewed contract and beats every inference:
+ * `// lc:webkit=browser` (a browser binary may launch) or `// lc:webkit=front-only` (only browserFront's TLS branch,
+ * allowed only for a file in FRONT_ONLY_SOURCES); a variable-driven file without a marker throws (TH-7, #147). */
+function usesWebKit(source, file = '') {
   const marker = source.match(/^\/\/ lc:webkit=(front-only|browser)\b/m)?.[1];
-  if (marker) return marker === 'browser'; // an explicit declaration beats inference (a front-only file may Setenv "webkit" to select the TLS front)
+  if (marker === 'browser') return true;
+  if (marker === 'front-only') {
+    const reviewed = canonicalPath(file);
+    if (!FRONT_ONLY_SOURCES.has(reviewed))
+      throw new Error(`${reviewed || '<unknown file>'}: "// lc:webkit=front-only" is a reviewed per-file exception, not a self-serve opt-out; add the file and its reason to FRONT_ONLY_SOURCES (allowed: ${[...FRONT_ONLY_SOURCES.keys()].join(', ')})`);
+    if (/\bwebkit\.executablePath\(\)/.test(source))
+      throw new Error(`${reviewed}: "// lc:webkit=front-only" contradicts executable WebKit launch evidence (webkit.executablePath())`);
+    return false;
+  }
+  if (/\bwebkit\.executablePath\(\)/.test(source)) return true;
   let driven = false;
   for (const m of source.matchAll(/\b\w+\.Setenv\(\s*"LC_BROWSER_ENGINE"\s*,\s*([^)]*?)\s*\)/g)) {
     if (m[1] === '"webkit"') return true;
@@ -44,11 +64,16 @@ function usesWebKit(source) {
   if (driven) throw new Error('variable-driven LC_BROWSER_ENGINE needs a "// lc:webkit=front-only|browser" marker: the WebKit coverage scan cannot see which engine it launches');
   return false;
 }
-/** Assert explicit WebKit commands and selected mixed Go test roots receive WebKit dependencies. */
-export function assertWebKitCoverage(source, testSources) {
+/** Assert explicit WebKit commands and selected mixed Go test roots receive WebKit dependencies.
+ * `testFiles` is parallel to `testSources` (repo-relative paths) and supplies the provenance the front-only
+ * allowlist needs; a marker without provenance fails closed rather than being trusted. */
+export function assertWebKitCoverage(source, testSources, testFiles = []) {
+  if (testFiles.length && testFiles.length !== testSources.length)
+    throw new Error(`testFiles must be parallel to testSources: ${testFiles.length} != ${testSources.length}`);
   // File-level inspection intentionally errs toward requiring WebKit for sibling tests.
-  const mixedRoots = testSources.filter(usesWebKit)
-    .flatMap(s => [...s.matchAll(/^func (Test\w+)\(t \*testing\.T\)/gm)].map(m => m[1]));
+  const mixedRoots = testSources.map((body, i) => ({ body, file: testFiles[i] ?? '' }))
+    .filter(({ body, file }) => usesWebKit(body, file))
+    .flatMap(({ body }) => [...body.matchAll(/^func (Test\w+)\(t \*testing\.T\)/gm)].map(m => m[1]));
   for (const entry of modeEntries(source).filter(e => isBrowser(e.name))) {
     const browsers = declared(entry);
     const code = entry.body.split('\n').filter(l => !l.trimStart().startsWith('#')).join('\n');
