@@ -722,13 +722,15 @@ try {
   const pointerB=await stored(a,"commerce-purchase-order-v1:"),cartB=(await api(a,"GET","cart")).body;
   assert.equal(await a.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"America/Los_Angeles");
   const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),firstHistoryUI=historyRead(a);
-  // The edge withholds this GET until release.resolve(). Assert the transient loading status while the reply is still
-  // held, then release from the same awaited branch; awaiting the held reply first only times out (run 39996387148).
+  // The edge withholds this GET until release.resolve(). Keep the baseline assertion order (upstream result, then the
+  // transient loading status while the reply is still held), then release from that same awaited branch; awaiting the
+  // held page reply first only times out (run 39996387148).
   const [historyReply]=await Promise.all([firstHistoryUI,a.getByTestId("toggle-order-history").click(),historyLoading.entered.promise.then(async()=>{
-    try{await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();}
-    finally{historyLoading.release.resolve();}
+    try{
+      assert.equal(await historyLoading.result.promise,200);
+      await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();
+    }finally{historyLoading.release.resolve();}
   })]);
-  assert.equal(await historyLoading.result.promise,200);
   await expect(a.locator(".history-list li")).toHaveCount(2);
   await assertHistoryTimes(a,"en",historyReply);
   await expect(a.locator(".history-list li").first().locator("button")).toHaveAttribute("data-order-id",orderB);
