@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
@@ -628,24 +627,7 @@ func lrPassword(t *testing.T, target lrCluster, sourceDSN string) string {
 
 func lrHTTPReady(t *testing.T, p *mrProcess, address string, deadline time.Time) {
 	t.Helper()
-	client := &http.Client{Timeout: time.Second}
-	for time.Now().Before(deadline) {
-		resp, err := client.Get("http://" + address + "/healthz")
-		if err == nil {
-			_ = resp.Body.Close()
-			if resp.StatusCode == http.StatusOK {
-				return
-			}
-		}
-		select {
-		case err := <-p.done:
-			p.exited = true
-			t.Fatalf("API exited before ready: %v", err)
-		default:
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
-	t.Fatal("API did not become healthy")
+	waitHTTPReady(t, p, "http://"+address+"/healthz", "local-recovery", time.Second, 20*time.Millisecond, deadline)
 }
 
 func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {

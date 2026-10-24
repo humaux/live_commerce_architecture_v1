@@ -1,12 +1,12 @@
 // Purpose: one shared bounded HTTP readiness probe for the real-process tests in this package.
 // Depends on: net/http, net/http/httptest (witness), mrProcess (meta_runtime_process_test.go), time.
 // Used by: local_recovery_test.go, meta_runtime_process_test.go, account_process_test.go,
-//
-//	merchant_restart_replay_test.go, studio_planning_only_test.go, studio_process_test.go and
-//	order_attempt_process_test.go.
+// merchant_restart_replay_test.go, studio_planning_only_test.go, studio_process_test.go and
+// order_attempt_process_test.go.
 package foundation_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -21,11 +21,16 @@ var (
 	errHTTPReadyExited   = errors.New("process exited before readiness")
 )
 
-// pollHTTPReady polls target until it answers 200. The caller owns the shared
-// readiness deadline; each individual request is capped by perRequest.
+// pollHTTPReady polls target until it answers 200 before the caller-owned shared
+// deadline. Each request runs under a context bounded by min(perRequest,
+// remaining budget), and a 200 is accepted only if it arrives before the
+// deadline: a late response is stale evidence, not readiness.
 func pollHTTPReady(proc *mrProcess, target string, perRequest, interval time.Duration, deadline time.Time) error {
-	client := &http.Client{Timeout: perRequest}
-	for time.Now().Before(deadline) {
+	for {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return errHTTPReadyDeadline
+		}
 		if proc != nil {
 			select {
 			case err := <-proc.done:
@@ -34,16 +39,36 @@ func pollHTTPReady(proc *mrProcess, target string, perRequest, interval time.Dur
 			default:
 			}
 		}
-		resp, err := client.Get(target)
+		timeout := perRequest
+		if remaining < timeout {
+			timeout = remaining
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
+		if err != nil {
+			cancel()
+			return err
+		}
+		resp, err := http.DefaultClient.Do(req)
 		if err == nil {
 			_ = resp.Body.Close()
-			if resp.StatusCode == http.StatusOK {
+			// Check expiry before accepting success: the 200 may have arrived
+			// after the shared deadline while the request context was expiring.
+			if resp.StatusCode == http.StatusOK && time.Now().Before(deadline) {
+				cancel()
 				return nil
 			}
 		}
-		time.Sleep(interval)
+		cancel()
+		if !time.Now().Before(deadline) {
+			return errHTTPReadyDeadline
+		}
+		pause := interval
+		if left := time.Until(deadline); left < pause {
+			pause = left
+		}
+		time.Sleep(pause)
 	}
-	return errHTTPReadyDeadline
 }
 
 // waitHTTPReady is pollHTTPReady's fatal wrapper for process tests.
@@ -72,7 +97,6 @@ func TestPollHTTPReadyRejectsSuccessAfterDeadline(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
-	defer close(release)
 
 	deadline := time.Now().Add(100 * time.Millisecond)
 	type result struct{ err error }
