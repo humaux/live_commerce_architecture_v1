@@ -88,10 +88,16 @@ test("the scan rejects awaiting a fixture-held reply before releasing the hold",
     'historyLoading.release.resolve();',
   ].join("\n");
   assert.equal(caseOf(triggerFirst).length, 1);
+});
+
+test("the scan rejects a held wait that only names entered before a release after the statement", () => {
   // #181 P2 witness verbatim from the review: naming only `entered` inside the aggregate does not release; the
   // release runs after the statement, so the await deterministically waits for a reply that is still held.
   const enteredOnly = 'const held=arm("orders?limit=20",{method:"GET",after:true}),pending=historyRead(a); await Promise.all([pending,a.getByTestId("toggle-order-history").click(),held.entered.promise]); held.release.resolve();';
   assert.equal(caseOf(enteredOnly).length, 1);
+});
+
+test("the scan accepts a release in the entered branch of the held aggregate", () => {
   // Driving the hold from inside the awaited aggregate (status asserted while held) stays green.
   const released = [
     'const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),historyUI=historyRead(a);',
