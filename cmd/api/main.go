@@ -31,6 +31,13 @@ func main() {
 	}
 }
 
+// validateListenAddr checks LISTEN_ADDR before any pool opens, so a bad address fails startup before the process can
+// log ready. Fixed ports keep the host the operator configured; the zero-port (ephemeral) rule lands in the next commit.
+func validateListenAddr(addr string) error {
+	_, _, err := net.SplitHostPort(addr)
+	return err
+}
+
 func run() error {
 	identityConfig, err := loadIdentityConfig(os.Getenv)
 	if err != nil {
@@ -39,6 +46,9 @@ func run() error {
 	addr := os.Getenv("LISTEN_ADDR")
 	if addr == "" {
 		addr = "127.0.0.1:8080"
+	}
+	if err := validateListenAddr(addr); err != nil {
+		return err
 	}
 	if identityConfig.enabled && !privateIdentityAddress(addr) {
 		return errors.New("identity requires a literal loopback listener")
