@@ -69,3 +69,27 @@ test("the scan rejects Promise.all that lists the trigger before the wait", () =
   // The wait-first form stays green (it is what the gate scripts use).
   assert.deepEqual(caseOf('const pending=p.waitForResponse(r=>r.ok());const [reply]=await Promise.all([pending,p.getByTestId("go").click()]);'), []);
 });
+
+test("the scan rejects awaiting a fixture-held reply before releasing the hold", () => {
+  // arm(..., {after: true}) withholds the reply until hook.release resolves. A wait declared with that hook and awaited
+  // in an aggregate that never drives the hold can only time out, even with the wait listed first.
+  const waitFirst = [
+    'const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),historyUI=historyRead(a);',
+    'const [reply]=await Promise.all([historyUI,a.getByTestId("toggle-order-history").click()]);',
+    'historyLoading.release.resolve();',
+  ].join("\n");
+  assert.equal(caseOf(waitFirst).length, 1);
+  // Listing the trigger first is the round-2 shape and still hits both ordering rules.
+  const triggerFirst = [
+    'const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),historyUI=historyRead(a);',
+    'const [reply]=await Promise.all([a.getByTestId("toggle-order-history").click(),historyUI]);',
+    'historyLoading.release.resolve();',
+  ].join("\n");
+  assert.equal(caseOf(triggerFirst).length, 2);
+  // Driving the hold from inside the awaited aggregate (status asserted while held) stays green.
+  const released = [
+    'const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),historyUI=historyRead(a);',
+    'const [reply]=await Promise.all([historyUI,a.getByTestId("toggle-order-history").click(),historyLoading.entered.promise.then(()=>historyLoading.release.resolve())]);',
+  ].join("\n");
+  assert.deepEqual(caseOf(released), []);
+});
