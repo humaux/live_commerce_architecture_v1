@@ -10,7 +10,8 @@ import { createHash } from 'node:crypto';
 import { modeEntries } from '../../scripts/dev/pr-modes.mjs';
 import { browserRequirements, assertWebKitCoverage } from '../../scripts/dev/ci-playwright-browsers.mjs';
 const registry = readFileSync('scripts/dev/test-local.sh', 'utf8');
-const goSources = readdirSync('tests/foundation').filter(n => n.endsWith('_test.go')).map(n => readFileSync(`tests/foundation/${n}`, 'utf8'));
+const goFiles = readdirSync('tests/foundation').filter(n => n.endsWith('_test.go')).map(n => `tests/foundation/${n}`);
+const goSources = goFiles.map(file => readFileSync(file, 'utf8'));
 
 test('ordinary and sharded browser jobs require only Chromium; default mixed modes keep WebKit', () => {
   for (const mode of ['--browser-returns-ui', '--browser-store-domains', '--browser-live-console', '--browser-visual-lint@4/4'])
@@ -33,28 +34,36 @@ test('every current browser arm declares requirements; unknown or missing declar
   assert.throws(() => browserRequirements('--browser-order', missing), /declar|browser/i);
 });
 test('coverage assertion derives mixed Go roots and catches a new mode reusing them', () => {
-  assertWebKitCoverage(registry, goSources);
+  assertWebKitCoverage(registry, goSources, goFiles);
   const mixed = `  --browser-new-mixed)\n    lc_build=storefront\n    lc_fixture=pg\n    lc_browsers=chromium\n    lc_prepare() {\n  :\n    }\n    lc_run() {\n  go test -tags browser -run '^TestBrowserTaiwanCvs$' ./tests/foundation\n    }\n    ;;\n`;
-  assert.throws(() => assertWebKitCoverage(registry.replace('  # APPEND MODES HERE', () => mixed + '  # APPEND MODES HERE'), goSources), /webkit/i);
+  assert.throws(() => assertWebKitCoverage(registry.replace('  # APPEND MODES HERE', () => mixed + '  # APPEND MODES HERE'), goSources, goFiles), /webkit/i);
 });
 
 test('TH-7: a variable-driven LC_BROWSER_ENGINE launch must declare itself, so it cannot slip past the WebKit coverage scan', () => {
+  const drivenFile = 'tests/foundation/browser_engine_loop_test.go';
   const driven = 'func TestEngineLoop(t *testing.T) {\n\tfor _, engine := range []string{"chromium", "webkit"} {\n\t\tt.Setenv("LC_BROWSER_ENGINE", engine)\n\t}\n}\n';
-  assert.throws(() => assertWebKitCoverage(registry, [...goSources, driven]), /marker|variable/i);
-  assertWebKitCoverage(registry, [...goSources, '// lc:webkit=front-only\n' + driven]); // TLS front without a browser binary: declared, accepted
+  assert.throws(() => assertWebKitCoverage(registry, [...goSources, driven], [...goFiles, drivenFile]), /marker|variable/i);
+  // A front-only declaration is a reviewed exception, not a self-serve opt-out: an unlisted file cannot buy silence.
+  assert.throws(() => assertWebKitCoverage(registry, [...goSources, '// lc:webkit=front-only\n' + driven], [...goFiles, drivenFile]), /allowlist|front-only/i);
+  // The one allowlisted TLS front may still drive the engine variable without launching a WebKit binary.
+  assertWebKitCoverage(registry, [...goSources, '// lc:webkit=front-only\n' + driven], [...goFiles, 'tests/foundation/browser_admin_relay_test.go']);
   const browser = '// lc:webkit=browser\n' + driven.replace('TestEngineLoop', 'TestEngineBrowser');
   const mode = `  --browser-new-driven)\n    lc_build=storefront\n    lc_fixture=pg\n    lc_browsers=chromium\n    lc_prepare() {\n  :\n    }\n    lc_run() {\n  go test -tags browser -run '^TestEngineBrowser$' ./tests/foundation\n    }\n    ;;\n`;
-  assert.throws(() => assertWebKitCoverage(registry.replace('  # APPEND MODES HERE', () => mode + '  # APPEND MODES HERE'), [...goSources, browser]), /webkit/i);
+  assert.throws(() => assertWebKitCoverage(registry.replace('  # APPEND MODES HERE', () => mode + '  # APPEND MODES HERE'), [...goSources, browser], [...goFiles, 'tests/foundation/browser_engine_browser_test.go']), /webkit/i);
 });
 
-test('TH-7: an explicit lc:webkit marker beats executablePath inference too', () => {
+test('TH-7: front-only is a reviewed allowlist, so executablePath evidence cannot be suppressed by a copied header', () => {
   const mode = root => `  --browser-marker-${root.toLowerCase()})\n    lc_build=storefront\n    lc_fixture=pg\n    lc_browsers=chromium\n    lc_prepare() {\n  :\n    }\n    lc_run() {\n  go test -tags browser -run '^${root}$' ./tests/foundation\n    }\n    ;;\n`;
   const registryWith = root => registry.replace('  # APPEND MODES HERE', () => mode(root) + '  # APPEND MODES HERE');
-  // The declaration is the reviewed contract; a front-only TLS fixture may still name the engine's path without launching a browser.
-  const front = '// lc:webkit=front-only\nfunc TestMarkerFront(t *testing.T) {\n\t_ = webkit.executablePath()\n}\n';
-  assertWebKitCoverage(registryWith('TestMarkerFront'), [...goSources, front]);
+  // A copied header with positive executable-path evidence, in a root no review has allowlisted, must be rejected.
+  const copied = '// lc:webkit=front-only\nfunc TestMarkerFront(t *testing.T) {\n\t_ = webkit.executablePath()\n}\n';
+  assert.throws(() => assertWebKitCoverage(registryWith('TestMarkerFront'), [...goSources, copied], [...goFiles, 'tests/foundation/browser_copied_front_test.go']), /allowlist|front-only/i);
+  // An allowlisted file may not contradict front-only with executable WebKit launch evidence either.
+  assert.throws(() => assertWebKitCoverage(registryWith('TestMarkerFront'), [...goSources, copied], [...goFiles, 'tests/foundation/browser_admin_relay_test.go']), /contradict|executablePath/i);
+  // The real relay file declares front-only and carries no executable-path evidence, so it still passes.
+  assertWebKitCoverage(registry, goSources, goFiles);
   const browser = '// lc:webkit=browser\nfunc TestMarkerBrowser(t *testing.T) {\n\t_ = webkit.executablePath()\n}\n';
-  assert.throws(() => assertWebKitCoverage(registryWith('TestMarkerBrowser'), [...goSources, browser]), /webkit/i);
+  assert.throws(() => assertWebKitCoverage(registryWith('TestMarkerBrowser'), [...goSources, browser], [...goFiles, 'tests/foundation/browser_marker_test.go']), /webkit/i);
 });
 
 function installer({ indexSha = 'MATCH', failures = 0, browsers = ['chromium'], first = 'missing', dpkg = 'installed', debs = false, offlineFails = false } = {}) {
