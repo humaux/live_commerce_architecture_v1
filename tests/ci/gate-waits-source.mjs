@@ -6,6 +6,11 @@
 //   inline (`const r = await page.waitForResponse(...)`) can only miss the reply or hang, and a `Promise.all([trigger(),
 //   pending])` that lists the trigger first lets a fixture-held reply (arm(..., {after: true})) wait for a release that
 //   lives after the statement — the gate then dies on a 30 s waitForResponse timeout (order-gate.mjs:724 in run 39996387148).
+//   Round 3 pins the hold itself: arm(..., {after:true}) withholds the reply until release.resolve(), so a wait declared
+//   with that hook must name the hook's entered/release in the same awaited statement. The wait-first variant still
+//   deadlocks when the release runs only after the aggregate; listing the wait first is not sufficient. A release driven
+//   through a helper variable is not recognised (the hook must be named in the awaited statement), so keep the release
+//   branch inline in the aggregate.
 // Depends on: nothing (plain text scan); callers pass {path, text} pairs and injected counterexamples.
 // Used by: tests/ci/gate-waits.test.mjs; no browser, network or application code is executed.
 
@@ -51,6 +56,14 @@ function statementEnd(text, from) {
   return text.length;
 }
 
+// The source line holding `index`. Gate scripts declare a held hook and its wait on one line
+// (`const held=arm(...),wait=historyRead(p);`); a declaration wrapped across lines is outside this lexical ratchet.
+function declarationLine(text, index) {
+  const start = text.lastIndexOf("\n", index - 1) + 1;
+  const end = text.indexOf("\n", index);
+  return { start, end: end < 0 ? text.length : end };
+}
+
 const awaitedDirectly = (name) => new RegExp(`await\\s*\\(*\\s*${name}\\b`);
 const AGGREGATE = /^await\s+Promise\.(?:all|allSettled|race)\(/;
 
@@ -78,6 +91,7 @@ export function offenders(files) {
   for (const { path, text } of files) {
     const re = new RegExp(WAIT.source, "g");
     const names = new Set();
+    const waits = [];
     let match;
     while ((match = re.exec(text))) {
       const [whole, name] = match;
@@ -91,6 +105,7 @@ export function offenders(files) {
         continue;
       }
       const statement = text.slice(at, statementEnd(text, at + 5));
+      waits.push({ name, line, index: match.index, statement });
       const direct = awaitedDirectly(name).test(statement);
       const aggregate = AGGREGATE.test(statement) && new RegExp(`\\b${name}\\b`).test(statement);
       if (!direct && !aggregate) {
@@ -128,6 +143,23 @@ export function offenders(files) {
       if (waitAt >= 0 && t.index < waitAt) {
         const line = text.slice(0, start + t.index).split("\n").length;
         found.push(`${path}:${line} the trigger is listed before the wait inside Promise.all; list the wait first`);
+      }
+    }
+
+    // Ordering rule 3: arm(..., {after: true}) withholds the reply until hook.release resolves. A wait declared in the
+    // same statement as that hook must drive the hold from the same awaited statement (entered/release named there);
+    // awaiting the held reply in an aggregate that never names the hook can only time out, wait-first or not.
+    const heldArm = /([A-Za-z_$][\w$]*)\s*=\s*arm\s*\(/g;
+    let hm;
+    while ((hm = heldArm.exec(text))) {
+      const holdEnd = callEnd(text, hm.index + hm[0].length - 1);
+      if (holdEnd < 0 || !/\bafter\s*:\s*true\b/.test(text.slice(hm.index, holdEnd))) continue;
+      const decl = declarationLine(text, hm.index);
+      const hook = new RegExp(`\\b${hm[1]}\\.(?:entered|release)\\b`);
+      for (const wait of waits) {
+        if (!wait.statement || wait.index <= decl.start || wait.index >= decl.end) continue;
+        if (hook.test(wait.statement)) continue;
+        found.push(`${path}:${wait.line} held ${wait.name} is awaited without ${hm[1]}.entered/release in the same statement; arm(..., {after: true}) withholds the reply until release, so this await times out`);
       }
     }
   }
