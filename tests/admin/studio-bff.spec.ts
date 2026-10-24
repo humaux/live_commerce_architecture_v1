@@ -3,6 +3,10 @@ import { test } from "node:test";
 import * as http from "node:http";
 import { chromium } from "@playwright/test";
 
+// #147 CI-7 round 2: this suite drives Chromium; the marker lets matrix-receipts.mjs count the runner summary its Go
+// harness redirects into the evidence log, while a unit/model suite that never launches a browser cannot.
+console.log("## matrix-receipts browser-spec");
+
 const required = (name: string) => {
   const value = process.env[name];
   if (!value) throw new Error(`${name} is required`);
