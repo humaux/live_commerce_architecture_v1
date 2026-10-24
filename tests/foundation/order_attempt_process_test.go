@@ -53,7 +53,8 @@ func TestOrderAttemptProcessAPIRejectsSplitBuyerPools(t *testing.T) {
 	// database is valid; a generic startup error cannot satisfy the negative cases.
 	t.Run("same-physical-database", func(t *testing.T) {
 		p := mrLaunch(t, binary, "oa-api-same-db", environment(-1))
-		lrHTTPReady(t, p, mrBoundAddr(t, p, 8*time.Second))
+		deadline := time.Now().Add(8 * time.Second)
+		lrHTTPReady(t, p, mrBoundAddr(t, p, time.Until(deadline)), deadline)
 		mrLogNoSecrets(t, p, bff, main, local[0], local[1], local[2])
 		mrStop(t, p, syscall.SIGTERM, true)
 	})

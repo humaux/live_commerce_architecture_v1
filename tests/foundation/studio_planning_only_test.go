@@ -49,8 +49,8 @@ func TestStudioPlanningOnlyG2APIProcess(t *testing.T) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	ready := func(p *mrProcess) {
 		t.Helper()
-		origin = "http://" + mrBoundAddr(t, p, 12*time.Second)
 		deadline := time.Now().Add(12 * time.Second)
+		origin = "http://" + mrBoundAddr(t, p, time.Until(deadline))
 		for time.Now().Before(deadline) {
 			select {
 			case err := <-p.done:
