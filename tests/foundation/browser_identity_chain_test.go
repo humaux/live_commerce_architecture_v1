@@ -308,12 +308,6 @@ func browserFront(t *testing.T, upstream string) string {
 		r.SetURL(target)
 		r.Out.URL.RawQuery = r.In.URL.RawQuery // Rewrite proxies drop unparsable queries (`?limit=%`); the BFF negatives need them raw.
 		r.Out.Host = r.In.Host
-		// Rewrite strips Forwarded and X-Forwarded-{For,Host,Proto}; hand Next every one exactly as the browser sent it.
-		for name, values := range r.In.Header {
-			if name == "Forwarded" || strings.HasPrefix(name, "X-Forwarded-") {
-				r.Out.Header[name] = values
-			}
-		}
 		// The TLS hop this front imitates; never overrides a client-sent value, so a spoofed XFP stays observable as on Chromium.
 		if _, sent := r.In.Header["X-Forwarded-Proto"]; !sent {
 			r.Out.Header.Set("X-Forwarded-Proto", "https")
