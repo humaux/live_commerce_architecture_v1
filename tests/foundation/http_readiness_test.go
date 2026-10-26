@@ -21,11 +21,41 @@ var (
 	errHTTPReadyExited   = errors.New("process exited before readiness")
 )
 
+// httpReadyOption overrides one probe setting. Options exist so that a caller
+// keeps the HTTP client it had before the probes were consolidated: the Meta
+// process test needs a no-redirect client, every other caller keeps
+// http.DefaultClient.
+type httpReadyOption func(*httpReadyConfig)
+
+type httpReadyConfig struct {
+	client *http.Client
+}
+
+// withHTTPClient makes the probe use client instead of http.DefaultClient.
+func withHTTPClient(client *http.Client) httpReadyOption {
+	return func(cfg *httpReadyConfig) {
+		if client != nil {
+			cfg.client = client
+		}
+	}
+}
+
+func newHTTPReadyConfig(opts []httpReadyOption) httpReadyConfig {
+	cfg := httpReadyConfig{client: http.DefaultClient}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	return cfg
+}
+
 // pollHTTPReady polls target until it answers 200 before the caller-owned shared
 // deadline. Each request runs under a context bounded by min(perRequest,
 // remaining budget), and a 200 is accepted only if it arrives before the
 // deadline: a late response is stale evidence, not readiness.
-func pollHTTPReady(proc *mrProcess, target string, perRequest, interval time.Duration, deadline time.Time) error {
+func pollHTTPReady(proc *mrProcess, target string, perRequest, interval time.Duration, deadline time.Time, opts ...httpReadyOption) error {
+	// RED witness: the option is wired here but the dispatch below still uses
+	// http.DefaultClient, so the Meta no-redirect policy is not yet honoured.
+	_ = newHTTPReadyConfig(opts)
 	for {
 		remaining := time.Until(deadline)
 		if remaining <= 0 {
@@ -72,9 +102,9 @@ func pollHTTPReady(proc *mrProcess, target string, perRequest, interval time.Dur
 }
 
 // waitHTTPReady is pollHTTPReady's fatal wrapper for process tests.
-func waitHTTPReady(t *testing.T, proc *mrProcess, target, label string, perRequest, interval time.Duration, deadline time.Time) {
+func waitHTTPReady(t *testing.T, proc *mrProcess, target, label string, perRequest, interval time.Duration, deadline time.Time, opts ...httpReadyOption) {
 	t.Helper()
-	if err := pollHTTPReady(proc, target, perRequest, interval, deadline); err != nil {
+	if err := pollHTTPReady(proc, target, perRequest, interval, deadline, opts...); err != nil {
 		if proc != nil {
 			t.Fatalf("API %s readiness failed: %v log=%s", label, err, proc.logPath)
 		}
@@ -119,6 +149,32 @@ func TestPollHTTPReadyAcceptsFastResponse(t *testing.T) {
 	defer server.Close()
 	if err := pollHTTPReady(nil, server.URL, time.Second, 10*time.Millisecond, time.Now().Add(time.Second)); err != nil {
 		t.Fatalf("fast 200 was not accepted: %v", err)
+	}
+}
+
+// TestPollHTTPReadyHonoursNoRedirectClient is the negative control for the Meta
+// readiness policy: /healthz answers 302 to a page that returns 200. The Meta
+// process test has always probed with a client whose CheckRedirect returns
+// http.ErrUseLastResponse, so a redirect must never count as ready — otherwise a
+// routing or middleware regression would satisfy readiness.
+func TestPollHTTPReadyHonoursNoRedirectClient(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/routed-ok", http.StatusFound)
+	})
+	mux.HandleFunc("/routed-ok", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	noRedirect := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	deadline := time.Now().Add(250 * time.Millisecond)
+	err := pollHTTPReady(nil, server.URL+"/healthz", time.Second, 20*time.Millisecond, deadline, withHTTPClient(noRedirect))
+	if !errors.Is(err, errHTTPReadyDeadline) {
+		t.Fatalf("Meta readiness accepted a 200 reached through a redirect: %v", err)
 	}
 }
 
