@@ -49,7 +49,8 @@ type Line struct {
 	TxnDate       string `json:"txn_date"`
 }
 
-// Statement is one closed period of one store (store currency only). Lines is empty on the list route.
+// Statement is one closed period of one store (store currency only). Lines is empty on the list route. The three payout-return fields
+// (returned_in_minor, payout_returned, payout_returned_at) are additive (§6.9); the return reference and ticket are never part of it.
 type Statement struct {
 	StatementID      string  `json:"statement_id"`
 	PeriodStart      string  `json:"period_start"`
@@ -62,6 +63,7 @@ type Statement struct {
 	PlatformFeeBPS   int     `json:"platform_fee_bps"`
 	PlatformFeeMinor int64   `json:"platform_fee_minor"`
 	CarriedInMinor   int64   `json:"carried_in_minor"`
+	ReturnedInMinor  int64   `json:"returned_in_minor"` // payout returns carried into this statement (§6.7); always present, >= 0
 	NetPayableMinor  int64   `json:"net_payable_minor"`
 	LineCount        int     `json:"line_count"`
 	ClosedAt         string  `json:"closed_at"`
@@ -69,6 +71,8 @@ type Statement struct {
 	PayoutRef        *string `json:"payout_ref,omitempty"`
 	PayoutMinor      *int64  `json:"payout_minor,omitempty"`
 	PaidAt           *string `json:"paid_at,omitempty"`
+	PayoutReturned   bool    `json:"payout_returned"`              // the payout of THIS statement bounced; always present (§6.7)
+	PayoutReturnedAt *string `json:"payout_returned_at,omitempty"` // RFC 3339, only when PayoutReturned; never the bank reference or ticket
 	Lines            []Line  `json:"lines,omitempty"`
 }
 

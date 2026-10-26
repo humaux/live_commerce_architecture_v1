@@ -6,7 +6,10 @@
 //   settlement-payout  --statement --payout-ref --amount --paid-at                 (SQL only: RECORDS a payout, never pays)
 //   settlement-resolve --environment --balance-txn --resolution [--target-tenant --target-store] --note
 //                      (SQL only: appends one §6.6 resolution row to an unmapped_source row so close can proceed; never moves money)
-// Depends on: internal/payments/stripeadmin (SettlementSync/Close/Payout/Statement/Resolve), internal/payments/settlement (CSV);
+//   settlement-payout-return --statement --return-ref --amount --returned-at   (SQL only: RECORDS that a payout bounced, §6.7; the next close
+//                      carries it into the store's next statement; never calls a bank)
+//   settlement-payables --environment [--limit 1..200, default 50]              (SQL only, read only: statements still owed money, §6.9)
+// Depends on: internal/payments/stripeadmin (SettlementSync/Close/Payout/PayoutReturn/Payables/Statement/Resolve), internal/payments/settlement (CSV);
 //   env COMMERCE_STRIPE_REGISTRAR_DATABASE_URL, the API keyring (sync only), STRIPE_SANDBOX=1 (SANDBOX sync opt-in) and the owner's LIVE
 //   flag+reference pair (LIVE sync only).
 // Used by: cmd/stripe-admin main.go dispatch; deploy/scripts/ops-admin.sh allowlist.
@@ -14,13 +17,16 @@
 //   because --store is already the scope flag; the assigned store of resolve is --target-tenant + --target-store); --operator and --ticket
 //   are required on every subcommand; the ticket goes into the audit row's details and is echoed in the one JSON result line.
 //   settlement-sync also names --connection, which SQL asserts is the designated platform connection, and refuses --to later than now minus
-//   15 minutes. Close, export, payout and resolve never call Stripe and never read the LIVE pair.
+//   15 minutes, prints the run id and the stored per-currency reconciliation, and exits non-zero (settlement_unreconciled) when any currency
+//   has a non-zero difference (the rows are already stored; the exit only tells the operator that close will refuse, §6.8). Close, export,
+//   payout, payout-return, payables and resolve never call Stripe and never read the LIVE pair.
 // Status: MOCK + REAL_PG; SANDBOX sync needs the owner's test key (NOT_RUN here).
 
 package main
 
 import (
 	"context"
+	"errors"
 	"io"
 	"regexp"
 	"strings"
@@ -31,6 +37,9 @@ import (
 	"livecommerce/internal/payments/settlement"
 )
 
+// errUnreconciled is the fixed exit text of a settlement-sync whose stored comparison has a non-zero difference (§6.8).
+var errUnreconciled = errors.New("settlement_unreconciled")
+
 var (
 	ticketPattern = regexp.MustCompile(`^[A-Za-z0-9._:-]{8,128}$`)
 	operatorName  = regexp.MustCompile(`^[A-Za-z0-9._:@-]{2,64}$`)
@@ -39,8 +48,9 @@ var (
 func runSettlement(ctx context.Context, name string, args []string, getenv func(string) string, stdout io.Writer) error {
 	c := newCommand(name)
 	var environment, connection, fromStr, toStr, periodStart, targetStore, statement, out, payoutRef, paidAtStr, operator, ticket string
-	var balanceTxn, resolution, targetTenant, note string
+	var balanceTxn, resolution, targetTenant, note, returnRef, returnedAtStr string
 	var expected, amount int64
+	limit := 50
 	switch name {
 	case "settlement-sync":
 		c.fs.StringVar(&environment, "environment", "", "")
@@ -67,6 +77,14 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 		c.fs.StringVar(&payoutRef, "payout-ref", "", "")
 		c.fs.Int64Var(&amount, "amount", 0, "")
 		c.fs.StringVar(&paidAtStr, "paid-at", "", "")
+	case "settlement-payout-return":
+		c.fs.StringVar(&statement, "statement", "", "")
+		c.fs.StringVar(&returnRef, "return-ref", "", "")
+		c.fs.Int64Var(&amount, "amount", 0, "")
+		c.fs.StringVar(&returnedAtStr, "returned-at", "", "")
+	case "settlement-payables":
+		c.fs.StringVar(&environment, "environment", "", "")
+		c.fs.IntVar(&limit, "limit", 50, "")
 	default:
 		return errUsage
 	}
@@ -78,11 +96,14 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 	if !operatorName.MatchString(operator) || !ticketPattern.MatchString(ticket) {
 		return errUsage
 	}
-	if (name == "settlement-sync" || name == "settlement-close" || name == "settlement-resolve") &&
+	if (name == "settlement-sync" || name == "settlement-close" || name == "settlement-resolve" || name == "settlement-payables") &&
 		environment != "SANDBOX" && environment != "LIVE" {
 		return errUsage
 	}
-	var from, to, paidAt time.Time
+	if name == "settlement-payables" && (limit < 1 || limit > 200) {
+		return errUsage
+	}
+	var from, to, paidAt, returnedAt time.Time
 	var err error
 	switch name {
 	case "settlement-sync":
@@ -98,6 +119,10 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 		}
 	case "settlement-payout":
 		if paidAt, err = time.Parse(time.RFC3339, paidAtStr); err != nil {
+			return errUsage
+		}
+	case "settlement-payout-return":
+		if returnedAt, err = time.Parse(time.RFC3339, returnedAtStr); err != nil {
 			return errUsage
 		}
 	case "settlement-export":
@@ -135,8 +160,14 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 		if err != nil {
 			return err
 		}
-		return emit(stdout, map[string]any{"environment": environment, "ticket": ticket, "from": from.UTC().Format(time.RFC3339),
-			"to": to.UTC().Format(time.RFC3339), "report": rep})
+		if err := emit(stdout, map[string]any{"environment": environment, "ticket": ticket, "from": from.UTC().Format(time.RFC3339),
+			"to": to.UTC().Format(time.RFC3339), "sync_run_id": rep.SyncRunID, "reconciliation": rep.Reconciliation, "report": rep}); err != nil {
+			return err
+		}
+		if !rep.Reconciled() {
+			return errUnreconciled // §6.8: the line above is already stored; this only tells the operator that close will refuse
+		}
+		return nil
 	case "settlement-close":
 		res, err := reg.SettlementClose(ctx, c.scope, environment, periodStart, operator, targetStore, ticket)
 		if err != nil {
@@ -161,6 +192,18 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 			return err
 		}
 		return emit(stdout, map[string]any{"statement_id": statement, "ticket": ticket, "line_count": st.LineCount, "written": true})
+	case "settlement-payout-return":
+		at, err := reg.SettlementPayoutReturn(ctx, c.scope, statement, returnRef, amount, returnedAt, operator, ticket)
+		if err != nil {
+			return err
+		}
+		return emit(stdout, map[string]any{"statement_id": statement, "ticket": ticket, "recorded_at": at.UTC().Format(time.RFC3339Nano)})
+	case "settlement-payables":
+		res, err := reg.SettlementPayables(ctx, c.scope, environment, limit)
+		if err != nil {
+			return err
+		}
+		return emit(stdout, map[string]any{"environment": environment, "ticket": ticket, "payables": res.Payables, "truncated": res.Truncated})
 	default: // settlement-payout
 		at, err := reg.SettlementPayout(ctx, c.scope, statement, payoutRef, amount, paidAt, operator, ticket)
 		if err != nil {

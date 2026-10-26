@@ -1396,7 +1396,7 @@
   },
   {
     "id": "SA-1",
-    "title": "结算后端：打款退回、对账入库与关账门、应付清单（迁移 02xx）",
+    "title": "结算后端：打款退回、对账入库与关账门、应付清单（迁移 0200）",
     "depends_on": [
       "SA-0"
     ],
@@ -1410,7 +1410,18 @@
     ],
     "role": "commerce_worker",
     "write_paths": [
-      "migrations/02xx_settlement_returns_recon.sql",
+      "migrations/0200_settlement_returns_recon.sql",
+      "apps/admin/lib/card-payments-settlements-model.ts",
+      "internal/payments/settlement/export.go",
+      "internal/payments/settlement/export_test.go",
+      "deploy/scripts/ops-admin.sh",
+      "deploy/README.md",
+      "tests/deploy/deploy-prep-r3.test.mjs",
+      "tests/foundation/stripe_live_schema_test.go",
+      "tests/foundation/r2_integration_upgrade_test.go",
+      "cmd/stripe-admin/settlement_test.go",
+      "contracts/stripe-platform-account-v1.md",
+      "docs/delivery/units/settlement-api-plan.md",
       "internal/payments/stripeadmin/settlement.go",
       "internal/payments/stripeadmin/settlement_unit_test.go",
       "internal/payments/stripeadmin/live.go",
@@ -1435,10 +1446,10 @@
       "independent_review": "NOT_RUN"
     },
     "plan": "docs/delivery/units/settlement-api-plan.md",
-    "migration_number": "02xx（integrator 分配）；ACL pin、ops-admin.sh 白名单、R2 迁移计数 pin 由 integrator 合并",
+    "migration_number": "0200；ACL pin、ops-admin.sh 白名单、R2 迁移计数 pin 同 PR 更新（SA-1）",
     "red_first": "仅 CI：基线上 PF16/PF17/PF18 红；PF17 必须按 §6.9 先证明完整两周干净可关账，再确认新差额拒绝（含 grandfathered），最后干净修复成功；缺入口或权限只算 setup RED。单独注错 net/anti-join、旧入口和缺 manifest。日志 output/settlement-returns/red.log",
     "acceptance": "仅 CI：bash scripts/dev/test-focused.sh '^(TestPlatformSettlement|TestR2IntegrationUpgradeFromReleaseHead|TestStripeAuthority|TestStripeAdmin|TestOpsAdmin)'；stripeadmin 单测与 platform registrar pin；go vet ./...；bash scripts/dev/check-gates.sh；foundation-shards；PF17 旧9参数 identity不存在、新10参数窗口缺manifest必须22023且零写入；Opus 金额复核 0 P0/P1",
-    "signature_retirement": "02xx DROP payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)；升级 settlement.go:203、platform/stripe_runtime.go:123、settlement_unit_test.go:139 和 platform_settlement_test.go:273,310 的调用/ACL清单，保留所有原有权限断言",
+    "signature_retirement": "0200 DROP payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)；升级 settlement.go:203、platform/stripe_runtime.go:123、settlement_unit_test.go:139 和 platform_settlement_test.go:273,310 的调用/ACL清单，保留所有原有权限断言",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
@@ -1477,7 +1488,7 @@
     },
     "plan": "docs/delivery/units/settlement-api-plan.md",
     "note": "routes.ts 只改 settlements 条目的 nav；用冻结 DTO fixture 并行开发，真实端到端等 SA-1 合并后再跑",
-    "acceptance": "tests/admin/settlements.spec.ts STL1–STL7（真实点击，含 WebKit 与 390px）；admin typecheck；点击台账",
+    "acceptance": "tests/admin/settlements.spec.ts STL1–STL7（真实点击，含 WebKit 与 390px）；admin typecheck；点击台账；渲染 returned_in 列，各列之和等于 net；payout_returned ⇒ paid && payout_returned_at（来源：PR #198 DeepSeek P2 与 Opus P2-5，integrator 批准的跨卡文字修改 2026-10-27）",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {

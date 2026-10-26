@@ -70,7 +70,7 @@ func WriteCSV(w io.Writer, st Statement) error {
 	for _, row := range [][2]string{
 		{"totals_currency", st.Currency}, {"captured", major(st.CapturedMinor)}, {"refunded", major(st.RefundedMinor)},
 		{"dispute", major(st.DisputeMinor)}, {"stripe_fee", major(st.StripeFeeMinor)}, {"platform_fee", major(st.PlatformFeeMinor)},
-		{"carried_in", major(st.CarriedInMinor)}, {"net_payable", major(st.NetPayableMinor)}, {"line_count", strconv.Itoa(st.LineCount)},
+		{"carried_in", major(st.CarriedInMinor)}, {"returned_in", major(st.ReturnedInMinor)}, {"net_payable", major(st.NetPayableMinor)}, {"line_count", strconv.Itoa(st.LineCount)},
 	} {
 		writeLine(&b, []string{row[0], row[1]}, []bool{true, row[0] == "totals_currency"})
 	}
