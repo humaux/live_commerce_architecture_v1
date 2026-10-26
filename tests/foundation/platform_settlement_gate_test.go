@@ -306,6 +306,21 @@ func gateRaw(id, typ string, amount int64, fee *int64, at time.Time) stripe.Bala
 		Currency: "HKD", Created: at.Unix(), SourceID: pslS("src_" + id[4:]), SourceObject: pslS(typ)}
 }
 
+// gateManifestEntry is the §6.8 manifest element: exactly {"id","currency","net"}; any other key is 22023.
+type gateManifestEntry struct {
+	ID       string `json:"id"`
+	Currency string `json:"currency"`
+	Net      int64  `json:"net"`
+}
+
+func gateManifest(txs []stripe.BalanceTransaction) []gateManifestEntry {
+	out := make([]gateManifestEntry, 0, len(txs))
+	for _, tx := range txs {
+		out = append(out, gateManifestEntry{ID: tx.ID, Currency: tx.Currency, Net: tx.Net})
+	}
+	return out
+}
+
 // sync calls the ten-argument §6.9 entry point: projected lines plus the full observed manifest.
 func (g *gateEnv) sync(t *testing.T, from, to time.Time, lines, manifest []stripe.BalanceTransaction) map[string]any {
 	t.Helper()
@@ -319,7 +334,7 @@ func (g *gateEnv) sync(t *testing.T, from, to time.Time, lines, manifest []strip
 	if err != nil {
 		t.Fatal(err)
 	}
-	m, err := json.Marshal(manifest)
+	m, err := json.Marshal(gateManifest(manifest))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -994,7 +1009,7 @@ func TestPlatformSettlementPF17Reconciliation(t *testing.T) {
 		bad := []struct {
 			name string
 			val  any
-		}{{"null-manifest", nil}, {"duplicate-id", `[` + string(gateJSON(t, a)) + `,` + string(gateJSON(t, a)) + `]`}}
+		}{{"null-manifest", nil}, {"duplicate-id", string(gateJSON(t, gateManifest([]stripe.BalanceTransaction{a, a})))}}
 		for _, tc := range bad {
 			_, err := g.callFn(t, "record_settlement_lines", map[string]any{
 				"tenant": g.tenant, "store": g.store, "principal": g.princ, "environment": "SANDBOX",
