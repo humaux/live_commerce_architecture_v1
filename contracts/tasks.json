@@ -1467,7 +1467,8 @@
       "tests/admin/fixtures/card-payments-wire/settlements-list.json",
       "tests/admin/fixtures/card-payments-wire/settlement-paid.json",
       "tests/admin/fixtures/card-payments-wire/settlement-carried.json",
-      "tests/admin/fixtures/card-payments-wire/settlement-pending.json"
+      "tests/admin/fixtures/card-payments-wire/settlement-pending.json",
+      "tests/admin/shell-registry.test.ts"
     ],
     "status": "NOT_STARTED",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
