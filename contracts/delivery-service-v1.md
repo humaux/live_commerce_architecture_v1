@@ -1,5 +1,7 @@
 # Merchant delivery service revisions v1
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q4, OC-Q16); ADR-20261026.
+
 Status: FROZEN_FOR_IMPLEMENTATION, 2026-09-20, base `058912c`.
 Executable prerequisite of checkout, not complete shipping, public UI or carrier
 acceptance. Implements the configuration portion of merchant-service-settings-v1.

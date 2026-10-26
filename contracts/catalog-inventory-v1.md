@@ -1,5 +1,7 @@
 # T04 v1 — catalog, price and physical inventory
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q15); ADR-20261026.
+
 Status: CONTRACT_FROZEN; implementation/tests must independently prove it. Owner: integrator. No customer production writes. Payment/checkout/fulfillment gates remain NOT_RUN until their own implementation.
 
 ## Amendment — A6 + product-editor rulings (2026-10-02, product-editor §f)

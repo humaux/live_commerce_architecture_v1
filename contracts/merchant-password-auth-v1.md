@@ -1,5 +1,7 @@
 # Merchant password auth v1 — email + password, emailed one-time code
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-T21R01); ADR-20261026.
+
 Status: **v1 FROZEN 2026-09-30 (DESIGN; gates NOT_RUN)** — round-1 review `output/contract-review/r2-design-wave.json`
 key `auth` and the three round-2 P1s addressed in §13; round-3 findings (`output/contract-review/r2-round3.json`
 key `auth`) applied per ruling X1 (§13 Round 3), frozen per ruling X6. Evidence label for this file: DESIGN.
@@ -418,7 +420,7 @@ the sending mailbox exist.
   authentication). It proves mailbox control; a mailbox compromise + password leak = account
   takeover, and reset needs only the mailbox. **Minimum length 12 is below NIST's 15 for
   single-factor passwords** — accepted gap (ruling Q2); the owner may raise it to 15 (one constant
-  + copy change). Upgrade signal: first merchant with payouts or staff ⇒ add TOTP or passkeys.
+  + copy change). Upgrade signal: first merchant with payouts or staff ⇒ add TOTP or passkeys. **Fired; see §16 (recent re-auth now, TOTP later).**
 - **Personal-mailbox transport:** the QQ daily/burst caps are UNKNOWN (F8); a provider rejection
   makes login answer 503 `mail_unavailable` for everyone until the provider window resets, and the
   provider cap is shared by login and unauthenticated mail (our split protects only our own
@@ -594,3 +596,14 @@ Findings: independent test F1 (`tests/foundation/password_finding_test.go`) and 
   not match its purpose). merchant-browser-auth-v1's "invalid 422" is read as the semantic case.
 - **A6 (note, no change): dead limit.** `email-mail-unauth`'s 10/day equals `ip-mail-unauth`'s and is hit by the same
   calls, so one source never observes it independently; it stays as defence in depth for a rotated `ip` key.
+
+## 16. Recent re-authentication (ADR-20261026 T21R-01; the §11 upgrade signal has fired; binding over §11)
+
+Evidence: DESIGN. Source: `output/r3-t21-review-20261026/FINDINGS.md` T21R-01 (P1); owner chose option A (implement re-auth) on 2026-10-26.
+
+- Sessions record `authenticated_at` (set at password+code login; **not** moved by session refresh). New SQL `identity.require_recent_auth(p_hash bytea, p_window interval)` raises `PT401` message `reauth_required` when `now() - authenticated_at > window`. Window default 10 minutes, configurable (`COMMERCE_REAUTH_WINDOW_MINUTES`, default 10, allowed 1–60). HTTP maps it as the existing PT401 row of §7.1 (401, code `reauth_required`).
+- Operations that must call it before acting: `staff_invite`, `staff_set_role`, `staff_remove`, `set_platform_stripe`, refunds (including offline refund), `decide_bank_transfer`, every export, erasure.
+- Re-auth method now: current password + a fresh emailed one-time code (same challenge machinery as §2). Success updates `authenticated_at` for that session only. TOTP/passkey is a later step, not in this change.
+- `staff_invite` with `role=owner` is refused until TOTP/passkey exists (code `owner_invite_disabled`, 403). Existing owners are unchanged.
+- Red test: set `authenticated_at` to 2 hours ago, call `staff_invite(role=member)` → `PT401 reauth_required`; call with `role=owner` → 403. Fresh re-auth → success. Both NOT_RUN.
+- Migration number `02xx` (integrator assigns). The §11 TOTP upgrade signal stays open for the owner-role invite.

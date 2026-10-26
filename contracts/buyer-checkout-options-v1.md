@@ -1,5 +1,7 @@
 # Buyer checkout options v1
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q1, OC-Q5); ADR-20261026.
+
 Status: FROZEN after independent preflight (no open P0/P1/P2), 2026-09-25.
 Implementation `83e5ed6` accepted: CO01–CO05 bounded private HTTP/PG gates,
 353-test full regression and independent review passed. [Evidence and limits](../docs/implementation/2026-09-25-buyer-checkout-options-acceptance.md).

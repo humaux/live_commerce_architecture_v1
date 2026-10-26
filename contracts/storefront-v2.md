@@ -1,5 +1,7 @@
 # Storefront v2 — independent-store baseline (R4)
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q5, OC-Q9, OC-Q10, OC-Q11, OC-Q18); ADR-20261026.
+
 Status: FROZEN 2026-10-01 by the integrator for R4 wave 1. Producers implement exactly these shapes; the
 consumer (unit storefront-shell, wave 2) codes against them. Changes need an integrator amendment here.
 Why: owner correction 2026-10-01 — the product must be a qualified independent-store SaaS (SHOPLINE parity

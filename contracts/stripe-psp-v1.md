@@ -1,5 +1,7 @@
 # Stripe PSP v1 — Checkout Session lifecycle, webhook intake and deadline closure
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-AD01); ADR-20261026.
+
 Status: Stage A accepted separately; stage B consistency amendment §0.2 is
 **FROZEN / IMPLEMENTATION_GATES_REQUIRED** on base `529cb0f` (2026-09-29).
 Independent review of `80dea8e` closed the scope/dedupe/atomicity concerns; its remaining
@@ -52,7 +54,7 @@ requires a new ADR.
 | D3 | **The worker creates sessions. The API never holds `sk_`.** No business transaction performs network I/O. | A crash in the API cannot leave an untracked remote session. The public-facing process carries a smaller secret blast radius. |
 | D4 | **Fixed session timing.** `expires_at = date_trunc('second', attempt.created_at) + 40 min`. The first create must be sent before `created_at + 7 min`. Handoff stops at `expires_at − 5 min`. A never-disclosed-session closure waits until `expires_at + 15 min`. | Satisfies Stripe's rule of 30 min–24 h measured from Stripe's own creation time: the latest first send leaves ≥ 31.8 min, allowing ≤60 s clock skew and ≤10 s latency. Stock is held for at most about 40 min after payment start plus closure latency (Q2). |
 | D5 | **Stock is released only by a `CLOSED_UNPAID` fact.** That fact requires one of: (a) Stripe retrieve shows `expired` + `unpaid` and the PaymentIntent has not succeeded; (b) the create was never sent; (c) the first send got a definitive rejection; or (d) the URL was never disclosed, DB now ≥ `expires_at + 15 min`, and a list scan finds no session. Timeout, 404, 5xx and an elapsed deadline alone never release stock. | Implements §11.5 and the owner rule "never release while the Stripe page can still take money". |
-| D6 | **Card only, automatic capture.** Sessions set `payment_method_types[0]=card`. Status `paid` produces a `CAPTURED` fact. Stripe never produces an `AUTHORIZED` fact. Async events are processed defensively and lead to review (Q3). | Stripe's dashboard-dynamic methods could otherwise add delayed-notification methods. Their release semantics would need a PaymentIntent-level protocol, which is not designed here. |
+| D6 | **Card + Link, automatic capture** (amended by ADR-20261026 AD-01; was card only). Sessions set `payment_method_types[0]=card` and `payment_method_types[1]=link` (Stripe requires both when methods are listed manually, one currency per session). Credit and debit cards are both `card`; a Link payment reports `payment_method.type=link`. Status `paid` produces a `CAPTURED` fact for either type; Stripe never produces an `AUTHORIZED` fact. Webhook, reconciliation and refund paths accept `type` in {`card`,`link`} and reject any other type into review. Every other card constraint is unchanged. Link funded by a US bank account is delayed: it is outside the TWD/HKD scope, and any non-`paid` or async outcome stays review-only. Async events are processed defensively and lead to review (Q3). | Stripe's dashboard-dynamic methods could otherwise add delayed-notification methods. Their release semantics would need a PaymentIntent-level protocol, which is not designed here. |
 | D7 | **The amount is pinned.** The session has one line item equal to the frozen order total. Promotion codes, discounts, automatic tax, shipping options, adjustable quantity, Managed Payments, Adaptive Pricing and after-expiration recovery are all **off**. Any money drift creates a review case. Nothing that violates I05 becomes a fact. | Managed Payments was ON by default on this account (2026-09-25 evidence). Adaptive Pricing showed USD. Recovery creates a *copy* session that could take money outside our attempt. |
 | D8 | **A webhook is a wake-up signal, never financial authority.** Every financial transition comes from an authenticated retrieve followed by a PG apply. Raw webhook bodies are **not retained**. | Follows Stripe's fulfillment guidance to re-retrieve. Also avoids storing `customer_details` PII (§16.1: short retention is replaced by no retention). |
 | D9 | Mandatory ownership, non-goal and safety comments (§15). | Reviewability. |
@@ -85,7 +87,7 @@ gate evidence. Only documentation search was used for this file.
 
 Owner answers (AskUserQuestion, 2026-09-28):
 - Q2: fixed 40-minute session and stock hold after payment start.
-- Q3: card only at launch.
+- Q3: card + Link at launch (ADR-20261026 AD-01; was card only).
 - Q5: payment after closure goes to manual refund work only (D13); never reopen the order.
 - Q1/Q4: "merchants may choose platform collection or their own account; markets are mainly Taiwan
   and Singapore; TWD, HKD, SGD, MYR and USD are all needed; the integrator decides".
@@ -546,6 +548,7 @@ line_items[0][price_data][unit_amount]=<stripe_unit_amount>
 line_items[0][quantity]=1                             payment_intent_data[metadata][lc_attempt]=<attempt>
 locale=<zh-TW→zh-TW | zh-CN→zh | en→en>               payment_intent_data[metadata][lc_order]=<order>
 payment_method_types[0]=card                          submit_type=pay
+payment_method_types[1]=link                          (ADR-20261026 AD-01; order fixed, no other value)
 success_url=<COMMERCE_PAYMENT_RETURN_URL>             ui_mode=hosted_page
 ```
 
@@ -869,7 +872,7 @@ CREATE TABLE payments.stripe_signals (
 | `integration.load_stripe_session(uuid,bigint,bytea,text) RETURNS jsonb` | 0061 | integration_writer | worker | Lease/token/profile fenced like `load_payment_query` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)*. Returns frozen scope, account, credential version, `create_params`, deadlines, pins, markers, the latest observation summary (Status, PaymentStatus, first-seen of complete+unpaid), terminal-fact flags, signal session candidate and DB now. Returns no secrets. |
 | `integration.mark_stripe_create_sent(uuid,bigint,bytea,text,bytea) RETURNS text` | 0061 | integration_writer | worker | Parameters: body_sha256. Locks the session row and returns `SEND` (first send, only if `now<send_deadline` and not suppressed or cancelled), `RESEND` (same body hash, `now<expires_at+15 min`) or `CLOSED`. Commits before the POST. |
 | `integration.note_stripe_expire(uuid,bigint,bytea,text) RETURNS void` | 0061 | integration_writer | worker | Increments `expire_calls` and sets `last_expire_at` before each expire POST, so the call is auditable. |
-| `integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text) RETURNS void` | post_river | integration_writer | worker | Parameters: report, reconcile_job, session_url (NULL unless pinning). Validates the lease and the exact §5.7 keys and types. Every observation carrying a non-empty `SessionID` must have our identity (ClientReferenceID = MetadataAttempt = attempt, AccountID, Livemode, ExpiresAt, Mode, card-only). `list` with zero matches, `create` rejections and LOCAL observations carry an empty identity, and their DB preconditions are checked instead. Otherwise it raises, nothing is recorded, and the caller finishes UNKNOWN with `stripe_session_mismatch`. It pins `session_id` (op `provider_reference` too), `url` and `payment_intent_id` set-once. It records a *different* session with our identity as evidence for a duplicate review but never pins it. For LOCAL `unsent` it sets `create_suppressed_at`. It deduplicates by hash, verifies the `payment_reconcile_v1` job, then Completes UNKNOWN/`stripe_report_observed` with DB-clock lease fences. |
+| `integration.record_stripe_observation(uuid,bigint,bytea,text,jsonb,bigint,text) RETURNS void` | post_river | integration_writer | worker | Parameters: report, reconcile_job, session_url (NULL unless pinning). Validates the lease and the exact §5.7 keys and types. Every observation carrying a non-empty `SessionID` must have our identity (ClientReferenceID = MetadataAttempt = attempt, AccountID, Livemode, ExpiresAt, Mode, `payment_method_types` exactly `[card, link]`, ADR-20261026 AD-01). `list` with zero matches, `create` rejections and LOCAL observations carry an empty identity, and their DB preconditions are checked instead. Otherwise it raises, nothing is recorded, and the caller finishes UNKNOWN with `stripe_session_mismatch`. It pins `session_id` (op `provider_reference` too), `url` and `payment_intent_id` set-once. It records a *different* session with our identity as evidence for a duplicate review but never pins it. For LOCAL `unsent` it sets `create_suppressed_at`. It deduplicates by hash, verifies the `payment_reconcile_v1` job, then Completes UNKNOWN/`stripe_report_observed` with DB-clock lease fences. |
 | `integration.finish_stripe_query(uuid,bigint,bytea,text,text) RETURNS void` | 0061 | integration_writer | worker | Fixed codes: `stripe_create_uncertain`, `stripe_retrieve_failed`, `stripe_rate_limited`, `stripe_timeout`, `stripe_panic`, `stripe_record_failed`, `stripe_session_mismatch`, `stripe_idempotency_alarm`, `stripe_unavailable`, `stripe_budget_exhausted`, `stripe_terminal_observed`. Always records UNKNOWN. `stripe_terminal_observed` requires a terminal fact and purges `session_url`. |
 | `integration.consume_stripe_signal(uuid,uuid,bigint,bytea,text,text) RETURNS void` | 0061 | integration_writer | worker | Parameters: signal, op, gen, token, profile, outcome. |
 | `payments.apply_capture(uuid,bytea) RETURNS void` | 0061 | checkout_writer | worker (existing grant) | **Dispatcher.** 0061 runs `ALTER FUNCTION payments.apply_capture(uuid,bytea) RENAME TO apply_capture_payuni_v1`, which keeps its body byte-identical, and revokes its EXECUTE. It then creates a new `apply_capture` that reads the op provider and calls `payments.apply_capture_payuni_v1` *(retired in 0197 / post_river 0026, PAY-RM2 phase 2b)* or `payments.apply_stripe_observation`. SP06 hashes the renamed body against the 0018 text. |
@@ -1315,7 +1318,7 @@ path for SANDBOX (SP21).
 | SP13 | `TestStripeSP13WebhookHTTP` | HTTP_PG (real API binary) | Every §9.1 status/limit; blocked-commit hook proves no ACK before commit; commit failure → 503; duplicate id with a different body (pending_webhooks) → DUPLICATE, no job; every quarantine/ignore reason; malformed after signature → 200 MALFORMED once; concurrency cap 503; log capture and a DB-wide scan find no signature, body, secret, URL, email or name sentinel; no row stores a body |
 | SP14 | `TestStripeSP14BuyerHTTP` + BFF Node tests | HTTP_PG + Node | Prepare/handoff/refresh/cancel/view exact keys and enums; handoff CREATING→REDIRECT (repeatable)→CLOSED/cutoff/UNAVAILABLE; foreign or other-store order 404; strict no-body/no-key; public validators accept only the Stripe URL pattern; **PAYUNi responses byte-identical to pre-change golden files**; BPH/BPT suites unchanged |
 | SP15 | `TestStripeSP15Process` | process + PG | Disabled flags read nothing; every config negative; `GET /v1/account` mismatch (fake) and unregistered fingerprint refuse start; the API never reads `STRIPE_SECRET_KEY` (source guard + env sentinel); the worker never reads `whsec`; one worker process consumes PAYUNi (signed mock) and Stripe (fake) jobs on one profile queue; a Stripe job on a Stripe-disabled worker → no claim; SIGTERM graceful; ingress pool role validation, both directions |
-| SP16 | `TestStripeSP16Sandbox` | **SANDBOX** | Refuses unless test key + `livemode=false` + account = `acct_1UJDb0RusP6Wwj7e`; `VerifyAccount`; create with frozen params (store currency, method min) → retrieve exact fields (adaptive pricing and managed payments disabled, presentment null, card only, amount pinned); same-key replay returns the same id with `Idempotent-Replayed`; changed-params same key → `idempotency_error`; expire → expired/unpaid; second expire → 400; list window finds it; below-minimum → first-send 400; `expires_at`=now+29 min → 400; records the least RAK permission set. Creates test objects only; no charge |
+| SP16 | `TestStripeSP16Sandbox` | **SANDBOX** | Refuses unless test key + `livemode=false` + account = `acct_1UJDb0RusP6Wwj7e`; `VerifyAccount`; create with frozen params (store currency, method min) → retrieve exact fields (adaptive pricing and managed payments disabled, presentment null, `payment_method_types` exactly `[card, link]` (ADR-20261026 AD-01), amount pinned); pay once with a test card and once with a Link sandbox account (`payment_method.type=link`) to prove CAPTURED, reconcile and refund for both; same-key replay returns the same id with `Idempotent-Replayed`; changed-params same key → `idempotency_error`; expire → expired/unpaid; second expire → 400; list window finds it; below-minimum → first-send 400; `expires_at`=now+29 min → 400; records the least RAK permission set. Creates test objects only; no charge |
 | SP17 | `TestStripeSP17SandboxWebhook` | SANDBOX-WEBHOOK | Real signed `checkout.session.expired` via the CLI forward → admission → signal → closure; redelivery dedupe |
 | SP18 | `stripe-browser.spec.ts` | **BROWSER** | Pay → child window → hosted page → card `4242 4242 4242 4242`, any future expiry, any CVC and postal code → neutral return → original tab shows CAPTURED (poller; webhook if SP17 is available) → CONFIRMED; decline `4000 0000 0000 0002` → stays open → buyer cancel → closure; 3DS `4000 0027 6000 3184` → authenticate → paid; 3 locales, desktop + mobile Chromium; screenshots hashed; no URL in storage or logs |
 | SP19 | `TestStripeSP19LiveRefusal` | UNIT + REAL_PG | LIVE is refused at config, CLI and SQL; no live network call is possible from tests |
@@ -1384,7 +1387,7 @@ At most two targeted fixes per blocker, then escalate.
 - **Single account.** There is one Stripe account per environment and one store (D1): no Connect,
   no multi-merchant, no merchant self-service. Key rotation is operator-run and requires
   re-qualification.
-- **Payment methods.** Card only (wallets only where Stripe presents them as card). No Link, FPS,
+- **Payment methods.** Card + Link (ADR-20261026 AD-01; wallets only where Stripe presents them as card). No FPS,
   Alipay, WeChat Pay or bank methods. Async outcomes are review-only.
 - **Currencies.** HKD, USD, TWD and JPY only. Minimums are local prefilters; Stripe's
   settlement-currency minimum decides.
@@ -1411,6 +1414,8 @@ At most two targeted fixes per blocker, then escalate.
 - **Merchant views.** The merchant orders read model shows closure only as `CANCELLED`. A dedicated
   merchant payment view is follow-up work.
 
+- **UNKNOWN (ADR-20261026 AD-01).** Whether the HK platform account may offer Link to Taiwan buyers (country/currency availability, Link enablement in the account's payment method settings) is not established. It needs a SANDBOX probe (SP16) before any LIVE enrollment. Until then `link` stays out of LIVE sessions: LIVE keeps `[card]` unless the owner records the probe result.
+
 ## 17. Open questions for the owner (blocking FREEZE unless marked)
 
 - **Q1 (blocking).** Is `acct_1UJDb0RusP6Wwj7e` (香港大碗貿易有限公司) the merchant of record's own
@@ -1418,7 +1423,7 @@ At most two targeted fixes per blocker, then escalate.
   instead of D1.
 - **Q2 (blocking).** Accept the fixed 40-minute session and stock hold after payment start? The
   alternative is a per-store TTL between 30 minutes and 24 hours.
-- **Q3 (blocking).** Card only at launch? HK buyers often expect FPS, Alipay or WeChat Pay, which
+- **Q3 (blocking, answered by ADR-20261026 AD-01: card + Link).** Card only at launch? HK buyers often expect FPS, Alipay or WeChat Pay, which
   are delayed or redirect methods and would need a PaymentIntent-level release protocol.
 - **Q4 (blocking).** Which launch market and currency (HKD from the sandbox, or TWD)? This confirms
   the D15 allowlist and the method minimums.

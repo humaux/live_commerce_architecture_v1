@@ -1,5 +1,7 @@
 # Admin transport completion: error envelope and cursor lists
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q7); ADR-20261026.
+
 2026-09-20, integrator-owned. This augments catalog-inventory-v1 before any production client exists. No real customer state changes.
 
 ## Stable pagination

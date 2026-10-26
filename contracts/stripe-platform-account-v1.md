@@ -1,5 +1,7 @@
 # Stripe platform account v1: one platform Stripe account collects for every store
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q2, OC-Q3, OC-AD01); ADR-20261026.
+
 Status: **DRAFT, FROZEN-ready, 2026-10-06 (DESIGN; every PF gate NOT_RUN)**. Integrator review and freeze are pending.
 SA-0 (2026-10-26): §0.3 AD-PF2.1, §6.7–§6.9, §8 `tw_legal_opinion`, §9 and §10 PF16–PF18 are **FROZEN** for SA-1/SA-2/SA-3
 (plan `docs/delivery/units/settlement-api-plan.md`; DESIGN, NOT_RUN).
@@ -73,6 +75,8 @@ account (the platform owner's own store(s)).
 - `read_platform_stripe` returns `allowed` (boolean) so the admin UI can hide the toggle.
 - Everything else in this file (attribution §4, kill switches §7, per-order cap, refunds limited to the store's own captures, the
   settlement ledger) is unchanged. Sections that say "every store" / "merchant" read as "every allowlisted store".
+
+**Amendment AD-PF3 (ADR-20261026 AD-01, owner 2026-10-26).** Merchant settings page: no "apply/enable" action and no configuration. When the platform state is OPEN for the store it shows 「平台統一收款・已可使用」 and the supported methods 「信用卡、金融卡、Link」; payment success is not settlement. Other states keep their existing wording and hide the toggle. Stripe methods: stripe-psp D6 (card + Link).
 
 **Amendment AD-PF2.1 (SA-0, 2026-10-26; integrator ruling on `docs/delivery/units/settlement-api-plan.md`).** The owner wrote on
 2026-10-25: 「全部收款由平台统一代收（平台 Stripe 账户）；商家不配置 API/密钥/商户号，不接自有 PSP/Connect」. This conflicts with

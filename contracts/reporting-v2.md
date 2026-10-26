@@ -1,5 +1,7 @@
 # Reporting v2 — product, channel, funnel and manual-order reports (W6-02B)
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q1); ADR-20261026.
+
 Status: **DRAFT 2026-10-06 (REAL_PG on MOCK data; integrator freezes)**. Migration `0147_reports.sql`. Code: `internal/reporting/{report,products,channels,funnel,manual}.go`,
 `internal/httpapi/reports.go`. Extends [customers-billing-v1](customers-billing-v1.md) §3.1/§5 (BD7 finance summary), whose money rules these reports share.
 Authoritative: 架构 §15.5, invariants I01 (scope), I05 (money: integer minor units, per currency and environment, no conversion).
