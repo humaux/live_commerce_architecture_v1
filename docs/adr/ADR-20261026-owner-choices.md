@@ -26,7 +26,7 @@
 ### T21R-01 近期再认证
 - 决定：选 A。会话记录 `authenticated_at`；新增 `identity.require_recent_auth`，窗口默认 10 分钟（可配置）；覆盖 staff_invite/set_role/remove、平台 Stripe 开关、退款（含 offline refund）、银行转账确认、导出、erasure，另加 billing:manage 与广告发布（复核建议，owner 可去掉）；检查放在 SQL definer 内与写入同事务；`reauth_required` 用 403（不是 401，不会登出）；方式先用密码 + 邮件验证码，TOTP 后续；`staff_invite` 与 `staff_set_role` 暂时都禁止 role=owner，已发出的 owner 邀请在接受时拒绝。
 - 依据：FINDINGS T21R-01（P1）；`merchant-password-auth-v1.md` §11 升级信号「出现 staff 或 payouts 就加 TOTP 或 passkey」已触发。放弃：只让 owner 书面接受风险（留着被盗会话即可自邀 owner 的路径）。
-- 契约：`merchant-password-auth-v1.md` §16。错误码 403 `reauth_required`，路由 /v1/identity/password/reauth/{start,complete}。实现卡：OC-02、OC-03、OC-04。
+- 契约：`merchant-password-auth-v1.md` §16。错误码 403 `reauth_required`（路由行由 OC-15 的实现 PR 随 Go handler 一起加入契约）；OIDC-only 用户重走 OIDC（prompt=login+max_age）。实现卡：OC-02、OC-03、OC-04、OC-15。
 
 ## 二、22 题（均选推荐项）
 ### Q1 商家自收银行转账（AD-02、FIN-01、FIN-02）

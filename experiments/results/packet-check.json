@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-10-26T15:54:12.106333+00:00",
+  "checked_at_utc": "2026-10-26T16:10:23.115059+00:00",
   "status": "PASS_PACKET_STRUCTURE_ONLY",
   "delivery_baseline_checked": false,
   "counts": {
@@ -34,12 +34,10 @@
     "OC-07",
     "OC-09",
     "OC-12",
-    "OC-15",
     "OC-16",
     "T09",
     "T10",
     "T13",
-    "OC-04",
     "OC-08",
     "OC-13",
     "T12",
@@ -53,9 +51,11 @@
     "T16",
     "T18",
     "OC-10",
+    "OC-15",
     "T20",
-    "OC-14",
+    "OC-04",
     "T21",
+    "OC-14",
     "T22"
   ],
   "model_source_sha256": "9e3288a624d7eb2410faf439b26ec730e439bb37e64fbb801f5f1107307795a2",
