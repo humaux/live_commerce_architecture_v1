@@ -14,7 +14,9 @@
 //   (default output/playwright), and a browser mode (registry arm with lc_browsers) with no parsed spec/node result is FAIL.
 //   Reporter precedence is per execution, not per job (#184 review P2): each evidence log and each lc_run gate-log segment
 //   picks glyphs, else custom case lines, else its summary, and distinct executions are summed; a gate log that tees one of
-//   its own evidence executions is that execution, not another one. A browser mode's lc_prepare runs unit/model node suites
+//   its own evidence executions is that execution, not another one. Equal summary counts alone never merge two executions
+//   (#190 review P2): a summary-only tee is accepted only when the evidence log's whole text, including a non-summary runner
+//   identity line, is one contiguous block of the gate's browser-run phase. A browser mode's lc_prepare runs unit/model node suites
 //   first, so a node summary is evidence only when the suite marks its own browser execution and its summary sits after the
 //   gate's browser-run marker (review 184 P1a); a node browser runner may instead print PASS/FAIL case lines to the gate log
 //   after that marker. Original and durable copies of one evidence tree share a per-run directory identity and count once (P2).
@@ -49,6 +51,8 @@ export const BROWSER_SPEC_MARK = "## matrix-receipts browser-spec";
 // (a four-line excerpt), longer/mixed, or differently numbered is not that runner's summary. Post-summary failure details are
 // ordinary following lines, so the block is not required to reach EOF.
 const NODE_SUMMARY = /(?:^|\n)(ℹ|#) tests (?<tests>\d+)\n\1 suites (?<suites>\d+)\n\1 pass (?<pass>\d+)\n\1 fail (?<fail>\d+)\n\1 cancelled (?<cancelled>\d+)\n\1 skipped (?<skipped>\d+)\n\1 todo (?<todo>\d+)\n\1 duration_ms (?<duration_ms>\d+(?:\.\d+)?)(?=\n|$)/g;
+// The lines a summary-only reporter contributes; every other non-empty line is a runner identity/marker (#190 review P2).
+const SUMMARY_COUNT_LINE = /^\s*\d+ (?:passed|failed)\b/;
 
 /** The text of each CLOSED begin/end marker pair = one node --test invocation; a log cut short before its end marker yields none. */
 function nodeInvocations(lines) {
@@ -135,6 +139,11 @@ function resultLines(text) {
   return text.split(/\r?\n/).filter((line) => /^\s*[✓✘]\s+\d+\s/.test(line) || /^(PASS|FAIL)\s/.test(line));
 }
 
+/** One log as trimmed non-empty lines; a summary-only tee is proven against the whole evidence log, not its count. */
+function logLines(text) {
+  return text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+}
+
 /** True when `lines` is one contiguous block of `other`; a tee copies the execution's own output verbatim. */
 function isTee(lines, other) {
   if (!lines.length || lines.length > other.length) return false;
@@ -198,16 +207,28 @@ export function makeReceipt({ mode, outcome, runId, runAttempt, sha, logs, specs
   const evidenceCounts = specScans.map((scan) => scan.glyphs || scan.cases);
   const evidenceSpecs = specs.reduce((sum, _text, i) => sum + (evidenceCounts[i] || nodeScans[i].n), 0);
   // #147 round 2: a node browser runner (storefront/shell/platform/gallery) prints its PASS/FAIL case lines to the gate log
-  // itself, so the mode's lc_run phase is evidence too. A gate log that repeats the result lines (or the exact summary count)
-  // of one of its own evidence executions is a tee of that execution, never a second execution; a gate-log execution with
-  // different lines or a different count still adds, even when one line happens to be identical.
-  const runScans = browser ? logs.map((text) => scanSpecs(afterBrowserRun(text))) : [];
-  const runLines = browser ? logs.map((text) => resultLines(afterBrowserRun(text))) : [];
+  // itself, so the mode's lc_run phase is evidence too. A gate log that repeats one of its own evidence executions is that
+  // execution, never a second one; a gate-log execution with different lines still adds.
+  // #190 review P2: a matching summary COUNT is not an execution identity. Summary-only logs carry no result lines, so the
+  // old `evidenceLines[j].length === 0` branch merged two independent equal-sized runs (23 + 23 became 23). Dedup now needs
+  // proof of a tee: the evidence log's whole text, including at least one non-summary runner line, is one contiguous block
+  // of the gate's browser-run phase. Bare equal counts always add; failure flags are still collected from every log.
+  const runTexts = browser ? logs.map((text) => afterBrowserRun(text)) : [];
+  const runScans = runTexts.map(scanSpecs);
+  const runLines = runTexts.map(resultLines);
+  const runTextLines = runTexts.map(logLines);
+  const evidenceTextLines = specs.map(logLines);
+  const evidenceIdentityLines = evidenceTextLines.map((lines) => lines.filter((line) => !SUMMARY_COUNT_LINE.test(line)));
+  const summaryOnly = specScans.map((scan, j) => scan.glyphs === 0 && evidenceLines[j].length === 0);
   const runSpecs = browser ? runScans.reduce((sum, scan, i) => {
     const count = scan.glyphs || scan.cases;
     if (!count) return sum;
-    const teed = evidenceCounts.some((evidenceCount, j) => evidenceCount === count
-      && (runLines[i].length ? isTee(runLines[i], evidenceLines[j]) : evidenceLines[j].length === 0));
+    const teed = evidenceCounts.some((evidenceCount, j) => {
+      if (evidenceCount !== count) return false;
+      if (runLines[i].length || evidenceLines[j].length) return runLines[i].length > 0 && isTee(runLines[i], evidenceLines[j]);
+      return summaryOnly[j] && evidenceIdentityLines[j].length > 0
+        && isTee(evidenceTextLines[j], runTextLines[i]);
+    });
     return sum + (teed ? 0 : count);
   }, 0) : 0;
   const specCount = evidenceSpecs + runSpecs;
