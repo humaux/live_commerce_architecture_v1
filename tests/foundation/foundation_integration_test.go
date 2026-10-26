@@ -75,6 +75,25 @@ func fixture(t *testing.T) *testFixture {
 // before the legacy flip in newFixture. TestBtcPolicyClosedAfterMigrate pins that the migration itself leaves the policy closed.
 var legacyBankPolicyAfterMigrate struct{ read, closed bool }
 
+// legacyOpenBankPolicy: legacy (OC-16, migration 0202 closes new bank_transfer writes; issue #210). The order_attempt pipeline tests use
+// bank_transfer as a generic payment mode and still have to be moved to another mode. It reads the policy as the migration left it
+// (TestBtcPolicyClosedAfterMigrate pins closed=true into `after` when given), then opens it for this test database only. Owner-only write:
+// no commerce_* role can do this (TestBtcPolicyNotWritableByApp). Called by every fixture that migrates a fresh database (newFixture,
+// pwIsolatedFixture).
+func legacyOpenBankPolicy(ctx context.Context, owner *pgxpool.Pool, after *struct{ read, closed bool }) error {
+	var closed bool
+	if err := owner.QueryRow(ctx, `SELECT closed FROM checkout.bank_transfer_policy`).Scan(&closed); err != nil {
+		return fmt.Errorf("read bank transfer policy: %w", err)
+	}
+	if after != nil {
+		after.read, after.closed = true, closed
+	}
+	if _, err := owner.Exec(ctx, `UPDATE checkout.bank_transfer_policy SET closed=false`); err != nil {
+		return fmt.Errorf("legacy open of the bank transfer policy: %w", err)
+	}
+	return nil
+}
+
 func newFixture() (*testFixture, string, error) {
 	if os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		return nil, "LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN", nil
@@ -109,17 +128,9 @@ func newFixture() (*testFixture, string, error) {
 		owner.Close()
 		return nil, "", fmt.Errorf("second migration apply: %w", err)
 	}
-	// legacy (OC-16, migration 0202 closes new bank_transfer writes; issue #210): the order_attempt pipeline tests use bank_transfer as a generic
-	// payment mode and still have to be moved to another mode. Read the policy as the migration left it (TestBtcPolicyClosedAfterMigrate pins
-	// closed=true), then open it for this fixture database only. Owner-only write: no commerce_* role can do this (TestBtcPolicyNotWritableByApp).
-	if err := owner.QueryRow(ctx, `SELECT closed FROM checkout.bank_transfer_policy`).Scan(&legacyBankPolicyAfterMigrate.closed); err != nil {
+	if err := legacyOpenBankPolicy(ctx, owner, &legacyBankPolicyAfterMigrate); err != nil {
 		owner.Close()
-		return nil, "", fmt.Errorf("read bank transfer policy: %w", err)
-	}
-	legacyBankPolicyAfterMigrate.read = true
-	if _, err := owner.Exec(ctx, `UPDATE checkout.bank_transfer_policy SET closed=false`); err != nil {
-		owner.Close()
-		return nil, "", fmt.Errorf("legacy open of the bank transfer policy: %w", err)
+		return nil, "", err
 	}
 
 	password := hex.EncodeToString(randomBytes(32))
