@@ -109,6 +109,18 @@ func newFixture() (*testFixture, string, error) {
 		owner.Close()
 		return nil, "", fmt.Errorf("second migration apply: %w", err)
 	}
+	// legacy (OC-16, migration 0202 closes new bank_transfer writes; issue #210): the order_attempt pipeline tests use bank_transfer as a generic
+	// payment mode and still have to be moved to another mode. Read the policy as the migration left it (TestBtcPolicyClosedAfterMigrate pins
+	// closed=true), then open it for this fixture database only. Owner-only write: no commerce_* role can do this (TestBtcPolicyNotWritableByApp).
+	if err := owner.QueryRow(ctx, `SELECT closed FROM checkout.bank_transfer_policy`).Scan(&legacyBankPolicyAfterMigrate.closed); err != nil {
+		owner.Close()
+		return nil, "", fmt.Errorf("read bank transfer policy: %w", err)
+	}
+	legacyBankPolicyAfterMigrate.read = true
+	if _, err := owner.Exec(ctx, `UPDATE checkout.bank_transfer_policy SET closed=false`); err != nil {
+		owner.Close()
+		return nil, "", fmt.Errorf("legacy open of the bank transfer policy: %w", err)
+	}
 
 	password := hex.EncodeToString(randomBytes(32))
 	if _, err := owner.Exec(ctx, `CREATE ROLE foundation_api LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE IN ROLE commerce_runtime PASSWORD '`+password+`'`); err != nil {

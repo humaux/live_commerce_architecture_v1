@@ -1126,7 +1126,8 @@ func TestCogTransferACL(t *testing.T) {
 			t.Errorf("functions that set a transfer CONFIRMED: %v (anything else is an auto-confirm path)", got)
 		}
 		// Migration 0090 (buyer comms) adds exactly one AFTER UPDATE trigger, notify_transfer_refund, whose function only enqueues the refund mail and
-		// RETURNs NULL; it can neither confirm nor update the transfer (the two source scans above cover every function body). Anything else is a new path.
+		// RETURNs NULL; it can neither confirm nor update the transfer (the two source scans above cover every function body). Migration 0202 (OC-16) adds the
+		// BEFORE INSERT bank_transfer_closed_guard, which only refuses a new row while the policy is closed. Anything else is a new path.
 		rows, err := owner.Query(context.Background(), `SELECT t.tgname||'->'||tf.nspname||'.'||p.proname FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace tf ON tf.oid=p.pronamespace
 		  WHERE t.tgrelid='checkout.bank_transfers'::regclass AND NOT t.tgisinternal ORDER BY 1`)
 		if err != nil {
@@ -1141,7 +1142,7 @@ func TestCogTransferACL(t *testing.T) {
 			}
 			trig = append(trig, s)
 		}
-		if fmt.Sprint(trig) != "[notify_transfer_refund->notify.on_transfer_refund]" {
+		if fmt.Sprint(trig) != "[bank_transfer_closed_guard->checkout.bank_transfer_closed_guard notify_transfer_refund->notify.on_transfer_refund]" {
 			t.Errorf("triggers on checkout.bank_transfers: %v", trig)
 		}
 
