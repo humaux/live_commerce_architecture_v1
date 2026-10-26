@@ -8,26 +8,47 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Fragment markers (#171): a name built with Array.join/template concatenation emits the
-// fragments, not the joined spelling, so the emitted-bundle gate matches both.
-export const SEAM_MARKERS = ["__lcHoldUpload", "lc-gallery-upload-release", "HoldUpload", "gallery-upload"];
+// Seam shapes (#171 + #186 review P2): a name built with Array.join/template concatenation emits the fragments, not the
+// joined spelling, but a bare fragment is also ordinary UI text (`className:"gallery-upload"`). Match only the two shapes
+// the simulated seam actually uses: a property access on a global (`window.__lcHoldUpload`, or the fragment-built
+// `w[["__lc","HoldUpload"].join("")]`) and an addEventListener/dispatchEvent event name (direct or fragment-built).
+export const SEAM_PROPERTY = "__lcHoldUpload";
+export const SEAM_EVENT = "lc-gallery-upload-release";
+export const SEAM_MARKERS = [SEAM_PROPERTY, SEAM_EVENT];
 const CLIENT_JS = /\.m?js$/;
 const root = fileURLToPath(new URL("../../", import.meta.url));
 export const DEFAULT_STATIC_DIR = path.join(root, "apps/admin/.next/static");
 
-/** Every marker occurrence in one emitted chunk, with its 1-based line. */
-export function findMarkers(text, markers = SEAM_MARKERS) {
+// One fragment join: an array of string literals concatenated with join("") / join('').
+const JOIN_ARRAY = String.raw`\[\s*((?:(?:"[^"]*"|'[^']*')\s*,\s*)*(?:"[^"]*"|'[^']*'))\s*\]\s*\.\s*join\(\s*(?:""|'')\s*\)`;
+const PROPERTY_DIRECT = /(?:\bwindow\b|\bglobalThis\b|\bself\b)\s*(?:\.\s*__lcHoldUpload\b|\[\s*["']__lcHoldUpload["']\s*\])/;
+const PROPERTY_FRAGMENT = new RegExp(String.raw`\b[A-Za-z_$][\w$]*\s*\[\s*${JOIN_ARRAY}\s*\]`, "g");
+const EVENT_DIRECT = /(?:addEventListener|dispatchEvent)\s*\(\s*["'`]lc-gallery-upload-release["'`]/;
+const EVENT_FRAGMENT = new RegExp(String.raw`(?:addEventListener|dispatchEvent)\s*\(\s*${JOIN_ARRAY}`, "g");
+
+/** The concatenated literals of a fragment join: ["__lc","HoldUpload"].join("") -> "__lcHoldUpload". */
+function joinedName(arrayBody) {
+  return (arrayBody.match(/"[^"]*"|'[^']*'/g) ?? []).map((literal) => literal.slice(1, -1)).join("");
+}
+
+/** One hit per distinct seam in one chunk (first occurrence, 1-based line); ordinary strings are not seams. */
+export function findMarkers(text) {
   const hits = [];
-  for (const marker of markers) {
-    let from = 0;
-    while (true) {
-      const index = text.indexOf(marker, from);
-      if (index < 0) break;
-      let line = 1;
-      for (let at = 0; at < index; at++) if (text.charCodeAt(at) === 10) line++;
-      hits.push({ marker, line });
-      from = index + marker.length;
-    }
+  const add = (marker, index) => {
+    if (index < 0 || hits.some((hit) => hit.marker === marker)) return;
+    let line = 1;
+    for (let at = 0; at < index; at++) if (text.charCodeAt(at) === 10) line++;
+    hits.push({ marker, line });
+  };
+  const property = PROPERTY_DIRECT.exec(text);
+  if (property) add(SEAM_PROPERTY, property.index);
+  else for (const match of text.matchAll(PROPERTY_FRAGMENT)) {
+    if (joinedName(match[1]) === SEAM_PROPERTY) { add(SEAM_PROPERTY, match.index); break; }
+  }
+  const event = EVENT_DIRECT.exec(text);
+  if (event) add(SEAM_EVENT, event.index);
+  else for (const match of text.matchAll(EVENT_FRAGMENT)) {
+    if (joinedName(match[1]) === SEAM_EVENT) { add(SEAM_EVENT, match.index); break; }
   }
   return hits;
 }
@@ -76,16 +97,19 @@ function main(argv) {
   if (!existsSync(dir)) { console.error(`check-gallery-bundle: missing build output ${dir}`); return 1; }
   const { files, hits } = scanClientJs(dir);
   if (files === 0) { console.error(`check-gallery-bundle: no client JS under ${dir}`); return 1; }
-  for (const hit of hits) console.error(`check-gallery-bundle: ${hit.file}:${hit.line} ${hit.marker}`);
-  if (expect === "absent" && hits.length > 0) {
-    console.error(`check-gallery-bundle: FAIL ${hits.length} gallery seam marker(s) in ${files} emitted client JS files under ${dir}`);
+  // Count unique seams: the same component emitted into several chunks is one seam, not one per occurrence.
+  const seams = new Map();
+  for (const hit of hits) if (!seams.has(hit.marker)) seams.set(hit.marker, hit);
+  for (const hit of seams.values()) console.error(`check-gallery-bundle: ${hit.file}:${hit.line} ${hit.marker}`);
+  if (expect === "absent" && seams.size > 0) {
+    console.error(`check-gallery-bundle: FAIL ${seams.size} gallery seam marker(s) in ${files} emitted client JS files under ${dir}`);
     return 1;
   }
-  if (expect === "present" && hits.length === 0) {
+  if (expect === "present" && seams.size === 0) {
     console.error(`check-gallery-bundle: FAIL the flag-enabled build emitted no gallery seam marker in ${files} client JS files under ${dir}`);
     return 1;
   }
-  console.log(`check-gallery-bundle: OK expect=${expect} files=${files} markers=${hits.length} dir=${dir}`);
+  console.log(`check-gallery-bundle: OK expect=${expect} files=${files} markers=${seams.size} dir=${dir}`);
   return 0;
 }
 

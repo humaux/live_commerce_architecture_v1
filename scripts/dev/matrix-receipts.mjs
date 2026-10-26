@@ -12,10 +12,12 @@
 //   Browser specs run inside go tests, so a browser mode's Go harness PASS alone does not prove a spec ran (#147 CI-7): the
 //   Playwright list-reporter result lines are counted from the job's own `*.log` evidence under RECEIPT_SPEC_ROOT
 //   (default output/playwright), and a browser mode (registry arm with lc_browsers) with no parsed spec/node result is FAIL.
-//   A browser mode's lc_prepare runs unit/model node suites first, so a node summary is evidence only when the suite marks
-//   its own browser execution and its summary sits after the gate's browser-run marker (review 184 P1a); a node browser
-//   runner may instead print PASS/FAIL case lines to the gate log after that marker. Original and durable copies of one
-//   evidence tree share a per-run directory identity and count once (P2).
+//   Reporter precedence is per execution, not per job (#184 review P2): each evidence log and each lc_run gate-log segment
+//   picks glyphs, else custom case lines, else its summary, and distinct executions are summed; a gate log that tees one of
+//   its own evidence executions is that execution, not another one. A browser mode's lc_prepare runs unit/model node suites
+//   first, so a node summary is evidence only when the suite marks its own browser execution and its summary sits after the
+//   gate's browser-run marker (review 184 P1a); a node browser runner may instead print PASS/FAIL case lines to the gate log
+//   after that marker. Original and durable copies of one evidence tree share a per-run directory identity and count once (P2).
 //   status is FAIL when the gate step failed OR a parsed failure (Go `--- FAIL:` / JSON fail / bare `FAIL<TAB>`, node summary
 //   fail>0, Playwright `N failed` / spec ✘) was seen, even if the gate exited 0 (#147 CI-6); an explicit `0 failed` is not
 //   a failure. Historical evidence never feeds this.
@@ -103,7 +105,7 @@ export const countTests = (text) => scanTests(text).n;
  * Playwright list-reporter result lines (#147 CI-7). A browser mode's Go harness is only the driver; the specs it actually ran are
  * the `✓`/`✘` result lines the gate's runners wrote into its own evidence logs, so a harness PASS with zero of them is not a
  * passing test. Some browser runners (storefront gate .mjs, the joint merchant/buyer gate) print one `PASS <case>` / `FAIL <case>`
- * line per case instead; a job with no Playwright glyphs anywhere falls back to those case lines (see makeReceipt).
+ * line per case instead; a log with no Playwright glyphs falls back to those case lines (see makeReceipt).
  * A run with a failed spec/case is a parsed failure (#147 CI-6).
  */
 export function scanSpecs(text) {
@@ -126,6 +128,17 @@ export function scanSpecs(text) {
   }
   // Per log one reporter decides: glyphs, else case lines, else the summary total (so a banner cannot double-count).
   return { glyphs, cases: caseLines || summaryPass + summaryFail, failed };
+}
+
+/** The result lines of one execution, in order: Playwright glyphs or a custom runner's PASS/FAIL case lines. */
+function resultLines(text) {
+  return text.split(/\r?\n/).filter((line) => /^\s*[✓✘]\s+\d+\s/.test(line) || /^(PASS|FAIL)\s/.test(line));
+}
+
+/** True when `lines` is one contiguous block of `other`; a tee copies the execution's own output verbatim. */
+function isTee(lines, other) {
+  if (!lines.length || lines.length > other.length) return false;
+  return other.some((_, start) => start + lines.length <= other.length && lines.every((line, i) => line === other[start + i]));
 }
 
 /**
@@ -177,26 +190,33 @@ export function specLogFiles(root, alreadyRead = []) {
 // run_attempt is recorded but deliberately not compared by verify: after `gh run rerun --failed` the jobs that were not rerun keep their attempt-1 receipts (same run_id and sha).
 export function makeReceipt({ mode, outcome, runId, runAttempt, sha, logs, specs = [], browser = false }) {
   const scans = logs.map(scanTests), specScans = specs.map(scanSpecs);
-  // One reporter per job: Playwright-list glyphs when the job printed them, else the custom runner's PASS case lines (a banner
-  // next to a listed run must not add a second copy of the same specs).
-  const glyphSpecs = specScans.reduce((s, x) => s + x.glyphs, 0);
-  const caseResults = specScans.reduce((s, x) => s + x.cases, 0);
+  // #184 review P2: reporter precedence belongs to ONE execution. Each evidence log keeps its own glyph/case/summary
+  // order (scanSpecs.cases already prefers case lines over a summary), then the distinct executions are summed; the old
+  // job-wide `glyphs || cases` dropped a whole second reporter format (2 glyphs + 3 custom cases counted 2, not 5).
+  const nodeScans = specs.map(scanBrowserNodeLog);
+  const evidenceLines = specs.map(resultLines);
+  const evidenceCounts = specScans.map((scan) => scan.glyphs || scan.cases);
+  const evidenceSpecs = specs.reduce((sum, _text, i) => sum + (evidenceCounts[i] || nodeScans[i].n), 0);
   // #147 round 2: a node browser runner (storefront/shell/platform/gallery) prints its PASS/FAIL case lines to the gate log
-  // itself, so the mode's lc_run phase is evidence too. Evidence files stay the canonical reporter when they hold a spec
-  // result, so a tee'd copy of one run cannot add a second copy.
-  const runSpecScans = browser ? logs.map((text) => scanSpecs(afterBrowserRun(text))) : [];
-  const runGlyphs = runSpecScans.reduce((s, x) => s + x.glyphs, 0);
-  const runCases = runSpecScans.reduce((s, x) => s + x.cases, 0);
-  // A Go harness that pipes a real `node --test` browser suite into an evidence log counts that suite's summary.
-  const nodeSpecScans = browser ? specs.map(scanBrowserNodeLog) : [];
-  const nodeSpecs = nodeSpecScans.reduce((s, x) => s + x.n, 0);
-  const specCount = glyphSpecs || caseResults || nodeSpecs || runGlyphs || runCases;
+  // itself, so the mode's lc_run phase is evidence too. A gate log that repeats the result lines (or the exact summary count)
+  // of one of its own evidence executions is a tee of that execution, never a second execution; a gate-log execution with
+  // different lines or a different count still adds, even when one line happens to be identical.
+  const runScans = browser ? logs.map((text) => scanSpecs(afterBrowserRun(text))) : [];
+  const runLines = browser ? logs.map((text) => resultLines(afterBrowserRun(text))) : [];
+  const runSpecs = browser ? runScans.reduce((sum, scan, i) => {
+    const count = scan.glyphs || scan.cases;
+    if (!count) return sum;
+    const teed = evidenceCounts.some((evidenceCount, j) => evidenceCount === count
+      && (runLines[i].length ? isTee(runLines[i], evidenceLines[j]) : evidenceLines[j].length === 0));
+    return sum + (teed ? 0 : count);
+  }, 0) : 0;
+  const specCount = evidenceSpecs + runSpecs;
   const testCount = scans.reduce((s, x) => s + x.n, 0) + specCount;
   // Tests the gate printed that are not this browser mode's Go harness: browser spec/case results, plus a node --test
   // suite that marked its own browser execution inside lc_run. lc_prepare prerequisites and run-phase unit suites never count.
   const nodeRun = scans.reduce((s, x) => s + x.nodeRun, 0);
   const nonHarness = nodeRun + specCount;
-  const failed = scans.some((s) => s.failed) || specScans.some((s) => s.failed) || nodeSpecScans.some((s) => s.failed) || runSpecScans.some((s) => s.failed);
+  const failed = scans.some((s) => s.failed) || specScans.some((s) => s.failed) || nodeScans.some((s) => s.failed) || runScans.some((s) => s.failed);
   const status = outcome === "success" && !failed && !(browser && nonHarness === 0) ? "PASS" : "FAIL";
   return { mode, run_id: String(runId), run_attempt: String(runAttempt), sha, status, test_count: testCount, spec_count: specCount };
 }

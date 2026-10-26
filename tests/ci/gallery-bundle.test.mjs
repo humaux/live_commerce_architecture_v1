@@ -29,17 +29,20 @@ function run(args) {
 
 const seam = 'if(0){}else{window.__lcHoldUpload=!0,window.addEventListener("lc-gallery-upload-release",f)}';
 
-test("findMarkers reports both seam spellings with lines and misses ordinary code", () => {
+test("findMarkers reports the seam shapes (global property + event listener) and misses ordinary code", () => {
   assert.deepEqual(findMarkers(seam).map(({ marker }) => marker).sort(), [...SEAM_MARKERS].sort());
   assert.deepEqual(findMarkers("const enabled = false;"), []);
-  assert.deepEqual(findMarkers(`a\nb\n__lcHoldUpload`).map(({ marker, line }) => [marker, line]).sort(),
-    [["HoldUpload", 3], ["__lcHoldUpload", 3]].sort());
+  // #186 review P2: a bare fragment in a string or identifier is not a seam. Only the two shapes the simulated
+  // gallery seam uses count: a global property access and an addEventListener/dispatchEvent event name.
+  assert.deepEqual(findMarkers(`a\nb\n__lcHoldUpload`), [], "bare fragment text is not a seam shape");
+  assert.deepEqual(findMarkers(`const o={className:"gallery-upload",label:"HoldUpload"};`), [], "ordinary UI strings are not seams");
+  assert.deepEqual(findMarkers(`a\nb\nwindow.__lcHoldUpload`).map(({ marker, line }) => [marker, line]), [["__lcHoldUpload", 3]]);
 });
 
 test("scanClientJs walks nested chunks and scans only executable client JS", () => {
   const dir = fixture({
     "chunks/app.js": seam,
-    "chunks/nested/deeper.mjs": "__lcHoldUpload",
+    "chunks/nested/deeper.mjs": "window.__lcHoldUpload",
     "chunks/app.js.map": "lc-gallery-upload-release",
     "chunks/app.css": "lc-gallery-upload-release",
     "chunks/notes.txt": "lc-gallery-upload-release",
@@ -48,11 +51,8 @@ test("scanClientJs walks nested chunks and scans only executable client JS", () 
     const { files, hits } = scanClientJs(path.join(dir, "chunks"));
     assert.equal(files, 2);
     assert.deepEqual(hits.map(({ file, marker }) => [file.replaceAll(path.sep, "/"), marker]).sort(), [
-      ["app.js", "HoldUpload"],
       ["app.js", "__lcHoldUpload"],
-      ["app.js", "gallery-upload"],
       ["app.js", "lc-gallery-upload-release"],
-      [path.join("nested", "deeper.mjs").replaceAll(path.sep, "/"), "HoldUpload"],
       [path.join("nested", "deeper.mjs").replaceAll(path.sep, "/"), "__lcHoldUpload"],
     ].sort());
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -64,8 +64,9 @@ test("the CLI fails an ordinary build that still emits the seam and passes a fol
   try {
     const failed = run(["--expect=absent", dirty]);
     assert.equal(failed.status, 1, failed.stderr);
-    assert.match(failed.stderr, /FAIL 4 gallery seam marker\(s\)/);
+    assert.match(failed.stderr, /FAIL 2 gallery seam marker\(s\)/);
     assert.match(failed.stderr, /app\.js:\d+ __lcHoldUpload/);
+    assert.match(failed.stderr, /app\.js:\d+ lc-gallery-upload-release/);
     const passed = run(["--expect=absent", clean]);
     assert.equal(passed.status, 0, passed.stderr);
     assert.match(passed.stdout, /OK expect=absent files=1 markers=0/);
@@ -89,9 +90,9 @@ test("the CLI requires the seam in a flag-enabled gallery build (positive contro
   }
 });
 
-// #171: a fragment-built name emits the fragments, not the joined marker, so the
-// artifact scan must match HoldUpload / gallery-upload while the positive control
-// still accepts the flag-enabled gallery build.
+// #171 + #186 review P2: a fragment-built name emits the fragments, not the joined marker, so the
+// artifact scan must resolve the fragments inside the seam shapes while the positive control still
+// accepts the flag-enabled gallery build. Two unique seams, not four raw fragment occurrences.
 test("the scan rejects fragment-built seam names and keeps the gallery positive control passing", () => {
   const fragments = fixture({
     "chunks/app.js": 'const w=window;w[["__lc","HoldUpload"].join("")]=!0,w.addEventListener(["lc-","gallery-upload","-release"].join(""),f)',
@@ -99,11 +100,26 @@ test("the scan rejects fragment-built seam names and keeps the gallery positive 
   try {
     const absent = run(["--expect=absent", fragments]);
     assert.equal(absent.status, 1, absent.stderr);
-    assert.match(absent.stderr, /HoldUpload/);
-    assert.match(absent.stderr, /gallery-upload/);
+    assert.match(absent.stderr, /FAIL 2 gallery seam marker\(s\)/);
+    assert.match(absent.stderr, /__lcHoldUpload/);
+    assert.match(absent.stderr, /lc-gallery-upload-release/);
     const present = run(["--expect=present", fragments]);
     assert.equal(present.status, 0, present.stderr);
   } finally { rmSync(fragments, { recursive: true, force: true }); }
+});
+
+// #186 review P2 RED witness: an ordinary UI string that merely contains a fragment must not be a seam.
+// Before the fix this failed --expect=absent (false FAIL) and satisfied --expect=present (false PASS).
+test("ordinary UI strings containing a bare fragment are not gallery seams", () => {
+  const clean = fixture({ "chunks/app.js": 'const o={className:"gallery-upload",label:"HoldUpload"};' });
+  try {
+    const absent = run(["--expect=absent", clean]);
+    assert.equal(absent.status, 0, absent.stderr);
+    assert.match(absent.stdout, /OK expect=absent files=1 markers=0/);
+    const present = run(["--expect=present", clean]);
+    assert.equal(present.status, 1, "an ordinary string cannot satisfy the positive control");
+    assert.match(present.stderr, /emitted no gallery seam marker/);
+  } finally { rmSync(clean, { recursive: true, force: true }); }
 });
 
 test("the CLI fails closed on a missing build output, empty output or a bad option", () => {
