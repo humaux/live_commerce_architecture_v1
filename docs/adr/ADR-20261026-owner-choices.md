@@ -36,10 +36,11 @@
 - 实现卡建议：OC-08（apps/admin/components/BankTransferSettings.tsx、lib/merchant-tools-model.ts）
 
 ### Q2 结算单「退回/带回」（FIN-03）
-- 决定：A：不新增显示。依据：owner「按你的结论来」，即 ADR-CHOICES 推荐项。
-- 理由与放弃项：O1 没提到退回与带回；放弃 B（新字段加迁移）。冲突：SA-0 在此题写成后冻结了 returned_in_minor/payout_returned，所以 SA-2 暂停，等 owner 一句话确认，SA-0/SA-1 后端不受影响。
-- 契约：`contracts/owner-choices-20261026-v1.md` OC-Q2；stripe-platform-account
-- 实现卡建议：SA-2 加 note 暂停
+- 决定：B：商家结算页加「退回」和「帶回下期」。依据：owner「按你的结论来」，结论经 integrator 更正（2026-10-26）。
+- 推荐更正：原推荐 A 基于 60268f3 过时清单；SA-0 契约（08ba731fc §6.7–6.9）已冻结该字段，与 B 一致。
+- 放弃项：A（不加，设计图改回现状）：与已冻结的 SA-0 冲突，且清单「没有对应字段」已不成立。
+- 契约：`contracts/owner-choices-20261026-v1.md` OC-Q2；stripe-platform-account §6.7–§6.9
+- 实现卡建议：SA-1/SA-2/SA-3（已在 tasks.json，不新增）
 
 ### Q3 结算页用词（FIN-04）
 - 决定：A：保持现状。依据：owner「按你的结论来」，即 ADR-CHOICES 推荐项。
@@ -166,8 +167,8 @@ LOG-01、LOG-02、LOG-03、CAT-01、CAT-03、CP-02、CAT-04：现行 owner 原�
 
 ## 四、未决 UNKNOWN
 1. HK 平台账户对台湾买家开放 Link 需要 SANDBOX 实测（SP16）；之前 LIVE 保持 `[card]`。
-2. Q2 与 SA-0 §6.7–6.9 冲突：需要 owner 一句话确认；SA-2 暂停。
-3. Q5 「到貨需付」白话文案需 owner 看一次。
+2. （已解决）Q2 经 integrator 更正为 B，与 SA-0 一致。
+3. Q5 「到貨需付」与代收金额白话文案是我的拟稿，需 owner 看一次（见 OC-Q5 草稿）。
 4. Q12 「未读」定义，Q20 核对页文案，均在各卡内先定。
 5. 设置页对已在 allowlist 的店是否保留开关（set_platform_stripe）：本次只规定不出现申请/配置，开关去留沿 AD-PF2.1。
 
