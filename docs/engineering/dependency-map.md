@@ -287,7 +287,7 @@ Package httperror owns transport-safe error envelopes, never domain policy.
 
 ## `internal/identity`
 
-Package identity owns merchant login and first-store bootstrap: the OIDC login (Service) and the email + password + emailed-code login (Passwords, contracts/merchant-password-auth-v1.md), plus the store staff team (Staff: invitations, roles, revoke; contracts/storefront-v2.md §D, staff.go).
+Purpose: OIDC recent re-authentication of a live merchant session (contracts/merchant-password-auth-v1.md §16, OIDC-only principals): a session-authenticated start that opens a prompt=login + max_age flow bound to the calling session hash, and the shared callback completion (CompleteLogin) that, for a re-auth flow, checks auth_time and the principal match in SQL and never issues a session.
 
 - Depends on (internal): `internal/mail`, `internal/oidclogin`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `golang.org/x/crypto/argon2`, `golang.org/x/text/unicode/norm`

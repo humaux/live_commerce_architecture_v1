@@ -1,0 +1,20 @@
+RED (CI only) for OC-02, PR #212, head 1842aea9c (tests only, no migrations/0201)
+workflow run: 40384938799  job: 121793260142  gate (shard:unit)  conclusion: failure  completed 2026-10-26T20:54:23Z
+url: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40384938799/job/121793260142
+filtered failures (job log, timestamps stripped):
+    reauth_test.go:191: UPDATE identity.sessions SET authenticated_at = clock_timestamp() - $2::interval WHERE token_hash=$1: ERROR: column "authenticated_at" of relation "sessions" does not exist (SQLSTATE 42703)
+    reauth_test.go:258: identity.complete_oidc_reauth(bytea,text,text,timestamptz): ERROR: function "identity.complete_oidc_reauth(bytea,text,text,timestamptz)" does not exist (SQLSTATE 42883)
+    reauth_test.go:258: identity.complete_reauth_challenge(bytea,bytea): ERROR: function "identity.complete_reauth_challenge(bytea,bytea)" does not exist (SQLSTATE 42883)
+    reauth_test.go:258: identity.consume_login_flow_with_session(bytea,bytea,text): ERROR: function "identity.consume_login_flow_with_session(bytea,bytea,text)" does not exist (SQLSTATE 42883)
+    reauth_test.go:258: identity.reauth_material(bytea): ERROR: function "identity.reauth_material(bytea)" does not exist (SQLSTATE 42883)
+    reauth_test.go:258: identity.require_recent_auth(bytea,interval): ERROR: function "identity.require_recent_auth(bytea,interval)" does not exist (SQLSTATE 42883)
+    reauth_test.go:258: identity.start_oidc_reauth_flow(bytea,bytea,text,text,text,bytea): ERROR: function "identity.start_oidc_reauth_flow(bytea,bytea,text,text,text,bytea)" does not exist (SQLSTATE 42883)
+    reauth_test.go:258: identity.start_reauth_challenge(uuid,bytea,bigint,bytea,bytea,text,bytea): ERROR: function "identity.start_reauth_challenge(uuid,bytea,bigint,bytea,bytea,text,bytea)" does not exist (SQLSTATE 42883)
+    reauth_test.go:294: migration 0201: open ../../migrations/0201_recent_auth.sql: no such file or directory
+    reauth_test.go:344: UPDATE identity.sessions SET authenticated_at = clock_timestamp() - $2::interval WHERE token_hash=$1: ERROR: column "authenticated_at" of relation "sessions" does not exist (SQLSTATE 42703)
+    reauth_test.go:410: UPDATE identity.sessions SET authenticated_at = clock_timestamp() - $2::interval WHERE token_hash=$1: ERROR: column "authenticated_at" of relation "sessions" does not exist (SQLSTATE 42703)
+--- FAIL: TestReauthRA01RequireRecentAuthFailClosed (0.15s)
+--- FAIL: TestReauthRA02PublicCannotExecute (0.01s)
+--- FAIL: TestReauthRA03Backfill (0.00s)
+--- FAIL: TestReauthRA04OIDCPrincipalMatch (0.00s)
+--- FAIL: TestReauthRA05ChallengeBoundToSession (0.08s)

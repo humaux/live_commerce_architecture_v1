@@ -1,8 +1,10 @@
 // Purpose: OC-02 recent re-authentication gates (contracts/merchant-password-auth-v1.md §16, Red tests): fail-closed
 // identity.require_recent_auth, the authenticated_at backfill of migration 0201, the password/code and OIDC re-auth
-// definers (session binding, principal match, no new session and no session.issued event) and their PUBLIC revoke.
+// definers (session binding, principal match, no new session and no session.issued event) and their PUBLIC revoke,
+// and the internal/identity Go flows over them (RA06 password + code, RA07 OIDC, MOCK mailer and MOCK IdP adapter).
 // Depends on: the disposable lc_foundation_test database (LC_TEST_DATABASE_ALLOWED=1, LC_TEST_DATABASE_URL),
-// livecommerce/migrations (Apply), internal/platform (OpenIdentityPool), internal/identity (HashPassword).
+// livecommerce/migrations (Apply), internal/platform (OpenIdentityPool), internal/identity (HashPassword, Passwords,
+// Service), internal/mail (Message), internal/oidclogin (Identity).
 // Used by: go test ./tests/identity (CI shard:unit via scripts/dev/test-local.sh).
 package reauthtests
 
@@ -14,8 +16,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/netip"
 	"net/url"
 	"os"
+	"regexp"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -25,6 +29,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/identity"
+	"livecommerce/internal/mail"
+	"livecommerce/internal/oidclogin"
 	"livecommerce/internal/platform"
 	"livecommerce/migrations"
 )
@@ -472,5 +478,254 @@ func TestReauthRA05ChallengeBoundToSession(t *testing.T) {
 	wantReauthRequired(t, "session B", requireRecent(e, hash(tokB), "10 minutes"))
 	if got := sessionFacts(t, e, p); got != facts {
 		t.Errorf("password re-auth issued sessions/events: %v -> %v", facts, got)
+	}
+}
+
+type mailer struct {
+	mu   sync.Mutex
+	msgs []mail.Message
+}
+
+func (m *mailer) Send(_ context.Context, msg mail.Message) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.msgs = append(m.msgs, msg)
+	return "250 queued", nil
+}
+
+func (m *mailer) last(t *testing.T, n int) mail.Message {
+	t.Helper()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m.msgs) != n {
+		t.Fatalf("mails = %d, want %d", len(m.msgs), n)
+	}
+	return m.msgs[n-1]
+}
+
+var digits6 = regexp.MustCompile(`\b[0-9]{6}\b`)
+
+func passwords(t *testing.T, e *env, m identity.Mailer) *identity.Passwords {
+	t.Helper()
+	pepper := rnd32() // a fresh pepper = fresh throttle buckets for this test
+	p, err := identity.NewPasswords(e.id, m, identity.PasswordPolicy{Pepper: pepper, SessionTTL: time.Hour, BreachCheck: "off", AllowLoopback: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = p.Close(context.Background()) })
+	return p
+}
+
+var ipSeq atomic.Int64
+
+func freshIP() netip.Addr {
+	return netip.MustParseAddr(fmt.Sprintf("198.51.100.%d", 1+ipSeq.Add(1)%250))
+}
+
+// RA06: the Go password re-auth flow end to end (internal/identity Passwords.StartReauth / CompleteReauth): a wrong
+// password is ErrReauthFailed and counts toward PD12; the mailed code of session A cannot refresh session B; the right
+// code refreshes only A and resets failed_count; an OIDC-only principal has no password path; nothing issues a session.
+func TestReauthRA06PasswordFlow(t *testing.T) {
+	e := fixture(t)
+	ctx := context.Background()
+	const phrase = "correct horse battery 1"
+	phc, err := identity.HashPassword(phrase)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := principal(t, e, "", "")
+	email := fmt.Sprintf("ra06.%d.%d@example.test", os.Getpid(), seq.Add(1))
+	mustExec(t, e.owner, `INSERT INTO identity.password_credentials(principal_id,email,password_hash,email_verified_at) VALUES ($1::uuid,$2,$3,clock_timestamp())`, p, email, phc)
+	tokA, tokB := session(t, e, p), session(t, e, p)
+	setAuthAge(t, e, tokA, "2 hours")
+	setAuthAge(t, e, tokB, "2 hours")
+	beforeA, beforeB := authAt(t, e, tokA), authAt(t, e, tokB)
+	facts := sessionFacts(t, e, p)
+	m := &mailer{}
+	pw := passwords(t, e, m)
+
+	if _, err := pw.StartReauth(ctx, freshIP(), tokA, "wrong horse battery 9", "en"); !errors.Is(err, identity.ErrReauthFailed) {
+		t.Fatalf("wrong password: %v, want ErrReauthFailed", err)
+	}
+	if n := count(t, e.owner, `SELECT failed_count FROM identity.password_credentials WHERE principal_id=$1::uuid`, p); n != 1 {
+		t.Errorf("failed_count after a wrong re-auth password = %d, want 1 (same counter as login)", n)
+	}
+	if _, err := pw.StartReauth(ctx, freshIP(), token(), phrase, "en"); !errors.Is(err, identity.ErrUnauthorized) {
+		t.Errorf("unknown session: %v, want ErrUnauthorized", err)
+	}
+	exp, err := pw.StartReauth(ctx, freshIP(), tokA, phrase, "zh-TW")
+	if err != nil || time.Until(exp) < 9*time.Minute {
+		t.Fatalf("start: %v %v", exp, err)
+	}
+	msg := m.last(t, 1)
+	code := digits6.FindString(msg.Text)
+	if msg.To != email || code == "" || digits6.MatchString(msg.Subject) {
+		t.Fatalf("re-auth mail to=%q code=%q subject=%q", msg.To, code, msg.Subject)
+	}
+	if _, err := pw.CompleteReauth(ctx, freshIP(), tokB, code); !errors.Is(err, identity.ErrInvalidCode) {
+		t.Errorf("session A's code on session B: %v, want ErrInvalidCode", err)
+	}
+	if at := authAt(t, e, tokB); !at.Equal(beforeB) {
+		t.Errorf("session B moved: %v -> %v", beforeB, at)
+	}
+	wrong := "000000"
+	if code == wrong {
+		wrong = "111111"
+	}
+	if _, err := pw.CompleteReauth(ctx, freshIP(), tokA, wrong); !errors.Is(err, identity.ErrInvalidCode) {
+		t.Errorf("wrong code: %v, want ErrInvalidCode", err)
+	}
+	if at := authAt(t, e, tokA); !at.Equal(beforeA) {
+		t.Errorf("refused re-auth moved A: %v -> %v", beforeA, at)
+	}
+	at, err := pw.CompleteReauth(ctx, freshIP(), tokA, code)
+	if err != nil || !at.After(beforeA) || !authAt(t, e, tokA).Equal(at) {
+		t.Fatalf("complete: at=%v err=%v", at, err)
+	}
+	if n := count(t, e.owner, `SELECT failed_count FROM identity.password_credentials WHERE principal_id=$1::uuid`, p); n != 0 {
+		t.Errorf("failed_count after a verified re-auth = %d, want 0", n)
+	}
+	if err := requireRecent(e, hash(tokA), "10 minutes"); err != nil {
+		t.Errorf("after re-auth: %v", err)
+	}
+	wantReauthRequired(t, "session B", requireRecent(e, hash(tokB), "10 minutes"))
+	if got := sessionFacts(t, e, p); got != facts {
+		t.Errorf("password re-auth issued sessions/events: %v -> %v", facts, got)
+	}
+
+	// OIDC-only principal: no password credential, no code mail.
+	o := principal(t, e, "https://idp.ra06.example.test", "o-"+uuid())
+	tokO := session(t, e, o)
+	if _, err := pw.StartReauth(ctx, freshIP(), tokO, phrase, "en"); !errors.Is(err, identity.ErrReauthFailed) {
+		t.Errorf("OIDC-only principal: %v, want ErrReauthFailed", err)
+	}
+	m.last(t, 1)
+
+	for raw, want := range map[string]time.Duration{"": 10 * time.Minute, "1": time.Minute, "60": time.Hour} {
+		if got, err := identity.ReauthWindow(raw); err != nil || got != want {
+			t.Errorf("ReauthWindow(%q) = %v %v, want %v", raw, got, err, want)
+		}
+	}
+	for _, raw := range []string{"0", "61", "-1", "ten", "1.5"} {
+		if _, err := identity.ReauthWindow(raw); err == nil {
+			t.Errorf("ReauthWindow(%q) accepted", raw)
+		}
+	}
+}
+
+// provider is a MOCK OIDC adapter: Exchange returns the identity the test set next.
+type provider struct {
+	mu     sync.Mutex
+	next   oidclogin.Identity
+	maxAge time.Duration
+}
+
+func (f *provider) AuthorizationURL(state, nonce, verifier string) (string, error) {
+	return "https://idp.example.test/authorize?state=" + state, nil
+}
+
+func (f *provider) ReauthAuthorizationURL(state, nonce, verifier string, maxAge time.Duration) (string, error) {
+	f.mu.Lock()
+	f.maxAge = maxAge
+	f.mu.Unlock()
+	return "https://idp.example.test/authorize?prompt=login&state=" + state, nil
+}
+
+func (f *provider) Exchange(ctx context.Context, code, nonce, verifier string) (oidclogin.Identity, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.next, nil
+}
+
+// RA07: the Go OIDC re-auth flow (Service.StartOIDCReauth / CompleteLogin): a session-authenticated start bound to
+// the session hash with max_age 10 minutes; the ordinary Complete never consumes it; another account, a missing or a
+// stale auth_time are ErrReauthFailed with authenticated_at unchanged; the own account returns Reauth with no token;
+// no session row or session.issued event either way.
+func TestReauthRA07OIDCFlow(t *testing.T) {
+	e := fixture(t)
+	ctx := context.Background()
+	iss := "https://idp.ra07.example.test"
+	subA, subB := "a-"+uuid(), "b-"+uuid()
+	a, b := principal(t, e, iss, subA), principal(t, e, iss, subB)
+	tokA := session(t, e, a)
+	setAuthAge(t, e, tokA, "2 hours")
+	beforeA := authAt(t, e, tokA)
+	facts := sessionFacts(t, e, a, b)
+	fp := &provider{}
+	svc, err := identity.New(e.id, fp, identity.Policy{ProviderKey: "oc02-ra07", SessionTTL: time.Hour})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.StartOIDCReauth(ctx, token()); !errors.Is(err, identity.ErrUnauthorized) {
+		t.Errorf("start with an unknown session: %v, want ErrUnauthorized", err)
+	}
+	attempt := func(id oidclogin.Identity) (identity.LoginResult, error) {
+		t.Helper()
+		flow, err := svc.StartOIDCReauth(ctx, tokA)
+		if err != nil {
+			t.Fatalf("start: %v", err)
+		}
+		fp.mu.Lock()
+		fp.next = id
+		maxAge := fp.maxAge
+		fp.mu.Unlock()
+		if maxAge != 10*time.Minute {
+			t.Errorf("max_age = %v, want 10m", maxAge)
+		}
+		return svc.CompleteLogin(ctx, flow.State, flow.Binding, "code-"+uuid())
+	}
+	now := time.Now()
+	for name, id := range map[string]oidclogin.Identity{
+		"other account":     {Issuer: iss, Subject: subB, AuthTime: now},
+		"missing auth_time": {Issuer: iss, Subject: subA},
+		"stale auth_time":   {Issuer: iss, Subject: subA, AuthTime: now.Add(-11 * time.Minute)},
+	} {
+		if _, err := attempt(id); !errors.Is(err, identity.ErrReauthFailed) {
+			t.Errorf("%s: %v, want ErrReauthFailed", name, err)
+		}
+		if at := authAt(t, e, tokA); !at.Equal(beforeA) {
+			t.Errorf("%s: authenticated_at moved %v -> %v", name, beforeA, at)
+		}
+	}
+
+	// The ordinary login completion never consumes a re-auth flow (it would issue a session for it).
+	flow, err := svc.StartOIDCReauth(ctx, tokA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, e.owner, `SELECT count(*) FROM identity.login_flows WHERE state_hash=$1 AND session_hash=$2`, hash(flow.State), hash(tokA)); n != 1 {
+		t.Errorf("re-auth flow not bound to the session hash (rows=%d)", n)
+	}
+	fp.mu.Lock()
+	fp.next = oidclogin.Identity{Issuer: iss, Subject: subA, AuthTime: time.Now()}
+	fp.mu.Unlock()
+	if _, err := svc.Complete(ctx, flow.State, flow.Binding, "code-x"); !errors.Is(err, identity.ErrUnauthorized) {
+		t.Errorf("Complete on a re-auth flow: %v, want ErrUnauthorized", err)
+	}
+	res, err := svc.CompleteLogin(ctx, flow.State, flow.Binding, "code-y")
+	if err != nil || !res.Reauth || res.Session.Token != "" || !res.AuthenticatedAt.After(beforeA) {
+		t.Fatalf("own account: %+v %v", res, err)
+	}
+	if err := requireRecent(e, hash(tokA), "10 minutes"); err != nil {
+		t.Errorf("after OIDC re-auth: %v", err)
+	}
+	if got := sessionFacts(t, e, a, b); got != facts {
+		t.Errorf("OIDC re-auth issued sessions/events: %v -> %v", facts, got)
+	}
+
+	// An ordinary login flow still issues a session through CompleteLogin, authenticated now.
+	login, err := svc.Start(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fp.mu.Lock()
+	fp.next = oidclogin.Identity{Issuer: iss, Subject: "c-" + uuid()}
+	fp.mu.Unlock()
+	res, err = svc.CompleteLogin(ctx, login.State, login.Binding, "code-z")
+	if err != nil || res.Reauth || res.Session.Token == "" {
+		t.Fatalf("ordinary login: %+v %v", res, err)
+	}
+	if err := requireRecent(e, hash(res.Session.Token), "1 minute"); err != nil {
+		t.Errorf("a new session must be authenticated at issue: %v", err)
 	}
 }

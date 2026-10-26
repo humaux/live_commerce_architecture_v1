@@ -56,6 +56,47 @@ func TestAuthorizationURLAndExchange(t *testing.T) {
 	}
 }
 
+// OC-02 (§16): the re-auth URL forces a fresh login (prompt=login, max_age) and Exchange reports auth_time; a missing
+// auth_time is a zero AuthTime (refused by internal/identity's re-auth), a malformed one is an error.
+func TestReauthAuthorizationURLAndAuthTime(t *testing.T) {
+	idp := newMockIDP(t)
+	provider := idp.provider(t)
+	raw, err := provider.ReauthAuthorizationURL("state-123", testNonce, testVerifier, 10*time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if q := parsed.Query(); q.Get("prompt") != "login" || q.Get("max_age") != "600" || q.Get("code_challenge_method") != "S256" || q.Get("nonce") != testNonce {
+		t.Fatalf("reauth url query = %v", q)
+	}
+	if plain, _ := provider.AuthorizationURL("state-123", testNonce, testVerifier); strings.Contains(plain, "prompt=") || strings.Contains(plain, "max_age=") {
+		t.Fatalf("ordinary login url carries re-auth parameters: %s", plain)
+	}
+	if _, err := provider.ReauthAuthorizationURL("state-123", testNonce, testVerifier, 0); err == nil {
+		t.Fatal("max_age 0 accepted")
+	}
+
+	authTime := time.Now().Add(-30 * time.Second).Truncate(time.Second)
+	claims := defaultClaims(idp.server.URL)
+	claims["auth_time"] = authTime.Unix()
+	got, err := provider.Exchange(context.Background(), idp.issue(claims, testVerifier, idp.signingKey), testNonce, testVerifier)
+	if err != nil || !got.AuthTime.Equal(authTime) {
+		t.Fatalf("auth_time = %v (%v), want %v", got.AuthTime, err, authTime)
+	}
+	got, err = provider.Exchange(context.Background(), idp.issue(defaultClaims(idp.server.URL), testVerifier, idp.signingKey), testNonce, testVerifier)
+	if err != nil || !got.AuthTime.IsZero() {
+		t.Fatalf("missing auth_time = %v (%v), want zero", got.AuthTime, err)
+	}
+	claims = defaultClaims(idp.server.URL)
+	claims["auth_time"] = -1
+	if _, err := provider.Exchange(context.Background(), idp.issue(claims, testVerifier, idp.signingKey), testNonce, testVerifier); err == nil {
+		t.Fatal("negative auth_time accepted")
+	}
+}
+
 func TestExchangeRejectsInvalidIDTokens(t *testing.T) {
 	idp := newMockIDP(t)
 	provider := idp.provider(t)
