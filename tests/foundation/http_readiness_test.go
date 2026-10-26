@@ -1,5 +1,5 @@
 // Purpose: one shared bounded HTTP readiness probe for the real-process tests in this package.
-// Depends on: net/http, net/http/httptest (witness), mrProcess (meta_runtime_process_test.go), time.
+// Depends on: net/http, net/http/httptest (witness), sync, mrProcess (meta_runtime_process_test.go), time.
 // Used by: local_recovery_test.go, meta_runtime_process_test.go, account_process_test.go,
 // merchant_restart_replay_test.go, studio_planning_only_test.go, studio_process_test.go and
 // order_attempt_process_test.go.
@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -53,9 +54,7 @@ func newHTTPReadyConfig(opts []httpReadyOption) httpReadyConfig {
 // remaining budget), and a 200 is accepted only if it arrives before the
 // deadline: a late response is stale evidence, not readiness.
 func pollHTTPReady(proc *mrProcess, target string, perRequest, interval time.Duration, deadline time.Time, opts ...httpReadyOption) error {
-	// RED witness: the option is wired here but the dispatch below still uses
-	// http.DefaultClient, so the Meta no-redirect policy is not yet honoured.
-	_ = newHTTPReadyConfig(opts)
+	cfg := newHTTPReadyConfig(opts)
 	for {
 		remaining := time.Until(deadline)
 		if remaining <= 0 {
@@ -79,7 +78,7 @@ func pollHTTPReady(proc *mrProcess, target string, perRequest, interval time.Dur
 			cancel()
 			return err
 		}
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := cfg.client.Do(req)
 		if err == nil {
 			_ = resp.Body.Close()
 			// Check expiry before accepting success: the 200 may have arrived
@@ -118,6 +117,8 @@ func waitHTTPReady(t *testing.T, proc *mrProcess, target, label string, perReque
 func TestPollHTTPReadyRejectsSuccessAfterDeadline(t *testing.T) {
 	started := make(chan struct{}, 1)
 	release := make(chan struct{})
+	var releaseOnce sync.Once
+	unblock := func() { releaseOnce.Do(func() { close(release) }) }
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		select {
 		case started <- struct{}{}:
@@ -126,18 +127,36 @@ func TestPollHTTPReadyRejectsSuccessAfterDeadline(t *testing.T) {
 		<-release
 		w.WriteHeader(http.StatusOK)
 	}))
+	// Defers run LIFO: unblock is registered second, so it runs before
+	// server.Close on every exit path (including an early t.Fatalf), and the
+	// handler is never left blocked on release during teardown.
 	defer server.Close()
+	defer unblock()
 
 	deadline := time.Now().Add(100 * time.Millisecond)
 	type result struct{ err error }
 	done := make(chan result, 1)
 	go func() { done <- result{pollHTTPReady(nil, server.URL, time.Second, 10*time.Millisecond, deadline)} }()
 
-	<-started                                                // the first request is in flight
+	// A loaded runner can schedule the poll goroutine after the deadline, in
+	// which case the helper correctly sends no request and `started` never
+	// arrives. Bound the handshake instead of waiting forever.
+	select {
+	case <-started: // the first request is in flight
+	case res := <-done:
+		t.Fatalf("probe finished without starting a request (deadline %s away): %v", time.Until(deadline).Round(time.Millisecond), res.err)
+	case <-time.After(3 * time.Second):
+		t.Fatalf("probe did not start a request within 3s (deadline %s away)", time.Until(deadline).Round(time.Millisecond))
+	}
 	<-time.After(time.Until(deadline) + 50*time.Millisecond) // ... and its 200 now arrives late.
-	close(release)
-	if res := <-done; !errors.Is(res.err, errHTTPReadyDeadline) {
-		t.Fatalf("probe accepted a 200 that arrived after the shared deadline: %v", res.err)
+	unblock()
+	select {
+	case res := <-done:
+		if !errors.Is(res.err, errHTTPReadyDeadline) {
+			t.Fatalf("probe accepted a 200 that arrived after the shared deadline: %v", res.err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatalf("probe did not return within 3s of the shared deadline")
 	}
 }
 
