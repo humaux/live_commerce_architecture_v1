@@ -12,7 +12,7 @@ import { Badge, TableFrame } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { readSettlementDetail, readSettlements } from "@/lib/card-payments-client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
-import { payoutState, signedAmountText, statementCells, type SettlementStatement } from "@/lib/card-payments-settlements-model.ts";
+import { payoutState, signedAmountText, statementCells, type PayoutState, type SettlementStatement } from "@/lib/card-payments-settlements-model.ts";
 import { cardPaymentsSettlementsCopy, type CardPaymentsSettlementsCopy } from "@/lib/card-payments-settlements-copy.ts";
 import { displayTime } from "@/lib/orders-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -20,9 +20,20 @@ import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./customers.css";
 
-const payoutTone = { paid: "success", pending: "warning", none: "neutral" } as const;
-const payoutText = (c: CardPaymentsSettlementsCopy, state: "paid" | "pending" | "none") =>
-  state === "paid" ? c.paid : state === "pending" ? c.pending : c.noPayout;
+const payoutTone = { returned: "warning", paid: "success", pending: "warning", none: "neutral" } as const;
+const payoutText = (c: CardPaymentsSettlementsCopy, state: PayoutState) =>
+  state === "returned" ? c.returned : state === "paid" ? c.paid : state === "pending" ? c.pending : c.noPayout;
+
+/** The return flag takes precedence over the historical paid flag; the explanation wraps at phone widths. */
+function PayoutStatus({ statement, c, testId }: { statement: SettlementStatement; c: CardPaymentsSettlementsCopy; testId: string }) {
+  const state = payoutState(statement);
+  return (
+    <div data-testid={state === "returned" ? `settlement-returned-message-${statement.statement_id}` : undefined} style={{ whiteSpace: "normal" }}>
+      <Badge tone={payoutTone[state]} data-testid={testId} data-state={state}>{payoutText(c, state)}</Badge>
+      {state === "returned" && <span> · {c.returnedCarry}</span>}
+    </div>
+  );
+}
 
 /** Owns the statements list and the per-statement line detail; everything is a read (billing:manage). */
 export function Settlements({
@@ -125,6 +136,7 @@ function List({
               <th>{c.stripeFee}</th>
               <th>{c.platformFee}</th>
               <th>{c.carriedIn}</th>
+              <th>{c.returnedIn}</th>
               <th>{c.netPayable}</th>
               <th>{c.status}</th>
               <th>{c.detail}</th>
@@ -133,14 +145,12 @@ function List({
           <tbody>
             {statements.map((s) => (
               <tr key={s.statement_id} data-testid={`settlement-row-${s.statement_id}`}>
-                {/* period, then the six signed contributions (what the store receives), then the server's net; see statementCells */}
+                {/* period, then seven signed contributions including returned funds, then the server's net; see statementCells */}
                 {statementCells(locale, s).map((text, index) => (
                   <td key={index} data-testid={index === 0 ? `settlement-period-${s.statement_id}` : undefined}>{text}</td>
                 ))}
                 <td>
-                  <Badge tone={payoutTone[payoutState(s)]} data-testid={`settlement-status-${s.statement_id}`} data-state={payoutState(s)}>
-                    {payoutText(c, payoutState(s))}
-                  </Badge>
+                  <PayoutStatus statement={s} c={c} testId={`settlement-status-${s.statement_id}`} />
                 </td>
                 <td>
                   <button type="button" data-testid={`settlement-open-${s.statement_id}`} onClick={() => onOpen(s.statement_id)}>
@@ -157,7 +167,7 @@ function List({
   );
 }
 
-/** The sign legend and the net formula, quoted from the 0150 identity; shown under every statement table and detail. */
+/** The sign legend and the net formula, including SA-0 returned funds; shown under every statement table and detail. */
 function Legend({ c }: { c: CardPaymentsSettlementsCopy }) {
   return (
     <div data-testid="settlements-legend">
@@ -169,10 +179,10 @@ function Legend({ c }: { c: CardPaymentsSettlementsCopy }) {
 
 function Detail({ statement: s, locale, c }: { statement: SettlementStatement; locale: Locale; c: CardPaymentsSettlementsCopy }) {
   const cells = statementCells(locale, s);
-  // the same six signed contributions and the server's net as the list row (statementCells), so the detail adds up the same way
+  // The same seven signed contributions and the server's net as the list row, including carried return money exactly once.
   const rows = [
     ["captured", c.captured], ["refunded", c.refunded], ["dispute", c.disputes], ["stripe-fee", c.stripeFee],
-    ["platform-fee", c.platformFee], ["carried-in", c.carriedIn], ["net", c.netPayable],
+    ["platform-fee", c.platformFee], ["carried-in", c.carriedIn], ["returned-in", c.returnedIn], ["net", c.netPayable],
   ] as const;
   return (
     <section data-testid="settlement-detail">
@@ -191,9 +201,7 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
         <div>
           <dt>{c.status}</dt>
           <dd>
-            <Badge tone={payoutTone[payoutState(s)]} data-testid="settlement-detail-status" data-state={payoutState(s)}>
-              {payoutText(c, payoutState(s))}
-            </Badge>
+            <PayoutStatus statement={s} c={c} testId="settlement-detail-status" />
           </dd>
         </div>
         {s.payout_ref && (
@@ -206,6 +214,12 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
           <div>
             <dt>{c.paidAt}</dt>
             <dd data-testid="settlement-paid-at">{displayTime(locale, s.paid_at)}</dd>
+          </div>
+        )}
+        {s.payout_returned_at && (
+          <div>
+            <dt>{c.returnedAt}</dt>
+            <dd data-testid="settlement-returned-at">{displayTime(locale, s.payout_returned_at)}</dd>
           </div>
         )}
       </dl>

@@ -2,6 +2,9 @@
 // storefront collector disclosure. The merchant terms (contract stripe-platform-account-v1 §5) and the two
 // ruling-fixed strings (「信用卡收款尚未開放」, 「已被平台暫停，請聯絡客服」) are pinned verbatim; no string may
 // ever contain a Stripe account id, key or approval id.
+// Purpose: assert trilingual card/settlement wording and frozen contract amount/sign explanations.
+// Depends on: real payment copy modules and stripe-platform-account-v1; no provider.
+// Used by: scripts/dev/test-node.sh and --browser-card-payments CI.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -139,11 +142,26 @@ test("settlement copy: deduction columns are labelled as deductions in every lan
     assert.match(c.legend, /＋|\+/, locale);
     assert.match(c.legend, /－|-|−/, locale);
     // the formula names every column (labels without their direction note) and ends in the net
-    for (const key of ["captured", "refunded", "disputes", "stripeFee", "platformFee", "carriedIn"] as const) {
+    for (const key of ["captured", "refunded", "disputes", "stripeFee", "platformFee", "carriedIn", "returnedIn"] as const) {
       const name = c[key].replace(/\s*[（(].*[)）]/, "");
       assert.ok(c.formula.includes(name), `${locale}: formula lacks ${name}`);
     }
     assert.ok(c.formula.includes(c.netPayable), `${locale}: formula lacks ${c.netPayable}`);
+  }
+});
+
+test("SA-2 returned-payout wording is exact and returned funds are a credit in all three locales", () => {
+  const expected = {
+    "zh-TW": "撥付已退回 · 退回款會計入之後的結算單",
+    "zh-CN": "拨付已退回 · 退回款会计入之后的结算单",
+    en: "Payout returned · Returned funds will be included in a later settlement",
+  };
+  for (const locale of locales) {
+    const c = cardPaymentsSettlementsCopy[locale];
+    assert.equal(`${c.returned} · ${c.returnedCarry}`, expected[locale]);
+    assert.match(c.returnedIn, /加計|加计|added/);
+    assert.doesNotMatch(c.returnedIn, /扣除|deducted/);
+    assert.ok(c.returnedAt);
   }
 });
 
