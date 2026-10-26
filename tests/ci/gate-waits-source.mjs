@@ -2,15 +2,15 @@
 //   assigned to a variable must be awaited before the next top-level await. Otherwise an intervening assertion throws, the
 //   page closes, the stray wait rejects unhandled and node exits with "Target page ... has been closed", hiding the real
 //   first failure (tests/storefront/order-gate.mjs:738 before this fix; see issue #179).
-//   Round 2 also pins ORDERING: the wait has to be registered before the action that triggers the request. A wait awaited
-//   inline (`const r = await page.waitForResponse(...)`) can only miss the reply or hang, and a `Promise.all([trigger(),
-//   pending])` that lists the trigger first lets a fixture-held reply (arm(..., {after: true})) wait for a release that
-//   lives after the statement — the gate then dies on a 30 s waitForResponse timeout (order-gate.mjs:724 in run 39996387148).
+//   Round 2 pins ORDERING for waits CREATED in the aggregate: a wait awaited inline (`const r = await
+//   page.waitForResponse(...)`) can only miss the reply or hang, and `Promise.all([trigger(), p.waitForResponse(...)])`
+//   registers its listener only after the action dispatches. A wait assigned before the aggregate is already listening,
+//   so its array position is lexical only: a pre-registered `pending` may sit after the trigger (#181 P2).
 //   Round 3 pins the hold itself: arm(..., {after:true}) withholds the reply until release.resolve(), so a wait declared
-//   with that hook must name the hook's entered/release in the same awaited statement. The wait-first variant still
-//   deadlocks when the release runs only after the aggregate; listing the wait first is not sufficient. A release driven
-//   through a helper variable is not recognised (the hook must be named in the awaited statement), so keep the release
-//   branch inline in the aggregate.
+//   with that hook must carry an actual `<hook>.release.resolve(` in the entered branch of the same awaited aggregate,
+//   after `<hook>.entered` and before the aggregate is awaited. Merely naming `<hook>.entered` (with the release after
+//   the statement) still deadlocks; a release driven through a helper variable is not recognised either, so keep the
+//   release branch inline in the aggregate.
 // Depends on: nothing (plain text scan); callers pass {path, text} pairs and injected counterexamples.
 // Used by: tests/ci/gate-waits.test.mjs; no browser, network or application code is executed.
 
@@ -85,17 +85,49 @@ function aggregateSpan(text, from) {
   return -1;
 }
 
+// Top-level comma-separated elements of an array body (between `[` and `]`), as [start, end) offsets into text.
+function topLevelElements(text, from, to) {
+  const elements = [];
+  let depth = 0;
+  let start = from;
+  for (let i = from; i < to; i++) {
+    const c = text[i];
+    if (OPENERS.has(c)) depth++;
+    else if (CLOSERS.has(c)) depth = Math.max(0, depth - 1);
+    else if (depth === 0 && c === ",") { elements.push([start, i]); start = i + 1; }
+  }
+  elements.push([start, to]);
+  return elements;
+}
+
+// True when the awaited aggregate has a branch that names `<hook>.entered` and then calls `<hook>.release.resolve(`:
+// that is the only shape whose release runs after the request is actually held, inside the awaited statement.
+function releasedInEnteredBranch(statement, hook) {
+  const entered = new RegExp(`\\b${hook}\\.entered\\b`).exec(statement);
+  if (!entered) return false;
+  const all = /Promise\.(?:all|allSettled|race)\s*\(\s*\[/.exec(statement);
+  if (!all) return false;
+  const open = statement.indexOf("[", all.index);
+  const end = aggregateSpan(statement, open);
+  if (open < 0 || end < 0) return false;
+  const release = new RegExp(`\\b${hook}\\.release\\.resolve\\s*\\(`);
+  for (const [from, to] of topLevelElements(statement, open + 1, end - 1)) {
+    if (entered.index < from || entered.index >= to) continue;
+    const call = release.exec(statement.slice(from, to));
+    return Boolean(call && from + call.index > entered.index);
+  }
+  return false;
+}
+
 // files: [{path, text}]. Returns one human-readable finding per wait that can reject unhandled or race its trigger.
 export function offenders(files) {
   const found = [];
   for (const { path, text } of files) {
     const re = new RegExp(WAIT.source, "g");
-    const names = new Set();
     const waits = [];
     let match;
     while ((match = re.exec(text))) {
       const [whole, name] = match;
-      names.add(name);
       const end = callEnd(text, match.index + whole.length - 1);
       if (end < 0) continue;
       const line = text.slice(0, match.index).split("\n").length;
@@ -121,8 +153,10 @@ export function offenders(files) {
       found.push(`${path}:${line} ${im[1]} is awaited in its own expression; register the wait before the action that triggers the request and await it in Promise.all with that action`);
     }
 
-    // Ordering rule 2: Promise.all([trigger(), wait]) — a reply held by the fixture can only be released after the
-    // statement, so the wait must be listed first (Promise.all([wait, trigger()])).
+    // Ordering rule 2: Promise.all([trigger(), <wait creation>]) — a wait CREATED inside the array after the trigger
+    // registers its listener only after the action dispatches. A wait assigned before the aggregate is already
+    // listening; its position in the array is lexical only, so a pre-registered `pending` may sit after the trigger
+    // (#181 P2). Held replies remain covered by rule 3 regardless of array order.
     const all = /Promise\.all\s*\(\s*\[/g;
     let am;
     while ((am = all.exec(text))) {
@@ -133,33 +167,28 @@ export function offenders(files) {
       TRIGGER.lastIndex = 0;
       const t = TRIGGER.exec(inside);
       if (!t) continue;
-      let waitAt = -1;
-      for (const name of names) {
-        const n = new RegExp(`\\b${name}\\b`).exec(inside);
-        if (n && (waitAt < 0 || n.index < waitAt)) waitAt = n.index;
-      }
-      const w = /(historyRead|waitForResponse|waitForRequest)\s*\(/.exec(inside);
-      if (w && (waitAt < 0 || w.index < waitAt)) waitAt = w.index;
-      if (waitAt >= 0 && t.index < waitAt) {
-        const line = text.slice(0, start + t.index).split("\n").length;
-        found.push(`${path}:${line} the trigger is listed before the wait inside Promise.all; list the wait first`);
-      }
+      const created = new RegExp(/(?:historyRead|waitForResponse|waitForRequest)\s*\(/g);
+      let cm;
+      let afterTrigger = false;
+      while ((cm = created.exec(inside))) if (cm.index > t.index) { afterTrigger = true; break; }
+      if (!afterTrigger) continue;
+      const line = text.slice(0, start + t.index).split("\n").length;
+      found.push(`${path}:${line} the trigger is listed before an inline wait inside Promise.all; register the wait before the action and list it first`);
     }
 
     // Ordering rule 3: arm(..., {after: true}) withholds the reply until hook.release resolves. A wait declared in the
-    // same statement as that hook must drive the hold from the same awaited statement (entered/release named there);
-    // awaiting the held reply in an aggregate that never names the hook can only time out, wait-first or not.
+    // same statement as that hook must drive the hold from an actual release in the entered branch of the same awaited
+    // aggregate; naming hook.entered alone does not release, and a release after the statement is too late (#181 P2).
     const heldArm = /([A-Za-z_$][\w$]*)\s*=\s*arm\s*\(/g;
     let hm;
     while ((hm = heldArm.exec(text))) {
       const holdEnd = callEnd(text, hm.index + hm[0].length - 1);
       if (holdEnd < 0 || !/\bafter\s*:\s*true\b/.test(text.slice(hm.index, holdEnd))) continue;
       const decl = declarationLine(text, hm.index);
-      const hook = new RegExp(`\\b${hm[1]}\\.(?:entered|release)\\b`);
       for (const wait of waits) {
         if (!wait.statement || wait.index <= decl.start || wait.index >= decl.end) continue;
-        if (hook.test(wait.statement)) continue;
-        found.push(`${path}:${wait.line} held ${wait.name} is awaited without ${hm[1]}.entered/release in the same statement; arm(..., {after: true}) withholds the reply until release, so this await times out`);
+        if (releasedInEnteredBranch(wait.statement, hm[1])) continue;
+        found.push(`${path}:${wait.line} held ${wait.name} is awaited without ${hm[1]}.release.resolve() in its entered branch; arm(..., {after: true}) withholds the reply until release, so this await times out`);
       }
     }
   }
