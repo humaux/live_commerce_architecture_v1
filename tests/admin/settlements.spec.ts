@@ -38,6 +38,7 @@ type Line = { order_number: string; kind: string; store_minor: number; fee_store
 type Statement = {
   statement_id: string; period_start: string; period_end: string; currency: string; captured_minor: number; refunded_minor: number;
   dispute_minor: number; stripe_fee_minor: number; platform_fee_minor: number; carried_in_minor: number; net_payable_minor: number;
+  returned_in_minor: number; payout_returned: boolean; payout_returned_at?: string;
   line_count: number; paid: boolean; payout_ref?: string; paid_at?: string; lines?: Line[];
 };
 
@@ -71,7 +72,7 @@ async function detailOf(page: Page, id: string): Promise<Statement> {
 }
 // What the store receives (review P1-1), restated from the 0150 identity (net = captured - refunded - dispute + stripe_fee - platform_fee + carried_in)
 // and independent of the page's helper: + is added to the payout, - is deducted.
-const contributions = (s: Statement) => [s.captured_minor, -s.refunded_minor, -s.dispute_minor, s.stripe_fee_minor, -s.platform_fee_minor, s.carried_in_minor].map((v) => v + 0);
+const contributions = (s: Statement) => [s.captured_minor, -s.refunded_minor, -s.dispute_minor, s.stripe_fee_minor, -s.platform_fee_minor, s.carried_in_minor, s.returned_in_minor].map((v) => v + 0);
 const signed = (currency: string, minor: number) => (minor > 0 ? "+" : "") + money("en", currency, minor === 0 ? 0 : minor);
 // "+NT$1,234.50" / "-NT$8" / "NT$0" back to minor units, to add up what is literally displayed
 const minorOf = (text: string): number => {
@@ -124,11 +125,11 @@ test("STL1 list: every statement row shows the server's numbers (signed) and the
     ];
     for (const [index, text] of expected.entries()) expect(flat(await cells.nth(index).textContent()), `${s.statement_id} column ${index}`).toBe(text);
     await expect(page.getByTestId(`settlement-status-${s.statement_id}`)).toHaveAttribute("data-state", state[s.statement_id]);
-    // what is on screen adds up: the six signed columns equal the net cell (review P1-1)
+    // What is on screen adds up: all seven contributions equal the same server net; old signs stay intact.
     const shown = [];
-    for (let index = 1; index <= 7; index++) shown.push(minorOf(flat(await cells.nth(index).textContent())));
-    expect(shown.slice(0, 6).reduce((a, b) => a + b, 0), `${s.statement_id}: displayed columns vs net`).toBe(shown[6]);
-    expect(shown[6]).toBe(s.net_payable_minor);
+    for (let index = 1; index <= 8; index++) shown.push(minorOf(flat(await cells.nth(index).textContent())));
+    expect(shown.slice(0, 7).reduce((a, b) => a + b, 0), `${s.statement_id}: displayed columns vs net`).toBe(shown[7]);
+    expect(shown[7]).toBe(s.net_payable_minor);
   }
   await expect(page.getByTestId("settlements-legend")).toContainText(en.legend);
   await expect(page.getByTestId("settlements-formula")).toHaveText(en.formula);
@@ -149,7 +150,7 @@ test("STL2 detail: lines, payout reference of the paid statement, none for the o
     await page.getByTestId(`settlement-open-${id}`).click();
     await expect(page.getByTestId("settlement-detail")).toBeVisible();
     await expect(page.getByTestId("settlement-detail-period")).toHaveText(periodLabel(s.period_start, s.period_end));
-    const detailKeys = ["captured", "refunded", "dispute", "stripe-fee", "platform-fee", "carried-in"];
+    const detailKeys = ["captured", "refunded", "dispute", "stripe-fee", "platform-fee", "carried-in", "returned-in"];
     for (const [index, minor] of contributions(s).entries())
       await expect(page.getByTestId(`settlement-detail-${detailKeys[index]}`)).toHaveText(signed(s.currency, minor));
     await expect(page.getByTestId("settlement-detail-net")).toHaveText(money("en", s.currency, s.net_payable_minor));
@@ -238,7 +239,9 @@ const clicks: { page: string; control: string; action: string; expected: string;
 async function clickProof(page: Page, locale: Sa2Locale, control: string, expected: string, verify: () => Promise<void>) {
   await page.getByTestId(control).click();
   await verify();
-  clicks.push({ page: `/${locale}/settings/settlements`, control, action: "click", expected, actual: expected, result: "PASS", locale, width: page.viewportSize()!.width });
+  const detail = page.getByTestId("settlement-detail");
+  const actual = await detail.count() ? await detail.innerText() : await page.getByTestId("settlements-page").innerText();
+  clicks.push({ page: `/${locale}/settings/settlements`, control, action: "click", expected, actual, result: "PASS", locale, width: page.viewportSize()!.width });
   await writeFile(path.join(evidence, "sa2-click-ledger.json"), JSON.stringify(clicks, null, 2));
 }
 async function returnedFixture(page: Page): Promise<ReturnedStatement[]> {

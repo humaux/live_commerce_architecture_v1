@@ -420,10 +420,10 @@ test("the period label shows the last day inside the (exclusive-end) week", () =
 });
 
 test("payout state: paid, pending only when money is due, none when the week nets to zero or less", () => {
-  assert.equal(payoutState({ paid: true, net_payable_minor: 100 }), "paid");
-  assert.equal(payoutState({ paid: false, net_payable_minor: 100 }), "pending");
-  assert.equal(payoutState({ paid: false, net_payable_minor: 0 }), "none");
-  assert.equal(payoutState({ paid: false, net_payable_minor: -900 }), "none");
+  assert.equal(payoutState({ paid: true, net_payable_minor: 100, payout_returned: false }), "paid");
+  assert.equal(payoutState({ paid: false, net_payable_minor: 100, payout_returned: false }), "pending");
+  assert.equal(payoutState({ paid: false, net_payable_minor: 0, payout_returned: false }), "none");
+  assert.equal(payoutState({ paid: false, net_payable_minor: -900, payout_returned: false }), "none");
 });
 
 // ---- shell registry: SA-2 adds the billing-scoped settlement entry; the card page remains an in-page route ----

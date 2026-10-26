@@ -1,9 +1,10 @@
-// Purpose: admin settlements model — strict parsers for the frozen settlement ledger DTOs (migrations/0150 signs and CHECKs).
+// Purpose: admin settlements model — strict parsers for the frozen settlement ledger DTOs (0150 signs, SA-0 §6.9 returns).
 // Depends on: customers-model.ts (object/count helpers), packages/format (money), Go internal/payments/settlement.
 // Used by: card-payments-client.ts, Settlements.tsx, tests/admin/card-payments-model.test.ts.
 // BFF `/api/stores/{store}/settlements[/{id}]` -> Go `internal/httpapi` settlement reads (billing:manage;
 // W4-S2 platform-settlement). List statements omit `lines`; the detail includes them. Payout fields are
-// omitempty and may appear only on paid statements. No settlement-currency amounts or Stripe ids exist here.
+// omitempty and may appear only on paid statements; SA-0 returned amount/flag are required, return time is conditional.
+// No settlement-currency amounts or Stripe ids exist here.
 import { count, object } from "./customers-model.ts";
 import { money as formatMoney } from "../../../packages/format/src/index.ts";
 
@@ -35,6 +36,7 @@ export type SettlementStatement = {
   platform_fee_bps: number;
   platform_fee_minor: number;
   carried_in_minor: number;
+  returned_in_minor: number;
   net_payable_minor: number;
   line_count: number;
   closed_at: string;
@@ -42,6 +44,8 @@ export type SettlementStatement = {
   payout_ref: string | null;
   payout_minor: number | null;
   paid_at: string | null;
+  payout_returned: boolean;
+  payout_returned_at: string | null;
   lines: SettlementLine[] | null;
 };
 
@@ -66,21 +70,21 @@ function dayNumber(value: unknown): number | null {
 }
 // What a statement's payout column says. A statement with a net of zero or less (refunds/disputes outran the week) is never
 // paid: it is carried into the next statement, so "pending payout" would promise money that will not come.
-export type PayoutState = "paid" | "pending" | "none";
-export const payoutState = (s: Pick<SettlementStatement, "paid" | "net_payable_minor">): PayoutState =>
-  s.paid ? "paid" : s.net_payable_minor > 0 ? "pending" : "none";
+export type PayoutState = "returned" | "paid" | "pending" | "none";
+export const payoutState = (s: Pick<SettlementStatement, "paid" | "net_payable_minor" | "payout_returned">): PayoutState =>
+  s.payout_returned ? "returned" : s.paid ? "paid" : s.net_payable_minor > 0 ? "pending" : "none";
 // ---- display convention (review P1-1): every column shows what the STORE RECEIVES. + is added to the payout, - is deducted. ----
-// The server's fields mix two senses (migrations/0150: net = captured - refunded - dispute + stripe_fee - platform_fee + carried_in), so
+// The server's fields mix two senses (SA-0: net = captured - refunded - dispute + stripe_fee - platform_fee + carried_in + returned_in), so
 // refunded, dispute and platform_fee are flipped for DISPLAY ONLY by these fixed per-column rules; the others already read that way.
-// Nothing here is summed or recomputed: the net is always the server's value, and the six displayed columns add up to it by the identity above
+// Nothing here is summed or recomputed: the net is always the server's value, and the seven displayed columns add up to it by the identity above
 // (checked by parseSettlementStatement before a statement is ever shown).
-export const columnSign = { captured: 1, refunded: -1, dispute: -1, stripe_fee: 1, platform_fee: -1, carried_in: 1 } as const;
+export const columnSign = { captured: 1, refunded: -1, dispute: -1, stripe_fee: 1, platform_fee: -1, carried_in: 1, returned_in: 1 } as const;
 const shown = (value: number, sign: 1 | -1) => (sign === 1 || value === 0 ? value : -value); // never -0: "-NT$0" would be a lie
 // A signed contribution as text: credits carry "+", deductions the "-" of money(); a column that moved nothing carries no sign.
 export function signedAmountText(locale: string, currency: string, minor: number): string {
   return (minor > 0 ? "+" : "") + formatMoney(locale, currency, minor);
 }
-/** The row of a statement as displayed: [period, captured, refunds, disputes, Stripe fee, platform fee, carried in, net payable]. */
+/** The row of a statement as displayed, including returned funds as a separate positive contribution before the server's net. */
 export function statementCells(locale: string, s: SettlementStatement): string[] {
   const signed = (value: number, sign: 1 | -1) => signedAmountText(locale, s.currency, shown(value, sign));
   return [
@@ -91,6 +95,7 @@ export function statementCells(locale: string, s: SettlementStatement): string[]
     signed(s.stripe_fee_minor, columnSign.stripe_fee),
     signed(s.platform_fee_minor, columnSign.platform_fee),
     signed(s.carried_in_minor, columnSign.carried_in),
+    signed(s.returned_in_minor, columnSign.returned_in),
     formatMoney(locale, s.currency, s.net_payable_minor),
   ];
 }
@@ -128,9 +133,9 @@ function parseLine(value: unknown): SettlementLine {
 const baseKeys = [
   "statement_id", "period_start", "period_end", "currency", "captured_minor", "refunded_minor",
   "dispute_minor", "stripe_fee_minor", "platform_fee_bps", "platform_fee_minor", "carried_in_minor",
-  "net_payable_minor", "line_count", "closed_at", "paid",
+  "net_payable_minor", "line_count", "closed_at", "paid", "returned_in_minor", "payout_returned",
 ];
-const optionalKeys = ["payout_ref", "payout_minor", "paid_at", "lines"];
+const optionalKeys = ["payout_ref", "payout_minor", "paid_at", "payout_returned_at", "lines"];
 
 export function parseSettlementStatement(value: unknown): SettlementStatement {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("unavailable");
@@ -160,16 +165,19 @@ export function parseSettlementStatement(value: unknown): SettlementStatement {
     !money(v.platform_fee_minor) ||
     !signedMoney(v.carried_in_minor) ||
     (v.carried_in_minor as number) > 0 ||
+    !money(v.returned_in_minor) ||
+    (v.returned_in_minor as number) > 100000000000 ||
     !signedMoney(v.net_payable_minor) ||
-    // 0150 CHECK: the statement nets to its own parts
+    // SA-0 §6.9: the statement nets to its own parts, including returned funds exactly once.
     (v.net_payable_minor as number) !==
       (v.captured_minor as number) - (v.refunded_minor as number) - (v.dispute_minor as number) + (v.stripe_fee_minor as number) -
-        (v.platform_fee_minor as number) + (v.carried_in_minor as number) ||
+        (v.platform_fee_minor as number) + (v.carried_in_minor as number) + (v.returned_in_minor as number) ||
     !Number.isSafeInteger(v.line_count) ||
     (v.line_count as number) < 0 ||
     (v.line_count as number) > maxLines ||
     !isInstant(v.closed_at) ||
-    typeof v.paid !== "boolean"
+    typeof v.paid !== "boolean" ||
+    typeof v.payout_returned !== "boolean"
   )
     throw new Error("unavailable");
   // Payout fields exist only once the platform marked the statement paid (omitempty in Go).
@@ -181,6 +189,12 @@ export function parseSettlementStatement(value: unknown): SettlementStatement {
   // 0150 CHECK: a payout exists only for a positive net and equals it; the three fields come together.
   if (v.paid && !("payout_ref" in v && "payout_minor" in v && "paid_at" in v)) throw new Error("unavailable");
   if (v.paid && ((v.net_payable_minor as number) <= 0 || v.payout_minor !== v.net_payable_minor)) throw new Error("unavailable");
+  // A return keeps its historical payout triple. Its timestamp exists iff the server confirms a return,
+  // and cannot precede the payout; carrying funds into another statement does not mean that payout bounced.
+  if (v.payout_returned) {
+    if (!v.paid || !isInstant(v.payout_returned_at) || Date.parse(v.payout_returned_at) < Date.parse(v.paid_at as string))
+      throw new Error("unavailable");
+  } else if ("payout_returned_at" in v) throw new Error("unavailable");
   let lines: SettlementLine[] | null = null;
   if ("lines" in v) {
     if (!Array.isArray(v.lines) || v.lines.length > maxLines) throw new Error("unavailable");
@@ -199,10 +213,11 @@ export function parseSettlementStatement(value: unknown): SettlementStatement {
       throw new Error("unavailable");
   }
   return {
-    ...(v as unknown as Omit<SettlementStatement, "payout_ref" | "payout_minor" | "paid_at" | "lines">),
+    ...(v as unknown as Omit<SettlementStatement, "payout_ref" | "payout_minor" | "paid_at" | "payout_returned_at" | "lines">),
     payout_ref: "payout_ref" in v ? (v.payout_ref as string) : null,
     payout_minor: "payout_minor" in v ? (v.payout_minor as number) : null,
     paid_at: "paid_at" in v ? (v.paid_at as string) : null,
+    payout_returned_at: "payout_returned_at" in v ? (v.payout_returned_at as string) : null,
     lines,
   };
 }
