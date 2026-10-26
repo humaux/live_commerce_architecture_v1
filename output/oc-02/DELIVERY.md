@@ -39,7 +39,7 @@
   - RA07 `TestReauthRA07OIDCFlow`
 - internal/oidclogin: `TestReauthAuthorizationURLAndAuthTime`.
 - RED: run 40384938799, job 121793260142 (gate shard:unit), head 1842aea9c. RA01–RA05 failed on the missing 0201; details in `output/oc-02/red.log`.
-- GREEN: see the PR #212 checks for head fed149133 or later (the result is recorded in the final report).
+- GREEN: head fed149133 (implementation 9a41a47a0 + merge of 86aaa2c57): 81 checks pass, 1 skipped. `required` = run 40400054009 job 121903742755; `shard:unit` job 121850396888 shows PASS (no SKIP) for RA01–RA07 and TestReauthAuthorizationURLAndAuthTime; `foundation` = run 40400054121. Later commits touch output/oc-02 only.
 
 ## Files outside the original write_paths (integrator-approved 2026-10-27, now in OC-02 write_paths)
 - `tests/identity/doc.go`: package doc, required by check-pkgdocs.
