@@ -118,6 +118,8 @@ Admin routes (store:write — use the narrowest existing permission the settings
 
 ## C. Checkout additions (producer: unit checkout-offline, migration 0088)
 
+> **Superseded for new orders (ADR-20261026 OC-Q1, `owner-choices-20261026-v1.md`).** `bank_transfer` is no longer offered for new orders and merchants can no longer save bank details; the text below describes the behaviour of orders already `AWAITING_TRANSFER`, which run to their terminal state.
+
 - Payment mode `bank_transfer` for home delivery (and CVS pickup when the merchant enables it):
   merchant configures bank name, branch, account name, account number (shown to buyers only on their
   own order page), transfer window hours (6..168, default 72). Order is placed `AWAITING_TRANSFER`,

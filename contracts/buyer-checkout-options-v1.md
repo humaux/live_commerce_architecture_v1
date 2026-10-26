@@ -74,6 +74,8 @@ the process-level gate and is not a per-store guarantee.
 
 ## Bank transfer joins the payment modes (checkout-offline, amends this contract; storefront-v2 §C)
 
+> **Superseded for new orders (ADR-20261026 OC-Q1, `owner-choices-20261026-v1.md`).** `bank_transfer` is no longer offered for new orders and merchants can no longer save bank details; the text below describes the behaviour of orders already `AWAITING_TRANSFER`, which run to their terminal state.
+
 When the store enabled bank transfer (`checkout.bank_transfer_settings`), `bank_transfer` is listed in `payment_modes` of every home row
 and, with `allow_cvs`, of every CVS row, together with `transfer_window_hours` (6..168, the hold the order will keep). A home row
 carries `payment_modes` only in that case (absent = card only, as before) and a home row is then offered even without card payment.
