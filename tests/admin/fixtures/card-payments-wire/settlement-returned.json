@@ -1,0 +1,71 @@
+{
+  "statements": [
+    {
+      "statement_id": "a2000000-0000-4000-8000-000000000003",
+      "period_start": "2026-09-21",
+      "period_end": "2026-09-28",
+      "currency": "TWD",
+      "captured_minor": 0,
+      "refunded_minor": 0,
+      "dispute_minor": 0,
+      "stripe_fee_minor": 0,
+      "platform_fee_bps": 0,
+      "platform_fee_minor": 0,
+      "carried_in_minor": 0,
+      "returned_in_minor": 0,
+      "net_payable_minor": 0,
+      "line_count": 0,
+      "closed_at": "2026-10-01T00:00:01+08:00",
+      "paid": false,
+      "payout_returned": false
+    },
+    {
+      "statement_id": "a2000000-0000-4000-8000-000000000002",
+      "period_start": "2026-09-14",
+      "period_end": "2026-09-21",
+      "currency": "TWD",
+      "captured_minor": 50000,
+      "refunded_minor": 0,
+      "dispute_minor": 0,
+      "stripe_fee_minor": -1800,
+      "platform_fee_bps": 0,
+      "platform_fee_minor": 0,
+      "carried_in_minor": 0,
+      "returned_in_minor": 125000,
+      "net_payable_minor": 173200,
+      "line_count": 1,
+      "closed_at": "2026-09-24T00:00:01+08:00",
+      "paid": false,
+      "payout_returned": false,
+      "lines": [
+        { "order_number": "LC-22222222222222222222222222222222", "kind": "CHARGE", "store_minor": 50000, "fee_store_minor": -1800, "txn_date": "2026-09-15" }
+      ]
+    },
+    {
+      "statement_id": "a2000000-0000-4000-8000-000000000001",
+      "period_start": "2026-09-07",
+      "period_end": "2026-09-14",
+      "currency": "TWD",
+      "captured_minor": 130000,
+      "refunded_minor": 0,
+      "dispute_minor": 0,
+      "stripe_fee_minor": -5000,
+      "platform_fee_bps": 0,
+      "platform_fee_minor": 0,
+      "carried_in_minor": 0,
+      "returned_in_minor": 0,
+      "net_payable_minor": 125000,
+      "line_count": 1,
+      "closed_at": "2026-09-17T00:00:01+08:00",
+      "paid": true,
+      "payout_ref": "BANK-SA2-SYNTHETIC-0001",
+      "payout_minor": 125000,
+      "paid_at": "2026-09-17T12:00:00+08:00",
+      "payout_returned": true,
+      "payout_returned_at": "2026-09-18T12:00:00+08:00",
+      "lines": [
+        { "order_number": "LC-11111111111111111111111111111111", "kind": "CHARGE", "store_minor": 130000, "fee_store_minor": -5000, "txn_date": "2026-09-08" }
+      ]
+    }
+  ]
+}

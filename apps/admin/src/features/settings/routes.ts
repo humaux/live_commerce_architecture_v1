@@ -3,7 +3,7 @@
 // Used by: routes.ts and shell-registry gates.
 // W0 route metadata only; data/authorization remain in the existing BFF and Go.
 import type { RouteEntry } from "../../route-types.ts";
-/** Settings route metadata; ledger is reached from an in-page link. */
+/** Settings route metadata; settlement statements have their own billing-scoped navigation entry. */
 export const settingsRoutes = [
   {id:"operations",path:"/settings/operations",group:"settings",labelKey:"operations",icon:"settings",permission:"integration:read",template:"list",nav:false,spec:"tests/admin/operations-ads.spec.ts"},
   {
@@ -60,7 +60,7 @@ export const settingsRoutes = [
     icon: "wallet",
     permission: "billing:manage",
     template: "workspace",
-    nav: false,
+    nav: true,
     spec: "tests/admin/settlements.spec.ts",
   },
 ] satisfies RouteEntry[];

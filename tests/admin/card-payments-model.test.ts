@@ -1,3 +1,6 @@
+// Purpose: strict parser, settlement amount/sign and permission tests for platform card DTOs, including SA-2 returns.
+// Depends on: the real card/settlement models, shell route registry and frozen stripe-platform-account-v1 §6.9.
+// Used by: scripts/dev/test-node.sh and --browser-card-payments CI.
 // w4-u1-payment-activation-ui: strict parsers for the frozen platform-Stripe card DTOs
 // (apps/admin/lib/card-payments-model.ts, card-payments-settlements-model.ts) against
 // internal/payments/platformstripe + internal/payments/settlement (contract stripe-platform-account-v1).
@@ -148,10 +151,12 @@ const statement = () => ({
   platform_fee_bps: 150,
   platform_fee_minor: 750,
   carried_in_minor: 0,
+  returned_in_minor: 0,
   net_payable_minor: 44650,
   line_count: 1,
   closed_at: "2026-09-14T00:00:05Z",
   paid: false,
+  payout_returned: false,
 });
 
 test("settlement list accepts statements without payout/lines keys (omitempty)", () => {
@@ -415,27 +420,27 @@ test("the period label shows the last day inside the (exclusive-end) week", () =
 });
 
 test("payout state: paid, pending only when money is due, none when the week nets to zero or less", () => {
-  assert.equal(payoutState({ paid: true, net_payable_minor: 100 }), "paid");
-  assert.equal(payoutState({ paid: false, net_payable_minor: 100 }), "pending");
-  assert.equal(payoutState({ paid: false, net_payable_minor: 0 }), "none");
-  assert.equal(payoutState({ paid: false, net_payable_minor: -900 }), "none");
+  assert.equal(payoutState({ paid: true, net_payable_minor: 100, payout_returned: false }), "paid");
+  assert.equal(payoutState({ paid: false, net_payable_minor: 100, payout_returned: false }), "pending");
+  assert.equal(payoutState({ paid: false, net_payable_minor: 0, payout_returned: false }), "none");
+  assert.equal(payoutState({ paid: false, net_payable_minor: -900, payout_returned: false }), "none");
 });
 
-// ---- shell registry: the pages are reachable by permission only and add no nav button (W3-U5 incident) ----
+// ---- shell registry: SA-2 adds the billing-scoped settlement entry; the card page remains an in-page route ----
 
-test("card-payments and settlements are nav:false routes, so no group loses or gains a nav button", () => {
+test("SA-2 exposes settlements in settings while card-payments stays nav:false and keeps both permission guards", () => {
   for (const id of ["card-payments", "settlements"]) {
     const route = routes.find((r) => r.id === id);
     assert.ok(route, id);
-    assert.equal(route.nav, false, `${id}: a second nav:true route would replace the group's own nav-<group> button`);
+    assert.equal(route.nav, id === "settlements", `${id}: exact SA-2 navigation metadata`);
     assert.equal(route.group, "settings");
     assert.ok(shellCopy.en[route.labelKey] && shellCopy["zh-TW"][route.labelKey] && shellCopy["zh-CN"][route.labelKey], id);
   }
-  // the settings group still shows exactly its three pre-existing entries
+  // Keep the exact pre-existing entries and append only the new settlement entry.
   const owner = { role: "owner", permissions: [] };
   assert.deepEqual(
     visibleGroups(owner).find((g) => g.id === "settings")?.routes.map((r) => r.id),
-    ["settings", "team", "billing"],
+    ["settings", "team", "billing", "settlements"],
   );
 });
 
@@ -478,15 +483,45 @@ test("statement cells: a dispute reversal and a returned fee read as credits (+)
       line_count: 0,
     }],
   })[0];
-  assert.deepEqual(statementCells("en", s), ["2026-09-07 – 2026-09-13", "+NT$100", "-NT$30", "+NT$20", "+NT$5", "-NT$2", "-NT$10", "NT$83"]);
-  assert.deepEqual(statementCells("zh-TW", s), ["2026-09-07 – 2026-09-13", "+NT$100", "-NT$30", "+NT$20", "+NT$5", "-NT$2", "-NT$10", "NT$83"]);
-  // the six contributions literally add up to the net the server computed; nothing is recomputed (the net cell is the server's value)
+  assert.deepEqual(statementCells("en", s), ["2026-09-07 – 2026-09-13", "+NT$100", "-NT$30", "+NT$20", "+NT$5", "-NT$2", "-NT$10", "NT$0", "NT$83"]);
+  assert.deepEqual(statementCells("zh-TW", s), ["2026-09-07 – 2026-09-13", "+NT$100", "-NT$30", "+NT$20", "+NT$5", "-NT$2", "-NT$10", "NT$0", "NT$83"]);
+  // All seven contributions add up to the same server net; the added return column is zero in this historical vector.
   const cells = statementCells("en", s);
-  assert.equal(cells.slice(1, 7).map(minorOf).reduce((a, b) => a + b, 0), minorOf(cells[7]));
-  assert.equal(minorOf(cells[7]), s.net_payable_minor);
+  assert.equal(cells.slice(1, 8).map(minorOf).reduce((a, b) => a + b, 0), minorOf(cells[8]));
+  assert.equal(minorOf(cells[8]), s.net_payable_minor);
   // a zero is never signed ("-NT$0" would be a lie about a column that moved nothing)
   const quiet = parseSettlementList({ statements: [{ ...statement(), captured_minor: 0, refunded_minor: 0, dispute_minor: 0, stripe_fee_minor: 0, platform_fee_minor: 0, platform_fee_bps: 0, net_payable_minor: 0, line_count: 0 }] })[0];
-  assert.deepEqual(statementCells("en", quiet).slice(1), ["NT$0", "NT$0", "NT$0", "NT$0", "NT$0", "NT$0", "NT$0"]);
+  assert.deepEqual(statementCells("en", quiet).slice(1), ["NT$0", "NT$0", "NT$0", "NT$0", "NT$0", "NT$0", "NT$0", "NT$0"]);
+});
+
+test("SA-2 requires returned amount and flag, validates return metadata, and adds returned funds exactly once", () => {
+  const carrying = { ...statement(), returned_in_minor: 125000, net_payable_minor: 44650 + 125000 };
+  const got = parseSettlementList({ statements: [carrying] })[0];
+  assert.equal(got.returned_in_minor, 125000);
+  assert.equal(statementCells("en", got)[7], "+NT$1,250");
+  assert.equal(minorOf(statementCells("en", got)[8]), 169650);
+  for (const key of ["returned_in_minor", "payout_returned"]) {
+    const missing: Record<string, unknown> = { ...statement() };
+    delete missing[key];
+    assert.throws(() => parseSettlementList({ statements: [missing] }), key);
+  }
+  for (const value of [-1, 0.5, 100000000001, "0", null])
+    assert.throws(() => parseSettlementList({ statements: [{ ...statement(), returned_in_minor: value }] }));
+  const returned = {
+    ...statement(), paid: true, payout_ref: "BANK-SA2-0001", payout_minor: 44650,
+    paid_at: "2026-09-17T12:00:00+08:00", payout_returned: true,
+    payout_returned_at: "2026-09-18T12:00:00+08:00",
+  };
+  const parsed = parseSettlementList({ statements: [returned] })[0];
+  assert.equal(payoutState(parsed), "returned");
+  assert.equal(parsed.payout_returned_at, returned.payout_returned_at);
+  assert.equal(parsed.payout_minor, 44650, "the original payout triple is historical, never erased");
+  for (const patch of [
+    { payout_returned: "true" }, { payout_returned_at: undefined }, { payout_returned_at: "later" },
+    { payout_returned: false }, { paid: false }, { payout_returned_at: "2026-09-16T12:00:00+08:00" },
+    { return_ref: "PRIVATE-RETURN" }, { ticket: "PRIVATE-TICKET" },
+  ]) assert.throws(() => parseSettlementList({ statements: [{ ...returned, ...patch }] }));
+  assert.throws(() => parseSettlementList({ statements: [{ ...carrying, net_payable_minor: 44650 }] }), "return cannot be omitted from net");
 });
 
 // ---- review P2-5: a detail without its lines is not a statement ----
