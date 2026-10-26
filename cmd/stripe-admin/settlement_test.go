@@ -27,6 +27,11 @@ func TestSettlementUsageErrorsAreFixedAndPrintNothing(t *testing.T) {
 		"settlement-sync " + ids + " --environment SANDBOX --from notatime --to 2026-09-21T00:00:00Z" + slOp,
 		"settlement-sync " + ids + " --environment SANDBOX --from 2098-12-28T00:00:00Z --to 2099-01-01T00:00:00Z --connection 44444444-4444-4444-8444-444444444444 --expected-version 1" + slOp, // P1-2: a future window
 		"settlement-payout " + ids + " --statement " + slStmt + " --payout-ref BANK-1 --amount 100 --paid-at nope" + slOp,
+		"settlement-payout-return " + ids + " --statement " + slStmt + " --return-ref BANKRET-1 --amount 100 --returned-at nope" + slOp,
+		"settlement-payout-return " + ids + " --statement " + slStmt + " --return-ref BANKRET-1 --amount 100 --returned-at 2026-10-02T00:00:00Z",
+		"settlement-payables " + ids + " --environment PROD",
+		"settlement-payables " + ids + " --environment SANDBOX --limit 0",
+		"settlement-payables " + ids + " --environment SANDBOX --limit 201",
 		"settlement-export " + ids + " --statement " + slStmt + slOp, // no --out
 		"settlement-export " + ids + " --statement " + slStmt + " --out /tmp/x.csv --extra=SECRETLEAK" + slOp,
 		"settlement-resolve " + ids + " --environment SANDBOX --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee",     // no operator/ticket
@@ -79,6 +84,8 @@ func TestSettlementCloseExportPayoutReadNoStripeOrLiveVariable(t *testing.T) {
 		"settlement-close " + ids + " --environment LIVE --period-start 2026-09-14" + slOp,
 		"settlement-export " + ids + " --statement " + slStmt + " --out /tmp/stripe-admin-never-written.csv" + slOp,
 		"settlement-payout " + ids + " --statement " + slStmt + " --payout-ref BANK-REF-1 --amount 100 --paid-at 2026-10-01T10:00:00Z" + slOp,
+		"settlement-payout-return " + ids + " --statement " + slStmt + " --return-ref BANKRET-1 --amount 100 --returned-at 2026-10-02T00:00:00Z" + slOp,
+		"settlement-payables " + ids + " --environment LIVE --limit 10" + slOp,
 		// S2-OPEN-1: resolve is SQL-only like close; even --environment LIVE must not touch the pair or a keyring
 		"settlement-resolve " + ids + " --environment LIVE --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee" + slOp,
 	} {

@@ -1,5 +1,7 @@
 # Manual fulfilment v1 — merchant-arranged shipment, tracking and unshipped export
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q17, OC-Q20); ADR-20261026.
+
 Status: **FROZEN 2026-09-29** after review rounds 1–3 (fresh reviewer round 3: PASS_WITH_P2). Was DRAFT (amended round 2). Round-1
 adversarial review `output/contract-review/refund-fulfilment-round1.json` (BLOCK) is addressed by the
 in-place edits marked "(A1)"; §9 maps each finding. The round-2 fresh review (one P1: schema USAGE
@@ -32,7 +34,7 @@ columns, permission names or tracking-URL policy.
 | MD7 | **Corrections** (carrier/tracking typo) are allowed only while the head is `SHIPPED`; void is allowed only while the head is `SHIPPED`. Refunds never change fulfilment state (stripe-refund RD6). | Clear single transition graph. |
 | MD8 | **Separate permissions:** `fulfillment:write` to record/correct/void; `orders:export` to download recipient PII as CSV. Neither is implied by `orders:read`; neither is backfilled. (A1) 0063 adds no grant row; the store creator receives both only via `0065_owner_provisioning.sql` (stripe-refund-v1 §12, OP01). | Export is bulk PII (I11); write authority differs from read (merchant-orders-v1). |
 | MD9 | **CSV export is generated on request, never stored,** capped, audited, formula-injection-safe, `no-store`. | "No automatic exports" (merchant-orders-v1) stays true: this is an explicit, permissioned, audited action. |
-| MD10 | **No buyer message** is sent on shipment in v1; the buyer sees the state on the order page. | Messaging needs consent/window rules (§10) and a separate contract. |
+| MD10 | **No buyer Messenger/IG message** is sent on shipment in v1; the buyer sees the state on the order page. Email: the existing `shipped` mail (migration 0090 `notify`, storefront-v2 §E) is kept and goes only to a buyer who left an email (ADR-20261026 CP-07). | Messaging needs consent/window rules (§10) and a separate contract. |
 
 Rejected alternatives:
 - A mutable `tracking_number` column on `checkout.orders`: overwrites history, fails §13.4 audit.
@@ -300,7 +302,7 @@ contracts' SQL interfaces are frozen (the MD6 refund check reads `payments.strip
 - No carrier API, label purchase, pickup booking, tracking events, delivery confirmation, RMA or
   returns (§13.3/§13.4) — T13/R2. `MERCHANT_SHIPPED` is merchant attestation only.
 - No built-in carrier tracking URLs until verified (M-2); no tracking import (M-7).
-- No buyer notification on shipment (MD10).
+- No buyer Messenger/IG notification on shipment; the email-only `shipped` mail stays (MD10, ADR-20261026 CP-07).
 - Export capped at 1000 rows without paging (M-5); generic columns, not carrier upload formats (M-6).
 - Cash-on-delivery is not modelled; a CVS carrier label here never implies COD collection.
 - (A1) CSV leading zeroes survive only when the spreadsheet imports the column as text (§5.3).

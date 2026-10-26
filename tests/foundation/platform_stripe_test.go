@@ -947,7 +947,7 @@ type pfLive struct {
 }
 
 var pfLiveChecklist = []string{"account_active", "canary_private", "descriptor", "dispute_notice", "managed_off", "merchant_terms", "payout_bank",
-	"payout_ops", "platform_stripe_terms", "policy_pages", "radar_default", "rak_live", "tax_invoice", "three_ds", "webhook_live"}
+	"payout_ops", "platform_stripe_terms", "policy_pages", "radar_default", "rak_live", "tax_invoice", "three_ds", "tw_legal_opinion", "webhook_live"}
 
 const pfLiveReadiness = `{"AVSRule":true,"CVCRule":true,"ChargesEnabled":true,"CurrentlyDueCount":0,"DescriptorLength":12,"DetailsSubmitted":true,"PayoutsEnabled":true,"PrefixLength":8}`
 
@@ -1015,6 +1015,63 @@ func pfBlocked(t *testing.T, done <-chan error, what string) {
 	case err := <-done:
 		t.Fatalf("%s finished while the other transaction still held its locks (err=%v)", what, err)
 	case <-time.After(1500 * time.Millisecond):
+	}
+}
+
+// §8 tw_legal_opinion (SA-1, migration 0200): live-approve refuses the pre-0200 platform set (15 codes, no tw_legal_opinion), and a
+// LIVE open is refused while the active approval lacks the code; the same approval with the code opens again.
+func TestPlatformStripeLiveLegalOpinion(t *testing.T) {
+	ctx := context.Background()
+	l := pfLiveNew(t) // 16 codes: approve and the LIVE open succeed
+	var old []string
+	for _, c := range pfLiveChecklist {
+		if c != "tw_legal_opinion" {
+			old = append(old, c)
+		}
+	}
+	_, err := l.f.owner.Exec(ctx, `SELECT payments.approve_stripe_live($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,'TWD','approval-ref-'||$4::text,clock_timestamp()-interval '1 minute',5000,2000000,$6::text[],$7::jsonb)`,
+		l.plat.f.tenantA, l.plat.f.storeA1, l.plat.f.principalA, randomUUID(), l.conn, old, pfLiveReadiness)
+	requirePGCode(t, err, "22023", "live-approve without tw_legal_opinion")
+	if !strings.Contains(err.Error(), "Stripe live checklist incomplete") {
+		t.Fatalf("live-approve without tw_legal_opinion: %v, want the checklist refusal", err)
+	}
+
+	// an approval stored before 0200 (15 codes): owner-pool fixture, triggers skipped, since the checklist is immutable by design
+	setChecklist := func(codes []string) {
+		t.Helper()
+		tx, err := l.f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback(ctx)
+		if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role=replica`); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tx.Exec(ctx, `UPDATE payments.stripe_live_approvals SET checklist=$2::text[] WHERE id=$1::uuid`, l.approval, codes); err != nil {
+			t.Fatal(err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	open := func() error {
+		var version int64
+		if err := l.f.owner.QueryRow(ctx, `SELECT version FROM payments.stripe_platform WHERE environment='LIVE'`).Scan(&version); err != nil {
+			t.Fatal(err)
+		}
+		_, err := l.f.owner.Exec(ctx, `SELECT payments.set_stripe_platform_open($1::uuid,$2::uuid,$3::uuid,'LIVE',true,NULL,$4::bigint)`,
+			l.plat.f.tenantA, l.plat.f.storeA1, l.plat.f.principalA, version)
+		return err
+	}
+	setChecklist(old)
+	err = open()
+	requirePGCode(t, err, "PT409", "LIVE open without tw_legal_opinion")
+	if !strings.Contains(err.Error(), "platform_not_ready") {
+		t.Fatalf("LIVE open without tw_legal_opinion: %v, want platform_not_ready", err)
+	}
+	setChecklist(pfLiveChecklist)
+	if err := open(); err != nil {
+		t.Fatalf("LIVE open with all 16 codes: %v", err)
 	}
 }
 

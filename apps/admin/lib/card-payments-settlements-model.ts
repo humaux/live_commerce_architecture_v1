@@ -186,6 +186,9 @@ export function parseSettlementStatement(value: unknown): SettlementStatement {
     throw new Error("unavailable");
   if ("payout_minor" in v && !money(v.payout_minor)) throw new Error("unavailable");
   if ("paid_at" in v && !isInstant(v.paid_at)) throw new Error("unavailable");
+  if ("returned_in_minor" in v && !money(v.returned_in_minor)) throw new Error("unavailable");
+  if ("payout_returned" in v && typeof v.payout_returned !== "boolean") throw new Error("unavailable");
+  if ("payout_returned_at" in v && (v.payout_returned !== true || !isInstant(v.payout_returned_at))) throw new Error("unavailable");
   // 0150 CHECK: a payout exists only for a positive net and equals it; the three fields come together.
   if (v.paid && !("payout_ref" in v && "payout_minor" in v && "paid_at" in v)) throw new Error("unavailable");
   if (v.paid && ((v.net_payable_minor as number) <= 0 || v.payout_minor !== v.net_payable_minor)) throw new Error("unavailable");

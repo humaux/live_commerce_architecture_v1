@@ -1,5 +1,7 @@
 # Merchant logistics/payments wizard v1
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-AD03); ADR-20261026.
+
 2026-09-24. Frozen after independent preflight; extends existing account/method HTTP contracts.
 User-approved composition: `.impeccable/merchant-settings-brief.md`, comp A.
 Operate mode; no new provider, schema, dependency or production change.
@@ -55,7 +57,7 @@ Route `/{locale}/settings`, locales zh-CN/zh-TW/en. Settings navigation is real.
 Reuse incumbent shell controls/CSS/Icon and authenticated store list; no inventory
 permission prerequisite to view settings. SSR provides only selected authorized
 store metadata, never account secrets. Explicit foreign store query fails closed.
-Four steps: choose platform, connect account, configure methods, inspect status.
+Four steps: choose platform, connect account, configure methods, inspect status. **Superseded by the "Amendment ADR-20261026 AD-03" section at the end of this file for the merchant-facing quick start.**
 PAYUNi uses the existing credential schema. Merchant-arranged manual delivery is
 a separate honest choice, never described as the screenshot's provider自主模式.
 Other providers are not invented as working integrations.
@@ -128,3 +130,9 @@ No unbounded automatic paging or request retry loop.
 Ownership after preflight: Go author owns new domain discovery files, pagination
 extension and HTTP registration; UI author owns settings component/copy/state/page
 and shared frame extraction. Root owns this contract, BFF and independent tests.
+
+## Amendment ADR-20261026 AD-03 (owner 2026-10-26: 商家設定要簡單，快速開店)
+
+- The merchant-facing quick start (快速上手) has **three** steps: 店名 → 配送 → 第一個商品. No provider, key, merchant-id or payment step (payment is platform-collected, see stripe-platform-account AD-PF3). The four-step provider wizard above is not shown to merchants.
+- After login the merchant lands on the dashboard (看板). The quick start is shown only for a newly created store; existing stores are never forced through it.
+- "Newly created" = the store has no completed quick-start marker (server-side, per store, set when the 3 steps are done or dismissed). Evidence DESIGN; gate NOT_RUN.

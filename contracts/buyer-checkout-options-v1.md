@@ -1,5 +1,7 @@
 # Buyer checkout options v1
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q1, OC-Q5); ADR-20261026.
+
 Status: FROZEN after independent preflight (no open P0/P1/P2), 2026-09-25.
 Implementation `83e5ed6` accepted: CO01–CO05 bounded private HTTP/PG gates,
 353-test full regression and independent review passed. [Evidence and limits](../docs/implementation/2026-09-25-buyer-checkout-options-acceptance.md).
@@ -71,6 +73,8 @@ The per-store method check stays order-bound in `checkout.hosted_payment_view*`;
 the process-level gate and is not a per-store guarantee.
 
 ## Bank transfer joins the payment modes (checkout-offline, amends this contract; storefront-v2 §C)
+
+> **Superseded for new orders (ADR-20261026 OC-Q1, `owner-choices-20261026-v1.md`).** `bank_transfer` is no longer offered for new orders and merchants can no longer save bank details; the text below describes the behaviour of orders already `AWAITING_TRANSFER`, which run to their terminal state.
 
 When the store enabled bank transfer (`checkout.bank_transfer_settings`), `bank_transfer` is listed in `payment_modes` of every home row
 and, with `allow_cvs`, of every CVS row, together with `transfer_window_hours` (6..168, the hold the order will keep). A home row

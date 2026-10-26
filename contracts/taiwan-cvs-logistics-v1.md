@@ -1,5 +1,7 @@
 # Taiwan CVS logistics v1 — buyer store selection, ECPay shipment creation, code/label, status ingress
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q8); ADR-20261026.
+
 Status: **v1 FROZEN 2026-09-30 (DESIGN; gates NOT_RUN)** — drafted 2026-09-29, amended 2026-09-29 after the round-1 review
 (`output/contract-review/r2-design-wave.json` key `cvs`, verdict BLOCK; resolution table in §14),
 2026-09-30 after the round-2 review (4 P1, resolution in §14.1) and 2026-09-30 after the round-3 review

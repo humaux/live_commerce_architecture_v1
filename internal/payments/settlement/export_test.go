@@ -13,8 +13,8 @@ import (
 
 func sample() Statement {
 	return Statement{StatementID: "5a5a5a5a-5a5a-4a5a-8a5a-5a5a5a5a5a01", PeriodStart: "2026-09-14", PeriodEnd: "2026-09-21", Currency: "TWD",
-		CapturedMinor: 250000, RefundedMinor: 80000, DisputeMinor: 0, StripeFeeMinor: -4100, PlatformFeeMinor: 0, CarriedInMinor: -1000,
-		NetPayableMinor: 164900, LineCount: 2,
+		CapturedMinor: 250000, RefundedMinor: 80000, DisputeMinor: 0, StripeFeeMinor: -4100, PlatformFeeMinor: 0, CarriedInMinor: -1000, ReturnedInMinor: 5000,
+		NetPayableMinor: 169900, LineCount: 2,
 		Lines: []Line{{OrderNumber: "LC-AAAA", Kind: "CHARGE", StoreMinor: 250000, FeeStoreMinor: -4100, TxnDate: "2026-09-15"},
 			{OrderNumber: "=cmd|' /C calc'!A0", Kind: "REFUND", StoreMinor: -80000, FeeStoreMinor: 0, TxnDate: "2026-09-16"}}}
 }
@@ -28,7 +28,7 @@ func TestWriteCSVLayoutGuardAndNumericCells(t *testing.T) {
 	want := "\xEF\xBB\xBFperiod_start,period_end,order_number,kind,amount,stripe_fee,txn_date\r\n" +
 		"2026-09-14,2026-09-21,LC-AAAA,CHARGE,2500.00,-41.00,2026-09-15\r\n" +
 		"2026-09-14,2026-09-21,'=cmd|' /C calc'!A0,REFUND,-800.00,0.00,2026-09-16\r\n" +
-		"\r\ntotals_currency,TWD\r\ncaptured,2500.00\r\nrefunded,800.00\r\ndispute,0.00\r\nstripe_fee,-41.00\r\nplatform_fee,0.00\r\ncarried_in,-10.00\r\nnet_payable,1649.00\r\nline_count,2\r\n"
+		"\r\ntotals_currency,TWD\r\ncaptured,2500.00\r\nrefunded,800.00\r\ndispute,0.00\r\nstripe_fee,-41.00\r\nplatform_fee,0.00\r\ncarried_in,-10.00\r\nreturned_in,50.00\r\nnet_payable,1699.00\r\nline_count,2\r\n"
 	if got != want {
 		t.Fatalf("csv:\n%q\nwant\n%q", got, want)
 	}

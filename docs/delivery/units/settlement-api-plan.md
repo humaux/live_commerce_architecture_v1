@@ -186,7 +186,7 @@ CLI（`cmd/stripe-admin`，加入 `ops-admin.sh` 白名单，不接受任何密�
 ### 3.4 不变量（新增 S-I1…S-I6，挂到 `contracts/invariants.json` 的 I05/I06/I19/I20 之下）
 
 - **S-I1** `net = captured − refunded − dispute + stripe_fee − platform_fee + carried_in + returned_in`，由表级 CHECK 保证。
-- **S-I2** 一张 statement 最多一次退回；退回金额等于原 payout 金额；退回只被一张后续 statement 带回一次（`carried_into_statement_id` 只能写一次 + UNIQUE）。
+- **S-I2** 一张 statement 最多一次退回；退回金额等于原 payout 金额；退回只被一张后续 statement 带回一次（`carried_into_statement_id` 只能写一次，由触发器保证；同店同环境由 close 选择保证，不由 FK 保证）。
 - **S-I3** 关账所需区间每段均有最新且所有币种干净的观测；新差额必须覆盖旧的干净观测，含 grandfathered；旧入口不能绕过 manifest。
 - **S-I4** 系统从不调用银行、Stripe payout 或 transfer 的写接口。打款和退回都只是记录。
 - **S-I5** 所有新写入都和审计行在同一事务；没有 UPDATE（只能写一次的列除外），没有 DELETE。

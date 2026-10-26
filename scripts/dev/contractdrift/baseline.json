@@ -5584,23 +5584,6 @@
     {
       "kind": "GO_ONLY",
       "method": "POST",
-      "path": "/v1/identity/login/complete",
-      "locations": [
-        {
-          "file": "internal/identityhttp/handler.go",
-          "line": 58,
-          "end": 58
-        },
-        {
-          "file": "internal/identityhttp/handler.go",
-          "line": 58,
-          "end": 73
-        }
-      ]
-    },
-    {
-      "kind": "GO_ONLY",
-      "method": "POST",
       "path": "/v1/identity/login/start",
       "locations": [
         {
