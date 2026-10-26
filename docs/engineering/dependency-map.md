@@ -725,6 +725,14 @@ Package foundation holds the real-PostgreSQL foundation and browser acceptance t
 - Depends on (third-party): —
 - Used by: — (entry point or unused)
 
+## `tests/identity`
+
+Package reauthtests owns the OC-02 recent re-authentication gates (contracts/merchant-password-auth-v1.md §16): real-PostgreSQL tests of migration 0201 (authenticated_at backfill, identity.require_recent_auth, the re-auth definers and their privileges) and of the internal/identity re-auth flows (files *_test.go).
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
 ## `tests/integrations/ecpay`
 
 Package ecpay_test holds the independent black-box gates of internal/integrations/shipping/ecpay (files *_test.go, package ecpay_test): TCV01 (MAC, recipient and store-code golden tables, trade number), TCV07/TCV10 (SANDBOX, build tag sandbox).
