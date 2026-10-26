@@ -19,6 +19,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -205,7 +206,8 @@ func TestBtcHistoryStaysUsable(t *testing.T) {
 		if st, _, raw := e.mcall(e.token(), "GET", "/v1/admin/stores/"+e.store()+"/bank-transfer-settings", "", ""); st != 200 || !strings.Contains(string(raw), cogBank) {
 			t.Errorf("settings read: %d %s", st, raw)
 		}
-		csv := e.financeCSV("2000-01-01", "2100-01-01")
+		today := time.Now().In(time.FixedZone("TPE", 8*3600))
+		csv := e.financeCSV(today.AddDate(0, 0, -1).Format("2006-01-02"), today.AddDate(0, 0, 1).Format("2006-01-02"))
 		if !strings.Contains(strings.SplitN(csv, "\n", 2)[0], "bank_transfer_confirmed_count,bank_transfer_confirmed_minor") {
 			t.Errorf("finance CSV lost the bank_transfer_confirmed columns: %q", strings.SplitN(csv, "\n", 2)[0])
 		}
