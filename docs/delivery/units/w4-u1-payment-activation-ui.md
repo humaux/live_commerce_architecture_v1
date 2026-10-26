@@ -14,7 +14,7 @@ and the frozen W4-S1 and W4-S2 briefs.
 - There is **no credential input of any kind**. The merchant only accepts terms and toggles card payments. Never show
   an account id, key or approval id.
 - The enable dialog quotes the terms summary from contract §5 verbatim and shows `descriptor_preview`. If the platform
-  is not OPEN, the page says 「信用卡收款尚未開放」（ADR-20261026 AD-01：OPEN 時改顯示「平台統一收款・已可使用」，支援「信用卡、金融卡、Link」，無申請/設定動作） and hides the toggle. In the BLOCKED state it says 「已被平台暫停，請聯絡客服」
+  is not OPEN, the page says 「信用卡收款尚未開放」（ADR-20261026 AD-01：OPEN 時改顯示「平台統一收款・已可使用」，列出該環境實際開放的方式（LIVE 未開 Link 時不顯示 Link），商家零密鑰零 API 設定，條款同意與自停開關保持不變） and hides the toggle. In the BLOCKED state it says 「已被平台暫停，請聯絡客服」
   and allows disable only.
 - The storefront disclosure line (contract §5, three languages) appears above the Stripe pay button and on the order
   payment page, whenever the hosted view returns `collector`.

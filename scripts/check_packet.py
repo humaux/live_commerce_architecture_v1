@@ -50,7 +50,7 @@ def walk_refs(node: Any, doc: dict[str, Any]) -> None:
 
 def main(delivery_baseline: bool = False) -> dict[str, Any]:
     regs={k:index(load(f'contracts/{k}.json'),k) for k in ('requirements','invariants','gates','tasks','risks','sources')}
-    expected={'requirements':22,'invariants':24,'gates':15,'tasks':41,'risks':32,'sources':50}
+    expected={'requirements':22,'invariants':24,'gates':15,'tasks':43,'risks':32,'sources':50}
     for name,count in expected.items():
         require(len(regs[name])==count,f'{name}: unexpected release baseline count; revise explicitly')
     for gate in regs['gates'].values():

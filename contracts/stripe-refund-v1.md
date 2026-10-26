@@ -17,7 +17,7 @@ any implementation of this file starts (upstream-interface rule, AGENTS.md).
 
 ## 0. Owner inputs, decisions and rulings needed
 
-Owner inputs already recorded: card + Link (ADR-20261026 AD-01; refunds accept `payment_method.type` card or link, nothing else), automatic capture (stripe-psp D6/Q3); one Stripe account
+Owner inputs already recorded: card, plus Link where allowed (ADR-20261026 AD-01; refund logic keys on payment status and amount, not on method type), automatic capture (stripe-psp D6/Q3); one Stripe account
 per store, direct charges, no Connect (§0.1); late payment after closure is a manual-refund
 obligation `CLOSURE_CONTRADICTED` + `REVIEW_REQUIRED` that "the later refund contract consumes"
 (§0.2, D13). No owner input exists yet on refund permission, dual control or refund reasons.

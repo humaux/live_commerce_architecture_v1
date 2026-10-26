@@ -11,8 +11,8 @@
 
 ## 一、点名的三项
 ### AD-01 Stripe 支持信用卡、金融卡、Link
-- 决定：收款方式从「仅 card」改为 card + link。信用卡、金融卡本来就是 `card`；Link 的付款类型是 `link`。设置页显示「平台統一收款・已可使用」，支持方式写信用卡、金融卡、Link，商家无申请、无配置。
-- 依据：owner 原话；Stripe 页面（见上）。Link 卡类付款与卡同样即时扣款，所以 `paid` 仍产生 CAPTURED，不产生 AUTHORIZED。Link 也可用美国银行账户，那是延迟方式，不在 TWD/HKD 范围，任何非 `paid` 或异步结果仍只进 review。
+- 决定：收款方式从「仅 card」改为 card + link。信用卡、金融卡本来就是 `card`；Link 的付款类型是 `link`。设置页显示「平台統一收款・已可使用」，列出该环境实际开放的方式（LIVE 未开 Link 时不显示 Link）；商家零密钥零 API 配置，条款同意与自停开关保持不变。
+- 依据：owner 原话；Stripe 页面（见上）。`paid` 仍产生 CAPTURED，不产生 AUTHORIZED。Link 也可用美国银行账户（延迟方式），所以契约写死：Link 仅在 TWD/HKD 的 session 提供，其他币种冻结 `[card]`；非 `paid` 或异步结果仍走 D5/D13 review。方式集合按环境冻结进 attempt：SANDBOX/MOCK `[card, link]`，LIVE `[card]` 直到 owner 记录探针结果。
 - 放弃：A 保持 card only（与 owner 要求不符）；B 改成 Stripe 动态支付方式（会混进 FPS、支付宝等延迟方式，释放语义没有设计，D6 已排除）。
 - 契约：`stripe-psp-v1.md` D6、Q3、§5 请求示例、§16 限制与 UNKNOWN、SP16、record_stripe_observation；`stripe-refund-v1.md` §0；`stripe-platform-account-v1.md` AD-PF3；`docs/delivery/units/w4-u1-payment-activation-ui.md`。对 card 原有约束一律不放宽。
 - UNKNOWN：HK 平台账户对台湾买家开放 Link 需要 SANDBOX 实测；在 owner 记录探针结果前，LIVE session 保持 `[card]`。
@@ -24,9 +24,9 @@
 - 契约：`merchant-settings-wizard-v1.md` AD-03 修订段。实现卡：OC-05（服务端标记）、OC-06（界面）。
 
 ### T21R-01 近期再认证
-- 决定：选 A。会话记录 `authenticated_at`；新增 `identity.require_recent_auth`，窗口默认 10 分钟（可配置）；覆盖 staff_invite/set_role/remove、平台 Stripe 开关、退款（含 offline refund）、银行转账确认、导出、erasure；方式先用密码 + 邮件验证码，TOTP 后续；`staff_invite` 暂时禁止 role=owner。
+- 决定：选 A。会话记录 `authenticated_at`；新增 `identity.require_recent_auth`，窗口默认 10 分钟（可配置）；覆盖 staff_invite/set_role/remove、平台 Stripe 开关、退款（含 offline refund）、银行转账确认、导出、erasure，另加 billing:manage 与广告发布（复核建议，owner 可去掉）；检查放在 SQL definer 内与写入同事务；`reauth_required` 用 403（不是 401，不会登出）；方式先用密码 + 邮件验证码，TOTP 后续；`staff_invite` 与 `staff_set_role` 暂时都禁止 role=owner，已发出的 owner 邀请在接受时拒绝。
 - 依据：FINDINGS T21R-01（P1）；`merchant-password-auth-v1.md` §11 升级信号「出现 staff 或 payouts 就加 TOTP 或 passkey」已触发。放弃：只让 owner 书面接受风险（留着被盗会话即可自邀 owner 的路径）。
-- 契约：`merchant-password-auth-v1.md` §16。错误码沿用 PT401（message `reauth_required`）。实现卡：OC-02、OC-03、OC-04。
+- 契约：`merchant-password-auth-v1.md` §16。错误码 403 `reauth_required`，路由 /v1/identity/password/reauth/{start,complete}。实现卡：OC-02、OC-03、OC-04。
 
 ## 二、22 题（均选推荐项）
 ### Q1 商家自收银行转账（AD-02、FIN-01、FIN-02）
@@ -36,7 +36,7 @@
 - 实现卡建议：OC-08（apps/admin/components/BankTransferSettings.tsx、lib/merchant-tools-model.ts）
 
 ### Q2 结算单「退回/带回」（FIN-03）
-- 决定：B：商家结算页加「退回」和「帶回下期」。依据：owner「按你的结论来」，结论经 integrator 更正（2026-10-26）。
+- 决定：SA-0 冻结契约优先；商家结算页按 SA-0 §6.7–6.9：「退回」= `payout_returned` 状态（打款被银行退回，不是退款），「帶回下期」= `returned_in_minor`。integrator 已据此更正推荐为 B，待 owner 一句话确认。
 - 推荐更正：原推荐 A 基于 60268f3 过时清单；SA-0 契约（08ba731fc §6.7–6.9）已冻结该字段，与 B 一致。
 - 放弃项：A（不加，设计图改回现状）：与已冻结的 SA-0 冲突，且清单「没有对应字段」已不成立。
 - 契约：`contracts/owner-choices-20261026-v1.md` OC-Q2；stripe-platform-account §6.7–§6.9
@@ -167,7 +167,7 @@ LOG-01、LOG-02、LOG-03、CAT-01、CAT-03、CP-02、CAT-04：现行 owner 原�
 
 ## 四、未决 UNKNOWN
 1. HK 平台账户对台湾买家开放 Link 需要 SANDBOX 实测（SP16）；之前 LIVE 保持 `[card]`。
-2. （已解决）Q2 经 integrator 更正为 B，与 SA-0 一致。
+2. Q2：integrator 已更正为 B，与 SA-0 一致，待 owner 确认。
 3. Q5 「到貨需付」与代收金额白话文案是我的拟稿，需 owner 看一次（见 OC-Q5 草稿）。
 4. Q12 「未读」定义，Q20 核对页文案，均在各卡内先定。
 5. 设置页对已在 allowlist 的店是否保留开关（set_platform_stripe）：本次只规定不出现申请/配置，开关去留沿 AD-PF2.1。

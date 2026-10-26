@@ -76,7 +76,7 @@ account (the platform owner's own store(s)).
 - Everything else in this file (attribution §4, kill switches §7, per-order cap, refunds limited to the store's own captures, the
   settlement ledger) is unchanged. Sections that say "every store" / "merchant" read as "every allowlisted store".
 
-**Amendment AD-PF3 (ADR-20261026 AD-01, owner 2026-10-26).** Merchant settings page: no "apply/enable" action and no configuration. When the platform state is OPEN for the store it shows 「平台統一收款・已可使用」 and the supported methods 「信用卡、金融卡、Link」; payment success is not settlement. Other states keep their existing wording and hide the toggle. Stripe methods: stripe-psp D6 (card + Link).
+**Amendment AD-PF3 (ADR-20261026 AD-01, owner 2026-10-26).** Merchant settings page: the merchant enters **zero keys and zero API configuration** (owner O1). Terms acceptance, the merchant's own on/off switch and the w4-u1 flow are **unchanged**; the page never asks the merchant to apply for anything. When the platform state is OPEN for the store the page shows 「平台統一收款・已可使用」 and lists the methods actually enabled for the environment: 「信用卡、金融卡、Link」 in SANDBOX/MOCK, 「信用卡、金融卡」 in LIVE until Link is cleared (stripe-psp D6/§16). Payment success is not settlement. Other states keep their wording. Stripe methods: stripe-psp D6.
 
 **Amendment AD-PF2.1 (SA-0, 2026-10-26; integrator ruling on `docs/delivery/units/settlement-api-plan.md`).** The owner wrote on
 2026-10-25: 「全部收款由平台统一代收（平台 Stripe 账户）；商家不配置 API/密钥/商户号，不接自有 PSP/Connect」. This conflicts with
