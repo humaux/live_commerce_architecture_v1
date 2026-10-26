@@ -771,9 +771,9 @@ func slsUpgrade(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016, and 0150 (settlement ledger) plus
-	// 0163 (settlement-resolve) with them; the same Apply runs all six.
-	if ledgerAfter != ledgerBefore+6 {
-		t.Fatalf("ledger grew by %d, want exactly 6 (0077, post_river/0016, 0137, post_river/0022, 0150 and 0163, once)", ledgerAfter-ledgerBefore)
+	// 0163 (settlement-resolve) and 0200 (settlement returns) with them; the same Apply runs all seven.
+	if ledgerAfter != ledgerBefore+7 {
+		t.Fatalf("ledger grew by %d, want exactly 7 (0077, post_river/0016, 0137, post_river/0022, 0150, 0163 and 0200, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))
