@@ -1,15 +1,19 @@
 // Purpose: the operator steps of the per-store settlement ledger (contracts/stripe-platform-account-v1.md §6, W4-S2; §6.6, S2-OPEN-1):
 //   sync the platform account's balance transactions into the ledger, close a weekly statement, record a payout (RECORD ONLY), read a
-//   statement for the CSV export, and resolve an unmapped_source row (append-only, §6.6) so close can proceed. Sync is the only step that
-//   calls Stripe (GET balance transactions with the STORED platform key); close, payout, read and resolve are SQL only. Nothing here calls
-//   a bank, a Stripe payout or a transfer API, and none takes a secret as input; resolve moves no money (a v1 assignment is a note).
-// Depends on: SQL payments.record_settlement_lines, close_settlement, record_settlement_payout, read_settlement_statement (0150) and
-//   record_settlement_resolution (0163); owner registry writer, EXECUTE commerce_payment_registrar only; payments.stripe_registrar_credential
-//   via storedCredential; Stripe GET /v1/balance_transactions through stripe.Client.ListBalanceTransactions; internal/payments/settlement (types).
-// Used by: cmd/stripe-admin settlement-sync | settlement-close | settlement-export | settlement-payout | settlement-resolve.
+//   statement for the CSV export, resolve an unmapped_source row (append-only, §6.6) so close can proceed, record a payout RETURN (§6.7, the
+//   owner already saw the money come back; SQL carries it into the next statement) and list the payables (§6.9, read only). Sync is the only
+//   step that calls Stripe (GET balance transactions with the STORED platform key); every other step is SQL only. Nothing here calls a bank, a
+//   Stripe payout or a transfer API, and none takes a secret as input; resolve and return move no money.
+// Depends on: SQL payments.record_settlement_lines (ten arguments, 0200), close_settlement, record_settlement_payout, read_settlement_statement
+//   (0150), record_settlement_resolution (0163), record_settlement_payout_return and read_settlement_payables (0200); owner registry writer,
+//   EXECUTE commerce_payment_registrar only; payments.stripe_registrar_credential via storedCredential; Stripe GET /v1/balance_transactions
+//   through stripe.Client.ListBalanceTransactions; internal/payments/settlement (types).
+// Used by: cmd/stripe-admin settlement-sync | settlement-close | settlement-export | settlement-payout | settlement-resolve |
+//   settlement-payout-return | settlement-payables.
 // Invariants: I02/I06/I20 (idempotent by Stripe balance transaction id: an identical replay returns the stored row, a different payload is
-//   PT409), I19 (SQL is the only arithmetic), a refused SQL step returns one of our own coded tokens (never a driver message). Errors stay
-//   ErrConfig/ErrDatabase/ErrRejected/ErrProvider (+ the token).
+//   PT409), I19 (SQL is the only arithmetic: the sync totals, the per-currency difference and the payables come back from SQL, Go sums nothing),
+//   a refused SQL step returns one of our own coded tokens (never a driver message). Errors stay ErrConfig/ErrDatabase/ErrRejected/ErrProvider
+//   (+ the token).
 // Status: MOCK + REAL_PG; SANDBOX needs the owner's test key (NOT_RUN here); never LIVE.
 
 package stripeadmin
@@ -35,6 +39,9 @@ import (
 const (
 	settlementBudget = 10 * time.Minute // up to 50 Stripe pages of 10 s each is the wire bound; SQL is bounded separately
 	settlementChunk  = 500              // record_settlement_lines accepts at most 500 lines per call
+	maxManifest      = 5000             // the window manifest holds every balance transaction of the run: 50 pages of 100 (SQL refuses more)
+	maxReturnMinor   = 100_000_000_000  // the SQL bound of a payout return and of a payout
+	maxManifestNet   = 100_000_000_000  // the SQL bound of abs(net) of one manifest entry (0200 RSL2)
 	maxSettleWindow  = 8 * 24 * time.Hour
 	// settleMargin: a sync window may not end later than now minus this (P1-2). A window that claims time that has not settled would let close
 	// treat balance transactions that did not exist yet as already read. SQL enforces the same margin (record_settlement_lines).
@@ -55,18 +62,51 @@ type balanceLister interface {
 	ListBalanceTransactions(ctx context.Context, createdGTE, createdLT int64) ([]stripe.BalanceTransaction, stripe.CallMeta, error)
 }
 
-// SyncReport is what settlement-sync prints: counts, and for each settlement currency Stripe's own net of the window next to the net of
-// the rows now persisted for the same window. Difference is the persisted net minus Stripe's (0 = reconciled); counts and amounts only.
+// SyncReconciliation is one settlement currency of the comparison SQL stored for the run (settlement_sync_reconciliations): Stripe's own
+// net of the window manifest next to the net of the ledger rows now persisted for the same window. DifferenceMinor is recorded minus
+// stripe (0 = reconciled); counts and amounts only.
+type SyncReconciliation struct {
+	Currency         string `json:"currency"`
+	StripeNetMinor   int64  `json:"stripe_net_minor"`
+	RecordedNetMinor int64  `json:"recorded_net_minor"`
+	DifferenceMinor  int64  `json:"difference_minor"`
+	StripeTxnCount   int    `json:"stripe_txn_count"`
+	RecordedTxnCount int    `json:"recorded_txn_count"`
+}
+
+// SyncReport is what settlement-sync prints: counts, the sync run id, and for each settlement currency Stripe's own net of the window next to
+// the net of the rows now persisted for the same window. StripeNet, RecordedNet, Difference and Reconciliation are READ BACK from the SQL
+// return value of the final chunk (§6.8): Go computes none of them. Difference is the persisted net minus Stripe's (0 = reconciled).
 type SyncReport struct {
-	Fetched      int              `json:"fetched"`
-	Inserted     int              `json:"inserted"`
-	Duplicate    int              `json:"duplicate"`
-	Unattributed int              `json:"unattributed"`
-	Mismatch     int              `json:"mismatch"`
-	Rechecked    int              `json:"rechecked"` // lines whose mismatch (or fee share) was re-evaluated because a late fact arrived (P1-1)
-	StripeNet    map[string]int64 `json:"stripe_net"`
-	RecordedNet  map[string]int64 `json:"recorded_net"`
-	Difference   map[string]int64 `json:"difference"`
+	SyncRunID      string               `json:"sync_run_id"`
+	Fetched        int                  `json:"fetched"`
+	Inserted       int                  `json:"inserted"`
+	Duplicate      int                  `json:"duplicate"`
+	Unattributed   int                  `json:"unattributed"`
+	Mismatch       int                  `json:"mismatch"`
+	Rechecked      int                  `json:"rechecked"` // lines whose mismatch (or fee share) was re-evaluated because a late fact arrived (P1-1)
+	StripeNet      map[string]int64     `json:"stripe_net"`
+	RecordedNet    map[string]int64     `json:"recorded_net"`
+	Difference     map[string]int64     `json:"difference"`
+	Reconciliation []SyncReconciliation `json:"reconciliation"`
+}
+
+// Reconciled reports whether every settlement currency of the run has a zero difference. A run that is not reconciled is already stored; close
+// will refuse (sync_unreconciled) until a clean re-sync of the window supersedes it.
+func (r SyncReport) Reconciled() bool {
+	for _, d := range r.Difference {
+		if d != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// manifestEntry is one balance transaction of the window manifest (§6.8): the same Stripe object as the projected line, before attribution.
+type manifestEntry struct {
+	ID       string `json:"id"`
+	Currency string `json:"currency"`
+	Net      int64  `json:"net"`
 }
 
 // ClosedStatement is one statement id from close_settlement with its net and whether it was a replay.
@@ -159,17 +199,32 @@ func (r *Registrar) SettlementSync(ctx context.Context, s Scope, connectionID st
 	return r.RecordSettlementLines(bounded, s, connectionID, ticket, txns, from, to)
 }
 
+// validManifest applies the 0200 RSL2 manifest rules in Go: txn id grammar, ids unique, upper-case ISO currency, abs(net) <= 1e11.
+func validManifest(txns []stripe.BalanceTransaction) bool {
+	seen := make(map[string]struct{}, len(txns))
+	for _, t := range txns {
+		if _, dup := seen[t.ID]; dup || !balanceTxnPattern.MatchString(t.ID) || !currencyPattern.MatchString(t.Currency) ||
+			t.Net > maxManifestNet || t.Net < -maxManifestNet {
+			return false
+		}
+		seen[t.ID] = struct{}{}
+	}
+	return true
+}
+
 // settledWindow reports whether a window ending at to claims only time that has settled (to <= now - 15 minutes).
 func settledWindow(to time.Time) bool { return !to.After(time.Now().Add(-settleMargin)) }
 
 // RecordSettlementLines hands the projected transactions to payments.record_settlement_lines in chunks of at most 500 (attribution is
-// done in SQL from Stripe ids). The LAST chunk carries the window, which records the sync coverage that close requires and returns the
-// persisted net of the window for the reconciliation. Replaying a window inserts nothing new (duplicates are counted), but a line that still
-// has no statement and carries a mismatch is re-checked (rechecked). connection (optional) is asserted in SQL to be the designated platform
-// connection; ticket (optional) goes into the audit row. SQL applies the same window rules as SettlementSync (whole seconds, 15-minute margin).
+// done in SQL from Stripe ids). The LAST chunk carries the window AND the window manifest (every balance transaction of the run as
+// {id,currency,net}, built from the same slice that is chunked): SQL records the sync coverage that close requires, computes both totals and
+// stores the per-currency comparison with the ledger in the same transaction (§6.8). The report reads those numbers back. Replaying a
+// window inserts nothing new (duplicates are counted), but a line that still has no statement and carries a mismatch is re-checked
+// (rechecked). connection (optional) is asserted in SQL to be the designated platform connection; ticket (optional) goes into the audit
+// row. SQL applies the same window rules as SettlementSync (whole seconds, 15-minute margin).
 func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connection, ticket string, txns []stripe.BalanceTransaction, from, to time.Time) (SyncReport, error) {
 	if r == nil || r.db == nil || ctx == nil || !validScope(s) || from.IsZero() || !to.After(from) || to.Sub(from) > maxSettleWindow ||
-		(connection != "" && !command.ValidID(connection)) {
+		(connection != "" && !command.ValidID(connection)) || len(txns) > maxManifest {
 		return SyncReport{}, ErrConfig
 	}
 	from, to = from.Truncate(time.Second), to.Truncate(time.Second)
@@ -183,10 +238,21 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connecti
 	if ticket != "" {
 		ticketArg = ticket
 	}
-	rep := SyncReport{Fetched: len(txns), StripeNet: map[string]int64{}, RecordedNet: map[string]int64{}, Difference: map[string]int64{}}
-	for _, t := range txns {
-		rep.StripeNet[t.Currency] += t.Net
+	// the whole manifest is checked BEFORE the first chunk (SQL checks it only on the last one, after earlier chunks committed): any bad
+	// entry means zero writes (§6.8 "before any write")
+	if !validManifest(txns) {
+		return SyncReport{}, ErrRejected
 	}
+	manifest := make([]manifestEntry, 0, len(txns)) // never JSON null: an empty run still records its window with an empty manifest
+	for _, t := range txns {
+		manifest = append(manifest, manifestEntry{ID: t.ID, Currency: t.Currency, Net: t.Net})
+	}
+	manifestJSON, err := json.Marshal(manifest)
+	if err != nil {
+		return SyncReport{}, ErrConfig
+	}
+	rep := SyncReport{Fetched: len(txns), StripeNet: map[string]int64{}, RecordedNet: map[string]int64{}, Difference: map[string]int64{},
+		Reconciliation: []SyncReconciliation{}}
 	for start := 0; start == 0 || start < len(txns); start += settlementChunk {
 		end := min(start+settlementChunk, len(txns))
 		last := end >= len(txns)
@@ -195,20 +261,22 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connecti
 			return SyncReport{}, ErrConfig
 		}
 		var out string
-		var winFrom, winTo any // only the LAST chunk carries the window: coverage exists only after a complete record
+		var winFrom, winTo, winManifest any // only the LAST chunk carries the window and the manifest: coverage exists only after a complete record
 		if last {
-			winFrom, winTo = from.UTC(), to.UTC()
+			winFrom, winTo, winManifest = from.UTC(), to.UTC(), string(manifestJSON)
 		}
-		// payments.record_settlement_lines: platform-scope operator definer; attribution, cross-checks and the unattributed rows are SQL.
+		// payments.record_settlement_lines: platform-scope operator definer; attribution, cross-checks, the unattributed rows and the
+		// stored comparison are SQL. A window without a manifest is refused there (22023) before any write.
 		err = r.settlementScan(ctx, &out, `SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,$4::text,$5::jsonb,
-			$6::timestamptz,$7::timestamptz,$8::uuid,$9::text)::text`, s.TenantID, s.StoreID, s.PrincipalID, r.environment(), string(payload),
-			winFrom, winTo, connArg, ticketArg)
+			$6::timestamptz,$7::timestamptz,$8::uuid,$9::text,$10::jsonb)::text`, s.TenantID, s.StoreID, s.PrincipalID, r.environment(), string(payload),
+			winFrom, winTo, connArg, ticketArg, winManifest)
 		if err != nil {
 			return SyncReport{}, err
 		}
 		var res struct {
 			Inserted, Duplicate, Unattributed, Mismatch, Rechecked int
-			WindowNet                                              map[string]int64 `json:"window_net"`
+			SyncRunID                                              string               `json:"sync_run_id"`
+			Reconciliation                                         []SyncReconciliation `json:"reconciliation"`
 		}
 		if json.Unmarshal([]byte(out), &res) != nil {
 			return SyncReport{}, ErrDatabase
@@ -219,18 +287,14 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connecti
 		rep.Mismatch += res.Mismatch
 		rep.Rechecked += res.Rechecked
 		if last {
-			rep.RecordedNet = res.WindowNet
-			if rep.RecordedNet == nil {
-				rep.RecordedNet = map[string]int64{}
+			if res.SyncRunID == "" || !command.ValidID(res.SyncRunID) {
+				return SyncReport{}, ErrDatabase
 			}
-		}
-	}
-	for cur, net := range rep.StripeNet {
-		rep.Difference[cur] = rep.RecordedNet[cur] - net
-	}
-	for cur, net := range rep.RecordedNet {
-		if _, ok := rep.StripeNet[cur]; !ok {
-			rep.Difference[cur] = net
+			rep.SyncRunID = res.SyncRunID
+			for _, c := range res.Reconciliation {
+				rep.StripeNet[c.Currency], rep.RecordedNet[c.Currency], rep.Difference[c.Currency] = c.StripeNetMinor, c.RecordedNetMinor, c.DifferenceMinor
+				rep.Reconciliation = append(rep.Reconciliation, c)
+			}
 		}
 	}
 	return rep, nil
@@ -329,6 +393,66 @@ func (r *Registrar) SettlementPayout(ctx context.Context, s Scope, statement, pa
 	return at, nil
 }
 
+// SettlementPayoutReturn RECORDS that the payout of a paid statement bounced (§6.7): the owner already saw the money come back at the bank, the
+// system never calls one. amountMinor only confirms the statement's payout amount (SQL: return_amount_mismatch otherwise), returnedAt is the
+// time the money came back (not before paid_at, not in the future). ticket is REQUIRED. SQL appends one row per statement (append-only),
+// writes one audit row without the bank reference, and the next close carries the money into the store's next statement as returned_in_minor.
+// An identical replay returns the stored time; anything else for a statement that already has a return is PT409 return_already_recorded.
+func (r *Registrar) SettlementPayoutReturn(ctx context.Context, s Scope, statement, returnRef string, amountMinor int64, returnedAt time.Time,
+	operator, ticket string) (time.Time, error) {
+	if r == nil || r.db == nil || ctx == nil || !validScope(s) || !command.ValidID(statement) {
+		return time.Time{}, ErrConfig
+	}
+	if !payoutRefPat.MatchString(returnRef) || amountMinor < 1 || amountMinor > maxReturnMinor || returnedAt.IsZero() ||
+		!operatorPattern.MatchString(operator) || !refPattern.MatchString(ticket) {
+		return time.Time{}, ErrRejected
+	}
+	var at time.Time
+	// payments.record_settlement_payout_return: platform-scope definer; amount = the statement's payout, returned_at within [paid_at, now].
+	if err := r.settlementScan(ctx, &at, `SELECT payments.record_settlement_payout_return($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::text,$6::bigint,
+		$7::timestamptz,$8::text,$9::text)`, s.TenantID, s.StoreID, s.PrincipalID, statement, returnRef, amountMinor, returnedAt.UTC(), operator, ticket); err != nil {
+		return time.Time{}, err
+	}
+	return at, nil
+}
+
+// Payable is one statement the owner still has to pay (§6.9): positive net, no payout recorded. No PII, no Stripe id, no bank data.
+type Payable struct {
+	StatementID     string    `json:"statement_id"`
+	TenantID        string    `json:"tenant_id"`
+	StoreID         string    `json:"store_id"`
+	PeriodStart     string    `json:"period_start"` // YYYY-MM-DD, Monday, Asia/Taipei
+	Currency        string    `json:"currency"`
+	NetPayableMinor int64     `json:"net_payable_minor"`
+	ClosedAt        time.Time `json:"closed_at"`
+}
+
+// PayablesResult is the payables list, oldest closed first; Truncated is true when more than the requested limit exist.
+type PayablesResult struct {
+	Payables  []Payable `json:"payables"`
+	Truncated bool      `json:"truncated"`
+}
+
+// SettlementPayables lists the environment's statements that are owed money (net_payable_minor > 0 and no payout recorded), oldest closed
+// first, at most limit (1..200) entries. SQL only and read only (no audit row, no lock); paying stays the owner's bank action.
+func (r *Registrar) SettlementPayables(ctx context.Context, s Scope, environment string, limit int) (PayablesResult, error) {
+	if r == nil || r.db == nil || ctx == nil || !validScope(s) || (environment != envSandbox && environment != envLive) || limit < 1 || limit > 200 {
+		return PayablesResult{}, ErrConfig
+	}
+	var out string
+	if err := r.settlementScan(ctx, &out, `SELECT payments.read_settlement_payables($1::uuid,$2::uuid,$3::uuid,$4::text,$5::integer)::text`,
+		s.TenantID, s.StoreID, s.PrincipalID, environment, limit); err != nil {
+		return PayablesResult{}, err
+	}
+	dec := json.NewDecoder(strings.NewReader(out))
+	dec.DisallowUnknownFields()
+	var res PayablesResult
+	if dec.Decode(&res) != nil || res.Payables == nil || len(res.Payables) > limit {
+		return PayablesResult{}, ErrDatabase
+	}
+	return res, nil
+}
+
 // SettlementStatement reads one statement with its lines for settlement-export (payments.read_settlement_statement, platform scope).
 func (r *Registrar) SettlementStatement(ctx context.Context, s Scope, statement string) (settlement.Statement, error) {
 	if r == nil || r.db == nil || ctx == nil || !validScope(s) || !command.ValidID(statement) {
@@ -364,6 +488,10 @@ func (r *Registrar) settlementScan(ctx context.Context, dest any, sql string, ar
 		if pg.Message == "settlement_unattributed" && blockingIDs(pg.Detail) {
 			return fmt.Errorf("%w: %s: %s", collapsed, pg.Message, pg.Detail)
 		}
+		// §6.8: the sync_unreconciled refusal carries up to 20 blocking sync run ids (uuids) in its DETAIL, in sequence order.
+		if pg.Message == "sync_unreconciled" && blockingRuns(pg.Detail) {
+			return fmt.Errorf("%w: %s: %s", collapsed, pg.Message, pg.Detail)
+		}
 		return fmt.Errorf("%w: %s", collapsed, pg.Message)
 	}
 	return collapsed
@@ -378,6 +506,20 @@ func blockingIDs(detail string) bool {
 	}
 	for _, id := range ids {
 		if !balanceTxnPattern.MatchString(id) {
+			return false
+		}
+	}
+	return true
+}
+
+// blockingRuns reports whether detail is exactly the sync_unreconciled refusal's run list: 1..20 sync run ids (uuids), comma separated.
+func blockingRuns(detail string) bool {
+	ids := strings.Split(detail, ",")
+	if len(ids) > 20 {
+		return false
+	}
+	for _, id := range ids {
+		if !command.ValidID(id) {
 			return false
 		}
 	}
