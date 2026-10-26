@@ -77,6 +77,11 @@ deploy/scripts/ops-admin.sh stripe-admin settlement-export --statement "$STATEME
 deploy/scripts/ops-admin.sh stripe-admin settlement-payout --statement "$STATEMENT_ID" \
   --payout-ref "$RECEIPT_REF" --amount "$MINOR_UNITS" --paid-at "$PAID_AT_RFC3339" \
   --operator "$OPERATOR" --ticket "$TICKET"
+# A bank return of a recorded payout (once per statement; carried into the next close as returned_in), and the payables list.
+deploy/scripts/ops-admin.sh stripe-admin settlement-payout-return --statement "$STATEMENT_ID" \
+  --return-ref "$RETURN_REF" --amount "$MINOR_UNITS" --returned-at "$RETURNED_AT_RFC3339" \
+  --operator "$OPERATOR" --ticket "$TICKET"
+deploy/scripts/ops-admin.sh stripe-admin settlement-payables --environment SANDBOX --limit 50
 ```
 
 Use readback IDs and minor-unit totals, reconcile every statement/receipt, and preserve HOLD/discrepancy evidence.
