@@ -431,9 +431,9 @@ func (g *gateEnv) recon(t *testing.T) reconTable {
 			switch {
 			case strings.Contains(lc, "difference"):
 				out.diff = col
-			case strings.Contains(lc, "stripe") && strings.HasSuffix(lc, "net"):
+			case strings.Contains(lc, "stripe") && strings.Contains(lc, "net") && !strings.Contains(lc, "count"):
 				out.stripeNet = col
-			case strings.Contains(lc, "recorded") && strings.HasSuffix(lc, "net"):
+			case strings.Contains(lc, "recorded") && strings.Contains(lc, "net") && !strings.Contains(lc, "count"):
 				out.recordedNet = col
 			case strings.Contains(lc, "stripe") && strings.Contains(lc, "count"):
 				out.stripeCount = col
@@ -506,13 +506,30 @@ func (g *gateEnv) count(t *testing.T, sql string, args ...any) int {
 
 func (g *gateEnv) statement(t *testing.T, store, period string) (id string, net, captured, refunded, fee int64) {
 	t.Helper()
-	var returned int64
-	if err := g.f.owner.QueryRow(context.Background(), `SELECT id::text,net_payable_minor,captured_minor,refunded_minor,stripe_fee_minor,
-		returned_in_minor FROM payments.settlement_statements WHERE store_id=$1 AND environment='SANDBOX' AND period_start=$2::date`,
-		store, period).Scan(&id, &net, &captured, &refunded, &fee, &returned); err != nil {
+	if err := g.f.owner.QueryRow(context.Background(), `SELECT id::text,net_payable_minor,captured_minor,refunded_minor,stripe_fee_minor
+		FROM payments.settlement_statements WHERE store_id=$1 AND environment='SANDBOX' AND period_start=$2::date`,
+		store, period).Scan(&id, &net, &captured, &refunded, &fee); err != nil {
 		t.Fatalf("statement %s %s: %v", store, period, err)
 	}
 	return
+}
+
+// returnedIn read the statement's returned_in_minor. The frozen contract requires the value, not a particular storage: use the
+// column when SA-1 stores it, otherwise sum the returns carried into the statement.
+func (g *gateEnv) returnedIn(t *testing.T, statement string) int64 {
+	t.Helper()
+	if g.hasColumn(t, "payments", "settlement_statements", "returned_in_minor") {
+		var n int64
+		if err := g.f.owner.QueryRow(context.Background(), `SELECT returned_in_minor FROM payments.settlement_statements WHERE id=$1`, statement).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	var n int64
+	if err := g.f.owner.QueryRow(context.Background(), `SELECT coalesce(sum(returned_minor),0) FROM payments.`+g.returnTable(t)+` WHERE carried_into_statement_id=$1`, statement).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
 }
 
 // gateFee is the §6.3 Go reference used only to document the fixture arithmetic in failure messages.
@@ -601,6 +618,25 @@ func gateNum(t *testing.T, v any, key string) int64 {
 	return int64(n)
 }
 
+// insertStatement is the disclosed owner-pool fixture for a closed statement that exists only to be read (the unpaid
+// second store in PF16a and the four PF18 payables): no money fact is invented, only an already-closed ledger row.
+func (g *gateEnv) insertStatement(t *testing.T, tenant, store string, net int64, period string, closed time.Time) string {
+	t.Helper()
+	col, val := "", ""
+	if g.hasColumn(t, "payments", "settlement_statements", "returned_in_minor") {
+		col, val = ",returned_in_minor", ",0"
+	}
+	var id string
+	if err := g.f.owner.QueryRow(context.Background(), `INSERT INTO payments.settlement_statements(id,tenant_id,store_id,environment,
+		period_start,period_end,currency,captured_minor,refunded_minor,dispute_minor,stripe_fee_minor,platform_fee_bps,platform_fee_minor,
+		carried_in_minor`+col+`,net_payable_minor,line_count,lines_sha256,closed_at,closed_by)
+		VALUES(gen_random_uuid(),$1,$2,'SANDBOX',$3::date,$3::date+7,'TWD',$4,0,0,0,0,0,0`+val+`,$4,0,sha256('x'),$5,'fixture@test')
+		RETURNING id::text`, tenant, store, period, net, closed).Scan(&id); err != nil {
+		t.Fatalf("statement fixture %s/%s: %v", tenant, period, err)
+	}
+	return id
+}
+
 func TestPlatformSettlementPF16PayoutReturn(t *testing.T) {
 	g := gateNew(t)
 	// §6.9 PF16 entry point: on the pre-SA-1 baseline this is the behavioural RED (the function does not exist yet); it is
@@ -650,14 +686,7 @@ func TestPlatformSettlementPF16PayoutReturn(t *testing.T) {
 
 	// a second store with a closed, still-unpaid W1 statement (owner-pool fixture: only a statement, no money fact).
 	b := g.merchant(t, false)
-	var bStmt string
-	if err := g.f.owner.QueryRow(context.Background(), `INSERT INTO payments.settlement_statements(id,tenant_id,store_id,environment,
-		period_start,period_end,currency,captured_minor,refunded_minor,dispute_minor,stripe_fee_minor,platform_fee_bps,platform_fee_minor,
-		carried_in_minor,returned_in_minor,net_payable_minor,line_count,lines_sha256,closed_by)
-		VALUES(gen_random_uuid(),$1,$2,'SANDBOX',$3,$4,'TWD',130000,0,0,-5000,0,0,0,0,125000,1,sha256('x'),'fixture@test') RETURNING id::text`,
-		b.f.tenantA, b.f.storeA1, w1.Format("2006-01-02"), w2.Format("2006-01-02")).Scan(&bStmt); err != nil {
-		t.Fatalf("unpaid statement fixture: %v", err)
-	}
+	bStmt := g.insertStatement(t, b.f.tenantA, b.f.storeA1, 125000, w1.Format("2006-01-02"), time.Now().Add(-time.Hour))
 
 	// close W1, then record payout T.
 	closed := g.close(t, w1.Format("2006-01-02"))
@@ -760,11 +789,7 @@ func TestPlatformSettlementPF16PayoutReturn(t *testing.T) {
 		if w2net != 173200 {
 			t.Fatalf("W2 net = %d, want 173200 (50000 - 1800 + 125000)", w2net)
 		}
-		var returned int64
-		if err := g.f.owner.QueryRow(context.Background(), `SELECT returned_in_minor FROM payments.settlement_statements WHERE id=$1`, w2id).Scan(&returned); err != nil {
-			t.Fatal(err)
-		}
-		if returned != 125000 {
+		if returned := g.returnedIn(t, w2id); returned != 125000 {
 			t.Fatalf("W2 returned_in_minor = %d, want 125000", returned)
 		}
 		var carried *string
@@ -783,16 +808,11 @@ func TestPlatformSettlementPF16PayoutReturn(t *testing.T) {
 			t.Fatalf("W2 replay changed the statement: %s %d", id, net)
 		}
 		g.close(t, w3.Format("2006-01-02"))
-		_, net3, _, _, _ := g.statement(t, m.f.storeA1, w3.Format("2006-01-02"))
+		w3id, net3, _, _, _ := g.statement(t, m.f.storeA1, w3.Format("2006-01-02"))
 		if net3 != 0 {
 			t.Fatalf("W3 net = %d, want 0 (a carried return is carried once)", net3)
 		}
-		var ret3 int64
-		if err := g.f.owner.QueryRow(context.Background(), `SELECT returned_in_minor FROM payments.settlement_statements WHERE store_id=$1 AND period_start=$2::date`,
-			m.f.storeA1, w3.Format("2006-01-02")).Scan(&ret3); err != nil {
-			t.Fatal(err)
-		}
-		if ret3 != 0 {
+		if ret3 := g.returnedIn(t, w3id); ret3 != 0 {
 			t.Fatalf("W3 returned_in_minor = %d, want 0", ret3)
 		}
 	})
@@ -974,7 +994,7 @@ func TestPlatformSettlementPF17Reconciliation(t *testing.T) {
 		bad := []struct {
 			name string
 			val  any
-		}{{"null-manifest", nil}, {"duplicate-id", `[` + string(mustJSON(t, a)) + `,` + string(mustJSON(t, a)) + `]`}}
+		}{{"null-manifest", nil}, {"duplicate-id", `[` + string(gateJSON(t, a)) + `,` + string(gateJSON(t, a)) + `]`}}
 		for _, tc := range bad {
 			_, err := g.callFn(t, "record_settlement_lines", map[string]any{
 				"tenant": g.tenant, "store": g.store, "principal": g.princ, "environment": "SANDBOX",
@@ -1087,7 +1107,7 @@ func TestPlatformSettlementPF17Reconciliation(t *testing.T) {
 	})
 }
 
-func mustJSON(t *testing.T, v any) []byte {
+func gateJSON(t *testing.T, v any) []byte {
 	t.Helper()
 	b, err := json.Marshal(v)
 	if err != nil {
@@ -1122,15 +1142,7 @@ func TestPlatformSettlementPF18Payables(t *testing.T) {
 	insert := func(name string, net int64, closed time.Time) string {
 		t.Helper()
 		st := p[name]
-		var id string
-		if err := g.f.owner.QueryRow(ctx, `INSERT INTO payments.settlement_statements(id,tenant_id,store_id,environment,period_start,
-			period_end,currency,captured_minor,refunded_minor,dispute_minor,stripe_fee_minor,platform_fee_bps,platform_fee_minor,
-			carried_in_minor,returned_in_minor,net_payable_minor,line_count,lines_sha256,closed_at,closed_by)
-			VALUES(gen_random_uuid(),$1,$2,'SANDBOX','2026-09-07','2026-09-14','TWD',$3,0,0,0,0,0,0,0,$3,0,sha256('x'),$4,'fixture@test')
-			RETURNING id::text`, st.tenant, st.store, net, closed).Scan(&id); err != nil {
-			t.Fatalf("statement %s: %v", name, err)
-		}
-		return id
+		return g.insertStatement(t, st.tenant, st.store, net, "2026-09-07", closed)
 	}
 	aID := insert("A", 80000, base)
 	insert("B", 0, base.Add(30*time.Second))
@@ -1238,9 +1250,7 @@ func TestPlatformSettlementPF18Payables(t *testing.T) {
 				tx.Rollback(ctx)
 				t.Fatalf("SET ROLE %s: %v", role, err)
 			}
-			var n int
 			_, err = tx.Exec(ctx, `SELECT count(*) FROM payments.read_settlement_payables($1,$2,$3,'SANDBOX',10)`, g.tenant, g.store, g.princ)
-			_ = n
 			tx.Rollback(ctx)
 			if gateSQLState(err) != "42501" {
 				t.Fatalf("%s EXECUTE: %v", role, err)
