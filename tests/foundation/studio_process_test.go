@@ -159,23 +159,7 @@ func TestStudioBackendSTU03RealAPIWorkerRestart(t *testing.T) {
 		t.Helper()
 		deadline := time.Now().Add(12 * time.Second)
 		origin = "http://" + mrBoundAddr(t, p, time.Until(deadline))
-		for time.Now().Before(deadline) {
-			select {
-			case err := <-p.done:
-				p.exited = true
-				t.Fatalf("API exited before readiness: %v log=%s", err, p.logPath)
-			default:
-			}
-			resp, err := client.Get(origin + "/healthz")
-			if err == nil {
-				_ = resp.Body.Close()
-				if resp.StatusCode == 200 {
-					return
-				}
-			}
-			time.Sleep(25 * time.Millisecond)
-		}
-		t.Fatalf("API not ready: %s", p.logPath)
+		waitHTTPReady(t, p, origin+"/healthz", "studio-process", 5*time.Second, 25*time.Millisecond, deadline)
 	}
 	request := func(method, path, key, body string, want int) map[string]any {
 		t.Helper()

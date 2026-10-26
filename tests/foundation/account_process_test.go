@@ -111,24 +111,10 @@ func TestMerchantAccountAPIProcessRestart(t *testing.T) {
 			}
 		})
 		deadline := time.Now().Add(15 * time.Second)
-		origin = "http://" + mrBoundAddr(t, &mrProcess{done: done, logPath: log.Name()}, time.Until(deadline))
-		for time.Now().Before(deadline) {
-			select {
-			case err := <-done:
-				t.Fatalf("API %s exited before readiness; see %s: %v", name, log.Name(), err)
-			default:
-			}
-			resp, err := client.Get(origin + "/healthz")
-			if err == nil {
-				_ = resp.Body.Close()
-				if resp.StatusCode == http.StatusOK {
-					return cmd, done
-				}
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-		t.Fatalf("API %s readiness timed out; see %s", name, log.Name())
-		return nil, nil
+		p := &mrProcess{done: done, logPath: log.Name()}
+		origin = "http://" + mrBoundAddr(t, p, time.Until(deadline))
+		waitHTTPReady(t, p, origin+"/healthz", name, 5*time.Second, 50*time.Millisecond, deadline)
+		return cmd, done
 	}
 	stop := func(cmd *exec.Cmd, done chan error) {
 		t.Helper()

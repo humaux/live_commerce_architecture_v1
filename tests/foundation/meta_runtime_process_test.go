@@ -321,25 +321,8 @@ func TestMetaRuntimeRealAPIBinariesPageInstagramRestart(t *testing.T) {
 	deadline := time.Now().Add(8 * time.Second)
 	origin := "http://" + mrBoundAddr(t, api, time.Until(deadline))
 	client := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
-	for {
-		select {
-		case err := <-api.done:
-			api.exited = true
-			t.Fatalf("API exited before healthz: %v log=%s", err, api.logPath)
-		default:
-		}
-		resp, err := client.Get(origin + "/healthz")
-		if err == nil {
-			_ = resp.Body.Close()
-			if resp.StatusCode == http.StatusOK {
-				break
-			}
-		}
-		if time.Now().After(deadline) {
-			t.Fatalf("API healthz timeout: %s", api.logPath)
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
+	// Keep the pre-consolidation policy: this probe has always rejected redirects.
+	waitHTTPReady(t, api, origin+"/healthz", "meta-runtime", 5*time.Second, 20*time.Millisecond, deadline, withHTTPClient(client))
 	if mrPoolCount(t, f, apiMainName, apiIngressName) < 2 {
 		t.Fatal("API did not hold separate main and ingress pools")
 	}
