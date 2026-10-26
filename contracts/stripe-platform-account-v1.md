@@ -1,6 +1,8 @@
 # Stripe platform account v1: one platform Stripe account collects for every store
 
 Status: **DRAFT, FROZEN-ready, 2026-10-06 (DESIGN; every PF gate NOT_RUN)**. Integrator review and freeze are pending.
+SA-0 (2026-10-26): §0.3 AD-PF2.1, §6.7–§6.9, §8 `tw_legal_opinion`, §9 and §10 PF16–PF18 are **FROZEN** for SA-1/SA-2/SA-3
+(plan `docs/delivery/units/settlement-api-plan.md`; DESIGN, NOT_RUN).
 Evidence label for this file: DESIGN. Nothing here moves real money. The only LIVE charge is still the
 owner's single canary on the platform store (stripe-live-enable §10). It is done **once**, not once per store.
 
@@ -71,6 +73,18 @@ account (the platform owner's own store(s)).
 - `read_platform_stripe` returns `allowed` (boolean) so the admin UI can hide the toggle.
 - Everything else in this file (attribution §4, kill switches §7, per-order cap, refunds limited to the store's own captures, the
   settlement ledger) is unchanged. Sections that say "every store" / "merchant" read as "every allowlisted store".
+
+**Amendment AD-PF2.1 (SA-0, 2026-10-26; integrator ruling on `docs/delivery/units/settlement-api-plan.md`).** The owner wrote on
+2026-10-25: 「全部收款由平台统一代收（平台 Stripe 账户）；商家不配置 API/密钥/商户号，不接自有 PSP/Connect」. This conflicts with
+AD-PF2 above. Gate order (gate > owner wording) resolves it as follows. The owner's wording is the target, and AD-PF2 is the LIVE gate
+until the owner lifts it:
+- **The allowlist stays the LIVE switch.** No code or SQL change to the AD-PF2 gate. `platform-allow` for a **third-party** store in
+  **LIVE** is an owner-only action. The owner takes it only after every §8 code is attested, including the new `tw_legal_opinion`.
+  An agent never runs it, and neither does CI or a runbook step.
+- **SANDBOX and dev: every store is platform-collected.** Designs, fixtures and tests treat every store as platform-collected. Each
+  test store is allowlisted by the test's own setup (SANDBOX/REAL_PG rows only). No merchant-owned PSP, key or Connect path is
+  designed or tested.
+- **Plan A (merchant-owned Taiwan PSP) is no longer the target.** It remains the documented fallback if the §8 compliance gate fails.
 
 ## 1. Model in one paragraph
 
@@ -377,7 +391,8 @@ payments.settlement_statements
   editing the unattributed row stays a red-line action.
 - **Reconcilable.** Each sync prints, for the window, Σ `settle_net` of lines + Σ unattributed net, next to Stripe's own
   window total of the same list. The operator compares them with the payout report in the Dashboard. A difference is
-  printed as counts and ids only.
+  printed as counts and ids only. **Since SA-0 (§6.8)**, both totals are computed by SQL and stored per sync run and
+  currency. A window with a non-zero difference does not count as coverage for close (`sync_unreconciled`).
 - **No cross-store leakage.** Statements and lines are RLS-scoped by tenant/store. The merchant reader takes the store
   from the token. CSV export is per statement.
 
@@ -479,6 +494,286 @@ replaces it, **append-only**:
 - **CLI.** `settlement-resolve` (§6.5), allowlisted in `ops-admin.sh`; it never calls Stripe and never reads the LIVE
   key pair. Audit action `stripe.settlement.resolve` in the same transaction.
 
+### 6.7 Payout returns (SA-0, FROZEN 2026-10-26; migration `02xx_settlement_returns_recon.sql`, 02xx（integrator 分配）)
+
+A payout recorded with `settlement-payout` (§6.4) can bounce: a bank return, or a transfer the owner reversed. Before SA-0 the payout triple
+was set-once and the only fix was a red-line SQL edit. SA-0 adds an **append-only return record**. The original payout triple is never
+changed. It stays as history. The returned money is owed to the store again, so it is **carried into that store's next statement** as
+`returned_in_minor`. The system only **records** a return that the owner has already seen at the bank. It never calls a bank, a Stripe payout or a
+transfer API (S-I4).
+
+Migration rules (all of 02xx): forward-only, one transaction. 0150/0163 functions are patched **in place** with the repository's
+`pg_get_functiondef` + `replace` idiom. Each anchor must match exactly once, or the migration raises and nothing is applied. Function
+owners, grants and `search_path=pg_catalog` are unchanged. New definers copy them. The integrator also updates the ACL pins, the
+`ops-admin.sh` allowlist and the R2 migration-count pin.
+
+```
+payments.settlement_payout_returns                    -- FORCE RLS, PUBLIC revoked, owner commerce_payment_registry_writer
+ statement_id uuid PRIMARY KEY,                       -- the PAID statement whose payout bounced: at most one return per statement
+ tenant_id uuid NOT NULL, store_id uuid NOT NULL,     -- copied from the statement row by SQL, never from input
+ environment text NOT NULL CHECK(environment IN ('SANDBOX','LIVE')),
+ return_ref text NOT NULL CHECK(return_ref ~ '^[A-Za-z0-9._:/-]{4,80}$'),   -- bank / owner reference; never shown to the merchant
+ returned_minor bigint NOT NULL CHECK(returned_minor BETWEEN 1 AND 100000000000),
+ returned_at timestamptz NOT NULL,                    -- when the money came back (operator-entered fact)
+ recorded_by text NOT NULL CHECK(recorded_by ~ '^[A-Za-z0-9._:@-]{2,64}$'),
+ ticket text NOT NULL CHECK(ticket ~ '^[A-Za-z0-9._:-]{8,128}$'),
+ carried_into_statement_id uuid NULL,                 -- set once by close_settlement (§6.7 close patch); NULL = not yet carried
+ recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ FOREIGN KEY(tenant_id,store_id,statement_id) REFERENCES payments.settlement_statements(tenant_id,store_id,id),
+ FOREIGN KEY(tenant_id,store_id,carried_into_statement_id) REFERENCES payments.settlement_statements(tenant_id,store_id,id),
+ CHECK(carried_into_statement_id IS DISTINCT FROM statement_id)
+
+payments.settlement_statements  (+1 column, 02xx)
+ returned_in_minor bigint NOT NULL DEFAULT 0 CHECK(returned_in_minor BETWEEN 0 AND 100000000000)
+ -- the 0150 net-identity CHECK is dropped by its catalog name (looked up in pg_constraint by its definition; exactly one
+ -- match or the migration raises) and re-added NAMED settlement_statements_net_identity:
+ CHECK(net_payable_minor = captured_minor - refunded_minor - dispute_minor + stripe_fee_minor - platform_fee_minor
+                           + carried_in_minor + returned_in_minor)
+ -- existing rows have returned_in_minor = 0, so every existing row still satisfies it (the ADD validates; no NOT VALID).
+```
+
+- **Grants.** `commerce_payment_registry_writer` holds SELECT, INSERT and `UPDATE(carried_into_statement_id)` on the returns table. Nobody
+  else holds anything. That includes `commerce_runtime`, every worker, ingress and the merchant reader. No role holds DELETE or TRUNCATE.
+- **Immutability trigger** `BEFORE UPDATE OR DELETE OR TRUNCATE`. An UPDATE is allowed only when it changes `carried_into_statement_id` from
+  NULL to non-NULL, with every other column equal. Anything else raises PT409 `settlement_return_immutable`, even for the table owner.
+  `guard_settlement_statement` (0150) is patched in place so that `returned_in_minor` is immutable like every other amount column.
+- **`payments.record_settlement_payout_return(p_tenant uuid, p_store uuid, p_principal uuid, p_statement uuid, p_return_ref text,
+  p_returned_minor bigint, p_returned_at timestamptz, p_operator text, p_ticket text) RETURNS timestamptz`**. `SECURITY DEFINER`. Owner
+  `commerce_payment_registry_writer`. EXECUTE to `commerce_payment_registrar` only. Steps, in order:
+  1. `integration.require_stripe_registrar_scope(p_tenant,p_store,p_principal)`. The caller is the platform store. The target store and
+     environment come from the statement row (`FOR UPDATE`), never from input.
+  2. Structural checks raise 22023 `invalid settlement payout return` before any read: any NULL argument, the ref, operator or ticket
+     shape, or `p_returned_minor` outside `1..100000000000`.
+  3. Take the same per-environment advisory lock as sync and close (§6.6).
+  4. Unknown statement, or a statement outside the caller's platform environment, raises PT409 `statement_unavailable`. A statement
+     with no payout triple raises PT409 `payout_not_recorded`.
+  5. Replay. A return row already exists for `p_statement`:
+     - every input equal (ref, minor, `returned_at`, operator, ticket) → return the stored `recorded_at`, with no second row and no second audit;
+     - otherwise → PT409 `return_already_recorded`.
+  6. `p_returned_minor <> payout_minor` raises PT409 `return_amount_mismatch`. The amount only **confirms** the payout. It is never an
+     amount source. Partial returns are not supported in v1 (§9).
+  7. `p_returned_at < paid_at` or `p_returned_at > clock_timestamp()` raises 22023 `invalid settlement payout return`.
+  8. INSERT the row. In the same transaction, write audit `stripe.settlement.payout_return` in the platform scope. The details carry the
+     target store, statement id, minor amount and ticket. They never carry the return ref. Return `recorded_at`.
+- **Close patch (`close_settlement`, in place).** When a store's statement for period P is created, the patch computes
+  `returned_in_minor = Σ returned_minor` over that store's returns that meet all four conditions:
+  - same environment;
+  - `carried_into_statement_id IS NULL`;
+  - `returned_at < period_end(P)` (instant at Asia/Taipei midnight);
+  - source statement `period_start < P.period_start`.
+
+  In the same transaction, the patch sets `carried_into_statement_id` on exactly those rows. If the UPDATE count differs from the
+  selected count, it raises PT409 `settlement_changed`. A store that has an uncarried return but no lines still gets a (possibly
+  line-less) statement. The rule is the same as 0150's "every store with an earlier statement". An idempotent close replay additionally
+  proves that `returned_in_minor` equals the sum of the returns carried into it, else `settlement_changed`. `returned_in_minor` is
+  added to net **before** the next period's `carried_in` is derived. A return can therefore turn a negative carry into a payable.
+- **Payables.** A statement whose payout bounced keeps its payout triple, so it never re-enters the payables list (§6.9). The money is
+  paid through the **carrying** statement.
+
+### 6.8 Sync reconciliation stored, and close gated on it (SA-0, FROZEN 2026-10-26; same migration 02xx)
+
+Before SA-0 the window totals were computed in Go and printed once (§6.2 "Reconcilable"). Nothing proved later that a statement's
+lines matched Stripe. SA-0 stores the comparison per sync run and settlement currency. Both totals are computed by SQL.
+
+```
+payments.settlement_sync_reconciliations              -- FORCE RLS, PUBLIC revoked, owner commerce_payment_registry_writer
+ sync_run_id uuid NOT NULL REFERENCES payments.settlement_sync_runs(id),
+ settle_currency text NOT NULL CHECK(settle_currency ~ '^[A-Z]{3}$'),
+ tenant_id uuid NOT NULL, store_id uuid NOT NULL,     -- the platform store's scope (= the sync run's)
+ environment text NOT NULL CHECK(environment IN ('SANDBOX','LIVE')),
+ stripe_net_minor bigint NOT NULL CHECK(abs(stripe_net_minor) <= 1000000000000000),     -- Σ net of the run's manifest (SQL)
+ recorded_net_minor bigint NOT NULL CHECK(abs(recorded_net_minor) <= 1000000000000000), -- Σ stored nets in the window (SQL)
+ stripe_txn_count integer NOT NULL CHECK(stripe_txn_count >= 0),
+ recorded_txn_count integer NOT NULL CHECK(recorded_txn_count >= 0),
+ difference_minor bigint GENERATED ALWAYS AS (recorded_net_minor - stripe_net_minor) STORED,
+ recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ PRIMARY KEY(sync_run_id, settle_currency)
+```
+
+The sign is `recorded − stripe`, as in today's `SyncReport.Difference`, so the operator output keeps its meaning. Grants are SELECT and
+INSERT for `commerce_payment_registry_writer` only. No UPDATE, DELETE or TRUNCATE for anyone. A `BEFORE UPDATE OR DELETE OR TRUNCATE`
+trigger raises PT409 `settlement_reconciliation_immutable`.
+
+- **Where the Stripe side comes from (deviation from the plan, recorded).** The plan said that SQL recomputes the Stripe total "from
+  `p_lines`". That is not possible: Go sends the run in chunks of ≤ 500 (`RecordSettlementLines`), and each chunk is a separate call.
+  Only the **last** chunk carries the window. SA-0 instead adds a parameter to `record_settlement_lines`:
+  `p_window_manifest jsonb DEFAULT NULL`. It is an array of `{"id","currency","net"}`, one entry for **every** balance transaction the
+  run fetched for the window. These are the same Stripe objects as the lines, before any projection or attribution. It is required iff
+  the window pair is given. Validation raises 22023 `invalid settlement manifest` before any write:
+  - ≤ 5000 entries (50 pages × 100);
+  - ids unique and matching `^txn_[A-Za-z0-9]{1,255}$`;
+  - currency matching `^[A-Z]{3}$`;
+  - `abs(net) ≤ 100000000000`.
+
+  SQL sums the manifest per currency into `stripe_net_minor` and `stripe_txn_count`. Go's own sum is no longer an authority. The new
+  argument changes the function signature. 02xx re-creates it with the 0150 owner and grants, and SA-1 updates the ACL pin.
+- **Recorded side.** `recorded_net_minor` and `recorded_txn_count` count the rows with `txn_created_at ∈ [window_from, window_to)` in the
+  run's environment:
+  - Σ `settle_net` over `settlement_lines`;
+  - plus Σ (`settle_amount − settle_fee`) over `settlement_unattributed`.
+
+  This is the existing `window_net` computation, per currency.
+- **Same transaction.** The patched function INSERTs one reconciliation row per currency that appears on **either** side, in the same
+  transaction that INSERTs the `settlement_sync_runs` row. An empty window (an empty manifest and no stored rows) writes no
+  reconciliation row. The return value adds `sync_run_id` and `reconciliation: [{currency, stripe_net_minor, recorded_net_minor,
+  difference_minor, stripe_txn_count, recorded_txn_count}]`. The `stripe.settlement.sync` audit details add the per-currency difference
+  (numbers only, no ids).
+- **Close gate (`close_settlement`, in place).** A sync run counts as coverage of `[period_start − 7 d, period_end)` only if **no**
+  reconciliation row of that run has `difference_minor <> 0`. The existing coverage walk is unchanged otherwise. Close then raises:
+  - PT409 `sync_unreconciled` if coverage would be complete when unreconciled runs were counted, and is not complete without them. The
+    DETAIL lists up to 20 blocking `sync_run_id`s, oldest first;
+  - `sync_required` otherwise, as before.
+
+  The cure is a fresh, clean sync of the same window. Nothing is ever edited. Runs recorded before 02xx have no reconciliation rows and
+  count as reconciled (grandfathered). No LIVE run exists before 02xx (PF-LIVE NOT_RUN), so this affects SANDBOX/dev data only.
+- **Go.** `SyncReport` gains `SyncRunID string \`json:"sync_run_id"\``. `StripeNet`, `RecordedNet` and `Difference` are **read back** from
+  the SQL return value. Go no longer computes them. Go still builds the manifest from the same `[]stripe.BalanceTransaction` slice that it
+  chunks.
+
+### 6.9 Payables list, Go, CLI, merchant DTO, error codes and invariants (SA-0, FROZEN 2026-10-26)
+
+**`payments.read_settlement_payables(p_tenant uuid, p_store uuid, p_principal uuid, p_environment text, p_limit integer) RETURNS jsonb`**.
+`SECURITY DEFINER` and `STABLE`. Same owner and grant as §6.7 (`commerce_payment_registrar` only). It is read-only, with no audit row and
+no lock.
+- It requires the registrar scope (platform store). It raises 22023 `invalid settlement payables` when `p_environment` is not
+  `SANDBOX`/`LIVE` or `p_limit` is not in `1..200`.
+- It returns `{"payables":[…], "truncated":bool}`. The list holds the environment's statements with `net_payable_minor > 0 AND
+  payout_ref IS NULL`, ordered by `closed_at ASC, id ASC`, at most `p_limit` entries. `truncated` is true when more exist.
+- Each entry has exactly `statement_id, tenant_id, store_id, period_start, currency, net_payable_minor, closed_at`. There is no PII, no
+  Stripe id and no bank data. The owner uses it to see who to pay, how much, and since when. Paying is still the owner's bank action.
+
+**Go** (`internal/payments/stripeadmin`; every method validates its arguments before SQL and maps PT409 tokens like
+`SettlementPayout`):
+```go
+func (r *Registrar) SettlementPayoutReturn(ctx context.Context, s Scope, statement, returnRef string, amountMinor int64,
+	returnedAt time.Time, operator, ticket string) (recordedAt time.Time, err error)
+func (r *Registrar) SettlementPayables(ctx context.Context, s Scope, environment string, limit int) (PayablesResult, error)
+
+type Payable struct {
+	StatementID     string    `json:"statement_id"`
+	TenantID        string    `json:"tenant_id"`
+	StoreID         string    `json:"store_id"`
+	PeriodStart     string    `json:"period_start"` // YYYY-MM-DD, Monday, Asia/Taipei
+	Currency        string    `json:"currency"`
+	NetPayableMinor int64     `json:"net_payable_minor"`
+	ClosedAt        time.Time `json:"closed_at"`
+}
+type PayablesResult struct {
+	Payables  []Payable `json:"payables"`
+	Truncated bool      `json:"truncated"`
+}
+// SyncReport gains SyncRunID string `json:"sync_run_id"`; StripeNet/RecordedNet/Difference are read back from SQL (§6.8).
+```
+`internal/payments/settlement.Statement` gains the following fields. The merchant DTO is **additive only**:
+```go
+ReturnedInMinor  int64   `json:"returned_in_minor"`            // always present; ≥ 0
+PayoutReturned   bool    `json:"payout_returned"`              // always present
+PayoutReturnedAt *string `json:"payout_returned_at,omitempty"` // RFC 3339, only when PayoutReturned
+```
+`read_store_settlements` / `settlement_statement_json` are patched in place to emit these three keys. They still never emit
+`return_ref`, `ticket`, `recorded_by`, Stripe ids, settlement-currency amounts or other stores' data. The admin model
+(`card-payments-settlements-model.ts`) adds them to its strict parser: `returned_in_minor` and `payout_returned` are required, and
+`payout_returned_at` is optional. **HTTP: no new route.** The two merchant GET routes (§6.5) are unchanged.
+
+**CLI** (`cmd/stripe-admin`, through `ops-admin.sh stripe-admin …` with the allowlist extended). Neither new subcommand takes a secret
+input, reads the LIVE key pair or calls Stripe. Each prints one JSON line on success. `--operator` and `--ticket` are required on both:
+```
+ops-admin.sh stripe-admin settlement-payout-return --statement <uuid> --return-ref <ref> --amount <minor> \
+    --returned-at <RFC3339> --operator <name> --ticket <ticket>
+ops-admin.sh stripe-admin settlement-payables --environment SANDBOX|LIVE [--limit 1..200, default 50] --operator <name> --ticket <ticket>
+```
+`settlement-sync` output gains `sync_run_id` and the stored reconciliation. Its exit code is non-zero when any currency has a non-zero
+difference. The rows are already stored. The non-zero exit only tells the operator that close will refuse.
+
+**Error codes added by SA-0** (PT409 unless noted; the CLI prints the token only):
+
+| Token | Raised by | Meaning |
+| --- | --- | --- |
+| `invalid settlement payout return` (22023) | `record_settlement_payout_return` | structural input error, amount out of range, `returned_at` before `paid_at` or in the future |
+| `payout_not_recorded` | same | the statement has no payout triple |
+| `return_amount_mismatch` | same | amount ≠ the statement's `payout_minor` |
+| `return_already_recorded` | same | a different return exists for this statement |
+| `statement_unavailable` (existing) | same | no such statement in the caller's platform environment |
+| `settlement_return_immutable` | trigger | any UPDATE other than the one NULL→value write of `carried_into_statement_id`, any DELETE/TRUNCATE |
+| `invalid settlement manifest` (22023) | `record_settlement_lines` | manifest missing with a window, or invalid (§6.8) |
+| `settlement_reconciliation_immutable` | trigger | any UPDATE/DELETE/TRUNCATE on reconciliations |
+| `sync_unreconciled` | `close_settlement` | coverage exists only through runs with a non-zero difference |
+| `settlement_changed` (existing) | `close_settlement` | carried-return count or sum does not match (§6.7 close patch) |
+| `invalid settlement payables` (22023) | `read_settlement_payables` | bad environment or limit |
+
+**Invariants (S-I1…S-I6, under `contracts/invariants.json` I05/I06/I19/I20; no new registry entry):**
+- **S-I1**. `net = captured − refunded − dispute + stripe_fee − platform_fee + carried_in + returned_in`, enforced by the named table CHECK.
+- **S-I2**. A statement has at most one return. The return amount equals that statement's `payout_minor`. A return is carried into
+  exactly one later statement of the **same store and environment**, exactly once: `carried_into_statement_id` is set once, guarded by
+  the trigger and by the composite FK.
+- **S-I3**. Every sync run that close relies on has `difference_minor = 0` in every currency.
+- **S-I4**. The system never calls a bank, Stripe payout, transfer or refund write API for settlement. Payouts and returns are records of
+  facts that the owner completed by hand.
+- **S-I5**. Every new write is in the same transaction as its audit row. Nothing is UPDATEd except the set-once column, and nothing is
+  DELETEd. Tenant and store come from the server (registrar scope + statement row), never from input. Every amount is `bigint` minor
+  units with the bounds above.
+- **S-I6**. A merchant response never contains a Stripe id, `return_ref`, `ticket`, another store's data or a settlement-currency amount.
+
+**Frozen test vectors** (SA-3 writes them from this text alone; TWD minor units, step 100; billing off so `platform_fee = 0`, bps 0).
+Each gate names one mutation that **must** turn it red. SA-3 runs it once and keeps the log.
+
+**PF16 payout return.** Setup: one store, two consecutive weekly periods W1 and W2. W1 closes with one CHARGE line,
+`store_minor = 130000`, `fee_store_minor = −5000`:
+`net(W1) = 130000 − 0 − 0 + (−5000) − 0 + 0 + 0 = 125000`.
+Payout recorded: `payout_minor = 125000`, `paid_at = T`.
+
+| # | Input | Expected |
+| --- | --- | --- |
+| a | return on an unpaid statement (a second store's W1, not yet paid) | PT409 `payout_not_recorded`, 0 rows |
+| b | W1 return, amount `124900` | PT409 `return_amount_mismatch` |
+| c | W1 return, `returned_at = T − 1 s` | 22023 |
+| d | W1 return, amount `125000`, `returned_at = T + 1 d`, ref `BANKRET-0001`, ticket `OPS-2026-0001` | returns `recorded_at` R; 1 return row; 1 audit row `stripe.settlement.payout_return` without the ref |
+| e | replay of d, byte-identical | returns R again; still 1 row and 1 audit row |
+| f | d with ref `BANKRET-0002` | PT409 `return_already_recorded` |
+| g | W2 close; W2 has one CHARGE `50000`, fee `−1800` | `returned_in_minor = 125000`; `net(W2) = 50000 − 0 − 0 + (−1800) − 0 + 0 + 125000 = 173200`; the return row's `carried_into_statement_id = W2.id` |
+| h | W2 close replay; then W3 close with no lines | W2 unchanged; W3 `returned_in_minor = 0`, `net = 0` |
+| i | merchant read of W1 and W2 | W1 `payout_returned=true`, `payout_returned_at` present; W2 `returned_in_minor=125000` (= 173200 − 48200 without it); no `return_ref`/`ticket` key anywhere in the JSON |
+| j | owner-pool UPDATE of `returned_minor`, DELETE of the return row | PT409 `settlement_return_immutable` both |
+
+Mutation that must turn PF16 red: drop the `carried_into_statement_id IS NULL` filter from the close patch. Then W3 gets
+`returned_in_minor = 125000` (vector h fails).
+
+**PF17 sync reconciliation.** One window W, settlement currency HKD. The Stripe list (the manifest) has three entries:
+- `txn_A`: charge, amount 10000, fee 400, net 9600, attributed to a store;
+- `txn_B`: refund of A, net −2000;
+- `txn_C`: stripe_fee, net −500. Unattributed `unsupported_type`.
+
+`stripe_net = 9600 − 2000 − 500 = 7100`, `stripe_txn_count = 3`.
+
+| # | Input | Expected |
+| --- | --- | --- |
+| a | `record_settlement_lines` with lines {A, C} (B dropped) and the full 3-entry manifest | 1 reconciliation row HKD: `recorded = 9600 − 500 = 9100`, `difference = 9100 − 7100 = +2000`, counts 3/2 |
+| b | close of the week containing W, ≥ 72 h later | PT409 `sync_unreconciled`, DETAIL contains the run id of a |
+| c | clean re-sync of W with lines {A, B, C} and the same manifest | new run: `recorded = 7100`, `difference = 0`, counts 3/3; run a's row unchanged |
+| d | close again | succeeds; the store's statement includes the refund |
+| e | window given without manifest; manifest with a duplicate id | 22023 `invalid settlement manifest`, 0 rows written |
+| f | owner-pool UPDATE/DELETE of a reconciliation row | PT409 `settlement_reconciliation_immutable` |
+
+Mutation that must turn PF17 red: drop the `difference_minor <> 0` exclusion from the coverage walk. Then step b closes
+(vector b fails).
+
+**PF18 payables.** SANDBOX. Four closed statements:
+- A: store 1, net 80000, closed first;
+- B: store 2, net 0;
+- C: store 3, net −3000;
+- D: store 4, net 50000, closed last.
+
+| # | Input | Expected |
+| --- | --- | --- |
+| a | `read_settlement_payables(…,'SANDBOX',50)` | `[A, D]` in that order, `truncated=false`; entries carry exactly the 7 keys |
+| b | limit 1 | `[A]`, `truncated=true` |
+| c | record payout on A, amount `80000`, then read | `[D]` |
+| d | limit 0, limit 201, environment `PROD` | 22023 `invalid settlement payables` |
+| e | EXECUTE as `commerce_runtime`, the merchant reader and a worker role | 42501 |
+| f | LIVE read with only SANDBOX statements | `[]` |
+
+Mutation that must turn PF18 red: drop `payout_ref IS NULL` from the filter. Then A stays listed after its payout (vector c fails).
+
 ## 7. Kill switches
 
 | Scope | Command | Effect | Never affected |
@@ -501,6 +796,7 @@ replaces it, **append-only**:
 | `merchant_terms` | Merchant terms text `terms_version` exists and is published (OQ-4). |
 | `tax_invoice` | The owner has decided who issues the Taiwan e-invoice (統一發票) for platform-collected sales, and how (OQ-5). |
 | `payout_ops` | `payouts_enabled=true` (PF-F1; already enforced by LD8 readiness), and the owner has a bank route to pay TWD to Taiwan merchants (OQ-6). |
+| `tw_legal_opinion` (SA-0, 2026-10-26) | The owner holds a written opinion from a lawyer admitted in Taiwan. It states whether the platform model is 代理收付實質交易款項 under the 電子支付機構管理條例 (Art. 3, small-amount exception Art. 5), which registration the 洗錢防制法 Art. 6 third-party-payment rule requires, and how collected funds are held (trust account or bank performance guarantee). The opinion reference goes into the `approval_ref` message. Added to the `live-approve` checklist by SA-1 (`PlatformChecklist`, and the 0137 checklist array patched in place in migration 02xx). |
 
 The canary (stripe-live-enable §10) runs on the platform store in **TWD**. `set_stripe_platform_open(true)` is refused
 until the canary is verified. SANDBOX staging opens without those codes, since there is no approval in SANDBOX.
@@ -515,7 +811,7 @@ the row by hand stays a red-line action requiring owner approval; the resolve st
 
 ## 9. Known limits / NOT_RUN
 
-- **Evidence:** DESIGN. PF01–PF14 are NOT_RUN. LIVE is owner-run only. Agents and CI never touch LIVE.
+- **Evidence:** DESIGN. PF01–PF14 are NOT_RUN in this file's own label. Later units record their own evidence. PF16–PF18 are NOT_RUN (SA-0 is a contract freeze). LIVE is owner-run only. Agents and CI never touch LIVE.
 - **One currency per platform approval:** TWD (one active approval per connection, 0077). An HKD or multi-currency
   platform needs an amendment.
 - **Disputes are not ingested as webhooks** (event allowlist unchanged). They appear in the ledger at the next sync. The
@@ -525,7 +821,17 @@ the row by hand stays a red-line action requiring owner approval; the resolve st
   There is no reserve or holdback in v1 (OQ-3).
 - **Fan-out** is bounded to 2000 enrollments per transaction.
 - **Settlement is CLI-only.** There is no automated payout and no bank API. The payout reference is operator-entered,
-  and the bank transfer is a red-line action done by the owner.
+  and the bank transfer is a red-line action done by the owner. The same holds for payout returns (§6.7): the owner sees the
+  return at the bank, and the system only records it. The payables list (§6.9) is read-only. Paying stays the owner's action.
+- **Payout returns are whole-payout only (§6.7).** A partial bank return or a wrongly entered payout reference cannot be expressed. Both
+  escalate to the owner as red-line SQL with a ticket. Add a partial-return amendment at the first real case.
+- **No payable date.** OQ-2's "paid within 5 business days" has no column. `closed_at` and the order of the payables list (§6.9) stand in
+  for it.
+- **Stripe → platform bank payouts are not reconciled.** §6.8 reconciles the balance-transaction list against the ledger only. The
+  `payout`-type rows stay `unsupported_type` unattributed rows (PF10).
+- **Reconciliation grandfathering (§6.8).** Sync runs recorded before 02xx have no reconciliation row and count as reconciled.
+- **Third-party stores in LIVE stay closed (AD-PF2.1)** until the owner attests every §8 code, `tw_legal_opinion` included, and
+  allowlists the store himself.
 - **`assigned_to_store` does not move money in v1** (§6.6): the resolution is recorded and printed as an operator
   note; the owner settles the signed amount with the store out of band. A ledger-visible assignment needs an amendment.
 - **A resolution (and its note) is never edited or erased by this tool.** Erasing or correcting one is a red-line owner
@@ -558,6 +864,9 @@ the row by hand stays a red-line action requiring owner approval; the resolve st
 | PF13 | S2 | `TestPlatformSettlementPF13Read` | HTTP_PG | merchant sees only their store; `billing:manage` required; no settlement-currency or other-store data; CSV has no PII columns and formula guards hold |
 | PF14 | S1+S2 | regression | CI | SP01–SP21, RF01–RF12 and SL01–SL09 unchanged and green, SP03 with the new key vectors, plus `--stripe-browser` and `--browser-payment` |
 | PF15 | S2-OPEN-1 | `TestPlatformSettlementPF15Resolve` | REAL_PG + MOCK | 0163 §6.6: `not_store_revenue` resolve clears the close refusal with totals unchanged; identical replay returns the stored row; different payload PT409; `foreign_connection`/`unsupported_type` refused; `assigned_to_store` without target / unknown / foreign store refused; already-closed period refused; blank note refused; runtime and merchant roles hold no privilege on the resolutions table and not even the owner can UPDATE/DELETE/TRUNCATE a resolution; a resolved row is never attributed by a later sync (an unresolved control row still is); CLI e2e (one JSON line + audit row); PF11 clears its blocking row through the resolve path, no owner-pool DELETE |
+| PF16 | SA-1/SA-3 | `TestPlatformSettlementPF16PayoutReturn` | REAL_PG | §6.9 vectors a–j: return refusals, replay, carry into the next statement exactly once, net identity with `returned_in`, immutability, merchant DTO without `return_ref`; mutation "drop the carried filter" red |
+| PF17 | SA-1/SA-3 | `TestPlatformSettlementPF17Reconciliation` | MOCK + REAL_PG | §6.9 vectors a–f: SQL-computed totals per currency, `sync_unreconciled` until a clean re-sync, manifest validation, immutability; mutation "count unreconciled runs as coverage" red |
+| PF18 | SA-1/SA-3 | `TestPlatformSettlementPF18Payables` | REAL_PG | §6.9 vectors a–f: only positive unpaid statements in `closed_at` order, truncation, disappears after payout, bounds, no EXECUTE for runtime/merchant/worker roles; mutation "drop the unpaid filter" red |
 | PF-SBX | S1 | SANDBOX | owner test keys | two SANDBOX stores enrolled on the platform's `sk_test`/`rk_test` account; one paid order and one refund each; ledger sync shows two attributed charges. NOT_RUN without keys. |
 | PF-LIVE | — | owner | LIVE | after the platform canary: the first non-developer Taiwan merchant's real order and refund (I17). NOT_RUN. |
 

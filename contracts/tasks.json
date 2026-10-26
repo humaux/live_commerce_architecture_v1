@@ -1352,5 +1352,160 @@
       "r1_2026_09_29": "Deploy package (compose, runbooks, release-gate.sh, CI deploy smoke 55 PASS / S29m BLOCKED media lane): R1 release gate 0 FAIL, all NOT_RUN accepted. Production host, OIDC IdP, Stripe live activation, Meta App Review: owner prerequisites; no production deploy performed."
     },
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "SA-0",
+    "title": "结算接口契约冻结：打款退回、同步对账入库、平台应付清单",
+    "depends_on": [
+      "T11",
+      "T17"
+    ],
+    "requirements": [
+      "R07",
+      "R12"
+    ],
+    "gates": [
+      "G05",
+      "G13"
+    ],
+    "role": "integrator",
+    "write_paths": [
+      "contracts/stripe-platform-account-v1.md",
+      "docs/delivery/units/settlement-api-plan.md",
+      "contracts/tasks.json",
+      "scripts/check_packet.py"
+    ],
+    "status": "IN_PROGRESS",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "DESIGN_FROZEN_PENDING_REVIEW",
+      "unit_mock": "NOT_APPLICABLE",
+      "real_pg": "NOT_APPLICABLE",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "plan": "docs/delivery/units/settlement-api-plan.md",
+    "contract": "contracts/stripe-platform-account-v1.md §0.3 AD-PF2.1, §6.7–§6.9, §8 tw_legal_opinion, §9, §10 PF16–PF18",
+    "acceptance": "python3 scripts/check_packet.py；Opus 金额复核签字（PF16–PF18 算术与注错）",
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "SA-1",
+    "title": "结算后端：打款退回、对账入库与关账门、应付清单（迁移 02xx）",
+    "depends_on": [
+      "SA-0"
+    ],
+    "requirements": [
+      "R07",
+      "R13"
+    ],
+    "gates": [
+      "G05",
+      "G01"
+    ],
+    "role": "commerce_worker",
+    "write_paths": [
+      "migrations/02xx_settlement_returns_recon.sql",
+      "internal/payments/stripeadmin/settlement.go",
+      "internal/payments/stripeadmin/live.go",
+      "internal/payments/settlement/service.go",
+      "cmd/stripe-admin/settlement.go",
+      "tests/foundation/settlement_returns_test.go",
+      "tests/foundation/platform_stripe_test.go",
+      "output/settlement-returns/red.log",
+      "output/settlement-returns/sa1/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "plan": "docs/delivery/units/settlement-api-plan.md",
+    "migration_number": "02xx（integrator 分配）；ACL pin、ops-admin.sh 白名单、R2 迁移计数 pin 由 integrator 合并",
+    "red_first": "基线上先跑 PF16/PF17/PF18 红，日志 output/settlement-returns/red.log",
+    "acceptance": "bash scripts/dev/test-focused.sh '^(TestPlatformSettlement|TestR2IntegrationUpgradeFromReleaseHead|TestStripeAuthority|TestStripeAdmin|TestOpsAdmin)'；go vet ./...；bash scripts/dev/check-gates.sh；CI foundation-shards；Opus 金额复核 0 P0/P1",
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "SA-2",
+    "title": "商家结算页：退回状态、带回金额、进入设置导航",
+    "depends_on": [
+      "SA-0"
+    ],
+    "requirements": [
+      "R07",
+      "R12"
+    ],
+    "gates": [
+      "G05"
+    ],
+    "role": "ui_worker",
+    "write_paths": [
+      "apps/admin/lib/card-payments-settlements-model.ts",
+      "apps/admin/lib/card-payments-settlements-copy.ts",
+      "apps/admin/components/Settlements.tsx",
+      "apps/admin/src/features/settings/routes.ts",
+      "tests/admin/settlements.spec.ts",
+      "tests/admin/fixtures/card-payments-wire/settlement-returned.json",
+      "output/settlement-returns/sa2/**"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "plan": "docs/delivery/units/settlement-api-plan.md",
+    "note": "routes.ts 只改 settlements 条目的 nav；用冻结 DTO fixture 并行开发，真实端到端等 SA-1 合并后再跑",
+    "acceptance": "tests/admin/settlements.spec.ts STL1–STL7（真实点击，含 WebKit 与 390px）；admin typecheck；点击台账",
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
+  },
+  {
+    "id": "SA-3",
+    "title": "结算独立验收 gate：PF09–PF13 补债 + PF16–PF18",
+    "depends_on": [
+      "SA-0"
+    ],
+    "requirements": [
+      "R07",
+      "R13"
+    ],
+    "gates": [
+      "G05",
+      "G01"
+    ],
+    "role": "test_worker",
+    "write_paths": [
+      "tests/foundation/platform_settlement_gate_test.go",
+      "output/settlement-returns/gate-*.log"
+    ],
+    "status": "NOT_STARTED",
+    "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
+    "max_attempts_before_escalation": 2,
+    "completion_dimensions": {
+      "implementation": "NOT_STARTED",
+      "unit_mock": "NOT_RUN",
+      "real_pg": "NOT_RUN",
+      "provider_sandbox": "NOT_RUN_OR_NOT_APPLICABLE",
+      "provider_live": "NOT_RUN_OR_NOT_APPLICABLE",
+      "independent_review": "NOT_RUN"
+    },
+    "plan": "docs/delivery/units/settlement-api-plan.md",
+    "independence": "只按契约 §6.9 向量写，不读 SA-1 实现；不是 SA-1 的作者",
+    "acceptance": "基线上 PF16–PF18 红、PF09–PF13 绿，每条契约注错各跑一次转红；先在 SA-1 分支全绿，再在合并 SHA 全绿，日志绑定 SHA",
+    "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   }
 ]
