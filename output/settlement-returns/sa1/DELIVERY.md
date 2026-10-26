@@ -11,3 +11,8 @@ migrations/0200；stripeadmin/settlement.go；settlement/{service,export}.go；c
 - g09 上 TestProductEditorMatrixLedgerEvidenceHistoricalPolicy 红，与本改动无关
 ## NOT_RUN
 所有测试（仅 go build/vet/gofmt/check_packet 本地过，E1）；PR 绿未取得
+
+## Integrator 接手修复 · 2026-10-27（CI run 40351516453，gate --browser-card-payments 中 STL1 得 0 行）
+- 根因：基线 UI 的 `parseSettlementStatement` 只认固定字段，遇到额外字段就判为不可用。SA-1 新增了 3 个字段（`returned_in_minor`、`payout_returned`、`payout_returned_at`），后台列表因此显示「Settlements are unavailable」。这也意味着生产上如果后端先于前端发布，同样会出问题。
+- 修法（先扩展、后收紧）：3 个字段在旧 parser 中按可选处理并校验类型；净额校验加上 `returned_in_minor`（缺省为 0，对应 0200 新的 CHECK）。SA-2 rebase 后会把这 3 个字段改为必填并负责展示。integrator 已批准把该文件临时加入 SA-1 的 write_paths。
+- 证据：playwright 的 error-context 位于 artifact gate-browser-card-payments（id 12665333591）。修复后的结果以新一轮 CI 为准，本地没有运行测试。

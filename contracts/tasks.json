@@ -1409,6 +1409,7 @@
     "role": "commerce_worker",
     "write_paths": [
       "migrations/0200_settlement_returns_recon.sql",
+      "apps/admin/lib/card-payments-settlements-model.ts",
       "internal/payments/settlement/export.go",
       "internal/payments/settlement/export_test.go",
       "deploy/scripts/ops-admin.sh",
