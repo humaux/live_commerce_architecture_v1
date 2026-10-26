@@ -130,7 +130,9 @@ const baseKeys = [
   "dispute_minor", "stripe_fee_minor", "platform_fee_bps", "platform_fee_minor", "carried_in_minor",
   "net_payable_minor", "line_count", "closed_at", "paid",
 ];
-const optionalKeys = ["payout_ref", "payout_minor", "paid_at", "lines"];
+// returned_in_minor / payout_returned / payout_returned_at come from SA-1 (§6.7). Accepted as optional so this UI keeps working when the API
+// ships first (expand step); SA-2 makes them required and renders them.
+const optionalKeys = ["payout_ref", "payout_minor", "paid_at", "lines", "returned_in_minor", "payout_returned", "payout_returned_at"];
 
 export function parseSettlementStatement(value: unknown): SettlementStatement {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("unavailable");
@@ -164,7 +166,7 @@ export function parseSettlementStatement(value: unknown): SettlementStatement {
     // 0150 CHECK: the statement nets to its own parts
     (v.net_payable_minor as number) !==
       (v.captured_minor as number) - (v.refunded_minor as number) - (v.dispute_minor as number) + (v.stripe_fee_minor as number) -
-        (v.platform_fee_minor as number) + (v.carried_in_minor as number) ||
+        (v.platform_fee_minor as number) + (v.carried_in_minor as number) + ((v.returned_in_minor as number | undefined) ?? 0) ||
     !Number.isSafeInteger(v.line_count) ||
     (v.line_count as number) < 0 ||
     (v.line_count as number) > maxLines ||
@@ -178,6 +180,9 @@ export function parseSettlementStatement(value: unknown): SettlementStatement {
     throw new Error("unavailable");
   if ("payout_minor" in v && !money(v.payout_minor)) throw new Error("unavailable");
   if ("paid_at" in v && !isInstant(v.paid_at)) throw new Error("unavailable");
+  if ("returned_in_minor" in v && !money(v.returned_in_minor)) throw new Error("unavailable");
+  if ("payout_returned" in v && typeof v.payout_returned !== "boolean") throw new Error("unavailable");
+  if ("payout_returned_at" in v && (v.payout_returned !== true || !isInstant(v.payout_returned_at))) throw new Error("unavailable");
   // 0150 CHECK: a payout exists only for a positive net and equals it; the three fields come together.
   if (v.paid && !("payout_ref" in v && "payout_minor" in v && "paid_at" in v)) throw new Error("unavailable");
   if (v.paid && ((v.net_payable_minor as number) <= 0 || v.payout_minor !== v.net_payable_minor)) throw new Error("unavailable");

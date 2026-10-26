@@ -1,0 +1,12 @@
+SA-1 RED (CI only, no local test run)
+base: 08ba731fc  RED commit: tests/foundation/settlement_returns_test.go alone, PR #198
+run: 40323520531 (Gates, job gate (shard:g09) 121578345189)  also Foundation checks run 40323520500 (success, does not run these tests)
+Failing tests (go test, shard g09):
+  --- FAIL: TestPlatformSettlementSA1PF16Return
+      BEHAVIOUR RED: merchant DTO paid statement lacks returned_in_minor / payout_returned (settlement_returns_test.go:161)
+      (record_settlement_payout_return itself is a missing-entry red; setup passed, statements closed and paid on the base)
+  --- FAIL: TestPlatformSettlementSA1PF17Reconciliation
+      BEHAVIOUR RED: close succeeded (<nil>) on a discrepant latest observation, want PT409 sync_unreconciled (line 269)
+  --- FAIL: TestPlatformSettlementSA1PF18Payables
+      MISSING-ENTRY RED (setup ok): payments.read_settlement_payables(uuid,uuid,uuid,text,integer) does not exist, SQLSTATE 42883 (line 356)
+Other failure in the same shard, unrelated to SA-1: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy (not in this change).

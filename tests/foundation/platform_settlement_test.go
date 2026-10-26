@@ -105,6 +105,7 @@ type pslEnv struct {
 	refundA1, refundB1             string // Stripe refund ids
 	refundC2, refundC2ID           string // the Stripe refund id and the refund uuid of C2's refund
 	storeA, storeB, storeC, storeP string
+	stripeSeen                     []stripe.BalanceTransaction // every balance transaction a successful sync of this database has sent, first sync order
 }
 
 func pslNew(t *testing.T) *pslEnv {
@@ -145,17 +146,55 @@ func pslNew(t *testing.T) *pslEnv {
 	return e
 }
 
+// window returns what a real Stripe list returns for [from, to): EVERY balance transaction created in it, not only the ones this call names.
+// 0200 (contract §6.8) stores the comparison of each run with the ledger and close refuses a window whose latest observation differs from Stripe,
+// so a re-sync that named only one new transaction of a populated window would (correctly) be a discrepant observation. The helpers therefore send the
+// transactions earlier syncs of this database already sent inside the window together with the new ones (a named transaction replaces an earlier one
+// of the same id, which is how a changed-content probe reaches SQL).
+func (e *pslEnv) window(from, to time.Time, txns []stripe.BalanceTransaction) []stripe.BalanceTransaction {
+	named := map[string]bool{}
+	for _, x := range txns {
+		named[x.ID] = true
+	}
+	out := append([]stripe.BalanceTransaction{}, txns...)
+	for _, x := range e.stripeSeen {
+		if !named[x.ID] && x.Created >= from.Unix() && x.Created < to.Unix() {
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+// remember records the transactions of a successful sync (a refused sync wrote nothing and is not remembered).
+func (e *pslEnv) remember(txns []stripe.BalanceTransaction) {
+	for _, x := range txns {
+		replaced := false
+		for i := range e.stripeSeen {
+			if e.stripeSeen[i].ID == x.ID {
+				e.stripeSeen[i], replaced = x, true
+			}
+		}
+		if !replaced {
+			e.stripeSeen = append(e.stripeSeen, x)
+		}
+	}
+}
+
 func (e *pslEnv) sync(t *testing.T, from, to time.Time, txns ...stripe.BalanceTransaction) stripeadmin.SyncReport {
 	t.Helper()
-	rep, err := e.reg.RecordSettlementLines(context.Background(), e.op, e.plat.connection, pslTicket, txns, from, to)
+	rep, err := e.reg.RecordSettlementLines(context.Background(), e.op, e.plat.connection, pslTicket, e.window(from, to, txns), from, to)
 	if err != nil {
 		t.Fatalf("sync [%s,%s): %v", from.Format("01-02"), to.Format("01-02"), err)
 	}
+	e.remember(txns)
 	return rep
 }
 
 func (e *pslEnv) syncErr(from, to time.Time, txns ...stripe.BalanceTransaction) error {
-	_, err := e.reg.RecordSettlementLines(context.Background(), e.op, e.plat.connection, pslTicket, txns, from, to)
+	_, err := e.reg.RecordSettlementLines(context.Background(), e.op, e.plat.connection, pslTicket, e.window(from, to, txns), from, to)
+	if err == nil {
+		e.remember(txns)
+	}
 	return err
 }
 
@@ -250,7 +289,8 @@ func TestPlatformSettlement(t *testing.T) {
 	t.Run("PF09_schema", func(t *testing.T) {
 		o := e.f.owner
 		tables := []string{"settlement_lines", "settlement_statements", "settlement_unattributed", "settlement_sync_runs",
-			"settlement_unattributed_resolutions"} // 0163 (S2-OPEN-1): the append-only resolution table joins every privilege pin
+			"settlement_unattributed_resolutions",                          // 0163 (S2-OPEN-1): the append-only resolution table joins every privilege pin
+			"settlement_payout_returns", "settlement_sync_reconciliations"} // 0200 (SA-1): the append-only return and reconciliation tables join them too
 		for _, tbl := range tables {
 			var rls, force bool
 			if err := o.QueryRow(ctx, `SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid=('payments.'||$1)::regclass`, tbl).Scan(&rls, &force); err != nil || !rls || !force {
@@ -270,15 +310,17 @@ func TestPlatformSettlement(t *testing.T) {
 			}
 		}
 		fns := map[string][]string{
-			"payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)": {"commerce_payment_registrar", "commerce_payment_registry_writer"},
-			"payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text)":                            {"commerce_payment_registrar", "commerce_payment_registry_writer"},
-			"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)":      {"commerce_payment_registrar", "commerce_payment_registry_writer"},
-			"payments.read_settlement_statement(uuid,uuid,uuid,uuid)":                                       {"commerce_payment_registrar", "commerce_payment_registry_writer"},
-			"payments.read_store_settlements(bytea,uuid,integer,date,uuid)":                                 {"commerce_runtime", "commerce_payment_registry_writer"},
-			"payments.record_settlement_resolution(uuid,uuid,uuid,text,text,text,text,text,text,uuid,uuid)": {"commerce_payment_registrar", "commerce_payment_registry_writer"}, // 0163 (S2-OPEN-1)
-			"payments.settlement_kind(text,text,text,bigint)":                                               {"commerce_payment_registry_writer"},
-			"payments.settlement_fee_store(bigint,bigint,bigint)":                                           {"commerce_payment_registry_writer"},
-			"payments.settlement_statement_json(uuid,uuid,uuid,boolean)":                                    {"commerce_payment_registry_writer"},
+			"payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text,jsonb)": {"commerce_payment_registrar", "commerce_payment_registry_writer"}, // 0200: ten arguments (window manifest)
+			"payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text)":                                  {"commerce_payment_registrar", "commerce_payment_registry_writer"},
+			"payments.record_settlement_payout_return(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)":     {"commerce_payment_registrar", "commerce_payment_registry_writer"}, // 0200 (SA-1)
+			"payments.read_settlement_payables(uuid,uuid,uuid,text,integer)":                                      {"commerce_payment_registrar", "commerce_payment_registry_writer"}, // 0200 (SA-1)
+			"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)":            {"commerce_payment_registrar", "commerce_payment_registry_writer"},
+			"payments.read_settlement_statement(uuid,uuid,uuid,uuid)":                                             {"commerce_payment_registrar", "commerce_payment_registry_writer"},
+			"payments.read_store_settlements(bytea,uuid,integer,date,uuid)":                                       {"commerce_runtime", "commerce_payment_registry_writer"},
+			"payments.record_settlement_resolution(uuid,uuid,uuid,text,text,text,text,text,text,uuid,uuid)":       {"commerce_payment_registrar", "commerce_payment_registry_writer"}, // 0163 (S2-OPEN-1)
+			"payments.settlement_kind(text,text,text,bigint)":                                                     {"commerce_payment_registry_writer"},
+			"payments.settlement_fee_store(bigint,bigint,bigint)":                                                 {"commerce_payment_registry_writer"},
+			"payments.settlement_statement_json(uuid,uuid,uuid,boolean)":                                          {"commerce_payment_registry_writer"},
 		}
 		for fn, want := range fns {
 			var secdef bool
@@ -295,6 +337,13 @@ func TestPlatformSettlement(t *testing.T) {
 			}
 			lcSameSet(t, fn+" EXECUTE grantees", acl, want)
 		}
+		// 0200: the nine-argument identity of the sync entry point is gone (no wrapper, no retained grant)
+		if n := countRows(t, o, `SELECT count(*) FROM pg_proc WHERE oid=to_regprocedure('payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)')`); n != 0 {
+			t.Fatal("the nine-argument payments.record_settlement_lines still exists")
+		}
+		if n := countRows(t, o, `SELECT count(*) FROM pg_proc WHERE proname='record_settlement_lines' AND pronamespace='payments'::regnamespace`); n != 1 {
+			t.Fatalf("record_settlement_lines has %d identities, want exactly the ten-argument one", n)
+		}
 		// no worker, ingress, checkout or integration authority can execute any operator definer
 		for fn := range fns {
 			if !strings.Contains(fn, "record_") && !strings.Contains(fn, "close_") && !strings.Contains(fn, "read_s") {
@@ -307,9 +356,10 @@ func TestPlatformSettlement(t *testing.T) {
 			}
 		}
 		// the merchant runtime can execute the reader only
-		if n := countRows(t, o, `SELECT count(*) FROM unnest(ARRAY['payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)',
+		if n := countRows(t, o, `SELECT count(*) FROM unnest(ARRAY['payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text,jsonb)',
 			'payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text)','payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)',
 			'payments.read_settlement_statement(uuid,uuid,uuid,uuid)',
+			'payments.record_settlement_payout_return(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)','payments.read_settlement_payables(uuid,uuid,uuid,text,integer)',
 			'payments.record_settlement_resolution(uuid,uuid,uuid,text,text,text,text,text,text,uuid,uuid)']) f
 			WHERE has_function_privilege('commerce_runtime',f::regprocedure,'EXECUTE')`); n != 0 {
 			t.Fatalf("commerce_runtime can execute %d operator definers", n)
@@ -574,11 +624,12 @@ func TestPlatformSettlement(t *testing.T) {
 		restoreCaptured()
 		restoreRefund("FAILED")
 		rep = e.sync(t, w1, w2, batch...)
-		if rep.Inserted != 0 || rep.Unattributed != 0 || rep.Mismatch != 0 || rep.Rechecked != 3 || rep.Duplicate != 1 {
-			t.Fatalf("re-sync after the facts arrived: %+v (want 3 rechecked, the already-clean C2 charge a duplicate)", rep)
+		// 0200: the window list is the whole of Stripe's window, so the 10 week-1 transactions of PF10_sync are duplicates as well
+		if rep.Inserted != 0 || rep.Unattributed != 0 || rep.Mismatch != 0 || rep.Rechecked != 3 || rep.Duplicate != 11 {
+			t.Fatalf("re-sync after the facts arrived: %+v (want 3 rechecked, the already-clean C2 charge and the 10 week-1 rows duplicates)", rep)
 		}
 		// a third identical sync changes nothing
-		if rep = e.sync(t, w1, w2, batch...); rep.Rechecked != 0 || rep.Duplicate != 4 || rep.Inserted != 0 {
+		if rep = e.sync(t, w1, w2, batch...); rep.Rechecked != 0 || rep.Duplicate != 14 || rep.Inserted != 0 {
 			t.Fatalf("third sync: %+v", rep)
 		}
 		for _, txn := range []string{"txn_ChargeC1", "txn_ChargeC2", "txn_RefundC2", "txn_RefundFailC2"} {
@@ -619,14 +670,15 @@ func TestPlatformSettlement(t *testing.T) {
 		}
 		for _, to := range []time.Time{now.Add(time.Hour), now.Add(-5 * time.Minute)} {
 			var state string
-			if err := e.f.owner.QueryRow(ctx, `SELECT 'x' FROM (SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,'SANDBOX','[]'::jsonb,$4::timestamptz,$5::timestamptz)) q`,
+			// 0200: the probe carries a VALID empty manifest, so the window rule (not the missing manifest) is the branch that must reject
+			if err := e.f.owner.QueryRow(ctx, `SELECT 'x' FROM (SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,'SANDBOX','[]'::jsonb,$4::timestamptz,$5::timestamptz,NULL,NULL,'[]'::jsonb)) q`,
 				e.op.TenantID, e.op.StoreID, e.op.PrincipalID, to.Add(-24*time.Hour), to).Scan(&state); sqlState(err) != "22023" {
 				t.Fatalf("SQL accepted a window ending at %s: %v", to.Format(time.RFC3339), err)
 			}
 		}
 		// P2-9: the wire lists whole unix seconds, so a fractional bound would claim a sliver that was never listed
 		var frac string
-		if err := e.f.owner.QueryRow(ctx, `SELECT 'x' FROM (SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,'SANDBOX','[]'::jsonb,$4::timestamptz,$5::timestamptz)) q`,
+		if err := e.f.owner.QueryRow(ctx, `SELECT 'x' FROM (SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,'SANDBOX','[]'::jsonb,$4::timestamptz,$5::timestamptz,NULL,NULL,'[]'::jsonb)) q`,
 			e.op.TenantID, e.op.StoreID, e.op.PrincipalID, w0.Add(500*time.Millisecond), w1).Scan(&frac); sqlState(err) != "22023" {
 			t.Fatalf("SQL accepted a fractional-second window: %v", err)
 		}

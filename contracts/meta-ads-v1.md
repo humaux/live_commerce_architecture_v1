@@ -1,5 +1,7 @@
 # Meta ads v1 — merchant ad account connect, approved campaigns, insights, CAPI Purchase
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q6); ADR-20261026.
+
 Status: **v1 FROZEN 2026-09-30 (DESIGN; gates NOT_RUN)** — answers reviews `output/contract-review/r2-design-wave.json`
 key `ads` (rounds 1–2) and `output/contract-review/r2-round3.json` key `ads` (round 3, applied per
 `docs/delivery/units/r2-design-rulings.md` X1/X2/X6; ledgers at the end). Evidence label for this file: DESIGN. Every MA gate below is

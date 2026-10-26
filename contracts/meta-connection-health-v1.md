@@ -1,5 +1,7 @@
 # Meta connection health v1 — proactive token/permission/subscription probe, capability table, merchant alert (W1-01B)
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q14); ADR-20261026.
+
 Status: **DRAFT (2026-10-05, author: Claude Opus subagent for the integrator; awaiting adversarial review and freeze)**.
 Unit W1-01B of `output/arch-conformance/IMPLEMENTATION-PLAN.md` (§5 card and dispatch item 3). Base `r3/integration`
 `d90d7fe3`. Evidence label of this file: DESIGN; every gate NOT_RUN.

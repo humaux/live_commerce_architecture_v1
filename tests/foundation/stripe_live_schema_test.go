@@ -612,8 +612,10 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 			// 0150 (W4-S2 settlement ledger) needs 0137's platform tables, so it is held back with them.
 			// 0163 (S2-OPEN-1 settlement-resolve) patches 0150's close_settlement in place and FKs its resolutions table to
 			// 0150's settlement_unattributed, so it is held back with them too.
+			// 0200 (SA-1 settlement returns/reconciliation/payables) patches 0150/0163 functions in place and extends 0150's tables.
 			if filepath.Base(path) == skip || filepath.Base(path) == "0137_platform_stripe.sql" || filepath.Base(path) == "0022_platform_stripe.sql" ||
-				filepath.Base(path) == "0150_platform_settlement.sql" || filepath.Base(path) == "0163_settlement_resolve.sql" {
+				filepath.Base(path) == "0150_platform_settlement.sql" || filepath.Base(path) == "0163_settlement_resolve.sql" ||
+				filepath.Base(path) == "0200_settlement_returns_recon.sql" {
 				continue
 			}
 			body, err := os.ReadFile(path)
@@ -769,9 +771,9 @@ func slsUpgrade(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016, and 0150 (settlement ledger) plus
-	// 0163 (settlement-resolve) with them; the same Apply runs all six.
-	if ledgerAfter != ledgerBefore+6 {
-		t.Fatalf("ledger grew by %d, want exactly 6 (0077, post_river/0016, 0137, post_river/0022, 0150 and 0163, once)", ledgerAfter-ledgerBefore)
+	// 0163 (settlement-resolve) and 0200 (settlement returns) with them; the same Apply runs all seven.
+	if ledgerAfter != ledgerBefore+7 {
+		t.Fatalf("ledger grew by %d, want exactly 7 (0077, post_river/0016, 0137, post_river/0022, 0150, 0163 and 0200, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))
@@ -908,7 +910,8 @@ func slsUpgrade(t *testing.T) {
 // slsSettlementDelta recognises exactly the privileges migration 0150 (W4-S2 settlement ledger) adds, per role (Opus review P2-6: no wildcard):
 //   - commerce_payment_registry_writer: any privilege on its own settlement tables/functions/triggers, and SELECT on exactly the existing-table
 //     columns the attribution reads use (stripe_sessions six columns, stripe_refunds four, payment_attempts.order_id);
-//   - commerce_payment_registrar: EXECUTE on the five operator functions only (0163 adds record_settlement_resolution);
+//   - commerce_payment_registrar: EXECUTE on the seven operator functions only (five from 0150/0163, of which 0163 adds
+//     record_settlement_resolution; 0200 adds record_settlement_payout_return and read_settlement_payables);
 //   - commerce_runtime: EXECUTE on read_store_settlements only.
 //
 // Nobody else (checkout writer, workers, ingress) gains anything. The same sets are pinned from the 0150 side by TestPlatformSettlement/PF09_schema.
@@ -917,7 +920,8 @@ func slsSettlementDelta(role, kind, obj, priv string) bool {
 	case "commerce_payment_registry_writer":
 		if strings.HasPrefix(obj, "payments.settlement_") || strings.HasPrefix(obj, "payments.record_settlement_") ||
 			strings.HasPrefix(obj, "payments.close_settlement") || strings.HasPrefix(obj, "payments.read_settlement_statement") ||
-			strings.HasPrefix(obj, "payments.read_store_settlements") || strings.HasPrefix(obj, "payments.guard_settlement_") {
+			strings.HasPrefix(obj, "payments.read_store_settlements") || strings.HasPrefix(obj, "payments.guard_settlement_") ||
+			strings.HasPrefix(obj, "payments.read_settlement_payables") {
 			return true
 		}
 		if kind == "column" && priv == "SELECT" {
@@ -933,7 +937,8 @@ func slsSettlementDelta(role, kind, obj, priv string) bool {
 	case "commerce_payment_registrar":
 		return kind == "exec" && priv == "EXECUTE" && (obj == "payments.record_settlement_lines" || obj == "payments.close_settlement" ||
 			obj == "payments.record_settlement_payout" || obj == "payments.read_settlement_statement" ||
-			obj == "payments.record_settlement_resolution")
+			obj == "payments.record_settlement_resolution" || obj == "payments.record_settlement_payout_return" ||
+			obj == "payments.read_settlement_payables")
 	case "commerce_runtime":
 		return kind == "exec" && priv == "EXECUTE" && obj == "payments.read_store_settlements"
 	}
