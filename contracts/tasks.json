@@ -1460,7 +1460,14 @@
       "apps/admin/src/features/settings/routes.ts",
       "tests/admin/settlements.spec.ts",
       "tests/admin/fixtures/card-payments-wire/settlement-returned.json",
-      "output/settlement-returns/sa2/**"
+      "output/settlement-returns/sa2/**",
+      "tests/admin/card-payments-model.test.ts",
+      "tests/admin/card-payments-wire.test.ts",
+      "tests/admin/card-payments-copy.test.ts",
+      "tests/admin/fixtures/card-payments-wire/settlements-list.json",
+      "tests/admin/fixtures/card-payments-wire/settlement-paid.json",
+      "tests/admin/fixtures/card-payments-wire/settlement-carried.json",
+      "tests/admin/fixtures/card-payments-wire/settlement-pending.json"
     ],
     "status": "NOT_STARTED",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
