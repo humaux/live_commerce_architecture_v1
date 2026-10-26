@@ -271,11 +271,23 @@ test("browser mode: a gate-log tee counts once, an independent gate execution st
   assert.equal(mixed.test_count, 6);
 });
 
-// A summary-only reporter tees as a summary too: the gate log repeats the evidence execution's count, not another run.
-test("browser mode: a summary-only gate-log tee counts once", () => {
+// #190 review P2: equal summary counts are not an execution identity. Two independent summary-only
+// executions of the same size are two runs; their specs must add instead of collapsing.
+test("browser mode: independent equal-count summary-only executions both count", () => {
   const summaryOnly = [BROWSER_RUN, "23 passed", "0 failed"].join("\n");
   const rec = makeReceipt({ mode: "--browser-live-console", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
     logs: ["--- PASS: TestBrowserLiveConsoleRealChain (374s)\n" + summaryOnly], specs: ["23 passed\n0 failed\n"] });
+  assert.equal(rec.spec_count, 46, "two independent 23-spec executions are 46 specs, not a tee");
+  assert.equal(rec.test_count, 47);
+});
+
+// A genuine summary tee repeats the evidence execution's whole log, including the runner's identity
+// line. That verbatim copy, not the matching count, is the proof that the gate log is the same run.
+test("browser mode: a summary-only gate-log tee with its runner marker counts once", () => {
+  const execution = ["browser: chromium", "23 passed", "0 failed"];
+  const summaryOnly = [BROWSER_RUN, ...execution].join("\n");
+  const rec = makeReceipt({ mode: "--browser-live-console", browser: true, outcome: "success", runId: 1, runAttempt: 1, sha: "s",
+    logs: ["--- PASS: TestBrowserLiveConsoleRealChain (374s)\n" + summaryOnly], specs: [execution.join("\n")] });
   assert.equal(rec.spec_count, 23);
   assert.equal(rec.test_count, 24);
 });
