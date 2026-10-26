@@ -71,6 +71,10 @@ func fixture(t *testing.T) *testFixture {
 	return shared
 }
 
+// legacyBankPolicyAfterMigrate is what the fixture read from checkout.bank_transfer_policy right after migrations.Apply (OC-16 / 0202),
+// before the legacy flip in newFixture. TestBtcPolicyClosedAfterMigrate pins that the migration itself leaves the policy closed.
+var legacyBankPolicyAfterMigrate struct{ read, closed bool }
+
 func newFixture() (*testFixture, string, error) {
 	if os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		return nil, "LC_TEST_DATABASE_ALLOWED=1 is required; real-PG foundation test NOT_RUN", nil
