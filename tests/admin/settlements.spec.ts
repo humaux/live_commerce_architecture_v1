@@ -28,7 +28,6 @@ const pending = required("LC_BROWSER_STMT_PENDING");
 const payoutRef = required("LC_BROWSER_PAYOUT_REF");
 
 test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-failure" });
-test.describe.configure({ mode: "serial" });
 
 const en = cardPaymentsSettlementsCopy.en;
 // the seeded balance-transaction / dispute ids carry the W4U1 tag; real Stripe ids start with the digit 1 ("txn_1Abc..."); "txn_date" is only a JSON key
@@ -105,6 +104,10 @@ async function shot(page: Page, name: string, locale: string, viewport: "desktop
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 }
 
+// Preserve the original real-chain serial group. The new independent MOCK DTO cases below must still execute
+// if SA-1 has not merged yet and the old server cannot emit the required fields; they never make that failure PASS.
+test.describe("STL1–STL5 real settlement ledger", () => {
+test.describe.configure({ mode: "serial" });
 test("STL1 list: every statement row shows the server's numbers (signed) and the right payout state", async ({ page }) => {
   await signedLogin(page);
   await page.goto(url("en"));
@@ -218,6 +221,7 @@ test("STL5 phone width: list and detail fit 390px in en and zh-TW", async ({ pag
     await expect(page.getByTestId("settlement-detail")).toBeVisible();
     await shot(page, "settlement-detail", locale, "mobile");
   }
+});
 });
 
 // SA-2: frozen §6.9 DTO fixture, explicitly MOCK at the BFF edge. This does not claim the
