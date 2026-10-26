@@ -1414,7 +1414,7 @@ At most two targeted fixes per blocker, then escalate.
 - **Merchant views.** The merchant orders read model shows closure only as `CANCELLED`. A dedicated
   merchant payment view is follow-up work.
 
-- **UNKNOWN (ADR-20261026 AD-01).** Whether the HK platform account may offer Link to Taiwan buyers (country/currency availability, Link enablement in the account's payment method settings) is not established. It needs a SANDBOX probe (SP16) before any LIVE enrollment. Until the owner records the probe result, the LIVE profile freezes `[card]` (D6); a unit case with the LIVE profile asserts `[card]` is frozen and not a mismatch. SP16 also covers a USD session (`[card]`) and notes Link's US-bank source is review-only.
+- **UNKNOWN (ADR-20261026 AD-01).** Whether the HK platform account may offer Link to Taiwan buyers (country/currency availability, Link enablement in the account's payment method settings) is not established. It needs a SANDBOX probe (SP16) before any LIVE enrollment. Until the owner records the probe result, the LIVE profile freezes `[card]` (D6); LIVE Link is enabled only by the owner: after the SP16 probe result is recorded, through one contract revision of D6 (or a platform configuration switch that the revision introduces); until then it is UNKNOWN and nobody else flips it. Upgrade path: owner records the probe, a contract revision changes the LIVE set to `[card, link]`, OC-01 follows. A unit case with the LIVE profile asserts `[card]` is frozen and not a mismatch. SP16 also covers a USD session (`[card]`) and notes Link's US-bank source is review-only.
 
 ## 17. Open questions for the owner (blocking FREEZE unless marked)
 
