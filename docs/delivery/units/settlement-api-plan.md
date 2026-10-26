@@ -8,6 +8,10 @@ Used by: integrator（裁决、冻结、分配迁移号）、车队实现者（c
 **基线：** `origin/r3/integration@4a2bf1fe8`，最新迁移是 `0199`。下文的迁移号 `02xx` 只是占位，由 integrator 分配。
 **证据级：** 本文是 E0 设计。文中「已测」只引用仓库里已有的 E3 记录（作者测试 + Opus 复核，REAL_PG/MOCK）。本轮没有复跑。
 
+**SA-0 冻结与复核修订（2026-10-26）：** 下文 §1 保留基线现状快照；实现依据唯一取
+`contracts/stripe-platform-account-v1.md` 冻结 §6.7–§6.9。§3 规划随 PR #194 的 3P1/1P2 修订同步更新：完整窗口
+manifest、0150 的 stored-net/anti-join、新观测覆盖旧观测、退役 9 参数入口、PF17 完整两周向量。本文不构成第二份独立契约。
+
 ## 0. 权威与输入
 
 | 域 | 权威 |
@@ -80,7 +84,7 @@ Used by: integrator（裁决、冻结、分配迁移号）、车队实现者（c
 目标有两个：**商家能在后台看到可信的结算单**，**平台能把一笔打款登记为已结清**。这两条主路径都已经能跑。下面三项会让「可信」和「已结清」在出错时失真，按优先级排：
 
 1. **M1 打款退回（P1）。** 银行退汇之后，结算单仍然显示「已付」，而钱实际回到了平台。最小方案：新增一张只追加的退回表。退回金额作为 `returned_in_minor` 加进该店的下一期结算单，原来的已付记录不改，留作历史。
-2. **M2 对账入库 + 关账门（P1）。** 现在 sync 的差额只打印一次，事后无法证明某张结算单和 Stripe 账对得上。最小方案：sync 在**同一事务**里，把每个币种的「Stripe 侧合计 vs 入库合计」写进对账表，两边都由 SQL 从输入批次和表里重新计算，不采用 Go 传进来的合计。关账只承认差额为 0 的同步窗口。
+2. **M2 对账入库 + 关账门（P1）。** 现在 sync 的差额只打印一次，事后无法证明某张结算单和 Stripe 账对得上。最小方案：sync 在**同一事务**里，把每个币种的「Stripe 侧合计 vs 入库合计」写进对账表。SQL 从完整窗口 manifest 算 Stripe 侧，从 0150 原有的 stored `settle_net` UNION/anti-join 算记录侧，不采用 Go 合计。关账对每段窗口先选最新观测，再检查差额；旧干净 run（包括 grandfathered）不能遮住新差额。具体顺序和重叠规则见冻结 §6.8。
 3. **M3 应付清单（P2，运维必需）。** 只读的 SQL 定义函数加一个 CLI `settlement-payables`，让 owner 打款前能看到「该付谁、付多少、关账多久了」。没有它，登记打款要靠手抄 id。
 
 同时修 P2：把 `nav` 改成 `true`，让结算页出现在设置导航里，并显示退回状态。
@@ -131,13 +135,15 @@ CREATE TABLE payments.settlement_sync_reconciliations (
  settle_currency text NOT NULL CHECK(settle_currency ~ '^[A-Z]{3}$'),
  tenant_id uuid NOT NULL, store_id uuid NOT NULL,                -- 平台店的 scope
  environment text NOT NULL CHECK(environment IN ('SANDBOX','LIVE')),
- stripe_net_minor bigint NOT NULL,     -- 本批输入的 Σ net（SQL 从 p_lines 重新计算）
- recorded_net_minor bigint NOT NULL,   -- 窗口内 Σ lines.settle_net + Σ unattributed net（SQL 查表计算）
- difference_minor bigint GENERATED ALWAYS AS (stripe_net_minor-recorded_net_minor) STORED,
+ stripe_net_minor bigint NOT NULL,     -- 完整窗口 p_window_manifest 的 Σ net；不是分块 p_lines
+ recorded_net_minor bigint NOT NULL,   -- 0150:480–490 的 stored settle_net UNION/anti-join；同笔只计一次
+ difference_minor bigint GENERATED ALWAYS AS (recorded_net_minor-stripe_net_minor) STORED,
  PRIMARY KEY(sync_run_id,settle_currency)
 );
 ```
 授权与 0150 相同：owner 是 `commerce_payment_registry_writer`，只授予 SELECT,INSERT（退回表另加 `UPDATE(carried_into_statement_id)`，并由触发器限制只能写一次）。worker、ingress、runtime 没有任何权限。
+冻结 §6.8 另给既有 `settlement_sync_runs` 加 `observation_seq` identity；最终分块和 close 使用同一环境锁分配／读取顺序。
+这只是冻结契约的摘要，完整金额上限、字段、触发器和权限以契约为准。
 
 ### 3.2 SQL 入口
 
@@ -145,8 +151,8 @@ CREATE TABLE payments.settlement_sync_reconciliations (
 |---|---|---|
 | `payments.record_settlement_payout_return(p_tenant uuid,p_store uuid,p_principal uuid,p_statement uuid,p_return_ref text,p_returned_minor bigint,p_returned_at timestamptz,p_operator text,p_ticket text) RETURNS timestamptz` | EXECUTE 只给 `commerce_payment_registrar` | 未付款 → `payout_not_recorded`；`p_returned_minor ≠ payout_minor` → `return_amount_mismatch`；`returned_at < paid_at` 或晚于当前时间 → 22023；相同内容重放 → 返回原值；内容不同 → `return_already_recorded`（PT409）；同一事务内写审计 `stripe.settlement.payout_return` |
 | `payments.read_settlement_payables(p_tenant uuid,p_store uuid,p_principal uuid,p_environment text,p_limit integer) RETURNS jsonb` | 同上 | 只读：列出 `net_payable_minor>0 AND payout_ref IS NULL` 的结算单，按 `closed_at` 升序；字段 `statement_id, store_id, period_start, net_payable_minor, closed_at`；不含 PII |
-| `record_settlement_lines`（用仓库惯用的 `pg_get_functiondef` + replace 做原地补丁，锚点必须唯一） | 不变 | 写 `settlement_sync_runs` 的同一事务里，为每个币种写一行对账 |
-| `close_settlement`（原地补丁） | 不变 | ① 覆盖检查只算所有币种 `difference_minor=0` 的 sync run；差额非 0 的窗口不算覆盖，关账报 `sync_unreconciled`（PT409）。② `returned_in_minor` = 该店尚未带回的退回之和，同一事务里写 `carried_into_statement_id` |
+| `record_settlement_lines`（02xx 安装 10 参数入口，末参 `p_window_manifest jsonb DEFAULT NULL`；同事务 DROP 旧 9 参数 identity） | 新 identity 保留原 owner / SECURITY DEFINER / search_path / registrar-writer ACL；旧 identity 不得保留可执行入口 | 仅最终分块携带完整窗口 manifest，窗口缺 manifest 必须在任何写前拒绝；同事务记录 run、每币种对账和审计；0150 anti-join 与 `settle_net` 原样保留 |
+| `close_settlement`（原地补丁） | 不变 | ① 完整两周按窗口边界分段，每段先选最大 observation_seq，再判所有币种差额；新差额覆盖旧干净 run／grandfathered，不能退回旧观测。缺段报 `sync_required`；完整但有最新差额报 `sync_unreconciled`；干净修复后允许关账。② `returned_in_minor` = 该店尚未带回的退回之和，同一事务里写 `carried_into_statement_id` |
 | `settlement_statement_json`（原地补丁） | 不变 | 商家 DTO 新增 `returned_in_minor`、`payout_returned`（bool）、`payout_returned_at`（omitempty）；仍然不含 return_ref、Stripe id 和结算币种金额 |
 
 ### 3.3 Go（签名草案）
@@ -181,7 +187,7 @@ CLI（`cmd/stripe-admin`，加入 `ops-admin.sh` 白名单，不接受任何密�
 
 - **S-I1** `net = captured − refunded − dispute + stripe_fee − platform_fee + carried_in + returned_in`，由表级 CHECK 保证。
 - **S-I2** 一张 statement 最多一次退回；退回金额等于原 payout 金额；退回只被一张后续 statement 带回一次（`carried_into_statement_id` 只能写一次 + UNIQUE）。
-- **S-I3** 关账依据的每个同步窗口，在所有币种上的 `difference_minor` 都为 0。
+- **S-I3** 关账所需区间每段均有最新且所有币种干净的观测；新差额必须覆盖旧的干净观测，含 grandfathered；旧入口不能绕过 manifest。
 - **S-I4** 系统从不调用银行、Stripe payout 或 transfer 的写接口。打款和退回都只是记录。
 - **S-I5** 所有新写入都和审计行在同一事务；没有 UPDATE（只能写一次的列除外），没有 DELETE。
 - **S-I6** 商家响应里没有 Stripe id、return_ref、其他店的数据、结算币种金额。
@@ -193,13 +199,13 @@ CLI（`cmd/stripe-admin`，加入 `ops-admin.sh` 白名单，不接受任何密�
 | 卡 | 角色 | ELEVATE | 写入路径（唯一归属） | 依赖 | 红测试（先写，注错→红） | 验收 gate |
 |---|---|---|---|---|---|---|
 | **SA-0** 契约冻结 | integrator（架构） | ✅ 金额规则 | `contracts/stripe-platform-account-v1.md`（§0.3 记录 10-25 决定 + allowlist 作为 LIVE gate、§6.7–§6.9、§9、§10 PF16–PF18） | 无 | 不适用（文档）；冻结的 PF16–PF18 向量必须写出算术过程 | `python3 scripts/check_packet.py`；Opus 金额复核签字 |
-| **SA-1** 后端：退回 + 对账 + 应付清单 | commerce_worker | ✅ | `migrations/02xx_settlement_returns_recon.sql`；`internal/payments/stripeadmin/settlement.go`；`internal/payments/settlement/service.go`；`cmd/stripe-admin/settlement.go`；`tests/foundation/settlement_returns_test.go`（作者冒烟测试） | SA-0 | 在当前基线上先跑：①登记打款后无法表达退回（PF16 红）；②sync 差额 ≠ 0 时关账仍然成功（PF17 红）；③没有 payables 读入口（PF18 红）。红跑日志存 `output/settlement-returns/red.log` | `bash scripts/dev/test-focused.sh '^(TestPlatformSettlement|TestR2IntegrationUpgradeFromReleaseHead|TestStripeAuthority|TestStripeAdmin|TestOpsAdmin)'`；`go vet ./...`；`bash scripts/dev/check-gates.sh`；CI `foundation-shards`；Opus 金额复核 0 个 P0/P1 |
+| **SA-1** 后端：退回 + 对账 + 应付清单 | commerce_worker | ✅ | `migrations/02xx_settlement_returns_recon.sql`；`internal/payments/stripeadmin/settlement.go`（:203 直接调用）、`settlement_unit_test.go`、`live.go`；`internal/platform/stripe_runtime.go`（registrar identity）；`internal/payments/settlement/service.go`；`cmd/stripe-admin/settlement.go`；`tests/foundation/platform_settlement_test.go`（:273/:310 ACL pin、SQL 探针）、`platform_stripe_test.go`、`settlement_returns_test.go`（作者冒烟测试） | SA-0 | PF16、PF18 同前；PF17 先证明完整两周干净可关账，再造差额证明拒绝，修复后成功；保留旧签名或窗口缺 manifest 必须红。基线缺入口／权限错误不算差额分支 RED，须分别记录。日志存 `output/settlement-returns/red.log` | 仅 CI：`bash scripts/dev/test-focused.sh '^(TestPlatformSettlement|TestR2IntegrationUpgradeFromReleaseHead|TestStripeAuthority|TestStripeAdmin|TestOpsAdmin)'`；stripeadmin 单测与 platform registrar pin；`go vet ./...`；`bash scripts/dev/check-gates.sh`；CI `foundation-shards`；Opus 金额复核 0 个 P0/P1 |
 | **SA-2** 商家 UI：退回状态、带回金额列、进导航 | ui_worker | ✅ 金额展示与符号 | `apps/admin/lib/card-payments-settlements-model.ts`、`…-copy.ts`；`apps/admin/components/Settlements.tsx`；`apps/admin/src/features/settings/routes.ts`（只改 settlements 条目的 `nav`）；`tests/admin/settlements.spec.ts`；`tests/admin/fixtures/card-payments-wire/settlement-returned.json` | SA-0 冻结 DTO（用 fixture 并行开发）；真实端到端依赖 SA-1 合并 | STL6：带有 `payout_returned=true` 的 fixture，在旧解析器上应当失败；STL7：设置导航里应当有「结算单」入口，当前 `nav:false` 时失败 | `tests/admin/settlements.spec.ts` STL1–STL7（含 WebKit 和 390px 宽度）；admin typecheck；`card-payments-model.test.ts` 的符号和恒等式断言包含 returned_in |
 | **SA-3** 独立验收 gate | test_worker（不是 SA-1 的作者） | ✅ | `tests/foundation/platform_settlement_gate_test.go`（新文件：补齐 PF09–PF13 的 K3 债务，再加 PF16–PF18） | SA-0（只按契约写，不读 SA-1 的实现）；和 SA-1 并行 | 在当前基线上：PF16–PF18 必须红；PF09–PF13 必须绿（证明测试本身有效），再做一次单点注错（例如把 carry 改成 0）让它变红并留日志 | 先在 SA-1 分支上全绿，再在合并后的 SHA 上全绿；结果绑定 SHA，写进 `output/settlement-returns/gate-*.log` |
 
 PF16–PF18（由 SA-0 冻结）：
 - **PF16 退回**：只能退一次；金额 ≠ payout 时拒绝；未付款时拒绝；`returned_at < paid_at` 时拒绝；相同内容重放返回原值；下一期的 `returned_in` 等于退回金额且只带回一次；net 恒等式成立；有审计行；商家 DTO 不含 return_ref。
-- **PF17 对账**：fixture 中丢一行，造出差额 → 写入对账行（difference ≠ 0），关账报 `sync_unreconciled`；再做一次干净的 sync，差额为 0，关账成功；对账表不可 UPDATE/DELETE。
+- **PF17 对账**：完整向量见契约 §6.9：R=`[2026-08-31T00:00:00+08:00,2026-09-14T00:00:00+08:00)`，U/W 各 7 天，W 不可缺。先保存干净 U/W，savepoint 内确认可关账后回滚探针；新 W 丢退款 B 形成 HKD +2000 差额，旧干净／grandfathered 均不得遮住，关账只报 `sync_unreconciled`；新 W 干净修复后成功（TWD net 76000）。另测 unmapped 后归属仍仅计 net 1440/count 1、NULL fee 的 unsupported 仍计 net −500/count 1、部分重叠覆盖、旧 9 参数 identity 消失、新入口窗口缺 manifest 22023 且零写入；每个对应单点注错必须红。对账表不可 UPDATE/DELETE。
 - **PF18 应付清单**：只列出 net > 0 且未付的单；登记打款后从清单里消失；runtime 和商家角色没有 EXECUTE 权限。
 
 ## 5. 合规：上线收真钱前的 owner gate（不阻塞开发）

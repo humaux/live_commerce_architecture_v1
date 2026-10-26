@@ -392,7 +392,8 @@ payments.settlement_statements
 - **Reconcilable.** Each sync prints, for the window, Σ `settle_net` of lines + Σ unattributed net, next to Stripe's own
   window total of the same list. The operator compares them with the payout report in the Dashboard. A difference is
   printed as counts and ids only. **Since SA-0 (§6.8)**, both totals are computed by SQL and stored per sync run and
-  currency. A window with a non-zero difference does not count as coverage for close (`sync_unreconciled`).
+  currency. Close uses the latest observation over each part of the required interval (§6.8); an older clean run cannot mask a
+  newer non-zero difference (`sync_unreconciled`).
 - **No cross-store leakage.** Statements and lines are RLS-scoped by tenant/store. The merchant reader takes the store
   from the token. CSV export is per statement.
 
@@ -606,26 +607,56 @@ trigger raises PT409 `settlement_reconciliation_immutable`.
   - `abs(net) ≤ 100000000000`.
 
   SQL sums the manifest per currency into `stripe_net_minor` and `stripe_txn_count`. Go's own sum is no longer an authority. The new
-  argument changes the function signature. 02xx re-creates it with the 0150 owner and grants, and SA-1 updates the ACL pin.
-- **Recorded side.** `recorded_net_minor` and `recorded_txn_count` count the rows with `txn_created_at ∈ [window_from, window_to)` in the
-  run's environment:
-  - Σ `settle_net` over `settlement_lines`;
-  - plus Σ (`settle_amount − settle_fee`) over `settlement_unattributed`.
+  argument changes the function signature. **02xx must DROP the old nine-argument identity**
+  `payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)` in the same migration transaction
+  that installs the ten-argument identity (the same types followed by `jsonb`). Adding a defaulted argument does not replace an
+  overload. There is no legacy executable wrapper and no retained registrar grant on the old identity. The new identity retains
+  `SECURITY DEFINER SET search_path=pg_catalog`, owner `commerce_payment_registry_writer`, PUBLIC revoked, and exactly the existing
+  registrar/writer EXECUTE ACL; runtime, workers and ingress remain unable to execute it.
 
-  This is the existing `window_net` computation, per currency.
+  SA-1 owns the direct Go call in `internal/payments/stripeadmin/settlement.go:203`: send the manifest only on the final chunk;
+  intermediate calls have both window bounds and manifest NULL. SA-1 also owns the two exact-identity ACL inventories in
+  `tests/foundation/platform_settlement_test.go:273,310` and that file's direct SQL window probes: update the ACL pins to the new
+  identity, assert the old identity is absent, and supply a valid manifest on probes not testing missing-manifest rejection.
+  The same SA-1 scope includes `internal/platform/stripe_runtime.go:123` (registrar signature inventory) and
+  `internal/payments/stripeadmin/settlement_unit_test.go:139` (SQL argument-count assertion); keep all original permission assertions.
+  PF17's entry-point gate checks both retirement and rejection **before any write** when the remaining entry point is called with
+  a valid window but a NULL manifest. No new sync coverage may be written through the old entry point or without this validation.
+- **Recorded side.** `recorded_net_minor` and `recorded_txn_count` count the rows with `txn_created_at ∈ [window_from, window_to)` in the
+  run's environment. Preserve the exact UNION/anti-join in `0150_platform_settlement.sql:480–490`:
+  - all `settlement_lines` in that environment/window contribute their stored `settle_net`;
+  - `settlement_unattributed` in that environment/window contribute their stored **`settle_net`**, only where
+    `NOT EXISTS (SELECT 1 FROM payments.settlement_lines z WHERE z.balance_txn_id = y.balance_txn_id)`.
+
+  Sum those UNION ALL rows per currency and count those same rows. An unattributed row remains as history after later successful
+  attribution; its matching line takes precedence, so the transaction contributes exactly once to both net and count. Do not replace
+  `settle_net` with `settle_amount − settle_fee`: an unsupported row may have NULL `settle_fee` and still have a known, non-NULL net.
 - **Same transaction.** The patched function INSERTs one reconciliation row per currency that appears on **either** side, in the same
   transaction that INSERTs the `settlement_sync_runs` row. An empty window (an empty manifest and no stored rows) writes no
   reconciliation row. The return value adds `sync_run_id` and `reconciliation: [{currency, stripe_net_minor, recorded_net_minor,
   difference_minor, stripe_txn_count, recorded_txn_count}]`. The `stripe.settlement.sync` audit details add the per-currency difference
   (numbers only, no ids).
-- **Close gate (`close_settlement`, in place).** A sync run counts as coverage of `[period_start − 7 d, period_end)` only if **no**
-  reconciliation row of that run has `difference_minor <> 0`. The existing coverage walk is unchanged otherwise. Close then raises:
-  - PT409 `sync_unreconciled` if coverage would be complete when unreconciled runs were counted, and is not complete without them. The
-    DETAIL lists up to 20 blocking `sync_run_id`s, oldest first;
-  - `sync_required` otherwise, as before.
+- **Observation order and custody.** 02xx adds `settlement_sync_runs.observation_seq bigint GENERATED ALWAYS AS IDENTITY UNIQUE`.
+  Existing runs receive lower sequence values than every post-migration run. Sequence gaps are allowed. Before computing the final
+  chunk's comparison, inserting its run and allocating its sequence, sync takes the same environment-scoped transaction advisory lock
+  as close (`hashtextextended('lc.settlement.' || environment, 0)`, 0150). It holds that lock through commit; close holds it while reading
+  coverage and creating statements. Thus a committed later observation has a greater sequence within its platform scope/environment;
+  caller timestamps, UUID ordering and clock ties do not choose authority. Only completed final-chunk runs count as observations.
+- **Close gate (`close_settlement`, in place).** For the platform tenant/store and environment, clip all completed observations to
+  `R = [period_start − 7 d, period_end)` and split R at the clipped window boundaries. For each nonempty segment choose **the covering
+  run with greatest `observation_seq`**, before filtering for reconciliation. A chosen run is clean only if **no** reconciliation row
+  of that run has `difference_minor <> 0` in any currency. It is not permissible to select an older clean run instead.
+  - If any segment has no observation at all, raise PT409 `sync_required` (even if another segment is unreconciled).
+  - Otherwise, if any segment's chosen run is not clean, raise PT409 `sync_unreconciled`. DETAIL lists up to 20 distinct blocking
+    chosen `sync_run_id`s in sequence order. No statement, assignment or close audit row is written.
+  - Otherwise coverage passes; all existing attribution, mismatch, period and statement gates remain in force.
 
-  The cure is a fresh, clean sync of the same window. Nothing is ever edited. Runs recorded before 02xx have no reconciliation rows and
-  count as reconciled (grandfathered). No LIVE run exists before 02xx (PF-LIVE NOT_RUN), so this affects SANDBOX/dev data only.
+  A new observation supersedes older observations **only over their overlap**. A wider old clean run cannot fill the part superseded
+  by a new dirty run. A partial clean repair leaves the remainder of that dirty window blocking until it too is superseded by a clean
+  observation. A fresh clean sync of the entire dirty window repairs it without editing any run or reconciliation row.
+  Runs already present before 02xx have no reconciliation rows and are initially clean (grandfathered), but take part in exactly the
+  same supersession rule; grandfathering is not a permanent bypass. New empty windows are clean only after the validated empty-manifest
+  path above. No LIVE run exists before 02xx (PF-LIVE NOT_RUN), so legacy grandfathering affects SANDBOX/dev data only.
 - **Go.** `SyncReport` gains `SyncRunID string \`json:"sync_run_id"\``. `StripeNet`, `RecordedNet` and `Difference` are **read back** from
   the SQL return value. Go no longer computes them. Go still builds the manifest from the same `[]stripe.BalanceTransaction` slice that it
   chunks.
@@ -697,7 +728,7 @@ difference. The rows are already stored. The non-zero exit only tells the operat
 | `settlement_return_immutable` | trigger | any UPDATE other than the one NULL→value write of `carried_into_statement_id`, any DELETE/TRUNCATE |
 | `invalid settlement manifest` (22023) | `record_settlement_lines` | manifest missing with a window, or invalid (§6.8) |
 | `settlement_reconciliation_immutable` | trigger | any UPDATE/DELETE/TRUNCATE on reconciliations |
-| `sync_unreconciled` | `close_settlement` | coverage exists only through runs with a non-zero difference |
+| `sync_unreconciled` | `close_settlement` | the whole required interval is observed, but a latest covering observation has a non-zero difference (§6.8) |
 | `settlement_changed` (existing) | `close_settlement` | carried-return count or sum does not match (§6.7 close patch) |
 | `invalid settlement payables` (22023) | `read_settlement_payables` | bad environment or limit |
 
@@ -706,7 +737,8 @@ difference. The rows are already stored. The non-zero exit only tells the operat
 - **S-I2**. A statement has at most one return. The return amount equals that statement's `payout_minor`. A return is carried into
   exactly one later statement of the **same store and environment**, exactly once: `carried_into_statement_id` is set once, guarded by
   the trigger and by the composite FK.
-- **S-I3**. Every sync run that close relies on has `difference_minor = 0` in every currency.
+- **S-I3**. Every segment of the required interval is covered by its latest observation, clean in every currency. A newer discrepancy
+  supersedes older clean coverage, including grandfathered coverage; no executable legacy entry point bypasses manifest validation.
 - **S-I4**. The system never calls a bank, Stripe payout, transfer or refund write API for settlement. Payouts and returns are records of
   facts that the owner completed by hand.
 - **S-I5**. Every new write is in the same transaction as its audit row. Nothing is UPDATEd except the set-once column, and nothing is
@@ -738,24 +770,56 @@ Payout recorded: `payout_minor = 125000`, `paid_at = T`.
 Mutation that must turn PF16 red: drop the `carried_into_statement_id IS NULL` filter from the close patch. Then W3 gets
 `returned_in_minor = 125000` (vector h fails).
 
-**PF17 sync reconciliation.** One window W, settlement currency HKD. The Stripe list (the manifest) has three entries:
-- `txn_A`: charge, amount 10000, fee 400, net 9600, attributed to a store;
-- `txn_B`: refund of A, net −2000;
-- `txn_C`: stripe_fee, net −500. Unattributed `unsupported_type`.
+**PF17 sync reconciliation.** SANDBOX, platform scope, settlement currency HKD. Use this concrete week and its indispensable
+complement (every bound is whole seconds, with the given Asia/Taipei offset):
+- `period_start = 2026-09-07`; period end `2026-09-14T00:00:00+08:00`.
+- Required fortnight R: `[2026-08-31T00:00:00+08:00, 2026-09-14T00:00:00+08:00)`.
+- Clean complement U: `[2026-08-31T00:00:00+08:00, 2026-09-07T00:00:00+08:00)`; empty manifest/ledger is valid.
+- W: `[2026-09-07T00:00:00+08:00, 2026-09-14T00:00:00+08:00)`. U and W are each 7 days (within the 8-day sync cap).
+  No other run covers W. Without W the walk stops at `2026-09-07T00:00:00+08:00` and returns `sync_required`.
+- Observe after `2026-09-17T00:00:00+08:00` (period end +72 h; the windows also satisfy the 15-minute settling margin). The target
+  store has no earlier line or unclosed earlier period, no mismatch, and no unresolved `unmapped_source`. Billing/platform fee is off.
 
-`stripe_net = 9600 − 2000 − 500 = 7100`, `stripe_txn_count = 3`.
+Use real SQL attribution with matching payment/refund facts, and a MOCK Stripe list; do not seed a statement or bypass registrar scope.
+Within W, the source objects have distinct ids and times: A at `2026-09-08T12:00:00+08:00`, B at
+`2026-09-09T12:00:00+08:00`, C at `2026-09-10T12:00:00+08:00`.
+- `txn_A`: CHARGE, HKD amount 10000, fee 400, net 9600; matched TWD captured amount 100000, fee share −4000.
+- `txn_B`: REFUND of A, HKD amount/net −2000, fee 0; matched SUCCEEDED TWD refund 20000.
+- `txn_C`: stripe_fee, HKD amount/net −500, **fee NULL**; unattributed `unsupported_type`, stored `settle_net = −500`.
+
+The initial MOCK snapshot contains {A,C}; the later snapshot reveals B in that same created-time window. Initial HKD net is
+`9600 − 500 = 9100` (2 transactions); the full later net is `9600 − 2000 − 500 = 7100` (3 transactions).
 
 | # | Input | Expected |
 | --- | --- | --- |
-| a | `record_settlement_lines` with lines {A, C} (B dropped) and the full 3-entry manifest | 1 reconciliation row HKD: `recorded = 9600 − 500 = 9100`, `difference = 9100 − 7100 = +2000`, counts 3/2 |
-| b | close of the week containing W, ≥ 72 h later | PT409 `sync_unreconciled`, DETAIL contains the run id of a |
-| c | clean re-sync of W with lines {A, B, C} and the same manifest | new run: `recorded = 7100`, `difference = 0`, counts 3/3; run a's row unchanged |
-| d | close again | succeeds; the store's statement includes the refund |
-| e | window given without manifest; manifest with a duplicate id | 22023 `invalid settlement manifest`, 0 rows written |
-| f | owner-pool UPDATE/DELETE of a reconciliation row | PT409 `settlement_reconciliation_immutable` |
+| a — clean coverage | Persist clean U and clean W run r0 with lines/manifest {A,C}. Probe `close_settlement` inside a savepoint, then ROLLBACK TO that savepoint only (keep U/r0 committed; leave no statement or assigned lines). | Coverage passes and the probe succeeds, net TWD `100000 − 4000 = 96000`. R0 HKD difference 0, counts 2/2. Repeat with U/r0 genuinely pre-02xx, then apply 02xx before b: these grandfathered runs have no reconciliation rows and are initially clean, not fabricated zero-difference rows. |
+| b — discrepant resync | New W run r1 sends projected lines {A,C} (B dropped), full manifest {A,B,C}. | r1 has greater observation_seq than r0; recorded HKD 9100, stripe 7100, difference **+2000**, stripe/recorded counts 3/2. R0 remains immutable and clean. |
+| c — refuse close | Close the same still-unclosed week. | PT409 **`sync_unreconciled`**, DETAIL contains r1, 0 statements/assignments/close audits. Not `sync_required`, `period_not_closable`, missing-function or permission failure. Old clean r0 cannot supply W. |
+| d — clean repair | New W run r2 sends lines/manifest {A,B,C}. | recorded/stripe HKD 7100, difference 0, counts 3/3; r2 > r1. R0 and r1 remain unchanged. |
+| e — successful close | Close again, then read the statement. | Succeeds; captured TWD 100000, refunded 20000, stripe_fee −4000, net **76000**. B is assigned exactly once. R1 still has difference +2000 and cannot block its newer clean repair. |
+| f — entry-point gate | Inspect old nine-argument `to_regprocedure`; inspect the new ten-argument owner/SECURITY DEFINER/search_path and ACLs. Then call the new entry with an otherwise valid window but NULL manifest; separately use a duplicate-id manifest. | Old identity **IS NULL**; new ACL is exactly registrar/writer (PUBLIC/runtime/workers/ingress excluded). Both invalid calls return 22023 `invalid settlement manifest`, with 0 new lines, unattributed rows, runs, reconciliation rows or audit rows. |
+| g — immutability | Owner-pool UPDATE/DELETE of a reconciliation row. | PT409 `settlement_reconciliation_immutable`. |
 
-Mutation that must turn PF17 red: drop the `difference_minor <> 0` exclusion from the coverage walk. Then step b closes
-(vector b fails).
+Additional recorded-side vectors use **isolated windows/fixtures**, not extra runs that could accidentally cover W in a–e:
+- **Unmapped then attributed.** `txn_D` has HKD amount 1500, fee 60, net 1440. First sync lacks its source mapping: one
+  `settlement_unattributed` row (`unmapped_source`), recorded/stripe net 1440, counts 1/1, difference 0. Create its matching payment
+  mapping/fact and resync the identical object: one matching `settlement_lines` row and the original unattributed history row both
+  exist, but recorded net is still **1440**, recorded count **1**, difference 0. No deletion or manual resolution is used.
+- **Unsupported NULL fee.** Sync C alone with its full manifest: one unattributed row has NULL fee and stored net −500;
+  recorded/stripe net **−500**, counts **1/1**, difference 0. NULL or zero recorded net is a failure.
+- **Overlap supersession.** In an isolated copy of R, replace r0 with a wider clean legacy window covering
+  `[2026-09-06T00:00:00+08:00, 2026-09-14T00:00:00+08:00)` (8 days). R1 on W must still make close return
+  `sync_unreconciled`. A later clean run on only `[2026-09-07T00:00:00+08:00, 2026-09-10T00:00:00+08:00)` cannot erase r1 over
+  the remaining `[2026-09-10T00:00:00+08:00, 2026-09-14T00:00:00+08:00)`; clean repair must cover every remaining dirty segment.
+
+Each single-point mutation must turn its corresponding assertion red, with no coverage/setup/ACL error masking the intended branch:
+1. Remove the unattributed anti-join: D contributes 2880/count 2 after attribution instead of 1440/count 1.
+2. Replace unattributed `settle_net` with `settle_amount − settle_fee`: C is dropped by SUM instead of contributing −500.
+3. Filter out dirty runs **before** selecting the latest observation, or retain grandfathered clean coverage as a fallback: step c
+   wrongly closes. Dropping the chosen-run nonzero-difference gate also wrongly closes c. These mutations must reach a successful
+   close, not another unrelated refusal; a–e use no overlapping spare coverage.
+4. Retain/regrant the old nine-argument entry point: f fails its absent-identity/ACL gate. Accepting a window with no manifest fails
+   f's error and zero-write assertions. Both are separate negatives; changing only the new function's ACL is insufficient.
 
 **PF18 payables.** SANDBOX. Four closed statements:
 - A: store 1, net 80000, closed first;
@@ -829,7 +893,8 @@ the row by hand stays a red-line action requiring owner approval; the resolve st
   for it.
 - **Stripe → platform bank payouts are not reconciled.** §6.8 reconciles the balance-transaction list against the ledger only. The
   `payout`-type rows stay `unsupported_type` unattributed rows (PF10).
-- **Reconciliation grandfathering (§6.8).** Sync runs recorded before 02xx have no reconciliation row and count as reconciled.
+- **Reconciliation grandfathering (§6.8).** Pre-02xx runs start clean but lose coverage wherever a newer observation supersedes them;
+  they never override a known later discrepancy. Historical runs and comparison rows remain immutable.
 - **Third-party stores in LIVE stay closed (AD-PF2.1)** until the owner attests every §8 code, `tw_legal_opinion` included, and
   allowlists the store himself.
 - **`assigned_to_store` does not move money in v1** (§6.6): the resolution is recorded and printed as an operator
