@@ -1083,14 +1083,16 @@ func TestPlatformSettlementPF17Reconciliation(t *testing.T) {
 		oa := gateCharge("txn_PF17OA", oo.pi, 100000, 10000, 400, "0.1", ow.Add(24*time.Hour+12*time.Hour))
 		ob := gateRefund("txn_PF17OB", oref, 20000, 2000, 0, "0.1", ow.Add(2*24*time.Hour+12*time.Hour))
 		oc := gateRaw("txn_PF17OC", "stripe_fee", -500, nil, ow.Add(3*24*time.Hour+12*time.Hour))
+		ox := gateRaw("txn_PF17OX", "stripe_fee", 1000, nil, ow.Add(4*24*time.Hour+12*time.Hour)) // 09-11, only ever in r1's manifest
 		og.sync(t, ou, ow, nil, nil)
 		// wider clean legacy window [09-06,09-14) (8 days), then strip its reconciliation rows (pre-02xx).
 		og.sync(t, ow.AddDate(0, 0, -1), ow.AddDate(0, 0, 7), []stripe.BalanceTransaction{oa, ob, oc}, []stripe.BalanceTransaction{oa, ob, oc})
 		wide := og.latestRun(t)
 		ort := og.recon(t)
 		og.fixtureExec(t, `DELETE FROM payments.`+ort.table+` WHERE sync_run_id=$1`, wide)
-		// r1 on W is dirty and newer than the legacy wide run.
-		og.sync(t, ow, ow.AddDate(0, 0, 7), []stripe.BalanceTransaction{oa, oc}, []stripe.BalanceTransaction{oa, ob, oc})
+		// r1 on W drops the 09-11 object from the projection but observes it in the manifest: dirty and newer than the
+		// legacy wide run.
+		og.sync(t, ow, ow.AddDate(0, 0, 7), []stripe.BalanceTransaction{oa, oc}, []stripe.BalanceTransaction{oa, ob, oc, ox})
 		if err := og.closeProbe(t, ow.Format("2006-01-02")); gateSQLState(err) != "PT409" || !strings.Contains(fmt.Sprint(err), "sync_unreconciled") {
 			t.Fatalf("wide legacy clean run masked r1: %v", err)
 		}
@@ -1100,7 +1102,7 @@ func TestPlatformSettlementPF17Reconciliation(t *testing.T) {
 			t.Fatalf("partial clean repair erased the remaining dirty segment: %v", err)
 		}
 		// clean repair of the remaining segment closes.
-		og.sync(t, gateAt(2026, 9, 10, 0), ow.AddDate(0, 0, 7), []stripe.BalanceTransaction{oc}, []stripe.BalanceTransaction{oc})
+		og.sync(t, gateAt(2026, 9, 10, 0), ow.AddDate(0, 0, 7), []stripe.BalanceTransaction{oc, ox}, []stripe.BalanceTransaction{oc, ox})
 		if err := og.closeProbe(t, ow.Format("2006-01-02")); err != nil {
 			t.Fatalf("full clean repair still refuses: %v", err)
 		}
