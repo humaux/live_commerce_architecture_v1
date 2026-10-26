@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { cardPaymentsSettlementsCopy } from "../../apps/admin/lib/card-payments-settlements-copy";
-import { periodLabel } from "../../apps/admin/lib/card-payments-settlements-model";
+import { parseSettlementDetail, periodLabel } from "../../apps/admin/lib/card-payments-settlements-model";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { money } from "../../packages/format/src/index";
 
@@ -218,3 +218,119 @@ test("STL5 phone width: list and detail fit 390px in en and zh-TW", async ({ pag
     await shot(page, "settlement-detail", locale, "mobile");
   }
 });
+
+// SA-2: frozen §6.9 DTO fixture, explicitly MOCK at the BFF edge. This does not claim the
+// not-yet-merged SA-1 return definer executed. STL1–STL5 retain their existing real Go/PG chain.
+type ReturnedStatement = Statement & {
+  platform_fee_bps: number;
+  payout_minor?: number;
+  returned_in_minor: number;
+  payout_returned: boolean;
+  payout_returned_at?: string;
+};
+const returnedCopy = {
+  "zh-TW": { message: "撥付已退回 · 退回款會計入之後的結算單", amount: "退回款帶入（加計）", status: "撥付已退回" },
+  "zh-CN": { message: "拨付已退回 · 退回款会计入之后的结算单", amount: "退回款带入（加计）", status: "拨付已退回" },
+  en: { message: "Payout returned · Returned funds will be included in a later settlement", amount: "Returned funds carried in (added)", status: "Payout returned" },
+} as const;
+type Sa2Locale = keyof typeof returnedCopy;
+const clicks: { page: string; control: string; action: string; expected: string; actual: string; result: "PASS"; locale: string; width: number }[] = [];
+async function clickProof(page: Page, locale: Sa2Locale, control: string, expected: string, verify: () => Promise<void>) {
+  await page.getByTestId(control).click();
+  await verify();
+  clicks.push({ page: `/${locale}/settings/settlements`, control, action: "click", expected, actual: expected, result: "PASS", locale, width: page.viewportSize()!.width });
+  await writeFile(path.join(evidence, "sa2-click-ledger.json"), JSON.stringify(clicks, null, 2));
+}
+async function returnedFixture(page: Page): Promise<ReturnedStatement[]> {
+  const { statements } = JSON.parse(await readFile(new URL("./fixtures/card-payments-wire/settlement-returned.json", import.meta.url), "utf8")) as { statements: ReturnedStatement[] };
+  await page.route(`**/api/stores/${store}/settlements**`, async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const base = `/api/stores/${store}/settlements`;
+    if (pathname === base) {
+      const list = statements.map(({ lines: _lines, ...row }) => row);
+      await route.fulfill({ status: 200, contentType: "application/json", headers: { "cache-control": "no-store" }, body: JSON.stringify({ statements: list }) });
+      return;
+    }
+    const row = statements.find((s) => pathname === `${base}/${s.statement_id}`);
+    if (row) await route.fulfill({ status: 200, contentType: "application/json", headers: { "cache-control": "no-store" }, body: JSON.stringify({ statement: row }) });
+    else await route.continue();
+  });
+  return statements;
+}
+
+for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+  for (const width of [1586, 390]) {
+    test(`STL6 returned payout and carried funds survive reload (${locale}, ${width}px, frozen DTO MOCK)`, async ({ page }) => {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
+      await signedLogin(page);
+      const rows = await returnedFixture(page);
+      const source = rows.find((s) => s.payout_returned)!;
+      const carrying = rows.find((s) => s.returned_in_minor > 0)!;
+      const quiet = rows.find((s) => s.line_count === 0)!;
+      const copy = returnedCopy[locale];
+      await page.goto(url(locale));
+      await expect(page.getByTestId(`settlement-status-${source.statement_id}`)).toHaveText(copy.status);
+      await expect(page.getByTestId(`settlement-returned-message-${source.statement_id}`)).toHaveText(copy.message);
+      await expect(page.getByRole("columnheader", { name: copy.amount, exact: true })).toBeVisible();
+      await expect(page.getByTestId(`settlement-row-${carrying.statement_id}`)).toContainText("+" + money(locale, "TWD", 125000));
+      await clickProof(page, locale, `settlement-open-${source.statement_id}`, "returned state, explanation and original payout retained", async () => {
+        await expect(page.getByTestId("settlement-detail-status")).toHaveAttribute("data-state", "returned");
+        await expect(page.getByTestId(`settlement-returned-message-${source.statement_id}`)).toHaveText(copy.message);
+        await expect(page.getByTestId("settlement-returned-at")).toBeVisible();
+        await expect(page.getByTestId("settlement-payout-ref")).toHaveText(source.payout_ref!);
+      });
+      await clickProof(page, locale, "settlement-back", "statement list restored", async () => {
+        await expect(page.getByTestId(`settlement-row-${carrying.statement_id}`)).toBeVisible();
+      });
+      await clickProof(page, locale, `settlement-open-${carrying.statement_id}`, "returned funds add once to the carrying statement", async () => {
+        await expect(page.getByTestId("settlement-detail-returned-in")).toHaveText("+" + money(locale, "TWD", 125000));
+        await expect(page.getByTestId("settlement-detail-net")).toHaveText(money(locale, "TWD", 173200));
+        await expect(page.getByTestId("settlement-detail-status")).toHaveAttribute("data-state", "pending");
+        await expect(page.getByTestId("settlement-returned-at")).toHaveCount(0);
+      });
+      await page.reload();
+      await expect(page.getByTestId(`settlement-status-${source.statement_id}`)).toHaveText(copy.status);
+      await clickProof(page, locale, `settlement-open-${carrying.statement_id}`, "reload keeps server returned amount and net unchanged", async () => {
+        await expect(page.getByTestId("settlement-detail-returned-in")).toHaveText("+" + money(locale, "TWD", 125000));
+        await expect(page.getByTestId("settlement-detail-net")).toHaveText(money(locale, "TWD", 173200));
+      });
+      await shot(page, "sa2-returned-detail", locale, width === 390 ? "mobile" : "desktop");
+      await clickProof(page, locale, "settlement-back", "can open a later quiet statement without carrying the return twice", async () => {
+        await expect(page.getByTestId(`settlement-row-${quiet.statement_id}`)).toBeVisible();
+      });
+      await clickProof(page, locale, `settlement-open-${quiet.statement_id}`, "later quiet statement has zero returned funds and net", async () => {
+        await expect(page.getByTestId("settlement-detail-returned-in")).toHaveText(money(locale, "TWD", 0));
+        await expect(page.getByTestId("settlement-detail-net")).toHaveText(money(locale, "TWD", 0));
+      });
+      // The real parser also rejects forged return metadata; no permissive legacy defaults or extra private fields.
+      expect(parseSettlementDetail({ statement: carrying }).returned_in_minor).toBe(125000);
+      for (const patch of [
+        { returned_in_minor: -1 }, { returned_in_minor: 1.5 }, { returned_in_minor: 100000000001 },
+        { payout_returned: "true" }, { payout_returned_at: "later" }, { return_ref: "PRIVATE-RETURN" },
+        { payout_returned: false, payout_returned_at: source.payout_returned_at },
+        { payout_returned_at: "2026-09-16T12:00:00+08:00" },
+      ]) expect(() => parseSettlementDetail({ statement: { ...source, ...patch } })).toThrow();
+      for (const key of ["returned_in_minor", "payout_returned", "payout_returned_at"] as const) {
+        const invalid: Record<string, unknown> = { ...source };
+        delete invalid[key];
+        expect(() => parseSettlementDetail({ statement: invalid })).toThrow();
+      }
+      await noLeaks(page);
+    });
+
+    test(`STL7 settings navigation opens settlements (${locale}, ${width}px)`, async ({ page }) => {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
+      await signedLogin(page);
+      const rows = await returnedFixture(page);
+      await page.goto(`/${locale}/settings/payments/card?store=${store}`);
+      const menu = page.locator('button[aria-controls="workspace-navigation"]');
+      if (await menu.isVisible()) await menu.click();
+      await expect(page.getByTestId("nav-settlements")).toBeVisible();
+      await clickProof(page, locale, "nav-settlements", "permission-checked settlement route opens from settings navigation", async () => {
+        await expect(page).toHaveURL(new RegExp(`/${locale}/settings/settlements\\?store=${store}$`));
+        await expect(page.getByTestId(`settlement-row-${rows[0].statement_id}`)).toBeVisible();
+      });
+      await shot(page, "sa2-settings-entry", locale, width === 390 ? "mobile" : "desktop");
+    });
+  }
+}
