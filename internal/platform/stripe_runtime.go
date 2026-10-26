@@ -120,13 +120,18 @@ var stripeRegistrarFunctions = []string{
 	"payments.allow_platform_stripe(uuid,uuid,uuid,uuid,uuid,text,boolean,text,text)",
 	// w4-s2-platform-settlement (migration 0150): the per-store settlement ledger operator steps. Same registrar authority; none takes a
 	// secret and none calls a bank. The merchant reader (read_store_settlements) belongs to commerce_runtime, not to this list.
-	"payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamp with time zone,timestamp with time zone,uuid,text)",
+	// 0200 (SA-1, contract §6.8): record_settlement_lines takes the window manifest as a tenth argument; the nine-argument identity is dropped.
+	"payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamp with time zone,timestamp with time zone,uuid,text,jsonb)",
 	"payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text)",
 	"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamp with time zone,text,text)",
 	"payments.read_settlement_statement(uuid,uuid,uuid,uuid)",
 	// settlement-resolve (S2-OPEN-1, migration 0163, contract §6.6): appends ONE resolution row for one unmapped_source
 	// row so close can proceed. Same registrar authority; SQL-only, no secret, no Stripe or bank call, moves no money.
 	"payments.record_settlement_resolution(uuid,uuid,uuid,text,text,text,text,text,text,uuid,uuid)",
+	// 0200 (SA-1, contract §6.7/§6.9): record a bounced payout (append-only, the money is carried by close) and the read-only payables list.
+	// Same registrar authority; SQL-only, no secret, no Stripe or bank call, moves no money.
+	"payments.record_settlement_payout_return(uuid,uuid,uuid,uuid,text,bigint,timestamp with time zone,text,text)",
+	"payments.read_settlement_payables(uuid,uuid,uuid,text,integer)",
 }
 
 func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
