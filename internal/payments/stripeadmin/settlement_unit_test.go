@@ -567,3 +567,49 @@ func TestSettlementReturnAndReconciliationRefusalsKeepOnlyOurCodedToken(t *testi
 		t.Fatalf("invalid manifest refusal: %v", err)
 	}
 }
+
+// §6.8 "before any write": a multi-chunk manifest whose LAST chunk holds a bad entry is refused before the first chunk (SQL would only see
+// it on the last call, after the earlier chunks committed). Zero SQL calls means zero writes.
+func TestSettlementManifestLastChunkInvalidWritesNothing(t *testing.T) {
+	for name, mutate := range map[string]func(*stripe.BalanceTransaction, []stripe.BalanceTransaction){
+		"duplicate id":         func(x *stripe.BalanceTransaction, all []stripe.BalanceTransaction) { x.ID = all[0].ID },
+		"lower-case currency":  func(x *stripe.BalanceTransaction, _ []stripe.BalanceTransaction) { x.Currency = "hkd" },
+		"net above 1e11":       func(x *stripe.BalanceTransaction, _ []stripe.BalanceTransaction) { x.Net = maxManifestNet + 1 },
+		"net below -1e11":      func(x *stripe.BalanceTransaction, _ []stripe.BalanceTransaction) { x.Net = -maxManifestNet - 1 },
+		"not a balance txn id": func(x *stripe.BalanceTransaction, _ []stripe.BalanceTransaction) { x.ID = "ch_NotATxn" },
+	} {
+		db := &liveDB{}
+		r := settlementRegistrar(t, db, &balanceFake{})
+		txns := txnN(1203) // three chunks: 500, 500, 203
+		mutate(&txns[len(txns)-1], txns)
+		if _, err := r.RecordSettlementLines(context.Background(), scope, conn, tick, txns, winFrom, winTo); !errors.Is(err, ErrRejected) {
+			t.Fatalf("%s: %v, want ErrRejected", name, err)
+		}
+		if len(db.calls) != 0 {
+			t.Fatalf("%s: %d SQL calls, want 0 (nothing written)", name, len(db.calls))
+		}
+	}
+	edge := txnN(2)
+	edge[0].Net, edge[1].Net = maxManifestNet, -maxManifestNet
+	if !validManifest(edge) || !validManifest(nil) {
+		t.Fatal("abs(net) == 1e11 and an empty manifest are valid")
+	}
+}
+
+// §8 tw_legal_opinion (SA-1): the platform approval is the base 11 codes plus five; the pre-0200 set of 15 is refused before any SQL.
+// (Lives here because live_test.go is outside SA-1's write_paths.)
+func TestPlatformChecklistRequiresTWLegalOpinion(t *testing.T) {
+	full := append(append([]string{}, LiveChecklist...), PlatformChecklist...)
+	if !validChecklist(LiveChecklist) || !validChecklist(full) || len(full) != 16 {
+		t.Fatalf("base 11 and platform 16 must be valid (got %d codes)", len(full))
+	}
+	var old []string
+	for _, c := range full {
+		if c != "tw_legal_opinion" {
+			old = append(old, c)
+		}
+	}
+	if len(old) != 15 || validChecklist(old) {
+		t.Fatal("the platform set without tw_legal_opinion must be refused")
+	}
+}

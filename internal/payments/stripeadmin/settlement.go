@@ -41,6 +41,7 @@ const (
 	settlementChunk  = 500              // record_settlement_lines accepts at most 500 lines per call
 	maxManifest      = 5000             // the window manifest holds every balance transaction of the run: 50 pages of 100 (SQL refuses more)
 	maxReturnMinor   = 100_000_000_000  // the SQL bound of a payout return and of a payout
+	maxManifestNet   = 100_000_000_000  // the SQL bound of abs(net) of one manifest entry (0200 RSL2)
 	maxSettleWindow  = 8 * 24 * time.Hour
 	// settleMargin: a sync window may not end later than now minus this (P1-2). A window that claims time that has not settled would let close
 	// treat balance transactions that did not exist yet as already read. SQL enforces the same margin (record_settlement_lines).
@@ -198,6 +199,19 @@ func (r *Registrar) SettlementSync(ctx context.Context, s Scope, connectionID st
 	return r.RecordSettlementLines(bounded, s, connectionID, ticket, txns, from, to)
 }
 
+// validManifest applies the 0200 RSL2 manifest rules in Go: txn id grammar, ids unique, upper-case ISO currency, abs(net) <= 1e11.
+func validManifest(txns []stripe.BalanceTransaction) bool {
+	seen := make(map[string]struct{}, len(txns))
+	for _, t := range txns {
+		if _, dup := seen[t.ID]; dup || !balanceTxnPattern.MatchString(t.ID) || !currencyPattern.MatchString(t.Currency) ||
+			t.Net > maxManifestNet || t.Net < -maxManifestNet {
+			return false
+		}
+		seen[t.ID] = struct{}{}
+	}
+	return true
+}
+
 // settledWindow reports whether a window ending at to claims only time that has settled (to <= now - 15 minutes).
 func settledWindow(to time.Time) bool { return !to.After(time.Now().Add(-settleMargin)) }
 
@@ -223,6 +237,11 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connecti
 	}
 	if ticket != "" {
 		ticketArg = ticket
+	}
+	// the whole manifest is checked BEFORE the first chunk (SQL checks it only on the last one, after earlier chunks committed): any bad
+	// entry means zero writes (§6.8 "before any write")
+	if !validManifest(txns) {
+		return SyncReport{}, ErrRejected
 	}
 	manifest := make([]manifestEntry, 0, len(txns)) // never JSON null: an empty run still records its window with an empty manifest
 	for _, t := range txns {

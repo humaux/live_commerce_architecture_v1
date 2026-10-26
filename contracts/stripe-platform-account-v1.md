@@ -3,6 +3,9 @@
 Status: **DRAFT, FROZEN-ready, 2026-10-06 (DESIGN; every PF gate NOT_RUN)**. Integrator review and freeze are pending.
 SA-0 (2026-10-26): §0.3 AD-PF2.1, §6.7–§6.9, §8 `tw_legal_opinion`, §9 and §10 PF16–PF18 are **FROZEN** for SA-1/SA-2/SA-3
 (plan `docs/delivery/units/settlement-api-plan.md`; DESIGN, NOT_RUN).
+SA-1 text corrections (PR #198, 2026-10-27; integrator ruling `output/integrator/tools/logs/sa-cards-20261026.md` and the #198 review
+round): §6.7 guard sentence, §9 deploy order for 0200, PF16 fixed T / clean-coverage precondition / mutation symptom, §8 `tw_legal_opinion`
+basis (owner ruling 2026-10-26, `output/launch-review-20261026/LAUNCH-REVIEW.md` §6). No gate is removed or weakened.
 Evidence label for this file: DESIGN. Nothing here moves real money. The only LIVE charge is still the
 owner's single canary on the platform store (stripe-live-enable §10). It is done **once**, not once per store.
 
@@ -537,7 +540,9 @@ payments.settlement_statements  (+1 column, 0200)
   else holds anything. That includes `commerce_runtime`, every worker, ingress and the merchant reader. No role holds DELETE or TRUNCATE.
 - **Immutability trigger** `BEFORE UPDATE OR DELETE OR TRUNCATE`. An UPDATE is allowed only when it changes `carried_into_statement_id` from
   NULL to non-NULL, with every other column equal. Anything else raises PT409 `settlement_return_immutable`, even for the table owner.
-  `guard_settlement_statement` (0150) is patched in place so that `returned_in_minor` is immutable like every other amount column.
+  `guard_settlement_statement` (0150) needs no patch: its row-wide comparison (0150:203, `to_jsonb(NEW)` minus the payout quadruple)
+  already covers `returned_in_minor`, so it is immutable like every other amount column. *(SA-1 correction 2026-10-27: the frozen text
+  said "patched in place"; 0200 deliberately does not patch it.)*
 - **`payments.record_settlement_payout_return(p_tenant uuid, p_store uuid, p_principal uuid, p_statement uuid, p_return_ref text,
   p_returned_minor bigint, p_returned_at timestamptz, p_operator text, p_ticket text) RETURNS timestamptz`**. `SECURITY DEFINER`. Owner
   `commerce_payment_registry_writer`. EXECUTE to `commerce_payment_registrar` only. Steps, in order:
@@ -754,7 +759,10 @@ Each gate names one mutation that **must** turn it red. SA-3 runs it once and ke
 **PF16 payout return.** Setup: one store, two consecutive weekly periods W1 and W2. W1 closes with one CHARGE line,
 `store_minor = 130000`, `fee_store_minor = −5000`:
 `net(W1) = 130000 − 0 − 0 + (−5000) − 0 + 0 + 0 = 125000`.
-Payout recorded: `payout_minor = 125000`, `paid_at = T`.
+Payout recorded: `payout_minor = 125000`, `paid_at = T`, where **T is fixed at W2's Monday 12:00 +08:00** (not `now`: with
+`T = now`, vector d's `returned_at = T + 1 d` lies in the future and is refused 22023). W1, W2 and W3 are past weeks old enough to close
+(+72 h). Precondition: every period that is closed (W1, W2, W3) has clean sync coverage (§6.8); otherwise close raises `sync_required` /
+`sync_unreconciled` and the vectors test the gate, not the return. *(SA-1 correction 2026-10-27, review P2-1.)*
 
 | # | Input | Expected |
 | --- | --- | --- |
@@ -769,8 +777,11 @@ Payout recorded: `payout_minor = 125000`, `paid_at = T`.
 | i | merchant read of W1 and W2 | W1 `payout_returned=true`, `payout_returned_at` present; W2 `returned_in_minor=125000` (= 173200 − 48200 without it); no `return_ref`/`ticket` key anywhere in the JSON |
 | j | owner-pool UPDATE of `returned_minor`, DELETE of the return row | PT409 `settlement_return_immutable` both |
 
-Mutation that must turn PF16 red: drop the `carried_into_statement_id IS NULL` filter from the close patch. Then W3 gets
-`returned_in_minor = 125000` (vector h fails).
+Mutation that must turn PF16 red: drop the `carried_into_statement_id IS NULL` filter from the close patch. Vector h then fails at
+the W3 close, which **raises** instead of returning `returned_in_minor = 125000`: dropped from both the sum (CS5) and the carry update
+(CS8), the set-once trigger raises PT409 `settlement_return_immutable`; dropped from the sum only, the row-count check raises PT409
+`settlement_changed`. Either error is the red. *(SA-1 correction 2026-10-27, review P2-2: the frozen text named a W3 value that the
+implementation can never produce.)*
 
 **PF17 sync reconciliation.** SANDBOX, platform scope, settlement currency HKD. Use this concrete week and its indispensable
 complement (every bound is whole seconds, with the given Asia/Taipei offset):
@@ -862,7 +873,7 @@ Mutation that must turn PF18 red: drop `payout_ref IS NULL` from the filter. The
 | `merchant_terms` | Merchant terms text `terms_version` exists and is published (OQ-4). |
 | `tax_invoice` | The owner has decided who issues the Taiwan e-invoice (統一發票) for platform-collected sales, and how (OQ-5). |
 | `payout_ops` | `payouts_enabled=true` (PF-F1; already enforced by LD8 readiness), and the owner has a bank route to pay TWD to Taiwan merchants (OQ-6). |
-| `tw_legal_opinion` (SA-0, 2026-10-26) | The owner holds a written opinion from a lawyer admitted in Taiwan. It states whether the platform model is 代理收付實質交易款項 under the 電子支付機構管理條例 (Art. 3, small-amount exception Art. 5), which registration the 洗錢防制法 Art. 6 third-party-payment rule requires, and how collected funds are held (trust account or bank performance guarantee). The opinion reference goes into the `approval_ref` message. Added to the `live-approve` checklist by SA-1 (`PlatformChecklist`, and the 0137 checklist array patched in place in migration 0200). |
+| `tw_legal_opinion` (SA-0, 2026-10-26; basis widened by SA-1 2026-10-27, see below) | The owner holds a written opinion from a lawyer admitted in Taiwan, **or** has signed a written risk acceptance (its date and scope go into the `approval_ref` message; see `output/launch-review-20261026/LAUNCH-REVIEW.md` §6, owner ruling 2026-10-26). An opinion states whether the platform model is 代理收付實質交易款項 under the 電子支付機構管理條例 (Art. 3, small-amount exception Art. 5), which registration the 洗錢防制法 Art. 6 third-party-payment rule requires, and how collected funds are held (trust account or bank performance guarantee). The opinion or risk-acceptance reference goes into the `approval_ref` message. Either way the owner attests the code personally at `live-approve`; the code is never implied. Added to the `live-approve` checklist by SA-1 (`PlatformChecklist`, and both 0137 checklist arrays — `approve_stripe_live` and `set_stripe_platform_open` — patched in place in migration 0200). An approval stored before 0200 (15 codes) no longer opens LIVE: the owner re-attests. |
 
 The canary (stripe-live-enable §10) runs on the platform store in **TWD**. `set_stripe_platform_open(true)` is refused
 until the canary is verified. SANDBOX staging opens without those codes, since there is no approval in SANDBOX.
@@ -900,6 +911,10 @@ the row by hand stays a red-line action requiring owner approval; the resolve st
   `payout`-type rows stay `unsupported_type` unattributed rows (PF10).
 - **Reconciliation grandfathering (§6.8).** Pre-0200 runs start clean but lose coverage wherever a newer observation supersedes them;
   they never override a known later discrepancy. Historical runs and comparison rows remain immutable.
+- **Deploy order for 0200 (SA-1).** Run `cmd/migrate` (0200) first, then replace the runtime and the stripe-admin (ops) image together.
+  In between, the old runtime refuses merchant settlement reads (its strict decoder rejects the three new DTO keys → `ErrUnavailable`, the
+  settlement page is briefly unavailable) and the old stripe-admin fails its exact-signature authority check (the nine-argument
+  `record_settlement_lines` is dropped) and refuses to run. Both fail closed; no wrong ledger row or statement is written.
 - **Third-party stores in LIVE stay closed (AD-PF2.1)** until the owner attests every §8 code, `tw_legal_opinion` included, and
   allowlists the store himself.
 - **`assigned_to_store` does not move money in v1** (§6.6): the resolution is recorded and printed as an operator

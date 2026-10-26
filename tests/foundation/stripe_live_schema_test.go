@@ -910,8 +910,8 @@ func slsUpgrade(t *testing.T) {
 // slsSettlementDelta recognises exactly the privileges migration 0150 (W4-S2 settlement ledger) adds, per role (Opus review P2-6: no wildcard):
 //   - commerce_payment_registry_writer: any privilege on its own settlement tables/functions/triggers, and SELECT on exactly the existing-table
 //     columns the attribution reads use (stripe_sessions six columns, stripe_refunds four, payment_attempts.order_id);
-//   - commerce_payment_registrar: EXECUTE on the five operator functions only (0163 adds record_settlement_resolution; 0200 adds
-//     record_settlement_payout_return and read_settlement_payables);
+//   - commerce_payment_registrar: EXECUTE on the seven operator functions only (five from 0150/0163, of which 0163 adds
+//     record_settlement_resolution; 0200 adds record_settlement_payout_return and read_settlement_payables);
 //   - commerce_runtime: EXECUTE on read_store_settlements only.
 //
 // Nobody else (checkout writer, workers, ingress) gains anything. The same sets are pinned from the 0150 side by TestPlatformSettlement/PF09_schema.

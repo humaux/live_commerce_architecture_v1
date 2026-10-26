@@ -44,6 +44,10 @@ one `up -d` for the active services → smoke/readback. It does **not** separate
 The rollback point is that automatic database dump plus the pre-upgrade `/etc/live-commerce` tarball. Product-media-v2
 migration 0149 forbids mixing old admin/API with the migrated DB or a new storefront with the old schema; stopping all
 old processes before migration and `up -d` provides the swap barrier. Migration 0159 precedes the new workers/API.
+Migration 0200 (settlement returns, contract stripe-platform-account-v1 §9) likewise runs first; then the runtime (`api`) and
+the `stripe-admin` ops image are replaced together. An old runtime left on the migrated DB refuses merchant settlement reads
+(settlements page briefly unavailable) and an old `stripe-admin` fails its authority check and refuses to run: both fail
+closed and write no wrong ledger row.
 Application rollback is permitted only when the saved migration-ledger count matches; otherwise use a forward fix or
 a separately owner-approved tested restore. This unit executes none of these host operations.
 

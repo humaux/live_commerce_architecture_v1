@@ -7,7 +7,7 @@
 --   Nothing here calls a bank, Stripe payout, transfer or refund API: a return is a fact the owner already saw at the bank (S-I4).
 -- Depends on: 0150 (statements, lines, unattributed, sync runs, record_settlement_lines, close_settlement, settlement_statement_json and the
 --   scope/advisory-lock/policy patterns), 0163 (resolution patches that this migration keeps by patching IN PLACE), 0137 (stripe_platform),
---   0061 (require_stripe_registrar_scope), ops.audit_events.
+--   0061 (require_stripe_registrar_scope), 0077/0137 (approve_stripe_live, set_stripe_platform_open checklist arrays), ops.audit_events.
 -- Used by: internal/payments/stripeadmin (settlement.go), internal/payments/settlement (merchant DTO, CSV), cmd/stripe-admin
 --   settlement-payout-return | settlement-payables | settlement-sync, deploy/scripts/ops-admin.sh (allowlist), tests/foundation
 --   (settlement_returns_test.go PF16-PF18 smoke, platform_settlement_test.go ACL pins, SA-3 gate).
@@ -16,8 +16,12 @@
 -- Migration rules: forward-only, one transaction. Existing functions are patched IN PLACE with the pg_get_functiondef/prosrc + replace idiom
 --   (0163): each anchor must match exactly once or the migration raises and nothing is applied. record_settlement_lines changes signature (one more
 --   argument), so the ten-argument identity is created from the patched definition and the nine-argument identity is DROPPED in this same
---   transaction: no wrapper, no retained grant. guard_settlement_statement needs no patch: it compares every column except the payout
---   quadruple, so returned_in_minor is immutable like every other amount column.
+--   transaction: no wrapper, no retained grant. guard_settlement_statement needs no patch: its row-wide comparison (0150:203-208,
+--   to_jsonb(NEW) minus the payout quadruple) already covers returned_in_minor, so it is immutable like every other amount column (§6.7).
+--   Section 9 adds the §8 code tw_legal_opinion to the two 0137 checklist arrays (approve_stripe_live, set_stripe_platform_open).
+-- Deploy order (§9): run cmd/migrate (0200) first, then replace the runtime and stripe-admin together. Until replaced, the old runtime
+--   refuses merchant settlement reads (unknown DTO keys -> ErrUnavailable) and the old stripe-admin fails its exact-signature authority
+--   check (nine-argument record_settlement_lines is dropped): both fail closed, no wrong ledger row is written.
 -- Status: REAL_PG + MOCK only. No Stripe call.
 
 -- ---------------------------------------------------------------------------------------------------------
@@ -504,3 +508,26 @@ REVOKE ALL ON FUNCTION payments.read_settlement_payables(uuid,uuid,uuid,text,int
 GRANT EXECUTE ON FUNCTION payments.read_settlement_payables(uuid,uuid,uuid,text,integer) TO commerce_payment_registrar;
 COMMENT ON FUNCTION payments.read_settlement_payables(uuid,uuid,uuid,text,integer) IS
  'payments owner (SA-1, contract §6.9); operator definer (stripe-admin settlement-payables, registrar only, platform store scope): READ ONLY (no audit row, no lock): the environment''s statements with net_payable_minor > 0 and no payout recorded, oldest closed first, at most p_limit (1..200), truncated=true when more exist; each entry is statement_id, tenant_id, store_id, period_start, currency, net_payable_minor, closed_at (no PII, no Stripe id, no bank data). A statement whose payout bounced keeps its payout triple and is paid through the statement that carries it. Moves no money';
+
+-- ---------------------------------------------------------------------------------------------------------
+-- 9. §8 tw_legal_opinion: the two 0137 checklist arrays, patched IN PLACE (same signatures, owners and grants)
+--    approve_stripe_live accepts the base 11 codes or the platform 16 (was 15); set_stripe_platform_open on LIVE requires all five
+--    platform codes. An approval stored before 0200 with the old 15 codes no longer opens LIVE: the owner re-attests (§8).
+-- ---------------------------------------------------------------------------------------------------------
+DO $do$
+DECLARE v_fn text; v_needle text;
+BEGIN
+ v_fn := pg_get_functiondef('payments.approve_stripe_live(uuid,uuid,uuid,uuid,uuid,text,text,timestamptz,bigint,bigint,text[],jsonb)'::regprocedure);
+ v_needle := $n$'platform_stripe_terms','tax_invoice']) c ORDER BY c COLLATE "C");$n$;
+ IF (length(v_fn)-length(replace(v_fn,v_needle,'')))<>length(v_needle) THEN
+  RAISE EXCEPTION 'payments.approve_stripe_live has an unexpected shape for the 0200 checklist patch'; END IF;
+ EXECUTE replace(v_fn,v_needle,$r$'platform_stripe_terms','tax_invoice','tw_legal_opinion']) c ORDER BY c COLLATE "C");$r$);
+
+ v_fn := pg_get_functiondef('payments.set_stripe_platform_open(uuid,uuid,uuid,text,boolean,integer,bigint)'::regprocedure);
+ v_needle := $n$ap.checklist @> ARRAY['merchant_terms','payout_ops','platform_stripe_terms','tax_invoice']::text[]$n$;
+ IF (length(v_fn)-length(replace(v_fn,v_needle,'')))<>length(v_needle) THEN
+  RAISE EXCEPTION 'payments.set_stripe_platform_open has an unexpected shape for the 0200 checklist patch'; END IF;
+ EXECUTE replace(v_fn,v_needle,$r$ap.checklist @> ARRAY['merchant_terms','payout_ops','platform_stripe_terms','tax_invoice','tw_legal_opinion']::text[]$r$);
+END $do$;
+ALTER FUNCTION payments.approve_stripe_live(uuid,uuid,uuid,uuid,uuid,text,text,timestamptz,bigint,bigint,text[],jsonb) OWNER TO commerce_payment_registry_writer;
+ALTER FUNCTION payments.set_stripe_platform_open(uuid,uuid,uuid,text,boolean,integer,bigint) OWNER TO commerce_payment_registry_writer;

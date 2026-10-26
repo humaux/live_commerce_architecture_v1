@@ -1486,7 +1486,7 @@
     },
     "plan": "docs/delivery/units/settlement-api-plan.md",
     "note": "routes.ts 只改 settlements 条目的 nav；用冻结 DTO fixture 并行开发，真实端到端等 SA-1 合并后再跑",
-    "acceptance": "tests/admin/settlements.spec.ts STL1–STL7（真实点击，含 WebKit 与 390px）；admin typecheck；点击台账",
+    "acceptance": "tests/admin/settlements.spec.ts STL1–STL7（真实点击，含 WebKit 与 390px）；admin typecheck；点击台账；渲染 returned_in 列，各列之和等于 net；payout_returned ⇒ paid && payout_returned_at（来源：PR #198 DeepSeek P2 与 Opus P2-5，integrator 批准的跨卡文字修改 2026-10-27）",
     "gate_semantics": "本任务贡献相应门禁的切片；全局门禁最终独立运行。外部资格阻塞不阻止明确标记mock的下游本地开发。"
   },
   {
