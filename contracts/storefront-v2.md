@@ -1,5 +1,7 @@
 # Storefront v2 — independent-store baseline (R4)
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q5, OC-Q9, OC-Q10, OC-Q11, OC-Q18); ADR-20261026.
+
 Status: FROZEN 2026-10-01 by the integrator for R4 wave 1. Producers implement exactly these shapes; the
 consumer (unit storefront-shell, wave 2) codes against them. Changes need an integrator amendment here.
 Why: owner correction 2026-10-01 — the product must be a qualified independent-store SaaS (SHOPLINE parity
@@ -115,6 +117,8 @@ Admin routes (store:write — use the narrowest existing permission the settings
 `POST design/rollback {version}`, `POST design/preview-token`, store-media upload/list/delete.
 
 ## C. Checkout additions (producer: unit checkout-offline, migration 0088)
+
+> **Superseded for new orders (ADR-20261026 OC-Q1, `owner-choices-20261026-v1.md`).** `bank_transfer` is no longer offered for new orders and merchants can no longer save bank details; the text below describes the behaviour of orders already `AWAITING_TRANSFER`, which run to their terminal state.
 
 - Payment mode `bank_transfer` for home delivery (and CVS pickup when the merchant enables it):
   merchant configures bank name, branch, account name, account number (shown to buyers only on their

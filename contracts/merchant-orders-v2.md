@@ -1,5 +1,7 @@
 # Orders v2 — read-only R5 A3
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q1, OC-Q21); ADR-20261026.
+
 Scope: additive `GET /v1/admin/stores/{store}/orders?view=v2` (same scoped BFF),
 and read-only `POST /v1/admin/stores/{store}/orders/search?view=v2` for private search.
 The unversioned list and detail remain v1. No money, inventory, shipment or state

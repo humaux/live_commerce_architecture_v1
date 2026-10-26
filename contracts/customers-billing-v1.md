@@ -1,5 +1,7 @@
 # Customers, privacy and platform billing v1 — T14 + T17 + their T18 screens (R2)
 
+> Amended 2026-10-26 by `owner-choices-20261026-v1.md` (OC-Q22); ADR-20261026.
+
 Status: **v1 FROZEN 2026-09-30 (DESIGN; gates NOT_RUN)**. Round-1 review (`output/contract-review/r2-design-wave.json`,
 key `customers-billing`, verdict BLOCK, 6 P1 + 7 P2), the round-2 cross-contract P1 (consent gate vs
 meta-ads-v1 AD8/A-3) and the round-3 P1 + P2s (`output/contract-review/r2-round3.json`) are closed in place;
