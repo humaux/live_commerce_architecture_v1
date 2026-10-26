@@ -1171,7 +1171,8 @@
     "write_paths": [
       "apps/admin/operations/**",
       "tests/admin/*.spec.ts",
-      "tests/admin/fixtures/**"
+      "tests/admin/fixtures/**",
+      "tests/admin/baselines/**"
     ],
     "status": "IN_PROGRESS",
     "done_requires": "实现+指定测试+独立复核+证据路径；不可自写PASS",
