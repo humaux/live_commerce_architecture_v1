@@ -85,7 +85,7 @@ func TestSettlementCloseExportPayoutReadNoStripeOrLiveVariable(t *testing.T) {
 		"settlement-export " + ids + " --statement " + slStmt + " --out /tmp/stripe-admin-never-written.csv" + slOp,
 		"settlement-payout " + ids + " --statement " + slStmt + " --payout-ref BANK-REF-1 --amount 100 --paid-at 2026-10-01T10:00:00Z" + slOp,
 		"settlement-payout-return " + ids + " --statement " + slStmt + " --return-ref BANKRET-1 --amount 100 --returned-at 2026-10-02T00:00:00Z" + slOp,
-		"settlement-payables " + ids + " --environment LIVE --limit 10",
+		"settlement-payables " + ids + " --environment LIVE --limit 10" + slOp,
 		// S2-OPEN-1: resolve is SQL-only like close; even --environment LIVE must not touch the pair or a keyring
 		"settlement-resolve " + ids + " --environment LIVE --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee" + slOp,
 	} {
