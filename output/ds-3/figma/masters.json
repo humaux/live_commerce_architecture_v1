@@ -1,0 +1,3113 @@
+[
+ {
+  "id": "4:12737",
+  "name": "Nav Item",
+  "type": "COMPONENT_SET",
+  "w": 520,
+  "h": 600,
+  "fill": [],
+  "r": 5,
+  "c": [
+   {
+    "id": "4:12733",
+    "name": "Item=overview, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 0,
+    "c": [
+     {
+      "id": "4:12734",
+      "name": "總覽",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "總覽",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "4:12735",
+    "name": "Item=overview, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 0,
+    "c": [
+     {
+      "id": "4:12736",
+      "name": "總覽",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "總覽",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79821",
+    "name": "Item=orders, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 60,
+    "c": [
+     {
+      "id": "1394:79822",
+      "name": "訂單與出貨",
+      "type": "TEXT",
+      "w": 70,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "訂單與出貨",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79823",
+    "name": "Item=orders, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 60,
+    "c": [
+     {
+      "id": "1394:79824",
+      "name": "訂單與出貨",
+      "type": "TEXT",
+      "w": 70,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "訂單與出貨",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79825",
+    "name": "Item=live, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 120,
+    "c": [
+     {
+      "id": "1394:79826",
+      "name": "直播",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "直播",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79827",
+    "name": "Item=live, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 120,
+    "c": [
+     {
+      "id": "1394:79828",
+      "name": "直播",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "直播",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79829",
+    "name": "Item=catalog, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 180,
+    "c": [
+     {
+      "id": "1394:79830",
+      "name": "商品與庫存",
+      "type": "TEXT",
+      "w": 70,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "商品與庫存",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79831",
+    "name": "Item=catalog, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 180,
+    "c": [
+     {
+      "id": "1394:79832",
+      "name": "商品與庫存",
+      "type": "TEXT",
+      "w": 70,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "商品與庫存",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79833",
+    "name": "Item=messages, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 240,
+    "c": [
+     {
+      "id": "1394:79834",
+      "name": "訊息中心",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "訊息中心",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79835",
+    "name": "Item=messages, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 240,
+    "c": [
+     {
+      "id": "1394:79836",
+      "name": "訊息中心",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "訊息中心",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79837",
+    "name": "Item=customers, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 300,
+    "c": [
+     {
+      "id": "1394:79838",
+      "name": "顧客",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "顧客",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79839",
+    "name": "Item=customers, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 300,
+    "c": [
+     {
+      "id": "1394:79840",
+      "name": "顧客",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "顧客",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79841",
+    "name": "Item=marketing, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 360,
+    "c": [
+     {
+      "id": "1394:79842",
+      "name": "行銷優惠",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "行銷優惠",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79843",
+    "name": "Item=marketing, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 360,
+    "c": [
+     {
+      "id": "1394:79844",
+      "name": "行銷優惠",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "行銷優惠",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79845",
+    "name": "Item=storefront, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 420,
+    "c": [
+     {
+      "id": "1394:79846",
+      "name": "網路商店",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "網路商店",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79847",
+    "name": "Item=storefront, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 420,
+    "c": [
+     {
+      "id": "1394:79848",
+      "name": "網路商店",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "網路商店",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79849",
+    "name": "Item=finance, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 480,
+    "c": [
+     {
+      "id": "1394:79850",
+      "name": "收款與報表",
+      "type": "TEXT",
+      "w": 70,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "收款與報表",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79851",
+    "name": "Item=finance, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 480,
+    "c": [
+     {
+      "id": "1394:79852",
+      "name": "收款與報表",
+      "type": "TEXT",
+      "w": 70,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "收款與報表",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79853",
+    "name": "Item=settings, State=Default",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 540,
+    "c": [
+     {
+      "id": "1394:79854",
+      "name": "設定",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#6b7280"
+      ],
+      "chars": "設定",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:79855",
+    "name": "Item=settings, State=Active",
+    "type": "COMPONENT",
+    "w": 216,
+    "h": 44,
+    "fill": [
+     "#eef2f7"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     42
+    ],
+    "gap": 0,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 260,
+    "y": 540,
+    "c": [
+     {
+      "id": "1394:79856",
+      "name": "設定",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "設定",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "4:12718",
+  "name": "Button",
+  "type": "COMPONENT_SET",
+  "w": 748,
+  "h": 96,
+  "fill": [],
+  "r": 5,
+  "c": [
+   {
+    "id": "4:12712",
+    "name": "Kind=Primary, State=Default",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [
+     "#142942"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 0,
+    "c": [
+     {
+      "id": "4:12713",
+      "name": "開始直播",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#ffffff"
+      ],
+      "chars": "開始直播",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "4:12714",
+    "name": "Kind=Secondary, State=Default",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "stroke": [
+     "#e5e7eb"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 152,
+    "y": 0,
+    "c": [
+     {
+      "id": "4:12715",
+      "name": "匯出",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "匯出",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 56,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "4:12716",
+    "name": "Kind=Ghost, State=Default",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "stroke": [
+     "#e5e7eb"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 304,
+    "y": 0,
+    "c": [
+     {
+      "id": "4:12717",
+      "name": "查看詳情",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#0f766e"
+      ],
+      "chars": "查看詳情",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:103516",
+    "name": "Kind=Danger, State=Default",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "stroke": [
+     "#b42318"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 456,
+    "y": 0,
+    "c": [
+     {
+      "id": "1394:103517",
+      "name": "刪除",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#b42318"
+      ],
+      "chars": "刪除",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 56,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:103518",
+    "name": "Kind=Text, State=Default",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 608,
+    "y": 0,
+    "c": [
+     {
+      "id": "1394:103519",
+      "name": "查看詳情",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#0f766e"
+      ],
+      "chars": "查看詳情",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:103520",
+    "name": "Kind=Primary, State=Disabled",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [
+     "#f5f6f8"
+    ],
+    "stroke": [
+     "#e5e7eb"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 52,
+    "c": [
+     {
+      "id": "1394:103521",
+      "name": "開始直播",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#566171"
+      ],
+      "chars": "開始直播",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:103522",
+    "name": "Kind=Secondary, State=Disabled",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [
+     "#f5f6f8"
+    ],
+    "stroke": [
+     "#e5e7eb"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 152,
+    "y": 52,
+    "c": [
+     {
+      "id": "1394:103523",
+      "name": "匯出",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#566171"
+      ],
+      "chars": "匯出",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 56,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:103524",
+    "name": "Kind=Ghost, State=Disabled",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [
+     "#f5f6f8"
+    ],
+    "stroke": [
+     "#e5e7eb"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 304,
+    "y": 52,
+    "c": [
+     {
+      "id": "1394:103525",
+      "name": "查看詳情",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#566171"
+      ],
+      "chars": "查看詳情",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:103526",
+    "name": "Kind=Danger, State=Disabled",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [
+     "#f5f6f8"
+    ],
+    "stroke": [
+     "#e5e7eb"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 456,
+    "y": 52,
+    "c": [
+     {
+      "id": "1394:103527",
+      "name": "刪除",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#566171"
+      ],
+      "chars": "刪除",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 56,
+      "y": 11
+     }
+    ]
+   },
+   {
+    "id": "1394:103528",
+    "name": "Kind=Text, State=Disabled",
+    "type": "COMPONENT",
+    "w": 140,
+    "h": 44,
+    "fill": [
+     "#f5f6f8"
+    ],
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 608,
+    "y": 52,
+    "c": [
+     {
+      "id": "1394:103529",
+      "name": "查看詳情",
+      "type": "TEXT",
+      "w": 56,
+      "h": 22,
+      "fill": [
+       "#566171"
+      ],
+      "chars": "查看詳情",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 42,
+      "y": 11
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "1397:105152",
+  "name": "Shell / Language switch",
+  "type": "COMPONENT",
+  "w": 64,
+  "h": 44,
+  "fill": [],
+  "r": 0,
+  "c": [
+   {
+    "id": "1397:105153",
+    "name": "Language switch",
+    "type": "INSTANCE",
+    "w": 64,
+    "h": 44,
+    "fill": [
+     "#ffffff"
+    ],
+    "stroke": [
+     "#e5e7eb"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 6,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     14,
+     0,
+     14
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 0,
+    "y": 0,
+    "c": [
+     {
+      "id": "I1397:105153;4:12715",
+      "name": "匯出",
+      "type": "TEXT",
+      "w": 28,
+      "h": 22,
+      "fill": [
+       "#142942"
+      ],
+      "chars": "繁中",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 22
+      },
+      "x": 18,
+      "y": 11
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "1397:105155",
+  "name": "Page Header",
+  "type": "COMPONENT",
+  "w": 1200,
+  "h": 64,
+  "fill": [
+   "#ffffff"
+  ],
+  "r": 0,
+  "c": [
+   {
+    "id": "1397:105156",
+    "name": "Breadcrumb",
+    "type": "FRAME",
+    "w": 182,
+    "h": 21,
+    "fill": [],
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "gap": 4,
+    "align": [
+     "MIN",
+     "MIN"
+    ],
+    "x": 24,
+    "y": 21,
+    "c": [
+     {
+      "id": "1397:105157",
+      "name": "Crumb 1",
+      "type": "TEXT",
+      "w": 28,
+      "h": 21,
+      "fill": [
+       "#596579"
+      ],
+      "chars": "總覽",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 21
+      },
+      "x": 0,
+      "y": 0
+     },
+     {
+      "id": "1397:105158",
+      "name": "Separator 1",
+      "type": "TEXT",
+      "w": 6,
+      "h": 21,
+      "fill": [
+       "#596579"
+      ],
+      "chars": "/",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 21
+      },
+      "x": 32,
+      "y": 0
+     },
+     {
+      "id": "1397:105159",
+      "name": "Crumb 2",
+      "type": "TEXT",
+      "w": 70,
+      "h": 21,
+      "fill": [
+       "#596579"
+      ],
+      "chars": "收款與報表",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 21
+      },
+      "x": 42,
+      "y": 0
+     },
+     {
+      "id": "1397:105160",
+      "name": "Separator 2",
+      "type": "TEXT",
+      "w": 6,
+      "h": 21,
+      "fill": [
+       "#596579"
+      ],
+      "chars": "/",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 21
+      },
+      "x": 116,
+      "y": 0
+     },
+     {
+      "id": "1397:105161",
+      "name": "Crumb 3",
+      "type": "TEXT",
+      "w": 56,
+      "h": 21,
+      "fill": [
+       "#596579"
+      ],
+      "chars": "財務總覽",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PIXELS",
+       "value": 21
+      },
+      "x": 126,
+      "y": 0
+     }
+    ]
+   },
+   {
+    "id": "1397:105162",
+    "name": "Shell / Language switch",
+    "type": "INSTANCE",
+    "w": 64,
+    "h": 44,
+    "fill": [],
+    "r": 0,
+    "x": 1112,
+    "y": 10,
+    "c": [
+     {
+      "id": "I1397:105162;1397:105153",
+      "name": "Language switch",
+      "type": "INSTANCE",
+      "w": 64,
+      "h": 44,
+      "fill": [
+       "#ffffff"
+      ],
+      "stroke": [
+       "#e5e7eb"
+      ],
+      "sw": 1,
+      "salign": "INSIDE",
+      "r": 6,
+      "lay": "HORIZONTAL",
+      "pad": [
+       0,
+       14,
+       0,
+       14
+      ],
+      "gap": 0,
+      "align": [
+       "CENTER",
+       "CENTER"
+      ],
+      "x": 0,
+      "y": 0,
+      "c": [
+       {
+        "id": "I1397:105162;1397:105153;4:12715",
+        "name": "匯出",
+        "type": "TEXT",
+        "w": 28,
+        "h": 22,
+        "fill": [
+         "#142942"
+        ],
+        "chars": "繁中",
+        "font": "Noto Sans SC Medium",
+        "size": 14,
+        "lh": {
+         "unit": "PIXELS",
+         "value": 22
+        },
+        "x": 18,
+        "y": 11
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "1401:38432",
+  "name": "Tag",
+  "type": "COMPONENT_SET",
+  "w": 760,
+  "h": 70,
+  "fill": [],
+  "r": 5,
+  "lay": "HORIZONTAL",
+  "pad": [
+   24,
+   24,
+   24,
+   24
+  ],
+  "gap": 16,
+  "align": [
+   "MIN",
+   "MIN"
+  ],
+  "c": [
+   {
+    "id": "1401:38422",
+    "name": "Tone=neutral",
+    "type": "COMPONENT",
+    "w": 40,
+    "h": 22,
+    "fill": [
+     "#edf0f3"
+    ],
+    "r": 999,
+    "lay": "HORIZONTAL",
+    "pad": [
+     2,
+     8,
+     2,
+     8
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 24,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38423",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 24,
+      "h": 18,
+      "fill": [
+       "#3f4753"
+      ],
+      "chars": "中性",
+      "font": "Noto Sans SC Regular",
+      "size": 12,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 8,
+      "y": 2
+     }
+    ]
+   },
+   {
+    "id": "1401:38424",
+    "name": "Tone=success",
+    "type": "COMPONENT",
+    "w": 40,
+    "h": 22,
+    "fill": [
+     "#e6f3ec"
+    ],
+    "r": 999,
+    "lay": "HORIZONTAL",
+    "pad": [
+     2,
+     8,
+     2,
+     8
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 80,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38425",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 24,
+      "h": 18,
+      "fill": [
+       "#2f6f55"
+      ],
+      "chars": "成功",
+      "font": "Noto Sans SC Regular",
+      "size": 12,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 8,
+      "y": 2
+     }
+    ]
+   },
+   {
+    "id": "1401:38426",
+    "name": "Tone=warning",
+    "type": "COMPONENT",
+    "w": 40,
+    "h": 22,
+    "fill": [
+     "#fae2a9"
+    ],
+    "r": 999,
+    "lay": "HORIZONTAL",
+    "pad": [
+     2,
+     8,
+     2,
+     8
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 136,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38427",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 24,
+      "h": 18,
+      "fill": [
+       "#5c4300"
+      ],
+      "chars": "注意",
+      "font": "Noto Sans SC Regular",
+      "size": 12,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 8,
+      "y": 2
+     }
+    ]
+   },
+   {
+    "id": "1401:38428",
+    "name": "Tone=danger",
+    "type": "COMPONENT",
+    "w": 40,
+    "h": 22,
+    "fill": [
+     "#fdebe9"
+    ],
+    "r": 999,
+    "lay": "HORIZONTAL",
+    "pad": [
+     2,
+     8,
+     2,
+     8
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 192,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38429",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 24,
+      "h": 18,
+      "fill": [
+       "#b42318"
+      ],
+      "chars": "危險",
+      "font": "Noto Sans SC Regular",
+      "size": 12,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 8,
+      "y": 2
+     }
+    ]
+   },
+   {
+    "id": "1401:38430",
+    "name": "Tone=info",
+    "type": "COMPONENT",
+    "w": 40,
+    "h": 22,
+    "fill": [
+     "#eaf0fc"
+    ],
+    "r": 999,
+    "lay": "HORIZONTAL",
+    "pad": [
+     2,
+     8,
+     2,
+     8
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 248,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38431",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 24,
+      "h": 18,
+      "fill": [
+       "#1d4ed8"
+      ],
+      "chars": "資訊",
+      "font": "Noto Sans SC Regular",
+      "size": 12,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 8,
+      "y": 2
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "1401:38449",
+  "name": "Segmented",
+  "type": "COMPONENT_SET",
+  "w": 760,
+  "h": 84,
+  "fill": [],
+  "r": 5,
+  "lay": "HORIZONTAL",
+  "pad": [
+   24,
+   24,
+   24,
+   24
+  ],
+  "gap": 16,
+  "align": [
+   "MIN",
+   "MIN"
+  ],
+  "c": [
+   {
+    "id": "1401:38433",
+    "name": "Kind=Switch-On, State=Selected",
+    "type": "COMPONENT",
+    "w": 44,
+    "h": 36,
+    "fill": [
+     "#3f7f32"
+    ],
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     12,
+     0,
+     12
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 24,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38434",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 14,
+      "h": 21,
+      "fill": [
+       "#ffffff"
+      ],
+      "chars": "是",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 15,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:38435",
+    "name": "Kind=Switch-On, State=Idle",
+    "type": "COMPONENT",
+    "w": 44,
+    "h": 36,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     12,
+     0,
+     12
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 84,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38436",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 14,
+      "h": 21,
+      "fill": [
+       "#5b5b5b"
+      ],
+      "chars": "是",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 15,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:38437",
+    "name": "Kind=Switch-Off, State=Selected",
+    "type": "COMPONENT",
+    "w": 44,
+    "h": 36,
+    "fill": [
+     "#5b5b5b"
+    ],
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     12,
+     0,
+     12
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 144,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38438",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 14,
+      "h": 21,
+      "fill": [
+       "#ffffff"
+      ],
+      "chars": "否",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 15,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:38439",
+    "name": "Kind=Switch-Off, State=Idle",
+    "type": "COMPONENT",
+    "w": 44,
+    "h": 36,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     12,
+     0,
+     12
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 204,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38440",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 14,
+      "h": 21,
+      "fill": [
+       "#5b5b5b"
+      ],
+      "chars": "否",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 15,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:38441",
+    "name": "Kind=Underline, State=Selected",
+    "type": "COMPONENT",
+    "w": 60,
+    "h": 36,
+    "fill": [],
+    "stroke": [
+     "#2a6fb0"
+    ],
+    "sw": [
+     0,
+     0,
+     2,
+     0
+    ],
+    "salign": "INSIDE",
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     16,
+     0,
+     16
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 264,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38442",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 28,
+      "h": 21,
+      "fill": [
+       "#2a6fb0"
+      ],
+      "chars": "頁籤",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 16,
+      "y": 6.5
+     }
+    ]
+   },
+   {
+    "id": "1401:38443",
+    "name": "Kind=Underline, State=Idle",
+    "type": "COMPONENT",
+    "w": 60,
+    "h": 36,
+    "fill": [],
+    "stroke": [
+     "#000000@0.00"
+    ],
+    "sw": [
+     0,
+     0,
+     2,
+     0
+    ],
+    "salign": "INSIDE",
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     16,
+     0,
+     16
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 340,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38444",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 28,
+      "h": 21,
+      "fill": [
+       "#5b5b5b"
+      ],
+      "chars": "頁籤",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 16,
+      "y": 6.5
+     }
+    ]
+   },
+   {
+    "id": "1401:38445",
+    "name": "Kind=Section, State=Selected",
+    "type": "COMPONENT",
+    "w": 60,
+    "h": 36,
+    "fill": [
+     "#ffffff"
+    ],
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     16,
+     0,
+     16
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 416,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38446",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 28,
+      "h": 21,
+      "fill": [
+       "#333333"
+      ],
+      "chars": "頁籤",
+      "font": "Noto Sans SC Medium",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 16,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:38447",
+    "name": "Kind=Section, State=Idle",
+    "type": "COMPONENT",
+    "w": 60,
+    "h": 36,
+    "fill": [
+     "#f3f3f3"
+    ],
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     16,
+     0,
+     16
+    ],
+    "gap": 4,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 492,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38448",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 28,
+      "h": 21,
+      "fill": [
+       "#5b5b5b"
+      ],
+      "chars": "頁籤",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 16,
+      "y": 7.5
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "1401:38456",
+  "name": "Input",
+  "type": "COMPONENT_SET",
+  "w": 760,
+  "h": 136,
+  "fill": [],
+  "r": 5,
+  "lay": "HORIZONTAL",
+  "pad": [
+   24,
+   24,
+   24,
+   24
+  ],
+  "gap": 16,
+  "align": [
+   "MIN",
+   "MIN"
+  ],
+  "c": [
+   {
+    "id": "1401:38450",
+    "name": "State=Placeholder",
+    "type": "COMPONENT",
+    "w": 240,
+    "h": 36,
+    "fill": [
+     "#ffffff"
+    ],
+    "stroke": [
+     "#8c8c8c"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     12,
+     0,
+     12
+    ],
+    "gap": 4,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 24,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38451",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 42,
+      "h": 21,
+      "fill": [
+       "#6b6b6b"
+      ],
+      "chars": "請輸入",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 13,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:38452",
+    "name": "State=Filled",
+    "type": "COMPONENT",
+    "w": 240,
+    "h": 36,
+    "fill": [
+     "#ffffff"
+    ],
+    "stroke": [
+     "#8c8c8c"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     12,
+     0,
+     12
+    ],
+    "gap": 4,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 280,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:38453",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 70,
+      "h": 21,
+      "fill": [
+       "#333333"
+      ],
+      "chars": "已填寫內容",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 13,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:38454",
+    "name": "State=Invalid",
+    "type": "COMPONENT",
+    "w": 240,
+    "h": 36,
+    "fill": [
+     "#ffffff"
+    ],
+    "stroke": [
+     "#b42318"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     12,
+     0,
+     12
+    ],
+    "gap": 4,
+    "align": [
+     "MIN",
+     "CENTER"
+    ],
+    "x": 24,
+    "y": 76,
+    "c": [
+     {
+      "id": "1401:38455",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 70,
+      "h": 21,
+      "fill": [
+       "#333333"
+      ],
+      "chars": "已填寫內容",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 13,
+      "y": 7.5
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "1401:58023",
+  "name": "Pagination",
+  "type": "COMPONENT_SET",
+  "w": 760,
+  "h": 84,
+  "fill": [],
+  "r": 5,
+  "lay": "HORIZONTAL",
+  "pad": [
+   24,
+   24,
+   24,
+   24
+  ],
+  "gap": 16,
+  "align": [
+   "MIN",
+   "MIN"
+  ],
+  "c": [
+   {
+    "id": "1401:57997",
+    "name": "Kind=Number, State=Default",
+    "type": "COMPONENT",
+    "w": 36,
+    "h": 36,
+    "fill": [],
+    "stroke": [
+     "#000000@0.00"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     8,
+     0,
+     8
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 24,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:57998",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 8,
+      "h": 21,
+      "fill": [
+       "#2a6fb0"
+      ],
+      "chars": "2",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 14,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:57999",
+    "name": "Kind=Number, State=Hover",
+    "type": "COMPONENT",
+    "w": 36,
+    "h": 36,
+    "fill": [
+     "#f3f3f3"
+    ],
+    "stroke": [
+     "#dddddd"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     8,
+     0,
+     8
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 76,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:58000",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 8,
+      "h": 21,
+      "fill": [
+       "#2a6fb0"
+      ],
+      "chars": "2",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 14,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:58001",
+    "name": "Kind=Number, State=Current",
+    "type": "COMPONENT",
+    "w": 36,
+    "h": 36,
+    "fill": [
+     "#2a6fb0"
+    ],
+    "stroke": [
+     "#2a6fb0"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     8,
+     0,
+     8
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 128,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:58002",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 9,
+      "h": 21,
+      "fill": [
+       "#ffffff"
+      ],
+      "chars": "1",
+      "font": "Noto Sans SC Bold",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 13.5,
+      "y": 7.5
+     }
+    ]
+   },
+   {
+    "id": "1401:58003",
+    "name": "Kind=Previous, State=Default",
+    "type": "COMPONENT",
+    "w": 36,
+    "h": 36,
+    "fill": [],
+    "stroke": [
+     "#000000@0.00"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     8,
+     0,
+     8
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 180,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:58005",
+      "name": "chevron 16",
+      "type": "FRAME",
+      "w": 16,
+      "h": 16,
+      "fill": [],
+      "r": 0,
+      "x": 10,
+      "y": 10,
+      "c": [
+       {
+        "id": "1401:58004",
+        "name": "Icon",
+        "type": "VECTOR",
+        "w": 4.5,
+        "h": 9,
+        "fill": [],
+        "stroke": [
+         "#2a6fb0"
+        ],
+        "sw": 1.5,
+        "salign": "CENTER",
+        "r": 0,
+        "x": 5.5,
+        "y": 3.5
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "1401:58006",
+    "name": "Kind=Previous, State=Hover",
+    "type": "COMPONENT",
+    "w": 36,
+    "h": 36,
+    "fill": [
+     "#f3f3f3"
+    ],
+    "stroke": [
+     "#dddddd"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     8,
+     0,
+     8
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 232,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:58008",
+      "name": "chevron 16",
+      "type": "FRAME",
+      "w": 16,
+      "h": 16,
+      "fill": [],
+      "r": 0,
+      "x": 10,
+      "y": 10,
+      "c": [
+       {
+        "id": "1401:58007",
+        "name": "Icon",
+        "type": "VECTOR",
+        "w": 4.5,
+        "h": 9,
+        "fill": [],
+        "stroke": [
+         "#2a6fb0"
+        ],
+        "sw": 1.5,
+        "salign": "CENTER",
+        "r": 0,
+        "x": 5.5,
+        "y": 3.5
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "1401:58009",
+    "name": "Kind=Previous, State=Disabled",
+    "type": "COMPONENT",
+    "w": 36,
+    "h": 36,
+    "fill": [],
+    "stroke": [
+     "#000000@0.00"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     8,
+     0,
+     8
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 284,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:58011",
+      "name": "chevron 16",
+      "type": "FRAME",
+      "w": 16,
+      "h": 16,
+      "fill": [],
+      "r": 0,
+      "x": 10,
+      "y": 10,
+      "c": [
+       {
+        "id": "1401:58010",
+        "name": "Icon",
+        "type": "VECTOR",
+        "w": 4.5,
+        "h": 9,
+        "fill": [],
+        "stroke": [
+         "#6b6b6b"
+        ],
+        "sw": 1.5,
+        "salign": "CENTER",
+        "r": 0,
+        "x": 5.5,
+        "y": 3.5
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "1401:58012",
+    "name": "Kind=Next, State=Default",
+    "type": "COMPONENT",
+    "w": 36,
+    "h": 36,
+    "fill": [],
+    "stroke": [
+     "#000000@0.00"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     8,
+     0,
+     8
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 336,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:58014",
+      "name": "chevron 16",
+      "type": "FRAME",
+      "w": 16,
+      "h": 16,
+      "fill": [],
+      "r": 0,
+      "x": 10,
+      "y": 10,
+      "c": [
+       {
+        "id": "1401:58013",
+        "name": "Icon",
+        "type": "VECTOR",
+        "w": 4.5,
+        "h": 9,
+        "fill": [],
+        "stroke": [
+         "#2a6fb0"
+        ],
+        "sw": 1.5,
+        "salign": "CENTER",
+        "r": 0,
+        "x": 6,
+        "y": 3.5
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "1401:58015",
+    "name": "Kind=Next, State=Hover",
+    "type": "COMPONENT",
+    "w": 36,
+    "h": 36,
+    "fill": [
+     "#f3f3f3"
+    ],
+    "stroke": [
+     "#dddddd"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     8,
+     0,
+     8
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 388,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:58017",
+      "name": "chevron 16",
+      "type": "FRAME",
+      "w": 16,
+      "h": 16,
+      "fill": [],
+      "r": 0,
+      "x": 10,
+      "y": 10,
+      "c": [
+       {
+        "id": "1401:58016",
+        "name": "Icon",
+        "type": "VECTOR",
+        "w": 4.5,
+        "h": 9,
+        "fill": [],
+        "stroke": [
+         "#2a6fb0"
+        ],
+        "sw": 1.5,
+        "salign": "CENTER",
+        "r": 0,
+        "x": 6,
+        "y": 3.5
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "1401:58018",
+    "name": "Kind=Next, State=Disabled",
+    "type": "COMPONENT",
+    "w": 36,
+    "h": 36,
+    "fill": [],
+    "stroke": [
+     "#000000@0.00"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 4,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     8,
+     0,
+     8
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 440,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:58020",
+      "name": "chevron 16",
+      "type": "FRAME",
+      "w": 16,
+      "h": 16,
+      "fill": [],
+      "r": 0,
+      "x": 10,
+      "y": 10,
+      "c": [
+       {
+        "id": "1401:58019",
+        "name": "Icon",
+        "type": "VECTOR",
+        "w": 4.5,
+        "h": 9,
+        "fill": [],
+        "stroke": [
+         "#6b6b6b"
+        ],
+        "sw": 1.5,
+        "salign": "CENTER",
+        "r": 0,
+        "x": 6,
+        "y": 3.5
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "1401:58021",
+    "name": "Kind=Gap, State=Default",
+    "type": "COMPONENT",
+    "w": 24,
+    "h": 36,
+    "fill": [],
+    "stroke": [
+     "#000000@0.00"
+    ],
+    "sw": 1,
+    "salign": "INSIDE",
+    "r": 0,
+    "lay": "HORIZONTAL",
+    "pad": [
+     0,
+     4,
+     0,
+     4
+    ],
+    "gap": 0,
+    "align": [
+     "CENTER",
+     "CENTER"
+    ],
+    "x": 492,
+    "y": 24,
+    "c": [
+     {
+      "id": "1401:58022",
+      "name": "Label",
+      "type": "TEXT",
+      "w": 14,
+      "h": 21,
+      "fill": [
+       "#6b6b6b"
+      ],
+      "chars": "…",
+      "font": "Noto Sans SC Regular",
+      "size": 14,
+      "lh": {
+       "unit": "PERCENT",
+       "value": 150
+      },
+      "x": 5,
+      "y": 7.5
+     }
+    ]
+   }
+  ]
+ }
+]

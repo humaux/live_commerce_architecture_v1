@@ -1,0 +1,531 @@
+{
+ "_meta": {
+  "purpose": "DS-3 expected computed styles of packages/ui/src/ds components in the UI gallery, one row per Figma master variant; read by tests/ui/ds-figma.spec.mjs.",
+  "source": "Figma page 4:8829 masters read 2026-10-27 through the fleet local bridge (use_figma, read-only getNodeByIdAsync, 8 roots in one call, no writes). Raw read: output/ds-3/figma/masters.json; script output/ds-3/figma/read.js.",
+  "format": "hex colours compare to getComputedStyle rgb(); 'transparent' = rgba(0, 0, 0, 0); height = getBoundingClientRect height (+-0.5); other keys are exact computed-style strings or named derived probes (labelInset, separator, holdsBreadcrumb, placeholderColor, noCaret).",
+  "viewport": "1586x900, zh-TW, deviceScaleFactor 1",
+  "unknown": "Figma masters carry no Hover/Focus for Button, Nav Item, Language switch; those ds states are not asserted (UNKNOWN). Button sm/lg sizes, Link variant, nav level-2 items and the topbar tools have no Figma master (UNKNOWN)."
+ },
+ "checks": [
+  {
+   "id": "button.primary.default",
+   "figma": "4:12712",
+   "target": "#sec-figma [data-figma=\"4:12712\"]",
+   "expect": {
+    "backgroundColor": "#142942",
+    "borderTopColor": "#142942",
+    "color": "#ffffff",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px"
+   },
+   "figmaRead": "fill #142942, no stroke, text #ffffff Noto Sans SC Medium 14/22, 140x44, r6, pad 0/14",
+   "note": "Figma has no stroke; ds keeps a 1px border painted in the fill colour, so it is invisible."
+  },
+  {
+   "id": "button.secondary.default",
+   "figma": "4:12714",
+   "target": "#sec-figma [data-figma=\"4:12714\"]",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "borderTopColor": "#e5e7eb",
+    "color": "#142942",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px"
+   },
+   "figmaRead": "fill #ffffff, stroke 1px #e5e7eb inside, text #142942 Medium 14, 140x44, r6, pad 0/14"
+  },
+  {
+   "id": "button.danger.default",
+   "figma": "1394:103516",
+   "target": "#sec-figma [data-figma=\"1394:103516\"]",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "borderTopColor": "#b42318",
+    "color": "#b42318",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px"
+   },
+   "figmaRead": "fill #ffffff, stroke 1px #b42318 inside, text #b42318 Medium 14, 140x44, r6, pad 0/14"
+  },
+  {
+   "id": "button.text.default",
+   "figma": "1394:103518",
+   "target": "#sec-figma [data-figma=\"1394:103518\"]",
+   "expect": {
+    "backgroundColor": "transparent",
+    "borderTopColor": "transparent",
+    "color": "#0f766e",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px"
+   },
+   "figmaRead": "no fill, no stroke, text #0f766e Medium 14, 140x44, r6, pad 0/14",
+   "note": "ds variant ghost = Figma Kind=Text."
+  },
+  {
+   "id": "button.primary.disabled",
+   "figma": "1394:103520",
+   "target": "#sec-figma [data-figma=\"1394:103520\"]",
+   "expect": {
+    "backgroundColor": "#6d8cab",
+    "borderTopColor": "#6d8cab",
+    "color": "#ffffff",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px"
+   },
+   "figmaRead": "fill #f5f6f8, stroke 1px #e5e7eb, text #566171 Medium 14, 140x44, r6",
+   "deviation": "REGISTERED: Figma Primary/Disabled is #f5f6f8 / #e5e7eb / #566171. The existing DS-1 gate (tests/admin/ui-gallery-clicks.mjs readFrame 'faint', tests/ui/ds-tokens.test.mjs disabled-primary 3:1 pairs) requires a disabled primary fill >= 3:1 against its background; #f5f6f8 on #ffffff is 1.08:1. Gate > owner wording (CLAUDE.md iron rule 3), so colours keep the gate value; geometry follows Figma. Owner/integrator decides."
+  },
+  {
+   "id": "button.secondary.disabled",
+   "figma": "1394:103522",
+   "target": "#sec-figma [data-figma=\"1394:103522\"]",
+   "expect": {
+    "backgroundColor": "#f5f6f8",
+    "borderTopColor": "#e5e7eb",
+    "color": "#566171",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px"
+   },
+   "figmaRead": "fill #f5f6f8, stroke 1px #e5e7eb, text #566171 Medium 14, 140x44, r6"
+  },
+  {
+   "id": "button.danger.disabled",
+   "figma": "1394:103526",
+   "target": "#sec-figma [data-figma=\"1394:103526\"]",
+   "expect": {
+    "backgroundColor": "#f5f6f8",
+    "borderTopColor": "#e5e7eb",
+    "color": "#566171",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px"
+   },
+   "figmaRead": "fill #f5f6f8, stroke 1px #e5e7eb, text #566171 Medium 14, 140x44, r6"
+  },
+  {
+   "id": "button.text.disabled",
+   "figma": "1394:103528",
+   "target": "#sec-figma [data-figma=\"1394:103528\"]",
+   "expect": {
+    "backgroundColor": "#f5f6f8",
+    "borderTopColor": "#f5f6f8",
+    "color": "#566171",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px"
+   },
+   "figmaRead": "fill #f5f6f8, no stroke, text #566171 Medium 14, 140x44, r6",
+   "note": "Figma has no stroke; ds paints the 1px border in the fill colour."
+  },
+  {
+   "id": "nav.item.default",
+   "figma": "4:12733",
+   "target": "[data-shell-rail] button[data-current=\"false\"]",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "color": "#6b7280",
+    "borderTopLeftRadius": "6px",
+    "height": 44,
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "labelInset": 42,
+    "borderLeftWidth": "0px"
+   },
+   "figmaRead": "Item=overview State=Default: fill #ffffff, no stroke, 216x44, r6, pad left 42 right 0, text #6b7280 Noto Sans SC Medium 14/22"
+  },
+  {
+   "id": "nav.item.active",
+   "figma": "4:12735",
+   "target": "[data-shell-rail] button[data-current=\"true\"]",
+   "expect": {
+    "backgroundColor": "#eef2f7",
+    "color": "#142942",
+    "borderTopLeftRadius": "6px",
+    "height": 44,
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "labelInset": 42,
+    "borderLeftWidth": "0px"
+   },
+   "figmaRead": "Item=overview State=Active: fill #eef2f7, no stroke, 216x44, r6, pad left 42, text #142942 Medium 14/22"
+  },
+  {
+   "id": "nav.rail",
+   "figma": "4:12737",
+   "target": "[data-shell-rail]",
+   "expect": {
+    "backgroundColor": "#ffffff"
+   },
+   "figmaRead": "Nav Item set is a light rail (Default fill #ffffff); rail colour itself read from the item fill, the rail frame is page-level (4:10687 screenshot)"
+  },
+  {
+   "id": "language.switch",
+   "figma": "1397:105153",
+   "target": "[data-figma=\"1397:105153\"] button",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "borderTopColor": "#e5e7eb",
+    "borderTopWidth": "1px",
+    "color": "#142942",
+    "borderTopLeftRadius": "6px",
+    "height": 44,
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "noCaret": true
+   },
+   "figmaRead": "Shell / Language switch 1397:105152 = Button Secondary instance 1397:105153: fill #ffffff, stroke 1px #e5e7eb, text '繁中' #142942 Medium 14/22, 64x44, r6, pad 0/14, no caret",
+   "note": "width: Figma fixes 64; ds width follows the label (registered deviation, not asserted)."
+  },
+  {
+   "id": "pageheader.bar",
+   "figma": "1397:105155",
+   "target": "[data-shell-topbar]",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "height": 64,
+    "paddingLeft": "24px",
+    "borderBottomWidth": "0px",
+    "holdsBreadcrumb": true,
+    "holdsLanguage": true
+   },
+   "figmaRead": "Page Header 1200x64, fill #ffffff, no stroke; Breadcrumb at x24 (vertically centred), Language switch instance at right (x1112, 24 from the right edge)"
+  },
+  {
+   "id": "pageheader.crumb",
+   "figma": "1397:105157",
+   "target": "[data-shell-topbar] ol > li",
+   "expect": {
+    "color": "#596579",
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "lineHeight": "21px",
+    "allCrumbsSameColor": true
+   },
+   "figmaRead": "Crumb 1/2/3: text #596579 Noto Sans SC Regular 14, line-height 21px (all three crumbs incl. the current one)"
+  },
+  {
+   "id": "pageheader.separator",
+   "figma": "1397:105158",
+   "target": "[data-shell-topbar] ol > li + li",
+   "expect": {
+    "separator": "/",
+    "separatorColor": "#596579",
+    "crumbGap": 4
+   },
+   "figmaRead": "Separator 1/2: text '/' #596579 Regular 14; Breadcrumb auto-layout HORIZONTAL gap 4"
+  },
+  {
+   "id": "tag.neutral",
+   "figma": "1401:38422",
+   "target": "#sec-badges [data-tone=\"neutral\"]",
+   "expect": {
+    "backgroundColor": "#edf0f3",
+    "color": "#3f4753",
+    "borderTopLeftRadius": "999px",
+    "height": 22,
+    "fontSize": "12px",
+    "paddingLeft": "8px"
+   },
+   "figmaRead": "fill #edf0f3, text #3f4753 Regular 12/150%, r999, pad 2/8, 40x22"
+  },
+  {
+   "id": "tag.success",
+   "figma": "1401:38424",
+   "target": "#sec-badges [data-tone=\"success\"]",
+   "expect": {
+    "backgroundColor": "#e6f3ec",
+    "color": "#2f6f55",
+    "borderTopLeftRadius": "999px",
+    "height": 22
+   },
+   "figmaRead": "fill #e6f3ec, text #2f6f55"
+  },
+  {
+   "id": "tag.warning",
+   "figma": "1401:38426",
+   "target": "#sec-badges [data-tone=\"warning\"]",
+   "expect": {
+    "backgroundColor": "#fae2a9",
+    "color": "#5c4300",
+    "borderTopLeftRadius": "999px",
+    "height": 22
+   },
+   "figmaRead": "fill #fae2a9, text #5c4300"
+  },
+  {
+   "id": "tag.danger",
+   "figma": "1401:38428",
+   "target": "#sec-badges [data-tone=\"danger\"]",
+   "expect": {
+    "backgroundColor": "#fdebe9",
+    "color": "#b42318",
+    "borderTopLeftRadius": "999px",
+    "height": 22
+   },
+   "figmaRead": "fill #fdebe9, text #b42318"
+  },
+  {
+   "id": "tag.info",
+   "figma": "1401:38430",
+   "target": "#sec-badges [data-tone=\"info\"]",
+   "expect": {
+    "backgroundColor": "#eaf0fc",
+    "color": "#1d4ed8",
+    "borderTopLeftRadius": "999px",
+    "height": 22
+   },
+   "figmaRead": "fill #eaf0fc, text #1d4ed8"
+  },
+  {
+   "id": "segmented.switchOn.selected",
+   "figma": "1401:38433",
+   "target": "#sec-switch [data-side=\"on\"]",
+   "state": "switch-on",
+   "expect": {
+    "backgroundColor": "#3f7f32",
+    "color": "#ffffff",
+    "fontWeight": "500",
+    "minWidth": "44px",
+    "paddingLeft": "12px",
+    "height": 34
+   },
+   "figmaRead": "44x36 fill #3f7f32, text #ffffff Medium 14/150%, pad 0/12, r0",
+   "note": "height 34 = the 36 switch minus its 1px container border (container is ds-only, not in the Figma master)."
+  },
+  {
+   "id": "segmented.switchOn.idle",
+   "figma": "1401:38435",
+   "target": "#sec-switch [data-side=\"on\"]",
+   "state": "switch-off",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "color": "#5b5b5b",
+    "fontWeight": "400"
+   },
+   "figmaRead": "fill #ffffff, text #5b5b5b Regular 14"
+  },
+  {
+   "id": "segmented.switchOff.selected",
+   "figma": "1401:38437",
+   "target": "#sec-switch [data-side=\"off\"]",
+   "state": "switch-off",
+   "expect": {
+    "backgroundColor": "#5b5b5b",
+    "color": "#ffffff",
+    "fontWeight": "500"
+   },
+   "figmaRead": "fill #5b5b5b, text #ffffff Medium 14"
+  },
+  {
+   "id": "segmented.switchOff.idle",
+   "figma": "1401:38439",
+   "target": "#sec-switch [data-side=\"off\"]",
+   "state": "switch-on",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "color": "#5b5b5b",
+    "fontWeight": "400"
+   },
+   "figmaRead": "fill #ffffff, text #5b5b5b Regular 14"
+  },
+  {
+   "id": "segmented.underline.selected",
+   "figma": "1401:38441",
+   "target": "#sec-switch [role=\"tablist\"] >> nth=0 >> [aria-selected=\"true\"]",
+   "expect": {
+    "color": "#2a6fb0",
+    "borderBottomColor": "#2a6fb0",
+    "borderBottomWidth": "2px",
+    "fontWeight": "500",
+    "height": 36,
+    "paddingLeft": "16px",
+    "borderTopLeftRadius": "0px"
+   },
+   "figmaRead": "60x36, no fill, bottom stroke 2px #2a6fb0, text #2a6fb0 Medium 14, pad 0/16, r0"
+  },
+  {
+   "id": "segmented.underline.idle",
+   "figma": "1401:38443",
+   "target": "#sec-switch [role=\"tablist\"] >> nth=0 >> [aria-selected=\"false\"] >> nth=0",
+   "expect": {
+    "color": "#5b5b5b",
+    "borderBottomColor": "transparent",
+    "borderBottomWidth": "2px",
+    "fontWeight": "400",
+    "height": 36
+   },
+   "figmaRead": "bottom stroke 2px #000000 at 0 opacity, text #5b5b5b Regular 14"
+  },
+  {
+   "id": "segmented.section.selected",
+   "figma": "1401:38445",
+   "target": "#sec-switch [role=\"tablist\"] >> nth=1 >> [aria-selected=\"true\"]",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "color": "#333333",
+    "fontWeight": "500",
+    "height": 36,
+    "paddingLeft": "16px",
+    "borderTopLeftRadius": "0px"
+   },
+   "figmaRead": "60x36 fill #ffffff, text #333333 Medium 14, pad 0/16, r0"
+  },
+  {
+   "id": "segmented.section.idle",
+   "figma": "1401:38447",
+   "target": "#sec-switch [role=\"tablist\"] >> nth=1 >> [aria-selected=\"false\"] >> nth=0",
+   "expect": {
+    "backgroundColor": "#f3f3f3",
+    "color": "#5b5b5b",
+    "fontWeight": "400",
+    "height": 36
+   },
+   "figmaRead": "fill #f3f3f3, text #5b5b5b Regular 14"
+  },
+  {
+   "id": "input.placeholder",
+   "figma": "1401:38450",
+   "target": "#sec-figma [data-figma=\"1401:38450\"]",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "borderTopColor": "#8c8c8c",
+    "borderTopWidth": "1px",
+    "borderTopLeftRadius": "4px",
+    "height": 36,
+    "paddingLeft": "12px",
+    "fontSize": "14px",
+    "placeholderColor": "#6b6b6b"
+   },
+   "figmaRead": "240x36 fill #ffffff, stroke 1px #8c8c8c, r4, pad 0/12, placeholder text #6b6b6b Regular 14"
+  },
+  {
+   "id": "input.filled",
+   "figma": "1401:38452",
+   "target": "#sec-figma [data-figma=\"1401:38452\"]",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "borderTopColor": "#8c8c8c",
+    "color": "#333333",
+    "height": 36,
+    "borderTopLeftRadius": "4px"
+   },
+   "figmaRead": "stroke #8c8c8c, text #333333 Regular 14"
+  },
+  {
+   "id": "input.invalid",
+   "figma": "1401:38454",
+   "target": "#sec-figma [data-figma=\"1401:38454\"]",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "borderTopColor": "#b42318",
+    "color": "#333333",
+    "height": 36,
+    "borderTopLeftRadius": "4px"
+   },
+   "figmaRead": "stroke 1px #b42318, text #333333"
+  },
+  {
+   "id": "pagination.number.default",
+   "figma": "1401:57997",
+   "target": "pager:number",
+   "expect": {
+    "backgroundColor": "transparent",
+    "borderTopColor": "transparent",
+    "color": "#2a6fb0",
+    "borderTopLeftRadius": "4px",
+    "height": 36,
+    "minWidth": "36px",
+    "paddingLeft": "8px",
+    "fontSize": "14px",
+    "fontWeight": "400"
+   },
+   "figmaRead": "36x36, no fill, stroke 1px #000 at 0 opacity, r4, pad 0/8, text #2a6fb0 Regular 14"
+  },
+  {
+   "id": "pagination.number.hover",
+   "figma": "1401:57999",
+   "target": "pager:number",
+   "state": "hover",
+   "expect": {
+    "backgroundColor": "#f3f3f3",
+    "borderTopColor": "#dddddd",
+    "color": "#2a6fb0"
+   },
+   "figmaRead": "fill #f3f3f3, stroke 1px #dddddd, text #2a6fb0"
+  },
+  {
+   "id": "pagination.number.current",
+   "figma": "1401:58001",
+   "target": "pager:current",
+   "expect": {
+    "backgroundColor": "#2a6fb0",
+    "borderTopColor": "#2a6fb0",
+    "color": "#ffffff",
+    "fontWeight": "600",
+    "height": 36
+   },
+   "figmaRead": "fill #2a6fb0, stroke #2a6fb0, text #ffffff Bold with wght axis 600 (STAGE-6 §3)"
+  },
+  {
+   "id": "pagination.previous.disabled",
+   "figma": "1401:58009",
+   "target": "pager:prevDisabled",
+   "expect": {
+    "color": "#6b6b6b",
+    "backgroundColor": "transparent",
+    "height": 36
+   },
+   "figmaRead": "no fill, chevron 16 stroke #6b6b6b"
+  },
+  {
+   "id": "pagination.next.default",
+   "figma": "1401:58012",
+   "target": "pager:next",
+   "expect": {
+    "color": "#2a6fb0",
+    "backgroundColor": "transparent",
+    "height": 36
+   },
+   "figmaRead": "no fill, chevron 16 stroke #2a6fb0"
+  },
+  {
+   "id": "pagination.gap",
+   "figma": "1401:58021",
+   "target": "pager:gap",
+   "expect": {
+    "color": "#6b6b6b"
+   },
+   "figmaRead": "24x36, text '…' #6b6b6b Regular 14 (width not asserted)"
+  }
+ ]
+}
