@@ -6,6 +6,10 @@
 #   2026-10-27 CI-SPEED (owner: "优化ci的速度"): a `build` job runs once per run (`test-local.sh --prebuild`: both production Next builds + a warmed Go build cache of the
 #   untagged and -tags browser ./tests/foundation graphs) and every gate leg in the plan's `prebuilt_modes` restores it (scripts/dev/prebuilt.mjs refuses any other SHA)
 #   instead of rebuilding per job (measured run 40461573230: ~90 s Go compile + ~20 s Next per browser job, x61 jobs).
+#   2026-10-28 CI-SPEED-2: the plan's `jobs` output packs the legs measured under 6 min (ci-plan.mjs GATE_SECONDS) into ~10 bundle jobs, saving ~75 s of runner
+#   setup per bundled leg. The planned mode list (`matrix`, what `receipts` verifies) is unchanged: every member runs (never stops at the first red one) under its own
+#   150 min bound, writes its OWN receipt from its own output tree and uploads its OWN `receipt-<art>` and `<art>` artifacts; any red member turns the job red.
+#   Explicit dispatches (incl. `@i/N` re-runs and extra_env calibration) are never bundled.
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
 #   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (installs only the system deps the runner image lacks, from cached .debs when possible; bounded apt otherwise),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), scripts/dev/matrix-receipts.mjs (per-job run receipts + verifier, #128), the pinned postgres image,
@@ -69,6 +73,7 @@ jobs:
     timeout-minutes: 10 # + contract drift (go run, ~1-2 min)
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
+      jobs: ${{ steps.plan.outputs.jobs }}
       sweep_n: ${{ steps.plan.outputs.sweep_n }}
       visual_n: ${{ steps.plan.outputs.visual_n }}
       deploy: ${{ steps.pr.outputs.deploy || 'false' }}
@@ -110,6 +115,9 @@ jobs:
           # PR: the set computed from the changed paths. Schedule / dispatch full_browser_universe: the full browser universe via the same planner.
           # Push: the sharded foundation suite (unit + groups, ~12 min wall). Dispatch: what was asked for.
           MODES: ${{ github.event_name == 'pull_request' && steps.pr.outputs.modes || github.event_name == 'schedule' && steps.nightly.outputs.modes || github.event_name == 'workflow_dispatch' && (inputs.full_browser_universe == 'true' && steps.nightly.outputs.modes || inputs.modes) || '["foundation-shards"]' }}
+          # CI-SPEED-2: pack short legs for PR / push / schedule and the full-universe dispatch; an explicit modes list (single `@i/N` slice, calibration) or any
+          # extra_env dispatch keeps one job per mode.
+          BUNDLE: ${{ github.event_name != 'workflow_dispatch' || (inputs.full_browser_universe == 'true' && inputs.extra_env == '') }}
         run: node scripts/dev/ci-plan.mjs
 
   # CI-SPEED build-once: the Next builds and the Go compile every prebuilt_modes leg used to repeat, done once for this run's SHA. Same commands as the legs
@@ -164,9 +172,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+        include: ${{ fromJSON(needs.plan.outputs.jobs) }} # solo legs + CI-SPEED-2 bundles; receipts still verify needs.plan.outputs.matrix
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: ${{ matrix.timeout }} # 150 per solo leg; a bundle gets 360 and bounds each member at 150 itself
     concurrency:
       # event_name separates run classes on the same ref: a nightly schedule (cancel-in-progress) must never cancel push verification.
       group: gates-${{ github.event_name }}-${{ github.ref }}-${{ matrix.mode }}-${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }}
@@ -177,6 +185,9 @@ jobs:
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
       MODE: ${{ matrix.mode }}
+      BUNDLE: ${{ matrix.bundle }}
+      MEMBERS: ${{ join(matrix.members.*.mode, ' ') }}
+      MEMBERS_JSON: ${{ toJSON(matrix.members) }}
       # Sweep fingerprints cover a shared store; concurrent UI copies alter another page's before/after state.
       LC_SWEEP_WORKERS: "1"
       EXTRA_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }} # never on pull_request
@@ -225,7 +236,7 @@ jobs:
           echo "LC_PREBUILT_DIR=$RUNNER_TEMP/prebuilt" >> "$GITHUB_ENV"
       - name: Browser requirements from registry
         id: browsers
-        run: node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+        run: node scripts/dev/ci-playwright-browsers.mjs $MEMBERS # a bundle installs the union of its members' engines
       - name: Playwright version (cache key)
         id: pw
         if: steps.browsers.outputs.engines != ''
@@ -286,7 +297,6 @@ jobs:
         id: gate
         run: |
           set -o pipefail
-          mkdir -p output/ci-gates
           # Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.
           for kv in $EXTRA_ENV; do
             [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }
@@ -298,43 +308,66 @@ jobs:
             [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || exit 2
             python3 tests/foundation/order_attempt_mutation.py
           fi
-          log_root=output/ci-gates
-          case "$MODE" in
-            --browser*|--stripe-browser*|--ops-disk-guard)
-              mkdir -p output/playwright
-              export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
-              log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"
-              mkdir -p "$log_root"
-              ;;
-          esac
-          log="$log_root/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"
-          case "$MODE" in
-            foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
-            shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
-            # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.
-            shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
-            shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
-            focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
-            # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.
-            --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;
-            # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.
-            # Xvfb comes with `playwright install --with-deps`.
-            --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
-            --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
-            *) echo "unknown mode: $MODE" >&2; exit 2 ;;
-          esac
+          # One planned mode: the per-mode dispatch every leg ran before CI-SPEED-2 (a solo job runs it once, a bundle job once per member).
+          # A member runs in a child `bash -eo pipefail` (the step's own -e + pipefail), so its exports (LC_BROWSER_EVIDENCE_ROOT) never reach the next member.
+          gate_one() {
+            local MODE="$1"
+            mkdir -p output/ci-gates
+            log_root=output/ci-gates
+            case "$MODE" in
+              --browser*|--stripe-browser*|--ops-disk-guard)
+                mkdir -p output/playwright
+                export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
+                log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"
+                mkdir -p "$log_root"
+                ;;
+            esac
+            log="$log_root/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"
+            case "$MODE" in
+              foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.
+              shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
+              # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.
+              --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;
+              # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.
+              # Xvfb comes with `playwright install --with-deps`.
+              --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
+              --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
+              *) echo "unknown mode: $MODE" >&2; exit 2 ;;
+            esac
+          }
+          if [[ "$BUNDLE" != true ]]; then gate_one "$MODE"; exit; fi
+          # CI-SPEED-2 bundle: EVERY member runs, each under its own 150 min bound (the solo job bound) in a fresh output tree; its receipt is written from that
+          # tree alone (same command as the solo "Run receipt" step), then the tree moves to output/members/<art>/ for that member's own artifacts.
+          # Member list on fd 3, so a gate that reads stdin cannot eat the remaining members. Any red member (or receipt write) = red step, after all ran.
+          export -f gate_one
+          rc=0
+          while read -r m art <&3; do
+            echo "::group::bundle member $m"
+            if timeout --kill-after=60s 150m bash -c 'set -eo pipefail; gate_one "$1"' _ "$m"; then outcome=success; else outcome=failure; fi
+            echo "::endgroup::"
+            echo "bundle member $m: $outcome"
+            ( shopt -s nullglob globstar
+              MODE="$m" GATE_OUTCOME="$outcome" node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl ) || rc=1
+            mkdir -p "output/members/$art"
+            for d in ci-gates playwright receipt; do if [[ -e "output/$d" ]]; then mv "output/$d" "output/members/$art/"; fi; done
+          done 3< <(jq -r '.[] | "\(.mode) \(.art)"' <<<"$MEMBERS_JSON")
+          exit "$rc"
       # MATRIX-RECEIPT (#128): ONE shared step for every mode, after the gate (always, so a failed gate still reports FAIL). test_count is counted
       # from this job's own gate log (go test -v PASS/FAIL lines + node --test summary) and its per-step go test -json logs (*.jsonl, e.g. --browser-webkit),
       # never a static count; the `receipts` job checks it against the plan.
       - name: Run receipt
-        if: always()
+        if: always() && !matrix.bundle
         env:
           GATE_OUTCOME: ${{ steps.gate.outcome }}
         run: |
           shopt -s nullglob globstar
           node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        if: always()
+        if: always() && !matrix.bundle
         with:
           name: receipt-${{ matrix.art }}
           path: output/receipt/
@@ -342,9 +375,11 @@ jobs:
           if-no-files-found: ignore # a job that wrote none is reported missing by the receipts job
       - name: Failure summary
         if: always()
-        run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log | head -200 || true
+        run: |
+          shopt -s nullglob
+          grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        if: always() && !startsWith(matrix.mode, '--browser-visual-lint')
+        if: always() && !matrix.bundle && !startsWith(matrix.mode, '--browser-visual-lint')
         with:
           name: ${{ matrix.art }}
           path: |
@@ -362,6 +397,152 @@ jobs:
             output/playwright/**/ui-visual-audit/**/lint.*
             output/playwright/**/ui-visual-audit/**/index.json
             output/playwright/**/ui-visual-audit/**/shots/**
+          retention-days: 14
+          if-no-files-found: ignore
+      # CI-SPEED-2: each bundle member's OWN receipt and evidence artifacts, under the exact names its solo job used (receipt-<art>, <art>). GitHub has no step
+      # loop, so the slots are unrolled: exactly ci-plan.mjs BUNDLE_MAX of them (tests/ci/gate-bundle.test.mjs pins the count and the names).
+      - name: Bundle member 1 receipt
+        if: always() && matrix.bundle && matrix.members[0].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: receipt-${{ matrix.members[0].art }}
+          path: output/members/${{ matrix.members[0].art }}/receipt/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 1 evidence
+        if: always() && matrix.bundle && matrix.members[0].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.members[0].art }}
+          path: |
+            output/members/${{ matrix.members[0].art }}/ci-gates/
+            output/members/${{ matrix.members[0].art }}/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 2 receipt
+        if: always() && matrix.bundle && matrix.members[1].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: receipt-${{ matrix.members[1].art }}
+          path: output/members/${{ matrix.members[1].art }}/receipt/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 2 evidence
+        if: always() && matrix.bundle && matrix.members[1].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.members[1].art }}
+          path: |
+            output/members/${{ matrix.members[1].art }}/ci-gates/
+            output/members/${{ matrix.members[1].art }}/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 3 receipt
+        if: always() && matrix.bundle && matrix.members[2].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: receipt-${{ matrix.members[2].art }}
+          path: output/members/${{ matrix.members[2].art }}/receipt/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 3 evidence
+        if: always() && matrix.bundle && matrix.members[2].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.members[2].art }}
+          path: |
+            output/members/${{ matrix.members[2].art }}/ci-gates/
+            output/members/${{ matrix.members[2].art }}/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 4 receipt
+        if: always() && matrix.bundle && matrix.members[3].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: receipt-${{ matrix.members[3].art }}
+          path: output/members/${{ matrix.members[3].art }}/receipt/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 4 evidence
+        if: always() && matrix.bundle && matrix.members[3].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.members[3].art }}
+          path: |
+            output/members/${{ matrix.members[3].art }}/ci-gates/
+            output/members/${{ matrix.members[3].art }}/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 5 receipt
+        if: always() && matrix.bundle && matrix.members[4].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: receipt-${{ matrix.members[4].art }}
+          path: output/members/${{ matrix.members[4].art }}/receipt/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 5 evidence
+        if: always() && matrix.bundle && matrix.members[4].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.members[4].art }}
+          path: |
+            output/members/${{ matrix.members[4].art }}/ci-gates/
+            output/members/${{ matrix.members[4].art }}/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 6 receipt
+        if: always() && matrix.bundle && matrix.members[5].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: receipt-${{ matrix.members[5].art }}
+          path: output/members/${{ matrix.members[5].art }}/receipt/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 6 evidence
+        if: always() && matrix.bundle && matrix.members[5].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.members[5].art }}
+          path: |
+            output/members/${{ matrix.members[5].art }}/ci-gates/
+            output/members/${{ matrix.members[5].art }}/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 7 receipt
+        if: always() && matrix.bundle && matrix.members[6].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: receipt-${{ matrix.members[6].art }}
+          path: output/members/${{ matrix.members[6].art }}/receipt/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 7 evidence
+        if: always() && matrix.bundle && matrix.members[6].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.members[6].art }}
+          path: |
+            output/members/${{ matrix.members[6].art }}/ci-gates/
+            output/members/${{ matrix.members[6].art }}/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 8 receipt
+        if: always() && matrix.bundle && matrix.members[7].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: receipt-${{ matrix.members[7].art }}
+          path: output/members/${{ matrix.members[7].art }}/receipt/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Bundle member 8 evidence
+        if: always() && matrix.bundle && matrix.members[7].art
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.members[7].art }}
+          path: |
+            output/members/${{ matrix.members[7].art }}/ci-gates/
+            output/members/${{ matrix.members[7].art }}/playwright/
           retention-days: 14
           if-no-files-found: ignore
 
