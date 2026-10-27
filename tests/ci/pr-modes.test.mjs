@@ -661,7 +661,8 @@ test("CI-SPEED: the reader scan sees literals, Join chains, globs, root *.md nam
     assert.equal(isInertDoc("contracts/new-v9.md", r), false, "%s is a one-segment wildcard");
     assert.equal(isInertDoc("contracts/sub/new.md", r), true, "a wildcard never crosses a directory");
     assert.equal(isInertDoc("OTHER.md", r), true);
-    assert.equal(isInertDoc("docs/browser-only.md", r), true, "browser-tagged files are not compiled by the foundation shards");
+    // #238 review P1-2a: browser-tagged Go tests read docs too (they run in the browser modes).
+    assert.equal(isInertDoc("docs/browser-only.md", r), false, "a doc a browser-tagged Go test reads is not inert");
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 test("CI-SPEED: CLI writes docs_only for gates.yml", () => {
@@ -673,4 +674,38 @@ test("CI-SPEED: CLI writes docs_only for gates.yml", () => {
     execFileSync(process.execPath, [path.join(root, "scripts/dev/pr-modes.mjs"), "--stdin"], { cwd: root, input: "output/ci-speed/DELIVERY.md\ndocs/tool.go\n", env: { ...process.env, GITHUB_OUTPUT: out }, stdio: ["pipe", "pipe", "pipe"] });
     assert.match(readFileSync(out, "utf8"), /^modes=\["foundation-shards"\]\ndeploy=false\ndocs_only=false\n$/);
   } finally { rmSync(path.dirname(out), { recursive: true, force: true }); }
+});
+
+// #238 review round 1 (Kimi K3.1 Pro + DeepSeek P1-1): only prose/images are documentation; scripts and data under docs/ or output/ are read by tests.
+test("CI-SPEED review P1-1: scripts and data under output/ are never docs-only, alone or mixed with a .md", () => {
+  for (const p of ["output/integrator/tools/visual_review.sh", "output/ci-select-backend-browser/covers-derivation.json"]) {
+    for (const paths of [[p], [p, "output/ci-speed/DELIVERY-20261027.md"], [p, "docs/delivery/units/x.md"]]) {
+      const r = planPr(paths);
+      assert.equal(r.docsOnly, false, `${paths.join(" + ")} must not be docs-only`);
+      assert.ok(r.modes.includes("foundation-shards"), `${paths.join(" + ")} must keep foundation-shards`);
+    }
+  }
+});
+// P1-2b: Node tests and browser specs read contracts too; a doc a browser-side reader names selects the whole browser universe.
+test("CI-SPEED review P1-2b: a contract a node/browser test reads is not docs-only and runs the browser universe", () => {
+  const r = planPr(["contracts/stripe-platform-account-v1.md"]); // tests/admin/card-payments-copy.test.ts:106
+  assert.equal(r.docsOnly, false);
+  for (const m of [...FOUNDATION, ...full]) assert.ok(r.modes.includes(m), `contracts/stripe-platform-account-v1.md lost ${m}`);
+});
+// P1-2c: readers are followed transitively (a test runs a script that runs a script that reads the doc), including output/ tools.
+test("CI-SPEED review P1-2c: transitively named scripts are scanned", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "ci-speed-deep-"));
+  try {
+    const w = (f, t) => { mkdirSync(path.dirname(path.join(dir, f)), { recursive: true }); writeFileSync(path.join(dir, f), t); };
+    w("tests/foundation/a_test.go", 'package foundation\nvar a = "scripts/one.sh"\nvar b = "output/tools/first.sh"\n');
+    w("scripts/one.sh", 'python3 "scripts/two.py"\n');
+    w("scripts/two.py", "open('docs/deep.md')\n");
+    w("output/tools/first.sh", 'bash "output/tools/second.sh"\n');
+    w("output/tools/second.sh", 'cat "docs/via-output.md"\n');
+    execFileSync("git", ["init", "-q"], { cwd: dir }); execFileSync("git", ["add", "-A"], { cwd: dir });
+    const r = foundationDocReads(dir);
+    assert.equal(isInertDoc("docs/deep.md", r), false, "two script levels deep");
+    assert.equal(isInertDoc("docs/via-output.md", r), false, "two output/ tool levels deep");
+    assert.equal(isInertDoc("docs/unread.md", r), true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
