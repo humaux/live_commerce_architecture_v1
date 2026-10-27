@@ -56,7 +56,7 @@
   cursor: pointer;
 }
 /* Hover has no Figma master (UNKNOWN); it reuses the Active fill and text, since the default text on the Active fill is only 4.3:1. */
-/* .nav prefix: the admin globals.css `button:hover:not(:disabled)` (#edf3f8, specificity 0,2,1) would otherwise win over a single class. */
+/* .nav prefix: the admin globals.css `button:hover:not(:disabled)` light fill (specificity 0,2,1) would otherwise win over a single class. */
 .nav .groupRow:hover, .nav .groupLink:hover, .nav .item:hover { background: var(--ds-nav-active); color: var(--ds-nav-text-active); }
 .groupRow[data-current="true"], .groupLink[aria-current="page"] { background: var(--ds-nav-active); color: var(--ds-nav-text-active); }
 .groupIcon { flex: none; display: inline-flex; width: 20px; justify-content: center; }

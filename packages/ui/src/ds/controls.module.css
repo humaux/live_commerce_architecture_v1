@@ -44,7 +44,7 @@
 .button[data-icon-only="true"][data-size="lg"] { width: var(--ds-button-lg); }
 .button[data-variant="primary"] { background: var(--ds-ink); border-color: var(--ds-ink); color: var(--ds-on-primary); }
 /* Hover has no Figma master (UNKNOWN): outlined kinds keep the DS-2 muted-surface hover; primary keeps its fill. The explicit primary/link
-   hover rules also stop the admin globals.css `button:hover` (#edf3f8) from repainting them. */
+   hover rules also stop the admin globals.css `button:hover` light fill from repainting them. */
 .button[data-variant="primary"]:hover:not([aria-disabled="true"]) { background: var(--ds-ink); }
 .button[data-variant="secondary"]:hover:not([aria-disabled="true"]) { background: var(--ds-surface-muted); }
 .button[data-variant="danger"] { background: var(--ds-surface); border-color: var(--ds-danger); color: var(--ds-danger-text); }
