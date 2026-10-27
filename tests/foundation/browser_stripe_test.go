@@ -611,8 +611,20 @@ func (e *sbEnv) act(t *testing.T, a sbAction) error {
 			e.fake.Patch(session, map[string]any{"presentment_details": map[string]any{"presentment_currency": "twd", "presentment_amount": 2499}})
 			e.fake.SetState(session, "complete", "paid")
 		case "age-cutoff": // SP10 owner-fixture clock aging: past the handoff cutoff, before expires_at
+			// #145: the live query worker must not straddle the two-sided aging. A retrieve that read the fake's
+			// old expires_at and applies after sstAge committed is a PROVIDER_IDENTITY_MISMATCH review case
+			// (0167 I05), so the order shows REVIEW_REQUIRED, never the cutoff. Real expires_at is frozen, so
+			// this is a fixture race, not a product one: stop the worker (graceful Stop lets the in-flight job
+			// finish), age both sides, then restart it if it was running.
+			e.mu.Lock()
+			running := e.stopper != nil
+			e.mu.Unlock()
+			e.workerStop()
 			sstAge(t, e.f, attempt, 36*time.Minute)
 			e.fake.AgeSession(session, 36*time.Minute)
+			if running {
+				e.workerStart(t)
+			}
 		}
 	default:
 		return fmt.Errorf("unknown action")
