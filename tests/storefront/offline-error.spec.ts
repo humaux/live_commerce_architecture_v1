@@ -28,18 +28,24 @@ export async function checkOfflineError({ browser, origin, control }) {
       const banner = page.getByTestId("offline-banner");
       await expect(banner, `OC11-B2 ${locale} offline banner text`).toHaveText(copy.offlineBanner);
       assert.equal(await banner.getAttribute("role"), "status");
-      assert.equal(await error.getAttribute("role"), "alert");
 
+      // OC-Q18: the page offers ONLY the read-only reload (and the offline banner): no link, no other button
+      assert.equal(await error.locator("a, button, input, select, textarea, [role=button], [role=link]").count(), 1, `OC11-B3 ${locale} the only actionable control is the reload`);
+      assert.equal(await page.getByTestId("page-error-message").getAttribute("role"), "alert");
       const reload = error.getByRole("button");
-      assert.equal(await reload.count(), 1, `OC11-B3 ${locale} the single action is the read-only reload`);
+      assert.equal(await reload.count(), 1, `OC11-B3b ${locale} the single action is the read-only reload`);
       assert.equal(await reload.innerText(), copy.reloadPage);
       assert.ok(((await reload.boundingBox())?.height ?? 0) >= 44, "44px target");
       // G-UI8 audit [READ/MEASURE]: horizontal overflow at 390px
       assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 1, "no horizontal scroll at 390px");
 
-      await reload.click();
+      // Back online and the API healthy again: the reload must really re-read the page (a no-op reload would leave the error page up)
       await context.setOffline(false);
+      await control("api-up");
       await expect(banner, `OC11-B4 ${locale} banner leaves when back online`).toHaveCount(0);
+      await reload.click();
+      await expect(page.getByTestId("page-error"), `OC11-B6 ${locale} reload replaces the error page`).toHaveCount(0);
+      await expect(page.locator(`a[href^="/${locale}/products/"]`).first(), `OC11-B6b ${locale} real shop content is back`).toBeAttached();
       assert.deepEqual(writes, [], `OC11-B5 ${locale} reload re-reads with GET only: no payment/order POST replayed`);
     } finally {
       await control("api-up");
