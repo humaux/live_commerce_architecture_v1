@@ -22,7 +22,8 @@ Dropped: the earlier shop-gate.mjs registration (runs only under LC_SHOP_MOCK=1,
 
 ## Evidence
 - RED (deliberate mutation: recheck republishes with a new key; offline banner disabled): see output/oc-11/red.log. Admin run 40462789529 job 122056953409 failed at OC11-A2; storefront run 40502862891 job 122191823469 failed at OC11-B2. Setup errors before that are listed there and not counted.
-- GREEN: mutations reverted; run/job ids are in the PR comment and the final line of red.log (filled after the run).
+- Review round 1 (DeepSeek + Kimi REQUEST_CHANGES at ca1be4157), all items fixed: recheck now needs the NEWEST row to be a publish of the sent draft version with version > the watermark recorded at send (the versions DTO carries no idempotency key; gap documented in design-client.ts); pending {key,version,watermark} persisted per store in sessionStorage and included in the beforeunload guard; failed recheck read has its own "could not confirm" state; error page has only the reload (no link), role=alert narrowed to title+body, neutral errorBody; setLive from list.live_version. RED ids in red.log.
+- GREEN: bound to the final SHA, run/job ids in the PR comment (NOT_RUN in this file until then).
 - Local: none (no node_modules). Level: E3 once green, MOCK/real-stack Next + Go harness, no device.
 - Not covered: Safari/WebKit (offline events differ), real network loss mid-payment, the "still in flight vs never arrived" ambiguity of recheck.
 - Risks: the admin spec uses the BFF-probe store and leaves one extra published version there; recheck cannot resend (by design).

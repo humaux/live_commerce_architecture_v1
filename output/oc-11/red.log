@@ -9,3 +9,10 @@ Storefront - Gates run 40502862891, job 122191823469 (gate --browser-storefront)
 
 Setup errors seen first, NOT counted as RED: run 40459757322 Foundation check-gates "offline-error.spec.ts is run by no gate"; run 40462789529 job 122056952289 OC11-B00 (cart link absent on home); run 40480095274 job 122137183144 OC11-B0 (garbage RSC payload did not reach the error boundary).
 Also not counted: run 40453952388 Foundation, shell-architecture.test.mjs "error.tsx: fetch 1 > 0" (an earlier fetch-in-reload mutation caught by the existing architecture test, dropped).
+
+REVIEW ROUND 1 RED (tests only, implementation of ca1be4157; heads c76884a0d then 100ae6fdb):
+- admin, Gates run 40524211987 attempt 2, job 122371308525: OC11-A5 "pending survives a reload" failed (pending banner gone after page.reload()).
+- storefront, same run, job 122371307295: OC11-B3 "zh-TW the only actionable control is the reload" failed (the 回到商店 link present).
+- admin rollback case, Gates run 40569219761, job 122433760269 (head 100ae6fdb, after a setup fix that opened the versions tab): OC11-A4 "the old publish row (source_version equal) must not confirm" failed (old publish row confirmed a new lost publish).
+- A6/A7 (unconfirmed state, not-yet) and B6/B6b (reload really re-reads) were not reached by the red runs; they are asserted for the first time in the GREEN run. Setup failure not counted: run 40524211987 attempt 1 was cancelled before any job ran; test 3 first failed on the missing versions-tab click.
+GREEN for the final SHA: recorded in the PR comment after the run (not in this file, to avoid a docs-only push during Gates).
