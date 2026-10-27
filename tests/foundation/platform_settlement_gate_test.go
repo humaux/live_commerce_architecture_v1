@@ -860,7 +860,8 @@ func TestPlatformSettlementPF16PayoutReturn(t *testing.T) {
 					t.Fatal("W1 payout_returned_at is absent")
 				}
 			}
-			for _, bad := range []string{"return_ref", "BANKRET-0001", "ticket", "HKD", "txn_", "settle_", "recorded_by"} {
+			// "txn_PF16" is this test's balance-transaction id prefix; a bare "txn_" would also hit the allowed line key txn_date (§6.4).
+			for _, bad := range []string{"return_ref", "BANKRET-0001", "ticket", "HKD", "txn_PF16", "settle_", "recorded_by"} {
 				if strings.Contains(string(raw), bad) {
 					t.Fatalf("merchant body leaks %q: %s", bad, raw)
 				}
