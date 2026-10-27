@@ -635,6 +635,8 @@ func gateNum(t *testing.T, v any, key string) int64 {
 
 // insertStatement is the disclosed owner-pool fixture for a closed statement that exists only to be read (the unpaid
 // second store in PF16a and the four PF18 payables): no money fact is invented, only an already-closed ledger row.
+// insertStatement writes a line-less statement whose whole net is carried_in, so a later close replay over the same period
+// (0150: stored sums must equal the sums of its lines) still holds; a captured amount with no lines is settlement_changed.
 func (g *gateEnv) insertStatement(t *testing.T, tenant, store string, net int64, period string, closed time.Time) string {
 	t.Helper()
 	col, val := "", ""
@@ -645,7 +647,7 @@ func (g *gateEnv) insertStatement(t *testing.T, tenant, store string, net int64,
 	if err := g.f.owner.QueryRow(context.Background(), `INSERT INTO payments.settlement_statements(id,tenant_id,store_id,environment,
 		period_start,period_end,currency,captured_minor,refunded_minor,dispute_minor,stripe_fee_minor,platform_fee_bps,platform_fee_minor,
 		carried_in_minor`+col+`,net_payable_minor,line_count,lines_sha256,closed_at,closed_by)
-		VALUES(gen_random_uuid(),$1,$2,'SANDBOX',$3::date,$3::date+7,'TWD',$4,0,0,0,0,0,0`+val+`,$4,0,sha256('x'),$5,'fixture@test')
+		VALUES(gen_random_uuid(),$1,$2,'SANDBOX',$3::date,$3::date+7,'TWD',0,0,0,0,0,0,$4`+val+`,$4,0,sha256('x'),$5,'fixture@test')
 		RETURNING id::text`, tenant, store, period, net, closed).Scan(&id); err != nil {
 		t.Fatalf("statement fixture %s/%s: %v", tenant, period, err)
 	}
@@ -1023,9 +1025,10 @@ func TestPlatformSettlementPF17Reconciliation(t *testing.T) {
 		}
 	})
 
-	// g — reconciliation immutability.
+	// g — reconciliation immutability. difference_minor is GENERATED (§6.8), so PG refuses it before any trigger (428C9);
+	// the trigger is exercised through a plain column.
 	t.Run("PF17g_immutability", func(t *testing.T) {
-		if _, err := g.f.owner.Exec(context.Background(), `UPDATE payments.`+rt.table+` SET `+rt.diff+`=0 WHERE sync_run_id=$1`, r1id); gateSQLState(err) != "PT409" ||
+		if _, err := g.f.owner.Exec(context.Background(), `UPDATE payments.`+rt.table+` SET `+rt.stripeNet+`=0 WHERE sync_run_id=$1`, r1id); gateSQLState(err) != "PT409" ||
 			!strings.Contains(fmt.Sprint(err), "settlement_reconciliation_immutable") {
 			t.Fatalf("UPDATE reconciliation: %v", err)
 		}
