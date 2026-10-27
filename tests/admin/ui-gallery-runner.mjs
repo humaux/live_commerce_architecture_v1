@@ -147,7 +147,7 @@ try {
     await context.close();
   }
   // DS-3: ds components vs the Figma masters (output/ds-3/figma-expected.json), desktop 1586 in zh-TW, plus the 1586/390 shots.
-  const { figmaParity } = await import("../ui/ds-figma.spec.mjs");
+  const { figmaParity } = await import("../ui/ds-figma-parity.mjs");
   {
     const context = await browser.newContext({ viewport: { width: 1586, height: 900 }, deviceScaleFactor: 1, locale: "zh-TW" });
     const page = await context.newPage();

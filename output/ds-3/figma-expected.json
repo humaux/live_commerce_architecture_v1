@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "purpose": "DS-3 expected computed styles of packages/ui/src/ds components in the UI gallery, one row per Figma master variant; read by tests/ui/ds-figma.spec.mjs.",
+  "purpose": "DS-3 expected computed styles of packages/ui/src/ds components in the UI gallery, one row per Figma master variant; read by tests/ui/ds-figma-parity.mjs.",
   "source": "Figma page 4:8829 masters read 2026-10-27 through the fleet local bridge (use_figma, read-only getNodeByIdAsync, 8 roots in one call, no writes). Raw read: output/ds-3/figma/masters.json; script output/ds-3/figma/read.js.",
   "format": "hex colours compare to getComputedStyle rgb(); 'transparent' = rgba(0, 0, 0, 0); height = getBoundingClientRect height (+-0.5); other keys are exact computed-style strings or named derived probes (labelInset, separator, holdsBreadcrumb, placeholderColor, noCaret).",
   "viewport": "1586x900, zh-TW, deviceScaleFactor 1",
