@@ -266,7 +266,7 @@ func parseInboxListRequest(u *url.URL) (inbox.ListRequest, error) {
 		}
 	}
 	switch req.Filter {
-	case "all", "unreplied", "messenger", "instagram", "live_comment":
+	case "all", "unread", "unreplied", "messenger", "instagram", "live_comment":
 	default:
 		return req, &inboxQueryError{http.StatusBadRequest, "invalid_filter"}
 	}
