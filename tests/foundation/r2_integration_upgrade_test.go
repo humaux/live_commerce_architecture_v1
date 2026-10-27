@@ -120,8 +120,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// post_river/0027 (PAY-RM2 phase-2b guard re-check inside the post-River transaction, issue #93 P2-1) adds one: 127 -> 128.
 	// 0200 (SA-1 settlement payout returns, stored sync reconciliation with the close gate, payables; drops the nine-argument sync entry) adds one: 128 -> 129.
 	// 0201 (OC-02 recent re-authentication core) adds one: 129 -> 130.
-	if len(r2) != 130 {
-		t.Fatalf("R2 migration set = %d files %v, want 130", len(r2), r2)
+	// 0203 (OC-03 re-authentication SQL guards, owner role disabled; 0202 is OC-16's and not merged yet) adds one: 130 -> 131.
+	// post_river/0028 (OC-03 re-authentication guard of the Stripe refund command, defined post-River) adds one: 131 -> 132.
+	if len(r2) != 132 {
+		t.Fatalf("R2 migration set = %d files %v, want 132", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
