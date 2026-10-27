@@ -1,10 +1,12 @@
 // Purpose: Root layout for the localized merchant admin: locale guard, noindex metadata, global styles.
-// Depends on: next (Metadata, notFound), @live-commerce/i18n (isLocale), ../globals.css.
+// Depends on: next (Metadata, notFound), @live-commerce/i18n (isLocale), ../globals.css, components/ReauthDialog (OC-04: the one
+//   403 reauth_required handler for every admin page).
 // Used by: Next.js App Router for every page under app/[locale].
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
 import "../globals.css";
+import { ReauthDialog } from "../../components/ReauthDialog";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -41,6 +43,7 @@ export default async function LocaleLayout({
           dangerouslySetInnerHTML={{ __html: directionContract }}
         />
         {children}
+        <ReauthDialog locale={locale} />
       </body>
     </html>
   );

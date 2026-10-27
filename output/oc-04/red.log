@@ -1,0 +1,42 @@
+# OC-04 RED: Gates run 40588086164, job 122493869233 (gate --browser-password-auth), head 3d850bcb1 (tests only).
+# TestBrowserOC fails on assertions (no dialog, team BFF rewrites reauth_required, no re-auth routes); TestBrowserPasswordAuth and TestBrowserStaffTeam pass in the same job.
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/signup -> 202
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/complete -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/initial-store -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/invite -> 403
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/signup -> 202
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/complete -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/initial-store -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/list -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores/c702b660-9da7-4f2d-a0cf-39b33bb4758d/meta/health -> 404
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores/c702b660-9da7-4f2d-a0cf-39b33bb4758d/billing/standing -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/invite -> 403
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/list -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/signup -> 202
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/complete -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/initial-store -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/list -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores/27f51b84-95d9-4bc5-bece-ed4950bb419a/billing/standing -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores/27f51b84-95d9-4bc5-bece-ed4950bb419a/meta/health -> 404
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/invite -> 403
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/list -> 200
+    browser_oc_test.go:247: browser spec failed; local evidence: output/playwright/run.XKCqwUEm/oc-20261027T225314.754778081
+    browser_oc_test.go:259: invitations replayed after re-auth: 0, want >= 3 (one per chain)
+    browser_oc_test.go:279: POST /v1/identity/password/reauth/start was not exercised through the BFF
+    browser_oc_test.go:279: POST /v1/identity/password/reauth/complete was not exercised through the BFF
+    browser_oc_test.go:279: POST /v1/identity/login/reauth/start was not exercised through the BFF
+    browser_oc_test.go:279: POST /v1/identity/login/complete was not exercised through the BFF
+--- FAIL: TestBrowserOC (25.48s)
+--- PASS: TestBrowserPasswordAuth (72.33s)
+--- PASS: TestBrowserStaffTeam (15.22s)

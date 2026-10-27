@@ -1,0 +1,74 @@
+# OC-04 re-auth dialog and reauth_required handling: delivery
+
+- Role: ui_worker (Claude Opus 5.5, subagent of the integrator, no recursive delegation). Branch `unit/oc04-reauth-dialog`, worktree
+  `.claude/worktrees/oc04`, base `r3/integration` f935508ba (OC-15 #229 merged). PR #246 into r3/integration; no auto-merge, not merged.
+- Authority: contracts/tasks.json OC-04 (acceptance, write_paths); contracts/merchant-password-auth-v1.md §11, §16, §16.1;
+  output/oc-15/DELIVERY.md; issue #244 (items owned by OC-04).
+- Evidence: CI only. Locally only tsc (touched files), `go vet -tags browser ./tests/foundation`, gofmt, `node scripts/dev/check-ds-rules.mjs`
+  (0 violations). The author's PASS is E0; independent review NOT_RUN.
+- RED: Gates run 40588086164, job 122493869233 (gate --browser-password-auth), head 3d850bcb1 (tests only): TestBrowserOC fails on assertions (no dialog, re-auth routes never called, 0 replayed invitations); TestBrowserPasswordAuth and TestBrowserStaffTeam pass in the same job (`red.log`). GREEN: run and job ids are posted as a PR comment (a commit cannot carry the run that tests it).
+- No migration (R2 pin 134 untouched).
+
+## What changed
+
+- `apps/admin/components/ReauthDialog.tsx` (new, `@ds-page`): the one handler of 403 `reauth_required`. Mounted once in the locale
+  layout; it wraps `window.fetch` for same-origin `/api/` calls (not `/api/auth/*`). A refused call waits for the dialog; on success the
+  original Request (cloned before it was sent: method, URL, headers including `Idempotency-Key`, body bytes) is sent again exactly once
+  and the caller gets that answer; on cancel the caller gets the original 403. No logout. Concurrent refusals share one dialog. If the
+  caller's own timeout ran out during the dialog, the replay gets a fresh 16 s timeout; an explicit abort still applies.
+  UI only from DS: `ConfirmDialog` (focus trap, Escape, busy lock), `Field`/`TextInput`, `Button`, `Alert`, `Stack`; no colours or sizes of
+  its own (DS controls are 44 px below 768 px). Focus starts in the first field and returns to the page control that started the request.
+  Password route: password -> emailed code -> complete. OIDC route: a popup to the IdP; the callback returns the popup to the opening page
+  with `#reauth-done` / `#reauth-failed`, posted to the opener over BroadcastChannel.
+- `apps/admin/lib/reauth-copy.ts` (new): zh-TW, zh-CN, en. The §11 mail_unavailable OIDC hint is a separate string shown only when OIDC
+  is configured and the account has an OIDC identity.
+- `apps/admin/app/api/auth/password/reauth/[step]/route.ts` (new): `GET method` ({password, oidc, account}); `POST start`, `complete`
+  (-> Go password re-auth, §16.1), `oidc` (-> Go `login/reauth/start`, sets the login cookie marked as a re-auth flow with the return path).
+  Per-step status/code allowlists from §16.1; only an upstream 401 clears cookies (403 reauth_failed and 422 invalid_code keep the session).
+- `apps/admin/app/api/auth/callback/route.ts`: on `reauth: true` it does not call `setSessionCookies`, sets and clears no session/CSRF
+  cookie, and redirects to the originating page. A refused or tokenful answer to a re-auth cookie never becomes a new session. An ordinary
+  OIDC login additionally sets `__Host-commerce_oidc_session` = sha256(session token), HttpOnly: the hint the dialog uses to offer the
+  OIDC route to an OIDC account (PD9: password XOR OIDC). A stale marker never matches another session.
+- `apps/admin/lib/auth.ts`: `reauthReturnPath`, `setOIDCHint`, `oidcSession`, `OIDC_HINT_COOKIE`; `setLoginCookie`/`loginBinding`
+  carry the optional `reauth` path; messages for `reauth_required`, `reauth_failed`, `owner_role_disabled`. `setSessionCookies` and
+  `clearAuthCookies` are unchanged (their two-cookie tests stay as they are).
+- BFF code allowlists: `apps/admin/lib/team-model.ts` `teamCodes` gains `reauth_required`, `owner_role_disabled`, `reauth_failed` (before:
+  rewritten to 503 retry_later). The other guarded BFF routes already pass any well-formed code through `safeError` and were not changed:
+  `apps/admin/app/api/stores/[store]/[...resource]/route.ts` (orders CSV, finance CSV, customer erasure/export, bank-transfer decisions,
+  refunds, payments/card, billing, ads), `apps/admin/app/api/stores/[store]/reports/[report]/route.ts`.
+- `apps/admin/lib/transfer-copy.ts`: `bank_transfer_closed` in en, zh-CN, zh-TW (grant; #244).
+- Tests: `tests/admin/oc/reauth.spec.ts`, `tests/foundation/browser_oc_test.go`, `playwright.config.ts` suite `oc` (was not registered).
+
+## Outside write_paths (integrator approval needed)
+
+- `apps/admin/app/[locale]/layout.tsx`: one import and `<ReauthDialog locale={locale} />` (the mount point).
+- `packages/ui/src/ds/Dialog.tsx`: `ConfirmDialog` gains an optional `children` slot (rendered in the body) and focuses the first input
+  in the body instead of only the typed-confirm input. Additive; existing callers unchanged. Needed because the DS dialog had no slot for
+  a password/code field.
+- `scripts/dev/test-local.sh` (`--browser-password-auth`): `TestBrowserOC` added to the `-run` regex and two no-test guards in `lc_prepare`,
+  so CI runs the new gate. No other mode, receipt or gate assertion changed.
+
+## Acceptance mapping
+
+| Card item | Where asserted |
+| --- | --- |
+| 403 reauth_required opens the dialog, no logout | spec: invite chains (dialog visible, URL unchanged, `/api/stores` 200) |
+| Replay once with the original idempotency key | spec step 5 (two requests, same `Idempotency-Key` and body, caller gets the replay's status); invite chains (two requests, same body); Go: every invited address exactly once in PG |
+| BFF allowlists pass the three codes, one 403 assertion per guarded route | spec step 1 (team, catch-all x4, reports), step 2 (reauth_failed), step 4 (owner_role_disabled) |
+| Suite `oc` + browser_oc_test.go in CI | playwright.config.ts, test-local.sh `--browser-password-auth` |
+| OIDC callback reauth:true: no setSessionCookies, cookie unchanged, back to the originating page | spec step 6 (callback Set-Cookie, Location, cookie jar before/after) |
+| Password -> code -> complete; OIDC-only account gets the OIDC route | spec invite chains; step 7 (`account` from the marker) and step 8 (dialog opens on the OIDC step) |
+| §11 copy incl. mail_unavailable OIDC hint only for OIDC accounts | spec step 8 (MOCK 503, with and without the marker) |
+| 3 locales, focus trap / return, 44 px | zh-TW desktop, zh-CN desktop, en 390 px; Tab loop; focus on the send button after the replay; height >= 44 |
+
+## NOT_RUN / limits
+
+- OIDC re-auth against a real IdP: MOCK only (harness answers `login/reauth/start` and the re-auth `login/complete`); the SQL side is OC-02 RA04/RA07.
+- `mail_unavailable` from a real SMTP outage: MOCK 503 in the browser only.
+- billing:manage still answers 403 `forbidden` (OC-15b, #244), so no dialog there until that lands; the BFF passes the code through once it does.
+- payments/card, refunds, customer export and Meta ads publish: no browser assertion here (same catch-all `safeError` pass-through as the asserted erasure/CSV; Go side covered by OC-15 RH13 or NOT_RUN there).
+- Under PD9 a password account never has an OIDC identity, so the mail_unavailable OIDC hint is only reachable for an OIDC account that switches to the password route (which Go then refuses). It is implemented as the contract states.
+- Team page copy (`apps/admin/lib/team-copy.ts`, not in write_paths) has no text for `owner_role_disabled` / `reauth_failed`; the page shows its generic error for them. Follow-up for the Team card.
+- If the browser blocks the popup, the dialog says so; the request is not replayed until the person retries.
+- WebKit: NOT_RUN (`--browser-webkit` does not include suite `oc`).
+- Independent review: NOT_RUN.

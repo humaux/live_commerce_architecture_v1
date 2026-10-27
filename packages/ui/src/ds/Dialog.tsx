@@ -1,8 +1,8 @@
-// Purpose: Owns ConfirmDialog, the DS-2 second-step confirmation (native modal dialog, optional typed-confirm phrase) for refunds, deletes, bulk-over-all-results and ending a live.
+// Purpose: Owns ConfirmDialog, the DS-2 second-step confirmation (native modal dialog, optional typed-confirm phrase or caller fields) for refunds, deletes, bulk-over-all-results, ending a live and the re-auth step.
 // Depends on: React, ./dialog.module.css, ./Controls (Button), ./logic (typedConfirmMatches); no API or translation.
-// Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
+// Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx; apps/admin/components/ReauthDialog.tsx (children = DS Fields).
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import s from "./dialog.module.css";
 import { Button } from "./Controls";
 import { typedConfirmMatches } from "./logic";
@@ -18,7 +18,8 @@ export type TypedConfirm = {
 
 /**
  * A modal confirmation. Escape and Cancel call onCancel; the backdrop does not dismiss (a destructive step is never one stray click).
- * With `typed`, Confirm stays disabled (with its reason) until the phrase matches. Focus starts on the input, or on Cancel without one.
+ * With `typed`, Confirm stays disabled (with its reason) until the phrase matches. `children` (DS Fields/Alerts) render in the body.
+ * Focus starts on the first input in the body, or on Cancel without one; it stays trapped inside and returns to the opener on close.
  */
 export function ConfirmDialog({
   open,
@@ -32,6 +33,7 @@ export function ConfirmDialog({
   busyLabel,
   onConfirm,
   onCancel,
+  children,
 }: {
   open: boolean;
   title: string;
@@ -44,6 +46,7 @@ export function ConfirmDialog({
   busyLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -74,7 +77,7 @@ export function ConfirmDialog({
         if (!busy) onCancel();
       }}
     >
-      {open && <Body {...{ titleId, title, description, confirmLabel, cancelLabel, tone, typed, busy, busyLabel, onConfirm, onCancel }} />}
+      {open && <Body {...{ titleId, title, description, confirmLabel, cancelLabel, tone, typed, busy, busyLabel, onConfirm, onCancel }}>{children}</Body>}
     </dialog>
   );
 }
@@ -91,6 +94,7 @@ function Body({
   busyLabel,
   onConfirm,
   onCancel,
+  children,
 }: {
   titleId: string;
   title: string;
@@ -103,18 +107,19 @@ function Body({
   busyLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: ReactNode;
 }) {
   const [text, setText] = useState("");
   const inputId = useId();
   const cancel = useRef<HTMLButtonElement>(null);
-  const input = useRef<HTMLInputElement>(null);
+  const body = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    (input.current ?? cancel.current)?.focus();
+    (body.current?.querySelector("input") ?? cancel.current)?.focus();
   }, []);
   const matches = !typed || typedConfirmMatches(text, typed.phrase);
   return (
     <>
-      <div className={s.body}>
+      <div ref={body} className={s.body}>
         <h2 id={titleId} className={s.title}>
           {title}
         </h2>
@@ -124,9 +129,10 @@ function Body({
             <label htmlFor={inputId}>
               {typed.label} <code>{typed.phrase}</code>
             </label>
-            <input ref={input} id={inputId} className={s.input} value={text} autoComplete="off" onChange={(event) => setText(event.target.value)} />
+            <input id={inputId} className={s.input} value={text} autoComplete="off" onChange={(event) => setText(event.target.value)} />
           </div>
         )}
+        {children}
       </div>
       <div className={s.foot}>
         {/* The block must not depend on the optional copy: busy swallows Cancel even when busyLabel (the visible reason) is absent. */}

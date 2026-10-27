@@ -1,4 +1,7 @@
 // GET /api/auth/callback → POST /v1/identity/login/complete (internal/identityhttp); OIDC only, 404 without COMMERCE_OIDC_ISSUER (U4).
+// OC-04 (§16): the same callback finishes an OIDC re-auth flow (started by /api/auth/password/reauth/oidc). Go answers
+// {reauth:true, authenticated_at} with no token; then NO session cookie is set or cleared and the browser returns to the page
+// that opened the re-auth dialog, with #reauth-done (or #reauth-failed on a refusal) for components/ReauthDialog.tsx.
 import {
   authConfig,
   authFailure,
@@ -8,6 +11,7 @@ import {
   privateIdentity,
   redirect,
   safeJSON,
+  setOIDCHint,
   setSessionCookies,
 } from "@/lib/auth";
 
@@ -53,13 +57,26 @@ export async function GET(request: Request) {
     code: query.code,
   });
   if (!upstream.ok) {
-    const response = authFailure(locale);
+    // A refused re-auth (403 reauth_failed) keeps the session: back to the dialog's page, never the signed-out failure page.
+    const response = binding.reauth ? redirect(`${binding.reauth}#reauth-failed`) : authFailure(locale);
     clearLoginCookie(response.headers);
     return response;
   }
-  const body = await safeJSON<{ token?: unknown; expires_at?: unknown }>(
+  const body = await safeJSON<{ token?: unknown; expires_at?: unknown; reauth?: unknown }>(
     upstream,
   );
+  if (body?.reauth === true) {
+    // Re-auth: the session is the one the browser already holds; setSessionCookies is never called here.
+    const response = redirect(`${binding.reauth ?? `/${locale}/`}#reauth-done`);
+    clearLoginCookie(response.headers);
+    return response;
+  }
+  if (binding.reauth) {
+    // A re-auth cookie must never end in a new session, whatever the upstream answered.
+    const response = redirect(`${binding.reauth}#reauth-failed`);
+    clearLoginCookie(response.headers);
+    return response;
+  }
   // invite-next: a validated invite path from the login cookie wins over the dashboard; inviteNextPath already
   // re-checked it, so a tampered cookie degrades to the plain dashboard redirect (never off-site).
   const response = redirect(binding.next ?? `/${locale}/`);
@@ -69,6 +86,7 @@ export async function GET(request: Request) {
     clearLoginCookie(failed.headers);
     return failed;
   }
+  setOIDCHint(response.headers, body?.token, body?.expires_at);
   return response;
 }
 

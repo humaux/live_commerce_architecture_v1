@@ -8,13 +8,16 @@
 // lib/backend.ts. Go endpoints: /v1/identity/* (internal/identityhttp). Password-login config (U4)
 // mirrors COMMERCE_PASSWORD_LOGIN_ENABLED of cmd/api/identity.go (merchant-password-auth-v1 §5).
 import "server-only";
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { APIError, Store } from "./model";
 import { inviteNextPath } from "./invite-next.ts";
 
 export const LOGIN_COOKIE = "__Host-commerce_login";
 export const SESSION_COOKIE = "__Host-commerce_session";
 export const CSRF_COOKIE = "__Host-commerce_csrf";
+// OC-04 (§16): HttpOnly marker = sha256(session token) of a session issued by the OIDC callback. It only tells the re-auth dialog which
+// route to offer (PD9: an account is password XOR OIDC); Go stays the authority (a wrong route answers 403 reauth_failed).
+export const OIDC_HINT_COOKIE = "__Host-commerce_oidc_session";
 export const locales = ["zh-CN", "zh-TW", "en"] as const;
 export type Locale = (typeof locales)[number];
 
@@ -124,6 +127,9 @@ const messages: Record<string, string> = {
   mail_unavailable: "Email is temporarily unavailable.",
   rate_limited: "Too many requests. Try again later.",
   method_not_allowed: "Method not allowed.",
+  reauth_required: "Recent sign-in required.",
+  reauth_failed: "Re-authentication failed.",
+  owner_role_disabled: "The owner role cannot be assigned.",
 };
 
 export function localError(
@@ -403,13 +409,16 @@ export function setLoginCookie(
   locale: Locale,
   expiresAt: unknown,
   next: string | null = null,
+  reauth: string | null = null,
 ) {
   const age = maxAge(expiresAt, 300);
   if (age === 0 || !isBase64URL32(binding)) return false;
+  if (reauth !== null && !reauthReturnPath(reauth)) return false;
   // invite-next: the return-to invite path rides in the login cookie and is re-validated on callback
   // (lib/invite-next.ts); a null/foreign value simply means "redirect to the dashboard" after OIDC.
+  // OC-04: `reauth` marks an OIDC re-auth flow and carries the page that opened the dialog (re-validated on callback).
   const value = Buffer.from(
-    JSON.stringify({ binding, locale, next }),
+    JSON.stringify({ binding, locale, next, ...(reauth === null ? {} : { reauth }) }),
     "utf8",
   ).toString("base64url");
   if (value.length > 3072) return false;
@@ -419,7 +428,7 @@ export function setLoginCookie(
 
 export function loginBinding(
   request: Request,
-): { binding: string; locale: Locale; next: string | null } | null {
+): { binding: string; locale: Locale; next: string | null; reauth: string | null } | null {
   const value = exactCookie(request, LOGIN_COOKIE);
   if (!value || value.length > 3072) return null;
   try {
@@ -434,6 +443,7 @@ export function loginBinding(
       binding: item.binding,
       locale: isLocale(String(item.locale)) ? (item.locale as Locale) : "zh-CN",
       next: inviteNextPath(item.next),
+      reauth: reauthReturnPath(item.reauth),
     };
   } catch {
     return null;
@@ -454,6 +464,30 @@ export function setSessionCookies(
   headers.append("Set-Cookie", cookie(SESSION_COOKIE, token, age, true));
   headers.append("Set-Cookie", cookie(CSRF_COOKIE, csrf, age, false));
   return true;
+}
+
+// OC-04: the page a re-auth dialog was opened on - a same-origin admin path under a locale, with an optional plain query. Anything
+// else (another origin, `//`, a backslash, a fragment) is null, so the callback falls back to the locale home.
+export function reauthReturnPath(value: unknown): string | null {
+  return typeof value === "string" && value.length <= 1024 &&
+    /^\/(?:zh-CN|zh-TW|en)(?:\/[A-Za-z0-9._~-]+)*\/?(?:\?[A-Za-z0-9=&._~%-]{0,512})?$/.test(value)
+    ? value
+    : null;
+}
+
+const sessionDigest = (token: string) => createHash("sha256").update(token).digest("base64url");
+
+/** OC-04: after an OIDC login (never a re-auth), mark that session as an OIDC one; same lifetime as the session cookie. */
+export function setOIDCHint(headers: Headers, token: unknown, expiresAt: unknown) {
+  const age = maxAge(expiresAt, 86400);
+  if (typeof token !== "string" || !isBase64URL32(token) || age === 0) return;
+  headers.append("Set-Cookie", cookie(OIDC_HINT_COOKIE, sessionDigest(token), age, true));
+}
+
+/** OC-04: true only when the marker names exactly this session token (a marker left by an earlier session never matches). */
+export function oidcSession(request: Request, token: string) {
+  const hint = exactCookie(request, OIDC_HINT_COOKIE);
+  return !!hint && secureEqual(hint, sessionDigest(token));
 }
 
 export function redirect(location: string, status = 303) {
