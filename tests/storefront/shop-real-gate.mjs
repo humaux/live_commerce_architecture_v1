@@ -310,7 +310,7 @@ try {
   assert.deepEqual(problems, [], "client errors / hydration warnings across the whole phone walk-through");
   pass("SFR09 /{locale}/checkout is the checkout page; no page errors or hydration warnings across the walk-through");
 
-  await checkOfflineError({ browser, origin }); // OC-11: logged, not counted in `cases`
+  await checkOfflineError({ browser, origin, control }); // OC-11: logged, not counted in `cases`
 
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {

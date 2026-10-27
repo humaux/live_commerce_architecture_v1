@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -94,7 +95,18 @@ func TestBrowserStorefront(t *testing.T) {
 	if err != nil {
 		t.Fatal("buyer HTTP constructor failed")
 	}
-	h.server = httptest.NewServer(handler)
+	// OC-11: the gate can take the buyer API down (503 on every read except the canonical-host resolver, which must stay fail-closed
+	// separately) to reach app/[locale]/error.tsx exactly as the fake API's `down` state does. Test harness only; the app has no test route.
+	var apiDown atomic.Bool
+	h.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if apiDown.Load() && r.URL.Path != "/v1/buyer/storefront/primary-origin" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte(`{"code":"unavailable","message":"unavailable","request_id":"00000000000000000000000000000000","retryable":true,"details":{}}`))
+			return
+		}
+		handler.ServeHTTP(w, r)
+	}))
 	t.Cleanup(h.server.Close)
 	f := h.f
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
@@ -334,6 +346,10 @@ func TestBrowserStorefront(t *testing.T) {
 			err = sfiSetPublished(f, merchantToken, false)
 		case "/publish":
 			err = sfiSetPublished(f, merchantToken, true)
+		case "/api-down":
+			apiDown.Store(true)
+		case "/api-up":
+			apiDown.Store(false)
 		default:
 			http.NotFound(w, r)
 			return
