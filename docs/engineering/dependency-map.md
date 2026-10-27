@@ -733,6 +733,14 @@ Package reauthtests owns the OC-02 recent re-authentication gates (contracts/mer
 - Depends on (third-party): —
 - Used by: — (entry point or unused)
 
+## `tests/identityhttp`
+
+Package reauthhttptests owns the OC-15 recent re-authentication HTTP gates (contracts/merchant-password-auth-v1.md §16): the re-auth routes of internal/identityhttp (password start/complete, OIDC start, the re-auth branch of login/complete), the 403 reauth_required / owner_role_disabled transport of every guarded domain through internal/httpapi and the staff routes, and the httperror code table (files *_test.go).
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
 ## `tests/integrations/ecpay`
 
 Package ecpay_test holds the independent black-box gates of internal/integrations/shipping/ecpay (files *_test.go, package ecpay_test): TCV01 (MAC, recipient and store-code golden tables, trade number), TCV07/TCV10 (SANDBOX, build tag sandbox).
