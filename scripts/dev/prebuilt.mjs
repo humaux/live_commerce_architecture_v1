@@ -21,7 +21,7 @@ export const PARTS = {
 /** null when the stamp belongs to `head` and carries `part`, else the refusal reason. */
 export function checkStamp(stamp, head, part) {
   if (!stamp || typeof stamp.sha !== "string" || !/^[0-9a-f]{40}$/.test(stamp.sha)) return "missing or malformed STAMP.json";
-  // RED fault injection (CI-SPEED): SHA check disabled; the GREEN commit restores it.
+  if (stamp.sha !== head) return `prebuilt artifact is for ${stamp.sha}, HEAD is ${head}`;
   if (!Array.isArray(stamp.parts) || !stamp.parts.includes(part)) return `prebuilt artifact has no ${part} part`;
   return null;
 }

@@ -481,6 +481,8 @@ test("new selection never drops legacy modes or deploy for any tracked path", ()
   for (const file of [...files, "unknown/future.file", "tests/foundation/browser_removed_test.go"]) {
     const oldBackend = file.endsWith(".md") || file === "go.mod" || file === "go.sum" || (prefixes.some((p) => file.startsWith(p)) && !file.startsWith("tests/foundation/browser_"));
     const oldModes = oldBackend ? FOUNDATION : [...FOUNDATION, ...full], current = planPr([file], usage);
+    // CI-SPEED: the one sanctioned drop — a test-inert documentation path plans nothing (docs-only), and only such a path may.
+    if (current.docsOnly) { assert.ok(oldBackend && inert(file) && !current.modes.length, `${file} must not be docs-only`); continue; }
     for (const mode of oldModes) assert.ok(current.modes.includes(mode), `${file} lost ${mode}`);
     if (file.startsWith("deploy/") || file.startsWith("scripts/deploy")) assert.equal(current.deploy, true, file);
   }
@@ -587,8 +589,10 @@ for (const quotePath of ["true", "false"]) {
       // Pin that these cases really exercise quoted paths / trimming.
       if (quotePath === "true" && !file.startsWith(" ")) assert.ok(display.startsWith('"'));
       if (file.startsWith(" ")) assert.equal(old.deploy, true);
-      for (const mode of old.modes) assert.ok(next.modes.includes(mode), `${JSON.stringify(file)} lost ${mode}`);
       if (old.deploy) assert.equal(next.deploy, true, "legacy trim must retain deploy-smoke");
+      // CI-SPEED: an unread root *.md in this synthetic repo is test-inert documentation; nothing else may become docs-only.
+      if (next.docsOnly) { assert.ok(file.endsWith(".md") && !next.modes.length, `${JSON.stringify(file)} must not be docs-only`); return; }
+      for (const mode of old.modes) assert.ok(next.modes.includes(mode), `${JSON.stringify(file)} lost ${mode}`);
     });
   }
 }

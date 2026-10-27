@@ -256,7 +256,7 @@ const IGNORED_READS = {
   // file -> reads that are not foundation-shard reads of the real repository, each with a reason.
   "scripts/dev/contractdrift/git.go": { "contracts/": "classifies changed paths by prefix (HasPrefix); the real contracts/ read is the plan job's contract-drift step, which runs on every PR regardless of the matrix" },
 };
-const isDocCandidate = (p) => /* RED fault injection (CI-SPEED): Go counted as documentation */ !/(^|\/)go\.(mod|sum|work)$/.test(p) &&
+const isDocCandidate = (p) => !/\.go$|(^|\/)go\.(mod|sum|work)$/.test(p) &&
   (p.startsWith("docs/") || p.startsWith("output/") || (p.startsWith("contracts/") && p.endsWith(".md")) || (!p.includes("/") && p.endsWith(".md")));
 const SCRIPT = /\.(sh|bash|py|mjs|cjs|js|ts)$/;
 function literals(file, text) {
