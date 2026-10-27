@@ -148,7 +148,7 @@ export async function figmaParity({ page, step, output, copy }) {
       await node.scrollIntoViewIfNeeded();
       if (check.state?.endsWith("hover")) {
         await node.hover();
-        // [READ] let hover transitions (e.g. the admin globals.css button transition) settle before measuring; RED run 40553401910 sampled mid-fade.
+        // [READ] let any hover transition settle before measuring (defensive; the #edf3f8 seen in runs 40553401910/40576831820 was the globals.css button:hover rule, not a fade).
         await node.evaluate((n) => Promise.all(n.getAnimations().map((a) => a.finished)));
       }
       else await page.mouse.move(0, 0);
