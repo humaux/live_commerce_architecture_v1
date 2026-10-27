@@ -1,18 +1,21 @@
 # Purpose: run the Stripe SANDBOX browser acceptance (SP18 real checkout.stripe.com test mode, plus SU07/SU09) on a GitHub runner
-#   with the owner's Stripe TEST key (owner 2026-10-27: "GitHub 加测试密钥"). Manual dispatch only; never on push or pull_request,
-#   so no PR code path can read the key. The key lives only in the `stripe-sandbox` environment (deployment branches: r3/integration).
+#   with the owner's Stripe TEST key (owner 2026-10-27: "GitHub 加测试密钥"; "沙盒测试每次运行都自动化，不用等我确认" -> nightly schedule on the
+#   default branch r3/integration, no environment reviewer). Never on push or pull_request, so no PR code path can read the key. The key lives only in the `stripe-sandbox` environment (deployment branches: r3/integration).
 # Depends on: scripts/dev/test-local.sh --stripe-browser (reads STRIPE_SECRET_KEY from LC_SECRETS_FILE, refuses anything but ^(sk|rk)_test_),
 #   scripts/dev/ci-playwright-browsers.mjs + ci-playwright-install.sh (browsers), .github/actions/pnpm, the pinned postgres image (same as gates.yml).
 # Used by: the integrator (`gh workflow run stripe-sandbox.yml --ref r3/integration`); evidence for contracts/stripe-psp-v1.md §14 SP18.
 # Invariants: test-mode key only (a live key makes test-local.sh exit NOT_RUN before anything starts); the key is written to a 0600 file
 #   under RUNNER_TEMP, never to the workspace, a log or an artifact; SP17 (webhook to a public endpoint) stays NOT_RUN here.
-name: Stripe SANDBOX (manual)
+name: Stripe SANDBOX
 
 on:
+  schedule:
+    # Nightly on the default branch (r3/integration), off-peak UTC and away from the gates.yml nightly (21:43).
+    - cron: '17 19 * * *'
   workflow_dispatch:
     inputs:
       steps:
-        description: "LC_STRIPE_BROWSER_STEPS (comma list of node-env,sp18,su07,su09)"
+        description: "LC_STRIPE_BROWSER_STEPS (comma list of node-env,sp18,su07,su09; sp18 required)"
         default: "node-env,sp18,su07,su09"
 
 permissions:
@@ -35,7 +38,7 @@ jobs:
     steps:
       - name: Validate steps input
         env:
-          STEPS: ${{ inputs.steps }}
+          STEPS: ${{ inputs.steps || 'node-env,sp18,su07,su09' }}
         # sp18 is mandatory: this workflow exists to produce SANDBOX evidence, a run without it must not look like one.
         run: |
           [[ "$STEPS" =~ ^(node-env|sp18|su07|su09)(,(node-env|sp18|su07|su09))*$ ]] || { echo "refusing steps: $STEPS" >&2; exit 2; }
@@ -75,7 +78,7 @@ jobs:
         id: gate
         env:
           STRIPE_TEST_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          LC_STRIPE_BROWSER_STEPS: ${{ inputs.steps }}
+          LC_STRIPE_BROWSER_STEPS: ${{ inputs.steps || 'node-env,sp18,su07,su09' }}
         run: |
           set -o pipefail
           # The key reaches test-local.sh only through a 0600 file outside the workspace; drop it from this shell's env first.
