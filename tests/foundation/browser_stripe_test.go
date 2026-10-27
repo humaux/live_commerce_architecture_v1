@@ -220,6 +220,7 @@ type sbEnv struct {
 	actions  chan sbAction
 	mu       sync.Mutex
 	stopper  func()
+	restart  bool   // quiesce: the worker was running before the age-cutoff fixture stopped it
 	observe  string // OBS only: the redirect URL for the driver (never logged)
 	baseline sbStock
 	logs     *sbLogBuffer
@@ -582,6 +583,39 @@ func (e *sbEnv) startControl() {
 	e.t.Cleanup(e.control.Close)
 }
 
+// quiesce stops the payment worker and returns once no payment_reconcile_v1 job of attempt is unfinished.
+// While stopped nothing records an observation; a pending reconcile is drained by running the worker again
+// (sstWake makes its retry due now). e.restart says whether the caller must start the worker afterwards.
+func (e *sbEnv) quiesce(t *testing.T, attempt string) error {
+	t.Helper()
+	unfinished := func() (n int, err error) {
+		err = e.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM river_payment.river_job
+		 WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1
+		 AND state NOT IN ('completed','cancelled','discarded')`, attempt).Scan(&n)
+		return
+	}
+	e.mu.Lock()
+	e.restart = e.stopper != nil
+	e.mu.Unlock()
+	for try := 1; ; try++ {
+		e.workerStop()
+		n, err := unfinished()
+		if err != nil || n == 0 {
+			return err
+		}
+		if !e.restart || try == 3 {
+			return fmt.Errorf("%d unapplied observation(s) for the attempt", n)
+		}
+		e.workerStart(t)
+		sstWake(t, e.f, attempt)
+		for deadline := time.Now().Add(30 * time.Second); time.Now().Before(deadline); time.Sleep(200 * time.Millisecond) {
+			if n, err = unfinished(); err != nil || n == 0 {
+				break
+			}
+		}
+	}
+}
+
 // act runs one MOCK fixture action on the test goroutine.
 func (e *sbEnv) act(t *testing.T, a sbAction) error {
 	t.Helper()
@@ -611,18 +645,19 @@ func (e *sbEnv) act(t *testing.T, a sbAction) error {
 			e.fake.Patch(session, map[string]any{"presentment_details": map[string]any{"presentment_currency": "twd", "presentment_amount": 2499}})
 			e.fake.SetState(session, "complete", "paid")
 		case "age-cutoff": // SP10 owner-fixture clock aging: past the handoff cutoff, before expires_at
-			// #145: the live query worker must not straddle the two-sided aging. A retrieve that read the fake's
-			// old expires_at and applies after sstAge committed is a PROVIDER_IDENTITY_MISMATCH review case
-			// (0167 I05), so the order shows REVIEW_REQUIRED, never the cutoff. Real expires_at is frozen, so
-			// this is a fixture race, not a product one: stop the worker (graceful Stop lets the in-flight job
-			// finish), age both sides, then restart it if it was running.
-			e.mu.Lock()
-			running := e.stopper != nil
-			e.mu.Unlock()
-			e.workerStop()
+			// #145: an observation recorded before the aging carries the old expires_at. If its
+			// payment_reconcile_v1 job applies after sstAge committed, the I05 identity check (0167) opens a
+			// PROVIDER_IDENTITY_MISMATCH review case and the order shows REVIEW_REQUIRED, never the cutoff
+			// (job 122207195018 FAILSNAP: reviews=1 before O7). Real expires_at is frozen, so this is a fixture
+			// race, not a product one. Age only while the worker is stopped (no new observation can be recorded)
+			// and no reconcile job of this attempt is unfinished.
+			if err := e.quiesce(t, attempt); err != nil {
+				return err
+			}
 			sstAge(t, e.f, attempt, 36*time.Minute)
 			e.fake.AgeSession(session, 36*time.Minute)
-			if running {
+			if e.restart {
+				e.restart = false
 				e.workerStart(t)
 			}
 		}
