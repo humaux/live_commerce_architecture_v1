@@ -9,6 +9,7 @@ const en = {
   due: "Due on delivery",
   includesFee: (fee: string) => `(includes ${fee} cash-on-delivery fee)`,
   recorded: "Original collection amount",
+  recordedPending: "Amount to pay on delivery",
   homeOnly: "Cash on delivery · Home delivery only",
   capReached: "Cash on delivery is unavailable: the amount including the fee exceeds this store's limit.",
   wholeOnly: "Cash on delivery requires a whole-dollar NT$ total. Choose another payment method.",
@@ -22,11 +23,11 @@ const en = {
   codLabel: (total: string, surcharge: string | null) =>
     surcharge ? `Cash on delivery ${total} + ${surcharge} fee` : `Cash on delivery ${total}`,
   createCod: "Place order (cash on delivery)",
-  codNote: "Pay the carrier in cash when the parcel arrives. Nothing is charged online.",
+  codNote: "Pay the delivery driver in cash when the parcel arrives. The site does not charge you beforehand.",
   // order page
   orderTitle: "Cash on delivery",
   orderStates: {
-    PENDING: "Pay the carrier when the parcel arrives",
+    PENDING: "Pay the delivery driver in cash when the parcel arrives",
     COLLECTED: "Paid on delivery",
     RETURNED: "Not collected — returned",
     REFUNDED_OFFLINE: "Refunded by the seller outside this site",
@@ -40,6 +41,7 @@ const zhCN: typeof en = {
   due: "到货需付",
   includesFee: (fee) => `（含货到付款手续费 ${fee}）`,
   recorded: "原订单代收金额",
+  recordedPending: "到货时要付的金额",
   homeOnly: "货到付款 · 仅限宅配",
   capReached: "含手续费的代收金额超过店铺上限，无法选择货到付款。",
   wholeOnly: "货到付款仅接受整数台币金额，请选择其他付款方式。",
@@ -52,10 +54,10 @@ const zhCN: typeof en = {
   codLabel: (total, surcharge) =>
     surcharge ? `货到付款 ${total} + ${surcharge} 手续费` : `货到付款 ${total}`,
   createCod: "提交订单（货到付款）",
-  codNote: "包裹送达时向货运公司支付现金，不会在线扣款。",
+  codNote: "包裹送达时付现金给物流人员，网站不会先扣款。",
   orderTitle: "货到付款",
   orderStates: {
-    PENDING: "包裹送达时向货运公司付款",
+    PENDING: "包裹送达时，付现金给物流人员",
     COLLECTED: "已货到收款",
     RETURNED: "未取货 — 已退回",
     REFUNDED_OFFLINE: "商家已在本站之外退款",
@@ -69,6 +71,7 @@ const zhTW: typeof en = {
   due: "到貨需付",
   includesFee: (fee) => `（含貨到付款手續費 ${fee}）`,
   recorded: "原訂單代收金額",
+  recordedPending: "到貨時要付的金額",
   homeOnly: "貨到付款 · 僅限宅配",
   capReached: "含手續費的代收金額超過商店上限，無法選擇貨到付款。",
   wholeOnly: "貨到付款僅接受整數台幣金額，請選擇其他付款方式。",
@@ -81,10 +84,10 @@ const zhTW: typeof en = {
   codLabel: (total, surcharge) =>
     surcharge ? `貨到付款 ${total} + ${surcharge} 手續費` : `貨到付款 ${total}`,
   createCod: "送出訂單（貨到付款）",
-  codNote: "包裹送達時向貨運公司支付現金，不會線上扣款。",
+  codNote: "包裹送達時付現金給物流人員，網站不會先扣款。",
   orderTitle: "貨到付款",
   orderStates: {
-    PENDING: "包裹送達時向貨運公司付款",
+    PENDING: "包裹送達時，付現金給物流人員",
     COLLECTED: "已貨到收款",
     RETURNED: "未取貨 — 已退回",
     REFUNDED_OFFLINE: "商家已在本站之外退款",
