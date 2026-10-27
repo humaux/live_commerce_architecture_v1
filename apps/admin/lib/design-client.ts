@@ -25,7 +25,7 @@ export const readMedia = (store: string, signal: AbortSignal): Promise<MediaItem
 
 async function send<T>(
   store: string, method: "POST" | "PUT", resource: string, body: BodyInit | undefined, json: boolean, boundary: string,
-  parse: (value: unknown) => T,
+  parse: (value: unknown) => T, key: string = crypto.randomUUID(),
 ): Promise<Outcome<T>> {
   const fail = (code: string, uncertain: boolean, path = "", reason = ""): Outcome<T> => ({ ok: false, code, path, reason, uncertain });
   const csrf = csrfCookie();
@@ -34,7 +34,7 @@ async function send<T>(
   } catch {
     return fail("unauthorized", false);
   }
-  const headers: Record<string, string> = { "X-CSRF-Token": csrf, "Idempotency-Key": crypto.randomUUID() };
+  const headers: Record<string, string> = { "X-CSRF-Token": csrf, "Idempotency-Key": key };
   if (json) headers["Content-Type"] = "application/json"; // multipart: the browser sets the boundary itself
   let response: Response;
   try {
@@ -62,8 +62,13 @@ const jsonBody = (value: unknown) => JSON.stringify(value);
 export const saveDraft = (store: string, expectedVersion: number, document: unknown, boundary: string) =>
   send(store, "PUT", "draft", jsonBody({ expected_version: expectedVersion, document }), true, boundary, parseDraft);
 // Go POST design/publish {expected_draft_version}: 409 when the draft moved or is already live.
-export const publish = (store: string, expectedDraftVersion: number, boundary: string): Promise<Outcome<VersionInfo>> =>
-  send(store, "POST", "publish", jsonBody({ expected_draft_version: expectedDraftVersion }), true, boundary, parseVersionInfo);
+// `key` is the request identity the caller keeps: an uncertain answer is rechecked by reading (publishLanded), never by a new publish.
+export const publish = (store: string, expectedDraftVersion: number, boundary: string, key: string = crypto.randomUUID()): Promise<Outcome<VersionInfo>> =>
+  send(store, "POST", "publish", jsonBody({ expected_draft_version: expectedDraftVersion }), true, boundary, parseVersionInfo, key);
+// OC-Q10 recheck of the ORIGINAL publish, read-only: Go's publish has no receipt table (compare-and-set on the draft version), but a
+// committed publish is exactly a `publish` row whose source_version is the draft version that was sent. GET design/versions, no write.
+export const publishLanded = (list: VersionList, draftVersion: number): VersionInfo | null =>
+  list.items.find((v) => v.kind === "publish" && v.source_version === draftVersion) ?? null;
 // Go POST design/rollback {version}: publishes a copy of an older version; 409 when it is already live.
 export const rollback = (store: string, version: number, boundary: string): Promise<Outcome<VersionInfo>> =>
   send(store, "POST", "rollback", jsonBody({ version }), true, boundary, parseVersionInfo);

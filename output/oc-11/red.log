@@ -1,0 +1,3 @@
+RED: NOT_RUN. The two specs (tests/admin/oc/design-publish-pending.spec.ts, tests/storefront/offline-error.spec.ts) are Playwright specs
+that no registered CI mode executes (browser specs run only through tests/foundation/browser_*_test.go; node tests only through the explicit list in
+scripts/dev/test-node.sh; both are shared files outside OC-11 write_paths). A CI run therefore cannot turn them red. No run id exists. Integrator request in DELIVERY.md.

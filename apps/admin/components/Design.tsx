@@ -29,6 +29,7 @@ import {
   issuePreview,
   mediaFileProblem,
   publish,
+  publishLanded,
   readDraft,
   readMedia,
   readVersions,
@@ -257,6 +258,10 @@ function Editor({
     "" | "save" | "publish" | "preview" | "rollback"
   >("");
   const [note, setNote] = useState<Note>(null);
+  // OC-Q10: an uncertain publish keeps its request identity; only a read of the result is offered, never a new publish.
+  const [pending, setPending] = useState<{ version: number; key: string } | null>(null);
+  const [rechecking, setRechecking] = useState(false);
+  const [notYet, setNotYet] = useState(false);
   const [stale, setStale] = useState(false);
   const [server, setServer] = useState<{ path: string; reason: string } | null>(
     null,
@@ -342,12 +347,38 @@ function Editor({
     }
     if (!window.confirm(fill(c.publishConfirm, { n: version }))) return;
     setBusy("publish");
-    const r = await publish(store, version, boundary);
+    const key = crypto.randomUUID();
+    const r = await publish(store, version, boundary, key);
     setBusy("");
+    if (!r.ok && r.uncertain) {
+      setNote(null);
+      setNotYet(false);
+      return setPending({ version, key });
+    }
     if (!r.ok) return fail(r);
     setLive(r.value.version);
     setNote({ kind: "ok", text: fill(c.okPublished, { n: r.value.version }) });
     await refreshVersions();
+  }
+
+  async function recheckPublish() {
+    if (!pending || rechecking) return;
+    setRechecking(true);
+    try {
+      const list = await readVersions(store, new AbortController().signal);
+      const landed = publishLanded(list, pending.version);
+      if (landed) {
+        setVersions(list);
+        setLive(landed.version);
+        setPending(null);
+        setNotYet(false);
+        setNote({ kind: "ok", text: fill(c.okPublished, { n: landed.version }) });
+      } else setNotYet(true);
+    } catch {
+      setNotYet(true); // the read failed too: still unknown, never "success"
+    } finally {
+      setRechecking(false);
+    }
   }
 
   async function doPreview() {
@@ -453,7 +484,7 @@ function Editor({
   const status = dirty ? c.unsaved : base === 0 ? c.noDraft : c.saved;
   const p = catalogPresentationCopy[locale];
   const saveReason = busy ? p.busy : !dirty && base !== 0 ? p.noChanges : "";
-  const publishReason = busy ? p.busy : liveIsDraft ? p.alreadyPublished : "";
+  const publishReason = busy ? p.busy : pending ? c.publishPending : liveIsDraft ? p.alreadyPublished : "";
   return (
     <div className="design-editor">
       <div className="design-toolbar" data-testid="design-toolbar">
@@ -497,7 +528,7 @@ function Editor({
             type="button"
             className="design-primary"
             onClick={() => void doPublish()}
-            disabled={!!busy || liveIsDraft}
+            disabled={!!busy || liveIsDraft || !!pending}
             aria-describedby={
               publishReason
                 ? publishReason === saveReason
@@ -517,6 +548,18 @@ function Editor({
           {publishReason && publishReason !== saveReason && (
             <p id="design-publish-reason">{publishReason}</p>
           )}
+        </div>
+      )}
+      {pending && (
+        <div className="design-note warning" role="alert" data-testid="design-publish-pending">
+          <p>
+            <strong>{c.publishPending}</strong>
+          </p>
+          <p>{fill(c.publishPendingBody, { n: pending.version })}</p>
+          {notYet && <p data-testid="design-publish-notyet">{fill(c.publishNotYet, { n: pending.version })}</p>}
+          <button type="button" onClick={() => void recheckPublish()} disabled={rechecking} data-testid="design-publish-recheck">
+            {rechecking ? c.publishRechecking : c.publishRecheck}
+          </button>
         </div>
       )}
       {note && (
