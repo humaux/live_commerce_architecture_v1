@@ -23,7 +23,6 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts, iosZoomOffenders, engine } from "./browser-engine.mjs";
 import { createFakeApi, PREVIEW_TOKEN } from "./shop-fake-api.mjs";
-import { checkOfflineError } from "./offline-error.spec.ts";
 import { reachCheckout } from "./shop-helpers.mjs";
 import { checkR5 } from "./shop-r5-checks.mjs";
 
@@ -438,7 +437,6 @@ try {
   pass("SF12 no page errors or hydration warnings across the whole phone walk-through");
 
   await checkR5({ browser, api, origin, raw, evidence });
-  await checkOfflineError({ browser, api, origin }); // OC-11: not counted in `cases` (the mode greps cases=12)
   }
 
   console.log(`engine=${engine} cases=${cases} mode=${mode} MOCK`);

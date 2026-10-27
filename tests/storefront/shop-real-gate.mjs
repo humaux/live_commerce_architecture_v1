@@ -24,6 +24,7 @@ import { expect } from "@playwright/test";
 import { launch, ctxOpts, iosZoomOffenders, engine } from "./browser-engine.mjs";
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 import { measureMediaSizes } from "./media-sizes-perf.mjs";
+import { checkOfflineError } from "./offline-error.spec.ts";
 
 const env = (name) => { const v = process.env[name]; assert(v, `${name} is required`); return v; };
 const root = process.cwd(), evidence = env("LC_SFR_EVIDENCE");
@@ -308,6 +309,8 @@ try {
   assert.equal((await raw("/en/checkout")).status, 200);
   assert.deepEqual(problems, [], "client errors / hydration warnings across the whole phone walk-through");
   pass("SFR09 /{locale}/checkout is the checkout page; no page errors or hydration warnings across the walk-through");
+
+  await checkOfflineError({ browser, origin }); // OC-11: logged, not counted in `cases`
 
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {

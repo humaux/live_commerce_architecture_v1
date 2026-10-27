@@ -1,24 +1,32 @@
-// Purpose: OC-11 / OC-Q18 buyer check: the storefront error page offers one read-only reload and an offline banner; it never re-sends a write.
-// Depends on: apps/storefront/lib/shop-copy.ts, @playwright/test `expect`; called with the shop-gate browser, fake API and virtual-host origin.
-// Used by: tests/storefront/shop-gate.mjs (scripts/dev/test-local.sh storefront-shell mode). Not a Playwright-runner file: a plain module.
-// Real click on the reload action; context.setOffline drives navigator.onLine and the offline/online events (measurement, not a DOM edit).
+// Purpose: OC-11 / OC-Q18 buyer check on the REAL stack: the storefront error page offers one read-only reload and an offline banner; it never re-sends a write.
+// Depends on: apps/storefront/lib/shop-copy.ts, @playwright/test `expect`; called with shop-real-gate's browser (CONNECT proxy to the virtual host) and origin.
+// Used by: tests/storefront/shop-real-gate.mjs (CI: scripts/dev/test-local.sh --browser-storefront). A plain module, not a Playwright-runner file.
+// The error boundary is reached with Playwright only (no test route in the app): a client navigation whose RSC response is replaced by an
+// unreadable flight payload makes the segment throw while rendering, which app/[locale]/error.tsx catches. context.setOffline drives
+// navigator.onLine and the offline/online events (a measurement of the browser, not a DOM edit). Real click on the reload action.
 import assert from "node:assert/strict";
 import { expect } from "@playwright/test";
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 import { ctxOpts } from "./browser-engine.mjs";
 
-export async function checkOfflineError({ browser, api, origin }) {
+export async function checkOfflineError({ browser, origin }) {
   for (const locale of ["zh-TW", "zh-CN", "en"]) {
     const copy = shopCopy[locale];
     const context = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, locale }));
     const page = await context.newPage();
     const writes = [];
     page.on("request", (r) => { if (r.method() !== "GET" && r.method() !== "HEAD") writes.push(`${r.method()} ${r.url()}`); });
-    api.state.down = true; // the pages' own error state (shop-fake-api `down`)
     try {
       await page.goto(`${origin}/${locale}`);
+      const link = page.locator(`a[href="/${locale}/cart"]`).first();
+      await expect(link, `OC11-B00 ${locale} client-navigation link present`).toBeVisible();
+      await page.waitForLoadState("networkidle");
+      await page.route(/[?&]_rsc=/, (route) => route.fulfill({ status: 200, contentType: "text/x-component", body: "0:{not a flight row\n" }));
+      await link.click();
       const error = page.getByTestId("page-error");
       await expect(error, `OC11-B0 ${locale} error state renders`).toBeVisible();
+      await page.unroute(/[?&]_rsc=/);
+      writes.length = 0; // only what the reload sends from here on counts
       assert.equal(await page.getByTestId("offline-banner").count(), 0, `OC11-B1 ${locale} no banner while online`);
 
       await context.setOffline(true);
@@ -39,7 +47,6 @@ export async function checkOfflineError({ browser, api, origin }) {
       await expect(banner, `OC11-B4 ${locale} banner leaves when back online`).toHaveCount(0);
       assert.deepEqual(writes, [], `OC11-B5 ${locale} reload re-reads with GET only: no payment/order POST replayed`);
     } finally {
-      api.state.down = false;
       await context.close();
     }
   }

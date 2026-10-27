@@ -30,7 +30,6 @@ export default function ErrorState({ reset }: { error: Error & { digest?: string
   useEffect(() => heading.current?.focus(), []); // a new error state announces itself and puts keyboard focus on its title
   const reload = () =>
     startTransition(() => {
-      void fetch("/api/buyer/checkout", { method: "POST", body: "{}" }); // MUTATION (red proof): replays a write
       router.refresh();
       reset();
     });
