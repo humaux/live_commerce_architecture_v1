@@ -1,8 +1,8 @@
 {
  "_meta": {
   "purpose": "DS-3 expected computed styles of packages/ui/src/ds components in the UI gallery, one row per Figma master variant; read by tests/ui/ds-figma-parity.mjs.",
-  "source": "Figma page 4:8829 masters read 2026-10-27 through the fleet local bridge (use_figma, read-only getNodeByIdAsync, 8 roots in one call, no writes). Raw read: output/ds-3/figma/masters.json; script output/ds-3/figma/read.js.",
-  "format": "hex colours compare to getComputedStyle rgb(); 'transparent' = rgba(0, 0, 0, 0); height = getBoundingClientRect height (+-0.5); other keys are exact computed-style strings or named derived probes (labelInset, separator, holdsBreadcrumb, placeholderColor, noCaret).",
+  "source": "Figma page 4:8829 masters read 2026-10-27 through the fleet local bridge (use_figma, read-only getNodeByIdAsync, 8 roots in one call, no writes). Raw read: output/ds-3/figma/masters.json; script output/ds-3/figma/read.js. Font weights/axes: output/ds-3/figma/weights.json (second read 2026-10-28).",
+  "format": "hex colours compare to getComputedStyle rgb(); 'transparent' = rgba(0, 0, 0, 0); height = getBoundingClientRect height (+-0.5); other keys are exact computed-style strings or named derived probes (labelInset, separator, holdsBreadcrumb, placeholderColor, noCaret). Probes: contrastAA (text/background >= 4.5:1, browser-measured), minHit (smallest visible control height in the rail list), hasHref, ariaDisabled. States: hover (real mouse), page:N / page:last (real click on a pager link).",
   "viewport": "1586x900, zh-TW, deviceScaleFactor 1",
   "unknown": "Figma masters carry no Hover/Focus for Button, Nav Item, Language switch; those ds states are not asserted (UNKNOWN). Button sm/lg sizes, Link variant, nav level-2 items and the topbar tools have no Figma master (UNKNOWN)."
  },
@@ -20,7 +20,8 @@
     "fontSize": "14px",
     "fontWeight": "500",
     "paddingLeft": "14px",
-    "borderTopWidth": "1px"
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
    },
    "figmaRead": "fill #142942, no stroke, text #ffffff Noto Sans SC Medium 14/22, 140x44, r6, pad 0/14",
    "note": "Figma has no stroke; ds keeps a 1px border painted in the fill colour, so it is invisible."
@@ -38,7 +39,8 @@
     "fontSize": "14px",
     "fontWeight": "500",
     "paddingLeft": "14px",
-    "borderTopWidth": "1px"
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
    },
    "figmaRead": "fill #ffffff, stroke 1px #e5e7eb inside, text #142942 Medium 14, 140x44, r6, pad 0/14"
   },
@@ -55,7 +57,8 @@
     "fontSize": "14px",
     "fontWeight": "500",
     "paddingLeft": "14px",
-    "borderTopWidth": "1px"
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
    },
    "figmaRead": "fill #ffffff, stroke 1px #b42318 inside, text #b42318 Medium 14, 140x44, r6, pad 0/14"
   },
@@ -72,7 +75,8 @@
     "fontSize": "14px",
     "fontWeight": "500",
     "paddingLeft": "14px",
-    "borderTopWidth": "1px"
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
    },
    "figmaRead": "no fill, no stroke, text #0f766e Medium 14, 140x44, r6, pad 0/14",
    "note": "ds variant ghost = Figma Kind=Text."
@@ -90,7 +94,8 @@
     "fontSize": "14px",
     "fontWeight": "500",
     "paddingLeft": "14px",
-    "borderTopWidth": "1px"
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
    },
    "figmaRead": "fill #f5f6f8, stroke 1px #e5e7eb, text #566171 Medium 14, 140x44, r6",
    "deviation": "REGISTERED: Figma Primary/Disabled is #f5f6f8 / #e5e7eb / #566171. The existing DS-1 gate (tests/admin/ui-gallery-clicks.mjs readFrame 'faint', tests/ui/ds-tokens.test.mjs disabled-primary 3:1 pairs) requires a disabled primary fill >= 3:1 against its background; #f5f6f8 on #ffffff is 1.08:1. Gate > owner wording (CLAUDE.md iron rule 3), so colours keep the gate value; geometry follows Figma. Owner/integrator decides."
@@ -108,7 +113,8 @@
     "fontSize": "14px",
     "fontWeight": "500",
     "paddingLeft": "14px",
-    "borderTopWidth": "1px"
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
    },
    "figmaRead": "fill #f5f6f8, stroke 1px #e5e7eb, text #566171 Medium 14, 140x44, r6"
   },
@@ -125,7 +131,8 @@
     "fontSize": "14px",
     "fontWeight": "500",
     "paddingLeft": "14px",
-    "borderTopWidth": "1px"
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
    },
    "figmaRead": "fill #f5f6f8, stroke 1px #e5e7eb, text #566171 Medium 14, 140x44, r6"
   },
@@ -142,10 +149,48 @@
     "fontSize": "14px",
     "fontWeight": "500",
     "paddingLeft": "14px",
-    "borderTopWidth": "1px"
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
    },
    "figmaRead": "fill #f5f6f8, no stroke, text #566171 Medium 14, 140x44, r6",
    "note": "Figma has no stroke; ds paints the 1px border in the fill colour."
+  },
+  {
+   "id": "button.ghost.default",
+   "figma": "4:12716",
+   "target": "#sec-figma [data-figma=\"4:12716\"]",
+   "expect": {
+    "backgroundColor": "#ffffff",
+    "borderTopColor": "#e5e7eb",
+    "color": "#0f766e",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
+   },
+   "figmaRead": "Kind=Ghost State=Default: fill #ffffff, stroke 1px #e5e7eb inside, text #0f766e Noto Sans SC Medium 14/22, 140x44, r6, pad 0/14",
+   "note": "ds variant outline = Figma Kind=Ghost (distinct from Text = ds ghost). Figma marks Ghost DEPRECATED (STAGE-6, 0 page instances) but the master exists."
+  },
+  {
+   "id": "button.ghost.disabled",
+   "figma": "1394:103524",
+   "target": "#sec-figma [data-figma=\"1394:103524\"]",
+   "expect": {
+    "backgroundColor": "#f5f6f8",
+    "borderTopColor": "#e5e7eb",
+    "color": "#566171",
+    "height": 44,
+    "borderTopLeftRadius": "6px",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "paddingLeft": "14px",
+    "borderTopWidth": "1px",
+    "lineHeight": "22px"
+   },
+   "figmaRead": "Kind=Ghost State=Disabled: fill #f5f6f8, stroke 1px #e5e7eb, text #566171 Medium 14/22"
   },
   {
    "id": "nav.item.default",
@@ -189,6 +234,39 @@
    "figmaRead": "Nav Item set is a light rail (Default fill #ffffff); rail colour itself read from the item fill, the rail frame is page-level (4:10687 screenshot)"
   },
   {
+   "id": "nav.item.hover",
+   "figma": "4:12735",
+   "target": "[data-shell-rail] button[data-current=\"false\"]",
+   "state": "hover",
+   "expect": {
+    "backgroundColor": "#eef2f7",
+    "color": "#142942",
+    "contrastAA": true
+   },
+   "figmaRead": "No Hover master (UNKNOWN). Rule: hover reuses Item State=Active (4:12735: #eef2f7 / #142942) because #6b7280 on #eef2f7 is 4.30:1; contrastAA = text/background >= 4.5:1 measured in the browser."
+  },
+  {
+   "id": "nav.subitem.hover",
+   "figma": "4:12735",
+   "target": "[data-shell-rail] ul ul a:not([aria-current])",
+   "state": "hover",
+   "expect": {
+    "backgroundColor": "#eef2f7",
+    "color": "#142942",
+    "contrastAA": true
+   },
+   "figmaRead": "Level-2 items have no Figma master (UNKNOWN); same hover rule as level 1."
+  },
+  {
+   "id": "nav.hitArea",
+   "figma": "4:12737",
+   "target": "[data-shell-rail] ul",
+   "expect": {
+    "minHit": 44
+   },
+   "figmaRead": "Nav Item rows are 44 high; every visible level-1 and level-2 control in the rail list must be >= 44 (min over buttons and nested links)."
+  },
+  {
    "id": "language.switch",
    "figma": "1397:105153",
    "target": "[data-figma=\"1397:105153\"] button",
@@ -201,7 +279,8 @@
     "height": 44,
     "fontSize": "14px",
     "fontWeight": "500",
-    "noCaret": true
+    "noCaret": true,
+    "lineHeight": "22px"
    },
    "figmaRead": "Shell / Language switch 1397:105152 = Button Secondary instance 1397:105153: fill #ffffff, stroke 1px #e5e7eb, text '繁中' #142942 Medium 14/22, 64x44, r6, pad 0/14, no caret",
    "note": "width: Figma fixes 64; ds width follows the label (registered deviation, not asserted)."
@@ -494,7 +573,7 @@
     "fontWeight": "600",
     "height": 36
    },
-   "figmaRead": "fill #2a6fb0, stroke #2a6fb0, text #ffffff Bold with wght axis 600 (STAGE-6 §3)"
+   "figmaRead": "fill #2a6fb0, stroke #2a6fb0, text #ffffff, fontName Noto Sans SC style 'Bold' with variationSettings wght 600, node fontWeight 600 (read 2026-10-27, output/ds-3/figma/weights.json)"
   },
   {
    "id": "pagination.previous.disabled",
@@ -503,7 +582,9 @@
    "expect": {
     "color": "#6b6b6b",
     "backgroundColor": "transparent",
-    "height": 36
+    "height": 36,
+    "hasHref": false,
+    "ariaDisabled": "true"
    },
    "figmaRead": "no fill, chevron 16 stroke #6b6b6b"
   },
@@ -526,6 +607,60 @@
     "color": "#6b6b6b"
    },
    "figmaRead": "24x36, text '…' #6b6b6b Regular 14 (width not asserted)"
+  },
+  {
+   "id": "pagination.previous.default",
+   "figma": "1401:58003",
+   "target": "pager:prev",
+   "state": "page:2",
+   "expect": {
+    "color": "#2a6fb0",
+    "backgroundColor": "transparent",
+    "borderTopColor": "transparent",
+    "height": 36,
+    "hasHref": true
+   },
+   "figmaRead": "no fill, stroke 1px #000 at 0 opacity, r4, chevron 16 stroke #2a6fb0"
+  },
+  {
+   "id": "pagination.previous.hover",
+   "figma": "1401:58006",
+   "target": "pager:prev",
+   "state": "page:2+hover",
+   "expect": {
+    "color": "#2a6fb0",
+    "backgroundColor": "#f3f3f3",
+    "borderTopColor": "#dddddd",
+    "height": 36
+   },
+   "figmaRead": "fill #f3f3f3, stroke 1px #dddddd, chevron #2a6fb0"
+  },
+  {
+   "id": "pagination.next.hover",
+   "figma": "1401:58015",
+   "target": "pager:next",
+   "state": "page:2+hover",
+   "expect": {
+    "color": "#2a6fb0",
+    "backgroundColor": "#f3f3f3",
+    "borderTopColor": "#dddddd",
+    "height": 36
+   },
+   "figmaRead": "fill #f3f3f3, stroke 1px #dddddd, chevron #2a6fb0"
+  },
+  {
+   "id": "pagination.next.disabled",
+   "figma": "1401:58018",
+   "target": "pager:nextDisabled",
+   "state": "page:last",
+   "expect": {
+    "color": "#6b6b6b",
+    "backgroundColor": "transparent",
+    "height": 36,
+    "hasHref": false,
+    "ariaDisabled": "true"
+   },
+   "figmaRead": "no fill, chevron 16 stroke #6b6b6b"
   }
  ]
 }

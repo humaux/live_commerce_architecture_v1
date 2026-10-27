@@ -7,7 +7,7 @@ The measured target is [reference-shopline-admin.md](../page-inventory/reference
 
 ## DS-3 Figma values (2026-10-27, supersedes the shell / button lines below where they differ)
 
-Owner 2026-10-26/27: Figma decides the look ("ui全部使用figma的设计"); this package stays the one code component layer. Values come from the Figma masters on page 4:8829; the read values and node ids are in `output/ds-3/figma-expected.json`, enforced by `tests/ui/ds-figma.spec.mjs` in `--browser-ui-gallery`.
+Owner 2026-10-26/27: Figma decides the look ("ui全部使用figma的设计"); this package stays the one code component layer. Values come from the Figma masters on page 4:8829; the read values and node ids are in `output/ds-3/figma-expected.json`, enforced by `tests/ui/ds-figma-parity.mjs` in `--browser-ui-gallery`.
 
 - Button (4:12718): 44 px high, radius 6, padding 0/14, 14 Medium. Primary `--ds-ink` #142942 with white text; Secondary white, 1 px #e5e7eb, ink text; Danger is an outline (white, 1 px and text #b42318); `ghost` = Figma Text kind (#0f766e, no fill, no border). Disabled = #f5f6f8 / #e5e7eb / #566171, except primary, which keeps the DS-1 3:1 fill gate (#6d8cab, registered deviation). `sm` 28 px, `lg`, `link` and icon-only have no Figma master and keep the DS-2 geometry.
 - Shell: light rail (Nav Item 4:12737): rows white with #6b7280 text, current / hover #eef2f7 with ink text, radius 6, 44 high, label 42 px into the row, rows inset 12 px, no accent bar. Focus ring is `--ds-focus` on the light rail.

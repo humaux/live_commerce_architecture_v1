@@ -142,6 +142,9 @@ case "$1" in
   test -f tests/admin/ui-gallery-clicks.mjs
   test -f 'apps/admin/app/[locale]/ui-gallery/page.tsx'
   test -f tests/ui/hex-baseline.json
+  # DS-3: the Figma parity module the runner imports and its expected values.
+  test -f tests/ui/ds-figma-parity.mjs
+  test -f output/ds-3/figma-expected.json
     }
     lc_run() {
   mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/ui-gallery"

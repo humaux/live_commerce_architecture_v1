@@ -22,7 +22,7 @@ export function compare(expect, got) {
   const bad = [];
   for (const [key, want] of Object.entries(expect)) {
     const have = got[key];
-    if (key === "height" || key === "labelInset" || key === "crumbGap") {
+    if (key === "height" || key === "labelInset" || key === "crumbGap" || key === "minHit") {
       if (typeof have !== "number" || Math.abs(have - want) > 0.5) bad.push(`${key} ${have} != ${want}`);
     } else if (typeof want === "string" && (/Color$/.test(key) || key === "color")) {
       if (have !== cssColour(want)) bad.push(`${key} ${have} != ${want} (${cssColour(want)})`);
@@ -39,6 +39,9 @@ assert.equal(compare({ backgroundColor: "transparent" }, { backgroundColor: "rgb
 assert.equal(compare({ noCaret: true }, {}).length, 1, "a missing probe must fail");
 assert.deepEqual(compare({ allCrumbsSameColor: true }, { allCrumbsSameColor: true }), [], "boolean probes ending in Color are not colours");
 assert.equal(compare({ allCrumbsSameColor: true }, { allCrumbsSameColor: false }).length, 1);
+assert.equal(compare({ contrastAA: true }, { contrastAA: false }).length, 1, "a hover below 4.5:1 must fail");
+assert.equal(compare({ minHit: 44 }, { minHit: 40 }).length, 1, "a 40px nested link must fail");
+assert.equal(compare({ hasHref: false }, { hasHref: true }).length, 1, "a disabled arrow with an href must fail");
 
 /** [READ/MEASURE] computed style of one element plus the derived probes the expect blocks name. */
 function measure(n) {
@@ -50,6 +53,23 @@ function measure(n) {
     borderTopLeftRadius: s.borderTopLeftRadius, fontSize: s.fontSize, fontWeight: s.fontWeight, lineHeight: s.lineHeight,
     paddingLeft: s.paddingLeft, minWidth: s.minWidth, height: box.height,
   };
+  out.hasHref = n.hasAttribute("href");
+  out.ariaDisabled = n.getAttribute("aria-disabled");
+  {
+    // contrastAA: text colour against the element's own fill (or the nearest painted ancestor), WCAG 4.5:1.
+    const rgb = (c) => (c.match(/[\d.]+/g) || []).map(Number);
+    const lum = (c) => { const [r, g, b] = rgb(c).slice(0, 3).map((v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    let bg = s.backgroundColor;
+    for (let p = n; p && (rgb(bg).length === 4 && rgb(bg)[3] === 0); p = p.parentElement) bg = getComputedStyle(p).backgroundColor;
+    const [hi, lo] = [lum(s.color), lum(bg)].sort((a, b) => b - a);
+    out.contrast = (hi + 0.05) / (lo + 0.05);
+    out.contrastAA = out.contrast >= 4.5;
+  }
+  if (n.tagName === "UL") {
+    const hits = [...n.querySelectorAll("a, button")].filter((c) => c.getClientRects().length).map((c) => c.getBoundingClientRect().height);
+    out.minHit = hits.length ? Math.min(...hits) : -1;
+    out.hitCount = hits.length;
+  }
   if (n.tagName === "INPUT") out.placeholderColor = getComputedStyle(n, "::placeholder").color;
   if (n.hasAttribute("data-current")) {
     const label = n.children[1];
@@ -81,11 +101,25 @@ function locate(page, target) {
   switch (target) {
     case "pager:number": return pager.locator("a:not([aria-current])").filter({ hasText: /^\d+$/ }).first();
     case "pager:current": return pager.locator('a[aria-current="page"]');
-    case "pager:prevDisabled": return pager.locator('[role="link"][aria-disabled="true"]').first();
+    case "pager:prevDisabled": return pager.locator("li").first().locator('[role="link"][aria-disabled="true"]');
+    case "pager:prev": return pager.locator("li").first().locator("a");
     case "pager:next": return pager.locator("li").last().locator("a");
+    case "pager:nextDisabled": return pager.locator("li").last().locator('[role="link"][aria-disabled="true"]');
     case "pager:gap": return pager.locator('[aria-hidden="true"]').filter({ hasText: "…" }).first();
     default: return page.locator(target).first();
   }
+}
+
+/** Moves the gallery pager (#sec-table) to page 2 or the last page with a real click on a page link. */
+async function pagerTo(page, want) {
+  const pager = page.locator("#sec-table nav").filter({ has: page.locator("ul") }).last();
+  const current = Number((await pager.locator('a[aria-current="page"]').textContent()).trim());
+  const numbers = pager.locator("a").filter({ hasText: /^\d+$/ });
+  const last = Math.max(...(await numbers.allTextContents()).map((t) => Number(t.trim())), current);
+  const target = want === "last" ? last : Number(want);
+  if (current === target) return;
+  await pager.locator("a").filter({ hasText: new RegExp(`^${target}$`) }).first().click();
+  await page.locator("#sec-table nav").filter({ has: page.locator("ul") }).last().locator('a[aria-current="page"]').filter({ hasText: new RegExp(`^${target}$`) }).waitFor();
 }
 
 /** Puts the gallery switch into the state a check needs with a real click (never a DOM write). */
@@ -108,10 +142,11 @@ export async function figmaParity({ page, step, output, copy }) {
   for (const check of checks) {
     await step(`DS-3 ${check.id} (Figma ${check.figma})`, "[READ] computed style", JSON.stringify(check.expect), async () => {
       if (check.state?.startsWith("switch-")) await switchTo(page, check.state);
+      if (check.state?.startsWith("page:")) await pagerTo(page, check.state.slice(5).replace("+hover", ""));
       const node = locate(page, check.target);
       await node.waitFor({ state: "attached", timeout: 4000 });
       await node.scrollIntoViewIfNeeded();
-      if (check.state === "hover") await node.hover();
+      if (check.state?.endsWith("hover")) await node.hover();
       else await page.mouse.move(0, 0);
       const got = await node.evaluate(measure); // [READ]
       const bad = compare(check.expect, got);
