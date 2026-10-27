@@ -2,7 +2,7 @@
 //   migrations/ select browser modes from the registry's lc_covers data (CI-SELECT: the browser modes run the real Go API on the real migrated PG); any other path adds the
 //   full browser set; deploy implementation changes select smoke; actual Git CLI quoting/whitespace must not reduce legacy selections.
 // Depends on: scripts/dev/pr-modes.mjs, scripts/dev/test-local.sh, scripts/dev/release-gate.sh, bash and isolated local Git fixture repos.
-//   CI-SPEED: a diff of only test-inert documentation (no untagged Go test or script it names reads it) plans nothing; Go never counts as documentation.
+//   CI-SPEED: a diff of only test-inert documentation (prose/images nothing in the repository reads) plans nothing; scripts, data and Go never count as documentation.
 // Used by: scripts/dev/test-node.sh, CI.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { EXCLUDED_MODES, browserModes, foundationDocReads, isInertDoc, modeEntries, planPr } from "../../scripts/dev/pr-modes.mjs";
+import { EXCLUDED_MODES, IGNORED_READS, browserModes, buildsWithBrowser, docClass, foundationDocReads, isInertDoc, modeEntries, planPr, rawDocReads } from "../../scripts/dev/pr-modes.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const usage = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8");
@@ -618,16 +618,17 @@ test("pay-rm2: Stripe worker/registrar changes select the buyer payment page gat
 // CI-SPEED (owner 2026-10-27 "优化ci的速度"): docs-only PRs (#233 ran 15 jobs x ~35 min) skip the foundation shards ONLY for paths nothing they execute reads.
 const reads = foundationDocReads();
 const inert = (p) => isInertDoc(p, reads);
+const cls = (p) => docClass(p, reads);
 test("CI-SPEED: test-inert documentation plans no gate leg, explicitly flagged docs-only", () => {
-  const r = planPr(["output/ci-speed/DELIVERY.md", "docs/delivery/units/x.md", "docs/design/y.png", "contracts/some-new-v1.md", "PRODUCT.md"], usage, undefined, inert);
+  const r = planPr(["output/ci-speed/DELIVERY.md", "docs/delivery/units/x.md", "docs/design/y.png", "contracts/some-new-v1.md", "PRODUCT.md"], usage, undefined, cls);
   assert.deepEqual(r, { modes: [], deploy: false, docsOnly: true });
   assert.equal(planPr(["output/ci-speed/DELIVERY.md"]).docsOnly, true, "the default classifier is the real repository scan");
-  assert.deepEqual(planPr([], usage, undefined, inert).modes, FOUNDATION, "an empty diff is not a docs-only diff");
+  assert.deepEqual(planPr([], usage, undefined, cls).modes, FOUNDATION, "an empty diff is not a docs-only diff");
 });
 test("CI-SPEED: Go and Go module files are never documentation, even under docs/ or output/ (fault: classifier treats .go as a doc)", () => {
   for (const p of ["docs/tool.go", "output/x/main.go", "output/go.mod", "docs/go.sum", "contracts/x.go", "internal/a.go", "x.go"]) {
     assert.equal(inert(p), false, p);
-    assert.ok(planPr(["docs/delivery/units/x.md", p], usage, undefined, inert).modes.includes("foundation-shards"), `${p} must keep foundation-shards`);
+    assert.ok(planPr(["docs/delivery/units/x.md", p], usage, undefined, cls).modes.includes("foundation-shards"), `${p} must keep foundation-shards`);
   }
   assert.equal(inert("contracts/invariants.json"), false, "contract JSON is read by check_packet.py and contract drift");
   assert.equal(inert("apps/admin/NOTES.md"), false, "only root-level *.md, docs/, output/ and contracts/*.md are candidates");
@@ -638,16 +639,16 @@ test("CI-SPEED: documentation a foundation test or a script it runs reads keeps 
     ["docs/runbooks/a-new-runbook.md", "the glob also covers runbooks that do not exist yet"],
     ["docs/runbooks/merchant-onboarding.md", "storefront_publish_test.go reads it"],
     ["output/matrix-ledger-enforce/DELIVERY.md", "catalog_matrix_*_test.go read the ledger evidence"],
-    ["output/matrix-ledger-enforce/fixture/SOURCE.json", "subtree read"],
+    ["output/matrix-ledger-enforce/fixture/SOURCE.json", "data is never documentation"],
     ["docs/TASKS.md", "scripts/check_packet.py (run by claims_retention_guard_test.go)"],
     ["架构.md", "scripts/check_packet.py"], ["AGENTS.md", "scripts/check_packet.py"],
     ["docs/delivery/GATES.md", "catalog_matrix_evidence_test.go hashes it"],
   ]) {
     assert.equal(inert(p), false, `${p}: ${why}`);
-    assert.deepEqual(planPr([p], usage, undefined, inert).modes, FOUNDATION, p);
+    assert.deepEqual(planPr([p], usage, undefined, cls).modes, FOUNDATION, p);
   }
 });
-test("CI-SPEED: the reader scan sees literals, Join chains, globs, root *.md names and named scripts, never comments or browser-tagged files", () => {
+test("CI-SPEED: the reader scan sees literals, Join chains, globs, root *.md names, scripts and browser-tagged files, never comments", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "ci-speed-reads-"));
   try {
     const w = (f, t) => { mkdirSync(path.dirname(path.join(dir, f)), { recursive: true }); writeFileSync(path.join(dir, f), t); };
@@ -657,7 +658,11 @@ test("CI-SPEED: the reader scan sees literals, Join chains, globs, root *.md nam
     w("scripts/check.py", "# docs/py-comment.md\nopen('NOTES.md')\n");
     execFileSync("git", ["init", "-q"], { cwd: dir }); execFileSync("git", ["add", "-A"], { cwd: dir });
     const r = foundationDocReads(dir);
-    assert.deepEqual(r, ["NOTES.md", "contracts/*.md", "docs/runbooks/*.md", "output/evidence/x.json"]);
+    assert.deepEqual(r, [
+      { read: "NOTES.md", browser: false }, { read: "contracts/*.md", browser: false }, { read: "docs/browser-only.md", browser: true },
+      { read: "docs/runbooks/*.md", browser: false }, { read: "output/evidence/x.json", browser: false },
+    ]);
+    assert.equal(docClass("docs/browser-only.md", r), "browser", "a browser-tagged reader selects the whole browser universe");
     assert.equal(isInertDoc("contracts/new-v9.md", r), false, "%s is a one-segment wildcard");
     assert.equal(isInertDoc("contracts/sub/new.md", r), true, "a wildcard never crosses a directory");
     assert.equal(isInertDoc("OTHER.md", r), true);
@@ -708,4 +713,17 @@ test("CI-SPEED review P1-2c: transitively named scripts are scanned", () => {
     assert.equal(isInertDoc("docs/via-output.md", r), false, "two output/ tool levels deep");
     assert.equal(isInertDoc("docs/unread.md", r), true);
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// #238 review P2: Go build-constraint semantics for "browser reader" (synthetic constraints).
+test("CI-SPEED review P2: buildsWithBrowser follows //go:build semantics", () => {
+  const go = (c) => `${c}\n\npackage x\n`;
+  for (const [c, want] of [["//go:build browser", true], ["//go:build browser || linux", true], ["//go:build linux && browser", true], ["//go:build (browser)", true],
+    ["//go:build !browser", false], ["//go:build linux && !browser", false], ["//go:build race", false], ["", false], ["//go:build browser; evil()", true]])
+    assert.equal(buildsWithBrowser(go(c)), want, JSON.stringify(c));
+  assert.equal(buildsWithBrowser("package x\n//go:build browser\n"), false, "a constraint after the package clause is not a constraint");
+});
+test("CI-SPEED review P2: every IGNORED_READS entry still matches a literal in its file (no stale exemption)", () => {
+  for (const [file, entries] of Object.entries(IGNORED_READS))
+    for (const read of Object.keys(entries)) assert.ok(rawDocReads(file, readFileSync(path.join(root, file), "utf8")).includes(read), `${file}: ${read} is stale`);
 });

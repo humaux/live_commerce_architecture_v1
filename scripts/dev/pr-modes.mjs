@@ -9,9 +9,9 @@
 // Depends on: mode registry, Go build headers and matrix producer declaration, git base/head/checkout sources and changed paths, the checkout's tracked Go sources (doc reads);
 //   env GITHUB_OUTPUT (modes, deploy, docs_only).
 // Used by: .github/workflows/gates.yml (plan job: pull_request diffs plus the schedule/workflow_dispatch full-browser-universe runs; the output feeds scripts/dev/ci-plan.mjs), tests/ci/pr-modes.test.mjs, tests/ci/backend-coverage.test.mjs.
-// Invariants: foundation-shards is present unless EVERY changed path is test-inert documentation (CI-SPEED, owner 2026-10-27 "优化ci的速度"): docs/**, output/**,
-//   contracts/**.md or a root *.md that no untagged Go test (the foundation shards' package set) nor a script such a test names reads — see
-//   foundationDocReads() below. Then the plan is EMPTY and gates.yml's `required` reports an explicit docs-only success (plan + contract drift still ran;
+// Invariants: foundation-shards is present unless EVERY changed path is test-inert documentation (CI-SPEED, owner 2026-10-27 "优化ci的速度"; #238 review r1):
+//   prose/images under docs/, output/, contracts/*.md or a root *.md that no tracked code file (any build tag, node tests, specs, apps, scripts, transitively
+//   named output/ tools) reads — see foundationDocReads() below. Then the plan is EMPTY and gates.yml's `required` reports an explicit docs-only success (plan + contract drift still ran;
 //   foundation.yml still runs check-gates/test-node). A mode is only ever dropped through EXCLUDED_MODES below.
 //
 // Backend-only set (changes here alone cannot alter a browser): contracts/ docs/ deploy/ output/ go.mod go.sum, tests/foundation/ except
@@ -130,8 +130,6 @@ function revisionSource(ref, file) {
   try { return git(["show", `${ref}:${file}`]); }
   catch { return null; } // Missing/deleted/unreadable input cannot silently become a known untagged file.
 }
-// Strict: only a real //go:build line with a `browser` term takes a file out of the untagged (shard) set; a comment mentioning it does not.
-function hasBrowserConstraint(source) { return /^\/\/go:build[^\n]*\bbrowser\b/m.test(source.slice(0, source.search(/^package\s/m) >>> 0)); }
 function hasBrowserTag(source) {
   // Conservative scan: a package-like line inside a license comment cannot hide a later constraint.
   return /^\s*\/\/(?:go:build|\s*\+build)\b[^\n]*\bbrowser\b/m.test(source);
@@ -242,66 +240,92 @@ const isDeploy = (p) => p.startsWith("deploy/") || p.startsWith("scripts/deploy"
   p.startsWith(".github/scripts/") || /^\.github\/workflows\/deploy-smoke\.ya?ml$/.test(p);
 
 /**
- * CI-SPEED test-inert documentation. A changed path can skip the foundation shards only when it is documentation (docs/**, output/**, contracts/**.md,
- * a root *.md; never Go, go.mod/go.sum/go.work — output/go.mod fences output/ out of ./...) AND no reader of it exists in what the shards execute: every
- * tracked Go file without a `browser` build constraint (shard:unit = ./... minus tests/foundation, shard:gNN = untagged tests/foundation) plus every
- * tracked script such a file names (one level: check_packet.py, deploy-prep-r3.test.mjs, ...). A reader is a path-shaped string literal
- * (docs|output|contracts/..., {x}/${x}/%s/* = one-segment wildcard, trailing "/" or a concatenated prefix = the whole subtree), a literal
- * filepath.Join chain ("docs", "runbooks", ...) or a root *.md basename. Full-line comments are ignored; anything else counts (over-reading = safe).
- * ponytail: lexical scan, not a call graph. A test that builds a doc path from a lone bare "docs"/"contracts" literal plus runtime data is not
- * seen (lone "output"/"docs" words are too common as field names to treat as reads); the push run on r3/integration still runs every shard after merge.
- * Upgrade path: test-level go list -deps + file-access tracing if such a reader appears.
+ * CI-SPEED test-inert documentation (review round 1 of #238). A changed path may skip every gate only when it is PROSE or an IMAGE (DOC_EXT) under
+ * docs/, output/, contracts/*.md or a root *.md — never a script, JSON, log or Go file, wherever it lives — AND nothing in the repository reads it.
+ * Readers = every tracked code file outside output/ (Go with ANY build tags, node tests, specs, apps, scripts, workflows), plus, transitively, every
+ * output/ code file such a file names (evidence tools a test runs). A read is a path-shaped string literal (docs|output|contracts/..., {x}/${x}/%s/* =
+ * one-segment wildcard, trailing "/" = the whole subtree), a literal filepath.Join chain or a root *.md name; full-line comments are ignored.
+ * A read doc keeps foundation-shards; a doc a BROWSER reader names (a Go file built with the `browser` tag, or a browser-side spec/runner/app file)
+ * adds the whole browser universe — no per-mode attribution.
+ * ponytail: lexical scan, not a call graph; a path built from a lone bare "docs" word plus runtime data is not seen. Upgrade path: file-access tracing.
  */
-const IGNORED_READS = {
-  // file -> reads that are not foundation-shard reads of the real repository, each with a reason.
-  "scripts/dev/contractdrift/git.go": { "contracts/": "classifies changed paths by prefix (HasPrefix); the real contracts/ read is the plan job's contract-drift step, which runs on every PR regardless of the matrix" },
+export const DOC_EXT = /\.(md|png|jpe?g|gif|webp|pdf)$/i;
+// file -> {read: reason}: literals that name a doc tree without reading the real repository's docs. A stale entry fails tests/ci/pr-modes.test.mjs.
+export const IGNORED_READS = {
+  "scripts/dev/contractdrift/git.go": { "contracts/": "classifies changed paths by prefix; the real contracts/ read is the plan job's contract-drift step, which runs on every PR" },
+  "scripts/dev/release-gate.sh": { "output/": "`git status | grep -v '^?? output/'` dirty-tree filter; reads no tracked doc" },
 };
-const isDocCandidate = (p) => !/\.go$|(^|\/)go\.(mod|sum|work)$/.test(p) &&
+// Files whose path literals are classifier rules and synthetic fixtures, not reads of this repository's docs (they read none).
+const CLASSIFIER_FILES = new Set(["scripts/dev/pr-modes.mjs", "tests/ci/pr-modes.test.mjs"]);
+const isDocCandidate = (p) => DOC_EXT.test(p) &&
   (p.startsWith("docs/") || p.startsWith("output/") || (p.startsWith("contracts/") && p.endsWith(".md")) || (!p.includes("/") && p.endsWith(".md")));
-const SCRIPT = /\.(sh|bash|py|mjs|cjs|js|ts)$/;
+const CODE = /\.(go|mjs|cjs|js|jsx|ts|tsx|sh|bash|py|ya?ml)$/;
+const BROWSER_SIDE = /^(?:apps|packages|tests\/(?:admin|storefront|ui|e2e))\/|\.spec\.[cm]?[jt]sx?$/;
 function literals(file, text) {
-  const code = text.split("\n").filter((l) => !(/\.(go|m?js|cjs|ts)$/.test(file) ? /^\s*\/\//.test(l) : /^\s*#/.test(l))).join("\n");
+  const code = text.split("\n").filter((l) => !(/\.(go|[cm]?jsx?|tsx?)$/.test(file) ? /^\s*\/\//.test(l) : /^\s*#/.test(l))).join("\n");
   const out = [...code.matchAll(/"((?:[^"\\\n]|\\.)*)"|`([^`]*)`|'((?:[^'\\\n]|\\.)*)'/g)].map((m) => m[1] ?? m[2] ?? m[3]);
-  for (const m of code.matchAll(/"[\w.-]+"(?:\s*,\s*"[\w.-]+")+/g)) out.push([...m[0].matchAll(/"([^"]+)"/g)].map((x) => x[1]).join("/"));
+  for (const m of code.matchAll(/["'`][\w.-]+["'`](?:\s*,\s*["'`][\w.-]+["'`])+/g)) out.push([...m[0].matchAll(/[\w.-]+/g)].map((x) => x[0]).join("/"));
   return out;
 }
-/** Reads (exact path, subtree "x/", or glob with *) of documentation by what the foundation shards execute, scanned from the given tree. */
+/** Go build constraint: is the file compiled when the `browser` tag is set and does its constraint name `browser`? (`browser`, `browser || x`, `x && browser`: yes;
+ *  `!browser`: no; no constraint: no — compiled everywhere, not browser-specific.) Other terms count as satisfied; an expression this cannot parse counts as yes. */
+export function buildsWithBrowser(source) {
+  const line = /^\/\/go:build (.+)$/m.exec(source.slice(0, source.search(/^package\s/m) >>> 0))?.[1]?.trim();
+  if (!line || !/\bbrowser\b/.test(line)) return false;
+  if (!/^[A-Za-z0-9_.!&|() ]+$/.test(line)) return true;
+  try { return Function(`"use strict"; return (${line.replace(/[A-Za-z0-9_.]+/g, "true")});`)() === true; } catch { return true; }
+}
+/** Every doc path one file's literals name (before IGNORED_READS); mdRe matches the repository's root *.md names. */
+export function rawDocReads(file, text, mdRe = null) {
+  const found = [];
+  for (const s of literals(file, text)) {
+    found.push(...[...s.matchAll(/(?<![\w./-])(?:\.\.?\/)*((?:docs|output|contracts)\/[^\s"'`()]*)/g)].map((m) => m[1].replace(/\$\{[^}]*\}|\{[^}]*\}|%[sdvq]/g, "*").replace(/\\n.*$/s, "")));
+    if (mdRe) found.push(...[...s.matchAll(mdRe)].map((m) => m[1]));
+  }
+  return found;
+}
+/** Reads of documentation: [{read, browser}] — read = exact path, subtree "x/" or glob with *; browser = named by a browser-side reader. */
 export function foundationDocReads(dir = root) {
   const files = execFileSync("git", ["ls-files", "-z"], { cwd: dir, encoding: "utf8", maxBuffer: 256 << 20 }).split("\0").filter(Boolean);
   const tracked = new Set(files), read = (f) => { try { return readFileSync(path.join(dir, f), "utf8"); } catch (e) { if (e.code === "ENOENT" || e.code === "EISDIR") return ""; throw e; } };
   const rootMd = files.filter((f) => !f.includes("/") && f.endsWith(".md")).map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
   const mdRe = rootMd.length ? new RegExp(`(?<![\\w./-])(${rootMd.join("|")})(?![\\w.-])`, "gu") : null;
-  const goFiles = files.filter((f) => f.endsWith(".go") && !hasBrowserConstraint(read(f)));
-  const scripts = new Set();
-  for (const f of goFiles) for (const s of literals(f, read(f))) { const p = s.replace(/^(?:\.\.?\/)+/, ""); if (tracked.has(p) && SCRIPT.test(p)) scripts.add(p); }
-  const reads = new Set();
-  for (const f of [...goFiles, ...scripts]) for (const s of literals(f, read(f))) {
-    for (const m of s.matchAll(/(?<![\w./-])(?:\.\.?\/)*((?:docs|output|contracts)\/[^\s"'`()]*)/g)) {
-      const r = m[1].replace(/\$\{[^}]*\}|\{[^}]*\}|%[sdvq]/g, "*").replace(/\\n.*$/s, "");
-      if (!IGNORED_READS[f]?.[r]) reads.add(r);
+  const queue = files.filter((f) => CODE.test(f) && !f.startsWith("output/") && !f.includes("node_modules/") && !CLASSIFIER_FILES.has(f)), seen = new Set(queue);
+  const reads = new Map();
+  while (queue.length) {
+    const f = queue.shift(), text = read(f), browser = BROWSER_SIDE.test(f) || (f.endsWith(".go") && buildsWithBrowser(text));
+    for (const s of literals(f, text)) {
+      const named = s.replace(/^(?:\.\.?\/)+/, "");
+      if (named.startsWith("output/") && tracked.has(named) && CODE.test(named) && !seen.has(named)) { seen.add(named); queue.push(named); }
     }
-    if (mdRe) for (const m of s.matchAll(mdRe)) reads.add(m[1]);
+    for (const r of rawDocReads(f, text, mdRe)) if (!IGNORED_READS[f]?.[r]) reads.set(r, (reads.get(r) ?? false) || browser);
   }
-  return [...reads].sort();
+  return [...reads].map(([r, browser]) => ({ read: r, browser })).sort((a, b) => (a.read < b.read ? -1 : a.read > b.read ? 1 : 0));
 }
 const readMatches = (read, p) => read.includes("*")
   ? new RegExp(`^${read.split("*").map((x) => x.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join("[^/]*")}(/|$)`).test(p)
   : read.endsWith("/") ? p.startsWith(read) : p === read || p.startsWith(`${read}/`);
-/** Test-inert documentation: a doc candidate no foundation-shard reader names. */
-export function isInertDoc(p, reads) { return isDocCandidate(p) && !reads.some((r) => readMatches(r, p)); }
+/** "inert" (skip every gate), "foundation" (non-doc or read doc: the old rules apply) or "browser" (a browser reader names it: whole browser universe). */
+export function docClass(p, reads) {
+  if (!isDocCandidate(p)) return "foundation";
+  const hits = reads.filter((r) => readMatches(r.read, p));
+  return !hits.length ? "inert" : hits.some((r) => r.browser) ? "browser" : "foundation";
+}
+export const isInertDoc = (p, reads) => docClass(p, reads) === "inert";
 let cachedReads;
-const defaultInert = (p) => isInertDoc(p, cachedReads ??= foundationDocReads());
+const defaultDocClass = (p) => docClass(p, cachedReads ??= foundationDocReads());
 
 /** Changed paths and source observations -> deterministic required gates; source lookup defaults to the worktree. */
-export function planPr(paths, source = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"), readSources = (file) => [workingSource(file)], inert = defaultInert) {
+export function planPr(paths, source = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"), readSources = (file) => [workingSource(file)], classify = defaultDocClass) {
   // CI-SPEED: nothing a foundation shard or browser can observe changed -> empty plan (gates.yml reports docs-only success explicitly).
-  if (paths.length && paths.every((p) => inert(p))) return { modes: [], deploy: paths.some(isDeploy), docsOnly: true };
+  const classes = paths.map((p) => classify(p));
+  if (paths.length && classes.every((c) => c === "inert")) return { modes: [], deploy: paths.some(isDeploy), docsOnly: true };
   const tagged = paths.some((file) => {
     if (!file.startsWith("tests/foundation/") || !file.endsWith(".go")) return false;
     const sources = readSources(file).filter((text) => text !== null);
     return !sources.length || sources.some(hasBrowserTag);
   });
-  const needsBrowsers = tagged || paths.some((p) => !isBackendOnly(p));
+  const needsBrowsers = tagged || paths.some((p) => !isBackendOnly(p)) || classes.includes("browser");
   // Historical refs may predate the declaration. Union all available base/head/
   // checkout observations, so additions, removals and merge-ref drift stay guarded.
   const producers = readSources("tests/foundation/catalog_matrix_ledger_test.go").flatMap(matrixEvidenceSources);
