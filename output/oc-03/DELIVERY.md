@@ -18,6 +18,8 @@
 
 ## Pin edits (forced by the new migrations)
 - `tests/foundation/r2_integration_upgrade_test.go`: R2 count 130 -> 132 (0203 and post_river/0028).
+- `tests/foundation/meta_ads_schema_test.go` (MA02): one listed exception, `func:identity.require_recent_auth(p_hash bytea, p_window interval):EXECUTE` for commerce_ads_writer (exact string, no wildcard). Found by CI run 40440719124 (shard g07) at head ce05bed68.
+- `tests/foundation/stripe_live_schema_test.go` (SL02 upgrade fixture): 0203 and post_river/0028 are held back with 0137 (0203 patches set_platform_stripe); ledger delta 7 -> 9; `require_recent_auth` ACL compared without the seven owner roles' EXECUTE (helper `slsDropRecentAuthOwners`); the privilege delta accepts exactly `exec identity.require_recent_auth` for those seven roles. Not yet seen red or green in CI.
 - `tests/foundation/staff_team_gate_test.go`, `tests/foundation/staff_team_smoke_test.go`: fixtures that needed a second owner through invite/accept or set_role now seed the owner rows directly through the owner pool (new helper `seedOwner`; `join("owner")`, `restorePair`, smoke last-owner race). Assertions are unchanged; the product path can no longer create an owner.
 
 ## NOT_RUN / not done
