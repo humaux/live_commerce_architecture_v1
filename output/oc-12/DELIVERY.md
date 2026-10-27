@@ -17,6 +17,7 @@ store-level (shared by all staff), cleared only by `inbox.mark_read` for `inbox:
 | internal/inbox/unread_test.go | UR01 definition · UR02 store-level clear/reset · UR03 cross-tenant/cross-store isolation (real PG, real service path). |
 | apps/admin/components/Inbox.tsx | `unread` option in the existing native filter `<select>` (label = existing copy key `unread`: 未讀/未读/Unread). |
 | output/oc-12/UNREAD.md, DELIVERY.md, out-of-scope-allowlist.patch | evidence + the approval patch below. |
+| tests/foundation/r2_integration_upgrade_test.go:124-127 | **Integrator-granted** (coordinator message 2026-10-27, scope: the R2 migration-count pin and its comment only): comment line for 0204 and count 132 -> 133. Trigger: shard:g04 at a563f284e (run 40466503323, job 122087549703) failed TestR2IntegrationUpgradeFromReleaseHead "R2 migration set = 133 files ..., want 132". If #211 (0202) merges first, the count becomes 134 after merging base. |
 
 Deviation: the card names `tests/inbox/unread_test.go`. A new `tests/inbox` package needs a non-test `doc.go`
 (scripts/dev/check-pkgdocs.sh) and a regenerated `docs/engineering/dependency-map.md` (depmap --check), both outside
@@ -27,6 +28,7 @@ CI shard:unit under `./...`, and needs no CI registration. Moving it is a pure r
 | Step | Head | Run / job | Result |
 |---|---|---|---|
 | RED (tests only) | 626cea5a3 | run 40463313144 / job 122054896395 (gate shard:unit) | FAIL exactly 3 top-level tests, all `ERROR: invalid_filter (SQLSTATE PT400)`: TestOC12UnreadDefinition (unread_test.go:226), TestOC12UnreadStoreLevelAndReset (:250), TestOC12UnreadCrossTenantIsolation (:280). No other top-level FAIL in the job. |
+| implementation | a563f284e | run 40466503323 | shard:g04 FAIL only TestR2IntegrationUpgradeFromReleaseHead (migration-count pin, fixed by the granted edit above). shard:unit job 122087549874 SUCCESS: TestOC12UnreadDefinition / StoreLevelAndReset / CrossTenantIsolation all `--- PASS` (not SKIP). |
 | GREEN | see PR head | (filled after CI) | |
 
 ## Out-of-scope approval request (NOT applied; patch in output/oc-12/out-of-scope-allowlist.patch, 7 lines)
