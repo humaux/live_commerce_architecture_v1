@@ -13,7 +13,7 @@ email + password, with an emailed one-time code as the security step — at sign
 at every login (second step) and at password reset. This replaces OIDC as the **primary** path.
 OIDC (`internal/oidclogin`, `/api/auth/login` + `/api/auth/callback`) stays as an optional second
 path. Owner decision O-B: outbound mail = generic SMTP adapter (Go stdlib `net/smtp`, implicit TLS
-465, no new dependency); first configuration = a QQ mailbox; Tencent Exmail (`@xgdwm.com`) is the
+465, no new dependency); first configuration = a QQ mailbox (replaced 2026-10-05 by Spacemail, F11, §11); Tencent Exmail (`@xgdwm.com`) is the
 recommended upgrade; Resend is not used.
 
 Extends [merchant-identity-v1](merchant-identity-v1.md) and
@@ -41,7 +41,7 @@ owner supplies secrets as files, never through chat); domain `xgdwm.com` on Clou
 | PD4 | **Emailed code:** 6 decimal digits from `crypto/rand` (uniform, rejection sampling), valid 10 minutes, at most 5 wrong entries per challenge, single use, bound to the purpose (`signup`/`login`/`reset`) and to a browser binding (32-byte random, HttpOnly cookie). DB stores only `HMAC-SHA256(auth_pepper, binding_hash ‖ code)` and the creating source's `ip_hmac` (PD14 bucket). Supersede rule: a `login` challenge supersedes all older open `login` challenges of the credential (the caller proved the password). A `reset` or `signup` challenge supersedes older open challenges of the same email + purpose **only when they were created from the same ip bucket**; otherwise both stay open, with at most 3 open per email + purpose (the oldest is superseded). | NIST ≥ 6 digits, ≤ 10 min (F5). Binding stops a code phished from the mail being used in another browser without the cookie. Same-source supersede stops an attacker from another source killing the victim's open reset/sign-up code (round-2 P1). |
 | PD5 | **Reset-code budget per (principal, ip bucket):** applies to `reset` challenges only — `SUM(attempts)` over the principal's `reset` challenges created in the last 24 h **with the same `ip_hmac` as the challenge being completed** ≥ 10, **or** the same sum over all the principal's `reset` challenges ≥ 50 ⇒ `complete` for purpose `reset` returns `INVALID` without comparing the code or incrementing `attempts`. (The binding cookie is held by the creating browser, so a challenge's `ip_hmac` is the attacker's own source.) `login` challenges (which already required the correct password) are limited only by their own 5 attempts; `signup` challenges have no principal. | Bounds a reset-code takeover to 50/10^6 per day; one attacking source can no longer block the victim's reset (round-2 P1), nor the victim's login (round-1 P1). |
 | PD6 | **No user enumeration:** sign-up and reset-start always answer 202 with the same shape; login answers the same 401 `invalid_credentials` for unknown email, wrong password and disabled credential, and runs Argon2 against a fixed dummy PHC when the email is unknown. Every rate-limit bucket, including the mail buckets for sign-up/reset, is hit **before** the existence lookup, whether or not the email exists. Sign-up of an existing email sends an "account already exists — sign in or reset" notice instead of a code. Response time does not depend on existence because sign-up/reset never wait for SMTP (PD7) and do the same hashing work. | OWASP auth guidance; verified by PA08b (timing). |
-| PD7 | **Mail is sent once after commit, no queue, no retry.** The challenge row commits (tx 1) with `mail_state='PENDING'`; then one SMTP send; the outcome `SENT`/`FAILED`/`UNKNOWN` is recorded (tx 2). SMTP has no idempotency key, so nothing is ever re-sent automatically: an uncertain result stays `UNKNOWN` (I06: no blind retry). Recovery from a lost mail = the user presses "resend", a new step-1 call creating a **new** challenge (new code) that supersedes the old one. **`login` waits for the send** (the caller already proved the password; FAILED → 503 `mail_unavailable`). **`signup` and `reset` write the 202 response first**; the send then runs in a detached, bounded goroutine (non-blocking acquire of an 8-slot semaphore — when full, the send is skipped and recorded `FAILED`; context detached from the request, 25 s cap; graceful shutdown waits for in-flight sends up to 25 s; a crash leaves `PENDING`). The mail outcome never changes a sign-up/reset response. The plaintext code exists only in process memory until the send ends. | I06; I04 does not apply (the code is not a must-execute business task; a lost mail loses nothing). River would need a new isolated schema + worker for a 10-minute secret that must not be persisted in plaintext (rejected). Background send for signup/reset closes the timing oracle (round-1 P1). |
+| PD7 | **Mail is sent once after commit, no queue, no retry.** The challenge row commits (tx 1) with `mail_state='PENDING'`; then one SMTP send; the outcome `SENT`/`FAILED`/`UNKNOWN` is recorded (tx 2). SMTP has no idempotency key, so nothing is ever re-sent automatically: an uncertain result stays `UNKNOWN` (I06: no blind retry). Recovery from a lost mail = the user presses "resend", a new step-1 call creating a **new** challenge (new code) that supersedes the old one. **`login` waits for the send** (the caller already proved the password; FAILED → 503 `mail_unavailable`). **`signup` and `reset` do not wait for the send** (the 202 never depends on the mail result; the send may start before the 202 is written); it runs in a detached, bounded goroutine (non-blocking acquire of an 8-slot semaphore — when full, the send is skipped and recorded `FAILED`; context detached from the request, 25 s cap; graceful shutdown waits for in-flight sends up to 25 s; a crash leaves `PENDING`). The mail outcome never changes a sign-up/reset response. The plaintext code exists only in process memory until the send ends. | I06; I04 does not apply (the code is not a must-execute business task; a lost mail loses nothing). River would need a new isolated schema + worker for a 10-minute secret that must not be persisted in plaintext (rejected). Background send for signup/reset closes the timing oracle (round-1 P1). |
 | PD8 | **Sessions reuse `identity.sessions`** (audience `merchant`, token hash only, TTL from existing `COMMERCE_SESSION_TTL` 5 min–24 h) and `identity.session_events('session.issued')`. A session is issued **only** inside the definer that consumes a correct code (§4.3), never from a function that takes a principal id. This is **not** a barrier against the `commerce_identity` login itself: it chooses the code HMAC, so a leaked identity DSN (`dsn_lc_api_identity`, already its own manifest row) means takeover of every password account — the same trust already placed in that role by `identity.issue_merchant_session(p_issuer,p_subject,…)` in 0004. | merchant-identity-v1 rule: no function takes an arbitrary principal target; trust boundary stated honestly. |
 | PD9 | **Separate principals per method.** A password principal has one row in `identity.password_credentials`; an OIDC principal has `identity.external_identities`. Same email in both ⇒ two principals; no linking in v1. | No merge by email; linking is an account-takeover path. |
 | PD10 | **Reset = code + new password in one step,** then: password version +1, consecutive-failure counter reset, **all** merchant sessions of the principal revoked (`session.revoked` events), one new session issued. | Ruling Q5. Revoking kills an attacker's session. |
@@ -49,7 +49,7 @@ owner supplies secrets as files, never through chat); domain `xgdwm.com` on Clou
 | PD12 | **Hard disable after 100 consecutive wrong passwords** on one credential (`disabled_at`); the counter saturates at 100 and never raises (§4.2). Only a successful reset, or the owner-approved operator unlock (§11), re-enables. A disabled credential answers exactly like an unknown email (§2 Login). Temporary throttles (§6) fire long before this. | NIST §3.2.2 cap (F4). Lockout abuse bounds: §11. |
 | PD13 | **Tenant scope is unknown before authentication** and must not come from the client (I01), so there is no per-tenant login bucket. The ceiling on cost/abuse is a deployment-wide mail budget split into three shares (§6): unauthenticated, login of principals **without** an active membership, and login of principals **with** one — so self-registered accounts without a store cannot spend store members' login mail. | Honest equivalent of per-tenant limits (round-2 P1). |
 | PD14 | **Client IP** for rate limits: Caddy is the edge and replaces incoming `X-Forwarded-*` (F9, verified in `deploy/caddy/Caddyfile` header: no `trusted_proxies`). The admin BFF takes the single `X-Forwarded-For` value, requires an IP literal, and forwards it as `X-Commerce-Client-IP` on the BFF-key-authenticated private call (ruling R-5). Go buckets IPv4 by /32 and IPv6 by /64 (plus /48 for sign-up) and stores only `HMAC(auth_pepper, bucket)`. The admin host stays DNS-only (no Cloudflare proxy) until a `trusted_proxies` review (ruling Q6), checked by PA15. | No raw IP at rest; no trust in a browser header. |
-| PD15 | **Mail transport: generic SMTP** (O-B) — Go stdlib `crypto/tls` + `net/smtp`, implicit TLS on port 465 only, `PLAIN` auth, one real adapter behind a consumer-side interface; tests use a loopback TLS fake SMTP server, so the real adapter is what MOCK exercises (§3). First configuration: a dedicated QQ mailbox (`smtp.qq.com:465`, SMTP authorization code as the secret, F8). Upgrade: Tencent Exmail (`smtp.exmail.qq.com:465`, sender `@xgdwm.com` with SPF/DKIM/DMARC on Cloudflare, F10) — a config + secret change, no code change. | O-B; no new dependency (stdlib only). |
+| PD15 | **Mail transport: generic SMTP** (O-B) — Go stdlib `crypto/tls` + `net/smtp`, implicit TLS on port 465 only, `PLAIN` auth, one real adapter behind a consumer-side interface; tests use a loopback TLS fake SMTP server, so the real adapter is what MOCK exercises (§3). First configuration: a dedicated QQ mailbox (`smtp.qq.com:465`, SMTP authorization code as the secret, F8); **replaced 2026-10-05 by Spacemail (`mail.spacemail.com:465`, `@xgdwm.com`), see §11**. Upgrade: Tencent Exmail (`smtp.exmail.qq.com:465`, sender `@xgdwm.com` with SPF/DKIM/DMARC on Cloudflare, F10) — a config + secret change, no code change. | O-B; no new dependency (stdlib only). |
 
 Rejected alternatives:
 - Magic links instead of codes: a secret in a URL (I11; Caddy logs query strings), opened on another
@@ -86,6 +86,7 @@ Rejected alternatives:
 | F7 | Go `net/smtp` is frozen (no new features) but supported; `smtp.NewClient(conn net.Conn, host)` wraps an existing connection (so a `crypto/tls` connection gives implicit TLS on 465); `smtp.PlainAuth` sends credentials only over TLS or to localhost, else fails without sending them. | local `go doc net/smtp`, `go doc net/smtp.PlainAuth`, `go doc net/smtp.NewClient` (go1.26.2); https://pkg.go.dev/net/smtp |
 | F8 | QQ mailbox third-party sending: SMTP server `smtp.qq.com`, port 465 with SSL; username = full mailbox address; password = a 16-character **authorization code** generated after enabling POP3/SMTP in mailbox settings (SMS-verified), not the web login password. Sending limits are **not documented**; QQ's help site lists the bounce "550 Sender frequency limited", and community reports mention throttling after ~10 rapid sends (unofficial). Daily cap: **UNKNOWN**. | https://help.mail.qq.com/detail/0/1087 (authorization code); https://cloud.tencent.com/developer/article/2177098 (host/port); https://blog.csdn.net/qq_44776721/article/details/113782738 (unofficial throttle report) |
 | F9 | Caddy `reverse_proxy` ignores incoming `X-Forwarded-*` unless `trusted_proxies` is set. | https://caddyserver.com/docs/caddyfile/directives/reverse_proxy |
+| F11 | Spacemail (current transport since 2026-10-05): SMTP `mail.spacemail.com:465` implicit TLS, username = full mailbox address (`ailun@xgdwm.com`), a pilot send from the overseas server succeeded on 2026-10-05 (host record, outside the PA gates: PA12/PA13 stay NOT_RUN). Sending caps: 20/hour on trial, 500/hour per paid mailbox (aliases share it) — **unverified**: from search summaries 2026-10-22, the Spaceship help pages returned 403 to fetch; daily cap UNKNOWN. Whether the SMTP secret is the mailbox password or an app-specific password: UNKNOWN in this repo. | pilot host record 2026-10-05; search summaries 2026-10-22 (no first-hand page) |
 | F10 | Tencent Exmail SMTP `smtp.exmail.qq.com:465`; sender on the owner's domain with SPF/DKIM/DMARC records on Cloudflare. Exact record values: **UNKNOWN** until read from the Exmail admin console at setup, never typed from this file. | owner decision O-B, `docs/delivery/units/r2-design-rulings.md` |
 
 ## 2. Flows
@@ -150,10 +151,10 @@ Mail content (`internal/identity/mailcopy.go`, zh-CN/zh-TW/en, chosen by the ste
 subject without the code; text + minimal HTML with the code, purpose, "valid 10 minutes", "if this
 was not you, ignore this mail / reset your password"; no links, no images, no tracking pixels.
 From: `COMMERCE_MAIL_FROM` = display name + the SMTP username address (config check: the address
-must equal `COMMERCE_SMTP_USERNAME`, because QQ/Exmail send only as the authenticated mailbox —
-verified in PA12; default display name `xgdwm`).
+must equal `COMMERCE_SMTP_USERNAME`, because QQ/Exmail send only as the authenticated mailbox (current Spacemail sender `ailun@xgdwm.com` follows the same rule) —
+to be verified by PA12, still NOT_RUN; default display name `xgdwm`).
 
-DNS: none for the QQ mailbox (sender `@qq.com`; SPF/DKIM are QQ's). Exmail upgrade: MX/SPF/DKIM
+DNS (current, Spacemail on `xgdwm.com`, set 2026-09-30): MX `mx1/mx2.spacemail.com`, SPF `v=spf1 include:spf.spacemail.com ~all`, `_dmarc` `p=none`; DKIM (`spacemail._domainkey`) value comes from the Spacemail console and is UNKNOWN here. Historical: none for the QQ mailbox (sender `@qq.com`; SPF/DKIM are QQ's). Exmail upgrade: MX/SPF/DKIM
 records from the Exmail admin console on `xgdwm.com` (DNS only), `_dmarc.xgdwm.com`
 `v=DMARC1; p=none; rua=mailto:<owner mailbox>` for 2–4 weeks, then `p=quarantine` (F10).
 
@@ -270,11 +271,13 @@ Go (`cmd/api/identity.go`), all under `COMMERCE_IDENTITY_ENABLED=1`:
     port fixed 465 (implicit TLS; STARTTLS/587 not supported in v1), `COMMERCE_SMTP_USERNAME`
     (full mailbox address), `COMMERCE_MAIL_FROM` (address must equal the username);
   - `COMMERCE_SMTP_PASSWORD_FILE` — new manifest row `commerce_smtp_password opaque owner api
-    <rotation>`; the value is the mailbox's SMTP **authorization code** (F8), supplied by the owner
-    as a file (O-D), never logged or echoed. Scope: a QQ/Exmail authorization code also grants
+    <rotation>`; the value is the mailbox's SMTP credential (QQ/Exmail: the **authorization code**, F8; current Spacemail: see F11), supplied by the owner
+    as a file (O-D), never logged or echoed. Scope: a QQ/Exmail authorization code (and a Spacemail mailbox password) also grants
     IMAP/POP access to that mailbox and cannot be narrowed, so it must belong to a **dedicated
     sending mailbox**, never the owner's personal mailbox. Rotation = generate a new code in the
     mailbox settings, write the file, restart api, revoke the old code there.
+    If the current Spacemail credential is the mailbox password (F11: UNKNOWN), rotation = change the
+    mailbox password in Spacemail (the old one stops working), write the file, restart api and the watchdog.
   - `COMMERCE_MAIL_DAILY_CAP` (default 200, range 20–100000; §6 splits it);
   - `COMMERCE_BREACH_CHECK` `hibp`|`off` (`off` only with loopback tests).
 - `COMMERCE_HIBP_BASE_URL` and a test SMTP root CA: loopback-only overrides, accepted only with
@@ -310,7 +313,7 @@ Shares are `floor(cap × pct / 100)`; with the minimum cap 20 they are 8 / 3 / 9
 Over a per-client limit → 429 `throttled` with `Retry-After` = window remainder; identical for
 known and unknown emails. Over a `global-mail-*` limit → 503 `mail_unavailable` (fail closed, O-B),
 raised before any existence lookup, identical for known and unknown emails. `throttled` is logged with
-the bucket kind only, not written as an audit row (§15 A3). The provider's real daily cap is UNKNOWN (F8): `COMMERCE_MAIL_DAILY_CAP` is
+the bucket kind only, not written as an audit row (§15 A3). The provider's real daily cap is UNKNOWN (F8; current Spacemail: F11): `COMMERCE_MAIL_DAILY_CAP` is
 set from the first observed `smtp_rejected` rate, never raised above what the mailbox has sustained.
 
 ## 7. HTTP
@@ -391,7 +394,7 @@ structure and reuse it; no new visual language. Visual approval by the owner sta
 | PA10 | `tests/admin/password-bff.test.ts` | Node | Origin rule, strict keys, cookie flags/Max-Age, challenge cookie cleared on 200/409 only and kept on 401, session+CSRF cookies set via existing helper, X-Forwarded-For parsing (missing/multiple/invalid → 503/400), OIDC-less config valid, password never in response or logs. |
 | PA11 | `tests/admin/password-auth.spec.ts` | BROWSER | Sign-up → code (read from the `mailtest` mailbox inspection endpoint — exists only in the test binary on loopback) → onboarding → logout → login → code → workspace; forgot → reset → signed in, old session revoked; wrong code, throttled, resend cooldown; zh-CN/zh-TW/en, desktop + mobile Chromium; autocomplete attributes; screenshots hashed for owner visual approval. |
 | PA12 | `TestMailPA12SMTPProbe` | LIVE read-only (owner-run, not CI) | Against the configured mailbox: TLS handshake, AUTH success, `MAIL FROM` = username accepted, then `RSET`/`QUIT` — **no DATA, nothing sent**; plus From ≠ username rejected by the server (records the reply code); SKIP = NOT_RUN. |
-| PA13 | `docs/runbooks/mail.md` check | LIVE (owner approval required) | One code mail to the owner's own mailbox; headers show `spf=pass dkim=pass` (QQ: `qq.com` alignment; Exmail: `dmarc=pass` for `xgdwm.com`); arrival time recorded; screenshot in `output/merchant-password-auth/`. |
+| PA13 | `docs/runbooks/mail.md` check | LIVE (owner approval required) | One code mail to the owner's own mailbox; headers show `spf=pass dkim=pass` (QQ: `qq.com` alignment; Exmail and current Spacemail: `dmarc=pass` for `xgdwm.com`, which needs the Spacemail DKIM record, F11); arrival time recorded; screenshot in `output/merchant-password-auth/`. |
 | PA14 | root review | REVIEW + regression | Security review (enumeration, timing, lockout, CSRF, cookie, log leaks); PROCESS §5 comments; `docs/engineering/dependencies.md` line for x/crypto; depmap regenerated; `go list -deps ./cmd/api` contains no `internal/mail/mailtest`; `go test -race ./...`, `go vet ./...`, `python3 scripts/check_packet.py`; existing T03/OIDC and browser-auth gates still green. |
 | PA15 | deploy preflight/smoke rule | LIVE (owner-run deploy) | `dig +short $LC_ADMIN_HOST` resolves only to the server IP, not a Cloudflare range; otherwise preflight fails while `COMMERCE_PASSWORD_LOGIN_ENABLED=1` (ruling Q6). |
 
@@ -421,12 +424,21 @@ the sending mailbox exist.
   takeover, and reset needs only the mailbox. **Minimum length 12 is below NIST's 15 for
   single-factor passwords** — accepted gap (ruling Q2); the owner may raise it to 15 (one constant
   + copy change). Upgrade signal: first merchant with payouts or staff ⇒ add TOTP or passkeys. **Fired; see §16 (recent re-auth now, TOTP later).**
-- **Personal-mailbox transport:** the QQ daily/burst caps are UNKNOWN (F8); a provider rejection
-  makes login answer 503 `mail_unavailable` for everyone until the provider window resets, and the
-  provider cap is shared by login and unauthenticated mail (our split protects only our own
-  budget). Upgrade signal: first `smtp_rejected` for frequency, or > 50 auth mails/day ⇒ Exmail
-  (or a provider API behind the same interface). Mail from `@qq.com` may land in spam at non-QQ
-  receivers; the UI says "check spam folder".
+- **Mail transport (current configuration since 2026-10-05: Spacemail, F11; the QQ mailbox of PD15/F8
+  was dropped because QQ refuses SMTP logins from the overseas server).** Same generic SMTP adapter,
+  a config + secret change only. Caps are unverified (F11). What a provider outage or rejection does
+  (PD7): **login and re-auth** wait for the send — FAILED → 503 `mail_unavailable`, UNKNOWN (e.g. a
+  timeout after DATA) → success and the user may press resend; **signup and reset** do not wait for
+  SMTP: the detached send records SENT/FAILED/UNKNOWN, the 202 never depends on it, and the user
+  recovers from FAILED/UNKNOWN with resend; a step-1 request that passes its earlier checks and rate
+  limits (422/401/429 come first) answers 503 `mail_unavailable` when a `global-mail-*` budget is
+  exhausted (§6).
+  Signed-in sessions are unaffected and nothing is re-sent automatically. Where OIDC is configured,
+  the `mail_unavailable` copy should also point to the OIDC sign-in, but only for merchants whose
+  account already has an OIDC identity (PD9 keeps password and OIDC principals separate, never merged
+  by email); owed by the CA-AUTH-COPY card. Alert e-mail (watchdog) uses the same relay, so a relay
+  outage also silences alerts: a dead-man check independent of the relay is a known gap. Upgrade
+  signal: first `smtp_rejected` for frequency ⇒ a provider API behind the same interface.
 - **Lockout bounds:** an attacker who knows only the email can disable the credential with 100 wrong
   passwords (PD12, NIST cap; one source needs ~2.5 h under `email-pw`). From one source they can no longer stop the victim's reset: the per-email unauth mail bucket, supersede and reset budget are per source, and `ip-mail-unauth` keeps one source from exhausting `global-mail-unauth` (that needs ≥ ⌈0.4·cap/10⌉ sources = 8 IPv4 /32 or 4 IPv6 /48 at the default cap) (§6, PD4, PD5). **A distributed attacker (≥ 3 sources/day; an IPv6 /48 holds 65,536 /64
   sources) can still keep a disabled credential locked indefinitely** — exhausting
@@ -476,7 +488,7 @@ the sending mailbox exist.
 
 ## 12. Owner questions (each has a default)
 
-1. **Sending mailbox** (blocks PA12/PA13 only, not implementation): which QQ mailbox sends auth
+1. **Sending mailbox** — **decided 2026-10-05: Spacemail `ailun@xgdwm.com`** (QQ refused SMTP logins from the overseas server). It is not a dedicated sending-only mailbox, so the §5 scope warning applies. Original question, kept for history: which QQ mailbox sends auth
    mail? **Default: a new dedicated QQ mailbox used only for platform sending** (its authorization
    code also opens its IMAP), display name `xgdwm`; the owner enables SMTP, generates the
    authorization code and places it as the `commerce_smtp_password` secret file on the server
@@ -544,7 +556,7 @@ Source: `docs/delivery/units/r2-design-rulings.md` (binding). Accepted defaults 
 revise before go-live:
 
 - **O-A** email + password + emailed code; OIDC optional. **O-B** generic SMTP (stdlib, 465),
-  QQ mailbox first, Exmail recommended upgrade, no Resend; no idempotency key — one attempt after
+  QQ mailbox first (replaced by Spacemail 2026-10-05, F11), Exmail recommended upgrade, no Resend; no idempotency key — one attempt after
   commit, resend = new code; global cap configurable (`COMMERCE_MAIL_DAILY_CAP`), default 200/day,
   split 40 % unauth / 15 % login without store / 45 % login with store (§6), fail closed with 503.
   **O-D** production operated by Claude; secrets as owner-supplied files, never in chat.
