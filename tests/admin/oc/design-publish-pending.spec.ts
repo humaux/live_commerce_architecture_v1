@@ -98,6 +98,7 @@ test("OC11 old publish row of the same draft version never confirms a new lost p
   await edit(page, "c");
   await page.getByTestId("design-publish").click(); // real publish of this draft version
   await expect(page.getByTestId("design-note")).toContainText(okPublished);
+  await page.getByTestId("design-tab-versions").click();
   await page.getByTestId("design-rollback").last().click(); // rollback: the newest row is now a rollback, the draft is unchanged
   await expect(page.getByTestId("design-note")).toContainText(/Rolled back/);
   await expect(page.getByTestId("design-publish")).toBeEnabled();
