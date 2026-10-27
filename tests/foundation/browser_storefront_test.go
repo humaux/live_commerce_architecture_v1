@@ -381,6 +381,11 @@ func TestBrowserStorefront(t *testing.T) {
 		t.Fatalf("the real-stack gate did not report all 9 cases; evidence=%s", evidence)
 	}
 
+	// OC-11: shop-real-gate.mjs runs tests/storefront/offline-error.spec.ts (error boundary + offline banner + read-only reload) after the nine cases.
+	if !strings.Contains(string(out), "OC11 error page:") {
+		t.Fatalf("offline-error.spec.ts did not report; evidence=%s", evidence)
+	}
+
 	// ---- independent PG readback ----------------------------------------------------------------------------------------------------
 	// Browsing, carts and quotes never place an order, hold stock or write the stock ledger (I05/§11.5: only checkout and payment move stock).
 	if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM checkout.orders WHERE store_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE store_id=$1)`, f.storeA1); n != ordersBefore {
