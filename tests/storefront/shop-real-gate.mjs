@@ -172,7 +172,9 @@ try {
   await p.goto(`${origin}/en/products?min=15&max=20`);
   const filtered = (await p.getByTestId("product-card").locator(".sf-card__price > span:first-child").allTextContents()).map(num);
   assert(filtered.length >= 3 && filtered.every((n) => n >= 15 && n <= 20), `price filter leaked ${filtered}`);
-  await expect(p.locator(".sf-filter")).toHaveAttribute("open", "");
+  // React streaming can briefly keep a second, hidden copy of the segment (<div hidden id="S:…">); assert on the visible one, then that the duplicate is gone.
+  await expect(p.locator(".sf-filter").filter({ visible: true })).toHaveAttribute("open", "");
+  await expect(p.locator(".sf-filter")).toHaveCount(1);
   await p.goto(`${origin}/en/products`);
   // React streaming briefly keeps the finished segment in a hidden <div hidden id="S:…"> before swapping it in; only the visible chips are the UI.
   // Match shop-r5-checks: measure the 390px chip layout after loading/streaming settles.
