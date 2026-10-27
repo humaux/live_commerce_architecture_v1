@@ -10,7 +10,7 @@ Authority: owner 2026-10-26 "以 Figma 为准", 2026-10-27 "ui全部使用figma�
 - `tests/ui/ds-figma-parity.mjs` + `output/ds-3/figma-expected.json` (37 checks, each with Figma node id and the raw Figma read). Computed background / border / text colour / radius / height / weight (+ label inset, separator, placeholder colour, caret, bar contents) of every master variant in the UI gallery at 1586x900 zh-TW. Comparator self-check (wrong colour / height / missing probe must fail) runs at import.
 - Registered in CI through the existing `--browser-ui-gallery` runner (`tests/admin/ui-gallery-runner.mjs`), which every UI-path PR runs (scripts/dev/pr-modes.mjs). No new registry entry needed. Each check is a click-ledger row; the new specimen card's 8 buttons are really clicked (aria-disabled ones with the real mouse) and its 3 inputs filled.
 - RED: Gates run 40500056860 @ 972878c1f, job `gate (--browser-ui-gallery)` failure, 26 findings, all DS-3 (every other DS-1/DS-2 row passed): `red-run-40500056860.txt`. Button/Nav/Language/Page Header/Segmented weights failed on values; Tag, Input, Pagination passed (they already matched, as the audit said). 4 rows failed on the gate itself (aria-disabled click wait) and were fixed in the GREEN commit.
-- GREEN: see "Runs" below.
+- GREEN: Gates run 40533759133 @ 5614d4966, `gate (--browser-ui-gallery)` success: 37/37 parity rows pass, 48/48 DS-3 ledger rows pass, whole runner `PASS DS-1 ui-gallery ... 1207 real-click ledger rows`, 0 failed (`gallery/parity.json`, `gallery/ds3-ledger-rows.json`).
 
 ## Before / after / Figma
 
@@ -73,4 +73,22 @@ Local tests and servers (CI only, per card). Independent review. WebKit / Safari
 
 ## Runs
 
-(filled in below)
+| Step | Head | Run | Result |
+|---|---|---|---|
+| RED attempt 0 | 54f99257f | Foundation 40496965866 | failure: check-gates, `tests/ui/ds-figma.spec.mjs` run by no gate (renamed to `ds-figma-parity.mjs`) |
+| RED | 972878c1f | Gates 40500056860, ui-gallery job 122186754000 | failure, 26 findings, all DS-3 (`red-run-40500056860.txt`) |
+| GREEN attempt 1 | ea29cef98 | Gates 40514175160, job 122264267125 | failure, 4 findings: DS-2 same-row (BulkMenu 44 vs 36 filter fields, 3 locales at 1440) + comparator treated `allCrumbsSameColor` as a colour; fixed in 5614d4966 (D7) |
+| GREEN | 5614d4966 | Gates 40533759133, job 122296409784; Foundation 40533759141 | ui-gallery success (37/37, 1207 ledger rows, 0 failed); all 78 gate jobs + receipts + aggregate success; foundation success |
+
+Two targeted fixes were used for the GREEN blocker (attempt 1 → pass), within the two-fix limit.
+
+## Screenshots
+
+- `gallery/gallery-1586.png`, `gallery/gallery-390.png`: gallery viewport from the GREEN run (artifact gate-browser-ui-gallery 12748952729).
+- `gallery/specimens-1586.png`, `gallery/specimens-390.png`: the #sec-figma specimen card.
+- `side-by-side-1586.png`, `side-by-side-390.png`: Figma master screenshots (`figma/shots/`, transparent master frames render black) next to the gallery.
+
+## Verification commands
+
+- Local (static only): `tsc --noEmit -p apps/admin/tsconfig.json` exit 0 (temporary node_modules symlinks, removed); `node scripts/dev/check-ds-rules.mjs` exit 0 (20 files, 0 violations); token contrast pairs recomputed statically, 0 below threshold.
+- CI: `scripts/dev/test-local.sh --browser-ui-gallery` (runs `node --test` ds-logic / ds-tokens / ds-hex-ratchet, the flag-enabled build, and `tests/admin/ui-gallery-runner.mjs`, which imports `tests/ui/ds-figma-parity.mjs`).

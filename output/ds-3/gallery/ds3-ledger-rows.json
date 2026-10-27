@@ -1,0 +1,386 @@
+[
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 button.primary.default (Figma 4:12712)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#142942\",\"borderTopColor\":\"#142942\",\"color\":\"#ffffff\",\"height\":44,\"borderTopLeftRadius\":\"6px\",\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"paddingLeft\":\"14px\",\"borderTopWidth\":\"1px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 button.secondary.default (Figma 4:12714)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"borderTopColor\":\"#e5e7eb\",\"color\":\"#142942\",\"height\":44,\"borderTopLeftRadius\":\"6px\",\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"paddingLeft\":\"14px\",\"borderTopWidth\":\"1px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 button.danger.default (Figma 1394:103516)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"borderTopColor\":\"#b42318\",\"color\":\"#b42318\",\"height\":44,\"borderTopLeftRadius\":\"6px\",\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"paddingLeft\":\"14px\",\"borderTopWidth\":\"1px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 button.text.default (Figma 1394:103518)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"transparent\",\"borderTopColor\":\"transparent\",\"color\":\"#0f766e\",\"height\":44,\"borderTopLeftRadius\":\"6px\",\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"paddingLeft\":\"14px\",\"borderTopWidth\":\"1px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 button.primary.disabled (Figma 1394:103520)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#6d8cab\",\"borderTopColor\":\"#6d8cab\",\"color\":\"#ffffff\",\"height\":44,\"borderTopLeftRadius\":\"6px\",\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"paddingLeft\":\"14px\",\"borderTopWidth\":\"1px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 button.secondary.disabled (Figma 1394:103522)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#f5f6f8\",\"borderTopColor\":\"#e5e7eb\",\"color\":\"#566171\",\"height\":44,\"borderTopLeftRadius\":\"6px\",\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"paddingLeft\":\"14px\",\"borderTopWidth\":\"1px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 button.danger.disabled (Figma 1394:103526)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#f5f6f8\",\"borderTopColor\":\"#e5e7eb\",\"color\":\"#566171\",\"height\":44,\"borderTopLeftRadius\":\"6px\",\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"paddingLeft\":\"14px\",\"borderTopWidth\":\"1px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 button.text.disabled (Figma 1394:103528)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#f5f6f8\",\"borderTopColor\":\"#f5f6f8\",\"color\":\"#566171\",\"height\":44,\"borderTopLeftRadius\":\"6px\",\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"paddingLeft\":\"14px\",\"borderTopWidth\":\"1px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 nav.item.default (Figma 4:12733)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"color\":\"#6b7280\",\"borderTopLeftRadius\":\"6px\",\"height\":44,\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"labelInset\":42,\"borderLeftWidth\":\"0px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 nav.item.active (Figma 4:12735)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#eef2f7\",\"color\":\"#142942\",\"borderTopLeftRadius\":\"6px\",\"height\":44,\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"labelInset\":42,\"borderLeftWidth\":\"0px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 nav.rail (Figma 4:12737)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 language.switch (Figma 1397:105153)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"borderTopColor\":\"#e5e7eb\",\"borderTopWidth\":\"1px\",\"color\":\"#142942\",\"borderTopLeftRadius\":\"6px\",\"height\":44,\"fontSize\":\"14px\",\"fontWeight\":\"500\",\"noCaret\":true}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 pageheader.bar (Figma 1397:105155)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"height\":64,\"paddingLeft\":\"24px\",\"borderBottomWidth\":\"0px\",\"holdsBreadcrumb\":true,\"holdsLanguage\":true}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 pageheader.crumb (Figma 1397:105157)",
+  "action": "[READ] computed style",
+  "expected": "{\"color\":\"#596579\",\"fontSize\":\"14px\",\"fontWeight\":\"400\",\"lineHeight\":\"21px\",\"allCrumbsSameColor\":true}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 pageheader.separator (Figma 1397:105158)",
+  "action": "[READ] computed style",
+  "expected": "{\"separator\":\"/\",\"separatorColor\":\"#596579\",\"crumbGap\":4}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 tag.neutral (Figma 1401:38422)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#edf0f3\",\"color\":\"#3f4753\",\"borderTopLeftRadius\":\"999px\",\"height\":22,\"fontSize\":\"12px\",\"paddingLeft\":\"8px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 tag.success (Figma 1401:38424)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#e6f3ec\",\"color\":\"#2f6f55\",\"borderTopLeftRadius\":\"999px\",\"height\":22}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 tag.warning (Figma 1401:38426)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#fae2a9\",\"color\":\"#5c4300\",\"borderTopLeftRadius\":\"999px\",\"height\":22}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 tag.danger (Figma 1401:38428)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#fdebe9\",\"color\":\"#b42318\",\"borderTopLeftRadius\":\"999px\",\"height\":22}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 tag.info (Figma 1401:38430)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#eaf0fc\",\"color\":\"#1d4ed8\",\"borderTopLeftRadius\":\"999px\",\"height\":22}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 segmented.switchOn.selected (Figma 1401:38433)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#3f7f32\",\"color\":\"#ffffff\",\"fontWeight\":\"500\",\"minWidth\":\"44px\",\"paddingLeft\":\"12px\",\"height\":34}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery",
+  "control": "DS-3 segmented.switchOn.idle (Figma 1401:38435)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"color\":\"#5b5b5b\",\"fontWeight\":\"400\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=0&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 segmented.switchOff.selected (Figma 1401:38437)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#5b5b5b\",\"color\":\"#ffffff\",\"fontWeight\":\"500\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=0&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 segmented.switchOff.idle (Figma 1401:38439)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"color\":\"#5b5b5b\",\"fontWeight\":\"400\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 segmented.underline.selected (Figma 1401:38441)",
+  "action": "[READ] computed style",
+  "expected": "{\"color\":\"#2a6fb0\",\"borderBottomColor\":\"#2a6fb0\",\"borderBottomWidth\":\"2px\",\"fontWeight\":\"500\",\"height\":36,\"paddingLeft\":\"16px\",\"borderTopLeftRadius\":\"0px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 segmented.underline.idle (Figma 1401:38443)",
+  "action": "[READ] computed style",
+  "expected": "{\"color\":\"#5b5b5b\",\"borderBottomColor\":\"transparent\",\"borderBottomWidth\":\"2px\",\"fontWeight\":\"400\",\"height\":36}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 segmented.section.selected (Figma 1401:38445)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"color\":\"#333333\",\"fontWeight\":\"500\",\"height\":36,\"paddingLeft\":\"16px\",\"borderTopLeftRadius\":\"0px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 segmented.section.idle (Figma 1401:38447)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#f3f3f3\",\"color\":\"#5b5b5b\",\"fontWeight\":\"400\",\"height\":36}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 input.placeholder (Figma 1401:38450)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"borderTopColor\":\"#8c8c8c\",\"borderTopWidth\":\"1px\",\"borderTopLeftRadius\":\"4px\",\"height\":36,\"paddingLeft\":\"12px\",\"fontSize\":\"14px\",\"placeholderColor\":\"#6b6b6b\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 input.filled (Figma 1401:38452)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"borderTopColor\":\"#8c8c8c\",\"color\":\"#333333\",\"height\":36,\"borderTopLeftRadius\":\"4px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 input.invalid (Figma 1401:38454)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#ffffff\",\"borderTopColor\":\"#b42318\",\"color\":\"#333333\",\"height\":36,\"borderTopLeftRadius\":\"4px\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 pagination.number.default (Figma 1401:57997)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"transparent\",\"borderTopColor\":\"transparent\",\"color\":\"#2a6fb0\",\"borderTopLeftRadius\":\"4px\",\"height\":36,\"minWidth\":\"36px\",\"paddingLeft\":\"8px\",\"fontSize\":\"14px\",\"fontWeight\":\"400\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 pagination.number.hover (Figma 1401:57999)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#f3f3f3\",\"borderTopColor\":\"#dddddd\",\"color\":\"#2a6fb0\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 pagination.number.current (Figma 1401:58001)",
+  "action": "[READ] computed style",
+  "expected": "{\"backgroundColor\":\"#2a6fb0\",\"borderTopColor\":\"#2a6fb0\",\"color\":\"#ffffff\",\"fontWeight\":\"600\",\"height\":36}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 pagination.previous.disabled (Figma 1401:58009)",
+  "action": "[READ] computed style",
+  "expected": "{\"color\":\"#6b6b6b\",\"backgroundColor\":\"transparent\",\"height\":36}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 pagination.next.default (Figma 1401:58012)",
+  "action": "[READ] computed style",
+  "expected": "{\"color\":\"#2a6fb0\",\"backgroundColor\":\"transparent\",\"height\":36}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 pagination.gap (Figma 1401:58021)",
+  "action": "[READ] computed style",
+  "expected": "{\"color\":\"#6b6b6b\"}",
+  "actual": "matches Figma",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 4:12712",
+  "action": "click",
+  "expected": "label reported in the card status",
+  "actual": "label reported in the card status",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 4:12714",
+  "action": "click",
+  "expected": "label reported in the card status",
+  "actual": "label reported in the card status",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 1394:103516",
+  "action": "click",
+  "expected": "label reported in the card status",
+  "actual": "label reported in the card status",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 1394:103518",
+  "action": "click",
+  "expected": "label reported in the card status",
+  "actual": "label reported in the card status",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 1394:103520",
+  "action": "click",
+  "expected": "reason shown",
+  "actual": "reason shown",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 1394:103522",
+  "action": "click",
+  "expected": "reason shown",
+  "actual": "reason shown",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 1394:103526",
+  "action": "click",
+  "expected": "reason shown",
+  "actual": "reason shown",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 1394:103528",
+  "action": "click",
+  "expected": "reason shown",
+  "actual": "reason shown",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 1401:38450",
+  "action": "fill",
+  "expected": "typed value kept",
+  "actual": "typed value kept",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 1401:38452",
+  "action": "fill",
+  "expected": "typed value kept",
+  "actual": "typed value kept",
+  "result": "pass"
+ },
+ {
+  "page": "/zh-TW/ui-gallery?tab=a&stab=a&sw=1&setting=profile&list=&nav=&page=1&tstate=ready",
+  "control": "DS-3 specimen 1401:38454",
+  "action": "fill",
+  "expected": "typed value kept",
+  "actual": "typed value kept",
+  "result": "pass"
+ }
+]
