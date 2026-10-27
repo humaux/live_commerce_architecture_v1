@@ -3,6 +3,9 @@
 #   each on its own 16 GB runner, so modes run in parallel instead of queueing on the local machine-wide PG lock.
 #   2026-10-07 speed-up: a `plan` job fans the two long gates out (`--browser-click-sweep` -> N LC_SWEEP_SHARD slices, `--browser-visual-lint` -> M slices,
 #   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.
+#   2026-10-27 CI-SPEED (owner: "优化ci的速度"): a `build` job runs once per run (`test-local.sh --prebuild`: both production Next builds + a warmed Go build cache of the
+#   untagged and -tags browser ./tests/foundation graphs) and every gate leg in the plan's `prebuilt_modes` restores it (scripts/dev/prebuilt.mjs refuses any other SHA)
+#   instead of rebuilding per job (measured run 40461573230: ~90 s Go compile + ~20 s Next per browser job, x61 jobs).
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
 #   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (installs only the system deps the runner image lacks, from cached .debs when possible; bounded apt otherwise),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), scripts/dev/matrix-receipts.mjs (per-job run receipts + verifier, #128), the pinned postgres image,
@@ -69,6 +72,8 @@ jobs:
       sweep_n: ${{ steps.plan.outputs.sweep_n }}
       visual_n: ${{ steps.plan.outputs.visual_n }}
       deploy: ${{ steps.pr.outputs.deploy || 'false' }}
+      prebuilt_modes: ${{ steps.plan.outputs.prebuilt_modes }}
+      prebuild: ${{ steps.plan.outputs.prebuild }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -107,9 +112,55 @@ jobs:
           MODES: ${{ github.event_name == 'pull_request' && steps.pr.outputs.modes || github.event_name == 'schedule' && steps.nightly.outputs.modes || github.event_name == 'workflow_dispatch' && (inputs.full_browser_universe == 'true' && steps.nightly.outputs.modes || inputs.modes) || '["foundation-shards"]' }}
         run: node scripts/dev/ci-plan.mjs
 
+  # CI-SPEED build-once: the Next builds and the Go compile every prebuilt_modes leg used to repeat, done once for this run's SHA. Same commands as the legs
+  # (test-local.sh's own lc_build_* under lc_environment; go test -race [-tags browser] over ./tests/foundation runs vet and links exactly like the arms).
+  build:
+    needs: plan
+    if: ${{ needs.plan.outputs.prebuild == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GOTOOLCHAIN: go1.27.3
+      GOFLAGS: -mod=readonly
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: false # this job IS the cache for its run; never a writer of the shard:gNN key
+      - name: Go modules (prefetch with retry)
+        run: for i in 1 2 3; do go mod download && exit 0; echo "go mod download attempt $i failed; retrying"; sleep $((i * 15)); done; exit 1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: ./.github/actions/pnpm
+      - name: Node dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Next builds (once per run)
+        run: bash scripts/dev/test-local.sh --prebuild "$RUNNER_TEMP/prebuilt"
+      - name: Go build cache of both ./tests/foundation graphs (once per run)
+        run: |
+          go test -race -count=1 -run '^$' ./tests/foundation
+          go test -race -tags browser -count=1 -run '^$' ./tests/foundation
+          node scripts/dev/prebuilt.mjs pack "$RUNNER_TEMP/prebuilt" gocache
+          ls -l "$RUNNER_TEMP/prebuilt" && cat "$RUNNER_TEMP/prebuilt/STAMP.json"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: prebuilt
+          path: ${{ runner.temp }}/prebuilt/
+          retention-days: 1
+          compression-level: 0 # already zstd
+          overwrite: true # a re-run of this job replaces its own run's artifact
+          if-no-files-found: error
+
   gate:
     name: gate (${{ matrix.mode }})
-    needs: plan
+    needs: [plan, build]
+    # build is skipped when no leg consumes it (push: foundation shards only); a failed build skips every leg, which `required` reports red.
+    if: ${{ !cancelled() && needs.plan.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
     strategy:
       fail-fast: false
       matrix:
@@ -159,6 +210,19 @@ jobs:
       - uses: ./.github/actions/pnpm # pnpm from the cached Corepack home, no per-run registry download (#107)
       - name: Node dependencies (frozen lockfile)
         run: pnpm install --frozen-lockfile --ignore-scripts
+      # CI-SPEED: this run's build-once artifact. Never for a calibration/fault-injection dispatch (extra_env may change what a build must contain).
+      - name: Download prebuilt Next apps + Go build cache
+        id: prebuilt
+        if: ${{ needs.build.result == 'success' && env.EXTRA_ENV == '' && contains(fromJSON(needs.plan.outputs.prebuilt_modes), matrix.mode) }}
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: prebuilt
+          path: ${{ runner.temp }}/prebuilt
+      - name: Restore prebuilt Go build cache (same sha only)
+        if: steps.prebuilt.outcome == 'success'
+        run: |
+          node scripts/dev/prebuilt.mjs unpack "$RUNNER_TEMP/prebuilt" gocache
+          echo "LC_PREBUILT_DIR=$RUNNER_TEMP/prebuilt" >> "$GITHUB_ENV"
       - name: Browser requirements from registry
         id: browsers
         run: node scripts/dev/ci-playwright-browsers.mjs "$MODE"
@@ -377,12 +441,14 @@ jobs:
   # expected (a sweep / visual-lint was planned), and deploy-smoke succeeded when it was expected. Skipped / cancelled / failed anywhere else is red, never silently green.
   required:
     name: required
-    needs: [plan, gate, aggregate, deploy, receipts]
+    needs: [plan, build, gate, aggregate, deploy, receipts]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
       PLAN: ${{ needs.plan.result }}
+      BUILD: ${{ needs.build.result }}
+      BUILD_EXPECTED: ${{ needs.plan.outputs.prebuild == 'true' }}
       GATE: ${{ needs.gate.result }}
       AGG: ${{ needs.aggregate.result }}
       AGG_EXPECTED: ${{ needs.plan.outputs.sweep_n != '0' || needs.plan.outputs.visual_n != '0' }}
@@ -391,8 +457,9 @@ jobs:
       DEPLOY_EXPECTED: ${{ needs.plan.outputs.deploy == 'true' }}
     steps:
       - run: |
-          echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"
+          echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"
           rc=0
+          if [[ "$BUILD_EXPECTED" == true ]]; then [[ "$BUILD" == success ]] || rc=1; else [[ "$BUILD" == skipped ]] || rc=1; fi
           [[ "$RECEIPTS" == success ]] || rc=1
           [[ "$PLAN" == success ]] || rc=1
           [[ "$GATE" == success ]] || rc=1

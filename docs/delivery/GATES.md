@@ -282,6 +282,8 @@ CI-SELECT (owner-approved 2026-10-10): `internal/`, `cmd/` and `migrations/` are
 
 The node-only browser modes (`--browser-platform-site`, `--browser-admin-shell`, `--browser-picklist`, `--browser-ui-gallery`, `lc_covers=""`) are selected by UI paths only, never by backend paths.
 
+Build once (CI-SPEED 2026-10-27): the `build` job runs `bash scripts/dev/test-local.sh --prebuild DIR` (the same `lc_build_storefront` + `lc_build_admin`) and warms the Go build cache with `go test -race [-tags browser] -run '^$' ./tests/foundation`; every leg in the plan's `prebuilt_modes` restores it through `scripts/dev/prebuilt.mjs`, which refuses an artifact whose STAMP sha is not the job's HEAD. Modes that build their own flagged bundle (`--browser-ui-gallery`, `--browser-picklist`) and the shards are unchanged; extra_env dispatches never use it.
+
 Excluded from the PR browser set (EXCLUDED_MODES in `pr-modes.mjs`): `--stripe-browser` (needs a Stripe test key; gates.yml has no secrets). It stays an integrator SANDBOX run.
 
 **Nightly trunk re-verification (CI-SELECT).** Pushes to `r3/integration` select no browser job, so trunk browser health was never re-verified after a merge. The `schedule` trigger (`cron '43 21 * * *'`, UTC off-peak) runs the FULL browser universe on the default-branch HEAD, and `workflow_dispatch` with `full_browser_universe=true` runs the same set on demand. Both pipe one tracked UI-side path through the same `pr-modes.mjs --stdin`, so the nightly set is exactly what a UI-path PR gets — never a second hand-kept list. Failures surface through the same `required` job as any other run.
