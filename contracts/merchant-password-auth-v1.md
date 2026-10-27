@@ -49,7 +49,7 @@ owner supplies secrets as files, never through chat); domain `xgdwm.com` on Clou
 | PD12 | **Hard disable after 100 consecutive wrong passwords** on one credential (`disabled_at`); the counter saturates at 100 and never raises (§4.2). Only a successful reset, or the owner-approved operator unlock (§11), re-enables. A disabled credential answers exactly like an unknown email (§2 Login). Temporary throttles (§6) fire long before this. | NIST §3.2.2 cap (F4). Lockout abuse bounds: §11. |
 | PD13 | **Tenant scope is unknown before authentication** and must not come from the client (I01), so there is no per-tenant login bucket. The ceiling on cost/abuse is a deployment-wide mail budget split into three shares (§6): unauthenticated, login of principals **without** an active membership, and login of principals **with** one — so self-registered accounts without a store cannot spend store members' login mail. | Honest equivalent of per-tenant limits (round-2 P1). |
 | PD14 | **Client IP** for rate limits: Caddy is the edge and replaces incoming `X-Forwarded-*` (F9, verified in `deploy/caddy/Caddyfile` header: no `trusted_proxies`). The admin BFF takes the single `X-Forwarded-For` value, requires an IP literal, and forwards it as `X-Commerce-Client-IP` on the BFF-key-authenticated private call (ruling R-5). Go buckets IPv4 by /32 and IPv6 by /64 (plus /48 for sign-up) and stores only `HMAC(auth_pepper, bucket)`. The admin host stays DNS-only (no Cloudflare proxy) until a `trusted_proxies` review (ruling Q6), checked by PA15. | No raw IP at rest; no trust in a browser header. |
-| PD15 | **Mail transport: generic SMTP** (O-B) — Go stdlib `crypto/tls` + `net/smtp`, implicit TLS on port 465 only, `PLAIN` auth, one real adapter behind a consumer-side interface; tests use a loopback TLS fake SMTP server, so the real adapter is what MOCK exercises (§3). First configuration: a dedicated QQ mailbox (`smtp.qq.com:465`, SMTP authorization code as the secret, F8). Upgrade: Tencent Exmail (`smtp.exmail.qq.com:465`, sender `@xgdwm.com` with SPF/DKIM/DMARC on Cloudflare, F10) — a config + secret change, no code change. | O-B; no new dependency (stdlib only). |
+| PD15 | **Mail transport: generic SMTP** (O-B) — Go stdlib `crypto/tls` + `net/smtp`, implicit TLS on port 465 only, `PLAIN` auth, one real adapter behind a consumer-side interface; tests use a loopback TLS fake SMTP server, so the real adapter is what MOCK exercises (§3). First configuration: a dedicated QQ mailbox (`smtp.qq.com:465`, SMTP authorization code as the secret, F8); **replaced 2026-10-05 by Spacemail (`mail.spacemail.com:465`, `@xgdwm.com`), see §11**. Upgrade: Tencent Exmail (`smtp.exmail.qq.com:465`, sender `@xgdwm.com` with SPF/DKIM/DMARC on Cloudflare, F10) — a config + secret change, no code change. | O-B; no new dependency (stdlib only). |
 
 Rejected alternatives:
 - Magic links instead of codes: a secret in a URL (I11; Caddy logs query strings), opened on another
@@ -421,12 +421,16 @@ the sending mailbox exist.
   takeover, and reset needs only the mailbox. **Minimum length 12 is below NIST's 15 for
   single-factor passwords** — accepted gap (ruling Q2); the owner may raise it to 15 (one constant
   + copy change). Upgrade signal: first merchant with payouts or staff ⇒ add TOTP or passkeys. **Fired; see §16 (recent re-auth now, TOTP later).**
-- **Personal-mailbox transport:** the QQ daily/burst caps are UNKNOWN (F8); a provider rejection
-  makes login answer 503 `mail_unavailable` for everyone until the provider window resets, and the
-  provider cap is shared by login and unauthenticated mail (our split protects only our own
-  budget). Upgrade signal: first `smtp_rejected` for frequency, or > 50 auth mails/day ⇒ Exmail
-  (or a provider API behind the same interface). Mail from `@qq.com` may land in spam at non-QQ
-  receivers; the UI says "check spam folder".
+- **Mail transport (current configuration since 2026-10-05: Spacemail, `mail.spacemail.com:465`, sender
+  `ailun@xgdwm.com`; the QQ mailbox of PD15/F8 was dropped because QQ refuses SMTP logins from the
+  overseas server):** the same generic SMTP adapter, a config + secret change only. Spacemail's
+  documented cap is 500 mails/hour per paid mailbox (20/hour on trial); daily cap UNKNOWN. A provider
+  outage or rejection makes login, reset and re-auth answer 503 `mail_unavailable` until it recovers;
+  signed-in sessions are unaffected, nothing is re-sent automatically (PD7), and the UI offers the
+  OIDC (Google) path, which needs no mail. Alert e-mail (watchdog) uses the same relay, so a relay
+  outage also silences alerts: a dead-man check independent of the relay is a known gap. Upgrade
+  signal: first `smtp_rejected` for frequency, or the hourly cap within 20 % ⇒ a provider API behind
+  the same interface.
 - **Lockout bounds:** an attacker who knows only the email can disable the credential with 100 wrong
   passwords (PD12, NIST cap; one source needs ~2.5 h under `email-pw`). From one source they can no longer stop the victim's reset: the per-email unauth mail bucket, supersede and reset budget are per source, and `ip-mail-unauth` keeps one source from exhausting `global-mail-unauth` (that needs ≥ ⌈0.4·cap/10⌉ sources = 8 IPv4 /32 or 4 IPv6 /48 at the default cap) (§6, PD4, PD5). **A distributed attacker (≥ 3 sources/day; an IPv6 /48 holds 65,536 /64
   sources) can still keep a disabled credential locked indefinitely** — exhausting
