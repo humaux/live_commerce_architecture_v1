@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -566,7 +567,7 @@ func TestReauthRH10SessionBindingOverHTTP(t *testing.T) {
 }
 
 // RH11: the re-auth throttle keys are the principal and the session hash (§16), for both steps: the four buckets
-// HMAC(pepper, kind ":" value) exist after one start and one complete, keyed by the calling session's principal and hash.
+// HMAC(pepper, kind ":" value) (per window, as auth_throttle_hit stores them) exist after one start and one complete, keyed by the calling session's principal and hash.
 func TestReauthRH11ThrottleKeys(t *testing.T) {
 	e := fixture(t)
 	p := passwordPrincipal(t, e)
@@ -578,17 +579,25 @@ func TestReauthRH11ThrottleKeys(t *testing.T) {
 		t.Fatalf("start: HTTP %d body %s", got.status, got.raw)
 	}
 	want(t, "wrong code", send(t, h, pathPwComplete, tok, `{"code":"000000"}`), http.StatusUnprocessableEntity, "invalid_code")
-	key := func(kind, value string) []byte {
+	// The stored row key is sha256(HMAC(pepper, kind ":" value) || int4(window seconds) || int4(offset)) (0070
+	// auth_throttle_hit, F1); the start step uses the 900 s email-pw window, the complete step the 600 s binding window.
+	key := func(kind, value string, window uint32) []byte {
 		m := hmac.New(sha256.New, pepper)
 		m.Write([]byte(kind + ":" + value))
-		return m.Sum(nil)
+		var w [8]byte
+		binary.BigEndian.PutUint32(w[:4], window)
+		k := sha256.Sum256(append(m.Sum(nil), w[:]...))
+		return k[:]
 	}
 	sessionHex := hex.EncodeToString(hash(tok))
-	for _, b := range []struct{ kind, value string }{
-		{"reauth-pw-principal", p}, {"reauth-pw-session", sessionHex},
-		{"reauth-code-principal", p}, {"reauth-code-session", sessionHex},
+	for _, b := range []struct {
+		kind, value string
+		window      uint32
+	}{
+		{"reauth-pw-principal", p, 900}, {"reauth-pw-session", sessionHex, 900},
+		{"reauth-code-principal", p, 600}, {"reauth-code-session", sessionHex, 600},
 	} {
-		if n := count(t, e.owner, `SELECT count(*) FROM identity.auth_throttle WHERE bucket=$1`, key(b.kind, b.value)); n < 1 {
+		if n := count(t, e.owner, `SELECT count(*) FROM identity.auth_throttle WHERE bucket=$1`, key(b.kind, b.value, b.window)); n < 1 {
 			t.Errorf("no throttle bucket %s keyed by the calling session's %s", b.kind, b.kind[strings.LastIndex(b.kind, "-")+1:])
 		}
 	}

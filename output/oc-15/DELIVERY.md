@@ -9,6 +9,7 @@
   - RH10/RH11: re-auth routes 404.
   - RH12: staff stale invite / set-role / remove and owner invite / set-role answered 403 `forbidden`.
   - RH13: orders unshipped.csv, finance summary.csv, customer erasure, bank-transfer confirm and refund-offline answered 403 `forbidden`; the fresh-session export already returned 200.
+- First implementation run: Gates 40477067546, job 122134936138 (shard:unit), head 47710283f. Every other shard and browser gate passed; shard:unit failed only RH11: the test derived the throttle row key as the bucket HMAC, but `identity.auth_throttle_hit` stores sha256(HMAC || int4(window) || int4(offset)) (0070 F1). Fix 1 of 2: the test now derives the stored key per window (900 s email-pw for start, 600 s binding for complete); the assertion is unchanged.
 - GREEN and head SHA: a commit cannot carry its own SHA or the run that tests it; both are in the PR body and the worker's report.
 
 ## What changed
