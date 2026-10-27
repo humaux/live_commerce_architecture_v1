@@ -110,5 +110,5 @@ test("OC11 old publish row of the same draft version never confirms a new lost p
   await expect(page.getByTestId("design-publish-notyet"), "OC11-A4 the old publish row (source_version equal) must not confirm").toBeVisible();
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
   await expect(page.getByTestId("design-publish")).toBeDisabled();
-  await expect(page.getByTestId("design-note")).not.toContainText(okPublished);
+  await expect(page.getByTestId("design-note"), "no success note of any kind").toHaveCount(0);
 });
