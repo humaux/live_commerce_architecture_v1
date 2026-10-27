@@ -2,5 +2,6 @@ RED head 1ddd806ef (registration + test, copy/CodOrderStatus temporarily reverte
 Foundation checks run 40453966936, job 122022857940 (step "Node unit suites"): FAIL
   x order-page and pre-order COD copy, zh-TW / zh-CN / en (recordedPending missing, old PENDING/codNote wording)
   x old wording is gone
-  x order-page amount is the server cod_collect_minor ... (PENDING-only label switch absent)
+  x order-page amount is the server cod_collect_minor, unchanged; no arithmetic in the component (PENDING-only label switch absent)
 These are assertion failures on the new strings, not setup errors.
+Failing file: tests/storefront/cod-footer.spec.ts (assertion at line 19, recordedPending). Gates run 40453966924 on this head was cancelled by the integrator; not evidence.
