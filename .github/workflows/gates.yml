@@ -347,7 +347,7 @@ jobs:
           rc=0
           while read -r m art <&3; do
             echo "::group::bundle member $m"
-            if timeout --kill-after=60s 150m bash -c 'set -eo pipefail; gate_one "$1"' _ "$m"; then outcome=success; else outcome=failure; fi
+            if timeout --kill-after=60s 150m bash -c 'set -eo pipefail; gate_one "$1"' _ "$m"; then outcome=success; else outcome=failure; rc=1; fi
             echo "::endgroup::"
             echo "bundle member $m: $outcome"
             ( shopt -s nullglob globstar

@@ -6,7 +6,7 @@
 // Used by: scripts/dev/test-node.sh (Foundation checks).
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -91,10 +91,12 @@ const gateScript = () => {
   return block.split("\n").map((l) => l.slice(10)).join("\n");
 };
 
-/** A throwaway checkout: the real scripts/ (registry + receipt writer), a stub xvfb-run that plays one browser gate, and the real Gate step. */
+/** A throwaway checkout: copies of the real registry + receipt writer, a stub xvfb-run that plays one browser gate, and the real Gate step. */
 function runGate({ bundle, mode, members = [], fail = [], stdinEater = [] }) {
   const dir = mkdtempSync(path.join(tmpdir(), "gate-bundle-"));
-  symlinkSync(path.join(repo, "scripts"), path.join(dir, "scripts"));
+  // Real copies, not a symlink: a CLI module run through a symlink fails its own `argv[1] === import.meta.url` main guard and silently writes nothing.
+  mkdirSync(path.join(dir, "scripts/dev"), { recursive: true });
+  for (const f of ["matrix-receipts.mjs", "ci-plan.mjs", "pr-modes.mjs", "test-local.sh", "shard-plan.json"]) copyFileSync(path.join(repo, "scripts/dev", f), path.join(dir, "scripts/dev", f));
   const bin = path.join(dir, ".bin");
   mkdirSync(bin);
   writeFileSync(path.join(bin, "xvfb-run"), `#!/usr/bin/env bash
