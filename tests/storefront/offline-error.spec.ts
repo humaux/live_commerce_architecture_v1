@@ -1,43 +1,47 @@
-// Purpose: OC-11 / OC-Q18 buyer gate: the storefront error page offers one read-only reload and an offline banner; it never re-sends a write.
-// Depends on: @playwright/test, apps/storefront/lib/shop-copy; env LC_OC11_ORIGIN (storefront origin) and LC_OC11_ERROR_PATH
-//   (a path that renders app/[locale]/error.tsx, e.g. a page read while the fake buyer API is `down`, tests/storefront/shop-fake-api.mjs).
-// Used by: NOT_RUN until the integrator registers a browser mode that serves such a fixture (see PR body, integrator request).
+// Purpose: OC-11 / OC-Q18 buyer check: the storefront error page offers one read-only reload and an offline banner; it never re-sends a write.
+// Depends on: apps/storefront/lib/shop-copy.ts, @playwright/test `expect`; called with the shop-gate browser, fake API and virtual-host origin.
+// Used by: tests/storefront/shop-gate.mjs (scripts/dev/test-local.sh storefront-shell mode). Not a Playwright-runner file: a plain module.
 // Real click on the reload action; context.setOffline drives navigator.onLine and the offline/online events (measurement, not a DOM edit).
-import { expect, test } from "@playwright/test";
-import { shopCopy } from "../../apps/storefront/lib/shop-copy";
+import assert from "node:assert/strict";
+import { expect } from "@playwright/test";
+import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
+import { ctxOpts } from "./browser-engine.mjs";
 
-const origin = process.env.LC_OC11_ORIGIN ?? "";
-const errorPath = process.env.LC_OC11_ERROR_PATH ?? "";
-test.skip(!origin || !errorPath, "LC_OC11_ORIGIN / LC_OC11_ERROR_PATH not provided: NOT_RUN");
-
-for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
-  test(`OC11 error page offline banner + read-only reload ${locale} at 390px`, async ({ browser }) => {
+export async function checkOfflineError({ browser, api, origin }) {
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
     const copy = shopCopy[locale];
-    const context = await browser.newContext({ baseURL: origin, viewport: { width: 390, height: 844 }, ignoreHTTPSErrors: true });
+    const context = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, locale }));
     const page = await context.newPage();
-    const writes: string[] = [];
-    page.on("request", (r) => r.method() !== "GET" && r.method() !== "HEAD" && writes.push(`${r.method()} ${r.url()}`));
-    await page.goto(`/${locale}${errorPath}`);
-    const error = page.getByTestId("page-error");
-    await expect(error).toBeVisible();
-    await expect(page.getByTestId("offline-banner")).toHaveCount(0);
+    const writes = [];
+    page.on("request", (r) => { if (r.method() !== "GET" && r.method() !== "HEAD") writes.push(`${r.method()} ${r.url()}`); });
+    api.state.down = true; // the pages' own error state (shop-fake-api `down`)
+    try {
+      await page.goto(`${origin}/${locale}`);
+      const error = page.getByTestId("page-error");
+      await expect(error, `OC11-B0 ${locale} error state renders`).toBeVisible();
+      assert.equal(await page.getByTestId("offline-banner").count(), 0, `OC11-B1 ${locale} no banner while online`);
 
-    await context.setOffline(true);
-    const banner = page.getByTestId("offline-banner");
-    await expect(banner).toHaveText(copy.offlineBanner);
-    await expect(banner).toHaveAttribute("role", "status");
-    await expect(error).toHaveAttribute("role", "alert");
+      await context.setOffline(true);
+      const banner = page.getByTestId("offline-banner");
+      await expect(banner, `OC11-B2 ${locale} offline banner text`).toHaveText(copy.offlineBanner);
+      assert.equal(await banner.getAttribute("role"), "status");
+      assert.equal(await error.getAttribute("role"), "alert");
 
-    const reload = error.getByRole("button");
-    await expect(reload).toHaveCount(1); // the single action is the read-only reload
-    await expect(reload).toHaveText(copy.reloadPage);
-    expect((await reload.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      const reload = error.getByRole("button");
+      assert.equal(await reload.count(), 1, `OC11-B3 ${locale} the single action is the read-only reload`);
+      assert.equal(await reload.innerText(), copy.reloadPage);
+      assert.ok(((await reload.boundingBox())?.height ?? 0) >= 44, "44px target");
+      // G-UI8 audit [READ/MEASURE]: horizontal overflow at 390px
+      assert.ok((await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 1, "no horizontal scroll at 390px");
 
-    await reload.click();
-    await context.setOffline(false);
-    await expect(banner).toHaveCount(0);
-    expect(writes, "reload re-reads with GET only: no payment/order POST is replayed").toEqual([]);
-    await context.close();
-  });
+      await reload.click();
+      await context.setOffline(false);
+      await expect(banner, `OC11-B4 ${locale} banner leaves when back online`).toHaveCount(0);
+      assert.deepEqual(writes, [], `OC11-B5 ${locale} reload re-reads with GET only: no payment/order POST replayed`);
+    } finally {
+      api.state.down = false;
+      await context.close();
+    }
+  }
+  console.log("OC11 error page: offline banner + single read-only reload, zh-TW/zh-CN/en at 390px, no write replayed");
 }
