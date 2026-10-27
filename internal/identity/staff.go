@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/mail"
+	"livecommerce/internal/platform"
 )
 
 var (
@@ -114,8 +115,8 @@ func staffError(err error) error {
 		return ErrInvalid
 	case "PT401":
 		return ErrUnauthorized
-	case "PT403":
-		return ErrForbidden
+	case "PT403": // reauth_required / owner_role_disabled keep their code (§16); any other refusal is the owner check
+		return platform.PT403(pg.Message, ErrForbidden)
 	case "PT404":
 		if pg.Message == "invite_invalid" {
 			return ErrInviteInvalid

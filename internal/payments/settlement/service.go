@@ -148,7 +148,7 @@ func mapError(err error) error {
 		case "PT404":
 			return platform.ErrScopeNotFound
 		case "PT403":
-			return platform.ErrForbidden
+			return platform.PT403(pg.Message, platform.ErrForbidden)
 		case "PT409":
 			if codePattern.MatchString(pg.Message) {
 				return &Error{Status: http.StatusConflict, Code: pg.Message}

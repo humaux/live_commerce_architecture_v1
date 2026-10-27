@@ -289,7 +289,7 @@ Package httperror owns transport-safe error envelopes, never domain policy.
 
 Purpose: OIDC recent re-authentication of a live merchant session (contracts/merchant-password-auth-v1.md §16, OIDC-only principals): a session-authenticated start that opens a prompt=login + max_age flow bound to the calling session hash, and the shared callback completion (CompleteLogin) that, for a re-auth flow, checks auth_time and the principal match in SQL and never issues a session.
 
-- Depends on (internal): `internal/mail`, `internal/oidclogin`
+- Depends on (internal): `internal/mail`, `internal/oidclogin`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `golang.org/x/crypto/argon2`, `golang.org/x/text/unicode/norm`
 - Used by: `cmd/api`, `internal/identityhttp`
 
@@ -297,7 +297,7 @@ Purpose: OIDC recent re-authentication of a live merchant session (contracts/mer
 
 Package identityhttp owns the trusted identity HTTP surface (/v1/identity/*) that only the local BFF may call, authenticated by a fixed BFF key: OIDC login start and complete, first store bootstrap and logout (handler.go), and the merchant password routes /v1/identity/password/* (password.go, contracts/merchant-password-auth-v1.md §7.1) and the staff-team routes /v1/identity/staff/* (staff.go, contracts/storefront-v2.md §D).
 
-- Depends on (internal): `internal/httperror`, `internal/identity`
+- Depends on (internal): `internal/httperror`, `internal/identity`, `internal/platform`
 - Depends on (third-party): —
 - Used by: `cmd/api`
 
@@ -595,7 +595,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`, `internal/integrations/psp/stripe`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
+- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
 
 ## `internal/pricing`
 

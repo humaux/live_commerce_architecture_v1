@@ -616,3 +616,22 @@ Evidence: DESIGN. Source: `output/r3-t21-review-20261026/FINDINGS.md` T21R-01 (P
 - **Owner role cannot be created.** `staff_invite(role=owner)` and `staff_set_role(role=owner)` both return 403 `owner_role_disabled`. Pending owner invitations issued before this change: **accepting one is refused** with the same code (no data is rewritten; chosen over voiding in the migration so a race or restore cannot revive them). Existing owners are unchanged.
 - **Red tests** (NOT_RUN): `authenticated_at` 2 hours ago + `staff_invite(role=viewer)` → 403 `reauth_required` and the session still valid; fresh re-auth → success; `staff_invite(owner)` → 403 `owner_role_disabled`; `staff_set_role(owner)` → 403; accepting a pre-existing owner invite → 403; code from session A cannot refresh session B; session A re-authenticating with a different OIDC account → 403 `reauth_failed` and `authenticated_at` unchanged; neither a successful nor a refused re-auth (password or OIDC) adds a session row or a `session.issued` event; `PUBLIC` cannot execute either re-auth definer; calling the guarded SQL directly (not via HTTP) with a stale session fails.
 - Migration number `02xx` (integrator assigns). The §11 TOTP upgrade signal stays open for the owner role.
+
+### 16.1 Re-auth routes (OC-15; private Go, `internal/identityhttp/reauth_routes.go`)
+
+Same transport rules as §7.1 (BFF key, no Origin/Cookie, strict JSON ≤ 64 KiB, no query, no-store). The session is the
+`Authorization: Bearer` token only; no bearer is 401 before any work, and no body field names an email or a principal. The
+password routes also need exactly one valid `X-Commerce-Client-IP` (else 400). Errors use the password writer
+(`passwordMessages`); `reauth_failed` is never 401, so the BFF and UI keep the session.
+
+| Route | Request | Success | Errors |
+| --- | --- | --- | --- |
+| `POST /v1/identity/password/reauth/start` | bearer + `{password,locale}` | 200 `{expires_at}` (code mailed, bound to this session's hash) | 403 `reauth_failed` (wrong password, disabled or no password credential), 401 `unauthorized` (session not live), 429 `throttled`, 503 `mail_unavailable`/`busy` |
+| `POST /v1/identity/password/reauth/complete` | bearer + `{code}` | 200 `{authenticated_at}` (this session only; never a token) | 422 `invalid_code` (wrong, expired, not six digits, or a code of another session), 401 `unauthorized`, 429 `throttled` |
+| `POST /v1/identity/login/reauth/start` | bearer + `{}` | 200 `{authorization_url,binding,expires_at}` (`prompt=login`, `max_age=600`; flow bound to this session's hash) | 401 `unauthorized`, 403 `forbidden` (no OIDC provider) |
+| `POST /v1/identity/login/complete` | `{state,binding,code}` (unchanged) | login flow: 200 `{token,expires_at}`; re-auth flow: 200 `{reauth:true,authenticated_at}` and **no token** | 403 `reauth_failed` (other account, stale or missing `auth_time`), 401 `unauthorized` |
+
+Throttle keys of the two password steps: principal and session hash (`reauth-pw-*`, login `email-pw` window;
+`reauth-code-*`, binding window), plus the ip buckets. Guarded business routes answer a stale session with 403
+`reauth_required` and an owner-role request with 403 `owner_role_disabled` (`internal/platform/reauth_errors.go`, tested
+before `forbidden` in `internal/httpapi/handler.go` and the `identityhttp` staff table; both codes are in `internal/httperror`).

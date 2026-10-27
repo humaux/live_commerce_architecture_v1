@@ -18,6 +18,7 @@ import (
 
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/identity"
+	"livecommerce/internal/platform"
 )
 
 // staffService mirrors *identity.Staff; a narrow seam lets transport tests prove rejection before any identity I/O.
@@ -150,7 +151,8 @@ var staffMessages = map[string]string{
 	"already_member":       "Already a member of this store.",
 	"last_owner":           "A store must keep at least one owner.",
 	"too_many_invitations": "Too many invitations. Try again later.", "conflict": "Request conflicts with current state.",
-	"unavailable": "Temporarily unavailable.",
+	"unavailable":     "Temporarily unavailable.",
+	"reauth_required": "Confirm it is you to continue.", "owner_role_disabled": "The owner role cannot be granted.",
 }
 
 // staffFailure maps service errors to (status, code). ErrInviteInvalid is 404 for every reason (no oracle).
@@ -163,6 +165,10 @@ func staffFailure(w http.ResponseWriter, err error) {
 		status, code = http.StatusUnprocessableEntity, "invalid_request"
 	case errors.Is(err, identity.ErrUnauthorized):
 		status, code = http.StatusUnauthorized, "unauthorized"
+	case errors.Is(err, platform.ErrReauthRequired): // §16: before the generic owner check, never 401 (the BFF keeps the session)
+		status, code = http.StatusForbidden, "reauth_required"
+	case errors.Is(err, platform.ErrOwnerRoleDisabled):
+		status, code = http.StatusForbidden, "owner_role_disabled"
 	case errors.Is(err, identity.ErrForbidden):
 		status, code = http.StatusForbidden, "forbidden"
 	case errors.Is(err, identity.ErrNotFound):
