@@ -38,6 +38,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"livecommerce/internal/billing"
+	"livecommerce/internal/billing/billingtest"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/identity"
@@ -630,7 +632,7 @@ func newWorld(t *testing.T, e *env) *world {
 
 // RH12: staff domain (internal/identity/staff.go -> identityhttp staff error table). A stale session gets 403
 // reauth_required on invite, set-role and remove and stays live; a fresh session asking for the owner role gets 403
-// owner_role_disabled.
+// owner_role_disabled, and so does accepting an owner invitation issued before 0203.
 func TestReauthRH12StaffCodes(t *testing.T) {
 	e := fixture(t)
 	w := newWorld(t, e)
@@ -653,6 +655,25 @@ func TestReauthRH12StaffCodes(t *testing.T) {
 		`{"store_id":"`+w.store+`","email":"`+email("oc15.owner")+`","role":"owner","locale":"en"}`), http.StatusForbidden, "owner_role_disabled")
 	want(t, "owner set-role", send(t, h, "/v1/identity/staff/set-role", w.fresh,
 		`{"store_id":"`+w.store+`","principal_id":"`+w.member+`","role":"owner"}`), http.StatusForbidden, "owner_role_disabled")
+
+	// An owner invitation issued before 0203 (inserted in the shape staff_invite wrote) cannot be accepted.
+	inviteeEmail, inviteToken := email("oc15.accept"), token()
+	phc, err := identity.HashPassword(phrase)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invitee := principal(t, e)
+	mustExec(t, e.owner, `INSERT INTO identity.password_credentials(principal_id,email,password_hash,email_verified_at) VALUES ($1::uuid,$2,$3,clock_timestamp())`, invitee, inviteeEmail, phc)
+	inviteeTok := session(t, e, invitee)
+	mustExec(t, e.owner, `WITH c AS (SELECT clock_timestamp() AS t)
+		INSERT INTO identity.staff_invitations(id,tenant_id,store_id,email,role,locale,token_hash,invited_by,created_at,expires_at)
+		SELECT $1::uuid,$2::uuid,$3::uuid,$4,'owner','en',$5,$6::uuid,c.t,c.t+interval '72 hours' FROM c`,
+		uuid(), w.tenant, w.store, inviteeEmail, hash(inviteToken), w.owner)
+	want(t, "accept old owner invitation", send(t, h, "/v1/identity/staff/accept", inviteeTok, `{"token":"`+inviteToken+`"}`),
+		http.StatusForbidden, "owner_role_disabled")
+	if n := count(t, e.owner, `SELECT count(*) FROM identity.store_staff WHERE store_id=$1::uuid AND principal_id=$2::uuid`, w.store, invitee); n != 0 {
+		t.Errorf("the refused owner invitation added a staff row (%d)", n)
+	}
 }
 
 // admin issues one merchant API request to internal/httpapi as the admin BFF does.
@@ -682,12 +703,25 @@ func admin(t *testing.T, h http.Handler, method, path, bearer, key, body string)
 
 // RH13: end to end through internal/httpapi (handler.go classify decides the code): a session authenticated 2 hours ago
 // performing a guarded operation gets HTTP 403 with body code reauth_required in each guarded domain wired here -
-// orders CSV (merchantorders/orders.go), finance CSV (reporting/finance.go), customer erasure (customers/read.go) and the
-// bank-transfer decisions (merchantorders offline -> orders.go) - and stays live; a fresh session gets the export.
+// orders CSV (merchantorders/orders.go), finance CSV and products report CSV (reporting), customer erasure (customers/read.go),
+// the bank-transfer decisions (merchantorders offline -> orders.go), platform Stripe settings (payments/platformstripe coded
+// 403) and billing checkout (billing/errors.go via billing.pin_customer) - and stays live; a fresh session gets the export.
 func TestReauthRH13GuardedDomainsEndToEnd(t *testing.T) {
 	e := fixture(t)
 	w := newWorld(t, e)
-	h := httpapi.NewHandler(e.runtime)
+	// Platform billing over the billingtest fake (never api.stripe.com): checkout creates the Stripe customer, then the guarded
+	// billing.pin_customer refuses the stale session.
+	fake := billingtest.New("acct_OC15" + hex.EncodeToString(rnd32()[:6]))
+	t.Cleanup(fake.Close)
+	cfg := billing.Config{SecretKey: "sk_" + "test_" + hex.EncodeToString(rnd32()[:12]), WebhookSecret: "whsec_" + hex.EncodeToString(rnd32()[:16]),
+		ReturnOrigin: "https://admin.example.test", PriceIDs: []string{"price_OC15Month"}}
+	fake.RequireKey(cfg.SecretKey)
+	fake.AddPrice("price_OC15Month", 30000, "twd", "month", "Pro Monthly", true, false)
+	bill, err := billing.New(context.Background(), e.runtime, cfg, fake.Transport())
+	if err != nil || !bill.Enabled() {
+		t.Fatalf("billing service: enabled=%v err=%v", bill != nil && bill.Enabled(), err)
+	}
+	h := httpapi.NewHandler(e.runtime, httpapi.Options{Billing: bill, PaymentProfile: "SANDBOX"})
 	base := "/v1/admin/stores/" + w.store
 	today := time.Now().UTC()
 	from, to := today.AddDate(0, 0, -7).Format("2006-01-02"), today.Format("2006-01-02")
@@ -700,6 +734,9 @@ func TestReauthRH13GuardedDomainsEndToEnd(t *testing.T) {
 		{"customer erasure", http.MethodPost, base + "/customers/" + uuid() + "/erasure", key(), `{"confirm":"ERASE"}`},
 		{"bank transfer confirm", http.MethodPost, base + "/orders/" + uuid() + "/bank-transfer/confirm", key(), `{}`},
 		{"bank transfer refund-offline", http.MethodPost, base + "/orders/" + uuid() + "/bank-transfer/refund-offline", key(), `{}`},
+		{"products report csv", http.MethodGet, base + "/reports/products.csv?from=" + from + "&to=" + to, "", ""},
+		{"platform Stripe settings", http.MethodPut, base + "/payments/card", "", `{"enabled":false,"terms_version":"","descriptor_suffix":null,"expected_version":0}`},
+		{"billing checkout", http.MethodPost, base + "/billing/checkout", "", `{"price_id":"price_OC15Month"}`},
 	} {
 		want(t, c.name, admin(t, h, c.method, c.path, w.stale, c.key, c.body), http.StatusForbidden, "reauth_required")
 	}
