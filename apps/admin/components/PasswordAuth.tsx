@@ -11,6 +11,9 @@
 // The password and code live only in component state: never storage, never a URL, never a log line.
 // Resend re-posts step 1 with the values held here; the 60 s cooldown is UX only, the server throttles.
 // Client checks are convenience: Go owns the password policy, code validity and every throttle.
+// #236 invariant: the first form stays disabled until mounted. Typed into the SSR form before hydration, a value
+// never reaches state and the first re-render (the #next effect) resets the controlled inputs to "". The form
+// carries data-hydrated once interactive; tests wait on it.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { entryCopy, passwordCopy } from "@/lib/entry-copy";
@@ -96,7 +99,11 @@ export function PasswordAuth({
   // invite-next: the validated invite path from the URL fragment (lib/invite-next.ts), read after mount because the server
   // never sees a fragment; null = go to the dashboard.
   const [nextPath, setNextPath] = useState<string | null>(null);
-  useEffect(() => setNextPath(inviteNextFromHash(window.location.hash)), []);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setNextPath(inviteNextFromHash(window.location.hash));
+    setMounted(true);
+  }, []);
   const secondsLeft = Math.max(0, Math.ceil((resendAt - now) / 1000));
 
   useEffect(() => {
@@ -255,7 +262,13 @@ export function PasswordAuth({
       )}
 
       {step === "form" ? (
-        <form className="entry-form" method="post" style={left} onSubmit={onForm}>
+        <form
+          className="entry-form"
+          method="post"
+          style={left}
+          onSubmit={onForm}
+          data-hydrated={mounted ? "true" : undefined}
+        >
           <label>
             <span>{c.email}</span>
             <input
@@ -265,7 +278,7 @@ export function PasswordAuth({
               maxLength={254}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              disabled={busy}
+              disabled={busy || !mounted}
               required
             />
           </label>
@@ -280,14 +293,14 @@ export function PasswordAuth({
                 }
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                disabled={busy}
+                disabled={busy || !mounted}
                 required
               />
               {mode === "signup" && <small>{c.policyHint}</small>}
             </label>
           )}
           <div className="entry-actions end">
-            <button className="entry-primary" type="submit" disabled={busy}>
+            <button className="entry-primary" type="submit" disabled={busy || !mounted}>
               {busy ? c.busy : submit}
             </button>
           </div>

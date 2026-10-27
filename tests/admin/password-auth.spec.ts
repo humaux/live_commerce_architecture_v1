@@ -137,13 +137,10 @@ async function noHorizontalScroll(page: Page) {
   expect(overflow, "no horizontal page scroll").toBeLessThanOrEqual(0);
 }
 
-// #236: the SSR form is live before React hydrates. A value typed then never reaches React state, and the first
-// post-hydration re-render (e.g. the `#next=` effect) re-asserts the empty controlled value, so submit sends "".
-// React attaches its props to a node when hydration claims it; from then on input events reach onChange.
+// #236: PasswordAuth keeps the first form disabled until mounted and then marks it data-hydrated (a value typed into
+// the SSR form would never reach React state). Wait for the public marker before typing.
 async function hydrated(page: Page) {
-  // G-UI8 audit [READ/MEASURE]: reads whether React has claimed the email input (no state change)
-  await expect.poll(() => emailInput(page).evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps$"))),
-    { message: "auth form hydrated before typing" }).toBe(true);
+  await expect(page.locator('form[data-hydrated="true"]'), "auth form hydrated before typing").toBeVisible();
 }
 
 async function fillCredentials(page: Page, email: string, password?: string) {
@@ -151,6 +148,7 @@ async function fillCredentials(page: Page, email: string, password?: string) {
   await emailInput(page).fill(email);
   if (password !== undefined) await passwordInput(page).fill(password);
   await expect(emailInput(page)).toHaveValue(email);
+  if (password !== undefined) await expect(passwordInput(page)).toHaveValue(password);
 }
 
 // Submits the code step, waits for the BFF's answer and for the page navigation that follows a 200
@@ -444,6 +442,42 @@ test("SSR: no form with a password field lacks method=post (/, /signup, /reset)"
   }
   expect(seen, "at least one SSR password form must be found").toBeGreaterThan(0);
   await ctx.dispose();
+});
+
+// #236 regression: an invitee on a slow chunk load reaches the SSR sign-up form before React hydrates. Whatever they
+// type then must not be lost: either the form refuses input until it is interactive (disabled), or the value survives
+// the post-hydration re-render (the #next effect). Submit must then reach the code step for the typed address.
+test("slow hydration: an early typist on the invite sign-up never loses the address (#236)", async ({ page, context }) => {
+  test.setTimeout(90_000);
+  await useSource(context, source());
+  const email = newEmail();
+  const password = newPassword();
+  let held = 0;
+  await page.route(/\/_next\/static\/chunks\//, async (route) => {
+    held++;
+    await new Promise((r) => setTimeout(r, 4000));
+    await route.continue();
+  });
+  await page.goto(`/en/signup#next=${encodeURIComponent(`/en/invite/${letters(43)}`)}`, { waitUntil: "commit" });
+  await expect(emailInput(page)).toBeAttached();
+  const blocked = await emailInput(page).isDisabled();
+  if (!blocked) {
+    await emailInput(page).fill(email);
+    await passwordInput(page).fill(password);
+  }
+  await page.waitForLoadState("load");
+  await page.waitForLoadState("networkidle");
+  expect(held, "the slow-chunk condition applied").toBeGreaterThan(0);
+  if (blocked) {
+    await fillCredentials(page, email, password);
+  } else {
+    await expect(emailInput(page), "a value typed before hydration survives it").toHaveValue(email);
+    await expect(passwordInput(page), "a value typed before hydration survives it").toHaveValue(password);
+  }
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+  await submitButton(page).click();
+  await expect(codeInput(page)).toBeVisible();
+  await expect(page.locator("main, body").first()).toContainText(`${email[0]}***@${email.split("@")[1]}`);
 });
 
 test("throttled UI state and the 60 s resend cooldown", async ({ page, context }) => {
