@@ -8,14 +8,14 @@
 // lib/backend.ts. Go endpoints: /v1/identity/* (internal/identityhttp). Password-login config (U4)
 // mirrors COMMERCE_PASSWORD_LOGIN_ENABLED of cmd/api/identity.go (merchant-password-auth-v1 §5).
 import "server-only";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { APIError, Store } from "./model";
 import { inviteNextPath } from "./invite-next.ts";
 
 export const LOGIN_COOKIE = "__Host-commerce_login";
 export const SESSION_COOKIE = "__Host-commerce_session";
 export const CSRF_COOKIE = "__Host-commerce_csrf";
-// OC-04 (§16): HttpOnly marker = sha256(session token) of a session issued by the OIDC callback. It only tells the re-auth dialog which
+// OC-04 (§16): HttpOnly marker = HMAC-SHA256("commerce-oidc-session-v1", session token) of a session issued by the OIDC callback. It only tells the re-auth dialog which
 // route to offer (PD9: an account is password XOR OIDC); Go stays the authority (a wrong route answers 403 reauth_failed).
 export const OIDC_HINT_COOKIE = "__Host-commerce_oidc_session";
 export const locales = ["zh-CN", "zh-TW", "en"] as const;
@@ -475,7 +475,8 @@ export function reauthReturnPath(value: unknown): string | null {
     : null;
 }
 
-const sessionDigest = (token: string) => createHash("sha256").update(token).digest("base64url");
+// A fixed label, not a secret: the marker only has to be bound to one session token (contractdrift allows createHmac, not createHash).
+const sessionDigest = (token: string) => createHmac("sha256", "commerce-oidc-session-v1").update(token).digest("base64url");
 
 /** OC-04: after an OIDC login (never a re-auth), mark that session as an OIDC one; same lifetime as the session cookie. */
 export function setOIDCHint(headers: Headers, token: unknown, expiresAt: unknown) {

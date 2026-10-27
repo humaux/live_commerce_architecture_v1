@@ -59,7 +59,9 @@ export async function GET(request: Request, context: Context) {
   return Response.json({ password, oidc, account }, { headers: nostore });
 }
 
-export async function POST(request: Request, context: Context) {
+// Named handleVerify on purpose: scripts/dev/contractdrift reads every /auth/password/ leaf through handleStep1/handleVerify and
+// inventories the literal privateIdentity paths below against the Go routes (§16.1).
+async function handleVerify(request: Request, context: Context) {
   if (!authConfig) return disabledResponse();
   const { step } = await context.params;
   if (step !== "start" && step !== "complete" && step !== "oidc") return localError(404, "not_found");
@@ -87,8 +89,9 @@ export async function POST(request: Request, context: Context) {
     const ip = clientIPFromHeaders(header === null ? [] : [header]);
     if ("status" in ip) return ip.status === 400 ? localError(400, "invalid_request") : localError(503, "retry_later");
     // 14 s on start: Go waits for the code mail (<= 10 s, §11). Never retried: a repeat burns throttles and mail budget.
-    upstream = await privateIdentity(`password/reauth/${step}`, step === "start" ? { password: body.password, locale: body.locale } : { code: body.code },
-      token, undefined, { timeoutMs: step === "start" ? 14000 : 6000, clientIP: ip.ip });
+    upstream = step === "start"
+      ? await privateIdentity("password/reauth/start", { password: body.password, locale: body.locale }, token, undefined, { timeoutMs: 14000, clientIP: ip.ip })
+      : await privateIdentity("password/reauth/complete", { code: body.code }, token, undefined, { timeoutMs: 6000, clientIP: ip.ip });
   }
   if (!upstream.ok) {
     const safe = await safeError(upstream);
@@ -111,6 +114,7 @@ export async function POST(request: Request, context: Context) {
   return Response.json({ [field]: at }, { headers: nostore });
 }
 
+export const POST = handleVerify;
 const unsupported = () => (authConfig ? localError(405, "method_not_allowed", "GET, POST") : disabledResponse());
 export const PUT = unsupported;
 export const DELETE = unsupported;

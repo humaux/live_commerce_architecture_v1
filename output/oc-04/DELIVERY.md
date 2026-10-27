@@ -27,7 +27,7 @@
   Per-step status/code allowlists from §16.1; only an upstream 401 clears cookies (403 reauth_failed and 422 invalid_code keep the session).
 - `apps/admin/app/api/auth/callback/route.ts`: on `reauth: true` it does not call `setSessionCookies`, sets and clears no session/CSRF
   cookie, and redirects to the originating page. A refused or tokenful answer to a re-auth cookie never becomes a new session. An ordinary
-  OIDC login additionally sets `__Host-commerce_oidc_session` = sha256(session token), HttpOnly: the hint the dialog uses to offer the
+  OIDC login additionally sets `__Host-commerce_oidc_session` = HMAC-SHA256(fixed label "commerce-oidc-session-v1", session token), HttpOnly: the hint the dialog uses to offer the
   OIDC route to an OIDC account (PD9: password XOR OIDC). A stale marker never matches another session.
 - `apps/admin/lib/auth.ts`: `reauthReturnPath`, `setOIDCHint`, `oidcSession`, `OIDC_HINT_COOKIE`; `setLoginCookie`/`loginBinding`
   carry the optional `reauth` path; messages for `reauth_required`, `reauth_failed`, `owner_role_disabled`. `setSessionCookies` and
@@ -37,6 +37,10 @@
   `apps/admin/app/api/stores/[store]/[...resource]/route.ts` (orders CSV, finance CSV, customer erasure/export, bank-transfer decisions,
   refunds, payments/card, billing, ads), `apps/admin/app/api/stores/[store]/reports/[report]/route.ts`.
 - `apps/admin/lib/transfer-copy.ts`: `bank_transfer_closed` in en, zh-CN, zh-TW (grant; #244).
+- Fix 1 of 2 (Foundation job 122520630945, contractdrift `TestBFFLiveSettingsRealLeaves` / `TestBFFRealSourceMutation`: 12 UNRESOLVED):
+  the scanner allows only `createHmac`/`randomBytes`/`timingSafeEqual` from node:crypto, and reads every `/auth/password/` leaf through
+  `handleStep1`/`handleVerify` with literal `privateIdentity` paths. The marker is now an HMAC with a fixed label (the spec computes the same),
+  the re-auth POST handler is named `handleVerify`, and the three upstream paths are literals. The scanner and its baseline are untouched.
 - Tests: `tests/admin/oc/reauth.spec.ts`, `tests/foundation/browser_oc_test.go`, `playwright.config.ts` suite `oc` (was not registered).
 
 ## Outside write_paths (integrator approval needed)

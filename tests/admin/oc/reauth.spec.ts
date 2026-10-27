@@ -12,7 +12,7 @@
 //   owner role = 403 owner_role_disabled; the OIDC route returns via /api/auth/callback with no session Set-Cookie, the session cookie
 //   unchanged and the originating page as Location; an OIDC account is offered the OIDC route; the mail_unavailable OIDC hint only for
 //   an OIDC account (MOCK 503); zh-TW / zh-CN / en; focus trap, focus return, 44 px targets at 390 px.
-import { createHash, randomBytes } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Browser, type Page } from "@playwright/test";
@@ -254,20 +254,20 @@ test("OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay
   expect(after, "session and CSRF cookies unchanged by the OIDC re-auth").toEqual(before.filter((k) => !k.startsWith("__Host-commerce_login=")));
   await signedIn(page);
 
-  // 7. Routing: a session the OIDC callback issued (marker = sha256(session token)) gets the OIDC route; any other marker does not.
+  // 7. Routing: a session the OIDC callback issued (marker = HMAC-SHA256(fixed label, session token), lib/auth.ts) gets the OIDC route; any other marker does not.
   const session = (await context.cookies(publicOrigin)).find((k) => k.name === "__Host-commerce_session")!.value;
   const mark = async (value: string) => context.addCookies([{ name: "__Host-commerce_oidc_session", value, url: publicOrigin, secure: true, httpOnly: true, sameSite: "Lax" }]);
   const method = async () => page.evaluate(async () => (await (await fetch("/api/auth/password/reauth/method")).json()) as { account: string });
-  await mark(createHash("sha256").update(session).digest("base64url"));
+  await mark(createHmac("sha256", "commerce-oidc-session-v1").update(session).digest("base64url"));
   expect((await method()).account).toBe("oidc");
-  await mark(createHash("sha256").update(session + "x").digest("base64url"));
+  await mark(createHmac("sha256", "commerce-oidc-session-v1").update(session + "x").digest("base64url"));
   expect((await method()).account).toBe("password");
 
   // 8. mail_unavailable copy (MOCK 503 from the start step): the OIDC hint only for an account with an OIDC identity; then Cancel
   //    hands the caller the original 403 and the person is still signed in.
   await page.route("**/api/auth/password/reauth/start", (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "mail_unavailable" }) }));
   for (const oidcAccount of [true, false]) {
-    await mark(createHash("sha256").update(oidcAccount ? session : session + "x").digest("base64url"));
+    await mark(createHmac("sha256", "commerce-oidc-session-v1").update(oidcAccount ? session : session + "x").digest("base64url"));
     await age(owner);
     await page.evaluate(({ path }) => { (window as unknown as { oc4c: Promise<number> }).oc4c = fetch(path).then((r) => r.status); }, { path: `${base}/orders/unshipped.csv` });
     await expect(dialog(page)).toHaveAttribute("data-step", oidcAccount ? "oidc" : "password");
