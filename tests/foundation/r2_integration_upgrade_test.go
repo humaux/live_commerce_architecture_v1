@@ -119,8 +119,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0199 (PAY-RM2 phase-2b follow-ups, issue #93: stricter guard, start/record window revoke, hosted writer revoke) adds one: 126 -> 127.
 	// post_river/0027 (PAY-RM2 phase-2b guard re-check inside the post-River transaction, issue #93 P2-1) adds one: 127 -> 128.
 	// 0200 (SA-1 settlement payout returns, stored sync reconciliation with the close gate, payables; drops the nine-argument sync entry) adds one: 128 -> 129.
-	if len(r2) != 129 {
-		t.Fatalf("R2 migration set = %d files %v, want 129", len(r2), r2)
+	// 0201 (OC-02 recent re-authentication core) adds one: 129 -> 130.
+	if len(r2) != 130 {
+		t.Fatalf("R2 migration set = %d files %v, want 130", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

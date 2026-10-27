@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,9 +40,13 @@ type Config struct {
 	AllowLoopbackForTests bool
 }
 
+// AuthTime is the id_token auth_time claim (when the user last actively authenticated at the IdP); zero when the
+// IdP omitted it. A re-authentication (internal/identity CompleteLogin) refuses a zero AuthTime; an ordinary login
+// does not need it.
 type Identity struct {
-	Issuer  string
-	Subject string
+	Issuer   string
+	Subject  string
+	AuthTime time.Time
 }
 
 type Provider struct {
@@ -117,15 +122,31 @@ func New(ctx context.Context, config Config) (*Provider, error) {
 }
 
 func (provider *Provider) AuthorizationURL(state, nonce, verifier string) (string, error) {
+	return provider.authorizationURL(state, nonce, verifier)
+}
+
+// ReauthAuthorizationURL is AuthorizationURL for a recent re-authentication (contracts/merchant-password-auth-v1.md
+// §16): prompt=login forces the IdP to ask for the credential again and max_age bounds the auth_time it reports.
+// It uses the same registered redirect URI as a login.
+func (provider *Provider) ReauthAuthorizationURL(state, nonce, verifier string, maxAge time.Duration) (string, error) {
+	if maxAge < time.Second {
+		return "", errors.New("oidc max_age invalid")
+	}
+	return provider.authorizationURL(state, nonce, verifier,
+		oauth2.SetAuthURLParam("prompt", "login"),
+		oauth2.SetAuthURLParam("max_age", strconv.FormatInt(int64(maxAge/time.Second), 10)))
+}
+
+func (provider *Provider) authorizationURL(state, nonce, verifier string, extra ...oauth2.AuthCodeOption) (string, error) {
 	if provider == nil || !validOpaqueValue(state) || !validOpaqueValue(nonce) || !validVerifier(verifier) {
 		return "", errors.New("oidc authorization input invalid")
 	}
 	challenge := sha256.Sum256([]byte(verifier))
-	return provider.oauth2.AuthCodeURL(state,
+	return provider.oauth2.AuthCodeURL(state, append([]oauth2.AuthCodeOption{
 		oauth2.SetAuthURLParam("nonce", nonce),
 		oauth2.SetAuthURLParam("code_challenge", base64.RawURLEncoding.EncodeToString(challenge[:])),
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
-	), nil
+	}, extra...)...), nil
 }
 
 func (provider *Provider) Exchange(ctx context.Context, code, nonce, verifier string) (Identity, error) {
@@ -147,8 +168,9 @@ func (provider *Provider) Exchange(ctx context.Context, code, nonce, verifier st
 		return Identity{}, errors.New("oidc id token invalid")
 	}
 	var claims struct {
-		Nonce           string `json:"nonce"`
-		AuthorizedParty string `json:"azp"`
+		Nonce           string   `json:"nonce"`
+		AuthorizedParty string   `json:"azp"`
+		AuthTime        *float64 `json:"auth_time"` // OIDC Core §2: JSON number of seconds since the epoch
 	}
 	if err := idToken.Claims(&claims); err != nil {
 		return Identity{}, errors.New("oidc id token claims invalid")
@@ -165,7 +187,14 @@ func (provider *Provider) Exchange(ctx context.Context, code, nonce, verifier st
 	if !validSubject(idToken.Subject) {
 		return Identity{}, errors.New("oidc subject invalid")
 	}
-	return Identity{Issuer: idToken.Issuer, Subject: idToken.Subject}, nil
+	result := Identity{Issuer: idToken.Issuer, Subject: idToken.Subject}
+	if claims.AuthTime != nil {
+		if *claims.AuthTime <= 0 || *claims.AuthTime > 1e11 {
+			return Identity{}, errors.New("oidc auth_time invalid")
+		}
+		result.AuthTime = time.Unix(int64(*claims.AuthTime), 0).UTC()
+	}
+	return result, nil
 }
 
 func validateConfiguredURL(raw string, allowLoopback bool, callback bool) (*url.URL, error) {
