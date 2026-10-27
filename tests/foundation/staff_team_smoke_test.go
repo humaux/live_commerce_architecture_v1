@@ -329,12 +329,7 @@ func TestStaffTeamSmokeOwnerFloor(t *testing.T) {
 	// Two owners demote each other at the same instant: exactly one change may win, one owner must remain.
 	email := "second" + strings.ReplaceAll(randomUUID(), "-", "") + "@example.test"
 	second, bearer := e.member(email)
-	if _, err := e.svc.Invite(e.ctx, e.owner.Token, e.store.StoreID, email, "owner", "en"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := e.svc.Accept(e.ctx, bearer, e.mailer.token(t, email)); err != nil {
-		t.Fatal(err)
-	}
+	seedOwner(e.ctx, t, e.f.owner, e.store.StoreID, second) // OC-03: invite/accept refuse the owner role
 	var wg sync.WaitGroup
 	errs := make([]error, 2)
 	wg.Add(2)
