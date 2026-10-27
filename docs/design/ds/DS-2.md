@@ -5,6 +5,17 @@ Status: implementation for gallery review only. Browser, compilation, independen
 
 The measured target is [reference-shopline-admin.md](../page-inventory/reference-shopline-admin.md). The nine IA groups and twelve cross-page patterns remain governed by [NEEDS.md](../page-inventory/NEEDS.md). No package, transaction engine or business API was added.
 
+## DS-3 Figma values (2026-10-27, supersedes the shell / button lines below where they differ)
+
+Owner 2026-10-26/27: Figma decides the look ("ui全部使用figma的设计"); this package stays the one code component layer. Values come from the Figma masters on page 4:8829; the read values and node ids are in `output/ds-3/figma-expected.json`, enforced by `tests/ui/ds-figma.spec.mjs` in `--browser-ui-gallery`.
+
+- Button (4:12718): 44 px high, radius 6, padding 0/14, 14 Medium. Primary `--ds-ink` #142942 with white text; Secondary white, 1 px #e5e7eb, ink text; Danger is an outline (white, 1 px and text #b42318); `ghost` = Figma Text kind (#0f766e, no fill, no border). Disabled = #f5f6f8 / #e5e7eb / #566171, except primary, which keeps the DS-1 3:1 fill gate (#6d8cab, registered deviation). `sm` 28 px, `lg`, `link` and icon-only have no Figma master and keep the DS-2 geometry.
+- Shell: light rail (Nav Item 4:12737): rows white with #6b7280 text, current / hover #eef2f7 with ink text, radius 6, 44 high, label 42 px into the row, rows inset 12 px, no accent bar. Focus ring is `--ds-focus` on the light rail.
+- Topbar = Figma Page Header (1397:105155): 64 px, white, no bottom rule, 24 px inline padding, breadcrumb on the left (desktop) and the language switch on the right. Phones keep the breadcrumb row under the 64 px bar.
+- Breadcrumb: every crumb and the "/" separator #596579 (`--ds-crumb-text`), 14 Regular, line 21, gap 4. The separator is CSS content with empty alt text, so it is not read out.
+- Language switch (1397:105152): a Secondary button (44 high) with no caret (`MenuButton caret={false}`).
+- Segmented / Tabs / Input / Pagination / Tag: unchanged values; selected segment and tab labels are 500 (Figma Medium); section tabs and switch segments paint their own idle fill.
+
 ## Visual rules
 
 - Shell: 270 px dark rail, 52 px first-level rows, 24 px icon slot, rotating SVG chevron, plain indented child links; desktop topbar 50 px. Phones use the modal drawer and one 50 px topbar row (menu/store/bell/account). Locale, help and external store navigation live in the mobile account disclosure and remain keyboard reachable. The sidebar keeps the brand/store fixed and scrolls only its list.

@@ -38,6 +38,7 @@ export function MenuButton({
   disabledReason,
   icon,
   variant = "secondary",
+  caret = true,
 }: {
   label: ReactNode;
   items: readonly MenuItem[];
@@ -47,6 +48,8 @@ export function MenuButton({
   /** Icon-only disclosure: no extra caret; label remains available to assistive technology. */
   icon?: IconName;
   variant?: "secondary" | "ghost";
+  /** false drops the chevron, as on the Figma Language switch (1397:105152); aria-expanded still announces the disclosure. */
+  caret?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
@@ -126,7 +129,7 @@ export function MenuButton({
         }}
         data-menu-trigger=""
       >
-        {icon ? <><Icon name={icon} size={16} /><span className={s.sr}>{label}</span></> : <>{label}<Icon name="chevronDown" size={16} /></>}
+        {icon ? <><Icon name={icon} size={16} /><span className={s.sr}>{label}</span></> : <>{label}{caret && <Icon name="chevronDown" size={16} />}</>}
       </Button>
       {open && (
         <div ref={list} className={s.menu} id={id} data-align={align} role="group" style={place} onKeyDown={(event) => {

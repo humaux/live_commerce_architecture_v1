@@ -84,7 +84,7 @@ export function FormSection(props: Omit<Parameters<typeof Card>[0], "flush">) {
 
 export type Crumb = { label: string; href?: string };
 
-/** Breadcrumb trail; the last crumb is the current page and is not a link. Also usable in the AppShellV2 breadcrumb slot. */
+/** Breadcrumb trail; the last crumb is the current page and is not a link. Separators are the Figma "/" (CSS, unspoken). Also usable in the AppShellV2 breadcrumb slot. */
 export function Breadcrumb({ label, crumbs }: { label: string; crumbs: readonly Crumb[] }) {
   return (
     <nav aria-label={label}>
@@ -93,7 +93,6 @@ export function Breadcrumb({ label, crumbs }: { label: string; crumbs: readonly 
           const current = i === crumbs.length - 1;
           return (
             <li key={`${i}-${crumb.label}`}>
-              {i > 0 && <Icon name="chevronRight" size={16} />}
               {crumb.href && !current ? <a href={crumb.href}>{crumb.label}</a> : <span aria-current={current ? "page" : undefined}>{crumb.label}</span>}
             </li>
           );

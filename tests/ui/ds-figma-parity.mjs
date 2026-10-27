@@ -126,7 +126,12 @@ export async function figmaParity({ page, step, output, copy }) {
     const blocked = (await button.getAttribute("aria-disabled")) === "true";
     await step(`DS-3 specimen ${id}`, "click", blocked ? "reason shown" : "label reported in the card status", async () => {
       const label = (await button.textContent()).trim();
-      await button.click();
+      if (blocked) {
+        // Playwright's enabled-wait treats aria-disabled as unclickable; a user can still click it, so click its centre with the real mouse.
+        await button.scrollIntoViewIfNeeded();
+        const box = await button.boundingBox(); // [MEASURE] position only
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      } else await button.click();
       if (blocked) await card.getByRole("status").filter({ hasText: copy.btnDisabledReason }).first().waitFor();
       else await card.getByRole("status").filter({ hasText: label }).first().waitFor();
     });

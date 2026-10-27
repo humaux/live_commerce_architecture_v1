@@ -7,7 +7,7 @@
  * resolves to its --ds-* replacement; without the attribute nothing changes.
  *   --ui-primary/-brand/-brand-text -> --ds-primary     --ui-primary-hover -> --ds-primary-hover   --ui-primary-soft -> --ds-primary-soft
  *   --ui-link -> --ds-link                              --ui-rail -> --ds-nav-bg                    --ui-rail-selected -> --ds-nav-active
- *   --ui-rail-active -> --ds-nav-accent-text            --ui-page -> --ds-page                      --ui-surface -> --ds-surface
+ *   --ui-rail-active -> --ds-nav-text-active            --ui-page -> --ds-page                      --ui-surface -> --ds-surface
  *   --ui-border -> --ds-border                          --ui-text -> --ds-text-1                    --ui-muted -> --ds-text-2
  *   --ui-danger/-success/-warning/-info -> --ds-<tone>-text   --ui-*-soft -> --ds-<tone>-bg           --ui-focus -> --ds-focus
  *   --ui-radius -> --ds-radius-md                       --ui-text-body/-helper -> --ds-text-md/-xs  --ui-rail-width -> --ds-nav-width
@@ -59,15 +59,17 @@
 
 /* DS-1 semantic tokens: the measured SHOPLINE reference (section 6), darkened where the reference fails WCAG (see output/ds-1/DELIVERY.md). */
 :root {
-  /* shell */
-  --ds-nav-bg: #373d4c;
-  --ds-nav-active: #494f5d;
-  --ds-nav-logo-bg: #4c5561;
-  --ds-nav-text: #f4f6f9;
-  --ds-nav-text-muted: #c4cad6;
-  --ds-nav-accent: #4492d1;
-  --ds-nav-accent-text: #9cc9f5;
-  --ds-topbar-bg: #fdfdfd;
+  /* shell. DS-3: the Figma light rail (Nav Item 4:12737: Default #fff / #6b7280, Active #eef2f7 / #142942) and the
+     Page Header bar (1397:105155: #fff, 64 high); output/ds-3/figma-expected.json holds the read values. */
+  --ds-ink: #142942; /* Figma Button Primary fill / Secondary text / Nav Active text */
+  --ds-nav-bg: #fff;
+  --ds-nav-active: #eef2f7;
+  --ds-nav-logo-bg: var(--ds-nav-bg);
+  --ds-nav-text: #6b7280;
+  --ds-nav-text-active: var(--ds-ink);
+  --ds-nav-text-muted: #6b7280;
+  --ds-topbar-bg: #fff;
+  --ds-crumb-text: #596579; /* Figma Page Header crumbs and "/" separators, current crumb included */
   /* surfaces */
   --ds-page: #f8f8f8;
   --ds-surface: #fff;
@@ -104,9 +106,8 @@
   /* lines: separators are decorative; the input border is a control boundary and holds 3:1 */
   --ds-border: #ddd;
   --ds-border-input: #8c8c8c;
-  /* focus: 2 px ring, >= 3:1 on white and on --ds-page; the dark variant holds 3:1 on --ds-nav-bg and --ds-nav-active */
+  /* focus: 2 px ring, >= 3:1 on white, on --ds-page and on the light rail (--ds-nav-bg / --ds-nav-active) */
   --ds-focus: #1d4ed8;
-  --ds-focus-on-dark: #9cc9f5;
   --ds-focus-width: 2px;
   --ds-focus-offset: 2px;
   /* spacing, 4-based */
@@ -124,6 +125,7 @@
   --ds-radius-md: 4px;
   --ds-radius-lg: 8px;
   --ds-radius-pill: 999px;
+  --ds-radius-control: 6px; /* Figma Button, Nav Item and Language switch masters */
   --ds-shadow-1: 0 1px 2px rgb(0 0 0 / 6%);
   --ds-shadow-2: 0 4px 12px rgb(0 0 0 / 12%);
   --ds-shadow-3: 0 12px 32px rgb(0 0 0 / 20%);
@@ -158,9 +160,17 @@
   --ds-card-header-inline: 24px;
   --ds-card-body: 24px;
   --ds-card-footer: 16px;
-  --ds-nav-indent: 52px; /* level-2 sidebar items align with level-1 labels (icon slot + gap) */
-  --ds-disabled-bg: #dae5ef;
-  --ds-disabled-text: #435b70;
+  --ds-nav-indent: 42px; /* level-2 sidebar items align with level-1 labels: Figma Nav Item text starts 42 px into the row */
+  --ds-nav-pad-start: 6px; /* + 24 px icon slot + 12 px gap = the Figma 42 px label inset */
+  --ds-nav-inset: 12px; /* rows sit 12 px inside the rail (Figma rail rows at x12) */
+  --ds-control-button-pad: 14px; /* Figma Button padding 0 / 14 */
+  /* Figma Button State=Disabled (Secondary / Danger / Text): fill #f5f6f8, stroke #e5e7eb, text #566171 */
+  --ds-disabled-bg: #f5f6f8;
+  --ds-disabled-border: #e5e7eb;
+  --ds-disabled-text: #566171;
+  /* Figma Button kinds (4:12718): Secondary stroke, Text-kind label */
+  --ds-button-border: #e5e7eb;
+  --ds-button-text-kind: #0f766e;
   /* disabled primary: a muted primary, not a ghost: fill >= 3:1 on --ds-surface/--ds-page/--ds-surface-muted, white label 3.5:1 */
   --ds-disabled-primary-bg: #6d8cab;
   --ds-disabled-primary-text: var(--ds-on-primary);
@@ -169,7 +179,7 @@
   /* sizes */
   --ds-nav-width: 270px;
   --ds-nav-item-height: 52px;
-  --ds-topbar-height: 50px;
+  --ds-topbar-height: 64px; /* Figma Page Header 1200 x 64 */
   --ds-target: 44px;
   --ds-control-height: 36px;
 }
@@ -182,7 +192,7 @@
   --ui-brand: var(--ds-primary);
   --ui-brand-text: var(--ds-primary);
   --ui-link: var(--ds-link);
-  --ui-rail-active: var(--ds-nav-accent-text);
+  --ui-rail-active: var(--ds-nav-text-active);
   --ui-rail-selected: var(--ds-nav-active);
   --ui-rail: var(--ds-nav-bg);
   --ui-page: var(--ds-page);
