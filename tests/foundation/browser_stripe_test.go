@@ -25,6 +25,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -220,7 +221,6 @@ type sbEnv struct {
 	actions  chan sbAction
 	mu       sync.Mutex
 	stopper  func()
-	restart  bool   // quiesce: the worker was running before the age-cutoff fixture stopped it
 	observe  string // OBS only: the redirect URL for the driver (never logged)
 	baseline sbStock
 	logs     *sbLogBuffer
@@ -585,8 +585,9 @@ func (e *sbEnv) startControl() {
 
 // quiesce stops the payment worker and returns once no payment_reconcile_v1 job of attempt is unfinished.
 // While stopped nothing records an observation; a pending reconcile is drained by running the worker again
-// (sstWake makes its retry due now). e.restart says whether the caller must start the worker afterwards.
-func (e *sbEnv) quiesce(t *testing.T, attempt string) error {
+// (sstWake makes its retry due now). restart says whether the worker was running and must be started again;
+// it is valid on error too, so the caller can restore the worker on every path.
+func (e *sbEnv) quiesce(t *testing.T, attempt string) (restart bool, err error) {
 	t.Helper()
 	unfinished := func() (n int, err error) {
 		err = e.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM river_payment.river_job
@@ -595,16 +596,16 @@ func (e *sbEnv) quiesce(t *testing.T, attempt string) error {
 		return
 	}
 	e.mu.Lock()
-	e.restart = e.stopper != nil
+	restart = e.stopper != nil
 	e.mu.Unlock()
 	for try := 1; ; try++ {
 		e.workerStop()
 		n, err := unfinished()
 		if err != nil || n == 0 {
-			return err
+			return restart, err
 		}
 		if try == 3 {
-			return fmt.Errorf("%d unapplied observation(s) for the attempt", n)
+			return restart, fmt.Errorf("%d unapplied observation(s) for the attempt", n)
 		}
 		e.workerStart(t) // even when it was stopped: a stopped worker's pending reconcile would apply after the aging
 		sstWake(t, e.f, attempt)
@@ -651,15 +652,15 @@ func (e *sbEnv) act(t *testing.T, a sbAction) error {
 			// (job 122207195018 FAILSNAP: reviews=1 before O7). Real expires_at is frozen, so this is a fixture
 			// race, not a product one. Age only while the worker is stopped (no new observation can be recorded)
 			// and no reconcile job of this attempt is unfinished.
-			if err := e.quiesce(t, attempt); err != nil {
+			restart, err := e.quiesce(t, attempt)
+			if restart { // restore the worker on every path (quiesce error, aging t.Fatal, success), exactly once
+				defer e.workerStart(t)
+			}
+			if err != nil {
 				return err
 			}
 			sstAge(t, e.f, attempt, 36*time.Minute)
 			e.fake.AgeSession(session, 36*time.Minute)
-			if e.restart {
-				e.restart = false
-				e.workerStart(t)
-			}
 		}
 	default:
 		return fmt.Errorf("unknown action")
@@ -733,7 +734,13 @@ loop:
 	for {
 		select {
 		case a := <-e.actions:
-			a.reply <- e.act(t, a)
+			// Fixture helpers call t.Fatal (runtime.Goexit): the deferred send still answers the control
+			// handler, which otherwise blocks on <-a.reply and hangs httptest.Server.Close in t.Cleanup.
+			func() {
+				err := errors.New("action aborted")
+				defer func() { a.reply <- err }()
+				err = e.act(t, a)
+			}()
 		case waitErr = <-done:
 			break loop
 		}
