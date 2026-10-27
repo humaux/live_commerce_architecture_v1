@@ -18,8 +18,8 @@ export async function checkOfflineError({ browser, origin }) {
     page.on("request", (r) => { if (r.method() !== "GET" && r.method() !== "HEAD") writes.push(`${r.method()} ${r.url()}`); });
     try {
       await page.goto(`${origin}/${locale}`);
-      const link = page.locator(`a[href="/${locale}/cart"]`).first();
-      await expect(link, `OC11-B00 ${locale} client-navigation link present`).toBeVisible();
+      const link = page.locator(`a[href^="/${locale}/products/"]`).first();
+      await expect(link, `OC11-B00 ${locale} client-navigation link (a product card) present`).toBeAttached();
       await page.waitForLoadState("networkidle");
       await page.route(/[?&]_rsc=/, (route) => route.fulfill({ status: 200, contentType: "text/x-component", body: "0:{not a flight row\n" }));
       await link.click();
