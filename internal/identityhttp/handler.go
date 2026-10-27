@@ -43,6 +43,8 @@ func NewHandler(s service, bffKey string) (http.Handler, error) {
 		return nil, errors.New("invalid identity transport configuration")
 	}
 	mux := http.NewServeMux()
+	rs, _ := s.(oidcReauthService) // *identity.Service has it; §16 re-auth routes (reauth_routes.go)
+	registerOIDCReauth(mux, rs)
 	mux.HandleFunc("POST /v1/identity/login/start", func(w http.ResponseWriter, r *http.Request) {
 		var in struct{}
 		if !body(w, r, &in) {
@@ -62,6 +64,10 @@ func NewHandler(s service, bffKey string) (http.Handler, error) {
 			Code    string `json:"code"`
 		}
 		if !body(w, r, &in) {
+			return
+		}
+		if rs != nil { // one callback for both flow kinds: a re-auth flow returns no token (§16)
+			completeLogin(w, r, rs, in.State, in.Binding, in.Code)
 			return
 		}
 		session, err := s.Complete(r.Context(), in.State, in.Binding, in.Code)

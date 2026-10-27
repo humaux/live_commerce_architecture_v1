@@ -433,6 +433,11 @@ func classify(err error) (int, string) {
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, platform.ErrScopeNotFound):
 		return http.StatusNotFound, "not_found"
+	// §16: the shared typed 403s wrap ErrForbidden, so they are tested first (the UI opens the re-auth dialog, never logs out).
+	case errors.Is(err, platform.ErrReauthRequired):
+		return http.StatusForbidden, "reauth_required"
+	case errors.Is(err, platform.ErrOwnerRoleDisabled):
+		return http.StatusForbidden, "owner_role_disabled"
 	case errors.Is(err, platform.ErrForbidden):
 		return http.StatusForbidden, "forbidden"
 	case errors.Is(err, platform.ErrUnauthorized):
@@ -451,6 +456,10 @@ func classify(err error) (int, string) {
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) {
 		switch pg.Code {
+		case "PT403": // a domain that passes the raw definer error (internal/ads): only the two fixed §16 messages are coded
+			if typed := platform.PT403(pg.Message, nil); typed != nil {
+				return classify(typed)
+			}
 		case "23505", "40001", "40P01":
 			return http.StatusConflict, "conflict"
 		case "23503":

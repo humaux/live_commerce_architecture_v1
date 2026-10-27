@@ -68,6 +68,9 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"insufficient_inventory": "Insufficient available inventory.",
 		"retry_later":            "Temporarily unavailable.", "unavailable": "Temporarily unavailable.",
 		"internal": "Request could not be completed.",
+		// merchant-password-auth-v1 §16 (OC-15): recent re-authentication and the disabled owner role (both 403, never 401).
+		"reauth_required":     "Confirm it is you to continue.",
+		"owner_role_disabled": "The owner role cannot be granted.",
 		// meta-ads-v1 §7 / internal/ads frozenStatus: every frozen ads refusal code must be listed here or the
 		// merchant sees "internal" (found by MA04; internal/ads TestFrozenCodesSurviveHTTPError guards the drift).
 		"state_mismatch":           "This Meta connection attempt does not belong to this session.",
@@ -192,6 +195,8 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"invalid_proof": "The transfer details are not valid.", "invalid_reason": "The rejection reason is not valid.", "transfer_not_submitted": "The buyer has not submitted transfer details.",
 		"already_confirmed": "The transfer was already confirmed.", "already_refunded": "The transfer was already refunded.",
 		"transfer_not_confirmed": "The transfer has not been confirmed.",
+		// owner-choices-20261026-v1 OC-Q1 (OC-16, issue #219): bank transfer is closed to new orders and bank-account changes (422).
+		"bank_transfer_closed": "Bank transfer is no longer available for new orders or account changes.",
 		// 0099 K3-02: the offline-refund restock choice.
 		"already_shipped": "The order was already handed over; its stock cannot be restocked here.", "restock_unavailable": "The reserved stock of this order cannot be released.",
 		// home-cod R5 (migration 0107): cash_on_delivery placement refusals of the begin_hold COD branch.

@@ -91,6 +91,7 @@ func NewPasswordHandler(p passwordService, bffKey string) (http.Handler, error) 
 		c, err := p.Reset(r.Context(), ip, in.Email, in.Locale)
 		challenge(w, c, err)
 	})
+	registerPasswordReauth(mux, p) // §16: POST /v1/identity/password/reauth/{start,complete} (reauth_routes.go)
 	mux.HandleFunc("POST /v1/identity/password/complete", func(w http.ResponseWriter, r *http.Request) {
 		var in struct {
 			Binding     string `json:"binding"`
@@ -210,6 +211,7 @@ var passwordMessages = map[string]string{
 	"invalid_code": "The code is incorrect or expired.", "account_exists": "An account already exists for this email.",
 	"throttled": "Too many attempts. Try again later.", "busy": "The service is busy. Try again shortly.",
 	"mail_unavailable": "Email cannot be sent right now. Try again later.",
+	"reauth_failed":    "Your identity could not be confirmed.", // §16 re-auth routes (reauth_routes.go): 403, the session stays
 }
 
 // passwordEnvelope is httperror.Envelope plus the A10 `reason` key (only for password_policy).
