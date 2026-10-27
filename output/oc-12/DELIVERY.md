@@ -17,7 +17,7 @@ store-level (shared by all staff), cleared only by `inbox.mark_read` for `inbox:
 | internal/inbox/unread_test.go | UR01 definition · UR02 store-level clear/reset · UR03 cross-tenant/cross-store isolation (real PG, real service path). |
 | apps/admin/components/Inbox.tsx | `unread` option in the existing native filter `<select>` (label = existing copy key `unread`: 未讀/未读/Unread). |
 | output/oc-12/UNREAD.md, DELIVERY.md, out-of-scope-allowlist.patch | evidence + the approval patch below. |
-| tests/foundation/r2_integration_upgrade_test.go:124-127 | **Integrator-granted** (coordinator message 2026-10-27, scope: the R2 migration-count pin and its comment only): comment line for 0204 and count 132 -> 133. Trigger: shard:g04 at a563f284e (run 40466503323, job 122087549703) failed TestR2IntegrationUpgradeFromReleaseHead "R2 migration set = 133 files ..., want 132". If #211 (0202) merges first, the count becomes 134 after merging base. |
+| tests/foundation/r2_integration_upgrade_test.go:124-127 | **Integrator-granted** (coordinator message 2026-10-27, scope: the R2 migration-count pin and its comment only): comment line for 0204 and count 132 -> 133. Trigger: shard:g04 at a563f284e (run 40466503323, job 122087549703) failed TestR2IntegrationUpgradeFromReleaseHead "R2 migration set = 133 files ..., want 132". #211 (0202) then merged (fb4558c2c); after merging base the pin is 133 -> 134 (coordinator update, same grant). |
 
 Deviation: the card names `tests/inbox/unread_test.go`. A new `tests/inbox` package needs a non-test `doc.go`
 (scripts/dev/check-pkgdocs.sh) and a regenerated `docs/engineering/dependency-map.md` (depmap --check), both outside

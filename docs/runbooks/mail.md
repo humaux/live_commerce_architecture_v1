@@ -1,6 +1,6 @@
 <!--
 File: docs/runbooks/mail.md
-Purpose: 密码登录的发信邮箱（专用 QQ 邮箱 → 之后可升级 Tencent Exmail）的设置、只读探测（PA12）和一次真实发信验证（PA13）。
+Purpose: 密码登录的发信邮箱（当前：Spacemail ailun@xgdwm.com，2026-10-05 起；历史：QQ → 可选 Exmail）的设置、只读探测（PA12）和一次真实发信验证（PA13）。
 Runs as/in: 文档；命令由 owner 或在 owner 批准下由运维以可 sudo 的用户在部署主机上执行（需要 root 的命令显式写 sudo）。
 Reads env / secrets: LC_SMTP_HOST / LC_SMTP_USERNAME / LC_MAIL_FROM（compose.env）；secret 文件 commerce_smtp_password（SMTP 授权码，owner 以文件提供，绝不经聊天）。
 Used by: docs/runbooks/merchant-onboarding.md §0 O2；contracts/merchant-password-auth-v1.md §5、§9 PA12/PA13。
@@ -12,7 +12,11 @@ Change rules: 授权码不得写入仓库、日志、聊天或命令行参数；
 
 **批准规则**：以下 §3、§4 会连接真实 SMTP 服务器，§4 会给真实邮箱发一封邮件。每一次都要先在聊天里得到 owner 对这一次操作的明确批准（AGENTS.md）。
 
-## 1. 设置（owner）
+## 0. 当前配置（2026-10-05 起）
+
+试点主机用 Spacemail：`LC_SMTP_HOST=mail.spacemail.com`、`LC_SMTP_USERNAME=ailun@xgdwm.com`、`LC_MAIL_FROM=DaWan Live <ailun@xgdwm.com>`，secret 文件 `commerce_smtp_password`。QQ 邮箱因拒绝海外服务器的 SMTP 登录而弃用。额度与 secret 类型见契约 F11（未经一手来源核实）。DNS：MX/SPF/DMARC 已于 2026-09-30 设置；DKIM 记录值需从 Spacemail 后台取。下面 §1、§2 是 QQ/Exmail 的历史步骤，不要据此改回 QQ。
+
+## 1. 设置（owner，历史：QQ 邮箱）
 
 1. 新建一个**专用**发信邮箱（不要用 owner 个人邮箱）：QQ/Exmail 的授权码同时授予该邮箱的 IMAP/POP 访问，无法收窄范围（契约 §5）。
 2. 在邮箱设置里开启 POP3/SMTP，生成 16 位 SMTP **授权码**（不是网页登录密码，F8）。
@@ -30,7 +34,7 @@ Change rules: 授权码不得写入仓库、日志、聊天或命令行参数；
 
 ## 4. PA13 一次真实发信（LIVE，owner 批准）
 
-只发给 owner 自己的邮箱一封验证码邮件：查看邮件头 `spf=pass dkim=pass`（QQ：`qq.com` 对齐；Exmail：`xgdwm.com` 的 `dmarc=pass`），记录到达时间与截图到 `output/merchant-password-auth/`。
+只发给 owner 自己的邮箱一封验证码邮件：查看邮件头 `spf=pass dkim=pass`（QQ：`qq.com` 对齐；Exmail 与当前 Spacemail：`xgdwm.com` 的 `dmarc=pass`，需先有 Spacemail 的 DKIM 记录），记录到达时间与截图到 `output/merchant-password-auth/`。
 
 ## 5. 故障与处置
 
