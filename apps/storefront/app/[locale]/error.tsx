@@ -5,7 +5,6 @@
 // (router.refresh re-reads the server tree with GETs, reset re-renders the segment); it never replays a payment or order POST and
 // the page promises no input persistence. An offline banner follows navigator.onLine + the online/offline events. The locale is
 // read from the URL because error boundaries receive no route params. The error object itself is never shown (no internals).
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { startTransition, useEffect, useRef, useSyncExternalStore } from "react";
 import { isLocale } from "@live-commerce/i18n";
@@ -35,11 +34,13 @@ export default function ErrorState({ reset }: { error: Error & { digest?: string
     });
   return (
     <main className="sf-wrap">
-      <div className="sf-empty sf-empty--page" role="alert" data-testid="page-error">
-        <h1 className="sf-empty__title" ref={heading} tabIndex={-1}>
-          {copy.errorTitle}
-        </h1>
-        <p className="sf-muted">{copy.errorBody}</p>
+      <div className="sf-empty sf-empty--page" data-testid="page-error">
+        <div role="alert" data-testid="page-error-message">
+          <h1 className="sf-empty__title" ref={heading} tabIndex={-1}>
+            {copy.errorTitle}
+          </h1>
+          <p className="sf-muted">{copy.errorBody}</p>
+        </div>
         {!online && (
           <p className="sf-notice" role="status" data-testid="offline-banner">
             {copy.offlineBanner}
@@ -49,9 +50,6 @@ export default function ErrorState({ reset }: { error: Error & { digest?: string
           <button type="button" className="sf-btn sf-btn--primary" onClick={reload} data-testid="page-error-reload">
             {copy.reloadPage}
           </button>
-          <Link className="sf-btn sf-btn--ghost" href={`/${locale}`}>
-            {copy.backHome}
-          </Link>
         </div>
       </div>
     </main>

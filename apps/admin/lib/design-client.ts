@@ -65,10 +65,15 @@ export const saveDraft = (store: string, expectedVersion: number, document: unkn
 // `key` is the request identity the caller keeps: an uncertain answer is rechecked by reading (publishLanded), never by a new publish.
 export const publish = (store: string, expectedDraftVersion: number, boundary: string, key: string = crypto.randomUUID()): Promise<Outcome<VersionInfo>> =>
   send(store, "POST", "publish", jsonBody({ expected_draft_version: expectedDraftVersion }), true, boundary, parseVersionInfo, key);
-// OC-Q10 recheck of the ORIGINAL publish, read-only: Go's publish has no receipt table (compare-and-set on the draft version), but a
-// committed publish is exactly a `publish` row whose source_version is the draft version that was sent. GET design/versions, no write.
-export const publishLanded = (list: VersionList, draftVersion: number): VersionInfo | null =>
-  list.items.find((v) => v.kind === "publish" && v.source_version === draftVersion) ?? null;
+// OC-Q10 recheck of the ORIGINAL publish, read-only (GET design/versions). Go's publish has no receipt table and the versions DTO does not carry
+// the Idempotency-Key, so the request identity cannot be matched by key. Closest provable match: the NEWEST row is a `publish` of the draft version
+// that was sent AND is newer than `watermark` (the newest version known when the request left). An older publish of the same draft version
+// (publish v5, rollback, publish v5 again) therefore never confirms a lost request. Known gap: a different session publishing the same draft
+// version inside that window would confirm it; closing it needs the key in the versions DTO (backend).
+export const publishLanded = (list: VersionList, draftVersion: number, watermark: number): VersionInfo | null => {
+  const top = list.items[0];
+  return top && top.kind === "publish" && top.source_version === draftVersion && top.version > watermark ? top : null;
+};
 // Go POST design/rollback {version}: publishes a copy of an older version; 409 when it is already live.
 export const rollback = (store: string, version: number, boundary: string): Promise<Outcome<VersionInfo>> =>
   send(store, "POST", "rollback", jsonBody({ version }), true, boundary, parseVersionInfo);

@@ -127,6 +127,25 @@ function useLoad(
   return { ...current, reload: () => setTick((value) => value + 1) };
 }
 
+type Pending = { version: number; key: string; watermark: number };
+const pendingKey = (store: string) => `lc.design.publishPending.${store}`;
+function loadPending(store: string): Pending | null {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(pendingKey(store)) ?? "null") as Partial<Pending> | null;
+    return v && Number.isInteger(v.version) && Number.isInteger(v.watermark) && typeof v.key === "string" ? (v as Pending) : null;
+  } catch {
+    return null; // storage can be blocked: the page then simply behaves as before (in-memory only)
+  }
+}
+function storePending(store: string, next: Pending | null) {
+  try {
+    if (next) sessionStorage.setItem(pendingKey(store), JSON.stringify(next));
+    else sessionStorage.removeItem(pendingKey(store));
+  } catch {
+    /* in-memory state still holds */
+  }
+}
+
 /** Owns storefront design draft editing, publication and rollback controls. User actions submit draft, publication, rollback and media commands through design-client. */
 export function Design({
   locale,
@@ -259,9 +278,16 @@ function Editor({
   >("");
   const [note, setNote] = useState<Note>(null);
   // OC-Q10: an uncertain publish keeps its request identity; only a read of the result is offered, never a new publish.
-  const [pending, setPending] = useState<{ version: number; key: string } | null>(null);
+  // Kept per store in sessionStorage (key + versions only, no PII) so a reload cannot turn UNKNOWN into "publish again".
+  const [pending, setPendingState] = useState<Pending | null>(null);
+  const setPending = (next: Pending | null) => {
+    setPendingState(next);
+    storePending(store, next);
+  };
+  useEffect(() => setPendingState(loadPending(store)), [store]);
   const [rechecking, setRechecking] = useState(false);
   const [notYet, setNotYet] = useState(false);
+  const [unconfirmed, setUnconfirmed] = useState(false);
   const [stale, setStale] = useState(false);
   const [server, setServer] = useState<{ path: string; reason: string } | null>(
     null,
@@ -283,11 +309,11 @@ function Editor({
 
   useEffect(() => {
     dirtyRef.current = dirty;
-    if (!dirty) return;
+    if (!dirty && !pending) return; // an unknown publish outcome also warns on leave (the browser's own generic prompt)
     const warn = (event: BeforeUnloadEvent) => event.preventDefault(); // the browser shows its own generic prompt
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty, dirtyRef]);
+  }, [dirty, pending, dirtyRef]);
   useEffect(
     () => () => {
       dirtyRef.current = false;
@@ -353,7 +379,8 @@ function Editor({
     if (!r.ok && r.uncertain) {
       setNote(null);
       setNotYet(false);
-      return setPending({ version, key });
+      setUnconfirmed(false);
+      return setPending({ version, key, watermark: versions.items[0]?.version ?? 0 });
     }
     if (!r.ok) return fail(r);
     setLive(r.value.version);
@@ -366,16 +393,18 @@ function Editor({
     setRechecking(true);
     try {
       const list = await readVersions(store, new AbortController().signal);
-      const landed = publishLanded(list, pending.version);
+      const landed = publishLanded(list, pending.version, pending.watermark);
+      setUnconfirmed(false);
       if (landed) {
         setVersions(list);
-        setLive(landed.version);
+        setLive(list.live_version ?? landed.version);
         setPending(null);
         setNotYet(false);
         setNote({ kind: "ok", text: fill(c.okPublished, { n: landed.version }) });
       } else setNotYet(true);
     } catch {
-      setNotYet(true); // the read failed too: still unknown, never "success"
+      setNotYet(false);
+      setUnconfirmed(true); // the read itself failed: still UNKNOWN, neither "recorded" nor "not recorded", never success
     } finally {
       setRechecking(false);
     }
@@ -556,6 +585,7 @@ function Editor({
             <strong>{c.publishPending}</strong>
           </p>
           <p>{fill(c.publishPendingBody, { n: pending.version })}</p>
+          {unconfirmed && <p data-testid="design-publish-unconfirmed">{c.publishUnconfirmed}</p>}
           {notYet && <p data-testid="design-publish-notyet">{fill(c.publishNotYet, { n: pending.version })}</p>}
           <button type="button" onClick={() => void recheckPublish()} disabled={rechecking} data-testid="design-publish-recheck">
             {rechecking ? c.publishRechecking : c.publishRecheck}
