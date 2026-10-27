@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -306,6 +307,8 @@ func gateRaw(id, typ string, amount int64, fee *int64, at time.Time) stripe.Bala
 		Currency: "HKD", Created: at.Unix(), SourceID: pslS("src_" + id[4:]), SourceObject: pslS(typ)}
 }
 
+var gateTxnID = regexp.MustCompile(`txn_[A-Za-z0-9]+`)
+
 // gateManifestEntry is the §6.8 manifest element: exactly {"id","currency","net"}; any other key is 22023.
 type gateManifestEntry struct {
 	ID       string `json:"id"`
@@ -359,20 +362,27 @@ func (g *gateEnv) close(t *testing.T, period string) map[string]any {
 // closeProbe runs close inside a transaction and rolls it back (keeping the committed coverage runs; no statement or line).
 func (g *gateEnv) closeProbe(t *testing.T, period string) error {
 	t.Helper()
+	_, err := g.closeProbeOut(t, period)
+	return err
+}
+
+// closeProbeOut is closeProbe that also returns close_settlement's JSON (read before the rollback).
+func (g *gateEnv) closeProbeOut(t *testing.T, period string) (string, error) {
+	t.Helper()
 	ctx := context.Background()
 	tx, err := g.reg.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tx.Rollback(ctx)
-	_, err = g.callOn(ctx, tx, "close_settlement", map[string]any{
+	out, err := g.callOn(ctx, tx, "close_settlement", map[string]any{
 		"tenant": g.tenant, "store": g.store, "principal": g.princ, "environment": "SANDBOX",
 		"period": period, "operator": "op@test", "target": nil, "ticket": gateTicket,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
-	return tx.Rollback(ctx)
+	return out, tx.Rollback(ctx)
 }
 
 func (g *gateEnv) latestRun(t *testing.T) string {
@@ -860,8 +870,11 @@ func TestPlatformSettlementPF16PayoutReturn(t *testing.T) {
 					t.Fatal("W1 payout_returned_at is absent")
 				}
 			}
-			// "txn_PF16" is this test's balance-transaction id prefix; a bare "txn_" would also hit the allowed line key txn_date (§6.4).
-			for _, bad := range []string{"return_ref", "BANKRET-0001", "ticket", "HKD", "txn_PF16", "settle_", "recorded_by"} {
+			// any Stripe balance-transaction id leaks; the allowed line key txn_date (§6.4) is not an id.
+			if ids := gateTxnID.FindAllString(strings.ReplaceAll(string(raw), `"txn_date"`, ""), -1); len(ids) != 0 {
+				t.Fatalf("merchant body leaks balance-transaction ids %v: %s", ids, raw)
+			}
+			for _, bad := range []string{"return_ref", "BANKRET-0001", "ticket", "HKD", "balance_txn", "settle_", "recorded_by"} {
 				if strings.Contains(string(raw), bad) {
 					t.Fatalf("merchant body leaks %q: %s", bad, raw)
 				}
@@ -918,8 +931,16 @@ func TestPlatformSettlementPF17Reconciliation(t *testing.T) {
 	if got := g.reconOf(t, r0id); got.diff != 0 || got.stripe != 9100 || got.recorded != 9100 || got.stripeCount != 2 || got.recordedCount != 2 {
 		t.Fatalf("r0 reconciliation %+v, want 0/9100/9100 counts 2/2 (return=%v)", got, r0)
 	}
-	if err := g.closeProbe(t, w.Format("2006-01-02")); err != nil {
+	if raw, err := g.closeProbeOut(t, w.Format("2006-01-02")); err != nil {
 		t.Fatalf("clean-coverage close probe: %v", err)
+	} else {
+		var body any
+		if err := json.Unmarshal([]byte(raw), &body); err != nil {
+			t.Fatalf("close probe body: %v (%s)", err, raw)
+		}
+		if got := gateNum(t, body, "net_payable_minor"); got != 96000 { // §10 PF17a: 100000 − 4000
+			t.Fatalf("clean-coverage close net = %d, want 96000 (%s)", got, raw)
+		}
 	}
 	if n := g.count(t, `SELECT count(*) FROM payments.settlement_statements WHERE store_id=$1 AND period_start=$2::date`, o.store(), w.Format("2006-01-02")); n != 0 {
 		t.Fatalf("the rolled-back probe left %d statements", n)
