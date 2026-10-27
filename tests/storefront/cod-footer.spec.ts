@@ -1,11 +1,11 @@
 // Purpose: OC-09a — owner-approved plain-language COD copy (output/oc-09/OWNER-APPROVED-COPY.md) on the order page and the pre-order note,
 //   and the order-page amount staying the server cod_collect_minor. The checkout bottom bar (OC-09b) is deferred and not asserted here.
 // Depends on: node:test, apps/storefront/lib/cod-copy.ts (types-only imports), CodOrderStatus.tsx source text. No browser.
-// Used by: scripts/dev/test-node.sh (registration requested in the PR; shared file, not edited by OC-09a).
+// Used by: scripts/dev/test-node.sh (one integrator-granted registration line).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { codCopy } from "../../apps/storefront/lib/cod-copy.ts";
+import { codAmountLabel, codCopy } from "../../apps/storefront/lib/cod-copy.ts";
 
 const want = {
   "zh-TW": { pending_label: "到貨時要付的金額", recorded: "原訂單代收金額", pending: "包裹送達時，付現金給物流人員", note: "包裹送達時付現金給物流人員，網站不會先扣款。" },
@@ -32,6 +32,14 @@ test("order-page amount is the server cod_collect_minor, unchanged; no arithmeti
   const src = readFileSync(new URL("../../apps/storefront/components/CodOrderStatus.tsx", import.meta.url), "utf8");
   assert.match(src, /formatMoney\(locale, order\.cod_collect_minor \?\? 0, "TWD"\)/);
   assert.doesNotMatch(src, /cod_collect_minor[^)]*[+\-*]/);
-  // approved label only while PENDING; other states keep the old one
-  assert.match(src, /collection === "PENDING" \? copy\.recordedPending : copy\.recorded/);
+  // the rendered label comes from codAmountLabel (behaviour asserted below), not an inline choice
+  assert.match(src, /label=\{codAmountLabel\(locale, collection\)\}/);
 });
+
+for (const [locale, w] of Object.entries(want)) {
+  test(`amount label per collection state, ${locale}: approved wording only while PENDING`, () => {
+    const states = Object.keys(codCopy[locale as keyof typeof want].orderStates) as (keyof typeof codCopy.en.orderStates)[];
+    assert.ok(states.length >= 6 && states.includes("PENDING"), states.join());
+    for (const st of states) assert.equal(codAmountLabel(locale as keyof typeof want, st), st === "PENDING" ? w.pending_label : w.recorded, st);
+  });
+}

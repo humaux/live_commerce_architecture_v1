@@ -98,3 +98,9 @@ const zhTW: typeof en = {
 };
 
 export const codCopy: Record<Locale, typeof en> = { en, "zh-CN": zhCN, "zh-TW": zhTW };
+
+// Order-page amount label (OC-09a): the owner-approved wording only while the buyer still has to pay; every other state keeps `recorded`.
+export function codAmountLabel(locale: Locale, collection: CollectionState): string {
+  const c = codCopy[locale];
+  return collection === "PENDING" ? c.recordedPending : c.recorded;
+}

@@ -4,7 +4,7 @@
 // Invariant: the order-page amount is the server cod_collect_minor, never computed here; the approved label (recordedPending) shows only
 // while collection is PENDING, every other state keeps the previous recorded wording.
 import type { Locale } from "@live-commerce/i18n";
-import { codCopy } from "../lib/cod-copy";
+import { codAmountLabel, codCopy } from "../lib/cod-copy";
 import type { Order } from "../lib/purchase";
 import { formatMoney } from "../lib/money";
 
@@ -26,7 +26,7 @@ export function CodOrderStatus({ order, locale }: { order: Order; locale: Locale
     <section data-testid="order-cod" aria-labelledby="cod-order-title">
       <h2 id="cod-order-title">{copy.orderTitle}</h2>
       <p className="cod-amount" data-testid="order-cod-amount">
-        <CodAmount locale={locale} total={formatMoney(locale, order.cod_collect_minor ?? 0, "TWD")} fee={formatMoney(locale, order.cod_surcharge_minor ?? 0, "TWD")} pending={collection === "PENDING"} label={collection === "PENDING" ? copy.recordedPending : copy.recorded} />
+        <CodAmount locale={locale} total={formatMoney(locale, order.cod_collect_minor ?? 0, "TWD")} fee={formatMoney(locale, order.cod_surcharge_minor ?? 0, "TWD")} pending={collection === "PENDING"} label={codAmountLabel(locale, collection)} />
       </p>
       <p data-testid="order-cod-state" data-state={collection}>{copy.orderStates[collection]}</p>
       {order.cod_carrier && <p className="order-note" data-testid="order-cod-carrier">{copy.orderedCarrier(copy.carriers[order.cod_carrier])}</p>}
