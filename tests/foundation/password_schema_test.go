@@ -42,7 +42,8 @@ var pwa03Funcs = map[string]string{
 var pwa03Columns = map[string][]string{
 	"password_credentials": {"principal_id", "email", "password_hash", "password_version", "failed_count", "disabled_at", "email_verified_at", "created_at", "password_changed_at"},
 	"email_challenges": {"id", "purpose", "email", "locale", "principal_id", "password_version", "pending_password_hash", "binding_hash", "code_hmac", "ip_hmac",
-		"attempts", "created_at", "expires_at", "consumed_at", "consumed_reason", "mail_state", "provider_message_id"},
+		"attempts", "created_at", "expires_at", "consumed_at", "consumed_reason", "mail_state", "provider_message_id",
+		"session_hash"}, // 0201 (OC-02, contract §16): reauth challenges are bound to the calling session hash
 	"auth_throttle": {"bucket", "window_start", "hits"},
 	"auth_events":   {"id", "principal_id", "email_hmac", "ip_hmac", "challenge_id", "action", "created_at"},
 }
@@ -503,6 +504,9 @@ func TestPasswordPA03Schema(t *testing.T) {
 		}
 		mustExec(t, o, `DROP TABLE identity.auth_events, identity.auth_throttle, identity.email_challenges, identity.password_credentials CASCADE`)
 		mustExec(t, o, `DELETE FROM public.lc_schema_migrations WHERE version='0070_merchant_password_auth.sql'`)
+		// 0201 (OC-02) alters the tables 0070 creates (reauth purpose, session_hash, action vocabulary) and re-creates
+		// complete_email_challenge; once 0070 is rebuilt it must run again for the upgrade to reach the current schema.
+		mustExec(t, o, `DELETE FROM public.lc_schema_migrations WHERE version='0201_recent_auth.sql'`)
 		var newest string
 		// R2 integration: the other R2 lanes' migrations (0071..0080) are applied here too, so "the 0066 state" is
 		// asserted as: 0070 itself is not in the ledger and its predecessor in ledger order is 0066. The whole R2 set

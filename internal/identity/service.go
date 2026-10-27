@@ -1,6 +1,7 @@
 // Package identity owns merchant login and first-store bootstrap: the OIDC login (Service) and the
 // email + password + emailed-code login (Passwords, contracts/merchant-password-auth-v1.md), plus the store staff team (Staff:
-// invitations, roles, revoke; contracts/storefront-v2.md §D, staff.go). Its
+// invitations, roles, revoke; contracts/storefront-v2.md §D, staff.go) and recent re-authentication of a live
+// session (password + emailed code in reauth.go, OIDC prompt=login in oidc_reauth.go; contract §16). Its
 // dedicated database pool is an authentication authority (role commerce_identity, EXECUTE on the
 // identity.* definers only), never a business runtime pool.
 //
@@ -147,12 +148,26 @@ func (s *Service) Complete(ctx context.Context, state, binding, code string) (Se
 	if err != nil {
 		return Session{}, ErrUnavailable
 	}
+	return s.issue(ctx, code, nonce, verifier)
+}
+
+// exchange runs the external code exchange and bounds the verified issuer/subject.
+func (s *Service) exchange(ctx context.Context, code, nonce, verifier string) (oidclogin.Identity, bool) {
 	subject, err := s.provider.Exchange(ctx, code, nonce, verifier)
 	if err != nil || len(subject.Issuer) == 0 || len(subject.Issuer) > 2048 || len(subject.Subject) == 0 || len(subject.Subject) > 255 || !utf8.ValidString(subject.Issuer) || !utf8.ValidString(subject.Subject) {
+		return oidclogin.Identity{}, false
+	}
+	return subject, true
+}
+
+// issue completes an ordinary (non re-auth) login flow whose nonce/verifier were already consumed.
+func (s *Service) issue(ctx context.Context, code, nonce, verifier string) (Session, error) {
+	subject, ok := s.exchange(ctx, code, nonce, verifier)
+	if !ok {
 		return Session{}, ErrUnauthorized
 	}
 	result := Session{Token: randomToken()}
-	err = s.transaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+	err := s.transaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		return tx.QueryRow(ctx, `SELECT principal_id::text,expires_at FROM identity.issue_merchant_session($1,$2,$3,$4)`, subject.Issuer, subject.Subject, digest(result.Token), int64(s.policy.SessionTTL/time.Second)).Scan(&result.PrincipalID, &result.ExpiresAt)
 	})
 	err = translateError(err)
