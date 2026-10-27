@@ -1,0 +1,51 @@
+SA-3 independent settlement gate — baseline evidence
+====================================================
+repo:        github.com/humaux/live_commerce_architecture_v1
+worktree:    .claude/worktrees/sa3
+branch:      unit/sa3-settlement-gate
+base:        08ba731fc7afbcb6eb9686ababcfdc512bb09224 (r3/integration)
+code head:   c9a43926a501095fd9fe3d11ebde262b09eb5409
+PR:          #199 (base r3/integration, no auto-merge)
+contract:    contracts/stripe-platform-account-v1.md §6.9 + §10 PF09–PF18 only
+             (SA-1 branch/implementation not read)
+
+CI run (Gates, pull_request): 40327612222
+job: gate (shard:g09) 121592345396 — conclusion: failure
+url: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40327612222/job/121592345396
+
+PF09–PF13 baseline (green, same run):
+  job gate (shard:g04) 121592345133
+  --- PASS: TestPlatformSettlement (14.42s) at 2026-10-26T13:35:27Z
+  (author smoke PF09_schema/PF10_sync/PF11_close/PF12_payout/PF13_read_and_csv all green)
+
+PF16–PF18 baseline (RED, behavioural; the §6.9 surface is absent on this base,
+the PG fixture and the registrar login succeeded before the entry-point check):
+  --- FAIL: TestPlatformSettlementPF16PayoutReturn (3.75s)
+      platform_settlement_gate_test.go:644: payments.record_settlement_payout_return is missing: no rows in result set
+  --- FAIL: TestPlatformSettlementPF17Reconciliation (4.13s)
+      platform_settlement_gate_test.go:882: payments.record_settlement_lines has 9 arguments, want 10
+  --- FAIL: TestPlatformSettlementPF18Payables (3.41s)
+      platform_settlement_gate_test.go:1135: payments.read_settlement_payables is missing: no rows in result set
+
+Why these are RED and not setup errors:
+  - each test first created its isolated PG (the pfNew harness), designated/opened the
+    platform, and reached the §6.9 entry-point check; the failure is the contract
+    surface itself (missing function / retired-signature count), not a fixture, DSN,
+    Docker, migration-apply or permission error;
+  - PF09–PF13 passed in the same run, so the baseline harness is healthy.
+
+g09 also reports one pre-existing, unrelated failure (not SA-3):
+  TestProductEditorMatrixLedgerEvidenceHistoricalPolicy (4 subtests)
+  catalog_matrix_evidence_test.go:36: recorded testdata at 2e10084b... unavailable
+  (needs full history); exit status 128 — a shallow-clone environment failure.
+
+Not run (NOT_RUN):
+  - GREEN PF16–PF18: SA-1 (returns/reconciliation/payables) is not on this base and
+    has not merged into r3/integration; the gate is the RED half of the RED→GREEN.
+  - per-contract mutation runs (§6.9 "mutation that must turn ... red"): require the
+    SA-1 implementation to mutate; no test is run locally (owner rule).
+
+Local checks (no test execution):
+  GOCACHE=/tmp/sa3-gocache GOFLAGS=-mod=readonly go build ./...            exit 0
+  GOCACHE=/tmp/sa3-gocache GOOS=linux GOFLAGS=-mod=readonly go vet -tags browser ./tests/...  exit 0
+  prepush.sh .claude/worktrees/sa3                                         exit 0
