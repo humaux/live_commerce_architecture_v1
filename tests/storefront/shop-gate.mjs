@@ -185,9 +185,10 @@ try {
   await p.goto(`${origin}/zh-TW/products?min=500&max=700`);
   const filtered = (await p.getByTestId("product-card").locator(".sf-card__price > span:first-child").allTextContents()).map((t) => Number(t.replace(/[^\d.]/g, "")));
   assert(filtered.length > 0 && filtered.every((n) => n >= 500 && n <= 700), `filter leaked ${filtered}`);
-  // React streaming can briefly keep a second, hidden copy of the segment (<div hidden id="S:…">); assert on the visible one, then that the duplicate is gone.
-  await expect(p.locator(".sf-filter").filter({ visible: true })).toHaveAttribute("open", "");
+  // React streaming can briefly keep a second, hidden copy of the segment (<div hidden id="S:…">): wait for the swap to leave
+  // exactly one (a lasting duplicate still fails) before the strict-mode assertion below.
   await expect(p.locator(".sf-filter")).toHaveCount(1);
+  await expect(p.locator(".sf-filter")).toHaveAttribute("open", "");
   await p.goto(`${origin}/zh-TW/products?limit=12`); // limit is honoured by Go; the page default is 24 so 30 products paginate
   await p.goto(`${origin}/zh-TW/products`);
   const first = await p.getByTestId("product-card").count();
