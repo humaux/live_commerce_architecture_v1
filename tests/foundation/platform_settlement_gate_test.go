@@ -635,8 +635,8 @@ func gateNum(t *testing.T, v any, key string) int64 {
 
 // insertStatement is the disclosed owner-pool fixture for a closed statement that exists only to be read (the unpaid
 // second store in PF16a and the four PF18 payables): no money fact is invented, only an already-closed ledger row.
-// insertStatement writes a line-less statement whose whole net is carried_in, so a later close replay over the same period
-// (0150: stored sums must equal the sums of its lines) still holds; a captured amount with no lines is settlement_changed.
+// insertStatement writes a line-less statement straight into the owner pool. A close of the same period would replay it and
+// 0150's lines-sum proof would raise settlement_changed, so callers insert it after that period's close.
 func (g *gateEnv) insertStatement(t *testing.T, tenant, store string, net int64, period string, closed time.Time) string {
 	t.Helper()
 	col, val := "", ""
@@ -647,7 +647,7 @@ func (g *gateEnv) insertStatement(t *testing.T, tenant, store string, net int64,
 	if err := g.f.owner.QueryRow(context.Background(), `INSERT INTO payments.settlement_statements(id,tenant_id,store_id,environment,
 		period_start,period_end,currency,captured_minor,refunded_minor,dispute_minor,stripe_fee_minor,platform_fee_bps,platform_fee_minor,
 		carried_in_minor`+col+`,net_payable_minor,line_count,lines_sha256,closed_at,closed_by)
-		VALUES(gen_random_uuid(),$1,$2,'SANDBOX',$3::date,$3::date+7,'TWD',0,0,0,0,0,0,$4`+val+`,$4,0,sha256('x'),$5,'fixture@test')
+		VALUES(gen_random_uuid(),$1,$2,'SANDBOX',$3::date,$3::date+7,'TWD',$4,0,0,0,0,0,0`+val+`,$4,0,sha256('x'),$5,'fixture@test')
 		RETURNING id::text`, tenant, store, period, net, closed).Scan(&id); err != nil {
 		t.Fatalf("statement fixture %s/%s: %v", tenant, period, err)
 	}
@@ -701,15 +701,16 @@ func TestPlatformSettlementPF16PayoutReturn(t *testing.T) {
 		t.Fatalf("return rows before any return = %d", n)
 	}
 
-	// a second store with a closed, still-unpaid W1 statement (owner-pool fixture: only a statement, no money fact).
-	b := g.merchant(t, false)
-	bStmt := g.insertStatement(t, b.f.tenantA, b.f.storeA1, 125000, w1.Format("2006-01-02"), time.Now().Add(-time.Hour))
-
 	// close W1, then record payout T.
 	closed := g.close(t, w1.Format("2006-01-02"))
 	if len(closed) == 0 {
 		t.Fatal("W1 close returned no statements")
 	}
+
+	// a second store with a closed, still-unpaid W1 statement (owner-pool fixture: only a statement, no money fact),
+	// inserted after the W1 close so that close never replays a statement that has no lines behind its captured amount.
+	b := g.merchant(t, false)
+	bStmt := g.insertStatement(t, b.f.tenantA, b.f.storeA1, 125000, w1.Format("2006-01-02"), time.Now().Add(-time.Hour))
 	w1id, w1net, w1cap, _, w1fee := g.statement(t, m.f.storeA1, w1.Format("2006-01-02"))
 	if w1net != 125000 || w1cap != 130000 || w1fee != -5000 {
 		t.Fatalf("W1 totals net=%d captured=%d fee=%d, want 125000/130000/-5000", w1net, w1cap, w1fee)
