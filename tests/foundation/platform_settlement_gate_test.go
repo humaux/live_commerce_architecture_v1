@@ -176,7 +176,7 @@ func gateKey(name string) string {
 		return "period"
 	case strings.Contains(n, "return_ref"):
 		return "return_ref"
-	case strings.Contains(n, "amount_minor"):
+	case strings.Contains(n, "amount_minor"), n == "returned_minor": // §6.7 names it p_returned_minor
 		return "amount"
 	case strings.Contains(n, "returned_at"):
 		return "returned_at"
