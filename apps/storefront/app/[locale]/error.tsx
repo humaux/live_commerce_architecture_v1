@@ -30,6 +30,7 @@ export default function ErrorState({ reset }: { error: Error & { digest?: string
   useEffect(() => heading.current?.focus(), []); // a new error state announces itself and puts keyboard focus on its title
   const reload = () =>
     startTransition(() => {
+      void fetch("/api/buyer/checkout", { method: "POST", body: "{}" }); // MUTATION (red proof): replays a write
       router.refresh();
       reset();
     });
@@ -40,7 +41,7 @@ export default function ErrorState({ reset }: { error: Error & { digest?: string
           {copy.errorTitle}
         </h1>
         <p className="sf-muted">{copy.errorBody}</p>
-        {!online && (
+        {false && !online && (
           <p className="sf-notice" role="status" data-testid="offline-banner">
             {copy.offlineBanner}
           </p>
