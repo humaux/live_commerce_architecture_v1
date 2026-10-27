@@ -351,9 +351,12 @@ export function main(argv = process.argv.slice(2), env = process.env) {
   // Never feed these display spellings into source lookup. The legacy CLI used
   // the checkout's registry even when an explicit head selected another one.
   const legacyPaths = legacyDisplay.split("\n").map((p) => p.trim()).filter(Boolean);
+  // CI-SPEED: a legacy spelling that is not backend-only (e.g. Git's quoted "\346...md") is never documentation either, so the
+  // union restores the old [foundation-shards, ...browsers] plan instead of a browser-only one; a deploy selection is never docs-only.
   if (legacyPaths.some((p) => !isBackendOnly(p)))
-    r.modes = [...new Set([...r.modes, ...browserModes(readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"))])];
+    r.modes = [...new Set(["foundation-shards", ...r.modes, ...browserModes(readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"))])];
   r.deploy ||= legacyPaths.some(isDeploy);
+  if (r.deploy && !r.modes.length) r.modes = ["foundation-shards"];
   r.docsOnly = r.modes.length === 0;
   console.error(`pr-modes: ${paths.length} changed path(s) -> ${r.modes.length} mode(s)${r.deploy ? "; deploy-smoke" : ""}${r.docsOnly ? "; docs-only (test-inert paths)" : ""}`);
   if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `modes=${JSON.stringify(r.modes)}\ndeploy=${r.deploy}\ndocs_only=${r.docsOnly}\n`);
