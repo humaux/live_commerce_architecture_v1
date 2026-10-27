@@ -1,5 +1,5 @@
 // Unit tests of the gates.yml matrix planner (scripts/dev/ci-plan.mjs): sweep / visual-lint / foundation-shards fan out completely, plain modes pass through, an explicit single
-// shard re-run does NOT ask for the whole-run aggregate, and artifact names are unique; CI-SPEED: build-once consumers and the docs-only empty plan. Run by scripts/dev/test-node.sh.
+// shard re-run does NOT ask for the whole-run aggregate, and artifact names are unique; CI-SPEED: build-once consumers and the `required` script. Run by scripts/dev/test-node.sh.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync } from "node:fs";
@@ -61,19 +61,10 @@ test("gate job concurrency group separates run classes by event", () => {
   assert.match(group, /\$\{\{ github\.event_name \}\}/, "gate job concurrency group must include github.event_name");
 });
 
-// CI-SPEED build-once + docs-only: shape of the plan outputs and of the gates.yml jobs that consume them.
+// CI-SPEED build-once: shape of the plan outputs and of the gates.yml jobs that consume them.
 const registry = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
 const wf = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8");
 const job = (name) => wf.split(new RegExp(`^  ${name}:\\s*$`, "m"))[1]?.split(/^  [\w-]+:\s*$/m)[0] ?? "";
-
-test("CI-SPEED: an empty plan is refused unless the PR was classified docs-only", () => {
-  assert.throws(() => expand([], { groupIds }), /modes must be/);
-  assert.deepEqual(expand([], { groupIds, allowEmpty: true }), { matrix: [], sweepN: 0, visualN: 0 });
-  const out = path.join(mkdtempSync(path.join(tmpdir(), "ci-plan-")), "out");
-  assert.throws(() => main({ MODES: "[]", GITHUB_OUTPUT: out, ALLOW_EMPTY: "false" }), /modes must be/);
-  main({ MODES: "[]", GITHUB_OUTPUT: out, ALLOW_EMPTY: "true" });
-  assert.equal(readFileSync(out, "utf8"), "matrix=[]\nsweep_n=0\nvisual_n=0\nprebuilt_modes=[]\nprebuild=false\n");
-});
 
 test("CI-SPEED: build-once consumers are exactly the registry arms that build a Next app or compile ./tests/foundation", () => {
   const matrix = expand(["foundation-shards", "--browser-click-sweep", "--browser-cvs", "--browser-ui-gallery", "--browser-picklist", "focused:^TestX$"], { groupIds }).matrix;
@@ -82,43 +73,40 @@ test("CI-SPEED: build-once consumers are exactly the registry arms that build a 
   for (const m of ["shard:unit", "shard:g01", "focused:^TestX$", "--browser-ui-gallery", "--browser-picklist"]) assert.ok(!got.includes(m), `${m} builds nothing shared (or its own flagged build)`);
 });
 
-test("CI-SPEED: gates.yml builds once, restores only same-run prebuilt output, and `required` accepts an empty plan only as docs-only", () => {
-  const build = job("build"), gate = job("gate"), required = job("required"), receipts = job("receipts");
+test("CI-SPEED: gates.yml builds once, restores only same-run prebuilt output, and `required` checks the build job", () => {
+  const build = job("build"), gate = job("gate"), required = job("required");
   assert.match(build, /if: \$\{\{ needs\.plan\.outputs\.prebuild == 'true' \}\}/);
   assert.match(build, /bash scripts\/dev\/test-local\.sh --prebuild "\$RUNNER_TEMP\/prebuilt"/);
   assert.match(build, /go test -race -count=1 -run '\^\$' \.\/tests\/foundation\n\s+go test -race -tags browser -count=1 -run '\^\$' \.\/tests\/foundation/);
   assert.match(build, /cache: false/, "the build job never writes the shard:gNN setup-go key");
   assert.match(gate, /needs: \[plan, build\]/);
-  assert.match(gate, /needs\.plan\.outputs\.matrix != '\[\]'/, "an empty matrix is never instantiated");
+  assert.doesNotMatch(wf, /docs_only|DOCS_ONLY|ALLOW_EMPTY/, "no docs-only empty plan (integrator scope cut 2026-10-28)");
   assert.match(gate, /contains\(fromJSON\(needs\.plan\.outputs\.prebuilt_modes\), matrix\.mode\)/);
   assert.match(gate, /env\.EXTRA_ENV == ''/, "fault-injection dispatches build their own");
   assert.match(gate, /node scripts\/dev\/prebuilt\.mjs unpack "\$RUNNER_TEMP\/prebuilt" gocache\n\s+echo "LC_PREBUILT_DIR=\$RUNNER_TEMP\/prebuilt" >> "\$GITHUB_ENV"/);
-  assert.match(receipts, /needs\.plan\.outputs\.matrix != '\[\]'/);
   assert.match(required, /needs: \[plan, build, gate, aggregate, deploy, receipts\]/);
-  assert.match(required, /DOCS_ONLY: \$\{\{ needs\.plan\.outputs\.docs_only == 'true' && needs\.plan\.outputs\.matrix == '\[\]' \}\}/);
-  assert.match(required, /for r in "\$BUILD" "\$GATE" "\$AGG" "\$DEPLOY" "\$RECEIPTS"; do \[\[ "\$r" == skipped \]\] \|\| rc=1; done/);
   assert.match(required, /if \[\[ "\$BUILD_EXPECTED" == true \]\]; then \[\[ "\$BUILD" == success \]\] \|\| rc=1; else \[\[ "\$BUILD" == skipped \]\] \|\| rc=1; fi/);
-  assert.match(job("plan"), /ALLOW_EMPTY: \$\{\{ github\.event_name == 'pull_request' && steps\.pr\.outputs\.docs_only == 'true' \}\}/);
 });
 
-// #238 review P2: the `required` step's shell (incl. the never-yet-exercised docs-only branch) is EXECUTED here, not only regex-matched:
-// every combination of job results / expectations against an independent oracle.
+// #238 review P2: the `required` step's shell is EXECUTED here, not only regex-matched: every combination of job results (incl. cancelled and an
+// empty result) and expectations against an independent oracle.
 test("CI-SPEED review P2: the real `required` script accepts exactly the right result combinations", () => {
   const block = /^  required:[\s\S]*?\n      - run: \|\n((?:          .*\n|\s*\n)+)/m.exec(wf)?.[1];
   assert.ok(block, "required job run block not found");
   const script = block.split("\n").map((l) => l.slice(10)).join("\n");
-  const R = ["success", "skipped", "failure"], B = ["true", "false"], combos = [];
-  for (const PLAN of ["success", "failure"]) for (const BUILD of R) for (const GATE of R) for (const AGG of R) for (const DEPLOY of R) for (const RECEIPTS of R)
-    for (const DOCS_ONLY of B) for (const BUILD_EXPECTED of B) for (const AGG_EXPECTED of B) for (const DEPLOY_EXPECTED of B)
-      combos.push({ PLAN, BUILD, GATE, AGG, DEPLOY, RECEIPTS, DOCS_ONLY, BUILD_EXPECTED, AGG_EXPECTED, DEPLOY_EXPECTED });
+  // Every result GitHub reports (and "" for a job that never ran) on the expectation-dependent legs; on PLAN/GATE/RECEIPTS, which must be success,
+  // the non-obvious red values (cancelled, "") stand in for the rest (failure/skipped are covered on the other legs), keeping the run ~27k cases.
+  const R = ["success", "skipped", "failure", "cancelled", ""], M = ["success", "cancelled", ""], B = ["true", "false"], combos = [];
+  for (const PLAN of M) for (const BUILD of R) for (const GATE of M) for (const AGG of R) for (const DEPLOY of R) for (const RECEIPTS of M)
+    for (const BUILD_EXPECTED of B) for (const AGG_EXPECTED of B) for (const DEPLOY_EXPECTED of B)
+      combos.push({ PLAN, BUILD, GATE, AGG, DEPLOY, RECEIPTS, BUILD_EXPECTED, AGG_EXPECTED, DEPLOY_EXPECTED });
   const keys = Object.keys(combos[0]);
-  const fn = `req() { ( ${script}\n) >/dev/null; }\nwhile read -r ${keys.join(" ")}; do export ${keys.join(" ")}; req; echo $?; done`;
-  const out = execFileSync("bash", ["-c", fn], { input: combos.map((c) => keys.map((k) => c[k]).join(" ")).join("\n") + "\n", encoding: "utf8", maxBuffer: 16 << 20 }).trim().split("\n").map(Number);
+  // "|" separates fields so an empty result ("") survives `read`.
+  const fn = `req() { ( ${script}\n) >/dev/null; }\nwhile IFS='|' read -r ${keys.join(" ")}; do export ${keys.join(" ")}; req; echo $?; done`;
+  const out = execFileSync("bash", ["-c", fn], { input: combos.map((c) => keys.map((k) => c[k]).join("|")).join("\n") + "\n", encoding: "utf8", maxBuffer: 64 << 20 }).trim().split("\n").map(Number);
   assert.equal(out.length, combos.length);
-  const oracle = (c) => c.DOCS_ONLY === "true"
-    ? c.PLAN === "success" && [c.BUILD, c.GATE, c.AGG, c.DEPLOY, c.RECEIPTS].every((r) => r === "skipped")
-    : c.PLAN === "success" && c.GATE === "success" && c.RECEIPTS === "success" && c.BUILD === (c.BUILD_EXPECTED === "true" ? "success" : "skipped")
-      && c.AGG === (c.AGG_EXPECTED === "true" ? "success" : "skipped") && c.DEPLOY === (c.DEPLOY_EXPECTED === "true" ? "success" : "skipped");
+  const oracle = (c) => c.PLAN === "success" && c.GATE === "success" && c.RECEIPTS === "success" && c.BUILD === (c.BUILD_EXPECTED === "true" ? "success" : "skipped")
+    && c.AGG === (c.AGG_EXPECTED === "true" ? "success" : "skipped") && c.DEPLOY === (c.DEPLOY_EXPECTED === "true" ? "success" : "skipped");
   combos.forEach((c, i) => assert.equal(out[i] === 0, oracle(c), JSON.stringify(c)));
-  assert.ok(out.filter((x) => x === 0).length >= 2, "both the docs-only and the normal green path are reachable");
+  assert.ok(out.some((x) => x === 0), "the green path is reachable");
 });

@@ -5,8 +5,7 @@
 #   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.
 #   2026-10-27 CI-SPEED (owner: "优化ci的速度"): a `build` job runs once per run (`test-local.sh --prebuild`: both production Next builds + a warmed Go build cache of the
 #   untagged and -tags browser ./tests/foundation graphs) and every gate leg in the plan's `prebuilt_modes` restores it (scripts/dev/prebuilt.mjs refuses any other SHA)
-#   instead of rebuilding per job (measured run 40461573230: ~90 s Go compile + ~20 s Next per browser job, x61 jobs). A PR whose every path is test-inert
-#   documentation (scripts/dev/pr-modes.mjs foundationDocReads) plans NO gate leg; `required` then reports an explicit docs-only success.
+#   instead of rebuilding per job (measured run 40461573230: ~90 s Go compile + ~20 s Next per browser job, x61 jobs).
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
 #   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (installs only the system deps the runner image lacks, from cached .debs when possible; bounded apt otherwise),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), scripts/dev/matrix-receipts.mjs (per-job run receipts + verifier, #128), the pinned postgres image,
@@ -73,7 +72,6 @@ jobs:
       sweep_n: ${{ steps.plan.outputs.sweep_n }}
       visual_n: ${{ steps.plan.outputs.visual_n }}
       deploy: ${{ steps.pr.outputs.deploy || 'false' }}
-      docs_only: ${{ steps.pr.outputs.docs_only || 'false' }}
       prebuilt_modes: ${{ steps.plan.outputs.prebuilt_modes }}
       prebuild: ${{ steps.plan.outputs.prebuild }}
     steps:
@@ -112,8 +110,6 @@ jobs:
           # PR: the set computed from the changed paths. Schedule / dispatch full_browser_universe: the full browser universe via the same planner.
           # Push: the sharded foundation suite (unit + groups, ~12 min wall). Dispatch: what was asked for.
           MODES: ${{ github.event_name == 'pull_request' && steps.pr.outputs.modes || github.event_name == 'schedule' && steps.nightly.outputs.modes || github.event_name == 'workflow_dispatch' && (inputs.full_browser_universe == 'true' && steps.nightly.outputs.modes || inputs.modes) || '["foundation-shards"]' }}
-          # CI-SPEED: an empty mode list is legal only for a pull request pr-modes.mjs classified docs-only; anywhere else ci-plan.mjs still refuses it.
-          ALLOW_EMPTY: ${{ github.event_name == 'pull_request' && steps.pr.outputs.docs_only == 'true' }}
         run: node scripts/dev/ci-plan.mjs
 
   # CI-SPEED build-once: the Next builds and the Go compile every prebuilt_modes leg used to repeat, done once for this run's SHA. Same commands as the legs
@@ -164,8 +160,7 @@ jobs:
     name: gate (${{ matrix.mode }})
     needs: [plan, build]
     # build is skipped when no leg consumes it (push: foundation shards only); a failed build skips every leg, which `required` reports red.
-    # A docs-only plan has no leg at all: an empty matrix is never instantiated.
-    if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.matrix != '[]' && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
+    if: ${{ !cancelled() && needs.plan.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
     strategy:
       fail-fast: false
       matrix:
@@ -415,7 +410,7 @@ jobs:
   # exactly one receipt from THIS run id and sha, status PASS, test_count > 0. Missing, duplicate, stale, unplanned or zero-count = red. Feeds `required`.
   receipts:
     needs: [plan, gate]
-    if: ${{ always() && needs.plan.result == 'success' && needs.plan.outputs.matrix != '[]' }}
+    if: ${{ always() && needs.plan.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -454,8 +449,6 @@ jobs:
       PLAN: ${{ needs.plan.result }}
       BUILD: ${{ needs.build.result }}
       BUILD_EXPECTED: ${{ needs.plan.outputs.prebuild == 'true' }}
-      # CI-SPEED: only pr-modes.mjs's docs-only classification may plan nothing; then every leg must be skipped and the success is explicit.
-      DOCS_ONLY: ${{ needs.plan.outputs.docs_only == 'true' && needs.plan.outputs.matrix == '[]' }}
       GATE: ${{ needs.gate.result }}
       AGG: ${{ needs.aggregate.result }}
       AGG_EXPECTED: ${{ needs.plan.outputs.sweep_n != '0' || needs.plan.outputs.visual_n != '0' }}
@@ -464,14 +457,8 @@ jobs:
       DEPLOY_EXPECTED: ${{ needs.plan.outputs.deploy == 'true' }}
     steps:
       - run: |
-          echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS docs_only=$DOCS_ONLY"
+          echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"
           rc=0
-          if [[ "$DOCS_ONLY" == true ]]; then
-            echo "docs-only PR: every changed path is test-inert documentation (scripts/dev/pr-modes.mjs); contract drift ran in plan, no gate leg planned"
-            for r in "$BUILD" "$GATE" "$AGG" "$DEPLOY" "$RECEIPTS"; do [[ "$r" == skipped ]] || rc=1; done
-            [[ "$PLAN" == success ]] || rc=1
-            exit "$rc"
-          fi
           if [[ "$BUILD_EXPECTED" == true ]]; then [[ "$BUILD" == success ]] || rc=1; else [[ "$BUILD" == skipped ]] || rc=1; fi
           [[ "$RECEIPTS" == success ]] || rc=1
           [[ "$PLAN" == success ]] || rc=1
