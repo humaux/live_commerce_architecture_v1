@@ -5,6 +5,8 @@ package foundation_test
 //   TestBtcPolicyClosedAfterMigrate      the policy row reads closed=true right after migrations.Apply, before the fixture's legacy flip
 //   TestBtcPolicyNotWritableByApp        no commerce_* role can write the policy table; a real write attempt as the definer owner and
 //                                        as the runtime login fails with 42501 (the fixture's legacy flip is owner-only, not a back door)
+//   TestBtcFailClosedWithoutPolicyRow    a zero-row policy table (DELETE) still refuses new transfers and saves
+//   TestBtcSaveReplayAfterClose           a same-key replay of a save that succeeded before closure returns the stored response; a new key is refused
 //   TestBtcRefusesNewWrites              closed: a new bank_transfer order through the app, a direct INSERT of a transfer row, and every
 //                                        way of saving or editing the merchant bank details (definer, real route, direct DML) are refused
 //                                        PT422 bank_transfer_closed; nothing is written and the saved details are unchanged
@@ -99,21 +101,30 @@ func TestBtcRefusesNewWrites(t *testing.T) {
 	ctx := context.Background()
 	btcClose(t, f)
 	tenant, store := e.tenant(), e.store()
-	state := func() [4]int {
-		return [4]int{
-			e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1 AND payment_mode='bank_transfer'`, store),
-			e.count(`SELECT count(*) FROM checkout.bank_transfers WHERE store_id=$1`, store),
-			e.count(`SELECT count(*) FROM checkout.bank_transfer_settings WHERE store_id=$1`, store),
-			e.count(`SELECT version FROM checkout.bank_transfer_settings WHERE store_id=$1`, store),
+	version := func() int64 {
+		var v int64
+		if err := f.owner.QueryRow(ctx, `SELECT version FROM checkout.bank_transfer_settings WHERE store_id=$1`, store).Scan(&v); err != nil {
+			t.Fatal(err)
+		}
+		return v
+	}
+	state := func() [4]int64 {
+		return [4]int64{
+			int64(e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1 AND payment_mode='bank_transfer'`, store)),
+			int64(e.count(`SELECT count(*) FROM checkout.bank_transfers WHERE store_id=$1`, store)),
+			int64(e.count(`SELECT count(*) FROM checkout.bank_transfer_settings WHERE store_id=$1`, store)),
+			version(),
 		}
 	}
 	before := state()
-	version := int64(before[3])
+	if before[2] != 1 || before[3] != 1 {
+		t.Fatalf("setup: %d settings rows at version %d, want 1 at version 1 (one save through the real route)", before[2], before[3])
+	}
+	current := before[3]
 
 	t.Run("a new bank_transfer order through the app is refused and leaves nothing", func(t *testing.T) {
-		if _, err := e.cofPlaceHome(e.newBuyer(), ""); err == nil {
-			t.Fatal("a bank_transfer order was placed while the policy is closed")
-		}
+		_, err := e.cofPlaceHome(e.newBuyer(), "")
+		tcvExpectRefusal(t, "new bank_transfer order", err, 422, "bank_transfer_closed")
 		if got := state(); got != before {
 			t.Errorf("state %v after the refused order, was %v", got, before)
 		}
@@ -130,10 +141,11 @@ func TestBtcRefusesNewWrites(t *testing.T) {
 			return f.runtime.QueryRow(ctx, `SELECT payments.set_bank_transfer_settings($1,$2::uuid,$3,$4,$5,true,true,'Other Bank','Branch','Shop Ltd','99887766',72)`,
 				hash[:], store, key, make([]byte, 32), expected).Scan(&raw)
 		}
-		btcWant(t, "definer, version CAS", save(version, t04Key("btc-save")))
+		btcWant(t, "definer, version CAS", save(current, t04Key("btc-save")))
 		btcWant(t, "definer, first-time insert shape", save(0, t04Key("btc-save0")))
-		if st, _ := e.cofSettings(version, true, true, 72); st < 400 {
-			t.Errorf("real route answered %d, want a refusal", st)
+		// mapTransferError (internal/merchantorders/offline.go) passes a PT422 message matching transferCode through as a 422 with that code.
+		if st, out := e.cofSettings(current, true, true, 72); st != 422 || cofCode(out) != "bank_transfer_closed" {
+			t.Errorf("real route answered %d %v, want 422 bank_transfer_closed", st, out)
 		}
 		_, err := f.owner.Exec(ctx, `UPDATE checkout.bank_transfer_settings SET bank_name='Other Bank' WHERE store_id=$1`, store)
 		btcWant(t, "direct settings UPDATE", err)
@@ -154,6 +166,60 @@ func TestBtcRefusesNewWrites(t *testing.T) {
 	})
 }
 
+func TestBtcFailClosedWithoutPolicyRow(t *testing.T) {
+	e := cogNew(t, 72)
+	f := e.p.f
+	ctx := context.Background()
+	btcClose(t, f)
+	// Registered after btcClose, so it runs first: put the row back (legacy-open) before btcClose's own restore.
+	t.Cleanup(func() {
+		mustExec(t, f.owner, `INSERT INTO checkout.bank_transfer_policy(closed) VALUES(false) ON CONFLICT DO NOTHING`)
+	})
+	mustExec(t, f.owner, `DELETE FROM checkout.bank_transfer_policy`) // disclosed: owner-only, restored by t.Cleanup
+	if n := e.count(`SELECT count(*) FROM checkout.bank_transfer_policy`); n != 0 {
+		t.Fatalf("policy rows %d, want 0", n)
+	}
+	_, err := f.owner.Exec(ctx, `INSERT INTO checkout.bank_transfers(tenant_id,store_id,owner_id,order_id,state,bank_name,branch,account_name,account_number,window_hours,currency,created_at,updated_at)
+	  VALUES($1,$2,$3,$4,'AWAITING','B','b','a','12345678',72,'TWD',clock_timestamp(),clock_timestamp())`, e.tenant(), e.store(), randomUUID(), randomUUID())
+	btcWant(t, "transfer INSERT without a policy row", err)
+	_, err = f.owner.Exec(ctx, `UPDATE checkout.bank_transfer_settings SET bank_name='Other Bank' WHERE store_id=$1`, e.store())
+	btcWant(t, "settings UPDATE without a policy row", err)
+	hash := sha256.Sum256([]byte(e.token()))
+	var raw []byte
+	err = f.runtime.QueryRow(ctx, `SELECT payments.set_bank_transfer_settings($1,$2::uuid,$3,$4,1,true,true,'Other Bank','Branch','Shop Ltd','99887766',72)`,
+		hash[:], e.store(), t04Key("btc-zero"), make([]byte, 32)).Scan(&raw)
+	btcWant(t, "definer save without a policy row", err)
+}
+
+func TestBtcSaveReplayAfterClose(t *testing.T) {
+	e := cogNew(t, 72) // saved once through the real route (version 1) while legacy-open
+	f := e.p.f
+	ctx := context.Background()
+	hash := sha256.Sum256([]byte(e.token()))
+	save := func(key string) ([]byte, error) {
+		var raw []byte
+		err := f.runtime.QueryRow(ctx, `SELECT payments.set_bank_transfer_settings($1,$2::uuid,$3,$4,1,true,true,'Replay Bank','Branch','Shop Ltd','99887766',72)`,
+			hash[:], e.store(), key, make([]byte, 32)).Scan(&raw)
+		return raw, err
+	}
+	key := t04Key("btc-replay")
+	first, err := save(key) // before the closure: a real success
+	if err != nil {
+		t.Fatalf("save before closure: %v", err)
+	}
+	btcClose(t, f)
+	again, err := save(key)
+	if err != nil || string(again) != string(first) {
+		t.Errorf("same-key replay after closure: %v %s, want the stored response %s", err, again, first)
+	}
+	_, err = save(t04Key("btc-replay-new"))
+	btcWant(t, "a new key after closure", err)
+	var version int64
+	if err := f.owner.QueryRow(ctx, `SELECT version FROM checkout.bank_transfer_settings WHERE store_id=$1`, e.store()).Scan(&version); err != nil || version != 2 {
+		t.Errorf("settings version %d (%v), want 2: only the pre-closure save counts", version, err)
+	}
+}
+
 func TestBtcHistoryStaysUsable(t *testing.T) {
 	e := cogNew(t, 72)
 	f := e.p.f
@@ -161,13 +227,16 @@ func TestBtcHistoryStaysUsable(t *testing.T) {
 	ba, confirmed := e.cogPlace("")
 	bb, rejected := e.cogPlace("")
 	_, refunded := e.cogPlace("")
+	bd, lateProof := e.cogPlace("")
+	_, expiring := e.cogPlace("")
 	if r := bb.cofProof(rejected, t04Key("btc-proof"), "22222", e.cogTotal(rejected)); r.status != 200 {
 		t.Fatalf("proof: %d %s", r.status, r.body)
 	}
 	btcClose(t, f)
 	transfers := e.count(`SELECT count(*) FROM checkout.bank_transfers WHERE store_id=$1`, e.store())
+	orders := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store())
 	settings := e.count(`SELECT count(*) FROM checkout.bank_transfer_settings WHERE store_id=$1`, e.store())
-	if transfers != 3 || settings != 1 {
+	if transfers != 5 || settings != 1 {
 		t.Fatalf("setup: %d transfers, %d settings", transfers, settings)
 	}
 
@@ -194,8 +263,24 @@ func TestBtcHistoryStaysUsable(t *testing.T) {
 			t.Errorf("refunded transfer state %q", got)
 		}
 	})
+	// OC-Q1 keeps proofs and AWAITING_TRANSFER states; a buyer paying an order placed before the closure must still be able to submit the proof.
+	t.Run("submit_transfer_proof still works on a pre-closure order", func(t *testing.T) {
+		if r := bd.cofProof(lateProof, t04Key("btc-late"), "33333", e.cogTotal(lateProof)); r.status != 200 {
+			t.Fatalf("proof after closure: %d %s", r.status, r.body)
+		}
+		if got := e.cogRow(lateProof).transfer; got != "SUBMITTED" {
+			t.Errorf("transfer state %q, want SUBMITTED", got)
+		}
+	})
+	t.Run("expire_held still reaches EXPIRED on a pre-closure order", func(t *testing.T) {
+		e.cofAge(expiring, 80)
+		e.cofExpire(expiring)
+		if got, err := e.cogRow(expiring).cogOutcome(); err != nil || got != "expired" {
+			t.Errorf("expiring order: %q %v", got, err)
+		}
+	})
 	t.Run("orders, transfer records, buyer view, settings and the finance export still read", func(t *testing.T) {
-		for _, o := range []string{confirmed, rejected, refunded} {
+		for _, o := range []string{confirmed, rejected, refunded, lateProof, expiring} {
 			if st, out, raw := e.mcall(e.token(), "GET", "/v1/admin/stores/"+e.store()+"/orders/"+o+"/bank-transfer", "", ""); st != 200 {
 				t.Errorf("merchant transfer read of %s: %d %v %s", o, st, out, raw)
 			}
@@ -215,6 +300,9 @@ func TestBtcHistoryStaysUsable(t *testing.T) {
 	t.Run("no row was deleted", func(t *testing.T) {
 		if n := e.count(`SELECT count(*) FROM checkout.bank_transfers WHERE store_id=$1`, e.store()); n != transfers {
 			t.Errorf("transfers %d, was %d", n, transfers)
+		}
+		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()); n != orders {
+			t.Errorf("orders %d, was %d", n, orders)
 		}
 		if n := e.count(`SELECT count(*) FROM checkout.bank_transfer_settings WHERE store_id=$1`, e.store()); n != settings {
 			t.Errorf("settings %d, was %d", n, settings)

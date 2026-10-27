@@ -1,7 +1,7 @@
 -- Purpose: OC-16 (contracts/owner-choices-20261026-v1.md OC-Q1): the SERVER closes new bank-transfer writes. A single-row policy table
 --   checkout.bank_transfer_policy(closed) is inserted closed=true; BEFORE INSERT triggers on checkout.bank_transfers (a new transfer order)
 --   and BEFORE INSERT/UPDATE on checkout.bank_transfer_settings (saving or editing the merchant bank details), and payments.set_bank_transfer_settings
---   itself (after authorization), raise PT422 bank_transfer_closed while closed. Reopening is a new migration (an ADR), never a runtime switch.
+--   itself (after authorization and the receipt replay lookup), raise PT422 bank_transfer_closed unless the policy row says closed=false (fail-closed: a missing row refuses too). Reopening is a new migration (an ADR), never a runtime switch.
 -- Depends on: 0088 (checkout.bank_transfers, checkout.bank_transfer_settings, payments.set_bank_transfer_settings, role commerce_checkout_writer),
 --   0184 (checkout.order_attempt_begin inserts the transfer row; unchanged, the trigger refuses it and the whole begin rolls back).
 -- Used by: migrations.Apply (numbered phase); tests/foundation/bank_transfer_closed_test.go (BTC gates); tests/foundation/foundation_integration_test.go
@@ -21,7 +21,8 @@ COMMENT ON TABLE checkout.bank_transfer_policy IS 'Single row. closed=true refus
 
 CREATE FUNCTION checkout.bank_transfer_closed_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
- IF EXISTS(SELECT 1 FROM checkout.bank_transfer_policy WHERE closed) THEN
+ -- Fail-closed: refuse unless a row says closed=false. A missing row (DELETE/TRUNCATE by an owner or a later migration) still refuses.
+ IF NOT EXISTS(SELECT 1 FROM checkout.bank_transfer_policy WHERE NOT closed) THEN
   RAISE EXCEPTION 'bank_transfer_closed' USING ERRCODE='PT422'; END IF;
  RETURN NEW;
 END $$;
@@ -49,14 +50,15 @@ BEGIN
  IF s.access_status IS DISTINCT FROM 'ok' THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
  PERFORM set_config('app.tenant_id',s.tenant_id::text,true),set_config('app.store_id',p_store::text,true),
   set_config('app.principal_id',s.principal_id::text,true);
- -- 0202 (OC-Q1): no new bank details are saved while the policy is closed. Refused after authorization and before any receipt replay or write.
- IF EXISTS(SELECT 1 FROM checkout.bank_transfer_policy WHERE closed) THEN RAISE EXCEPTION 'bank_transfer_closed' USING ERRCODE='PT422'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended('bank_transfer.settings|'||s.tenant_id||'|'||p_store,0));
  SELECT r.request_hash,r.response INTO v_saved,v_response FROM ops.command_results r WHERE r.tenant_id=s.tenant_id
   AND r.store_id=p_store AND r.operation='checkout.bank_transfer_settings.set' AND r.idempotency_key=p_key;
  IF FOUND THEN
   IF v_saved<>p_request_hash THEN RAISE EXCEPTION 'idempotency_conflict' USING ERRCODE='PT409'; END IF;
  ELSE
+  -- 0202 (OC-Q1): no new bank details are saved while the policy is closed (fail-closed, as the trigger). Refused after authorization and after
+  -- the receipt lookup, so a same-key replay of a save that succeeded before the closure still returns its stored response (FOUND branch above).
+  IF NOT EXISTS(SELECT 1 FROM checkout.bank_transfer_policy WHERE NOT closed) THEN RAISE EXCEPTION 'bank_transfer_closed' USING ERRCODE='PT422'; END IF;
   -- CHECK-equivalent validation first so a bad body is a 422 invalid_settings, never a 500 from a constraint.
   IF p_enabled IS NULL OR p_allow_cvs IS NULL OR p_bank_name IS NULL OR p_branch IS NULL OR p_account_name IS NULL
    OR p_account_number IS NULL OR p_window_hours IS NULL OR p_window_hours NOT BETWEEN 6 AND 168

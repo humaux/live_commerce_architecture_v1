@@ -1,6 +1,6 @@
 OC-16 RED evidence (GitHub Actions only; nothing run locally)
 PR #211 head 56b2e0293daedf5d847133096822eaa8881eacbd (RED commit, tests only, no migration 0202)
-gates run id 40384465228, job 121792636843 (gate shard:g09), go test livecommerce/tests/foundation FAIL
+gates run id 40384465228 (later cancelled by a newer push; the job below had completed): job 121792636843 (gate shard:g09), go test livecommerce/tests/foundation FAIL
 foundation workflow run id 40384465610: success (PR-mode selection does not run the real-PG gate there)
 --- FAIL: TestBtcHistoryStaysUsable (0.38s)
 --- FAIL: TestBtcPolicyClosedAfterMigrate (0.00s)
