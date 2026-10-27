@@ -1,11 +1,11 @@
 // Unit tests of the gates.yml matrix planner (scripts/dev/ci-plan.mjs): sweep / visual-lint / foundation-shards fan out completely, plain modes pass through, an explicit single
-// shard re-run does NOT ask for the whole-run aggregate, and artifact names are unique. Run by scripts/dev/test-node.sh.
+// shard re-run does NOT ask for the whole-run aggregate, and artifact names are unique; CI-SPEED: build-once consumers and the docs-only empty plan. Run by scripts/dev/test-node.sh.
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { SWEEP_SHARDS, VISUAL_SHARDS, artifactName, expand, main } from "../../scripts/dev/ci-plan.mjs";
+import { SWEEP_SHARDS, VISUAL_SHARDS, artifactName, expand, main, prebuiltModes } from "../../scripts/dev/ci-plan.mjs";
 
 const groupIds = ["g01", "g02", "g03"];
 const modes = (r) => r.matrix.map((e) => e.mode);
@@ -49,7 +49,7 @@ test("main writes matrix / sweep_n / visual_n to GITHUB_OUTPUT", () => {
   main({ MODES: JSON.stringify(["--browser-click-sweep"]), GITHUB_OUTPUT: out });
   const text = readFileSync(out, "utf8");
   assert.match(text, /^matrix=\[\{"mode":"--browser-click-sweep@1\/10","art":"gate-browser-click-sweep_1_10"\}/);
-  assert.match(text, /\nsweep_n=10\nvisual_n=0\n$/);
+  assert.match(text, /\nsweep_n=10\nvisual_n=0\nprebuilt_modes=\["--browser-click-sweep@1\/10",.*"--browser-click-sweep@10\/10"\]\nprebuild=true\n$/);
 });
 
 // PR #39 r7 (Codex P2): the nightly schedule shares the ref and mode names with post-merge push runs and has
@@ -58,4 +58,44 @@ test("gate job concurrency group separates run classes by event", () => {
   const wf = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8");
   const group = /^\s+group: gates-.*matrix\.mode.*$/m.exec(wf)?.[0] ?? "";
   assert.match(group, /\$\{\{ github\.event_name \}\}/, "gate job concurrency group must include github.event_name");
+});
+
+// CI-SPEED build-once + docs-only: shape of the plan outputs and of the gates.yml jobs that consume them.
+const registry = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
+const wf = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8");
+const job = (name) => wf.split(new RegExp(`^  ${name}:\\s*$`, "m"))[1]?.split(/^  [\w-]+:\s*$/m)[0] ?? "";
+
+test("CI-SPEED: an empty plan is refused unless the PR was classified docs-only", () => {
+  assert.throws(() => expand([], { groupIds }), /modes must be/);
+  assert.deepEqual(expand([], { groupIds, allowEmpty: true }), { matrix: [], sweepN: 0, visualN: 0 });
+  const out = path.join(mkdtempSync(path.join(tmpdir(), "ci-plan-")), "out");
+  assert.throws(() => main({ MODES: "[]", GITHUB_OUTPUT: out, ALLOW_EMPTY: "false" }), /modes must be/);
+  main({ MODES: "[]", GITHUB_OUTPUT: out, ALLOW_EMPTY: "true" });
+  assert.equal(readFileSync(out, "utf8"), "matrix=[]\nsweep_n=0\nvisual_n=0\nprebuilt_modes=[]\nprebuild=false\n");
+});
+
+test("CI-SPEED: build-once consumers are exactly the registry arms that build a Next app or compile ./tests/foundation", () => {
+  const matrix = expand(["foundation-shards", "--browser-click-sweep", "--browser-cvs", "--browser-ui-gallery", "--browser-picklist", "focused:^TestX$"], { groupIds }).matrix;
+  const got = prebuiltModes(matrix, registry);
+  assert.ok(got.includes("--browser-click-sweep@1/10") && got.includes("--browser-click-sweep@10/10") && got.includes("--browser-cvs"));
+  for (const m of ["shard:unit", "shard:g01", "focused:^TestX$", "--browser-ui-gallery", "--browser-picklist"]) assert.ok(!got.includes(m), `${m} builds nothing shared (or its own flagged build)`);
+});
+
+test("CI-SPEED: gates.yml builds once, restores only same-run prebuilt output, and `required` accepts an empty plan only as docs-only", () => {
+  const build = job("build"), gate = job("gate"), required = job("required"), receipts = job("receipts");
+  assert.match(build, /if: \$\{\{ needs\.plan\.outputs\.prebuild == 'true' \}\}/);
+  assert.match(build, /bash scripts\/dev\/test-local\.sh --prebuild "\$RUNNER_TEMP\/prebuilt"/);
+  assert.match(build, /go test -race -count=1 -run '\^\$' \.\/tests\/foundation\n\s+go test -race -tags browser -count=1 -run '\^\$' \.\/tests\/foundation/);
+  assert.match(build, /cache: false/, "the build job never writes the shard:gNN setup-go key");
+  assert.match(gate, /needs: \[plan, build\]/);
+  assert.match(gate, /needs\.plan\.outputs\.matrix != '\[\]'/, "an empty matrix is never instantiated");
+  assert.match(gate, /contains\(fromJSON\(needs\.plan\.outputs\.prebuilt_modes\), matrix\.mode\)/);
+  assert.match(gate, /env\.EXTRA_ENV == ''/, "fault-injection dispatches build their own");
+  assert.match(gate, /node scripts\/dev\/prebuilt\.mjs unpack "\$RUNNER_TEMP\/prebuilt" gocache\n\s+echo "LC_PREBUILT_DIR=\$RUNNER_TEMP\/prebuilt" >> "\$GITHUB_ENV"/);
+  assert.match(receipts, /needs\.plan\.outputs\.matrix != '\[\]'/);
+  assert.match(required, /needs: \[plan, build, gate, aggregate, deploy, receipts\]/);
+  assert.match(required, /DOCS_ONLY: \$\{\{ needs\.plan\.outputs\.docs_only == 'true' && needs\.plan\.outputs\.matrix == '\[\]' \}\}/);
+  assert.match(required, /for r in "\$BUILD" "\$GATE" "\$AGG" "\$DEPLOY" "\$RECEIPTS"; do \[\[ "\$r" == skipped \]\] \|\| rc=1; done/);
+  assert.match(required, /if \[\[ "\$BUILD_EXPECTED" == true \]\]; then \[\[ "\$BUILD" == success \]\] \|\| rc=1; else \[\[ "\$BUILD" == skipped \]\] \|\| rc=1; fi/);
+  assert.match(job("plan"), /ALLOW_EMPTY: \$\{\{ github\.event_name == 'pull_request' && steps\.pr\.outputs\.docs_only == 'true' \}\}/);
 });

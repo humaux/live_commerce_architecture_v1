@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Purpose: one declarative case registry for mode discovery, preparation, builds and execution.
 # Depends on: Bash3.2+, test-local-runtime.sh, Docker/Go/Node and each mode's declared tools.
-# Used by: developers, CI, pr-modes.mjs, check-gates.sh and release-gate.sh.
+# Used by: developers, CI (gates.yml build job: --prebuild DIR; gate jobs: LC_PREBUILT_DIR), pr-modes.mjs, ci-plan.mjs, check-gates.sh and release-gate.sh.
 # Add a mode in ONE case entry below; browser arms declare lc_browsers for CI dependency selection.
 set -euo pipefail
 # Keep the runtime guard before cd, exactly as in the original runner; metadata paths are inert.
@@ -1672,10 +1672,12 @@ lc_usage() {
   done < <(lc_mode_names)
   printf 'Usage: bash scripts/dev/test-local.sh [%s]\n' "$choices"
 }
+# CI-SPEED: LC_PREBUILT_DIR (gates.yml) = the run's one `--prebuild` output; prebuilt.mjs restores it only when its STAMP sha is this HEAD, else the gate fails.
 lc_build_storefront() {
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
-  COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
+  if [[ -n "${LC_PREBUILT_DIR:-}" ]]; then command node scripts/dev/prebuilt.mjs unpack "$LC_PREBUILT_DIR" storefront
+  else COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront; fi
   mkdir -p output/playwright
 }
 lc_build_admin() {
@@ -1683,7 +1685,8 @@ lc_build_admin() {
   type -P node >/dev/null
   # Production package, but local-only runtime configuration is injected by the
   # tagged test. Build never needs an IdP or database credential.
-  COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
+  if [[ -n "${LC_PREBUILT_DIR:-}" ]]; then command node scripts/dev/prebuilt.mjs unpack "$LC_PREBUILT_DIR" admin
+  else COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin; fi
   # #147 TH-13: this flag-absent build is the production shape, so the emitted client JS must not carry the gallery
   # hold/release seam. The flag-enabled gallery gate checks the positive direction.
   node scripts/dev/check-gallery-bundle.mjs --expect=absent
@@ -1694,6 +1697,11 @@ lc_environment() {
 }
 
 if [[ "$#" == 1 && "$1" == --list ]]; then lc_mode_names; exit 0; fi
+# CI-SPEED build-once: the exact lc_build_storefront + lc_build_admin of every mode (same lc_environment), packed for LC_PREBUILT_DIR consumers.
+if [[ "$#" == 2 && "$1" == --prebuild ]]; then
+  unset LC_PREBUILT_DIR; lc_environment; lc_build_storefront; lc_build_admin
+  command node scripts/dev/prebuilt.mjs pack "$2" admin storefront; exit 0
+fi
 lc_dry_run=0
 if [[ "${1:-}" == --dry-run ]]; then lc_dry_run=1; shift; fi
 if [[ "$lc_dry_run" == 0 ]]; then

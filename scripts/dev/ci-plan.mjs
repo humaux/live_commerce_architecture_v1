@@ -2,13 +2,17 @@
 // Purpose: turn the `modes` a gates.yml run was asked for into the job matrix: `--browser-click-sweep` and `--browser-visual-lint` fan out into LC_SWEEP_SHARD
 //   slices (`--browser-click-sweep@3/10`), `foundation-shards` into the unit shard plus every group of scripts/dev/shard-plan.json, everything else passes through.
 //   Also says whether a whole sweep / visual-lint was requested, so the workflow's aggregate job knows to prove the slices cover the full universe.
-// Depends on: scripts/dev/shard-plan.json (group ids); env MODES (JSON array) and GITHUB_OUTPUT (matrix, sweep_n, visual_n); no network.
+//   CI-SPEED: names the matrix modes that consume the run's one prebuilt artifact (`prebuilt_modes`: test-local.sh registry arms that build a Next app or
+//   compile ./tests/foundation), so gates.yml builds once per run instead of once per job; an EMPTY mode list is accepted only for a docs-only PR (ALLOW_EMPTY=true).
+// Depends on: scripts/dev/shard-plan.json (group ids), scripts/dev/pr-modes.mjs (modeEntries: read-only test-local.sh registry); env MODES (JSON array), ALLOW_EMPTY
+//   and GITHUB_OUTPUT (matrix, sweep_n, visual_n, prebuilt_modes, prebuild); no network.
 // Used by: .github/workflows/gates.yml (plan job; its matrix output is also the planned list scripts/dev/matrix-receipts.mjs verifies), tests/ci/ci-plan.test.mjs.
 // Invariants: an expanded mode always yields ALL its shards (a partial list is only ever the integrator's explicit `@i/N` re-run, which skips the aggregate);
 //   artifact names are unique per job, so the aggregate job can find each shard's evidence by pattern.
 import { appendFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { modeEntries } from "./pr-modes.mjs";
 
 /** Click-sweep shards per full run. Measured on 2026-10-07: ~7600 s of single-worker route time + ~5 min of per-job setup/builds; 10 shards = ~12-16 min per job. Retune from the shard times in PLAN.md. */
 export const SWEEP_SHARDS = 10;
@@ -22,8 +26,8 @@ const fanOut = (mode, n) => Array.from({ length: n }, (_, i) => `${mode}@${i + 1
 export const artifactName = (mode) => `gate-${mode.replace(/^-+/, "").replace(/[^A-Za-z0-9_.-]+/g, "_").replace(/_+$/, "")}`;
 
 /** modes (strings) -> { matrix: [{ mode, art }], sweepN, visualN } with sweepN/visualN = N when every shard 1..N of that gate is in the matrix, else 0. */
-export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_SHARDS }) {
-  if (!Array.isArray(modes) || !modes.length || modes.some((m) => typeof m !== "string" || !/^[\x20-\x7e]+$/.test(m))) throw new Error("modes must be a non-empty JSON array of printable strings");
+export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_SHARDS, allowEmpty = false }) {
+  if (!Array.isArray(modes) || (!modes.length && !allowEmpty) || modes.some((m) => typeof m !== "string" || !/^[\x20-\x7e]+$/.test(m))) throw new Error("modes must be a non-empty JSON array of printable strings");
   const out = [];
   for (const m of modes) {
     if (m === "foundation-shards") out.push("shard:unit", ...groupIds.map((id) => `shard:${id}`));
@@ -45,12 +49,23 @@ export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_
   return { matrix, sweepN: whole("--browser-click-sweep"), visualN: whole("--browser-visual-lint") };
 }
 
+/** Matrix modes whose test-local.sh arm builds a Next app or compiles ./tests/foundation: they reuse the run's prebuilt Next output + Go build cache. */
+export function prebuiltModes(matrix, registrySource) {
+  const byName = new Map(modeEntries(registrySource).map((e) => [e.name, e]));
+  return matrix.map((e) => e.mode).filter((mode) => {
+    const entry = byName.get(mode.replace(/@\d+\/\d+$/, ""));
+    return !!entry && (entry.build !== "none" || /go test[^\n]*\.\/tests\/foundation/.test(entry.run.replace(/\\\r?\n/g, " ")));
+  });
+}
+
 export function main(env = process.env) {
   const plan = JSON.parse(readFileSync(path.join(root, "scripts/dev/shard-plan.json"), "utf8"));
-  const result = expand(JSON.parse(env.MODES ?? ""), { groupIds: plan.groups.map((g) => g.id) });
+  const result = expand(JSON.parse(env.MODES ?? ""), { groupIds: plan.groups.map((g) => g.id), allowEmpty: env.ALLOW_EMPTY === "true" });
+  const prebuilt = prebuiltModes(result.matrix, readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"));
   console.log(`ci-plan: ${result.matrix.length} job(s)${result.sweepN ? `; click-sweep x${result.sweepN} (aggregate)` : ""}${result.visualN ? `; visual-lint x${result.visualN} (aggregate)` : ""}`);
   for (const e of result.matrix) console.log(`  ${e.mode}  -> artifact ${e.art}`);
-  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `matrix=${JSON.stringify(result.matrix)}\nsweep_n=${result.sweepN}\nvisual_n=${result.visualN}\n`);
+  console.log(`ci-plan: ${prebuilt.length} job(s) reuse the prebuilt Next + Go build cache`);
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `matrix=${JSON.stringify(result.matrix)}\nsweep_n=${result.sweepN}\nvisual_n=${result.visualN}\nprebuilt_modes=${JSON.stringify(prebuilt)}\nprebuild=${prebuilt.length > 0}\n`);
   return 0;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

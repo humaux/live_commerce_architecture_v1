@@ -274,13 +274,16 @@ CI-SELECT (owner-approved 2026-10-10): `internal/`, `cmd/` and `migrations/` are
 
 | Changed paths | Modes run |
 | --- | --- |
-| only `contracts/ docs/ deploy/ output/ go.mod go.sum tests/foundation/` (not `browser_*`, not browser-tagged) `tests/deploy/ tests/ci/` or `*.md` (docs-only included) | `foundation-shards` (11 jobs) |
+| only test-inert documentation: `docs/**`, `output/**`, `contracts/**.md`, root `*.md` that no untagged Go file (the foundation shards' packages) and no script such a file names reads (`foundationDocReads` in `pr-modes.mjs`: path literals, `filepath.Join` chains, globs, root `*.md` names; never `*.go`/`go.mod`/`go.sum`) | nothing (CI-SPEED 2026-10-27): plan + contract drift run, `required` reports an explicit docs-only success; Foundation checks (check-gates, test-node) still run |
+| only `contracts/ docs/ deploy/ output/ go.mod go.sum tests/foundation/` (not `browser_*`, not browser-tagged) `tests/deploy/ tests/ci/` or `*.md` (docs read by a foundation test, e.g. `docs/runbooks/*.md`, included) | `foundation-shards` (11 jobs) |
 | `internal/<pkg>/**` | `foundation-shards` + every browser mode whose `lc_covers` declares `<pkg>` (prefix match). Today every Go-seeded harness wires all 70 internal packages, so in practice this is all 48 Go-seeded browser modes. A package no mode declares falls to the conservative row below until `check-backend-coverage.mjs` classifies it; a `BACKEND_ONLY_PACKAGES`-listed package selects none |
 | `cmd/**`, `migrations/**`, the shared platform packages (`internal/platform`, `internal/httpapi`, `internal/command`), or an internal package no mode declares | `foundation-shards` + every `lc_fixture=pg` browser mode (47; conservative — the modes run the binaries `cmd/` builds on the schema `migrations/` wrote) |
 | anything else (`apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ tests/foundation/browser_* scripts/ .github/ playwright.config.ts`, package files, unknown paths) | `foundation-shards` + every `--browser-*` mode of the test-local.sh usage line (derived like `release-gate.sh`, never a second list), click-sweep x10 and visual-lint x4 included (about 70 jobs) |
 | `deploy/` or `scripts/deploy*` (on top of the above) | also `deploy-smoke.yml`, called as a reusable workflow so the required check waits for it |
 
 The node-only browser modes (`--browser-platform-site`, `--browser-admin-shell`, `--browser-picklist`, `--browser-ui-gallery`, `lc_covers=""`) are selected by UI paths only, never by backend paths.
+
+Build once (CI-SPEED 2026-10-27): the `build` job runs `bash scripts/dev/test-local.sh --prebuild DIR` (the same `lc_build_storefront` + `lc_build_admin`) and warms the Go build cache with `go test -race [-tags browser] -run '^$' ./tests/foundation`; every leg in the plan's `prebuilt_modes` restores it through `scripts/dev/prebuilt.mjs`, which refuses an artifact whose STAMP sha is not the job's HEAD. Modes that build their own flagged bundle (`--browser-ui-gallery`, `--browser-picklist`) and the shards are unchanged; extra_env dispatches never use it.
 
 Excluded from the PR browser set (EXCLUDED_MODES in `pr-modes.mjs`): `--stripe-browser` (needs a Stripe test key; gates.yml has no secrets). It stays an integrator SANDBOX run.
 

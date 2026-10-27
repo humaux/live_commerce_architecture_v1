@@ -6,13 +6,17 @@
 //   Canonical matrix producer changes always select the live product-editor guard, from the Go consumer's single source declaration.
 //   Deploy runtime, smoke workflow/helpers and deploy-test edits select deploy-smoke. Unknown/missing foundation Go sources conservatively select tagged runners.
 //   CLI unions legacy quoted/trimmed path classification; only raw paths are used for source lookup.
-// Depends on: mode registry, Go build headers and matrix producer declaration, git base/head/checkout sources and changed paths; env GITHUB_OUTPUT (modes, deploy).
+// Depends on: mode registry, Go build headers and matrix producer declaration, git base/head/checkout sources and changed paths, the checkout's tracked Go sources (doc reads);
+//   env GITHUB_OUTPUT (modes, deploy, docs_only).
 // Used by: .github/workflows/gates.yml (plan job: pull_request diffs plus the schedule/workflow_dispatch full-browser-universe runs; the output feeds scripts/dev/ci-plan.mjs), tests/ci/pr-modes.test.mjs, tests/ci/backend-coverage.test.mjs.
-// Invariants: foundation-shards is ALWAYS present (so the one `required` check exists for docs-only PRs too); a mode is only ever dropped through EXCLUDED_MODES below.
+// Invariants: foundation-shards is present unless EVERY changed path is test-inert documentation (CI-SPEED, owner 2026-10-27 "优化ci的速度"): docs/**, output/**,
+//   contracts/**.md or a root *.md that no untagged Go test (the foundation shards' package set) nor a script such a test names reads — see
+//   foundationDocReads() below. Then the plan is EMPTY and gates.yml's `required` reports an explicit docs-only success (plan + contract drift still ran;
+//   foundation.yml still runs check-gates/test-node). A mode is only ever dropped through EXCLUDED_MODES below.
 //
 // Backend-only set (changes here alone cannot alter a browser): contracts/ docs/ deploy/ output/ go.mod go.sum, tests/foundation/ except
 //   tests/foundation/browser_* or browser-tagged Go sources, tests/deploy/ and tests/ci/ (node tests of shell scripts / this planner; scripts/ itself stays UI), and *.md anywhere. Everything else (apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ scripts/ .github/ playwright.config.ts, package files...) is a UI path.
-// Docs-only (docs/, output/, *.md, contracts/) is a subset of backend-only: it runs foundation-shards (cheap, keeps the single required check) and no browser mode.
+// Docs-only (docs/, output/, *.md, contracts/) is a subset of backend-only: it runs foundation-shards and no browser mode — or NOTHING when every path is test-inert (CI-SPEED).
 //
 // CI-SELECT (owner-approved 2026-10-10; round 2 "Narrow per domain + nightly"): internal/, cmd/ and migrations/ are NOT backend-only — every Go-seeded browser mode runs the
 //   real Go API on the real migrated PG, so e.g. an internal/live/stream.go change alters what --browser-live-console exercises (verified root cause of PR #30/#24: both
@@ -126,6 +130,8 @@ function revisionSource(ref, file) {
   try { return git(["show", `${ref}:${file}`]); }
   catch { return null; } // Missing/deleted/unreadable input cannot silently become a known untagged file.
 }
+// Strict: only a real //go:build line with a `browser` term takes a file out of the untagged (shard) set; a comment mentioning it does not.
+function hasBrowserConstraint(source) { return /^\/\/go:build[^\n]*\bbrowser\b/m.test(source.slice(0, source.search(/^package\s/m) >>> 0)); }
 function hasBrowserTag(source) {
   // Conservative scan: a package-like line inside a license comment cannot hide a later constraint.
   return /^\s*\/\/(?:go:build|\s*\+build)\b[^\n]*\bbrowser\b/m.test(source);
@@ -235,8 +241,61 @@ const isBackendOnly = (p) =>
 const isDeploy = (p) => p.startsWith("deploy/") || p.startsWith("scripts/deploy") || p.startsWith("tests/deploy/") ||
   p.startsWith(".github/scripts/") || /^\.github\/workflows\/deploy-smoke\.ya?ml$/.test(p);
 
+/**
+ * CI-SPEED test-inert documentation. A changed path can skip the foundation shards only when it is documentation (docs/**, output/**, contracts/**.md,
+ * a root *.md; never Go, go.mod/go.sum/go.work — output/go.mod fences output/ out of ./...) AND no reader of it exists in what the shards execute: every
+ * tracked Go file without a `browser` build constraint (shard:unit = ./... minus tests/foundation, shard:gNN = untagged tests/foundation) plus every
+ * tracked script such a file names (one level: check_packet.py, deploy-prep-r3.test.mjs, ...). A reader is a path-shaped string literal
+ * (docs|output|contracts/..., {x}/${x}/%s/* = one-segment wildcard, trailing "/" or a concatenated prefix = the whole subtree), a literal
+ * filepath.Join chain ("docs", "runbooks", ...) or a root *.md basename. Full-line comments are ignored; anything else counts (over-reading = safe).
+ * ponytail: lexical scan, not a call graph. A test that builds a doc path from a lone bare "docs"/"contracts" literal plus runtime data is not
+ * seen (lone "output"/"docs" words are too common as field names to treat as reads); the push run on r3/integration still runs every shard after merge.
+ * Upgrade path: test-level go list -deps + file-access tracing if such a reader appears.
+ */
+const IGNORED_READS = {
+  // file -> reads that are not foundation-shard reads of the real repository, each with a reason.
+  "scripts/dev/contractdrift/git.go": { "contracts/": "classifies changed paths by prefix (HasPrefix); the real contracts/ read is the plan job's contract-drift step, which runs on every PR regardless of the matrix" },
+};
+const isDocCandidate = (p) => /* RED fault injection (CI-SPEED): Go counted as documentation */ !/(^|\/)go\.(mod|sum|work)$/.test(p) &&
+  (p.startsWith("docs/") || p.startsWith("output/") || (p.startsWith("contracts/") && p.endsWith(".md")) || (!p.includes("/") && p.endsWith(".md")));
+const SCRIPT = /\.(sh|bash|py|mjs|cjs|js|ts)$/;
+function literals(file, text) {
+  const code = text.split("\n").filter((l) => !(/\.(go|m?js|cjs|ts)$/.test(file) ? /^\s*\/\//.test(l) : /^\s*#/.test(l))).join("\n");
+  const out = [...code.matchAll(/"((?:[^"\\\n]|\\.)*)"|`([^`]*)`|'((?:[^'\\\n]|\\.)*)'/g)].map((m) => m[1] ?? m[2] ?? m[3]);
+  for (const m of code.matchAll(/"[\w.-]+"(?:\s*,\s*"[\w.-]+")+/g)) out.push([...m[0].matchAll(/"([^"]+)"/g)].map((x) => x[1]).join("/"));
+  return out;
+}
+/** Reads (exact path, subtree "x/", or glob with *) of documentation by what the foundation shards execute, scanned from the given tree. */
+export function foundationDocReads(dir = root) {
+  const files = execFileSync("git", ["ls-files", "-z"], { cwd: dir, encoding: "utf8", maxBuffer: 256 << 20 }).split("\0").filter(Boolean);
+  const tracked = new Set(files), read = (f) => { try { return readFileSync(path.join(dir, f), "utf8"); } catch (e) { if (e.code === "ENOENT" || e.code === "EISDIR") return ""; throw e; } };
+  const rootMd = files.filter((f) => !f.includes("/") && f.endsWith(".md")).map((f) => f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const mdRe = rootMd.length ? new RegExp(`(?<![\\w./-])(${rootMd.join("|")})(?![\\w.-])`, "gu") : null;
+  const goFiles = files.filter((f) => f.endsWith(".go") && !hasBrowserConstraint(read(f)));
+  const scripts = new Set();
+  for (const f of goFiles) for (const s of literals(f, read(f))) { const p = s.replace(/^(?:\.\.?\/)+/, ""); if (tracked.has(p) && SCRIPT.test(p)) scripts.add(p); }
+  const reads = new Set();
+  for (const f of [...goFiles, ...scripts]) for (const s of literals(f, read(f))) {
+    for (const m of s.matchAll(/(?<![\w./-])(?:\.\.?\/)*((?:docs|output|contracts)\/[^\s"'`()]*)/g)) {
+      const r = m[1].replace(/\$\{[^}]*\}|\{[^}]*\}|%[sdvq]/g, "*").replace(/\\n.*$/s, "");
+      if (!IGNORED_READS[f]?.[r]) reads.add(r);
+    }
+    if (mdRe) for (const m of s.matchAll(mdRe)) reads.add(m[1]);
+  }
+  return [...reads].sort();
+}
+const readMatches = (read, p) => read.includes("*")
+  ? new RegExp(`^${read.split("*").map((x) => x.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join("[^/]*")}(/|$)`).test(p)
+  : read.endsWith("/") ? p.startsWith(read) : p === read || p.startsWith(`${read}/`);
+/** Test-inert documentation: a doc candidate no foundation-shard reader names. */
+export function isInertDoc(p, reads) { return isDocCandidate(p) && !reads.some((r) => readMatches(r, p)); }
+let cachedReads;
+const defaultInert = (p) => isInertDoc(p, cachedReads ??= foundationDocReads());
+
 /** Changed paths and source observations -> deterministic required gates; source lookup defaults to the worktree. */
-export function planPr(paths, source = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"), readSources = (file) => [workingSource(file)]) {
+export function planPr(paths, source = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"), readSources = (file) => [workingSource(file)], inert = defaultInert) {
+  // CI-SPEED: nothing a foundation shard or browser can observe changed -> empty plan (gates.yml reports docs-only success explicitly).
+  if (paths.length && paths.every((p) => inert(p))) return { modes: [], deploy: paths.some(isDeploy), docsOnly: true };
   const tagged = paths.some((file) => {
     if (!file.startsWith("tests/foundation/") || !file.endsWith(".go")) return false;
     const sources = readSources(file).filter((text) => text !== null);
@@ -248,7 +307,7 @@ export function planPr(paths, source = readFileSync(path.join(root, "scripts/dev
   const producers = readSources("tests/foundation/catalog_matrix_ledger_test.go").flatMap(matrixEvidenceSources);
   const matrix = paths.some((file) => producers.includes(file));
   // Backend-driven selections are always a subset of the full browser set, so UI-path plans keep their exact order.
-  return { modes: [...new Set(["foundation-shards", ...(needsBrowsers ? browserModes(source) : []), ...backendBrowserModes(paths, source), ...(tagged ? taggedFoundationModes(source) : []), ...(matrix ? ["--browser-product-editor"] : [])])], deploy: paths.some(isDeploy) };
+  return { modes: [...new Set(["foundation-shards", ...(needsBrowsers ? browserModes(source) : []), ...backendBrowserModes(paths, source), ...(tagged ? taggedFoundationModes(source) : []), ...(matrix ? ["--browser-product-editor"] : [])])], deploy: paths.some(isDeploy), docsOnly: false };
 }
 
 // Parse only the named literal Go data table, never executable code or unrelated
@@ -295,8 +354,9 @@ export function main(argv = process.argv.slice(2), env = process.env) {
   if (legacyPaths.some((p) => !isBackendOnly(p)))
     r.modes = [...new Set([...r.modes, ...browserModes(readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"))])];
   r.deploy ||= legacyPaths.some(isDeploy);
-  console.error(`pr-modes: ${paths.length} changed path(s) -> ${r.modes.length} mode(s)${r.deploy ? "; deploy-smoke" : ""}`);
-  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `modes=${JSON.stringify(r.modes)}\ndeploy=${r.deploy}\n`);
+  r.docsOnly = r.modes.length === 0;
+  console.error(`pr-modes: ${paths.length} changed path(s) -> ${r.modes.length} mode(s)${r.deploy ? "; deploy-smoke" : ""}${r.docsOnly ? "; docs-only (test-inert paths)" : ""}`);
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `modes=${JSON.stringify(r.modes)}\ndeploy=${r.deploy}\ndocs_only=${r.docsOnly}\n`);
   console.log(JSON.stringify(r));
   return 0;
 }
