@@ -15,7 +15,7 @@
 
 /* ---------- Button ----------
  * DS-3: geometry and colours of the Figma Button master 4:12718 (44 high, radius 6, padding 0/14, 14 Medium).
- * Kinds: primary = Primary, secondary = Secondary, danger = Danger (outline), ghost = Text; link has no Figma master.
+ * Kinds: primary = Primary, secondary = Secondary, danger = Danger (outline), ghost = Text, outline = Ghost; link has no Figma master.
  * Disabled = Figma State=Disabled, except primary, which keeps the DS-1 3:1 fill gate (registered deviation, output/ds-3/DELIVERY.md). */
 .button {
   display: inline-flex;
@@ -32,7 +32,7 @@
   font: inherit;
   font-size: var(--ds-text-md);
   font-weight: 500;
-  line-height: 1.3;
+  line-height: var(--ds-leading-button);
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
@@ -46,6 +46,8 @@
 /* Hover has no Figma master (UNKNOWN): outlined kinds keep the DS-2 muted-surface hover; primary has none. */
 .button[data-variant="secondary"]:hover:not([aria-disabled="true"]) { background: var(--ds-surface-muted); }
 .button[data-variant="danger"] { background: var(--ds-surface); border-color: var(--ds-danger); color: var(--ds-danger-text); }
+.button[data-variant="outline"] { background: var(--ds-surface); border-color: var(--ds-button-border); color: var(--ds-button-text-kind); }
+.button[data-variant="outline"]:hover:not([aria-disabled="true"]) { background: var(--ds-surface-muted); }
 .button[data-variant="danger"]:hover:not([aria-disabled="true"]) { background: var(--ds-surface-muted); }
 .button[data-variant="link"] { background: none; border-color: transparent; color: var(--ds-link); padding: 0 var(--ds-space-1); text-decoration: underline; }
 .button[data-variant="link"]:hover:not([aria-disabled="true"]) { color: var(--ds-link-hover); }

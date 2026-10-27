@@ -89,7 +89,7 @@ export function ButtonsSection({ c }: { c: GalleryCopy }) {
 /** DS-3: one specimen per Figma Button / Input master variant (data-figma = Figma node id); tests/ui/ds-figma-parity.mjs reads their computed style. */
 export function FigmaSection({ c }: { c: GalleryCopy }) {
   const [clicked, setClicked] = useState("");
-  const kinds = [["primary", c.btnPrimary, "4:12712", "1394:103520"], ["secondary", c.btnSecondary, "4:12714", "1394:103522"], ["danger", c.btnDanger, "1394:103516", "1394:103526"], ["ghost", c.btnLink, "1394:103518", "1394:103528"], ["outline" as "ghost", c.btnLink, "4:12716", "1394:103524"]] as const;
+  const kinds = [["primary", c.btnPrimary, "4:12712", "1394:103520"], ["secondary", c.btnSecondary, "4:12714", "1394:103522"], ["danger", c.btnDanger, "1394:103516", "1394:103526"], ["ghost", c.btnLink, "1394:103518", "1394:103528"], ["outline", c.btnLink, "4:12716", "1394:103524"]] as const;
   return (
     <Card id="sec-figma" title={`${c.sButtons} · Figma`}>
       <div className={s.row}>

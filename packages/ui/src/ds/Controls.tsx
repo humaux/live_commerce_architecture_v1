@@ -16,7 +16,8 @@ import { Icon, type IconName } from "./Icon";
 import s from "./controls.module.css";
 import { buttonState, statusTone, type StatusDomain, type StatusOf, type Tone } from "./logic";
 
-export type ButtonVariant = "primary" | "secondary" | "danger" | "link" | "ghost";
+/** DS-3 Figma Button kinds: primary, secondary, danger, ghost = Figma Text, outline = Figma Ghost (white, grey border, teal label); link has no Figma master. */
+export type ButtonVariant = "primary" | "secondary" | "danger" | "link" | "ghost" | "outline";
 export type ButtonSize = "sm" | "md" | "lg";
 
 export type ButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled" | "type"> & {

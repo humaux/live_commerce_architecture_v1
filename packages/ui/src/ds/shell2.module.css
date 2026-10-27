@@ -64,7 +64,7 @@
 .groupRow[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .chev svg { transform: scale(var(--ds-nav-chevron-scale)); }
 .sub { margin: 0; padding: 0; list-style: none; }
-.item { display: flex; align-items: center; box-sizing: border-box; min-height: 40px; padding: 0 var(--ds-space-4) 0 var(--ds-nav-indent); border-radius: var(--ds-radius-control); color: var(--ds-nav-text-muted); font-size: var(--ds-text-md); font-weight: 500; text-decoration: none; }
+.item { display: flex; align-items: center; box-sizing: border-box; min-height: var(--ds-button-lg); padding: 0 var(--ds-space-4) 0 var(--ds-nav-indent); border-radius: var(--ds-radius-control); color: var(--ds-nav-text-muted); font-size: var(--ds-text-md); font-weight: 500; text-decoration: none; }
 .item[aria-current="page"] { background: var(--ds-nav-active); color: var(--ds-nav-text-active); }
 .nav :focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: -2px; }
 .close { display: none; }
@@ -112,5 +112,5 @@
 .shell input, .shell textarea { caret-color: var(--ds-primary); }
 .groupIcon { width: var(--ds-space-6); align-items: center; }
 .chev { width: var(--ds-space-4); height: var(--ds-space-4); }
-.item:hover { color: var(--ds-nav-text); background: var(--ds-nav-active); }
+.item:hover { color: var(--ds-nav-text-active); background: var(--ds-nav-active); } /* hover = Active colours: the default text on this fill is 4.3:1 */
 .topbarRight { gap: var(--ds-space-2); }

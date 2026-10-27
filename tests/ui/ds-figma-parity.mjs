@@ -146,7 +146,11 @@ export async function figmaParity({ page, step, output, copy }) {
       const node = locate(page, check.target);
       await node.waitFor({ state: "attached", timeout: 4000 });
       await node.scrollIntoViewIfNeeded();
-      if (check.state?.endsWith("hover")) await node.hover();
+      if (check.state?.endsWith("hover")) {
+        await node.hover();
+        // [READ] let hover transitions (e.g. the admin globals.css button transition) settle before measuring; RED run 40553401910 sampled mid-fade.
+        await node.evaluate((n) => Promise.all(n.getAnimations().map((a) => a.finished)));
+      }
       else await page.mouse.move(0, 0);
       const got = await node.evaluate(measure); // [READ]
       const bad = compare(check.expect, got);
