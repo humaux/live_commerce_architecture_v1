@@ -1,7 +1,7 @@
 // Purpose: the admin re-authentication dialog and the one place that handles HTTP 403 `reauth_required` (contracts/
 //   merchant-password-auth-v1.md §16, card OC-04). @ds-page: built only from DS components (ConfirmDialog, Field/TextInput,
 //   Button, Alert, Stack), so scripts/dev/check-ds-rules.mjs covers this file.
-// Depends on: @live-commerce/ui/ds; lib/reauth-copy.ts; the BFF /api/auth/password/reauth/{method,start,complete,oidc}
+// Depends on: @live-commerce/ui/ds; lib/reauth-copy.ts; lib/reauth-client.ts, which calls the BFF /api/auth/password/reauth/{method,start,complete,oidc}
 //   (app/api/auth/password/reauth/[step]/route.ts) and the OIDC callback's #reauth-done / #reauth-failed return
 //   (app/api/auth/callback/route.ts).
 // Used by: app/[locale]/layout.tsx (mounted once per page); tests/admin/oc/reauth.spec.ts.
@@ -14,16 +14,12 @@ import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { Alert, Button, ConfirmDialog, Field, Stack, TextInput } from "@live-commerce/ui/ds";
 import { reauthCopy, reauthError } from "../lib/reauth-copy";
+import { reauthMethod, reauthStep, type ReauthMethod } from "../lib/reauth-client";
 
 const CHANNEL = "commerce-reauth";
 const POPUP = "commerce-reauth";
-type Method = { password: boolean; oidc: boolean; account: "password" | "oidc" };
+type Method = ReauthMethod;
 type Step = "password" | "code" | "oidc" | "waiting";
-
-function csrf() {
-  const values = document.cookie.split(";").map((p) => p.trim()).filter((p) => p.startsWith("__Host-commerce_csrf=")).map((p) => p.slice(21));
-  return values.length === 1 ? values[0] : "";
-}
 
 /** Wraps fetch: a guarded same-origin /api/ call answered 403 reauth_required waits for `confirm`, then is replayed once. */
 export function reauthFetch(native: typeof fetch, confirm: () => Promise<boolean>): typeof fetch {
@@ -40,19 +36,6 @@ export function reauthFetch(native: typeof fetch, confirm: () => Promise<boolean
     const timedOut = request.signal.aborted && (request.signal.reason as { name?: string } | undefined)?.name === "TimeoutError";
     return native(new Request(replay, { signal: timedOut ? AbortSignal.timeout(16000) : request.signal }));
   };
-}
-
-async function send(path: string, body: unknown): Promise<{ status: number; body: Record<string, unknown> }> {
-  try {
-    const response = await fetch(`/api/auth/password/reauth/${path}`, {
-      method: "POST", credentials: "same-origin", cache: "no-store",
-      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf() },
-      body: JSON.stringify(body), signal: AbortSignal.timeout(16000),
-    });
-    return { status: response.status, body: await response.json().catch(() => ({})) };
-  } catch {
-    return { status: 503, body: { code: "retry_later" } };
-  }
 }
 
 export function ReauthDialog({ locale }: { locale: Locale }) {
@@ -108,9 +91,8 @@ export function ReauthDialog({ locale }: { locale: Locale }) {
     if (!open) return;
     let live = true;
     setBusy(true);
-    fetch("/api/auth/password/reauth/method", { credentials: "same-origin", cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((m: Method) => { if (live) { setMethod(m); setStep(m.account === "oidc" ? "oidc" : "password"); setBusy(false); } })
+    reauthMethod()
+      .then((m) => { if (live) { setMethod(m); setStep(m.account === "oidc" ? "oidc" : "password"); setBusy(false); } })
       .catch(() => { if (live) { setError(reauthError(c, "retry_later")); setBusy(false); } });
     const channel = new BroadcastChannel(CHANNEL);
     channel.onmessage = (event) => {
@@ -136,14 +118,14 @@ export function ReauthDialog({ locale }: { locale: Locale }) {
       if (!popup) return setError(reauthError(c, "popup_blocked"));
       setBusy(true);
       const search = /^\?[A-Za-z0-9=&._~%-]{0,512}$/.test(window.location.search) ? window.location.search : "";
-      const sent = await send("oidc", { locale, return_to: window.location.pathname + search });
+      const sent = await reauthStep("oidc", { locale, return_to: window.location.pathname + search });
       setBusy(false);
       if (sent.status !== 200 || typeof sent.body.authorization_url !== "string") { popup.close(); return fail(sent.status, sent.body); }
       popup.location.href = sent.body.authorization_url;
       return setStep("waiting");
     }
     setBusy(true);
-    const sent = step === "password" ? await send("start", { password, locale }) : await send("complete", { code: code.trim() });
+    const sent = step === "password" ? await reauthStep("start", { password, locale }) : await reauthStep("complete", { code: code.trim() });
     setBusy(false);
     if (sent.status !== 200) return fail(sent.status, sent.body);
     if (step === "password") { setPassword(""); setStep("code"); return; }

@@ -20,6 +20,9 @@
   its own (DS controls are 44 px below 768 px). Focus starts in the first field and returns to the page control that started the request.
   Password route: password -> emailed code -> complete. OIDC route: a popup to the IdP; the callback returns the popup to the opening page
   with `#reauth-done` / `#reauth-failed`, posted to the opener over BroadcastChannel.
+- `apps/admin/lib/reauth-client.ts` (new, integrator grant): the two BFF calls of the dialog (`reauthMethod`, `reauthStep`), so the
+  component calls no `fetch` (G-UI3/G-UI5, tests/admin/shell-architecture.test.mjs). Fix 1 of 2 for that blocker (Foundation job
+  122523457766); no allowance added, test untouched.
 - `apps/admin/lib/reauth-copy.ts` (new): zh-TW, zh-CN, en. The §11 mail_unavailable OIDC hint is a separate string shown only when OIDC
   is configured and the account has an OIDC identity.
 - `apps/admin/app/api/auth/password/reauth/[step]/route.ts` (new): `GET method` ({password, oidc, account}); `POST start`, `complete`
