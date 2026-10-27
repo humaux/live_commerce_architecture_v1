@@ -16,9 +16,13 @@ Copy keys added (admin: publishPending*, publishRecheck*, publishNotYet; storefr
 
 ## Files
 apps/admin/lib/design-client.ts, apps/admin/components/Design.tsx, apps/admin/lib/design-copy.ts (extra), apps/storefront/app/[locale]/error.tsx, apps/storefront/lib/shop-copy.ts (extra), tests/admin/oc/design-publish-pending.spec.ts (extra), tests/storefront/offline-error.spec.ts, output/oc-11/**.
+Integrator-granted: tests/foundation/browser_store_design_test.go (spec added to the playwright invocation), tests/storefront/shop-real-gate.mjs (calls the check; not counted in cases=9), tests/foundation/browser_storefront_test.go (asserts the check reported; harness-only `api-down`/`api-up` control that makes the buyer API answer 503 so error.tsx renders; the app has no test route).
+Needed beyond the grant (flag for the integrator): playwright.config.ts, one entry "oc/design-publish-pending.spec.ts" in the store-design testMatch (without it the spec is never selected).
+Dropped: the earlier shop-gate.mjs registration (runs only under LC_SHOP_MOCK=1, never in CI).
 
-## Evidence / NOT_RUN
-- RED: NOT_RUN (see red.log). GREEN: NOT_RUN for the two specs. Only the generic PR CI (build/typecheck gates) applies; run ids in the PR.
-- No local tests, no typecheck (no node_modules in the worktree). check_packet.py ran.
-- Integrator requests: (1) register tests/admin/oc/design-publish-pending.spec.ts in the store-design browser test (same env as design.spec.ts); (2) a buyer browser mode that serves LC_OC11_ORIGIN + LC_OC11_ERROR_PATH (shop-fake-api `down` state) for tests/storefront/offline-error.spec.ts; then run RED/GREEN.
-- Risks: unexecuted specs may need locator fixes; error.tsx unverified under Next 16 build until CI; E1 at best.
+## Evidence
+- RED (deliberate mutation: recheck republishes with a new key; offline banner disabled): see output/oc-11/red.log. Admin run 40462789529 job 122056953409 failed at OC11-A2; storefront run 40502862891 job 122191823469 failed at OC11-B2. Setup errors before that are listed there and not counted.
+- GREEN: mutations reverted; run/job ids are in the PR comment and the final line of red.log (filled after the run).
+- Local: none (no node_modules). Level: E3 once green, MOCK/real-stack Next + Go harness, no device.
+- Not covered: Safari/WebKit (offline events differ), real network loss mid-payment, the "still in flight vs never arrived" ambiguity of recheck.
+- Risks: the admin spec uses the BFF-probe store and leaves one extra published version there; recheck cannot resend (by design).
