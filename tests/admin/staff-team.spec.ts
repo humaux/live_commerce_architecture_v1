@@ -139,8 +139,14 @@ async function unobscuredMemberRole(page: Page, testId: string) {
 // `fromHere` signs up on the page the caller already opened (an invite page's own sign-up link) instead of a fresh /signup.
 async function signUp(page: Page, locale: string, email: string, password: string, priorMails: number, fromHere = false) {
   if (!fromHere) await page.goto(`/${locale}/signup`);
+  // #236: fill only after hydration. Typed before it, the value never reaches React state and the invite page's
+  // `#next=` effect re-render resets the controlled inputs to "" (the en-mobile empty-email submit).
+  // G-UI8 audit [READ/MEASURE]: reads whether React has claimed the email input (no state change)
+  await expect.poll(() => emailInput(page).evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps$"))),
+    { message: "sign-up form hydrated before typing" }).toBe(true);
   await emailInput(page).fill(email);
   await passwordInput(page).fill(password);
+  await expect(emailInput(page)).toHaveValue(email);
   await submitButton(page).click();
   await expect(codeInput(page)).toBeVisible();
   const code = codeOf(await nthMail(email, priorMails + 1));

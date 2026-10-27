@@ -137,9 +137,20 @@ async function noHorizontalScroll(page: Page) {
   expect(overflow, "no horizontal page scroll").toBeLessThanOrEqual(0);
 }
 
+// #236: the SSR form is live before React hydrates. A value typed then never reaches React state, and the first
+// post-hydration re-render (e.g. the `#next=` effect) re-asserts the empty controlled value, so submit sends "".
+// React attaches its props to a node when hydration claims it; from then on input events reach onChange.
+async function hydrated(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: reads whether React has claimed the email input (no state change)
+  await expect.poll(() => emailInput(page).evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps$"))),
+    { message: "auth form hydrated before typing" }).toBe(true);
+}
+
 async function fillCredentials(page: Page, email: string, password?: string) {
+  await hydrated(page);
   await emailInput(page).fill(email);
   if (password !== undefined) await passwordInput(page).fill(password);
+  await expect(emailInput(page)).toHaveValue(email);
 }
 
 // Submits the code step, waits for the BFF's answer and for the page navigation that follows a 200
@@ -259,7 +270,7 @@ test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> 
   await useSource(other, source());
   const page2 = await other.newPage();
   await page2.goto(`/${locale}/reset`);
-  await emailInput(page2).fill(email);
+  await fillCredentials(page2, email);
   await expect(passwordInput(page2)).toHaveCount(0); // step 1 of reset asks for the address only
   await submitButton(page2).click();
   await expect(codeInput(page2)).toBeVisible();
@@ -561,7 +572,7 @@ test("matrix: locale copy differs per locale and the reset wording is the same f
     await useSource(context, source());
     await page.context().clearCookies({ name: challengeName });
     await page.goto("/en/reset");
-    await emailInput(page).fill(email);
+    await fillCredentials(page, email);
     await submitButton(page).click();
     await expect(codeInput(page)).toBeVisible();
     const text = await page.locator("main, body").first().innerText();
