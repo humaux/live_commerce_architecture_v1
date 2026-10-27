@@ -330,11 +330,14 @@ case "$1" in
   test -f tests/admin/staff-team.spec.ts
   test -f tests/foundation/browser_staff_team_test.go
   grep -q '^func TestBrowserStaffTeam' tests/foundation/browser_staff_team_test.go
+  # OC-04 (re-auth dialog, Playwright suite `oc`) rides on the same harness: refuse a no-test success here too.
+  test -f tests/admin/oc/reauth.spec.ts
+  grep -q '^func TestBrowserOC' tests/foundation/browser_oc_test.go
   mkdir -p output/playwright
     }
     lc_run() {
   node --test --experimental-strip-types tests/admin/password-bff.test.ts   # PA10 (Node, no browser, no PG)
-  LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=1800s -run '^(TestBrowserPasswordAuth|TestBrowserStaffTeam)$' -v ./tests/foundation
+  LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=1800s -run '^(TestBrowserPasswordAuth|TestBrowserStaffTeam|TestBrowserOC)$' -v ./tests/foundation
   printf 'PASS: isolated Next + Go + PG + loopback SMTP fake password-auth browser chain (PA11) and staff-team invite/accept/role/revoke chain (zh-TW + en, desktop + 390px); no real mailbox, no owner secret.\n'
     }
     ;;
