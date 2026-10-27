@@ -53,8 +53,8 @@ func mapError(err error) error {
 			return command.ErrConflict
 		case "PT401":
 			return platform.ErrUnauthorized
-		case "PT403": // §16: reauth_required (pin_customer, record_checkout_session) keeps its code
-			return platform.PT403(pgErr.Message, platform.ErrForbidden)
+		case "PT403":
+			return platform.ErrForbidden
 		case "PT404":
 			return platform.ErrScopeNotFound
 		}

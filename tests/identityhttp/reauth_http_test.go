@@ -38,8 +38,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"livecommerce/internal/billing"
-	"livecommerce/internal/billing/billingtest"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/identity"
@@ -704,24 +702,12 @@ func admin(t *testing.T, h http.Handler, method, path, bearer, key, body string)
 // RH13: end to end through internal/httpapi (handler.go classify decides the code): a session authenticated 2 hours ago
 // performing a guarded operation gets HTTP 403 with body code reauth_required in each guarded domain wired here -
 // orders CSV (merchantorders/orders.go), finance CSV and products report CSV (reporting), customer erasure (customers/read.go),
-// the bank-transfer decisions (merchantorders offline -> orders.go), platform Stripe settings (payments/platformstripe coded
-// 403) and billing checkout (billing/errors.go via billing.pin_customer) - and stays live; a fresh session gets the export.
+// the bank-transfer decisions (merchantorders offline -> orders.go) and platform Stripe settings (payments/platformstripe coded
+// 403) - and stays live; a fresh session gets the export. Billing is pending OC-15b (contract §16).
 func TestReauthRH13GuardedDomainsEndToEnd(t *testing.T) {
 	e := fixture(t)
 	w := newWorld(t, e)
-	// Platform billing over the billingtest fake (never api.stripe.com): checkout creates the Stripe customer, then the guarded
-	// billing.pin_customer refuses the stale session.
-	fake := billingtest.New("acct_OC15" + hex.EncodeToString(rnd32()[:6]))
-	t.Cleanup(fake.Close)
-	cfg := billing.Config{SecretKey: "sk_" + "test_" + hex.EncodeToString(rnd32()[:12]), WebhookSecret: "whsec_" + hex.EncodeToString(rnd32()[:16]),
-		ReturnOrigin: "https://admin.example.test", PriceIDs: []string{"price_OC15Month"}}
-	fake.RequireKey(cfg.SecretKey)
-	fake.AddPrice("price_OC15Month", 30000, "twd", "month", "Pro Monthly", true, false)
-	bill, err := billing.New(context.Background(), e.runtime, cfg, fake.Transport())
-	if err != nil || !bill.Enabled() {
-		t.Fatalf("billing service: enabled=%v err=%v", bill != nil && bill.Enabled(), err)
-	}
-	h := httpapi.NewHandler(e.runtime, httpapi.Options{Billing: bill, PaymentProfile: "SANDBOX"})
+	h := httpapi.NewHandler(e.runtime, httpapi.Options{PaymentProfile: "SANDBOX"})
 	base := "/v1/admin/stores/" + w.store
 	today := time.Now().UTC()
 	from, to := today.AddDate(0, 0, -7).Format("2006-01-02"), today.Format("2006-01-02")
@@ -736,7 +722,6 @@ func TestReauthRH13GuardedDomainsEndToEnd(t *testing.T) {
 		{"bank transfer refund-offline", http.MethodPost, base + "/orders/" + uuid() + "/bank-transfer/refund-offline", key(), `{}`},
 		{"products report csv", http.MethodGet, base + "/reports/products.csv?from=" + from + "&to=" + to, "", ""},
 		{"platform Stripe settings", http.MethodPut, base + "/payments/card", "", `{"enabled":false,"terms_version":"","descriptor_suffix":null,"expected_version":0}`},
-		{"billing checkout", http.MethodPost, base + "/billing/checkout", "", `{"price_id":"price_OC15Month"}`},
 	} {
 		want(t, c.name, admin(t, h, c.method, c.path, w.stale, c.key, c.body), http.StatusForbidden, "reauth_required")
 	}
