@@ -603,10 +603,10 @@ func (e *sbEnv) quiesce(t *testing.T, attempt string) error {
 		if err != nil || n == 0 {
 			return err
 		}
-		if !e.restart || try == 3 {
+		if try == 3 {
 			return fmt.Errorf("%d unapplied observation(s) for the attempt", n)
 		}
-		e.workerStart(t)
+		e.workerStart(t) // even when it was stopped: a stopped worker's pending reconcile would apply after the aging
 		sstWake(t, e.f, attempt)
 		for deadline := time.Now().Add(30 * time.Second); time.Now().Before(deadline); time.Sleep(200 * time.Millisecond) {
 			if n, err = unfinished(); err != nil || n == 0 {
