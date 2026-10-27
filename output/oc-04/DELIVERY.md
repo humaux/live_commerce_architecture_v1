@@ -13,13 +13,16 @@
 
 - `apps/admin/components/ReauthDialog.tsx` (new, `@ds-page`): the one handler of 403 `reauth_required`. Mounted once in the locale
   layout; it wraps `window.fetch` for same-origin `/api/` calls (not `/api/auth/*`). A refused call waits for the dialog; on success the
-  original Request (cloned before it was sent: method, URL, headers including `Idempotency-Key`, body bytes) is sent again exactly once
+  original request (the caller's own fetch arguments: method, URL, headers including `Idempotency-Key`, body) is sent again exactly once
   and the caller gets that answer; on cancel the caller gets the original 403. No logout. Concurrent refusals share one dialog. If the
   caller's own timeout ran out during the dialog, the replay gets a fresh 16 s timeout; an explicit abort still applies.
   UI only from DS: `ConfirmDialog` (focus trap, Escape, busy lock), `Field`/`TextInput`, `Button`, `Alert`, `Stack`; no colours or sizes of
   its own (DS controls are 44 px below 768 px). Focus starts in the first field and returns to the page control that started the request.
   Password route: password -> emailed code -> complete. OIDC route: a popup to the IdP; the callback returns the popup to the opening page
   with `#reauth-done` / `#reauth-failed`, posted to the opener over BroadcastChannel.
+- Fix 1 of 2 for a third blocker (Gates job 122530020662, `--browser-live-console` labels: `request.postData()` was null): the first
+  send had been rebuilt as `new Request(...)` plus `clone()`, which turns the body into a stream the browser tooling cannot read. The
+  first send is now the caller's own `fetch(input, init)` untouched; the replay reuses the same arguments (a Request input is cloned).
 - `apps/admin/lib/reauth-client.ts` (new, integrator grant): the two BFF calls of the dialog (`reauthMethod`, `reauthStep`), so the
   component calls no `fetch` (G-UI3/G-UI5, tests/admin/shell-architecture.test.mjs). Fix 1 of 2 for that blocker (Foundation job
   122523457766); no allowance added, test untouched.

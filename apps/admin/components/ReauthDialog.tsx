@@ -6,8 +6,8 @@
 //   (app/api/auth/callback/route.ts).
 // Used by: app/[locale]/layout.tsx (mounted once per page); tests/admin/oc/reauth.spec.ts.
 // Invariants: a 403 reauth_required never signs out - every same-origin /api/ call (except /api/auth/*) that gets one waits for
-//   the dialog; on success the ORIGINAL request (same method, URL, headers - including its Idempotency-Key - and body bytes,
-//   cloned before it was sent) is sent again exactly once and its answer is what the caller sees; on cancel the caller gets the
+//   the dialog; on success the ORIGINAL request (same method, URL, headers - including its Idempotency-Key - and body, from the
+//   caller's own arguments) is sent again exactly once and its answer is what the caller sees; on cancel the caller gets the
 //   original 403. Concurrent refusals share one dialog. Password and code live only in component state and go only to the BFF.
 "use client";
 import { useEffect, useRef, useState } from "react";
@@ -26,15 +26,18 @@ export function reauthFetch(native: typeof fetch, confirm: () => Promise<boolean
   return async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
     if (url.origin !== window.location.origin || !url.pathname.startsWith("/api/") || url.pathname.startsWith("/api/auth/")) return native(input, init);
-    const request = new Request(input, init);
-    const replay = request.clone(); // before the body is consumed: the exact bytes and headers are sent again
-    const response = await native(request);
+    // The first send is the caller's own call, untouched (a Request built here would turn the body into a stream that devtools and
+    // Playwright can no longer read). Only a Request input is cloned up front, because sending consumes its body.
+    const source = input instanceof Request ? input.clone() : input;
+    const response = await native(input, init);
     if (response.status !== 403) return response;
     const code = await response.clone().json().then((b: { code?: unknown } | null) => b?.code, () => null);
     if (code !== "reauth_required" || !(await confirm())) return response;
-    // The caller's own timeout may have run out while the person re-authenticated; an explicit abort still applies.
-    const timedOut = request.signal.aborted && (request.signal.reason as { name?: string } | undefined)?.name === "TimeoutError";
-    return native(new Request(replay, { signal: timedOut ? AbortSignal.timeout(16000) : request.signal }));
+    // Same URL, method, headers (Idempotency-Key included) and body. The caller's own timeout may have run out while the person
+    // re-authenticated; an explicit abort still applies.
+    const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+    const timedOut = !!signal?.aborted && (signal.reason as { name?: string } | undefined)?.name === "TimeoutError";
+    return native(source, { ...init, signal: timedOut ? AbortSignal.timeout(16000) : signal });
   };
 }
 
