@@ -24,7 +24,7 @@ export function compare(expect, got) {
     const have = got[key];
     if (key === "height" || key === "labelInset" || key === "crumbGap") {
       if (typeof have !== "number" || Math.abs(have - want) > 0.5) bad.push(`${key} ${have} != ${want}`);
-    } else if (/Color$/.test(key) || key === "color") {
+    } else if (typeof want === "string" && (/Color$/.test(key) || key === "color")) {
       if (have !== cssColour(want)) bad.push(`${key} ${have} != ${want} (${cssColour(want)})`);
     } else if (have !== want) bad.push(`${key} ${JSON.stringify(have)} != ${JSON.stringify(want)}`);
   }
@@ -37,6 +37,8 @@ assert.equal(compare({ color: "#142942" }, { color: "rgb(42, 111, 176)" }).lengt
 assert.equal(compare({ height: 44 }, { height: 36 }).length, 1, "wrong height must fail");
 assert.equal(compare({ backgroundColor: "transparent" }, { backgroundColor: "rgb(255, 255, 255)" }).length, 1);
 assert.equal(compare({ noCaret: true }, {}).length, 1, "a missing probe must fail");
+assert.deepEqual(compare({ allCrumbsSameColor: true }, { allCrumbsSameColor: true }), [], "boolean probes ending in Color are not colours");
+assert.equal(compare({ allCrumbsSameColor: true }, { allCrumbsSameColor: false }).length, 1);
 
 /** [READ/MEASURE] computed style of one element plus the derived probes the expect blocks name. */
 function measure(n) {

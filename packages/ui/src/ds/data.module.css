@@ -77,6 +77,9 @@
 .menuReason { padding: 0 var(--ds-space-4) var(--ds-space-1); color: var(--ds-text-2); font-size: var(--ds-text-xs); white-space: normal; max-width: 260px; }
 
 /* ---------- filter bar ---------- */
+/* DS-3: Figma Buttons are 44, Figma Input / Pagination / Segmented are 36. A Button in a filter row shares the row with 36 px fields,
+   so on desktop it takes the 36 field scale (DS-2 same-row height rule); phones are 44 for every control anyway. Registered deviation D7. */
+@media (min-width: 768px) { .filters button[data-size="md"] { height: var(--ds-control-height); min-height: var(--ds-control-height); } }
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-3) var(--ds-space-4); padding: var(--ds-space-3) 0; }
 .filterField { display: inline-flex; align-items: center; gap: var(--ds-space-2); color: var(--ds-text-2); font-size: var(--ds-text-sm); }
 .select, .searchInput { box-sizing: border-box; min-height: var(--ds-control-height); padding: 0 var(--ds-space-3); border: 1px solid var(--ds-border-input); border-radius: var(--ds-radius-md); background: var(--ds-surface); color: var(--ds-text-1); font: inherit; font-size: var(--ds-text-md); }
