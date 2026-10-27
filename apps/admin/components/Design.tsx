@@ -366,7 +366,6 @@ function Editor({
     setRechecking(true);
     try {
       const list = await readVersions(store, new AbortController().signal);
-      void publish(store, pending.version, boundary); // MUTATION (red proof): recheck sends a NEW publish with a new key
       const landed = publishLanded(list, pending.version);
       if (landed) {
         setVersions(list);

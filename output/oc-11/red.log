@@ -1,3 +1,11 @@
-RED: NOT_RUN. The two specs (tests/admin/oc/design-publish-pending.spec.ts, tests/storefront/offline-error.spec.ts) are Playwright specs
-that no registered CI mode executes (browser specs run only through tests/foundation/browser_*_test.go; node tests only through the explicit list in
-scripts/dev/test-node.sh; both are shared files outside OC-11 write_paths). A CI run therefore cannot turn them red. No run id exists. Integrator request in DELIVERY.md.
+RED (deliberate mutation, head c918028953847faba5ca12a5809e63d47c3e1d91 for the storefront; 80dc8a55 mutation for admin; same Design.tsx mutation kept through c918028):
+Mutation: Design.tsx recheck also called publish() (new Idempotency-Key); error.tsx offline banner disabled (`false && !online`).
+
+Admin  - Gates run 40462789529, job 122056953409 (gate --browser-design, head 0222d531 merge sha), TestBrowserStoreDesign:
+  tests/admin/oc/design-publish-pending.spec.ts:20 "OC11 publish pending (en, three-locale wording)"
+  FAILED at assertion "OC11-A2 recheck is a read: still exactly one publish request, one key" (received two publish requests, keys c0dc87bc... and bd30bd02..., both expected_draft_version 4). design.spec.ts: 8 passed.
+Storefront - Gates run 40502862891, job 122191823469 (gate --browser-storefront), shop-real-gate.mjs -> tests/storefront/offline-error.spec.ts:
+  FAILED at "OC11-B2 zh-TW offline banner text" (getByTestId('offline-banner') never appeared). SFR01-SFR09 and OC11-B0/B1 (error state renders, no banner while online) passed.
+
+Setup errors seen first, NOT counted as RED: run 40459757322 Foundation check-gates "offline-error.spec.ts is run by no gate"; run 40462789529 job 122056952289 OC11-B00 (cart link absent on home); run 40480095274 job 122137183144 OC11-B0 (garbage RSC payload did not reach the error boundary).
+Also not counted: run 40453952388 Foundation, shell-architecture.test.mjs "error.tsx: fetch 1 > 0" (an earlier fetch-in-reload mutation caught by the existing architecture test, dropped).

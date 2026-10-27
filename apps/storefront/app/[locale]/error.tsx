@@ -40,7 +40,7 @@ export default function ErrorState({ reset }: { error: Error & { digest?: string
           {copy.errorTitle}
         </h1>
         <p className="sf-muted">{copy.errorBody}</p>
-        {false && !online && (
+        {!online && (
           <p className="sf-notice" role="status" data-testid="offline-banner">
             {copy.offlineBanner}
           </p>
