@@ -20,6 +20,7 @@
 - `internal/identityhttp`: `reauth_routes.go` (new) - password `reauth/start` / `reauth/complete`, OIDC `login/reauth/start`, the re-auth branch of `login/complete` (`CompleteLogin`: `{reauth:true, authenticated_at}`, no token); `password.go` (`reauth_failed` in `passwordMessages`, routes mounted); `handler.go` (OIDC route, callback through `CompleteLogin`); `staff.go` (two codes in the staff table, tested before the owner check). Routes are mounted through optional interfaces, so the existing transport fakes keep compiling.
 - `contracts/merchant-password-auth-v1.md` §16.1: the four route rows.
 - `tests/identityhttp/reauth_http_test.go` (RH01-RH04 transport, RH10-RH13 real PG).
+- Coordinator follow-ups after #211/#233 landed (base merged, no conflict): `tests/foundation/bank_transfer_closed_test.go` route assertion restored to the exact code (`cofCode(out) == "bank_transfer_closed"` plus 422 and retryable=false; file granted for that one assertion); §16 "Method now" now points the mail-unavailable limit at §11 instead of "pending owner confirmation".
 
 ## Outside write_paths (integrator approval needed)
 - `tests/identityhttp/doc.go`: package comment; a test-only package has no `go list .Doc`, so `check-pkgdocs.sh` fails without it.
