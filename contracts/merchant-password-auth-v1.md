@@ -426,8 +426,9 @@ the sending mailbox exist.
   overseas server):** the same generic SMTP adapter, a config + secret change only. Spacemail's
   documented cap is 500 mails/hour per paid mailbox (20/hour on trial); daily cap UNKNOWN. A provider
   outage or rejection makes login, reset and re-auth answer 503 `mail_unavailable` until it recovers;
-  signed-in sessions are unaffected, nothing is re-sent automatically (PD7), and the UI offers the
-  OIDC (Google) path, which needs no mail. Alert e-mail (watchdog) uses the same relay, so a relay
+  signed-in sessions are unaffected, nothing is re-sent automatically (PD7). The `mail_unavailable`
+  copy must also point to the OIDC (Google) sign-in, which needs no mail (today it only says "wait";
+  owed by the CA-AUTH-COPY card). Alert e-mail (watchdog) uses the same relay, so a relay
   outage also silences alerts: a dead-man check independent of the relay is a known gap. Upgrade
   signal: first `smtp_rejected` for frequency, or the hourly cap within 20 % ⇒ a provider API behind
   the same interface.
