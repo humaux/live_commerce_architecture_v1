@@ -1,10 +1,11 @@
 // Purpose: OC-12 real-PostgreSQL gates of the A8 `unread` filter (output/oc-12/UNREAD.md, contracts/live-console-v1.md §3.6):
 // the unread definition (last_inbound_seq > read_seq, store-level, cleared only by inbox:reply, re-opened by a newer inbound
 // seq) and cross-tenant / cross-store isolation of the filtered read through the real service path (platform.WithScope +
-// inbox.Service.ListConversations).
+// inbox.Service.ListConversations), and the HTTP A8 route (filter=unread 200, unknown filter 400 invalid_filter).
 // Depends on: the disposable lc_foundation_test database (LC_TEST_DATABASE_ALLOWED=1, LC_TEST_DATABASE_URL; otherwise every
 // test is a SKIP = NOT_RUN, never a PASS), livecommerce/migrations (Apply), internal/platform (OpenPool, WithScope),
-// internal/inbox (LoadKeyring, NewService, ListConversations), social.list_conversations / inbox.mark_read definers.
+// internal/inbox (LoadKeyring, NewService, ListConversations), internal/httpapi (NewHandler, A8 route),
+// social.list_conversations / inbox.mark_read definers.
 // Used by: go test ./internal/inbox (CI shard:unit via scripts/dev/test-local.sh). Fixtures are synthetic UUIDs only; no buyer PII.
 package inbox_test
 
@@ -14,8 +15,11 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"slices"
@@ -27,6 +31,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"livecommerce/internal/httpapi"
 	"livecommerce/internal/inbox"
 	"livecommerce/internal/platform"
 	"livecommerce/migrations"
@@ -298,5 +303,53 @@ func TestOC12UnreadCrossTenantIsolation(t *testing.T) {
 		if err == nil || ran {
 			t.Fatalf("tenant B token with tenant A store %s: err=%v ran=%t, want refusal before the callback", foreign, err, ran)
 		}
+	}
+}
+
+// UR04: the HTTP A8 route (internal/httpapi, as cmd/api mounts it) accepts filter=unread with 200 and only this store's
+// unread rows, rejects an unknown filter with 400 invalid_filter, and a foreign tenant's token naming this store gets no 200.
+func TestOC12UnreadHTTP(t *testing.T) {
+	e := unreadFixture(t)
+	tenant, stores := tenantWithStores(t, e, 1)
+	store := stores[0]
+	reader := staff(t, e, tenant, store, "inbox:read")
+	conv := conversation(t, e, tenant, store, 2, 0)
+	conversation(t, e, tenant, store, 2, 2)
+	tenantB, storesB := tenantWithStores(t, e, 1)
+	foreign := staff(t, e, tenantB, storesB[0], "inbox:read")
+	h := httpapi.NewHandler(e.runtime, httpapi.Options{Inbox: e.svc})
+	get := func(token, query string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+store+"/inbox/conversations?"+query, nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		res := httptest.NewRecorder()
+		h.ServeHTTP(res, req)
+		return res
+	}
+
+	res := get(reader, "filter=unread")
+	if res.Code != http.StatusOK {
+		t.Fatalf("GET filter=unread status=%d body=%s, want 200", res.Code, res.Body.String())
+	}
+	var body struct {
+		Items []struct {
+			ConversationID string `json:"conversation_id"`
+			Unread         bool   `json:"unread"`
+		} `json:"items"`
+		UnreadTotal int64 `json:"unread_total"`
+	}
+	if err := json.Unmarshal(res.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode A8 body: %v", err)
+	}
+	if len(body.Items) != 1 || body.Items[0].ConversationID != conv || !body.Items[0].Unread || body.UnreadTotal != 1 {
+		t.Fatalf("GET filter=unread items=%+v total=%d, want only %s unread, total 1", body.Items, body.UnreadTotal, conv)
+	}
+
+	res = get(reader, "filter=bogus")
+	if res.Code != http.StatusBadRequest || !strings.Contains(res.Body.String(), `"invalid_filter"`) {
+		t.Fatalf("GET filter=bogus status=%d body=%s, want 400 invalid_filter", res.Code, res.Body.String())
+	}
+
+	if res = get(foreign, "filter=unread"); res.Code == http.StatusOK || strings.Contains(res.Body.String(), conv) {
+		t.Fatalf("foreign tenant token on this store: status=%d body=%s, want refusal without data", res.Code, res.Body.String())
 	}
 }

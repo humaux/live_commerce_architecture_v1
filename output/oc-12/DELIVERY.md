@@ -29,18 +29,21 @@ CI shard:unit under `./...`, and needs no CI registration. Moving it is a pure r
 |---|---|---|---|
 | RED (tests only) | 626cea5a3 | run 40463313144 / job 122054896395 (gate shard:unit) | FAIL exactly 3 top-level tests, all `ERROR: invalid_filter (SQLSTATE PT400)`: TestOC12UnreadDefinition (unread_test.go:226), TestOC12UnreadStoreLevelAndReset (:250), TestOC12UnreadCrossTenantIsolation (:280). No other top-level FAIL in the job. |
 | implementation | a563f284e | run 40466503323 | shard:g04 FAIL only TestR2IntegrationUpgradeFromReleaseHead (migration-count pin, fixed by the granted edit above). shard:unit job 122087549874 SUCCESS: TestOC12UnreadDefinition / StoreLevelAndReset / CrossTenantIsolation all `--- PASS` (not SKIP). |
-| GREEN | see PR head | (filled after CI) | |
+| GREEN (before allowlist) | b9889f0e0 | run 40508176316: shard:unit job 122226111091, shard:g04 job 122226110088 | 81 SUCCESS + 1 SKIPPED (deploy). The 3 TestOC12* tests and TestR2IntegrationUpgradeFromReleaseHead show `--- PASS`. |
+| GREEN (final, allowlist + UR04 + INU01) | the commit containing this line | posted as a PR comment once CI finishes (a commit cannot contain its own run id) | |
 
-## Out-of-scope approval request (NOT applied; patch in output/oc-12/out-of-scope-allowlist.patch, 7 lines)
-Without these the UI option reaches the API as 400 invalid_filter; the Go/SQL read is complete without them.
-1. internal/httpapi/inbox.go:269 — add `"unread"` to the A8 filter `case`.
-2. apps/admin/lib/inbox-bff.ts:35-41 — add `"unread"` to `filters`.
-3. apps/admin/app/api/stores/[store]/[...resource]/route.ts:128 — add `"unread"` to the invalid_filter list.
-4. contracts/live-console-v1.md:675 — A8 row `?filter=all|unread|unreplied|…`.
-Recommended: approve all four in this PR (merge blocker until then), plus a tests/admin/inbox-ui.spec.ts case selecting `unread` (out of scope, not written).
+## Out-of-scope edits (integrator-approved 2026-10-28, applied from output/oc-12/out-of-scope-allowlist.patch)
+1. internal/httpapi/inbox.go:269: `"unread"` in the A8 filter `case`.
+2. apps/admin/lib/inbox-bff.ts: `"unread"` in `filters`.
+3. apps/admin/app/api/stores/[store]/[...resource]/route.ts:128: `"unread"` in the invalid_filter list.
+4. contracts/live-console-v1.md:675: A8 row `?filter=all|unread|unreplied|…`.
+5. tests/admin/inbox-ui.spec.ts INU01: selects the `unread` option and asserts that the BFF list request carries
+   `filter=unread`, gets 200 (no 400) and lists the unread thread (real Next/BFF/Go/PG chain, --browser-inbox).
+Plus, inside write_paths: internal/inbox/unread_test.go UR04 `TestOC12UnreadHTTP`. It runs the real httpapi handler over real
+PG: filter=unread 200 with only this store's unread row, filter=bogus 400 `invalid_filter`, and a foreign-tenant token
+gets no 200 and no data.
 
 ## Risks
-- Merging without the four allowlist lines ships a visible option that errors (P1 for the UI; no data exposure).
 - `last_inbound_seq` reset is simulated in UR02 by updating the column the trigger writes (MOCK of the trigger); the
   trigger itself is covered by the existing 0119 foundation tests.
 - No partial index; same scan cost as `unreplied`.
@@ -49,5 +52,5 @@ Recommended: approve all four in this PR (merge blocker until then), plus a test
 gofmt -l (clean), go vet ./internal/inbox (ok). tsc NOT_RUN locally (no node_modules in the worktree) → CI typecheck.
 
 ## NOT_RUN
-Local tests (policy: CI only) · browser test of the unread option · HTTP-level filter=unread (blocked on the allowlist) ·
+Local tests (policy: CI only) ·
 real Meta traffic (N/A) · independent review.
