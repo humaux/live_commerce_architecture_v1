@@ -20,6 +20,13 @@ import (
 	"livecommerce/internal/identity"
 )
 
+// The routes are mounted through optional interfaces (so transport fakes without them keep compiling); these assertions make
+// a drift of the production types a compile error instead of silently unmounted routes.
+var (
+	_ passwordReauthService = (*identity.Passwords)(nil)
+	_ oidcReauthService     = (*identity.Service)(nil)
+)
+
 // passwordReauthService is the re-auth half of *identity.Passwords.
 type passwordReauthService interface {
 	StartReauth(ctx context.Context, ip netip.Addr, sessionToken, password, locale string) (time.Time, error)

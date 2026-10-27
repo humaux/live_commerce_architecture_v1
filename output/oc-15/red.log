@@ -85,3 +85,26 @@
 --- FAIL: TestReauthRH13GuardedDomainsEndToEnd (0.04s)
 FAIL
 FAIL	livecommerce/tests/identityhttp	0.610s
+
+## Review round 1 RED: Gates run 40536880127, shard:unit job 122309094476, head fde4971c7 (tests only)
+=== RUN   TestReauthRH01PasswordStartTransport
+--- PASS: TestReauthRH01PasswordStartTransport (0.00s)
+=== RUN   TestReauthRH02PasswordCompleteTransport
+--- PASS: TestReauthRH02PasswordCompleteTransport (0.00s)
+=== RUN   TestReauthRH03OIDCTransport
+--- PASS: TestReauthRH03OIDCTransport (0.00s)
+=== RUN   TestReauthRH04HTTPErrorCodes
+--- PASS: TestReauthRH04HTTPErrorCodes (0.00s)
+=== RUN   TestReauthRH10SessionBindingOverHTTP
+--- PASS: TestReauthRH10SessionBindingOverHTTP (0.56s)
+=== RUN   TestReauthRH11ThrottleKeys
+--- PASS: TestReauthRH11ThrottleKeys (0.22s)
+=== RUN   TestReauthRH12StaffCodes
+--- PASS: TestReauthRH12StaffCodes (0.11s)
+=== RUN   TestReauthRH13GuardedDomainsEndToEnd
+    reauth_http_test.go:741: billing checkout: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Operation not permitted.","request_id":"…","retryable":false,"details":{}}
+        )
+--- FAIL: TestReauthRH13GuardedDomainsEndToEnd (0.06s)
+FAIL
+FAIL	livecommerce/tests/identityhttp	1.054s
+(internal/httpapi: --- PASS: TestClassifyRawPT403ReauthCodes)
