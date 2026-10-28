@@ -479,7 +479,16 @@ test("new selection never drops legacy modes or deploy for any tracked path", ()
   for (const file of [...files, "unknown/future.file", "tests/foundation/browser_removed_test.go"]) {
     const oldBackend = file.endsWith(".md") || file === "go.mod" || file === "go.sum" || (prefixes.some((p) => file.startsWith(p)) && !file.startsWith("tests/foundation/browser_"));
     const oldModes = oldBackend ? FOUNDATION : [...FOUNDATION, ...full], current = planPr([file], usage);
-    for (const mode of oldModes) assert.ok(current.modes.includes(mode), `${file} lost ${mode}`);
+    // Integrator ruling 2026-10-28, owner: "太慢了，需要提升ci的速度…好好想想怎么提高速度";
+    // CI-SELECT "narrow per domain + nightly": only app/spec/helper classes use derived owners.
+    // Backend-only expectations, conservative-ALL paths and deploy flags remain the frozen contract.
+    if (!oldBackend && /^(?:apps\/[^/]+\/|tests\/(?:admin|e2e|ui|storefront)\/)/.test(file)) {
+      const owners = uiOwners(file);
+      assert.ok(owners.length > 0, `${file}: an unowned path must fall back to the full universe`);
+      for (const mode of [...FOUNDATION, ...owners]) assert.ok(current.modes.includes(mode), `${file} lost owner ${mode}`);
+    } else {
+      for (const mode of oldModes) assert.ok(current.modes.includes(mode), `${file} lost ${mode}`);
+    }
     if (file.startsWith("deploy/") || file.startsWith("scripts/deploy")) assert.equal(current.deploy, true, file);
   }
 });
@@ -607,4 +616,115 @@ test("pay-rm2: Stripe worker/registrar changes select the buyer payment page gat
     assert.ok(modes.includes("--browser-payment"), `${file} -> --browser-payment`);
     assert.ok(modes.includes("--browser-webkit"), `${file} -> --browser-webkit`);
   }
+});
+
+// CI-SPEED-3: generated execution ownership, not a second hand-maintained mode list.
+// Invariants: foundation always; unowned/unresolvable inputs and shared infrastructure keep ALL.
+import { existsSync } from "node:fs";
+const uiOwnershipFile = "output/ci-select-backend-browser/browser-ownership.json";
+function uiOwnership() {
+  assert.ok(existsSync(path.join(root, uiOwnershipFile)), "CI-SPEED-3 must commit generated browser ownership beside covers-derivation.json");
+  const data = JSON.parse(readFileSync(path.join(root, uiOwnershipFile), "utf8"));
+  assert.equal(data.version, 1);
+  assert.deepEqual(Object.keys(data.modes).sort(), [...full].sort(), "every CI-runnable mode has an ownership record");
+  return data;
+}
+function uiOwners(file) {
+  const data = uiOwnership(), app = /^apps\/([^/]+)\//.exec(file)?.[1];
+  const owners = full.filter((mode) => app ? data.modes[mode].apps.includes(app) : data.modes[mode].inputs.includes(file));
+  return owners.length ? owners : full;
+}
+
+test("CI-SPEED-3: a registered admin spec selects only its executing modes", () => {
+  // Base-present replacement approved by integrator 2026-10-28; the original reauth spec belongs to PR #246.
+  const file = "tests/admin/live-settings.spec.ts";
+  assert.ok(existsSync(path.join(root, file)));
+  assert.deepEqual(planPr([file], usage).modes, [...FOUNDATION, "--browser-live-settings"]);
+});
+
+test("CI-SPEED-3: real stdin and GITHUB_OUTPUT preserve narrowed spec selection", (t) => {
+  const dir = mkdtempSync(path.join(root, "output/ci-speed-3-cli-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const output = path.join(dir, "github-output.txt");
+  const result = JSON.parse(execFileSync(process.execPath, ["scripts/dev/pr-modes.mjs", "--stdin"], {
+    cwd: root, encoding: "utf8", input: "tests/admin/live-settings.spec.ts\n", env: { ...process.env, GITHUB_OUTPUT: output }, stdio: ["pipe", "pipe", "pipe"],
+  }));
+  assert.deepEqual(result.modes, [...FOUNDATION, "--browser-live-settings"]);
+  assert.deepEqual(JSON.parse(/^modes=(.*)$/m.exec(readFileSync(output, "utf8"))[1]), result.modes);
+});
+
+test("CI-SPEED-3: storefront component selects storefront owners and no admin-only mode", () => {
+  const file = "apps/storefront/components/CvsPickup.tsx", data = uiOwnership();
+  const owners = full.filter((mode) => data.modes[mode].apps.includes("storefront"));
+  assert.ok(owners.length > 0 && owners.length < full.length, "storefront must have a proper nonempty owner set");
+  assert.ok(data.modes["--browser-live-settings"].apps.includes("admin"));
+  assert.ok(!data.modes["--browser-live-settings"].apps.includes("storefront"), "live-settings starts/drives admin only");
+  assert.deepEqual(planPr([file], usage).modes, [...FOUNDATION, ...owners]);
+  assert.ok(!planPr([file], usage).modes.includes("--browser-live-settings"));
+});
+
+test("CI-SPEED-3: shared helper import closure selects all importing modes", () => {
+  const file = "tests/admin/fixtures/native-device.ts", data = uiOwnership();
+  const owners = full.filter((mode) => data.modes[mode].inputs.includes(file));
+  assert.ok(owners.includes("--browser-live-settings"), "live-settings.spec.ts imports native-device");
+  assert.ok(owners.length > 1 && owners.length < full.length, "a shared fixture has multiple owners, not the whole universe");
+  assert.deepEqual(planPr([file], usage).modes, [...FOUNDATION, ...owners]);
+});
+
+test("CI-SPEED-3: packages and conservative infrastructure paths still select ALL", () => {
+  for (const file of ["packages/ds/src/button.tsx", "packages/i18n/x.ts", "scripts/dev/test-local.sh", ".github/workflows/gates.yml", "package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "playwright.config.ts", "playwright.config.future.ts", "tests/foundation/browser_removed_test.go", "unknown/future.file"])
+    assert.deepEqual(planPr([file], usage).modes, [...FOUNDATION, ...full], file);
+});
+
+test("CI-SPEED-3: unknown specs, helpers and apps cannot silently select zero modes", () => {
+  for (const file of ["tests/admin/oc/reauth.spec.ts", "tests/admin/future-fixture.ts", "tests/e2e/unknown.spec.ts", "tests/ui/unknown-helper.mjs", "tests/storefront/unknown.spec.ts", "apps/future/components/X.tsx"])
+    assert.deepEqual(planPr([file], usage).modes, [...FOUNDATION, ...full], file);
+});
+
+test("CI-SPEED-3: UI selections union with each other and backend/deploy guards", () => {
+  const spec = "tests/admin/live-settings.spec.ts", component = "apps/storefront/components/CvsPickup.tsx";
+  const selected = planPr([spec, component, "internal/integrations/metareply/reply.go", "deploy/compose.yml"], usage);
+  const expected = new Set([...FOUNDATION, ...uiOwners(spec), ...uiOwners(component), "--browser-live-console", "--browser-e2e"]);
+  assert.deepEqual(new Set(selected.modes), expected);
+  assert.equal(selected.deploy, true);
+  assert.equal(selected.modes.length, new Set(selected.modes).size);
+  assert.ok(!selected.modes.includes("--stripe-browser"));
+});
+
+test("CI-SPEED-3: every derived owner of an old-ALL tracked path is retained", () => {
+  const data = uiOwnership();
+  let checked = 0;
+  for (const [mode, record] of Object.entries(data.modes)) {
+    assert.ok(Array.isArray(record.apps) && Array.isArray(record.inputs));
+    for (const file of record.inputs.filter((file) => /^tests\/(?:admin|e2e|ui|storefront)\//.test(file))) {
+      assert.ok(planPr([file], usage).modes.includes(mode), `${file} dropped its derived owner ${mode}`);
+      checked++;
+    }
+    for (const app of record.apps) {
+      const file = execFileSync("git", ["ls-files", "--", `apps/${app}/`], { cwd: root, encoding: "utf8" }).split("\n").find((file) => file && !file.endsWith(".md"));
+      assert.ok(file, `${mode}: app evidence must name a real app`);
+      assert.ok(planPr([file], usage).modes.includes(mode), `${file} dropped app owner ${mode}`);
+      checked++;
+    }
+  }
+  assert.ok(checked > full.length, "exercise real execution ownership, not an empty derivation");
+});
+
+test("CI-SPEED-3: schedule and full-universe dispatch still plan the FULL browser universe", () => {
+  const workflow = readFileSync(path.join(root, ".github/workflows/gates.yml"), "utf8");
+  const nightly = /      - id: nightly\n([\s\S]*?)(?=      - |      # CI-DRIFT)/.exec(workflow)?.[1];
+  assert.ok(nightly, "the shared schedule/dispatch planner step must exist");
+  assert.match(nightly, /github\.event_name == 'schedule'/);
+  assert.match(nightly, /github\.event_name == 'workflow_dispatch' && inputs\.full_browser_universe == 'true'/);
+  assert.match(nightly, /printf '\.github\/workflows\/gates\.yml\\n' \| node scripts\/dev\/pr-modes\.mjs --stdin/);
+  const planEnv = /          MODES: (.*)/.exec(workflow)?.[1];
+  assert.ok(planEnv);
+  assert.match(planEnv, /github\.event_name == 'schedule' && steps\.nightly\.outputs\.modes/);
+  assert.match(planEnv, /inputs\.full_browser_universe == 'true' && steps\.nightly\.outputs\.modes/);
+  const actual = JSON.parse(execFileSync(process.execPath, ["scripts/dev/pr-modes.mjs", "--stdin"], {
+    cwd: root, encoding: "utf8", input: ".github/workflows/gates.yml\n", env: { ...process.env, GITHUB_OUTPUT: "" }, stdio: ["pipe", "pipe", "pipe"],
+  }));
+  assert.deepEqual(actual.modes, [...FOUNDATION, ...full]);
+  // Integrator correction 2026-10-28: push stays foundation-only; gates.yml is outside this card.
+  assert.match(planEnv, /\|\| '\["foundation-shards"\]'/);
 });
