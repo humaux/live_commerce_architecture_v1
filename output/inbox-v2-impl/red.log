@@ -1,0 +1,9 @@
+INBOX-V2-IMPL RED
+base_sha=9a5a2f765c29fc0ab59fbb71e68ba468b31041e8
+tests_only_head=PENDING
+run_id=PENDING
+job_id=PENDING
+assertion_failure=PENDING
+evidence_level=E0 (no CI result yet)
+implementation=NOT_STARTED; wait for causal CI RED before implementation
+local_tests=NOT_RUN (owner prohibits local execution)

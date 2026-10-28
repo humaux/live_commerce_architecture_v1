@@ -84,11 +84,11 @@
     "tests/admin/inbox-browser-support.ts": "3210d85f617b13713a6584d771536b7baa070590a8e0d55dcd610a5cd3c48363",
     "tests/admin/inbox-bundle-browser.test.ts": "8f326f6de6b33e829229348047a783357eb9dc1900a7591f895a5e2d68111fb9",
     "tests/admin/inbox-bundle-ui.spec.ts": "286f6a0ae14e2a77ea2d7442680f324057a9c8b965630e44122e5a6b82dcada6",
-    "tests/admin/inbox-copy.test.ts": "dc922bdf9612ad7f615d67c80b50b0bfcc484ade2cac387757568c8808fb04bd",
+    "tests/admin/inbox-copy.test.ts": "d0c975af91bd253cb29f8c4e762b776c46705c69cd40bdaeffaf1ef1e7e56b54",
     "tests/admin/inbox-credential-artifacts.test.ts": "165d97e50b8906d2c4c58c3b70b3f20a56bc5c022bfb08835b2df4f2406b717e",
     "tests/admin/inbox-customer-link.test.ts": "13e0f5ad72f084733bc9a845a14e6aa3a01ccb347b5bcaf64baa8459c54e249b",
     "tests/admin/inbox-customer-ui.spec.ts": "b22cc6728f3b3e6d827f8582e6b6fbad981bff1c63a09dd6d6e2a1a60d3df296",
-    "tests/admin/inbox-discovery.test.ts": "6ae36c0182995bca078fc2b0c734eebe697ec124df5a3476c6f4194d577ce26f",
+    "tests/admin/inbox-discovery.test.ts": "63bbf2ff3c59ce3f46133fbaac07e33cd4b56dc77c308b7000122bf5b4c7969e",
     "tests/admin/inbox-entry.test.ts": "11cd26750c9900f82f2c2e156995b548fdf694176fa39e759f93bbe59ba62991",
     "tests/admin/inbox-evidence.test.ts": "e417a8357f92368a77a1d0da92613e7a72a0ad2a21f1f08405abe280eb1f0888",
     "tests/admin/inbox-privacy.test.ts": "604201722d1c075fb11556ac1a8e491ba8ed751afb716569682bbda345a31618",
@@ -101,6 +101,7 @@
     "tests/admin/inbox-shell-navigation.test.ts": "8711fd9cc66fe8bd5ca8a44ea71de7fc5e39bef69e02aca3697c9325ff31bef0",
     "tests/admin/inbox-ui.spec.ts": "ef288e4bc908e9f5e4e178cef3f8fa89fff38b9c2749024d9e6ecfa25f369a66",
     "tests/admin/inbox-unknown.test.ts": "c2d379d7720babe40bc6aee3cd9c807a48def7071e4ccc847b5c84f9fb214d55",
+    "tests/admin/inbox-v2-ui.spec.ts": "a696ceea3943390c46b62fa7eff3392c833964fa2190adaf9faa8ab3422d2c12",
     "tests/admin/inbox-window.test.ts": "17c58a16c202857d83f770ee6fe7a39aa597ed09ce3e044b99e8a82e4b0f9a87",
     "tests/admin/input-delivery.spec.ts": "7e27d34fe5736e3d1ee9dcf56ec32df36f387cac4914d4eaa7f593d667a11f39",
     "tests/admin/invite-next.test.ts": "641a704b4833fa8c85cc257061cb37ea4417853ffaf5e9f068de9001ee359a57",
@@ -755,7 +756,7 @@
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
     "scripts/dev/test-local.sh": "718729e925920fd1b9b80bab166c01d717c36700d45750b7b168eb5217992f95",
-    "playwright.config.ts": "659853d6b0a627aec3235c6ad91c999b72d3c2a4e85579f3b84c0b631c5695d0",
+    "playwright.config.ts": "7b4aa722104e994a2811b12e9a711e38702cfd6482698f8d7c02d239973b30c2",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
     "package.json": "dfa3b54b5ffe4382bd9ec06971526e0e82c33e4303e916d50a85c121196bfca0",
@@ -769,7 +770,8 @@
       "specs": [
         "tests/admin/inbox-bundle-ui.spec.ts",
         "tests/admin/inbox-customer-ui.spec.ts",
-        "tests/admin/inbox-ui.spec.ts"
+        "tests/admin/inbox-ui.spec.ts",
+        "tests/admin/inbox-v2-ui.spec.ts"
       ],
       "inputs": [
         "tests/admin/fixtures/native-device.ts",
@@ -777,7 +779,8 @@
         "tests/admin/inbox-bundle-ui.spec.ts",
         "tests/admin/inbox-customer-ui.spec.ts",
         "tests/admin/inbox-private-evidence.ts",
-        "tests/admin/inbox-ui.spec.ts"
+        "tests/admin/inbox-ui.spec.ts",
+        "tests/admin/inbox-v2-ui.spec.ts"
       ],
       "apps": [
         "admin"
@@ -796,7 +799,8 @@
         "tests/foundation/browser_inbox_ui_test.go:server/import apps/admin",
         "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-bundle-ui.spec.ts",
         "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-customer-ui.spec.ts",
-        "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-ui.spec.ts"
+        "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-ui.spec.ts",
+        "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-v2-ui.spec.ts"
       ]
     },
     "--browser-meta-health-ui": {
