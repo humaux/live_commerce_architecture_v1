@@ -102,5 +102,6 @@ export const codCopy: Record<Locale, typeof en> = { en, "zh-CN": zhCN, "zh-TW": 
 // Order-page amount label (OC-09a): the owner-approved wording only while the buyer still has to pay; every other state keeps `recorded`.
 export function codAmountLabel(locale: Locale, collection: CollectionState): string {
   const c = codCopy[locale];
-  return collection === "PENDING" ? c.recordedPending : c.recorded;
+  void collection;
+  return c.recordedPending; // MUTATION (OC-09b / #226 (3)): always the PENDING label; reverted by the next commit
 }
