@@ -51,9 +51,9 @@ async function customerRead<T>(read: () => Promise<T>): Promise<T> {
 }
 
 /** Fetch one conversation or bundle; linking never infers identity from names, claim owners or purchase history. */
-export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, onOrder, onLinked, sessionId }: {
+export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, onOrder, onLinked, sessionId, compact = false }: {
   store: Store; conversationId?: string; bundleId?: string; onUnauthorized?: () => void;
-  onOrder?: (orderId: string) => void; onLinked?: () => void; sessionId?: string;
+  onOrder?: (orderId: string) => void; onLinked?: () => void; sessionId?: string; compact?: boolean;
 }) {
   const params = useParams<{ locale: string }>(), locale = params?.locale ?? "zh-TW", c = inboxCopy(locale);
   const scope = `${store.id}:${conversationId ?? ""}:${bundleId ?? ""}`;
@@ -210,6 +210,7 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
     {error && <p role="alert" className={`${styles.notice} ${styles.error}`}>{inboxError(locale, error)}</p>}
     {error && !busy && !uncertain && goneScope.current !== scope && privacy.visible && <button className={styles.button} onClick={() => void reload()}>{c.refresh}</button>}
     {data && <>
+      {compact && data.orders === undefined && <p>{c.ordersUnavailable}</p>}
       <dl><dt>{c.buyer}</dt><dd>{data.display_name ?? c.unnamed}</dd>
         <dt>{c.window}</dt><dd>{data.platform}{data.window_open_until && <> · {displayTime(locale, data.window_open_until)}</>}</dd>
         <dt>{c.ordinal}</dt><dd>{c.ordinalValue.replace("{n}", String(data.purchase_ordinal))}</dd></dl>

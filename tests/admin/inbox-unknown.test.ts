@@ -10,9 +10,9 @@ import {
 } from "./inbox-review-host.test.ts";
 const { InboxThread } = await import("../../apps/admin/components/InboxThread.tsx");
 const warning: Record<string, string> = {
-  en: "Delivery is uncertain. Check Messenger before taking another action; this reply is not automatically resent.",
-  "zh-TW": "送達狀態不確定。請先到 Messenger 確認；系統不會自動重送。",
-  "zh-CN": "送达状态不确定。请先到 Messenger 确认；系统不会自动重发。",
+  en: "Delivery unconfirmed; check status without resending.",
+  "zh-TW": "送達待確認；只查詢，不重送。",
+  "zh-CN": "送达情况待确认；只查询，不重发。",
 };
 const projection = (state: string) => ({
   ...thread,
@@ -112,14 +112,40 @@ test("a later A9 page omitting the known UNKNOWN is not delivery reconciliation"
 });
 
 for (const state of ["queued", "sent", "failed", "blocked"]) {
-  test(`persisted ${state} is not mislabeled UNKNOWN and retains ordinary composer eligibility`, async (t) => {
+  test(`persisted ${state} stays distinct from UNKNOWN and enforces signed send locking`, async (t) => {
     const env = environment(t);
     transport(() => response(projection(state)));
     const host = mount(env);
     await loaded(host, state);
     assert.equal(textOf(host.output).includes(warning.en), false);
     change(host, "reply-text", "MOCK_ELIGIBLE_DRAFT");
-    assert.equal(sendControl(host).props.disabled, false);
+    assert.equal(sendControl(host).props.disabled, state === "queued" || state === "blocked",
+      "pending or policy-blocked results cannot start another send");
+    assert.equal(node(host, n => n.type === "form").props.hidden, true,
+      "signed result view folds the duplicate composer on page entry");
+    if (state === "queued" || state === "blocked") {
+      node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+      assert.equal(host.ref(ReplyReceipt).pending(), null, "captured or hidden form cannot bypass the result lock");
+    }
+  });
+}
+
+for (const state of ["sent", "queued", "blocked", "unknown"]) {
+  test(`a newer buyer message starts the next composer only after confirmed ${state}`, async (t) => {
+    const env = environment(t);
+    const page = projection(state);
+    page.items.push({ ...thread.items[0], seq: 2, at: "2030-01-01T00:00:02Z", text: "MOCK_NEXT_INBOUND" });
+    const calls = transport(() => response(page));
+    const host = mount(env);
+    await loaded(host, state);
+    assert.equal(node(host, n => n.type === "form").props.hidden, state !== "sent");
+    change(host, "reply-text", "MOCK_NEXT_REPLY");
+    assert.equal(sendControl(host).props.disabled, state !== "sent");
+    if (state !== "sent") {
+      node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+      assert.equal(sends(calls).length, 0, "new inbound cannot bypass an uncertain or policy-blocked send");
+      assert.equal(host.ref(ReplyReceipt).pending(), null);
+    }
   });
 }
 

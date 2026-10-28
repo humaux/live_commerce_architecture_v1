@@ -1,6 +1,8 @@
 // Purpose: own fixed inbox labels and error explanations in the three unit languages.
-// Depends on: no network or buyer content; unknown server codes use a fixed fallback.
+// Depends on: packages/i18n signed inbox copy; no network or buyer content; unknown codes use a fixed fallback.
 // Used by: Inbox, InboxThread and independently mounted BuyerPanel.
+// Invariants: fixed translated copy only; server diagnostic text never reaches sellers.
+import { inboxMessages, type InboxMessages } from "@live-commerce/i18n";
 const en = {
   title: "Messages",
   subtitle: "Read the conversation, take over, then reply.",
@@ -347,9 +349,14 @@ const cn: Copy = {
   read: "已读",
   linkUnavailable: "此认领无法恢复链接，请刷新对话列表。",
 };
+const copies = {
+  en: { ...en, ...inboxMessages.en },
+  "zh-CN": { ...cn, ...inboxMessages["zh-CN"] },
+  "zh-TW": { ...tw, ...inboxMessages["zh-TW"] },
+};
 /** Resolve the three real admin locales; unknown callers retain the existing Traditional Chinese fallback. */
-export function inboxCopy(locale: string): Copy {
-  return locale === "en" ? en : locale === "zh-CN" ? cn : tw;
+export function inboxCopy(locale: string): Copy & InboxMessages {
+  return copies[locale === "en" ? "en" : locale === "zh-CN" ? "zh-CN" : "zh-TW"];
 }
 /** Map only fixed server vocabulary; never display raw upstream errors or buyer data. */
 export function inboxError(locale: string, code: string): string {

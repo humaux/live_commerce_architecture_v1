@@ -148,6 +148,8 @@ async function send(page: Page, copy: Copy) {
   expect((await ack).status()).toBe(200);
   await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.pending);
   await expect(page.getByTestId("reply-text")).toBeHidden();
+  await expect(page.getByTestId("inbox-send-locked")).toBeVisible();
+  await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
   await expect(page.getByTestId("inbox-thread").getByText(copy.draft, { exact: true })).toHaveCount(1);
   record(`send ${copy.locale}`, "fill then click Send", "one MOCK POST, one original outgoing body, composer folded after ACK");
 }
@@ -236,6 +238,16 @@ for (const copy of copies) {
 
   test(`INV2 ${copy.locale} states`, async ({ page }) => {
     const state = await enter(page, copy);
+    const helpCopy = copy.locale === "en" ? {
+      window: "The reply window has ended; wait for the buyer to message again.",
+      connection: "Check the connection and reply permissions in Settings before sending.",
+    } : copy.locale === "zh-CN" ? {
+      window: "已超过可回复时间；请等待买家再次发消息。",
+      connection: "请在设置中检查连接和回复权限；确认前无法发送。",
+    } : {
+      window: "已超過回覆時間；等買家再次傳訊息。",
+      connection: "到設定檢查連接與回覆權限；確認前無法傳送。",
+    };
     await page.setViewportSize({ width: 390, height: 844 });
     const densities: Array<{ blocks: number; chars: number }> = [];
     const capture = async (name: string) => {
@@ -302,6 +314,14 @@ for (const copy of copies) {
       await expect(page.getByTestId("inbox-eligibility")).toContainText(reason);
       await expect(page.getByTestId("reply-send")).toBeDisabled();
       await capture(mode);
+      // The owning form disclosure reveals the concrete restriction explanation.
+      const helpButton = page.getByTestId("inbox-eligibility").locator("..").locator('button[aria-expanded]');
+      await helpButton.click();
+      await expect(helpButton).toHaveAttribute("aria-expanded", "true");
+      await expect(page.getByTestId("inbox-thread")).toContainText(mode === "closed" ? helpCopy.window : helpCopy.connection);
+      await capture(`${mode}-help`);
+      await helpButton.click();
+      await expect(helpButton).toHaveAttribute("aria-expanded", "false");
       expect(state.posts).toBe(1);
       record(`${mode} ${copy.locale}`, "open conversation", "named restriction visible; send disabled; no POST");
     }

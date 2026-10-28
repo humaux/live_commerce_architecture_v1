@@ -248,7 +248,7 @@ const adapters: Record<string, string> = {
   "react-dom": mock("export const flushSync=callback=>callback(); export const createPortal=(...args)=>globalThis.__inboxReviewRuntime.createPortal(...args);"),
   "next/navigation": mock('export const useParams=()=>({locale:"en"});'),
   "@live-commerce/format": mock(
-    "export const displayTime=(_,value)=>value; export const money=(_,currency,value)=>`${currency} ${value}`;",
+    "export const STORE_TIME_ZONE='Asia/Taipei'; export const displayTime=(_,value)=>value; export const money=(_,currency,value)=>`${currency} ${value}`;",
   ),
   "@/lib/meta-health-hook": mock("export const useMetaHealth=()=>({data:globalThis.__inboxReviewRuntime.health});"),
   "./WorkspaceFrame": mock("export const WorkspaceFrame=({children})=>children;"),
@@ -258,7 +258,8 @@ registerHooks({
     if (adapters[specifier]) return { url: adapters[specifier], shortCircuit: true };
     if (specifier.endsWith(".css")) return { url: mock("export default {};"), shortCircuit: true };
     let file: string | undefined;
-    if (specifier.startsWith("@/")) file = resolve(root, "apps/admin", specifier.slice(2));
+    if (specifier === "@live-commerce/i18n") file = resolve(root, "packages/i18n/src/index.ts");
+    else if (specifier.startsWith("@/")) file = resolve(root, "apps/admin", specifier.slice(2));
     else if (specifier.startsWith(".") && context.parentURL?.startsWith("file:")) {
       file = resolve(dirname(fileURLToPath(context.parentURL)), specifier);
     }
@@ -356,7 +357,7 @@ function submit(host: Host) {
   host.flush();
 }
 function clickText(host: Host, label: string) {
-  const button = node(host, (n) => n.type === "button" && textOf(n) === label);
+  const button = node(host, (n) => n.type === "button" && (textOf(n) === label || n.props["aria-label"] === label));
   assert.equal(button.props.disabled, false, "actual button is enabled");
   button.props.onClick();
   host.flush();

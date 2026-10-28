@@ -1,9 +1,39 @@
-INBOX-V2-IMPL RED
+INBOX-V2-IMPL RED — verified GitHub receipt (2026-10-29 relay)
 base_sha=9a5a2f765c29fc0ab59fbb71e68ba468b31041e8
-tests_only_head=PENDING
-run_id=PENDING
-job_id=PENDING
-assertion_failure=PENDING
-evidence_level=E0 (no CI result yet)
-implementation=NOT_STARTED; wait for causal CI RED before implementation
+tests_only_head=2b63813f3d9c826c4ed0da9517d3ba4ab643f137
+pr=294 https://github.com/humaux/live_commerce_architecture_v1/pull/294
+base_branch=r3/integration
+foundation_run_id=40772119429
+foundation_job_id=123111778889
+foundation_status=FAIL (5m58s)
+tested_synthetic_merge_sha=dfebcc0daa0d38fcd845ced00a11db6c79e449d8
+assertion_failure=tests/admin/inbox-copy.test.ts:101/104; NEW INBOX-V2 signed zh-TW/zh-CN/en simpleTitle assertions; actual undefined
+expected=全店訊息 / 全店消息 / Store inbox
+suite_result=28 tests, 25 pass, 3 fail; exit 1 on the new assertions, not import/compile errors
+evidence_level=E3 for causal copy RED only; browser result is separate
+gates_red_run_id=40772119497
+gates_red_build_job_id=123113511707 (PASS; not a browser acceptance receipt)
+gates_red_browser=PENDING at implementation relay; not used as proof of browser RED
+implementation=written after Foundation causal RED; next single implementation push targets PR294
 local_tests=NOT_RUN (owner prohibits local execution)
+green=PENDING implementation push CI
+independent_review=NOT_RUN
+wake_owner=Claude integrator relays a fresh session after new Foundation/Gates WAIT_RUN conclusions
+receipt_policy=final green receipts go in PR comment; no evidence-only push
+
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0947901Z ✖ INBOX-V2 signed simplified labels and safe delivery copy in zh-TW (1.0782ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0948533Z ✖ INBOX-V2 signed simplified labels and safe delivery copy in zh-CN (0.361063ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0949084Z ✖ INBOX-V2 signed simplified labels and safe delivery copy in en (0.230306ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0970856Z ✖ INBOX-V2 signed simplified labels and safe delivery copy in zh-TW (1.0782ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0971325Z   AssertionError [ERR_ASSERTION]: signed zh-TW simpleTitle
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0977021Z     actual: undefined,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0977267Z     expected: '全店訊息',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0978623Z ✖ INBOX-V2 signed simplified labels and safe delivery copy in zh-CN (0.361063ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0979063Z   AssertionError [ERR_ASSERTION]: signed zh-CN simpleTitle
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0984745Z     actual: undefined,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0985012Z     expected: '全店消息',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0986702Z ✖ INBOX-V2 signed simplified labels and safe delivery copy in en (0.230306ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0987157Z   AssertionError [ERR_ASSERTION]: signed en simpleTitle
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0993157Z     actual: undefined,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0993424Z     expected: 'Store inbox',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.1031317Z ##[error]Process completed with exit code 1.

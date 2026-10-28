@@ -8,7 +8,7 @@
 - Role: dispatched UI implementation worker. Runtime model/effort not exposed: UNKNOWN. No delegation.
 - UI authority: `/Volumes/data/live_commerce_architecture_v1/.worktrees/ux-inbox/output/ux-inbox/DELIVERY.md`, current 2026-10-29 polish + retained simplify baseline. Owner sign-off is supplied in this implementation card; the design handoff's older UNKNOWN sign-off is historical.
 - Read: `AGENTS.md`; `架构.md` §§0/1/2/10/26/27; `contracts/live-console-v1.md` §§3.3/3.6/4.4/11; current A8/A9/A13/A14 browser DTOs and their consumers. The existing inbox is the implementation authority for privacy, cancellation, CAS and send eligibility.
-- Humaux search/get/rejected/coord/store/canvas/code-index tools are unavailable. No library lookup, new ownership claim, store or canvas success is asserted. This file is a local handoff, not a replacement shared-state authority.
+- Relay update 2026-10-29: Humaux became available after initial discovery. Search/get and rejected representative enumeration ran (5/9, coverage 0.5556; not the complete set). Dispatch ownership remains with the integrator; no additional claim/delegation. Code-index/navigation tools unavailable; used rg symbols/imports and direct callers. Shared-store receipt and own sub-element updates are recorded separately.
 
 ## Exact module write paths (before code)
 
@@ -59,4 +59,6 @@ Locally: static checks only (`node --check`, `tsc`, allowed packet check where a
 
 ## Current evidence
 
-E0: author plan only. Implementation / RED / GREEN / browser / density / independent review: NOT_RUN.
+Causal copy RED: E3 GitHub Foundation 40772119429 / 123111778889, tests-only head 2b63813f, tested synthetic merge dfebcc0daa0d38fcd845ced00a11db6c79e449d8. Implementation written; author E0, local syntax checks E1 only. Implementation GREEN/browser/density/independent acceptance PENDING.
+
+Additional direct-consumer test paths needed during implementation (outside the original pre-code list; listed in PR body): `tests/admin/inbox-unknown.test.ts` adapts signed warning copy and ADDS stricter queued/blocked and new-inbound counterexamples; `tests/admin/inbox-window.test.ts` updates two closed-window copy literals to the signed wording. All timeout, boundary, no-POST, CAS, permission and privacy assertions remain. No Go graph change; depmap regeneration unnecessary.

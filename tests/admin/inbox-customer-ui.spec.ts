@@ -39,6 +39,8 @@ async function actor(request: APIRequestContext, mode: "qualified" | "operator")
 }
 async function openBuyer(page: Page) {
   await page.getByTestId(`conversation-${fixture.conversation}`).click();
+  await page.getByTestId("customer-details-toggle").click();
+  await expect(page.getByTestId("customer-details-toggle")).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByTestId("buyer-panel")).toHaveAttribute("aria-busy", "false");
   await expect(page.getByTestId("customer-link-choice")).toBeEnabled();
 }

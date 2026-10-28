@@ -1,6 +1,10 @@
-# INBOX-V2-IMPL — tests-only RED handoff
+# INBOX-V2-IMPL — implementation / CI relay handoff
 
-Status: **implementation NOT_STARTED; CI RED pending**. This is a partial, resumable handoff, not completion. No product source has changed. No local tests, browser, server, container, database or LIVE action ran.
+Status: **implementation written; exact-head GREEN and independent acceptance PENDING**. Author assessment E0. No local test, browser, server, PG, container or LIVE action ran.
+
+PR [#294](https://github.com/humaux/live_commerce_architecture_v1/pull/294), draft into `r3/integration`. Verified tests-only RED head `2b63813f3d9c826c4ed0da9517d3ba4ab643f137`; Foundation run `40772119429`, job `123111778889`, synthetic merge `dfebcc0daa0d38fcd845ced00a11db6c79e449d8`. Three NEW signed `simpleTitle` assertions fail at `tests/admin/inbox-copy.test.ts:101/104` (undefined versus signed copy), exit 1. E3 proves this copy RED only. Browser RED in Gates `40772119497` remained pending when implementation began. Raw filtered receipt: `red.log`.
+
+One whole-card implementation push follows this record. Its Foundation/Gates RUN ids are the next WAIT_RUN handoff; final run/job evidence belongs in a PR comment, without an evidence-only commit. The integrator relays a fresh session when the jobs finish. No completion is claimed.
 
 ## Authority and current scope
 
@@ -8,7 +12,7 @@ See `PLAN.md` for exact paths and acceptance matrix. UI authority is the integra
 `/Volumes/data/live_commerce_architecture_v1/.worktrees/ux-inbox/output/ux-inbox/DELIVERY.md`
 SHA-256 `a74b140f8abc0d7a50be3a55b9ee5bd180c84c4459c1ad8d2bbda4387def0d88`.
 
-Current Fleet Bridge read: connected document, editorType figma, default file `iJ9lDdFIXgTlKkt5Tvrc0X`; read-only context `1429:39076`; fresh screenshots `1429:38826`, `1429:39076`, `1429:37361`, `1429:39424` under `figma/`. No Figma write, copy-lint mutation or bridge restart. All 43 authority frames remain the implementation target; the four captures are representatives, not whole-set acceptance.
+Initial tests-only Fleet Bridge read: connected document, editorType figma, default file `iJ9lDdFIXgTlKkt5Tvrc0X`; read-only context `1429:39076`; fresh screenshots `1429:38826`, `1429:39076`, `1429:37361`, `1429:39424` under `figma/`. No Figma write, copy-lint mutation or bridge restart. All 43 authority frames remain the implementation target; the four captures are representatives, not whole-set acceptance.
 
 ## BOURDIEU — Q1–Q6
 
@@ -31,7 +35,7 @@ Current Fleet Bridge read: connected document, editorType figma, default file `i
 |Same contract §4.4, existing A8/A9/A13/A14 code|Distinct queued/sent/failed/blocked/unknown outcomes; customer link/CAS, privacy clearing and uncertain receipts cannot be simplified away.|
 |Current implementation card|No local tests/servers; one whole-card RED push before implementation; three locales; fixed chip order; no new settings/API/contract.|
 
-Humaux preference/rejected search, coord/lock/store and canvas: tool unavailable, NOT_RUN. Library absence is not inferred.
+Relay: Humaux search/get and rejected representative enumeration ran after tools became available. Read current development rule 7bdb220b-0798-4b1d-aff5-16ee94cae75f. Dispatch ownership is retained; no new claim or recursive delegation. Shared writes use coord_lock. The card is the UI/authorization authority; recalled summaries are leads only.
 
 ## MOBBIN → EAGLE
 
@@ -57,25 +61,25 @@ This records application of the supplied guide; no current upstream documentatio
 
 ## Desktop → mobile / summary-result parity checklist
 
-All implementation/readback entries are PENDING until causal RED and the implementation push.
+The source locations below are author-reviewed mappings, E0. Runtime click, refresh and density results remain PENDING exact-head CI; source mapping is not an acceptance receipt.
 
 |Required desktop field/fact|Required mobile and every result/review presentation|Implementation / CI|
 |---|---|---|
-|Buyer and channel|Selected buyer/channel header, unchanged through send/recovery|PENDING|
+|Buyer and channel|Selected buyer/channel header, unchanged through send/recovery|`InboxThread` header / same header around result; CI PENDING|
 |Store read/unread|Row/filter state and store-read metadata; persists after reload|New native-click assertion; PENDING|
-|Assignment/takeover and paused automation|Always-visible disclosure label; use real assignment facts, no invented agent name|New disclosure assertion; PENDING|
-|Manual identity link|Expanded details; never infer from name|Existing real A14 link/CAS tests retained; PENDING|
-|Orders/cumulative spend unavailable|Expanded unavailable fact when server omits data; never an invented zero|New unavailable-fact assertion; PENDING|
+|Assignment/takeover and paused automation|Always-visible disclosure label; use real assignment facts, no invented agent name|`InboxThread` disclosure label / result states; CI PENDING|
+|Manual identity link|Expanded details; never infer from name|Expanded `BuyerPanel`; real A14/CAS assertions retained; CI PENDING|
+|Orders/cumulative spend unavailable|Expanded unavailable fact when server omits data; never an invented zero|`BuyerPanel compact` unavailable fact; CI PENDING|
 |Incoming author/time/body|Header identifies author; original body/time once|Existing real-chain + new state tests; PENDING|
 |Outgoing author/time/body/outcome|Original once, author from actual server facts, one result region|New queued/sent/failed/unknown assertions; PENDING|
 |Recipient/channel before send|Header next to composer; remains in recovery|New three-language main path; PENDING|
-|Draft/retained original|Editable before send/known rejection; one original after ACK; no hidden persisted buyer draft|Native fill/clear/send/edit; PENDING|
-|Deadline/restriction/safe next step|Eligibility or one concrete result; UNKNOWN only query, never resend|New window/permission/connection/UNKNOWN assertions; PENDING|
+|Draft/retained original|Editable before send/known rejection; one original after ACK; no hidden persisted buyer draft|`InboxThread` composer/result/edit; native fill/clear/send/edit CI PENDING|
+|Deadline/restriction/safe next step|Eligibility or one concrete result; UNKNOWN only query, never resend|`InboxThread` eligibility/result/help; CI PENDING|
 |Phone/destination/totals/payment timing|N/A: not part of this inbox card|No field added|
 
 ## Three-language copy
 
-The complete signed 62-string table remains at the authority path above. New additive Node assertions independently pin the 23 module keys in zh-TW/zh-CN/en, with `{time}`/`{channel}` placeholders instead of Figma sample facts. Existing consumer copy assertions remain unchanged. `packages/i18n` implementation is PENDING and must preserve all three locales.
+The complete signed table remains at the authority path above. `packages/i18n/src/inbox.ts` now owns the typed zh-TW/zh-CN/en entries, exported through the locale package and resolved by the existing inbox copy/error mapper. Independent additive copy assertions use the signed literals and `{time}`/`{channel}` placeholders. Legacy copy keys stay intact for standalone consumers. Browser tests cover the main screen in all three locales.
 
 |zh-TW|zh-CN|en|
 |---|---|---|
@@ -108,12 +112,23 @@ New `tests/admin/inbox-v2-ui.spec.ts` registers six cases: three locales × (mai
 
 Runtime click ledger will append to the existing suite's `click-ledger.json`; no unexecuted control is marked PASS here. New tests preserve the old discovery counts/calibration by adding a separately counted six-case matrix.
 
-- `node --check` on the new spec, modified copy/discovery suites and Playwright config: exit 0 (E1 syntax only).
-- `git diff --check`: exit 0 (static whitespace only).
-- `pnpm exec tsc ... tests/admin/inbox-v2-ui.spec.ts`: exit 254, `Command "tsc" not found`; typecheck NOT_RUN, dependency installation not attempted.
-- `node scripts/dev/derive-browser-ownership.mjs`: exit 0, generated 53-mode ownership artifact after staging the new spec. This is static generation, not a test.
-- RED/GREEN/browser/density/independent acceptance: PENDING / NOT_RUN. Exact push run IDs go in `red.log` and final WAIT_RUN handoff.
-- Outside module paths: `playwright.config.ts` ADD-only test registration and generated `output/ci-select-backend-browser/browser-ownership.json`; explicitly list in PR body for integrator review. No dependency map change needed so far (no Go graph changes).
-- Rollback point: clean base SHA above; this tests-only commit is isolated on the assigned branch. No rollback command was executed.
-- No background process was started. Owned captures stay under this task's output directory; no other lane material was edited/deleted.
-- Author assessment E0; static syntax/generation E1. **No completion or product PASS claimed.** Humaux store/canvas remains unavailable.
+- Allowed static validation: `node --check` on changed TS locale/copy/harness/spec files, `git diff --check`, and `node scripts/dev/derive-browser-ownership.mjs`. Exact exits are recorded in `static.log`. These are E1 only; JSX/type/runtime acceptance belongs to CI.
+- Local `tsc`: NOT_RUN, no installed compiler/dependencies (`Command "tsc" not found` in prior RED preparation). No dependency install was attempted.
+- GREEN/browser/density/refresh/independent acceptance: PENDING / NOT_RUN. Six INV2 cases retain the unchanged density thresholds and add actual clicks on both restriction explanations. Existing real BFF/Go/PG suites retain their permission, CAS, read, idempotency, privacy and boundary assertions.
+- Required harness adaptation: every `Inbox.tsx` / `InboxThread.tsx` / `BuyerPanel.tsx` importer was found with `rg -l`. They share `inbox-review-host.test.ts`; it now supplies `STORE_TIME_ZONE` and resolves icon buttons by accessible name as well as visible text. No timeout or waiting budget changed.
+- Additional direct-consumer paths outside the initial PLAN: `tests/admin/inbox-unknown.test.ts` (signed copy; stricter pending/policy locks; four new-inbound counterexamples) and `tests/admin/inbox-window.test.ts` (two signed closing-copy literals). Register with integrator in PR body. Tests-only registration already includes `playwright.config.ts` and generated `output/ci-select-backend-browser/browser-ownership.json`.
+- No API, contract, migration, pin, baseline, exemption, dependency or lockfile change. No other app/backend edit. No Go dependency edge changed, so no depmap update is needed.
+- Rollback reference: assigned branch base `9a5a2f765c29fc0ab59fbb71e68ba468b31041e8`; source changes are isolated in the implementation commit. Integrator can revert that commit through its normal PR gate. No rollback ran.
+- No background local process, temporary fixture, container or port was started. Owned Figma captures are retained as read evidence.
+
+## Implementation details and limits
+
+- Fixed All / Unread / Assigned-in-store slots, Instagram filter and full-width rows use A8 facts. Assignment filters only loaded authorized A8 rows, with existing cursor pagination; there is no invented server filter or claimed global assignment total. Existing uncommon filters remain under one overflow disclosure; this preserves the real-chain filter assertions while keeping the primary view simple.
+- `InboxThread` owns the shared desktop/mobile customer disclosure and folds its existing BuyerPanel, takeover/release, published-template and older-history controls. No setting was added. Read state changes only after successful A10; privacy/session fences remain authoritative.
+- Known sending outcomes use one result region and retain the original outgoing text once. Rejected text can be restored for editing. Queued/blocked/UNKNOWN results refuse a fresh send, including captured-form bypass; uncertain transport acknowledgment still permits only the existing exact-body/exact-key receipt retry. UNKNOWN remains latched if a later page omits it. A newer inbound reopens the signed composer only after a confirmed sent outcome.
+- Sender names are not exposed in current A9/A8 responses (principal/assignee UUIDs only). Show the real human-takeover/paused-automation role, not invented sample Agent A/B names or raw UUIDs. This DTO limitation is disclosed; no API expansion was authorized.
+- Orders/cumulative-spend omission remains unavailable, never a synthetic zero. Standalone console BuyerPanel behavior is retained; inbox-only unavailable copy is additive.
+- `BOURDIEU`, `PROJECT UNDERSTANDING`, `MOBBIN → EAGLE`, and `FIGMA OFFICIAL GUIDANCE` sections above document the required process. The pinned brief controls; local skill setup scripts/tests were not run under the card's static-only restriction. No Figma mutation or design hand-in occurred; current design-copy lint is N/A to this code-only change.
+- Fresh relay read: Fleet Bridge connected; `get_design_context` / `get_screenshot` re-read `1429:39076`, and screenshot `1429:39424`; captures in `figma-current/`. No uncertain write/restart.
+- Humaux: causal RED store accepted for background indexing; own canvas `integrator-inbox-v2-impl-sub-1` updated successfully (1 element, no conflicts), under coord_lock and released. Shared parent task/canvas untouched.
+- Author E0; static checks E1; causal copy RED E3 only. Product completion, LIVE and independent E4 are **not claimed**.

@@ -1,0 +1,11 @@
+INBOX-V2-IMPL implementation static validation — 2026-10-29
+node --check: packages/i18n/src/inbox.ts, packages/i18n/src/index.ts, apps/admin/src/features/messages/copy.ts, tests/admin/inbox-copy.test.ts, tests/admin/inbox-review-host.test.ts, tests/admin/inbox-ui.spec.ts, tests/admin/inbox-customer-ui.spec.ts, tests/admin/inbox-v2-ui.spec.ts, tests/admin/inbox-unknown.test.ts, tests/admin/inbox-window.test.ts
+exit_code=0 (set -e loop, no tests executed)
+git diff --check
+exit_code=0
+node scripts/dev/derive-browser-ownership.mjs
+exit_code=0; regenerated tracked browser-ownership.json, 53 modes
+E1 only: syntax/whitespace/static ownership generation. JSX/type/runtime acceptance NOT_RUN locally.
+tsc=NOT_RUN; compiler/dependencies not installed in this worktree; earlier attempt exit 254 Command tsc not found.
+No local tests, build server, browser, database or container started.
+Exact implementation source hashes: source-sha256.txt. CI head/run receipts supplied after the single implementation push; no evidence-only push.

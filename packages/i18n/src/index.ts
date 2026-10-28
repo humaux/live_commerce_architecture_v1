@@ -1,5 +1,10 @@
+// Purpose: supported locale registry, language negotiation, safe locale paths and fixed product copy.
+// Depends on: native Intl/URL-independent parsing and the signed inbox locale table.
+// Used by: admin and storefront presentation; no authentication or business-state authority.
+// Invariants: language changes never change store scope, market facts or redirect trust boundaries.
 export const locales = ['zh-CN', 'zh-TW', 'en'] as const;
 export type Locale = (typeof locales)[number];
+export { inboxMessages, type InboxMessages } from './inbox.ts';
 
 export const localeNames: Record<Locale, string> = {
   'zh-CN': '简体中文',

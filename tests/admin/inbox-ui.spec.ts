@@ -55,9 +55,27 @@ async function session(context: BrowserContext, token: string) {
   ]);
 }
 
+// The signed primary filters are buttons; the retained uncommon filters are behind overflow.
+async function filter(page: Page, value: string) {
+  if (["all", "unread", "assigned", "instagram"].includes(value)) {
+    await page.getByTestId(`inbox-filter-${value}`).click();
+  } else {
+    const picker = page.getByTestId("inbox-filter");
+    if (!await picker.isVisible()) await page.getByTestId("inbox-more-filters").click();
+    await picker.selectOption(value);
+    await page.getByTestId("inbox-more-filters").click();
+  }
+}
+async function details(page: Page) {
+  const disclosure = page.getByTestId("customer-details-toggle");
+  if (await disclosure.getAttribute("aria-expanded") === "false") await disclosure.click();
+  await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+}
+
 async function open(page: Page, id: string) {
   await page.getByTestId(`conversation-${id}`).click();
   await expect(page.getByTestId("inbox-thread")).toBeVisible();
+  await details(page);
 }
 
 async function facts(page: Page, conversation = "open") {
@@ -99,22 +117,22 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
   record("list refresh", "click Refresh", "real A8 list read and named conversation restored");
   const before = await facts(page);
-  await page.getByTestId("inbox-filter").selectOption("instagram");
+  await filter(page, "instagram");
   await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
   await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
   record("filter", "select Instagram", "only Instagram conversation visible");
-  await page.getByTestId("inbox-filter").selectOption("messenger");
+  await filter(page, "messenger");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
-  await page.getByTestId("inbox-filter").selectOption("messenger");
+  await filter(page, "messenger");
   await expect(
     page.getByTestId(`conversation-${ids.open}`),
     "same filter must not clear the loaded page",
   ).toBeVisible();
   await expect(page.getByTestId(`conversation-${ids.instagram}`)).toHaveCount(0);
-  await page.getByTestId("inbox-filter").selectOption("unreplied");
+  await filter(page, "unreplied");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
   // #242 item 2: prepare a distinct read conversation through the real A9/A10 UI path.
-  await page.getByTestId("inbox-filter").selectOption("all");
+  await filter(page, "all");
   await expect(page.getByTestId(`conversation-${ids.closed}`)).toBeVisible();
   const closedRead = page.waitForResponse(
     (r) => r.request().method() === "POST" && r.url().includes(`/conversations/${ids.closed}/read`),
@@ -129,7 +147,7 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
     (r) => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/stores/${store}/inbox/conversations`
       && new URL(r.url()).searchParams.get("filter") === "unread",
   );
-  await page.getByTestId("inbox-filter").selectOption("unread");
+  await filter(page, "unread");
   expect((await unreadList).status(), "filter=unread real BFF result").toBe(200);
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
   await expect(
@@ -155,16 +173,16 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
     (r) => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/stores/${store}/inbox/conversations`
       && new URL(r.url()).searchParams.get("filter") === "unread",
   );
-  await page.getByTestId("inbox-filter").selectOption("unread");
+  await filter(page, "unread");
   expect((await reloadedUnreadList).status(), "reloaded filter=unread real BFF result").toBe(200);
   await expect(page.getByTestId("inbox-list")).toHaveAttribute("aria-busy", "false");
   await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
   await expect(page.getByTestId(`conversation-${ids.closed}`), "completed unread reload excludes the distinct read conversation").toHaveCount(0);
   await expect(page.getByTestId(`conversation-${ids.open}`), "completed unread reload excludes the marked-read conversation").toHaveCount(0);
   record("unread row persistence", "reload then select unread", "marked-read thread remains absent after authoritative reload");
-  await page.getByTestId("inbox-filter").selectOption("live_comment");
+  await filter(page, "live_comment");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
-  await page.getByTestId("inbox-filter").selectOption("all");
+  await filter(page, "all");
   record(
     "filter",
     "select Messenger/unreplied/live comment/all",
@@ -222,6 +240,7 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
     "fill and click send then refresh/reopen",
     "one encrypted outbound appears in authoritative readback",
   );
+  await details(page);
   await action(page, ids.open, "release", () => page.getByTestId("release").click());
   await expect.poll(async () => (await facts(page)).mode).toBe("auto");
   await page.reload();
@@ -321,7 +340,7 @@ test("INU08 committed send with lost acknowledgment retries exact body/key once"
   const second = page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === endpoint);
   await page.getByTestId("reply-send").click();
   expect((await second).status()).toBeGreaterThanOrEqual(200);
-  await expect(page.getByTestId("reply-send")).toHaveText("Send reply");
+  await expect(page.getByTestId("reply-send")).toHaveText("Send");
   expect(submissions).toHaveLength(2);
   expect(submissions[0].key).toMatch(/^[A-Za-z0-9_-]{8,128}$/);
   expect(submissions[1]).toEqual(submissions[0]);
@@ -543,9 +562,9 @@ test("INU05 native hide clears private thread; visible return reauthorizes befor
 });
 
 const localeCases = [
-  { locale: "zh-TW", linkPermission: "連結顧客需要回覆與顧客讀取權限。", title: "訊息", send: "送出回覆", buyer: "買家資料", back: "返回對話列表" },
-  { locale: "zh-CN", linkPermission: "连接顾客需要回复与顾客读取权限。", title: "消息", send: "发送回复", buyer: "买家资料", back: "返回对话列表" },
-  { locale: "en", linkPermission: "Linking needs reply and customer read access.", title: "Messages", send: "Send reply", buyer: "Buyer details", back: "Back to conversations" },
+  { locale: "zh-TW", linkPermission: "連結顧客需要回覆與顧客讀取權限。", title: "全店訊息", send: "傳送", buyer: "買家資料", back: "返回對話列表" },
+  { locale: "zh-CN", linkPermission: "连接顾客需要回复与顾客读取权限。", title: "全店消息", send: "发送", buyer: "买家资料", back: "返回对话列表" },
+  { locale: "en", linkPermission: "Linking needs reply and customer read access.", title: "Store inbox", send: "Send", buyer: "Buyer details", back: "Back to conversations" },
 ] as const;
 
 async function switchLocale(page: Page, locale: (typeof localeCases)[number]["locale"]) {
@@ -578,7 +597,7 @@ for (const copy of localeCases) {
         await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
         record(`mobile back ${copy.locale}`, "click back", "private detail removed before reopening the list");
       }
-      await page.getByTestId("inbox-filter").selectOption("messenger");
+      await filter(page, "messenger");
       await open(page, ids.open);
       await expect(page.getByTestId("inbox-thread")).toContainText(dm);
       await expect(page.getByTestId("buyer-panel")).toBeVisible();
@@ -606,7 +625,7 @@ for (const copy of localeCases) {
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       if (width === 390) await page.getByRole("button", { name: copy.back, exact: true }).click();
-      await page.getByTestId("inbox-filter").selectOption("messenger");
+      await filter(page, "messenger");
       await open(page, ids.open);
       await expect(page.getByTestId("inbox-thread")).toContainText(dm);
       // Independent literal expectations catch zh-CN falling back to Traditional Chinese.
