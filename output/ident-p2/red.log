@@ -1,0 +1,4 @@
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T09:29:40.6179875Z     reauth_guard_sql_test.go:396: after OIDC re-auth authenticated_at infinity=true capped=false, want false/true
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T09:29:40.6180510Z --- FAIL: TestGuardOG07OIDCReauthCapsInfiniteAuthenticatedAt (0.00s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T09:29:48.5800230Z matrix-receipts: {"mode":"shard:unit","run_id":"40655692256","run_attempt":"1","sha":"05c641166990fcc04470da95b63497e5acd5e1c8","status":"FAIL","test_count":1464,"spec_count":0}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T09:29:49.8215376Z --- FAIL: TestGuardOG07OIDCReauthCapsInfiniteAuthenticatedAt (0.00s)

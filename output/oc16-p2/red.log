@@ -1,0 +1,86 @@
+card=oc16-p2
+base=5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248
+stage=tests-only; expected RED not yet observed
+expected_test=TestOrderAttemptExecutorAbortClassification/PT422/bank_transfer_closed
+expected_assertion=closed native pair: got "" want "payment_unavailable"
+ci_run=PENDING
+ci_job=PENDING
+local_tests=NOT_RUN (prohibited)
+
+Remaining-tests batch 2026-10-28 (after implementation head 83deaff3ca56ac4a0832b19cb9e2531baec10546):
+expected_test_1=TestBtcPolicyNotWritableByApp/bank_tables_and_transfer_snapshot_privileges
+expected_assertion_1=forbidden bank privilege: commerce_runtime holds DELETE/TRUNCATE on both bank tables and UPDATE on six immutable snapshot columns
+expected_test_2=TestBtcSaveReplayAfterClose/old_key_with_a_different_body_conflicts_before_closure_refusal
+expected_assertion_2=old-key/different-body after closure: <nil>, want PT409 idempotency_conflict
+mutation_scope=two independent owner transactions, deferred rollback; no migration or committed grant/function change
+remaining_batch_red=PENDING (do not remove mutations until both own-assertion failures observed on GitHub CI)
+remaining_push_budget=one tests-only RED push now, one mutation-removal GREEN push after assertion RED
+remaining_batch_head=96a4a04d3359f4da52692160b78b7c38eef4f6e8
+remaining_batch_gates_run=40680080856 (pending; test jobs not yet allocated)
+remaining_batch_foundation_run=40680080789 (queued)
+WAIT_RUN=40680080856
+WAIT_RUN=40680080789
+wake_owner=integrator; relay new Gates test-job conclusion in a fresh session
+
+Observed 2026-10-28 after PR creation:
+pr=https://github.com/humaux/live_commerce_architecture_v1/pull/260
+head=a3b8c31044eefb156eb7607ef1be6d7735185796
+ci_run=40628067749 (Foundation checks; queued)
+ci_job=122617676540 (foundation; pending; primary RED assertion receipt)
+gates_run=40628067835 (queued)
+gates_plan_job=122617676896 (pending; shard:unit job not allocated yet)
+red_conclusion=PENDING; no assertion failure observed
+wake_owner=integrator; card explicitly says integrator relays fresh session when WAIT_JOB completes
+resume=gh run view 40628067749 --repo humaux/live_commerce_architecture_v1 --log-failed (filter to classification failure)
+This receipt append is intentionally uncommitted to keep current CI bound to the tests-only SHA. Include it with the implementation only after confirmed RED.
+
+Resume inspection 2026-10-28 (supersedes pending Foundation observations above):
+foundation_run=40628067749 conclusion=success head=a3b8c31044eefb156eb7607ef1be6d7735185796
+foundation_job=122617676540 conclusion=success
+foundation_step_12=Real PostgreSQL, race detector and vet; conclusion=skipped
+command=gh run view 40628067749 --log-failed | tail -60
+result=exit 0; no failed-job output; no bank_transfer_closed assertion executed/proven
+gates_run=40628067835 status=queued
+unit_job=122622547420 name=gate (shard:unit) status=queued conclusion=null
+unit_head=a3b8c31044eefb156eb7607ef1be6d7735185796
+red_conclusion=PENDING; Foundation success is not assertion RED or Go test GREEN
+implementation=NOT_STARTED; RED-first requirement retained
+WAIT_RUN=40628067835
+wake_owner=integrator; relay Gates unit-job conclusion in a fresh session
+resume=gh run view 40628067835 --log-failed (filter to TestOrderAttemptExecutorAbortClassification and closed native pair)
+2026-10-28T05:19:11.3198665Z
+2026-10-28T05:19:11.3198931Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-10-28T05:19:11.3199299Z
+2026-10-28T05:19:11.3199728Z HEAD is now at cb89258d Merge a3b8c31044eefb156eb7607ef1be6d7735185796 into 5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248
+2026-10-28T05:19:11.3311606Z ##[endgroup]
+2026-10-28T05:19:11.3369467Z [command]/usr/bin/git log -1 --format=%H
+2026-10-28T05:19:11.3407190Z cb89258d27e6bcf4c824cd84ddaa38bc8e1ca056
+2026-10-28T05:19:11.3419773Z ##[group]Removing auth
+2026-10-28T05:19:11.3425749Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-28T05:19:11.3468046Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-28T05:19:11.3734931Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-28T05:19:11.3771842Z http.https://github.com/.extraheader
+2026-10-28T05:19:11.3781618Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+--
+2026-10-28T05:25:41.9627209Z === RUN   TestOrderAttemptExecutorAbortClassification/PT422/pay_at_pickup_unavailable
+2026-10-28T05:25:41.9628605Z === RUN   TestOrderAttemptExecutorAbortClassification/PT422/cash_on_delivery_unavailable
+2026-10-28T05:25:41.9629908Z === RUN   TestOrderAttemptExecutorAbortClassification/PT422/bank_transfer_closed
+2026-10-28T05:25:41.9631862Z     executor_test.go:52: closed native pair: got "" want "payment_unavailable"
+2026-10-28T05:25:41.9633064Z === RUN   TestOrderAttemptExecutorAbortClassification/PT422/sku_inactive
+2026-10-28T05:25:41.9634245Z === RUN   TestOrderAttemptExecutorAbortClassification/PT422/sku_changed
+2026-10-28T05:25:41.9635401Z === RUN   TestOrderAttemptExecutorAbortClassification/PT422/sku_unavailable
+2026-10-28T05:25:41.9636627Z === RUN   TestOrderAttemptExecutorAbortClassification/PT422/max_per_order_exceeded
+2026-10-28T05:25:41.9637873Z === RUN   TestOrderAttemptExecutorAbortClassification/PT429/offline_order_limit
+2026-10-28T05:25:41.9639080Z === RUN   TestOrderAttemptExecutorAbortClassification/allocator_insufficient
+2026-10-28T05:25:41.9640601Z === RUN   TestOrderAttemptExecutorAbortClassification/missing_local_plan_key_stays_retryable
+
+Confirmed remaining-batch RED 2026-10-29:
+head=96a4a04d3359f4da52692160b78b7c38eef4f6e8
+run=40680080856 job=122821418704 (shard:g09) conclusion=failure
+synthetic_checkout=c1b634784a65ff4a2ff6a290dcffb9dfa2bf1c9e base=776550a1e42bd57bc8496ccce16555f31ece7638
+raw_filtered_receipt=output/oc16-p2/batch-red-job.log
+15:50:42 UTC: bank_transfer_closed_test.go:102 forbidden bank privilege, all 10 injected privileges detected
+15:50:43 UTC: bank_transfer_closed_test.go:287 old-key/different-body after closure: <nil>, want PT409 idempotency_conflict
+Both added assertions reached and failed; no setup failure. ProductEditor child failures are expected by PASS TestProductEditorMatrixEvidenceShallowClone.
+Foundation 40680080789/job122788273561 success does not replace REAL_PG test evidence.
+Evidence=E3 for assertion RED only; GREEN pending final implementation push.

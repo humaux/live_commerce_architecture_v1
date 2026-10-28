@@ -1,6 +1,14 @@
 // Copy for the admin orders page and its refund/shipment/export sections (BFF orders* -> Go merchantorders).
+// Purpose: Defines matching seller-facing order and shipment copy for zh-TW, zh-CN and en.
+// Depends on: @live-commerce/i18n locale type; no runtime data or effects.
+// Used by: MerchantOrders, OrderDetailPanel, OrderShipment and their order presentation components.
+// Invariants: Translations explain server facts; labels never assert a carrier action.
 // Carrier display names follow refund-fulfilment-ui Q3; refund state labels follow stripe-refund-v1 §7.1 (UI paragraph).
 // W3-07B: errors.in_parcel_group is the same sentence as parcels-copy `blocked` (the server code maps to the group hint).
+// Purpose: localize merchant order states and actions without changing server authority.
+// Depends on: i18n Locale and merchant-orders-v2 / manual-fulfilment-v1 state semantics.
+// Used by: merchant orders screens and order-copy CI assertions.
+// Invariants: OC-Q21 labels match task queues; state codes and filter behavior remain unchanged.
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
@@ -32,6 +40,15 @@ const en = {
   manualOrder: "Created by you",
   expand: "Show order details",
   collapse: "Hide order details",
+  backToList: "Back to orders",
+  statusHelp: "About this status",
+  consignHelp: "A carrier label is ready. Printing does not mean the parcel has been handed to the carrier.",
+  reviewHelp: "This payment needs review. Check its details before treating the order as paid or arranging shipment.",
+  selectionTitle: "Selected orders",
+  selectionSelected: "Selected", selectionUnit: "orders", selectionView: "View",
+  shipReview: "Review shipment record",
+  shipConfirm: "Confirm mark shipped",
+  shipManualNote: "Confirm only after arranging shipment yourself. This saves your shipment record; it does not contact a carrier, buy a label or confirm delivery.",
   items: "Items",
   product: "Product",
   unit: "Unit price",
@@ -205,7 +222,7 @@ const en = {
     REFUNDED: "Refunded",
     MANUAL_UNASSIGNED: "Preparing",
     PAID_ALLOCATION_FAILED: "Allocation needs review",
-    NOT_STARTED: "Unpaid",
+    NOT_STARTED: "Awaiting payment",
     PENDING: "Pending",
     AUTHORIZED: "Authorized · not captured",
     CAPTURED: "Captured",
@@ -252,6 +269,12 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
     previous: "上一页", next: "下一页", pageCount: "本页订单数", newOrder: "新", order: "订单",
     created: "创建时间（台北时间）", total: "总额", commercial: "订单状态", payment: "付款状态",
     fulfillment: "履约", work: "付款待办", test: "测试环境", manualOrder: "后台创建", expand: "展开订单详情", collapse: "收起订单详情",
+    backToList: "返回订单列表", statusHelp: "查看状态说明",
+    consignHelp: "物流面单已准备好。打印面单不代表包裹已交给承运商。",
+    reviewHelp: "这笔付款需要人工复核。请先核对详情，再确认收款或安排发货。",
+    selectionTitle: "已选订单", selectionSelected: "已选", selectionUnit: "笔", selectionView: "查看",
+    shipReview: "核对发货记录", shipConfirm: "确认标记已发货",
+    shipManualNote: "请自行安排寄件后再确认。本次仅保存商家发货记录，不会联系承运商、购买面单或确认送达。",
     items: "商品明细", product: "商品", unit: "单价", quantity: "数量", amount: "小计",
     subtotal: "商品小计", discount: "优惠", shipping: "运费", shippingTax: "运费税",
     tax: "税额", grandTotal: "订单总额", recipient: "收货资料", name: "收件人", phone: "手机",
@@ -317,8 +340,8 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
     },
     statuses: {
       active: "不含草稿", all: "全部", DRAFT: "草稿", AWAITING_PAYMENT: "待付款", AWAITING_TRANSFER: "待转账", AWAITING_COLLECTION: "待货到收款", CONFIRMED: "已确认", CANCELLED: "已取消",
-      shipped: "已出货", unshipped: "待出货", MERCHANT_SHIPPED: "已发货", PARTIALLY_REFUNDED: "部分退款", REFUNDED: "已退款",
-      MANUAL_UNASSIGNED: "备货中", PAID_ALLOCATION_FAILED: "分配异常待核对", NOT_STARTED: "未付款",
+      shipped: "已出货", unshipped: "待出货", MERCHANT_SHIPPED: "已出货", PARTIALLY_REFUNDED: "部分退款", REFUNDED: "已退款",
+      MANUAL_UNASSIGNED: "备货中", PAID_ALLOCATION_FAILED: "分配异常待核对", NOT_STARTED: "待付款",
       PENDING: "处理中", AUTHORIZED: "已授权·未扣款", CAPTURED: "已扣款", REVIEW_REQUIRED: "待核对",
       NONE: "无", READY: "待处理", home: "宅配", cvs_711: "7-ELEVEN 取货", cvs_familymart: "全家取货",
       cvs_hilife: "莱尔富取货", cvs_okmart: "OK超商取货", PROVIDER_LABEL_CREATED: "已建立物流单", cvs_pending: "已建单·待交寄",
@@ -345,6 +368,12 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
     previous: "上一頁", next: "下一頁", pageCount: "本頁訂單數", newOrder: "新", order: "訂單",
     created: "建立時間（台北時間）", total: "總額", commercial: "訂單狀態", payment: "付款狀態",
     fulfillment: "履約", work: "付款待辦", test: "測試環境", manualOrder: "後台建立", expand: "展開訂單詳情", collapse: "收起訂單詳情",
+    backToList: "返回訂單列表", statusHelp: "查看狀態說明",
+    consignHelp: "物流面單已備妥。列印面單不代表包裹已交給承運商。",
+    reviewHelp: "此筆付款需要人工覆核。請先核對詳情，再確認收款或安排寄件。",
+    selectionTitle: "已選訂單", selectionSelected: "已選", selectionUnit: "筆", selectionView: "檢視",
+    shipReview: "確認出貨紀錄", shipConfirm: "確認標記已出貨",
+    shipManualNote: "確認表示你已自行安排寄件。本次只登記商家出貨紀錄，不會呼叫承運商、購買面單或證明送達。",
     items: "商品明細", product: "商品", unit: "單價", quantity: "數量", amount: "小計",
     subtotal: "商品小計", discount: "折扣", shipping: "運費", shippingTax: "運費稅",
     tax: "稅額", grandTotal: "訂單總額", recipient: "收貨資料", name: "收件人", phone: "手機",
@@ -410,8 +439,8 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
     },
     statuses: {
       active: "不含草稿", all: "全部", DRAFT: "草稿", AWAITING_PAYMENT: "待付款", AWAITING_TRANSFER: "待轉帳", AWAITING_COLLECTION: "待貨到收款", CONFIRMED: "已確認", CANCELLED: "已取消",
-      shipped: "已出貨", unshipped: "待出貨", MERCHANT_SHIPPED: "已發貨", PARTIALLY_REFUNDED: "部分退款", REFUNDED: "已退款",
-      MANUAL_UNASSIGNED: "備貨中", PAID_ALLOCATION_FAILED: "分配異常待核對", NOT_STARTED: "未付款",
+      shipped: "已出貨", unshipped: "待出貨", MERCHANT_SHIPPED: "已出貨", PARTIALLY_REFUNDED: "部分退款", REFUNDED: "已退款",
+      MANUAL_UNASSIGNED: "備貨中", PAID_ALLOCATION_FAILED: "分配異常待核對", NOT_STARTED: "待付款",
       PENDING: "處理中", AUTHORIZED: "已授權·未扣款", CAPTURED: "已扣款", REVIEW_REQUIRED: "待核對",
       NONE: "無", READY: "待處理", home: "宅配", cvs_711: "7-ELEVEN 取貨", cvs_familymart: "全家取貨",
       cvs_hilife: "萊爾富取貨", cvs_okmart: "OK超商取貨", PROVIDER_LABEL_CREATED: "已建立物流單", cvs_pending: "已建單·待交寄",

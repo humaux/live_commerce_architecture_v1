@@ -9,8 +9,9 @@ MOCK mailer / MOCK IdP. Local: go vet and static checks only.
 
 - RED `05c641166` — tests only (no production/migration change): added OG04 ordering/interval, OG07, OG08/OG09,
   RA08/RA09/RA10. Expected failing test: `TestGuardOG07OIDCReauthCapsInfiniteAuthenticatedAt`.
-- GREEN `<green sha>` — `migrations/0207_recent_auth_followups.sql`, R2 pin 137, contract §16, deploy note,
+- Implementation `e4510f742` — `migrations/0207_recent_auth_followups.sql`, R2 pin 137, contract §16, deploy note,
   DEFINERS.md, package-doc blank lines + regenerated dependency map.
+  Its historical unit and Foundation results do not establish GREEN for the fix-2 head.
 
 ## Item disposition
 
@@ -38,13 +39,47 @@ MOCK mailer / MOCK IdP. Local: go vet and static checks only.
 
 ## Migration numbering
 
-`0207` is this PR's only migration. `0205` (OC-05) and `0206` (CVS snapshot) are reserved by open PRs that were not
-merged when this PR opened; the R2 pin is 137 (134 + 0205 + 0206 + 0207) as instructed. Until those two merge, the
-foundation R2 count leg sees 135 files and fails; the unit shard that carries the RED/GREEN assertions is independent.
+`0207` is this PR's only migration. The integrator confirmed the serial order #254 (0205), #262 (0206),
+then #265 (0207). Fix 2 merges `origin/r3/integration` at `2bc6d482606a2b0583af15789086fdad727b27ec`
+after GitHub confirmed #262 merged at 2026-10-28T23:01:15Z. The base's exact R2 count is 136;
+this PR retains 137 (base + 1). No migration was renamed or changed.
+
+## Fix 2 evidence and handoff
+
+- Authority: integrator's fix-2 card; worktree `ident-p2`, branch above, base `2bc6d4826`.
+  Executor: Codex; runtime does not expose a verifiable model/effort identifier. No delegated agents.
+- Historical causal RED, verified from raw CI log: run `40655692256`, job `122727348722`,
+  SHA `05c641166990fcc04470da95b63497e5acd5e1c8`. OG07 asserts finite/capped auth time and fails with
+  `infinity=true capped=false, want false/true`. Filtered original lines: `red.log`.
+- Prior-head failure: run `40634706241`, job `122681056072` (`shard:g04`),
+  `TestR2IntegrationUpgradeFromReleaseHead` found 135 files, expected 137.
+  Filtered raw evidence: `fix2/g04-prior.log`. Merge brings the two missing files; pin stays exact.
+- Read all failure jobs on the prior head: the same run's receipts `122717034017`, aggregate `122717034150`,
+  required `122740388437`; cancelled dispatch `40634706260` receipts `122654268303` and required `122680396541`;
+  cancelled dispatch `40664915076` required `122757083424`. Missing receipts/aggregate slices and cancelled
+  upstream jobs explain those dependent failures; none is acceptance for the new head.
+- Also inspected cancelled jobs: g10 `122681056834` exposed an actual fixture dependency error before cancellation:
+  `stripe_live_schema_test.go:628` ran 0207 without the 0203 function shape (`unexpected shape ... 0`).
+  Fix: defer 0207 with 0203 in the pre-0077 fixture, assert it is absent before upgrade, and require exactly ten
+  migrations on the real Apply (previously nine). No production patch anchors or privilege assertions change.
+  Filtered raw evidence: `fix2/g10-prior.log`.
+  g07 `122681057273` and CVS `122681057149` logs end in cancellation; meta-health `122681057293` is cancelled
+  and GitHub returns no job log, so its test outcome is UNKNOWN. These require new-head CI.
+- Static checks: `gofmt -d tests/foundation/{r2_integration_upgrade,stripe_live_schema}_test.go` exit 0, no diff;
+  `bash scripts/dev/depmap.sh` exit 0, generated map unchanged from the merge.
+  `GOTOOLCHAIN=go1.27.3 go vet ./tests/foundation` exit 0. No local tests were run.
+  Imported integration whitespace findings were left untouched; card-owned diff is checked separately.
+- New-head Gates and Foundation verification: PENDING. Run IDs will be recorded in the PR comment and handoff,
+  without an evidence-only push. Integrator relays completion; no local watcher/server is left running.
+- Scope beyond OC-02/OC-03 write paths: `tests/foundation/stripe_live_schema_test.go` fixes this card's migration
+  dependency in the upgrade fixture; integrator approval required. Existing contract/deploy edits and
+  `output/ident-p2/**` are also listed in the PR.
+  Merge-only changes belong to the integration base and introduce no additional authored module edits.
+- Evidence: E3 for historical raw CI failures only; author assessment E0. Current-head completion is not claimed.
 
 ## NOT_RUN
 
 - Local `go test` / PostgreSQL (repo rule). All test results are the CI runs above.
-- The foundation R2 count leg is expected red until 0205/0206 merge (see above).
+- New-head GREEN and independent review (await CI and integrator).
 - Real IdP / real SMTP / deployed environment.
 - Item #228.8 implementation (needs a card) and #228.7 guard (owner decision).

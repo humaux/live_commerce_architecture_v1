@@ -110,6 +110,7 @@ export default function OrderFlow({
   reload,
   onOrder,
   money,
+  onCodFee,
 }: {
   context: string;
   cart: Cart;
@@ -123,6 +124,9 @@ export default function OrderFlow({
   reload: () => Promise<void>;
   onOrder: (order: Order) => void;
   money: Money;
+  // OC-09b: reports the selected cash-on-delivery option's server surcharge (null = another mode or COD not offered) so the
+  // checkout bottom bar can show the quote's cod_due_minor; never an amount of its own.
+  onCodFee?: (fee: number | null) => void;
 }) {
   const copy = orderCopy[locale];
   // A destination journal intentionally stores no PII or quotation. A fresh
@@ -157,6 +161,11 @@ export default function OrderFlow({
   const pickup = useRef<PickupHandle | null>(null);
   const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
   const paymentChoices = option && quote ? offeredPaymentModes(option, quote.amount.total_minor) : [];
+  const codFee = paymentMode === "cash_on_delivery" && option && paymentChoices.includes("cash_on_delivery") ? option.cod_surcharge_minor ?? 0 : null;
+  useEffect(() => {
+    onCodFee?.(codFee);
+    return () => onCodFee?.(null);
+  }, [codFee, onCodFee]);
 
   useEffect(() => {
     const version = ++live.current;
@@ -548,9 +557,10 @@ export default function OrderFlow({
       <ConsentChoices locale={locale} value={consents} onChange={setConsents} disabled={busy || blocked} />
       {option?.payment_modes?.includes("cash_on_delivery") && !paymentChoices.includes("cash_on_delivery") &&
         <p role="status" data-testid="cod-cap-unavailable">{quote && quote.amount.total_minor % 100 !== 0 ? cod.wholeOnly : cod.capReached}</p>}
-      {paymentMode === "cash_on_delivery" && option && quote && paymentChoices.includes("cash_on_delivery") && (
+      {paymentMode === "cash_on_delivery" && option && quote && quote.cod_due_minor !== undefined && paymentChoices.includes("cash_on_delivery") && (
         <div className="cod-summary" data-testid="checkout-cod-amount">
-          <p className="cod-amount"><CodAmount locale={locale} total={money(quote.amount.total_minor + (option.cod_surcharge_minor ?? 0), "TWD")} fee={money(option.cod_surcharge_minor ?? 0, "TWD")} /></p>
+          {/* OC-09b: the server quote's cod_due_minor, shown as given (no client sum). */}
+          <p className="cod-amount"><CodAmount locale={locale} total={money(quote.cod_due_minor, "TWD")} fee={money(option.cod_surcharge_minor ?? 0, "TWD")} /></p>
           {option.cod_carrier && <p className="order-note">{cod.manualCarrier(cod.carriers[option.cod_carrier])}</p>}
         </div>
       )}

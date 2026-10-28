@@ -1,6 +1,7 @@
 // Purpose: render import header mapping and safe paged row verdicts; no uploaded data cells are rendered.
 // Depends on: React, import-copy, import-model safe DTO types and import-view-model ordering.
 // Used by: ImportWizard; column names are metadata, all verdict messages come from local copy.
+// Invariants: source-ID help never renders identifiers; mapping values and import retry semantics stay unchanged.
 "use client";
 import { useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
@@ -18,10 +19,11 @@ export function ImportColumnMapping({ locale, fields, required, headers, mapping
   return <fieldset className="import-mapping" disabled={disabled}>
     <legend>{c.mapHeader}</legend>
     {fields.map(field => <label key={field}>{c.fieldLabels[field]}{required.includes(field) && <small> · {c.required}</small>}
-      <select data-testid={`import-map-${field}`} value={mapping[field] ?? ""} onChange={event => onChange(field, event.target.value)}>
+      <select data-testid={`import-map-${field}`} aria-describedby={field === "external_id" || field === "customer_id" ? `import-map-${field}-hint` : undefined} value={mapping[field] ?? ""} onChange={event => onChange(field, event.target.value)}>
         <option value="">{c.unmapped}</option>
         {headers.map(header => <option key={header} value={header}>{header}</option>)}
       </select>
+      {(field === "external_id" || field === "customer_id") && <small id={`import-map-${field}-hint`}>{c.sourceIdHint}</small>}
     </label>)}
   </fieldset>;
 }

@@ -290,3 +290,17 @@ Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); 
 
 - Clause 5 (ruling B27): function grants gain EXECUTE `meta_inbox.lock_purgeable(uuid)` to the NOLOGIN
   `commerce_retention_writer` only; "no execution grant for any login role" still holds.
+
+## Amendment 2026-10-28 (CF-MSG)
+
+Status: DESIGN, review-ready; implementation/CI/independent review NOT_RUN for this amendment.
+Authority: [owner choices](owner-choices-20261026-v1.md) OC-Q12/13/14 and read-only notification boundary;
+owner Q-MSG answer 2026-10-28 「是，全店共享」 (full human source Humaux
+`29a7cc5d-dc10-4ec6-9f38-589ecb883bc8`, relayed verbatim in the CF-TRIAGE continuation card).
+
+1. AD-04 read state is **store-scoped**, not per staff member. An authorized member reading a conversation marks the messages read for the whole store. Unread means inbound messages not yet covered by that store's acknowledged read position; messages arriving after that position remain unread for all members. Personal browser state is not the truth source.
+2. The read position and unread query must be durable in PostgreSQL and scoped by authenticated tenant/store and conversation. The server checks the existing inbox read authority; client scope IDs, another store's conversation or a forged read position cannot authorize a transition. Listing/filtering alone must not acknowledge unseen messages. Concurrent/stale acknowledgements must not hide a newer inbound message.
+3. Before CA-MESSAGE-UI exposes the unread filter, a technical continuation must freeze the mark-read command, bounded acknowledgement/cursor semantics and store-scoped definer/RLS query, with an integrator-assigned migration if required. No SQL signature, new permission or migration number is assigned here. Ingress receipt tables above are not conversation read state; [meta-consumer-v1](meta-consumer-v1.md) remains the conversation/message authority.
+4. OC-Q13: show no marketing-consent field and never infer consent from the reply window or reading. OC-Q14: no Meta health-mail off switch. AD-07 notification center remains 「未納入產品」 and history read-only. Reading never sends a Meta message or changes its reply window; existing deadline/stop-send gates remain.
+
+Acceptance handoff (NOT_RUN): CI must prove member A's read is reflected for member B in the same store after refresh, a later inbound message becomes unread again, stale/concurrent acknowledgements do not cover unseen messages, and cross-tenant/store/conversation or unauthorized calls neither read nor mutate that state. Exercise unread pagination/cursor consistency and definer/RLS negatives. Real-click filter/open/read/refresh evidence is required; the owner decision alone is no runtime acceptance.

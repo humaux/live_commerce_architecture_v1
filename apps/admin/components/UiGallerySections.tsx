@@ -1,8 +1,10 @@
-// Purpose: The static-state sections of the design-system gallery: tokens, buttons, switch and tabs, badges, alerts, state blocks, upload area, form with save bars, settings layout and KPI cards.
-// Depends on: react, @live-commerce/ui/ds, ../src/ui-gallery-copy, ./UiGallery.module.css; sample data only, no API.
+// Purpose: The static-state sections of the design-system gallery: tokens, buttons, the DS-3 Figma specimen card (one control per Figma master variant, data-figma = node id), switch and tabs, badges, alerts, state blocks, upload area, form with save bars, settings layout and KPI cards.
+// Depends on: react, @live-commerce/ui/ds, ../src/ui-gallery-copy, ./UiGalleryRecovery, ./UiGallery.module.css; sample data only, no API.
 // Used by: apps/admin/components/UiGallery.tsx.
 "use client";
 import { useState } from "react";
+import type { Locale } from "@live-commerce/i18n";
+import { UiGalleryRecovery } from "./UiGalleryRecovery";
 import {
   FormActionBar,
   Field,
@@ -86,6 +88,28 @@ export function ButtonsSection({ c }: { c: GalleryCopy }) {
   );
 }
 
+/** DS-3: one specimen per Figma Button / Input master variant (data-figma = Figma node id); tests/ui/ds-figma-parity.mjs reads their computed style. */
+export function FigmaSection({ c }: { c: GalleryCopy }) {
+  const [clicked, setClicked] = useState("");
+  const kinds = [["primary", c.btnPrimary, "4:12712", "1394:103520"], ["secondary", c.btnSecondary, "4:12714", "1394:103522"], ["danger", c.btnDanger, "1394:103516", "1394:103526"], ["ghost", c.btnLink, "1394:103518", "1394:103528"], ["outline", c.btnLink, "4:12716", "1394:103524"]] as const;
+  return (
+    <Card id="sec-figma" title={`${c.sButtons} · Figma`}>
+      <div className={s.row}>
+        {kinds.map(([variant, label, id]) => <Button key={id} variant={variant} data-figma={id} onClick={() => setClicked(label)}>{label}</Button>)}
+      </div>
+      <div className={s.row}>
+        {kinds.map(([variant, label, , id]) => <Button key={id} variant={variant} data-figma={id} disabledReason={c.btnDisabledReason}>{label}</Button>)}
+      </div>
+      <div className={s.row}>
+        <TextInput data-figma="1401:38450" aria-label={c.nameLabel} placeholder={c.nameLabel} />
+        <TextInput data-figma="1401:38452" aria-label={c.nameLabel} defaultValue={c.storeName} />
+        <TextInput data-figma="1401:38454" aria-label={c.nameLabel} defaultValue={c.storeName} aria-invalid />
+      </div>
+      <p className={s.result} role="status">{clicked}</p>
+    </Card>
+  );
+}
+
 export function SwitchTabsSection({ c, params, setParam }: { c: GalleryCopy; params: GalleryParams; setParam: SetParam }) {
   const tabs = [{ id: "a", label: c.tabA }, { id: "b", label: c.tabB, count: 12 }, { id: "c", label: c.tabC }];
   const stabs = [{ id: "a", label: c.stabA }, { id: "b", label: c.stabB }, { id: "c", label: c.stabC }];
@@ -149,7 +173,7 @@ export function AlertsSection({ c }: { c: GalleryCopy }) {
   );
 }
 
-export function StatesSection({ c }: { c: GalleryCopy }) {
+export function StatesSection({ c, locale }: { c: GalleryCopy; locale: Locale }) {
   const [retried, setRetried] = useState(false);
   const [added, setAdded] = useState(false);
   return (
@@ -163,6 +187,7 @@ export function StatesSection({ c }: { c: GalleryCopy }) {
       {/* one line per control: retry must not hide the empty-state result (and vice versa) */}
       <p className={s.result} role="status">{retried ? c.retryDone : ""}</p>
       <p className={s.result} role="status">{added ? c.clicked(c.emptyAction) : ""}</p>
+      <UiGalleryRecovery locale={locale} />
     </Card>
   );
 }

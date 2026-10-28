@@ -1,0 +1,27 @@
+2026-10-28T15:48:33.2437384Z HEAD is now at c1b63478 Merge 96a4a04d3359f4da52692160b78b7c38eef4f6e8 into 776550a1e42bd57bc8496ccce16555f31ece7638
+2026-10-28T15:50:42.0689001Z === RUN   TestBtcPolicyNotWritableByApp
+2026-10-28T15:50:42.0689475Z === RUN   TestBtcPolicyNotWritableByApp/bank_tables_and_transfer_snapshot_privileges
+2026-10-28T15:50:42.0715783Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds DELETE on checkout.bank_transfer_settings
+2026-10-28T15:50:42.0718236Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds TRUNCATE on checkout.bank_transfer_settings
+2026-10-28T15:50:42.0718959Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds DELETE on checkout.bank_transfers
+2026-10-28T15:50:42.0719483Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds TRUNCATE on checkout.bank_transfers
+2026-10-28T15:50:42.0720010Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds UPDATE on checkout.bank_transfers.bank_name
+2026-10-28T15:50:42.0720565Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds UPDATE on checkout.bank_transfers.branch
+2026-10-28T15:50:42.0721110Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds UPDATE on checkout.bank_transfers.account_name
+2026-10-28T15:50:42.0721672Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds UPDATE on checkout.bank_transfers.account_number
+2026-10-28T15:50:42.0722220Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds UPDATE on checkout.bank_transfers.window_hours
+2026-10-28T15:50:42.0722940Z     bank_transfer_closed_test.go:102: forbidden bank privilege: commerce_runtime holds UPDATE on checkout.bank_transfers.currency
+2026-10-28T15:50:42.0750872Z --- FAIL: TestBtcPolicyNotWritableByApp (0.01s)
+2026-10-28T15:50:42.0754060Z     --- FAIL: TestBtcPolicyNotWritableByApp/bank_tables_and_transfer_snapshot_privileges (0.00s)
+2026-10-28T15:50:42.7295783Z === RUN   TestBtcSaveReplayAfterClose
+2026-10-28T15:50:43.0161523Z === RUN   TestBtcSaveReplayAfterClose/old_key_with_a_different_body_conflicts_before_closure_refusal
+2026-10-28T15:50:43.0196530Z     bank_transfer_closed_test.go:287: old-key/different-body after closure: <nil>, want PT409 idempotency_conflict (not a stored response or closure refusal)
+2026-10-28T15:50:43.0278072Z --- FAIL: TestBtcSaveReplayAfterClose (0.30s)
+2026-10-28T15:50:43.0279783Z     --- FAIL: TestBtcSaveReplayAfterClose/old_key_with_a_different_body_conflicts_before_closure_refusal (0.00s)
+2026-10-28T15:51:04.2718580Z         --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy (0.02s)
+2026-10-28T15:51:04.2719035Z             --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/matching (0.00s)
+2026-10-28T15:51:04.2719521Z             --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-default (0.00s)
+2026-10-28T15:51:04.2720004Z             --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-strict (0.00s)
+2026-10-28T15:51:04.2720502Z             --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/tampered-matching (0.00s)
+2026-10-28T16:08:01.1414749Z --- FAIL: TestBtcPolicyNotWritableByApp (0.01s)
+2026-10-28T16:08:01.1415289Z --- FAIL: TestBtcSaveReplayAfterClose (0.30s)
