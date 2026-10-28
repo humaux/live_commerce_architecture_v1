@@ -22,7 +22,7 @@ export function compare(expect, got) {
   const bad = [];
   for (const [key, want] of Object.entries(expect)) {
     const have = got[key];
-    if (key === "height" || key === "labelInset" || key === "crumbGap" || key === "minHit") {
+    if (key === "height" || key === "width" || key === "labelInset" || key === "crumbGap" || key === "minHit") {
       if (typeof have !== "number" || Math.abs(have - want) > 0.5) bad.push(`${key} ${have} != ${want}`);
     } else if (typeof want === "string" && (/Color$/.test(key) || key === "color")) {
       if (have !== cssColour(want)) bad.push(`${key} ${have} != ${want} (${cssColour(want)})`);
@@ -42,6 +42,7 @@ assert.equal(compare({ allCrumbsSameColor: true }, { allCrumbsSameColor: false }
 assert.equal(compare({ contrastAA: true }, { contrastAA: false }).length, 1, "a hover below 4.5:1 must fail");
 assert.equal(compare({ minHit: 44 }, { minHit: 40 }).length, 1, "a 40px nested link must fail");
 assert.equal(compare({ hasHref: false }, { hasHref: true }).length, 1, "a disabled arrow with an href must fail");
+assert.equal(compare({ width: 24 }, { width: 14 }).length, 1, "a 14px gap must fail");
 
 /** [READ/MEASURE] computed style of one element plus the derived probes the expect blocks name. */
 function measure(n) {
@@ -51,7 +52,7 @@ function measure(n) {
     backgroundColor: s.backgroundColor, color: s.color, borderTopColor: s.borderTopColor, borderTopWidth: s.borderTopWidth,
     borderBottomColor: s.borderBottomColor, borderBottomWidth: s.borderBottomWidth, borderLeftWidth: s.borderLeftWidth,
     borderTopLeftRadius: s.borderTopLeftRadius, fontSize: s.fontSize, fontWeight: s.fontWeight, lineHeight: s.lineHeight,
-    paddingLeft: s.paddingLeft, minWidth: s.minWidth, height: box.height,
+    paddingLeft: s.paddingLeft, minWidth: s.minWidth, height: box.height, width: box.width, display: s.display,
   };
   out.hasHref = n.hasAttribute("href");
   out.ariaDisabled = n.getAttribute("aria-disabled");

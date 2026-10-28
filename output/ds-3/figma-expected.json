@@ -2,7 +2,7 @@
  "_meta": {
   "purpose": "DS-3 expected computed styles of packages/ui/src/ds components in the UI gallery, one row per Figma master variant; read by tests/ui/ds-figma-parity.mjs.",
   "source": "Figma page 4:8829 masters read 2026-10-27 through the fleet local bridge (use_figma, read-only getNodeByIdAsync, 8 roots in one call, no writes). Raw read: output/ds-3/figma/masters.json; script output/ds-3/figma/read.js. Font weights/axes: output/ds-3/figma/weights.json (second read 2026-10-28).",
-  "format": "hex colours compare to getComputedStyle rgb(); 'transparent' = rgba(0, 0, 0, 0); height = getBoundingClientRect height (+-0.5); other keys are exact computed-style strings or named derived probes (labelInset, separator, holdsBreadcrumb, placeholderColor, noCaret). Probes: contrastAA (text/background >= 4.5:1, browser-measured), minHit (smallest visible control height in the rail list), hasHref, ariaDisabled. States: hover (real mouse), page:N / page:last (real click on a pager link).",
+  "format": "hex colours compare to getComputedStyle rgb(); 'transparent' = rgba(0, 0, 0, 0); height = getBoundingClientRect height (+-0.5); other keys are exact computed-style strings or named derived probes (labelInset, separator, holdsBreadcrumb, placeholderColor, noCaret). Probes: contrastAA (text/background >= 4.5:1, browser-measured), minHit (smallest visible control height in the rail list), hasHref, ariaDisabled. States: hover (real mouse), page:N / page:last (real click on a pager link). width = getBoundingClientRect width (+-0.5); display = computed display.",
   "viewport": "1586x900, zh-TW, deviceScaleFactor 1",
   "unknown": "Figma masters carry no Hover/Focus for Button, Nav Item, Language switch; those ds states are not asserted (UNKNOWN). Button sm/lg sizes, Link variant, nav level-2 items and the topbar tools have no Figma master (UNKNOWN)."
  },
@@ -191,6 +191,18 @@
     "lineHeight": "22px"
    },
    "figmaRead": "Kind=Ghost State=Disabled: fill #f5f6f8, stroke 1px #e5e7eb, text #566171 Medium 14/22"
+  },
+  {
+   "id": "button.primary.loading.hover",
+   "figma": "4:12712",
+   "target": "#sec-buttons button[data-variant=\"primary\"][aria-busy=\"true\"]",
+   "state": "hover",
+   "expect": {
+    "backgroundColor": "#142942",
+    "color": "#ffffff",
+    "contrastAA": true
+   },
+   "figmaRead": "No Loading or Hover master (UNKNOWN). Rule: a loading primary keeps the Kind=Primary fill (4:12712: #142942, text #ffffff) under real hover; contrastAA = text/background >= 4.5:1 measured in the browser. Review round 2 P1: admin globals.css button:hover painted it #edf3f8 (about 1.12:1)."
   },
   {
    "id": "nav.item.default",
@@ -604,9 +616,15 @@
    "figma": "1401:58021",
    "target": "pager:gap",
    "expect": {
-    "color": "#6b6b6b"
+    "color": "#6b6b6b",
+    "width": 24,
+    "height": 36,
+    "paddingLeft": "4px",
+    "fontSize": "14px",
+    "lineHeight": "21px",
+    "display": "inline-flex"
    },
-   "figmaRead": "24x36, text '…' #6b6b6b Regular 14 (width not asserted)"
+   "figmaRead": "Kind=Gap 1401:58021: 24x36, auto-layout HORIZONTAL pad 0/4, centred; text '…' #6b6b6b Noto Sans SC Regular 14, line-height 150% = 21px"
   },
   {
    "id": "pagination.previous.default",
