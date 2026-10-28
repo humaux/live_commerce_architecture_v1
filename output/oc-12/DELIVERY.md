@@ -30,7 +30,16 @@ CI shard:unit under `./...`, and needs no CI registration. Moving it is a pure r
 | RED (tests only) | 626cea5a3 | run 40463313144 / job 122054896395 (gate shard:unit) | FAIL exactly 3 top-level tests, all `ERROR: invalid_filter (SQLSTATE PT400)`: TestOC12UnreadDefinition (unread_test.go:226), TestOC12UnreadStoreLevelAndReset (:250), TestOC12UnreadCrossTenantIsolation (:280). No other top-level FAIL in the job. |
 | implementation | a563f284e | run 40466503323 | shard:g04 FAIL only TestR2IntegrationUpgradeFromReleaseHead (migration-count pin, fixed by the granted edit above). shard:unit job 122087549874 SUCCESS: TestOC12UnreadDefinition / StoreLevelAndReset / CrossTenantIsolation all `--- PASS` (not SKIP). |
 | GREEN (before allowlist) | b9889f0e0 | run 40508176316: shard:unit job 122226111091, shard:g04 job 122226110088 | 81 SUCCESS + 1 SKIPPED (deploy). The 3 TestOC12* tests and TestR2IntegrationUpgradeFromReleaseHead show `--- PASS`. |
-| GREEN (final, allowlist + UR04 + INU01) | the commit containing this line | posted as a PR comment once CI finishes (a commit cannot contain its own run id) | |
+| GREEN (final, allowlist + UR04 + INU01) | 52f3ae7adaa85b4ef8dd90ffc627352a05d30e12 | run 40538883929: shard:unit job 122316890900, browser-inbox job 122316892730 | Run and both jobs SUCCESS (API readback 2026-10-28); historical OC-12 evidence, not acceptance of #259. |
+
+RED scope clarification (#242 item 4): run 40463313144 / job 122054896395 observed the SQL
+`invalid_filter` path, before the SQL unread implementation. It did **not** execute the later UR04/INU01
+assertions and is not their observed CI RED. The pre-allowlist HTTP parser rejected `unread` with 400;
+the BFF's `filters` omitted `unread` and its route returned 400 `invalid_filter` (the original before/after
+source is preserved in `output/oc-12/out-of-scope-allowlist.patch`). Therefore the new UR04/INU01
+`status=200` assertions would fail on that pre-fix 400 path. This is source-level counterfactual evidence
+only, not an executed RED of those assertions. Their independent CI mutation RED remains NOT_RUN;
+the #259 INU01 row-removal RED (run 40628056371 / job 122622864648) covers a different assertion.
 
 ## Out-of-scope edits (integrator-approved 2026-10-28, applied from output/oc-12/out-of-scope-allowlist.patch)
 1. internal/httpapi/inbox.go:269: `"unread"` in the A8 filter `case`.
@@ -44,8 +53,9 @@ PG: filter=unread 200 with only this store's unread row, filter=bogus 400 `inval
 gets no 200 and no data.
 
 ## Risks
-- `last_inbound_seq` reset is simulated in UR02 by updating the column the trigger writes (MOCK of the trigger); the
-  trigger itself is covered by the existing 0119 foundation tests.
+- #242 replaces UR02's simulated reset with `tests/foundation/inbox_unread_trigger_test.go`:
+  signed synthetic webhook → real consumer → committed `social.messages` INSERT → production trigger.
+  Permission split and the store-level clear remain asserted; CI acceptance of this replacement is pending.
 - No partial index; same scan cost as `unreplied`.
 
 ## Static checks run locally

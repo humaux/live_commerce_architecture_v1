@@ -1,0 +1,28 @@
+  1) tests/admin/inbox-ui.spec.ts:91:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG
+
+    Error: marked-read row disappears immediately from the unread list
+
+    expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByTestId('conversation-2b0192a4-aa9d-4dd1-ba08-697c9960bdf8')
+    Expected: 0
+    Received: 1
+    Timeout:  10000ms
+
+    Call log:
+      - marked-read row disappears immediately from the unread list getByTestId('conversation-2b0192a4-aa9d-4dd1-ba08-697c9960bdf8') with timeout 10000ms
+      - waiting for getByTestId('conversation-2b0192a4-aa9d-4dd1-ba08-697c9960bdf8')
+        24 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      133 |     page.getByTestId(`conversation-${ids.open}`),
+      134 |     "marked-read row disappears immediately from the unread list",
+    > 135 |   ).toHaveCount(0);
+          |     ^
+      136 |   await expect.poll(async () => (await facts(page)).read_seq).toBeGreaterThan(0);
+      137 |   record("unread row", "click unread thread", "read thread remains open and its row immediately disappears");
+      138 |   await page.reload();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-ui.spec.ts:135:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────

@@ -1,0 +1,7 @@
+E1 static checks only; no local test/server execution.
+Command: gofmt -w internal/inbox/unread_test.go tests/foundation/inbox_unread_trigger_test.go
+Exit code: 0
+Command: go vet ./internal/inbox ./tests/foundation
+Exit code: 0
+Output: empty (no diagnostics).
+TS typecheck: NOT_RUN locally (worktree has no node_modules); GitHub CI required.

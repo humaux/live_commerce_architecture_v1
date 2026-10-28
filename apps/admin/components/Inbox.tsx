@@ -1,6 +1,7 @@
 // Purpose: own private inbox list/filter/cursor selection with no buyer data in navigation or storage.
 // Depends on: React/react-dom, @live-commerce/format, inbox-client/types, BundleRecovery, WorkspaceFrame and privacy fences.
 // Used by: /[locale]/messages; threads and BuyerPanel are cleared on hide or session changes.
+// Invariants: successful reads remove unread-filter rows without clearing the selected thread.
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -287,12 +288,17 @@ export function Inbox({
                               old
                                 ? {
                                     ...old,
-                                    items: old.items.map((item) =>
-                                      item.conversation_id ===
-                                      selected.conversation_id
-                                        ? { ...item, unread: false }
-                                        : item,
-                                    ),
+                                    items: old.items
+                                      .map((item) =>
+                                        item.conversation_id ===
+                                        selected.conversation_id
+                                          ? { ...item, unread: false }
+                                          : item,
+                                      )
+                                      .filter(
+                                        (item) =>
+                                          filter !== "unread" || item.unread,
+                                      ),
                                     unread_total: Math.max(
                                       0,
                                       old.unread_total -
