@@ -351,7 +351,7 @@ jobs:
             echo "::endgroup::"
             echo "bundle member $m: $outcome"
             ( shopt -s nullglob globstar
-              MODE="$m" GATE_OUTCOME="$outcome" node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl
+              MODE="$m" GATE_OUTCOME="$outcome" node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl || exit 1
               # BUNDLE-258: the writer already scores an exit-0 member FAIL from a failure line in its log (#147 CI-6). The step's own verdict
               # follows the receipt it just wrote, so the bundle job is red whenever any member receipt is not PASS (not only on a non-zero exit).
               for receipt in output/receipt/receipt-*.json; do
