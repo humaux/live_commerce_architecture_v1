@@ -298,7 +298,8 @@ try {
     await page.getByTestId("cvs-entered-code").fill("131386");
     const resolved = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
     const [lookup] = await Promise.all([resolved, page.getByTestId("confirm-address").click()]);
-    assert.equal(lookup.status(), 201);
+    // The BFF normalizes successful JSON to 200; private Go/PG creation remains 201.
+    assert.equal(lookup.status(), 200);
     const savedStore = await lookup.json();
     assert.equal(savedStore.name, "建盛");
     assert.equal(savedStore.address, "新竹市東區建中一路52號1樓");
@@ -320,7 +321,7 @@ try {
     await page.getByTestId("cvs-entered-code").fill("131386");
     const restored = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
     const [restoredResponse] = await Promise.all([restored, page.getByTestId("confirm-address").click()]);
-    assert.equal(restoredResponse.status(), 201);
+    assert.equal(restoredResponse.status(), 200);
     assert.equal((await restoredResponse.json()).pickup_id, savedStore.pickup_id, "refresh preserves the persisted buyer pickup and its canonical identity");
     await expect(page.getByTestId("cvs-store-name")).toContainText("建盛");
     await expect(page.getByTestId("cvs-store-address")).toHaveText("新竹市東區建中一路52號1樓");
