@@ -135,7 +135,7 @@ func mtBody(sku string, qty int, optionKey, mode string, delivery map[string]any
 
 var (
 	mtHome = map[string]any{"home_address": map[string]any{"region": "台北市", "city": "中正區", "postal_code": "100", "line1": "忠孝東路1號", "line2": ""}}
-	mtCVS  = map[string]any{"cvs": map[string]any{"store_code": "123456", "store_name": "取貨門市", "store_address": "台北市取貨路1號"}}
+	mtCVS  = map[string]any{"cvs": map[string]any{"store_code": "131386", "store_name": "建盛", "store_address": "新竹市東區建中一路52號1樓"}}
 )
 
 func TestMerchantToolsManualOrder(t *testing.T) {

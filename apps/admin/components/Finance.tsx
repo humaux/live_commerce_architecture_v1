@@ -1,11 +1,12 @@
 // Purpose: Owns the merchant finance summary and CSV download controls.
 // Depends on: react, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-client, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css
 // Used by: apps/admin/app/[locale]/finance/page.tsx
+// Invariants: Go owns totals/permissions; ReauthDialog sends the native CSV control through its shared re-auth download path.
 "use client";
 
 // Merchant finance summary (/{locale}/finance): date range (native date inputs), daily table + totals row, CSV link,
 // test-mode badge. BFF GET /api/stores/{store}/finance/summary?from&to (orders:read) and the plain download link
-// GET .../finance/summary.csv (orders:read + orders:export, streamed by the BFF, never held in JS) -> Go
+// GET .../finance/summary.csv (orders:read + orders:export, streamed by the BFF, downloaded by the shared re-auth handler) -> Go
 // /v1/admin/stores/{id}/finance/summary[.csv] (internal/httpapi/finance.go; internal/reporting.Finance/FinanceCSV).
 // The CSV link shows only when GET order-actions says orders_export (same probe MerchantOrders uses).
 // Money uses the shared `money` formatter; sums come from Go (I05), nothing is recomputed here.

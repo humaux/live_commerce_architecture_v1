@@ -7,6 +7,7 @@
 // internal/inbox (LoadKeyring, NewService, ListConversations), internal/httpapi (NewHandler, A8 route),
 // social.list_conversations / inbox.mark_read definers.
 // Used by: go test ./internal/inbox (CI shard:unit via scripts/dev/test-local.sh). Fixtures are synthetic UUIDs only; no buyer PII.
+// Invariants: snapshot fixtures here test filtering; UR02 uses real ingress in tests/foundation/inbox_unread_trigger_test.go.
 package inbox_test
 
 import (
@@ -171,7 +172,7 @@ func conversation(t *testing.T, e *unreadEnv, tenant, store string, inbound, rea
 	return conv
 }
 
-// setInbound stands in for inbox.advance_conversation_state (the social.messages trigger): it raises last_inbound_seq/at only.
+// setInbound seeds a filtering snapshot only; the UR02 reset uses the production trigger in the foundation test.
 func setInbound(t *testing.T, e *unreadEnv, conv string, seq int64) {
 	t.Helper()
 	exec(t, e.owner, `UPDATE inbox.conversation_state SET last_inbound_seq=$2, last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, conv, seq)
@@ -203,18 +204,6 @@ func ids(t *testing.T, l inbox.ConversationList) []string {
 	return out
 }
 
-func markRead(t *testing.T, e *unreadEnv, token, store, conv string, seq int64) int64 {
-	t.Helper()
-	var got int64
-	err := platform.WithScope(context.Background(), e.runtime, token, store, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
-		return tx.QueryRow(context.Background(), `SELECT inbox.mark_read($1,$2)`, conv, seq).Scan(&got)
-	})
-	if err != nil {
-		t.Fatalf("mark_read: %v", err)
-	}
-	return got
-}
-
 // UR01: unread = COALESCE(last_inbound_seq,0) > read_seq; no-inbound and fully-read conversations are excluded;
 // unread_total counts exactly the filtered set of this store.
 func TestOC12UnreadDefinition(t *testing.T) {
@@ -238,34 +227,8 @@ func TestOC12UnreadDefinition(t *testing.T) {
 	}
 }
 
-// UR02: the marker is store-level and only inbox:reply clears it; a newer inbound seq makes the thread unread again.
-func TestOC12UnreadStoreLevelAndReset(t *testing.T) {
-	e := unreadFixture(t)
-	tenant, stores := tenantWithStores(t, e, 1)
-	store := stores[0]
-	reader := staff(t, e, tenant, store, "inbox:read")
-	replier := staff(t, e, tenant, store, "inbox:read", "inbox:reply")
-	other := staff(t, e, tenant, store, "inbox:read", "inbox:reply")
-	conv := conversation(t, e, tenant, store, 4, 0)
-
-	if got := markRead(t, e, reader, store, conv, 4); got != 0 {
-		t.Fatalf("inbox:read-only mark_read=%d, want 0 (unchanged)", got)
-	}
-	if l, err := listUnread(t, e, other, store); err != nil || !slices.Equal(ids(t, l), []string{conv}) {
-		t.Fatalf("after read-only mark: unread=%v err=%v, want [%s]", l.Items, err, conv)
-	}
-	if got := markRead(t, e, replier, store, conv, 4); got != 4 {
-		t.Fatalf("inbox:reply mark_read=%d, want 4", got)
-	}
-	// Store-level: another staff member no longer sees it as unread.
-	if l, err := listUnread(t, e, other, store); err != nil || len(l.Items) != 0 || l.UnreadTotal != 0 {
-		t.Fatalf("after replier mark: unread=%v total=%d err=%v, want none", l.Items, l.UnreadTotal, err)
-	}
-	setInbound(t, e, conv, 5) // a new buyer message
-	if l, err := listUnread(t, e, other, store); err != nil || !slices.Equal(ids(t, l), []string{conv}) || l.UnreadTotal != 1 {
-		t.Fatalf("after new inbound: unread=%v total=%d err=%v, want [%s] total 1", l.Items, l.UnreadTotal, err, conv)
-	}
-}
+// UR02 moved, with its permission/store-level assertions, to the foundation package's
+// TestOC12UnreadStoreLevelAndReset so it can reuse signed ingress and the real consumer/trigger fixture.
 
 // UR03 (red first): the unread read never crosses tenant or store. Tenant A store 1 sees only its own unread thread;
 // tenant B's staff sees none of A's, and naming A's store id in the request is refused before any read.

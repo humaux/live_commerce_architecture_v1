@@ -1,0 +1,271 @@
+# OC-04 RED: Gates run 40588086164, job 122493869233 (gate --browser-password-auth), head 3d850bcb1 (tests only).
+# TestBrowserOC fails on assertions (no dialog, team BFF rewrites reauth_required, no re-auth routes); TestBrowserPasswordAuth and TestBrowserStaffTeam pass in the same job.
+# Directed fix 2026-10-28: Gates run 40626807342, job 122653477002 (gate --browser-password-auth), head 36b807952ca57ba651ba0bee15d214e881c4be72.
+# Job API: status completed, conclusion failure, completed_at 2026-10-28T06:55:45Z.
+# Raw job log: 2026-10-28T06:54:06.8660915Z --- FAIL: TestBrowserOC (68.13s).
+# Integrator failure pointer: tests/admin/oc/reauth.spec.ts:265, zh-TW step 7, TypeError reading 'value' of undefined after cookies(publicOrigin).
+# One directed repair push authorized; new step 6 existence assertions have not yet run on CI. Historical RED below remains unchanged.
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/signup -> 202
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/complete -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/initial-store -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/invite -> 403
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/signup -> 202
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/complete -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/initial-store -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/list -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores/c702b660-9da7-4f2d-a0cf-39b33bb4758d/meta/health -> 404
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores/c702b660-9da7-4f2d-a0cf-39b33bb4758d/billing/standing -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/invite -> 403
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/list -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/signup -> 202
+    browser_oc_test.go:193: Go transport POST /v1/identity/password/complete -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/initial-store -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/list -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores/27f51b84-95d9-4bc5-bece-ed4950bb419a/billing/standing -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200
+    browser_oc_test.go:193: Go transport GET /v1/admin/stores/27f51b84-95d9-4bc5-bece-ed4950bb419a/meta/health -> 404
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/invite -> 403
+    browser_oc_test.go:193: Go transport POST /v1/identity/staff/list -> 200
+    browser_oc_test.go:247: browser spec failed; local evidence: output/playwright/run.XKCqwUEm/oc-20261027T225314.754778081
+    browser_oc_test.go:259: invitations replayed after re-auth: 0, want >= 3 (one per chain)
+    browser_oc_test.go:279: POST /v1/identity/password/reauth/start was not exercised through the BFF
+    browser_oc_test.go:279: POST /v1/identity/password/reauth/complete was not exercised through the BFF
+    browser_oc_test.go:279: POST /v1/identity/login/reauth/start was not exercised through the BFF
+    browser_oc_test.go:279: POST /v1/identity/login/complete was not exercised through the BFF
+--- FAIL: TestBrowserOC (25.48s)
+--- PASS: TestBrowserPasswordAuth (72.33s)
+--- PASS: TestBrowserStaffTeam (15.22s)
+
+# OC-04 PR #246 CSV review fix, attempt 1, 2026-10-29
+# Tests-only RED candidate head: 51e81e7d6d48e6aea299cc49d80f2f11720dcfb0
+# Gates run 40749708453: PENDING. Foundation run 40749708075, job 123032808680: PENDING.
+# No assertion failure observed yet. Resume must read gate (--browser-password-auth) and record its real job id + failure.
+# Six new real-click cases: orders and finance CSV, each zh-TW / zh-CN / en.
+# Expected RED assertion: the real CSV control must open the shared re-auth dialog.
+# GREEN: NOT_RUN. Implementation must wait for a confirmed assertion-level RED.
+
+# PR #246 continuation: corrected Foundation blocker (2026-10-29)
+# Source: gh run view 40749708075 --job 123032808680 --log-failed, exit 0.
+# Head: 51e81e7d6d48e6aea299cc49d80f2f11720dcfb0. Actual includes --browser-password-auth.
+# tests/ci/pr-modes.test.mjs:680 hard-codes this existing owned spec as unknown and expects ALL browser modes.
+# Outside-card gate conflict; owner prohibits changing this test. STOP; no implementation/ownership mutation/push.
+foundation	Node unit suites (storefront, i18n)	2026-10-28T19:03:05.8920505Z ✖ CI-SPEED-3: unknown specs, helpers and apps cannot silently select zero modes (3.893477ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T19:03:05.9403942Z ✖ CI-SPEED-3: unknown specs, helpers and apps cannot silently select zero modes (3.893477ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T19:03:05.9404761Z   AssertionError [ERR_ASSERTION]: tests/admin/oc/reauth.spec.ts
+foundation	Node unit suites (storefront, i18n)	2026-10-28T19:03:05.9422632Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ci/pr-modes.test.mjs:681:12)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T19:03:05.9426785Z     actual: [ 'foundation-shards', '--browser-password-auth' ],
+foundation	Node unit suites (storefront, i18n)	2026-10-28T19:03:05.9427163Z     expected: [
+foundation	Node unit suites (storefront, i18n)	2026-10-28T19:03:05.9442967Z ##[error]Process completed with exit code 1.
+
+# FIX-RED #246, 2026-10-29: independently read all four CURRENT remote-head failures.
+# Remote head: 51e81e7d6d48e6aea299cc49d80f2f11720dcfb0.
+# git fetch origin && git merge origin/r3/integration: exit 0; integration bf161bac9 merged.
+# Local merge head: ddfc6dd02 (unpublished). No implementation source changed.
+# Foundation 40749708075 / 123032808680: same unknown-spec assertion above; still present at tests/ci/pr-modes.test.mjs:680 on integration.
+# Gates 40749708453 / 123035494287 (bundle:08), raw job-log API after gh run view stalled:
+2026-10-28T19:35:54.5782841Z     browser_oc_test.go:247: browser spec failed; local evidence: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.rZTyyimz/oc-20261028T191557.074930968
+2026-10-28T19:35:54.5784668Z     browser_oc_test.go:254: SELECT count(*) FROM identity.staff_invitations WHERE email LIKE 'oc4i.%@example.test': context deadline exceeded
+2026-10-28T19:35:54.5841106Z --- FAIL: TestBrowserOC (1200.02s)
+# This timeout alone is NOT assertion-level RED for the CSV tests. Never increase its timeout to get green.
+# Gates receipts job 123058993884, raw job-log API:
+2026-10-28T19:46:35.0876625Z FAIL: --browser-password-auth: status FAIL
+2026-10-28T19:46:35.0882704Z   receipt --browser-password-auth: FAIL test_count=47 run=40749708453/1 sha=e8667f2fad7d22b9305818c66fbd2415ec4c3d74
+2026-10-28T19:46:35.0934029Z matrix-receipts: RED (1 problem(s))
+# Gates required job 123059582522, raw job-log API:
+2026-10-28T19:46:40.9387125Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure
+2026-10-28T19:46:40.9405992Z ##[error]Process completed with exit code 1.
+# STOP: shared CI fixture conflict outside apps/admin and OC-04 write_paths, not browser ownership drift.
+# No new push, GREEN run or WAIT_RUN. Humaux store/canvas/coord unavailable.
+
+# FIX-RED relay independently rechecked, 2026-10-29
+# PR remote head remains 51e81e7d6d48e6aea299cc49d80f2f11720dcfb0; local merge ddfc6dd02ed99ff2e8633069362e3ed42e86e3f7.
+# git fetch origin && git merge origin/r3/integration: exit 0, already up to date (bf161bac9).
+# Read gh pr checks 246 and all four failed jobs, no older-head conclusions used.
+# Foundation log read via gh run view; Gates logs via gh api actions/jobs/<job>/logs after gh run view stalled.
+# Foundation 40749708075/123032808680: tests/ci/pr-modes.test.mjs:679 unknown-spec assertion incorrectly includes the registered OC spec.
+# Confirmed exact same fixture in origin/r3/integration source; generated ownership already records that spec under --browser-password-auth.
+# Gates 40749708453/123035494287: TestBrowserOC (1200.02s), context deadline exceeded; no CSV assertion-level RED established.
+# Receipts 40749708453/123058993884: --browser-password-auth FAIL, test_count=47, synthetic merge e8667f2fad7d22b9305818c66fbd2415ec4c3d74.
+# Required 40749708453/123059582522: gate=failure, receipts=failure; dependent failure, not a separate root cause.
+# STOP unchanged: out-of-module CI gate conflict. No source edits, tests, servers, commit or push. No new WAIT_RUN.
+# GREEN and CSV causal RED remain NOT_RUN. Humaux tools unavailable; no store/canvas/coord completion claimed.
+
+
+# FIX-RED current relay audit, 2026-10-29; raw logs independently re-read, not prior notes.
+# PR head 51e81e7d6d48e6aea299cc49d80f2f11720dcfb0; local unpublished merge ddfc6dd02ed99ff2e8633069362e3ed42e86e3f7.
+# fetch + merge exit 0, already up to date. Same conflicting unknown-spec assertion remains on integration bf161bac9.
+# gh run view 40749708075 --log-failed --job 123032808680: exit 0.
+foundation 2026-10-28T19:03:05.9404761Z AssertionError [ERR_ASSERTION]: tests/admin/oc/reauth.spec.ts
+foundation 2026-10-28T19:03:05.9426785Z actual: [ 'foundation-shards', '--browser-password-auth' ],
+# Gates gh run view --log-failed --job (all three failed jobs) timed out after 45s each; raw job logs API then exited 0 each.
+# 40749708453 / 123035494287:
+2026-10-28T19:35:54.5784668Z browser_oc_test.go:254: context deadline exceeded
+2026-10-28T19:35:54.5841106Z --- FAIL: TestBrowserOC (1200.02s)
+# 40749708453 / 123058993884:
+2026-10-28T19:46:35.0884086Z receipt --browser-password-auth: FAIL test_count=47 run=40749708453/1 sha=e8667f2fad7d22b9305818c66fbd2415ec4c3d74
+# 40749708453 / 123059582522:
+2026-10-28T19:46:40.9387125Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure
+# STOP: outside-module CI gate conflict; no assertion-level CSV RED. GREEN NOT_RUN; WAIT_RUN NONE; no push.
+
+# FIX-RED latest integration relay, 2026-10-29; fresh raw CI readback.
+# Remote PR head: 51e81e7d6d48e6aea299cc49d80f2f11720dcfb0 (rechecked after log reads).
+# Integration: 313c2c36f4ac064975c1c7c170d710cb63fa457f; local unpublished merge: b500d58cb0ffa541c4d2c4500aa932201d321b08.
+# gh pr checks 246: four failures. gh run view --log-failed --job attempted for all four.
+# Foundation direct read exit 0; all three Gates jobs read via raw per-job API after bounded timeouts.
+# Foundation 40749708075 / 123032808680, original filtered lines:
+foundation 2026-10-28T19:03:05.9404761Z AssertionError [ERR_ASSERTION]: tests/admin/oc/reauth.spec.ts
+foundation 2026-10-28T19:03:05.9422632Z at tests/ci/pr-modes.test.mjs:681:12
+foundation 2026-10-28T19:03:05.9426785Z actual: [ 'foundation-shards', '--browser-password-auth' ],
+# Gates 40749708453 / 123035494287, raw API exit 0:
+2026-10-28T19:35:54.5784668Z browser_oc_test.go:254: context deadline exceeded
+2026-10-28T19:35:54.5841106Z --- FAIL: TestBrowserOC (1200.02s)
+# Gates 40749708453 / 123058993884, raw API exit 0:
+2026-10-28T19:46:35.0876625Z FAIL: --browser-password-auth: status FAIL
+2026-10-28T19:46:35.0884086Z receipt --browser-password-auth: FAIL test_count=47 run=40749708453/1 sha=e8667f2fad7d22b9305818c66fbd2415ec4c3d74
+# Gates 40749708453 / 123059582522, raw API exit 0:
+2026-10-28T19:46:40.9387125Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure
+# Fresh integration source still has the registered OC spec in the unknown-spec fixture at pr-modes.test.mjs:680.
+# STOP per outside-card gate rule; integrator/CI owner must resolve fixture conflict without weakening its assertion.
+# No causal CSV RED established; no implementation/push; GREEN NOT_RUN; WAIT_RUN NONE. All readers ended.
+# FIX-RED fresh relay readback, 2026-10-29 (this session).
+# fetch + merge exit 0: already up to date. Integration 313c2c36f4ac064975c1c7c170d710cb63fa457f.
+# Remote PR head independently rechecked: 51e81e7d6d48e6aea299cc49d80f2f11720dcfb0; local head b500d58cb0ffa541c4d2c4500aa932201d321b08.
+# gh pr checks 246 and gh run view --log-failed --job attempted for all four failed jobs.
+# Foundation direct read exit 0; three Gates jobs read successfully via raw job-log API after bounded gh timeouts.
+# 40749708075/123032808680: AssertionError tests/admin/oc/reauth.spec.ts, tests/ci/pr-modes.test.mjs:681:12.
+# Live integration source still lists the registered OC spec as unknown at line 680; actual modes foundation-shards + --browser-password-auth.
+# 40749708453/123035494287: browser_oc_test.go:254 context deadline exceeded; --- FAIL: TestBrowserOC (1200.02s).
+# 40749708453/123058993884: receipt --browser-password-auth FAIL, test_count=47, synthetic merge e8667f2fad7d22b9305818c66fbd2415ec4c3d74.
+# 40749708453/123059582522: gate=failure, receipts=failure; dependent failures.
+# STOP: shared tests/ci gate is outside authorized module; this is not browser ownership drift. No assertion-level CSV RED.
+# No source changes, tests, servers, generator, commit or push. E3 failure receipts only; GREEN NOT_RUN; WAIT_RUN NONE.
+# Only in-card evidence appended; prior dirty notes preserved. All session log readers ended. Humaux unavailable (no store/canvas/coord).
+
+# 2026-10-29 current continuation: supersedes historical STOP notes above.
+# Integrator fixed the CI fixture at base 4db7c2c9f34817888c6877e4d40c2be0a7386bae.
+# Tests-only RED candidate: all six CSV cases assert dialog immediately after real click (noWaitAfter:true),
+# before checking the recorded 403. Removes the unresolved pre-assertion response wait on native downloads.
+# Existing 10s assertion and 240s test timeouts, fixtures, retry settings and download assertions unchanged.
+# E1: node syntax check, strict standalone tsc and git diff --check exit 0. No local tests/servers.
+# Generated browser ownership source hash refreshed; generator exit 0. CSV implementation NOT_RUN.
+# New run/job receipts will follow after this single RED push. No causal CSV RED or GREEN claimed.
+# Push receipt: exit 0, 4db7c2c9f..ab9cfb666 -> unit/oc04-reauth-dialog (PR #246).
+# Current tests-only head: ab9cfb6669b2e42dfea61555cafebd249b7e70df.
+# gh run list: Gates 40774924700 pending; Foundation 40774924495 pending, both exact head above.
+# gh pr checks 246: exit 8 (pending), foundation job 123121737482 (NOT a plan job).
+# WAIT_RUN: 40774924700 (Gates), 40774924495 (Foundation); CSV assertion-level RED and GREEN still PENDING/NOT_RUN.
+# Integrator relays completed CI to fresh session. Read failed browser job logs and record actual CSV assertion,
+# then implement orders/finance downloads through existing shared re-auth fetch path in one implementation push.
+
+# RELAY 1 readback, 2026-10-29 (current head ab9cfb6669b2e42dfea61555cafebd249b7e70df).
+# gh pr checks 246: exit 8. gh run view --job 123124513292 --log-failed cannot read a still-running workflow.
+# Fallback: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/123124513292/logs (exit 0).
+# Gates 40774924700; checkout merge SHA c8050532a9c977b6a2a890b09b6fd8e8753a18ca; bundle:02 job 123124513292 failure.
+2026-10-28T22:03:58.3101287Z --- FAIL: TestBrowserBuyerOrderUI (47.79s)
+2026-10-28T22:03:58.5842092Z bundle member --browser-order: failure
+# Not CSV assertion RED. Bundle:02 contains payment/order/reports/storefront; OC-04 is in bundle:08.
+# Plan log readback: bundle:08 includes --browser-password-auth; job 123124513438 remains in_progress.
+# Foundation 40774924495 / 123121737482 completed success at the exact head (not whole-PR GREEN).
+# STOP under the card's outside-scope gate rule: buyer storefront failure is outside OC-04/apps/admin.
+# No implementation, test changes, commit or push this relay; existing dirty evidence notes preserved.
+# WAIT_RUN: 40774924700 (OC-04 bundle:08 job 123124513438); integrator relays its conclusion to a fresh session.
+# CSV causal RED/GREEN PENDING; local tests/servers, implementation, independent re-review, WebKit and LIVE NOT_RUN.
+
+# RELAY 2 original job logs: run 40774924700 / bundle:08 job 123124513438, head ab9cfb6669b2e42dfea61555cafebd249b7e70df
+2026-10-28T22:03:12.0787256Z === RUN   TestBrowserOC
+2026-10-28T22:05:32.6416356Z --- FAIL: TestBrowserOC (140.56s)
+2026-10-28T22:09:48.8274308Z --- FAIL: TestBrowserOC (140.56s)
+# Original CI artifact 12856180807 gate-browser-password-auth: playwright/run.BsxXgrHF/oc-20261028T220314.238911817/playwright.log
+  ✘  1 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay (11.2s)
+  ✘  2 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✘  3 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN orders: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✘  4 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✘  5 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en orders: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✘  6 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay (10.8s)
+  ✓  7 tests/admin/oc/reauth.spec.ts:240:1 › OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay, OIDC re-auth, routing and hints (1.0m)
+  ✓  8 tests/admin/oc/reauth.spec.ts:370:3 › OC-04 zh-CN desktop: the refused invite opens the localized dialog and is replayed once after password re-auth (1.2s)
+  ✓  9 tests/admin/oc/reauth.spec.ts:370:3 › OC-04 en mobile: the refused invite opens the localized dialog and is replayed once after password re-auth (1.2s)
+  1) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-TW-orde-d1e6f--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-TW-orde-d1e6f--downloads-after-one-replay/error-context.md
+  2) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-TW-fina-77ec1--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-TW-fina-77ec1--downloads-after-one-replay/error-context.md
+  3) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN orders: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-CN-orde-dd474--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-CN-orde-dd474--downloads-after-one-replay/error-context.md
+  4) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-CN-fina-41684--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-CN-fina-41684--downloads-after-one-replay/error-context.md
+  5) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en orders: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-en-orders--bf3f9--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-en-orders--bf3f9--downloads-after-one-replay/error-context.md
+  6) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-en-finance-623bd--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-en-finance-623bd--downloads-after-one-replay/error-context.md
+  6 failed
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN orders: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en orders: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay
+  3 passed (2.3m)

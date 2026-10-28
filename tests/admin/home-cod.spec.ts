@@ -156,6 +156,7 @@ test("ship-collect: the merchant records the manual shipment, then the collected
   await shipment.getByTestId("ship-tracking").fill("BC1234567890");
   await shot(page, "ship", locale, "desktop");
   await shipment.getByTestId("shipment-submit").click();
+  await shipment.getByTestId("shipment-confirm").click();
   await expect(shipment.getByTestId("shipment-record")).toBeVisible();
   // collected is only offered once the order is shipped; the dialog names the carrier-collected fact
   const cod = detail.getByTestId("order-cod");

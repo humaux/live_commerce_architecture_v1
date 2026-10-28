@@ -1,0 +1,90 @@
+2245:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:47.3867999Z     r2_integration_upgrade_test.go:129: R2 migration set = 135 files [0070_merchant_password_auth.sql 0071_claims_retention.sql 0072_taiwan_cvs_logistics.sql 0073_taiwan_cvs_functions.sql 0074_meta_ads.sql 0075_meta_ads_insights.sql 0077_stripe_live_enable.sql 0078_customers_privacy.sql 0079_platform_billing.sql 0080_meta_capi.sql 0081_storefront_publish.sql 0082_product_images.sql 0083_cvs_restock_guard.sql 0085_finance_pay_at_pickup.sql 0086_catalog_v2.sql 0087_store_design.sql 0088_checkout_offline.sql 0089_staff_team.sql 0090_buyer_comms.sql 0091_promotions.sql 0092_live_tools.sql 0093_storefront_integration.sql 0094_merchant_tools.sql 0095_meta_connect.sql 0096_worker_authorities.sql 0097_order_locale.sql 0098_buyer_comms_fixes.sql 0099_checkout_offline_fixes.sql 0100_meta_connect_fixes.sql 0101_promotion_live_fixes.sql 0102_cvs_collected_guard.sql 0103_claim_checkout_live_price.sql 0104_authz_ip_scope_link_replay.sql 0105_claim_live_price_uses.sql 0106_store_domains.sql 0107_home_cod.sql 0108_meta_multi_page.sql 0109_product_core.sql 0110_merchant_orders_v2.sql 0111_product_image_sizes.sql 0112_meta_ads_refusal_text.sql 0113_ads_attribution.sql 0115_claims_contains_mode.sql 0116_claim_sold_out_read.sql 0117_delivery_allocation_backfill.sql 0118_live_session_flow.sql 0119_live_console_inbox.sql 0120_kwc_v2.sql 0121_msg_templates.sql 0122_live_lifecycle.sql 0123_live_console_comments.sql 0124_lc_b1_readonly_archived.sql 0125_meta_connection_health.sql 0126_tracking_import.sql 0127_lc_r1_retention.sql 0128_lc_b4_sends.sql 0129_lc_b6_order_for_buyer.sql 0130_pick_list.sql 0136_payuni_notify.sql 0137_platform_stripe.sql 0139_customer_tags_notes.sql 0143_platform_operator.sql 0144_checkout_reminders.sql 0146_parcel_groups.sql 0147_reports.sql 0148_lc_b7_console_read.sql 0149_product_media_v2.sql 0150_platform_settlement.sql 0151_sold_out_reply.sql 0152_customer_import.sql 0153_support_grants.sql 0154_buyer_blocklist.sql 0155_returns.sql 0156_order_history_import.sql 0157_dashboard_todos_perf.sql 0158_live_price_keep_on_pause.sql 0159_operations_ledger.sql 0160_ads_unbind.sql 0161_remove_payuni_notify.sql 0162_cancel_closes_work_item.sql 0163_settlement_resolve.sql 0165_lc_b3b_buyer_panel.sql 0166_open_parcel_groups.sql 0167_stripe_untracked_reservation.sql 0169_lc_r2_c3x_purge.sql 0170_order_attempt_identity.sql 0171_order_attempt_provenance.sql 0172_order_attempt_admission_authority.sql 0173_order_attempt_admission_facts.sql 0174_order_attempt_subject_admission.sql 0175_order_attempt_claim_admission.sql 0176_order_attempt_admission.sql 0177_order_attempt_legacy_claim_fence.sql 0178_order_attempt_execution_fence.sql 0179_order_attempt_quote_materialization.sql 0180_order_attempt_abort.sql 0181_order_attempt_destination.sql 0182_order_attempt_execution_commit.sql 0183_order_attempt_allocation.sql 0184_order_attempt_begin.sql 0185_order_attempt_claim_execution.sql 0186_order_attempt_composite.sql 0187_order_attempt_pay_entry.sql 0188_order_attempt_notification.sql 0189_order_attempt_settlement.sql 0190_order_attempt_expiry_compat.sql 0191_order_attempt_sweep.sql 0192_order_attempt_erasure_prefix.sql 0193_order_attempt_native_cancel.sql 0194_order_attempt_plan_key_retirement.sql 0195_media_recovery_read_snapshot.sql 0196_studio_read_snapshot.sql 0197_payuni_phase2b_drop.sql 0198_payuni_form_material_erase.sql 0199_payuni_phase2b_followups.sql 0200_settlement_returns_recon.sql 0201_recent_auth.sql 0202_bank_transfer_closed.sql 0203_recent_auth_guards.sql 0204_inbox_unread.sql 0206_cvs_store_directory.sql post_river/0015_meta_ads_river.sql post_river/0016_stripe_live.sql post_river/0017_taiwan_cvs_begin_hold.sql post_river/0018_checkout_offline_begin_hold.sql post_river/0019_worker_authorities.sql post_river/0020_home_cod_begin_hold.sql post_river/0021_product_core_begin_hold.sql post_river/0022_platform_stripe.sql post_river/0023_order_attempt_jobs.sql post_river/0024_order_attempt_expiry.sql post_river/0025_order_attempt_sweep.sql post_river/0026_payuni_phase2b_drop.sql post_river/0027_payuni_phase2b_guard_recheck.sql post_river/0028_recent_auth_refund_guard.sql], want 136
+2246:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:47.3878983Z --- FAIL: TestR2IntegrationUpgradeFromReleaseHead (0.02s)
+2247-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:47.3879328Z === RUN   TestMerchantCancel
+2248-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:50.7572038Z === RUN   TestMerchantCancel/RT04_an_unpaid_hold_is_cancelled:_reservation_released,_sellable_quantity_restored,_replay_safe
+2249-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:50.8306510Z === RUN   TestMerchantCancel/RT05_a_payment_in_progress_cannot_be_cancelled_by_the_merchant
+--
+2253-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:54.9329980Z === RUN   TestMerchantCancel/RT08_cancelling_a_member_of_an_OPEN_parcel_group_removes_it;_the_last_survivor_dissolves_the_group
+2254-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:57.5823698Z === RUN   TestMerchantCancel/a_refused_cancel_leaves_its_parcel_group_untouched
+2255-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.2974407Z === RUN   TestMerchantCancel/RT10_cancelling_a_hold_while_its_payment_starts:_exactly_one_wins,_stock_stays_consistent
+2256:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.3361703Z === RUN   TestMerchantCancel/a_pay-at-pickup_order_cancels_through_the_same_command_(existing_§16.8_release)
+2257-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6654155Z --- PASS: TestMerchantCancel (12.28s)
+2258-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6655320Z     --- PASS: TestMerchantCancel/RT04_an_unpaid_hold_is_cancelled:_reservation_released,_sellable_quantity_restored,_replay_safe (0.07s)
+2259-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6656516Z     --- PASS: TestMerchantCancel/RT05_a_payment_in_progress_cannot_be_cancelled_by_the_merchant (0.47s)
+--
+2263-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6661419Z     --- PASS: TestMerchantCancel/RT08_cancelling_a_member_of_an_OPEN_parcel_group_removes_it;_the_last_survivor_dissolves_the_group (2.65s)
+2264-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6662150Z     --- PASS: TestMerchantCancel/a_refused_cancel_leaves_its_parcel_group_untouched (1.71s)
+2265-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6662882Z     --- PASS: TestMerchantCancel/RT10_cancelling_a_hold_while_its_payment_starts:_exactly_one_wins,_stock_stays_consistent (0.04s)
+2266:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6664326Z     --- PASS: TestMerchantCancel/a_pay-at-pickup_order_cancels_through_the_same_command_(existing_§16.8_release) (0.06s)
+2267-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6664961Z === RUN   TestReturnsHelperACLAndGuardBodies
+2268-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6729566Z --- PASS: TestReturnsHelperACLAndGuardBodies (0.01s)
+2269-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:16:59.6773426Z === RUN   TestSoldOutReplyTextMatchesAdapter
+--
+2526-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.0931655Z === RUN   TestStripeSP21RegistrarBindsStoredCredential/rotate_with_another_accounts_key_is_rejected_and_the_head_stays
+2527-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.0986549Z === RUN   TestStripeSP21RegistrarBindsStoredCredential/old_key_and_foreign_account_cannot_qualify_the_new_head
+2528-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.1012860Z === RUN   TestStripeSP21RegistrarBindsStoredCredential/stored_key_qualifies_and_the_probe_uses_it
+2529:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.1067100Z === RUN   TestStripeSP21RegistrarBindsStoredCredential/stale_expected_version_is_refused_before_any_provider_call
+2530-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.1159933Z --- PASS: TestStripeSP21RegistrarBindsStoredCredential (0.46s)
+2531-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.1161391Z     --- PASS: TestStripeSP21RegistrarBindsStoredCredential/rotate_with_another_accounts_key_is_rejected_and_the_head_stays (0.00s)
+2532-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.1163169Z     --- PASS: TestStripeSP21RegistrarBindsStoredCredential/old_key_and_foreign_account_cannot_qualify_the_new_head (0.00s)
+2533-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.1164736Z     --- PASS: TestStripeSP21RegistrarBindsStoredCredential/stored_key_qualifies_and_the_probe_uses_it (0.01s)
+2534:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.1166378Z     --- PASS: TestStripeSP21RegistrarBindsStoredCredential/stale_expected_version_is_refused_before_any_provider_call (0.00s)
+2535-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.1169629Z === RUN   TestStripeSP21Registrar
+2536-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.8229901Z === RUN   TestStripeSP21Registrar/two_stores_two_accounts_register_and_first_rotation_is_exact_version
+2537-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.8457611Z === RUN   TestStripeSP21Registrar/second_account_per_store_same_account_across_stores_and_cross_store_rebinding_are_rejected
+2538-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.8550583Z === RUN   TestStripeSP21Registrar/non_owner_principal_is_rejected_everywhere
+2539-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.8632025Z === RUN   TestStripeSP21Registrar/register_verifies_the_account_before_any_write
+2540:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.8648266Z === RUN   TestStripeSP21Registrar/ciphertext_purpose_and_aad_swaps_fail_to_open
+2541-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:38.8705010Z === RUN   TestStripeSP21Registrar/rotation_blocks_new_starts_until_requalified_and_historical_attempts_keep_their_version
+2542-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:39.2749793Z === RUN   TestStripeSP21Registrar/method_bounds_currency_and_cas
+2543-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:39.2832881Z === RUN   TestStripeSP21Registrar/qualification_evidence_formats_mock_and_probe
+--
+2549-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:39.3751964Z     --- PASS: TestStripeSP21Registrar/second_account_per_store_same_account_across_stores_and_cross_store_rebinding_are_rejected (0.01s)
+2550-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:39.3753763Z     --- PASS: TestStripeSP21Registrar/non_owner_principal_is_rejected_everywhere (0.01s)
+2551-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:39.3754925Z     --- PASS: TestStripeSP21Registrar/register_verifies_the_account_before_any_write (0.00s)
+2552:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:39.3756385Z     --- PASS: TestStripeSP21Registrar/ciphertext_purpose_and_aad_swaps_fail_to_open (0.01s)
+2553-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:39.3759077Z     --- PASS: TestStripeSP21Registrar/rotation_blocks_new_starts_until_requalified_and_historical_attempts_keep_their_version (0.40s)
+2554-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:39.3761458Z     --- PASS: TestStripeSP21Registrar/method_bounds_currency_and_cas (0.01s)
+2555-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:39.3762633Z     --- PASS: TestStripeSP21Registrar/qualification_evidence_formats_mock_and_probe (0.01s)
+--
+2648-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.2072782Z         --- PASS: TestCvsSelectionFlow/stores_and_environments/open_with_a_profile_whose_environment_differs_from_the_deployment:_service_unavailable (0.03s)
+2649-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.2074965Z         --- PASS: TestCvsSelectionFlow/stores_and_environments/SANDBOX_and_LIVE_selections_produce_different_namespaces (0.48s)
+2650-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.2077078Z     --- PASS: TestCvsSelectionFlow/open-selection_limit:_10_OPEN_per_owner_and_cart,_then_429_(§4.3) (0.11s)
+2651:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.2078685Z FAIL
+2652:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.2357239Z FAIL	livecommerce/tests/foundation	763.927s
+2653:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.2444997Z FAIL
+2654-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.5366857Z ##[error]Process completed with exit code 1.
+2655-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.5412728Z ##[group]Run shopt -s nullglob globstar
+2656-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.5413020Z [36;1mshopt -s nullglob globstar[0m
+--
+2672-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.5433913Z   LC_SWEEP_WORKERS: 1
+2673-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.5434111Z   EXTRA_ENV:
+2674-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.5434293Z   COREPACK_ENABLE_NETWORK: 0
+2675:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.5434526Z   GATE_OUTCOME: failure
+2676-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.5434716Z ##[endgroup]
+2677:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.5845110Z matrix-receipts: {"mode":"shard:g04","run_id":"40663921173","run_attempt":"1","sha":"326c10203c3b441aedc8e709af8b252c7fd986f2","status":"FAIL","test_count":216,"spec_count":0}
+2678-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.6545709Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2679-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.6546054Z with:
+2680-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:57.6546235Z   name: receipt-gate-shard_g04
+--
+2714-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.0921698Z Artifact download URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40663921173/artifacts/12830874877
+2715-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1064405Z ##[group]Run shopt -s nullglob
+2716-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1064673Z [36;1mshopt -s nullglob[0m
+2717:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1065328Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true[0m
+2718-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1083602Z shell: /usr/bin/bash -e {0}
+2719-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1083830Z env:
+2720-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1084002Z   GOTOOLCHAIN: local
+--
+2733-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1086010Z   EXTRA_ENV:
+2734-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1086226Z   COREPACK_ENABLE_NETWORK: 0
+2735-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1086432Z ##[endgroup]
+2736:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1140403Z --- FAIL: TestMerchantToolsManualOrder (1.21s)
+2737-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1142351Z     meta_ads_sandbox_test.go:148: NOT_RUN: META_ADS_SANDBOX=1 and the owner's sandbox inputs are required (app 大梦 roles, sandbox ad account); never run in CI
+2738:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1143458Z --- FAIL: TestR2IntegrationUpgradeFromReleaseHead (0.02s)
+2739-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1145058Z     stripe_registrar_test.go:403: NOT_RUN: set STRIPE_SANDBOX=1 with a test STRIPE_SECRET_KEY and STRIPE_ACCOUNT_ID to probe the real sandbox (creates and expires one test session, no charge)
+2740:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1146086Z FAIL
+2741:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1146485Z FAIL	livecommerce/tests/foundation	763.927s
+2742:gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1146887Z FAIL
+2743-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1213861Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2744-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1214420Z with:
+2745-gate (shard:g04)	UNKNOWN STEP	2026-10-28T16:18:59.1214691Z   name: gate-shard_g04
