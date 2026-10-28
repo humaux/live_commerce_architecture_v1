@@ -1,0 +1,7 @@
+foundation	Package docs and gate map are current	2026-10-28T02:15:34.0762514Z --- FAIL: TestGoRepositoryInventory (5.51s)
+foundation	Package docs and gate map are current	2026-10-28T02:15:34.0765390Z     go_extract_test.go:283: real inventory routes=332 unresolved=22 notes=97
+foundation	Package docs and gate map are current	2026-10-28T02:15:34.0766914Z     go_extract_test.go:292: missing actual cmd/api coverage guard EXACT /v1/platform/stripe/webhook
+foundation	Package docs and gate map are current	2026-10-28T02:15:34.0767834Z FAIL
+foundation	Package docs and gate map are current	2026-10-28T02:15:34.0768591Z FAIL	livecommerce/scripts/dev/contractdrift	197.849s
+foundation	Package docs and gate map are current	2026-10-28T02:15:34.0769375Z FAIL
+foundation	Package docs and gate map are current	2026-10-28T02:15:34.1545543Z ##[error]Process completed with exit code 1.

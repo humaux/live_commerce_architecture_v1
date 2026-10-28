@@ -66,7 +66,7 @@ func buildPlatformBilling(ctx context.Context, mainPool *pgxpool.Pool, getenv fu
 		ingress.Close()
 		return svc, nil, noop, nil
 	}
-	return svc, svc.WebhookHandler(ingress), ingress.Close, nil
+	return svc, registerPlatformBillingWebhook(svc.WebhookHandler(ingress)), ingress.Close, nil
 }
 
 // mountPlatformBilling routes exactly platformWebhookPath to the webhook (the handler itself answers 405 to
@@ -78,25 +78,33 @@ func mountPlatformBilling(fallback, webhook http.Handler) http.Handler {
 	if webhook == nil {
 		return fallback
 	}
-	mux := http.NewServeMux()
-	mux.Handle("POST /v1/platform/stripe/webhook", webhook)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == platformWebhookPath {
-			if r.Method != http.MethodPost {
-				webhook.ServeHTTP(w, r)
-				return
-			}
-			// The old mount compared decoded Path. Select with that same path,
-			// including encoded separators, then pass the original signed request
-			// unchanged; ServeMux must not redirect or rewrite it.
-			selection := *r
-			selectionURL := *r.URL
-			selectionURL.RawPath = ""
-			selection.URL = &selectionURL
-			handler, _ := mux.Handler(&selection)
-			handler.ServeHTTP(w, r)
+			webhook.ServeHTTP(w, r)
 			return
 		}
 		fallback.ServeHTTP(w, r)
 	})
+}
+
+// registerPlatformBillingWebhook declares the business method at construction;
+// mountPlatformBilling remains the exact decoded-path guard. Non-POST requests
+// still reach the webhook's own method rejection with the original request.
+func registerPlatformBillingWebhook(webhook http.Handler) http.HandlerFunc {
+	mux := http.NewServeMux()
+	mux.Handle("POST /v1/platform/stripe/webhook", webhook)
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			webhook.ServeHTTP(w, r)
+			return
+		}
+		// Select with the decoded path admitted by the mount, including encoded
+		// separators, but deliver the original signed request unchanged.
+		selection := *r
+		selectionURL := *r.URL
+		selectionURL.RawPath = ""
+		selection.URL = &selectionURL
+		handler, _ := mux.Handler(&selection)
+		handler.ServeHTTP(w, r)
+	}
 }

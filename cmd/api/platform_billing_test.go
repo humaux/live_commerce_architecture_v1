@@ -134,7 +134,7 @@ func TestMountPlatformBillingPreservesRequestAndDispatch(t *testing.T) {
 					})
 				}
 				rec := httptest.NewRecorder()
-				mountPlatformBilling(hit("fallback"), hit("webhook")).ServeHTTP(rec, req)
+				mountPlatformBilling(hit("fallback"), registerPlatformBillingWebhook(hit("webhook"))).ServeHTTP(rec, req)
 				if rec.Code != http.StatusAccepted || rec.Header().Get("X-Handler") != want || rec.Body.String() != want {
 					t.Fatalf("HTTP %d handler=%q body=%q, want 202 %s", rec.Code, rec.Header().Get("X-Handler"), rec.Body.String(), want)
 				}
