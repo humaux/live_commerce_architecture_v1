@@ -10,8 +10,8 @@ UI target: 示意页 v5 (owner-adopted as the W2 acceptance target by integrator
 console (status bar, left = video + offers, middle = comments and DMs in one stream, right = buyer panel) and the
 top-level 訊息 inbox that reuses the same buyer panel. Owner decisions bound here: 「公开回复也要做」 (public replies via
 `pages_manage_engagement`), the 直播接单主流程 (keyword comment → claim → private reply with link → buyer pays; the
-merchant can chat and build an order for the buyer from the console), and G3 (manual order may offer card, through
-PAYUNi; integrator ruling 2026-10-05).
+merchant can chat and build an order for the buyer from the console). Payment authority is the META-00 amendment
+below: platform Stripe pay entry only; the former G3 payment-provider wording is superseded.
 
 Amends, without editing them (amendment text in §14, recorded by the **integrator at freeze**, never by an implementer):
 `meta-claims-intake-v1.md` (§1 Out list, §6.1–6.3, Amendment "Merchant connect" clause 3), `meta-consumer-v1.md`
@@ -454,6 +454,12 @@ Messenger 確認，系統不會重送」). The auto first-reply state (M08 #4/#6
 
 ### 5.1 Flow
 
+**Legacy implementation boundary (META-00, 2026-10-28):** the separate-commit flow below describes the existing
+LC-B6 path, not the implementation target for new UI. `order-attempt-v1.md` §§1–6 governs its replacement:
+versioned admission, one atomic C2, read-only copy, locked payment-notification authorization and recovery.
+OA-2/OA-3 must close that boundary before LC-U3-ATTEMPT adopts it; do not build a second legacy writer.
+`LC_ORDER_ATTEMPT_ENABLED` stays `"0"` until OA-3 acceptance; this contract change does not activate it.
+
 1. `GET …/inbox/order-prefill?bundle_id=` or `?conversation_id=` → `{items: [{sku_id, offer_id, keyword, name,
    variant, quantity, live_price_minor, catalog_price_minor, sellable}], bundles: [bundle_id], customer: {name, phone,
    email} | null, last_delivery: {option_key, cvs: {store_code, store_name, store_address}} | {option_key,
@@ -499,17 +505,19 @@ replay otherwise returns the same order and operation, with `buyer_link` null (a
 
 | Endpoint | Status |
 | --- | --- |
-| `GET …/orders/manual/options` | reused unchanged |
-| `POST …/orders/manual` | reused unchanged (still the plain manual order) |
-| `POST …/orders/manual/regenerate-link` | reused unchanged (also called internally by a for-buyer replay, step c) |
+| `GET …/orders/manual/options` | existing endpoint; new-order payment choices constrained by META-00 / OA-3 |
+| `POST …/orders/manual` | existing legacy writer; replaced at OA-3 cutover by versioned attempt admission |
+| `POST …/orders/manual/regenerate-link` | legacy rotation; never used for new-protocol copy or replay |
 | `GET …/live-sessions/{sid}/claims/bundles`, `POST …/claims/bundles/{id}/link` | reused unchanged (send the claim link instead of building an order) |
-| `GET …/inbox/order-prefill` | **new** |
-| `POST …/orders/for-buyer` | **new**, a thin wrapper over `ManualOrders.Place` + bundle lock/record + optional grant + optional DM |
+| `GET …/inbox/order-prefill` | existing A15; OA-3 adds selected-set completeness/revision before new UI adoption |
+| `POST …/orders/for-buyer` | existing LC-B6 wrapper; OA-3 replaces placement with the same attempt authority as manual orders |
 
 ### 5.3 Card and live price
 
-- Card: per G3 ruling 2026-10-05, `payment_mode` may include PAYUNi card **when the manual-order options list it**
-  (the change belongs to the G3/PAYUNi unit; this contract only passes the mode through).
+- Payment: platform Stripe pay entry only (owner 2026-10-25; META-00 R5). No new `bank_transfer` order and no
+  bank-transfer receiving-account setup (OC-Q1/OC-16; owner 2026-10-28). Historical records remain read-only under
+  the owner-choices contract; their existing terminal processing is preserved. Order-view copy is distinct from
+  a payable entry; neither a created order nor a copied view link proves collection is available.
 - Live price (OPEN-13, RESOLVED with the integrator money-path ruling below): a **merchant-attested claim origin**.
   For lines whose offer has a live price, the server sets `CartInput.Origins` (server-only field) and
   `claims.live_prices` gains exactly one branch: the cart's buyer capability was issued by this for-buyer request and
@@ -555,6 +563,108 @@ badge 「僅測試帳號」); otherwise it is absent or disabled with the reason
 Server rule: the planner refuses with `409 capability` regardless of what the UI shows; Check re-reads it.
 
 ## 7. Console read models
+
+### 7.0 META-00 authority amendment (2026-10-28; normative DESIGN)
+
+Authority: owner dispatch 「Meta的信息，抓单回复，还有meta的私信，手工单这些，你梳理安排车队做吧。」 and integrator
+R1–R7 in the META-00 card; OC-Q13 in `owner-choices-20261026-v1.md`. These clauses govern the new stream/UI units;
+they do not claim an implemented endpoint or current-SHA test acceptance. Existing A2/A8/A9 remain compatible.
+
+- **R1 — comment edits/removals:** `meta-claims-intake-v1.md` §3 stays unchanged: edit/remove never qualifies,
+  retracts, or changes claim quantity. The design sentence 「改留言會更新件數」 is incorrect and must be corrected
+  in the separate design lane. Removing a comment from a read projection never removes its accepted claim.
+- **R2 — consent:** no marketing-consent badge, field, filter, or consent branch in Inbox, console, buyer panel,
+  or their summary/review states. The reply window is not marketing consent; neither a comment, claim, payment
+  nor explicit customer link opens it. Existing message authority/window/privacy checks remain in force.
+- **R3 — stream membership:** live comments from this session's authenticated claim source plus inbound DMs
+  explicitly linked to **this session**. Proof is a same-store bundle/claim-to-conversation relation through the
+  verified §3.7 peer mapping, or an explicit customer-link whose same-store session/bundle relation is also
+  provable. A customer link alone is not a session link. Return the exact relation kind/reference; without that
+  proof the DM stays exclusively in store-wide Inbox. Never infer session, buyer or peer from nickname, similar
+  text, contact details or `bundles.owner_id`. A conversation proven linked to two sessions may appear in both,
+  with unchanged source identity; this does not merge buyers or duplicate any send authority.
+- **R4 — video/accepting:** embed only an official Facebook player after eligibility for the exact source has
+  been verified. Unknown, ineligible or unavailable playback shows plain-language state and the validated native
+  Facebook watch link when one exists; absent a valid source, explain that no watch link is available. Never
+  show fake playback or a successful-playing state from an unverified `video_embeddable` boolean. The bar's
+  接單中/暫停接單 reads/writes the existing `StudioClaims` accepting/claim-window switch with its existing
+  permission, CAS and billing checks. It never calls A7 start/end/archive; pausing preserves session lifecycle,
+  comments, DM visibility and reply authority. Lifecycle controls remain separate explicit actions.
+
+### 7.0.1 META-STREAM-READ DTO (new read surface; not yet registered)
+
+`GET /v1/admin/stores/{store_id}/live-sessions/{sid}/stream` requires **both `live:read` and `inbox:read`**; scope is
+server-authenticated, foreign tenant/store/session returns non-disclosing 404. A live-only reader continues to
+use A2 and receives no DM-derived metadata. Query keys only `filter`, `cursor`, `before_cursor`, `limit`;
+`cursor` and `before_cursor` are mutually exclusive. Default `filter=all`, `limit=50`, integer range 1..100;
+unknown keys, invalid filter/limit/cursor → 400. It is read-only: no mark-read, takeover, claim or send side effect.
+
+```text
+SessionStreamPage = {
+  session_id, as_of, reset, items: [SessionStreamItem],
+  removed: [{item_key, source_epoch: integer|null}], next_cursor: string, older_cursor: string|null,
+  scan_exhausted: {comments: boolean, dm: boolean}, truncated: boolean,
+  stream: StreamState
+}
+SessionStreamItem = {
+  item_key, kind: comment|dm, at,
+  source: {platform: facebook|instagram, app_id, object, asset_id, source_object_id: string|null,
+           comment_ref: string|null, conversation_id: uuid|null,
+           message_seq: integer|null, comment_epoch: integer|null, comment_seq: integer|null},
+  session_link: {kind: source|bundle|claim|customer_link, ref},
+  recipient: {conversation_id: uuid|null, bundle_id: uuid|null, display_name: string|null},
+  text: string|null, unreadable: boolean, attachments: [{type}],
+  claim: {offer_id, keyword, quantity, bundle_id}|null,
+  assignee: {principal_id}|null, window_open_until: timestamp|null,
+  unreplied: boolean|null, send: {state, reason}|null, marks: ConsoleMarks|null
+}
+```
+
+Fields above are required (nullable where specified); timestamps are UTC RFC3339. `source_epoch` is the comment
+epoch, null for a DM's never-reused message identity. `at` is the original comment
+creation/message occurrence time, not fetch time. `source_object_id` is the stored session source for a comment;
+for DM it is null unless that exact object is in the session-link proof. `item_key` is collision-free within the
+store and bound to kind + full source tuple + comment reference or conversation/message sequence, never a display
+name or list index. Raw PSID/IG sender IDs, `peer_key`, bearer URLs, contact details and ciphertext are not DTO
+fields. Display name is optional, never identity authority. A DM without a bundle remains selectable through its
+conversation ID. Comment rows reuse A2 marks; DM rows reuse A9 decryption/unreadable and §3.6 window/send facts.
+`send` is the relevant existing reply disposition, not proof of delivery; missing authority is null, never sent.
+
+| UI filter | Wire value | Exact selection |
+| --- | --- | --- |
+| 全部 | `all` | Session comments plus all eligible session-linked inbound DM items |
+| 關鍵字 | `keyword` | Comment items with an accepted keyword claim/offer mark; no free-text nickname matching |
+| 私訊 | `private` | Eligible inbound DM items only; not all store DMs or comments awaiting a private reply |
+| 待回覆 | `unreplied` | Comments with no successful private reply and no public reply; DMs whose conversation has `last_inbound_at > coalesce(last_outbound_at, '-infinity')` (§3.6). Unknown reply evidence yields null and is not classified as unreplied |
+
+Unread and unreplied remain distinct. Pending/unknown send evidence never authorizes another send; A9's
+`has_unknown_outbound` and A4/A5/A12 checks remain authoritative when opening the selected thread/composer.
+
+**Ordering/cursors:** choose the newest bounded page, then return ascending `(at, kind, item_key)` with lexical
+tie-breaks (`comment` before `dm`). History pages preserve that order. Incremental reads advance a source-vector
+cursor (comment epoch/scan position plus per-conversation message positions), not a fabricated shared sequence or
+timestamp-only watermark; a late DM/comment with an old event time must still be returned and inserted by sort
+key. Cursors are opaque, integrity-checked, scope/session/filter/linkage-revision bound and contain no text, names,
+contacts or bearer data. Reuse across scope/filter or malformed cursor → 400; epoch change, expired retained
+position or changed session linkage → `reset=true`, a fresh bounded head and fresh cursors; clear the old view
+before rendering it. Revalidate membership/current permissions on every page; stale linked-thread data is cleared.
+
+**Bounds/deletion/privacy:** preserve §2.2's 2000-comment/2-hour ring and demand/idle limits; each request scans at
+most 200 raw comment envelopes and 200 raw DM metadata rows, using existing ≤100/≤50 reader batches. At most
+100 items are returned; cap/budget exhaustion sets `truncated=true` and returns continuation positions, never a
+false EOF. `scan_exhausted` is per-source raw-scan proof only (§2.6), never evidence that a displayed item was
+deleted. `removed` carries only authoritative deletion/retention removals for the exact item/source epoch, or
+removals established by complete authoritative coverage within that epoch; absent proof it is empty. Never
+evict from an incomplete/filtered page or a `seq:null` history gap. Old-epoch removals cannot delete a newer
+item; membership/epoch resets clear the old view instead. Accepted claims remain unchanged (R1).
+Do not copy comment/DM plaintext to a new table or search index. Existing encrypted social storage and retention
+remain authoritative. Poll at the existing visible 3-second cadence, console 5 seconds / Inbox 10 seconds;
+pause when hidden and back off 3→30 seconds on 5xx. Clear private text on hide/pagehide/logout/store change,
+cancel in-flight reads and reject stale responses. Responses `Cache-Control: private, no-store` and
+`Referrer-Policy: no-referrer`; no body/name/contact/token in URLs, logs, audit, metrics or browser storage.
+
+R3/R4 are owner defaults, revisable only through a later explicit contract amendment. UI units must not widen
+membership, infer playback eligibility or implement their own generation/window/send authority.
 
 ### 7.1 `GET …/live-sessions/{sid}/console` (`live:read`; polled every 5 s)
 
@@ -662,6 +772,10 @@ class: they are never stored (§2.1). `inbox.order_for_buyer` follows order rete
 Base `/v1/admin/stores/{store_id}`. Every route: merchant bearer → server-resolved tenant/store (I01), strict JSON
 decoder (unknown keys 400), `Cache-Control: no-store`, errors `{code}` from the fixed list. Writes need
 `Idempotency-Key`. New permissions (0122, OPEN-7/17): `inbox:read`, `inbox:reply`, `inventory:live_adjust`.
+
+META-00: A15/A16 below describe the existing legacy grammar. Their replacement and all new-attempt
+admission/lookup/recovery/pay-entry rules are owned by `order-attempt-v1.md` §5.1 and its OA-2/OA-3 briefs;
+new UI must not implement the legacy table as a second write authority. The new stream route is §7.0.1.
 
 | # | Method path | Permission | Request → Response | Errors | Audit |
 | --- | --- | --- | --- | --- | --- |
