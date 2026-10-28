@@ -377,3 +377,18 @@ Columns, in this order (import accepts any column order and ignores extra unknow
 
 ### G acceptance (what the tester proves; each with one red run before its green)
 MT01 dashboard numbers equal a hand-built fixture across today / 7 days, three payment modes, the five counters and the 10-row list, and finance reuse (card never includes bank/pickup); MT02 dashboard authority (orders:read, other store 404, no tenant from input) and read-only (zero writes); MT03 export columns/BOM/one row per variant/stock per warehouse/collections/image count, escaped commas, quotes and newlines survive a round trip; MT04 import preview lists every error with its row, writes nothing; MT05 commit is all-or-nothing (one bad row of 100 leaves zero changes); MT06 create vs update by slug+sku, new products draft, nothing deleted; MT07 stock only through the adjustment path with the reason, never below reserved; MT08 same file twice = replay, no second adjustment; MT09 limits (2 MiB, 1,500 rows, the 6,000-command work cap, formula-injection cells are exported with a leading apostrophe and imported back without it); MT10 manual order home + bank transfer / CVS + pay at pickup end to end, stock reserved, AWAITING_TRANSFER window, `source=merchant_manual`, audit row, replay with the same key, other body 409; MT11 manual order authority (inventory:reserve + catalog:read; viewer, live_operator and a reserve-only role are 403) and no price override surface; MT12 admin UI (browser, three locales, 375 px and desktop): dashboard, import wizard (upload, preview with row errors, commit), manual order form; nav keeps Inventory (the ledger).
+
+
+## Amendment 2026-10-28 (CF-SF)
+
+Status: DESIGN, review-ready; implementation/CI/independent review NOT_RUN for this amendment.
+Authority: [owner choices](owner-choices-20261026-v1.md) OC-Q9, OC-Q10, OC-Q11, OC-Q18
+(owner quotation and scope at lines 4–5). This section amends only the named points; frozen history above remains.
+
+- SF-01: no storefront live-replay entry. It stays planned; no replay contract, route, source, access or product-binding model is authorized.
+- SF-04: an ambiguous publish shows 「發布結果待確認」. Retain the original request identity and expected draft version; resolve that request's outcome. Never generate a new key, repeat a publish or switch to a newer draft to make uncertainty disappear. UNKNOWN is neither success nor failure.
+- B-acceptance's CAS, permissions, idempotency and publication atomicity remain. A versions-list read alone is not proof that the original request committed. The exact request-bound terminal-receipt/read contract must be frozen in a scoped continuation before that recovery UI is called implemented; this amendment invents no endpoint or receipt persistence.
+- SF-07: retain one not-open-yet presentation. No independent 暫停營業 state is introduced. SF-06 read recovery offers 「重新讀取這個頁面」 and an offline banner only; it never replays payment/order writes or promises input persistence.
+- SF-12: no new four-check publish-readiness gate. Preserve profile/footer/page CRUD, preview and existing permission checks.
+
+Acceptance handoff (NOT_RUN): real-click editor/read-state tests must cover ambiguous publish without a second write/key, correlation to the original version, late outcome and stale draft; reload/offline handling must not replay a write. Deterministic server receipt tests must precede any receipt implementation. No-build replay/pause rulings are scope exclusions, not evidence of running UI.
