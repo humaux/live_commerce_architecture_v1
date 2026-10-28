@@ -1,5 +1,21 @@
 # COD-255 — PR #285 implementation, CI acceptance pending
 
+## Relay 3: generated ownership repair (attempt 1 for this blocker)
+
+Head ce9e96384cc568cd55e12bbcf6c93a03803401bf failed Foundation run 40761401812,
+job 123074002991, at tests/ci/backend-coverage.test.mjs:274. The only failed assertion
+was `CI-SPEED-3: generated browser ownership is current and covers the registry`;
+the generator reported `browser ownership drift`. The previous wait-order gate passed.
+Root cause: relay 2 changed home-cod-buyer.mjs but did not regenerate its recorded source hash.
+Ran the card-prescribed static generator `node scripts/dev/derive-browser-ownership.mjs`
+(exit 0, 53 modes), which changed exactly that one hash in the generated ownership file.
+No generator, registry, mode, test, assertion, fixture, timeout, threshold or application source changed.
+No new/renamed/deleted browser spec, page or route; the existing required integration merge
+is 881c5ded343136fb51d41f35fba9a49a567ecdd8. No further base merge is needed for a hash-only repair.
+This is static metadata generation, not local test execution or CI acceptance (E1 only).
+New Foundation/Gates receipts will be recorded in the PR comment without an evidence-only push.
+Humaux remains unavailable: no store/canvas/coord receipt claimed. No local tests or servers.
+
 ## Relay 2: targeted CI repair (attempt 1)
 
 Implementation head e887218c851ab6a64194be655933cd467cea3ab5 failed Foundation run 40759941214,
