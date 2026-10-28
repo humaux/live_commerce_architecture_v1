@@ -149,6 +149,7 @@ test("MF07 merchant marks a paid order shipped, corrects, voids and re-ships; bu
   // record: 7-ELEVEN, leading-zero tracking number, https link, merchant-only note
   await fillShipment(detail, "seven_eleven_cvs", tracking, `https://track.example.com/t?n=${tracking}`, "MF07 internal note");
   await detail.getByRole("button", { name: ui.markShipped }).click();
+  await detail.getByTestId("shipment-confirm").click();
   await expect(detail.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
   await expect(detail).toContainText(tracking);
   await expect(detail).not.toContainText(ui.delivered);
@@ -177,6 +178,7 @@ test("MF07 merchant marks a paid order shipped, corrects, voids and re-ships; bu
   // re-ship
   await fillShipment(detail, "seven_eleven_cvs", tracking, `https://track.example.com/t?n=${tracking}`, "MF07 internal note");
   await detail.getByRole("button", { name: ui.markShipped }).click();
+  await detail.getByTestId("shipment-confirm").click();
   await expect(detail.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
   expect(requests).toHaveLength(4);
   expect(JSON.parse(requests[3].body ?? "{}")).toMatchObject({ expected_version: 3, status: "SHIPPED" });

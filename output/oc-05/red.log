@@ -1,0 +1,93 @@
+RED_NOT_RUN: no valid assertion-level RED receipt obtained; GitHub runner queue pending.
+Initial tests-only head: 1dbc1c40af97d8e962cea77b44e5d3a33b8c71fc
+Current tests-only head: 5da45aea079019ed17d12368a80e4b7183dfb368
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/254
+Gates run: 40615454659; plan job: 122576770600 (queued, no runner at last read).
+Foundation run: 40615454727; job: 122576770772 (queued, no runner at last read).
+Initial raw queue receipt: output/oc-05/red-pending.json.
+No implementation push is permitted before the new tests fail on their own assertions in CI.
+This file is a pending receipt, NOT evidence of RED and NOT a PASS.
+
+Reachability failure (INVALID as behavior RED): Foundation 40615454727 / 122576770772
+failed package docs before the tests: doc lacks "never": livecommerce/tests/quickstart.
+Original failed-step excerpt: output/oc-05/red-reachability.log.
+Fixed only the tests package non-goal comment in 5da45aea0; all behavior assertions retained.
+Current head workflows: Gates 40619573790; Foundation 40619573804 / 122590042610.
+Latest status-read/cancel attempt returned TLS handshake timeout (tool chunk 206a66),
+so neither a test conclusion nor a successful cancellation is inferred from it.
+
+At 02:30 UTC active queue cutoff: Foundation40619573804/job122590042610 SUCCESS; Gates40619573790 plan122590613621 SUCCESS, build122591734081 QUEUED. No behavior RED/GREEN obtained. Current-head raw queue receipt: red-current-pending.json. Implementation remains unpushed.
+
+CONFIRMED ASSERTION RED (supersedes pending observations above)
+Read on 2026-10-28; PR 254; tests-only head 5da45aea079019ed17d12368a80e4b7183dfb368.
+Gates run 40619573790; failed job 122603618623 gate (shard:unit); exit 1.
+CI synthetic merge receipt SHA: 924bfa74545d47744895da2689641e0769638c83 (not PR head).
+Five new HTTP tests fail their own expected-200 assertion with actual 404; migration test fails its own missing-0205 check.
+No unrelated test failure observed in the filtered failed-test list; receipts/required are downstream failures.
+Command: gh run view 40619573790 --job 122603618623 --log-failed | rg (OC05/quickstart/failure excerpts).
+575:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:34:01.9645103Z HEAD is now at 924bfa74 Merge 5da45aea079019ed17d12368a80e4b7183dfb368 into 5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248
+9648:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.2553111Z === RUN   TestOC05NewStoreDerivedSteps
+9649:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.4050346Z     quickstart_test.go:162: GET quickstart status=404 want 200 (new server route); body={"code":"not_found","message":"Resource not found.","request_id":"4425de8fdcef7923e222f2f7b760d9cd","retryable":false,"details":{}}
+9650:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.4056482Z --- FAIL: TestOC05NewStoreDerivedSteps (0.15s)
+9651:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.4057897Z === RUN   TestOC05CompleteIdempotentAndPersistent
+9652:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.5553370Z     quickstart_test.go:183: GET quickstart status=404 want 200 (new server route); body={"code":"not_found","message":"Resource not found.","request_id":"1b9b04e27c038ccd06514b57b8ea8aee","retryable":false,"details":{}}
+9653:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.5560493Z --- FAIL: TestOC05CompleteIdempotentAndPersistent (0.15s)
+9654:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.5562780Z === RUN   TestOC05CrossTenantAndStoreRefused
+9655:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.7026540Z     quickstart_test.go:212: GET quickstart status=404 want 200 (new server route); body={"code":"not_found","message":"Resource not found.","request_id":"5914f8fe0f4a5a7027ecbab0d9811084","retryable":false,"details":{}}
+9656:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.7049063Z --- FAIL: TestOC05CrossTenantAndStoreRefused (0.15s)
+9657:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.7050251Z === RUN   TestOC05ReadOnlyCannotDismissAndNoClientState
+9658:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.8551929Z     quickstart_test.go:239: GET quickstart status=404 want 200 (new server route); body={"code":"not_found","message":"Resource not found.","request_id":"dd6a9b3cc8146400d7b4dd666417a48c","retryable":false,"details":{}}
+9659:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.8576165Z --- FAIL: TestOC05ReadOnlyCannotDismissAndNoClientState (0.15s)
+9660:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:16.8576903Z === RUN   TestOC05ShippingDerivedFromCurrentStoreData
+9661:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:17.0017780Z     quickstart_test.go:258: GET quickstart status=404 want 200 (new server route); body={"code":"not_found","message":"Resource not found.","request_id":"252584cb31c15c48800a80a0a8625c63","retryable":false,"details":{}}
+9662:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:17.0050980Z --- FAIL: TestOC05ShippingDerivedFromCurrentStoreData (0.15s)
+9663:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:17.0051770Z === RUN   TestOC05MigrationBackfillsOnlyExistingStores
+9664:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:17.1491701Z     quickstart_test.go:296: OC-05 migration unavailable: open ../../migrations/0205_quickstart_marker.sql: no such file or directory
+9665:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:17.1522702Z --- FAIL: TestOC05MigrationBackfillsOnlyExistingStores (0.15s)
+9667:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:17.1557653Z FAIL	livecommerce/tests/quickstart	0.966s
+9669:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:17.8320406Z ##[error]Process completed with exit code 1.
+9728:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:19.1499114Z --- FAIL: TestOC05NewStoreDerivedSteps (0.15s)
+9729:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:19.1499588Z --- FAIL: TestOC05CompleteIdempotentAndPersistent (0.15s)
+9730:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:19.1500057Z --- FAIL: TestOC05CrossTenantAndStoreRefused (0.15s)
+9731:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:19.1500575Z --- FAIL: TestOC05ReadOnlyCannotDismissAndNoClientState (0.15s)
+9732:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:19.1501100Z --- FAIL: TestOC05ShippingDerivedFromCurrentStoreData (0.15s)
+9733:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:19.1501610Z --- FAIL: TestOC05MigrationBackfillsOnlyExistingStores (0.15s)
+9735:gate (shard:unit)	UNKNOWN STEP	2026-10-28T03:45:19.1502245Z FAIL	livecommerce/tests/quickstart	0.966s
+
+
+GET-422 blocker RED inspected 2026-10-29; Gates 40650048011, head 27c0d51d034f401603ee106052627a5b1908e8c6, synthetic merge e5bc7ce102d45fc30179be9677d28a4839b4d7ab.
+Jobs: shard:unit 122733463849, receipts 122843044695, required 122909447868.
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:35.7611173Z === RUN   TestOC05NewStoreDerivedSteps
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:35.9289463Z     quickstart_test.go:164: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"4469d9917c840278bf240c48dbef6a60","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:35.9323112Z --- FAIL: TestOC05NewStoreDerivedSteps (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:35.9324633Z === RUN   TestOC05CompleteIdempotentAndPersistent
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.0999959Z     quickstart_test.go:185: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"ee8ce3357c52af20f0699a01a7d69d1c","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.1031030Z --- FAIL: TestOC05CompleteIdempotentAndPersistent (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.1031875Z === RUN   TestOC05CrossTenantAndStoreRefused
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.2695728Z     quickstart_test.go:214: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"cf334e0494dc74845e54111b9e359e83","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.2701503Z --- FAIL: TestOC05CrossTenantAndStoreRefused (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.2703223Z === RUN   TestOC05ReadOnlyCannotDismissAndNoClientState
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.4328348Z     quickstart_test.go:241: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"a02532084090df4b91757d8332280d24","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.4334041Z --- FAIL: TestOC05ReadOnlyCannotDismissAndNoClientState (0.16s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.4335333Z === RUN   TestOC05ShippingDerivedFromCurrentStoreData
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.5959990Z     quickstart_test.go:260: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"2543196135d2de340668d2f5689b9645","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.5972064Z --- FAIL: TestOC05ShippingDerivedFromCurrentStoreData (0.16s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.5973041Z === RUN   TestOC05MigrationBackfillsOnlyExistingStores
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.7804633Z --- PASS: TestOC05MigrationBackfillsOnlyExistingStores (0.18s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.7808053Z === RUN   TestOC05MarkerRLSAndTimestampAuthority
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.9713972Z --- PASS: TestOC05MarkerRLSAndTimestampAuthority (0.19s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.9780429Z FAIL	livecommerce/tests/quickstart	1.278s
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:37.4899484Z ##[error]Process completed with exit code 1.
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:37.5545267Z matrix-receipts: {"mode":"shard:unit","run_id":"40650048011","run_attempt":"1","sha":"e5bc7ce102d45fc30179be9677d28a4839b4d7ab","status":"FAIL","test_count":1465,"spec_count":0}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9050409Z --- FAIL: TestOC05NewStoreDerivedSteps (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9051862Z --- FAIL: TestOC05CompleteIdempotentAndPersistent (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9053146Z --- FAIL: TestOC05CrossTenantAndStoreRefused (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9054129Z --- FAIL: TestOC05ReadOnlyCannotDismissAndNoClientState (0.16s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9055367Z --- FAIL: TestOC05ShippingDerivedFromCurrentStoreData (0.16s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9056523Z FAIL	livecommerce/tests/quickstart	1.278s
+receipts	UNKNOWN STEP	2026-10-28T15:17:08.2194493Z FAIL: shard:unit: status FAIL
+receipts	UNKNOWN STEP	2026-10-28T15:17:08.2243531Z   receipt shard:unit: FAIL test_count=1465 run=40650048011/1 sha=e5bc7ce102d45fc30179be9677d28a4839b4d7ab
+receipts	UNKNOWN STEP	2026-10-28T15:17:08.2244107Z matrix-receipts: RED (1 problem(s))
+receipts	UNKNOWN STEP	2026-10-28T15:17:08.2255716Z ##[error]Process completed with exit code 1.
+required	UNKNOWN STEP	2026-10-28T16:06:01.3941263Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure
+required	UNKNOWN STEP	2026-10-28T16:06:01.3960609Z ##[error]Process completed with exit code 1.

@@ -2,7 +2,7 @@
 
 // Purpose: Shipment section of the merchant order detail row (contracts/manual-fulfilment-v1.md §5.1, §5.4), plus the
 //   W3-U4 extracted ShipmentFields/shipmentFieldsError shared with the parcel-group waybill form (ParcelGroup.tsx).
-// Depends on: @/lib/orders-client (PUT shipment, GET history), @/lib/orders-model, @/lib/orders-copy, ./OrderRefunds (errorText).
+// Depends on: @/lib/orders-client (PUT shipment, GET history), @/lib/orders-model, @/lib/orders-copy, ./OrderRefunds (errorText), ./orders/ShipmentConfirm.
 // Used by: ./OrderDetailPanel (per-order section), ./ParcelGroup (ShipmentFields + shipmentFieldsError only).
 // BFF routes: PUT /api/stores/{store}/orders/{id}/shipment (Idempotency-Key), GET .../shipment/history
 // -> Go internal/httpapi/shipments.go (PUT fulfillment:write, GET orders:read). Record, correct and void are
@@ -10,6 +10,7 @@
 // after every response the order and history are re-read, and this UI never claims transit or delivery (MD3).
 // W3-07B: parcelBlock replaces the record form with the group hint when the order sits in an OPEN parcel group;
 // the server `in_parcel_group` guard (internal/httpapi/shipments.go) stays the authority.
+// Invariants: New shipment records require review before PUT; CAS, idempotency and unknown-result retry remain server-bound.
 
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
@@ -28,6 +29,7 @@ import {
 } from "@/lib/orders-model";
 import type { OrdersCopy } from "@/lib/orders-copy";
 import { errorText } from "./OrderRefunds";
+import { ShipmentConfirm } from "./orders/ShipmentConfirm";
 import "./order-actions.css";
 
 function carrierLabel(c: OrdersCopy, item: { carrier_code: CarrierCode; carrier_name: string | null }) {
@@ -107,6 +109,7 @@ export function ShipmentFields({
 export function OrderShipment({
   store,
   detail,
+  orderNumber,
   locale,
   c,
   canWrite,
@@ -117,6 +120,7 @@ export function OrderShipment({
 }: {
   store: string;
   detail: OrderDetail;
+  orderNumber?: string;
   locale: Locale;
   c: OrdersCopy;
   canWrite: boolean;
@@ -144,6 +148,8 @@ export function OrderShipment({
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
+  // The reviewed CAS version must still be current when the merchant confirms.
+  const [reviewVersion, setReviewVersion] = useState<number | null>(null);
   // One key per submission; only a byte-identical retry after an unknown outcome reuses it.
   const pending = useRef<{ key: string; body: string } | null>(null);
 
@@ -254,7 +260,11 @@ export function OrderShipment({
       data-testid="shipment-form"
       onSubmit={(event) => {
         event.preventDefault();
-        void send();
+        if (mode !== "record" || uncertain) { void send(); return; }
+        const bad = invalid();
+        if (bad) { setProblem(bad); return; }
+        setProblem("");
+        setReviewVersion(expectedVersion);
       }}
     >
       {mode === "void" ? (
@@ -292,6 +302,10 @@ export function OrderShipment({
   return (
     <section className="orders-section" data-testid="order-shipment" aria-label={c.shipTitle}>
       <h2>{c.shipTitle}</h2>
+      <ShipmentConfirm open={reviewVersion === expectedVersion && canWrite && !head && eligible && !parcelBlock}
+        order={detail} orderNumber={orderNumber} carrier={carrier ? carrierLabel(c, { carrier_code: carrier, carrier_name: carrierName.trim() || null }) : ""}
+        tracking={tracking.trim()} locale={locale} c={c} onCancel={() => setReviewVersion(null)}
+        onConfirm={() => { if (reviewVersion !== expectedVersion) return; setReviewVersion(null); void send(); }} />
       {status === "error" && (
         <div role="status">
           <p>{c.sectionUnavailable}</p>
