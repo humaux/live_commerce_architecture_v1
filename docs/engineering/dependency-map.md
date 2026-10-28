@@ -765,3 +765,11 @@ Package fakegraph is the MOCK Meta Graph of the merchant Page-connect gates (uni
 - Depends on (third-party): —
 - Used by: — (entry point or unused)
 
+## `tests/quickstart`
+
+Package quickstarttests owns OC-05 real-PostgreSQL quick-start marker and HTTP gates.
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
