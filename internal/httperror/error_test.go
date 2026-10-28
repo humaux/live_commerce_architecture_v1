@@ -106,6 +106,23 @@ func TestRateLimitCodeUsesFixedPublicMessage(t *testing.T) {
 	}
 }
 
+func TestStoreNotFoundPreservesSafeEnvelope(t *testing.T) {
+	w := httptest.NewRecorder()
+	Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Write(w, http.StatusUnprocessableEntity, "store_not_found")
+	})).ServeHTTP(w, httptest.NewRequest("POST", "/v1/buyer/cvs-stores", nil))
+	var envelope Envelope
+	if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != http.StatusUnprocessableEntity || envelope.Code != "store_not_found" ||
+		envelope.Message != "The store was not found. Check the chain and store number." ||
+		envelope.Retryable || envelope.Details == nil || len(envelope.RequestID) != 32 ||
+		envelope.RequestID != w.Header().Get("X-Request-ID") {
+		t.Fatalf("directory miss lost its safe public envelope: %d %+v", w.Code, envelope)
+	}
+}
+
 // #255: an unlisted code is rewritten to "internal" (and the storefront BFF turns that into 503), so the COD re-quote
 // refusal must keep its code and status.
 func TestCODSurchargeChangedKeepsItsCode(t *testing.T) {

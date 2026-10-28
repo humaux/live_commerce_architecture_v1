@@ -1,0 +1,26 @@
+browser engine: webkit
+PASS store 1 map round trip zh-TW/desktop: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip en/mobile: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip zh-CN/desktop: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip zh-TW/mobile: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 2: the map return lands on the originating store's host with its own __Host- cookie and shows the store card
+PASS OK mart and Hi-Life are disabled with 即將開放 until verified
+HTTP 503 POST /api/buyer/cvs-stores
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+503 !== 422
+
+    at file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/cvs-buyer.mjs:293:12 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 503,
+  expected: 422,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0

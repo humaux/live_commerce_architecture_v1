@@ -1,8 +1,9 @@
 // Purpose: Renders order detail and composes the supplied action sections (refund, returns, cancel, shipment, COD…).
 // Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/client, @/lib/orders-model, @/lib/orders-copy,
 //   @/lib/cod-copy, @/lib/returns-model, @/lib/returns-client, @/lib/returns-copy, ./OrderRefunds, ./OrderReturns, ./OrderShipment,
-//   ./OrderCvsShipment, ./OrderBankTransfer, ./OrderCodCollection
+//   ./OrderCvsShipment, ./OrderBankTransfer, ./OrderCodCollection, ./orders/OrderStatusBadge
 // Used by: apps/admin/components/MerchantOrders.tsx
+// Invariants: Frozen server detail owns identities and amounts; return navigation retains the mounted list scope.
 "use client";
 
 // Inline detail row of the merchant orders page (items, totals, recipient, statuses and the refund / returns / cancel /
@@ -11,7 +12,7 @@
 // the one stateful child defined here (returns-v1 §3), the rest live in their section components.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import { Badge, TableFrame } from "@live-commerce/ui";
+import { TableFrame } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
 import { money } from "@/lib/client";
 import type { OrderActions, OrderDetail } from "@/lib/orders-model";
@@ -26,6 +27,7 @@ import { OrderShipment } from "./OrderShipment";
 import { OrderCvsShipment } from "./OrderCvsShipment";
 import { OrderBankTransfer } from "./OrderBankTransfer";
 import { OrderCodCollection } from "./OrderCodCollection";
+import { OrderStatusBadge } from "./orders/OrderStatusBadge";
 
 // Refund section applies once money was captured (stripe-refund-v1 §4.3); earlier payment states have nothing to refund.
 const capturedPayment = ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED", "REVIEW_REQUIRED"];
@@ -36,18 +38,12 @@ export function amount(locale: Locale, currency: string, minor: number) {
 }
 /** Renders the localized order-state badge. */
 export function badge(state: string, c: OrdersCopy) {
-  return (
-    <Badge
-      tone={/CAPTURED|FULFILLED|DELIVERED|COLLECTED/.test(state) ? "success" : /FAILED|CANCELLED|EXPIRED/.test(state) ? "danger" : /AWAITING|PENDING|REVIEW/.test(state) ? "warning" : "neutral"}
-      className={`orders-badge orders-badge-${state.toLowerCase()}`}
-      data-state={state}
-    >
-      {c.statuses[state as keyof OrdersCopy["statuses"]]}
-    </Badge>
-  );
+  return <OrderStatusBadge state={state} c={c} />;
 }
 /** Describes Sections values shared by this presentation module. */
 export type Sections = {
+  orderNumber?: string;
+  onBack?: () => void;
   store: string;
   actions: OrderActions;
   boundary: string;
@@ -217,6 +213,7 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
       data-testid="order-detail"
       aria-label={`${c.order} ${detail.order_id}`}
     >
+      {sections.onBack && <div className="orders-detail-heading"><strong>{sections.orderNumber}</strong><button type="button" data-testid="order-detail-back" onClick={sections.onBack}>{c.backToList}</button></div>}
       <div className="orders-items">
         <h2>{c.items}</h2>
         <TableFrame label={c.items} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-items-scroll">
@@ -436,6 +433,7 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
           {(detail.commercial_state === "CONFIRMED" || detail.payment_mode === "cash_on_delivery") && (
             <OrderShipment
               store={sections.store}
+              orderNumber={sections.orderNumber}
               // A pay-at-pickup order never has a payment work item, so its list-side work_state is NONE. The
               // 0063 form's MD6 eligibility hint reads READY as "nothing blocks shipping"; for that mode that
               // hint is collection PENDING instead (hint only: record_manual_shipment re-checks in SQL).
