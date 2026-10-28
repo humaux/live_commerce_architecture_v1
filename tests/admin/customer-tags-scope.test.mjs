@@ -87,6 +87,7 @@ function customers() {
       if (p === "@/lib/orders-model") return { displayTime: () => "" };
       if (p === "@/lib/customers-copy") return { customersCopy: { en: new Proxy({}, { get: () => "x" }) } };
       if (["./WorkspaceFrame", "./AdminPageHeader", "./Icon"].includes(p)) return { WorkspaceFrame: "div", AdminPageHeader: "div", Icon: "i" };
+      if (p === "./AdminStateBlock") return { AdminStateBlock: "div" };
       if (/\.css$/.test(p) || p === "@live-commerce/i18n" || p === "@/lib/model") return {};
       throw new Error(`Unexpected import ${p}`);
     } });
