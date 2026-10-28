@@ -5,7 +5,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Store } from "@/lib/model";
-import { displayTime, STORE_TIME_ZONE } from "@live-commerce/format";
+import { displayTime, instantToTaipei } from "@live-commerce/format";
 import type { ConversationItem, Thread, Template } from "@/lib/inbox-types";
 import { inboxRead, inboxWrite, InboxError } from "@/lib/inbox-client";
 import { useMetaHealth } from "@/lib/meta-health-hook";
@@ -335,7 +335,6 @@ export function InboxThread({
   };
   const seqs =
     thread?.items.flatMap((item) => (item.seq ? [item.seq] : [])) ?? [];
-  const messageTime = new Intl.DateTimeFormat(locale, { timeZone: STORE_TIME_ZONE, hour: "2-digit", minute: "2-digit", hour12: false });
   const channel = conversation.platform === "instagram" ? c.instagram : c.messenger;
   const latestOutbound = [...(thread?.items ?? [])].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
     .find(item => item.direction === "out");
@@ -398,7 +397,7 @@ export function InboxThread({
           {[...thread.items].sort((a, b) => (a.at ?? "").localeCompare(b.at ?? "") || (a.seq ?? 0) - (b.seq ?? 0))
             .map((item, index) => <li className={styles.message} data-direction={item.direction}
               key={`${item.direction}:${item.seq ?? item.at ?? index}:${index}`}>
-              {item.at && <time className={styles.meta} dateTime={item.at} title={displayTime(locale, item.at)}>{messageTime.format(new Date(item.at))}</time>}
+              {item.at && <time className={styles.meta} dateTime={item.at} title={displayTime(locale, item.at)}>{instantToTaipei(item.at).slice(-5)}</time>}
               <p>{item.unreadable ? c.unreadable : item.text}</p>
               {item.send_state && (item !== latestOutbound || !folded) && <span className={styles.meta}>{deliveryLabels[item.send_state]}</span>}
               {(item.attachments ?? []).map((attachment, i) => <span className={styles.badge} key={i}>{c.attachment}: {attachment.type}</span>)}

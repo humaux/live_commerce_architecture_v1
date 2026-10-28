@@ -130,6 +130,7 @@ async function open(page: Page, id: string) {
   await page.getByTestId(`conversation-${id}`).click();
   await expect(page.getByTestId("inbox-thread")).toBeVisible();
   await expect(page.getByTestId("inbox-thread")).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByTestId("inbox-thread").locator('time[datetime="2026-10-29T06:32:00Z"]')).toHaveText("14:32");
 }
 async function query(page: Page) {
   const read = page.waitForResponse(response => response.request().method() === "GET" &&

@@ -1,0 +1,23 @@
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8780386Z test at tests/admin/shell-architecture.test.mjs:10:1
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8781014Z ✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (604.707695ms)
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8781625Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8782012Z   + actual - expected
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8782212Z   
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8782368Z   + [
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8782666Z   +   'apps/admin/components/InboxThread.tsx: format 1 > 0'
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8783147Z   + ]
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8783318Z   - []
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8783481Z   
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8784394Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shell-architecture.test.mjs:11:10)
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8785204Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8785641Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8786087Z       at Test.start (node:internal/test_runner/test:1262:17)
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8786649Z       at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8787348Z     generatedMessage: true,
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8787614Z     code: 'ERR_ASSERTION',
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8788024Z     actual: [ 'apps/admin/components/InboxThread.tsx: format 1 > 0' ],
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8788359Z     expected: [],
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8788623Z     operator: 'deepStrictEqual',
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8788879Z     diff: 'simple'
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8789066Z   }
+foundation	Package docs and gate map are current	2026-10-28T22:12:38.8844589Z ##[error]Process completed with exit code 1.

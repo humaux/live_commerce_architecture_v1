@@ -16,3 +16,10 @@ node --check packages/i18n/src/index.ts: exit0
 node scripts/dev/derive-browser-ownership.mjs on merged source: exit0,53modes
 git diff --name-only --diff-filter=U: empty; git diff --check: exit0
 Source hashes refreshed for current merged files. No local tests/servers.
+
+Relay2 formatter architecture repair attempt1 (base 7a10e999):
+node --check tests/admin/inbox-review-host.test.ts: exit0
+node --check tests/admin/inbox-v2-ui.spec.ts: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0,53modes
+git diff --check: exit0
+E1 syntax/static generation only; no local tests/server/browser.

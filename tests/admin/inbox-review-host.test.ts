@@ -248,6 +248,7 @@ const adapters: Record<string, string> = {
   "react-dom": mock("export const flushSync=callback=>callback(); export const createPortal=(...args)=>globalThis.__inboxReviewRuntime.createPortal(...args);"),
   "next/navigation": mock('export const useParams=()=>({locale:"en"});'),
   "@live-commerce/format": mock(
+    `export { instantToTaipei } from ${JSON.stringify(pathToFileURL(resolve(root, "packages/format/src/index.ts")).href)};` +
     "export const STORE_TIME_ZONE='Asia/Taipei'; export const displayTime=(_,value)=>value; export const money=(_,currency,value)=>`${currency} ${value}`;",
   ),
   "@/lib/meta-health-hook": mock("export const useMetaHealth=()=>({data:globalThis.__inboxReviewRuntime.health});"),
