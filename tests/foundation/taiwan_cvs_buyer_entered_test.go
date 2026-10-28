@@ -8,7 +8,7 @@ package foundation_test
 // Routes/definers: POST /v1/buyer/cvs-stores (fulfillment.record_buyer_cvs_store), GET /v1/buyer/checkout-options (fulfillment.read_cvs_offer),
 // checkout.begin_hold (cvs_source_mismatch), POST .../orders/{id}/cvs-shipment (request_cvs_shipment, no_cvs_destination), merchant order
 // projection (pickup_source). The browser half of TCV14 is TCV08 (tests/admin/taiwan-cvs.spec.ts).
-// Owner-pool writes (disclosed): identity grants (tcvEnv.grantCreator), nothing else.
+// Owner-pool writes (disclosed fixtures): identity grants, directory-name refresh (restored at subtest cleanup), and pickup expiry aging.
 
 import (
 	"context"
@@ -58,6 +58,39 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 		svc[k], _, _ = e.service(k, "MANUAL", 0)
 	}
 
+	t.Run("snapshot directory preserves all used chains and is definer-only reference data", func(t *testing.T) {
+		var n int
+		if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.cvs_store_directory WHERE snapshot='20261028'`).Scan(&n); err != nil || n != 13615 {
+			t.Fatalf("directory count: got %d err %v, want 13615 (UNIMARTFREEZE unused)", n, err)
+		}
+		for _, row := range []struct {
+			kind  string
+			count int
+		}{{"cvs_711", 7173}, {"cvs_familymart", 4433}, {"cvs_okmart", 326}, {"cvs_hilife", 1683}} {
+			if got := e.count(`SELECT count(*) FROM fulfillment.cvs_store_directory WHERE kind=$1`, row.kind); got != row.count {
+				t.Errorf("%s directory count: %d want %d", row.kind, got, row.count)
+			}
+		}
+		var owner, comment string
+		var tenantColumn bool
+		if err := f.owner.QueryRow(ctx, `SELECT pg_get_userbyid(c.relowner),coalesce(obj_description(c.oid,'pg_class'),''),
+          EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attname='tenant_id' AND NOT a.attisdropped)
+          FROM pg_class c WHERE c.oid='fulfillment.cvs_store_directory'::regclass`).Scan(&owner, &comment, &tenantColumn); err != nil {
+			t.Fatal(err)
+		}
+		if owner != "commerce_checkout_writer" || comment == "" || tenantColumn {
+			t.Errorf("reference owner/comment/scope: %s %q tenant=%v", owner, comment, tenantColumn)
+		}
+		for _, role := range []string{"commerce_runtime", "commerce_buyer_runtime", "commerce_checkout_runtime", "commerce_buyer_writer", "commerce_auth", "commerce_integration_writer"} {
+			for _, priv := range []string{"SELECT", "INSERT", "UPDATE", "DELETE"} {
+				var allowed bool
+				if err := f.owner.QueryRow(ctx, `SELECT has_table_privilege($1,'fulfillment.cvs_store_directory',$2)`, role, priv).Scan(&allowed); err != nil || allowed {
+					t.Errorf("%s %s directory privilege: %v err %v", role, priv, allowed, err)
+				}
+			}
+		}
+	})
+
 	t.Run("snapshot 20261028 returns exact directory values through HTTP and SQL", func(t *testing.T) {
 		// Public store reference data from the owner-supplied snapshot; no buyer PII.
 		for _, row := range []struct{ kind, code, name, address string }{
@@ -67,6 +100,7 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 			{"cvs_hilife", "F959", "大園中山南", "桃園市大園區中山南路６號"},
 			{"cvs_hilife", "L505", "車麗屋內湖店", "台北市內湖區內湖路一段３６６號"},
 			{"cvs_hilife", "2001", "大安杭州南", "台北市大安區杭州南路二段５號"},
+			{"cvs_hilife", "D010", "大同大橋頭", "台北市大同區延平北路二段２５５-１號"},
 		} {
 			t.Run(row.kind+"/"+row.code, func(t *testing.T) {
 				b := e.newBuyer()
@@ -234,54 +268,20 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 		}
 	})
 
-	t.Run("name and address bounds, control characters, trimming", func(t *testing.T) {
+	t.Run("legacy name and address are ignored, including empty, padded, long and control text", func(t *testing.T) {
 		b := e.newBuyer()
-		s711 := svc["cvs_711"]
-		long := func(n int) string { return strings.Repeat("店", n) }
-		cases := []struct {
-			label, name, addr string
-			status            int
-			code              string
-		}{
-			{"name 1 char", "店", "台北市測試路1號", 201, ""},
-			{"name 40 chars", long(40), "台北市測試路1號", 201, ""},
-			{"name 41 chars", long(41), "台北市測試路1號", 422, "bad_store_name"},
-			{"name empty", "", "台北市測試路1號", 422, "bad_store_name"},
-			{"name blank", "   ", "台北市測試路1號", 422, "bad_store_name"},
-			{"name control char", "店\x07店", "台北市測試路1號", 422, "bad_store_name"},
-			{"name newline", "店\n店", "台北市測試路1號", 422, "bad_store_name"},
-			{"address 5 chars", "測試門市", "台北市測試", 201, ""},
-			{"address 4 chars", "測試門市", "台北市測", 422, "bad_store_address"},
-			{"address 120 chars", "測試門市", long(120), 201, ""},
-			{"address 121 chars", "測試門市", long(121), 422, "bad_store_address"},
-			{"address control char", "測試門市", "台北市\x00測試路1號", 422, "bad_store_address"},
-			{"address tab", "測試門市", "台北市\t測試路1號", 422, "bad_store_address"},
-		}
-		for _, c := range cases {
-			res := b.enteredStore(s711, "123456", c.name, c.addr)
-			if res.status != c.status || (c.code != "" && tcvStr(tcvJSON(t, res.body), "code") != c.code) {
-				t.Errorf("%s: want %d %s, got %d %s", c.label, c.status, c.code, res.status, res.body)
+		for _, text := range []string{"", "different", "  padded  ", "a\n\t\x00b", strings.Repeat("店", 121)} {
+			res := b.enteredStore(svc["cvs_711"], "131386", text, text)
+			if res.status != 201 {
+				t.Fatalf("ignored legacy text: %d %s", res.status, res.body)
 			}
-		}
-		// trimmed: surrounding blanks are not part of the stored value
-		// Contract 16.1 says "trimmed, 1..40 chars": either reading is safe (normalise then store, or refuse an untrimmed value), but a
-		// value with surrounding blanks must never be stored. Recorded as an ambiguity in NOT_RUN.md.
-		res := b.enteredStore(s711, "123456", "  修剪門市  ", "  台北市修剪路9號  ")
-		switch res.status {
-		case 201:
 			out := tcvJSON(t, res.body)
-			if tcvStr(out, "name") != "修剪門市" || tcvStr(out, "address") != "台北市修剪路9號" {
-				t.Errorf("name/address must be stored trimmed: %v", out)
+			if tcvStr(out, "name") != "建盛" || tcvStr(out, "address") != "新竹市東區建中一路52號1樓" {
+				t.Errorf("legacy text must never supply identity: %s", res.body)
 			}
-		case 422:
-			if c := tcvStr(tcvJSON(t, res.body), "code"); c != "bad_store_name" && c != "bad_store_address" {
-				t.Errorf("an untrimmed value refused with an unexpected code: %s", res.body)
-			}
-		default:
-			t.Fatalf("trim case: %d %s", res.status, res.body)
 		}
-		if n := e.count(`SELECT count(*) FROM fulfillment.pickup_versions WHERE namespace=$1 AND (name<>btrim(name) OR address<>btrim(address))`, "buyer."+b.cap.Scope.OwnerID); n != 0 {
-			t.Errorf("%d stored versions carry surrounding blanks", n)
+		if n := e.count(`SELECT count(*) FROM fulfillment.pickup_versions WHERE namespace=$1 AND (name<>'建盛' OR address<>'新竹市東區建中一路52號1樓')`, "buyer."+b.cap.Scope.OwnerID); n != 0 {
+			t.Errorf("%d pickup versions differ from the snapshot", n)
 		}
 	})
 
@@ -289,7 +289,7 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 		b := e.newBuyer()
 		s711 := svc["cvs_711"]
 		key := t04Key("tce-version")
-		first := b.enteredStoreKey(key, s711, "123456", "版本門市", "台北市版本路1號")
+		first := b.enteredStoreKey(key, s711, "131386", "版本門市", "台北市版本路1號")
 		if first.status != 201 {
 			t.Fatalf("first: %d %s", first.status, first.body)
 		}
@@ -313,36 +313,43 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 		}
 		// same key + same body replays the same answer and writes nothing
 		versions := e.count(`SELECT count(*) FROM fulfillment.pickup_versions WHERE namespace=$1`, ns)
-		if replay := b.enteredStoreKey(key, s711, "123456", "版本門市", "台北市版本路1號"); replay.status != 201 || string(replay.body) != string(first.body) {
+		if replay := b.enteredStoreKey(key, s711, "131386", "版本門市", "台北市版本路1號"); replay.status != 201 || string(replay.body) != string(first.body) {
 			t.Errorf("replay: %d %s", replay.status, replay.body)
 		}
 		// same key + other body: conflict
-		if other := b.enteredStoreKey(key, s711, "123456", "別的門市", "台北市版本路1號"); other.status != 409 {
+		if other := b.enteredStoreKey(key, s711, "131386", "別的門市", "台北市版本路1號"); other.status != 409 {
 			t.Errorf("same key, other body: want 409, got %d %s", other.status, other.body)
 		}
 		if got := e.count(`SELECT count(*) FROM fulfillment.pickup_versions WHERE namespace=$1`, ns); got != versions {
 			t.Errorf("replay/conflict wrote versions: %d -> %d", versions, got)
 		}
 		// same store + same name/address under a NEW key reuses the head's current version (valid_until > now+1h)
-		again := b.enteredStore(s711, "123456", "版本門市", "台北市版本路1號")
+		again := b.enteredStore(s711, "131386", "版本門市", "台北市版本路1號")
 		if again.status != 201 || tcvStr(tcvJSON(t, again.body), "pickup_id") != id1 {
 			t.Errorf("unchanged entry must reuse the current version: %d %s (want pickup %s)", again.status, again.body, id1)
 		}
-		// a changed name appends version 2 with head CAS
-		changed := b.enteredStore(s711, "123456", "改名門市", "台北市版本路1號")
-		if changed.status != 201 {
-			t.Fatalf("changed: %d %s", changed.status, changed.body)
+		// A changed client name cannot alter canonical identity or create a version.
+		changed := b.enteredStore(s711, "131386", "改名門市", "台北市版本路1號")
+		if changed.status != 201 || tcvStr(tcvJSON(t, changed.body), "pickup_id") != id1 {
+			t.Fatalf("changed client text must reuse canonical identity: %d %s", changed.status, changed.body)
 		}
-		if id2 := tcvStr(tcvJSON(t, changed.body), "pickup_id"); id2 == id1 {
-			t.Error("a changed name must append a new version")
+		// Fixture-only directory refresh exercises the unchanged name/address reuse rule.
+		// Restore the reference row even if an assertion fails; no real directory service is contacted.
+		mustExec(t, f.owner, `UPDATE fulfillment.cvs_store_directory SET name='snapshot refresh fixture' WHERE kind='cvs_711' AND code='131386'`)
+		t.Cleanup(func() {
+			mustExec(t, f.owner, `UPDATE fulfillment.cvs_store_directory SET name='建盛' WHERE kind='cvs_711' AND code='131386'`)
+		})
+		changed = b.enteredStore(s711, "131386", "ignored", "ignored")
+		if changed.status != 201 || tcvStr(tcvJSON(t, changed.body), "pickup_id") == id1 || tcvStr(tcvJSON(t, changed.body), "name") != "snapshot refresh fixture" {
+			t.Fatalf("directory identity change must append canonical version: %d %s", changed.status, changed.body)
 		}
 		var head int64
-		if err := f.owner.QueryRow(ctx, `SELECT current_version FROM fulfillment.pickup_heads WHERE namespace=$1 AND code='123456' AND kind='cvs_711'`, ns).Scan(&head); err != nil || head != 2 {
+		if err := f.owner.QueryRow(ctx, `SELECT current_version FROM fulfillment.pickup_heads WHERE namespace=$1 AND code='131386' AND kind='cvs_711'`, ns).Scan(&head); err != nil || head != 2 {
 			t.Errorf("head after a changed entry: version %d err %v, want 2", head, err)
 		}
 		// an entry about to expire (<1 h left) is not reused: age the head's version (owner-pool fixture, disclosed: only valid_until moves)
-		mustExec(t, f.owner, `UPDATE fulfillment.pickup_versions SET attested_at=attested_at-interval '23 hours 30 minutes',valid_until=valid_until-interval '23 hours 30 minutes' WHERE namespace=$1 AND code='123456' AND version=2`, ns)
-		aged := b.enteredStore(s711, "123456", "改名門市", "台北市版本路1號")
+		mustExec(t, f.owner, `UPDATE fulfillment.pickup_versions SET attested_at=attested_at-interval '23 hours 30 minutes',valid_until=valid_until-interval '23 hours 30 minutes' WHERE namespace=$1 AND code='131386' AND version=2`, ns)
+		aged := b.enteredStore(s711, "131386", "改名門市", "台北市版本路1號")
 		if aged.status != 201 || tcvStr(tcvJSON(t, aged.body), "pickup_id") == tcvStr(tcvJSON(t, changed.body), "pickup_id") {
 			t.Errorf("a version with <1 h validity left must not be reused: %d %s", aged.status, aged.body)
 		}
@@ -352,20 +359,20 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 		b := e.newBuyer()
 		s711 := svc["cvs_711"]
 		stale := b.req("POST", "/v1/buyer/cvs-stores", t04Key("tce-stale"), map[string]any{"cart_version": b.cartVersion() + 5, "market_id": e.p.market.ID, "service_code": s711,
-			"store_code": "123456", "store_name": "門市", "store_address": "台北市測試路1號"}, nil)
+			"store_code": "131386", "store_name": "門市", "store_address": "台北市測試路1號"}, nil)
 		if stale.status != 409 {
 			t.Errorf("stale cart_version: want 409, got %d %s", stale.status, stale.body)
 		}
-		if res := b.enteredStore("nosuchservice", "123456", "門市", "台北市測試路1號"); res.status != 422 || tcvStr(tcvJSON(t, res.body), "code") != "service_unavailable" {
+		if res := b.enteredStore("nosuchservice", "131386", "門市", "台北市測試路1號"); res.status != 422 || tcvStr(tcvJSON(t, res.body), "code") != "service_unavailable" {
 			t.Errorf("unknown service: want 422 service_unavailable, got %d %s", res.status, res.body)
 		}
 		if res := b.req("POST", "/v1/buyer/cvs-stores", "", map[string]any{"cart_version": b.cartVersion(), "market_id": e.p.market.ID, "service_code": s711,
-			"store_code": "123456", "store_name": "門市", "store_address": "台北市測試路1號"}, nil); res.status < 400 {
+			"store_code": "131386", "store_name": "門市", "store_address": "台北市測試路1號"}, nil); res.status < 400 {
 			t.Errorf("a missing Idempotency-Key must be refused, got %d", res.status)
 		}
 		// exact body: an extra field is refused
 		if res := b.req("POST", "/v1/buyer/cvs-stores", t04Key("tce-extra"), map[string]any{"cart_version": b.cartVersion(), "market_id": e.p.market.ID, "service_code": s711,
-			"store_code": "123456", "store_name": "門市", "store_address": "台北市測試路1號", "recipient": "x"}, nil); res.status < 400 {
+			"store_code": "131386", "store_name": "門市", "store_address": "台北市測試路1號", "recipient": "x"}, nil); res.status < 400 {
 			t.Errorf("an unknown body field must be refused, got %d", res.status)
 		}
 	})
@@ -376,7 +383,7 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 		var last bhResponse
 		accepted := 0
 		for i := 0; i < 24; i++ {
-			last = rl.enteredStore(s711, "123456", fmt.Sprintf("限流門市%d", i), "台北市限流路1號")
+			last = rl.enteredStore(s711, "131386", fmt.Sprintf("限流門市%d", i), "台北市限流路1號")
 			if last.status == 201 {
 				accepted++
 			} else {
@@ -393,7 +400,7 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 
 	t.Run("buyer B cannot read or bump buyer A's head (both buyer roles)", func(t *testing.T) {
 		a, other := e.newBuyer(), e.newBuyer()
-		res := a.enteredStore(svc["cvs_711"], "654321", "甲的門市", "台北市甲路1號")
+		res := a.enteredStore(svc["cvs_711"], "265568", "甲的門市", "台北市甲路1號")
 		if res.status != 201 {
 			t.Fatalf("A: %d %s", res.status, res.body)
 		}
@@ -414,11 +421,11 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 			})
 		}
 		// B's own entry of the same store is its own namespace and version
-		resB := other.enteredStore(svc["cvs_711"], "654321", "甲的門市", "台北市甲路1號")
+		resB := other.enteredStore(svc["cvs_711"], "265568", "甲的門市", "台北市甲路1號")
 		if resB.status != 201 || tcvStr(tcvJSON(t, resB.body), "pickup_id") == pickupA {
 			t.Errorf("B must get its own pickup row: %d %s", resB.status, resB.body)
 		}
-		if got := e.count(`SELECT count(DISTINCT namespace) FROM fulfillment.pickup_versions WHERE code='654321' AND namespace LIKE 'buyer.%'`); got < 2 {
+		if got := e.count(`SELECT count(DISTINCT namespace) FROM fulfillment.pickup_versions WHERE code='265568' AND namespace LIKE 'buyer.%'`); got < 2 {
 			t.Errorf("two buyers, %d buyer namespaces", got)
 		}
 	})
@@ -432,7 +439,7 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 			t.Fatalf("settings: %d %s", status, raw)
 		}
 		place := func(b *tcvBuyer) (orderID string, err error) {
-			res := b.enteredStore(svc["cvs_711"], "123456", "標籤門市", "台北市標籤路1號")
+			res := b.enteredStore(svc["cvs_711"], "131386", "標籤門市", "台北市標籤路1號")
 			if res.status != 201 {
 				t.Fatalf("enter store: %d %s", res.status, res.body)
 			}
@@ -449,7 +456,7 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 		}
 		firstBuyer, secondBuyer := e.newBuyer(), e.newBuyer()
 		// second buyer enters its store BEFORE the ECPay connection exists (so its pickup is BUYER_ENTERED)
-		res := secondBuyer.enteredStore(svc["cvs_711"], "123456", "標籤門市", "台北市標籤路1號")
+		res := secondBuyer.enteredStore(svc["cvs_711"], "131386", "標籤門市", "台北市標籤路1號")
 		if res.status != 201 {
 			t.Fatalf("second buyer store: %d %s", res.status, res.body)
 		}
@@ -490,7 +497,7 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 			t.Errorf("a refused Begin left %d holds", got-holdsBefore)
 		}
 		// (c) record_buyer_cvs_store refuses once the store is ecpay_map
-		late := e.newBuyer().enteredStore(svc["cvs_711"], "123456", "晚到門市", "台北市晚到路1號")
+		late := e.newBuyer().enteredStore(svc["cvs_711"], "131386", "晚到門市", "台北市晚到路1號")
 		if late.status != 422 || tcvStr(tcvJSON(t, late.body), "code") != "service_unavailable" {
 			t.Errorf("entering a store while the store is ecpay_map: want 422 service_unavailable, got %d %s", late.status, late.body)
 		}

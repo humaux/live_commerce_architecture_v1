@@ -1,3 +1,7 @@
+// Purpose: validate CVS storefront wire shapes and input hints.
+// Depends on: taiwan-cvs-logistics-v1 and server-owned checkout rules.
+// Used by: CvsPickup and buyer storefront projections.
+// Invariants: input hints never replace server validation or directory identity.
 // Pure CVS (convenience-store pickup) wire contract for the buyer storefront: validators for the
 // FROZEN JSON of contracts/taiwan-cvs-logistics-v1.md §5.2/§16.1 (Go internal/buyerhttp/cvs.go via the BFF
 // /api/buyer/cvs-selections[/{id}[/verify]] and /api/buyer/cvs-stores), plus the input mirrors the UI shows
@@ -183,25 +187,15 @@ export const validBuyerStore = (v: unknown): v is BuyerStore =>
   isString(v.address, 400) &&
   v.source === "buyer_entered";
 
-// §16.1 store_code table (Go twin: fulfillment.ValidBuyerStoreCode). Hi-Life length is UNKNOWN upstream
-// (3..8 digits accepted until evidence); codes stay strings so leading zeros survive.
-const CODE_RULES: Record<CvsKind, RegExp> = {
+// §16.1 snapshot 20261028 formats (Go twin: fulfillment.ValidBuyerStoreCode). Codes stay strings.
+export const CODE_RULES: Record<CvsKind, RegExp> = {
   cvs_711: /^[0-9]{6}$/,
   cvs_familymart: /^[0-9]{6}$/,
-  cvs_okmart: /^[0-9]{4}$/,
-  cvs_hilife: /^[0-9]{3,8}$/,
+  cvs_okmart: /^[0-9]{6}$/,
+  cvs_hilife: /^([0-9]{4}|[A-Z][0-9]{3})$/,
 };
 export const validStoreCode = (kind: CvsKind, code: string) =>
   CODE_RULES[kind].test(code);
-const NO_CONTROL = /[\p{Cc}\p{Zl}\p{Zp}]/u;
-export const validStoreName = (v: string) => {
-  const n = [...v.trim()].length;
-  return n >= 1 && n <= 40 && !NO_CONTROL.test(v);
-};
-export const validStoreAddress = (v: string) => {
-  const n = [...v.trim()].length;
-  return n >= 5 && n <= 120 && !NO_CONTROL.test(v);
-};
 export type BuyerStoreBody = {
   cart_version: number;
   market_id: string;
@@ -233,11 +227,7 @@ export const validBuyerStoreBody = (
   typeof v.store_code === "string" &&
   validStoreCode(kind, v.store_code) &&
   typeof v.store_name === "string" &&
-  v.store_name === v.store_name.trim() &&
-  validStoreName(v.store_name) &&
-  typeof v.store_address === "string" &&
-  v.store_address === v.store_address.trim() &&
-  validStoreAddress(v.store_address);
+  typeof v.store_address === "string";
 
 // Official store-search pages shown next to the code field (§16.1). Opened in a new tab with
 // rel="noopener noreferrer"; never fetched or scraped. Retrieved 2026-09-30.
@@ -345,6 +335,7 @@ export const CVS_ERROR_CODES = [
   "service_unavailable",
   "selection_replay_new_key",
   "bad_store_code",
+  "store_not_found",
   "bad_store_name",
   "bad_store_address",
   "cvs_recipient_rejected",
@@ -372,6 +363,7 @@ export function errorField(
   code: string,
 ): "store_code" | "store_name" | "store_address" | "recipient" | "store" | "payment" | null {
   switch (code) {
+    case "store_not_found":
     case "bad_store_code":
       return "store_code";
     case "bad_store_name":

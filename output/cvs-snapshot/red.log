@@ -13,3 +13,52 @@ Expected assertion failures (must confirm from CI, never infer RED from a red ba
 Static-only commands: gofmt -w (three changed Go test files), node --check (two changed .mjs files), git diff --check; exit 0.
 NOT_RUN locally: all test suites, PG, browsers, servers, builds.
 Remote run/job IDs: pending PR creation; record as soon as assigned.
+
+Remote dispatch receipt (2026-10-28T03:43:41Z):
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/262 (OPEN; base r3/integration)
+Tests-only head: 03aa811f1f5c37d6e321504507be86d7267eb5a8
+Remote PR merge ref observed: 9f332d7015074823f3ffff2b378b61273c2ce87b
+Checkout note: pull_request workflows default to the synthetic merge ref; actual runner checkout is NOT_RUN/unverified while queued.
+Foundation workflow: 40628271158, attempt 1, job 122618341936, QUEUED.
+  https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40628271158/job/122618341936
+  Needed RED: Node unit suites / CVS-SNAP chain plus code resolves server identity and reports directory misses.
+Gates workflow: 40628271224, attempt 1, plan job 122618342331, QUEUED.
+  https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40628271224/job/122618342331
+  Needed after plan: shard:unit / TestValidBuyerStoreCodeGolden snapshot formats; shard:g08 / TestCvsBuyerEnteredStore; --browser-cvs.
+  Those gate job IDs have not been assigned yet; do not label the plan job as a test result.
+WAIT_JOB: 122618341936
+WAIT_JOB: 122618342331 (plan only; obtain the assigned test job IDs after it finishes)
+RED conclusion: PENDING, no assertion has failed yet.
+GREEN conclusion: NOT_RUN, implementation is intentionally not pushed before RED.
+Integrator wake-up: card dispatch explicitly delegates a fresh resumed session to the integrator after the needed job completes. No local background waiter/server was started; CI job timeouts remain unchanged.
+This receipt is a local working-tree append; no evidence-only CI restart was pushed.
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.6887631Z     taiwan_cvs_buyer_entered_test.go:80: must return exact snapshot identity, never supplied text or verified: {"pickup_id":"9fbdc706-7467-4a0a-b73f-cf3f850c50e7","kind":"cvs_711","code":"131386","name":"different supplied name","address":"different supplied address","source":"buyer_entered"}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.6914230Z     taiwan_cvs_buyer_entered_test.go:91: SQL snapshot lookup with empty legacy text: ERROR: bad_store_name (SQLSTATE PT422)
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7161665Z     taiwan_cvs_buyer_entered_test.go:80: must return exact snapshot identity, never supplied text or verified: {"pickup_id":"156b1057-d214-41fd-879c-d576bd798cc6","kind":"cvs_familymart","code":"011344","name":"different supplied name","address":"different supplied address","source":"buyer_entered"}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7178470Z     taiwan_cvs_buyer_entered_test.go:91: SQL snapshot lookup with empty legacy text: ERROR: bad_store_name (SQLSTATE PT422)
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7406948Z     taiwan_cvs_buyer_entered_test.go:75: snapshot store: want 201, got 422 {"code":"bad_store_code","message":"The store number is not valid for this chain.","request_id":"97f5858bdd66360cdc492f785491182b","retryable":false,"details":{}}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7609536Z     taiwan_cvs_buyer_entered_test.go:75: snapshot store: want 201, got 422 {"code":"bad_store_code","message":"The store number is not valid for this chain.","request_id":"0c51f2ab6582af2d99bf1a9f733e7b3e","retryable":false,"details":{}}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7813110Z     taiwan_cvs_buyer_entered_test.go:75: snapshot store: want 201, got 422 {"code":"bad_store_code","message":"The store number is not valid for this chain.","request_id":"1d9721e5a2ba1d6fd051d4970766c6e3","retryable":false,"details":{}}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8035087Z     taiwan_cvs_buyer_entered_test.go:80: must return exact snapshot identity, never supplied text or verified: {"pickup_id":"fc1f37e7-6cac-4d80-bab3-2b394aa7ec34","kind":"cvs_hilife","code":"2001","name":"different supplied name","address":"different supplied address","source":"buyer_entered"}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8048121Z     taiwan_cvs_buyer_entered_test.go:91: SQL snapshot lookup with empty legacy text: ERROR: bad_store_name (SQLSTATE PT422)
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8230230Z     taiwan_cvs_buyer_entered_test.go:107: code-only HTTP request: want exact directory store, got 422 {"code":"bad_store_name","message":"The store name is not valid.","request_id":"3c060c150137447d207e21b53d8d5b91","retryable":false,"details":{}}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8273860Z     taiwan_cvs_buyer_entered_test.go:115: cvs_711/000000: want 422 store_not_found, got 201 {"pickup_id":"98055634-18df-44d5-aa8a-3fb92872da66","kind":"cvs_711","code":"000000","name":"Synthetic Store","address":"Synthetic Address","source":"buyer_entered"}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8333746Z     taiwan_cvs_buyer_entered_test.go:115: cvs_okmart/1328: want 422 bad_store_code, got 201 {"pickup_id":"90b983ef-69d2-4071-8315-4c4db9acd3b1","kind":"cvs_okmart","code":"1328","name":"Synthetic Store","address":"Synthetic Address","source":"buyer_entered"}
+foundation	UNKNOWN STEP	2026-10-28T03:59:20.3129054Z ✖ CVS-SNAP chain plus code resolves server identity and reports directory misses (4.143709ms)
+foundation	UNKNOWN STEP	2026-10-28T03:59:37.7008455Z test at apps/storefront/tests/cvs-contract.test.mjs:57:1
+foundation	UNKNOWN STEP	2026-10-28T03:59:37.7009202Z ✖ CVS-SNAP chain plus code resolves server identity and reports directory misses (4.143709ms)
+foundation	UNKNOWN STEP	2026-10-28T03:59:37.7010338Z   AssertionError [ERR_ASSERTION]: empty legacy name/address are accepted
+foundation	UNKNOWN STEP	2026-10-28T03:59:37.7011024Z   false !== true
+
+CONFIRMED RED (supersedes historical PENDING entries above):
+Evidence: E3 GitHub CI regression failures, tests-only head 03aa811f1f5c37d6e321504507be86d7267eb5a8.
+Runner checkout/synthetic merge SHA: 9f332d7015074823f3ffff2b378b61273c2ce87b (matrix receipts).
+Foundation 40628271158 / job 122618341936: new storefront unit assertion empty legacy name/address accepted failed false !== true.
+Gates 40628271224 / job 122624122933 (shard:unit): TestValidBuyerStoreCodeGolden/20261028_snapshot_code_formats failed on OK/Hi-Life expectations.
+Gates 40628271224 / job 122624123599 (shard:g08): exact-directory HTTP/SQL expectations failed; missing 000000 incorrectly 201; old OK 1328 incorrectly 201; code-only incorrectly bad_store_name.
+Gates 40628271224 / job 122624123324 (--browser-cvs): new no-name-input assertion failed expected count 0, received 1 at cvs-buyer.mjs:285, Chromium and WebKit.
+Original browser failure logs retained: red-browser-1.log and red-browser-2.log; source artifact gate-browser-cvs id 12794983725, run 40628271224.
+Gates 40628271224 / job 122624122728 (--browser-webkit): CVS child failed; other child suites passed (same card regression, not an unrelated blocker).
+GREEN: NOT_RUN; implementation remains uncommitted/unpushed due the static out-of-scope parity-gate dependency documented in blocker.md.
+
+Continuation ruling 2026-10-28: prior scope STOP is resolved by the latest human authorization. Gates run conclusion/job IDs reread via gh run view: failure on tests-only 03aa811f1. One implementation push is now authorized; GREEN remains PENDING until its own CI. F/L-only expectations are superseded by A-Z, per snapshot-wide integrator profile.

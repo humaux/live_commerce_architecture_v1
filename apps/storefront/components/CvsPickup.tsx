@@ -1,5 +1,9 @@
 "use client";
 
+// Purpose: render buyer CVS pickup inputs and server-returned store details.
+// Depends on: buyer BFF, cvs-contract, cvs-copy and parent purchase context.
+// Used by: OrderFlow and the buyer order page.
+// Invariants: snapshot identity is read-only; map verification flow stays separate.
 // Storefront CVS pickup section, rendered by OrderFlow.tsx when the quoted delivery option is a CVS kind.
 // BFF routes (lib/buyer-client.ts buyerRequest -> lib/buyer-server.ts) and the Go endpoints behind them
 // (contracts/taiwan-cvs-logistics-v1.md §5.2, §16.1):
@@ -7,7 +11,7 @@
 //   POST /api/buyer/cvs-selections/{id}/verify -> Go POST /v1/buyer/cvs-selections/{id}/verify (keyless)
 //   POST /api/buyer/cvs-stores                -> Go POST /v1/buyer/cvs-stores (buyer-entered store, keyed)
 // Two store sources, decided by the server per store (option.pickup_selection): "ecpay_map" (same-tab POST to the
-// ECPay map, return with ?cvs_selection=, verify) and "buyer_entered" (typed code/name/address, official search
+// ECPay map, return with ?cvs_selection=, verify) and "buyer_entered" (typed code with server-returned name/address, official search
 // link, never labelled verified). Nothing here writes the destination or the order: OrderFlow calls
 // handle.ensure() to get a pickup_id, then writes the destination and Begin (checkout) itself.
 // Also exports CvsOrderStatus, the CVS/pay-at-pickup block of the buyer order page (§5.3, §16.4, §16.8).
@@ -31,9 +35,7 @@ import {
   validCvsSelection,
   validCvsSelectionOpen,
   validReturnPath,
-  validStoreAddress,
   validStoreCode,
-  validStoreName,
   type CvsDraft,
   type CvsErrorCode,
   type CvsKind,
@@ -120,7 +122,7 @@ export default function CvsPickup({
   const [opening, setOpening] = useState(false);
   const [retryReady, setRetryReady] = useState(true);
   const [copied, setCopied] = useState<"" | "ok" | "failed">("");
-  const [entered, setEntered] = useState({ code: "", name: "", address: "" });
+  const [entered, setEntered] = useState({ code: "" });
   // One key per distinct typed store; a retry of the same body replays the same server record.
   const attempt = useRef<{ key: string; body: string } | null>(null);
   const live = useRef(0);
@@ -300,14 +302,10 @@ export default function CvsPickup({
       return store.pickup_id;
     }
     const code = entered.code.trim();
-    const storeName = entered.name.trim();
-    const address = entered.address.trim();
-    if (store?.source === "entered" && store.code === code && store.name === storeName && store.address === address)
+    if (store?.source === "entered" && store.code === code)
       return store.pickup_id;
     const next: FieldErrors = {};
     if (!validStoreCode(kind, code)) next.store_code = copy.errors.bad_store_code;
-    if (!validStoreName(storeName)) next.store_name = copy.errors.bad_store_name;
-    if (!validStoreAddress(address)) next.store_address = copy.errors.bad_store_address;
     if (Object.keys(next).length) {
       setErrors(next);
       return null;
@@ -317,8 +315,8 @@ export default function CvsPickup({
       market_id: option.market_id,
       service_code: serviceCode(option),
       store_code: code,
-      store_name: storeName,
-      store_address: address,
+      store_name: "", // frozen wire shape; SQL ignores legacy text
+      store_address: "",
     };
     if (!validBuyerStoreBody(body, kind)) {
       setErrors({ store: copy.invalidStore });
@@ -360,8 +358,8 @@ export default function CvsPickup({
   }
   handle.current = { ensure };
 
-  function edit(field: "code" | "name" | "address", value: string) {
-    setEntered({ ...entered, [field]: value });
+  function edit(value: string) {
+    setEntered({ code: value });
     setStore(null);
     setErrors({});
     changed.current();
@@ -501,7 +499,7 @@ export default function CvsPickup({
             )}
           </p>
           <p data-testid="cvs-store-name">
-            {copy.chains[kind]} · {store.name}
+            {copy.enteredName}: {copy.chains[kind]} · {store.name}
           </p>
           <p>
             {copy.storeCode}: <span data-testid="cvs-store-code">{store.code}</span>
@@ -545,45 +543,15 @@ export default function CvsPickup({
               name="store_code"
               data-testid="cvs-entered-code"
               type="text"
-              inputMode="numeric"
+              inputMode={kind === "cvs_hilife" ? "text" : "numeric"}
               autoComplete="off"
-              maxLength={8}
+              maxLength={6}
               required
               aria-invalid={!!errors.store_code}
               value={entered.code}
-              onChange={(event) => edit("code", event.target.value)}
+              onChange={(event) => edit(event.target.value)}
             />
             {errors.store_code && <span role="alert">{errors.store_code}</span>}
-          </label>
-          <label>
-            <span>{copy.enteredName}</span>
-            <input
-              name="store_name"
-              data-testid="cvs-entered-name"
-              type="text"
-              autoComplete="off"
-              maxLength={40}
-              required
-              aria-invalid={!!errors.store_name}
-              value={entered.name}
-              onChange={(event) => edit("name", event.target.value)}
-            />
-            {errors.store_name && <span role="alert">{errors.store_name}</span>}
-          </label>
-          <label className="wide">
-            <span>{copy.enteredAddress}</span>
-            <input
-              name="store_address"
-              data-testid="cvs-entered-address"
-              type="text"
-              autoComplete="off"
-              maxLength={120}
-              required
-              aria-invalid={!!errors.store_address}
-              value={entered.address}
-              onChange={(event) => edit("address", event.target.value)}
-            />
-            {errors.store_address && <span role="alert">{errors.store_address}</span>}
           </label>
           <p className="order-note wide">{copy.enteredNote}</p>
         </>

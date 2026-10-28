@@ -124,8 +124,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0203 (OC-03 re-authentication SQL guards, owner role disabled) adds one: 131 -> 132.
 	// post_river/0028 (OC-03 re-authentication guard of the Stripe refund command, defined post-River) adds one: 132 -> 133.
 	// 0204 (OC-12 inbox unread filter on social.list_conversations) adds one: 133 -> 134.
-	if len(r2) != 134 {
-		t.Fatalf("R2 migration set = %d files %v, want 134", len(r2), r2)
+	// 0205 (OC-05, assigned prerequisite) and 0206 (CVS-SNAP directory) add two: 134 -> 136.
+	if len(r2) != 136 {
+		t.Fatalf("R2 migration set = %d files %v, want 136", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

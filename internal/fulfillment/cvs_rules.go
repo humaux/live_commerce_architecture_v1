@@ -1,3 +1,7 @@
+// Purpose: keep pure CVS code formats and connection identities aligned with SQL.
+// Depends on: standard library and taiwan-cvs-logistics-v1 §16.1.
+// Used by: checkout, fulfillment and shared-golden CI tests.
+// Invariants: codes stay strings; no SQL, network or state.
 // cvs_rules.go holds the pure rules of taiwan-cvs-logistics-v1 that Go and SQL must agree on: the four CVS kinds, the
 // buyer-entered store code format (§16.1), the deterministic ecpay_logistics connection id and the error type the CVS
 // routes map SQL SQLSTATEs to (unit default C7).
@@ -19,25 +23,21 @@ func isCVSKind(kind string) bool {
 	return kind == "cvs_711" || kind == "cvs_familymart" || kind == "cvs_hilife" || kind == "cvs_okmart"
 }
 
-// Store code formats of §16.1 (F21, retrieved 2026-09-30): 7-ELEVEN https://emap.pcsc.com.tw/ (6 digits),
-// FamilyMart https://family.map.com.tw/famiport/storeNumberFreeze.aspx (6 digits), OK mart
-// https://www.okmart.com.tw/convenient_shopSearch (4 digits). Hi-Life length is UNKNOWN (3..8 accepted until evidence).
+// Store code formats pinned by the owner-approved 20261028 snapshot (§16.1/F21).
+// SQL twin: migration 0206. Hi-Life accepts four digits or one uppercase letter followed by three digits.
 var (
-	storeCode6   = regexp.MustCompile(`^[0-9]{6}$`)
-	storeCode4   = regexp.MustCompile(`^[0-9]{4}$`)
-	storeCodeAny = regexp.MustCompile(`^[0-9]{3,8}$`)
+	storeCode6      = regexp.MustCompile(`^[0-9]{6}$`)
+	storeCodeHiLife = regexp.MustCompile(`^([0-9]{4}|[A-Z][0-9]{3})$`)
 )
 
 // ValidBuyerStoreCode is the §16.1 table; it is the twin of the SQL check in record_buyer_cvs_store. Codes are strings:
 // leading zeros are data and are never trimmed or numerically converted.
 func ValidBuyerStoreCode(kind, code string) bool {
 	switch kind {
-	case "cvs_711", "cvs_familymart":
+	case "cvs_711", "cvs_familymart", "cvs_okmart":
 		return storeCode6.MatchString(code)
-	case "cvs_okmart":
-		return storeCode4.MatchString(code)
 	case "cvs_hilife":
-		return storeCodeAny.MatchString(code)
+		return storeCodeHiLife.MatchString(code)
 	}
 	return false
 }

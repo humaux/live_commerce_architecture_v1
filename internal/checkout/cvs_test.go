@@ -30,23 +30,6 @@ func TestNewNonce(t *testing.T) {
 	}
 }
 
-func TestBoundedText(t *testing.T) {
-	for _, tc := range []struct {
-		value    string
-		min, max int
-		ok       bool
-	}{
-		{"7-ELEVEN 忠孝門市", 1, 40, true}, {"台北市中正區忠孝西路一段 1 號", 5, 120, true},
-		{"", 1, 40, false}, {" padded", 1, 40, false}, {"padded ", 1, 40, false}, {"tab\there", 1, 40, false},
-		{"line\nbreak", 1, 40, false}, {strings.Repeat("店", 41), 1, 40, false}, {strings.Repeat("店", 40), 1, 40, true},
-		{"1234", 5, 120, false}, {string([]byte{0xff, 0xfe}), 1, 40, false},
-	} {
-		if got := boundedText(tc.value, tc.min, tc.max); got != tc.ok {
-			t.Errorf("boundedText(%q,%d,%d)=%v want %v", tc.value, tc.min, tc.max, got, tc.ok)
-		}
-	}
-}
-
 func TestUnavailableReason(t *testing.T) {
 	for _, tc := range []struct {
 		name                  string
@@ -191,11 +174,6 @@ func TestOpenAndEnterStoreRefusalsBeforeSQL(t *testing.T) {
 	}{
 		"letters in code": {func(i *StoreEntryInput) { i.StoreCode = "12a456" }, "bad_store_code"},
 		"short code":      {func(i *StoreEntryInput) { i.StoreCode = "12" }, "bad_store_code"},
-		"empty name":      {func(i *StoreEntryInput) { i.StoreName = "" }, "bad_store_name"},
-		"control in name": {func(i *StoreEntryInput) { i.StoreName = "a\x00b" }, "bad_store_name"},
-		"short address":   {func(i *StoreEntryInput) { i.StoreAddress = "abc" }, "bad_store_address"},
-		"padded address":  {func(i *StoreEntryInput) { i.StoreAddress = " 台北市中正區忠孝西路一段" }, "bad_store_address"},
-		"long address":    {func(i *StoreEntryInput) { i.StoreAddress = strings.Repeat("址", 121) }, "bad_store_address"},
 	} {
 		in := entry
 		tc.edit(&in)

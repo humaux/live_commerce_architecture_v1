@@ -25,9 +25,7 @@ import {
   validCvsSelectionOpen,
   validMapForm,
   validReturnPath,
-  validStoreAddress,
   validStoreCode,
-  validStoreName,
 } from "../lib/cvs-contract.ts";
 import { buyerRequest, BuyerClientError } from "../lib/buyer-client.ts";
 
@@ -60,8 +58,8 @@ test("CVS-SNAP chain plus code resolves server identity and reports directory mi
   assert.equal(validBuyerStoreBody({ ...body, store_name: "different", store_address: "different" }, "cvs_711"), true);
   assert.equal(validStoreCode("cvs_okmart", "000005"), true, "six-digit OK codes retain leading zeros");
   assert.equal(validStoreCode("cvs_okmart", "1328"), false, "old four-digit OK codes are refused");
-  for (const code of ["2001", "F959", "L505"]) assert.equal(validStoreCode("cvs_hilife", code), true, code);
-  for (const code of ["123", "12345678", "f959", "A959", "F95"]) assert.equal(validStoreCode("cvs_hilife", code), false, code);
+  for (const code of ["2001", "F959", "L505", "A959", "D010"]) assert.equal(validStoreCode("cvs_hilife", code), true, code);
+  for (const code of ["123", "12345678", "f959", "d010", "F95"]) assert.equal(validStoreCode("cvs_hilife", code), false, code);
   assert.equal(isCvsErrorCode("store_not_found"), true, "directory miss is a known server refusal");
   assert.equal(errorField("store_not_found"), "store_code", "directory miss appears beside the code input");
 });
@@ -176,11 +174,9 @@ test("CVS04 buyer-entered store answer and request body", () => {
   };
   assert.equal(validBuyerStoreBody(body, "cvs_711"), true);
   for (const [name, bad] of [
-    ["okmart 6 digits", [{ ...body, store_code: "001234" }, "cvs_okmart"]],
+    ["okmart old 4 digits", [{ ...body, store_code: "0012" }, "cvs_okmart"]],
     ["711 five digits", [{ ...body, store_code: "12345" }, "cvs_711"]],
     ["letters", [{ ...body, store_code: "12345A" }, "cvs_711"]],
-    ["untrimmed name", [{ ...body, store_name: " S" }, "cvs_711"]],
-    ["short address", [{ ...body, store_address: "abcd" }, "cvs_711"]],
     ["extra key", [{ ...body, return_path: "/en/products/x" }, "cvs_711"]],
     ["missing key", [(({ store_name, ...rest }) => rest)(body), "cvs_711"]],
     ["bad service code", [{ ...body, service_code: "Bad Code" }, "cvs_711"]],
@@ -194,19 +190,10 @@ test("CVS05 store code table (§16.1) keeps leading zeros and per-chain lengths"
   assert.equal(validStoreCode("cvs_711", "1234567"), false);
   assert.equal(validStoreCode("cvs_familymart", "006045"), true);
   assert.equal(validStoreCode("cvs_familymart", "６０４５００"), false, "full-width digits are not a typed code");
-  assert.equal(validStoreCode("cvs_okmart", "0123"), true);
+  assert.equal(validStoreCode("cvs_okmart", "000005"), true);
   assert.equal(validStoreCode("cvs_okmart", "012"), false);
-  for (const ok of ["123", "12345678"]) assert.equal(validStoreCode("cvs_hilife", ok), true);
+  for (const ok of ["2001", "F959", "L505"]) assert.equal(validStoreCode("cvs_hilife", ok), true);
   for (const bad of ["12", "123456789", "12 34", ""]) assert.equal(validStoreCode("cvs_hilife", bad), false);
-  assert.equal(validStoreName("一"), true);
-  assert.equal(validStoreName("x".repeat(40)), true);
-  assert.equal(validStoreName("x".repeat(41)), false);
-  assert.equal(validStoreName("  "), false);
-  assert.equal(validStoreName("a\nb"), false);
-  assert.equal(validStoreAddress("12345"), true);
-  assert.equal(validStoreAddress("1234"), false);
-  assert.equal(validStoreAddress("x".repeat(121)), false);
-  assert.equal(validStoreAddress("a b street"), false);
 });
 
 test("CVS06 recipient mirror: real-name width 4..10 (CJK=2), no digits/symbols/emoji; 09 mobile", () => {

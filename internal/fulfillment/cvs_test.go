@@ -7,10 +7,12 @@ package fulfillment
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
@@ -34,11 +36,42 @@ func TestValidBuyerStoreCodeGolden(t *testing.T) {
 			{"cvs_hilife", "F959", true}, {"cvs_hilife", "L505", true},
 			{"cvs_hilife", "2001", true}, {"cvs_hilife", "123", false},
 			{"cvs_hilife", "12345678", false}, {"cvs_hilife", "f959", false},
-			{"cvs_hilife", "A959", false}, {"cvs_hilife", "F95", false},
+			{"cvs_hilife", "A959", true}, {"cvs_hilife", "D010", true},
+			{"cvs_hilife", "d010", false}, {"cvs_hilife", "F95", false},
 		} {
 			if got := ValidBuyerStoreCode(tc.kind, tc.code); got != tc.want {
 				t.Errorf("snapshot format %s/%q: got %v, want %v", tc.kind, tc.code, got, tc.want)
 			}
+		}
+	})
+	t.Run("every snapshot row passes its chain code format", func(t *testing.T) {
+		raw, err := os.ReadFile("cvsdata/stores-20261028.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var snapshot map[string][]struct {
+			Code string `json:"store_id"`
+		}
+		if err := json.Unmarshal(raw, &snapshot); err != nil {
+			t.Fatal(err)
+		}
+		kinds := map[string]string{"UNIMART": "cvs_711", "UNIMARTFREEZE": "cvs_711", "FAMI": "cvs_familymart", "OKMART": "cvs_okmart", "HILIFE": "cvs_hilife"}
+		rows := 0
+		for chain, stores := range snapshot {
+			for _, store := range stores {
+				rows++
+				if !ValidBuyerStoreCode(kinds[chain], store.Code) {
+					t.Errorf("snapshot %s/%q fails its kind format", chain, store.Code)
+				}
+			}
+		}
+		if rows != 20439 {
+			t.Fatalf("snapshot row coverage: got %d, want 20439", rows)
+		}
+	})
+	t.Run("snapshot generator matches committed SQL byte for byte", func(t *testing.T) {
+		if out, err := exec.Command("python3", "../../scripts/dev/cvs-directory-sql.py", "--check").CombinedOutput(); err != nil {
+			t.Fatalf("deterministic snapshot SQL: %v %s", err, out)
 		}
 	})
 	f, err := os.Open("testdata/cvs_store_codes.golden")

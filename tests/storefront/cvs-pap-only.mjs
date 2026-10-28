@@ -155,9 +155,7 @@ try {
     // place the order without touching the payment control
     await page.getByTestId("cvs-recipient-name").fill("王小明");
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
-    await page.getByTestId("cvs-entered-code").fill("123456");
-    await page.getByTestId("cvs-entered-name").fill("測試門市");
-    await page.getByTestId("cvs-entered-address").fill("台北市測試路1號");
+    await page.getByTestId("cvs-entered-code").fill("131386");
     await page.getByTestId("confirm-address").click();
     await expect(page.getByTestId("create-order")).toBeEnabled();
     await shot(page, "pap-only-before", locale, viewport);

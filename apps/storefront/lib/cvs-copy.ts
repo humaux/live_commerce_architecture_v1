@@ -1,3 +1,7 @@
+// Purpose: localize buyer CVS inputs, directory refusals and pickup status.
+// Depends on: cvs-contract and the three storefront locales.
+// Used by: CvsPickup, OrderFlow and the buyer order page.
+// Invariants: buyer-entered snapshot identity never implies verified delivery.
 // Buyer-facing copy (zh-CN / zh-TW / en) for the CVS pickup picker, pay-at-pickup and the CVS parts of the
 // order page (contracts/taiwan-cvs-logistics-v1.md §5.3, §16.1, §16.2, §16.4, §16.8; owner answers U2, U3, U4).
 // Rendered by components/CvsPickup.tsx and components/OrderFlow.tsx; no BFF route of its own.
@@ -51,18 +55,18 @@ const en = {
   // buyer-entered mode
   enteredLabel: "Store you entered",
   enteredIntro:
-    "Find your store on the chain's official site, then type its number, name and address here.",
+    "Find your store on the chain's official site, then type its number here. The server returns its name and address.",
   enteredCode: "Store number",
   enteredName: "Store name",
   enteredAddress: "Store address",
   enteredNote:
-    "We only check the format. Make sure the store exists and is open; the seller will check before shipping.",
+    "Store details come from the 2026-10-28 snapshot. The seller must confirm shipping availability.",
   searchLink: "Find your store number on the official site",
   codeHint: {
     cvs_711: "6 digits",
     cvs_familymart: "6 digits",
-    cvs_hilife: "3–8 digits",
-    cvs_okmart: "4 digits",
+    cvs_hilife: "4 digits or an uppercase letter + 3 digits",
+    cvs_okmart: "6 digits",
   } as Record<CvsKind, string>,
   consent: "The recipient's name and mobile are shared with the carrier and store for pickup notices.",
   confirmPickup: "Confirm pickup details",
@@ -92,6 +96,7 @@ const en = {
     bad_return_origin: "This page cannot receive the store choice. Reload and try again.",
     service_unavailable: "This chain is not available right now. Choose another delivery option.",
     selection_replay_new_key: "That store choice was already used. Choose the store again.",
+    store_not_found: "Store not found in the directory. Check the chain and store number.",
     bad_store_code: "The store number does not match this chain's format.",
     bad_store_name: "Enter the store name (up to 40 characters).",
     bad_store_address: "Enter the store address (5–120 characters).",
@@ -163,17 +168,17 @@ export const cvsCopy: Record<Locale, Copy> = {
     storeCode: "门市店号",
     storeAddress: "地址",
     enteredLabel: "你填写的门市",
-    enteredIntro: "请到超商官网查询门市，再把店号、店名和地址填在这里。",
+    enteredIntro: "请到超商官网查询门市，再填写店号。门店名称和地址由服务器返回。",
     enteredCode: "店号",
     enteredName: "店名",
     enteredAddress: "门市地址",
-    enteredNote: "我们只检查格式。请确认门市存在且营业中，卖家出货前也会核对。",
+    enteredNote: "门店资料来自 2026-10-28 快照；卖家仍需确认可配送。",
     searchLink: "到官网查询店号",
     codeHint: {
       cvs_711: "6 位数字",
       cvs_familymart: "6 位数字",
-      cvs_hilife: "3–8 位数字",
-      cvs_okmart: "4 位数字",
+      cvs_hilife: "4 位数字或大写字母加 3 位数字",
+      cvs_okmart: "6 位数字",
     },
     consent: "取件人姓名与手机将提供给物流商与门店，用于通知与取货。",
     confirmPickup: "确认取货信息",
@@ -201,6 +206,7 @@ export const cvsCopy: Record<Locale, Copy> = {
       bad_return_origin: "此页面无法接收门市选择，请重新加载后再试。",
       service_unavailable: "此超商暂时无法使用，请改选其他配送方式。",
       selection_replay_new_key: "该门市选择已使用过，请重新选择门市。",
+      store_not_found: "找不到门店，请确认超商品牌和店号。",
       bad_store_code: "店号不符合该超商的格式。",
       bad_store_name: "请填写店名（最多 40 个字）。",
       bad_store_address: "请填写门市地址（5–120 个字）。",
@@ -266,17 +272,17 @@ export const cvsCopy: Record<Locale, Copy> = {
     storeCode: "門市店號",
     storeAddress: "地址",
     enteredLabel: "你填寫的門市",
-    enteredIntro: "請到超商官網查詢門市，再把店號、店名和地址填在這裡。",
+    enteredIntro: "請到超商官網查詢門市，再填寫店號。門市名稱和地址由伺服器回傳。",
     enteredCode: "店號",
     enteredName: "店名",
     enteredAddress: "門市地址",
-    enteredNote: "我們只檢查格式。請確認門市存在且營業中，賣家出貨前也會核對。",
+    enteredNote: "門市資料來自 2026-10-28 快照；賣家仍需確認可配送。",
     searchLink: "到官網查詢店號",
     codeHint: {
       cvs_711: "6 碼數字",
       cvs_familymart: "6 碼數字",
-      cvs_hilife: "3–8 碼數字",
-      cvs_okmart: "4 碼數字",
+      cvs_hilife: "4 碼數字或大寫字母加 3 碼數字",
+      cvs_okmart: "6 碼數字",
     },
     consent: "取件人姓名與手機將提供給物流商與門市，用於通知與取貨。",
     confirmPickup: "確認取貨資訊",
@@ -304,6 +310,7 @@ export const cvsCopy: Record<Locale, Copy> = {
       bad_return_origin: "此頁面無法接收門市選擇，請重新載入後再試。",
       service_unavailable: "此超商暫時無法使用，請改選其他配送方式。",
       selection_replay_new_key: "該門市選擇已使用過，請重新選擇門市。",
+      store_not_found: "找不到門市，請確認超商品牌和店號。",
       bad_store_code: "店號不符合該超商的格式。",
       bad_store_name: "請填寫店名（最多 40 字）。",
       bad_store_address: "請填寫門市地址（5–120 字）。",

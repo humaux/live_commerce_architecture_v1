@@ -1,3 +1,7 @@
+// Purpose: resolve buyer CVS selections and snapshot store identity.
+// Depends on: checkout-pool SQL definers, buyer scope and ECPay map client.
+// Used by: internal/buyerhttp CVS routes.
+// Invariants: server scope and directory identity; BUYER_ENTERED never verified.
 // cvs.go is the buyer side of taiwan-cvs-logistics-v1: open an ECPay e-map selection (a same-tab form the storefront submits), read
 // or verify it after the buyer returns (directory lookup OUTSIDE any transaction, then verify_cvs_selection), and enter a store by
 // hand when the merchant has no ECPay connection (§16.1, source "buyer_entered", never "verified").
@@ -19,8 +23,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -73,7 +75,7 @@ var (
 	// product form /{locale}/products/{id}. Same strictness as before (no query, no fragment, no extra segment, three locales).
 	// Mirrored byte for byte in migrations/0093 (open_cvs_selection and the cvs_selections CHECK): Go answers early, SQL is the authority.
 	returnPathPattern = regexp.MustCompile(`^/(zh-TW|zh-CN|en)/(products/[A-Za-z0-9_-]{1,64}|checkout)$`)
-	storeCodePattern  = regexp.MustCompile(`^[0-9]{3,8}$`)
+	storeCodePattern  = regexp.MustCompile(`^([0-9]{4}|[0-9]{6}|[A-Z][0-9]{3})$`)
 	serviceCodeRx     = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,39}$`)
 )
 
@@ -379,35 +381,14 @@ type StoreEntered struct {
 	Source   string `json:"source"`
 }
 
-func boundedText(value string, min, max int) bool {
-	if !utf8.ValidString(value) || strings.TrimSpace(value) != value {
-		return false
-	}
-	n := utf8.RuneCountInString(value)
-	if n < min || n > max {
-		return false
-	}
-	for _, r := range value {
-		if unicode.IsControl(r) {
-			return false
-		}
-	}
-	return true
-}
-
-// EnterStore records a store the buyer typed for a merchant without an ECPay connection: chain code format, name and address bounds are
-// checked here for a fast 422 and again in SQL (the per-chain regex needs the service kind, which only the definer knows).
+// EnterStore resolves a typed code in the snapshot directory for a merchant without ECPay.
+// Legacy name/address stay accepted for wire compatibility but only SQL directory values are trusted.
 func (b *BuyerCVS) EnterStore(ctx context.Context, token, storeID, key string, in StoreEntryInput) (StoreEntered, error) {
 	if b == nil || !checkoutKey.MatchString(key) || in.CartVersion < 1 || !command.ValidID(in.MarketID) || !serviceCodeRx.MatchString(in.ServiceCode) {
 		return StoreEntered{}, command.ErrInvalid
 	}
-	switch {
-	case !storeCodePattern.MatchString(in.StoreCode):
+	if !storeCodePattern.MatchString(in.StoreCode) {
 		return StoreEntered{}, &fulfillment.CVSError{Status: 422, Code: "bad_store_code"}
-	case !boundedText(in.StoreName, 1, 40):
-		return StoreEntered{}, &fulfillment.CVSError{Status: 422, Code: "bad_store_name"}
-	case !boundedText(in.StoreAddress, 5, 120):
-		return StoreEntered{}, &fulfillment.CVSError{Status: 422, Code: "bad_store_address"}
 	}
 	request, _ := json.Marshal(struct {
 		Op string `json:"op"`
@@ -420,8 +401,8 @@ func (b *BuyerCVS) EnterStore(ctx context.Context, token, storeID, key string, i
 		var raw []byte
 		// fulfillment.record_buyer_cvs_store: BUYER_ENTERED, NULL principal, namespace buyer.<owner>; refused in ecpay_map mode.
 		if err := tx.QueryRow(callCtx, `SELECT fulfillment.record_buyer_cvs_store($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10)`,
-			tokenHash[:], storeID, key, digest[:], in.CartVersion, in.MarketID, in.ServiceCode, in.StoreCode, in.StoreName,
-			in.StoreAddress).Scan(&raw); err != nil {
+			tokenHash[:], storeID, key, digest[:], in.CartVersion, in.MarketID, in.ServiceCode, in.StoreCode, "",
+			"").Scan(&raw); err != nil {
 			return err
 		}
 		return decodeStrict(raw, &out)

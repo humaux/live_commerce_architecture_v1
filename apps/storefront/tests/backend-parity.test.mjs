@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { parseListQuery } from "../lib/shop-query.ts";
 import { parseCollections } from "../lib/shop-contract.ts";
 import { normalizeDesign } from "../lib/design.ts";
-import { validStoreCode, validStoreName, validStoreAddress, RETURN_PATH } from "../lib/cvs-contract.ts";
+import { CODE_RULES, validStoreCode, RETURN_PATH } from "../lib/cvs-contract.ts";
 
 const src = (rel) => readFile(new URL(`../../../${rel}`, import.meta.url), "utf8");
 const num = (text, name) => {
@@ -48,20 +48,28 @@ test("design caps equal internal/design/schema.go (nav, sections, pages)", async
   assert.equal(d.pages.length, pages);
 });
 
-test("CVS buyer-entered store bounds and return path equal Go (internal/checkout/cvs.go, migration 0093)", async () => {
-  const go = await src("internal/checkout/cvs.go");
-  assert.match(go, /boundedText\(in\.StoreName, 1, 40\)/);
-  assert.match(go, /boundedText\(in\.StoreAddress, 5, 120\)/);
-  assert.equal(validStoreName("字".repeat(40)), true);
-  assert.equal(validStoreName("字".repeat(41)), false);
-  assert.equal(validStoreAddress("字".repeat(120)), true);
-  assert.equal(validStoreAddress("字".repeat(121)), false);
-  assert.equal(validStoreAddress("字".repeat(4)), false);
+test("CVS snapshot store-code formats and return path equal Go (fulfillment/cvs_rules.go, migration 0093)", async () => {
+  const go = await src("internal/fulfillment/cvs_rules.go");
+  for (const [kinds, rule] of [
+    [["cvs_711", "cvs_familymart", "cvs_okmart"], "storeCode6"],
+    [["cvs_hilife"], "storeCodeHiLife"],
+  ]) {
+    const format = go.match(new RegExp(`${rule}\\s*=\\s*regexp\\.MustCompile\\(\x60([^\x60]+)\x60\\)`));
+    assert.ok(format, `${rule} Go regex not found`);
+    assert.ok(go.includes(`case ${kinds.map((kind) => JSON.stringify(kind)).join(", ")}:\n\t\treturn ${rule}.MatchString(code)`), `${rule} Go kind dispatch`);
+    for (const kind of kinds) assert.equal(CODE_RULES[kind].source, format[1], `${kind} regex source parity`);
+  }
   const sql = await src("migrations/0093_storefront_integration.sql");
   const m = sql.match(/return_path ~ '([^']+)'/);
   assert.ok(m, "return_path CHECK not found");
   const norm = (re) => re.replaceAll("\\/", "/").replaceAll("?:", "");
   assert.equal(norm(RETURN_PATH.source), norm(m[1]));
   assert.equal(validStoreCode("cvs_711", "123456"), true);
-  assert.equal(validStoreCode("cvs_okmart", "1234"), true);
+  assert.equal(validStoreCode("cvs_okmart", "123456"), true);
+  assert.equal(validStoreCode("cvs_hilife", "1234"), true);
+  assert.equal(validStoreCode("cvs_hilife", "D123"), true);
+  assert.equal(validStoreCode("cvs_okmart", "1234"), false);
+  assert.equal(validStoreCode("cvs_711", "12345"), false);
+  assert.equal(validStoreCode("cvs_hilife", "12345"), false);
+  assert.equal(validStoreCode("cvs_hilife", "d123"), false);
 });

@@ -1,4 +1,4 @@
-# Buyer-entered store code golden table (taiwan-cvs-logistics-v1 §16.1, F21 retrieved 2026-09-30).
+# Buyer-entered store code golden table (taiwan-cvs-logistics-v1 §16.1, F21 snapshot 20261028).
 # Columns: kind<TAB>code<TAB>valid. Shared by the Go rule (fulfillment.ValidBuyerStoreCode) and the SQL twin
 # (record_buyer_cvs_store): cvs-tests replays these rows against the definer. Codes are strings; leading zeros are data.
 cvs_711	123456	true
@@ -13,16 +13,25 @@ cvs_familymart	017888	true
 cvs_familymart	65980	false
 cvs_familymart	0065981	false
 cvs_familymart	00659x	false
-cvs_okmart	1328	true
-cvs_okmart	0001	true
+cvs_okmart	1328	false
+cvs_okmart	0001	false
 cvs_okmart	13280	false
 cvs_okmart	132	false
 cvs_okmart	13a8	false
-cvs_hilife	123	true
-cvs_hilife	12345678	true
-cvs_hilife	00123456	true
+cvs_hilife	123	false
+cvs_hilife	12345678	false
+cvs_hilife	00123456	false
 cvs_hilife	12	false
 cvs_hilife	123456789	false
 cvs_hilife	12-345	false
 home	123456	false
 cvs_other	123456	false
+cvs_okmart	000005	true
+cvs_okmart	000022	true
+cvs_hilife	2001	true
+cvs_hilife	F959	true
+cvs_hilife	L505	true
+cvs_hilife	f959	false
+cvs_hilife	D010	true
+cvs_hilife	A067	true
+cvs_hilife	d010	false

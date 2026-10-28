@@ -1,0 +1,26 @@
+CVS-SNAP local STATIC checks only, 2026-10-28
+Source state: uncommitted implementation atop tests-only 03aa811f1f5c37d6e321504507be86d7267eb5a8.
+gofmt -w on changed Go files: exit 0.
+node --check apps/storefront/tests/cvs-contract.test.mjs: exit 0.
+node --check tests/storefront/cvs-buyer.mjs: exit 0.
+node --check tests/storefront/cvs-pap-only.mjs: exit 0.
+bash scripts/dev/depmap.sh: exit 0; generated dependency map byte-unchanged.
+python3 scripts/check_packet.py: exit 0, PASS_PACKET_STRUCTURE_ONLY. Its out-of-scope timestamp-only output was restored; no source/gate change.
+go build ./internal/checkout ./internal/fulfillment ./migrations: exit 0.
+go vet ./internal/checkout ./internal/fulfillment ./migrations: exit 0.
+pnpm exec tsc -p apps/storefront/tsconfig.json --noEmit --incremental false: exit 254, tsc not installed.
+pnpm -C apps/storefront exec tsc --noEmit --incremental false: exit 254, tsc not installed. No dependency install attempted.
+Generator was executed to produce the committed-target migration INSERT block (artifact creation, no test suite); 13615 used-chain rows, raw snapshot hash unchanged.
+NOT_RUN: all local tests/PG/browser/server runs, generator --check (CI test added), CI implementation verification, contractdrift and independent review.
+No local server, test fixture, container or background waiter was started.
+
+Resumed ruling static checks (2026-10-28):
+- gofmt -w internal/checkout/cvs.go internal/fulfillment/cvs_rules.go internal/fulfillment/cvs_test.go tests/foundation/taiwan_cvs_buyer_entered_test.go: exit 0.
+- node --check apps/storefront/tests/backend-parity.test.mjs and cvs-contract.test.mjs: exit 0.
+- node --check tests/storefront/cvs-buyer.mjs and cvs-pap-only.mjs: exit 0.
+- go build ./internal/checkout ./internal/fulfillment ./migrations: exit 0.
+- go vet ./internal/checkout ./internal/fulfillment ./migrations: exit 0.
+- bash scripts/dev/depmap.sh: exit 0; byte-identical map.
+- git diff --check: exit 0.
+No local tests, servers, PG, browser, generator --check or contractdrift execution.
+- Resumed python3 scripts/check_packet.py: exit 0, PASS_PACKET_STRUCTURE_ONLY; packet.log retained. Its timestamp-only experiments/results/packet-check.json edit was restored.
