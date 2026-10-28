@@ -620,7 +620,7 @@
     "tests/foundation/returns_test.go": "82d091a11841ec15203055826b07ebcf7852a3b81a1b40586d536cc8c017ebce",
     "tests/foundation/scope_revoke_race_test.go": "82932b6debec4c7bd57549f075c9d20f8ab6b9dbd397b5a9d4a4e233a509d38b",
     "tests/foundation/settlement_resolve_test.go": "ec450a17ab7c7fada892821d706be7df81b591b1f8e90c9b60b120a1c8f3a5e0",
-    "tests/foundation/settlement_returns_test.go": "1814f94dea0dbc92292d79d928a29360e780242120420e6de3ede5e2fb0cede5",
+    "tests/foundation/settlement_returns_test.go": "52e6c7b1500738d43a5509d462e4a3791198d545d6c3319eea6b8294dd632091",
     "tests/foundation/sold_out_reply_test.go": "e94ca13c234f2d7fc1210bab1eb76808df2343ac19bb771ba25bee5579ceb077",
     "tests/foundation/staff_team_gate_test.go": "ba70fce98efa7007ada3bdc8e5abe1d62a3b344917a5252ff62e6e51f1002842",
     "tests/foundation/staff_team_smoke_test.go": "3fa9da8960bc400d130c808624ff273242d667185a4977146e7c4b333a9d0f21",

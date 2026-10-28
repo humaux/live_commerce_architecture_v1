@@ -1,0 +1,42 @@
+SETTLE-196-197 — RED_PENDING (not assertion-level RED yet)
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/286
+Branch: unit/settle196-v2-ui
+Head: 2c521b2a9058d73e870b74a6aa453d0b32b1c427
+Base fast-forwarded before edits: bf161bac9 (origin/r3/integration)
+Commit: tests only; one batched push covers #196 and #197.
+Observed 2026-10-28 UTC via gh pr checks / gh run view / gh api actions/runs/.../jobs:
+Gates run: 40758502896, in progress
+  https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40758502896
+  build job 123064306226, in progress; no behavioral result yet
+Foundation run: 40758502909, in progress
+  foundation job 123063752434, in progress
+  https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40758502909/job/123063752434
+No target assertion failures observed at handoff. Queue/build states are NOT RED evidence.
+Expected failure assertions:
+  TestSettlementSyncChunksAndCarriesTheWindowAndManifestOnEveryChunk
+    RED #197 chunk 0: every chunk must carry the window and full manifest
+  TestPlatformSettlementSA1PF17Reconciliation/196_item_completeness/*
+    RED #196: equal totals must not hide item differences; want sync_unreconciled
+  TestPlatformSettlementSA1PF17Reconciliation/197_failed_final_chunk
+    RED #197: concurrent close after tail failure must refuse
+Local commands: gofmt -w on the two modified test files (exit 0); git diff --check (exit 0).
+No local tests, servers, containers, PG or browser were run.
+Own acceptance: E0. CI RED/GREEN and independent review NOT_RUN/PENDING.
+WAIT_RUN: 40758502896
+WAIT_RUN: 40758502909
+Wake-up owner: integrator relays a fresh session when these runs conclude (per task instruction).
+
+RELAY 1 — 2026-10-29: causal RED NOT_RUN; prerequisite repair attempt 1/2
+Verified current PR head via gh pr view: 2c521b2a9058d73e870b74a6aa453d0b32b1c427.
+Foundation run 40758502909 / job 123063752434 failed solely at Node unit suites:
+  tests/ci/backend-coverage.test.mjs:274
+  CI-SPEED-3: generated browser ownership is current and covers the registry
+  browser ownership drift: regenerate with node scripts/dev/derive-browser-ownership.mjs
+Node summary: 335 tests, 334 pass, 1 fail; process exit 1.
+Real PostgreSQL, race detector and vet: SKIPPED. New settlement assertions: NOT_RUN in Foundation.
+Filtered raw receipt: output/settle196-197/foundation-red-blocker.log.
+Followed explicit relay exception: git fetch origin r3/integration (exit 0); git merge origin/r3/integration (exit 0, Already up to date, base bf161bac96252c35337e07713c08a275d48e3e17).
+node scripts/dev/derive-browser-ownership.mjs (exit 0): generated 53 modes; only settlement_returns_test.go source hash changed.
+This prerequisite repair contains no settlement implementation, migration or weakened test.
+Next: wait for PR-owned CI on repair head; obtain failures on the NEW settlement assertions before implementation.
+Humaux/code-index tools unavailable: no shared memory/canvas/coord writes.
