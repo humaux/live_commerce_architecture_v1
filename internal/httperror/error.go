@@ -187,6 +187,7 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"bad_return_path":      "The return page is not allowed.", "bad_return_origin": "The storefront origin is not allowed.",
 		"service_unavailable": "This delivery service is not available.", "selection_replay_new_key": "Start the store selection again.",
 		"bad_store_code": "The store number is not valid for this chain.", "bad_store_name": "The store name is not valid.",
+		"store_not_found":   "The store was not found. Check the chain and store number.",
 		"bad_store_address": "The store address is not valid.", "pay_at_pickup_unavailable": "Pay at pickup is not available for this order.",
 		"pay_at_pickup_amount_exceeds": "The amount is outside the pay-at-pickup limit.", "card_unavailable": "Card payment is not available for this store.", "pay_at_pickup_limit": "Too many pay-at-pickup orders are open.",
 		// storefront-v2 §C (unit checkout-offline): bank_transfer placement, proof, merchant confirm/reject/refund. Coded 422/409 of the 0088 definers.

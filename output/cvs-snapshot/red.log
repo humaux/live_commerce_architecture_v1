@@ -62,3 +62,34 @@ Gates 40628271224 / job 122624122728 (--browser-webkit): CVS child failed; other
 GREEN: NOT_RUN; implementation remains uncommitted/unpushed due the static out-of-scope parity-gate dependency documented in blocker.md.
 
 Continuation ruling 2026-10-28: prior scope STOP is resolved by the latest human authorization. Gates run conclusion/job IDs reread via gh run view: failure on tests-only 03aa811f1. One implementation push is now authorized; GREEN remains PENDING until its own CI. F/L-only expectations are superseded by A-Z, per snapshot-wide integrator profile.
+foundation	Node unit suites (storefront, i18n)	2026-10-28T09:20:36.8657664Z   +   'tests/storefront/cvs-buyer.mjs:291 missing is awaited only after another await: await page.getByTestId("confirm-address").click()',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T09:20:36.8659849Z   +   'tests/storefront/cvs-buyer.mjs:300 resolved is awaited only after another await: await page.getByTestId("confirm-address").click()',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T09:20:36.8662017Z   +   'tests/storefront/cvs-buyer.mjs:323 restored is awaited only after another await: await page.getByTestId("confirm-address").click()'
+foundation	Node unit suites (storefront, i18n)	2026-10-28T09:20:36.8676299Z     actual: [ 'tests/storefront/cvs-buyer.mjs:291 missing is awaited only after another await: await page.getByTestId("confirm-address").click()', 'tests/storefront/cvs-buyer.mjs:300 resolved is awaited only after another await: await page.getByTestId("confirm-address").click()', 'tests/storefront/cvs-buyer.mjs:323 restored is awaited only after another await: await page.getByTestId("confirm-address").click()' ],
+
+Gate-waits follow-up RED: Foundation run 40655717175 / job 122706136382 at b0a6290f7bc0261490365dd770deb8454bf3fa16, assertion offenders missing/resolved/restored (CI log readback verified).
+Fix pushed once: 8df28fad0d6373db0da3259a4375b237aff7106e; only tests/storefront/cvs-buyer.mjs committed.
+node --check tests/storefront/cvs-buyer.mjs and git diff --check exit 0 (E1); no local tests/servers.
+WAIT_RUN: 40663921177 (Foundation queued at observation)
+WAIT_RUN: 40663921173 (Gates pending at observation)
+GREEN: PENDING; integrator resumes after workflow completion. No evidence-only push.
+
+2026-10-29 fix attempt 1: all nine failed jobs of Gates 40663921173 read; remote head 8df28fad0d6373db0da3259a4375b237aff7106e, tested synthetic merge 326c10203c3b441aedc8e709af8b252c7fd986f2 (E3 historical failures only).
+job122822744631: manual CVS order 422 internal; independent R2 upgrade gate count=135 expected=136; OC-05 migration0205 still absent after required integration merge.
+job122822744566: merchant dashboard CVS fixture orders fail; shared mtCVS code123456 absent from snapshot.
+job122822744401: new missing-store assertion expected422 store_not_found, actual422 internal; shared internal/httperror/error.go does not register that code.
+job122822744728: TestBrowserClaimDirectCheckout/RealClick failed; job122822744296: TestBrowserLiveTools failed; job122822744086: TestBrowserTaiwanCvs MOCK/WebKit failed; job122822744499: CVS and claim-checkout WebKit children failed. Browser child root causes UNKNOWN; do not assume fixture-only cause.
+job122976524907 receipts and job123004181616 required propagate failed modes.
+STOP per explicit out-of-card gate rule. See fix1-blocked.md and fix1-*.log. Local merge f365733f4261d91cce29ad030fbcaad580a82027 not pushed; no implementation changes. GREEN=NOT_RUN. WAIT_RUN=NOT_DISPATCHED. Humaux unavailable; local handoff only.
+
+Fix2 resumed 2026-10-29: existing RED retained, no extra tests-only push per integrator's one-push repair instruction.
+Original tests-only RED: head 03aa811f1f5c37d6e321504507be86d7267eb5a8, merge 9f332d7015074823f3ffff2b378b61273c2ce87b.
+Gates 40628271224/jobs 122624122933 (code-format assertions), 122624123599 (directory/code-only assertions), 122624123324 (no-name-input browser assertion); Foundation 40628271158/job 122618341936 (empty legacy fields).
+After merging current integration (#254, 313c2c36f4ac064975c1c7c170d710cb63fa457f), reread all nine failed jobs from the PR's latest completed run 40663921173 (old head 8df28fad0d6373db0da3259a4375b237aff7106e; merge 326c10203c3b441aedc8e709af8b252c7fd986f2). Filtered raw excerpts: fix2-<job>.log.
+Repair regression receipts: jobs 122822744401 (422 store_not_found expected, internal returned); 122822744631 (manual CVS 422 and missing 0205 count); 122822744566 (CVS dashboard fixture orders).
+Browser claim job 122822744728: original artifact 12828838677/browser.log explicitly times out filling cvs-entered-name. Preserved in fix2-artifact-claim-browser.log. Replace obsolete control fills with absence plus exact canonical identity assertions; preserve money/order/reload/recovery coverage.
+These are historical E3 failures only. New head GREEN and new focused envelope test execution remain PENDING. Author acceptance E0.
+Browser CVS artifact 12822294061: both Chromium/WebKit cvs-buyer.mjs.log show 503 unavailable instead of expected 422 at line 293; original logs preserved in fix2-cvs-20261028T140911.374967375.log and fix2-cvs-20261028T140934.960765986.log. Static trace: buyer-server.ts upstreamError rejects unknown internal from the backend, but already allows store_not_found via CVS_ERROR_CODES; the approved shared HTTP mapping fixes the root, no BFF edit required.
+Browser live-tools artifact 12830436236/playwright.log: all four zh-TW/en desktop/mobile cases wait for removed cvs-entered-name; preserved in fix2-artifact-e2e-playwright.log. Helper update retains tests and asserts canonical identity.
+Downloaded ZIPs (including deliberately stopped redundant/partial downloads) removed after preserving complete individual failure log entries. WebKit aggregate artifact was not fully inspected; its shared child failures are covered by the explicit CVS/claim logs, aggregate GREEN remains pending.
+Committed CI excerpts normalize trailing whitespace only; original run/job/artifact ids above identify the authoritative raw receipts.
