@@ -1,6 +1,6 @@
 # PEOPLE-V2-IMPL · scope before source edits
 
-Status: RED preparation; implementation NOT_RUN. Evidence: E0 until CI executes.
+Status: implementation structure ready; causal search RED confirmed on old head. Current implementation CI PENDING. Author E0; static E1.
 Branch: `unit/people-v2-ui`; base after required integration merge:
 `bf161bac96252c35337e07713c08a275d48e3e17` (fast-forward from `origin/r3/integration`).
 Execution: Codex, UI implementation lane; actual runtime model/effort not exposed.
@@ -78,3 +78,15 @@ regenerate ownership. Do not push a final evidence-only commit after GREEN.
 Click ledger, desktop/mobile required-fact parity, three-language copy coverage and
 mobile density must be reported from actual CI product evidence at implementation
 handoff; Figma static counts are not runtime acceptance.
+
+## Implementation relay scope refinement
+
+Current integration merged before implementation/ownership generation. Two additional direct-caller
+browser specs must follow the signed controls: `tests/admin/customer-tags.spec.ts` (click Advanced
+before existing tools, including after refresh) and `tests/admin/import-wizard.spec.ts` (name plus
+scope checkbox for the existing imported-customer erasure). These are the same customer module,
+authorized by SCOPE PRE-APPROVAL; list both explicitly in the PR body. No assertion is weakened.
+
+The detail page `apps/admin/app/[locale]/customers/[customer]/page.tsx` also needs the list's
+existing bounded q/tag grammar so the signed Back to results link survives a refresh. This is
+UI query context only, not a BFF/API contract change; preserve unknown/repeated query refusal.

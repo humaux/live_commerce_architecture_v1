@@ -24,8 +24,11 @@ const copy = {
 type Locale = keyof typeof copy;
 type Ledger = { page: string; control: string; operation: string; expected: string; actual: string; result: "pass" | "fail" }[];
 const ledgers = new WeakMap<Page, Ledger>();
+const densities = new WeakMap<Page, { step: string; blocks: number; characters: number; width: number }[]>();
 test.afterEach(async ({ page }, info) => {
-  await writeFile(path.join(evidence, `people-v2-${info.title.replace(/[^a-zA-Z0-9-]/g, "-")}-clicks.json`), JSON.stringify(ledgers.get(page) ?? [], null, 2));
+  const stem = `people-v2-${info.title.replace(/[^a-zA-Z0-9-]/g, "-")}`;
+  await writeFile(path.join(evidence, `${stem}-clicks.json`), JSON.stringify(ledgers.get(page) ?? [], null, 2));
+  await writeFile(path.join(evidence, `${stem}-density.json`), JSON.stringify(densities.get(page) ?? [], null, 2));
 });
 async function act(page: Page, control: string, expected: string, action: () => Promise<unknown>, verify: () => Promise<unknown>, operation = "click") {
   const ledger = ledgers.get(page) ?? [];
@@ -33,7 +36,25 @@ async function act(page: Page, control: string, expected: string, action: () => 
   const row: Ledger[number] = { page: new URL(page.url()).pathname, control, operation, expected, actual: "", result: "fail" };
   ledger.push(row);
   await test.step(`${control}: ${expected}`, async () => {
-    try { await action(); await verify(); row.result = "pass"; row.actual = expected; }
+    try {
+      await action(); await verify(); row.result = "pass"; row.actual = expected;
+      // READ/MEASURE only. Native text blocks are recorded for independent density review, not DOM mutation or a claimed Figma probe result.
+      const density = await page.evaluate(() => {
+        const root = document.querySelector('dialog[open]') ?? document.querySelector('[data-testid="customer-detail"], [data-testid="customers-page"]');
+        if (!root) return null;
+        const candidates = [...root.querySelectorAll('h1,h2,h3,p,td,li,button,a,summary,label')].filter((node) => {
+          const element = node as HTMLElement, style = getComputedStyle(element), rect = element.getBoundingClientRect();
+          if (!element.innerText.trim() || rect.width <= 1 || rect.height <= 1 || style.visibility === "hidden" || style.display === "none") return false;
+          for (let ancestor: Element | null = element; ancestor && ancestor !== root; ancestor = ancestor.parentElement) {
+            if (ancestor instanceof HTMLDetailsElement && !ancestor.open && !ancestor.querySelector(':scope > summary')?.contains(element)) return false;
+          }
+          return true;
+        });
+        const blocks = candidates.filter((node) => !candidates.some((other) => other !== node && other.contains(node)));
+        return { blocks: blocks.length, characters: blocks.reduce((n, node) => n + (node as HTMLElement).innerText.trim().length, 0), width: innerWidth };
+      });
+      if (density) { const rows = densities.get(page) ?? []; rows.push({ step: expected, ...density }); densities.set(page, rows); }
+    }
     catch (error) { row.actual = error instanceof Error ? error.message : String(error); throw error; }
   });
 }
@@ -53,7 +74,7 @@ async function fixture(page: Page, fault: "none" | "export" | "erase" | "blocked
     active: true, imported: false, tags: [],
   };
   const orders = ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222", "33333333-3333-4333-8333-333333333333"].map((id) => ({
-    order_id: id, created_at: "2026-10-25T00:00:00Z", updated_at: "2026-10-25T00:00:00Z",
+    order_id: id, created_at: "2026-10-25T00:00:00.000000Z", updated_at: "2026-10-25T00:00:00.000000Z",
     currency: "TWD", total_minor: 128000, commercial_state: "CONFIRMED", fulfillment_state: "MANUAL_UNASSIGNED",
     payment_state: "CAPTURED", test_mode: true, work_state: "READY", refunded_minor: 0, refund_pending_minor: 0,
     pickup_source: null, payment_mode: "card", collection_state: null, cod_surcharge_minor: null, cod_collect_minor: null,
@@ -82,7 +103,7 @@ async function fixture(page: Page, fault: "none" | "export" | "erase" | "blocked
     }
     posts.push({ resource, key: request.headers()["idempotency-key"], body: request.postData() });
     if ((fault === "export" && resource.endsWith("/exports")) || (fault === "erase" && resource.endsWith("/erasure"))) return route.abort("failed");
-    if (fault === "blocked" && resource.endsWith("/erasure")) return json({ error: { code: "erasure_blocked" } }, 409);
+    if (fault === "blocked" && resource.endsWith("/erasure")) return json({ code: "erasure_blocked" }, 409);
     if (resource.endsWith("/exports")) {
       detail.privacy_actions.push({ kind: "EXPORT", via: "merchant", completed_at: "2026-10-29T00:00:00Z", summary: null });
       return json({ schema: "lc.customer-export.v1", customer: row, orders, consent_history: detail.consent_history });
@@ -125,6 +146,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
     await signed(page, width); await fixture(page); await page.goto(mainURL(locale));
     await expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible(); // Existing baseline reaches new assertion.
     await expect(page.getByTestId("customers-search"), "PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt").toHaveAttribute("placeholder", c.search);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(c.title);
     await fits(page);
     await act(page, c.search, "customer search draft is visible", () => page.getByTestId("customers-search").fill("示範林"), () => expect(page.getByTestId("customers-search")).toHaveValue("示範林"), "fill");
     await act(page, c.submit, "search results retain the customer and query", () => page.getByTestId("customers-search-submit").click(), async () => { await expect(page).toHaveURL(/q=/); await expect(page.getByTestId(`customer-open-${customer}`)).toContainText(name); });
@@ -155,6 +177,7 @@ for (const width of [1440, 390]) {
     const download = page.waitForEvent("download");
     await act(page, copy.en.confirmDownload, "synchronous export delivers one file", () => page.getByRole("button", { name: copy.en.confirmDownload, exact: true }).click(), async () => { expect((await download).suggestedFilename()).toMatch(/\.json$/); expect(f.posts).toHaveLength(1); });
     await act(page, "Refresh", "completed export remains in server history", () => page.reload(), () => expect(page.getByTestId("privacy-actions")).toContainText("Data export"), "reload");
+    await act(page, "Advanced", "completed server history becomes visible", () => page.getByTestId("people-customer-tools").locator(":scope > summary").click(), () => expect(page.getByTestId("privacy-actions")).toBeVisible());
     expect(f.posts).toHaveLength(1); expect(f.posts[0].key).toBeTruthy(); await fits(page);
   });
   test(`PEOPLE-V2 erasure name checkbox and persistence en-${width}`, async ({ page }) => {

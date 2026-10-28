@@ -10,3 +10,32 @@ LOCAL_SERVER=NOT_RUN
 NODE_SYNTAX_CHECK=exit_0
 BROWSER_OWNERSHIP_GENERATOR=exit_0 (53 modes)
 Evidence is appended after the push. No CI failure is claimed from source inspection.
+
+LATEST_RECEIPT_UTC=2026-10-28T20:11:20Z (workflow creation time)
+PR=https://github.com/humaux/live_commerce_architecture_v1/pull/289
+HEAD_SHA=8e19c18721bca3f778a7ff7683afcfd5e5b2f708
+FOUNDATION_RUN=40761011425
+FOUNDATION_JOB=123072614938
+FOUNDATION_STATUS=QUEUED
+GATES_RUN=40761011712
+GATES_STATUS=QUEUED (plan has not yet selected browser jobs)
+RED_ASSERTION_RESULT=PENDING (no test job has executed)
+GREEN=NOT_RUN
+WAIT_RUN=40761011425,40761011712
+WAKEUP=integrator relays these workflow conclusions in a fresh session, per dispatched card
+NEXT=Inspect own CI; require failure on PEOPLE-V2 assertions before the single implementation push.
+POST_PUSH_EVIDENCE=local working-tree update; intentionally no second push while RED waits
+
+RELAY_1_VERIFIED=2026-10-29
+RED_HEAD_SHA=8e19c18721bca3f778a7ff7683afcfd5e5b2f708
+RED_GATES_RUN=40761011712
+RED_JOB=123079851595 (bundle:07)
+RED_SYNTHETIC_MERGE_SHA=da0f49dc9f4e0a0ae244b86d6753a89c9c16fb00
+RED_ARTIFACT=12853485502 (gate-browser-customers-billing)
+RED_ASSERTION_RESULT=CONFIRMED: 6 PEOPLE-V2-SIGNED-SEARCH assertions, all three locales x desktop/mobile. Expected signed placeholder, received no placeholder.
+OTHER_NEW_FAILURES=10 detail journeys stopped before new confirmation assertions: MOCK order timestamps lacked the six fractional digits required by unchanged parseOrderSummary. Correct fixture format only; no assertion/parser weakening.
+EXISTING_BROWSER_CASES=12 passed
+FOUNDATION_RUN=40761011425
+FOUNDATION_JOB=123072614938 PASS
+CAUSAL_EVIDENCE=evidence/red-assertions.log; original GitHub artifact retains full report, traces and screenshots.
+GREEN=NOT_RUN

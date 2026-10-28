@@ -1,3 +1,7 @@
+// Purpose: shared locale routing, core messages and feature copy exports.
+// Depends on: ./people.ts for signed customer copy; otherwise native URL handling.
+// Used by: admin, storefront and shared UI locale consumers.
+// Invariants: only zh-CN, zh-TW and en are accepted as routed locales.
 export const locales = ['zh-CN', 'zh-TW', 'en'] as const;
 export type Locale = (typeof locales)[number];
 
@@ -149,3 +153,5 @@ export function localizedPath(locale: Locale, path: string): string {
 export function translate(locale: Locale, key: MessageKey): string {
   return messages[locale][key];
 }
+
+export { peopleCopy } from "./people.ts";
