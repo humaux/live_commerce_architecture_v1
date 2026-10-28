@@ -111,3 +111,38 @@ func TestCardRefusalOP1(t *testing.T) {
 		t.Fatal("only card without a PSP is refused")
 	}
 }
+
+// OC-09b: codDue mirrors begin_hold's COD amount checks; nil exactly where Begin refuses cash_on_delivery_unavailable/amount_exceeds.
+func TestCodDueMirrorsBeginHold(t *testing.T) {
+	on := codOffer{enabled: true, surchargeTWD: 50, carrier: "black_cat", maxTWD: 20000}
+	if due := codDue(on, "TWD", "TW", 2500); due == nil || *due != 7500 {
+		t.Fatalf("total 2500 + surcharge 5000: got %v, want 7500", due)
+	}
+	free := on
+	free.surchargeTWD = 0
+	if due := codDue(free, "TWD", "TW", 2500); due == nil || *due != 2500 {
+		t.Errorf("no surcharge: got %v, want the total", due)
+	}
+	atCap := on
+	atCap.maxTWD = 75
+	if due := codDue(atCap, "TWD", "TW", 2500); due == nil || *due != 7500 {
+		t.Errorf("total + surcharge equal to the cap is allowed: got %v", due)
+	}
+	off := on
+	off.enabled = false
+	overCap := on
+	overCap.maxTWD = 74
+	for name, c := range map[string]struct {
+		offer             codOffer
+		currency, country string
+		total             int64
+	}{
+		"switch off": {off, "TWD", "TW", 2500}, "over the cap": {overCap, "TWD", "TW", 2500},
+		"not TWD": {on, "USD", "TW", 2500}, "not TW": {on, "TWD", "US", 2500}, "not whole TWD": {on, "TWD", "TW", 2550},
+		"zero total": {on, "TWD", "TW", 0}, "above NT$20,000": {on, "TWD", "TW", 2000100},
+	} {
+		if due := codDue(c.offer, c.currency, c.country, c.total); due != nil {
+			t.Errorf("%s: got %d, want nil", name, *due)
+		}
+	}
+}

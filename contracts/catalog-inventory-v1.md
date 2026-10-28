@@ -178,3 +178,18 @@ is the main cover) or main[0..3] (when `image_link` is a variant image). No deta
 PM1 migration of a 9-image product -> 4 main + 5 detail in order, counts asserted; PM2 5th main / 21st detail refused in SQL (CHECK) and Go (409); PM3 option-value
 link: same product, role sku, real value of the effective axis, one image per value, cross-store/tenant refused (FK + RLS); PM4 buyer detail shape; PM5 feed links;
 PM6 v1 catalog `image_id` and v2 variant `image_id`; PM7 move/reorder/delete per role; PM8 ACL inventory pins the new table, functions and `UPDATE(role,position,version)`.
+
+
+## Amendment 2026-10-28 (CF-CAT)
+
+Status: DESIGN, review-ready; implementation/CI/independent review NOT_RUN for this amendment.
+Authority: owner 2026-10-26 「已有SKU归到第一个新规格值」, with SKU code, price, stock and images unchanged
+(first-hand quotation transcript `output/integrator/tools/logs/owner-decisions-20261026.md:9`, read-only main);
+[owner choices](owner-choices-20261026-v1.md) OC-Q15 and its already-decided CAT-01/CAT-03 reference.
+
+- CAT-01: when adding an option axis, retain every existing SKU's identity and attach it to the new axis's first value. Keep its code, price, inventory and image association unchanged. Do not archive/recreate an existing SKU merely because its option tuple changed; only genuinely new combinations get new rows.
+- Use the existing §g merge-patch SaveProductEdit / DocumentSKUPatch: original id, expected version and option_values. The existing same-row path (`internal/catalog/document.go` option-values patch/update) supports this. Retain CAS, idempotency, live-window refusal, inventory ledger and transaction atomicity. This amendment does not authorize a price/stock rewrite while changing axes.
+- CAT-03 is an implementation-strategy lead, not authorization for persistent axis/value IDs. No new schema/API/axis-id/migration is required or introduced by this card. Any such extension needs a separately frozen contract.
+- CAT-02: OC-Q15 excludes per-SKU delivery eligibility. Weight/size remain; delivery follows store settings. Preserve product-media-v2, including 4 main images, 20 detail images and option-value image rules; do not restore the superseded 12-image cap or bypass existing axis/value/combination bounds.
+
+Acceptance handoff (NOT_RUN): CI regression must start from an existing product/SKU, add an axis, save and reload with the same SKU id/code/price/inventory/image association at its first value; verify new combinations and stale-version/live-window refusals. Browser acceptance must use real clicks/fills and persistent readback. Run the regression RED on old matching logic before the implementation card's GREEN; this contract-only card adds no executable behavior.

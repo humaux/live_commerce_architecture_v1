@@ -221,3 +221,18 @@ owner 已经决定平台代收（10-25），本文不推翻。下面列的是**�
 | 向台湾商家打 TWD 款的银行路线 | owner 指定的银行路线，以及 Stripe payout 已开通 | `payout_ops`（OQ-6） |
 
 **放开第三方店铺**（把 AD-PF2 的 allowlist 从「只限自营店」扩大到所有店铺）也属于这个 gate：材料齐了之后由 owner 本人执行 `platform-allow`，agent 不代做。**真实转账**永远由 owner 本人在银行完成，系统只记录（S-I4）。
+
+## Amendment 2026-10-28 (CF-FIN)
+
+Status: DESIGN, review-ready; implementation/CI/independent review NOT_RUN for this amendment.
+Authority: owner Q-FIN answer 2026-10-28 「是，按 B」 (full human source Humaux
+`29a7cc5d-dc10-4ec6-9f38-589ecb883bc8`, relayed verbatim in the CF-TRIAGE continuation card).
+This confirms OC-Q2 = B and supersedes only the pending-confirmation wording in
+`contracts/owner-choices-20261026-v1.md` OC-Q2 and the earlier CF-PAY amendment's pending reference.
+Historical text is retained; no second `settlement-v1.md` is created.
+
+1. The sole settlement contract remains [stripe-platform-account-v1](../../../contracts/stripe-platform-account-v1.md) SA-0 §6.7–§6.9. Returned payouts and carry-forward follow those sections exactly; this amendment adds no money rule, field, route or migration.
+2. 「退回」 means `payout_returned`, a returned bank payout, never a buyer refund. SA-0 retains the original payout history and carries the returned amount into the eligible next statement exactly once as `returned_in_minor`. Reconciliation, close guards and payable eligibility remain SA-0's rules; a returned source statement is not paid a second time.
+3. The merchant DTO remains SA-0's additive `returned_in_minor`, `payout_returned`, optional `payout_returned_at`, with no `return_ref`, operator/ticket, Stripe IDs or another store's data. OC-Q1 historical bank-transfer report fields, API/CSV shape and exports remain; OC-Q3 wording 已請款 / 上期結轉（扣除）/ 應撥淨額 / 已撥付 remains. No fee default is introduced.
+
+Acceptance handoff (NOT_RUN): CA-FIN-UI consumes the existing SA-0 DTO after its backend's exact-SHA CI acceptance. Preserve PF16–PF18, whole-return/replay/exactly-once carry, reconciliation refusal, same-store/environment isolation, DTO redaction and historical report/CSV compatibility. Real-click UI readback must distinguish bank-payout return from refund. SA-1/SA-2/SA-3 implementation and independent review remain separate; this owner answer authorizes no LIVE funds action.

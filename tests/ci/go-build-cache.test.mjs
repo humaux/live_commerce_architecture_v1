@@ -181,9 +181,10 @@ test("a harmless arm in the first case MODE statement is not a shadow of the sha
 
 // #147 CI-3: the dispatch is exactly the second `case "$MODE" in`; a later case block that mentions "shard:" must not replace it.
 test("only the second case MODE statement is scanned for the shard arms", () => {
-  const anchor = "          esac\n      # MATRIX-RECEIPT";
+  // CI-SPEED-2: the dispatch now closes the per-mode gate_one() function.
+  const anchor = "            esac\n          }\n";
   assert.ok(workflow.includes(anchor), "the dispatch esac is where the test looks");
-  const third = "          esac\n          case \"$MODE\" in\n            *) echo \"no shard: arms here\" ;;\n          esac\n      # MATRIX-RECEIPT";
+  const third = "            esac\n          }\n          case \"$MODE\" in\n            *) echo \"no shard: arms here\" ;;\n          esac\n";
   assert.doesNotThrow(() => shardScopeContract(workflow.replace(anchor, third)), "a later case block is not the dispatch");
 });
 
