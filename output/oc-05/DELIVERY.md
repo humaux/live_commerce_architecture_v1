@@ -1,3 +1,36 @@
+# OC-05 GET 422 fix — attempt 1 for this blocker (2026-10-29)
+
+This receipt supersedes pending status statements below, which remain historical.
+Authority: integrator's PR #254 GET-422 fix card; merchant-settings-wizard-v1 OC-05; repository transport code.
+Role: dispatched OC-05 implementer; runtime model GPT-6, effort not exposed; worktree .worktrees/oc05; branch unit/oc05-quickstart-marker.
+Entry head: 27c0d51d034f401603ee106052627a5b1908e8c6. Merged origin/r3/integration at 11f281f8c6439489e402ba70f90737cd31dc1a0a, no conflicts; retained base and pre-existing uncommitted work.
+
+Read all three failed jobs in Gates 40650048011: shard:unit 122733463849, receipts 122843044695, required 122909447868. The latter two propagate the unit failure. Original filtered logs: fix-get-body-red.log. E3 failure: five TestOC05 HTTP tests returned 422 instead of 200; migration and RLS tests passed on that old run. Synthetic merge SHA e5bc7ce102d45fc30179be9677d28a4839b4d7ab, PR head 27c0d51d034f401603ee106052627a5b1908e8c6.
+
+Root cause: httptest.NewRequest wraps strings.NewReader("") into a present request Body, which studioRoute correctly rejects for GET before authorization. Cross-scope tests also sent a JSON body on GET, preventing their 404 assertions from reaching authorization. Construct bodyless GET with a nil reader and use {} only on POST. All existing status and domain assertions remain unchanged. Add TestOC05GETRejectsBodies for both an empty-but-present body and {} to retain the strict transport boundary. No production code, gate, threshold, exemption or baseline changed.
+
+Original tests-only RED: Gates 40619573790 / 122603618623 at head 5da45aea079019ed17d12368a80e4b7183dfb368; recorded in red.log. No redundant RED push; this is the authorized targeted fix after observed assertion RED.
+Static evidence E1 only: fix-get-body-static.log (source hash, commands, exit 0). Dependency map regenerated and unchanged.
+This fix changes only tests/quickstart/quickstart_test.go and output/oc-05/**. Existing PR out-of-card scope for integrator review: contracts/merchant-settings-wizard-v1.md, internal/httpapi/handler.go, tests/foundation/r2_integration_upgrade_test.go (assigned pin 135), tests/quickstart/doc.go, scripts/dev/pr-modes.mjs (previous classification authorization), docs/engineering/dependency-map.md (generated allowance).
+GREEN: PENDING until this push's own Gates/Foundation conclude. Author PASS = E0. Runtime verification, independent review, sandbox/live/provider/production: NOT_RUN. No local tests or servers. No new background process or fixture. Integrator relays a fresh session when CI concludes; wait at most approximately ten minutes to register current-head runs.
+Humaux tools unavailable: memory store, code index/link, coord and canvas NOT_RUN. No local/platform memory was read or written. Pre-existing untracked receipts retained.
+
+---
+
+# OC-05 resume receipt (2026-10-28T07:06:34.762008+00:00)
+
+Prepared implementation pushed unchanged to PR #254: `ee8da5325eea7d40e28992c6dfc42045e77e47f0`. Push exit 0; PR head independently read back as this SHA.
+RED: Gates 40619573790 / job 122603618623, six TestOC05 failures on their own checks; filtered original excerpts appended to red.log (E3 failure evidence). Synthetic merge receipt SHA 924bfa74545d47744895da2689641e0769638c83.
+WAIT_RUN: 40647834448 (Gates, queued; no test job yet).
+WAIT_RUN: 40647834419 (Foundation, queued).
+WAIT_JOB: 122680684562 (foundation).
+GREEN: PENDING. Independent review: NOT_RUN. Author PASS = E0.
+Outside card write paths: none. Unchanged pr-modes backend coverage classification requires integrator approval if needed; do not bypass it.
+No local tests or servers; no new background processes. Integrator is the designated completion wakeup, as requested. Humaux unavailable: store/canvas/coord updates NOT_RUN.
+Evidence updates remain local under output/oc-05; no extra commit was created. Earlier pending entries in DELIVERY.md/red.log are historical and superseded by this receipt.
+
+---
+
 # OC-05 handoff — behavior RED pending
 
 PR: https://github.com/humaux/live_commerce_architecture_v1/pull/254 into r3/integration.

@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -133,7 +134,13 @@ func staff(t *testing.T, e *env, tenant, store string, manage bool) string {
 	return tok
 }
 func request(e *env, method, store, token, body string) *httptest.ResponseRecorder {
-	r := httptest.NewRequest(method, "/v1/admin/stores/"+store+"/quickstart", strings.NewReader(body))
+	// A bodyless GET must use a nil reader: even an empty strings.Reader creates
+	// a non-NoBody request that the production transport correctly refuses.
+	var input io.Reader
+	if body != "" {
+		input = strings.NewReader(body)
+	}
+	r := httptest.NewRequest(method, "/v1/admin/stores/"+store+"/quickstart", input)
 	r.Header.Set("Authorization", "Bearer "+token)
 	if method == http.MethodPost {
 		r.Header.Set("Content-Type", "application/json")
@@ -154,6 +161,19 @@ func read(t *testing.T, e *env, s, tok string) state {
 		t.Fatal(err)
 	}
 	return out
+}
+
+func TestOC05GETRejectsBodies(t *testing.T) {
+	// Transport refusals happen before database access; nil is not a SQL mock.
+	handler := httpapi.NewHandler(nil)
+	for _, body := range []string{"", `{}`} {
+		r := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+id()+"/quickstart", strings.NewReader(body))
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		if w.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("GET with present body %q status=%d want 422", body, w.Code)
+		}
+	}
 }
 
 func TestOC05NewStoreDerivedSteps(t *testing.T) {
@@ -214,7 +234,11 @@ func TestOC05CrossTenantAndStoreRefused(t *testing.T) {
 	read(t, e, a1, tok)
 	for _, s := range []string{a2, b} {
 		for _, m := range []string{http.MethodGet, http.MethodPost} {
-			w := request(e, m, s, tok, `{}`)
+			body := ""
+			if m == http.MethodPost {
+				body = `{}`
+			}
+			w := request(e, m, s, tok, body)
 			if w.Code != 404 {
 				t.Fatalf("foreign store %s status=%d want non-disclosing 404", m, w.Code)
 			}
