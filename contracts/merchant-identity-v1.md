@@ -59,3 +59,16 @@ day a non-privacy role (e.g. a customer-service bundle) receives `customers:writ
 
 ## Amendment OPS-02B: platform support grant (migration 0153)
 `identity.resolve_access` (signature, owner `commerce_auth`, EXECUTE unchanged) gains one branch after the regular lookup finds nothing: the principal holds a live `identity.support_grants` row (unrevoked, `expires_at > clock_timestamp()`, store and tenant active), is an enabled row of `identity.platform_support_principals` and holds no active membership and no `store_grants` row anywhere (`identity.support_principal_ok`), and the requested permission is a granted `:read` (NULL is `forbidden`). It returns `ok` with `authz_revision = -1`. `memberships.authz_revision` is always > 0, so a negative revision identifies a support scope; `internal/platform` then runs the transaction read-only and writes a throttled `support.used` audit row. `identity.list_session_stores` lists such stores with role `support` and the grant's permissions. The regular branch is unchanged. Handlers whose Go validators require `Revision > 0` keep refusing support (second fence). Details and operator surface: `contracts/platform-operator-v1.md` §7.
+
+## Amendment 2026-10-28 (CF-TEAM)
+
+Status: DESIGN, review-ready; implementation/CI/independent review NOT_RUN for this amendment.
+Authority: [owner choices](owner-choices-20261026-v1.md) AD-13 read-only boundary and owner Q-TEAM answer
+2026-10-28 「是，一并暂停」 (full human source Humaux `29a7cc5d-dc10-4ec6-9f38-589ecb883bc8`,
+relayed verbatim in the CF-TRIAGE continuation card).
+
+1. While invitations are 「未納入產品」, both new issuance and acceptance of **previously issued, still-valid invitations** are paused. Close UI, BFF and server write entry points; hiding a button is insufficient. A valid old token is not an exception. Refusal must not consume/accept it or create membership, grants or an accepted-invitation result.
+2. Invitation history remains readable/exportable under existing authorization; do not delete or rewrite it. Existing expiry/revocation facts remain, and this pause neither extends validity nor promises future acceptance. Reopening requires a separate owner decision and scoped contract/implementation card.
+3. This concerns staff invitations. First-store owner bootstrap above and OC-AD03 quick start remain separate flows; no new owner/bootstrap powers or changes to existing members' permissions follow. Preserve authentication, CSRF, scope and existing read ACLs.
+
+Acceptance handoff (NOT_RUN): CA-TEAM-BOUNDARY must prove UI/BFF/server refusal of new invites and old unexpired-token acceptance without acceptance or membership/grant writes, readable history after refresh, and cross-store/expired/revoked/unauthenticated bypass negatives. Use synthetic tokens and fake mail only. Include real-click history/closed-write controls and first-store bootstrap regression in exact-SHA CI, then independent review.

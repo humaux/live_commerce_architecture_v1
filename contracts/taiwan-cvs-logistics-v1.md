@@ -1145,3 +1145,18 @@ non-DRAFT order (0013:569), so without an exit an anonymous junk order holds its
   (RETURNED); merchant projections carry `collection_state`; buyer order page CANCELLED "賣家已取消訂單",
   RESTOCKED "未取貨，已退回".
 - **Gate:** TCV17 (§10).
+
+## Amendment 2026-10-28 (CF-LOG)
+
+Status: DESIGN, review-ready, **PARTIAL**; implementation/CI/independent review NOT_RUN for this amendment.
+Authority: owner Q-LOG answer 2026-10-28: 「就使用js文件进行设计，我觉得有两种，第一、用户选择品牌，选择地区什么的，然后确认门市，第二、用户选择品牌，系统匹配门市详细地址，买家选择。…因为后面接入API合适同步门市快照这种形式，不然服务器压力大。」
+Full human source: Humaux `29a7cc5d-dc10-4ec6-9f38-589ecb883bc8`; current CF-TRIAGE continuation explicitly requires the 2026-10-28 snapshot and final server validation by `(kind, code)`.
+
+1. Buyer CVS selection uses a picker over the **2026-10-28 store snapshot**, served as static snapshot data from the supplied JS dataset. Provide both brand → region → store → confirmation and brand → address search → matched store → confirmation. Search/browsing uses that static data, not a live provider lookup or server request per search. This supersedes the earlier brand-plus-number-only interaction; codes remain strings, including leading zeros.
+2. Final selection is validated server-side by `(kind, code)` against the authoritative snapshot; the server returns and persists its exact store name/address. Client name/address, region labels, search results or a forged code are not authority. Existing buyer/cart ownership, version/idempotency, service availability and scope checks remain. Snapshot lookup never itself grants a shipping service or certifies provider qualification/deliverability.
+3. Future provider APIs refresh the snapshot by synchronization, never live per-request store lookup. Snapshot selection is independent of logistics credential ownership. PR #262 is the lookup/persistence implementation lead, not CI/integration proof or picker UI delivery. No provider API, snapshot importer, UI, schema or migration is implemented by this docs-only amendment. It does not silently extend buyer selection to merchant manual-order entry.
+4. The 2026-10-26 zero-merchant-key decision remains (human source `b9197057-8187-4fc9-a8b7-425ad34fd7a9`). Owner did **not** answer whether zero-key shipping starts with MANUAL or platform ECPay credentials/binding migration. That slice remains **UNKNOWN**; retain existing enabled/visible/mode/qualification gates and do not fall back from an unavailable API service to MANUAL. Four-brand/COD product targets do not establish provider qualification. OC-Q4/8/16/17 still govern fixed fee + threshold, no home-delivery label, no separate self-delivery, shipped email retained and no Messenger/IG shipment message.
+
+Remaining owner question (yes/no): 零密钥物流是否统一先使用现有 MANUAL 配送，平台 ECPay 凭据接入及旧商家 binding 迁移另卡处理？
+
+Acceptance handoff (NOT_RUN): exact-SHA CI must cover both picker paths through real clicks and refresh, static search without per-request provider calls, exact server snapshot name/address despite forged client fields, wrong-brand/unknown-code rejection with zero pickup writes, leading zeros, scope/version/idempotency negatives and existing service-mode gates. Provider sync and merchant/manual-order scope need separate technical continuations; no LIVE waybill purchase is authorized.
