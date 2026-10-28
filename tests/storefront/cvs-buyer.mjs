@@ -293,7 +293,7 @@ try {
     assert.equal(miss.status(), 422);
     assert.equal((await miss.json()).code, "store_not_found");
     await expect(page.getByTestId("cvs-entered-code")).toHaveAttribute("aria-invalid", "true");
-    await expect(page.locator("[role=alert]")).toContainText(locale === "en" ? "Store not found" : locale === "zh-CN" ? "找不到门店" : "找不到門市");
+    await expect(page.locator("label", { has: page.getByTestId("cvs-entered-code") }).getByRole("alert")).toContainText(locale === "en" ? "Store not found" : locale === "zh-CN" ? "找不到门店" : "找不到門市");
     snapshotClicks.push({ locale, viewport, control: "store code / confirm", operation: "fill 000000; click", expected: "422 store_not_found beside code", actual: "localized field error", result: "PASS" });
     await page.getByTestId("cvs-entered-code").fill("131386");
     const resolved = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");

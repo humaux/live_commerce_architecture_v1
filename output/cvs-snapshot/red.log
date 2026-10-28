@@ -93,3 +93,11 @@ Browser CVS artifact 12822294061: both Chromium/WebKit cvs-buyer.mjs.log show 50
 Browser live-tools artifact 12830436236/playwright.log: all four zh-TW/en desktop/mobile cases wait for removed cvs-entered-name; preserved in fix2-artifact-e2e-playwright.log. Helper update retains tests and asserts canonical identity.
 Downloaded ZIPs (including deliberately stopped redundant/partial downloads) removed after preserving complete individual failure log entries. WebKit aggregate artifact was not fully inspected; its shared child failures are covered by the explicit CVS/claim logs, aggregate GREEN remains pending.
 Committed CI excerpts normalize trailing whitespace only; original run/job/artifact ids above identify the authoritative raw receipts.
+
+Fix3 continuation, current-head RED readback (2026-10-29):
+Head 17bf02dbc4e3c96e449bb857f038e05d8959c31f; Gates synthetic checkout 5dbb2290fe7fb9dee8b00c3d76d2cb5e8b940589.
+Foundation 40762185265/job123076746838: sole failure backend-coverage.test.mjs:274 generated browser ownership is current and covers registry; derive-browser-ownership --check reports drift.
+Gates 40762185213/job123081441225 (bundle:07): only --browser-cvs member failed, TestBrowserTaiwanCvs/MOCK and /WebKit. job123081443055 (--browser-webkit): only cvs child failed. Receipts123118188253 and required123118933496 propagate those failures.
+Artifacts12852401100 (two cvs-buyer.mjs.log entries) and12853786208 (cvs-buyer.mjs.log + cvs.jsonl) independently show cvs-buyer.mjs:296 strict-mode locator failure: page-wide [role=alert] matches store-code field error AND Next.js route announcer. Actual backend response is422 store_not_found and the localized field text is present. Root cause is selector ambiguity, not HTTP error transport. Complete original selected logs retained as fix3-artifact-*.log.
+Repair: scope same localized assertion to the label containing cvs-entered-code, retaining strictness and all status/code/canonical/reload/click checks. Merge integration c12fac9a2acafc04a7be5222c10ff2573975dde6 and regenerate browser ownership in the same push. Assigned0206 and pin136 unchanged.
+GREEN remains PENDING, author acceptance E0. Local node --check exits0; no local tests/servers.

@@ -14,6 +14,7 @@ Authorized or disclosed paths outside the original card write paths (integrator 
 - tests/e2e/live-tools.spec.ts and tests/storefront/claim-checkout.mjs: direct callers of changed storefront CVS component; checkout fixture/helper compatibility under the in-module root-cause preapproval. No spec/page/route was added, renamed or deleted.
 - apps/storefront/tests/backend-parity.test.mjs: previously approved CVS subtest/import only; RETURN_PATH and unrelated assertions preserved.
 - tests/integrations/ecpay/testdata/store_code.json: existing CVS golden fixture required by the original card.
+output/ci-select-backend-browser/browser-ownership.json: explicitly authorized regeneration after merging integration (fix3).
 Dependency map regenerated, byte-identical. Frozen buyerhttp, contractdrift baseline, route dispatcher inventory, gate-adapter assertions and thresholds unchanged by this lane.
 
 RED (historical E3) on tests-only head 03aa811f1f5c37d6e321504507be86d7267eb5a8 / synthetic merge 9f332d7015074823f3ffff2b378b61273c2ce87b:
@@ -23,7 +24,9 @@ After the integration merge, all nine failed jobs of latest completed Gates 4066
 
 E1 static only: gofmt, node --check tests/storefront/claim-checkout.mjs, go build ./internal/httperror ./internal/checkout ./internal/fulfillment ./migrations, go vet ./internal/httperror ./tests/foundation, dependency-map regeneration, git diff --check: exit 0. Exact source hashes: output/cvs-snapshot/fix2-static.log. No local tests or servers.
 
-GREEN is PENDING the PR's own CI; the new focused envelope regression has not yet run. Author acceptance E0; independent acceptance pending. NOT_RUN: local tests/PG/browser/server, tsc (unavailable on PATH), current-head CI/database/browser/contractdrift acceptance, independent review, SANDBOX/LIVE/production. This lane will record Gates/Foundation WAIT_RUN ids and return; integrator relays a fresh session after completion. Final GREEN run/job ids belong in a PR comment, with no evidence-only push.
+Fix3 continuation: Foundation40762185265/job123076746838 failed only on ownership drift. Gates40762185213/jobs123081441225 and123081443055 failed on CVS alert locator ambiguity (original artifacts12852401100/12853786208): the store error and Next.js route announcer both match the page-wide alert selector. The same assertion now targets the label containing the store-code input; status/code/text, strictness and real clicks remain. Integration c12fac9a2 was merged, ownership regenerated (53 modes), assigned0206/pin136 retained. Details: output/cvs-snapshot/fix3.md and red.log.
+
+GREEN is PENDING the PR's own CI; fix3 current-head verification has not yet run. Author acceptance E0; independent acceptance pending. NOT_RUN: local tests/PG/browser/server, tsc (unavailable on PATH), current-head CI/database/browser/contractdrift acceptance, independent review, SANDBOX/LIVE/production. This lane will record Gates/Foundation WAIT_RUN ids and return; integrator relays a fresh session after completion. Final GREEN run/job ids belong in a PR comment, with no evidence-only push.
 
 Rollback: revert card changes through normal reviewed commits; no production migration or deployment performed. Keep the immutable snapshot and forward migration refresh rule. No merge to integration, auto-merge, force push or status writes.
 
