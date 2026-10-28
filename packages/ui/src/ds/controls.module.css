@@ -54,6 +54,12 @@
 .button[data-variant="link"] { background: none; border-color: transparent; color: var(--ds-link); padding: 0 var(--ds-space-1); text-decoration: underline; }
 .button[data-variant="link"]:hover:not([aria-disabled="true"]) { color: var(--ds-link-hover); background: none; }
 .button[aria-disabled="true"] { cursor: not-allowed; }
+/* A loading button is aria-disabled + aria-busy: none of the hover rules above (they skip aria-disabled) nor the disabled rules below
+   (they skip aria-busy) apply, so the admin globals.css button:hover fill would repaint it (white on a light fill on primary).
+   Busy buttons keep their resting fill under hover. */
+.button[aria-busy="true"]:hover { background: var(--ds-surface); }
+.button[data-variant="primary"][aria-busy="true"]:hover { background: var(--ds-ink); }
+.button[data-variant="ghost"][aria-busy="true"]:hover, .button[data-variant="link"][aria-busy="true"]:hover { background: none; }
 .button[aria-disabled="true"]:not([aria-busy="true"]) { background: var(--ds-disabled-bg); color: var(--ds-disabled-text); border-color: var(--ds-disabled-border); opacity: 1; }
 .button[data-variant="ghost"][aria-disabled="true"]:not([aria-busy="true"]) { border-color: var(--ds-disabled-bg); }
 .button[data-variant="primary"][aria-disabled="true"]:not([aria-busy="true"]) { background: var(--ds-disabled-primary-bg); color: var(--ds-disabled-primary-text); border-color: var(--ds-disabled-primary-bg); }

@@ -97,7 +97,8 @@
 .pageLink[aria-current="page"] { border-color: var(--ds-primary); background: var(--ds-primary); color: var(--ds-on-primary); font-weight: 600; }
 /* aria-disabled on a plain link is not exempt from axe contrast, so the disabled arrow stays at --ds-text-3 (5:1) and is told apart by the missing href and the hover state. */
 .pageLink[aria-disabled="true"] { color: var(--ds-text-3); pointer-events: none; cursor: not-allowed; }
-.gap { padding: 0 var(--ds-space-1); color: var(--ds-text-3); }
+/* Figma Pagination Kind=Gap 1401:58021: a 24 x 36 centred box, padding 0/4, 14/21 text. */
+.gap { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 24px; height: var(--ds-button-md); padding: 0 var(--ds-space-1); color: var(--ds-text-3); font-size: var(--ds-text-md); line-height: var(--ds-leading); }
 .summary { color: var(--ds-text-2); font-size: var(--ds-text-sm); }
 
 .menu { max-width: calc(100vw - var(--ds-space-8)); max-height: 60vh; overflow-y: auto; }
