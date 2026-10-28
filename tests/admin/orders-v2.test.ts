@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buckets, emptyFilters, parseOrderListV2, validOrdersV2Query, validOrderFilters } from "../../apps/admin/lib/orders-v2.ts";
 import { ordersV2Copy } from "../../apps/admin/lib/orders-v2-copy.ts";
+import { ordersCopy } from "../../apps/admin/lib/orders-copy.ts";
 
 const counts = Object.fromEntries(buckets.map(k => [k, 0]));
 test("legacy display sentinels preserve a list row without admitting arbitrary or private data", () => {
@@ -38,4 +39,14 @@ test("all three locales label every task queue, payment and delivery mode", () =
     assert.deepEqual(Object.keys(c.tabs), [...buckets]);
     assert(c.modes.cash_on_delivery); assert(c.deliveries.cvs_familymart); assert(c.completedNote);
   }
+});
+test("ORD-01 keeps state codes and filters while aligning merchant status labels with their queues", () => {
+  for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
+    assert.equal(ordersCopy[locale].statuses.MERCHANT_SHIPPED, ordersV2Copy[locale].tabs.shipped);
+    assert.equal(ordersCopy[locale].statuses.NOT_STARTED, ordersV2Copy[locale].tabs.unpaid);
+  }
+  assert.equal(ordersCopy["zh-TW"].statuses.MERCHANT_SHIPPED, "已出貨");
+  assert.equal(ordersCopy["zh-TW"].statuses.NOT_STARTED, "待付款");
+  assert.equal(ordersCopy["zh-CN"].statuses.MERCHANT_SHIPPED, "已出货");
+  assert.equal(ordersCopy["zh-CN"].statuses.NOT_STARTED, "待付款");
 });
