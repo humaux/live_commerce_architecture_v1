@@ -1,0 +1,73 @@
+Historical OC-15b RED attempt (previous sandbox): BLOCKED, NOT_RUN
+Base/local HEAD: 79f95784c9dee419346fe3119d4d4f56720d4a3c
+Branch: unit/oc15b-billing-reauth
+
+No local tests or servers were run.
+RH13 billing checkout assertion and the historical fake Stripe setup were restored
+from fde4971c7; tests-only.patch contains the exact uncommitted source diff.
+
+git add tests/identityhttp/reauth_http_test.go
+Exit code: 128
+fatal: Unable to create '/Volumes/data/live_commerce_architecture_v1/.git/worktrees/oc15b/index.lock': Operation not permitted
+
+gh issue view 244
+Post "https://api.github.com/graphql": proxyconnect tcp: dial tcp 127.0.0.1:7897: connect: operation not permitted
+Issue #244 was subsequently read through the connected GitHub fetch_issue tool.
+
+GitHub connector create_branch on unit/oc15b-billing-reauth at the base SHA:
+MCP tool call requires approval, but approval policy is never
+The connector rejected the write before returning a branch/commit receipt.
+
+RED run/job ids: NONE (cannot push tests-only commit).
+GREEN run/job ids: NONE.
+PR: NONE.
+No implementation, remote ref update, merge, status, or auto-merge was performed.
+
+2026-10-28 resumed with working Git/gh permissions:
+Tests-only head: d55d9282c392f33d0e6b436c36a2a5f78920113b
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/252
+Base: r3/integration
+Gates run: 40612243880; plan job 122566337894 succeeded; build job 122567002727 queued.
+Foundation run: 40612244086; job 122566338763 succeeded (6m3s).
+Foundation intentionally SKIPS its PG suite for r3/integration PRs; this is NOT RH13 evidence.
+RH13 RED: PENDING until Gates unit shard actually fails the billing code assertion.
+No implementation changes yet. Local tests and servers NOT_RUN by owner rule.
+Active monitor: gh pr checks 252 --watch --fail-fast --interval 30,
+bounded by Python subprocess timeout=2400 seconds; log red-watch.log.
+
+Final monitor receipt (2026-10-28 01:43 UTC):
+Gates build 122567002727 succeeded in 3m18s.
+RH13 unit job 122575742449 is still queued, with no executed steps.
+The LOCAL MONITOR exited 1: subprocess.TimeoutExpired after 2400 seconds.
+This is a monitoring timeout, NOT a CI test failure and NOT assertion RED.
+Raw final CI job state: red-state.json. Watch process ended; remote CI was not cancelled.
+Implementation and GREEN remain NOT_RUN. Do not merge this tests-only PR.
+Integrator/next worker must recheck run 40612243880, job 122575742449, obtain
+the RH13 billing assertion failure, then proceed with card steps 1–2.
+2026-10-28T01:50:30.0290686Z HEAD is now at b1934fb5 Merge d55d9282c392f33d0e6b436c36a2a5f78920113b into 79f95784c9dee419346fe3119d4d4f56720d4a3c
+2026-10-28T01:50:30.0394162Z ##[endgroup]
+2026-10-28T01:50:30.0446628Z [command]/usr/bin/git log -1 --format=%H
+2026-10-28T01:50:30.0476190Z b1934fb5e5deca4f59a766be957466a2c7e0a41b
+2026-10-28T01:50:30.0496354Z ##[group]Removing auth
+--
+2026-10-28T02:01:56.5027061Z === RUN   TestReauthRH13GuardedDomainsEndToEnd
+2026-10-28T02:01:56.5630398Z     reauth_http_test.go:741: billing checkout: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Operation not permitted.","request_id":"eaef6d2dd1ac0dae2aed6557b36f6a30","retryable":false,"details":{}}
+2026-10-28T02:01:56.5632642Z         )
+2026-10-28T02:01:56.5712418Z 2026/10/28 02:01:56 INFO orders.export_unshipped store_id=bae23403-5ddf-4c77-857c-5a1fb004ba92 rows=0 truncated=false duration_ms=6
+2026-10-28T02:01:56.5717467Z --- FAIL: TestReauthRH13GuardedDomainsEndToEnd (0.07s)
+2026-10-28T02:01:56.5719038Z FAIL
+2026-10-28T02:01:56.5842840Z FAIL	livecommerce/tests/identityhttp	0.993s
+2026-10-28T02:01:57.3461386Z === RUN   TestEcpayMac
+2026-10-28T02:01:57.3462725Z === RUN   TestEcpayMac/F6_official_vector
+--
+2026-10-28T02:02:01.8071657Z matrix-receipts: {"mode":"shard:unit","run_id":"40612243880","run_attempt":"1","sha":"b1934fb5e5deca4f59a766be957466a2c7e0a41b","status":"FAIL","test_count":1458,"spec_count":0}
+2026-10-28T02:02:01.8171794Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2026-10-28T02:02:01.8172233Z with:
+2026-10-28T02:02:01.8172443Z   name: receipt-gate-shard_unit
+2026-10-28T02:02:01.8172697Z   path: output/receipt/
+--
+2026-10-28T02:02:03.4489014Z --- FAIL: TestReauthRH13GuardedDomainsEndToEnd (0.07s)
+2026-10-28T02:02:03.4489799Z FAIL
+2026-10-28T02:02:03.4490147Z FAIL	livecommerce/tests/identityhttp	0.993s
+2026-10-28T02:02:03.4490451Z FAIL
+2026-10-28T02:02:03.4555508Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
