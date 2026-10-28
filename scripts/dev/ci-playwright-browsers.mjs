@@ -1,4 +1,4 @@
-// Purpose: select the browser installation set for one CI matrix mode.
+// Purpose: select the browser installation set for one CI matrix job (one mode, or the union over a CI-SPEED-2 bundle's members).
 // Depends on: the test-local registry; no browser or network operation.
 // Used by: gates.yml and CI installer contract tests.
 import { readFileSync, appendFileSync } from 'node:fs';
@@ -85,12 +85,17 @@ export function assertWebKitCoverage(source, testSources, testFiles = []) {
       throw new Error(`${entry.name}: selected WebKit execution requires webkit declaration`);
   }
 }
-/** CLI writes a safe engine list/cache suffix for GitHub Actions; non-browser legs emit empty requirements. */
-export function main(mode = process.argv[2], env = process.env) {
-  if (typeof mode !== 'string' || !mode.length) throw new Error('matrix mode required');
+/** CLI writes a safe engine list/cache suffix for GitHub Actions; non-browser legs emit empty requirements.
+ * CI-SPEED-2: a bundle job passes all its member modes and gets the union, in registry order (chromium before webkit), so the
+ * cache suffix is one a solo job of the same engine set also uses. */
+export function main(modes = process.argv.slice(2), env = process.env) {
+  if (typeof modes === 'string') modes = [modes];
+  if (!Array.isArray(modes) || !modes.length || modes.some((m) => typeof m !== 'string' || !m.length)) throw new Error('matrix mode required');
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-  const engines = browserRequirements(mode, readFileSync(path.join(root, 'scripts/dev/test-local.sh'), 'utf8'), env.EXTRA_ENV ?? '');
-  console.log(`ci-playwright: mode=${mode} browsers=${engines.join(' ') || 'none'}`);
+  const source = readFileSync(path.join(root, 'scripts/dev/test-local.sh'), 'utf8');
+  const wanted = new Set(modes.flatMap((mode) => browserRequirements(mode, source, env.EXTRA_ENV ?? '')));
+  const engines = ['chromium', 'webkit'].filter((e) => wanted.has(e));
+  console.log(`ci-playwright: mode=${modes.join(' ')} browsers=${engines.join(' ') || 'none'}`);
   if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `engines=${engines.join(' ')}\ncache=${engines.join('-')}\n`);
   return engines;
 }
