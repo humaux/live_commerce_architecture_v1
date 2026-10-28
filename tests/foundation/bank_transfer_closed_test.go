@@ -16,7 +16,7 @@ package foundation_test
 // Fixture writes (disclosed): the policy row is flipped by the migration owner (closed for the test, restored to the legacy-open state by
 // t.Cleanup, see newFixture / issue #210); one rolled-back direct INSERT/UPDATE per refusal.
 // Purpose: pin bank-transfer closure, immutable snapshots and receipt replay. Depends on: foundation fixture, 0088/0202 SQL.
-// Used by: GitHub CI foundation shards. Invariants: owner-only policy setup is restored; RED fault injections roll back before other tests.
+// Used by: GitHub CI foundation shards. Invariants: owner-only policy setup is restored; privilege and replay probes roll back before other tests.
 
 import (
 	"context"
@@ -69,15 +69,6 @@ func TestBtcPolicyNotWritableByApp(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer probe.Rollback(ctx)
-		// RED-only fault injection: add the forbidden grants in this transaction, never in a migration or shared fixture.
-		for _, sql := range []string{
-			`GRANT DELETE,TRUNCATE ON checkout.bank_transfer_settings,checkout.bank_transfers TO commerce_runtime`,
-			`GRANT UPDATE(bank_name,branch,account_name,account_number,window_hours,currency) ON checkout.bank_transfers TO commerce_runtime`,
-		} {
-			if _, err := probe.Exec(ctx, sql); err != nil {
-				t.Fatal(err)
-			}
-		}
 		var roleCount int
 		if err := probe.QueryRow(ctx, `SELECT count(*) FROM pg_roles WHERE rolname LIKE 'commerce\_%'`).Scan(&roleCount); err != nil || roleCount < 5 {
 			t.Fatalf("privilege scan roles=%d err=%v, want at least 5 commerce roles", roleCount, err)
@@ -263,18 +254,6 @@ func TestBtcSaveReplayAfterClose(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer probe.Rollback(ctx)
-		// RED-only fault injection: remove the native receipt hash guard only inside this rolled-back transaction.
-		var definition string
-		if err := probe.QueryRow(ctx, `SELECT pg_get_functiondef('payments.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer)'::regprocedure)`).Scan(&definition); err != nil {
-			t.Fatal(err)
-		}
-		const guard = "IF v_saved<>p_request_hash THEN"
-		if strings.Count(definition, guard) != 1 {
-			t.Fatal("RED mutation requires exactly one native request-hash guard")
-		}
-		if _, err := probe.Exec(ctx, strings.Replace(definition, guard, "IF false THEN", 1)); err != nil {
-			t.Fatal(err)
-		}
 		if _, err := probe.Exec(ctx, `SET LOCAL ROLE commerce_runtime`); err != nil {
 			t.Fatal(err)
 		}

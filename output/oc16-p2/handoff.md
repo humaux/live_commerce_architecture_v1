@@ -66,3 +66,15 @@ The native grants and receipt guard already implement the requested behavior. To
 Item 2 is SKIPPED under the card's other-module-contract boundary: buyer-checkout-options-v1 is FROZEN and documents only bank_transfer_unavailable; documenting bank_transfer_closed also requires storefront-v2/admin error-table alignment. Preserve the current buyer and merchant exact bank_transfer_closed assertions. Integrator must own this contract decision; PR records the exclusion and must not imply full issue closure acceptance. Comment item 3 depends on the executor mapping already implemented; no enabled=false policy exception or migration is authorized. OC-15 public-code fixes remain skipped as already present.
 
 Static checks: gofmt on the changed Go test file and git diff --check, exit 0. No import or dependency changes; dependency map unchanged. Local tests, servers, generators, PG, independent review and production actions NOT_RUN. Evidence E1 for formatting only; new regression acceptance E0/PENDING until own PR CI. Before final push append native RED run/job/assertion receipt to red.log. Integrator owns wake-up after the tests-only push; record Gates/Foundation RUN ids in this file after allocation, without a third evidence-only push.
+
+### Batched RED push receipt
+
+Pushed head 96a4a04d3359f4da52692160b78b7c38eef4f6e8 to the assigned branch; PR #260 body updated. WAIT_RUN: 40680080856 (Gates, pending) and 40680080789 (Foundation, queued), both head-bound via gh run list. Test job ids not yet allocated. Both new assertion RED receipts PENDING; do not remove mutations yet. Final one implementation push remains. Stop this session per CI-wait rule; integrator must relay the new Gates test-job conclusion. This receipt and refreshed pr-body.md intentionally stay uncommitted until the final implementation push, so no evidence-only CI restart is introduced.
+
+## Final mutation removal — 2026-10-29
+
+Read original completed g09 job via GitHub jobs/logs API because gh run view --log-failed refuses logs while the overall run is active. Both new own-assertion failures confirmed at run 40680080856/job122821418704, synthetic c1b634784a65ff4a2ff6a290dcffb9dfa2bf1c9e; receipt saved before code edit in red.log and batch-red-job.log. The only other FAIL text is an expected child process under PASS TestProductEditorMatrixEvidenceShallowClone.
+
+Removed ONLY the two RED SQL mutation blocks, preserving assertions, transaction rollback, runtime role and existing fixture. Updated invariant header to describe final probes. Native grants and receipt guard remain unchanged. No imports/dependency changes; map regeneration unnecessary. Buyer contract exclusion remains unresolved and must not be inferred complete. Local tests/servers NOT_RUN. Humaux tools absent, so memory/coord/canvas NOT_RUN; integrator assignment retained.
+
+One final implementation push now; GREEN and contractdrift PENDING, independent acceptance NOT_RUN. Integrator owns wake-up after new Gates/Foundation run allocation. No additional push permitted under current batching budget.

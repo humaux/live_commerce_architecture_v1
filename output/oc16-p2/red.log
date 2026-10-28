@@ -15,6 +15,12 @@ expected_assertion_2=old-key/different-body after closure: <nil>, want PT409 ide
 mutation_scope=two independent owner transactions, deferred rollback; no migration or committed grant/function change
 remaining_batch_red=PENDING (do not remove mutations until both own-assertion failures observed on GitHub CI)
 remaining_push_budget=one tests-only RED push now, one mutation-removal GREEN push after assertion RED
+remaining_batch_head=96a4a04d3359f4da52692160b78b7c38eef4f6e8
+remaining_batch_gates_run=40680080856 (pending; test jobs not yet allocated)
+remaining_batch_foundation_run=40680080789 (queued)
+WAIT_RUN=40680080856
+WAIT_RUN=40680080789
+wake_owner=integrator; relay new Gates test-job conclusion in a fresh session
 
 Observed 2026-10-28 after PR creation:
 pr=https://github.com/humaux/live_commerce_architecture_v1/pull/260
@@ -67,3 +73,14 @@ resume=gh run view 40628067835 --log-failed (filter to TestOrderAttemptExecutorA
 2026-10-28T05:25:41.9637873Z === RUN   TestOrderAttemptExecutorAbortClassification/PT429/offline_order_limit
 2026-10-28T05:25:41.9639080Z === RUN   TestOrderAttemptExecutorAbortClassification/allocator_insufficient
 2026-10-28T05:25:41.9640601Z === RUN   TestOrderAttemptExecutorAbortClassification/missing_local_plan_key_stays_retryable
+
+Confirmed remaining-batch RED 2026-10-29:
+head=96a4a04d3359f4da52692160b78b7c38eef4f6e8
+run=40680080856 job=122821418704 (shard:g09) conclusion=failure
+synthetic_checkout=c1b634784a65ff4a2ff6a290dcffb9dfa2bf1c9e base=776550a1e42bd57bc8496ccce16555f31ece7638
+raw_filtered_receipt=output/oc16-p2/batch-red-job.log
+15:50:42 UTC: bank_transfer_closed_test.go:102 forbidden bank privilege, all 10 injected privileges detected
+15:50:43 UTC: bank_transfer_closed_test.go:287 old-key/different-body after closure: <nil>, want PT409 idempotency_conflict
+Both added assertions reached and failed; no setup failure. ProductEditor child failures are expected by PASS TestProductEditorMatrixEvidenceShallowClone.
+Foundation 40680080789/job122788273561 success does not replace REAL_PG test evidence.
+Evidence=E3 for assertion RED only; GREEN pending final implementation push.
