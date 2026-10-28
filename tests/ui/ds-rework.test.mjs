@@ -29,7 +29,7 @@ const { Field, TextInput, FormGrid } = load("./Fields");
 const { Badge, Alert, Button } = load("./Controls");
 const { FormActionBar, PageHeader, Timeline } = load("./Layout");
 const { MenuButton, DataTable } = load("./Data");
-const { UploadGrid, EmptyState } = load("./States");
+const { UploadGrid, EmptyState, StatePanel, InlineError } = load("./States");
 const el = React.createElement;
 const html = node => renderToStaticMarkup(node);
 
@@ -102,6 +102,48 @@ test("state density is explicit and timeline facts carry ISO time", () => {
   assert.match(html(el(EmptyState, { title: "Empty" })), /data-mode="compact"/);
   assert.match(html(el(EmptyState, { title: "Empty", mode: "full" })), /data-mode="full"/);
   assert.match(html(el(Timeline, { label: "History", items: [{ id: "a", title: "Received", dateTime: "2026-10-15T10:00:00+08:00", time: "10:00 UTC+8" }] })), /<time dateTime="2026-10-15T10:00:00\+08:00">/i);
+});
+
+test("StatePanel: every variant has one primary action and only transient states announce politely", () => {
+  for (const variant of ["empty", "forbidden", "offline", "expired", "unknown"]) {
+    const out = html(el(StatePanel, {
+      variant,
+      title: `${variant} title`,
+      body: `${variant} body`,
+      note: `${variant} note`,
+      status: el("span", null, "Pending review"),
+      action: { label: "Continue", onClick() {} },
+      resourceName: "private-order-123",
+    }));
+    assert.match(out, new RegExp(`data-variant="${variant}"`));
+    assert.match(out, new RegExp(`${variant} title`));
+    assert.match(out, new RegExp(`${variant} body`));
+    assert.match(out, new RegExp(`${variant} note`));
+    assert.match(out, /Pending review/);
+    assert.equal((out.match(/<a |<button /g) ?? []).length, 1, `${variant} must have exactly one action`);
+    assert.match(out, /<button[^>]*data-variant="primary"[^>]*>Continue<\/button>/);
+    assert.doesNotMatch(out, /chevron|<svg|›|→/, `${variant} has no chevron outside its button`);
+    assert.doesNotMatch(out, /private-order-123/, `${variant} must not render a resource identifier`);
+    if (variant === "offline" || variant === "unknown") {
+      assert.match(out, /role="status" aria-live="polite"/);
+    } else {
+      assert.doesNotMatch(out, /role="status"|aria-live/);
+    }
+  }
+});
+
+test("StatePanel: href actions are links and InlineError is an alert with at most one action", () => {
+  const panel = html(el(StatePanel, { variant: "empty", title: "Nothing yet", body: "Start here", action: { label: "Browse", href: "/products" } }));
+  assert.match(panel, /<a[^>]*href="\/products"[^>]*data-variant="primary"[^>]*>Browse<\/a>/);
+  assert.doesNotMatch(panel, /<button /);
+
+  const inline = html(el(InlineError, { message: "Could not read the latest state", action: { label: "Check status", href: "/status" } }));
+  assert.match(inline, /role="alert"/);
+  assert.match(inline, /Could not read the latest state/);
+  assert.equal((inline.match(/<a |<button /g) ?? []).length, 1);
+  assert.match(inline, /<a[^>]*data-variant="primary"[^>]*>Check status<\/a>/);
+  assert.doesNotMatch(inline, /chevron|<svg|›|→/);
+  assert.doesNotMatch(html(el(InlineError, { message: "Try again later" })), /<a |<button /);
 });
 
 test("round 2: icon menu has one SVG and an explicit name, header status shares the title row", () => {
