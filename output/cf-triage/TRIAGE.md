@@ -32,7 +32,7 @@ Read-only main input blob hashes (`git hash-object`, no object writes): CODE-ALI
 
 ## Seven-card triage
 
-DECIDABLE means product boundaries can be amended from existing authority, not that implementation/review passed. All seven cards are DECIDABLE; technical implementation and qualification gates remain separate.
+DECIDABLE means product boundaries can be amended from existing authority, not that implementation/review passed. All seven cards are DECIDABLE for the named rows below; technical implementation and qualification gates remain separate. **SF-12 is UNKNOWN**: no first-hand decision on the four-check publish-readiness gate is established. OC-Q9/10/11/18 cover SF-01/04/07/06 only; owner-choices and ADR-CHOICES do not decide SF-12, and the backlog is a lead, not authority. SF-12 is neither a default implementation target nor ruled out.
 
 | CF card / backlog rows | Status | Decided boundary and exact authority | Owner question | CA cards affected / unlock boundary |
 |---|---|---|---|---|
@@ -52,6 +52,7 @@ DECIDABLE means product boundaries can be amended from existing authority, not t
 
 ## Delivery and evidence
 
+- Review round 1 (2026-10-28): independent Kimi K3.1 Pro review of `8576750c9` returned REQUEST_CHANGES (P1: SF-12 exclusion lacked first-hand authority). This correction marks SF-12 UNKNOWN in the amendment, triage and PR body; re-review and exact-head CI are PENDING. `python3 scripts/check_packet.py` exited 0 at `2026-10-28T07:27:55.616765+00:00`, `PASS_PACKET_STRUCTURE_ONLY` (E1); the prior `static.log` remains the previous follow-up receipt. RED remains NOT_APPLICABLE for this docs-only correction.
 - Dispatched contract worker; GPT-6 family (exact runtime variant/effort not exposed); no recursive delegation. Worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/cf-triage`, branch `unit/cf-contract-triage`, target `r3/integration`, base above. Write scope: this output directory plus assigned CF contract paths.
 - **RED: NOT_APPLICABLE** by explicit CF-TRIAGE exception: docs/contracts only, no executable behavior. No artificial failing push.
 - Static command: `python3 scripts/check_packet.py`, exit **0**, `PASS_PACKET_STRUCTURE_ONLY` for this follow-up (timestamp in the raw receipt); raw receipt: `output/cf-triage/static.log` (refreshed after these amendments, before the single push). Packet structure is E1 only; the generated packet-check.json timestamp-only change is restored. Exact-head GitHub CI/independent review **PENDING/NOT_RUN** until receipts exist; own correctness claim E0.
