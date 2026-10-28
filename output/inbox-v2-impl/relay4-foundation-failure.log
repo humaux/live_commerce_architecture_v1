@@ -1,0 +1,33 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4276070Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4276445Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4276720Z ℹ duration_ms 1418.320969
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4288308Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4288780Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4289054Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4289414Z test at tests/ui/ds-hex-ratchet.test.mjs:87:1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4290335Z ✖ the live tree holds the baseline (apps/admin hex colours did not increase) (208.993033ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4291128Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4291629Z   + actual - expected
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4291884Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4292085Z   + [
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4292396Z   +   'total hex colours 403 > baseline 386',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4293651Z   +   'apps/admin/src/features/messages/Inbox.module.css: 55 hex colours > baseline 38 (use a --ds-* token from packages/ui/src/tokens.css)'
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4294756Z   + ]
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4295099Z   - []
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4295330Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4296518Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ui/ds-hex-ratchet.test.mjs:88:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4297609Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4298177Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4298866Z       at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4299546Z       at Test.postRun (node:internal/test_runner/test:1542:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4300113Z       at Test.run (node:internal/test_runner/test:1467:12)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4300825Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4301324Z     generatedMessage: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4301606Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4302629Z     actual: [ 'total hex colours 403 > baseline 386', 'apps/admin/src/features/messages/Inbox.module.css: 55 hex colours > baseline 38 (use a --ds-* token from packages/ui/src/tokens.css)' ],
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4303396Z     expected: [],
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4303680Z     operator: 'deepStrictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4304494Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4304730Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4358944Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:36:28.4368629Z ##[error]Process completed with exit code 1.

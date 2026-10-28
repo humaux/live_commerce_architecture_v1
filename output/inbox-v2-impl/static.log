@@ -30,3 +30,8 @@ node scripts/dev/derive-browser-ownership.mjs: exit0,53modes
 git diff --check: exit0
 Only the inbox-specific authority array adds the fourth INV2 file; no assertion removed.
 E1 syntax/static generation only; no local tests/discovery/server/browser/PG/container.
+
+Relay4 color-token repair attempt1 (base 8c663521b36012aec0375b361c0b78af43716bab):
+git diff --check: exit0
+E1 whitespace only; no local tests or runtime style verification. Existing DS hex ratchet runs on GitHub CI.
+No browser-discovery input or Go dependency changed; ownership/depmap unchanged.
