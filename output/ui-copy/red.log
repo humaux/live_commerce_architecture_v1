@@ -1,0 +1,24 @@
+CA-UI-COPY — causal RED receipts, retrieved 2026-10-28
+Branch: unit/ca-ui-copy; PR: #267 -> r3/integration
+PR head: 26d5f721a9e519fe6e4e5736a0a4c1288854903b (tests-only, retained verbatim)
+Both runs use pull_request; tested synthetic merge SHA was not independently extracted.
+
+ORD-01: Foundation checks
+Run: 40645100067; job: 122671969067 (foundation); conclusion: failure
+https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40645100067/job/122671969067
+tests/admin/orders-v2.test.ts:43, assertion at :46
+Actual: 'Unpaid'; expected: 'Awaiting payment'. Test summary: pass 4 / fail 1.
+Read command: gh run view 40645100067 --job 122671969067 --log-failed
+Filtered raw excerpt: red-orders-ci.log
+
+CU-01: Gates (GitHub runners)
+Run: 40645100039; job: 122683775768 (gate (bundle:07)); conclusion: failure
+https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40645100039/job/122683775768
+tests/admin/import-view.test.ts:27, assertion at :46
+Actual: undefined; expected: 'Unique customer ID in your old system (source_id).'
+Test group summary: pass 40 / fail 1. Existing safe-failure-CSV assertion passed.
+gh run view --log-failed hit HTTP/2 CANCEL twice for this large job log.
+Read fallback: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/122683775768/logs
+Filtered raw excerpt: red-import-ci.log
+
+Historical RED confirms the two new assertions fail. It is not GREEN evidence for the implementation.

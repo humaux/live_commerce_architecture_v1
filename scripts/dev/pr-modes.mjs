@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 // Purpose: the deterministic gate set of a pull request into r3/integration, computed from the PR's changed paths (owner decision: the repo fixes the required checks, the merging
-//   agent never picks modes). Always `foundation-shards`; any UI path adds every CI-runnable `--browser-*` mode of the test-local.sh mode registry; internal/, cmd/ and
+//   agent never picks modes). Always `foundation-shards`; app/spec paths select generated execution owners; shared/unknown UI paths add every CI-runnable browser mode; internal/, cmd/ and
 //   migrations/ changes select browser modes from the registry's lc_covers data (CI-SELECT, see the block below).
 //   Browser-tagged foundation inputs additionally select every real registry branch that compiles that tag (including non-browser-named modes).
 //   Canonical matrix producer changes always select the live product-editor guard, from the Go consumer's single source declaration.
 //   Deploy runtime, smoke workflow/helpers and deploy-test edits select deploy-smoke. Unknown/missing foundation Go sources conservatively select tagged runners.
 //   CLI unions legacy quoted/trimmed path classification; only raw paths are used for source lookup.
+//   CI-SPEED-3 (owner 2026-10-28): extend "narrow per domain + nightly" to known apps and tests/admin|e2e|ui|storefront inputs.
+//   derive-browser-ownership.mjs records registry harness/spec/server evidence and relative-import closure; CI checks drift.
+//   Unowned/unresolvable paths, packages/, scripts/, .github/, package/lock files and Playwright config keep ALL.
+//   Schedule/full-browser workflow_dispatch retain ALL; push remains foundation-only (integrator correction 2026-10-28).
 // Depends on: mode registry, Go build headers and matrix producer declaration, git base/head/checkout sources and changed paths; env GITHUB_OUTPUT (modes, deploy).
 // Used by: .github/workflows/gates.yml (plan job: pull_request diffs plus the schedule/workflow_dispatch full-browser-universe runs; the output feeds scripts/dev/ci-plan.mjs), tests/ci/pr-modes.test.mjs, tests/ci/backend-coverage.test.mjs.
 // Invariants: foundation-shards is ALWAYS present (so the one `required` check exists for docs-only PRs too); a mode is only ever dropped through EXCLUDED_MODES below.
 //
 // Backend-only set (changes here alone cannot alter a browser): contracts/ docs/ deploy/ output/ go.mod go.sum, tests/foundation/ except
-//   tests/foundation/browser_* or browser-tagged Go sources, tests/deploy/ and tests/ci/ (node tests of shell scripts / this planner; scripts/ itself stays UI), and *.md anywhere. Everything else (apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ scripts/ .github/ playwright.config.ts, package files...) is a UI path.
+//   tests/foundation/browser_* or browser-tagged Go sources, tests/deploy/ and tests/ci/ (node tests of shell scripts / this planner; scripts/ itself stays UI), and *.md anywhere. Other paths are UI inputs: known app/spec/helper paths select execution owners, shared or unknown paths select ALL.
 // Docs-only (docs/, output/, *.md, contracts/) is a subset of backend-only: it runs foundation-shards (cheap, keeps the single required check) and no browser mode.
 //
 // CI-SELECT (owner-approved 2026-10-10; round 2 "Narrow per domain + nightly"): internal/, cmd/ and migrations/ are NOT backend-only — every Go-seeded browser mode runs the
@@ -35,6 +39,7 @@ import { appendFileSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -235,20 +240,50 @@ const isBackendOnly = (p) =>
 const isDeploy = (p) => p.startsWith("deploy/") || p.startsWith("scripts/deploy") || p.startsWith("tests/deploy/") ||
   p.startsWith(".github/scripts/") || /^\.github\/workflows\/deploy-smoke\.ya?ml$/.test(p);
 
+// Ownership is generated, never a hand list. Registry drift, unknown paths or incomplete import evidence fail closed.
+const ownershipPath = "output/ci-select-backend-browser/browser-ownership.json";
+let ownership;
+function uiBrowserModes(paths, source, readSources) {
+  const full = browserModes(source), selected = new Set();
+  if (!paths.length) return [];
+  if (ownership === undefined) {
+    try { ownership = JSON.parse(workingSource(ownershipPath)); } catch { ownership = null; }
+  }
+  const hash = createHash("sha256").update(source).digest("hex");
+  if (ownership?.version !== 1 || ownership.registryHash !== hash ||
+      full.some((mode) => !ownership.modes?.[mode] ||
+        ["inputs", "apps", "unresolved", "foundationUnresolvedInputs"].some((field) => !Array.isArray(ownership.modes[mode][field])))) return full;
+  for (const file of paths) {
+    const app = /^apps\/([^/]+)\//.exec(file)?.[1];
+    const spec = /^tests\/(?:admin|e2e|ui|storefront)\//.test(file);
+    if ((!app && !spec) || !readSources(file).some((text) => text !== null)) return full;
+    // New unclassified app files stay conservative, as do deleted/renamed specs with no execution owner.
+    if (app && workingSource(file) === null) return full;
+    // Incomplete browser-driver evidence can hide ANY helper, so retain ALL. Computed Node-only loaders
+    // independently covered by foundation (derived from test-node.sh) are conservative when that input changes.
+    if (full.some((mode) => ownership.modes[mode].unresolved.length ||
+      ownership.modes[mode].foundationUnresolvedInputs.includes(file))) return full;
+    const owners = full.filter((mode) => app ? ownership.modes[mode].apps.includes(app) : ownership.modes[mode].inputs.includes(file));
+    if (!owners.length) return full;
+    for (const mode of owners) selected.add(mode);
+  }
+  return full.filter((mode) => selected.has(mode));
+}
+
 /** Changed paths and source observations -> deterministic required gates; source lookup defaults to the worktree. */
 export function planPr(paths, source = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"), readSources = (file) => [workingSource(file)]) {
   const tagged = paths.some((file) => {
     if (!file.startsWith("tests/foundation/") || !file.endsWith(".go")) return false;
     const sources = readSources(file).filter((text) => text !== null);
-    return !sources.length || sources.some(hasBrowserTag);
+    return (!sources.length && !file.startsWith("tests/foundation/browser_")) || sources.some(hasBrowserTag);
   });
-  const needsBrowsers = tagged || paths.some((p) => !isBackendOnly(p));
+  const ui = uiBrowserModes(paths.filter((p) => !isBackendOnly(p)), source, readSources);
   // Historical refs may predate the declaration. Union all available base/head/
   // checkout observations, so additions, removals and merge-ref drift stay guarded.
   const producers = readSources("tests/foundation/catalog_matrix_ledger_test.go").flatMap(matrixEvidenceSources);
   const matrix = paths.some((file) => producers.includes(file));
   // Backend-driven selections are always a subset of the full browser set, so UI-path plans keep their exact order.
-  return { modes: [...new Set(["foundation-shards", ...(needsBrowsers ? browserModes(source) : []), ...backendBrowserModes(paths, source), ...(tagged ? taggedFoundationModes(source) : []), ...(matrix ? ["--browser-product-editor"] : [])])], deploy: paths.some(isDeploy) };
+  return { modes: [...new Set(["foundation-shards", ...(tagged ? browserModes(source) : ui), ...backendBrowserModes(paths, source), ...(tagged ? taggedFoundationModes(source) : []), ...(matrix ? ["--browser-product-editor"] : [])])], deploy: paths.some(isDeploy) };
 }
 
 // Parse only the named literal Go data table, never executable code or unrelated
@@ -292,7 +327,10 @@ export function main(argv = process.argv.slice(2), env = process.env) {
   // Never feed these display spellings into source lookup. The legacy CLI used
   // the checkout's registry even when an explicit head selected another one.
   const legacyPaths = legacyDisplay.split("\n").map((p) => p.trim()).filter(Boolean);
-  if (legacyPaths.some((p) => !isBackendOnly(p)))
+  // Ordinary raw paths already use derived ownership. Only display spellings that differ (Git quoting / trim)
+  // need the legacy classifier; otherwise this compatibility union would undo every narrowed PR plan.
+  const displayOnly = legacyPaths.filter((p) => !paths.includes(p));
+  if (displayOnly.some((p) => !isBackendOnly(p)))
     r.modes = [...new Set([...r.modes, ...browserModes(readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"))])];
   r.deploy ||= legacyPaths.some(isDeploy);
   console.error(`pr-modes: ${paths.length} changed path(s) -> ${r.modes.length} mode(s)${r.deploy ? "; deploy-smoke" : ""}`);
