@@ -1,0 +1,90 @@
+--
+1543-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:05.0692646Z --- PASS: TestHomeCodAndUntrackedCoexist (0.37s)
+1544-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:05.0704593Z === RUN   TestBuyerPaymentHostedAdmissionDriftBeforePrepare
+1545-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:05.4206487Z --- PASS: TestBuyerPaymentHostedAdmissionDriftBeforePrepare (0.35s)
+1546:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:05.4210024Z === RUN   TestIdentityConcurrentConsumeAndProviderFailure
+1547:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:05.4568424Z --- PASS: TestIdentityConcurrentConsumeAndProviderFailure (0.04s)
+1548-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:05.4569020Z === RUN   TestIdentityDatabaseAuthoritySeparation
+1549-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:05.5392022Z --- PASS: TestIdentityDatabaseAuthoritySeparation (0.08s)
+1550-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:05.5395270Z === RUN   TestK3LcB1IdempotencyKeyReuse
+--
+1561-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:17.3255796Z --- PASS: TestK3LCB4ReplyUsedBlockedManualRecovery (1.35s)
+1562-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:17.3257381Z === RUN   TestKeywordToolsBatchDeactivateIsAPause
+1563-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:17.7417150Z --- PASS: TestKeywordToolsBatchDeactivateIsAPause (0.42s)
+1564:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:17.7424144Z === RUN   TestLegacyRuntimeIsolationUpgradeFailClosedRetry
+1565-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:20.3677611Z     legacy_runtime_upgrade_test.go:1043: pg teardown: "cancelled migration attempt still holds the migration advisory lock" backends reached 0 after 28ms (2 polls)
+1566:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:20.6342085Z --- PASS: TestLegacyRuntimeIsolationUpgradeFailClosedRetry (2.89s)
+1567-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:20.6343160Z === RUN   TestLegacyRuntimeIsolationFamilyCollidingIDs
+1568-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:23.9393607Z --- PASS: TestLegacyRuntimeIsolationFamilyCollidingIDs (3.30s)
+1569-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:10:23.9396773Z === RUN   TestLiveBrowserInputBRW02ConcurrentStopAndRevokeBeforeFinalReservation
+--
+1771-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:36.3725927Z     --- PASS: TestMerchantToolsCSVBoundaries/a_stock_target_below_what_is_reserved_is_a_row_error,_never_a_negative_balance (0.01s)
+1772-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:36.3726758Z === RUN   TestMerchantToolsDashboard
+1773-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:37.0741432Z     merchant_tools_order_smoke_test.go:423: fixture orders: map[buyer_link:https://tcv-efcb0f14a3bd.example/zh-TW/order-link#o=9f36ec8b-da4b-4f85-afe5-d8eedd4e1359&t=NQILjI0mWx4wd2gWwaIcMUi4g4yyG08f8LXXDVKcbnE commercial_state:AWAITING_TRANSFER currency:TWD expires_at:2026-10-31T16:15:36.876215Z link_state:configured order_id:9f36ec8b-da4b-4f85-afe5-d8eedd4e1359 payment_mode:bank_transfer source:merchant_manual total_minor:2500] map[code:internal details:map[] message:Request could not be completed. request_id:e2bc667e88ef580fe36b4e1d5ca4ccef retryable:false] map[code:internal details:map[] message:Request could not be completed. request_id:982bfcce1f5c1bc3c9209f5a0a428923 retryable:false]
+1774:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:37.0792999Z --- FAIL: TestMerchantToolsDashboard (0.71s)
+1775-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:37.0795689Z === RUN   TestMetaAdsMA02Billing
+1776:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:37.0798076Z === RUN   TestMetaAdsMA02Billing/standing_is_read_correctly_AS_commerce_ads_writer:_RESTRICTED_is_not_fail-open_UNBILLED
+1777-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:37.1833971Z === RUN   TestMetaAdsMA02Billing/RESTRICTED:_approve_and_publish_402_billing_restricted
+1778-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:37.2830049Z === RUN   TestMetaAdsMA02Billing/RESTRICTED:_create_and_activate_are_BLOCKED_POLICY_billing_restricted_with_zero_HTTP
+1779-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:37.5918063Z === RUN   TestMetaAdsMA02Billing/RESTRICTED:_activate
+1780-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:39.3659237Z === RUN   TestMetaAdsMA02Billing/RESTRICTED:_pause_and_insights_reads_are_never_blocked
+1781-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:41.4954496Z --- PASS: TestMetaAdsMA02Billing (4.42s)
+1782:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:41.4955340Z     --- PASS: TestMetaAdsMA02Billing/standing_is_read_correctly_AS_commerce_ads_writer:_RESTRICTED_is_not_fail-open_UNBILLED (0.10s)
+1783-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:41.4956150Z     --- PASS: TestMetaAdsMA02Billing/RESTRICTED:_approve_and_publish_402_billing_restricted (0.10s)
+1784-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:41.4957020Z     --- PASS: TestMetaAdsMA02Billing/RESTRICTED:_create_and_activate_are_BLOCKED_POLICY_billing_restricted_with_zero_HTTP (0.31s)
+1785-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:15:41.4957678Z     --- PASS: TestMetaAdsMA02Billing/RESTRICTED:_activate (1.77s)
+--
+2283-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:18:59.1555407Z     --- PASS: TestStripeRF09AdminHTTP/PAYUNi_is_refused_and_SP14_historical_responses_remain_unchanged (0.49s)
+2284-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:18:59.1556187Z === RUN   TestStripeRF04Request
+2285-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.1856017Z === RUN   TestStripeRF04Request/atomic_request_writes_op,_refund,_event,_audit,_command_result_and_job
+2286:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.2139555Z === RUN   TestStripeRF04Request/expected_refundable_CAS_and_capacity
+2287-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.2431271Z === RUN   TestStripeRF04Request/two_concurrent_requests_whose_sum_exceeds_captured:_exactly_one_wins_(real_two-transaction_witness)
+2288-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.2862847Z === RUN   TestStripeRF04Request/4.3_matrix_incl._the_A1_combinations
+2289-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.4141332Z === RUN   TestStripeRF04Request/A1:_a_suppression_recorded_but_not_yet_applied_blocks_new_requests
+--
+2293-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.5029315Z === RUN   TestStripeRF04Request/refresh_writes_a_MERCHANT_REFRESH_signal_and_a_job,_no_facts
+2294-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.7073150Z --- PASS: TestStripeRF04Request (13.55s)
+2295-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.7073912Z     --- PASS: TestStripeRF04Request/atomic_request_writes_op,_refund,_event,_audit,_command_result_and_job (0.03s)
+2296:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.7074601Z     --- PASS: TestStripeRF04Request/expected_refundable_CAS_and_capacity (0.03s)
+2297-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.7075449Z     --- PASS: TestStripeRF04Request/two_concurrent_requests_whose_sum_exceeds_captured:_exactly_one_wins_(real_two-transaction_witness) (0.04s)
+2298-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.7076222Z     --- PASS: TestStripeRF04Request/4.3_matrix_incl._the_A1_combinations (0.13s)
+2299-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:12.7076963Z     --- PASS: TestStripeRF04Request/A1:_a_suppression_recorded_but_not_yet_applied_blocks_new_requests (0.01s)
+--
+2367-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.0766492Z     --- PASS: TestWAS03CrossAuthorityClaimRefused/claims (0.07s)
+2368-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.0771567Z === RUN   TestWAS06PrivilegeInventory
+2369-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.0860123Z --- PASS: TestWAS06PrivilegeInventory (0.01s)
+2370:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.0867871Z FAIL
+2371:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.1198038Z FAIL	livecommerce/tests/foundation	698.379s
+2372:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.1294451Z FAIL
+2373-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7180240Z ##[error]Process completed with exit code 1.
+2374-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7215221Z ##[group]Run shopt -s nullglob globstar
+2375-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7215430Z [36;1mshopt -s nullglob globstar[0m
+--
+2391-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7233570Z   LC_SWEEP_WORKERS: 1
+2392-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7233692Z   EXTRA_ENV:
+2393-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7233826Z   COREPACK_ENABLE_NETWORK: 0
+2394:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7233980Z   GATE_OUTCOME: failure
+2395-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7234109Z ##[endgroup]
+2396:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7529506Z matrix-receipts: {"mode":"shard:g06","run_id":"40663921173","run_attempt":"1","sha":"326c10203c3b441aedc8e709af8b252c7fd986f2","status":"FAIL","test_count":216,"spec_count":0}
+2397-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7597280Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2398-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7597507Z with:
+2399-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:35.7597633Z   name: receipt-gate-shard_g06
+--
+2433-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8747613Z Artifact download URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40663921173/artifacts/12833030031
+2434-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8867380Z ##[group]Run shopt -s nullglob
+2435-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8867567Z [36;1mshopt -s nullglob[0m
+2436:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8868011Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true[0m
+2437-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8884401Z shell: /usr/bin/bash -e {0}
+2438-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8884544Z env:
+2439-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8884655Z   GOTOOLCHAIN: local
+--
+2453-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8886137Z   COREPACK_ENABLE_NETWORK: 0
+2454-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8886279Z ##[endgroup]
+2455-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8932721Z     mail_probe_test.go:48: NOT_RUN: LC_MAIL_PROBE=1 plus COMMERCE_SMTP_HOST, COMMERCE_SMTP_USERNAME and COMMERCE_SMTP_PASSWORD_FILE are required; this LIVE read-only probe is owner-run on the server and never runs in CI (PA12)
+2456:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8933325Z --- FAIL: TestMerchantToolsDashboard (0.71s)
+2457:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8933587Z FAIL
+2458:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8933837Z FAIL	livecommerce/tests/foundation	698.379s
+2459:gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8934093Z FAIL
+2460-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8966441Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2461-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8966668Z with:
+2462-gate (shard:g06)	UNKNOWN STEP	2026-10-28T16:19:36.8966782Z   name: gate-shard_g06

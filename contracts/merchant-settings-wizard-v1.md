@@ -136,3 +136,27 @@ and shared frame extraction. Root owns this contract, BFF and independent tests.
 - The merchant-facing quick start (快速上手) has **three** steps: 店名 → 配送 → 第一個商品. No provider, key, merchant-id or payment step (payment is platform-collected, see stripe-platform-account AD-PF3). The four-step provider wizard above is not shown to merchants.
 - After login the merchant lands on the dashboard (看板). The quick start is shown only for a newly created store; existing stores are never forced through it.
 - "Newly created" = the store has no completed quick-start marker (server-side, per store, set when the 3 steps are done or dismissed). Evidence DESIGN; gate NOT_RUN.
+
+### OC-05 server marker (0205, assigned 2026-10-28)
+
+| Method/path | Input and output | Permission |
+|---|---|---|
+| GET /v1/admin/stores/{store_id}/quickstart | No query; `{completed, completed_at, steps:{store_name, shipping, first_product}}` | `store:read` |
+| POST /v1/admin/stores/{store_id}/quickstart | Strict empty JSON object `{}`, required `Idempotency-Key`, no query; same state DTO | `integration:manage` |
+
+This POST is an idempotent completion/dismissal, an exception to the older keyed
+command receipts above: the store primary key preserves the first completion time,
+even across different keys. Call it after the steps are done or on explicit dismissal.
+It never asserts that unfinished steps were performed. GET makes no writes.
+`completed_at` is nullable; `completed` means the persistent marker exists. Only the
+database chooses the timestamp. The server derives `store_name` from nonblank
+`control.stores.name`, `shipping` from at least one enabled current delivery-service
+version, and `first_product` from at least one product (including archived products).
+Derived steps remain truthful after dismissal; they are never client-supplied flags.
+0205 atomically backfills every existing store as completed while serializing store
+creation. New stores have no marker until POST. Runtime can only insert scoped
+tenant/store columns; no timestamp overwrite, marker deletion or reset is exposed.
+The normal authenticated scope and RLS apply, with permission rechecks before/after
+reads and writes. No new definer or privileged role is needed for these scoped reads
+and the append-only marker. CI tests: `tests/quickstart/quickstart_test.go`; independent
+review and runtime evidence remain NOT_RUN until the PR checks are read.

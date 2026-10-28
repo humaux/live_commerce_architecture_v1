@@ -1,0 +1,82 @@
+# inbox-p2 RED: #242 item 1 — observed CI assertion failure (E3)
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/259
+Head: 8c12cec74644d3c1134ced0a3a8f4cd7b8820396
+Gates run: 40628056371 (pull_request), conclusion failure
+Synthetic merge tested: dd3f3a1ca852b997031e1f2205eb06eee1a9c197
+Job: 122622864648, gate (--browser-inbox), conclusion failure
+2026-10-28T05:44:02Z: Playwright 1 failed, 18 passed; failed INU01.
+Artifact: gate-browser-inbox / 12794009779 (2,404,531 bytes)
+Artifact playwright/inbox-ui/20261028T054254.574524459/playwright.log:
+  Error: marked-read row disappears immediately from the unread list
+  expect(locator).toHaveCount(expected) failed
+  Expected: 0
+  Received: 1
+  Timeout: 10000ms
+  tests/admin/inbox-ui.spec.ts:135:5
+Filtered excerpt (title's trailing space removed): output/inbox-p2/red-assertion.log (SHA256
+d46b52bf6dff83b0ff28ade46c48cf59cd46543791ed291dedbae842dfe70838).
+The failure follows A10 status=200 and the thread-content assertion; it is the
+new row-removal assertion itself, not setup or infrastructure failure.
+receipts 122668012337 and required 122680263780 fail as downstream consequences
+of this FAIL receipt. Every other executed gate matrix job is success.
+
+Historical OC-12 final GREEN independently read from run 40538883929:
+head 52f3ae7adaa85b4ef8dd90ffc627352a05d30e12; conclusion success;
+shard:unit 122316890900 success; browser-inbox 122316892730 success.
+These historical results do not accept PR #259's implementation head.
+
+Evidence gaps: item 2 read-row exclusion and item 3 trigger fixture replacement
+were absent from the inherited tests-only push. No separate failing CI assertion
+for those hardening changes is claimed. Original SQL invalid_filter RED does not
+by itself prove BFF/HTTP allowlist/browser assertion sensitivity (item 4).
+No local tests or servers run; implementation GREEN is pending.
+
+2026-10-28 continuation: prior implementation head 7f6ea56586ad9c5c90319b05c86b2821de193dd1
+now GREEN (E3 original GitHub receipts): Foundation 40650271764 / 122688477621;
+Gates 40650271800 / receipts 122794721961 / required 122818633209.
+Remaining item2/3 mutation RED batch: PENDING. See RED-HANDOFF.md for expected
+assertions and exact restoration procedure. Never accept this mutation head.
+New run/head/job IDs are recorded in the PR continuation comment after allocation;
+append observed failures here in the authorized restoration commit, not a later
+evidence-only push. No item2/3 RED claimed until those original receipts are read.
+
+2026-10-29 continuation: both remaining own-assertion REDs observed (E3).
+Head c4a02e25de0e082be7aa1d356ada05d9104a2c2a; Gates40690611280.
+Synthetic merge: 9b3a6ab2c231aa3fd8b2a84aa09dc57fdf5777c1.
+Item3 g09 job122906556202 original job log via gh API:
+2026-10-28T16:23:38.5256090Z inbox_unread_trigger_test.go:109:
+committed inbound rows=1 seq=1 state_seq=2, want rows=2 and matching positive sequence
+2026-10-28T16:23:45.6402437Z --- FAIL: TestOC12UnreadStoreLevelAndReset (7.86s)
+Item2 bundle:06 job122906556998, member --browser-inbox, artifact12835468093:
+playwright/inbox-ui/20261028T171220.207857783/playwright.log:
+Error: completed unread reload excludes the distinct read conversation
+Expected:0; Received:1; tests/admin/inbox-ui.spec.ts:171:131.
+INU01 failed,18 passed; exact excerpt in item2-red.log.
+Later open-row assertion did not execute; no RED claimed for it.
+STOP: unrelated WebKit job122906556346 order pass0/fail1; six other groups pass.
+Full WebKit artifact download timed out at60s; underlying assertion UNKNOWN.
+Foundation40690611232/job122824128440 success is for mutation head only.
+No restoration push consumed; final GREEN PENDING.
+
+2026-10-29 FIX-RED259: CURRENT remote head independently checked via gh pr checks,
+gh run view --log-failed --job for EVERY current failing job, and run API.
+Head c4a02e25de0e082be7aa1d356ada05d9104a2c2a; Gates40690611280, attempt2.
+This current-attempt read supersedes the earlier WebKit STOP checkpoint above:
+WebKit job123014763427 is PASS. No unrelated gate remains in the current failure list.
+- g09 job123014757576: inbox_unread_trigger_test.go:109:
+  committed inbound rows=1 seq=1 state_seq=2, want rows=2 and matching positive sequence
+  --- FAIL: TestOC12UnreadStoreLevelAndReset (7.86s)
+- bundle06 job123014763947: Playwright failed INU01 (inbox-ui.spec.ts:92:1);
+  --- FAIL: TestBrowserInboxUIRealChain (84.41s).
+  Same bundle: --- PASS: TestBrowserCardPayments (67.79s), buyer half passed.
+  Original inbox assertion is retained in item2-red.log, artifact12835468093:
+  completed unread reload excludes the distinct read conversation; expected0/received1.
+- receipts job123021219884: FAIL shard:g09 and --browser-inbox only;
+  --browser-card-payments PASS test_count=106; matrix-receipts RED(2 problems).
+- required job123021536575: plan/build/aggregate success, gate/receipts failure;
+  downstream exit1, no additional root cause.
+Both temporary mutations are restored together in the next implementation push.
+All row exclusion, loading completion, permissions, message count/sequence and
+unread total assertions remain. New implementation GREEN is PENDING, not claimed.
+
+Original artifact12835468093 playwright.log independently read in FIX-RED259 via bounded byte-range download; ZIP member CRC verified. Exact own assertion expected0/received1 at :171:131 is retained in fix-red-browser-assertion.log. Full download stalled and its partial temporary archive was removed.
