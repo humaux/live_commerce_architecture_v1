@@ -5,6 +5,10 @@
 // Invariants: Translations explain server facts; labels never assert a carrier action.
 // Carrier display names follow refund-fulfilment-ui Q3; refund state labels follow stripe-refund-v1 §7.1 (UI paragraph).
 // W3-07B: errors.in_parcel_group is the same sentence as parcels-copy `blocked` (the server code maps to the group hint).
+// Purpose: localize merchant order states and actions without changing server authority.
+// Depends on: i18n Locale and merchant-orders-v2 / manual-fulfilment-v1 state semantics.
+// Used by: merchant orders screens and order-copy CI assertions.
+// Invariants: OC-Q21 labels match task queues; state codes and filter behavior remain unchanged.
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
@@ -218,7 +222,7 @@ const en = {
     REFUNDED: "Refunded",
     MANUAL_UNASSIGNED: "Preparing",
     PAID_ALLOCATION_FAILED: "Allocation needs review",
-    NOT_STARTED: "Unpaid",
+    NOT_STARTED: "Awaiting payment",
     PENDING: "Pending",
     AUTHORIZED: "Authorized · not captured",
     CAPTURED: "Captured",
@@ -336,8 +340,8 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
     },
     statuses: {
       active: "不含草稿", all: "全部", DRAFT: "草稿", AWAITING_PAYMENT: "待付款", AWAITING_TRANSFER: "待转账", AWAITING_COLLECTION: "待货到收款", CONFIRMED: "已确认", CANCELLED: "已取消",
-      shipped: "已出货", unshipped: "待出货", MERCHANT_SHIPPED: "已发货", PARTIALLY_REFUNDED: "部分退款", REFUNDED: "已退款",
-      MANUAL_UNASSIGNED: "备货中", PAID_ALLOCATION_FAILED: "分配异常待核对", NOT_STARTED: "未付款",
+      shipped: "已出货", unshipped: "待出货", MERCHANT_SHIPPED: "已出货", PARTIALLY_REFUNDED: "部分退款", REFUNDED: "已退款",
+      MANUAL_UNASSIGNED: "备货中", PAID_ALLOCATION_FAILED: "分配异常待核对", NOT_STARTED: "待付款",
       PENDING: "处理中", AUTHORIZED: "已授权·未扣款", CAPTURED: "已扣款", REVIEW_REQUIRED: "待核对",
       NONE: "无", READY: "待处理", home: "宅配", cvs_711: "7-ELEVEN 取货", cvs_familymart: "全家取货",
       cvs_hilife: "莱尔富取货", cvs_okmart: "OK超商取货", PROVIDER_LABEL_CREATED: "已建立物流单", cvs_pending: "已建单·待交寄",
@@ -435,8 +439,8 @@ export const ordersCopy: Record<Locale, OrdersCopy> = {
     },
     statuses: {
       active: "不含草稿", all: "全部", DRAFT: "草稿", AWAITING_PAYMENT: "待付款", AWAITING_TRANSFER: "待轉帳", AWAITING_COLLECTION: "待貨到收款", CONFIRMED: "已確認", CANCELLED: "已取消",
-      shipped: "已出貨", unshipped: "待出貨", MERCHANT_SHIPPED: "已發貨", PARTIALLY_REFUNDED: "部分退款", REFUNDED: "已退款",
-      MANUAL_UNASSIGNED: "備貨中", PAID_ALLOCATION_FAILED: "分配異常待核對", NOT_STARTED: "未付款",
+      shipped: "已出貨", unshipped: "待出貨", MERCHANT_SHIPPED: "已出貨", PARTIALLY_REFUNDED: "部分退款", REFUNDED: "已退款",
+      MANUAL_UNASSIGNED: "備貨中", PAID_ALLOCATION_FAILED: "分配異常待核對", NOT_STARTED: "待付款",
       PENDING: "處理中", AUTHORIZED: "已授權·未扣款", CAPTURED: "已扣款", REVIEW_REQUIRED: "待核對",
       NONE: "無", READY: "待處理", home: "宅配", cvs_711: "7-ELEVEN 取貨", cvs_familymart: "全家取貨",
       cvs_hilife: "萊爾富取貨", cvs_okmart: "OK超商取貨", PROVIDER_LABEL_CREATED: "已建立物流單", cvs_pending: "已建單·待交寄",
