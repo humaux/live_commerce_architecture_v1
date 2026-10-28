@@ -351,7 +351,12 @@ jobs:
             echo "::endgroup::"
             echo "bundle member $m: $outcome"
             ( shopt -s nullglob globstar
-              MODE="$m" GATE_OUTCOME="$outcome" node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl ) || rc=1
+              MODE="$m" GATE_OUTCOME="$outcome" node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl
+              # BUNDLE-258: the writer already scores an exit-0 member FAIL from a failure line in its log (#147 CI-6). The step's own verdict
+              # follows the receipt it just wrote, so the bundle job is red whenever any member receipt is not PASS (not only on a non-zero exit).
+              for receipt in output/receipt/receipt-*.json; do
+                jq -e '.status == "PASS"' "$receipt" >/dev/null || { echo "bundle member $m: receipt $(basename "$receipt") is not PASS" >&2; exit 1; }
+              done ) || rc=1
             mkdir -p "output/members/$art"
             for d in ci-gates playwright receipt; do if [[ -e "output/$d" ]]; then mv "output/$d" "output/members/$art/"; fi; done
           done 3< <(jq -r '.[] | "\(.mode) \(.art)"' <<<"$MEMBERS_JSON")
