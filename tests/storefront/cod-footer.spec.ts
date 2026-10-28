@@ -1,11 +1,15 @@
 // Purpose: OC-09a — owner-approved plain-language COD copy (output/oc-09/OWNER-APPROVED-COPY.md) on the order page and the pre-order note,
-//   and the order-page amount staying the server cod_collect_minor. The checkout bottom bar (OC-09b) is deferred and not asserted here.
-// Depends on: node:test, apps/storefront/lib/cod-copy.ts (types-only imports), CodOrderStatus.tsx source text. No browser.
+//   and the order-page amount staying the server cod_collect_minor; OC-09b — the checkout bottom bar 「到貨需付」 shows the server quote's
+//   cod_due_minor (never a client sum) only while cash on delivery is the selected mode.
+// Depends on: node:test, apps/storefront/lib/cod-copy.ts (runtime imports: codCopy, codAmountLabel, codFooter), apps/storefront/lib/money.ts
+//   (formatMoney), and the source text of CodOrderStatus.tsx, CheckoutFlow.tsx and OrderFlow.tsx. No browser.
 // Used by: scripts/dev/test-node.sh (one integrator-granted registration line).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { codAmountLabel, codCopy } from "../../apps/storefront/lib/cod-copy.ts";
+import * as codModule from "../../apps/storefront/lib/cod-copy.ts";
+import { formatMoney } from "../../apps/storefront/lib/money.ts";
 
 const want = {
   "zh-TW": { pending_label: "到貨時要付的金額", recorded: "原訂單代收金額", pending: "包裹送達時，付現金給物流人員", note: "包裹送達時付現金給物流人員，網站不會先扣款。" },
@@ -43,3 +47,38 @@ for (const [locale, w] of Object.entries(want)) {
     for (const st of states) assert.equal(codAmountLabel(locale as keyof typeof want, st), st === "PENDING" ? w.pending_label : w.recorded, st);
   });
 }
+
+// OC-09b bottom bar. Looked up on the module object so a missing export fails these tests, not the whole file.
+type Footer = { label: string; amount: string; note: string } | null;
+const codFooter = (codModule as Record<string, unknown>).codFooter as
+  | ((locale: keyof typeof want, codDueMinor: number | undefined, fee: number | null, money: (minor: number) => string) => Footer)
+  | undefined;
+
+for (const locale of Object.keys(want) as (keyof typeof want)[]) {
+  test(`checkout bottom bar, ${locale}: COD shows the server cod_due_minor as given; card and a missing due hide it`, () => {
+    assert.equal(typeof codFooter, "function", "cod-copy.ts exports codFooter");
+    const money = (minor: number) => formatMoney(locale, minor, "TWD");
+    const c = codCopy[locale];
+    assert.deepEqual(codFooter!(locale, 7500, 5000, money), { label: c.due, amount: money(7500), note: c.includesFee(money(5000)) });
+    // the amount is the server value verbatim: a due that is not total + fee is shown as given, nothing is added
+    assert.equal(codFooter!(locale, 1234500, 5000, money)?.amount, money(1234500));
+    assert.equal(codFooter!(locale, 7500, 0, money)?.note, ""); // no fee: the bracket is omitted (owner rule)
+    assert.equal(codFooter!(locale, 7500, null, money), null); // card (or COD not offered): hidden
+    assert.equal(codFooter!(locale, undefined, 5000, money), null); // server omitted cod_due_minor: hidden, never computed
+  });
+}
+
+test("approved footer label: 到貨需付 / 到货需付 / Due on delivery", () => {
+  assert.equal(codCopy["zh-TW"].due, "到貨需付");
+  assert.equal(codCopy["zh-CN"].due, "到货需付");
+  assert.equal(codCopy.en.due, "Due on delivery");
+});
+
+test("bottom bar source: CheckoutFlow renders codFooter from quote.cod_due_minor; no COD sum in OrderFlow", () => {
+  const checkout = readFileSync(new URL("../../apps/storefront/components/CheckoutFlow.tsx", import.meta.url), "utf8");
+  assert.match(checkout, /codFooter\(locale, quote\.cod_due_minor, codFee, /);
+  assert.doesNotMatch(checkout, /cod_due_minor[^)\n]*[+\-*]/);
+  const order = readFileSync(new URL("../../apps/storefront/components/OrderFlow.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(order, /total_minor \+ \(option\.cod_surcharge_minor/);
+  assert.match(order, /quote\.cod_due_minor/);
+});

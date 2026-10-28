@@ -180,6 +180,10 @@ type quoteResponse struct {
 	Lines       []quoteLineResponse `json:"lines"`
 	Amount      quoteAmountResponse `json:"amount"`
 	Promotion   *promotionResponse  `json:"promotion,omitempty"`
+	// CodDueMinor (OC-09b, buyer-http-v1 quote amendment) is checkout.Service.CodDue for this quote: the cash due on delivery
+	// (total + COD surcharge) that a cash_on_delivery order from this quote collects. Absent when cash on delivery is not selectable
+	// for it. Set by the quote routes after projectQuote; the storefront shows it verbatim and never sums.
+	CodDueMinor *int64 `json:"cod_due_minor,omitempty"`
 }
 
 func projectQuoteLines(lines []storefront.QuoteLine) []quoteLineResponse {

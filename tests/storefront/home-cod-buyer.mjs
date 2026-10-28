@@ -45,10 +45,12 @@ const copy = {
   "zh-TW": {
     delivery: "選擇配送", quote: "取得目前總額", cod: /貨到付款/, createCod: "送出訂單（貨到付款）",
     paid: "已貨到收款", note: /現金/, orderTitle: "你的訂單",
+    due: "到貨需付", pendingLabel: "到貨時要付的金額", recorded: "原訂單代收金額", // OC-09b footer label; OC-09a order-page labels
   },
   en: {
     delivery: "Choose delivery", quote: "Get current total", cod: /Cash on delivery/, createCod: "Place order (cash on delivery)",
     paid: "Paid on delivery", note: /cash/i, orderTitle: "Your order",
+    due: "Due on delivery", pendingLabel: "Amount to pay on delivery", recorded: "Original collection amount",
   },
 };
 const pii = { recipient_name: "Synthetic Gate Recipient", phone: "+886900000091", region: "Synthetic Region", city: "Synthetic City", postal_code: "99991", line1: "Synthetic Address Ninety One", line2: "Synthetic Unit Ninety Two" };
@@ -187,7 +189,21 @@ async function place(buyer) {
   await expect(codText).toContainText(c.cod);
   await expect(codText).toContainText(String(total / 100));
   await expect(codText).toContainText(String(surcharge / 100));
+  // OC-09b: the bottom bar shows 「到貨需付」 with the server quote's cod_due_minor only while cash on delivery is the selected mode.
+  assert.equal(quote.cod_due_minor, total + surcharge, `${label}: the server quote carries cod_due_minor = total + surcharge`);
+  const footer = page.locator(".purchase-footer");
+  await expect(footer).not.toContainText(c.due); // default (non-COD) mode: no COD due in the bar
   await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
+  await expect(footer).toContainText(c.due);
+  await expect(footer.locator("strong")).toHaveText(`NT$${(total + surcharge) / 100}`);
+  await expect(footer).toContainText(`NT$${surcharge / 100}`);
+  const cardMode = page.locator('input[name="home_payment_mode"][value="card"]');
+  if (await cardMode.count()) {
+    await cardMode.check();
+    await expect(footer).not.toContainText(c.due); // card: hidden
+    await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
+    await expect(footer).toContainText(c.due);
+  }
   await page.getByTestId("confirm-address").click();
   await expect(page.getByTestId("create-order")).toBeEnabled();
   await expect(page.getByTestId("create-order")).toHaveText(c.createCod);
@@ -223,6 +239,9 @@ async function place(buyer) {
   await expect(cod.getByTestId("order-cod-state")).toHaveAttribute("data-state", "PENDING");
   await expect(cod.getByTestId("order-cod-amount")).toContainText(`NT$${(total + surcharge) / 100}`);
   await expect(cod.getByTestId("order-cod-amount")).toContainText(`NT$${surcharge / 100}`);
+  // #226 (4): CodAmount's `label ??` precedence — PENDING passes the approved label, which wins over the pending default (copy.due).
+  await expect(cod.getByTestId("order-cod-amount")).toContainText(c.pendingLabel);
+  await expect(cod.getByTestId("order-cod-amount")).not.toContainText(c.due);
   await expect(cod.getByTestId("order-cod-carrier")).toContainText(locale === "en" ? "Black Cat" : "黑貓");
   // SF-2: the page title is the order itself; the payment instruction is the labelled "Cash on delivery" section, stated once (no second status line).
   await expect(page.locator("#order-title")).toHaveText(c.orderTitle);
@@ -335,6 +354,7 @@ try {
         await preview.goto(`${origin}/${locale}/orders/${a.id}`);
         await expect(preview.locator("#order-title")).toHaveText(copy[locale].orderTitle);
         await expect(preview.getByTestId("order-cod-state")).toHaveText(terminalTitles[locale][state]);
+        await expect(preview.getByTestId("order-cod-amount")).toContainText(copy[locale].recorded); // non-PENDING label (#226 (4))
         await expect(preview.getByTestId("order-cod-carrier")).toContainText(locale === "en" ? "Carrier at checkout · Hsinchu" : "下單時的物流商 · 新竹");
         for (const width of [390, 1586]) {
           await preview.setViewportSize({ width, height: width === 390 ? 844 : 992 });

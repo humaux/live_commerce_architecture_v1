@@ -1,0 +1,29 @@
+# OC-09b RED evidence (CI only; no local test runs)
+
+## RED 1: tests-only commit 38a4cda77 (PR #250 merge ref 946c117ea)
+Foundation checks run 40600188972 (job 122526091179): Node suite, tests/storefront/cod-footer.spec.ts
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /codFooter\(locale, quote\.cod_due_minor, codFee, /. Input:
+  AssertionError [ERR_ASSERTION]: cod-copy.ts exports codFooter
+✖ bottom bar source: CheckoutFlow renders codFooter from quote.cod_due_minor; no COD sum in OrderFlow (1.276307ms)
+✖ checkout bottom bar, en: COD shows the server cod_due_minor as given; card and a missing due hide it (0.207981ms)
+✖ checkout bottom bar, zh-CN: COD shows the server cod_due_minor as given; card and a missing due hide it (0.324528ms)
+✖ checkout bottom bar, zh-TW: COD shows the server cod_due_minor as given; card and a missing due hide it (0.969626ms)
+
+Gates run 40600189231, shard:g09 (job 122529158460): tests/foundation/oc09b_cod_due_test.go
+    --- FAIL: TestOC09bQuoteCodDue/cod_due_minor_equals_the_placed_order's_cod_collect_minor_(same_cart,_same_quote) (0.05s)
+    --- PASS: TestOC09bQuoteCodDue/absent_when_Begin_would_refuse_cash_on_delivery:_cap_exceeded,_then_store_switch_off (0.10s)
+    --- SKIP: TestOC09bQuoteCodDue/scope:_another_owner_or_another_store_never_reads_a_due_for_the_quote (0.00s)
+    oc09b_cod_due_test.go:102: needs the placed quote
+    oc09b_cod_due_test.go:73: COD-enabled store: quote must carry cod_due_minor; keys [expires_at lines amount id cart_id market_id country method created_at cart_version currency]
+--- FAIL: TestOC09bQuoteCodDue (0.62s)
+(the scope subtest SKIPs at RED because it needs the placed quote; its CodDue calls first run at GREEN)
+
+Gates run 40600189231, --browser-home-cod (job 122529158556): TestBrowserHomeCod FAIL, buyer script exited before "placed"
+(home-cod-buyer.mjs stdout is in the run's evidence directory, not the job log; the first new assertion on that path is quote.cod_due_minor)
+
+## RED 2: mutation commit a134f1ae0 (codAmountLabel always recordedPending; #226 (3))
+Foundation checks run 40612298275 (job 122566514677):
+  AssertionError [ERR_ASSERTION]: COLLECTED
+✖ amount label per collection state, en: approved wording only while PENDING (0.170582ms)
+✖ amount label per collection state, zh-CN: approved wording only while PENDING (0.151846ms)
+✖ amount label per collection state, zh-TW: approved wording only while PENDING (0.737032ms)

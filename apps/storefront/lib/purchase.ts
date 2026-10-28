@@ -253,6 +253,8 @@ export const validQuote = (v: unknown): v is Quote =>
   deliveryMethod(v.method) &&
   integer(v.cart_version, 1) &&
   timestamp(v.expires_at) &&
+  // OC-09b: optional server COD due, whole TWD (the same rule begin_hold applies); displayed, never summed.
+  (v.cod_due_minor === undefined || (integer(v.cod_due_minor, 100, MAX_AMOUNT) && (v.cod_due_minor as number) % 100 === 0)) &&
   validQuoteSummary(v);
 
 // The private API may return a previous CVS head even though the first inline

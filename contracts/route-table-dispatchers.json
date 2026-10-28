@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "c593c0be301721ca9917c2f2b4ea05acafc2bc9935c419c79d55f9b99da71f60",
+    "dispatcher_sha256": "bfbb4441b77afb0b48f0c3bd0c326b75e276a528fa54e588a645cbe0f814c43a",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -75,6 +75,7 @@
       "handler.privacyErase",
       "handler.privacyExport",
       "handler.privacyGet",
+      "handler.quoteWithCodDue",
       "handler.storeMedia",
       "handler.transferRequest",
       "handler.viewOnly",
@@ -167,6 +168,7 @@
       "func handler.privacyErase",
       "func handler.privacyExport",
       "func handler.privacyGet",
+      "func handler.quoteWithCodDue",
       "func handler.storeMedia",
       "func handler.transferRequest",
       "func handler.viewOnly",
@@ -272,6 +274,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "2026-10-15 integrator + independent review (Opus, PR 70 admittedPaymentMethod narrowing; output/buyer-route-table/review-p70-pin.md)"
+    "reviewed": "2026-10-28 integrator + independent review (Opus, OC-09b quoteWithCodDue + quoteResponse.CodDueMinor; output/buyer-route-table/review-oc09b-pin.md)"
   }
 ]
