@@ -25,7 +25,9 @@
   first send is now the caller's own `fetch(input, init)` untouched; the replay reuses the same arguments (a Request input is cloned).
 - Fix 1 of 2 for a fourth blocker (Gates job 122546542318, spec step 5: the password field was not focused when the dialog opened from a
   script-started request): `ConfirmDialog` focused its first input in the body's effect, which runs before the parent's `showModal()`;
-  it now also focuses the first input right after `showModal()`.
+  it now also focuses the first input right after `showModal()`. That alone did not clear it (Gates job 122566399452, same step:
+  the field lost focus during the 8.5 s wait), so fix 2 of 2: while the re-auth dialog is open, focus settles on its first field on
+  open and on every step, and returns there whenever it falls out of the dialog to nothing.
 - `apps/admin/lib/reauth-client.ts` (new, integrator grant): the two BFF calls of the dialog (`reauthMethod`, `reauthStep`), so the
   component calls no `fetch` (G-UI3/G-UI5, tests/admin/shell-architecture.test.mjs). Fix 1 of 2 for that blocker (Foundation job
   122523457766); no allowance added, test untouched.

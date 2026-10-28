@@ -52,7 +52,8 @@ export function ReauthDialog({ locale }: { locale: Locale }) {
   const [busy, setBusy] = useState(false);
   const waiters = useRef<((ok: boolean) => void)[]>([]);
   const opener = useRef<HTMLElement | null>(null);
-  const lastFocus = useRef<HTMLElement | null>(null); // the page control focused last (a clicked button is often disabled by the 403 time)
+  const lastFocus = useRef<HTMLElement | null>(null);
+  const form = useRef<HTMLFormElement>(null); // the page control focused last (a clicked button is often disabled by the 403 time)
 
   const finish = (ok: boolean) => {
     for (const resolve of waiters.current.splice(0)) resolve(ok);
@@ -106,6 +107,21 @@ export function ReauthDialog({ locale }: { locale: Locale }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  useEffect(() => {
+    // Focus stays in the open dialog: on open and on every step it settles on the first field, and if focus ever falls out to
+    // nothing (a re-rendered control, a blur) it comes back. Leaving through a control inside the dialog is untouched.
+    if (!open) return;
+    const box = form.current?.closest("dialog");
+    if (!box) return;
+    const settle = () => window.requestAnimationFrame(() => {
+      if (box.open && !box.contains(document.activeElement)) (box.querySelector<HTMLElement>("input") ?? box.querySelector<HTMLElement>("button"))?.focus();
+    });
+    settle();
+    const lost = (event: FocusEvent) => { if (!event.relatedTarget || !box.contains(event.relatedTarget as Node)) settle(); };
+    box.addEventListener("focusout", lost);
+    return () => box.removeEventListener("focusout", lost);
+  }, [open, step]);
+
   const fail = (status: number, body: Record<string, unknown>) => {
     const reason = typeof body.code === "string" ? body.code : "retry_later";
     setError(reauthError(c, reason) + (reason === "mail_unavailable" && method?.oidc && method.account === "oidc" ? ` ${c.mailUnavailableOidc}` : ""));
@@ -150,7 +166,7 @@ export function ReauthDialog({ locale }: { locale: Locale }) {
       onConfirm={() => void confirm()}
       onCancel={() => finish(false)}
     >
-      <form data-testid="reauth-dialog" data-step={step} onSubmit={(event) => { event.preventDefault(); void confirm(); }}>
+      <form ref={form} data-testid="reauth-dialog" data-step={step} onSubmit={(event) => { event.preventDefault(); void confirm(); }}>
         <Stack>
           {step === "password" && (
             <Field label={c.password}>
