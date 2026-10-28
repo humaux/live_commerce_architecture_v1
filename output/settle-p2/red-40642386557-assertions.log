@@ -1,0 +1,47 @@
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:13:02.3925691Z HEAD is now at 875994d3 Merge 4e447ea1d502f6de2799c7959978511043f9af4c into c0295ad64c4bb7c4f5d507e39907c7fa094d9683
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.3171952Z             catalog_matrix_evidence_test.go:36: SKIP[CI-12]: tests/foundation/testdata/product_editor_matrix_cases.json at 2e10084b3f5e96548c15953cc40488aef9e1c86d is unavailable in a shallow local clone (exit status 128); fetch tag evidence/matrix-ledger-enforce-2e10084b or full history
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.3177276Z             catalog_matrix_evidence_test.go:36: SKIP[CI-12]: tests/foundation/testdata/product_editor_matrix_cases.json at 2e10084b3f5e96548c15953cc40488aef9e1c86d is unavailable in a shallow local clone (exit status 128); fetch tag evidence/matrix-ledger-enforce-2e10084b or full history
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.3182498Z             catalog_matrix_evidence_test.go:36: SKIP[CI-12]: tests/foundation/testdata/product_editor_matrix_cases.json at 2e10084b3f5e96548c15953cc40488aef9e1c86d is unavailable in a shallow local clone (exit status 128); fetch tag evidence/matrix-ledger-enforce-2e10084b or full history
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.3186523Z             catalog_matrix_evidence_test.go:36: SKIP[CI-12]: tests/foundation/testdata/product_editor_matrix_cases.json at 2e10084b3f5e96548c15953cc40488aef9e1c86d is unavailable in a shallow local clone (exit status 128); fetch tag evidence/matrix-ledger-enforce-2e10084b or full history
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.4456527Z             catalog_matrix_evidence_test.go:36: recorded tests/foundation/testdata/product_editor_matrix_cases.json at 2e10084b3f5e96548c15953cc40488aef9e1c86d unavailable (needs full history): exit status 128
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.4462246Z             catalog_matrix_evidence_test.go:36: recorded tests/foundation/testdata/product_editor_matrix_cases.json at 2e10084b3f5e96548c15953cc40488aef9e1c86d unavailable (needs full history): exit status 128
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.4468035Z             catalog_matrix_evidence_test.go:36: recorded tests/foundation/testdata/product_editor_matrix_cases.json at 2e10084b3f5e96548c15953cc40488aef9e1c86d unavailable (needs full history): exit status 128
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.4473957Z             catalog_matrix_evidence_test.go:36: recorded tests/foundation/testdata/product_editor_matrix_cases.json at 2e10084b3f5e96548c15953cc40488aef9e1c86d unavailable (needs full history): exit status 128
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.4476225Z         --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy (0.02s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.4477880Z             --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/matching (0.01s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.4479878Z             --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-default (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.4481855Z             --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/drift-strict (0.01s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:16:10.4484083Z             --- FAIL: TestProductEditorMatrixLedgerEvidenceHistoricalPolicy/tampered-matching (0.01s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:40.5709962Z     platform_settlement_gate_test.go:166: gateKey("p_amount_minor") = "amount", want "amount_minor"; monetary arguments must not alias
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:40.5722048Z     platform_settlement_gate_test.go:166: gateKey("p_returned_minor") = "amount", want "returned_minor"; monetary arguments must not alias
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:40.5724492Z --- FAIL: TestPlatformSettlementGateArgumentKeys (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:40.5725501Z     --- FAIL: TestPlatformSettlementGateArgumentKeys/amount_minor (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:40.5726638Z     --- FAIL: TestPlatformSettlementGateArgumentKeys/returned_minor (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:44.6751733Z     platform_settlement_gate_test.go:215: record_settlement_payout_return value keys mismatch
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:44.8647753Z --- FAIL: TestPlatformSettlementGateFunctionArguments (4.29s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:44.8652303Z     --- FAIL: TestPlatformSettlementGateFunctionArguments/record_settlement_payout_return (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:48.9407927Z     platform_settlement_gate_test.go:740: PF16 paid_at = 2026-09-18 12:00:00 +0800 TPE, want W2 Monday 2026-09-14 12:00:00 +0800 TPE
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:51.9406987Z --- FAIL: TestPlatformSettlementPF16PayoutReturn (7.08s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:51.9408035Z     --- FAIL: TestPlatformSettlementPF16PayoutReturn/PF16_fixed_Monday_T (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:26:58.6406786Z     platform_settlement_gate_test.go:1029: r0 immutability subject has 0 rows, want 1 before forbidden mutations
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:06.7249604Z --- FAIL: TestPlatformSettlementPF17Reconciliation (14.78s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:06.7251548Z     --- FAIL: TestPlatformSettlementPF17Reconciliation/PF17a_r0_immutability (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.1940466Z     platform_settlement_gate_test.go:1298: probe observer missed uncommitted statement mutation: before=statements=1 assignments=0 audits=0 after=statements=1 assignments=0 audits=0
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4175398Z --- FAIL: TestPlatformSettlementGateProbeVisibility (4.69s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4180803Z     platform_settlement_gate_test.go:1338: PF18a accepted wrong net_payable_minor=50000, want 80000
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4187660Z     platform_settlement_gate_test.go:1338: PF18a accepted wrong closed_at=2026-09-18T12:01:30+08:00, want 2026-09-18T12:00:00+08:00
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4190761Z     platform_settlement_gate_test.go:1338: PF18a accepted wrong tenant_id=tenant-D, want tenant-A
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4195042Z     platform_settlement_gate_test.go:1338: PF18a accepted wrong store_id=store-D, want store-A
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4201893Z     platform_settlement_gate_test.go:1338: PF18a accepted wrong period_start=2026-09-14, want 2026-09-07
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4203304Z --- FAIL: TestPlatformSettlementGatePayableValues (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4204433Z     --- FAIL: TestPlatformSettlementGatePayableValues/net_payable_minor (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4205643Z     --- FAIL: TestPlatformSettlementGatePayableValues/closed_at (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4206796Z     --- FAIL: TestPlatformSettlementGatePayableValues/tenant_id (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4207879Z     --- FAIL: TestPlatformSettlementGatePayableValues/store_id (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:27:11.4208919Z     --- FAIL: TestPlatformSettlementGatePayableValues/period_start (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:31:51.4031022Z --- FAIL: TestPlatformSettlementGateArgumentKeys (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:31:51.4031974Z --- FAIL: TestPlatformSettlementGateFunctionArguments (4.29s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:31:51.4033283Z --- FAIL: TestPlatformSettlementPF16PayoutReturn (7.08s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:31:51.4034123Z --- FAIL: TestPlatformSettlementPF17Reconciliation (14.78s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:31:51.4034969Z --- FAIL: TestPlatformSettlementGateProbeVisibility (4.69s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T07:31:51.4035587Z --- FAIL: TestPlatformSettlementGatePayableValues (0.00s)

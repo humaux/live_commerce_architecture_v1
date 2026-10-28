@@ -51,3 +51,27 @@ Evidence: E0 until the PR's own CI proves the expected assertion failures. No lo
 - No new imports or package dependencies; dependency-map regeneration is unnecessary. No frozen paths, migrations, other branches/worktrees or product code changed.
 - Skill: ponytail read and applied; Humaux/coord/code-index unavailable, no shared-state claim/store fabricated. Repository-local evidence is the fallback, not a Humaux store.
 - Static: gofmt and git diff --check exit 0. All local tests/servers NOT_RUN. No background processes started. CI timeout/completion notifications and integrator relay remain the wake mechanism.
+settle-p2 CI handoff — head 4e447ea1d502f6de2799c7959978511043f9af4c
+
+Confirmed RED (#220.3): Gates 40628121605 / g09 job 122621731233, at prior head caded567501aa169d47d0f3759e425167bc21bdb (synthetic checkout 749eff3a0baf71a33b32a593fb57c76eefd68f88). Both monetary-key assertions and the discovered return-function key set failed on their own expectations (E3). Full filtered receipt is committed under output/settle-p2/.
+
+Remaining four items are now in one tests-only RED batch. Current Gates run 40642386557 and Foundation run 40642386434 are queued, bound to the head above. No current matrix job IDs allocated yet; these are workflow RUN IDs, not plan jobs.
+
+WAIT_RUN: 40642386557 (Gates)
+WAIT_RUN: 40642386434 (Foundation)
+
+Integrator: relay Gates completion to resume; read failed assertion jobs before the single implementation push. Existing mapping remains intentionally unfixed so its verified RED remains present. Other expected negatives: PF16_fixed_Monday_T; GatePayableValues bad-field subtests; PF17a_r0_immutability; GateProbeVisibility. Implementation steps and PostgreSQL exception-rollback limits are in handoff.md. No local tests/servers run; gofmt and diff check exit 0; no files outside write paths. GREEN/contractdrift/current acceptance PENDING. No local background processes remain. GitHub workflow timeouts/completion notifications plus integrator relay provide the wake mechanism.
+
+## Resume STOP checkpoint — 2026-10-28
+
+All five #220 regression units now have own-assertion CI RED (E3): Gates 40642386557 / g09 122680364875; head 4e447ea1d502f6de2799c7959978511043f9af4c, synthetic checkout 875994d3c1fe21194e74c954da5c74167b3c8344. Foundation 40642386434 / 122663269609 succeeded. See red.log and red-40642386557-assertions.log.
+
+Card hard stop applies: the same g09 also fails TestProductEditorMatrixLedgerEvidenceHistoricalPolicy, catalog_matrix_evidence_test.go:36, because recorded fixture history at 2e10084b3f5e96548c15953cc40488aef9e1c86d is unavailable (exit 128). Outside settlement write paths; no attempt to fix, weaken or exempt it. Integrator must resolve/relay this blocker before the implementation continuation. No implementation changes, commit, push, merge, or new CI run this session. Existing uncommitted handoff edits preserved; new receipts left locally for the next authorized implementation commit. No background process remains.
+
+Humaux tools appeared after initial discovery. Targeted search, rejected enumeration (representative 5/9), coord list and canvas read performed. As a dispatched worker no independent claim or delegation made. Handoff is stored in Humaux with its own child canvas element under lock; local-memory files untouched. Ponytail skill read/applied to the planned minimal fixes; implementation remains stopped by card rule.
+
+## Integrator ruling and implementation continuation — 2026-10-28
+The previous STOP interpretation is corrected by the integrator's current dispatch: indented matrix FAIL lines are expected child-scenario output; the parent passes. Top-level g09 failures are only this card's six test functions. No unrelated blocker remains in that RED receipt.
+All five #220 units implemented together after batch assertion RED 40642386557 / 122680364875 (head 4e447ea1d502f6de2799c7959978511043f9af4c; synthetic 875994d3c1fe21194e74c954da5c74167b3c8344).
+Changes: fixed Monday paid_at; exact PF18 tenant/store/period/net/closed_at comparisons; distinct amount_minor/returned_minor keys with matching return inputs; r0 mutation guard before fixture deletion; query probe transaction before outer rollback. Probe runs real SQL under SET LOCAL ROLE commerce_payment_registrar, then resets role for owner-only observation. Savepoint recovery cannot reveal writes already undone by PostgreSQL failed-statement rollback; no such proof claimed. Existing post-rollback assertions remain.
+Static gofmt and git diff --check exit 0. No new imports/dependencies, so dependency map unchanged. No out-of-scope paths, migrations or frozen contract edits. Local tests/servers NOT_RUN. Current GREEN/contractdrift/independent acceptance PENDING until implementation CI. No background local process. GitHub workflow timeout/completion notification and integrator relay provide wakeup.
