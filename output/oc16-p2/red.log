@@ -1,0 +1,8 @@
+card=oc16-p2
+base=5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248
+stage=tests-only; expected RED not yet observed
+expected_test=TestOrderAttemptExecutorAbortClassification/PT422/bank_transfer_closed
+expected_assertion=closed native pair: got "" want "payment_unavailable"
+ci_run=PENDING
+ci_job=PENDING
+local_tests=NOT_RUN (prohibited)
