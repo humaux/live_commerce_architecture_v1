@@ -5,8 +5,9 @@ package foundation_test
 //   TestBtcPolicyClosedAfterMigrate      the policy row reads closed=true right after migrations.Apply, before the fixture's legacy flip
 //   TestBtcPolicyNotWritableByApp        no commerce_* role can write the policy table; a real write attempt as the definer owner and
 //                                        as the runtime login fails with 42501 (the fixture's legacy flip is owner-only, not a back door)
+//                                        also pins no DELETE/TRUNCATE on either bank table and no UPDATE of the transfer snapshot
 //   TestBtcFailClosedWithoutPolicyRow    a zero-row policy table (DELETE) still refuses new transfers and saves
-//   TestBtcSaveReplayAfterClose           a same-key replay of a save that succeeded before closure returns the stored response; a new key is refused
+//   TestBtcSaveReplayAfterClose           same key/body returns its pre-closure receipt; same key/different body conflicts; a new key is refused
 //   TestBtcRefusesNewWrites              closed: a new bank_transfer order through the app, a direct INSERT of a transfer row, and every
 //                                        way of saving or editing the merchant bank details (definer, real route, direct DML) are refused
 //                                        PT422 bank_transfer_closed; nothing is written and the saved details are unchanged
@@ -14,6 +15,8 @@ package foundation_test
 //                                        and the order, buyer view, settings read and finance export still read; no row is deleted
 // Fixture writes (disclosed): the policy row is flipped by the migration owner (closed for the test, restored to the legacy-open state by
 // t.Cleanup, see newFixture / issue #210); one rolled-back direct INSERT/UPDATE per refusal.
+// Purpose: pin bank-transfer closure, immutable snapshots and receipt replay. Depends on: foundation fixture, 0088/0202 SQL.
+// Used by: GitHub CI foundation shards. Invariants: owner-only policy setup is restored; RED fault injections roll back before other tests.
 
 import (
 	"context"
@@ -60,6 +63,48 @@ func TestBtcPolicyClosedAfterMigrate(t *testing.T) {
 func TestBtcPolicyNotWritableByApp(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
+	t.Run("bank tables and transfer snapshot privileges", func(t *testing.T) {
+		probe, err := f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer probe.Rollback(ctx)
+		// RED-only fault injection: add the forbidden grants in this transaction, never in a migration or shared fixture.
+		for _, sql := range []string{
+			`GRANT DELETE,TRUNCATE ON checkout.bank_transfer_settings,checkout.bank_transfers TO commerce_runtime`,
+			`GRANT UPDATE(bank_name,branch,account_name,account_number,window_hours,currency) ON checkout.bank_transfers TO commerce_runtime`,
+		} {
+			if _, err := probe.Exec(ctx, sql); err != nil {
+				t.Fatal(err)
+			}
+		}
+		var roleCount int
+		if err := probe.QueryRow(ctx, `SELECT count(*) FROM pg_roles WHERE rolname LIKE 'commerce\_%'`).Scan(&roleCount); err != nil || roleCount < 5 {
+			t.Fatalf("privilege scan roles=%d err=%v, want at least 5 commerce roles", roleCount, err)
+		}
+		rows, err := probe.Query(ctx, `SELECT r.rolname,t.name,p.priv FROM pg_roles r
+		 CROSS JOIN unnest(ARRAY['checkout.bank_transfer_settings','checkout.bank_transfers']) t(name)
+		 CROSS JOIN unnest(ARRAY['DELETE','TRUNCATE']) p(priv)
+		 WHERE r.rolname LIKE 'commerce\_%' AND has_table_privilege(r.oid,t.name,p.priv)
+		 UNION ALL
+		 SELECT r.rolname,'checkout.bank_transfers.'||c.name,'UPDATE' FROM pg_roles r
+		 CROSS JOIN unnest(ARRAY['bank_name','branch','account_name','account_number','window_hours','currency']) c(name)
+		 WHERE r.rolname LIKE 'commerce\_%' AND has_column_privilege(r.oid,'checkout.bank_transfers',c.name,'UPDATE')`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var role, object, privilege string
+			if err := rows.Scan(&role, &object, &privilege); err != nil {
+				t.Fatal(err)
+			}
+			t.Errorf("forbidden bank privilege: %s holds %s on %s", role, privilege, object)
+		}
+		if err := rows.Err(); err != nil {
+			t.Fatal(err)
+		}
+	})
 	rows, err := f.owner.Query(ctx, `SELECT r.rolname,p FROM pg_roles r CROSS JOIN unnest(ARRAY['INSERT','UPDATE','DELETE','TRUNCATE']) p
 	  WHERE r.rolname LIKE 'commerce\_%' AND has_table_privilege(r.rolname,'checkout.bank_transfer_policy',p)`)
 	if err != nil {
@@ -211,6 +256,40 @@ func TestBtcSaveReplayAfterClose(t *testing.T) {
 	again, err := save(key)
 	if err != nil || string(again) != string(first) {
 		t.Errorf("same-key replay after closure: %v %s, want the stored response %s", err, again, first)
+	}
+	t.Run("old key with a different body conflicts before closure refusal", func(t *testing.T) {
+		probe, err := f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer probe.Rollback(ctx)
+		// RED-only fault injection: remove the native receipt hash guard only inside this rolled-back transaction.
+		var definition string
+		if err := probe.QueryRow(ctx, `SELECT pg_get_functiondef('payments.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer)'::regprocedure)`).Scan(&definition); err != nil {
+			t.Fatal(err)
+		}
+		const guard = "IF v_saved<>p_request_hash THEN"
+		if strings.Count(definition, guard) != 1 {
+			t.Fatal("RED mutation requires exactly one native request-hash guard")
+		}
+		if _, err := probe.Exec(ctx, strings.Replace(definition, guard, "IF false THEN", 1)); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := probe.Exec(ctx, `SET LOCAL ROLE commerce_runtime`); err != nil {
+			t.Fatal(err)
+		}
+		changedHash := sha256.Sum256([]byte("Different Replay Bank"))
+		var raw []byte
+		err = probe.QueryRow(ctx, `SELECT payments.set_bank_transfer_settings($1,$2::uuid,$3,$4,1,true,true,'Different Replay Bank','Branch','Shop Ltd','99887766',72)`,
+			hash[:], e.store(), key, changedHash[:]).Scan(&raw)
+		var pgErr *pgconn.PgError
+		if !errors.As(err, &pgErr) || pgErr.Code != "PT409" || pgErr.Message != "idempotency_conflict" {
+			t.Errorf("old-key/different-body after closure: %v, want PT409 idempotency_conflict (not a stored response or closure refusal)", err)
+		}
+	})
+	again, err = save(key)
+	if err != nil || string(again) != string(first) {
+		t.Errorf("original receipt after conflicting replay: %v %s, want %s", err, again, first)
 	}
 	_, err = save(t04Key("btc-replay-new"))
 	btcWant(t, "a new key after closure", err)

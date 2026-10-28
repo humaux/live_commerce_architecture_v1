@@ -7,6 +7,15 @@ ci_run=PENDING
 ci_job=PENDING
 local_tests=NOT_RUN (prohibited)
 
+Remaining-tests batch 2026-10-28 (after implementation head 83deaff3ca56ac4a0832b19cb9e2531baec10546):
+expected_test_1=TestBtcPolicyNotWritableByApp/bank_tables_and_transfer_snapshot_privileges
+expected_assertion_1=forbidden bank privilege: commerce_runtime holds DELETE/TRUNCATE on both bank tables and UPDATE on six immutable snapshot columns
+expected_test_2=TestBtcSaveReplayAfterClose/old_key_with_a_different_body_conflicts_before_closure_refusal
+expected_assertion_2=old-key/different-body after closure: <nil>, want PT409 idempotency_conflict
+mutation_scope=two independent owner transactions, deferred rollback; no migration or committed grant/function change
+remaining_batch_red=PENDING (do not remove mutations until both own-assertion failures observed on GitHub CI)
+remaining_push_budget=one tests-only RED push now, one mutation-removal GREEN push after assertion RED
+
 Observed 2026-10-28 after PR creation:
 pr=https://github.com/humaux/live_commerce_architecture_v1/pull/260
 head=a3b8c31044eefb156eb7607ef1be6d7735185796
