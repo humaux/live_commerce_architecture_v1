@@ -1,3 +1,9 @@
+// Purpose: buyer delivery/payment options for a cart (ListOptions, cursor-paginated and bound to the buyer scope), the CVS
+// availability decoration of those rows, and the server-computed COD amount due for a quote (CodDue, OC-09b).
+// Depends on: internal/buyer (scope), internal/pagination, the checkout pool's read definers for options, CVS offers and quotes.
+// Used by: internal/buyerhttp (options and quote handlers), tests in internal/checkout and internal/buyerhttp.
+// Invariants: amounts and availability come from the server (never the client); a cursor only replays under the binding it was
+// issued for; CodDue is nil when the quote offers no COD.
 package checkout
 
 import (
