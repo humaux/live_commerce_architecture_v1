@@ -601,10 +601,14 @@ try {
   await expect(lost.getByTestId("checkout-unknown")).toHaveText("Checking your order status");
   await expect(lost.getByTestId("recover-purchase")).toHaveText("Check order status");
   await expect(lost.getByTestId("checkout-submit")).toBeDisabled();
+  await expect(lost.getByTestId("checkout-review")).toContainText(pii.recipient_name);
+  await expect(lost.getByTestId("checkout-review")).toContainText(pii.phone);
   await expect(lost.getByTestId("create-order")).toHaveCount(0);
   await expect(lost.getByTestId("continue-shopping")).toHaveCount(0);
   assert.deepEqual(Object.keys(lostPending.body).sort(),["allocation_version","cart_version","destination_id","quote_id","service_version"]);
   await lost.reload();await expect(lost.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(lost),lostPending);
+  await expect(lost.getByTestId("checkout-review")).toContainText(pii.recipient_name);
+  await expect(lost.getByTestId("checkout-review")).toContainText(pii.phone);
   await expect(lost.getByTestId("checkout-unknown")).toHaveText("Checking your order status");
   await expect(lost.getByTestId("recover-purchase")).toHaveText("Check order status");
   await expect(lost.getByTestId("checkout-submit")).toBeDisabled();

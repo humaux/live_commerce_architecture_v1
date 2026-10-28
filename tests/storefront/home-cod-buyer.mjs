@@ -230,6 +230,8 @@ async function place(buyer) {
     await expect(page.getByTestId("quote-reconfirm")).toContainText("金額已更新，請再確認");
     await expect(page.getByTestId("create-order")).toBeDisabled();
     await expect.poll(() => optionReads).toBeGreaterThan(0);
+    // CHECKOUT-V2: a definite fee change also needs a separate amount acknowledgment; original address/submit assertions stay intact.
+    await page.getByRole("button", { name: "確認更新後的金額", exact: true }).click();
     await page.getByTestId("confirm-address").click();
     await expect(page.getByTestId("create-order")).toBeEnabled();
     page.off("request", observe);

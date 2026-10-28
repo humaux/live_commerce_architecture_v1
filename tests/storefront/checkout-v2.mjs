@@ -14,6 +14,11 @@ const copy = {
   "zh-TW": { timing: "送出後付款", open: "展開付款說明", close: "收合付款說明", changed: "金額已更新，請再確認", confirm: "確認更新後的金額", change: "重新選擇配送", quote: "取得目前總額" },
   "zh-CN": { timing: "送出后付款", open: "展开付款说明", close: "收合付款说明", changed: "金额已更新，请再确认", confirm: "确认更新后的金额", change: "重新选择配送", quote: "取得目前总额" },
 };
+const localeScreen = {
+  en: { delivery: "Choose delivery", quote: "Get current total", timing: copy.en.timing, open: copy.en.open, close: copy.en.close },
+  "zh-TW": { delivery: "選擇配送", quote: "取得目前總額", timing: copy["zh-TW"].timing, open: copy["zh-TW"].open, close: copy["zh-TW"].close },
+  "zh-CN": { delivery: "选择配送", quote: "获取当前总额", timing: "提交订单后付款", open: "展开付款说明", close: "收起付款说明" },
+};
 
 async function ledgerStep(ledger, file, page, control, action, expected, perform) {
   const row = { page: new URL(page.url()).pathname, control, action, expected, actual: "NOT_RUN", status: "NOT_RUN" };
@@ -60,8 +65,8 @@ export async function checkoutV2Suite({ newContext, origin, product, recipient, 
     await reachCheckout(page, origin, "en", product);
     await page.getByRole("button", { name: "Choose delivery", exact: true }).click();
     const quoted = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
-    await page.getByRole("button", { name: copy.en.quote, exact: true }).click();
-    const quote = await (await quoted).json();
+    const [response] = await Promise.all([quoted, page.getByRole("button", { name: copy.en.quote, exact: true }).click()]);
+    const quote = await response.json();
     await expect(page.getByTestId("address-section")).toBeVisible();
     try {
       await fill(page); await confirm(page);
@@ -106,9 +111,46 @@ export async function checkoutV2Suite({ newContext, origin, product, recipient, 
           const reconfirm = page.getByRole("button", { name: copy.en.confirm, exact: true });
           const box = await reconfirm.boundingBox(); assert(box && box.height >= 44);
           await reconfirm.click(); await expect(page.getByTestId("create-order")).toBeEnabled(); await expect(page.getByTestId("checkout-submit")).toBeEnabled();
+          await page.reload(); await expect(page.getByTestId("address-section")).toBeVisible();
+          await confirm(page); await expect(page.getByTestId("quote-reconfirm")).toHaveCount(0);
         });
       } catch (error) { failures.push(`re-quote: ${error.message}`); }
     } finally { await context.close(); }
+  }
+  // Main screen in all supported locales, on both layouts, through real controls only.
+  for (const locale of ["zh-TW", "zh-CN", "en"]) for (const mobile of [false, true]) {
+    const context = await newContext(mobile), page = await context.newPage(), words = localeScreen[locale];
+    try {
+      await reachCheckout(page, origin, locale, product);
+      await page.getByRole("button", { name: words.delivery, exact: true }).click();
+      const quoted = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
+      const [response] = await Promise.all([quoted, page.getByRole("button", { name: words.quote, exact: true }).click()]);
+      const quote = await response.json();
+      await expect(page.getByTestId("address-section")).toBeVisible();
+      await fill(page); await confirm(page);
+      await ledgerStep(ledger, file, page, `${locale} final screen`, "real quote/address/radio/help controls and reload", "server total, recipient and timing persist; selected radio is explicit", async () => {
+        const review = page.getByTestId("checkout-review"), radio = review.getByRole("radio").first();
+        await radio.click(); await page.getByTestId("confirm-address").click();
+        await expect(radio).toBeChecked(); await expect(radio.locator("..")).toHaveClass(/selected/);
+        await expect(review).toContainText(recipient.recipient_name); await expect(review).toContainText(recipient.phone);
+        await expect(page.locator(".purchase-footer")).toContainText(words.timing);
+        await expect(review.getByTestId("review-total")).toHaveText(formatMoney(locale, quote.amount.total_minor, quote.currency));
+        const help = page.getByTestId("payment-help-toggle");
+        await help.click(); await expect(help).toHaveText(words.close); await expect(page.getByTestId("payment-help-content")).toBeVisible();
+        await help.click(); await expect(help).toHaveText(words.open);
+        await page.reload(); await expect(page.getByTestId("address-section")).toBeVisible(); await confirm(page);
+        await expect(page.getByTestId("checkout-review")).toContainText(recipient.phone);
+        await expect(page.locator(".purchase-footer")).toContainText(words.timing);
+        await expect(page.getByTestId("checkout-submit")).toBeEnabled();
+      });
+      if (locale === "en" && mobile) await ledgerStep(ledger, file, page, "fixed submit", "click submit then reload", "one original order is displayed and restored", async () => {
+        await page.getByTestId("checkout-submit").click();
+        await expect(page.getByTestId("order-section")).toBeVisible();
+        const id = await page.getByTestId("order-id").innerText();
+        await page.reload(); await expect(page.getByTestId("order-id")).toHaveText(id);
+      });
+    } catch (error) { failures.push(`${locale}/${mobile ? 390 : "desktop"}: ${error.message}`); }
+    finally { await context.close(); }
   }
   assert.deepEqual(failures, [], "CHECKOUT-V2 new behaviour assertions");
 }
@@ -126,6 +168,7 @@ export async function checkoutV2Cod(page, quote, locale, recipient, fee, evidenc
   });
   await page.reload();
   await expect(page.getByTestId("address-section")).toBeVisible();
+  await expect(cod).toBeChecked(); // saved choice is revalidated against current server options before it is restored
   // The server retains the recipient; confirmation must be explicit again. Re-selecting COD never writes money.
   await cod.click(); await page.getByTestId("confirm-address").click();
   await checkoutV2Review(page, quote, locale, recipient, { codFee: fee, ledger, file });

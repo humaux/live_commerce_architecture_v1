@@ -3,6 +3,7 @@
 // Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
 // Depends on: buyer BFF cart/options/quotes/destination/checkout/orders and purchase recovery; lib/cod-copy codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
+// Invariants: server money only; a changed quote needs acknowledgment; an unknown checkout can only replay its original intent/key.
 
 // Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
 // address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page
@@ -25,7 +26,9 @@ import { purchaseCopy } from "../lib/purchase-copy";
 import { orderCopy } from "../lib/order-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import { codFooter } from "../lib/cod-copy";
+import { checkoutCopy } from "../lib/checkout-copy";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
+import CheckoutPendingReview from "./checkout/CheckoutPendingReview";
 import PromoCode from "./PromoCode";
 import OrderHistory from "./OrderHistory";
 import { CartLines } from "./CartLines";
@@ -98,6 +101,9 @@ export default function CheckoutFlow({
   const [codFee, setCodFee] = useState<number | null>(null);
   const [method, setMethod] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoteChange, setQuoteChange] = useState<number | null>(null);
+  const [reviewState, setReviewState] = useState<{ quoteID: string; ready: boolean; timing: string } | null>(null);
+  const v2 = checkoutCopy[locale];
   const [pending, setPending] = useState(false);
   const [pendingKind, setPendingKind] = useState<string | null>(null);
   const [recoveryCountry, setRecoveryCountry] = useState<string | null>(null);
@@ -112,6 +118,15 @@ export default function CheckoutFlow({
   const working = useRef(false);
   const deliveryRef = useRef<HTMLElement>(null);
   const quoteRef = useRef<HTMLElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
+  const [footerHeight, setFooterHeight] = useState(180);
+  useEffect(() => {
+    const footer = footerRef.current;
+    if (!footer) return;
+    const observer = new ResizeObserver(() => setFooterHeight(footer.getBoundingClientRect().height));
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, [loading, orderLocked, order, cart, historyOpen]);
   const shell = useCart();
   const { details } = useCartDetails();
   const subtotal = details ? details.subtotal : null;
@@ -122,6 +137,30 @@ export default function CheckoutFlow({
     chosen && subtotal !== null && !quote ? freeShippingProgress(subtotal, chosen.free_shipping_threshold_minor ?? null) : null;
   // One money format for the whole storefront (lib/money.ts): the bar, the quotation, the order and the history read like the cart lines.
   const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
+
+  // Only quote identifiers and server totals, scoped to this buyer context; never recipient data or authority to charge.
+  // Keeping the previous total through delivery selection AND reload prevents a changed quote silently becoming accepted.
+  function acceptQuote(value: Quote, ctx = currentContext.current) {
+    const key = `commerce-checkout-review-v2:${ctx}`;
+    const raw = sessionStorage.getItem(key);
+    const previous = raw ? JSON.parse(raw) : null;
+    if (previous && (typeof previous.id !== "string" || !Number.isSafeInteger(previous.total) || typeof previous.currency !== "string" || (previous.old !== null && !Number.isSafeInteger(previous.old))))
+      throw new BuyerClientError("invalid_response");
+    const old = previous?.currency === value.currency && previous.cartID === value.cart_id
+      ? previous.id === value.id ? previous.old : previous.total !== value.amount.total_minor ? previous.total : previous.old
+      : null;
+    sessionStorage.setItem(key, JSON.stringify({ id: value.id, cartID: value.cart_id, total: value.amount.total_minor, currency: value.currency, old }));
+    setQuoteChange(old);
+    setReviewState(null);
+    setQuote(value);
+  }
+
+  function requireFeeConfirmation() {
+    if (!quote) return;
+    const old = quote.cod_due_minor ?? quote.amount.total_minor;
+    sessionStorage.setItem(`commerce-checkout-review-v2:${context}`, JSON.stringify({ id: quote.id, cartID: quote.cart_id, total: quote.amount.total_minor, currency: quote.currency, old }));
+    setQuoteChange(old);
+  }
 
   function showError(reason: unknown) {
     if (
@@ -227,7 +266,7 @@ export default function CheckoutFlow({
           previous.cart_version === current.version &&
           previous.cart_id === current.id
         )
-          setQuote(previous);
+          acceptQuote(previous, ctx);
       }
     } catch (reason) {
       if (version === epoch.current) showError(reason);
@@ -361,9 +400,18 @@ export default function CheckoutFlow({
 
   return (
     <>
+      <style>{`
+        @media (max-width: 600px) {
+          .checkout-fixed-bar .footer-inner { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+          .checkout-fixed-bar .footer-inner > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; }
+          .checkout-fixed-bar .footer-inner small { grid-column: 1 / -1; }
+          .checkout-fixed-bar .footer-inner > button { width: 100%; min-height: 52px; }
+        }
+      `}</style>
       {demonstration && <p className="demonstration">{copy.demonstration}</p>}
       <main
         className="purchase-main"
+        style={{ paddingBottom: footerHeight + 40 }}
         aria-busy={loading || busy || paymentBusy}
       >
         {fromClaim && <p role="status" className="order-note" data-testid="claim-checkout-notice">{fromClaim === "claim-recovery" ? claimCopy[locale].recovery : claimCopy[locale].checkoutNotice}</p>}
@@ -383,8 +431,8 @@ export default function CheckoutFlow({
         </nav>
         {error && (
           <div role="alert" className="purchase-error">
-            <p>
-              {error === "session" && orderLocked
+            <p data-testid={pendingKind === "checkout" ? "checkout-unknown" : undefined}>
+              {pendingKind === "checkout" ? v2.unknown : error === "session" && orderLocked
                 ? orderCopy[locale].recovery
                 : copy[error]}
             </p>
@@ -415,12 +463,12 @@ export default function CheckoutFlow({
                     if (result.kind === "cart") {
                       setCart(result.value);
                       await deliveryOptions();
-                    } else setQuote(result.value);
+                    } else acceptQuote(result.value);
                     setPending(false);
                   })
                 }
               >
-                {pendingKind === "destination"
+                {pendingKind === "checkout" ? v2.query : pendingKind === "destination"
                   ? orderCopy[locale].review
                   : copy.recover}
               </button>
@@ -634,8 +682,10 @@ export default function CheckoutFlow({
                 <p>{copy.noPayment}</p>
                 {/* storefront-v2 §F: discount code; re-quotes this cart + delivery through writePurchase and replaces the quote. */}
                 {!orderLocked && error !== "session" && (
-                  <PromoCode context={context} quote={quote} locale={locale} busy={busy || pending} run={act} onQuote={setQuote} money={money} />
+                  <PromoCode context={context} quote={quote} locale={locale} busy={busy || pending} run={act} onQuote={acceptQuote} money={money} />
                 )}
+                <button className="quote-navigation" disabled={busy || pending || orderLocked || error === "session"}
+                  onClick={() => quoteRef.current?.scrollIntoView({ behavior: "auto", block: "start" })}>{copy.viewQuote}</button>
                 <button
                   className="text-button"
                   disabled={
@@ -652,6 +702,15 @@ export default function CheckoutFlow({
                 </button>
               </section>
             )}
+            {quote && quoteChange !== null && <section data-testid="quote-reconfirm" role="status" style={{ marginTop: 24 }}>
+              <p>{v2.changed}</p>
+              <p>{money(quoteChange, quote.currency)} → {money(codFee === null ? quote.amount.total_minor : quote.cod_due_minor ?? quote.amount.total_minor, quote.currency)}</p>
+              <button style={{ minHeight: 44, minWidth: 44 }} disabled={busy || pending || orderLocked || error === "session"}
+                onClick={() => { try {
+                  sessionStorage.setItem(`commerce-checkout-review-v2:${context}`, JSON.stringify({ id: quote.id, cartID: quote.cart_id, total: quote.amount.total_minor, currency: quote.currency, old: null }));
+                  setQuoteChange(null);
+                } catch (reason) { showError(reason); } }}>{v2.confirm}</button>
+            </section>}
             {(quote || pendingKind === "destination") &&
               cart &&
               !orderLocked &&
@@ -669,6 +728,9 @@ export default function CheckoutFlow({
                   run={act}
                   money={money}
                   onCodFee={setCodFee}
+                  reconfirmRequired={quoteChange !== null}
+                  onFeeChanged={requireFeeConfirmation}
+                  onReviewState={setReviewState}
                   onOrder={acceptOrder}
                   reload={async () => {
                     // Requotation may unmount the form, so first resolve its
@@ -682,11 +744,13 @@ export default function CheckoutFlow({
                   }}
                 />
               )}
+            {quote && pendingKind === "checkout" && <CheckoutPendingReview context={context} quote={quote} locale={locale} onCodFee={setCodFee} onReviewState={setReviewState} />}
           </>
         )}
+        <div data-testid="checkout-content-end" />
       </main>
-      {cart && cart.items.length > 0 && !historyOpen && !order && !orderLocked && (
-        <footer className={`purchase-footer${quote ? " has-quote" : ""}`}>
+      {cart && cart.items.length > 0 && !historyOpen && !order && (!orderLocked || pendingKind === "checkout") && (
+        <footer ref={footerRef} className={`purchase-footer checkout-fixed-bar${quote ? " has-quote" : ""}`} style={{ position: "fixed", insetInline: 0, bottom: 0 }}>
           <div className="footer-inner">
             {/* OC-09b: 「到貨需付」 shows the server quote due (codFooter) while cash on delivery is selected; hidden for card. */}
             {(() => {
@@ -698,6 +762,7 @@ export default function CheckoutFlow({
                   <span>{due.label}</span>
                   <strong>{due.amount}</strong>
                   {due.note && <small>{due.note}</small>}
+                  <small>{reviewState && reviewState.quoteID === quote?.id ? reviewState.timing : v2.cod}</small>
                 </div>
               ) : (
                 <div>
@@ -709,11 +774,14 @@ export default function CheckoutFlow({
                         ? "—"
                         : money(subtotal, cart.currency)}
                   </strong>
-                  <small>{quote ? copy.unpaid : copy.shippingLater}</small>
+                  <small>{quote ? reviewState?.quoteID === quote.id ? reviewState.timing : v2.online : copy.shippingLater}</small>
                 </div>
               );
             })()}
-            <button
+            {(quote || pendingKind === "checkout") ? <button type="submit" form="checkout-order-form" data-testid="checkout-submit" className="primary"
+              disabled={busy || loading || pending || orderLocked || error === "session" || quoteChange !== null || !quote || reviewState?.quoteID !== quote.id || !reviewState.ready}>
+              {pendingKind === "checkout" ? v2.unknown : v2.submit}
+            </button> : <button
               className={quote ? "quote-navigation" : "primary"}
               disabled={
                 busy ||
@@ -749,7 +817,7 @@ export default function CheckoutFlow({
                     if (!isCurrent()) return;
                     if (result.kind !== "quote")
                       throw new BuyerClientError("invalid_response");
-                    setQuote(result.value);
+                    acceptQuote(result.value);
                   }
                 })
               }
@@ -761,7 +829,7 @@ export default function CheckoutFlow({
                   : deliveryOpen
                     ? copy.quote
                     : copy.delivery}
-            </button>
+            </button>}
           </div>
         </footer>
       )}

@@ -1,0 +1,29 @@
+CHECKOUT-V2-IMPL tests-only RED observation — 2026-10-28
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/273
+branch: unit/checkout-v2-ui
+base: d187d7fbac1492ca8fe6c507ab61340b6b9fb616
+head: 83fb57206dd7745c66c91ed7d54ecd8fe050227f
+commit: tests-only, no implementation
+local: node --check tests/storefront/{checkout-v2,order-gate,home-cod-buyer}.mjs — each exit 0, E1 syntax only
+local tests/servers/browser/builds: NOT_RUN
+gh pr checks 273:
+foundation pending https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40665214376/job/122737878511
+plan pending https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40665214452/job/122737878046
+WAIT_RUN: 40665214452 (Gates workflow run, NOT the plan job ID)
+WAIT_RUN: 40665214376 (Foundation checks workflow run)
+New assertions: complete server-money and recipient/destination review; fixed submit total/timing and 390x844 non-overlap;
+changed quote old-to-new and explicit acknowledgment retained across refresh; >=44px Chevron payment-help toggle;
+COD arrival timing, radio selection and restored recipient; cod_surcharge_changed re-confirm state;
+BO05 UNKNOWN status/query copy and disabled fixed submit before/after reload, unchanged original-key/body assertions.
+RED assertion result: PENDING; no failed assertion or causal RED claimed yet.
+GREEN: NOT_RUN; implementation must wait for causal assertion failure in the above CI.
+Wake-up owner: integrator relays fresh session when recorded workflow completes, per card.
+No owned background process; no polling beyond this observation; no force-push, merge or auto-merge.
+
+Current causal RED readback, 2026-10-28:
+Gates40665214452 head83fb57206dd7745c66c91ed7d54ecd8fe050227f; tested merge ec2230626e7584adcc9244601fbc2f6254ed907c.
+job122784411665 bundle06: TestBrowserHomeCod / home-cod-buyer.mjs.log fails CHECKOUT-V2 new behaviour assertions: checkout-review, payment-help-toggle, quote-reconfirm missing on desktop/390 and refresh.
+job122784411546 bundle02: TestBrowserBuyerOrderUI / browser.log fails added BO05 assertion checkout-unknown expected Checking your order status, element not found.
+Raw artifacts gate-browser-home-cod12818385680 and gate-browser-order12819118918 retained locally in red-cod/ and red-order/.
+Foundation40665214376 job122737878511 independently fails gate-waits.test.mjs on checkout-v2.mjs quoted promise wait; sanctioned Promise.all correction included with implementation, assertions retained.
+No GREEN claimed. No local tests/server.
