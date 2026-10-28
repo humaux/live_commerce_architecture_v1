@@ -105,3 +105,17 @@ func TestRateLimitCodeUsesFixedPublicMessage(t *testing.T) {
 		t.Fatalf("unsafe rate response: %+v", envelope)
 	}
 }
+
+// #255: an unlisted code is rewritten to "internal" (and the storefront BFF turns that into 503), so the COD re-quote
+// refusal must keep its code and status.
+func TestCODSurchargeChangedKeepsItsCode(t *testing.T) {
+	w := httptest.NewRecorder()
+	WriteNonRetryable(w, http.StatusConflict, "cod_surcharge_changed")
+	var envelope Envelope
+	if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != 409 || envelope.Code != "cod_surcharge_changed" {
+		t.Fatalf("cod_surcharge_changed lost: %d %+v", w.Code, envelope)
+	}
+}
