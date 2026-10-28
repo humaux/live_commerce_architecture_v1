@@ -17,3 +17,5 @@ Plan job 122566123441, prebuild job 122567483178 and Foundation run/job 40612179
 These are RED-head receipts, not GREEN implementation acceptance.
 The earlier queued observation is retained in checks-at-handoff.json and red-watch.log (historical).
 Implementation GREEN, independent review and LIVE: pending/NOT_RUN.
+
+FIX 1/2 continuation RED: Gates 40619949465 / job 122622312675, head 7cf853a1b874b920346705c47bb9d9c6f14366a1, tested merge ac3addbe7d09a6003325e1859bdced827c74ab93. The noscript root matcher returned an empty string although the artifact screenshot shows the complete explanation. See fix1-red.log and fix1-webkit-no-js.png.

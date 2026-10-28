@@ -1,6 +1,6 @@
 # CA-AUTH-COPY part A — implementation handoff
 
-Status: implementation submitted for PR CI; GREEN PENDING. Author assessment E0; check_packet structure E1; assertion-failing RED E3. No completion or functional PASS claim.
+Status: FIX 1/2 submitted for renewed PR CI; GREEN PENDING. Author assessment E0; prior check_packet structure E1; assertion-failing RED E3. Historical implementation handoff appears below; the FIX 1/2 section supersedes its pending run observations. No completion or functional PASS claim.
 
 - Role: delegated implementation worker; Codex (runtime model/effort identifiers are not exposed).
 - Base: `79f95784c9dee419346fe3119d4d4f56720d4a3c`.
@@ -37,3 +37,23 @@ Gate: the PR's own GitHub CI, including password browser acceptance and check-ds
 | Three locales, hydrated sign-in/signup/reset | Status and reload | Observe immediately and after ten seconds | Both removed | NOT_RUN |
 
 Risks/limits: browser timing, no-JS parsing and desktop/mobile layout await CI; independent visual review remains NOT_RUN. Native empty href reloads the current resource path/query; an invite URL fragment is not available to SSR. No backend/auth capability, schema or production behavior changed. Rollback: revert this card's commits. No local server or background watcher was started in this continuation. Downloaded archive and full job log were removed after retaining the failed assertion; historical failure receipts remain.
+
+## Current-head CI registration (local post-push handoff; no evidence-only commit)
+
+- Implementation source: `7cf853a1b874b920346705c47bb9d9c6f14366a1` (pushed; PR head confirmed through gh).
+- Gates run `40619949465`: PENDING; jobs endpoint currently returns no jobs, so password-browser job ID is not assigned yet. Resume on this run once jobs exist; required acceptance includes gate (--browser-password-auth).
+- Foundation run `40619949514`, job `122591286226`: IN_PROGRESS at handoff.
+- `gh pr checks 251 --json name,state,link` snapshot: green-checks-at-handoff.json. No current-head GREEN receipt exists.
+- PR body updated to implementation scope and RED evidence; the local PR_BODY.md mirrors that update and is intentionally uncommitted so CI stays bound to the implementation head.
+- check_packet changed only the timestamp in experiments/results/packet-check.json; that generated change was restored immediately and is absent from the commit/worktree diff.
+- No local watcher/server remains. CI completion/resume is handed to the integrator as required; this session ends without a long CI poll.
+
+## FIX 1/2 — WebKit no-JS matcher root (2026-10-28)
+
+- Starting head: `7cf853a1b874b920346705c47bb9d9c6f14366a1`; branch and PR unchanged.
+- Existing RED: Gates run `40619949465`, job `122622312675`, attempt 1, `gate (--browser-webkit)` failed on the card's new noscript text assertion. The tested synthetic merge was `ac3addbe7d09a6003325e1859bdced827c74ab93` (base `5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248`). Official job logs and artifact `12793052251` were read; retained receipts are `fix1-red.log`, `fix1-webkit-no-js.png`, and the appended entry in `red.log`.
+- Root cause: the actual failing WebKit screenshot already shows the entire localized JavaScript explanation above disabled controls. Playwright 1.63.0 `shouldSkipForTextMatching` explicitly ignores a NOSCRIPT root: https://github.com/microsoft/playwright/blob/v1.63.0/packages/injected/src/selectorUtils.ts#L57-L60. Empty matcher output does not establish empty DOM content or an invisible product message. The repository currently uses the Desktop Safari profile for admin WebKit, per `playwright.config.ts`; no profile change is made here.
+- Decision: preserve the working product fallback. Retarget only the card's new `toContainText` root to the rendered DS Alert (`noscript` → descendant `role=status`), retaining the exact complete localized expected string. Add explicit visibility of that status. The existing exact visible-text, inert controls, native click/reload, path/query persistence, locale and engine requirements remain intact. Add no-script explanation absence checks after normal hydration and after the existing ten-second deadline. No assertion, timeout or engine coverage is weakened; no gate adapter changed.
+- This is a narrow correction to the newly added card test's selector, justified by the current fix instruction to check user-visible text; older pre-card tests remain untouched. No product change is warranted by this failure's evidence. Acceptance still requires this PR's renewed Chromium and WebKit CI, including the later click/reload cases that serial execution had not reached.
+- Local checks/tests/builds/servers/browser/PG/containers in FIX 1/2: NOT_RUN. All inspected browser results came from GitHub CI. No local background process started. The downloaded artifact directory was removed after retaining the scoped failure receipt and screenshot. Pre-existing handoff files were preserved and updated within the card's output directory.
+- New head and Gates/Foundation run IDs will be registered after the single push in the PR comment and local handoff, with no evidence-only follow-up commit. Integrator owns CI completion notification and a fresh-session resume; no merge/auto-merge. Out-of-card paths: none. Humaux store/canvas/coord/code tools remain unavailable; repository evidence is ready for integrator recording, and no Humaux persistence is claimed.

@@ -186,7 +186,9 @@ for (const locale of locales) {
       const page = await context.newPage();
       for (const path of [`/${locale}/`, `/${locale}/signup`, `/${locale}/reset`]) {
         await page.goto(`${publicOrigin}${path}?recovery=1`);
-        await expect(page.locator("noscript")).toContainText(hydrationCopy[locale].noScript);
+        // Playwright excludes NOSCRIPT itself from text matching; assert its rendered DS alert instead.
+        await expect(page.locator("noscript").getByRole("status")).toContainText(hydrationCopy[locale].noScript);
+        await expect(page.locator("noscript").getByRole("status")).toBeVisible();
         await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toBeVisible();
         await expect(emailInput(page)).toBeDisabled();
         if (!path.endsWith("/reset")) await expect(passwordInput(page)).toBeDisabled();
@@ -237,11 +239,13 @@ for (const locale of locales) {
       await hydrated(page);
       await expect(emailInput(page)).toBeEnabled();
       await expect(page.getByText(hydrationCopy[locale].loading, { exact: true })).toHaveCount(0);
+      await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toHaveCount(0);
       await expect(page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true })).toHaveCount(0);
     }
     // Real time: CSS recovery must not reappear after its deadline on an interactive page.
     await page.waitForTimeout(11_000);
     await expect(page.getByText(hydrationCopy[locale].loading, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toHaveCount(0);
     await expect(page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true })).toHaveCount(0);
   });
 }
