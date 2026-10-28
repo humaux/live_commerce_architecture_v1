@@ -8,3 +8,35 @@ Expected own-assertion failures:
 - TestPlatformSettlementGateFunctionArguments/record_settlement_payout_return: value keys contain amount, want returned_minor
 Local tests/servers: NOT_RUN (owner prohibition).
 Run/job identifiers will be appended after GitHub creates the PR jobs.
+
+2026-10-28 GitHub receipt (queued, not RED):
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/261 (draft)
+Head: caded567501aa169d47d0f3759e425167bc21bdb
+Gates run: 40628121605; status queued; headSha matches the RED commit.
+WAIT_JOB: 122617848131 (plan; queued; must finish before matrix jobs exist).
+Expected assertion job: gate (shard:g09), because both added top-level tests are unplanned and g09 is catch_all.
+Assertion job id: PENDING allocation by plan; do not interpret plan completion as RED evidence.
+Foundation run: 40628121654; job 122617848287; queued.
+GREEN: NOT_RUN (implementation deliberately not pushed before own-assertion RED).
+
+2026-10-28 verified RED (supersedes queued checkpoint above):
+Evidence E3 for #220.3 assertion failures only; no whole-card completion claim.
+Gates run 40628121605 / gate (shard:g09) job 122621731233: completed failure.
+PR head caded567501aa169d47d0f3759e425167bc21bdb; tested synthetic merge 749eff3a0baf71a33b32a593fb57c76eefd68f88.
+Exact failed assertions: p_amount_minor -> amount (want amount_minor); p_returned_minor -> amount (want returned_minor).
+Discovered record_settlement_payout_return value keys: missing returned_minor, extra amount.
+Filtered original receipt: output/settle-p2/red-40628121605-assertions.log.
+Other failures are downstream receipts/required aggregation; all other gate shards passed.
+Foundation 40628121654 / job 122617848287 succeeded; this is not a substitute for Gates assertions.
+PF16a-j also passed on that tests-only head; no new carry-filter mutation receipt is claimed.
+
+Remaining-items RED batch (CI PENDING):
+#220.1 PF16_fixed_Monday_T: existing Friday timestamp must fail against contract Monday 2026-09-14T12:00+08:00.
+Also assert the real registrar persisted historical paid_at before actual W1 closed_at.
+#220.2 TestPlatformSettlementGatePayableValues: corrupt each tenant/store/period/net/closed_at independently;
+existing shape/currency-only validator must fail the negative assertions. Real PF18a shares that validator.
+#220.4 PF17a_r0_immutability: existing fixture deletion leaves 0 rows, want 1 before UPDATE/DELETE.
+#220.5 TestPlatformSettlementGateProbeVisibility: old separate-pool observer misses an uncommitted statement mutation.
+This is a test-only owner fixture, always rolled back. No production SQL mutations or migration changes.
+Implementation of ALL items remains withheld until these own assertions are observed RED on CI.
+Static gofmt and git diff --check: exit 0. Local tests and servers NOT_RUN.

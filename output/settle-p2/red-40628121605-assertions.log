@@ -1,0 +1,25 @@
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7931539Z === RUN   TestPlatformSettlementGateArgumentKeys
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7932322Z === RUN   TestPlatformSettlementGateArgumentKeys/amount_minor
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7933466Z     platform_settlement_gate_test.go:166: gateKey("p_amount_minor") = "amount", want "amount_minor"; monetary arguments must not alias
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7934143Z === RUN   TestPlatformSettlementGateArgumentKeys/returned_minor
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7935112Z     platform_settlement_gate_test.go:166: gateKey("p_returned_minor") = "amount", want "returned_minor"; monetary arguments must not alias
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7935780Z === RUN   TestPlatformSettlementGateArgumentKeys/payout_minor
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7936212Z --- FAIL: TestPlatformSettlementGateArgumentKeys (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7937034Z     --- FAIL: TestPlatformSettlementGateArgumentKeys/amount_minor (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7937761Z     --- FAIL: TestPlatformSettlementGateArgumentKeys/returned_minor (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7938333Z     --- PASS: TestPlatformSettlementGateArgumentKeys/payout_minor (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:38.7938826Z === RUN   TestPlatformSettlementGateFunctionArguments
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.5091107Z === RUN   TestPlatformSettlementGateFunctionArguments/record_settlement_lines
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.5123697Z === RUN   TestPlatformSettlementGateFunctionArguments/close_settlement
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.5124901Z === RUN   TestPlatformSettlementGateFunctionArguments/record_settlement_payout
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.5135189Z === RUN   TestPlatformSettlementGateFunctionArguments/record_settlement_payout_return
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.5142372Z     platform_settlement_gate_test.go:215: record_settlement_payout_return value keys mismatch
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.5142706Z         missing: [returned_minor]
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.5143046Z         extra:   [amount]
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.5148503Z === RUN   TestPlatformSettlementGateFunctionArguments/read_settlement_payables
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.6908936Z --- FAIL: TestPlatformSettlementGateFunctionArguments (2.90s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.6909409Z     --- PASS: TestPlatformSettlementGateFunctionArguments/record_settlement_lines (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.6909842Z     --- PASS: TestPlatformSettlementGateFunctionArguments/close_settlement (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.6910327Z     --- PASS: TestPlatformSettlementGateFunctionArguments/record_settlement_payout (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.6923254Z     --- FAIL: TestPlatformSettlementGateFunctionArguments/record_settlement_payout_return (0.00s)
+gate (shard:g09)	UNKNOWN STEP	2026-10-28T04:20:41.6923849Z     --- PASS: TestPlatformSettlementGateFunctionArguments/read_settlement_payables (0.00s)
