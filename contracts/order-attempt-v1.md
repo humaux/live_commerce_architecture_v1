@@ -208,6 +208,15 @@ Privacy erasure uses a narrow domain-owned definer, not extra SELECT grants for 
 
 ## 4. Pay entry and payment notification
 
+**META-00 R5 (normative, 2026-10-28):** merchant-created orders collect through the **platform Stripe pay entry
+only** (owner 2026-10-25). New bank-transfer orders are closed (OC-Q1/OC-16), and there is no bank-transfer
+receiving-account setup (owner 2026-10-28). Preserve historical records and their existing terminal processing;
+do not reopen either new-write surface. Server-derived options/prices, not client payment labels, decide validity.
+「複製訂單查看連結」 is a separate read/navigation action and grants no payment or buyer-owner authority. A payable
+entry must satisfy this section's order-only credential, locked disclosure and expiry rules; never label a view
+link as a payment link or imply copying it means payment is ready. Copying a pay entry remains read-only too.
+No Meta/Stripe LIVE connection, App Review, real message or payment is authorized by this amendment.
+
 Three separate facts: **orders** authorize collection; **pay entry + link_version** authorize a credential; **business outbox** records a notification. Neither a River job nor an integration-operation status substitutes for all three.
 
 - **Copy = read.** Read the existing order-scoped pay entry under the order lock; never call regeneration. **Owner-decided absolute lifetime is 72 hours:** each credential version expires at the earlier of the payment deadline or **72 hours after that version's first issuance**. Copy and reminders never extend it. After expiry, the merchant must explicitly CAS-rotate to a newly issued version (§4); old versions remain expired/revoked and the order's payment deadline is never extended. Exchange grants at most **15 minutes**, capped by remaining entry lifetime, and authorizes only that order's payment, never a profile/cart/other orders. Revalidate payable/erasure/version on every exchange and payment action. Preserve old links through §5's adapter, not by resetting old redemption/expiry.
@@ -252,6 +261,16 @@ Before C3, lock the order and outbox in §3 order; revalidate payable state, pri
 Cancel atomically revokes the pay entry and voids **READY** rows. Guarantee: cancel committed before dispatch authorization ⇒ **zero provider calls**. If dispatch authorization won, a remote send may already be in flight; preserve DISPATCHING/UNKNOWN/ACCEPTED evidence and make the link unpayable. Do not claim remote exactly-once or recall. Current `0129_lc_b6_order_for_buyer.sql:521–611`, `0144_checkout_reminders.sql:165–184` and `internal/integrations/core/dispatcher.go:303,365–370,472–491` lack this complete authorization boundary; a lock-free pre-send check is insufficient.
 
 ## 5. Migration and API compatibility
+
+**META-00 R6/R7 delivery boundary (normative, 2026-10-28):** OA-1's merged C1/C2 core is a prerequisite, not
+acceptance of dispatch or public cutover. OA-2 owns C3/C4, paired notification/operation transitions, lease sweep,
+copy/reminder/rotation CAS commands and dispatcher integration. OA-3 owns versioned merchant APIs/A15 selected-set
+integrity, legacy/retention cutover and the public order-only pay-entry surface (including buyer-page acceptance).
+See `docs/delivery/units/oa-2-order-attempt-notify.md` and `oa-3-order-attempt-api.md` for paths, RED cases and gates.
+`LC_ORDER_ATTEMPT_ENABLED` stays **`"0"` until OA-3 acceptance**, including OA-2 and pay-entry/security dependencies;
+GREEN or merge of OA-2 alone cannot enable it. Changing the pin needs a separately assigned activation change;
+acceptance does not authorize production deployment. All new migration numbers, post-River slots and R2 pin
+increments: **integrator assigns**. LC-U3-ATTEMPT consumes the frozen versioned API only after those dependencies.
 
 **Cutover is fenced.** Inventory both trunk and PR #32 experimental tables/functions first; never assume 0170–0172 are installed everywhere. Integrator assigns new migration numbers, with one exact R2 count increment/comment per migration. Preserve SECURITY DEFINER/ACL/COMMENT pins and frozen privacy grants. Disable old placement writers during backfill, or first make every old entry route through the new admission fence; no period permits two authorities.
 
