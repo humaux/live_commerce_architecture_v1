@@ -1,10 +1,11 @@
 // Purpose: plain three-language migration wizard copy, no customer rows or identifiers.
 // Depends on: existing Locale type only.
 // Used by: ImportWizard and import wire tests.
+// Invariants: describe safe metadata only; no source IDs or customer cells enter failure downloads.
 import type { Locale } from "@live-commerce/i18n";
 
 /** Localized wizard labels and closed-code messages; no side effects. */
-export const importCopy: Record<Locale, { title: string; subtitle: string; customerKind: string; ordersKind: string; consentNotice: string; historyNotice: string; customerFirst: string; uploadLabel: string; utf8Hint: string; fileTooLarge: string; mapHeader: string; mapField: string; unmapped: string; required: string; guess: string; preview: string; commit: string; back: string; restart: string; loading: string; working: string; row: string; outcome: string; code: string; newRows: string; updateRows: string; failedRows: string; erasedRows: string; consentIgnoredRows: string; cityDroppedRows: string; empty: string; confirmLabel: string; created: string; updated: string; failed: string; replayed: string; staleNotice: string; idempotencyConflict: string; unknownCommit: string; signedOut: string; forbidden: string; notFound: string; unavailable: string; noFile: string; requiredMapping: string; failedDownload: string; downloadStarted: string; downloadUnknown: string; headersFailure: string; limits: string; fileHash: string; mappingSaved: string; storageNotice: string; onlyRowsHint: string; stages: Record<string, string>; fieldLabels: Record<string, string>; outcomes: Record<string, string>; errors: Record<string, string> }> = {
+export const importCopy: Record<Locale, { title: string; subtitle: string; customerKind: string; ordersKind: string; consentNotice: string; historyNotice: string; customerFirst: string; uploadLabel: string; utf8Hint: string; fileTooLarge: string; mapHeader: string; mapField: string; sourceIdHint: string; unmapped: string; required: string; guess: string; preview: string; commit: string; back: string; restart: string; loading: string; working: string; row: string; outcome: string; code: string; newRows: string; updateRows: string; failedRows: string; erasedRows: string; consentIgnoredRows: string; cityDroppedRows: string; empty: string; confirmLabel: string; created: string; updated: string; failed: string; replayed: string; staleNotice: string; idempotencyConflict: string; unknownCommit: string; signedOut: string; forbidden: string; notFound: string; unavailable: string; noFile: string; requiredMapping: string; failedDownload: string; downloadStarted: string; downloadUnknown: string; headersFailure: string; limits: string; fileHash: string; mappingSaved: string; storageNotice: string; onlyRowsHint: string; stages: Record<string, string>; fieldLabels: Record<string, string>; outcomes: Record<string, string>; errors: Record<string, string> }> = {
   "en": {
     "title": "Move from SHOPLINE",
     "subtitle": "Import customers first, then a read-only historical order archive.",
@@ -18,6 +19,7 @@ export const importCopy: Record<Locale, { title: string; subtitle: string; custo
     "fileTooLarge": "Choose a file no larger than 2 MiB.",
     "mapHeader": "CSV column",
     "mapField": "Customer / order field",
+    "sourceIdHint": "Unique customer ID in your old system (source_id).",
     "unmapped": "Do not import this column",
     "required": "Required",
     "guess": "Guess column mapping",
@@ -51,8 +53,8 @@ export const importCopy: Record<Locale, { title: string; subtitle: string; custo
     "unavailable": "Import is unavailable. Try again after checking your session.",
     "noFile": "Choose a CSV file first.",
     "requiredMapping": "Map every required field before previewing.",
-    "failedDownload": "Download failed row numbers",
-    "downloadStarted": "Failure report download started.",
+    "failedDownload": "Download rows not imported (CSV)",
+    "downloadStarted": "Download started. The CSV contains only source row numbers, outcomes and reason codes; no customer names, phone numbers or source IDs.",
     "downloadUnknown": "The download could not be confirmed. Check your downloads before trying again.",
     "headersFailure": "The header could not be read. Check the CSV format and UTF-8 encoding.",
     "limits": "UTF-8 CSV, at most 2 MiB and 5,000 data lines. Order lines are grouped into orders.",
@@ -132,6 +134,7 @@ export const importCopy: Record<Locale, { title: string; subtitle: string; custo
     "fileTooLarge": "請選擇不超過 2 MiB 的檔案。",
     "mapHeader": "CSV 欄位",
     "mapField": "顧客／訂單欄位",
+    "sourceIdHint": "你舊系統裡每位顧客的唯一編號（source_id）。",
     "unmapped": "不匯入這個欄位",
     "required": "必填",
     "guess": "自動猜測欄位",
@@ -165,8 +168,8 @@ export const importCopy: Record<Locale, { title: string; subtitle: string; custo
     "unavailable": "目前無法匯入，請先確認登入狀態。",
     "noFile": "請先選擇 CSV 檔案。",
     "requiredMapping": "預覽前請對應所有必填欄位。",
-    "failedDownload": "下載失敗列號",
-    "downloadStarted": "已開始下載失敗列報告。",
+    "failedDownload": "下載未匯入的列（CSV）",
+    "downloadStarted": "已開始下載。CSV 只含來源列號、結果與原因代碼，不含姓名、電話或來源編號。",
     "downloadUnknown": "下載尚未確認，再試前請先檢查下載紀錄。",
     "headersFailure": "無法讀取表頭，請檢查 CSV 格式與 UTF-8 編碼。",
     "limits": "UTF-8 CSV，最多 2 MiB、5,000 資料列；訂單品項列會合併成訂單。",
@@ -246,6 +249,7 @@ export const importCopy: Record<Locale, { title: string; subtitle: string; custo
     "fileTooLarge": "请选择不超过 2 MiB 的文件。",
     "mapHeader": "CSV 列",
     "mapField": "顾客／订单字段",
+    "sourceIdHint": "你旧系统里每位顾客的唯一编号（source_id）。",
     "unmapped": "不导入这列",
     "required": "必填",
     "guess": "自动猜测列",
@@ -279,8 +283,8 @@ export const importCopy: Record<Locale, { title: string; subtitle: string; custo
     "unavailable": "当前无法导入，请先确认登录状态。",
     "noFile": "请先选择 CSV 文件。",
     "requiredMapping": "预览前请对应所有必填字段。",
-    "failedDownload": "下载失败行号",
-    "downloadStarted": "已开始下载失败行报告。",
+    "failedDownload": "下载未导入的行（CSV）",
+    "downloadStarted": "已开始下载。CSV 只含来源行号、结果与原因代码，不含姓名、电话或来源编号。",
     "downloadUnknown": "下载尚未确认，再试前请先检查下载记录。",
     "headersFailure": "无法读取表头，请检查 CSV 格式与 UTF-8 编码。",
     "limits": "UTF-8 CSV，最多 2 MiB、5,000 数据行；订单品项行会合并成订单。",
