@@ -272,6 +272,12 @@ function Editor({
   const [live, setLive] = useState(initial.draft.published_version);
   const [media, setMedia] = useState(initial.media);
   const [versions, setVersions] = useState(initial.versions);
+  // Highest version this component has CONFIRMED (initial read, last successful publish/rollback answer, last good list). The recheck
+  // watermark takes max(list, this): a refresh that failed after a success must not leave an old list as the baseline.
+  const known = useRef(Math.max(initial.versions.items[0]?.version ?? 0, initial.draft.published_version ?? 0));
+  const sawVersion = (v: number | null | undefined) => {
+    if (typeof v === "number") known.current = Math.max(known.current, v);
+  };
   const [tab, setTab] = useState<Tab>("profile");
   const [busy, setBusy] = useState<
     "" | "save" | "publish" | "preview" | "rollback"
@@ -357,7 +363,10 @@ function Editor({
 
   async function refreshVersions() {
     try {
-      setVersions(await readVersions(store, new AbortController().signal));
+      const list = await readVersions(store, new AbortController().signal);
+      sawVersion(list.items[0]?.version);
+      sawVersion(list.live_version);
+      setVersions(list);
     } catch {
       /* the next page load shows it; the publish itself already succeeded */
     }
@@ -374,15 +383,19 @@ function Editor({
     if (!window.confirm(fill(c.publishConfirm, { n: version }))) return;
     setBusy("publish");
     const key = crypto.randomUUID();
+    // Armed BEFORE the request leaves: a reload while Go may already have committed must find UNKNOWN, never a free Publish button.
+    setNotYet(false);
+    setUnconfirmed(false);
+    setPending({ version, key, watermark: Math.max(versions.items[0]?.version ?? 0, known.current) });
     const r = await publish(store, version, boundary, key);
     setBusy("");
     if (!r.ok && r.uncertain) {
       setNote(null);
-      setNotYet(false);
-      setUnconfirmed(false);
-      return setPending({ version, key, watermark: versions.items[0]?.version ?? 0 });
+      return; // pending stays: the recheck reads the result of this same request
     }
+    setPending(null); // a definite answer, success or refusal
     if (!r.ok) return fail(r);
+    sawVersion(r.value.version);
     setLive(r.value.version);
     setNote({ kind: "ok", text: fill(c.okPublished, { n: r.value.version }) });
     await refreshVersions();
@@ -396,6 +409,8 @@ function Editor({
       const landed = publishLanded(list, pending.version, pending.watermark);
       setUnconfirmed(false);
       if (landed) {
+        sawVersion(list.items[0]?.version);
+        sawVersion(list.live_version);
         setVersions(list);
         setLive(list.live_version ?? landed.version);
         setPending(null);
@@ -454,6 +469,7 @@ function Editor({
     const r = await rollback(store, version, boundary);
     setBusy("");
     if (!r.ok) return fail(r);
+    sawVersion(r.value.version);
     setLive(r.value.version);
     setNote({ kind: "ok", text: fill(c.okRolledBack, { n: r.value.version }) });
     await refreshVersions();
@@ -579,7 +595,7 @@ function Editor({
           )}
         </div>
       )}
-      {pending && (
+      {pending && busy !== "publish" && (
         <div className="design-note warning" role="alert" data-testid="design-publish-pending">
           <p>
             <strong>{c.publishPending}</strong>

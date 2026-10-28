@@ -14,6 +14,10 @@ Deviation from Figma: node 1253:17204 says "你已填寫的內容還在"; OC-Q18
 error.tsx: single read-only reload (router.refresh + reset, GET only), offline banner via useSyncExternalStore on navigator.onLine + online/offline, title focused on mount, role=alert/status, buttons 48px, no persistence promise.
 Copy keys added (admin: publishPending*, publishRecheck*, publishNotYet; storefront: reloadPage, offlineBanner) in en/zh-TW/zh-CN.
 
+## Round-2 ruling (coordinator)
+- OC-Q18 scope: it restricts what the error card OFFERS as recovery (only the read-only reload; never a replay of a payment or order). Shop header/footer navigation (GET links, search, cart drawer) is site chrome and stays; assertion B3 is scoped to the error card (`page-error`).
+- Final fix: pending {key,version,watermark} is armed (sessionStorage + leave guard) BEFORE publish() is called and cleared only on a definite answer; the recheck watermark is max(list top, highest version this component confirmed), so a failed refresh after a success cannot leave a stale baseline. Tests OC11-A9/A10/A11. GREEN ids: PR comment (bound to the final SHA).
+
 ## Files
 apps/admin/lib/design-client.ts, apps/admin/components/Design.tsx, apps/admin/lib/design-copy.ts (extra), apps/storefront/app/[locale]/error.tsx, apps/storefront/lib/shop-copy.ts (extra), tests/admin/oc/design-publish-pending.spec.ts (extra), tests/storefront/offline-error.spec.ts, output/oc-11/**.
 Integrator-granted: tests/foundation/browser_store_design_test.go (spec added to the playwright invocation), tests/storefront/shop-real-gate.mjs (calls the check; not counted in cases=9), tests/foundation/browser_storefront_test.go (asserts the check reported; harness-only `api-down`/`api-up` control that makes the buyer API answer 503 so error.tsx renders; the app has no test route).
