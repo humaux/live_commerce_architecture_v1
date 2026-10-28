@@ -3267,33 +3267,6 @@
     {
       "kind": "GO_ONLY",
       "method": "POST",
-      "path": "/v1/admin/stores/{}/design/publish",
-      "locations": [
-        {
-          "file": "internal/httpapi/design.go",
-          "line": 40,
-          "end": 40
-        },
-        {
-          "file": "internal/httpapi/design.go",
-          "line": 47,
-          "end": 47
-        },
-        {
-          "file": "internal/httpapi/design.go",
-          "line": 47,
-          "end": 49
-        },
-        {
-          "file": "internal/httpapi/handler.go",
-          "line": 198,
-          "end": 198
-        }
-      ]
-    },
-    {
-      "kind": "GO_ONLY",
-      "method": "POST",
       "path": "/v1/admin/stores/{}/design/rollback",
       "locations": [
         {
