@@ -20,7 +20,7 @@ Authority: `contracts/live-console-v1.md` §§2–7.0.1/9/11, intake §3 and MET
   `apps/admin/src/features/live/**`, `apps/admin/lib/inbox-bff.ts` (new read grammar only),
   `tests/admin/live-console*.test.ts`, `tests/admin/live-console*.spec.ts`, `output/meta-console-v3/**`.
   BuyerPanel is consumed unchanged from Inbox; any needed prop change returns to integrator for path assignment.
-- No backend, schema, sending grammar or Studio lifecycle rewrite. Three locales zh-TW/en/ja; existing tokens
+- No backend, schema, sending grammar or Studio lifecycle rewrite. Three locales zh-TW/zh-CN/en; existing tokens
   and shared components. Do not touch unmerged DS/transport lanes. One worktree/branch/PR, no merge.
 
 ## Batch RED list (GitHub CI only)

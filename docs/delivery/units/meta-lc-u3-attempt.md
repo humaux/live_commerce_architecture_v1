@@ -49,7 +49,7 @@ PR-own `--browser-manual-order` (including manual-order-link), affected inbox/co
 contract-drift and no-store/privacy guards. Real clicks on every control with visible outcome, refresh and PG
 readback for durable results. **Mobile/summary parity gate:** DELIVERY.md table maps recipient, channel,
 product/qty, assignee, window and send result across desktop/mobile/all summary/review states, plus required
-name/phone/destination/totals/payment timing. Missing fact = P1. Three locales zh-TW/en/ja, 1440/390 all states,
+name/phone/destination/totals/payment timing. Missing fact = P1. Three locales zh-TW/zh-CN/en, 1440/390 all states,
 click ledger, exact SHA/run/job IDs and independent money/privacy/visual review. No raw codes/review scaffolding
 in seller copy; Figma changes belong to separately authorized design work with its own parity/copy-lint receipt.
 

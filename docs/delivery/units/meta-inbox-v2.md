@@ -13,7 +13,7 @@ Authority: `contracts/live-console-v1.md` §§3/4/6/7.0/11 and owner-choices OC-
   Reuse A8–A14, including unread; do not redo the already-merged unread implementation or #259's repair.
 - Adopt approved v2 desktop/mobile structure, list/thread navigation and fixed selected recipient. No marketing-
   consent badge/branch. Unknown delivery permits readback only; preserve A9's true/false/null delivery guard.
-- Three locales zh-TW/en/ja, 1440/390 layouts, existing tokens/components and accessible ≥44px touch targets.
+- Three locales zh-TW/zh-CN/en, 1440/390 layouts, existing tokens/components and accessible ≥44px touch targets.
   Seller copy uses plain language; no raw UNKNOWN/queued/MOCK codes or review scaffolding on product screens.
 - Write paths: `apps/admin/components/{Inbox,InboxThread,BuyerPanel}.tsx`,
   `apps/admin/src/features/messages/**`, `tests/admin/inbox*.test.ts`, `tests/admin/inbox*.spec.ts`,

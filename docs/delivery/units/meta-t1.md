@@ -44,7 +44,7 @@ every actionable control, assert visible results and refresh persistence, and at
 expected/actual/result ledger. API seed, DOM mutation, forced click and screenshot are not user-action proof.
 **Mobile/summary parity gate:** recipient, channel, product/qty, assignee, window and send result across desktop,
 mobile and every summary/review state; order flows also name/phone/destination/totals/payment timing. Inspect
-actual exports/rendered states, 1440/390 and zh-TW/en/ja; bearer pages must consistently withhold private fields.
+actual exports/rendered states, 1440/390 and zh-TW/zh-CN/en; bearer pages must consistently withhold private fields.
 Independent privacy/money/visual review, mutation-to-assertion table and run/job/artifact/exit/source/merge-SHA
 receipts are required. Classify E0 self-report, E1 structure, E2 representative run, E3 automated tested environment,
 E4 independent verification; no MOCK proof upgrades a provider capability to LIVE.
