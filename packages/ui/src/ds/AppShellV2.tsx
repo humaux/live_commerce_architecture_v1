@@ -1,4 +1,4 @@
-// Purpose: Owns AppShellV2, the redesigned admin frame: dark sidebar with the nine NEEDS section 1 groups (collapsible second level), store card, topbar (locale, help, notifications, enter-my-store, account), breadcrumb slot and a mobile drawer below 768 px. Not switched on for any page yet.
+// Purpose: Owns AppShellV2, the redesigned admin frame: light sidebar (Figma Nav Item 4:12737) with the nine NEEDS section 1 groups (collapsible second level), store card, topbar = Figma Page Header 1397:105155 (breadcrumb on desktop, locale, help, notifications, enter-my-store, account), phone breadcrumb row and a mobile drawer below 768 px. Not switched on for any page yet.
 // Depends on: React, shared Icon/Controls, ./shell2.module.css, ./logic (initialOpenGroups); no API, routing, permissions or translation: nav data, copy and slots are props.
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx (the W3 page migration will mount it).
 "use client";
@@ -180,6 +180,8 @@ export function AppShellV2({ nav, currentId, persistenceKey = "ds-shell-expanded
             <Icon name="menu" />
           </button>
           <span className={s.mobileStore}>{store.name}</span>
+          {/* The breadcrumb is rendered twice; CSS shows exactly one (display: none removes the other from the accessibility tree). */}
+          {breadcrumb && <div className={s.topCrumbs}>{breadcrumb}</div>}
           <div className={s.topbarRight}>
             <div className={s.desktopTools}>{topbar.locale}{topbar.help}</div>
             {topbar.notifications}

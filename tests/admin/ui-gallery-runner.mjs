@@ -146,6 +146,17 @@ try {
     await clickJourney({ page, step: (...args) => step(page, ...args), copy: galleryCopy[locale], locale, base: on.base, mobile: width < 768 });
     await context.close();
   }
+  // DS-3: ds components vs the Figma masters (output/ds-3/figma-expected.json), desktop 1586 in zh-TW, plus the 1586/390 shots.
+  const { figmaParity } = await import("../ui/ds-figma-parity.mjs");
+  {
+    const context = await browser.newContext({ viewport: { width: 1586, height: 900 }, deviceScaleFactor: 1, locale: "zh-TW" });
+    const page = await context.newPage();
+    page.setDefaultTimeout(8000);
+    await page.goto(`${on.base}/zh-TW/ui-gallery`, { waitUntil: "load" });
+    await page.getByRole("heading", { level: 1, name: galleryCopy["zh-TW"].title }).waitFor();
+    await figmaParity({ page, step: (...args) => step(page, ...args), output, copy: galleryCopy["zh-TW"] });
+    await context.close();
+  }
 } finally {
   await browser.close();
   await on.stop();

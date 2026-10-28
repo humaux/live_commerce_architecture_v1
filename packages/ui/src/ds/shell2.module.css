@@ -1,4 +1,5 @@
-/* Purpose: Styles AppShellV2: dark 270 px sidebar with collapsible groups and a store card, 50 px topbar, breadcrumb row, mobile drawer below 768 px.
+/* Purpose: Styles AppShellV2: light 270 px sidebar (Figma Nav Item 4:12737) with collapsible groups and a store card, 64 px topbar that is the
+ *   Figma Page Header (1397:105155: breadcrumb left, language switch right; desktop), breadcrumb row on phones, mobile drawer below 768 px.
  * Depends on: ../tokens.css custom properties.
  * Used by: packages/ui/src/ds/AppShellV2.tsx */
 .shell { display: flex; min-height: 100vh; background: var(--ds-page); color: var(--ds-text-1); font-size: var(--ds-text-md); }
@@ -24,16 +25,16 @@
   color: var(--ds-nav-text);
   z-index: var(--ds-z-nav);
 }
-.brand { display: flex; align-items: center; height: var(--ds-topbar-height); padding: 0 var(--ds-space-4); background: var(--ds-nav-logo-bg); font-weight: 600; font-size: var(--ds-text-lg); }
+.brand { display: flex; align-items: center; height: var(--ds-topbar-height); padding: 0 var(--ds-space-4); background: var(--ds-nav-logo-bg); color: var(--ds-nav-text-active); font-weight: 600; font-size: var(--ds-text-lg); }
 .store { display: flex; align-items: center; gap: var(--ds-space-3); padding: var(--ds-space-4); border-bottom: 1px solid var(--ds-nav-active); }
 .storeLogo { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--ds-radius-md); background: var(--ds-nav-active); overflow: hidden; }
 .storeText { min-width: 0; display: flex; flex-direction: column; }
-.storeName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.storeName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ds-nav-text-active); }
 .storeRegion { color: var(--ds-nav-text-muted); font-size: var(--ds-text-sm); }
 .brand, .store { flex: none; }
 .groups { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--ds-nav-text-muted) var(--ds-nav-bg); margin: 0; padding: var(--ds-space-2) 0; list-style: none; }
 /* The 52px navigation slot contains a 44px control, on the action-control scale. */
-.groups > li { padding-block: var(--ds-space-1); }
+.groups > li { padding-block: var(--ds-space-1); padding-inline: var(--ds-nav-inset); }
 .groupRow, .groupLink {
   display: flex;
   align-items: center;
@@ -42,38 +43,44 @@
   width: 100%;
   height: var(--ds-button-lg);
   min-height: var(--ds-button-lg);
-  padding: 0 var(--ds-space-4);
+  padding: 0 var(--ds-space-4) 0 var(--ds-nav-pad-start);
   border: 0;
-  border-inline-start: 3px solid transparent;
-  background: none;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-nav-bg);
   color: var(--ds-nav-text);
   font: inherit;
   font-size: var(--ds-text-md);
+  font-weight: 500;
   text-align: start;
   text-decoration: none;
   cursor: pointer;
 }
-.groupRow:hover, .groupLink:hover, .item:hover { background: var(--ds-nav-active); }
-.groupRow[data-current="true"], .groupLink[aria-current="page"] { border-inline-start-color: var(--ds-nav-accent); background: var(--ds-nav-active); }
+/* Hover has no Figma master (UNKNOWN); it reuses the Active fill and text, since the default text on the Active fill is only 4.3:1. */
+/* .nav prefix: the admin globals.css `button:hover:not(:disabled)` light fill (specificity 0,2,1) would otherwise win over a single class. */
+.nav .groupRow:hover, .nav .groupLink:hover, .nav .item:hover { background: var(--ds-nav-active); color: var(--ds-nav-text-active); }
+.groupRow[data-current="true"], .groupLink[aria-current="page"] { background: var(--ds-nav-active); color: var(--ds-nav-text-active); }
 .groupIcon { flex: none; display: inline-flex; width: 20px; justify-content: center; }
 .groupLabel { flex: 1; min-width: 0; }
 .chev { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 var(--ds-space-4); width: var(--ds-space-4); height: var(--ds-space-4); transition: transform 0.15s; }
 .groupRow[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .chev svg { transform: scale(var(--ds-nav-chevron-scale)); }
 .sub { margin: 0; padding: 0; list-style: none; }
-.item { display: flex; align-items: center; box-sizing: border-box; min-height: 40px; padding: 0 var(--ds-space-4) 0 var(--ds-nav-indent); color: var(--ds-nav-text-muted); font-size: var(--ds-text-md); text-decoration: none; }
-.item[aria-current="page"] { background: var(--ds-nav-active); color: var(--ds-nav-text); font-weight: 600; }
-.nav :focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus-on-dark); outline-offset: -2px; }
+.item { display: flex; align-items: center; box-sizing: border-box; min-height: var(--ds-button-lg); padding: 0 var(--ds-space-4) 0 var(--ds-nav-indent); border-radius: var(--ds-radius-control); color: var(--ds-nav-text-muted); font-size: var(--ds-text-md); font-weight: 500; text-decoration: none; }
+.item[aria-current="page"] { background: var(--ds-nav-active); color: var(--ds-nav-text-active); }
+.nav :focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: -2px; }
 .close { display: none; }
 .backdrop { display: none; }
 
 /* ---------- work area ---------- */
 .work { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.topbar { flex: none; position: sticky; inset-block-start: 0; z-index: var(--ds-z-topbar); display: flex; align-items: center; gap: var(--ds-space-3); box-sizing: border-box; height: var(--ds-topbar-height); padding: 0 var(--ds-space-4); border-bottom: 1px solid var(--ds-border); background: var(--ds-topbar-bg); }
+.topbar { flex: none; position: sticky; inset-block-start: 0; z-index: var(--ds-z-topbar); display: flex; align-items: center; gap: var(--ds-space-3); box-sizing: border-box; height: var(--ds-topbar-height); padding: 0 var(--ds-space-6); background: var(--ds-topbar-bg); }
+/* Desktop: the breadcrumb sits in the bar (Figma Page Header); phones keep it in .crumbRow under the bar. */
+.topCrumbs { flex: 1; min-width: 0; }
+.crumbRow { display: none; }
 .topbarRight { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--ds-space-2) var(--ds-space-4); margin-inline-start: auto; }
 .menuButton { display: none; box-sizing: border-box; flex: none; width: var(--ds-button-lg); height: var(--ds-button-lg); min-height: var(--ds-button-lg); padding: 0; border: 0; background: none; color: var(--ds-text-1); font: inherit; font-size: var(--ds-text-xl); cursor: pointer; }
 .menuButton:focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: var(--ds-focus-offset); }
-.crumbRow { padding: var(--ds-space-4) var(--ds-space-6) 0; }
+
 .main { flex: 1; box-sizing: border-box; padding: var(--ds-space-4) var(--ds-space-6) var(--ds-space-8); outline: none; }
 
 .desktopTools { display: flex; align-items: center; gap: var(--ds-space-2); }
@@ -88,11 +95,12 @@
   .backdrop { display: block; position: fixed; inset: 0; z-index: calc(var(--ds-z-drawer) - 1); border: 0; background: var(--ds-scrim); }
   .menuButton { display: inline-flex; align-items: center; justify-content: center; }
   .topbar { flex-wrap: nowrap; height: var(--ds-topbar-height); padding: 0 var(--ds-space-2); gap: var(--ds-space-2); }
+  .topCrumbs { display: none; }
   .desktopTools { display: none; }
   .mobileTools { display: flex; }
   .mobileStore { display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .topbarRight { flex: none; }
-  .crumbRow { padding: var(--ds-space-3) var(--ds-space-4) 0; }
+  .crumbRow { display: block; padding: var(--ds-space-3) var(--ds-space-4) 0; }
   .main { padding: var(--ds-space-3) var(--ds-space-4) var(--ds-space-6); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -105,5 +113,5 @@
 .shell input, .shell textarea { caret-color: var(--ds-primary); }
 .groupIcon { width: var(--ds-space-6); align-items: center; }
 .chev { width: var(--ds-space-4); height: var(--ds-space-4); }
-.item:hover { color: var(--ds-nav-text); background: var(--ds-nav-active); }
+
 .topbarRight { gap: var(--ds-space-2); }

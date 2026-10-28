@@ -1,0 +1,14 @@
+/zh-TW/ui-gallery | DS-3 button.primary.default (Figma 4:12712) | [READ] computed style: button.primary.default (Figma 4:12712): lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 button.secondary.default (Figma 4:12714) | [READ] computed style: button.secondary.default (Figma 4:12714): lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 button.danger.default (Figma 1394:103516) | [READ] computed style: button.danger.default (Figma 1394:103516): lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 button.text.default (Figma 1394:103518) | [READ] computed style: button.text.default (Figma 1394:103518): lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 button.primary.disabled (Figma 1394:103520) | [READ] computed style: button.primary.disabled (Figma 1394:103520): lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 button.secondary.disabled (Figma 1394:103522) | [READ] computed style: button.secondary.disabled (Figma 1394:103522): lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 button.danger.disabled (Figma 1394:103526) | [READ] computed style: button.danger.disabled (Figma 1394:103526): lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 button.text.disabled (Figma 1394:103528) | [READ] computed style: button.text.disabled (Figma 1394:103528): lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 button.ghost.default (Figma 4:12716) | [READ] computed style: button.ghost.default (Figma 4:12716): color rgb(20, 41, 66) != #0f766e (rgb(15, 118, 110)); lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 button.ghost.disabled (Figma 1394:103524) | [READ] computed style: button.ghost.disabled (Figma 1394:103524): lineHeight "18.2px" != "22px"
+/zh-TW/ui-gallery | DS-3 nav.item.hover (Figma 4:12735) | [READ] computed style: nav.item.hover (Figma 4:12735): backgroundColor rgb(237, 243, 248) != #eef2f7 (rgb(238, 242, 247))
+/zh-TW/ui-gallery | DS-3 nav.subitem.hover (Figma 4:12735) | [READ] computed style: nav.subitem.hover (Figma 4:12735): color rgb(107, 114, 128) != #142942 (rgb(20, 41, 66)); contrastAA false != true
+/zh-TW/ui-gallery | DS-3 nav.hitArea (Figma 4:12737) | [READ] computed style: nav.hitArea (Figma 4:12737): minHit 40 != 44
+/zh-TW/ui-gallery | DS-3 language.switch (Figma 1397:105153) | [READ] computed style: language.switch (Figma 1397:105153): lineHeight "18.2px" != "22px"
