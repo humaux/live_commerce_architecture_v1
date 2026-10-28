@@ -9,3 +9,10 @@ E1 only: syntax/whitespace/static ownership generation. JSX/type/runtime accepta
 tsc=NOT_RUN; compiler/dependencies not installed in this worktree; earlier attempt exit 254 Command tsc not found.
 No local tests, build server, browser, database or container started.
 Exact implementation source hashes: source-sha256.txt. CI head/run receipts supplied after the single implementation push; no evidence-only push.
+CI registration repair attempt1: source push c7cb646d had no check suite; GitHub mergeable=false/dirty. Remote integration=dcecd6220094234b4760315c676d9737ed713c40.
+git fetch origin r3/integration; merge --no-commit --no-ff FETCH_HEAD: one conflict, i18n/src/index.ts header comments only.
+Resolution retains both module exports and the integration header. No product source from integration manually edited.
+node --check packages/i18n/src/index.ts: exit0
+node scripts/dev/derive-browser-ownership.mjs on merged source: exit0,53modes
+git diff --name-only --diff-filter=U: empty; git diff --check: exit0
+Source hashes refreshed for current merged files. No local tests/servers.

@@ -1,8 +1,9 @@
-// Purpose: supported locale registry, language negotiation, safe locale paths and fixed product copy.
-// Depends on: native Intl/URL-independent parsing and the signed inbox locale table.
-// Used by: admin and storefront presentation; no authentication or business-state authority.
-// Invariants: language changes never change store scope, market facts or redirect trust boundaries.
+// Purpose: Supported locales, shared seller messages and validated locale-aware URL helpers.
+// Depends on: state-recovery and signed inbox copy; no network or storage dependency.
+// Used by: admin/storefront routes, shared UI callers and locale tests.
+// Invariants: only supported locales and validated local paths can enter generated URLs.
 export const locales = ['zh-CN', 'zh-TW', 'en'] as const;
+export { stateRecoveryCopy } from './state-recovery.ts';
 export type Locale = (typeof locales)[number];
 export { inboxMessages, type InboxMessages } from './inbox.ts';
 

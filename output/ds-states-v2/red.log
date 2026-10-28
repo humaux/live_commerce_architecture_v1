@@ -1,0 +1,21 @@
+DS-STATES-V2 / PR #274 review fix attempt 1
+Evidence state: PENDING; this file is not a claim of assertion-level RED.
+Invalid prior RED: Foundation 40666631261 / foundation job 122742664746,
+head f20184bf814aa1ad2ff17c21ce570f86fa02d87b. Failed before assertions:
+Element type is invalid ... got: undefined. Superseded as behavioral RED evidence.
+
+New negative control: StatePanel and InlineError remain exported, renderable functions.
+StatePanel renders legacy EmptyState output; InlineError renders legacy paragraph output.
+GalleryForbidden deliberately interpolates a synthetic denied-resource message into body.
+Intended assertion failures:
+- forbidden caller: assert.doesNotMatch(rendered HTML, /private-order-123|Access denied to/)
+- StatePanel: missing data-variant/required content and transient live-region contracts
+- InlineError: missing alert role and recovery action
+- browser: visible recovery effects, 44px action targets, status read-only/no replay,
+  link navigation/reload persistence, three locales x desktop/mobile; CI-only.
+No missing component export is an acceptable RED result.
+
+Run/job/head receipts: to be appended after the RED push; no local tests run.
+Restore only the three explicitly marked review RED sites after CI reaches its assertions.
+Then regenerate browser ownership (source hashes include tests), commit the RED receipts
+with the restoration, and push ONE implementation commit. No evidence-only GREEN push.

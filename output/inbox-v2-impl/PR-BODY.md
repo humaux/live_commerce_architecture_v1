@@ -21,4 +21,6 @@ Dispatched role: UI implementation worker; actual model/effort UNKNOWN (not expo
 
 Rollback: revert the isolated implementation commit through the integrator's PR process; no rollback executed. No local background process or temporary fixture remains; owned read-only captures are retained as evidence.
 
+CI-registration repair (attempt 1): after source commit `c7cb646d7f1b19b073fea7bef256c30277a28f30`, no current-head workflow was registered because GitHub marked the PR CONFLICTING/DIRTY. Remote r3/integration had advanced to `dcecd6220094234b4760315c676d9737ed713c40`; sync it into the assigned branch. The only conflict was the i18n index header comment. Both stateRecoveryCopy and inboxMessages exports are retained, the header names both dependencies, and browser ownership is regenerated from the merged source. No incoming integration product file was manually edited; the PR diff remains this inbox card. This necessary integration sync is not an evidence-only push.
+
 🤖 Generated with Codex (dispatched by Claude Code integrator).
