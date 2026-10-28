@@ -226,8 +226,8 @@ async function surchargeRefresh(scenario) {
   if (!gap) {
     await page.route("**/api/buyer/checkout-options?**", holdOptions, { times: 1 });
     const refused = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/checkout" && r.request().method() === "POST");
-    await create.click();
-    const response = await refused, body = await response.json();
+    const [response] = await Promise.all([refused, create.click()]);
+    const body = await response.json();
     assert.equal(response.status(), unavailable ? 422 : 409, `COD-255 ${key}: real server refusal`);
     assert.equal(body.code, unavailable ? (key === "disabled" ? "cash_on_delivery_unavailable" : "cash_on_delivery_amount_exceeds") : "cod_surcharge_changed");
   }
@@ -260,8 +260,8 @@ async function surchargeRefresh(scenario) {
     await expect(create).toBeDisabled(); // new money has not yet been explicitly confirmed
     await confirm.click(); await expect(create).toBeEnabled();
     const submitted = page.waitForRequest((r) => new URL(r.url()).pathname === "/api/buyer/checkout" && r.method() === "POST");
-    await create.click();
-    const body = (await submitted).postDataJSON();
+    const [request] = await Promise.all([submitted, create.click()]);
+    const body = request.postDataJSON();
     assert.equal(body.quote_id, quotes.at(-1).id, "COD-255: submit the refreshed server quote");
     assert.equal(body.expected_cod_surcharge_minor, fee);
     await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 });

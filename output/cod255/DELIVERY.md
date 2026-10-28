@@ -1,5 +1,19 @@
 # COD-255 — PR #285 implementation, CI acceptance pending
 
+## Relay 2: targeted CI repair (attempt 1)
+
+Implementation head e887218c851ab6a64194be655933cd467cea3ab5 failed Foundation run 40759941214,
+job 123068822047, in tests/ci/gate-waits.test.mjs:18. The scanner identified two new waits in
+tests/storefront/home-cod-buyer.mjs (old lines 228 and 262) awaited only after `await create.click()`.
+If the click failed first, the outstanding wait could reject unhandled and hide the real failure.
+Both response/request waits now join the real click in Promise.all, attaching rejection handlers before
+the click settles. All assertions, fixtures, timeouts and gate rules are preserved. No spec/page/route
+was added, renamed or deleted. Existing source headers are unchanged.
+Raw failed receipt: output/cod255/foundation-implementation-failed.raw.log (local retained evidence).
+Local validation: node --check tests/storefront/home-cod-buyer.mjs and git diff --check, exit 0 (E1 only).
+No local tests or servers. New Foundation/Gates acceptance remains PENDING; no GREEN claimed.
+Humaux tools remain unavailable: no store/canvas/coord receipt is claimed.
+
 Role: UI worker dispatched by integrator; model: GPT-6 (exact runtime effort unavailable).
 Worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/cod255-v2-ui.
 Branch: unit/cod255-v2-ui; target: r3/integration; implementation base: 881c5ded343136fb51d41f35fba9a49a567ecdd8.
