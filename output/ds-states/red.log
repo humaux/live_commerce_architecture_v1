@@ -1,0 +1,148 @@
+claim_type: problem · project: live_commerce_architecture_v1 · module: ds-states · date: 2026-10-29
+PR #274 continuation; incoming head ce10fcee79e897f6c14798dc97703cc59a67a6b6.
+Prior RED INVALID: Gates run 40750174036, build job 123035247199 failed TS2322 at States.tsx(61,75).
+Gates browser gate skipped; no assertion-level browser RED exists in that run.
+Foundation run 40750174047, job 123034488051 failed G-UI3/G-UI5 before DS assertions:
+apps/admin/components/UiGalleryRecovery.tsx: fetch 1 > 0.
+No previous run is claimed as new assertion-level RED.
+
+This batch removes unreachable implementation from both legacy RED stubs; exports and prop types remain intact.
+Reuses existing lib/customers-client readJSON for fixture GETs with a 12s timeout; no component fetch.
+The SSR harness explicitly resolves the new import; browser HTTP fixture adds no-store required by the real helper.
+Every existing assertion remains unchanged and in order. Ownership artifact regenerated.
+New assertion-level RED: PENDING GitHub CI. GREEN: NOT_RUN.
+The implementation is prepared in implementation.patch; do not apply until assertion-level RED is confirmed.
+After applying it, regenerate ownership if needed and push exactly one implementation batch.
+build	Next builds (once per run)	2026-10-28T19:04:04.7263742Z ##[error]../../packages/ui/src/ds/States.tsx(61,75): error TS2322: Type 'StateAction | undefined' is not assignable to type 'StateAction'.
+build	Next builds (once per run)	2026-10-28T19:04:04.7272928Z   Type 'undefined' is not assignable to type 'StateAction'.
+build	Next builds (once per run)	2026-10-28T19:04:04.7674374Z Failed to type check.
+foundation	Package docs and gate map are current	2026-10-28T19:07:01.1058120Z   +   'apps/admin/components/UiGalleryRecovery.tsx: fetch 1 > 0'
+foundation	Package docs and gate map are current	2026-10-28T19:07:01.1059635Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shell-architecture.test.mjs:11:10)
+foundation	Package docs and gate map are current	2026-10-28T19:07:01.1062762Z     actual: [ 'apps/admin/components/UiGalleryRecovery.tsx: fetch 1 > 0' ],
+
+PR #274 — corrected RED handoff
+Head: 855152b662b99d004881ef255ac1c79d42e077aa
+WAIT_RUN: 40752816753 (Foundation checks, foundation job 123043721507, pending)
+WAIT_RUN: 40752816839 (Gates, queued; browser job not yet assigned)
+These are workflow run IDs, not the plan job ID.
+
+Previous RED invalid: Gates 40750174036 / build 123035247199 failed TS2322;
+Foundation 40750174047 / foundation 123034488051 failed component-fetch architecture gate.
+Current assertion-level RED: PENDING; GREEN run/job: NOT_RUN.
+No local tests/servers/builds. E1 node syntax checks and diff whitespace checks only.
+The two blocker corrections and harness/fixture update are pushed together.
+No assertions/gates/baselines/exemptions changed. Original dirty/untracked files excluded.
+Implementation is prepared at output/ds-states/implementation.patch.
+After CI confirms assertion-level RED, apply with:
+git apply --unidiff-zero output/ds-states/implementation.patch
+Then regenerate ownership as needed, record RED run/job receipts and push one implementation batch.
+If CI fails outside the card, stop and report. Do not merge or enable auto-merge.
+Wake-up: integrator explicitly relays a fresh session when these workflow runs finish.
+Read conclusion/log-failed from these exact runs; no indefinite watch/process left behind.
+NOT_RUN: tsc (unavailable), local tests/browser/server/build, corrected assertion-level RED,
+GREEN, independent review, production/LIVE/provider/PG/WebKit/Figma acceptance.
+Humaux tools unavailable in the previous session; no previous shared-store/canvas/coord write claimed.
+
+FIX-RED #274 implementation continuation, 2026-10-29
+CONFIRMED ASSERTION RED (E3 for RED only):
+Head: 855152b662b99d004881ef255ac1c79d42e077aa
+Foundation run 40752816753 / foundation job 123043721507, FAILURE.
+Original log: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40752816753/job/123043721507
+tests/ui/ds-rework.test.mjs:55 failed doesNotMatch /private-order-123|Access denied to/.
+tests/ui/ds-rework.test.mjs:142 failed match /data-variant="empty"/.
+tests/ui/ds-rework.test.mjs:170 failed match /role="alert"/.
+All three failures were ERR_ASSERTION on rendered output, not import/type/setup failures.
+Raw filtered original job excerpts are appended below.
+Implementation restores the three deliberately mutated rendering sites, preserving assertions.
+GREEN for implementation: PENDING own PR CI. Historical green does not accept it.
+2139-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.2278280Z ✔ DataTable banner: all-results scope counts the total (2.889217ms)
+2140:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4603553Z ✖ forbidden caller renders safe localized copy even when the actual failure contains a resource identifier (9.753355ms)
+2141-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4613131Z ✔ icons: fixed optical box, stroke, sizes and decorative semantics; labelled variant has a title (10.692702ms)
+2142-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4623521Z ✔ badges: a single text-only rule; loading/alert controls use SVG, never text glyphs (2.275781ms)
+2143-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4625207Z ✔ Field: the actual input owns label, error/help/counter associations and maxLength (1.855049ms)
+2144-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4626710Z ✔ FormActionBar: one connected frame, two responsive bars, explicit state, one live announcement (1.528207ms)
+2145-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4628142Z ✔ upload grid: progress, error, retry, remove and completion keep explicit names (2.770292ms)
+2146-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4629316Z ✔ state density is explicit and timeline facts carry ISO time (1.493846ms)
+2147:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4646843Z ✖ StatePanel: every variant has one primary action and only transient states announce politely (0.967088ms)
+2148:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4653580Z ✖ StatePanel: href actions are links and InlineError is an alert with at most one action (1.260111ms)
+2149-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4655579Z ✔ round 2: icon menu has one SVG and an explicit name, header status shares the title row (1.845576ms)
+2150-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4657404Z ✔ round 2: tables expose a localized scroll cue and focusable native scroll group (1.346869ms)
+2151-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4913316Z ✔ CSS: injected colour, spacing and font-size literals are red; tokens are green (4.003393ms)
+2152-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4915150Z ✔ TSX: glyph icons, raw svg, inline style objects, plain className strings and colour strings are red (1.683176ms)
+2153-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4916814Z ✔ CSS (#88): inset family literals are red like margin/padding/gap; tokens are green (0.38631ms)
+--
+2156-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.4930355Z ✔ the live DS tree and every @ds-page file follow the spec (R1–R7) (80.233608ms)
+2157:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7087507Z ✖ forbidden caller renders safe localized copy even when the actual failure contains a resource identifier (9.447834ms)
+2158-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7089358Z ✔ icons: fixed optical box, stroke, sizes and decorative semantics; labelled variant has a title (8.241892ms)
+2159-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7091184Z ✔ badges: a single text-only rule; loading/alert controls use SVG, never text glyphs (1.73345ms)
+2160-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7094308Z ✔ Field: the actual input owns label, error/help/counter associations and maxLength (1.461178ms)
+2161-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7096316Z ✔ FormActionBar: one connected frame, two responsive bars, explicit state, one live announcement (1.235665ms)
+2162-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7109361Z ✔ upload grid: progress, error, retry, remove and completion keep explicit names (2.103617ms)
+2163-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7111133Z ✔ state density is explicit and timeline facts carry ISO time (1.231369ms)
+2164:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7114002Z ✖ StatePanel: every variant has one primary action and only transient states announce politely (0.872819ms)
+2165:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7116910Z ✖ StatePanel: href actions are links and InlineError is an alert with at most one action (0.969311ms)
+2166-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7118307Z ✔ round 2: icon menu has one SVG and an explicit name, header status shares the title row (1.495129ms)
+2167-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7119614Z ✔ round 2: tables expose a localized scroll cue and focusable native scroll group (1.153774ms)
+2168-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7120598Z ✔ contrast: every text pair holds 4.5:1 (1.13739ms)
+2169-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7121677Z ✔ contrast: focus ring and control boundaries hold 3:1 on every surface they sit on (0.284571ms)
+2170-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7129293Z ✔ contrast: the calculator rejects the reference values that fail (so the gate can fail) (0.128409ms)
+--
+2185-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7420970Z
+2186:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7421316Z test at tests/ui/ds-rework.test.mjs:55:1
+2187:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7422199Z ✖ forbidden caller renders safe localized copy even when the actual failure contains a resource identifier (9.753355ms)
+2188-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7423270Z   AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /private-order-123|Access denied to/. Input:
+2189-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7424098Z
+2190-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7427778Z   '<div class="state" data-kind="empty" data-mode="compact"><span class="stateIcon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex-shrink:0;vertical-align:middle"><path d="M3 14l4-10h10l4 10v7H3z M3 14h6l1 3h4l1-3h6"></path></svg></span><h3 class="stateTitle">目前無法開啟此頁</h3><p class="stateText">Access denied to private-order-123</p><div class="stateActions"><a href="/zh-TW/ui-gallery" class="button " data-variant="primary" data-size="md">返回店鋪</a></div></div>'
+2191-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7430253Z
+2192-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7431705Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ui/ds-rework.test.mjs:63:12)
+--
+2204-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7445015Z
+2205:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7445207Z test at tests/ui/ds-rework.test.mjs:142:1
+2206:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7446036Z ✖ StatePanel: every variant has one primary action and only transient states announce politely (0.967088ms)
+2207-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7447015Z   AssertionError [ERR_ASSERTION]: The input did not match the regular expression /data-variant="empty"/. Input:
+2208-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7447573Z
+2209-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7450276Z   '<div class="state" data-kind="empty" data-mode="compact"><span class="stateIcon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex-shrink:0;vertical-align:middle"><path d="M3 14l4-10h10l4 10v7H3z M3 14h6l1 3h4l1-3h6"></path></svg></span><h3 class="stateTitle">empty title</h3><p class="stateText">empty body</p><div class="stateActions"><button type="button" class="button " data-variant="primary" data-size="md">Continue</button></div></div>'
+2210-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7452576Z
+2211-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7453547Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ui/ds-rework.test.mjs:153:12)
+--
+2225-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7465007Z
+2226:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7465244Z test at tests/ui/ds-rework.test.mjs:170:1
+2227:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7466179Z ✖ StatePanel: href actions are links and InlineError is an alert with at most one action (1.260111ms)
+2228-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7467002Z   AssertionError [ERR_ASSERTION]: The input did not match the regular expression /role="alert"/. Input:
+2229-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7467469Z
+2230-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7467743Z   '<p>Could not read the latest state</p>'
+2231-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7468029Z
+2232-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7468896Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ui/ds-rework.test.mjs:176:10)
+--
+2246-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7475276Z
+2247:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7475462Z test at tests/ui/ds-rework.test.mjs:55:1
+2248:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7476265Z ✖ forbidden caller renders safe localized copy even when the actual failure contains a resource identifier (9.447834ms)
+2249-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7477272Z   AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /private-order-123|Access denied to/. Input:
+2250-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7477865Z
+2251-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7480840Z   '<div class="state" data-kind="empty" data-mode="compact"><span class="stateIcon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex-shrink:0;vertical-align:middle"><path d="M3 14l4-10h10l4 10v7H3z M3 14h6l1 3h4l1-3h6"></path></svg></span><h3 class="stateTitle">目前無法開啟此頁</h3><p class="stateText">Access denied to private-order-123</p><div class="stateActions"><a href="/zh-TW/ui-gallery" class="button " data-variant="primary" data-size="md">返回店鋪</a></div></div>'
+2252-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7482955Z
+2253-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7484071Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ui/ds-rework.test.mjs:63:12)
+--
+2265-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7494059Z
+2266:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7494279Z test at tests/ui/ds-rework.test.mjs:142:1
+2267:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7495061Z ✖ StatePanel: every variant has one primary action and only transient states announce politely (0.872819ms)
+2268-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7495960Z   AssertionError [ERR_ASSERTION]: The input did not match the regular expression /data-variant="empty"/. Input:
+2269-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7496510Z
+2270-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7500505Z   '<div class="state" data-kind="empty" data-mode="compact"><span class="stateIcon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="flex-shrink:0;vertical-align:middle"><path d="M3 14l4-10h10l4 10v7H3z M3 14h6l1 3h4l1-3h6"></path></svg></span><h3 class="stateTitle">empty title</h3><p class="stateText">empty body</p><div class="stateActions"><button type="button" class="button " data-variant="primary" data-size="md">Continue</button></div></div>'
+2271-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7503183Z
+2272-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7504381Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ui/ds-rework.test.mjs:153:12)
+--
+2286-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7515818Z
+2287:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7516012Z test at tests/ui/ds-rework.test.mjs:170:1
+2288:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7516773Z ✖ StatePanel: href actions are links and InlineError is an alert with at most one action (0.969311ms)
+2289-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7517574Z   AssertionError [ERR_ASSERTION]: The input did not match the regular expression /role="alert"/. Input:
+2290-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7518047Z
+2291-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7518331Z   '<p>Could not read the latest state</p>'
+2292-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7518609Z
+2293-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:24:39.7519469Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ui/ds-rework.test.mjs:176:10)
+
+Supplemental RED: Gates run 40752816839 / gate (bundle:01) job 123048715342.
+The --browser-ui-gallery member failed on the same three DS assertions before browser execution.
+Synthetic-merge SHA in original receipt: 29522e0292a014cc00d97000da758f94225ac0ea.
+No browser-click RED is claimed; current-head real clicks remain pending implementation CI.
+Excerpts above preserve original assertion output; trailing whitespace was normalized for git diff hygiene.
