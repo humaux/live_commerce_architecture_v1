@@ -1,0 +1,4 @@
+CVS-PICK-IMPL — batched tests-only RED
+State: NOT_RUN at commit creation. CI run/job identifiers will be recorded here after push and in the PR comment.
+Expected assertions, not observed results: pure matcher export exists; deterministic static-directory generator exists; real browser picker controls exist.
+No local test/server executed. Do not implement until CI records the new assertion failures.
