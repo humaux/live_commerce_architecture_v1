@@ -134,8 +134,8 @@ test("OC11 reload while the publish request is in flight: pending is armed befor
 
 test("OC11 stale versions list: confirmed publish, failed refresh, second publish aborted before commit never shows success", async ({ page }) => {
   const { state } = await open(page);
-  await page.route("**/design/versions", (route) => route.abort("connectionreset")); // every versions read fails from here on
-  await edit(page, "e");
+  await edit(page, "e"); // wait for the editor's initial draft/media/versions load before injecting the refresh failure
+  await page.route("**/design/versions", (route) => route.abort("connectionreset")); // only subsequent versions reads fail
   await page.getByTestId("design-publish").click(); // real publish; its answer arrives, the list refresh after it fails
   await expect(page.getByTestId("design-note")).toContainText(okPublished);
   state.cut = "before-commit"; // the same draft again; nothing commits

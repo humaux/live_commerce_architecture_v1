@@ -31,3 +31,11 @@ Dropped: the earlier shop-gate.mjs registration (runs only under LC_SHOP_MOCK=1,
 - Local: none (no node_modules). Level: E3 once green, MOCK/real-stack Next + Go harness, no device.
 - Not covered: Safari/WebKit (offline events differ), real network loss mid-payment, the "still in flight vs never arrived" ambiguity of recheck.
 - Risks: the admin spec uses the BFF-probe store and leaves one extra published version there; recheck cannot resend (by design).
+
+## Directed fix 1 (#221, 2026-10-28)
+- Base: deb79b87dbe933267a23a89b9e48c368dcc75556; assigned branch unit/oc11-publish-pending-offline. Role: ui_worker; runtime model: GPT-6 (exact model ID/reasoning setting not exposed). No delegation.
+- Existing RED: Gates 40630002101 / job 122684528117; artifact 12812066011 error-context.md confirms the design-name fill timeout and the visible "The store design is temporarily unavailable. Try again." state. The test installed the versions-abort route before the initial asynchronous load finished, preventing Editor from mounting. This is a setup failure, not A11 assertion RED.
+- Fix: move the real fill before fault injection. Product behavior and all A11 assertions are unchanged; no timeout, retry or force option added.
+- Local static evidence: python3 scripts/check_packet.py exit 0 (PASS_PACKET_STRUCTURE_ONLY); git diff --check exit 0. The packet check's generated experiments/results/packet-check.json was restored to its clean starting content. No local tests or servers; no dependencies available for a local typecheck. E1 structure only; author assessment is E0. GREEN and independent review remain pending.
+- Changed paths: tests/admin/oc/design-publish-pending.spec.ts (outside the original contracts/tasks.json write_paths; explicitly targeted by this directed card, flagged for integrator approval), output/oc-11/DELIVERY.md and output/oc-11/red.log. No CVS changes. Go dependency graph unchanged; no dependency-map regeneration needed.
+- Acceptance: the PR's own gate --browser-design must complete the unchanged OC11-A11 assertions. Publish the fix once, record Gates/Foundation WAIT_RUN IDs in the handoff; integrator relays completion. No merge or auto-merge. Rollback: revert only this directed-fix commit on the assigned branch.

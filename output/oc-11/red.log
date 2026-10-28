@@ -16,3 +16,10 @@ REVIEW ROUND 1 RED (tests only, implementation of ca1be4157; heads c76884a0d the
 - admin rollback case, Gates run 40569219761, job 122433760269 (head 100ae6fdb, after a setup fix that opened the versions tab): OC11-A4 "the old publish row (source_version equal) must not confirm" failed (old publish row confirmed a new lost publish).
 - A6/A7 (unconfirmed state, not-yet) and B6/B6b (reload really re-reads) were not reached by the red runs; they are asserted for the first time in the GREEN run. Setup failure not counted: run 40524211987 attempt 1 was cancelled before any job ran; test 3 first failed on the missing versions-tab click.
 GREEN for the final SHA: recorded in the PR comment after the run (not in this file, to avoid a docs-only push during Gates).
+
+DIRECTED FIX 1 RED (existing CI; no new RED push required by the dispatch):
+- Head deb79b87dbe933267a23a89b9e48c368dcc75556, Gates run 40630002101, job 122684528117 (gate --browser-design, TestBrowserStoreDesign).
+- GitHub job API confirms completed/failure at that head. Artifact gate-browser-design (id 12812066011), playwright/store-design/20261028T111753.399966496/results/oc-design-publish-pending--3c5de--commit-never-shows-success/error-context.md confirms locator.fill timed out after 30000 ms waiting for getByTestId('design-name'). Its page snapshot shows only the unavailable state: "The store design is temporarily unavailable. Try again." and a Try again button, with no editor.
+- Root cause from current source: page.goto returns before useLoad's loadAll (draft/media/versions) completes. Installing the versions-abort route before edit can abort that initial read; Design renders the unavailable state instead of Editor, so design-name is absent.
+- Fix: complete the real design-name fill before installing the versions-abort route. Subsequent refresh reads still fail; the second publish is still aborted before commit; every existing A11 assertion remains unchanged.
+- This setup timeout is not assertion-level RED evidence for A11. The earlier mutation/assertion RED records above remain unchanged. New-head CI and independent review are pending.
