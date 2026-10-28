@@ -122,6 +122,23 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   expect((await unreadList).status(), "filter=unread real BFF result").toBe(200);
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
   record("filter", "select unread", "A8 filter=unread answered 200 and lists the unread thread");
+  // #242 item 1: opening the unread thread must remove its list row immediately.
+  const unreadRead = page.waitForResponse(
+    (r) => r.request().method() === "POST" && r.url().includes(`/conversations/${ids.open}/read`),
+  );
+  await open(page, ids.open);
+  expect((await unreadRead).status()).toBe(200);
+  await expect(page.getByTestId("inbox-thread")).toContainText(dm);
+  await expect(
+    page.getByTestId(`conversation-${ids.open}`),
+    "marked-read row disappears immediately from the unread list",
+  ).toHaveCount(0);
+  await expect.poll(async () => (await facts(page)).read_seq).toBeGreaterThan(0);
+  record("unread row", "click unread thread", "read thread remains open and its row immediately disappears");
+  await page.reload();
+  await page.getByTestId("inbox-filter").selectOption("unread");
+  await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
+  record("unread row persistence", "reload then select unread", "marked-read thread remains absent after authoritative reload");
   await page.getByTestId("inbox-filter").selectOption("live_comment");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
   await page.getByTestId("inbox-filter").selectOption("all");

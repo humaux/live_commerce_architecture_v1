@@ -1,0 +1,6 @@
+# inbox-p2 RED: #242 item 1
+Status: PENDING; no test has been run locally.
+Test: INU01, tests/admin/inbox-ui.spec.ts
+Expected assertion: marked-read row disappears immediately from the unread list
+Production behavior retained: Inbox.tsx onRead only maps unread=false.
+CI run/job IDs will be recorded after PR creation; this file is not a PASS receipt.
