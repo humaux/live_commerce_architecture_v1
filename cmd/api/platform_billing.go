@@ -5,6 +5,10 @@
 // never reuses the merchant pool for the webhook and never logs a key, secret or DSN.
 //
 // External host: api.stripe.com (platform account), only through internal/billing.
+// Purpose: assemble and mount the platform billing service and webhook.
+// Depends on: internal/billing, internal/platform and the dedicated Stripe ingress pool.
+// Used by: cmd/api main and platform billing wiring tests.
+// Invariants: only the exact decoded webhook path reaches billing; requests remain unchanged.
 
 package main
 
@@ -74,9 +78,23 @@ func mountPlatformBilling(fallback, webhook http.Handler) http.Handler {
 	if webhook == nil {
 		return fallback
 	}
+	mux := http.NewServeMux()
+	mux.Handle("POST /v1/platform/stripe/webhook", webhook)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == platformWebhookPath {
-			webhook.ServeHTTP(w, r)
+			if r.Method != http.MethodPost {
+				webhook.ServeHTTP(w, r)
+				return
+			}
+			// The old mount compared decoded Path. Select with that same path,
+			// including encoded separators, then pass the original signed request
+			// unchanged; ServeMux must not redirect or rewrite it.
+			selection := *r
+			selectionURL := *r.URL
+			selectionURL.RawPath = ""
+			selection.URL = &selectionURL
+			handler, _ := mux.Handler(&selection)
+			handler.ServeHTTP(w, r)
 			return
 		}
 		fallback.ServeHTTP(w, r)
