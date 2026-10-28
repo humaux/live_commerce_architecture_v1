@@ -150,10 +150,26 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   ).toHaveCount(0);
   await expect.poll(async () => (await facts(page)).read_seq).toBeGreaterThan(0);
   record("unread row", "click unread thread", "read thread remains open and its row immediately disappears");
+  // #242 item 2 mutation RED: emulate an ignored unread filter using real, unfiltered BFF data.
+  // Fixture fault injection only; remove this route after CI proves the unchanged exclusion assertions fail.
+  await page.route(`**/api/stores/${store}/inbox/conversations?*`, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("filter") !== "unread") return route.continue();
+    url.searchParams.set("filter", "all");
+    const response = await route.fetch({ url: url.toString() });
+    await route.fulfill({ response });
+  });
   await page.reload();
+  const reloadedUnreadList = page.waitForResponse(
+    (r) => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/stores/${store}/inbox/conversations`
+      && new URL(r.url()).searchParams.get("filter") === "unread",
+  );
   await page.getByTestId("inbox-filter").selectOption("unread");
-  await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
-  await expect(page.getByTestId(`conversation-${ids.closed}`)).toHaveCount(0);
+  expect((await reloadedUnreadList).status(), "reloaded filter=unread real BFF result").toBe(200);
+  await expect(page.getByTestId("inbox-list")).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
+  await expect(page.getByTestId(`conversation-${ids.closed}`), "completed unread reload excludes the distinct read conversation").toHaveCount(0);
+  await expect(page.getByTestId(`conversation-${ids.open}`), "completed unread reload excludes the marked-read conversation").toHaveCount(0);
   record("unread row persistence", "reload then select unread", "marked-read thread remains absent after authoritative reload");
   await page.getByTestId("inbox-filter").selectOption("live_comment");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);

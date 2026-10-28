@@ -30,3 +30,12 @@ were absent from the inherited tests-only push. No separate failing CI assertion
 for those hardening changes is claimed. Original SQL invalid_filter RED does not
 by itself prove BFF/HTTP allowlist/browser assertion sensitivity (item 4).
 No local tests or servers run; implementation GREEN is pending.
+
+2026-10-28 continuation: prior implementation head 7f6ea56586ad9c5c90319b05c86b2821de193dd1
+now GREEN (E3 original GitHub receipts): Foundation 40650271764 / 122688477621;
+Gates 40650271800 / receipts 122794721961 / required 122818633209.
+Remaining item2/3 mutation RED batch: PENDING. See RED-HANDOFF.md for expected
+assertions and exact restoration procedure. Never accept this mutation head.
+New run/head/job IDs are recorded in the PR continuation comment after allocation;
+append observed failures here in the authorized restoration commit, not a later
+evidence-only push. No item2/3 RED claimed until those original receipts are read.

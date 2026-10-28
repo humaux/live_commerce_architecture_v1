@@ -1,7 +1,7 @@
 // Purpose: UR02 store-level read/reset through committed inbound messages and the production trigger (#242).
 // Depends on: lbSetup signed MOCK webhook/real consumer, real PG, platform.WithScope and inbox.Service.
 // Used by: CI foundation catch-all shard; replaces internal/inbox/unread_test.go's simulated UR02.
-// Invariants: no direct last_inbound_seq writes or disabled triggers; all original UR02 permissions remain asserted.
+// Invariants: all original UR02 permissions remain asserted; temporary #242 mutation below must fail real-message checks.
 package foundation_test
 
 import (
@@ -101,8 +101,10 @@ func TestOC12UnreadStoreLevelAndReset(t *testing.T) {
 		t.Fatalf("inbox:reply mark_read=%d, want %d", got, first)
 	}
 	assertUnread(false) // Another staff member observes the store-level clear.
-	if next := e.postDM(t, peer, "SYNTHETIC-UR02-NEW-INBOUND", time.Now()); next != conv {
-		t.Fatal("new inbound created a different conversation")
+	// #242 item 3 mutation RED: reproduce the former simulated reset without inserting a message.
+	// Restore postDM after CI proves messageSeq rejects this bypass on its own row/sequence assertion.
+	if _, err := f.owner.Exec(ctx, `UPDATE inbox.conversation_state SET last_inbound_seq=last_inbound_seq+1 WHERE conversation_id=$1`, conv); err != nil {
+		t.Fatal(err)
 	}
 	if next := messageSeq(2); next <= first {
 		t.Fatalf("new inbound sequence=%d, want > %d", next, first)

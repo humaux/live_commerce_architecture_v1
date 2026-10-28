@@ -8,7 +8,7 @@ Branch: unit/issue-242-inbox-p2. PR #259 → r3/integration. No merge/auto-merge
 Authority: https://github.com/humaux/live_commerce_architecture_v1/issues/242,
 contracts/live-console-v1.md §3.6 / A8–A10 and original CI receipts.
 
-## Changes (author report E0; current-head CI pending)
+## Changes (author report E0; see latest RED continuation below)
 1. Inbox.tsx onRead now removes read rows when filter=unread, retaining the open
    thread and existing unread-total calculation. All other filters keep their rows.
    Inherited INU01 checks immediate removal and absence after reload/reselect.
@@ -60,5 +60,26 @@ Items 2/3 were absent from the inherited tests-only push; no independent CI RED 
 those test-hardening units is claimed. Item 4 allowlist/browser mutation RED also
 remains NOT_RUN. Strict per-item RED acceptance is incomplete; integrator must not
 mark the card accepted solely because implementation CI later turns green.
-Humaux tools are unavailable (search/store/canvas/coord/code index); no store or
-canvas action is claimed. These task-owned files are the available handoff trace.
+The previous session had no Humaux tools. On 2026-10-28 continuation, tools became
+discoverable: directed search, development rules, repo map, rejected/lesson subset,
+locked decision store and own canvas update were performed. Rejected coverage 3/9;
+lesson coverage 3/33; these subsets are not asserted to be complete inventories.
+
+## 2026-10-28 RED continuation (author E0; new CI PENDING)
+
+Prior implementation head 7f6ea56586ad9c5c90319b05c86b2821de193dd1 is now observed
+GREEN: Foundation 40650271764 / 122688477621; Gates 40650271800 / receipts
+122794721961 / required 122818633209. These are prior-head E3, not acceptance
+of the intentional mutation or subsequent restoration. No failed jobs on either run.
+This supersedes the previous implementation-CI-pending statement above.
+
+Remaining item 2/3 RED evidence is combined in one minimal direct-test mutation
+push. See RED-HANDOFF.md for exact mutations, expected own-assertion failures,
+and the restoration instructions. Item 2 also gains precise response/loading
+barriers and a positive unread row after reload, addressing the latest #242
+incremental review: count=0 during an empty loading state is insufficient proof.
+No assertions were removed or thresholds changed. The temporary mutations are
+not production fixes and this mutation head must never be merged.
+At most one restoration push remains after this batch. Item 4's historical
+GREEN and source-counterfactual explanation remain in output/oc-12/DELIVERY.md;
+its historical allowlist/browser mutation RED is not claimed.
