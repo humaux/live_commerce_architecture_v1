@@ -1,6 +1,37 @@
-/* Purpose: Styles EmptyState, ErrorState, PermissionState, BlockedState and Dropzone from --ds-* tokens only.
+/* Purpose: Styles EmptyState, ErrorState, PermissionState, BlockedState, StatePanel, InlineError and Dropzone from --ds-* tokens only.
  * Depends on: ../tokens.css custom properties.
- * Used by: packages/ui/src/ds/States.tsx */
+ * Used by: packages/ui/src/ds/States.tsx
+ * Invariants: no raw colours; recovery actions retain the 44px DS target and have no decorative chevron. */
+.statePanel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ds-space-4);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--ds-space-6);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  background: var(--ds-surface);
+  color: var(--ds-text-1);
+}
+.statePanelTitle { margin: 0; color: var(--ds-text-1); font-size: var(--ds-text-2xl); font-weight: 600; line-height: var(--ds-leading-heading); }
+.statePanelBody { margin: 0; color: var(--ds-text-1); font-size: var(--ds-text-md); line-height: var(--ds-leading); }
+.statePanelNote { margin: 0; color: var(--ds-text-2); font-size: var(--ds-text-sm); line-height: var(--ds-leading); }
+.statePanelStatus { display: flex; align-items: flex-start; }
+.statePanelAction, .inlineErrorAction { display: flex; min-height: var(--ds-target); }
+.statePanelAction > *, .inlineErrorAction > * { width: 100%; }
+.inlineError {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ds-space-3);
+  box-sizing: border-box;
+  padding: var(--ds-space-4);
+  background: var(--ds-surface);
+}
+.inlineErrorMessage { margin: 0; color: var(--ds-danger-text); font-size: var(--ds-text-md); line-height: var(--ds-leading); }
+
 .state {
   display: flex;
   flex-direction: column;

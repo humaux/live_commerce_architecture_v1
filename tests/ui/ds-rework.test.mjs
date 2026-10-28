@@ -1,6 +1,7 @@
 // Purpose: DS-2 render contracts and regression negatives; authored for CI, never substitutes for real click/visual review.
 // Depends on: node:test/assert, React SSR, TypeScript transpilation; real DS modules loaded with CSS names only stubbed.
 // Used by: ds-tokens.test.mjs in test-node.sh and --browser-ui-gallery. Browser/red-green execution remains CI NOT_RUN.
+// Invariants: assertions cover the authored contract only; SSR never substitutes for real browser clicks or visual review.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
