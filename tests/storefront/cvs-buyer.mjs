@@ -289,8 +289,7 @@ try {
     snapshotClicks.push({ locale, viewport, control: "store code / confirm", operation: "fill 12345; click", expected: "format error", actual: "aria-invalid=true", result: "PASS" });
     await page.getByTestId("cvs-entered-code").fill("000000");
     const missing = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
-    await page.getByTestId("confirm-address").click();
-    const miss = await missing;
+    const [miss] = await Promise.all([missing, page.getByTestId("confirm-address").click()]);
     assert.equal(miss.status(), 422);
     assert.equal((await miss.json()).code, "store_not_found");
     await expect(page.getByTestId("cvs-entered-code")).toHaveAttribute("aria-invalid", "true");
@@ -298,8 +297,7 @@ try {
     snapshotClicks.push({ locale, viewport, control: "store code / confirm", operation: "fill 000000; click", expected: "422 store_not_found beside code", actual: "localized field error", result: "PASS" });
     await page.getByTestId("cvs-entered-code").fill("131386");
     const resolved = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
-    await page.getByTestId("confirm-address").click();
-    const lookup = await resolved;
+    const [lookup] = await Promise.all([resolved, page.getByTestId("confirm-address").click()]);
     assert.equal(lookup.status(), 201);
     const savedStore = await lookup.json();
     assert.equal(savedStore.name, "建盛");
@@ -321,8 +319,7 @@ try {
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     await page.getByTestId("cvs-entered-code").fill("131386");
     const restored = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
-    await page.getByTestId("confirm-address").click();
-    const restoredResponse = await restored;
+    const [restoredResponse] = await Promise.all([restored, page.getByTestId("confirm-address").click()]);
     assert.equal(restoredResponse.status(), 201);
     assert.equal((await restoredResponse.json()).pickup_id, savedStore.pickup_id, "refresh preserves the persisted buyer pickup and its canonical identity");
     await expect(page.getByTestId("cvs-store-name")).toContainText("建盛");
