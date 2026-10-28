@@ -298,6 +298,7 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   await detail.getByLabel(/tracking number|物流單號|追蹤單號/i).fill(fixtures.tracking);
   await detail.getByLabel(/tracking (url|link)|追蹤連結/i).fill(`https://track.example.com/t?n=${fixtures.tracking}`);
   await detail.getByRole("button", { name: /mark shipped|標記已出貨/i }).click();
+  await detail.getByTestId("shipment-confirm").click();
   await expect(detail.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
   await expect(detail).toContainText(fixtures.tracking);
   await expect(detail).not.toContainText(/delivered|in transit|已送達|運送中/i);

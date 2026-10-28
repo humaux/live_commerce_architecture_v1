@@ -39,3 +39,11 @@ FOUNDATION_RUN=40761011425
 FOUNDATION_JOB=123072614938 PASS
 CAUSAL_EVIDENCE=evidence/red-assertions.log; original GitHub artifact retains full report, traces and screenshots.
 GREEN=NOT_RUN
+
+IMPLEMENTATION_SHA=7eed1ab3cecef8700962f1b84c099e6ceead9497
+IMPLEMENTATION_CHECK_SUITES=0; GitHub mergeStateStatus DIRTY / mergeable CONFLICTING
+CI_STARTUP_REPAIR_ATTEMPT=1
+CURRENT_INTEGRATION=dcecd6220094234b4760315c676d9737ed713c40
+RESOLUTION=i18n index header only; preserve both feature exports; regenerate browser ownership
+MAPPED_TSC_AFTER_MERGE=exit_0
+NEXT=one integration-conflict repair push, then record current-head Gates/Foundation IDs

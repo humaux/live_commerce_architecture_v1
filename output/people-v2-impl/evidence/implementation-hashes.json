@@ -5,7 +5,7 @@
   "apps/admin/components/customers.css": "1d798d3005876d6083406c9ce7a5ec7fdb5c47355acc3ad52345a9255807c591",
   "apps/admin/lib/customers-copy.ts": "81d9557d18909de6828f871da32ba77715bc6c7d472078ee49ffd0eaa42ee5d9",
   "packages/i18n/src/people.ts": "38a886120211a42ad57a691a7f485bcdad6c0a47884eee6e8314d2d0288dd3da",
-  "packages/i18n/src/index.ts": "c326e7790ecb2d477018720d68c28edd8df78a7d39dd3730de7e0a39701d6718",
+  "packages/i18n/src/index.ts": "2935e7b97beea2509e5306bfb0cc74ee6cc6f70990106f44ee9144a0f4dfcd4d",
   "tests/admin/people-v2.spec.ts": "df30036be948743d02685cad109b03678e7f5e1bb0b2beebc8c2ae610bc91293",
   "tests/admin/customer-tags.spec.ts": "0eedc8dfb8ecc6876c90732bc37f6d80ccb3ea41306d2edcfe3bef0b657d9f3d",
   "tests/admin/import-wizard.spec.ts": "4564d819c1879949573839dca3bcab193a14f2d178cadca4a043be98559c3435",

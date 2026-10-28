@@ -347,3 +347,14 @@ customer-tags-copy.ts, import-history-copy.ts and orders-copy.ts. No copy in tho
 is changed. Error/source/kind/via labels retain customers-copy.ts's existing locale maps;
 only the signed buyer-settings source uses the table above. Erasure completion counts come
 from the existing localized erasedDone formatter and actual server summary.
+
+## CI startup conflict repair · attempt 1
+
+Implementation `7eed1ab3cecef8700962f1b84c099e6ceead9497` pushed successfully, but GitHub
+reported DIRTY/CONFLICTING and no check suite/run. Current integration had meanwhile
+advanced to `dcecd6220094234b4760315c676d9737ed713c40`. Merged it into this branch; the
+only content conflict was the shared i18n index header. Retained both stateRecoveryCopy
+and peopleCopy exports and described both dependencies in the header. Other imported
+code is unchanged from integration. Regenerated ownership and depmap; strict mapped
+admin tsc and index syntax check exit 0. One repair push is required to let PR CI start;
+no item-by-item implementation pushes or test weakening. Temporary links/config removed.

@@ -13,4 +13,6 @@ Outside original PLAN write paths, within the pre-approved customer module:
 
 Generated browser ownership is included after merging origin/r3/integration. depmap.sh produced no diff. Existing compiling harnesses updated in the same push. DELIVERY.md contains the required parity checklist, UI PROCESS sections, three-language copy, risk and NOT_RUN lists. Unknown outcomes stay locked in that authenticated tab until a definite outcome or new session; there is no server request-status endpoint to invent an automatic unlock from. Rollback: revert the implementation commit; no database or production write.
 
+CI startup repair (attempt 1): GitHub reported DIRTY/CONFLICTING with no checks on implementation 7eed1ab3c. Merged current integration dcecd6220, reconciled only the i18n header while preserving both feature exports, and regenerated ownership. Strict mapped tsc and index syntax checks exit 0. Other imported code is unchanged from integration. A single integration repair push allows the PR workflows to start.
+
 🤖 Generated with Codex (dispatched by Claude Code integrator).
