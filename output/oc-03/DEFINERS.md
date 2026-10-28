@@ -1,6 +1,6 @@
 # OC-03 guarded definers
 
-Guard: `PERFORM identity.require_recent_auth(<session hash arg>, interval '10 minutes')`, inserted in place (pg_get_functiondef + exactly-one-anchor replace) right after the definer's own authorization succeeded and before any lock or write. An unknown, revoked or expired session therefore still answers 401/404/403 as before; only an authorized member with a stale `authenticated_at` gets PT403 `reauth_required`. EXECUTE on `identity.require_recent_auth(bytea,interval)` is granted to the definer's owner role (read from `pg_proc.proowner` at apply time).
+Guard: `PERFORM identity.require_recent_auth(<session hash arg>, interval '10 minutes')`, inserted in place (pg_get_functiondef + exactly-one-anchor replace) right after the definer's own authorization succeeded and before its first write. An unknown, revoked or expired session therefore still answers 401/404/403 as before; only an authorized member with a stale `authenticated_at` gets PT403 `reauth_required`. EXECUTE on `identity.require_recent_auth(bytea,interval)` is granted to the definer's owner role (read from `pg_proc.proowner` at apply time). One lock-order exception (issue #228 item 3): `staff_invite`, `staff_set_role` and `staff_remove` authorize through `identity.staff_owner_ctx`, which itself takes the store lock and the target `FOR UPDATE`; their guard runs after that read lock (no write precedes it).
 
 | Family | Definer (full signature) | Latest definition | Owner role | Hash arg | Patched in |
 |---|---|---|---|---|---|
@@ -23,14 +23,15 @@ Guard: `PERFORM identity.require_recent_auth(<session hash arg>, interval '10 mi
 
 Owner role disabled (no reauth guard): `identity.staff_invite` and `identity.staff_set_role` refuse role `owner`; `identity.staff_accept(bytea,bytea)` (0089, commerce_staff_writer) refuses an owner invitation. All PT403 `owner_role_disabled`.
 
-0201 functions changed in 0203 (issue #215 items 1 and 2): `identity.complete_oidc_reauth` (GREATEST of the old value and LEAST(auth_time, now)); `identity.require_recent_auth` (authenticated_at more than 1 minute ahead, or infinity, is not recent).
+0201 functions changed in 0203 (issue #215 items 1 and 2): `identity.complete_oidc_reauth` (GREATEST of the old value and LEAST(auth_time, now)); `identity.require_recent_auth` (authenticated_at more than 1 minute ahead, or infinity, is not recent). 0207 (issue #228 item 6) caps the OIDC result at `clock_timestamp()`, so a prior `infinity` cannot survive a successful re-auth.
 
 ## Not guarded, and why (integrator decision needed where marked)
 
 - `payments.request_stripe_refund_refresh` (post_river/0013): records a throttled status-refresh signal, moves no money. Not a refund command.
 - `billing.refresh_subscription` (0079): refresh-on-read mirror of Stripe state, called on a plain billing page view; guarding it would break reads for any member with an older session. `identity.read_billing`, `payments.read_store_settlements` (billing:manage) are reads.
 - Settlement statement CSV (`cmd/stripe-admin settlement-export`): an operator CLI over `internal/payments/stripeadmin`, no merchant session hash. DECISION: out of the merchant re-auth scope.
-- Carrier / pick-list CSV (`internal/merchantorders/carrier_export.go`): formatted in Go from `fulfillment.read_pick_list` after a Go-side `resolve_access` (orders:export). There is no export-only SQL entry; the SQL guard would have to sit on the shared read. DECISION: Go-side call to `identity.require_recent_auth` in the same transaction (OC-15) or a dedicated export definer.
+- Carrier / pick-list CSV (`internal/merchantorders/carrier_export.go`): formatted in Go from `fulfillment.read_pick_list` after a Go-side `resolve_access` (orders:export). There is no export-only SQL entry; the SQL guard would have to sit on the shared read. DECISION: Go-side call to `identity.require_recent_auth` in the same transaction (OC-15) or a dedicated export definer. Issue #228 item 8 records that no card owns this yet; it needs a card before deployment (r3/integration is fail-closed for stale sessions only on the SQL-guarded operations).
+- `payments.set_bank_transfer_settings(bytea,uuid,text,bytea,bigint,boolean,boolean,text,text,text,text,integer)` (0088; refused by 0202 while `checkout.bank_transfer_policy.closed`): writes the merchant's payment-receiving bank details (the account buyers pay into). Deliberately not guarded here: issue #228 item 7 leaves the §16 scope decision to the owner. If §16 covers payment-receiving settings, the guard belongs right after `resolve_access`/before the advisory lock in a later migration.
 - `claims.erase_actor`, `claims.replay_actor_erasures`, `customers.replay_erasures`, `ops.order_attempt_erase_*`: retention/operator entries (commerce_retention_operator, tenant/store arguments), no session hash. Not merchant-session commands.
 - Buyer branches of `customers.record_export` / `customers.erase_owner` and `customers.buyer_export_orders`: authenticated by a buyer capability session, which has no `authenticated_at`.
 - `identity.staff_revoke_invite`: not in the §16 list (revoking an invitation grants nothing).

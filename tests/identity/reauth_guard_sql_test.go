@@ -3,7 +3,9 @@
 // reauth_required; a fresh session passes the guard; the owner role cannot be created (staff_invite, staff_set_role,
 // accepting an old owner invitation: PT403 owner_role_disabled); EXECUTE on identity.require_recent_auth is held by the
 // owners of the guarded definers and nobody else; plus the two OC-02 follow-ups of issue #215 (an OIDC re-auth never moves
-// authenticated_at backwards; a future or infinite authenticated_at is not recent).
+// authenticated_at backwards; a future or infinite authenticated_at is not recent) and the #228 follow-ups (the guard
+// carries interval '10 minutes' and precedes the first write/lock; 11-minute sessions are refused and 9-minute sessions
+// pass; an infinite authenticated_at cannot survive an OIDC re-auth).
 // Depends on: reauth_test.go (same package: disposable lc_foundation_test database, fixtures and helpers), migrations 0089
 // (staff), 0137 (platform Stripe), 0079 (billing), 0074 (ads), 0078 (privacy), 0147 (reports), post_river/0016 (refund), 0203.
 // Used by: go test ./tests/identity (CI shard:unit via scripts/dev/test-local.sh).

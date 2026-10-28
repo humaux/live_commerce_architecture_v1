@@ -51,6 +51,14 @@ closed and write no wrong ledger row.
 Application rollback is permitted only when the saved migration-ledger count matches; otherwise use a forward fix or
 a separately owner-approved tested restore. This unit executes none of these host operations.
 
+**Migration 0201 (OC-02) rewrites `identity.sessions` in one transaction.** It adds `authenticated_at`, backfills every
+existing session from `identity.session_events` (and sets `-infinity` where there is no `session.issued` event), then
+sets NOT NULL and the DEFAULT. `ALTER TABLE ... ADD COLUMN` + `UPDATE` + `ALTER COLUMN` take an ACCESS EXCLUSIVE lock on
+`identity.sessions` for the length of that transaction, so logins and every authenticated request block meanwhile. The
+window is short for a normal session table but grows with row count. Plan 0201 in a low-traffic deploy window with the
+maintenance window already open (as `deploy.sh upgrade` does), and do not interrupt `migrate` mid-transaction. Issue #215
+item 6 records this as the deploy note instead of a batched backfill; no data migration is added by IDENT-P2.
+
 Before any R3 `stripe-admin` command on an existing installation, the owner/operator prepares
 `$LC_STATE_DIR/settlements` with `install -d -o 65532 -g 65532 -m 0700 "$LC_STATE_DIR/settlements"`.
 New `host-setup.sh` and full smoke fixtures do this automatically; preflight P02 refuses a missing/symlink/wrong-owner

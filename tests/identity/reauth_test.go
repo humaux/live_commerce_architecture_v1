@@ -1,7 +1,9 @@
 // Purpose: OC-02 recent re-authentication gates (contracts/merchant-password-auth-v1.md §16, Red tests): fail-closed
 // identity.require_recent_auth, the authenticated_at backfill of migration 0201, the password/code and OIDC re-auth
 // definers (session binding, principal match, no new session and no session.issued event) and their PUBLIC revoke,
-// and the internal/identity Go flows over them (RA06 password + code, RA07 OIDC, MOCK mailer and MOCK IdP adapter).
+// and the internal/identity Go flows over them (RA06 password + code, RA07 OIDC, MOCK mailer and MOCK IdP adapter),
+// plus the #215 follow-ups (RA08 both re-auth throttle call sites, RA09 the PD5 budget before compare, RA10 the issue
+// path writing authenticated_at without the column DEFAULT).
 // Depends on: the disposable lc_foundation_test database (LC_TEST_DATABASE_ALLOWED=1, LC_TEST_DATABASE_URL),
 // livecommerce/migrations (Apply), internal/platform (OpenIdentityPool), internal/identity (HashPassword, Passwords,
 // Service), internal/mail (Message), internal/oidclogin (Identity).
