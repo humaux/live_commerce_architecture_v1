@@ -30,3 +30,26 @@ Tests plus explicitly labelled minimal mutations: arm-after-response and stale-l
 Expected own-assertion failures: OC11-A9 persisted key while POST held; OC11-A10 actual second POST after reload; OC11-A11 stale row must not confirm; OC11-P1a key metadata and other-tab identity; OC11-P1b local rollback disabled, superseded resolution/unlock/persistence and bounded recheck read.
 Run/job ids: PENDING until push. No assertion RED or GREEN claimed yet. Initial-load/fill/timeouts outside the bounded-read assertion do not count.
 Local tests: NOT_RUN (prohibited). Humaux: unavailable, no shared memory/canvas write.
+
+REVIEW FIX RED PUSH RECEIPT (PENDING; not assertion evidence):
+Head: 33bbc7e8d4f0da89ee7b28cff9c94d7f65d6873c.
+Gates workflow WAIT_RUN: 40758862245 (pull_request, in_progress); only plan job materialized at handoff, so no test job id or assertion failure yet. Do not use plan job as acceptance.
+Foundation workflow WAIT_RUN: 40758862052; foundation job 123065015466 in_progress. gh pr checks 221 exit 8 = pending.
+GREEN: NOT_RUN. Implementation push: NOT_DONE, waiting for causal assertion RED.
+Wakeup: integrator relays these workflows' conclusions in a fresh session per dispatch. Next session inspect failed browser-design job logs and recover each named assertion; if setup fails, count targeted attempt and do not call it RED. Record synthetic checkout SHA when actual test job materializes.
+This receipt is intentionally retained as a local evidence-only diff for the implementation commit; no extra CI-triggering evidence push. PR comment also records the receipt remotely.
+
+RELAY 1 RAW ASSERTION AUDIT (2026-10-29; no GREEN claim):
+Head 33bbc7e8d4f0da89ee7b28cff9c94d7f65d6873c; Gates 40758862245, bundle:04 job 123067989372, completed/failure.
+Synthetic checkout 2d6b62b0cf35b762ccdb1917d3e170a091eef3d5 (head into base bf161bac96252c35337e07713c08a275d48e3e17).
+Source: official artifact gate-browser-design id 12849931133, member playwright/store-design/20261028T202735.230547984/playwright.log; preserved as output/oc-11/review-red-playwright.log. Artifact transport was slow: bounded 90s API download yielded a partial ZIP; tar recovered the earlier complete log member. Independently verified that member's deflate EOF, compressed/uncompressed sizes and ZIP CRC32 5978702a (23574 bytes, compressed 3236). Full ZIP download NOT_DONE; incomplete container removed, original artifact remains on GitHub. No local test executed.
+Preserved log SHA256: e7a49529bf3c217c2b4b514fda0bae40b96f780348cc3f1b6467085d0668e419.
+Observed 6 failed / 13 passed. Assertion RED witnessed:
+- OC11-P1a versions expose the committed original request key: received undefined.
+- OC11-A9 identity durable while original POST held: expected intercepted request key, received undefined.
+- OC11-A11 first confirmed publish must not confirm second: design-publish-notyet absent, own assertion timeout 10000ms (not setup/fill timeout).
+- OC11-P1a another request must never be our success: design-note count expected 0, received 1.
+- OC11-P1b bounded read: Recheck remained disabled after the own 7000ms assertion budget.
+NOT witnessed: OC11-A10 count failure. The in-flight test reported only A9; do not claim #264 closed. Source inference: reload can reject the old document's fetch before teardown, letting arm-after-response persist pending during cancellation. Corrected transport fixture withholds publish rejections until document destruction, preserving real native requests/routes/reload/clicks, so old-context cleanup cannot mask the second POST.
+P1b supersession NOT_REACHED: timeout:0 on the enabled local rollback control exhausted the 30000ms whole-test timeout, then newPage failed against the disposed context. This is not terminal-resolution RED. Replaced unbounded soft locator waits with immediate predicate samples after existing boundaries so all independent oracles execute. Primary Playwright v1.63.0 matcher/progress source checked; references in DELIVERY.md.
+Foundation 40758862052 / job 123065015466 passed on the old head; current candidate acceptance remains PENDING. This directed test-oracle correction is attempt 1; both labelled product mutations remain solely for RED. No implementation push because current storefront-v2:390 requires an integrator-frozen receipt contract; requested that contract + backend ownership, no migration assigned.

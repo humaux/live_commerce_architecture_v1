@@ -132,6 +132,22 @@ test("OC11 old publish row of the same draft version never confirms a new lost p
 });
 
 test("OC11 reload while the publish request is in flight: pending is armed before the request, no second publish", async ({ page }) => {
+  // Transport fixture only: do not deliver a cancellation result to the departing document.
+  // An ordinary reload can reject fetch before teardown, letting the broken arm-after-response
+  // order persist pending just in time and mask A10. Model the response remaining unheard until
+  // the document is gone; native requests, route holding, reload and every user click stay real.
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async (...args: Parameters<typeof fetch>) => {
+      const [input, init] = args;
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (init?.method === "POST" && url.endsWith("/design/publish")) {
+        try { return await nativeFetch(...args); }
+        catch { return new Promise<Response>(() => {}); }
+      }
+      return nativeFetch(...args);
+    };
+  });
   const { publishes, state } = await open(page);
   state.cut = "held-before-commit";
   await edit(page, "d");
@@ -144,7 +160,9 @@ test("OC11 reload while the publish request is in flight: pending is armed befor
     await page.reload();
     await expect(page.getByTestId("design-name")).toBeVisible();
     await expect.soft(page.getByTestId("design-publish-pending"), "OC11-A9 pending armed before the request").toContainText(c.publishPending);
-    await expect.soft(page.getByTestId("design-publish")).toBeDisabled({ timeout: 0 });
+    // The editor is ready: sample the control now. Playwright timeout: 0 disables its deadline,
+    // which would strand this soft assertion and hide the independent A10 POST-count failure.
+    expect.soft(await page.getByTestId("design-publish").isDisabled(), "OC11-A9 Publish stays locked after reload").toBe(true);
     // Exercise the accidentally enabled control on the unfixed order so A10 has its OWN assertion witness.
     state.cut = "before-commit";
     if (await page.getByTestId("design-publish").isEnabled()) {
@@ -205,7 +223,7 @@ test("OC11 P1b pending blocks local rollback, external rollback resolves the com
   await page.getByTestId("design-publish").click();
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
   await page.getByTestId("design-tab-versions").click();
-  await expect.soft(page.getByTestId("design-rollback").last(), "OC11-P1b local rollback cannot race an unresolved publish").toBeDisabled({ timeout: 0 });
+  expect.soft(await page.getByTestId("design-rollback").last().isDisabled(), "OC11-P1b local rollback cannot race an unresolved publish").toBe(true);
 
   const other = await context.newPage();
   other.on("dialog", (d) => void d.accept());
@@ -215,11 +233,12 @@ test("OC11 P1b pending blocks local rollback, external rollback resolves the com
   await expect(other.getByTestId("design-note")).toContainText(/Rolled back/);
   await recheckSettled(page);
   await expect.soft(page.getByTestId("design-publish-pending"), "OC11-P1b the original committed receipt resolves despite a newer rollback").toHaveCount(0);
-  await expect.soft(page.getByTestId("design-publish-superseded"), "OC11-P1b explain that a later version replaced this publication").toBeVisible({ timeout: 0 });
-  await expect.soft(page.getByTestId("design-publish"), "OC11-P1b terminal resolution unlocks Publish").toBeEnabled({ timeout: 0 });
+  // recheckSettled already observed completion; take independent snapshots so every oracle runs on RED.
+  expect.soft(await page.getByTestId("design-publish-superseded").isVisible(), "OC11-P1b explain that a later version replaced this publication").toBe(true);
+  expect.soft(await page.getByTestId("design-publish").isEnabled(), "OC11-P1b terminal resolution unlocks Publish").toBe(true);
   await page.reload();
   await expect(page.getByTestId("design-name")).toBeVisible();
-  await expect.soft(page.getByTestId("design-publish-pending"), "OC11-P1b terminal resolution survives refresh").toHaveCount(0, { timeout: 0 });
+  expect.soft(await page.getByTestId("design-publish-pending").count(), "OC11-P1b terminal resolution survives refresh").toBe(0);
   await expect(page.getByTestId("design-publish")).toBeEnabled();
   expect(publishes, "resolution never sends a replacement publish").toHaveLength(2);
 });
