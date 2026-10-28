@@ -1,0 +1,9 @@
+CA-UI-COPY — 2026-10-28; local static checks only, no test/server execution
+python3 scripts/check_packet.py: exit 0, PASS_PACKET_STRUCTURE_ONLY; static-packet.log
+node --check apps/admin/lib/orders-copy.ts: exit 0
+node --check apps/admin/lib/import-copy.ts: exit 0
+git diff --check: exit 0
+git diff --exit-code 26d5f721a9e519fe6e4e5736a0a4c1288854903b -- tests/admin/orders-v2.test.ts tests/admin/import-view.test.ts tests/ci/next-startup.test.mjs scripts/dev/test-node.sh scripts/dev/contractdrift/baseline.json contracts/route-table-dispatchers.json: exit 0
+Evidence level: E1 structure/syntax only. File binding: source-sha256.txt.
+TypeScript and JSX type check: NOT_RUN, no tsc executable installed in worktree/PATH.
+GREEN CI, browser clicks and independent review: NOT_RUN / pending integrator push.

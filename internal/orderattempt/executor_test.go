@@ -38,6 +38,7 @@ func TestOrderAttemptExecutorAbortClassification(t *testing.T) {
 		{"PT422", "delivery_service_unavailable", "invalid_destination"},
 		{"PT422", "pay_at_pickup_unavailable", "payment_unavailable"},
 		{"PT422", "cash_on_delivery_unavailable", "payment_unavailable"},
+		{"PT422", "bank_transfer_closed", "payment_unavailable"},
 		{"PT422", "sku_inactive", "resource_unavailable"},
 		{"PT422", "sku_changed", "resource_unavailable"},
 		{"PT422", "sku_unavailable", "resource_unavailable"},

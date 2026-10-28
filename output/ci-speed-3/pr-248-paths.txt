@@ -1,0 +1,7 @@
+.github/workflows/gates.yml
+docs/delivery/GATES.md
+scripts/dev/ci-plan.mjs
+scripts/dev/ci-playwright-browsers.mjs
+scripts/dev/test-node.sh
+tests/ci/gate-bundle.test.mjs
+tests/ci/go-build-cache.test.mjs
