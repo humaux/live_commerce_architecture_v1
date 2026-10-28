@@ -1,0 +1,90 @@
+921-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:01.8507653Z Redirecting to blob download url: https://productionresultssa31.blob.core.windows.net/actions-results/4380c34f-0856-821d-aeaa-fc2f8727dffe/workflow-job-run-e08c5fff-4a82-5431-9062-402a997e6a30/artifacts/c61e6fc541034544a6da5d971ce83fc8ef573f1a6117beb3a696f4e8ffe7deed.zip
+922-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:01.8510254Z Starting download of artifact to: /home/runner/work/_temp/prebuilt
+923-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:02.0250884Z (node:2579) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+--
+1020-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:06.4630506Z   key: playwright-Linux-X64-1.63.0-chromium-webkit
+1021-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:06.4630909Z   restore-keys: playwright-Linux-X64-1.63.0-chromium-webkit
+1022-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:06.4631315Z   enableCrossOsArchive: false
+1023:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:06.4631589Z   fail-on-cache-miss: false
+1024-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:06.4631842Z   lookup-only: false
+1025-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:06.4632066Z env:
+1026-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:06.4632271Z   GOTOOLCHAIN: local
+--
+1053-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:10.8631554Z   path: /home/runner/work/_temp/playwright-debs
+1054-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:10.8632056Z   key: playwright-debs-Linux-X64-ubuntu24-20261023.334.3-1.63.0-chromium-webkit
+1055-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:10.8632740Z   enableCrossOsArchive: false
+1056:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:10.8633049Z   fail-on-cache-miss: false
+1057-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:10.8633321Z   lookup-only: false
+1058-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:10.8633566Z env:
+1059-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:10.8633775Z   GOTOOLCHAIN: local
+--
+2018-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7319072Z Digest: sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2019-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7325815Z Status: Downloaded newer image for postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2020-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7333757Z docker.io/library/postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+2021:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7393880Z ##[group]Run set -o pipefail
+2022:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7394559Z [36;1mset -o pipefail[0m
+2023:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7395500Z [36;1m# Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.[0m
+2024-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7396337Z [36;1mfor kv in $EXTRA_ENV; do[0m
+2025-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7397031Z [36;1m  [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }[0m
+2026-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7397843Z [36;1m  export "$kv"; echo "extra_env: ${kv%%=*} set"[0m
+--
+2032-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7401874Z [36;1m  python3 tests/foundation/order_attempt_mutation.py[0m
+2033-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7402449Z [36;1mfi[0m
+2034-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7403297Z [36;1m# One planned mode: the per-mode dispatch every leg ran before CI-SPEED-2 (a solo job runs it once, a bundle job once per member).[0m
+2035:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7405090Z [36;1m# A member runs in a child `bash -eo pipefail` (the step's own -e + pipefail), so its exports (LC_BROWSER_EVIDENCE_ROOT) never reach the next member.[0m
+2036-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7406068Z [36;1mgate_one() {[0m
+2037-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7406447Z [36;1m  local MODE="$1"[0m
+2038-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7406893Z [36;1m  mkdir -p output/ci-gates[0m
+--
+2070-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7427706Z [36;1mrc=0[0m
+2071-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7427953Z [36;1mwhile read -r m art <&3; do[0m
+2072-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7428269Z [36;1m  echo "::group::bundle member $m"[0m
+2073:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7428883Z [36;1m  if timeout --kill-after=60s 150m bash -c 'set -eo pipefail; gate_one "$1"' _ "$m"; then outcome=success; else outcome=failure; rc=1; fi[0m
+2074-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7429464Z [36;1m  echo "::endgroup::"[0m
+2075-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7429761Z [36;1m  echo "bundle member $m: $outcome"[0m
+2076-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:46.7430093Z [36;1m  ( shopt -s nullglob globstar[0m
+--
+2102-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:50.5915857Z prebuilt: admin restored from 326c10203c3b441aedc8e709af8b252c7fd986f2
+2103-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:50.6693165Z check-gallery-bundle: OK expect=absent files=62 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+2104-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:42:52.5269301Z ## matrix-receipts browser-run begin
+2105:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:43:25.6442934Z buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=31s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.uKaQOnDR/webkit/326c10203c3b-buyer.jsonl
+2106:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:44:51.2913559Z order: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=84s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.uKaQOnDR/webkit/326c10203c3b-order.jsonl
+2107:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:45:39.0782353Z payment: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=46s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.uKaQOnDR/webkit/326c10203c3b-payment.jsonl
+2108:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:45:58.4156220Z merchant-buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=18s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.uKaQOnDR/webkit/326c10203c3b-merchant-buyer.jsonl
+2109:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:46:47.4707769Z cvs: pass=0 fail=2 skip=0 leaf_pass=0 leaf_fail=1 leaf_skip=0 exit=1 verdict=1 duration=47s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.uKaQOnDR/webkit/326c10203c3b-cvs.jsonl
+2110:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:46:47.4708963Z FAIL: cvs (go test exit=1, parse verdict=1)
+2111:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:48:28.3824295Z password-auth: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=99s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.uKaQOnDR/webkit/326c10203c3b-password-auth.jsonl
+2112:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:10.8107019Z claim-checkout: pass=0 fail=2 skip=0 leaf_pass=0 leaf_fail=1 leaf_skip=0 exit=1 verdict=1 duration=40s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.uKaQOnDR/webkit/326c10203c3b-claim-checkout.jsonl
+2113:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:10.8108257Z FAIL: claim-checkout (go test exit=1, parse verdict=1)
+2114:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:10.8109201Z FAIL: --browser-webkit (see logs in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.uKaQOnDR/webkit)
+2115-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0106822Z ##[error]Process completed with exit code 1.
+2116-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0165577Z ##[group]Run shopt -s nullglob globstar
+2117-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0165983Z [36;1mshopt -s nullglob globstar[0m
+--
+2134-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0257647Z   EXTRA_ENV:
+2135-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0257928Z   COREPACK_ENABLE_NETWORK: 0
+2136-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0258251Z   LC_PREBUILT_DIR: /home/runner/work/_temp/prebuilt
+2137:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0258585Z   GATE_OUTCOME: failure
+2138-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0258833Z ##[endgroup]
+2139:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0840274Z matrix-receipts: {"mode":"--browser-webkit","run_id":"40663921173","run_attempt":"1","sha":"326c10203c3b441aedc8e709af8b252c7fd986f2","status":"FAIL","test_count":88,"spec_count":81}
+2140-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0937070Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2141-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0937513Z with:
+2142-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:11.0937766Z   name: receipt-gate-browser-webkit
+--
+2177-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.2818851Z Artifact download URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40663921173/artifacts/12829008511
+2178-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.2958061Z ##[group]Run shopt -s nullglob
+2179-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.2958413Z [36;1mshopt -s nullglob[0m
+2180:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.2959284Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true[0m
+2181-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3030524Z shell: /usr/bin/bash -e {0}
+2182-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3030821Z env:
+2183-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3031043Z   GOTOOLCHAIN: local
+--
+2197-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3034056Z   COREPACK_ENABLE_NETWORK: 0
+2198-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3034383Z   LC_PREBUILT_DIR: /home/runner/work/_temp/prebuilt
+2199-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3034853Z ##[endgroup]
+2200:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3148050Z FAIL: cvs (go test exit=1, parse verdict=1)
+2201:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3148822Z FAIL: claim-checkout (go test exit=1, parse verdict=1)
+2202:gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3150090Z FAIL: --browser-webkit (see logs in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.uKaQOnDR/webkit)
+2203-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3203771Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2204-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3204234Z with:
+2205-gate (--browser-webkit)	UNKNOWN STEP	2026-10-28T15:49:12.3204470Z   name: gate-browser-webkit
