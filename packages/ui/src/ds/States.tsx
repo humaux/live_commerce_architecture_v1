@@ -32,14 +32,31 @@ function StateActionControl({ action }: { action: StateAction }) {
 
 /** Owner-signed recovery panel. The caller owns the route/read semantics; forbidden copy must remain non-leaking. */
 export function StatePanel({ variant, title, body, note, action, status }: StatePanelProps) {
-  // DS-STATES-V2 review RED: renderable legacy-output stub; restore after assertion-level CI failure.
-  return <EmptyState title={title} description={body} action={<StateActionControl action={action} />} />;
+  const transient = variant === "offline" || variant === "unknown";
+  return (
+    <section
+      className={s.statePanel}
+      data-variant={variant}
+      role={transient ? "status" : undefined}
+      aria-live={transient ? "polite" : undefined}
+    >
+      <h2 className={s.statePanelTitle}>{title}</h2>
+      <p className={s.statePanelBody}>{body}</p>
+      {note && <p className={s.statePanelNote}>{note}</p>}
+      {status && <div className={s.statePanelStatus}>{status}</div>}
+      <div className={s.statePanelAction}><StateActionControl action={action} /></div>
+    </section>
+  );
 }
 
 /** An in-place read failure; the optional recovery action keeps the user in the original task. */
 export function InlineError({ message, action }: InlineErrorProps) {
-  // DS-STATES-V2 review RED: legacy inline output deliberately omits the alert/action contract.
-  return <p>{message}</p>;
+  return (
+    <div className={s.inlineError} role="alert">
+      <p className={s.inlineErrorMessage}>{message}</p>
+      {action && <div className={s.inlineErrorAction}><StateActionControl action={action} /></div>}
+    </div>
+  );
 }
 
 function Block({

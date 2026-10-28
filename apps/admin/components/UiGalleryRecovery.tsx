@@ -14,8 +14,7 @@ const denial: ReadFailure = { status: 403, message: "Access denied to private-or
 export function GalleryForbidden({ locale, failure, href }: { locale: Locale; failure: ReadFailure; href: string }) {
   const c = stateRecoveryCopy[locale];
   if (failure.status !== 403) return <InlineError message={c.failed} />;
-  // DS-STATES-V2 review RED: deliberately interpolate the raw failure; restore c.forbiddenBody after assertion-level RED.
-  return <StatePanel variant="forbidden" title={c.forbidden} body={failure.message} note={c.forbiddenNote} action={{ label: c.back, href }} />;
+  return <StatePanel variant="forbidden" title={c.forbidden} body={c.forbiddenBody} note={c.forbiddenNote} action={{ label: c.back, href }} />;
 }
 export function UiGalleryRecovery({ locale }: { locale: Locale }) {
   const c = stateRecoveryCopy[locale];
