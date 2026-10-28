@@ -1,6 +1,7 @@
 // Purpose: Owns password sign-in, signup, reset and code-verification views.
-// Depends on: react, @live-commerce/i18n, @/lib/entry-copy, @/lib/invite-next, @/lib/entry-state
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui/ds, @/lib/entry-copy, @/lib/invite-next, @/lib/entry-state
 // Used by: apps/admin/components/Entry.tsx
+// Invariants: credentials stay in memory; forms stay inert until hydration; recovery works without JavaScript.
 "use client";
 // Email + password + emailed-code forms for the admin host (merchant-password-auth-v1 §7.3).
 // Mounted by Entry.tsx at /[locale]/ (signin), /[locale]/signup and /[locale]/reset.
@@ -16,6 +17,7 @@
 // carries data-hydrated once interactive; tests wait on it.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, ButtonLink, Alert } from "@live-commerce/ui/ds";
 import { entryCopy, passwordCopy } from "@/lib/entry-copy";
 import { inviteNextFromHash, inviteNextHash } from "@/lib/invite-next";
 import {
@@ -243,7 +245,37 @@ export function PasswordAuth({
   const link = { color: "var(--ui-link)", display: "inline-flex", alignItems: "center", minHeight: "var(--ui-target)" } as const;
 
   return (
-    <section className="entry-auth-panel" aria-labelledby="password-auth-title">
+    <section className="entry-auth-panel" data-password-auth aria-labelledby="password-auth-title">
+      {/* CSS, rather than an effect, owns the deadline: a missing chunk must not disable recovery too.
+          The status sits in the shell's existing space above the panel, so hydration moves no fields.
+          An empty native href reloads this resource, retaining its path and query without client routing. */}
+      {!mounted && (
+        <>
+          <style>{`
+            [data-password-auth] { position: relative; }
+            [data-password-recovery] {
+              position: absolute;
+              inset-inline: 0;
+              inset-block-end: calc(100% + var(--ds-space-2));
+              display: flex;
+              flex-wrap: wrap;
+              align-items: center;
+              justify-content: center;
+              gap: var(--ds-space-2);
+            }
+            [data-password-reload] {
+              visibility: hidden;
+              animation: password-recovery-reveal 0s linear 10s forwards;
+            }
+            @keyframes password-recovery-reveal { to { visibility: visible; } }
+          `}</style>
+          <div data-password-recovery>
+            <div role="status" aria-live="polite"><Badge>{c.hydrationLoading}</Badge></div>
+            <ButtonLink href="" variant="link" data-password-reload>{c.hydrationReload}</ButtonLink>
+          </div>
+          <noscript><Alert>{c.hydrationNoScript}</Alert></noscript>
+        </>
+      )}
       <h1 id="password-auth-title">{step === "code" ? c.codeTitle : title}</h1>
       {step === "form" ? (
         <p>{body}</p>

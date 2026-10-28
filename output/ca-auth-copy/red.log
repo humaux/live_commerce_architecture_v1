@@ -1,0 +1,19 @@
+CA-AUTH-COPY part A — assertion-failing RED (E3 negative evidence)
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/251
+Tests-only source: 781887326d96ae0e291e3ce3ab2a87a2e28636f9
+Gates run: 40612180005
+Job: 122576061200 — gate (--browser-password-auth), completed FAILURE at 2026-10-28T02:11:01Z.
+Job metadata/log: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/122576061200[/logs]
+The run was still active, so gh run view --job 122576061200 --log-failed returned:
+  run 40612180005 is still in progress; logs will be available when it is complete
+The same completed job's logs were read with the official jobs API; no network workaround.
+Artifact: 12786856353 (gate-browser-password-auth), downloaded through gh api.
+Extracted assertion evidence: output/ca-auth-copy/red-playwright.log.
+Failed new test: #245 zh-CN: no JavaScript explains the inert form and reload stays native.
+Assertion: tests/admin/password-auth.spec.ts:189, expect(page.locator("noscript")).toContainText(...).
+Actual: element(s) not found; timeout 10000ms. New test failed on its own assertion against unchanged implementation.
+Serial result: 1 failed, 20 did not run. Harness downstream principal/mail counts were consequently zero.
+Plan job 122566123441, prebuild job 122567483178 and Foundation run/job 40612179953/122566123061 succeeded.
+These are RED-head receipts, not GREEN implementation acceptance.
+The earlier queued observation is retained in checks-at-handoff.json and red-watch.log (historical).
+Implementation GREEN, independent review and LIVE: pending/NOT_RUN.
