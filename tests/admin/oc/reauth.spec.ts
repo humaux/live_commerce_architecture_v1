@@ -152,10 +152,12 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
         const control = page.getByTestId(kind === "orders" ? "orders-export" : "finance-csv");
         await expect(control).toBeVisible();
         await age(owner); // Fixture preparation only; the export itself is a real user click.
-        const refused = page.waitForResponse((response) => new URL(response.url()).pathname === endpoint);
-        await control.click();
-        expect((await refused).status(), "the clicked export reaches the real expired re-auth guard").toBe(403);
+        // Native download navigations can omit Playwright's response event. Assert the visible
+        // re-auth outcome first, using the existing expect timeout, rather than waiting 240 s
+        // on that event when the download control bypasses the shared fetch interceptor.
+        await control.click({ noWaitAfter: true });
         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        expect(statuses[0], "the clicked export reaches the real expired re-auth guard").toBe(403);
         await expect(modal(page)).toContainText(copy[locale].title);
         expect(urls, "only the refused request precedes re-auth").toHaveLength(1);
         expect(downloads, "a refused export must not download an error document").toEqual([]);
