@@ -1,3 +1,7 @@
+// Purpose: exercise buyer CVS entry through real HTTP and checkout-pool SQL.
+// Depends on: tcv fixtures, buyer scope and fulfillment.record_buyer_cvs_store.
+// Used by: TCV14 in the CI foundation shard.
+// Invariants: snapshot values are authoritative; buyer scope, replay and ECPay separation stay enforced.
 package foundation_test
 
 // TCV14 TestCvsBuyerEnteredStore (contracts/taiwan-cvs-logistics-v1.md §10 TCV14 REAL_PG half, §16.1, §5.1). Prefix `tce`. Tier REAL_PG + HTTP_PG.
@@ -53,6 +57,79 @@ func TestCvsBuyerEnteredStore(t *testing.T) {
 	for _, k := range kinds {
 		svc[k], _, _ = e.service(k, "MANUAL", 0)
 	}
+
+	t.Run("snapshot 20261028 returns exact directory values through HTTP and SQL", func(t *testing.T) {
+		// Public store reference data from the owner-supplied snapshot; no buyer PII.
+		for _, row := range []struct{ kind, code, name, address string }{
+			{"cvs_711", "131386", "建盛", "新竹市東區建中一路52號1樓"},
+			{"cvs_familymart", "011344", "六甲民生附店", "台南市六甲區工研路８號"},
+			{"cvs_okmart", "000005", "三重成功二店", "新北市三重區成功路97號"},
+			{"cvs_hilife", "F959", "大園中山南", "桃園市大園區中山南路６號"},
+			{"cvs_hilife", "L505", "車麗屋內湖店", "台北市內湖區內湖路一段３６６號"},
+			{"cvs_hilife", "2001", "大安杭州南", "台北市大安區杭州南路二段５號"},
+		} {
+			t.Run(row.kind+"/"+row.code, func(t *testing.T) {
+				b := e.newBuyer()
+				res := b.enteredStore(svc[row.kind], row.code, "different supplied name", "different supplied address")
+				if res.status != 201 {
+					t.Fatalf("snapshot store: want 201, got %d %s", res.status, res.body)
+				}
+				out := tcvJSON(t, res.body)
+				if tcvStr(out, "name") != row.name || tcvStr(out, "address") != row.address ||
+					tcvStr(out, "code") != row.code || tcvStr(out, "kind") != row.kind || tcvStr(out, "source") != "buyer_entered" {
+					t.Errorf("must return exact snapshot identity, never supplied text or verified: %s", res.body)
+				}
+				// SQL bypasses Go input checks; empty legacy text must still resolve the directory row.
+				tokenHash := sha256.Sum256([]byte(b.cap.Token))
+				var raw []byte
+				err := buyer.WithScope(ctx, e.p.pool, b.cap.Token, e.store(), func(callCtx context.Context, tx pgx.Tx, _ buyer.Scope) error {
+					return tx.QueryRow(callCtx, `SELECT fulfillment.record_buyer_cvs_store($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10)`,
+						tokenHash[:], e.store(), "tce-snapshot-"+t04Tag(), randomBytes(32), b.cartVersion(), e.p.market.ID,
+						svc[row.kind], row.code, "", "").Scan(&raw)
+				})
+				if err != nil {
+					t.Fatalf("SQL snapshot lookup with empty legacy text: %v", err)
+				}
+				got := tcvJSON(t, raw)
+				if tcvStr(got, "name") != row.name || tcvStr(got, "address") != row.address || tcvStr(got, "pickup_id") != tcvStr(out, "pickup_id") {
+					t.Errorf("SQL canonical lookup/reuse: %s, first %s", raw, res.body)
+				}
+			})
+		}
+	})
+
+	t.Run("snapshot lookup needs only a code and refuses missing stores and old OK codes", func(t *testing.T) {
+		b := e.newBuyer()
+		res := b.req("POST", "/v1/buyer/cvs-stores", t04Key("tce-code-only"), map[string]any{
+			"cart_version": b.cartVersion(), "market_id": e.p.market.ID, "service_code": svc["cvs_711"], "store_code": "131386",
+		}, nil)
+		if res.status != 201 || tcvStr(tcvJSON(t, res.body), "name") != "建盛" || tcvStr(tcvJSON(t, res.body), "address") != "新竹市東區建中一路52號1樓" {
+			t.Errorf("code-only HTTP request: want exact directory store, got %d %s", res.status, res.body)
+		}
+		for _, tc := range []struct{ kind, code, refusal string }{
+			{"cvs_711", "000000", "store_not_found"},
+			{"cvs_okmart", "1328", "bad_store_code"},
+		} {
+			got := b.enteredStore(svc[tc.kind], tc.code, "Synthetic Store", "Synthetic Address")
+			if got.status != 422 || tcvStr(tcvJSON(t, got.body), "code") != tc.refusal {
+				t.Errorf("%s/%s: want 422 %s, got %d %s", tc.kind, tc.code, tc.refusal, got.status, got.body)
+			}
+			tokenHash := sha256.Sum256([]byte(b.cap.Token))
+			err := buyer.WithScope(ctx, e.p.pool, b.cap.Token, e.store(), func(callCtx context.Context, tx pgx.Tx, _ buyer.Scope) error {
+				var raw []byte
+				return tx.QueryRow(callCtx, `SELECT fulfillment.record_buyer_cvs_store($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10)`,
+					tokenHash[:], e.store(), "tce-snapshot-miss-"+t04Tag(), randomBytes(32), b.cartVersion(), e.p.market.ID,
+					svc[tc.kind], tc.code, "Synthetic Store", "Synthetic Address").Scan(&raw)
+			})
+			var pg *pgconn.PgError
+			if !errors.As(err, &pg) || pg.Code != "PT422" || pg.Message != tc.refusal {
+				t.Errorf("SQL %s/%s: want PT422 %s, got %v", tc.kind, tc.code, tc.refusal, err)
+			}
+		}
+		if n := e.count(`SELECT count(*) FROM fulfillment.pickup_versions WHERE namespace=$1 AND code IN ('000000','1328')`, "buyer."+b.cap.Scope.OwnerID); n != 0 {
+			t.Errorf("directory/code refusals wrote %d pickup versions", n)
+		}
+	})
 
 	t.Run("options: buyer_entered mode with the four official search links", func(t *testing.T) {
 		b := e.newBuyer()

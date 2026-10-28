@@ -1,3 +1,7 @@
+// Purpose: exercise the storefront CVS request, projection and validation contract.
+// Depends on: cvs-contract.ts, buyer-client.ts and synthetic transport/storage.
+// Used by: CI Node unit suites.
+// Invariants: snapshot store identity comes from the server; map verification rules remain strict.
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -49,6 +53,18 @@ const pickup = {
   outside: false,
 };
 const verified = { selection_id: uid(1), state: "VERIFIED", reject_code: null, retry_after_s: null, pickup };
+
+test("CVS-SNAP chain plus code resolves server identity and reports directory misses", () => {
+  const body = { cart_version: 3, market_id: uid(4), service_code: "cvs-711", store_code: "131386", store_name: "", store_address: "" };
+  assert.equal(validBuyerStoreBody(body, "cvs_711"), true, "empty legacy name/address are accepted");
+  assert.equal(validBuyerStoreBody({ ...body, store_name: "different", store_address: "different" }, "cvs_711"), true);
+  assert.equal(validStoreCode("cvs_okmart", "000005"), true, "six-digit OK codes retain leading zeros");
+  assert.equal(validStoreCode("cvs_okmart", "1328"), false, "old four-digit OK codes are refused");
+  for (const code of ["2001", "F959", "L505"]) assert.equal(validStoreCode("cvs_hilife", code), true, code);
+  for (const code of ["123", "12345678", "f959", "A959", "F95"]) assert.equal(validStoreCode("cvs_hilife", code), false, code);
+  assert.equal(isCvsErrorCode("store_not_found"), true, "directory miss is a known server refusal");
+  assert.equal(errorField("store_not_found"), "store_code", "directory miss appears beside the code input");
+});
 
 test("CVS01 map form: only the two ECPay e-map actions, exact fields, top-level-safe values", () => {
   assert.equal(validMapForm(form()), true);

@@ -1,3 +1,7 @@
+// Purpose: test buyer CVS validation, projections and SQL refusal mapping.
+// Depends on: checkout CVS, fulfillment codes and synthetic pgx errors.
+// Used by: the CI unit shard.
+// Invariants: fixed SQL refusal codes reach the buyer without driver details.
 package checkout
 
 import (
@@ -66,6 +70,9 @@ func TestUnavailableReason(t *testing.T) {
 
 func TestCVSRefusalMapping(t *testing.T) {
 	var refusal *fulfillment.CVSError
+	if err := cvsError(context.Background(), &pgconn.PgError{Code: "PT422", Message: "store_not_found"}); !errors.As(err, &refusal) || refusal.Status != 422 || refusal.Code != "store_not_found" {
+		t.Fatalf("snapshot directory miss must stay a coded 422: %v", err)
+	}
 	err := safeError(context.Background(), &pgconn.PgError{Code: "PT422", Message: "cvs_amount_exceeds"})
 	if !errors.As(err, &refusal) || refusal.Status != 422 || refusal.Code != "cvs_amount_exceeds" {
 		t.Fatalf("PT422: %v", err)

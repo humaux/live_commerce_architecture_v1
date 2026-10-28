@@ -1,3 +1,7 @@
+// Purpose: TCV08 buyer half + TCV14 snapshot lookup UI through real user clicks.
+// Depends on: the real storefront BFF/Go stack, Playwright and the synthetic ECPay map edge.
+// Used by: TestBrowserTaiwanCvs on CI (Chromium and WebKit).
+// Invariants: snapshot identity is server supplied; existing ECPay-map assertions remain intact.
 // TCV08 buyer half + TCV14 buyer_entered UI half (contracts/taiwan-cvs-logistics-v1.md §5.2, §5.3, §16.1, §16.2, §16.4, §10 TCV08/TCV14).
 // Real production storefront Next -> private buyerhttp -> isolated PG, driven by tests/foundation/browser_taiwan_cvs_test.go (MOCK variant).
 // The browser reaches only synthetic hosts through one CONNECT proxy and one self-signed edge:
@@ -263,6 +267,7 @@ try {
   }
 
   // ---- buyer_entered store (no ECPay profile): TCV14 UI half ----------------------------------------------------------------
+  const snapshotClicks = [];
   for (const [locale, mobile] of [["zh-TW", false], ["en", true], ["zh-CN", false]]) {
     const viewport = mobile ? "mobile" : "desktop";
     const ctx = await newContext(mobile), page = await ctx.newPage();
@@ -277,20 +282,57 @@ try {
     await page.getByTestId("cvs-recipient-name").fill("王小明");
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     await page.getByTestId("cvs-entered-code").fill("12345"); // 7-ELEVEN needs 6 digits
-    await page.getByTestId("cvs-entered-name").fill("測試門市");
-    await page.getByTestId("cvs-entered-address").fill("台北市測試路1號");
+    await expect(page.getByTestId("cvs-entered-name")).toHaveCount(0);
+    await expect(page.getByTestId("cvs-entered-address")).toHaveCount(0);
     await page.getByTestId("confirm-address").click();
     await expect(page.getByTestId("cvs-entered-code")).toHaveAttribute("aria-invalid", "true"); // a field error from the code format, no request needed
-    await page.getByTestId("cvs-entered-code").fill("123456");
+    snapshotClicks.push({ locale, viewport, control: "store code / confirm", operation: "fill 12345; click", expected: "format error", actual: "aria-invalid=true", result: "PASS" });
+    await page.getByTestId("cvs-entered-code").fill("000000");
+    const missing = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
     await page.getByTestId("confirm-address").click();
+    const miss = await missing;
+    assert.equal(miss.status(), 422);
+    assert.equal((await miss.json()).code, "store_not_found");
+    await expect(page.getByTestId("cvs-entered-code")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.locator("[role=alert]")).toContainText(locale === "en" ? "Store not found" : locale === "zh-CN" ? "找不到门店" : "找不到門市");
+    snapshotClicks.push({ locale, viewport, control: "store code / confirm", operation: "fill 000000; click", expected: "422 store_not_found beside code", actual: "localized field error", result: "PASS" });
+    await page.getByTestId("cvs-entered-code").fill("131386");
+    const resolved = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
+    await page.getByTestId("confirm-address").click();
+    const lookup = await resolved;
+    assert.equal(lookup.status(), 201);
+    const savedStore = await lookup.json();
+    assert.equal(savedStore.name, "建盛");
+    assert.equal(savedStore.address, "新竹市東區建中一路52號1樓");
+    assert.equal(savedStore.source, "buyer_entered");
+    await expect(page.getByTestId("cvs-store-name")).toContainText("建盛");
+    await expect(page.getByTestId("cvs-store-address")).toHaveText("新竹市東區建中一路52號1樓");
     await expect(page.getByTestId("create-order")).toBeEnabled();
+    snapshotClicks.push({ locale, viewport, control: "store code / confirm", operation: "fill 131386; click", expected: "exact directory name/address read-only", actual: `${savedStore.name} / ${savedStore.address}`, result: "PASS" });
     await shot(page, "entered", locale, viewport);
     const text = await page.getByTestId("address-section").innerText();
     assert(!/已驗證|已验证|\bverified\b/i.test(text), "a buyer-typed store is never labelled verified");
     if (locale === "zh-TW") assert(text.includes(copy["zh-TW"].enteredLabel), "the zh-TW label 你填寫的門市 must be shown");
+    await page.getByTestId("cvs-change-store").click();
+    await expect(page.getByTestId("cvs-entered-code")).toBeVisible();
+    await page.reload();
+    await toQuote(page, stores.entered, locale, "cvs_711");
+    await page.getByTestId("cvs-recipient-name").fill("王小明");
+    await page.getByTestId("cvs-recipient-phone").fill("0912345678");
+    await page.getByTestId("cvs-entered-code").fill("131386");
+    const restored = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
+    await page.getByTestId("confirm-address").click();
+    const restoredResponse = await restored;
+    assert.equal(restoredResponse.status(), 201);
+    assert.equal((await restoredResponse.json()).pickup_id, savedStore.pickup_id, "refresh preserves the persisted buyer pickup and its canonical identity");
+    await expect(page.getByTestId("cvs-store-name")).toContainText("建盛");
+    await expect(page.getByTestId("cvs-store-address")).toHaveText("新竹市東區建中一路52號1樓");
+    await expect(page.getByTestId("create-order")).toBeEnabled();
+    snapshotClicks.push({ locale, viewport, control: "change store / reload / confirm", operation: "click; reload; fill same code; click", expected: "same persisted pickup and exact address", actual: savedStore.pickup_id, result: "PASS" });
     pass(`buyer_entered ${locale}/${viewport}: official search link (new tab, noopener), 422-style field errors, never labelled verified`);
     await ctx.close();
   }
+  await writeFile(path.join(evidence, "cvs-snapshot-click-ledger.json"), JSON.stringify(snapshotClicks, null, 2));
   assert.equal(iframeSeen.length, 0, `an iframe was attached: ${iframeSeen}`);
   pass("no iframe was ever attached to any page (F4)");
   // B20: the buyer BFF sends Device=1 for mobile user agents and 0 otherwise (buyers arrive from Facebook / Instagram on phones)

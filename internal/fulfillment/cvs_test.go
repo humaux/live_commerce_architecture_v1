@@ -1,3 +1,7 @@
+// Purpose: test CVS pure rules, refusal mapping and orchestration boundaries.
+// Depends on: fulfillment rules, pgx errors and synthetic integration clients.
+// Used by: the CI unit shard and existing fulfillment tests.
+// Invariants: buyer store codes stay strings and follow the 20261028 snapshot formats.
 package fulfillment
 
 import (
@@ -21,6 +25,22 @@ import (
 
 // TestValidBuyerStoreCodeGolden replays the shared golden table (§16.1); the same file feeds the SQL twin in cvs-tests.
 func TestValidBuyerStoreCodeGolden(t *testing.T) {
+	t.Run("20261028 snapshot code formats", func(t *testing.T) {
+		for _, tc := range []struct {
+			kind, code string
+			want       bool
+		}{
+			{"cvs_okmart", "000005", true}, {"cvs_okmart", "1328", false},
+			{"cvs_hilife", "F959", true}, {"cvs_hilife", "L505", true},
+			{"cvs_hilife", "2001", true}, {"cvs_hilife", "123", false},
+			{"cvs_hilife", "12345678", false}, {"cvs_hilife", "f959", false},
+			{"cvs_hilife", "A959", false}, {"cvs_hilife", "F95", false},
+		} {
+			if got := ValidBuyerStoreCode(tc.kind, tc.code); got != tc.want {
+				t.Errorf("snapshot format %s/%q: got %v, want %v", tc.kind, tc.code, got, tc.want)
+			}
+		}
+	})
 	f, err := os.Open("testdata/cvs_store_codes.golden")
 	if err != nil {
 		t.Fatal(err)

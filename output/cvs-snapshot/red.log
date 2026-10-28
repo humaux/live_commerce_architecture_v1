@@ -1,0 +1,15 @@
+CVS-SNAP RED evidence ledger
+Phase: tests-only; CI PENDING (E0; no RED assertion receipt yet)
+Base: 5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248
+Branch: unit/cvs-snapshot-directory
+Worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/cvs-snapshot
+Target: r3/integration
+Expected assertion failures (must confirm from CI, never infer RED from a red badge):
+- TestValidBuyerStoreCodeGolden/20261028_snapshot_code_formats: OK 000005, Hi-Life F959/L505 accepted; old OK 1328 and Hi-Life 123/12345678 refused.
+- CVS-SNAP chain plus code resolves server identity and reports directory misses: empty legacy text accepted and store_not_found mapped beside code.
+- TestCvsBuyerEnteredStore/snapshot_20261028_returns_exact_directory_values_through_HTTP_and_SQL: exact snapshot name/address despite different supplied text.
+- TestCvsBuyerEnteredStore/snapshot_lookup_needs_only_a_code_and_refuses_missing_stores_and_old_OK_codes: code-only 201; unknown 000000 PT422 store_not_found; old OK 1328 PT422 bad_store_code; no pickup writes on refusals.
+- TestBrowserTaiwanCvs: no buyer name/address controls, code 131386 displays 建盛 / 新竹市東區建中一路52號1樓, persisted pickup reused after reload and real re-entry.
+Static-only commands: gofmt -w (three changed Go test files), node --check (two changed .mjs files), git diff --check; exit 0.
+NOT_RUN locally: all test suites, PG, browsers, servers, builds.
+Remote run/job IDs: pending PR creation; record as soon as assigned.
