@@ -105,11 +105,15 @@ async function quote(page, locale = "zh-TW") {
 async function place(page, link, locale = "zh-TW", loseReply = false, deplete = null) {
   await quote(page, locale);
   await expect.poll(() => page.seen.quote?.lines.find((i) => i.sku_id === link.sku)?.unit_price_minor).toBe(20000);
-  for (const [id, value] of [["cvs-recipient-name", "王小明"], ["cvs-recipient-phone", "0912345678"], ["cvs-entered-code", "131386"], ["cvs-entered-name", "合成測試門市"], ["cvs-entered-address", "合成測試地址"]]) {
+  for (const [id, value] of [["cvs-recipient-name", "王小明"], ["cvs-recipient-phone", "0912345678"], ["cvs-entered-code", "131386"]]) {
     await action(page, id, () => page.getByTestId(id).fill(value), "input value retained", () => expect(page.getByTestId(id)).toHaveValue(value));
   }
+  await expect(page.getByTestId("cvs-entered-name")).toHaveCount(0);
+  await expect(page.getByTestId("cvs-entered-address")).toHaveCount(0);
   await action(page, "pay-at-pickup", () => page.getByRole("radio", { name: copy[locale].pickup }).check(), "pay-at-pickup selected", () => expect(page.getByRole("radio", { name: copy[locale].pickup })).toBeChecked());
   await action(page, "confirm-address", () => page.getByTestId("confirm-address").click(), "order action enabled", () => expect(page.getByTestId("create-order")).toBeEnabled());
+  await expect(page.getByTestId("cvs-store-name")).toContainText("建盛");
+  await expect(page.getByTestId("cvs-store-address")).toHaveText("新竹市東區建中一路52號1樓");
   await noLeaks(page, link);
   if (deplete) {
     await fixture(deplete, "deplete");

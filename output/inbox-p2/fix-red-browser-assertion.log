@@ -1,0 +1,32 @@
+Original artifact12835468093; ZIP member CRC verified through zipfile, fetched by byte ranges after full download stalled.
+Gates40690611280 head c4a02e25de0e082be7aa1d356ada05d9104a2c2a
+playwright/inbox-ui/20261028T171220.207857783/playwright.log
+  1) tests/admin/inbox-ui.spec.ts:92:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG 
+
+    Error: completed unread reload excludes the distinct read conversation
+
+    expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByTestId('conversation-69038d04-3881-4349-9ec0-1ac4e505ebec')
+    Expected: 0
+    Received: 1
+    Timeout:  10000ms
+
+    Call log:
+      - completed unread reload excludes the distinct read conversation getByTestId('conversation-69038d04-3881-4349-9ec0-1ac4e505ebec') with timeout 10000ms
+      - waiting for getByTestId('conversation-69038d04-3881-4349-9ec0-1ac4e505ebec')
+        24 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      169 |   await expect(page.getByTestId("inbox-list")).toHaveAttribute("aria-busy", "false");
+      170 |   await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
+    > 171 |   await expect(page.getByTestId(`conversation-${ids.closed}`), "completed unread reload excludes the distinct read conversation").toHaveCount(0);
+          |                                                                                                                                   ^
+      172 |   await expect(page.getByTestId(`conversation-${ids.open}`), "completed unread reload excludes the marked-read conversation").toHaveCount(0);
+      173 |   record("unread row persistence", "reload then select unread", "marked-read thread remains absent after authoritative reload");
+      174 |   await page.getByTestId("inbox-filter").selectOption("live_comment");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-ui.spec.ts:171:131
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261028T171220.207857783/results/inbox-ui-INU01-live-operat-7d6c2-send-release-persists-in-PG/test-failed-1.png

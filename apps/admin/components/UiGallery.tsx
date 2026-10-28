@@ -310,7 +310,7 @@ export function UiGallery({ locale, initial, search: initialSearch }: { locale: 
         <SwitchTabsSection c={c} params={params} setParam={setParam} />
         <BadgesSection c={c} />
         <AlertsSection c={c} />
-        <StatesSection c={c} />
+        <StatesSection c={c} locale={locale} />
         <DropzoneSection c={c} />
         <FormSectionDemo c={c} />
         <SettingsSection c={c} params={params} />

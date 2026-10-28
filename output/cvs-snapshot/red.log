@@ -1,0 +1,109 @@
+CVS-SNAP RED evidence ledger
+Phase: tests-only; CI PENDING (E0; no RED assertion receipt yet)
+Base: 5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248
+Branch: unit/cvs-snapshot-directory
+Worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/cvs-snapshot
+Target: r3/integration
+Expected assertion failures (must confirm from CI, never infer RED from a red badge):
+- TestValidBuyerStoreCodeGolden/20261028_snapshot_code_formats: OK 000005, Hi-Life F959/L505 accepted; old OK 1328 and Hi-Life 123/12345678 refused.
+- CVS-SNAP chain plus code resolves server identity and reports directory misses: empty legacy text accepted and store_not_found mapped beside code.
+- TestCvsBuyerEnteredStore/snapshot_20261028_returns_exact_directory_values_through_HTTP_and_SQL: exact snapshot name/address despite different supplied text.
+- TestCvsBuyerEnteredStore/snapshot_lookup_needs_only_a_code_and_refuses_missing_stores_and_old_OK_codes: code-only 201; unknown 000000 PT422 store_not_found; old OK 1328 PT422 bad_store_code; no pickup writes on refusals.
+- TestBrowserTaiwanCvs: no buyer name/address controls, code 131386 displays 建盛 / 新竹市東區建中一路52號1樓, persisted pickup reused after reload and real re-entry.
+Static-only commands: gofmt -w (three changed Go test files), node --check (two changed .mjs files), git diff --check; exit 0.
+NOT_RUN locally: all test suites, PG, browsers, servers, builds.
+Remote run/job IDs: pending PR creation; record as soon as assigned.
+
+Remote dispatch receipt (2026-10-28T03:43:41Z):
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/262 (OPEN; base r3/integration)
+Tests-only head: 03aa811f1f5c37d6e321504507be86d7267eb5a8
+Remote PR merge ref observed: 9f332d7015074823f3ffff2b378b61273c2ce87b
+Checkout note: pull_request workflows default to the synthetic merge ref; actual runner checkout is NOT_RUN/unverified while queued.
+Foundation workflow: 40628271158, attempt 1, job 122618341936, QUEUED.
+  https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40628271158/job/122618341936
+  Needed RED: Node unit suites / CVS-SNAP chain plus code resolves server identity and reports directory misses.
+Gates workflow: 40628271224, attempt 1, plan job 122618342331, QUEUED.
+  https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40628271224/job/122618342331
+  Needed after plan: shard:unit / TestValidBuyerStoreCodeGolden snapshot formats; shard:g08 / TestCvsBuyerEnteredStore; --browser-cvs.
+  Those gate job IDs have not been assigned yet; do not label the plan job as a test result.
+WAIT_JOB: 122618341936
+WAIT_JOB: 122618342331 (plan only; obtain the assigned test job IDs after it finishes)
+RED conclusion: PENDING, no assertion has failed yet.
+GREEN conclusion: NOT_RUN, implementation is intentionally not pushed before RED.
+Integrator wake-up: card dispatch explicitly delegates a fresh resumed session to the integrator after the needed job completes. No local background waiter/server was started; CI job timeouts remain unchanged.
+This receipt is a local working-tree append; no evidence-only CI restart was pushed.
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.6887631Z     taiwan_cvs_buyer_entered_test.go:80: must return exact snapshot identity, never supplied text or verified: {"pickup_id":"9fbdc706-7467-4a0a-b73f-cf3f850c50e7","kind":"cvs_711","code":"131386","name":"different supplied name","address":"different supplied address","source":"buyer_entered"}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.6914230Z     taiwan_cvs_buyer_entered_test.go:91: SQL snapshot lookup with empty legacy text: ERROR: bad_store_name (SQLSTATE PT422)
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7161665Z     taiwan_cvs_buyer_entered_test.go:80: must return exact snapshot identity, never supplied text or verified: {"pickup_id":"156b1057-d214-41fd-879c-d576bd798cc6","kind":"cvs_familymart","code":"011344","name":"different supplied name","address":"different supplied address","source":"buyer_entered"}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7178470Z     taiwan_cvs_buyer_entered_test.go:91: SQL snapshot lookup with empty legacy text: ERROR: bad_store_name (SQLSTATE PT422)
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7406948Z     taiwan_cvs_buyer_entered_test.go:75: snapshot store: want 201, got 422 {"code":"bad_store_code","message":"The store number is not valid for this chain.","request_id":"97f5858bdd66360cdc492f785491182b","retryable":false,"details":{}}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7609536Z     taiwan_cvs_buyer_entered_test.go:75: snapshot store: want 201, got 422 {"code":"bad_store_code","message":"The store number is not valid for this chain.","request_id":"0c51f2ab6582af2d99bf1a9f733e7b3e","retryable":false,"details":{}}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.7813110Z     taiwan_cvs_buyer_entered_test.go:75: snapshot store: want 201, got 422 {"code":"bad_store_code","message":"The store number is not valid for this chain.","request_id":"1d9721e5a2ba1d6fd051d4970766c6e3","retryable":false,"details":{}}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8035087Z     taiwan_cvs_buyer_entered_test.go:80: must return exact snapshot identity, never supplied text or verified: {"pickup_id":"fc1f37e7-6cac-4d80-bab3-2b394aa7ec34","kind":"cvs_hilife","code":"2001","name":"different supplied name","address":"different supplied address","source":"buyer_entered"}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8048121Z     taiwan_cvs_buyer_entered_test.go:91: SQL snapshot lookup with empty legacy text: ERROR: bad_store_name (SQLSTATE PT422)
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8230230Z     taiwan_cvs_buyer_entered_test.go:107: code-only HTTP request: want exact directory store, got 422 {"code":"bad_store_name","message":"The store name is not valid.","request_id":"3c060c150137447d207e21b53d8d5b91","retryable":false,"details":{}}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8273860Z     taiwan_cvs_buyer_entered_test.go:115: cvs_711/000000: want 422 store_not_found, got 201 {"pickup_id":"98055634-18df-44d5-aa8a-3fb92872da66","kind":"cvs_711","code":"000000","name":"Synthetic Store","address":"Synthetic Address","source":"buyer_entered"}
+gate (shard:g08)	UNKNOWN STEP	2026-10-28T06:08:41.8333746Z     taiwan_cvs_buyer_entered_test.go:115: cvs_okmart/1328: want 422 bad_store_code, got 201 {"pickup_id":"90b983ef-69d2-4071-8315-4c4db9acd3b1","kind":"cvs_okmart","code":"1328","name":"Synthetic Store","address":"Synthetic Address","source":"buyer_entered"}
+foundation	UNKNOWN STEP	2026-10-28T03:59:20.3129054Z ✖ CVS-SNAP chain plus code resolves server identity and reports directory misses (4.143709ms)
+foundation	UNKNOWN STEP	2026-10-28T03:59:37.7008455Z test at apps/storefront/tests/cvs-contract.test.mjs:57:1
+foundation	UNKNOWN STEP	2026-10-28T03:59:37.7009202Z ✖ CVS-SNAP chain plus code resolves server identity and reports directory misses (4.143709ms)
+foundation	UNKNOWN STEP	2026-10-28T03:59:37.7010338Z   AssertionError [ERR_ASSERTION]: empty legacy name/address are accepted
+foundation	UNKNOWN STEP	2026-10-28T03:59:37.7011024Z   false !== true
+
+CONFIRMED RED (supersedes historical PENDING entries above):
+Evidence: E3 GitHub CI regression failures, tests-only head 03aa811f1f5c37d6e321504507be86d7267eb5a8.
+Runner checkout/synthetic merge SHA: 9f332d7015074823f3ffff2b378b61273c2ce87b (matrix receipts).
+Foundation 40628271158 / job 122618341936: new storefront unit assertion empty legacy name/address accepted failed false !== true.
+Gates 40628271224 / job 122624122933 (shard:unit): TestValidBuyerStoreCodeGolden/20261028_snapshot_code_formats failed on OK/Hi-Life expectations.
+Gates 40628271224 / job 122624123599 (shard:g08): exact-directory HTTP/SQL expectations failed; missing 000000 incorrectly 201; old OK 1328 incorrectly 201; code-only incorrectly bad_store_name.
+Gates 40628271224 / job 122624123324 (--browser-cvs): new no-name-input assertion failed expected count 0, received 1 at cvs-buyer.mjs:285, Chromium and WebKit.
+Original browser failure logs retained: red-browser-1.log and red-browser-2.log; source artifact gate-browser-cvs id 12794983725, run 40628271224.
+Gates 40628271224 / job 122624122728 (--browser-webkit): CVS child failed; other child suites passed (same card regression, not an unrelated blocker).
+GREEN: NOT_RUN; implementation remains uncommitted/unpushed due the static out-of-scope parity-gate dependency documented in blocker.md.
+
+Continuation ruling 2026-10-28: prior scope STOP is resolved by the latest human authorization. Gates run conclusion/job IDs reread via gh run view: failure on tests-only 03aa811f1. One implementation push is now authorized; GREEN remains PENDING until its own CI. F/L-only expectations are superseded by A-Z, per snapshot-wide integrator profile.
+foundation	Node unit suites (storefront, i18n)	2026-10-28T09:20:36.8657664Z   +   'tests/storefront/cvs-buyer.mjs:291 missing is awaited only after another await: await page.getByTestId("confirm-address").click()',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T09:20:36.8659849Z   +   'tests/storefront/cvs-buyer.mjs:300 resolved is awaited only after another await: await page.getByTestId("confirm-address").click()',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T09:20:36.8662017Z   +   'tests/storefront/cvs-buyer.mjs:323 restored is awaited only after another await: await page.getByTestId("confirm-address").click()'
+foundation	Node unit suites (storefront, i18n)	2026-10-28T09:20:36.8676299Z     actual: [ 'tests/storefront/cvs-buyer.mjs:291 missing is awaited only after another await: await page.getByTestId("confirm-address").click()', 'tests/storefront/cvs-buyer.mjs:300 resolved is awaited only after another await: await page.getByTestId("confirm-address").click()', 'tests/storefront/cvs-buyer.mjs:323 restored is awaited only after another await: await page.getByTestId("confirm-address").click()' ],
+
+Gate-waits follow-up RED: Foundation run 40655717175 / job 122706136382 at b0a6290f7bc0261490365dd770deb8454bf3fa16, assertion offenders missing/resolved/restored (CI log readback verified).
+Fix pushed once: 8df28fad0d6373db0da3259a4375b237aff7106e; only tests/storefront/cvs-buyer.mjs committed.
+node --check tests/storefront/cvs-buyer.mjs and git diff --check exit 0 (E1); no local tests/servers.
+WAIT_RUN: 40663921177 (Foundation queued at observation)
+WAIT_RUN: 40663921173 (Gates pending at observation)
+GREEN: PENDING; integrator resumes after workflow completion. No evidence-only push.
+
+2026-10-29 fix attempt 1: all nine failed jobs of Gates 40663921173 read; remote head 8df28fad0d6373db0da3259a4375b237aff7106e, tested synthetic merge 326c10203c3b441aedc8e709af8b252c7fd986f2 (E3 historical failures only).
+job122822744631: manual CVS order 422 internal; independent R2 upgrade gate count=135 expected=136; OC-05 migration0205 still absent after required integration merge.
+job122822744566: merchant dashboard CVS fixture orders fail; shared mtCVS code123456 absent from snapshot.
+job122822744401: new missing-store assertion expected422 store_not_found, actual422 internal; shared internal/httperror/error.go does not register that code.
+job122822744728: TestBrowserClaimDirectCheckout/RealClick failed; job122822744296: TestBrowserLiveTools failed; job122822744086: TestBrowserTaiwanCvs MOCK/WebKit failed; job122822744499: CVS and claim-checkout WebKit children failed. Browser child root causes UNKNOWN; do not assume fixture-only cause.
+job122976524907 receipts and job123004181616 required propagate failed modes.
+STOP per explicit out-of-card gate rule. See fix1-blocked.md and fix1-*.log. Local merge f365733f4261d91cce29ad030fbcaad580a82027 not pushed; no implementation changes. GREEN=NOT_RUN. WAIT_RUN=NOT_DISPATCHED. Humaux unavailable; local handoff only.
+
+Fix2 resumed 2026-10-29: existing RED retained, no extra tests-only push per integrator's one-push repair instruction.
+Original tests-only RED: head 03aa811f1f5c37d6e321504507be86d7267eb5a8, merge 9f332d7015074823f3ffff2b378b61273c2ce87b.
+Gates 40628271224/jobs 122624122933 (code-format assertions), 122624123599 (directory/code-only assertions), 122624123324 (no-name-input browser assertion); Foundation 40628271158/job 122618341936 (empty legacy fields).
+After merging current integration (#254, 313c2c36f4ac064975c1c7c170d710cb63fa457f), reread all nine failed jobs from the PR's latest completed run 40663921173 (old head 8df28fad0d6373db0da3259a4375b237aff7106e; merge 326c10203c3b441aedc8e709af8b252c7fd986f2). Filtered raw excerpts: fix2-<job>.log.
+Repair regression receipts: jobs 122822744401 (422 store_not_found expected, internal returned); 122822744631 (manual CVS 422 and missing 0205 count); 122822744566 (CVS dashboard fixture orders).
+Browser claim job 122822744728: original artifact 12828838677/browser.log explicitly times out filling cvs-entered-name. Preserved in fix2-artifact-claim-browser.log. Replace obsolete control fills with absence plus exact canonical identity assertions; preserve money/order/reload/recovery coverage.
+These are historical E3 failures only. New head GREEN and new focused envelope test execution remain PENDING. Author acceptance E0.
+Browser CVS artifact 12822294061: both Chromium/WebKit cvs-buyer.mjs.log show 503 unavailable instead of expected 422 at line 293; original logs preserved in fix2-cvs-20261028T140911.374967375.log and fix2-cvs-20261028T140934.960765986.log. Static trace: buyer-server.ts upstreamError rejects unknown internal from the backend, but already allows store_not_found via CVS_ERROR_CODES; the approved shared HTTP mapping fixes the root, no BFF edit required.
+Browser live-tools artifact 12830436236/playwright.log: all four zh-TW/en desktop/mobile cases wait for removed cvs-entered-name; preserved in fix2-artifact-e2e-playwright.log. Helper update retains tests and asserts canonical identity.
+Downloaded ZIPs (including deliberately stopped redundant/partial downloads) removed after preserving complete individual failure log entries. WebKit aggregate artifact was not fully inspected; its shared child failures are covered by the explicit CVS/claim logs, aggregate GREEN remains pending.
+Committed CI excerpts normalize trailing whitespace only; original run/job/artifact ids above identify the authoritative raw receipts.
+
+Fix3 continuation, current-head RED readback (2026-10-29):
+Head 17bf02dbc4e3c96e449bb857f038e05d8959c31f; Gates synthetic checkout 5dbb2290fe7fb9dee8b00c3d76d2cb5e8b940589.
+Foundation 40762185265/job123076746838: sole failure backend-coverage.test.mjs:274 generated browser ownership is current and covers registry; derive-browser-ownership --check reports drift.
+Gates 40762185213/job123081441225 (bundle:07): only --browser-cvs member failed, TestBrowserTaiwanCvs/MOCK and /WebKit. job123081443055 (--browser-webkit): only cvs child failed. Receipts123118188253 and required123118933496 propagate those failures.
+Artifacts12852401100 (two cvs-buyer.mjs.log entries) and12853786208 (cvs-buyer.mjs.log + cvs.jsonl) independently show cvs-buyer.mjs:296 strict-mode locator failure: page-wide [role=alert] matches store-code field error AND Next.js route announcer. Actual backend response is422 store_not_found and the localized field text is present. Root cause is selector ambiguity, not HTTP error transport. Complete original selected logs retained as fix3-artifact-*.log.
+Repair: scope same localized assertion to the label containing cvs-entered-code, retaining strictness and all status/code/canonical/reload/click checks. Merge integration c12fac9a2acafc04a7be5222c10ff2573975dde6 and regenerate browser ownership in the same push. Assigned0206 and pin136 unchanged.
+GREEN remains PENDING, author acceptance E0. Local node --check exits0; no local tests/servers.
+
+Fix4 continuation — 2026-10-29, current-head CI readback:
+Head c105c7ec69f61fbb65780b0cd13a7a9024706837; Gates 40775565842/job123127558866, synthetic merge1245de74c100b92585b4640820505275b22822d1. Foundation40775565630/job123123852428 passed.
+Only bundle:07 member --browser-cvs failed. Original artifact12854649427 browser logs (Chromium + WebKit) both fail cvs-buyer.mjs:301: expected201, actual200. The missing-store422/code/localized field assertions passed before that point. Original extracted entries: fix4-cvs-1337.log and fix4-cvs-*.log.
+Root: new browser assertion confused private Go creation201 with existing storefront BFF success200. apps/storefront/tests/buyer-server.test.mjs explicitly asserts200 for a mocked private201 on cvs-stores; buyer-server.ts success() normalizes successful JSON to200. Correct both new first-lookup/reload browser status expectations to exact200; preserve private HTTP/PG201, missing-store422, canonical identity, pickup reuse, strict selectors, all locales, clicks and every existing test. No production transport change.
+Merge origin/r3/integration dcecd6220094234b4760315c676d9737ed713c40 before regenerating ownership; migration0206/pin136 unchanged. This is attempt1 for the newly exposed status-contract mismatch, not a repeat locator/ownership fix. GREEN pending PR CI; authorPASS E0.
