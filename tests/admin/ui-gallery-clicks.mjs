@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { localeNames, locales } from "../../packages/i18n/src/index.ts";
 import { galleryNav } from "../../apps/admin/src/ui-gallery-nav.ts";
+import { recoveryClicks } from "./ds-states-clicks.mjs";
 
 /** Runs the whole journey once for one locale and viewport; `step(control, action, expected, fn)` records a ledger row. */
 export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nested = false }) {
@@ -574,6 +575,7 @@ export async function clickJourney({ page, step, copy: c, locale, mobile, ds2Nes
     await seen(page.getByRole("heading", { level: 1 }));
   });
   if (!ds2Nested && locale === "zh-TW" && !mobile) await ds2Matrix({ page, step });
+  if (!ds2Nested && locale === "zh-TW" && !mobile) await recoveryClicks({ page, step });
 }
 
 // DS-2 extends the existing CI entry point here because the task's write_paths exclude ui-gallery-runner.mjs.
