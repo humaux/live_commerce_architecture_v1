@@ -32,3 +32,19 @@ No local test/server/generator has run.
 Read red.log and exact CI head/run/job. Use gh run view RUN --log-failed (filtered). If expected new assertion is RED, record run/job and failure in red.log BEFORE implementation. If unrelated gate blocks the card, STOP. At most two targeted attempts per blocker.
 After GREEN, final run/job evidence belongs in a PR comment, never an evidence-only commit.
 Evidence: E0 static inspection; CI NOT_RUN/PENDING until receipts arrive.
+
+## Resume inspection 2026-10-28
+
+Foundation run 40628067749/job 122617676540 succeeded, but step 12 (Real PostgreSQL, race detector and vet) was skipped. Its failed-job log is empty. This does not establish the required new-test assertion RED. Gates run 40628067835 remains queued; the actual unit job is 122622547420, confirmed against the tests-only head a3b8c31044eefb156eb7607ef1be6d7735185796 through the job API.
+
+No implementation or new push was made. RED is still PENDING. WAIT_RUN: 40628067835. The integrator must relay the unit-job conclusion; on assertion RED, append its exact failure to red.log and continue implementation. Existing uncommitted output files are preserved for the implementation commit. Local tests/servers and Humaux memory/coord/canvas remain NOT_RUN. Evidence level: E0 for implementation acceptance; CI metadata proves only the recorded job states.
+
+## Item 1 implementation after confirmed CI RED — 2026-10-28
+
+Raw job API confirms run 40628067835/job 122622547420 completed failure, tests-only head a3b8c31044eefb156eb7607ef1be6d7735185796; synthetic checkout cb89258d27e6bcf4c824cd84ddaa38bc8e1ca056 merges that head into base 5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248. At 05:25:41 UTC TestOrderAttemptExecutorAbortClassification/PT422/bank_transfer_closed fails executor_test.go:52: closed native pair: got "" want "payment_unavailable". Receipt is appended to red.log before implementation.
+
+Root cause: exact PT422 pair omitted from executionAbortCode. Minimal fix adds bank_transfer_closed to the payment_unavailable case. Executor.Execute already rolls back C2 then invokes fenced Service.Abort for that terminal code. No schema, grants, signatures, dependencies or header changes. gofmt -d internal/orderattempt/executor.go exited 0 with no output. No local tests/servers or generators run; dependency map unaffected by the unchanged import graph.
+
+Humaux is now available. Read development detail 7bdb220b-0798-4b1d-aff5-16ee94cae75f; applied ponytail; searched rejected decisions (representative 3/9, not full coverage). Stored fix/RED receipt and own subtask canvas oc16-p2-sub-1 under acquired advisory lock; no extra task claim because dispatched worker. Prior unavailable notes above are historical. No recursive delegation.
+
+Next: await own implementation push CI and integrator relay. GREEN PENDING, contractdrift PENDING. Other issue units remain open as listed above; they have NOT been implemented or claimed complete. In particular item 2 must respect the card prohibition on editing another module contract; comment regression tests need their own RED receipts. Keep PR open; no merge/auto-merge/status posting. E3 describes only the witnessed RED; implementation acceptance E0.
