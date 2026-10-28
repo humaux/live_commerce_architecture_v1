@@ -613,9 +613,10 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 			// 0163 (S2-OPEN-1 settlement-resolve) patches 0150's close_settlement in place and FKs its resolutions table to
 			// 0150's settlement_unattributed, so it is held back with them too.
 			// 0200 (SA-1 settlement returns/reconciliation/payables) patches 0150/0163 functions in place and extends 0150's tables.
+			// 0208 (#196/#197 item completeness) extends 0200's reconciliation table and patches those same definers.
 			if filepath.Base(path) == skip || filepath.Base(path) == "0137_platform_stripe.sql" || filepath.Base(path) == "0022_platform_stripe.sql" ||
 				filepath.Base(path) == "0150_platform_settlement.sql" || filepath.Base(path) == "0163_settlement_resolve.sql" ||
-				filepath.Base(path) == "0200_settlement_returns_recon.sql" ||
+				filepath.Base(path) == "0200_settlement_returns_recon.sql" || filepath.Base(path) == "0208_settlement_item_completeness.sql" ||
 				// 0203 / post_river/0028 (OC-03 re-auth guards) patch set_platform_stripe (0137) and the refund definers in place.
 				filepath.Base(path) == "0203_recent_auth_guards.sql" || filepath.Base(path) == "0028_recent_auth_refund_guard.sql" {
 				continue
@@ -773,10 +774,10 @@ func slsUpgrade(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016, and 0150 (settlement ledger) plus
-	// 0163 (settlement-resolve) and 0200 (settlement returns) with them, and 0203 / post_river/0028 (OC-03 re-auth guards, which patch
-	// 0137's set_platform_stripe in place); the same Apply runs all nine.
-	if ledgerAfter != ledgerBefore+9 {
-		t.Fatalf("ledger grew by %d, want exactly 9 (0077, post_river/0016, 0137, post_river/0022, 0150, 0163, 0200, 0203 and post_river/0028, once)", ledgerAfter-ledgerBefore)
+	// 0163 (settlement-resolve), 0200 (settlement returns), 0208 (item completeness) with them, and 0203 / post_river/0028
+	// (OC-03 re-auth guards, which patch 0137's set_platform_stripe in place); the same Apply runs all ten.
+	if ledgerAfter != ledgerBefore+10 {
+		t.Fatalf("ledger grew by %d, want exactly 10 (0077, post_river/0016, 0137, post_river/0022, 0150, 0163, 0200, 0203, post_river/0028 and 0208, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))

@@ -125,8 +125,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// post_river/0028 (OC-03 re-authentication guard of the Stripe refund command, defined post-River) adds one: 132 -> 133.
 	// 0204 (OC-12 inbox unread filter on social.list_conversations) adds one: 133 -> 134.
 	// 0205 (OC-05 per-store quick-start marker) adds one: 134 -> 135.
-	if len(r2) != 135 {
-		t.Fatalf("R2 migration set = %d files %v, want 135", len(r2), r2)
+	// 0206 (#262), 0207 (#265), then assigned 0208 (#196/#197 item completeness) add three: 135 -> 138.
+	// Integrator serializes these migrations; the final pin includes the queued predecessors even before they reach this base.
+	if len(r2) != 138 {
+		t.Fatalf("R2 migration set = %d files %v, want 138", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

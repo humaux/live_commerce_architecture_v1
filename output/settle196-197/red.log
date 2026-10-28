@@ -40,3 +40,33 @@ node scripts/dev/derive-browser-ownership.mjs (exit 0): generated 53 modes; only
 This prerequisite repair contains no settlement implementation, migration or weakened test.
 Next: wait for PR-owned CI on repair head; obtain failures on the NEW settlement assertions before implementation.
 Humaux/code-index tools unavailable: no shared memory/canvas/coord writes.
+
+Repair pushed as 18bd6a6629815af7844847e8a96ecc6e31c4e863.
+WAIT_RUN: 40759956153 — Foundation checks, queued, pull_request, exact repair head.
+WAIT_RUN: 40759956329 — Gates (GitHub runners), pending, pull_request, exact repair head.
+No assertion-level RED or GREEN claimed. Integrator relays next session on completion.
+
+RELAY 2 — assertion-level RED verified on tests-only repair head 18bd6a6629815af7844847e8a96ecc6e31c4e863
+Gates run 40759956329 / job 123075243384 (gate shard:unit), failure, completed 2026-10-28T20:43:18Z.
+TestSettlementSyncChunksAndCarriesTheWindowAndManifestOnEveryChunk fails at settlement_unit_test.go:117:
+  RED #197 chunk 0: every chunk must carry the window and full manifest
+Synthetic merge tested: be7e4ed536f81f706e0dc3d24f2c6c24506f32f6 (head 18bd6a66 into base bf161bac9).
+Raw source: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/123075243384/logs
+Filtered receipt: output/settle196-197/relay2-unit-red.log (fixture argument dump omitted).
+Foundation run 40759956153 / job 123068875365: success at this RED head; this is NOT implementation GREEN.
+PF17 database counterexamples (#196 and failed-final-chunk #197) are pending in catch-all shard:g09 job 123075243146.
+No assertion-level database RED claimed; the confirmed new unit assertion satisfies the relay condition to push implementation.
+
+Implementation preparation:
+Merged origin/r3/integration at 313c2c36f (contains assigned predecessor 0205, not 0206/0207).
+0208 adds immutable items_complete per reconciliation currency; effective ledger IDs/currency/stored net must match the manifest.
+Existing 0200 aggregate-only comparisons default false (resync required); pre-0200 grandfather semantics remain unchanged.
+Every Registrar chunk carries the full manifest and window, so an incomplete committed prefix supersedes old clean coverage.
+Close retains latest-observation selection, ACLs, locks, returns, idempotence and refusal-before-writes.
+R2 pin is assigned expected final count 138; actual files on this base plus 0208 = 136 until #262/#265 merge.
+Stripe historical upgrade fixture defers 0208 with its dependencies; exact newly applied count rises from 9 to 10.
+Local: gofmt, git diff --check, python3 scripts/check_packet.py exit 0 (PASS_PACKET_STRUCTURE_ONLY).
+Browser ownership regenerated statically after foundation source changes; 53 modes, no hand edits.
+No local tests, server, PG, containers, browser, sandbox or LIVE calls.
+Own implementation assessment E0; static structure E1; current-head GREEN and independent review pending.
+Humaux/code-index unavailable; shared memory/canvas/coord writes NOT_RUN.
