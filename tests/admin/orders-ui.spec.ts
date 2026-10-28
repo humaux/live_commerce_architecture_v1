@@ -1,5 +1,5 @@
 // Purpose: Exercises orders, filters and details with supplied isolated browser identities.
-// Depends on: @playwright/test, node:fs/promises, node:path, node:http, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_ORDER_STORE, LC_BROWSER_ORDER_IDS, LC_BROWSER_FROZEN_SKU_CODE, LC_BROWSER_FOREIGN_STORE, LC_BROWSER_FOREIGN_ORDER_ID, LC_BROWSER_UNLISTED_STORE, LC_BROWSER_SECOND_TOKEN, LC_BROWSER_NO_ORDERS_TOKEN, LC_BROWSER_EXPIRED_TOKEN, LC_BROWSER_REVOKED_TOKEN
+// Depends on: ../../apps/admin/lib/orders-model (strict MOCK shipment DTO validation), @playwright/test, node:fs/promises, node:path, node:http, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_ORDER_STORE, LC_BROWSER_ORDER_IDS, LC_BROWSER_FROZEN_SKU_CODE, LC_BROWSER_FOREIGN_STORE, LC_BROWSER_FOREIGN_ORDER_ID, LC_BROWSER_UNLISTED_STORE, LC_BROWSER_SECOND_TOKEN, LC_BROWSER_NO_ORDERS_TOKEN, LC_BROWSER_EXPIRED_TOKEN, LC_BROWSER_REVOKED_TOKEN
 // Used by: apps/admin/src/features/orders/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_merchant_orders_ui_test.go
 // Invariants: ORDERS-V2-IMPL uses real clicks and response-derived identities/counts; shipment writes are explicitly MOCK,
 //   never reach PG, and preserve this harness's read-only fingerprints. Existing MOU assertions remain unchanged.
@@ -8,6 +8,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import * as http from "node:http";
 import { nativePage } from "./fixtures/native-device";
+import { parseShipmentVersion } from "../../apps/admin/lib/orders-model";
 import {picklistCopy} from '../../apps/admin/lib/picklist-copy';
 
 const required = (name: string) => {
@@ -1234,7 +1235,9 @@ for (const [locale, width] of [["en", 1586], ["zh-TW", 390], ["zh-CN", 390]] as 
     const path = `/api/stores/${store}/orders/${id}`;
     let saved = false;
     const submissions: Array<Record<string, unknown>> = [];
-    const head = { version: 1, status: "SHIPPED", carrier_code: "black_cat", carrier_name: null, tracking_number: "MOCK-ORDERS-V2-001", tracking_url: null, recorded_at: "2026-10-28T00:00:00Z" };
+    // Match the frozen orders DTO timestamp (six fractional digits); malformed readback is rejected by both detail and history parsers.
+    const head = { version: 1, status: "SHIPPED", carrier_code: "black_cat", carrier_name: null, tracking_number: "MOCK-ORDERS-V2-001", tracking_url: null, recorded_at: "2026-10-28T00:00:00.000000Z" };
+    parseShipmentVersion(head, false); // Reject malformed MOCK wire data before any UI interaction.
     // MOCK preparation/readback: intercept the existing route only. A real PUT would invalidate the PG read-only harness.
     await page.route(url => url.pathname === `${path}/shipment`, async route => {
       expect(route.request().method()).toBe("PUT");
