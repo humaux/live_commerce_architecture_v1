@@ -21,7 +21,7 @@ export async function recoveryClicks({ page, step }) {
     const url = new URL(request.url());
     const kind = url.searchParams.get("kind");
     requests.push({ method: request.method(), operation: url.searchParams.get("operation"), kind });
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ operation: "ds-states-example", status: kind === "unknown" ? "pending" : "loaded" }) });
+    await route.fulfill({ status: 200, contentType: "application/json", headers: { "cache-control": "no-store" }, body: JSON.stringify({ operation: "ds-states-example", status: kind === "unknown" ? "pending" : "loaded" }) });
   };
   await page.route(pattern, handler);
   const fixture = kind => page.locator(`[data-recovery="${kind}"]`);

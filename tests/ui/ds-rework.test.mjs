@@ -47,6 +47,8 @@ runInNewContext(ts.transpileModule(readFileSync("apps/admin/components/UiGallery
   if (name === "@live-commerce/ui/ds") return load("./States");
   if (name === "@live-commerce/i18n") return { stateRecoveryCopy };
   if (name === "../src/ui-gallery-state") return galleryState;
+  // SSR never invokes recovery callbacks; real requests exercise readJSON in the browser gate.
+  if (name === "../lib/customers-client") return { readJSON: () => { throw new Error("SSR must not issue a recovery read"); } };
   return app(name);
 } });
 

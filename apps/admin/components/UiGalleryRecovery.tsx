@@ -1,11 +1,12 @@
 // Purpose: Developer-only StatePanel/InlineError acceptance fixtures, mounted inside the flag-guarded gallery.
-// Depends on: shared DS components, i18n copy, useGalleryRecord; synthetic GET responses intercepted by the CI browser.
+// Depends on: shared DS components, i18n copy, useGalleryRecord, lib/customers-client readJSON; synthetic GET responses intercepted by the CI browser.
 // Used by: UiGallerySections; DS-STATES SSR and real-click browser acceptance.
 // Invariants: no real data or writes; unknown reads one fixed operation; raw denial diagnostics never become visible copy.
 "use client";
 import { StatePanel, InlineError, type StatePanelVariant } from "@live-commerce/ui/ds";
 import { stateRecoveryCopy, type Locale } from "@live-commerce/i18n";
 import { useGalleryRecord } from "../src/ui-gallery-state";
+import { readJSON } from "../lib/customers-client";
 
 type ReadFailure = { status: number; message: string; resourceName: string };
 const denial: ReadFailure = { status: 403, message: "Access denied to private-order-123", resourceName: "private-order-123" };
@@ -21,9 +22,7 @@ export function UiGalleryRecovery({ locale }: { locale: Locale }) {
   const [state, save, ready] = useGalleryRecord(`ds-states:${locale}`, { offline: "", unknown: "", inline: "" });
   const read = async (kind: "offline" | "unknown" | "inline") => {
     try {
-      const response = await fetch(`/api/__gallery/recovery?operation=ds-states-example&kind=${kind}`, { method: "GET", cache: "no-store" });
-      if (!response.ok) throw new Error("read failed");
-      const value: unknown = await response.json();
+      const value = await readJSON(`/api/__gallery/recovery?operation=ds-states-example&kind=${kind}`, AbortSignal.timeout(12000));
       if (!value || typeof value !== "object" || !("operation" in value) || value.operation !== "ds-states-example" ||
           !("status" in value) || value.status !== (kind === "unknown" ? "pending" : "loaded")) throw new Error("invalid fixture response");
       save({ ...state, [kind]: kind === "unknown" ? c.checked : c.loaded });

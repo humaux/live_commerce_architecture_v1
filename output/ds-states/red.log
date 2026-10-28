@@ -1,0 +1,21 @@
+claim_type: problem · project: live_commerce_architecture_v1 · module: ds-states · date: 2026-10-29
+PR #274 continuation; incoming head ce10fcee79e897f6c14798dc97703cc59a67a6b6.
+Prior RED INVALID: Gates run 40750174036, build job 123035247199 failed TS2322 at States.tsx(61,75).
+Gates browser gate skipped; no assertion-level browser RED exists in that run.
+Foundation run 40750174047, job 123034488051 failed G-UI3/G-UI5 before DS assertions:
+apps/admin/components/UiGalleryRecovery.tsx: fetch 1 > 0.
+No previous run is claimed as new assertion-level RED.
+
+This batch removes unreachable implementation from both legacy RED stubs; exports and prop types remain intact.
+Reuses existing lib/customers-client readJSON for fixture GETs with a 12s timeout; no component fetch.
+The SSR harness explicitly resolves the new import; browser HTTP fixture adds no-store required by the real helper.
+Every existing assertion remains unchanged and in order. Ownership artifact regenerated.
+New assertion-level RED: PENDING GitHub CI. GREEN: NOT_RUN.
+The implementation is prepared in implementation.patch; do not apply until assertion-level RED is confirmed.
+After applying it, regenerate ownership if needed and push exactly one implementation batch.
+build	Next builds (once per run)	2026-10-28T19:04:04.7263742Z ##[error]../../packages/ui/src/ds/States.tsx(61,75): error TS2322: Type 'StateAction | undefined' is not assignable to type 'StateAction'.
+build	Next builds (once per run)	2026-10-28T19:04:04.7272928Z   Type 'undefined' is not assignable to type 'StateAction'.
+build	Next builds (once per run)	2026-10-28T19:04:04.7674374Z Failed to type check.
+foundation	Package docs and gate map are current	2026-10-28T19:07:01.1058120Z   +   'apps/admin/components/UiGalleryRecovery.tsx: fetch 1 > 0'
+foundation	Package docs and gate map are current	2026-10-28T19:07:01.1059635Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shell-architecture.test.mjs:11:10)
+foundation	Package docs and gate map are current	2026-10-28T19:07:01.1062762Z     actual: [ 'apps/admin/components/UiGalleryRecovery.tsx: fetch 1 > 0' ],
