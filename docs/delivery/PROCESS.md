@@ -91,7 +91,7 @@ Token rules for every agent:
 ### Third-party models (owner 2026-10-01: Kimi subscription)
 
 Runner: `scripts/agents/ext-agent.sh` (sandboxed: private HOME, no MCP, Bash allowlist, no secrets, worktree only).
-`KIMI_MODEL=k3` (K3, default) or `kimi-for-coding` (K2.8). Calibrated on real units 2026-10-01.
+`KIMI_MODEL=k3` (K3, default) or `kimi-for-coding` (K2.8). Calibrated on real units 2026-10-01. `k3.1-pro` (K3.1 Pro, owner 2026-10-27 "kimi新出了一个模型，编入车队") is allowed and is being calibrated as a cross-family reviewer against DeepSeek on live PRs; it becomes the default only after that calibration is recorded. `k3.1-pro-highspeed` is not used (2x usage cost).
 
 | Work | Model |
 | --- | --- |
