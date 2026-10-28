@@ -100,7 +100,9 @@ test("AD-09: global error owns html/body and styles, independent of the localize
   assert.match(text, /import ["']\.\/globals\.css["']/);
   assert.doesNotMatch(text, /WorkspaceFrame|\[locale\]\/layout|Sidebar/);
   const html = renderRoute(boundaries[3], { error: new Error("secret"), reset() {} }, "/en/orders");
-  assert.match(html, /^<html lang="en"><body>/);
+  // React 19.3 SSR inserts an empty head for a full document even when JSX omits it.
+  // ReactFizzConfigDOM writePreambleStart/writePreambleEnd emit and close that head.
+  assert.match(html, /^<html lang="en"><head><\/head><body>/);
   assert.match(html, /data-kind="error"/);
   assert.doesNotMatch(html, /secret|500/);
 });

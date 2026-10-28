@@ -7,3 +7,14 @@ Foundation checks: run 40645302665, completed failure.
 Expected RED subject: tests/admin/code-alignment-admin-state.test.mjs; the shared state components, localized/root route boundaries and new empty-copy keys were absent at this head.
 Job IDs / failed-log lines: NOT_READ. The integrator relay supplied the run conclusions; this sandbox rejected gh run view before execution, so no job ID or log excerpt is claimed here.
 Local RED execution: NOT_RUN (owner CI-only rule).
+
+Directed AD-09 blocker evidence (read directly 2026-10-28)
+Head: 36f5b1e39147ed3aac80296eaabcd07028407ccd
+Foundation run: 40690045203; job: 122822227182; conclusion: failure
+Failed step: Node unit suites (storefront, i18n)
+Command: gh run view 40690045203 --log-failed (filtered to the AD-09 failure)
+2026-10-28T14:19:54.7813800Z AD-09: global error owns html/body and styles, independent of the localized workspace
+2026-10-28T14:19:54.7814282Z AssertionError [ERR_ASSERTION]: The input did not match /^<html lang="en"><body>/.
+Actual prefix: <html lang="en"><head></head><body><main class="admin-state-page">
+Suite: tests 9; pass 8; fail 1. Process completed with exit code 1.
+No new RED push: the directed fix card authorizes this existing CI failure as RED.
