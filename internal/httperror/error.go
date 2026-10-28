@@ -203,6 +203,8 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		// home-cod R5 (migration 0107): cash_on_delivery placement refusals of the begin_hold COD branch.
 		"cash_on_delivery_unavailable": "Cash on delivery is not available for this order.", "cash_on_delivery_amount_exceeds": "The amount is outside the cash-on-delivery limit.",
 		"cash_on_delivery_limit": "Too many cash-on-delivery orders are open.",
+		// home-cod P2-1 (#255): begin_hold PT409 when the merchant changed the COD surcharge after the quote; the buyer re-quotes.
+		"cod_surcharge_changed": "The cash-on-delivery fee changed; review the new total and try again.",
 		// storefront-v2 §F (unit promotions): discount codes. The buyer codes are the 422s of the quote request and of BeginCheckout.
 		"promo_invalid": "This discount code is not valid.", "promo_not_started": "This discount code is not active yet.",
 		"promo_expired": "This discount code has expired.", "promo_min_subtotal": "The order is below the minimum amount for this discount code.",
