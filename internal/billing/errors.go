@@ -1,9 +1,5 @@
 // errors.go: the fixed sentinels of the billing surface and the PG error mapping. Errors never carry
 // Stripe messages, response bodies, URLs, keys or driver details (I11, contract §12).
-// Purpose: map billing database errors to safe shared error values.
-// Depends on: pgx errors, internal/command and internal/platform PT403 codes.
-// Used by: billing service and webhook operations.
-// Invariants: only allowlisted PT403 messages become public re-authentication codes.
 
 package billing
 
@@ -58,7 +54,7 @@ func mapError(err error) error {
 		case "PT401":
 			return platform.ErrUnauthorized
 		case "PT403":
-			return platform.PT403(pgErr.Message, platform.ErrForbidden)
+			return platform.ErrForbidden
 		case "PT404":
 			return platform.ErrScopeNotFound
 		}

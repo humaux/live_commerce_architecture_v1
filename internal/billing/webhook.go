@@ -7,10 +7,6 @@
 // Status rules: signature error, malformed body or livemode -> 400; a handled event whose retrieve or
 // database write fails -> 503 (Stripe retries live webhooks for up to 3 days, F-B9,
 // https://docs.stripe.com/billing/subscriptions/webhooks retrieved 2026-09-29); everything else -> 200.
-// Purpose: authenticate platform subscription webhook events and reconcile their Stripe state.
-// Depends on: Stripe verification/retrieval and the dedicated billing.apply_subscription ingress pool.
-// Used by: cmd/api platform billing mount and billing webhook tests.
-// Invariants: event payloads never supply authoritative subscription state; secrets are never logged.
 
 package billing
 
@@ -43,7 +39,7 @@ var handledEvents = map[string]bool{
 // WebhookHandler returns the platform webhook. ingress is the commerce_stripe_ingress pool (the ONLY pool
 // that may execute billing.apply_subscription, C-4). A nil/disabled service or nil pool yields a handler
 // that answers 503 so Stripe retries rather than dropping events.
-func (s *Service) WebhookHandler(ingress *pgxpool.Pool) http.HandlerFunc {
+func (s *Service) WebhookHandler(ingress *pgxpool.Pool) http.Handler {
 	if !s.Enabled() || ingress == nil {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			httperror.Write(w, http.StatusServiceUnavailable, "unavailable")

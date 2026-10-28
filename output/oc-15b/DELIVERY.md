@@ -14,28 +14,28 @@ At 2026-10-28T02:01:56Z, `TestReauthRH13GuardedDomainsEndToEnd` failed its own a
 
 `gh run view --job 122575742449 --log-failed` initially refused logs while the containing run was in progress. `gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/122575742449/logs` succeeded; its checkout and assertion lines are preserved in red.log. That transport limitation was not treated as a test result.
 
-## Implementation
+## Current implementation (Fix 2, integrator FINAL)
 
-1. `cmd/api/platform_billing.go`: register literal `POST /v1/platform/stripe/webhook` on a stdlib ServeMux during webhook construction via `registerPlatformBillingWebhook`. Keep `mountPlatformBilling` identical to the base implementation, retaining the scanner's EXACT coverage guard, nil-webhook fallback identity, exact decoded-path admission and alias fallthrough. The constructed handler preserves non-POST delegation. For POST selection only, clear RawPath on a request/URL copy so encoded separators retain the old decoded-path behavior. Invoke the selected handler with the ORIGINAL request; signed body, headers, URL, method and request URI are untouched.
-2. `internal/billing/webhook.go`: narrow WebhookHandler's return type from http.Handler to the concrete http.HandlerFunc it already returns on every path. This is the scanner's existing explicit-registration leaf-handler form (go_opaque.go); the same webhook function and method rejection execute. No scanner/exemption changes.
-3. `internal/billing/errors.go`: PT403 maps via `platform.PT403(pgErr.Message, platform.ErrForbidden)`.
-4. Contract §16 mapper list now includes billing instead of the OC-15b pending note.
-5. Add `TestMountPlatformBillingPreservesRequestAndDispatch`: 7 methods × 10 paths/query forms, including escapes and aliases, with handler/status/body and original request assertions. Existing billing/webhook tests and RH13 assertions are unchanged. RH13 itself was restored in the tests-only commit.
+- Restore `cmd/api/platform_billing.go`, `cmd/api/platform_billing_test.go`, `internal/billing/webhook.go` and `internal/billing/errors.go` byte-for-byte to `origin/r3/integration` (`5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248`). All earlier mount refactors and the added mount regression test are removed as explicitly instructed. Existing mount/webhook tests are unchanged from that ref.
+- New `internal/billing/admin_errors.go` maps allowlisted PT403 messages in the `pin_customer` and `record_checkout_session` SQL callbacks, BEFORE the unchanged shared `run`/`mapError` can collapse them. Other errors follow the existing path. Typed errors still wrap ErrForbidden, so platform.WithScope retains its store-visibility recheck and transaction rollback. No SQL, scope, permission, Stripe request or webhook behavior changes.
+- `internal/billing/service.go` changes only its required header and those two admin-only SQL callback returns. The scanner's webhook dependency spans remain untouched. Portal has no guarded writer and is unchanged.
+- Contract §16 lists the admin write mapper; RH13 billing-checkout assertion remains intact (only its implementation-path comment changes in this fix).
+- First placement attempt: static scanner exit 0, errors=0. No second placement attempt was needed. Earlier failure at `ff23d27c5`, Foundation run `40620706981` / job `122593760499`, named `cmd/api/platform_billing.go:27` and `:77` for the opaque EXACT webhook guard; current mount equals the integration ref.
 
-## Commands and scope
+## Static checks and scope
 
-- `gofmt -w` on the four changed implementation/test Go files: exit 0 (authorized static formatting).
-- No local tests, servers, PG, containers, builds or gates run. Runtime acceptance is exclusively this PR's GitHub CI.
-- No new imports, packages or package docs; dependency graph unchanged. Dependency map left unchanged; if CI requires a change it must be regenerated with scripts/dev/depmap.sh, never hand-edited.
-- Source files retain their existing headers, with Purpose/Depends on/Used by/Invariants added to the three modified production files.
-- Outside card write paths: NONE. No changes to baseline.json, route-table-dispatchers.json, the scanner, migrations, R2 pin, gate-adapter assertions, lockfiles or other worktrees.
-- Previous runtime lacked Humaux tools. Fix 1 runtime has them: searched OC-15b and rejected decisions (representative 3/9 coverage), read development rules, stored root cause/fix and updated only the dispatched worker's canvas under a lock. Existing integrator assignment is retained; no separate claim or delegation.
+- `go run ./scripts/dev/contractdrift`: exit 0. Summary and source hashes in `fix2-static.log`; full raw local output in untracked `fix2-scanner.log` (not committed because its raw warning formatting has trailing whitespace).
+- `go build ./...`: exit 0; `go vet ./internal/billing ./cmd/api ./tests/identityhttp`: exit 0. These are authorized static checks, E1 only. No local tests, servers, PG or containers.
+- `gofmt -w internal/billing/admin_errors.go internal/billing/service.go` and `git diff --check`: exit 0.
+- No Go package or import dependency change (billing already imports pgconn and platform). Dependency map unchanged; regenerate with scripts/dev/depmap.sh only if required by CI.
+- Outside card write paths: NONE. No scanner, baseline, dispatcher pin, migration, R2 pin, gate-adapter assertion, lockfile, other worktree or branch changes. Existing untracked handoff/monitor files from previous sessions are preserved.
+- Humaux, coord, code-index and canvas tools are unavailable in this runtime. No Humaux store/update claim; root cause, change and handoff are recorded here. No recursive delegation or separate claim.
 
-## Fix 1 of 2 (2026-10-28)
+## Fix 1 of 2 (2026-10-28; superseded by Fix 2)
 
 Foundation run `40619161251`, job `122588674187`, failed at head `52ed2c77a986b111af06399732e7e90a3e59fd61`: `TestGoRepositoryInventory` requires `EXACT /v1/platform/stripe/webhook` in `inv.Unresolved`, while the explicit method route belongs in `inv.Routes`. Putting registration inside the mount classifies it as a route registrar and skips its opaque EXACT guard (`go_extract.go`), so the original refactor removed that guard. Raw filtered failure: `fix1.log`.
 
-The fix restores the original mount unchanged and registers the literal POST during construction instead. `WebhookHandler` remains the concrete leaf handler, so billing internals are not rebound as opaque child spans. The existing added 70-case request-preservation matrix now exercises registration plus the original mount; all assertions and pre-existing tests remain unchanged. No imports or dependency-map content changed. Static formatting: `gofmt -w cmd/api/platform_billing.go cmd/api/platform_billing_test.go`, exit 0. No local runtime checks. Own assessment E0, current CI GREEN pending. Push once, capture Foundation and Gates `shard:unit` job IDs, then stop for integrator relay; no unattended local process remains.
+Historical Fix 1 moved registration to construction and retained the concrete handler return type, but Foundation run `40620706981` / job `122593760499` still failed contractdrift at `ff23d27c5`. The integrator rejected further mount refactoring. Fix 2 above replaces that approach entirely; no earlier mount/runtime claim is current acceptance.
 
 ## Acceptance and handoff
 

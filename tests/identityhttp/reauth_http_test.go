@@ -705,7 +705,7 @@ func admin(t *testing.T, h http.Handler, method, path, bearer, key, body string)
 // performing a guarded operation gets HTTP 403 with body code reauth_required in each guarded domain wired here -
 // orders CSV (merchantorders/orders.go), finance CSV and products report CSV (reporting), customer erasure (customers/read.go),
 // the bank-transfer decisions (merchantorders offline -> orders.go) and platform Stripe settings (payments/platformstripe coded
-// 403) and billing checkout (billing/errors.go via billing.pin_customer) - and stays live; a fresh session gets the export.
+// 403) and billing checkout (billing/admin_errors.go via billing.pin_customer) - and stays live; a fresh session gets the export.
 func TestReauthRH13GuardedDomainsEndToEnd(t *testing.T) {
 	e := fixture(t)
 	w := newWorld(t, e)

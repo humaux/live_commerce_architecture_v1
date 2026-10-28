@@ -4,6 +4,10 @@
 // every merchant-visible SQL entry point is a 0079 definer that re-verifies the caller (billing:manage).
 // It never charges buyers, blocks anything but a caller's own billing actions, logs a bearer URL or
 // retries a Stripe call inside a request.
+// Purpose: implement merchant subscription reads, checkout and portal operations.
+// Depends on: scoped PostgreSQL billing definers, Stripe client and billing configuration.
+// Used by: internal/httpapi billing routes; webhook shares Service state and timing helpers.
+// Invariants: Stripe calls hold no database transaction; admin write PT403 codes survive mapping.
 
 package billing
 
@@ -292,8 +296,8 @@ func (s *Service) pinCustomer(ctx context.Context, pool *pgxpool.Pool, scope pla
 	var pinned string
 	err := s.run(ctx, pool, scope, token, func(tx pgx.Tx, hash [32]byte) error {
 		// billing.pin_customer: set-once per store; re-checks BD1 against integration.merchant_accounts.
-		return tx.QueryRow(ctx, `SELECT billing.pin_customer($1::bytea,$2::uuid,$3::text,$4::text,$5::text)`,
-			hash[:], scope.StoreID, envSandbox, customer, s.account).Scan(&pinned)
+		return mapAdminWriteError(tx.QueryRow(ctx, `SELECT billing.pin_customer($1::bytea,$2::uuid,$3::text,$4::text,$5::text)`,
+			hash[:], scope.StoreID, envSandbox, customer, s.account).Scan(&pinned))
 	})
 	return pinned, err
 }
@@ -352,8 +356,8 @@ func (s *Service) StartCheckout(ctx context.Context, pool *pgxpool.Pool, scope p
 	var older *string
 	if err := s.run(ctx, pool, scope, token, func(tx pgx.Tx, hash [32]byte) error {
 		// billing.record_checkout_session: one open session per store; returns an older unexpired id.
-		return tx.QueryRow(ctx, `SELECT billing.record_checkout_session($1::bytea,$2::uuid,$3::text,$4::text,$5::timestamptz)`,
-			hash[:], scope.StoreID, envSandbox, id, expires).Scan(&older)
+		return mapAdminWriteError(tx.QueryRow(ctx, `SELECT billing.record_checkout_session($1::bytea,$2::uuid,$3::text,$4::text,$5::timestamptz)`,
+			hash[:], scope.StoreID, envSandbox, id, expires).Scan(&older))
 	}); err != nil {
 		return "", err // the new session was never returned to anyone and expires within 30 min
 	}
