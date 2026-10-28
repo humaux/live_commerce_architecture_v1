@@ -1,5 +1,5 @@
 // Purpose: buyer order-page cash-on-delivery block (amount, collection state, carrier) and the shared CodAmount line.
-// Depends on: lib/cod-copy.ts (copy), lib/cvs-contract (CollectionState), lib/purchase (Order), lib/money.
+// Depends on: lib/cod-copy.ts (copy, codAmountLabel), @live-commerce/i18n (Locale), lib/purchase (Order), lib/money.
 // Used by: components/OrderFlow.tsx (checkout summary and the order page).
 // Invariant: the order-page amount is the server cod_collect_minor, never computed here; the approved label (recordedPending) shows only
 // while collection is PENDING, every other state keeps the previous recorded wording.

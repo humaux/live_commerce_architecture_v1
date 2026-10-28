@@ -187,3 +187,19 @@ SU06 is SANDBOX, never LIVE. NOT_RUN: SP17 (capture proven by refresh signal + p
   local minimum becomes **2500 minor (NT$25)** in every layer that encodes it (stripe-psp-v1 §4
   table, Go amount checks, SQL `stripe_amount_ok`/`stripe_unit_amount`, storefront
   `STRIPE_AMOUNT` table) — one follow-up unit, with SP02 parity vectors updated to match.
+
+
+## Amendment 2026-10-28 (CF-PAY)
+
+Status: DESIGN, review-ready; implementation/CI/independent review NOT_RUN for this amendment.
+Authority: owner 2026-10-26 「用确认码，买家登录画面删掉，请款改成付款」 and the order-details-only/UNKNOWN decision
+(first-hand quotation transcript `output/integrator/tools/logs/owner-decisions-20261026.md:7–10`, read-only main);
+[owner choices](owner-choices-20261026-v1.md) scope and OC-Q3; platform settings follow
+[stripe-platform-account-v1](stripe-platform-account-v1.md) Amendment 2026-10-28 (CF-PAY).
+
+- CP-02: buyer-visible wording uses 付款, never 請款. Preserve AUTHORIZED versus CAPTURED versus settlement facts: authorization is not confirmed capture; capture is not merchant bank payout. No new payment status or success inference from redirects/return URLs.
+- Payment results remain in the order-details payment block. No separate result page, buyer login/account restoration, success message for UNKNOWN, or retry action for an uncertain payment. Existing neutral Stripe return instructions are not a result receipt and remain neutral.
+- This wording amendment does not change §5's bounded Continue-original-payment/Refresh/Cancel state machine, method eligibility, amounts, idempotency, server checks or read-only REVIEW_REQUIRED/AUTHORIZED states. It adds no UNKNOWN retry and does not relabel Continue as a new payment.
+- OC-Q3 keeps merchant settlement words 已請款 / 上期結轉（扣除）/ 應撥淨額 / 已撥付; buyer wording must not rename that separate ledger vocabulary.
+
+Acceptance handoff (NOT_RUN): CI copy/state tests and real-click order-details cases must retain distinct authorized/captured/unknown displays, no unknown success/retry, and no new standalone result screen; retain all existing payment safety assertions.

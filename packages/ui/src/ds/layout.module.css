@@ -53,11 +53,14 @@
 /* ---------- PageHeader ---------- */
 .pageHeader { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--ds-space-3) var(--ds-space-6); margin-bottom: var(--ds-space-4); }
 .pageHeading { flex: 1 1 280px; min-width: 0; }
-.crumbs { margin: 0 0 var(--ds-space-1); padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: var(--ds-space-2); color: var(--ds-text-3); font-size: var(--ds-text-sm); }
-.crumbs li { display: inline-flex; align-items: center; gap: var(--ds-space-2); }
-.crumbs a { color: var(--ds-text-3); text-decoration: none; }
+/* DS-3: Figma Page Header breadcrumb 1397:105156: every crumb and "/" separator in --ds-crumb-text, 14 Regular, line 21, gap 4. */
+.crumbs { margin: 0 0 var(--ds-space-1); padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: var(--ds-space-1); color: var(--ds-crumb-text); font-size: var(--ds-text-md); font-weight: 400; line-height: var(--ds-leading); }
+.crumbs li { display: inline-flex; align-items: center; gap: var(--ds-space-1); }
+.crumbs li + li::before { content: "/" / ""; color: var(--ds-crumb-text); }
+.crumbs a { color: var(--ds-crumb-text); text-decoration: none; }
 .crumbs a:hover { text-decoration: underline; }
-.crumbs [aria-current="page"] { color: var(--ds-text-1); }
+.crumbs [aria-current="page"] { color: var(--ds-crumb-text); }
+[data-shell-topbar] .crumbs { margin: 0; }
 .pageTitleRow, .pageStatus { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2); }
 .pageTitle { margin: 0; font-size: var(--ds-text-2xl); line-height: 1.3; color: var(--ds-text-1); }
 .pageDescription { margin: var(--ds-space-1) 0 0; color: var(--ds-text-2); font-size: var(--ds-text-md); }

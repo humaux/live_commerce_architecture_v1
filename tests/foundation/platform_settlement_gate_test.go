@@ -39,7 +39,8 @@ import (
 const gateTicket = "OPS-2026-0001"
 
 // gateEnv is one isolated database (pfNew creates a fresh PG) plus a registrar-role pool. The registrar pool is the same
-// role cmd/stripe-admin logs in as; no owner connection is used to call a §6.9 entry point.
+// role cmd/stripe-admin logs in as. Close probes use an owner transaction for observations, but SET LOCAL ROLE to
+// the registrar before calling the real entry point; owner privileges are restored only for the readback.
 type gateEnv struct {
 	*pfEnv
 	reg                  *pgxpool.Pool
@@ -157,6 +158,66 @@ func (g *gateEnv) fnArgs(t *testing.T, oid string) []gateArg {
 	return out
 }
 
+// TestPlatformSettlementGateArgumentKeys keeps distinct monetary parameters distinct (#220.3), including the real
+// p_returned_minor spelling that previously failed before the registrar call (#216).
+func TestPlatformSettlementGateArgumentKeys(t *testing.T) {
+	for _, name := range []string{"amount_minor", "returned_minor", "payout_minor"} {
+		t.Run(name, func(t *testing.T) {
+			if got := gateKey("p_" + name); got != name {
+				t.Fatalf("gateKey(%q) = %q, want %q; monetary arguments must not alias", "p_"+name, got, name)
+			}
+		})
+	}
+}
+
+// TestPlatformSettlementGateFunctionArguments pins every discovered argument of the five registrar entry points used
+// by PF16-PF18. Checking both the SQL names and their canonical keys catches missing, unexpected and colliding bindings.
+func TestPlatformSettlementGateFunctionArguments(t *testing.T) {
+	g := gateNew(t)
+	for _, tc := range []struct {
+		name string
+		args []string
+		keys []string
+	}{
+		{"record_settlement_lines",
+			[]string{"p_tenant", "p_store", "p_principal", "p_environment", "p_lines", "p_window_from", "p_window_to", "p_connection", "p_ticket", "p_window_manifest"},
+			[]string{"tenant", "store", "principal", "environment", "lines", "from", "to", "connection", "ticket", "manifest"}},
+		{"close_settlement",
+			[]string{"p_tenant", "p_store", "p_principal", "p_environment", "p_period_start", "p_operator", "p_target_store", "p_ticket"},
+			[]string{"tenant", "store", "principal", "environment", "period", "operator", "target", "ticket"}},
+		{"record_settlement_payout",
+			[]string{"p_tenant", "p_store", "p_principal", "p_statement", "p_payout_ref", "p_payout_minor", "p_paid_at", "p_operator", "p_ticket"},
+			[]string{"tenant", "store", "principal", "statement", "payout_ref", "payout_minor", "paid_at", "operator", "ticket"}},
+		{"record_settlement_payout_return",
+			[]string{"p_tenant", "p_store", "p_principal", "p_statement", "p_return_ref", "p_returned_minor", "p_returned_at", "p_operator", "p_ticket"},
+			[]string{"tenant", "store", "principal", "statement", "return_ref", "returned_minor", "returned_at", "operator", "ticket"}},
+		{"read_settlement_payables",
+			[]string{"p_tenant", "p_store", "p_principal", "p_environment", "p_limit"},
+			[]string{"tenant", "store", "principal", "environment", "limit"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			oid := g.fn(t, tc.name, len(tc.args))
+			args, err := g.lookupArgs(oid)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var names, keys []string
+			seen := map[string]string{}
+			for _, arg := range args {
+				key := gateKey(arg.name)
+				if previous, ok := seen[key]; ok {
+					t.Fatalf("%s arguments %q and %q alias key %q", tc.name, previous, arg.name, key)
+				}
+				seen[key] = arg.name
+				names = append(names, arg.name)
+				keys = append(keys, key)
+			}
+			lcSameSet(t, tc.name+" SQL arguments", names, tc.args)
+			lcSameSet(t, tc.name+" value keys", keys, tc.keys)
+		})
+	}
+}
+
 // gateKey maps the contract's parameter names to the test's canonical value keys. The wildcard manifest branch keeps the
 // call independent of where SA-1 places the new argument.
 func gateKey(name string) string {
@@ -177,8 +238,6 @@ func gateKey(name string) string {
 		return "period"
 	case strings.Contains(n, "return_ref"):
 		return "return_ref"
-	case strings.Contains(n, "amount_minor"), n == "returned_minor": // §6.7 names it p_returned_minor
-		return "amount"
 	case strings.Contains(n, "returned_at"):
 		return "returned_at"
 	case strings.Contains(n, "target_store"):
@@ -370,17 +429,38 @@ func (g *gateEnv) closeProbe(t *testing.T, period string) error {
 func (g *gateEnv) closeProbeOut(t *testing.T, period string) (string, error) {
 	t.Helper()
 	ctx := context.Background()
-	tx, err := g.reg.Begin(ctx)
+	// Owner is needed only to observe all write surfaces; the call itself runs as registrar.
+	tx, err := g.f.owner.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tx.Rollback(ctx)
-	out, err := g.callOn(ctx, tx, "close_settlement", map[string]any{
+	before := g.gateCloseCounts(t, tx)
+	if _, err := tx.Exec(ctx, `SAVEPOINT close_probe`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `SET LOCAL ROLE commerce_payment_registrar`); err != nil {
+		t.Fatal(err)
+	}
+	out, callErr := g.callOn(ctx, tx, "close_settlement", map[string]any{
 		"tenant": g.tenant, "store": g.store, "principal": g.princ, "environment": "SANDBOX",
 		"period": period, "operator": "op@test", "target": nil, "ticket": gateTicket,
 	})
-	if err != nil {
-		return "", err
+	if callErr != nil {
+		// Recover the aborted statement before reading. PostgreSQL has already undone any writes made by that
+		// failed statement; this checks surviving transaction effects, not transient writes erased by RAISE.
+		if _, err := tx.Exec(ctx, `ROLLBACK TO SAVEPOINT close_probe`); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := tx.Exec(ctx, `RESET ROLE`); err != nil {
+		t.Fatal(err)
+	}
+	if after := g.gateCloseCounts(t, tx); callErr != nil && after != before {
+		t.Fatalf("refused close wrote inside probe: before=%s after=%s", before, after)
+	}
+	if callErr != nil {
+		return "", callErr
 	}
 	return out, tx.Rollback(ctx)
 }
@@ -674,7 +754,12 @@ func TestPlatformSettlementPF16PayoutReturn(t *testing.T) {
 	at := func(w time.Time, d, hour int) time.Time {
 		return w.Add(time.Duration(d)*24*time.Hour + time.Duration(hour)*time.Hour)
 	}
-	paid := w1.Add(11*24*time.Hour + 12*time.Hour) // fixed T = 2026-09-18T12:00+08:00, after W1's close gate
+	paid := w2.Add(12 * time.Hour) // §6.9 fixed T = W2 Monday 2026-09-14T12:00+08:00
+	t.Run("PF16_fixed_Monday_T", func(t *testing.T) {
+		if want := gateAt(2026, 9, 14, 12); !paid.Equal(want) {
+			t.Fatalf("PF16 paid_at = %s, want W2 Monday %s", paid, want)
+		}
+	})
 
 	// one store: W1 charge 130000 (price 65000 x 2), then W2 charge 50000 (price 25000 x 2)
 	m, s, o1 := g.gateStore(t, 65000)
@@ -728,11 +813,18 @@ func TestPlatformSettlementPF16PayoutReturn(t *testing.T) {
 	payout := map[string]any{"tenant": g.tenant, "store": g.store, "principal": g.princ, "statement": w1id,
 		"payout_ref": "BANK-PAY-W1", "payout_minor": int64(125000), "paid_at": paid, "operator": "op@test", "ticket": gateTicket}
 	g.mustCall(t, "record W1 payout", "record_settlement_payout", payout)
+	var storedPaid, closedAt time.Time
+	if err := g.f.owner.QueryRow(context.Background(), `SELECT paid_at,closed_at FROM payments.settlement_statements WHERE id=$1`, w1id).Scan(&storedPaid, &closedAt); err != nil {
+		t.Fatal(err)
+	}
+	if !storedPaid.Equal(paid) || !storedPaid.Before(closedAt) {
+		t.Fatalf("historical payout must persist before actual close: paid=%s stored=%s closed=%s", paid, storedPaid, closedAt)
+	}
 
 	ret := func(statement, ref string, amount int64, when time.Time) (string, error) {
 		return g.callRaw(t, "record_settlement_payout_return", map[string]any{
 			"tenant": g.tenant, "store": g.store, "principal": g.princ, "statement": statement,
-			"return_ref": ref, "amount": amount, "returned_at": when, "operator": "op@test", "ticket": gateTicket})
+			"return_ref": ref, "returned_minor": amount, "returned_at": when, "operator": "op@test", "ticket": gateTicket})
 	}
 
 	t.Run("PF16a_unpaid_statement", func(t *testing.T) {
@@ -949,7 +1041,25 @@ func TestPlatformSettlementPF17Reconciliation(t *testing.T) {
 	// a (continued) — U/r0 genuinely pre-02xx: strip r0's reconciliation rows (the migration cannot be un-applied per test)
 	// and prove the grandfathered run is still treated as clean, not as a fabricated zero row.
 	rt := g.recon(t)
+	// Assert r0 immutability while its row still exists, before creating the legacy fixture.
+	t.Run("PF17a_r0_immutability", func(t *testing.T) {
+		if n := g.count(t, `SELECT count(*) FROM payments.`+rt.table+` WHERE sync_run_id=$1`, r0id); n != 1 {
+			t.Fatalf("r0 immutability subject has %d rows, want 1 before forbidden mutations", n)
+		}
+		for _, sql := range []string{
+			`UPDATE payments.` + rt.table + ` SET ` + rt.stripeNet + `=0 WHERE sync_run_id=$1`,
+			`DELETE FROM payments.` + rt.table + ` WHERE sync_run_id=$1`,
+		} {
+			if _, err := g.f.owner.Exec(context.Background(), sql, r0id); gateSQLState(err) != "PT409" || !strings.Contains(fmt.Sprint(err), "settlement_reconciliation_immutable") {
+				t.Fatalf("r0 forbidden mutation: %v", err)
+			}
+		}
+		if got := g.reconOf(t, r0id); got.diff != 0 || got.stripe != 9100 || got.recorded != 9100 || got.stripeCount != 2 || got.recordedCount != 2 {
+			t.Fatalf("r0 changed after forbidden mutations: %+v", got)
+		}
+	})
 	g.fixtureExec(t, `DELETE FROM payments.`+rt.table+` WHERE sync_run_id=$1`, r0id)
+
 	if err := g.closeProbe(t, w.Format("2006-01-02")); err != nil {
 		t.Fatalf("grandfathered clean coverage probe: %v", err)
 	}
@@ -1171,6 +1281,98 @@ func (g *gateEnv) gateWriteCounts(t *testing.T) string {
 		g.count(t, `SELECT count(*) FROM ops.audit_events WHERE action='stripe.settlement.sync'`))
 }
 
+// gateCloseCounts observes the three PF17c write surfaces through the caller's still-open transaction.
+func (g *gateEnv) gateCloseCounts(t *testing.T, q gateQuerier) string {
+	t.Helper()
+	var statements, assignments, audits int
+	if err := q.QueryRow(context.Background(), `SELECT
+		(SELECT count(*) FROM payments.settlement_statements),
+		(SELECT count(*) FROM payments.settlement_lines WHERE statement_id IS NOT NULL),
+		(SELECT count(*) FROM ops.audit_events WHERE action='stripe.settlement.close')`).Scan(&statements, &assignments, &audits); err != nil {
+		t.Fatal(err)
+	}
+	return fmt.Sprintf("statements=%d assignments=%d audits=%d", statements, assignments, audits)
+}
+
+// This visibility negative uses an owner-only fixture deletion inside an uncommitted transaction. It changes no
+// committed data and catches the same blind spot as a close write observed after rollback/on a separate connection.
+func TestPlatformSettlementGateProbeVisibility(t *testing.T) {
+	g := gateNew(t)
+	m := g.merchant(t, false)
+	id := g.insertStatement(t, m.f.tenantA, m.f.storeA1, 80000, "2026-09-07", gateAt(2026, 9, 18, 12))
+	ctx := context.Background()
+	tx, err := g.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	before := g.gateCloseCounts(t, tx)
+	if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role=replica`); err != nil {
+		t.Fatal(err)
+	}
+	if tag, err := tx.Exec(ctx, `DELETE FROM payments.settlement_statements WHERE id=$1`, id); err != nil || tag.RowsAffected() != 1 {
+		t.Fatalf("probe-only fixture mutation: %v (%v)", err, tag)
+	}
+	if after := g.gateCloseCounts(t, tx); after == before {
+		t.Fatalf("probe observer missed uncommitted statement mutation: before=%s after=%s", before, after)
+	}
+	if committed := g.gateCloseCounts(t, g.f.owner); committed != before {
+		t.Fatalf("probe mutation escaped transaction: %s, want %s", committed, before)
+	}
+}
+
+// gatePayableError checks PF18a's exact fixture values as well as shape/currency for the real registrar read.
+// Compare timestamps as instants because PostgreSQL may serialize them using a different offset.
+func gatePayableError(entry, want map[string]any) error {
+	if len(entry) != 7 {
+		return fmt.Errorf("entry has %d keys, want 7", len(entry))
+	}
+	for _, k := range []string{"statement_id", "tenant_id", "store_id", "period_start", "currency", "net_payable_minor", "closed_at"} {
+		if _, ok := entry[k]; !ok {
+			return fmt.Errorf("missing %s", k)
+		}
+	}
+	if entry["currency"] != "TWD" {
+		return fmt.Errorf("currency = %v", entry["currency"])
+	}
+	for _, k := range []string{"statement_id", "tenant_id", "store_id", "period_start", "net_payable_minor"} {
+		if entry[k] != want[k] {
+			return fmt.Errorf("%s = %v, want %v", k, entry[k], want[k])
+		}
+	}
+	gotTime, err := time.Parse(time.RFC3339Nano, fmt.Sprint(entry["closed_at"]))
+	if err != nil {
+		return fmt.Errorf("closed_at: %w", err)
+	}
+	wantTime, err := time.Parse(time.RFC3339Nano, fmt.Sprint(want["closed_at"]))
+	if err != nil || !gotTime.Equal(wantTime) {
+		return fmt.Errorf("closed_at = %v, want %v (parse: %v)", entry["closed_at"], want["closed_at"], err)
+	}
+	return nil
+}
+
+func TestPlatformSettlementGatePayableValues(t *testing.T) {
+	want := map[string]any{"statement_id": "statement-A", "tenant_id": "tenant-A", "store_id": "store-A",
+		"period_start": "2026-09-07", "currency": "TWD", "net_payable_minor": float64(80000),
+		"closed_at": "2026-09-18T12:00:00+08:00"}
+	if err := gatePayableError(want, want); err != nil {
+		t.Fatal(err)
+	}
+	for key, wrong := range map[string]any{"tenant_id": "tenant-D", "store_id": "store-D", "period_start": "2026-09-14",
+		"net_payable_minor": float64(50000), "closed_at": "2026-09-18T12:01:30+08:00"} {
+		t.Run(key, func(t *testing.T) {
+			entry := make(map[string]any, len(want))
+			for k, v := range want {
+				entry[k] = v
+			}
+			entry[key] = wrong
+			if err := gatePayableError(entry, want); err == nil {
+				t.Fatalf("PF18a accepted wrong %s=%v, want %v", key, wrong, want[key])
+			}
+		})
+	}
+}
+
 func TestPlatformSettlementPF18Payables(t *testing.T) {
 	g := gateNew(t)
 	g.fn(t, "read_settlement_payables", 5)
@@ -1225,7 +1427,17 @@ func TestPlatformSettlementPF18Payables(t *testing.T) {
 		if len(list) != 2 || list[0]["statement_id"] != aID || list[1]["statement_id"] != dID {
 			t.Fatalf("payables = %v, want [A D]", list)
 		}
-		for _, entry := range list {
+		for i, entry := range list {
+			name, net, closed := "A", float64(80000), base
+			if i == 1 {
+				name, net, closed = "D", float64(50000), base.Add(90*time.Second)
+			}
+			want := map[string]any{"statement_id": []string{aID, dID}[i], "tenant_id": p[name].tenant,
+				"store_id": p[name].store, "period_start": "2026-09-07", "currency": "TWD",
+				"net_payable_minor": net, "closed_at": closed.Format(time.RFC3339Nano)}
+			if err := gatePayableError(entry, want); err != nil {
+				t.Fatalf("%s payable fixture mismatch: %v (%v)", name, err, entry)
+			}
 			if len(entry) != 7 {
 				t.Fatalf("entry has %d keys, want exactly 7: %v", len(entry), entry)
 			}

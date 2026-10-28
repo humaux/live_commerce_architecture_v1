@@ -358,7 +358,7 @@ func executionAbortCode(err error) string {
 		switch pgerr.Message {
 		case "delivery_service_unavailable":
 			return "invalid_destination"
-		case "pay_at_pickup_unavailable", "cash_on_delivery_unavailable":
+		case "pay_at_pickup_unavailable", "cash_on_delivery_unavailable", "bank_transfer_closed":
 			return "payment_unavailable"
 		case "sku_inactive", "sku_changed", "sku_unavailable":
 			return "resource_unavailable"
