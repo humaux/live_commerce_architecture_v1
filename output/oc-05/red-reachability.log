@@ -1,0 +1,12 @@
+foundation	Package docs and gate map are current	﻿2026-10-28T02:09:55.8827073Z ##[group]Run bash scripts/dev/check-pkgdocs.sh
+foundation	Package docs and gate map are current	2026-10-28T02:09:55.8827490Z [36;1mbash scripts/dev/check-pkgdocs.sh[0m
+foundation	Package docs and gate map are current	2026-10-28T02:09:55.8827824Z [36;1mbash scripts/dev/check-gates.sh[0m
+foundation	Package docs and gate map are current	2026-10-28T02:09:55.8870788Z shell: /usr/bin/bash -e {0}
+foundation	Package docs and gate map are current	2026-10-28T02:09:55.8871014Z env:
+foundation	Package docs and gate map are current	2026-10-28T02:09:55.8871181Z   GOTOOLCHAIN: local
+foundation	Package docs and gate map are current	2026-10-28T02:09:55.8871362Z   GOFLAGS: -mod=readonly
+foundation	Package docs and gate map are current	2026-10-28T02:09:55.8871569Z   COREPACK_ENABLE_NETWORK: 0
+foundation	Package docs and gate map are current	2026-10-28T02:09:55.8871767Z ##[endgroup]
+foundation	Package docs and gate map are current	2026-10-28T02:09:59.1236165Z doc lacks "never": livecommerce/tests/quickstart
+foundation	Package docs and gate map are current	2026-10-28T02:09:59.1237050Z check-pkgdocs: FAIL (PROCESS.md §5: Owns + Never in every package comment)
+foundation	Package docs and gate map are current	2026-10-28T02:09:59.1249224Z ##[error]Process completed with exit code 1.
