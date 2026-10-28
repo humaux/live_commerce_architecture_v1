@@ -265,3 +265,42 @@ test("round 5 sweep: every real Go browser mode discovers a spec, or is explicit
   // arm runs Go-only BRW SQL/executor checks (go test -run '^TestLiveBrowserInputBRW' + go vet), no Playwright spec.
   assert.match(diag, /^SPECS-ZERO-OK --live-browser-input:/m);
 });
+
+// CI-SPEED-3 ownership drift is checked by this already-registered CI suite, without workflow/runner edits.
+import { existsSync } from "node:fs";
+const ownershipGenerator = "scripts/dev/derive-browser-ownership.mjs";
+const ownershipJSON = "output/ci-select-backend-browser/browser-ownership.json";
+
+test("CI-SPEED-3: generated browser ownership is current and covers the registry", () => {
+  assert.ok(existsSync(path.join(root, ownershipGenerator)), "CI-SPEED-3 requires the ownership generator");
+  assert.ok(existsSync(path.join(root, ownershipJSON)), "CI-SPEED-3 requires its committed derivation beside lc_covers");
+  execFileSync(process.execPath, [ownershipGenerator, "--check"], { cwd: root, stdio: ["ignore", "pipe", "pipe"] });
+  const data = JSON.parse(readFileSync(path.join(root, ownershipJSON), "utf8"));
+  assert.equal(data.version, 1);
+  assert.ok(Object.keys(data.modes).length > 20);
+  for (const [mode, entry] of Object.entries(data.modes)) {
+    for (const field of ["specs", "inputs", "apps", "unresolved", "evidence"]) assert.ok(Array.isArray(entry[field]), `${mode}.${field}`);
+    assert.ok(entry.evidence.length > 0, `${mode}: ownership must cite registry/spec/server evidence`);
+    for (const spec of entry.specs) assert.ok(entry.inputs.includes(spec), `${mode}: ${spec} omitted from import closure`);
+  }
+});
+
+test("CI-SPEED-3: drift checker rejects a corrupted ownership artifact on its own assertion", (t) => {
+  assert.ok(existsSync(path.join(root, ownershipGenerator)), "CI-SPEED-3 requires the ownership generator");
+  const dir = mkdtempSync(path.join(root, "output/ci-speed-3-drift-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const output = path.join(dir, "ownership.json");
+  const run = (...args) => execFileSync(process.execPath, [ownershipGenerator, "--output", output, ...args], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  run();
+  const original = readFileSync(output, "utf8"), data = JSON.parse(original);
+  const mode = Object.keys(data.modes)[0];
+  delete data.modes[mode];
+  writeFileSync(output, JSON.stringify(data));
+  assert.throws(() => run("--check"), (error) => {
+    assert.equal(error.status, 1, "drift must fail without crashing or invoking a browser");
+    assert.match(String(error.stderr), /ownership.*drift|drift.*ownership/i);
+    return true;
+  });
+  writeFileSync(output, original);
+  run("--check");
+});
