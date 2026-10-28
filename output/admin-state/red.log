@@ -1,5 +1,19 @@
 CA-ADMIN-STATE RED evidence (CI only)
 
+Relay3 current-head Foundation blocker (read directly 2026-10-29)
+Head: 5db5ec3d72f57c44be4c9cdcbf5998f0007331f7
+Run: 40789708532; job: 123171584335; conclusion: failure
+Command: gh run view 40789708532 --log-failed --job 123171584335
+Excerpt: output/admin-state/relay3-foundation.log
+New contextual AD-10 SSR assertion at code-alignment-admin-state.test.mjs:159:
+AssertionError [ERR_ASSERTION]: Customers en neutral guidance; actual false; expected true.
+Suite: 10 tests, 9 pass, 1 fail; Node unit step exit 1.
+Harness RED, not a product guidance regression: the paragraph regex also matches SVG path.
+Correction: require the opening tag to be an exact p element; preserve every assertion.
+Approved fix3 loading relocation is already present at this head; no patch replay required.
+All current failing jobs were read; Gates40789708692 build was pending at readback.
+No local test/server; no extra RED push for this directed existing-failure repair.
+
 Head: b02a185628b9b1c6bc07eb538df635c75f8a761f
 PR: #268
 Gates (GitHub runners): run 40645302418, completed success.

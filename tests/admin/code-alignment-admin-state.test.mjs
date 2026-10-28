@@ -155,7 +155,8 @@ test("AD-10: shared forbidden state retains each caller's localized denial and n
       const defaultHtml = renderToStaticMarkup(React.createElement(AdminForbidden, { locale }));
       const html = renderToStaticMarkup(React.createElement(AdminForbidden, { locale, description: copy[locale].forbidden }));
       assert.ok(html.includes(copy[locale].forbidden), `${component} ${locale} denial`);
-      const body = /<p[^>]*>(.*?)<\/p>/.exec(defaultHtml)?.[1];
+      // Match a paragraph element, never the preceding SVG <path> in the state icon.
+      const body = /<p(?:\s[^>]*)?>(.*?)<\/p>/.exec(defaultHtml)?.[1];
       assert.ok(body && html.includes(body), `${component} ${locale} neutral guidance`);
       assert.match(html, /data-kind="permission"/);
       assert.match(html, new RegExp(`href="/${locale}"`));

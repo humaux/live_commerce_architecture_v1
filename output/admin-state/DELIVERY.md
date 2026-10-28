@@ -1,5 +1,34 @@
 # CA-ADMIN-STATE delivery
 
+## Relay3 current correction (2026-10-29)
+
+- Assigned FIX-RED #268, same worktree/branch; executor Codex (runtime model/effort not exposed). Base head: 5db5ec3d72f57c44be4c9cdcbf5998f0007331f7. No recursive delegation or separate queue claim.
+- `git fetch origin && git merge origin/r3/integration`: exit 0, already up to date. The approved fix3 loading relocation, including customer/order page guards before Suspense, is already implemented. The pre-existing untracked patch remains untouched.
+- Read current `gh pr checks 268` and the only failed job directly: Foundation40789708532/job123171584335. Gates40789708692 build was still pending. No older-head success is acceptance.
+- Root cause: the new AD-10 contextual SSR test uses `<p[^>]*>` and accidentally starts at the state icon's SVG `<path>`. Its captured HTML includes the title and paragraph opener, so adding caller denial breaks a substring that was never just guidance. Product copy is present.
+- Fix: match an exact paragraph opening tag, retaining all denial/guidance, locale, permission and dashboard-link assertions. No product code, thresholds, fixtures, ACL logic or gate exemptions changed. This is a harness correction, not a browser acceptance claim.
+- Raw failure excerpt: relay3-foundation.log; run/job recorded in red.log. The existing current-head failure is the directed RED; no extra tests-only push. Targeted attempt 1 for this matcher blocker.
+- Static `node --check tests/admin/code-alignment-admin-state.test.mjs`: exit 0. Regenerated browser ownership using the existing generator: exit 0, 53 modes. No import changed; existing compilation harnesses are untouched. No Go dependency change requires depmap regeneration.
+- Evidence: E0 self-review; new exact-head Foundation/Gates GREEN PENDING. No local tests/servers, browser, PG, SANDBOX, LIVE or production. Independent review NOT_RUN. Integrator relays a fresh session on registered CI completion; no local background process.
+- Scope: test is original card scope; generated ownership and output/admin-state evidence are pre-approved. No new outside-module edits.
+- Rollback: revert the relay3 correction commit. No merge, auto-merge, force-push, commit status or deployment.
+
+### BOURDIEU
+
+Q1–Q6 unchanged/UNKNOWN; this relay corrects test parsing only. Q6 aesthetics remains owner-only.
+
+### PROJECT UNDERSTANDING
+
+Read AGENTS.md and 架构.md sections 0/1/2/26/27, the current test, real DS state renderer and both page guards. Source/runtime evidence stays distinct; TS/React baseline and server-owned scopes remain; author review is E0. Owner choice OC-Q7 (contracts/owner-choices-20261026-v1.md) keeps neutral denial without inferred roles. The current card authorizes restoring caller copy and loading placement, already implemented.
+
+### MOBBIN → EAGLE
+
+No new visual pattern; no reference import or query required for an SSR parser correction. Prior design provenance not re-audited.
+
+### FIGMA OFFICIAL GUIDANCE
+
+No Figma write or new design; guidance application, copy lint, density and mobile parity NOT_RUN in this relay. Existing UI click ledger remains pending CI; parser evidence cannot substitute for real clicks.
+
 Evidence: E0 implementation self-review only. Runtime/browser/product acceptance is NOT_RUN locally and must come from PR #268 CI. No LIVE, SANDBOX or production claim.
 
 ## Task identity
