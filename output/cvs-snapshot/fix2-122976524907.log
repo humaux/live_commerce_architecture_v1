@@ -1,0 +1,48 @@
+13-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5166498Z   receipt --browser-catalog-core: PASS test_count=3 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+14-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5168442Z   receipt --browser-catalog-media: PASS test_count=22 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+15-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5169930Z   receipt --browser-checkout-offline: PASS test_count=17 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+16:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5171528Z   receipt --browser-claim-checkout: FAIL test_count=3 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+17-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5173011Z   receipt --browser-click-sweep@10/10: PASS test_count=12 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+18-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5174425Z   receipt --browser-click-sweep@1/10: PASS test_count=13 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+19-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5176895Z   receipt --browser-click-sweep@2/10: PASS test_count=12 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+--
+25-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5188811Z   receipt --browser-click-sweep@8/10: PASS test_count=12 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+26-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5191330Z   receipt --browser-click-sweep@9/10: PASS test_count=12 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+27-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5194078Z   receipt --browser-customers-billing: PASS test_count=121 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+28:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5196724Z   receipt --browser-cvs: FAIL test_count=26 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+29-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5199041Z   receipt --browser-design: PASS test_count=47 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+30:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5201360Z   receipt --browser-e2e: FAIL test_count=8 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+31-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5203729Z   receipt --browser-home-cod: PASS test_count=10 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+32-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5206211Z   receipt --browser-identity: PASS test_count=6 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+33-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5208535Z   receipt --browser-inbox: PASS test_count=20 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+--
+51-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5241453Z   receipt --browser-picklist: PASS test_count=1 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+52-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5243089Z   receipt --browser-platform-site: PASS test_count=20 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+53-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5244490Z   receipt --browser-product-editor: PASS test_count=15 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+54:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5246144Z FAIL: shard:g04: status FAIL
+55:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5246927Z FAIL: shard:g06: status FAIL
+56:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5247679Z FAIL: shard:g08: status FAIL
+57:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5248665Z FAIL: --browser-claim-checkout: status FAIL
+58:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5249510Z FAIL: --browser-cvs: status FAIL
+59:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5250324Z FAIL: --browser-webkit: status FAIL
+60:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5251127Z FAIL: --browser-e2e: status FAIL
+61-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5252279Z   receipt --browser-product-media-v2: PASS test_count=13 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+62-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5253688Z   receipt --browser-promotions: PASS test_count=33 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+63-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5255342Z   receipt --browser-refund-fulfilment: PASS test_count=22 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+--
+74-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5271033Z   receipt --browser-visual-lint@2/4: PASS test_count=20 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+75-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5272419Z   receipt --browser-visual-lint@3/4: PASS test_count=20 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+76-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5273803Z   receipt --browser-visual-lint@4/4: PASS test_count=20 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+77:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5275556Z   receipt --browser-webkit: FAIL test_count=88 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+78-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5276979Z   receipt --live-browser-input: PASS test_count=18 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+79-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5278355Z   receipt shard:g01: PASS test_count=1 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+80-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5279623Z   receipt shard:g02: PASS test_count=1 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+81-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5280878Z   receipt shard:g03: PASS test_count=1 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+82:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5282143Z   receipt shard:g04: FAIL test_count=216 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+83-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5283414Z   receipt shard:g05: PASS test_count=215 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+84:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5285322Z   receipt shard:g06: FAIL test_count=216 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+85-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5286770Z   receipt shard:g07: PASS test_count=212 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+86:receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5288068Z   receipt shard:g08: FAIL test_count=214 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+87-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5289348Z   receipt shard:g09: PASS test_count=266 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+88-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5290639Z   receipt shard:g10: PASS test_count=217 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2
+89-receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T18:03:33.5292130Z   receipt shard:unit: PASS test_count=1458 run=40663921173/1 sha=326c10203c3b441aedc8e709af8b252c7fd986f2

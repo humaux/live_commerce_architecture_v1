@@ -1,0 +1,90 @@
+2079:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:33.4207563Z 2026/10/28 15:54:33 http: proxy error: context canceled
+2080:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:33.4219273Z 2026/10/28 15:54:33 http: proxy error: context canceled
+2081:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:33.5777580Z 2026/10/28 15:54:33 http: proxy error: context canceled
+2082:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:33.5788715Z 2026/10/28 15:54:33 http: proxy error: context canceled
+2083-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:43.0234401Z     browser_storefront_publish_test.go:274: PASS: merchant Settings card (en/zh-TW, desktop/390px) + store-admin executable + anonymous buyer browser on https://buyer.example, no owner-seeded publication/domain rows; cases=23; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/storefront-publish-1593331146
+2084-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:43.0241782Z     harness_pool_capacity_test.go:159: HARNESS_PG_CAPACITY sampled_peak=15 samples=247 limit=54 max=60 reserved=0 super=3 margin=3 observer_timeout_retries=0
+2085-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:43.0348167Z --- PASS: TestBrowserStorefrontPublish (32.20s)
+--
+2095-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:45.3397845Z check-gallery-bundle: OK expect=absent files=62 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+2096-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:47.0522836Z ## matrix-receipts browser-run begin
+2097-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:48.8615140Z === RUN   TestBrowserPromotions
+2098:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:54.4248377Z 2026/10/28 15:54:54 http: proxy error: context canceled
+2099:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:54.4249729Z 2026/10/28 15:54:54 http: proxy error: context canceled
+2100:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:54.4309747Z 2026/10/28 15:54:54 http: proxy error: context canceled
+2101:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:59.7955688Z 2026/10/28 15:54:59 http: proxy error: context canceled
+2102:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:54:59.7966196Z 2026/10/28 15:54:59 http: proxy error: context canceled
+2103:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:00.5206367Z 2026/10/28 15:55:00 http: proxy error: context canceled
+2104:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:00.5208667Z 2026/10/28 15:55:00 http: proxy error: context canceled
+2105:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:00.5259740Z 2026/10/28 15:55:00 http: proxy error: context canceled
+2106:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:00.5272642Z 2026/10/28 15:55:00 http: proxy error: context canceled
+2107:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:00.5282485Z 2026/10/28 15:55:00 http: proxy error: context canceled
+2108:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:00.5287552Z 2026/10/28 15:55:00 http: proxy error: context canceled
+2109:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:05.4768171Z 2026/10/28 15:55:05 http: proxy error: context canceled
+2110:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:05.4802524Z 2026/10/28 15:55:05 http: proxy error: context canceled
+2111:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:05.4809913Z 2026/10/28 15:55:05 http: proxy error: context canceled
+2112:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:05.4811036Z 2026/10/28 15:55:05 http: proxy error: context canceled
+2113:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:09.8346582Z 2026/10/28 15:55:09 http: proxy error: context canceled
+2114:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:10.5254170Z 2026/10/28 15:55:10 http: proxy error: context canceled
+2115:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:10.5284724Z 2026/10/28 15:55:10 http: proxy error: context canceled
+2116:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:10.5315232Z 2026/10/28 15:55:10 http: proxy error: context canceled
+2117:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:10.5320540Z 2026/10/28 15:55:10 http: proxy error: context canceled
+2118:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:14.5713001Z 2026/10/28 15:55:14 http: proxy error: context canceled
+2119:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:14.5719316Z 2026/10/28 15:55:14 http: proxy error: context canceled
+2120-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:14.9263574Z     browser_promotions_test.go:231: BROWSER (MOCK IdP, bank_transfer) promotions gate passed: 4 cells (zh-TW/en x desktop/390px), 32 cases, DB readback exact; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.R9uB8bXy/promotions/20261028T155448.861349306
+2121-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:14.9548716Z --- PASS: TestBrowserPromotions (26.09s)
+2122-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:14.9611016Z PASS
+--
+2140-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.5131526Z ℹ tests 10
+2141-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.5132258Z ℹ suites 0
+2142-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.5132876Z ℹ pass 10
+2143:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.5133497Z ℹ fail 0
+2144-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.5134146Z ℹ cancelled 0
+2145-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.5134803Z ℹ skipped 0
+2146-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.5135659Z ℹ todo 0
+--
+2148-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.5194322Z ## matrix-receipts node-test end
+2149-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.5195300Z ## matrix-receipts node-test begin
+2150-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6461011Z ✔ exactly the five W3-07B resources route (1.784211ms)
+2151:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6466091Z ✔ dissolve carries exactly ?expected_version=N (N >= 1) (0.279902ms)
+2152-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6613959Z ℹ tests 2
+2153-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6622868Z ℹ suites 0
+2154-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6623391Z ℹ pass 2
+2155:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6623845Z ℹ fail 0
+2156-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6624306Z ℹ cancelled 0
+2157-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6624802Z ℹ skipped 0
+2158-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6625557Z ℹ todo 0
+--
+2160-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6673200Z ## matrix-receipts node-test end
+2161-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.6676291Z ## matrix-receipts node-test begin
+2162-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.9764649Z ✔ bodyless dissolve DELETE (empty body stream, no content-length) reaches Go with the CAS query, no body, no key (32.02933ms)
+2163:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.9766944Z ✔ every parcel DELETE must carry exactly one expected_version >= 1 (never forwarded without it) (4.589328ms)
+2164-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.9768472Z ✔ a DELETE that declares a body or chunked framing is refused (1.035162ms)
+2165-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.9770069Z ✔ DELETE needs the session, origin and CSRF like every command; other DELETEs stay unsupported (1.641475ms)
+2166-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:16.9867520Z ✔ GET parcel-groups (open groups read) and merge-suggestions pass with no query; a query or key is refused (13.723171ms)
+2167-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:17.0148030Z ℹ tests 5
+2168-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:17.0148572Z ℹ suites 0
+2169-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:17.0156215Z ℹ pass 5
+2170:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:17.0156720Z ℹ fail 0
+2171-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:17.0157129Z ℹ cancelled 0
+2172-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:17.0157573Z ℹ skipped 0
+2173-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:17.0157989Z ℹ todo 0
+--
+2188-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6131126Z ##[error]Process completed with exit code 1.
+2189-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6194368Z ##[group]Run shopt -s nullglob
+2190-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6194709Z [36;1mshopt -s nullglob[0m
+2191:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6195928Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true[0m
+2192-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6259143Z shell: /usr/bin/bash -e {0}
+2193-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6259420Z env:
+2194-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6259638Z   GOTOOLCHAIN: local
+--
+2229-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6266574Z   LC_PREBUILT_DIR: /home/runner/work/_temp/prebuilt
+2230-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6266897Z ##[endgroup]
+2231-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6369793Z     browser_e2e_test.go:1139: NOT_RUN: SANDBOX tier needs STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 with the owner's test keys
+2232:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6370675Z --- FAIL: TestBrowserLiveTools (114.27s)
+2233:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6371085Z FAIL
+2234:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6371449Z FAIL	livecommerce/tests/foundation	143.672s
+2235:gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6372125Z FAIL
+2236-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6375636Z PASS: promotions browser gate (BROWSER, MOCK IdP): the merchant creates a 10% code with a minimum spend in /promotions, an anonymous buyer adds 2 products in the new storefront, applies the code at checkout, sees the discount and places a bank_transfer order, the merchant order view and finance show the discounted amounts; invalid and below-minimum codes show their messages; zh-TW + en, desktop + 390px; PG readback of codes/orders/redemptions; Stripe SANDBOX and WebKit are NOT_RUN here.
+2237-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6378172Z     browser_refund_fulfilment_test.go:408: NOT_RUN: RF11(b) needs STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 with the owner's test keys
+2238-gate (bundle:05)	UNKNOWN STEP	2026-10-28T15:55:36.6379609Z PASS: MF07 + RF11(a) isolated admin + storefront Next, Go, PG, real worker and the MOCK Stripe fake; RF11(b) SANDBOX is NOT_RUN unless it says otherwise above; not provider or deployment acceptance.
