@@ -20,9 +20,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/quickstart"
 	"livecommerce/migrations"
 )
 
@@ -289,6 +291,7 @@ func TestOC05MigrationBackfillsOnlyExistingStores(t *testing.T) {
 	e := setup(t)
 	tn := tenant(t, e)
 	old := store(t, e, tn)
+	tok := staff(t, e, tn, old, true)
 	// Recreate only this card's table in a rollback-only owner transaction, then run the entire assigned
 	// migration. No committed schema is reset, and normal Apply's checksum ledger is untouched.
 	sql, err := os.ReadFile(filepath.Join("..", "..", "migrations", "0205_quickstart_marker.sql"))
@@ -317,5 +320,68 @@ func TestOC05MigrationBackfillsOnlyExistingStores(t *testing.T) {
 	var count int
 	if err = tx.QueryRow(context.Background(), `SELECT count(*) FROM control.quickstart_markers WHERE tenant_id=$1 AND store_id=$2`, tn, newStore).Scan(&count); err != nil || count != 0 {
 		t.Fatalf("new store precompleted: count=%d err=%v", count, err)
+	}
+	// Authenticate from the real session, then use the normal service as commerce_runtime inside the upgrade transaction.
+	// This keeps the recreated schema rollback-only while still exercising the production read and its RLS/permission fences.
+	if _, err = tx.Exec(context.Background(), `SET LOCAL ROLE commerce_runtime`); err != nil {
+		t.Fatal(err)
+	}
+	h := sha256.Sum256([]byte(tok))
+	var access string
+	var scope platform.Scope
+	scope.StoreID = old
+	if err = tx.QueryRow(context.Background(), `SELECT access_status,tenant_id::text,principal_id::text,authz_revision FROM identity.resolve_access($1,$2,'store:read')`, h[:], old).Scan(&access, &scope.TenantID, &scope.PrincipalID, &scope.Revision); err != nil || access != "ok" {
+		t.Fatalf("upgrade scope access=%s err=%v", access, err)
+	}
+	if _, err = tx.Exec(context.Background(), `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, scope.TenantID, scope.StoreID, scope.PrincipalID); err != nil {
+		t.Fatal(err)
+	}
+	got, err := quickstart.Get(context.Background(), tx, scope, tok)
+	if err != nil || !got.Completed || got.CompletedAt == nil || !got.CompletedAt.Equal(completed) {
+		t.Fatalf("old-store service state=%+v err=%v", got, err)
+	}
+}
+
+func TestOC05MarkerRLSAndTimestampAuthority(t *testing.T) {
+	e := setup(t)
+	tn := tenant(t, e)
+	s, other := store(t, e, tn), store(t, e, tn)
+	tok := staff(t, e, tn, s, true)
+	otherTok := staff(t, e, tn, other, true)
+	for _, v := range []struct{ store, token string }{{s, tok}, {other, otherTok}} {
+		if w := request(e, http.MethodPost, v.store, v.token, `{}`); w.Code != 200 {
+			t.Fatalf("complete fixture status=%d", w.Code)
+		}
+	}
+	err := platform.WithScope(context.Background(), e.runtime, tok, s, "store:read", func(tx pgx.Tx, _ platform.Scope) error {
+		var count int
+		if err := tx.QueryRow(context.Background(), `SELECT count(*) FROM control.quickstart_markers WHERE tenant_id=$1 AND store_id=$2`, tn, other).Scan(&count); err != nil {
+			return err
+		}
+		if count != 0 {
+			t.Fatalf("RLS exposed %d sibling marker rows", count)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, stmt := range []struct {
+		sql  string
+		args []any
+	}{
+		{`INSERT INTO control.quickstart_markers(tenant_id,store_id) VALUES($1,$2)`, []any{tn, other}},
+		{`UPDATE control.quickstart_markers SET completed_at='2000-01-01' WHERE tenant_id=$1 AND store_id=$2`, []any{tn, s}},
+		{`DELETE FROM control.quickstart_markers WHERE tenant_id=$1 AND store_id=$2`, []any{tn, s}},
+		{`INSERT INTO control.quickstart_markers(tenant_id,store_id,completed_at) VALUES($1,$2,'2000-01-01')`, []any{tn, s}},
+	} {
+		err = platform.WithScope(context.Background(), e.runtime, tok, s, "integration:manage", func(tx pgx.Tx, _ platform.Scope) error {
+			_, err := tx.Exec(context.Background(), stmt.sql, stmt.args...)
+			return err
+		})
+		pg, ok := err.(*pgconn.PgError)
+		if !ok || pg.Code != "42501" {
+			t.Fatalf("runtime marker authority was not denied by RLS/grants: %v", err)
+		}
 	}
 }

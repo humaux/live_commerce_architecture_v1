@@ -1,0 +1,19 @@
+RED_NOT_RUN: no valid assertion-level RED receipt obtained; GitHub runner queue pending.
+Initial tests-only head: 1dbc1c40af97d8e962cea77b44e5d3a33b8c71fc
+Current tests-only head: 5da45aea079019ed17d12368a80e4b7183dfb368
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/254
+Gates run: 40615454659; plan job: 122576770600 (queued, no runner at last read).
+Foundation run: 40615454727; job: 122576770772 (queued, no runner at last read).
+Initial raw queue receipt: output/oc-05/red-pending.json.
+No implementation push is permitted before the new tests fail on their own assertions in CI.
+This file is a pending receipt, NOT evidence of RED and NOT a PASS.
+
+Reachability failure (INVALID as behavior RED): Foundation 40615454727 / 122576770772
+failed package docs before the tests: doc lacks "never": livecommerce/tests/quickstart.
+Original failed-step excerpt: output/oc-05/red-reachability.log.
+Fixed only the tests package non-goal comment in 5da45aea0; all behavior assertions retained.
+Current head workflows: Gates 40619573790; Foundation 40619573804 / 122590042610.
+Latest status-read/cancel attempt returned TLS handshake timeout (tool chunk 206a66),
+so neither a test conclusion nor a successful cancellation is inferred from it.
+
+At 02:30 UTC active queue cutoff: Foundation40619573804/job122590042610 SUCCESS; Gates40619573790 plan122590613621 SUCCESS, build122591734081 QUEUED. No behavior RED/GREEN obtained. Current-head raw queue receipt: red-current-pending.json. Implementation remains unpushed.

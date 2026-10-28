@@ -1,13 +1,13 @@
-OC-05 adds the server-owned quick-start marker for a store. Migration 0205 backfills existing stores as completed; new stores derive the name/shipping/product steps from real data and can complete or dismiss the checklist through the authenticated admin route. OC-06 UI is excluded.
+OC-05 candidate is prepared in the assigned local worktree; this PR currently contains tests-only head `5da45aea079019ed17d12368a80e4b7183dfb368`. The implementation has NOT been pushed because no valid behavior RED has been obtained. UI OC-06 is excluded.
 
-Base: 79f95784c9dee419346fe3119d4d4f56720d4a3c. Target: r3/integration. No merge or auto-merge authorization for this worker.
+Prepared server change: migration 0205 backfills old stores as completed and leaves new stores incomplete; an append-only scoped marker preserves the first completion timestamp. GET derives name/shipping/product steps from real data; authenticated POST completes or dismisses without accepting client state. Assigned R2 pin 135, owning contract rows, API mount and generated dependency map are prepared.
 
-RED first: this initial commit contains only the PostgreSQL/HTTP regression tests and the mandated generated package dependency entry. Expected failures are the missing GET/POST behavior and absent assigned migration. Run/job receipts will be recorded in output/oc-05/red.log before implementation is pushed.
+RED reachability: initial Foundation run40615454727/job122576770772 failed package docs before tests (NOT valid RED). Tests-only repair5da45aea0 adds the package non-goal without changing any behavior assertion. Current Foundation40619573804/job122590042610 SUCCESS; Gates40619573790 plan122590613621 SUCCESS, build122591734081 queued at the 02:30 UTC active queue cutoff. PostgreSQL/race is skipped in Foundation for these PRs. Behavior RED/GREEN and independent review are NOT_RUN.
 
-Checks: no local tests or servers. Static formatting and dependency-map regeneration only. CI verification pending; independent review NOT_RUN; author self-assessment E0.
+Allowed local static build/vet/gofmt checks passed; no local tests, PG, servers, browser or containers. Candidate file hashes and handoff are in the assigned local output/oc-05 directory. A bounded CI monitor will notify terminal status; it does not push implementation or claim acceptance.
 
-Write paths outside the assigned card: none. R2 pin 135 and API mount/contract changes are explicitly granted in the dispatch card.
+Files touched outside assigned card: none. Required follow-up outside the grant (NOT changed): scripts/dev/pr-modes.mjs must classify new internal/quickstart for check-backend-coverage.mjs. Conservative SHARED coverage would preserve every Go-booting browser mode until OC-06 adds precise coverage; integrator scope extension is required. This is a static dependency, not an observed candidate CI failure. No scanner, exemption, baseline or dispatcher list was modified.
 
-Risk/rollback: a server-only additive table; no provider calls, money flow, customer data or UI changes. Revert the code through an integrator-reviewed PR; keep migrated marker data, with any schema reversal separately reviewed. No production database action.
+No merge/auto-merge authorization for this worker. Rollback: integrator-reviewed code revert; retain marker data and review any schema reversal separately. No production/provider action. Author PASS = E0; candidate is E1 only.
 
 🤖 Generated with Codex (dispatched by Claude Code integrator).

@@ -227,7 +227,7 @@ Package command owns scoped replay records and small transaction primitives.
 
 - Depends on (internal): `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `cmd/meta-admin`, `cmd/platform-admin`, `cmd/store-admin`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/metabridge`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/orderattempt`, `internal/pagination`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/returns`, `internal/storefront`, `internal/storefrontadmin`, `internal/storefrontdomains`
+- Used by: `cmd/meta-admin`, `cmd/platform-admin`, `cmd/store-admin`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/metabridge`, `internal/integrations/metareply`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/orderattempt`, `internal/pagination`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/pricing`, `internal/promotions`, `internal/quickstart`, `internal/reporting`, `internal/returns`, `internal/storefront`, `internal/storefrontadmin`, `internal/storefrontdomains`
 
 ## `internal/csvguard`
 
@@ -273,7 +273,7 @@ Purpose: Per-market delivery allocation (which warehouses serve a delivery servi
 
 Purpose: httpapi owns the composition layer for authenticated merchant/admin routes — routing, bearer resolution, request bounds and error mapping.
 
-- Depends on (internal): `internal/ads`, `internal/billing`, `internal/catalog`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/fulfillment`, `internal/httperror`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
+- Depends on (internal): `internal/ads`, `internal/billing`, `internal/catalog`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/fulfillment`, `internal/httperror`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/quickstart`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
 - Used by: `cmd/admin-fixture`, `cmd/api`
 
@@ -595,7 +595,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`, `internal/integrations/psp/stripe`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
+- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/identity`, `internal/identityhttp`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/quickstart`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
 
 ## `internal/pricing`
 
@@ -612,6 +612,14 @@ Package promotions owns merchant discount codes (storefront-v2 section F): the c
 - Depends on (internal): `internal/command`, `internal/platform`, `internal/pricing`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
 - Used by: `internal/buyerhttp`, `internal/checkout`, `internal/httpapi`, `internal/storefront`
+
+## `internal/quickstart`
+
+Package quickstart owns the store's persistent quick-start completion and derives the three steps from domain data.
+
+- Depends on (internal): `internal/command`, `internal/platform`
+- Depends on (third-party): `github.com/jackc/pgx/v5`
+- Used by: `internal/httpapi`
 
 ## `internal/reporting`
 
