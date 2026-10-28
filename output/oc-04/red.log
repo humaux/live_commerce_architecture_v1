@@ -159,3 +159,113 @@ foundation 2026-10-28T19:03:05.9426785Z actual: [ 'foundation-shards', '--browse
 # E1: node syntax check, strict standalone tsc and git diff --check exit 0. No local tests/servers.
 # Generated browser ownership source hash refreshed; generator exit 0. CSV implementation NOT_RUN.
 # New run/job receipts will follow after this single RED push. No causal CSV RED or GREEN claimed.
+# Push receipt: exit 0, 4db7c2c9f..ab9cfb666 -> unit/oc04-reauth-dialog (PR #246).
+# Current tests-only head: ab9cfb6669b2e42dfea61555cafebd249b7e70df.
+# gh run list: Gates 40774924700 pending; Foundation 40774924495 pending, both exact head above.
+# gh pr checks 246: exit 8 (pending), foundation job 123121737482 (NOT a plan job).
+# WAIT_RUN: 40774924700 (Gates), 40774924495 (Foundation); CSV assertion-level RED and GREEN still PENDING/NOT_RUN.
+# Integrator relays completed CI to fresh session. Read failed browser job logs and record actual CSV assertion,
+# then implement orders/finance downloads through existing shared re-auth fetch path in one implementation push.
+
+# RELAY 1 readback, 2026-10-29 (current head ab9cfb6669b2e42dfea61555cafebd249b7e70df).
+# gh pr checks 246: exit 8. gh run view --job 123124513292 --log-failed cannot read a still-running workflow.
+# Fallback: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/123124513292/logs (exit 0).
+# Gates 40774924700; checkout merge SHA c8050532a9c977b6a2a890b09b6fd8e8753a18ca; bundle:02 job 123124513292 failure.
+2026-10-28T22:03:58.3101287Z --- FAIL: TestBrowserBuyerOrderUI (47.79s)
+2026-10-28T22:03:58.5842092Z bundle member --browser-order: failure
+# Not CSV assertion RED. Bundle:02 contains payment/order/reports/storefront; OC-04 is in bundle:08.
+# Plan log readback: bundle:08 includes --browser-password-auth; job 123124513438 remains in_progress.
+# Foundation 40774924495 / 123121737482 completed success at the exact head (not whole-PR GREEN).
+# STOP under the card's outside-scope gate rule: buyer storefront failure is outside OC-04/apps/admin.
+# No implementation, test changes, commit or push this relay; existing dirty evidence notes preserved.
+# WAIT_RUN: 40774924700 (OC-04 bundle:08 job 123124513438); integrator relays its conclusion to a fresh session.
+# CSV causal RED/GREEN PENDING; local tests/servers, implementation, independent re-review, WebKit and LIVE NOT_RUN.
+
+# RELAY 2 original job logs: run 40774924700 / bundle:08 job 123124513438, head ab9cfb6669b2e42dfea61555cafebd249b7e70df
+2026-10-28T22:03:12.0787256Z === RUN   TestBrowserOC
+2026-10-28T22:05:32.6416356Z --- FAIL: TestBrowserOC (140.56s)
+2026-10-28T22:09:48.8274308Z --- FAIL: TestBrowserOC (140.56s)
+# Original CI artifact 12856180807 gate-browser-password-auth: playwright/run.BsxXgrHF/oc-20261028T220314.238911817/playwright.log
+  ✘  1 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay (11.2s)
+  ✘  2 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✘  3 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN orders: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✘  4 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✘  5 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en orders: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✘  6 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay (10.8s)
+  ✓  7 tests/admin/oc/reauth.spec.ts:240:1 › OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay, OIDC re-auth, routing and hints (1.0m)
+  ✓  8 tests/admin/oc/reauth.spec.ts:370:3 › OC-04 zh-CN desktop: the refused invite opens the localized dialog and is replayed once after password re-auth (1.2s)
+  ✓  9 tests/admin/oc/reauth.spec.ts:370:3 › OC-04 en mobile: the refused invite opens the localized dialog and is replayed once after password re-auth (1.2s)
+  1) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-TW-orde-d1e6f--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-TW-orde-d1e6f--downloads-after-one-replay/error-context.md
+  2) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-TW-fina-77ec1--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-TW-fina-77ec1--downloads-after-one-replay/error-context.md
+  3) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN orders: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-CN-orde-dd474--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-CN-orde-dd474--downloads-after-one-replay/error-context.md
+  4) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-CN-fina-41684--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-zh-CN-fina-41684--downloads-after-one-replay/error-context.md
+  5) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en orders: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-en-orders--bf3f9--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-en-orders--bf3f9--downloads-after-one-replay/error-context.md
+  6) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay
+    Error: the real CSV control must open the shared re-auth dialog
+    expect(locator).toBeVisible() failed
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+    Call log:
+    > 159 |         await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:159:96
+    output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-en-finance-623bd--downloads-after-one-replay/test-failed-1.png
+    Error Context: output/playwright/run.BsxXgrHF/oc-20261028T220314.238911817/results/oc-reauth-OC-04-en-finance-623bd--downloads-after-one-replay/error-context.md
+  6 failed
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN orders: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en orders: expired re-auth CSV click opens dialog and downloads after one replay
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay
+  3 passed (2.3m)

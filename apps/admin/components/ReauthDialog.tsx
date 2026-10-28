@@ -4,17 +4,19 @@
 // Depends on: @live-commerce/ui/ds; lib/reauth-copy.ts; lib/reauth-client.ts, which calls the BFF /api/auth/password/reauth/{method,start,complete,oidc}
 //   (app/api/auth/password/reauth/[step]/route.ts) and the OIDC callback's #reauth-done / #reauth-failed return
 //   (app/api/auth/callback/route.ts).
+//   reauth-client also fetches the existing orders/finance CSV anchors through this shared re-auth handler.
 // Used by: app/[locale]/layout.tsx (mounted once per page); tests/admin/oc/reauth.spec.ts.
 // Invariants: a 403 reauth_required never signs out - every same-origin /api/ call (except /api/auth/*) that gets one waits for
 //   the dialog; on success the ORIGINAL request (same method, URL, headers - including its Idempotency-Key - and body, from the
 //   caller's own arguments) is sent again exactly once and its answer is what the caller sees; on cancel the caller gets the
 //   original 403. Concurrent refusals share one dialog. Password and code live only in component state and go only to the BFF.
+//   Orders/finance CSV bytes download only after a successful private attachment response; error documents never download.
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { Alert, Button, ConfirmDialog, Field, Stack, TextInput } from "@live-commerce/ui/ds";
 import { reauthCopy, reauthError } from "../lib/reauth-copy";
-import { reauthMethod, reauthStep, type ReauthMethod } from "../lib/reauth-client";
+import { reauthDownload, reauthMethod, reauthStep, type ReauthMethod } from "../lib/reauth-client";
 
 const CHANNEL = "commerce-reauth";
 const POPUP = "commerce-reauth";
@@ -49,6 +51,7 @@ export function ReauthDialog({ locale }: { locale: Locale }) {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const waiters = useRef<((ok: boolean) => void)[]>([]);
   const opener = useRef<HTMLElement | null>(null);
@@ -88,7 +91,31 @@ export function ReauthDialog({ locale }: { locale: Locale }) {
       setOpen(true);
     });
     window.fetch = reauthFetch(native, confirm);
-    return () => { window.fetch = native; document.removeEventListener("focusin", track); };
+    // Native attachment navigation bypasses fetch. Keep the existing controls, but send these two guarded exports
+    // through the same refusal/dialog/replay path; the Blob download itself causes no additional API request.
+    const active = new AbortController();
+    const downloads = new Set<string>();
+    const download = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[download]") : null;
+      if (!link) return;
+      const url = new URL(link.href);
+      if (url.origin !== window.location.origin || !/^\/api\/stores\/[0-9a-f-]{36}\/(?:orders\/unshipped|finance\/summary)\.csv$/.test(url.pathname)) return;
+      event.preventDefault();
+      if (downloads.has(url.href)) return;
+      downloads.add(url.href);
+      setDownloadError(null);
+      void reauthDownload(url, active.signal).then((code) => {
+        if (!active.signal.aborted) setDownloadError(code);
+      }).finally(() => downloads.delete(url.href));
+    };
+    document.addEventListener("click", download);
+    return () => {
+      active.abort();
+      window.fetch = native;
+      document.removeEventListener("focusin", track);
+      document.removeEventListener("click", download);
+    };
   }, []);
 
   useEffect(() => {
@@ -154,6 +181,8 @@ export function ReauthDialog({ locale }: { locale: Locale }) {
   const switchTo = (next: Step) => { setError(""); setStep(next); };
   const both = !!method?.password && !!method?.oidc;
   return (
+    <>
+    {downloadError && <Alert tone="danger">{reauthError(c, downloadError)}</Alert>}
     <ConfirmDialog
       open={open}
       title={c.title}
@@ -186,5 +215,6 @@ export function ReauthDialog({ locale }: { locale: Locale }) {
         </Stack>
       </form>
     </ConfirmDialog>
+    </>
   );
 }

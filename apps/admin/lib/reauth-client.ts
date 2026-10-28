@@ -1,7 +1,9 @@
 // Purpose: browser client of the re-auth BFF (contracts/merchant-password-auth-v1.md §16.1, card OC-04): which route to offer and
-//   the start / complete / oidc steps. Same-origin POSTs carry the double-submit CSRF header; nothing is retried or stored.
+//   the start / complete / oidc steps and guarded orders/finance CSV downloads. Same-origin POSTs carry the double-submit
+//   CSRF header; only the shared re-auth wrapper may replay a refused export once. Bytes live in a short-lived Blob URL.
 // Depends on: /api/auth/password/reauth/{method,start,complete,oidc} (app/api/auth/password/reauth/[step]/route.ts).
-// Used by: components/ReauthDialog.tsx. These calls are under /api/auth/, so the dialog's fetch wrapper never intercepts them.
+// Used by: components/ReauthDialog.tsx. Auth calls bypass its fetch wrapper; the two CSV downloads use it.
+// Invariants: export errors/cancellation never become files; only validated private CSV attachments are downloaded.
 export type ReauthMethod = { password: boolean; oidc: boolean; account: "password" | "oidc" };
 export type ReauthAnswer = { status: number; body: Record<string, unknown> };
 
@@ -29,4 +31,34 @@ export async function reauthStep(step: "start" | "complete" | "oidc", body: unkn
   } catch {
     return { status: 503, body: { code: "retry_later" } };
   }
+}
+
+/** Fetch through the installed re-auth wrapper, then expose the successful attachment without a second HTTP GET. */
+export async function reauthDownload(url: URL, signal: AbortSignal): Promise<string | null> {
+  try {
+    const response = await fetch(url.href, { credentials: "same-origin", cache: "no-store",
+      signal: AbortSignal.any([signal, AbortSignal.timeout(30000)]) });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({})) as { code?: string };
+      return body.code === "reauth_required" ? null : body.code ?? "retry_later";
+    }
+    const name = /^attachment; filename="([a-z0-9.-]+)"$/.exec(response.headers.get("content-disposition") ?? "")?.[1];
+    const validName = url.pathname.endsWith("/orders/unshipped.csv")
+      ? /^unshipped-[0-9a-f]{8}-[0-9]{12}\.csv$/
+      : /^finance-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv$/;
+    const cache = response.headers.get("cache-control")?.toLowerCase().split(",").map((part) => part.trim());
+    if (response.status !== 200 || !name || !validName.test(name) ||
+      response.headers.get("content-type")?.toLowerCase() !== "text/csv; charset=utf-8" ||
+      !cache?.includes("private") || !cache.includes("no-store")) return "retry_later";
+    const blob = await response.blob();
+    if (signal.aborted) return null;
+    const href = URL.createObjectURL(blob);
+    try {
+      const link = document.createElement("a");
+      link.href = href; link.download = name; link.rel = "noopener";
+      document.body.append(link);
+      try { link.click(); } finally { link.remove(); }
+    } finally { setTimeout(() => URL.revokeObjectURL(href), 1000); }
+    return null;
+  } catch { return signal.aborted ? null : "retry_later"; }
 }

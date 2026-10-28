@@ -300,3 +300,86 @@ acceptance only. NOT_RUN: all local tests/builds/servers, CI RED result, impleme
 - Current acceptance remains author E0; causal CSV RED, GREEN, CSV implementation, independent review,
   WebKit and LIVE are NOT_RUN/PENDING. Run/job IDs are appended to `red.log` and the PR after push;
   integrator relays CI completion to resume. No production operation or local process was started.
+- Push succeeded at `ab9cfb6669b2e42dfea61555cafebd249b7e70df`. Exact-head runs:
+  WAIT_RUN: Gates `40774924700`; Foundation `40774924495`, foundation job `123121737482`.
+  `gh pr checks 246` exits 8 (pending). No causal CSV RED outcome or GREEN yet.
+  These receipts remain local and in the PR; no extra evidence-only push is needed.
+
+## RELAY 1: unrelated bundle failure, 2026-10-29
+
+- Current head remains `ab9cfb6669b2e42dfea61555cafebd249b7e70df`; no source changes, commit or push in this relay.
+- Gates `40774924700`, job `123124513292` (`bundle:02`) failed on `TestBrowserBuyerOrderUI`
+  in `--browser-order` (47.79 s), using checkout merge SHA `c8050532a9c977b6a2a890b09b6fd8e8753a18ca`.
+  Raw job logs were read with the GitHub jobs/logs API because gh run view refuses logs while the workflow runs.
+  This is neither a CSV assertion failure nor browser ownership drift; the underlying buyer failure is not diagnosed here.
+- Plan log places OC-04 `--browser-password-auth` in `bundle:08`, job `123124513438`, still running.
+  Foundation `40774924495`, job `123121737482`, completed successfully for the exact head; whole-PR GREEN is pending.
+- STOP: the card requires stopping for an outside-scope gate blocker. No change to buyer storefront tests or code.
+  WAIT_RUN: `40774924700`; integrator relays the `bundle:08` conclusion to a fresh session.
+- Only `output/oc-04/DELIVERY.md` and `red.log` updated; previous dirty receipts retained. No outside-card files touched.
+  Author acceptance remains E0; CSV causal RED/GREEN, implementation and independent re-review pending.
+  NOT_RUN: local tests/servers (prohibited), WebKit, real OIDC, SMTP-outage, LIVE.
+
+
+## RELAY 2: causal CSV RED and implementation, 2026-10-29
+
+- Assignment: OC-04 continuation, ui_worker/Codex (runtime model/effort not exposed), own worktree and
+  branch `unit/oc04-reauth-dialog`; no delegation. Starting head `ab9cfb6669b2e42dfea61555cafebd249b7e70df`.
+  Authority: current relay; contracts/tasks.json OC-04; merchant-password-auth-v1.md §16/16.1.
+- Causal RED E3: Gates `40774924700`, bundle:08 job `123124513438`, tested synthetic merge
+  `c8050532a9c977b6a2a890b09b6fd8e8753a18ca` (base `dcecd6220094234b4760315c676d9737ed713c40`).
+  Artifact `12856180807` (`gate-browser-password-auth`), `oc-20261028T220314.238911817/playwright.log`:
+  all SIX new CSV cases failed at reauth.spec.ts:159 on their own visible-dialog assertion in 10.8–11.2 s;
+  original THREE cases passed. TestBrowserOC failed in 140.56 s, not the outer timeout.
+  Raw assertion excerpts are in red.log (trailing whitespace normalized only).
+- Root cause: native download anchors never call window.fetch, so the shared 403 handler never sees
+  reauth_required. ReauthDialog now handles normal clicks on ONLY same-origin orders/unshipped.csv
+  and finance/summary.csv download anchors. The existing controls, hrefs and three-language copy remain.
+  reauth-client fetches through the installed handler; only a successful private/no-store CSV attachment
+  with the server's validated filename becomes a short-lived Blob URL. No extra HTTP download GET,
+  no persisted bytes, no error-document download, no automatic retry beyond the existing single re-auth replay.
+  Repeated clicks on the same in-flight export are coalesced; unmount aborts the request and blocks exposure.
+  Failures use the existing localized re-auth error strings. No settings or business rules added.
+- Acceptance gate: unchanged six real-click cases in zh-TW/zh-CN/en must assert 403 → dialog → password/code
+  → one 200 replay → one valid CSV download, same URL/query, still signed in and no repeat after refresh.
+  All existing assertions, fixtures, retries, budgets and timeouts remain unchanged. No spec/page/route
+  added/renamed/deleted, so browser ownership regeneration is unnecessary. No Go graph changes.
+- Local static results: strict standalone tsc for reauth-client.ts exits 0 (E1). Full admin tsc exits 1:
+  installed workspace cannot resolve @live-commerce/ui and @live-commerce/format; no dependency/config
+  changes made. Complete browser/application validation remains CI-only. git diff --check is recorded below.
+  Import-harness search `rg -rlE 'ReauthDialog\.tsx' tests/` has no matches; no compiling harness to update.
+- This relay's outside-card paths: apps/admin/lib/reauth-client.ts (existing granted module, CSV helper);
+  apps/admin/components/Finance.tsx and MerchantOrders.tsx (comments only, correct obsolete streaming claim).
+  Covered by same-app scope pre-approval, listed for integrator review. Prior lane exceptions remain listed above.
+- Humaux/coord/canvas/code-index tools unavailable: no store, canvas update or fresh coordination claim possible;
+  existing integrator assignment retained. Evidence written only to the authorized delivery files and PR.
+- GREEN/independent review pending; author acceptance E0. NOT_RUN: local tests/servers (prohibited),
+  WebKit, real OIDC, real SMTP-outage, LIVE. No production action, merge, auto-merge or status posting.
+  No visual redesign or new copy delivered in this relay.
+  Integrator relays the exact pushed Gates/Foundation run conclusion to a fresh session.
+
+
+### UI process — BOURDIEU
+
+Q1–Q6: UNKNOWN in this relay: Humaux cannot provide the question definitions or owner verdicts.
+No class/device proxy or new aesthetic decision made. This repair restores the existing export interaction.
+Q6 aesthetics remains UNKNOWN until owner.
+
+### UI process — PROJECT UNDERSTANDING
+
+Read 架构.md §0/1/2/26/27: separate measured acceptance from design, TypeScript strict, trusted server
+scope, isolated worktree and independent CI acceptance. Read tasks.json OC-04 and password-auth §16/16.1:
+a stale-session 403 opens re-auth without sign-out; successful confirmation replays once. No contract changes.
+
+### UI process — MOBBIN → EAGLE
+
+NOT_RUN: no new visual pattern/reference imported for this behavioral fix. Existing CSV controls and
+shared DS dialog retained. Module Eagle folder/audit candidate IDs UNKNOWN (Humaux unavailable).
+No image, brand or product fact copied; no additional Mobbin query needed for the existing interaction.
+
+### UI process — FIGMA OFFICIAL GUIDANCE
+
+NOT_RUN/NOT_APPLICABLE to this source repair: no Figma reads/writes or new layout/prototype.
+No claim of official-guide or design acceptance. Existing shared DS controls retained.
+
+- RELAY 2 final static receipt: `git diff --check` exit 0; no local tests/servers started.
