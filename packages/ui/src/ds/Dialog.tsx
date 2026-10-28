@@ -57,6 +57,8 @@ export function ConfirmDialog({
     if (open && !node.open) {
       restore.current = document.activeElement as HTMLElement | null;
       node.showModal();
+      // The body's own focus ran before showModal (child effects first) and showModal may move it again: settle on the first field.
+      node.querySelector<HTMLInputElement>("input")?.focus();
     }
     if (!open && node.open) { node.close(); restore.current?.focus(); }
   }, [open]);

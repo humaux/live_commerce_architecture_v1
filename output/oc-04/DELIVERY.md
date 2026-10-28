@@ -23,6 +23,9 @@
 - Fix 1 of 2 for a third blocker (Gates job 122530020662, `--browser-live-console` labels: `request.postData()` was null): the first
   send had been rebuilt as `new Request(...)` plus `clone()`, which turns the body into a stream the browser tooling cannot read. The
   first send is now the caller's own `fetch(input, init)` untouched; the replay reuses the same arguments (a Request input is cloned).
+- Fix 1 of 2 for a fourth blocker (Gates job 122546542318, spec step 5: the password field was not focused when the dialog opened from a
+  script-started request): `ConfirmDialog` focused its first input in the body's effect, which runs before the parent's `showModal()`;
+  it now also focuses the first input right after `showModal()`.
 - `apps/admin/lib/reauth-client.ts` (new, integrator grant): the two BFF calls of the dialog (`reauthMethod`, `reauthStep`), so the
   component calls no `fetch` (G-UI3/G-UI5, tests/admin/shell-architecture.test.mjs). Fix 1 of 2 for that blocker (Foundation job
   122523457766); no allowance added, test untouched.
