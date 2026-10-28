@@ -1,0 +1,15 @@
+OC-05 static-only evidence (E1), 2026-10-28T02:26:02.407367+00:00
+Commands observed exit 0:
+  go build ./internal/quickstart ./internal/httpapi
+  go vet ./internal/quickstart ./tests/quickstart
+  git diff --check
+Formatting: gofmt -w on changed Go files (exit 0).
+Dependency map: bash scripts/dev/depmap.sh (exit 0).
+NO local tests, servers, PG, browser, containers or model experiments.
+SHA256 of the checked source files:
+4c5feb6e3f14f5273cbb72cf75e60c6b6a0bb6c1dbb006a9334aa85a40d4b88b  internal/quickstart/quickstart.go
+d9a239e704cf744183a5a12a391031b087e592ddfdc1f093e5ce7ef98f2b714c  internal/httpapi/handler.go
+a064ba3309207d91dbbdc5987df9eb45205bc411860103d9f3abb7151133ff09  migrations/0205_quickstart_marker.sql
+32443871ac3dd4a64494de66ae053d3c22dfd213845c94b9523009bdd69365d9  tests/quickstart/quickstart_test.go
+26dc7cdded202081d6ac4ebd16bc6fbd71d5b7a7587d7068ba15b0329af3c692  tests/foundation/r2_integration_upgrade_test.go
+86097c5585e01632f8d3a9706fff14b69e16fdbd0c5f483f431a1a685d510e02  contracts/merchant-settings-wizard-v1.md
