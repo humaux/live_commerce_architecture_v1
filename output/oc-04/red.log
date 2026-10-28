@@ -1,5 +1,10 @@
 # OC-04 RED: Gates run 40588086164, job 122493869233 (gate --browser-password-auth), head 3d850bcb1 (tests only).
 # TestBrowserOC fails on assertions (no dialog, team BFF rewrites reauth_required, no re-auth routes); TestBrowserPasswordAuth and TestBrowserStaffTeam pass in the same job.
+# Directed fix 2026-10-28: Gates run 40626807342, job 122653477002 (gate --browser-password-auth), head 36b807952ca57ba651ba0bee15d214e881c4be72.
+# Job API: status completed, conclusion failure, completed_at 2026-10-28T06:55:45Z.
+# Raw job log: 2026-10-28T06:54:06.8660915Z --- FAIL: TestBrowserOC (68.13s).
+# Integrator failure pointer: tests/admin/oc/reauth.spec.ts:265, zh-TW step 7, TypeError reading 'value' of undefined after cookies(publicOrigin).
+# One directed repair push authorized; new step 6 existence assertions have not yet run on CI. Historical RED below remains unchanged.
     browser_oc_test.go:193: Go transport POST /v1/identity/password/signup -> 202
     browser_oc_test.go:193: Go transport POST /v1/identity/password/complete -> 200
     browser_oc_test.go:193: Go transport GET /v1/admin/stores -> 200

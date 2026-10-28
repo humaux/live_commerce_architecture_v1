@@ -15,7 +15,7 @@
 import { createHmac, randomBytes } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 function requiredOrigin(name: string) {
   const value = process.env[name];
@@ -76,6 +76,12 @@ async function person(browser: Browser, vp: keyof typeof viewports) {
   const context = await browser.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin, viewport: viewports[vp] });
   await context.setExtraHTTPHeaders({ "x-forwarded-for": source() });
   return { context, page: await context.newPage() };
+}
+
+async function authCookies(context: BrowserContext) {
+  // Match password-auth.spec.ts: an http URL filter omits Secure cookies accepted by Chromium on loopback.
+  const host = new URL(publicOrigin).hostname;
+  return (await context.cookies()).filter((cookie) => cookie.domain === host);
 }
 
 async function signUp(page: Page, locale: Locale, email: string, password: string) {
@@ -235,7 +241,9 @@ test("OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay
 
   // 6. OIDC re-auth (MOCK IdP) from the password dialog: no session Set-Cookie, cookie unchanged, back to the opening page.
   await age(owner);
-  const before = (await context.cookies(publicOrigin)).filter((k) => k.name.startsWith("__Host-commerce_")).map((k) => `${k.name}=${k.value}`).sort();
+  const beforeCookies = await authCookies(context);
+  expect(beforeCookies.filter((k) => k.name === "__Host-commerce_session"), "session cookie exists before OIDC re-auth").toHaveLength(1);
+  const before = beforeCookies.filter((k) => k.name.startsWith("__Host-commerce_")).map((k) => `${k.name}=${k.value}`).sort();
   const callbacks: { status: number; location: string; cookies: string }[] = [];
   context.on("response", async (r) => {
     if (new URL(r.url()).pathname !== "/api/auth/callback") return;
@@ -257,13 +265,17 @@ test("OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay
   expect(callbacks[0].location, "returns to the page that opened the dialog").toBe(`/${locale}/team?store=${store}#reauth-done`);
   expect(callbacks[0].cookies, "a re-auth callback sets no session cookie").not.toContain("__Host-commerce_session");
   expect(callbacks[0].cookies).not.toContain("__Host-commerce_csrf");
-  const after = (await context.cookies(publicOrigin)).filter((k) => k.name.startsWith("__Host-commerce_") && k.name !== "__Host-commerce_login").map((k) => `${k.name}=${k.value}`).sort();
+  const afterCookies = await authCookies(context);
+  expect(afterCookies.filter((k) => k.name === "__Host-commerce_session"), "session cookie exists after OIDC re-auth").toHaveLength(1);
+  const after = afterCookies.filter((k) => k.name.startsWith("__Host-commerce_") && k.name !== "__Host-commerce_login").map((k) => `${k.name}=${k.value}`).sort();
   expect(after, "session and CSRF cookies unchanged by the OIDC re-auth").toEqual(before.filter((k) => !k.startsWith("__Host-commerce_login=")));
   await signedIn(page);
 
   // 7. Routing: a session the OIDC callback issued (marker = HMAC-SHA256(fixed label, session token), lib/auth.ts) gets the OIDC route; any other marker does not.
-  const session = (await context.cookies(publicOrigin)).find((k) => k.name === "__Host-commerce_session")!.value;
-  const mark = async (value: string) => context.addCookies([{ name: "__Host-commerce_oidc_session", value, url: publicOrigin, secure: true, httpOnly: true, sameSite: "Lax" }]);
+  const session = afterCookies.find((k) => k.name === "__Host-commerce_session")!.value;
+  // FIXTURE/SETUP: use the existing admin specs' HTTPS cookie URL for a Secure __Host- marker, including Chromium's HTTP loopback front.
+  const cookieURL = publicOrigin.replace(/^http:/, "https:");
+  const mark = async (value: string) => context.addCookies([{ name: "__Host-commerce_oidc_session", value, url: cookieURL, secure: true, httpOnly: true, sameSite: "Lax" }]);
   const method = async () => page.evaluate(async () => (await (await fetch("/api/auth/password/reauth/method")).json()) as { account: string });
   await mark(createHmac("sha256", "commerce-oidc-session-v1").update(session).digest("base64url"));
   expect((await method()).account).toBe("oidc");

@@ -1,5 +1,26 @@
 # OC-04 re-auth dialog and reauth_required handling: delivery
 
+## Directed cookie-fixture fix (2026-10-28, attempt 1 of 2)
+
+- Dispatched by Claude integrator to Codex; base `36b807952ca57ba651ba0bee15d214e881c4be72`, branch
+  `unit/oc04-reauth-dialog`, worktree `/Volumes/data/live_commerce_architecture_v1/.claude/worktrees/oc04`.
+  Runtime model/effort identifiers are not exposed. No delegation. Authorized source path: `tests/admin/oc/reauth.spec.ts`.
+- Blocking CI: Gates run `40626807342`, job `122653477002` (`gate (--browser-password-auth)`, failure).
+  Integrator reports the zh-TW step 7 session-cookie lookup throws at line 265; the job API confirms TestBrowserOC failed.
+- Root cause: `browserFront` uses HTTP loopback for Chromium, which accepts and sends Secure `__Host-` cookies there;
+  Playwright's HTTP URL cookie filter omits those stored cookies. The step 6 snapshots could therefore both be empty.
+- Fix: reuse `password-auth.spec.ts`'s unfiltered cookie-jar read plus exact public-host match, assert one session cookie both
+  before and after OIDC re-auth, retain the existing unchanged-cookie and callback assertions, and read the validated session
+  for step 7. The step 7/8 OIDC marker fixture uses the existing admin specs' HTTPS cookie URL (same hostname, no navigation).
+  Product authentication code and all step 7/8 routing, mail-hint, cancel and signed-in assertions are unchanged.
+- Static checks: `node --check --experimental-strip-types tests/admin/oc/reauth.spec.ts` exit 0;
+  `./node_modules/.bin/tsc --noEmit --strict --skipLibCheck --target ES2023 --module NodeNext --moduleResolution NodeNext
+  --typeRoots apps/admin/node_modules/@types --types node tests/admin/oc/reauth.spec.ts` exit 0.
+  The initial tsc invocation without the installed admin type root exited 1 (TS2688, missing Node type lookup).
+- Evidence: E1 syntax/type structure only; no local tests or servers. CI GREEN and independent review PENDING;
+  exact pushed head and WAIT_RUN IDs will be recorded in a PR comment, with no evidence-only push.
+- Outside card write_paths: none. Humaux is unavailable in this runtime; memory, canvas and coordination updates were not possible.
+
 - Role: ui_worker (Claude Opus 5.5, subagent of the integrator, no recursive delegation). Branch `unit/oc04-reauth-dialog`, worktree
   `.claude/worktrees/oc04`, base `r3/integration` f935508ba (OC-15 #229 merged). PR #246 into r3/integration; no auto-merge, not merged.
 - Authority: contracts/tasks.json OC-04 (acceptance, write_paths); contracts/merchant-password-auth-v1.md §11, §16, §16.1;
