@@ -23,3 +23,10 @@ node --check tests/admin/inbox-v2-ui.spec.ts: exit0
 node scripts/dev/derive-browser-ownership.mjs: exit0,53modes
 git diff --check: exit0
 E1 syntax/static generation only; no local tests/server/browser.
+
+Relay3 inbox registration assertion repair attempt1 (base 6195fce8):
+bash -n scripts/dev/test-node.sh: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0,53modes
+git diff --check: exit0
+Only the inbox-specific authority array adds the fourth INV2 file; no assertion removed.
+E1 syntax/static generation only; no local tests/discovery/server/browser/PG/container.
