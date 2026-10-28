@@ -1,0 +1,82 @@
+[
+  {
+    "mergeCommit": {
+      "oid": "997480141a7959ad6256a29e43bb1af31b97a404"
+    },
+    "mergedAt": "2026-10-28T06:24:23Z",
+    "number": 237,
+    "title": "DS-3: ds component layer takes the Figma master values"
+  },
+  {
+    "mergeCommit": {
+      "oid": "c0295ad64c4bb7c4f5d507e39907c7fa094d9683"
+    },
+    "mergedAt": "2026-10-28T05:03:45Z",
+    "number": 248,
+    "title": "ci(speed-2): bundle short gate legs into ~10 jobs (CI-SPEED-2)"
+  },
+  {
+    "mergeCommit": {
+      "oid": "5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248"
+    },
+    "mergedAt": "2026-10-28T01:41:12Z",
+    "number": 240,
+    "title": "test(storefront): fix .sf-filter React-streaming flake"
+  },
+  {
+    "mergeCommit": {
+      "oid": "24ffb0e24e4eec8150163de6be28abfe688419b7"
+    },
+    "mergedAt": "2026-10-28T01:40:53Z",
+    "number": 234,
+    "title": "chore(agents): allow Kimi K3.1 Pro in ext-agent.sh"
+  },
+  {
+    "mergeCommit": {
+      "oid": "79f95784c9dee419346fe3119d4d4f56720d4a3c"
+    },
+    "mergedAt": "2026-10-27T23:02:09Z",
+    "number": 243,
+    "title": "test: fix SU09 age-cutoff and staff-team hydration flakes (#145, #236)"
+  },
+  {
+    "mergeCommit": {
+      "oid": "ec2872a9ecadd12cdbe63c70892147d11e0be363"
+    },
+    "mergedAt": "2026-10-27T22:34:48Z",
+    "number": 238,
+    "title": "ci(speed): build once per run + docs-only empty plan (CI-SPEED)"
+  },
+  {
+    "mergeCommit": {
+      "oid": "f935508ba6200aceadf7988d7eedde26aba5a792"
+    },
+    "mergedAt": "2026-10-27T21:19:38Z",
+    "number": 229,
+    "title": "feat(identityhttp): OC-15 re-auth HTTP routes and 403 reauth_required transport"
+  },
+  {
+    "mergeCommit": {
+      "oid": "8bf4e4f5709ce5fdd033f7da504e8853dbd963ed"
+    },
+    "mergedAt": "2026-10-27T19:17:29Z",
+    "number": 227,
+    "title": "feat(inbox): OC-12 unread filter (store-level read_seq, store-scoped A8)"
+  },
+  {
+    "mergeCommit": {
+      "oid": "c69b44324a41ce2bacfe45a672720e148e573d2b"
+    },
+    "mergedAt": "2026-10-27T12:58:35Z",
+    "number": 233,
+    "title": "docs(auth): mail transport is Spacemail (§11, PD15)"
+  },
+  {
+    "mergeCommit": {
+      "oid": "fb4558c2c033cb67b037c2eef2f7e863331a80cc"
+    },
+    "mergedAt": "2026-10-27T12:58:12Z",
+    "number": 211,
+    "title": "feat(checkout): OC-16 close new bank-transfer writes"
+  }
+]
