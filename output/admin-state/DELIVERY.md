@@ -156,3 +156,51 @@ All five failed jobs from `gh pr checks 268` were read directly via jobs API aft
 - This repair preserves existing UI copy, fields, tokens and interactions in zh-TW/zh-CN/en. No new visual design or Figma hand-in is claimed; the original visual/click acceptance is not upgraded by source inspection. Independent review, new-head runtime verification and production acceptance remain NOT_RUN/PENDING.
 
 Artifact transport limits for this session: gh ZIP reads for 12834974786, 12839256540, 12839086450 and 12841600388 each timed out at 90 seconds; the direct-reader fallback hung and was terminated (own PID 49912, exit 143); final cache-busted gh ZIP reads for 12834974786, 12839256540, 12839086450 and the correct StoreDesign artifact 12841765213 each timed out at 60 seconds. No archive/fixture file was left on disk. Job logs were successfully read for every failed job; archive-level causes remain UNKNOWN where stated. No fix for those unconfirmed causes is claimed.
+
+## RELAY 2: current denial-copy root cause (2026-10-29)
+
+- Executor: Codex, ui_worker responsibility, exact runtime model/effort not exposed. No delegation. Entry PR head8a671a9a004ee3d4a96763ef80e7f5c7db03cec0; branch unit/ca-admin-state; PR268 into r3/integration. First fetched/merged integration2bc6d482606a2b0583af15789086fdad727b27ec; final local merge242144915dcb1a965b68ea0522941ad24291510a (Co-Authored-By trailer added before any push).
+- Authority: this relay's human FIX-RED instruction; repository AGENTS.md; 架构.md sections0,1,2,26,27; CA-ADMIN-STATE card original blobfb520c93a9962d0abb67348ba39491862b47b960 lines698–728; actual components and unmodified parcel-merge assertions. Humaux development rule7bdb220b-0798-4b1d-aff5-16ee94cae75f read; rejected enumeration coverage9/9. Parent-dispatched child; no separate claim or recursive delegation.
+- The approved fix3 already exists. The sole failing current-head job is Gates40774523865/job123156443677 bundle09. All other completed checks, including Foundation40774523875/job123120190295 and admin-shell, passed at readback. In-progress checks are not PASS.
+- Raw job API fallback and artifact12860707314 prove parcel-merge.spec.ts:462 failed because MerchantOrders no longer showed the existing order denial. The held-poll timeout occurs while that copy assertion is stalled. The prior note treating the order-specific assertion as stale is superseded: it exposes a real omission in the shared display.
+- Repair: optional localized description in AdminForbidden preserves the caller's existing denial, followed by the approved neutral guidance. Both Customers and MerchantOrders pass c.forbidden from existing en/zh-CN/zh-TW copy tables. No transport, ACL, private data, required-role mapping or status purge changes. No new imports; existing component VM allowlists/globals stay valid.
+- Added six SSR cases (two callers × three locales), retaining all prior assertions. Existing browser suggestions/groups401/403/404 purge, held-completion, reload and real-click assertions remain verbatim. No new test claims to have run locally.
+- Static node --check and git diff --check exited0. Browser ownership regenerated deterministically after integration merge (53modes); only this test's source hash changes. No Go dependency changes; depmap generation unnecessary. tsc NOT_RUN: no installed compiler; no dependency install attempted.
+- RED evidence: red.log + relay2-playwright-parcel.log. New-head GREEN PENDING; self-review E0. Rollback: revert this repair commit; retain approved post-validation Suspense fix. Before-edit merge242144915dcb1a965b68ea0522941ad24291510a.
+- New changes outside original write_paths: generated output/ci-select-backend-browser/browser-ownership.json and output/admin-state evidence only. No new module scope expansion. Prior approved AdminLoading/customers-page/orders-page edits and prior harness/browser scope extensions remain listed in PR body. Upstream integration changes are merge content, not authored here.
+- Humaux fix stored as d7b6ff19-c178-47b6-baf2-e515d738cfcd; own child canvas codex-admin-state-fixred-sub-relay2 updated. No production action, merge/auto-merge of this PR, local tests/servers/PG, or background application process.
+
+### Relay2 click ledger
+
+| Page/control | CI operation | Expected | Actual before repair | New head |
+|---|---|---|---|---|
+| Orders / parcel retry | real retry click with one503 then403; held stale completions | Order-specific denial plus cleared private UI | Denial omitted; generic state only; artifact12860707314 | PENDING CI |
+| Orders / remaining privacy states | existing401/403/404 real-click/read barriers unchanged | Cleared rows/detail/bulk/groups persist after stale completions | CI stops at first403 omission | PENDING CI |
+| Permission / dashboard | existing locale dashboard link | Return to locale dashboard | href preserved by existing SSR assertions | PENDING CI |
+
+### Relay2 three-language copy parity
+
+Only existing localized copy is restored; no new translation keys.
+
+| Context | zh-TW | zh-CN | en |
+|---|---|---|---|
+| Orders denial | 此帳號沒有讀取訂單的權限。 | 当前账号没有读取订单的权限。 | This account does not have permission to read orders. |
+| Customers denial | 此帳號無權查看客戶。 | 此账号无权查看客户。 | This account does not have permission to view customers. |
+
+### BOURDIEU
+
+Q1–Q6: UNKNOWN; no new audience, expertise, hierarchy or aesthetic decisions in this corrective relay. Existing merchant-facing denial copy is restored. Q6 remains owner-only; no aesthetic acceptance claimed.
+
+### PROJECT UNDERSTANDING
+
+架构0 distinguishes source/model/runtime evidence;1 requires TS strict and server-owned business rules;2 limits this to merchant UI;26 requires assigned worktree and independent acceptance;27 requires failure-path evidence. CA-ADMIN-STATE display-only contract forbids ACL changes. Existing server refusal is displayed without resource identifiers or inferred roles.
+
+### MOBBIN → EAGLE
+
+No new layout/pattern/reference creation in this relay. Existing permission-state structure retained. No Mobbin query or Eagle import required for restoring the already-localized denial. Prior design-reference provenance not re-audited here.
+
+### FIGMA OFFICIAL GUIDANCE
+
+No Figma design or write in this relay; no new auto-layout/components/variables/prototype claim. output/ux-audit-ref/FIGMA-GUIDE.md was not available/read for this repair. Figma parity/copy-lint/density acceptance NOT_RUN, not implied by SSR or source inspection.
+
+Evidence formatting: staged diff check initially caught two trailing spaces from the downloaded Playwright log; trimmed only those line endings. Assertion text and original artifact12860707314 remain unchanged. Final staged diff check must pass before commit. Own downloaded archive/full wrapper log removed after preserving selected failure evidence; pre-existing fix3-proposed.patch retained.

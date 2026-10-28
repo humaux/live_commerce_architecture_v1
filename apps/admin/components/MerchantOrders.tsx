@@ -617,7 +617,7 @@ export function MerchantOrders({
         {(current.status === "loading" || current.status === "initial") && (
           <AdminStateBlock variant="loading" title={c.loading} />
         )}
-        {current.status === "forbidden" && <AdminForbidden locale={locale} />}
+        {current.status === "forbidden" && <AdminForbidden locale={locale} description={c.forbidden} />}
         {current.status !== "ready" &&
           current.status !== "loading" &&
           current.status !== "initial" &&

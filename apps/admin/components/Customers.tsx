@@ -149,7 +149,7 @@ export function Customers({
         {(read.status === "loading" || read.status === "hidden") && (
           <AdminStateBlock variant="loading" title={c.loading} />
         )}
-        {read.status === "forbidden" && <AdminForbidden locale={locale} />}
+        {read.status === "forbidden" && <AdminForbidden locale={locale} description={c.forbidden} />}
         {failure && (
           <AdminStateBlock
             variant="error"

@@ -64,3 +64,20 @@ Fallback for each: gh api repos/humaux/live_commerce_architecture_v1/actions/job
 These are existing current-head RED receipts, not evidence for the forthcoming fix.
 No local tests or servers. The directed repair reuses this RED and batches the approved implementation in one push.
 Artifact-level read limits: gh ZIP reads timed out at 90 seconds. A direct-reader fallback was terminated as hung (own PID 49912). Final cache-busted ZIP reads timed out at 60 seconds for 12834974786 (card-payments), 12839256540 (orders), 12839086450 (staff), 12841765213 (store-design). Detailed causes beyond job-log assertions remain UNKNOWN. No local archive files were created.
+
+RELAY 2 current-head RED, direct read (2026-10-29)
+PR head 8a671a9a004ee3d4a96763ef80e7f5c7db03cec0; synthetic merge e8e72adcea724b8dcf522aacb79889d55df7bd97.
+Gates run 40774523865; bundle:09 job 123156443677; only failed job in gh pr checks at readback.
+Foundation run 40774523875/job 123120190295 SUCCESS belongs to that old head only.
+Requested gh run view 40774523865 --log-failed --job 123156443677: run still in progress, logs unavailable.
+Read fallback: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/123156443677/logs.
+Failed member: --browser-merchant-orders-ui, browser_merchant_orders_ui_test.go:439 parcel-merge browser exit1.
+Downloaded artifact12860707314 (gate-browser-merchant-orders-ui); original playwright-parcel.log preserved as relay2-playwright-parcel.log.
+Actual assertion: tests/admin/parcel-merge.spec.ts:462 suggestions403 clears orders/detail/bulk/groups before stale completions.
+Expected: This account does not have permission to read orders.
+Actual: Orders...You can’t use this feature...Your current role can’t use this feature. Contact the store owner.Back to dashboard
+Also reported: held order poll release timed out at parcel-merge.spec.ts:405 while denial assertion waited10s.
+Root cause: shared AdminForbidden branch omitted existing per-module localized denial; privacy assertions and timing unchanged.
+Approved fix3 loading boundary relocation already present; not replayed. Integration merged before repair.
+This directed repair uses the existing failing assertion as RED; no extra tests-only push or local tests/servers.
+New-head CI GREEN PENDING; old Foundation success is not new-head acceptance.

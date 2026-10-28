@@ -145,6 +145,24 @@ test("AD-10: forbidden display uses exact neutral Figma copy in every locale and
   }
 });
 
+test("AD-10: shared forbidden state retains each caller's localized denial and neutral guidance", () => {
+  const { AdminForbidden } = forbidden();
+  const customers = load("apps/admin/lib/customers-copy.ts", requireApp).customersCopy;
+  const orders = load("apps/admin/lib/orders-copy.ts", requireApp).ordersCopy;
+  for (const [component, copy] of [["Customers", customers], ["MerchantOrders", orders]]) {
+    assert.match(source(`apps/admin/components/${component}.tsx`), /<AdminForbidden locale=\{locale\} description=\{c\.forbidden\}/);
+    for (const locale of ["en", "zh-CN", "zh-TW"]) {
+      const defaultHtml = renderToStaticMarkup(React.createElement(AdminForbidden, { locale }));
+      const html = renderToStaticMarkup(React.createElement(AdminForbidden, { locale, description: copy[locale].forbidden }));
+      assert.ok(html.includes(copy[locale].forbidden), `${component} ${locale} denial`);
+      const body = /<p[^>]*>(.*?)<\/p>/.exec(defaultHtml)?.[1];
+      assert.ok(body && html.includes(body), `${component} ${locale} neutral guidance`);
+      assert.match(html, /data-kind="permission"/);
+      assert.match(html, new RegExp(`href="/${locale}"`));
+    }
+  }
+});
+
 test("AD-11: customer and order empty copy has a title and safe guidance in all three locales", () => {
   const customers = load("apps/admin/lib/customers-copy.ts", requireApp).customersCopy;
   const orders = load("apps/admin/lib/orders-v2-copy.ts", requireApp).ordersV2Copy;
