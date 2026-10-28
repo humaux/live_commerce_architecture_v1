@@ -124,12 +124,19 @@ async function createStore(page: Page, locale: Locale) {
 const dialog = (page: Page) => page.getByTestId("reauth-dialog");
 const modal = (page: Page) => page.locator("dialog[open]");
 
+// The re-auth mail is throttled per email: email-mail-login allows 1 per aligned 60 s window (internal/identity/throttle.go winMailLogin).
+// A second start for the same owner must therefore begin >= 61 s after the previous one; the production limit is left as is.
+const lastStart = new Map<string, number>();
+
 // Password route inside the open dialog: password -> Enter -> emailed code (mail n) -> Enter.
 async function passwordReauth(page: Page, email: string, password: string, mailIndex: number) {
   await expect(dialog(page)).toHaveAttribute("data-step", "password");
   const field = dialog(page).locator('input[type="password"]');
   await expect(field).toBeFocused();
   await field.fill(password);
+  const wait = (lastStart.get(email) ?? 0) + 61_000 - Date.now();
+  if (wait > 0) await page.waitForTimeout(wait);
+  lastStart.set(email, Date.now());
   await field.press("Enter");
   await expect(dialog(page)).toHaveAttribute("data-step", "code");
   const codeField = dialog(page).locator('input[autocomplete="one-time-code"]');
