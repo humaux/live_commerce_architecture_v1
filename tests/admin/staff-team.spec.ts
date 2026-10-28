@@ -139,8 +139,12 @@ async function unobscuredMemberRole(page: Page, testId: string) {
 // `fromHere` signs up on the page the caller already opened (an invite page's own sign-up link) instead of a fresh /signup.
 async function signUp(page: Page, locale: string, email: string, password: string, priorMails: number, fromHere = false) {
   if (!fromHere) await page.goto(`/${locale}/signup`);
+  // #236: PasswordAuth marks its form data-hydrated once interactive (it is disabled before); typing earlier is refused.
+  await expect(page.locator('form[data-hydrated="true"]'), "sign-up form hydrated before typing").toBeVisible();
   await emailInput(page).fill(email);
   await passwordInput(page).fill(password);
+  await expect(emailInput(page)).toHaveValue(email);
+  await expect(passwordInput(page)).toHaveValue(password);
   await submitButton(page).click();
   await expect(codeInput(page)).toBeVisible();
   const code = codeOf(await nthMail(email, priorMails + 1));

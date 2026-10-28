@@ -1,0 +1,27 @@
+OC-15b Fix 2: static checks only (E1); runtime acceptance PENDING
+
+go run ./scripts/dev/contractdrift
+exit_code=0
+SUMMARY routes go=331 contract=169 bff=301; errors=0 warnings=287 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=89 GO_NOT_IN_BFF=30 GO_ONLY=199 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51
+
+go build ./...
+exit_code=0; stdout/stderr empty
+
+go vet ./internal/billing ./cmd/api ./tests/identityhttp
+exit_code=0; stdout/stderr empty
+
+gofmt -w internal/billing/admin_errors.go internal/billing/service.go
+exit_code=0
+
+git diff --cached --check
+exit_code=0 (raw scanner output intentionally unstaged)
+
+Source SHA256 (binds checks before commit):
+db546371c0459d355821e2fe6d43adbfc0ab6a085ff9149851d02d96698a094f  cmd/api/platform_billing.go
+fb6392871d5db0188161275fac93cf12bb1aac95d835e3d39668b6859914e190  cmd/api/platform_billing_test.go
+727b0998f0fddeaf4bc1e788670ae2f88422ab73e792e6bf2ed8e956a94299e8  internal/billing/webhook.go
+2b3f49f81bf5dff00b871165baa42e0aecbb259188a09b437eead73ce83217f9  internal/billing/errors.go
+7eb8d6470b369ee97e6ddb3db1030c2116d8117a8bceb61fbf639ff41ae59997  internal/billing/service.go
+e242ed0a64144649835832b3ae5f03fd53770ebd28a128ce6746db2e3041388e  internal/billing/admin_errors.go
+4b7d1e17a454105a60a39758bd9e3dd5822ddcbcca44388ea56f8c44234d13c5  tests/identityhttp/reauth_http_test.go
+9c6c1d81e1455edfc1cf2dbf94707428fc4961e412227f789ae8f58f0ac49837  contracts/merchant-password-auth-v1.md

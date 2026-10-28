@@ -1,0 +1,42 @@
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2587242Z ✔ all three locales label every task queue, payment and delivery mode (0.948025ms)
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2602909Z ✖ ORD-01 keeps state codes and filters while aligning merchant status labels with their queues (1.547268ms)
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2793430Z ℹ tests 5
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2800774Z ℹ suites 0
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2801335Z ℹ pass 4
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2801849Z ℹ fail 1
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2802743Z ℹ cancelled 0
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2803419Z ℹ skipped 0
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2804310Z ℹ todo 0
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2806912Z ℹ duration_ms 158.753109
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2808745Z 
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2809064Z ✖ failing tests:
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2809623Z 
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2809989Z test at tests/admin/orders-v2.test.ts:43:1
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2811394Z ✖ ORD-01 keeps state codes and filters while aligning merchant status labels with their queues (1.547268ms)
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2812685Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2813431Z   + actual - expected
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2813825Z   
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2814181Z   + 'Unpaid'
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2814614Z   - 'Awaiting payment'
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2815017Z   
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2816686Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/orders-v2.test.ts:46:12)
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2818284Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2819248Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2820690Z       at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2821859Z       at Test.postRun (node:internal/test_runner/test:1542:19)
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2822816Z       at Test.run (node:internal/test_runner/test:1467:12)
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2823988Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2824887Z     generatedMessage: true,
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2825423Z     code: 'ERR_ASSERTION',
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2825918Z     actual: 'Unpaid',
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2826471Z     expected: 'Awaiting payment',
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2827048Z     operator: 'strictEqual',
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2827552Z     diff: 'simple'
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2827896Z   }
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2886808Z ## matrix-receipts node-test end
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.2904631Z ##[error]Process completed with exit code 1.
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.3051052Z Post job cleanup.
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.4027762Z [command]/usr/bin/git version
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.4083885Z git version 2.56.0
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.4134362Z Temporarily overriding HOME='/home/runner/work/_temp/93272720-fa67-49b0-b89a-77f2ed714eb2' before making global git config changes
+foundation	UNKNOWN STEP	2026-10-28T07:10:27.4136380Z Adding repository directory to the temporary git global config as a safe directory

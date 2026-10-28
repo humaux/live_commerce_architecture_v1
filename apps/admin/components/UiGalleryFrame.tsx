@@ -26,7 +26,7 @@ export function UiGalleryFrame({ locale, currentId, template, children }: { loca
     store={{ name: c.storeName, region: c.storeRegion, logo: <Icon name="store" size={24} /> }} menuLabel={c.menu} closeLabel={c.close} skipLabel={c.skip}
     breadcrumb={<Breadcrumb label={c.crumbLabel} crumbs={crumbs} />}
     topbar={{
-      locale: <nav aria-label={c.localeLabel}><MenuButton label={localeNames[locale]} items={locales.map(l => ({ id: l, label: localeNames[l], href: `/${l}/ui-gallery${template ? `/templates/${template}` : ""}` }))} /></nav>,
+      locale: <nav aria-label={c.localeLabel} data-figma="1397:105153"><MenuButton label={localeNames[locale]} caret={false} items={locales.map(l => ({ id: l, label: localeNames[l], href: `/${l}/ui-gallery${template ? `/templates/${template}` : ""}` }))} /></nav>,
       help: <Button iconOnly variant="ghost" onClick={() => { window.location.href = `${root}#sec-alerts`; }}><Icon name="help" size={16} /><span className={s.sr}>{c.help}</span></Button>,
       notifications: <MenuButton icon="bell" variant="ghost" label={c.notifications} items={[{ id: "unread", label: c.kpiUnread, onSelect: () => { window.location.href = `${root}#sec-kpi`; } }]} />,
       account: <MenuButton icon="user" variant="ghost" label={c.account} items={[{ id: "profile", label: c.setItemProfile, onSelect: () => { window.location.href = `${root}?setting=profile#sec-settings`; } }]} />,

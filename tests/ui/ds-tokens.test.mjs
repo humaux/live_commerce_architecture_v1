@@ -39,13 +39,17 @@ const TEXT_PAIRS = [
   ["link", "surface"], ["link", "page"], ["link-hover", "surface"], ["primary", "primary-soft"], ["primary", "surface"],
   ["success-text", "surface"], ["success-text", "success-bg"], ["warn-text", "warn-bg"], ["warn-text", "warn-soft"], ["warn-text", "surface"],
   ["danger-text", "surface"], ["danger-text", "danger-bg"], ["info-text", "surface"], ["info-text", "info-bg"], ["neutral-text", "neutral-bg"],
-  ["nav-text", "nav-bg"], ["nav-text", "nav-active"], ["nav-text", "nav-logo-bg"], ["nav-text-muted", "nav-bg"], ["nav-text-muted", "nav-active"], ["nav-accent-text", "nav-bg"], ["nav-accent-text", "nav-active"],
+  // DS-3 light rail (Figma Nav Item): default text on the rail; active/hover rows switch to the ink text (#6b7280 on #eef2f7 is 4.3:1, so it never sits there).
+  ["nav-text", "nav-bg"], ["nav-text", "nav-logo-bg"], ["nav-text-muted", "nav-bg"], ["nav-text-active", "nav-active"], ["nav-text-active", "nav-bg"],
+  // DS-3 Figma Button kinds and Page Header crumbs, including the hover fills they sit on.
+  ["on-primary", "ink"], ["ink", "surface"], ["ink", "surface-muted"], ["button-text-kind", "surface"], ["button-text-kind", "page"], ["button-text-kind", "surface-muted"],
+  ["danger-text", "surface-muted"], ["crumb-text", "topbar-bg"], ["crumb-text", "surface"],
 ];
-// Non-text: focus ring on both surfaces (and the dark ring on the dark nav), control boundaries, the active-nav bar: WCAG 1.4.11 / 2.4.11, 3:1.
+// Non-text: focus ring on every surface including the light rail, control boundaries: WCAG 1.4.11 / 2.4.11, 3:1.
 const UI_PAIRS = [
   ["focus", "surface"], ["focus", "page"], ["focus", "surface-muted"], ["focus", "primary-soft"],
-  ["focus-on-dark", "nav-bg"], ["focus-on-dark", "nav-active"], ["focus-on-dark", "nav-logo-bg"],
-  ["border-input", "surface"], ["border-input", "page"], ["nav-accent", "nav-bg"], ["primary", "page"],
+  ["focus", "nav-bg"], ["focus", "nav-active"], ["focus", "nav-logo-bg"],
+  ["border-input", "surface"], ["border-input", "page"], ["primary", "page"],
   ["disabled-primary-bg", "surface"], ["disabled-primary-bg", "page"], ["disabled-primary-bg", "surface-muted"], ["disabled-primary-text", "disabled-primary-bg"],
 ];
 
