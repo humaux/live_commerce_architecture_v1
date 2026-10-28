@@ -125,7 +125,7 @@ async function route(request: Request, context: Context) {
   if (inbox && !validInboxRequest(request, path)) {
     if (invalidCommentCursor(request, path)) return error(400, "invalid_cursor");
     const filters = new URL(request.url).searchParams.getAll("filter");
-    if (path === "inbox/conversations" && filters.length === 1 && filters[0] && !["all", "unreplied", "messenger", "instagram", "live_comment"].includes(filters[0])) return error(400, "invalid_filter");
+    if (path === "inbox/conversations" && filters.length === 1 && filters[0] && !["all", "unread", "unreplied", "messenger", "instagram", "live_comment"].includes(filters[0])) return error(400, "invalid_filter");
     return error(path === "inbox/buyer-panel" && request.method === "GET" ? 400 : 422, "invalid_request");
   }
   const operation = operationRoute(request.method, path);

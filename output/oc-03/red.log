@@ -1,0 +1,50 @@
+RED (CI only) for OC-03, PR #217, head 4a4e25b83 (tests only, no migrations/0203)
+workflow run: 40436212776  job: 121967146167  gate (shard:unit)  conclusion: failure
+url: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40436212776/job/121967146167
+Top-level failing tests of package livecommerce/tests/identity (OG02 and RA01-RA07 PASS: fixtures are valid, the failures are assertion failures, not setup errors):
+    reauth_guard_sql_test.go:189: staff_invite: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:189: staff_set_role: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:189: staff_remove: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:189: set_platform_stripe: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:189: request_stripe_refund: err = ERROR: order not found (SQLSTATE PT404), want PT403 reauth_required
+    reauth_guard_sql_test.go:189: decide_bank_transfer: err = ERROR: order not found (SQLSTATE PT404), want PT403 reauth_required
+    reauth_guard_sql_test.go:189: decide_bank_transfer_refund_offline: err = ERROR: order not found (SQLSTATE PT404), want PT403 reauth_required
+    reauth_guard_sql_test.go:189: export_unshipped_orders: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:189: export_finance_summary: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:189: export_report: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:189: record_export_merchant: err = ERROR: customer not found (SQLSTATE PT404), want PT403 reauth_required
+    reauth_guard_sql_test.go:189: export_import_profile: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:189: erase_owner_merchant: err = ERROR: customer not found (SQLSTATE PT404), want PT403 reauth_required
+    reauth_guard_sql_test.go:189: pin_customer: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:189: record_checkout_session: err = ERROR: no billing customer (SQLSTATE PT404), want PT403 reauth_required
+    reauth_guard_sql_test.go:189: approve_draft: err = ERROR: not_found (SQLSTATE AD404), want PT403 reauth_required
+    reauth_guard_sql_test.go:189: publish_draft: err = ERROR: not_found (SQLSTATE AD404), want PT403 reauth_required
+--- FAIL: TestGuardOG01StaleSessionRefusedByEveryDefiner (0.14s)
+    reauth_guard_sql_test.go:220: staff_invite(owner): err = <nil>, want PT403 owner_role_disabled
+    reauth_guard_sql_test.go:222: staff_set_role(owner): err = <nil>, want PT403 owner_role_disabled
+    reauth_guard_sql_test.go:228: staff_accept(pre-existing owner invitation): err = <nil>, want PT403 owner_role_disabled
+--- FAIL: TestGuardOG03OwnerRoleDisabled (0.11s)
+    reauth_guard_sql_test.go:251: identity.staff_invite(bytea,uuid,uuid,text,text,text,bytea) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: identity.staff_set_role(bytea,uuid,uuid,text) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: identity.staff_remove(bytea,uuid,uuid) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: payments.set_platform_stripe(bytea,uuid,text,boolean,text,text,bigint) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: payments.request_stripe_refund(bytea,uuid,uuid,text,bytea,bigint,text,bigint,uuid,bigint) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: payments.decide_bank_transfer(bytea,uuid,uuid,text,bytea,text,text) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: identity.export_unshipped_orders(bytea,uuid,integer) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: identity.export_finance_summary(bytea,uuid,date,date) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: identity.export_report(bytea,uuid,text,date,date,uuid,text) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: customers.record_export(bytea,uuid,uuid,text,uuid,jsonb) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: customers.export_import_profile(bytea,uuid,uuid) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: customers.erase_owner(bytea,uuid,uuid,text,uuid) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: billing.pin_customer(bytea,uuid,text,text,text) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: billing.record_checkout_session(bytea,uuid,text,text,timestamptz) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: ads.approve_draft(bytea,uuid,uuid,integer) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:251: ads.publish_draft(bytea,uuid,uuid,integer,uuid,bigint) does not call identity.require_recent_auth
+    reauth_guard_sql_test.go:257: identity.staff_accept must refuse owner invitations (err=<nil>)
+    reauth_guard_sql_test.go:285: EXECUTE on identity.require_recent_auth: grantees {commerce_identity,commerce_identity_writer}, want {commerce_ads_writer,commerce_auth,commerce_billing_writer,commerce_checkout_writer,commerce_identity,com
+--- FAIL: TestGuardOG04GuardPresentAndExecuteGrantsExact (0.01s)
+    reauth_guard_sql_test.go:309: OIDC re-auth moved authenticated_at back: 2026-10-27 02:46:34.974743 +0000 UTC -> 2026-10-27 02:42:34.975083 +0000 UTC
+--- FAIL: TestGuardOG05OIDCReauthNeverMovesAuthenticatedAtBackwards (0.00s)
+    reauth_guard_sql_test.go:327: authenticated_at one hour ahead: err = <nil>, want PT403 reauth_required
+    reauth_guard_sql_test.go:328: authenticated_at infinity: err = <nil>, want PT403 reauth_required
+--- FAIL: TestGuardOG06FutureOrInfiniteAuthenticatedAtIsNotRecent (0.00s)

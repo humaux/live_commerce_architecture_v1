@@ -1,4 +1,5 @@
-// Purpose: the inbox read side's definer callers and projections: A8 ListConversations (metadata only, no ciphertext),
+// Purpose: the inbox read side's definer callers and projections: A8 ListConversations (metadata only, no ciphertext; filter
+// unread = store-level last_inbound_seq > read_seq, OC-12 migration 0204),
 // A9 ReadThread (header + opened/decrypted inbound messages), A13 BuyerPanel / BuyerPanelByBundle (claims, orders, ordinal,
 // auto_reply), and the shared databaseError mapper that passes only the fixed PT400/PT403/PT404/PT409/PT422 codes through.
 // Depends on: the SECURITY DEFINER functions social.list_conversations / social.read_thread / social.conversation_meta /
@@ -72,8 +73,9 @@ func (s *Service) ListConversations(ctx context.Context, tx pgx.Tx, req ListRequ
 		return out, err
 	}
 	// Live comments have their own bundle keyset on every page. Other eligible filters retain
-	// Amendment 1 P2-2's first-page-only pending-link append (copy-link only).
-	if req.Filter == "live_comment" || (req.LastAt == nil && req.Filter != "messenger" && req.Filter != "instagram") {
+	// Amendment 1 P2-2's first-page-only pending-link append (copy-link only). Bundle rows carry no read marker
+	// (always unread=false), so filter=unread (OC-12, output/oc-12/UNREAD.md) never appends them.
+	if req.Filter == "live_comment" || (req.LastAt == nil && req.Filter != "messenger" && req.Filter != "instagram" && req.Filter != "unread") {
 		var bundles []ConversationItem
 		var err error
 		if req.Filter == "live_comment" {

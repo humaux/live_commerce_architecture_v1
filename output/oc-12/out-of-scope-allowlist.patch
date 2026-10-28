@@ -1,0 +1,51 @@
+diff --git a/apps/admin/app/api/stores/[store]/[...resource]/route.ts b/apps/admin/app/api/stores/[store]/[...resource]/route.ts
+index 4bdc896c3..de8f0e49a 100644
+--- a/apps/admin/app/api/stores/[store]/[...resource]/route.ts
++++ b/apps/admin/app/api/stores/[store]/[...resource]/route.ts
+@@ -125,7 +125,7 @@ async function route(request: Request, context: Context) {
+   if (inbox && !validInboxRequest(request, path)) {
+     if (invalidCommentCursor(request, path)) return error(400, "invalid_cursor");
+     const filters = new URL(request.url).searchParams.getAll("filter");
+-    if (path === "inbox/conversations" && filters.length === 1 && filters[0] && !["all", "unreplied", "messenger", "instagram", "live_comment"].includes(filters[0])) return error(400, "invalid_filter");
++    if (path === "inbox/conversations" && filters.length === 1 && filters[0] && !["all", "unread", "unreplied", "messenger", "instagram", "live_comment"].includes(filters[0])) return error(400, "invalid_filter");
+     return error(path === "inbox/buyer-panel" && request.method === "GET" ? 400 : 422, "invalid_request");
+   }
+   const operation = operationRoute(request.method, path);
+diff --git a/apps/admin/lib/inbox-bff.ts b/apps/admin/lib/inbox-bff.ts
+index 44fadb226..c1eb8a368 100644
+--- a/apps/admin/lib/inbox-bff.ts
++++ b/apps/admin/lib/inbox-bff.ts
+@@ -34,6 +34,7 @@ export function inboxRoute(method: string, path: string) {
+ 
+ const filters = new Set([
+   "all",
++  "unread",
+   "unreplied",
+   "messenger",
+   "instagram",
+diff --git a/contracts/live-console-v1.md b/contracts/live-console-v1.md
+index e2cb8533c..79260ba40 100644
+--- a/contracts/live-console-v1.md
++++ b/contracts/live-console-v1.md
+@@ -672,7 +672,7 @@ decoder (unknown keys 400), `Cache-Control: no-store`, errors `{code}` from the
+ | A5 | POST `/live-sessions/{sid}/comments/{ref}/public-reply` | inbox:reply | same as A4 | 409 capability\|ig_live_unsupported, 422 public_reply_forbidden_content | inbox.public_reply.planned |
+ | A6 | POST `/live-sessions/{sid}/claims/offers/{oid}/recommend` | live:manage (+inbox:reply if post_comment) | `{expected_version, post_comment}` → `{recommended_at, operation_id?}` | 409 version_conflict\|offer_unavailable\|capability, 422 ig_live_unsupported | live.offer.recommended |
+ | A7 | POST `/live-sessions/{sid}/lifecycle` | live:manage | `{action, expected_version, open_window?}` → `{lifecycle, version, window}` | 409 version_conflict\|invalid_transition\|too_many_open_windows, 402 billing_restricted | live.session.started\|ended\|archived |
+-| A8 | GET `/inbox/conversations` | inbox:read | `?filter=all\|unreplied\|messenger\|instagram\|live_comment&session_id=&cursor=&limit≤50` → `{items: [{conversation_id?, bundle_id?, platform, display_name?, last_at, unread, unreplied, mode, assignee, window_open_until, linked_customer_id, link_version}], next_cursor, unread_total}` (amendment "LC-B3b" adds link_version, the session_id filter and live_comment rows with an opaque keyset cursor) | 400 invalid_filter | — |
++| A8 | GET `/inbox/conversations` | inbox:read | `?filter=all\|unread\|unreplied\|messenger\|instagram\|live_comment&session_id=&cursor=&limit≤50` → `{items: [{conversation_id?, bundle_id?, platform, display_name?, last_at, unread, unreplied, mode, assignee, window_open_until, linked_customer_id, link_version}], next_cursor, unread_total}` (amendment "LC-B3b" adds link_version, the session_id filter and live_comment rows with an opaque keyset cursor) | 400 invalid_filter | — |
+ | A9 | GET `/inbox/conversations/{cid}/messages` | inbox:read | `?before_seq=&limit≤50` → `{items: [{direction, seq?, at, text, attachments, kind?, send_state?, principal_id?, unreadable?}], window_open_until, mode, takeover_generation, human_until, link_version, binding_id, has_unknown_outbound: boolean\|null}` | 404 | `inbox.thread_opened` (principal, conversation; coalesced ≤ 1 per principal per conversation per hour; no content) |
+ | A10 | POST `/inbox/conversations/{cid}/read` | inbox:read (effective only with inbox:reply, §3.6) | `{read_seq}` → `{read_seq}` | 404, 422 | — |
+ | A11 | POST `/inbox/conversations/{cid}/takeover` · `/release` | inbox:reply | `{expected_generation}` → `{mode, assignee, takeover_generation}` | 409 takeover_changed | inbox.takeover\|inbox.release |
+diff --git a/internal/httpapi/inbox.go b/internal/httpapi/inbox.go
+index c1bf0550f..b7814e6b5 100644
+--- a/internal/httpapi/inbox.go
++++ b/internal/httpapi/inbox.go
+@@ -266,7 +266,7 @@ func parseInboxListRequest(u *url.URL) (inbox.ListRequest, error) {
+ 		}
+ 	}
+ 	switch req.Filter {
+-	case "all", "unreplied", "messenger", "instagram", "live_comment":
++	case "all", "unread", "unreplied", "messenger", "instagram", "live_comment":
+ 	default:
+ 		return req, &inboxQueryError{http.StatusBadRequest, "invalid_filter"}
+ 	}

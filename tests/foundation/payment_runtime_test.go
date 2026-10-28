@@ -105,6 +105,9 @@ func pwIsolatedFixture(t *testing.T) *testFixture {
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatal(err)
 	}
+	if err := legacyOpenBankPolicy(ctx, owner, nil); err != nil { // legacy: issue #210
+		t.Fatal(err)
+	}
 	if pgStripeRevoke { // promotions-tests only: disclosed workaround of BASE defect B1, see promotions_gate_test.go / DEFECTS.md
 		mustExec(t, owner, `REVOKE EXECUTE ON FUNCTION catalog.products_default_slug(), design.refuse_history_change() FROM PUBLIC`)
 	}

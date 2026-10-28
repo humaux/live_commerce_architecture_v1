@@ -25,6 +25,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -582,6 +583,40 @@ func (e *sbEnv) startControl() {
 	e.t.Cleanup(e.control.Close)
 }
 
+// quiesce stops the payment worker and returns once no payment_reconcile_v1 job of attempt is unfinished.
+// While stopped nothing records an observation; a pending reconcile is drained by running the worker again
+// (sstWake makes its retry due now). restart says whether the worker was running and must be started again;
+// it is valid on error too, so the caller can restore the worker on every path.
+func (e *sbEnv) quiesce(t *testing.T, attempt string) (restart bool, err error) {
+	t.Helper()
+	unfinished := func() (n int, err error) {
+		err = e.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM river_payment.river_job
+		 WHERE kind='payment_reconcile_v1' AND args->>'operation_id'=$1
+		 AND state NOT IN ('completed','cancelled','discarded')`, attempt).Scan(&n)
+		return
+	}
+	e.mu.Lock()
+	restart = e.stopper != nil
+	e.mu.Unlock()
+	for try := 1; ; try++ {
+		e.workerStop()
+		n, err := unfinished()
+		if err != nil || n == 0 {
+			return restart, err
+		}
+		if try == 3 {
+			return restart, fmt.Errorf("%d unapplied observation(s) for the attempt", n)
+		}
+		e.workerStart(t) // even when it was stopped: a stopped worker's pending reconcile would apply after the aging
+		sstWake(t, e.f, attempt)
+		for deadline := time.Now().Add(30 * time.Second); time.Now().Before(deadline); time.Sleep(200 * time.Millisecond) {
+			if n, err = unfinished(); err != nil || n == 0 {
+				break
+			}
+		}
+	}
+}
+
 // act runs one MOCK fixture action on the test goroutine.
 func (e *sbEnv) act(t *testing.T, a sbAction) error {
 	t.Helper()
@@ -611,6 +646,19 @@ func (e *sbEnv) act(t *testing.T, a sbAction) error {
 			e.fake.Patch(session, map[string]any{"presentment_details": map[string]any{"presentment_currency": "twd", "presentment_amount": 2499}})
 			e.fake.SetState(session, "complete", "paid")
 		case "age-cutoff": // SP10 owner-fixture clock aging: past the handoff cutoff, before expires_at
+			// #145: an observation recorded before the aging carries the old expires_at. If its
+			// payment_reconcile_v1 job applies after sstAge committed, the I05 identity check (0167) opens a
+			// PROVIDER_IDENTITY_MISMATCH review case and the order shows REVIEW_REQUIRED, never the cutoff
+			// (job 122207195018 FAILSNAP: reviews=1 before O7). Real expires_at is frozen, so this is a fixture
+			// race, not a product one. Age only while the worker is stopped (no new observation can be recorded)
+			// and no reconcile job of this attempt is unfinished.
+			restart, err := e.quiesce(t, attempt)
+			if restart { // restore the worker on every path (quiesce error, aging t.Fatal, success), exactly once
+				defer e.workerStart(t)
+			}
+			if err != nil {
+				return err
+			}
 			sstAge(t, e.f, attempt, 36*time.Minute)
 			e.fake.AgeSession(session, 36*time.Minute)
 		}
@@ -686,7 +734,13 @@ loop:
 	for {
 		select {
 		case a := <-e.actions:
-			a.reply <- e.act(t, a)
+			// Fixture helpers call t.Fatal (runtime.Goexit): the deferred send still answers the control
+			// handler, which otherwise blocks on <-a.reply and hangs httptest.Server.Close in t.Cleanup.
+			func() {
+				err := errors.New("action aborted")
+				defer func() { a.reply <- err }()
+				err = e.act(t, a)
+			}()
 		case waitErr = <-done:
 			break loop
 		}

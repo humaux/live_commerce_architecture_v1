@@ -204,11 +204,34 @@ func (e *sgEnv) person(email string) (principal, bearer string) {
 	return principal, bearer
 }
 
+// seedOwner makes principal an owner of the store through the owner pool, writing the rows the accept path writes (membership,
+// store_staff row, owner bundle). Since OC-03 invite, set_role and accept refuse the owner role (owner_role_disabled).
+func seedOwner(ctx context.Context, t *testing.T, owner *pgxpool.Pool, store, principal string) {
+	t.Helper()
+	for _, q := range []string{
+		`INSERT INTO identity.memberships(tenant_id,principal_id) SELECT s.tenant_id,$2::uuid FROM control.stores s WHERE s.id=$1::uuid
+		 ON CONFLICT (tenant_id,principal_id) DO UPDATE SET active=true, authz_revision=identity.memberships.authz_revision+1`,
+		`INSERT INTO identity.store_staff(tenant_id,store_id,principal_id,role) SELECT s.tenant_id,s.id,$2::uuid,'owner' FROM control.stores s WHERE s.id=$1::uuid
+		 ON CONFLICT (tenant_id,store_id,principal_id) DO UPDATE SET role='owner'`,
+		`SELECT identity.staff_apply_role(s.tenant_id,s.id,$2::uuid,'owner') FROM control.stores s WHERE s.id=$1::uuid`,
+	} {
+		if _, err := owner.Exec(ctx, q, store, principal); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 // join runs the whole product path: owner invites, the person accepts. Returns principal, bearer, token.
 func (e *sgEnv) join(role string) (principal, bearer, token string) {
 	e.t.Helper()
 	email := sgEmail("sg" + strings.ReplaceAll(role, "_", ""))
 	principal, bearer = e.person(email)
+	if role == "owner" {
+		// OC-03: the owner role is no longer reachable through invite/accept (owner_role_disabled), so fixtures that need
+		// several owners seed the rows the accept path writes.
+		seedOwner(e.ctx, e.t, e.f.owner, e.store.StoreID, principal)
+		return principal, bearer, ""
+	}
 	if _, err := e.svc.Invite(e.ctx, e.inviter, e.store.StoreID, email, role, "en"); err != nil {
 		e.t.Fatalf("invite %s: %v", role, err)
 	}
@@ -731,18 +754,9 @@ func (e *sgEnv) restorePair(a, b string) {
 		switch e.role(other) {
 		case "owner":
 			return
-		case "":
-			em := e.emails[other]
-			if _, err := e.svc.Invite(e.ctx, e.bearers[self], e.store.StoreID, em, "owner", "en"); err != nil {
-				e.t.Fatalf("re-invite: %v", err)
-			}
-			if _, err := e.svc.Accept(e.ctx, e.bearers[other], e.mail.token(e.t, em)); err != nil {
-				e.t.Fatalf("re-accept: %v", err)
-			}
 		default:
-			if err := e.svc.SetRole(e.ctx, e.bearers[self], e.store.StoreID, other, "owner"); err != nil {
-				e.t.Fatalf("re-promote: %v", err)
-			}
+			// removed or demoted: seed the owner rows again (OC-03: invite/set_role refuse the owner role)
+			seedOwner(e.ctx, e.t, e.f.owner, e.store.StoreID, other)
 		}
 		return
 	}

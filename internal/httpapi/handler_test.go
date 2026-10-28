@@ -91,3 +91,22 @@ func TestNoPublicReserveOrGETMutation(t *testing.T) {
 		}
 	}
 }
+
+// OC-15 (§16): a raw definer PT403 (internal/ads passes driver errors through) keeps only the two fixed codes; any other PT403
+// message keeps the pre-OC-15 fallback (500 internal, no driver text).
+func TestClassifyRawPT403ReauthCodes(t *testing.T) {
+	for _, tt := range []struct {
+		message string
+		status  int
+		code    string
+	}{
+		{"reauth_required", 403, "reauth_required"},
+		{"owner_role_disabled", 403, "owner_role_disabled"},
+		{"some other refusal", 500, "internal"},
+	} {
+		status, code := classify(&pgconn.PgError{Code: "PT403", Message: tt.message})
+		if status != tt.status || code != tt.code {
+			t.Errorf("PT403 %q: %d %q, want %d %q", tt.message, status, code, tt.status, tt.code)
+		}
+	}
+}

@@ -971,3 +971,20 @@ the row by hand stays a red-line action requiring owner approval; the resolve st
 | OQ-6 | Payout setup: when payouts are enabled on the HK account, and which bank route pays TWD to Taiwan merchants. | Owner completes Stripe payout setup (required for LD8 readiness) and names the bank route before the first statement. |
 | OQ-7 | Dispute handling as business of record. | Owner responds in Stripe; the merchant must supply evidence within 5 days; the loss is deducted from the store. |
 | OQ-8 | `display_name` and `descriptor_display` shown to buyers. | Platform brand on `xgdwm.com`; descriptor = the Stripe card prefix (LQ6). |
+
+
+## Amendment 2026-10-28 (CF-PAY)
+
+Status: DESIGN, review-ready; implementation/CI/independent review NOT_RUN for this amendment.
+Authority: [owner choices](owner-choices-20261026-v1.md) OC-Q1, OC-Q3, OC-AD01;
+owner 2026-10-26 「商家设置需要简单一点,不需要商家配置API key什么的,商家收款统一平台收款方式」
+(full human source Humaux `b9197057-8187-4fc9-a8b7-425ad34fd7a9`); owner 2026-10-25 platform-collection decision
+(full human source `0d6a98a3-a915-4eaf-9051-05f0ba4779a1`; quoted in §0.3 AD-PF2.1).
+This is a bounded alignment amendment, not permission to collect LIVE funds.
+
+1. AD-01: AD-PF3 governs zero merchant keys/API/merchant-number configuration. Terms acceptance, self-stop/re-enable semantics, server permissions and actual environment/currency method set remain. Show 「平台統一收款・已可使用」 only when the server's state permits it; other states retain their meaning. No frontend eligibility override. AD-PF2.1 allowlist, §8 attestations and owner-only LIVE actions remain in force; Link is not advertised in LIVE before its existing gate clears.
+2. AD-02/FIN-01: OC-Q1 retires **new** merchant own-bank details and **new** bank-transfer orders at the server as well as UI/manual-order entry. Storefront bank transfer remains unavailable. This does not disable the completion of existing orders or delete financial history.
+3. FIN-02: already-saved bank details remain readable for awaiting-transfer orders, never edited/deleted. Existing orders/proofs/AWAITING_TRANSFER and expiry/decide_bank_transfer completion remain, including recent re-auth. Keep bank_transfer_confirmed_* report fields and existing API/CSV shape, columns and historical export access unchanged. Do not turn a historical report into an eleven-column format or silently zero/remove old transfer amounts.
+4. CF-FIN consumes the sole settlement contract §6.7–§6.9; OC-Q2's explicit pending confirmation stays pending. OC-Q3 merchant wording is retained. This amendment creates no second settlement model, fee rate or schema/migration number. Buyer payment terminology is scoped by the CF-PAY amendment in [stripe-buyer-ui-v1](stripe-buyer-ui-v1.md), not merchant payout vocabulary.
+
+Acceptance handoff (NOT_RUN): CI must prove new bank saves/orders are refused through the existing authenticated server entry points, existing pending orders still reach terminal state, historical report/CSV fields remain exact, and terms/self-stop/not-open/LIVE allowlist/method-set negatives remain intact. UI cards require real clicks plus persistent readback. Amend implementation-owning contracts in their own assigned cards; this docs-only change provides no runtime acceptance.

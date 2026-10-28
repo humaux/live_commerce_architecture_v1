@@ -5,7 +5,8 @@
 #   Anthropic Messages API that Kimi exposes at https://api.kimi.com/coding/. Used by the integrator to offload work
 #   that does not need the top tier (docs/delivery/PROCESS.md §3 "Third-party models").
 # Usage: [READONLY=1] [PROVIDER=kimi|aliyun|deepseek|anthropic] [MODEL=...] [RESUME=<session_id from a cut-off run's result.json>] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
-#   kimi (subscription, 5-hour quota window): MODEL k3 (default) | kimi-for-coding (K2.8)
+#   kimi (subscription, 5-hour quota window): MODEL k3 (default) | k3.1-pro (K3.1 Pro, listed 2026-10-27, 1M context, being calibrated) | kimi-for-coding (K2.8);
+#   never k3.1-pro-highspeed (the endpoint lists it as 2x usage cost)
 #   deepseek (PAY-AS-YOU-GO, owner balance): MODEL deepseek-flash (default; owner 2026-10-22: cheaper, faster, better than pro) | deepseek-v4-pro; refuses to start below
 #   DEEPSEEK_MIN_BALANCE_CNY (default 10, owner 2026-10-02), and a watchdog checks the balance every 60 s during the run and
 #   stops the run when it falls below the reserve. Either case writes <repo>/output/ext-agents/DEEPSEEK_LOW_BALANCE (balance,
@@ -32,7 +33,7 @@ wt=${1:?worktree}; prompt=${2:?prompt file}; out=${3:?out dir}; effort=${4:-high
 provider=${PROVIDER:-kimi}
 case "$provider" in
   kimi) model=${MODEL:-${KIMI_MODEL:-k3}}; base_url="https://api.kimi.com/coding/"; key_file="$HOME/.config/livecommerce/kimi.env"; key_var=KIMI_CODE_API_KEY
-    case "$model" in k3|kimi-for-coding) ;; *) echo "kimi MODEL must be k3 or kimi-for-coding" >&2; exit 2 ;; esac ;;
+    case "$model" in k3|k3.1-pro|kimi-for-coding) ;; *) echo "kimi MODEL must be k3, k3.1-pro or kimi-for-coding" >&2; exit 2 ;; esac ;;
   deepseek) model=${MODEL:-deepseek-flash}; base_url="https://api.deepseek.com/anthropic"; key_file="$HOME/.config/livecommerce/deepseek.env"; key_var=DEEPSEEK_API_KEY
     case "$model" in deepseek-v4-pro|deepseek-flash) ;; *) echo "deepseek MODEL must be deepseek-v4-pro or deepseek-flash" >&2; exit 2 ;; esac ;;
   # aliyun = Bailian Token Plan subscription (monthly quota; owner 2026-10-07). Anthropic-compatible endpoint verified 2026-10-07

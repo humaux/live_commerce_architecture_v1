@@ -1,0 +1,115 @@
+# Purpose: run the Stripe SANDBOX browser acceptance (SP18 real checkout.stripe.com test mode, plus SU07/SU09) on a GitHub runner
+#   with the owner's Stripe TEST key (owner 2026-10-27: "GitHub 加测试密钥"; "沙盒测试每次运行都自动化，不用等我确认" -> nightly schedule on the
+#   default branch r3/integration, no environment reviewer). Never on push or pull_request, so no PR code path can read the key. The key lives only in the `stripe-sandbox` environment (deployment branches: r3/integration).
+# Depends on: scripts/dev/test-local.sh --stripe-browser (reads STRIPE_SECRET_KEY from LC_SECRETS_FILE, refuses anything but ^(sk|rk)_test_),
+#   scripts/dev/ci-playwright-browsers.mjs + ci-playwright-install.sh (browsers), .github/actions/pnpm, the pinned postgres image (same as gates.yml).
+# Used by: the integrator (`gh workflow run stripe-sandbox.yml --ref r3/integration`); evidence for contracts/stripe-psp-v1.md §14 SP18.
+# Invariants: test-mode key only (a live key makes test-local.sh exit NOT_RUN before anything starts); the key is written to a 0600 file
+#   under RUNNER_TEMP, never to the workspace, a log or an artifact; SP17 (webhook to a public endpoint) stays NOT_RUN here.
+name: Stripe SANDBOX
+
+on:
+  schedule:
+    # Nightly on the default branch (r3/integration), off-peak UTC and away from the gates.yml nightly (21:43).
+    - cron: '17 19 * * *'
+  workflow_dispatch:
+    inputs:
+      steps:
+        description: "LC_STRIPE_BROWSER_STEPS (comma list of node-env,sp18,su07,su09; sp18 required)"
+        default: "node-env,sp18,su07,su09"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stripe-sandbox
+  cancel-in-progress: false
+
+jobs:
+  sandbox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    environment: stripe-sandbox
+    env:
+      GOTOOLCHAIN: go1.27.3
+      GOFLAGS: -mod=readonly
+      PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+      MODE: --stripe-browser
+    steps:
+      - name: Validate steps input
+        env:
+          STEPS: ${{ inputs.steps || 'node-env,sp18,su07,su09' }}
+        # sp18 is mandatory: this workflow exists to produce SANDBOX evidence, a run without it must not look like one.
+        run: |
+          [[ "$STEPS" =~ ^(node-env|sp18|su07|su09)(,(node-env|sp18|su07|su09))*$ ]] || { echo "refusing steps: $STEPS" >&2; exit 2; }
+          [[ ",$STEPS," == *,sp18,* ]] || { echo "steps must include sp18" >&2; exit 2; }
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Go modules (prefetch with retry)
+        run: for i in 1 2 3; do go mod download && exit 0; echo "go mod download attempt $i failed; retrying"; sleep $((i * 15)); done; exit 1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: ./.github/actions/pnpm
+      - name: Node dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Browser requirements from registry
+        id: browsers
+        run: node scripts/dev/ci-playwright-browsers.mjs "$MODE"
+      - name: Writable Playwright browser dir
+        run: sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"
+      - name: Browsers
+        timeout-minutes: 15
+        env:
+          BROWSERS: ${{ steps.browsers.outputs.engines }}
+          LC_PLAYWRIGHT_DEBS_DIR: ${{ runner.temp }}/playwright-debs
+        run: |
+          read -r -a browsers <<< "$BROWSERS"
+          bash scripts/dev/ci-playwright-install.sh "${browsers[@]}"
+      - name: Download pinned test image
+        run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: SANDBOX gate
+        id: gate
+        env:
+          STRIPE_TEST_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          LC_STRIPE_BROWSER_STEPS: ${{ inputs.steps || 'node-env,sp18,su07,su09' }}
+        run: |
+          set -o pipefail
+          # The key reaches test-local.sh only through a 0600 file outside the workspace; drop it from this shell's env first.
+          umask 077
+          secrets_file="$RUNNER_TEMP/secrets.env"
+          printf 'STRIPE_SECRET_KEY=%s\n' "$STRIPE_TEST_KEY" > "$secrets_file"
+          unset STRIPE_TEST_KEY
+          mkdir -p output/playwright
+          export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
+          mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/ci-gates"
+          LC_SECRETS_FILE="$secrets_file" STRIPE_BROWSER=1 STRIPE_SANDBOX=1 \
+            xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$LC_BROWSER_EVIDENCE_ROOT/ci-gates/stripe-browser.log"
+      - name: Remove key file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/secrets.env"
+      - name: Failure summary
+        if: always()
+        run: grep -hE '^--- FAIL|^FAIL|NOT_RUN|^PASS' output/playwright/*/ci-gates/*.log | head -100 || true
+      # Log masking does not cover artifacts: refuse to upload evidence that contains any Stripe secret-key-shaped string.
+      - name: Secret scan of evidence
+        id: scan
+        if: always()
+        run: |
+          # Exactly "no match" (grep exit 1) passes; a hit (0) or a scan error (2) blocks the upload. -R follows symlinks like the upload does.
+          rc=0; grep -RlE '(sk|rk)_(test|live)_[A-Za-z0-9]{10,}' output/playwright || rc=$?
+          if [[ $rc == 0 ]]; then echo "evidence contains a Stripe key-shaped string; not uploading" >&2; exit 1; fi
+          if [[ $rc != 1 ]]; then echo "secret scan error (grep exit $rc); not uploading" >&2; exit 1; fi
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always() && steps.scan.outcome == 'success'
+        with:
+          name: stripe-sandbox-evidence-${{ github.sha }}-${{ github.run_attempt }}
+          path: output/playwright/
+          retention-days: 30
+          if-no-files-found: warn

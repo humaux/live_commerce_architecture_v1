@@ -1,0 +1,110 @@
+=== RUN   TestReauthRH01PasswordStartTransport
+    reauth_http_test.go:191: no bearer: HTTP 404 code "not_found", want 401 "unauthorized" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:192: email in body: HTTP 404 code "not_found", want 400 "invalid_json" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:199: wrong password: HTTP 404 code "not_found", want 403 "reauth_failed" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:201: reauth_failed message "Resource not found.", want "Your identity could not be confirmed."
+    reauth_http_test.go:204: service got bearer=false password="" locale="" ip=invalid IP
+    reauth_http_test.go:208: mail down: HTTP 404 code "not_found", want 503 "mail_unavailable" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:211: throttled: HTTP 404 code "not_found", want 429 "throttled" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:213: Retry-After "", want 90
+    reauth_http_test.go:216: dead session: HTTP 404 code "not_found", want 401 "unauthorized" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:221: start success: HTTP 404 body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        , want 200 {expires_at}
+--- FAIL: TestReauthRH01PasswordStartTransport (0.00s)
+=== RUN   TestReauthRH02PasswordCompleteTransport
+    reauth_http_test.go:234: no bearer: HTTP 404 code "not_found", want 401 "unauthorized" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:235: malformed code: HTTP 404 code "not_found", want 422 "invalid_code" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:240: wrong code: HTTP 404 code "not_found", want 422 "invalid_code" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:242: service got bearer=false code=""
+    reauth_http_test.go:245: throttled: HTTP 404 code "not_found", want 429 "throttled" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:249: complete success: HTTP 404 body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        , want 200 {authenticated_at} only
+--- FAIL: TestReauthRH02PasswordCompleteTransport (0.00s)
+=== RUN   TestReauthRH03OIDCTransport
+    reauth_http_test.go:263: start without bearer: HTTP 404 code "not_found", want 401 "unauthorized" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:266: oidc re-auth start: HTTP 404 body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+         bearer passed=false
+    reauth_http_test.go:273: re-auth callback: HTTP 401 body {"code":"unauthorized","message":"Sign-in required.","request_id":"…","retryable":false,"details":{}}
+        , want 200 {reauth:true, authenticated_at}
+    reauth_http_test.go:279: login/complete used the login-only Complete (1 calls), want CompleteLogin
+    reauth_http_test.go:284: refused re-auth callback: HTTP 401 code "unauthorized", want 403 "reauth_failed" (body {"code":"unauthorized","message":"Sign-in required.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:286: reauth_failed message "Sign-in required.", want "Your identity could not be confirmed."
+    reauth_http_test.go:293: login callback: HTTP 401 body {"code":"unauthorized","message":"Sign-in required.","request_id":"…","retryable":false,"details":{}}
+        , want 200 {token, expires_at}
+--- FAIL: TestReauthRH03OIDCTransport (0.00s)
+=== RUN   TestReauthRH04HTTPErrorCodes
+    reauth_http_test.go:315: reauth_required: HTTP 403 code "internal" message "Request could not be completed." retryable false
+    reauth_http_test.go:315: owner_role_disabled: HTTP 403 code "internal" message "Request could not be completed." retryable false
+    reauth_http_test.go:315: bank_transfer_closed: HTTP 422 code "internal" message "Request could not be completed." retryable false
+--- FAIL: TestReauthRH04HTTPErrorCodes (0.00s)
+=== RUN   TestReauthRH10SessionBindingOverHTTP
+    reauth_http_test.go:537: wrong password: HTTP 404 code "not_found", want 403 "reauth_failed" (body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:539: reauth_failed message "Resource not found.", want "Your identity could not be confirmed."
+    reauth_http_test.go:545: start on A: HTTP 404 body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+--- FAIL: TestReauthRH10SessionBindingOverHTTP (0.32s)
+=== RUN   TestReauthRH11ThrottleKeys
+    reauth_http_test.go:578: start: HTTP 404 body {"code":"not_found","message":"Resource not found.","request_id":"…","retryable":false,"details":{}}
+--- FAIL: TestReauthRH11ThrottleKeys (0.13s)
+=== RUN   TestReauthRH12StaffCodes
+    reauth_http_test.go:636: stale invite: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Only a store owner can manage the team.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:638: stale set-role: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Only a store owner can manage the team.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:640: stale remove: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Only a store owner can manage the team.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:643: owner invite: HTTP 403 code "forbidden", want 403 "owner_role_disabled" (body {"code":"forbidden","message":"Only a store owner can manage the team.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:645: owner set-role: HTTP 403 code "forbidden", want 403 "owner_role_disabled" (body {"code":"forbidden","message":"Only a store owner can manage the team.","request_id":"…","retryable":false,"details":{}}
+        )
+--- FAIL: TestReauthRH12StaffCodes (0.03s)
+=== RUN   TestReauthRH13GuardedDomainsEndToEnd
+    reauth_http_test.go:695: orders unshipped.csv: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Operation not permitted.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:695: finance summary.csv: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Operation not permitted.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:695: customer erasure: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Operation not permitted.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:695: bank transfer confirm: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Operation not permitted.","request_id":"…","retryable":false,"details":{}}
+        )
+    reauth_http_test.go:695: bank transfer refund-offline: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Operation not permitted.","request_id":"…","retryable":false,"details":{}}
+        )
+2026/10/27 08:54:20 INFO orders.export_unshipped store_id=0de8faf8-ffba-4e39-b3b2-a64c1a4c60c6 rows=0 truncated=false duration_ms=5
+--- FAIL: TestReauthRH13GuardedDomainsEndToEnd (0.04s)
+FAIL
+FAIL	livecommerce/tests/identityhttp	0.610s
+
+## Review round 1 RED: Gates run 40536880127, shard:unit job 122309094476, head fde4971c7 (tests only)
+=== RUN   TestReauthRH01PasswordStartTransport
+--- PASS: TestReauthRH01PasswordStartTransport (0.00s)
+=== RUN   TestReauthRH02PasswordCompleteTransport
+--- PASS: TestReauthRH02PasswordCompleteTransport (0.00s)
+=== RUN   TestReauthRH03OIDCTransport
+--- PASS: TestReauthRH03OIDCTransport (0.00s)
+=== RUN   TestReauthRH04HTTPErrorCodes
+--- PASS: TestReauthRH04HTTPErrorCodes (0.00s)
+=== RUN   TestReauthRH10SessionBindingOverHTTP
+--- PASS: TestReauthRH10SessionBindingOverHTTP (0.56s)
+=== RUN   TestReauthRH11ThrottleKeys
+--- PASS: TestReauthRH11ThrottleKeys (0.22s)
+=== RUN   TestReauthRH12StaffCodes
+--- PASS: TestReauthRH12StaffCodes (0.11s)
+=== RUN   TestReauthRH13GuardedDomainsEndToEnd
+    reauth_http_test.go:741: billing checkout: HTTP 403 code "forbidden", want 403 "reauth_required" (body {"code":"forbidden","message":"Operation not permitted.","request_id":"…","retryable":false,"details":{}}
+        )
+--- FAIL: TestReauthRH13GuardedDomainsEndToEnd (0.06s)
+FAIL
+FAIL	livecommerce/tests/identityhttp	1.054s
+(internal/httpapi: --- PASS: TestClassifyRawPT403ReauthCodes)

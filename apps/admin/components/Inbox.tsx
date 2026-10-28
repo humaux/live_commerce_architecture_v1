@@ -176,6 +176,7 @@ export function Inbox({
                 >
                   {[
                     "all",
+                    "unread",
                     "unreplied",
                     "messenger",
                     "instagram",

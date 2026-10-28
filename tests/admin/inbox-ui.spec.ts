@@ -112,6 +112,16 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   await expect(page.getByTestId(`conversation-${ids.instagram}`)).toHaveCount(0);
   await page.getByTestId("inbox-filter").selectOption("unreplied");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
+  // OC-12: the unread option reaches the real BFF/Go/PG chain as filter=unread (no 400); the open thread has an
+  // inbound message and read_seq 0 until it is opened below, so it is listed as unread.
+  const unreadList = page.waitForResponse(
+    (r) => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/stores/${store}/inbox/conversations`
+      && new URL(r.url()).searchParams.get("filter") === "unread",
+  );
+  await page.getByTestId("inbox-filter").selectOption("unread");
+  expect((await unreadList).status(), "filter=unread real BFF result").toBe(200);
+  await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
+  record("filter", "select unread", "A8 filter=unread answered 200 and lists the unread thread");
   await page.getByTestId("inbox-filter").selectOption("live_comment");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
   await page.getByTestId("inbox-filter").selectOption("all");

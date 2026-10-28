@@ -34,6 +34,7 @@ export function inboxRoute(method: string, path: string) {
 
 const filters = new Set([
   "all",
+  "unread",
   "unreplied",
   "messenger",
   "instagram",

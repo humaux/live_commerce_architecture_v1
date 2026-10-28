@@ -615,7 +615,9 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 			// 0200 (SA-1 settlement returns/reconciliation/payables) patches 0150/0163 functions in place and extends 0150's tables.
 			if filepath.Base(path) == skip || filepath.Base(path) == "0137_platform_stripe.sql" || filepath.Base(path) == "0022_platform_stripe.sql" ||
 				filepath.Base(path) == "0150_platform_settlement.sql" || filepath.Base(path) == "0163_settlement_resolve.sql" ||
-				filepath.Base(path) == "0200_settlement_returns_recon.sql" {
+				filepath.Base(path) == "0200_settlement_returns_recon.sql" ||
+				// 0203 / post_river/0028 (OC-03 re-auth guards) patch set_platform_stripe (0137) and the refund definers in place.
+				filepath.Base(path) == "0203_recent_auth_guards.sql" || filepath.Base(path) == "0028_recent_auth_refund_guard.sql" {
 				continue
 			}
 			body, err := os.ReadFile(path)
@@ -771,9 +773,10 @@ func slsUpgrade(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016, and 0150 (settlement ledger) plus
-	// 0163 (settlement-resolve) and 0200 (settlement returns) with them; the same Apply runs all seven.
-	if ledgerAfter != ledgerBefore+7 {
-		t.Fatalf("ledger grew by %d, want exactly 7 (0077, post_river/0016, 0137, post_river/0022, 0150, 0163 and 0200, once)", ledgerAfter-ledgerBefore)
+	// 0163 (settlement-resolve) and 0200 (settlement returns) with them, and 0203 / post_river/0028 (OC-03 re-auth guards, which patch
+	// 0137's set_platform_stripe in place); the same Apply runs all nine.
+	if ledgerAfter != ledgerBefore+9 {
+		t.Fatalf("ledger grew by %d, want exactly 9 (0077, post_river/0016, 0137, post_river/0022, 0150, 0163, 0200, 0203 and post_river/0028, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))
@@ -802,6 +805,10 @@ func slsUpgrade(t *testing.T) {
 			// 0137: the registry writer now resolves merchant access for set/read_platform_stripe.
 			if strings.HasPrefix(k, "identity.resolve_access(") {
 				got = strings.Replace(got, "commerce_payment_registry_writer:EXECUTE,", "", 1)
+			}
+			// 0203 (OC-03, merchant-password-auth-v1 §16): EXECUTE on require_recent_auth goes to the owner role of each guarded definer.
+			if strings.HasPrefix(k, "identity.require_recent_auth(") {
+				got = slsDropRecentAuthOwners(got)
 			}
 			if got != was {
 				t.Errorf("function %s changed owner/config/ACL:\n  before %s\n  after  %s", k, was, got)
@@ -867,6 +874,9 @@ func slsUpgrade(t *testing.T) {
 				ok = true
 				sawFn[obj] = true
 			}
+			if !ok && kind == "exec" && obj == "identity.require_recent_auth" && priv == "EXECUTE" && slsRecentAuthOwners[role] {
+				ok = true // 0203 (OC-03 §16): the guarded definers' owner roles, exactly these seven
+			}
 			if !ok && slsSettlementDelta(role, kind, obj, priv) {
 				ok = true // 0150 (settlement ledger) is applied by the same Apply; exact per-role sets, pinned from its own side by PF09
 			}
@@ -905,6 +915,23 @@ func slsUpgrade(t *testing.T) {
 			t.Fatalf("ledger rows with a checksum: %d", got)
 		}
 	})
+}
+
+// slsRecentAuthOwners are the owner roles of the definers 0203 / post_river/0028 guard; each gets EXECUTE on identity.require_recent_auth.
+var slsRecentAuthOwners = map[string]bool{"commerce_staff_writer": true, "commerce_payment_registry_writer": true, "commerce_checkout_writer": true,
+	"commerce_auth": true, "commerce_privacy_writer": true, "commerce_billing_writer": true, "commerce_ads_writer": true}
+
+// slsDropRecentAuthOwners removes the seven OC-03 EXECUTE grants from a functions() row (owner|secdef|config|acl,...).
+func slsDropRecentAuthOwners(row string) string {
+	i := strings.LastIndex(row, "|")
+	var keep []string
+	for _, a := range strings.Split(row[i+1:], ",") {
+		if role, ok := strings.CutSuffix(a, ":EXECUTE"); ok && slsRecentAuthOwners[role] {
+			continue
+		}
+		keep = append(keep, a)
+	}
+	return row[:i+1] + strings.Join(keep, ",")
 }
 
 // slsSettlementDelta recognises exactly the privileges migration 0150 (W4-S2 settlement ledger) adds, per role (Opus review P2-6: no wildcard):

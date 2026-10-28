@@ -101,6 +101,8 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 			"schema:identity:USAGE", "schema:integration:USAGE", "schema:payments:USAGE", "schema:control:USAGE", "schema:catalog:USAGE",
 			// §4.3: ads.put_capi_context resolves the buyer capability like customers.buyer_set_consent (buyer.resolve_scope)
 			"func:buyer.resolve_scope(p_hash bytea, p_store uuid):EXECUTE",
+			// OC-03 (merchant-password-auth-v1 §16): ads.approve_draft / ads.publish_draft call the recent-auth check in their own transaction.
+			"func:identity.require_recent_auth(p_hash bytea, p_window interval):EXECUTE",
 			// row (0080): attempt->order->owner columns and published-catalog columns (F17), named by table below
 			"schema:checkout:USAGE", "schema:storefront:USAGE", "schema:inventory:USAGE",
 			// 0113 / §4.4 attribution delta: domain-owner read seams, never source-table grants.

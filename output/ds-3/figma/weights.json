@@ -1,0 +1,152 @@
+{
+ "1401:58002": {
+  "name": "Label",
+  "fontName": {
+   "family": "Noto Sans SC",
+   "style": "Bold",
+   "variationSettings": {
+    "wght": 600
+   }
+  },
+  "fontWeight": 600,
+  "lineHeight": {
+   "unit": "PERCENT",
+   "value": 150
+  },
+  "segments": [
+   {
+    "fontWeight": 600,
+    "style": "Bold"
+   }
+  ],
+  "variation": {
+   "wght": 600
+  },
+  "openType": "n/a"
+ },
+ "4:12713": {
+  "name": "開始直播",
+  "fontName": {
+   "family": "Noto Sans SC",
+   "style": "Medium",
+   "variationSettings": {
+    "wght": 500
+   }
+  },
+  "fontWeight": 500,
+  "lineHeight": {
+   "unit": "PIXELS",
+   "value": 22
+  },
+  "segments": [
+   {
+    "fontWeight": 500,
+    "style": "Medium"
+   }
+  ],
+  "variation": {
+   "wght": 500
+  },
+  "openType": "n/a"
+ },
+ "4:12717": {
+  "name": "查看詳情",
+  "fontName": {
+   "family": "Noto Sans SC",
+   "style": "Medium",
+   "variationSettings": {
+    "wght": 500
+   }
+  },
+  "fontWeight": 500,
+  "lineHeight": {
+   "unit": "PIXELS",
+   "value": 22
+  },
+  "segments": [
+   {
+    "fontWeight": 500,
+    "style": "Medium"
+   }
+  ],
+  "variation": {
+   "wght": 500
+  },
+  "openType": "n/a"
+ },
+ "1394:103519": {
+  "name": "查看詳情",
+  "fontName": {
+   "family": "Noto Sans SC",
+   "style": "Medium",
+   "variationSettings": {
+    "wght": 500
+   }
+  },
+  "fontWeight": 500,
+  "lineHeight": {
+   "unit": "PIXELS",
+   "value": 22
+  },
+  "segments": [
+   {
+    "fontWeight": 500,
+    "style": "Medium"
+   }
+  ],
+  "variation": {
+   "wght": 500
+  },
+  "openType": "n/a"
+ },
+ "1401:38434": {
+  "name": "Label",
+  "fontName": {
+   "family": "Noto Sans SC",
+   "style": "Medium",
+   "variationSettings": {
+    "wght": 500
+   }
+  },
+  "fontWeight": 500,
+  "lineHeight": {
+   "unit": "PERCENT",
+   "value": 150
+  },
+  "segments": [
+   {
+    "fontWeight": 500,
+    "style": "Medium"
+   }
+  ],
+  "variation": {
+   "wght": 500
+  },
+  "openType": "n/a"
+ },
+ "4:12734": {
+  "name": "總覽",
+  "fontName": {
+   "family": "Noto Sans SC",
+   "style": "Medium",
+   "variationSettings": {
+    "wght": 500
+   }
+  },
+  "fontWeight": 500,
+  "lineHeight": {
+   "unit": "PIXELS",
+   "value": 22
+  },
+  "segments": [
+   {
+    "fontWeight": 500,
+    "style": "Medium"
+   }
+  ],
+  "variation": {
+   "wght": 500
+  },
+  "openType": "n/a"
+ }
+}
