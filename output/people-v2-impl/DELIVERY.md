@@ -392,3 +392,33 @@ Previous compiler receipts predate this edit. Current-head GREEN and independent
 acceptance remain PENDING; author assessment E0. No product completion claim.
 No new path outside PLAN.md. Rollback: revert the single formatter repair commit.
 Humaux store/canvas/coord unavailable; no shared-state update is claimed.
+
+## RELAY 2 · repair-head wait receipt (local, no evidence-only push)
+
+Head `d6e11ce5b82cf5d9e76789b2d4cdcae124eade93` pushed to PR #289.
+Foundation `40776603959` / job `123127418798` QUEUED; Gates `40776604067`
+PENDING. PR is MERGEABLE; GREEN and independent acceptance remain PENDING.
+WAIT_RUN: 40776603959,40776604067. Integrator relays these run conclusions in a
+fresh session. No local tests/servers/background processes or merge/auto-merge.
+
+## RELAY 3 · semantic colour repair (attempt 1 for this blocker)
+
+Current-head Foundation `40776603959` / job `123127418798` failed on
+`tests/ui/ds-hex-ratchet.test.mjs:87`: `customers.css` contains 10 literal hex
+colours against baseline 8; global total 388 against 386. Original assertion
+receipt: `evidence/relay3-foundation-failure.log`. This is a different blocker
+from the prior formatter assertion; no claim of overall Foundation success.
+
+Root cause: the signed PEOPLE-v2 styles added two literal white declarations.
+Replace those declarations with existing `--ds-on-primary` (action foreground)
+and `--ds-surface` (surface background). Both are `#fff` in the current globally
+imported `packages/ui/src/tokens.css`; selector order and all other style values
+are preserved. Tokens, tests, baselines, exemption lists and thresholds unchanged.
+Scope: planned `apps/admin/components/customers.css` and card evidence only.
+Rollback: revert this repair commit. No import/harness/browser ownership change.
+
+No local tests, servers or CI-gate scripts run. The skill context/diagnostic
+scripts are omitted because they are outside the card's local-check allowlist;
+the signed authority and current source were read directly. Humaux tools remain
+unavailable; no store/canvas/coord write is claimed. Author E0; repair-head CI and
+independent acceptance PENDING. No completion claim.

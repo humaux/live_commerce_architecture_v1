@@ -85,7 +85,7 @@
 .people-v2 .customers-search input { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
 .people-v2 .people-advanced { margin: 0 0 16px; color: var(--ui-muted); font-size: 13px; }
 .people-v2 summary { cursor: pointer; min-height: 44px; align-content: center; }
-.people-v2 [data-testid="customers-search-submit"], .people-v2 .people-view { background: var(--ui-primary); border-color: var(--ui-primary); color: #fff; }
+.people-v2 [data-testid="customers-search-submit"], .people-v2 .people-view { background: var(--ui-primary); border-color: var(--ui-primary); color: var(--ds-on-primary); }
 .people-v2 .people-result-count { font-size: 16px; margin: 20px 0 16px; }
 .people-v2 .people-profile { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--people-gap); align-items: start; }
 .people-v2 .people-primary { grid-column: 1; grid-row: 1; min-width: 0; }
@@ -96,7 +96,7 @@
 .people-v2 .people-facts p:last-child { margin-bottom: 0; }
 .people-v2 .people-event { display: block; line-height: 1.6; }
 .people-v2 .people-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.people-v2 .people-tabs a, .people-v2 .people-view { min-height: 44px; display: grid; place-items: center; padding: 8px 16px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); background: #fff; }
+.people-v2 .people-tabs a, .people-v2 .people-view { min-height: 44px; display: grid; place-items: center; padding: 8px 16px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); background: var(--ds-surface); }
 .people-v2 .customers-actions { display: grid; }
 .people-v2 .people-view { font-size: 14px; margin-top: 8px; }
 .people-v2 .orders-table.customers-table td { vertical-align: middle; }

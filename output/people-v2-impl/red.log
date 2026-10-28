@@ -73,3 +73,26 @@ CURRENT_TSC=NOT_RUN (dependencies unavailable; previous compiler result predates
 LOCAL_TESTS=NOT_RUN
 LOCAL_SERVERS=NOT_RUN
 GREEN=PENDING own repair-head CI
+
+RELAY_2_REPAIR_HEAD=d6e11ce5b82cf5d9e76789b2d4cdcae124eade93
+REPAIR_FOUNDATION_RUN=40776603959 QUEUED
+REPAIR_FOUNDATION_JOB=123127418798
+REPAIR_GATES_RUN=40776604067 PENDING
+GREEN=PENDING
+WAIT_RUN=40776603959,40776604067
+WAKEUP=integrator relays current-head conclusions in fresh session
+EVIDENCE_ONLY_PUSH=NOT_RUN; current wait receipts retained locally
+
+RELAY_3_VERIFIED=2026-10-29
+FAILED_IMPLEMENTATION_HEAD=d6e11ce5b82cf5d9e76789b2d4cdcae124eade93
+FAILED_FOUNDATION_RUN=40776603959
+FAILED_FOUNDATION_JOB=123127418798
+FAILED_ASSERTION=tests/ui/ds-hex-ratchet.test.mjs:87; customers.css 10 hex colours > baseline 8; total 388 > 386
+ROOT_CAUSE=two PEOPLE-v2 rules introduced literal white colours instead of existing semantic tokens
+REPAIR_ATTEMPT=1 (hex-colour blocker)
+REPAIR=use --ds-on-primary and --ds-surface; both resolve to the original white from globally imported tokens.css
+REPAIR_RECEIPT=evidence/relay3-foundation-failure.log
+TESTS_BASELINES_EXEMPTIONS=UNCHANGED
+LOCAL_TESTS=NOT_RUN
+LOCAL_SERVERS=NOT_RUN
+GREEN=PENDING own repair-head CI
