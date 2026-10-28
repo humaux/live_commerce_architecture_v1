@@ -598,9 +598,16 @@ try {
   const lostStart=calls.length,dropCheckout=arm("checkout",{method:"POST",drop:true,repeat:true});
   await lost.getByTestId("create-order").click();assert.equal(await dropCheckout.result.promise,200);await expect(lost.getByTestId("recover-purchase")).toBeVisible();hook=null;
   const lostPending=await stored(lost);assert.equal(lostPending.kind,"checkout");
+  await expect(lost.getByTestId("checkout-unknown")).toHaveText("Checking your order status");
+  await expect(lost.getByTestId("recover-purchase")).toHaveText("Check order status");
+  await expect(lost.getByTestId("checkout-submit")).toBeDisabled();
+  await expect(lost.getByTestId("create-order")).toHaveCount(0);
   await expect(lost.getByTestId("continue-shopping")).toHaveCount(0);
   assert.deepEqual(Object.keys(lostPending.body).sort(),["allocation_version","cart_version","destination_id","quote_id","service_version"]);
   await lost.reload();await expect(lost.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(lost),lostPending);
+  await expect(lost.getByTestId("checkout-unknown")).toHaveText("Checking your order status");
+  await expect(lost.getByTestId("recover-purchase")).toHaveText("Check order status");
+  await expect(lost.getByTestId("checkout-submit")).toBeDisabled();
   await lost.getByTestId("recover-purchase").click();await created(lost,q4);
   const replays=calls.slice(lostStart).filter(x=>x.path==="/api/buyer/checkout"&&x.method==="POST");assert(replays.length>=2);assert.equal(new Set(replays.map(x=>x.key)).size,1);assert.equal(new Set(replays.map(x=>x.body)).size,1);
   assert.equal(await stored(lost),null);await capture(lost,"mobile-order.png");

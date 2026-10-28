@@ -1,3 +1,7 @@
+// Purpose: home-COD lifecycle and CHECKOUT-V2-IMPL real-click browser acceptance.
+// Depends on: production Next/Go/isolated PG, Playwright, checkout-v2.mjs and shared browser helpers.
+// Used by: TestBrowserHomeCod in GitHub CI --browser-home-cod (MOCK only).
+// Invariants: existing lifecycle assertions stay intact; synthetic buyer data only, no PSP or carrier calls.
 // home-cod R5 buyer half (migration 0107; docs/delivery/units/home-cod.md). Real production storefront Next -> private buyerhttp ->
 // isolated PG, driven by tests/foundation/browser_home_cod_test.go (MOCK: no PSP, no carrier API on this path — cash on delivery is
 // collected by the carrier and recorded by the merchant).
@@ -24,6 +28,7 @@ import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs";
 import { reachCheckout } from "./shop-helpers.mjs";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
+import { checkoutV2Suite, checkoutV2Cod } from "./checkout-v2.mjs";
 
 const env = (name) => {
   const value = process.env[name];
@@ -208,6 +213,7 @@ async function place(buyer) {
   await expect(page.getByTestId("create-order")).toBeEnabled();
   await expect(page.getByTestId("create-order")).toHaveText(c.createCod);
   await expect(page.locator(".order-note").filter({ hasText: c.note })).toBeVisible(); // no online charge
+  await checkoutV2Cod(page, quote, locale, pii, surcharge, evidence);
   await shot(page, "checkout", locale, viewport);
   if (label === "order A") {
     // MOCK one definite provider refusal on the real checkout flow; no upstream order is created.
@@ -221,6 +227,7 @@ async function place(buyer) {
     }), { times: 1 });
     await page.getByTestId("create-order").click();
     await expect(page.getByTestId("cod-checkout-error")).toBeVisible();
+    await expect(page.getByTestId("quote-reconfirm")).toContainText("金額已更新，請再確認");
     await expect(page.getByTestId("create-order")).toBeDisabled();
     await expect.poll(() => optionReads).toBeGreaterThan(0);
     await page.getByTestId("confirm-address").click();
@@ -299,6 +306,7 @@ try {
     for (const s of [socket, upstream]) { sockets.add(s); s.on("close", () => sockets.delete(s)); s.on("error", () => { socket.destroy(); upstream.destroy(); }); }
   });
   browser = await launch({ headless: true, proxy: { server: `http://127.0.0.1:${await listen(proxy)}` } });
+  await checkoutV2Suite({ newContext, origin, product, recipient: pii, evidence });
 
   // ---- place -------------------------------------------------------------------------------------------------------------
   const plan = [
