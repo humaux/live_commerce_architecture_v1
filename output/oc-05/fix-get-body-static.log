@@ -1,0 +1,8 @@
+E1 static-only, 2026-10-29 (Asia/Shanghai)
+go build ./internal/quickstart ./internal/httpapi: exit 0
+go vet ./internal/quickstart ./tests/quickstart: exit 0
+gofmt -w tests/quickstart/quickstart_test.go: exit 0
+bash scripts/dev/depmap.sh: exit 0, generated output unchanged
+git diff --check: exit 0
+sha256 tests/quickstart/quickstart_test.go: 60e6f1de6f3a92e9fc16fdfa9d3b2397eaf2e4e8dde26c7e03f6dc3d48ea8ebe
+Local tests, servers, PG, browsers, containers: NOT_RUN
