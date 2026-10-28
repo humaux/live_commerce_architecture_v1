@@ -14,6 +14,7 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/pricing"
+	"livecommerce/internal/storefront"
 )
 
 type OptionsRequest struct {
@@ -263,6 +264,50 @@ func (s *Service) ListOptions(ctx context.Context, token, storeID string, in Opt
 		return pagination.Page[Option]{Items: []Option{}}, safeError(ctx, err)
 	}
 	return page, nil
+}
+
+// CodDue (OC-09b, contracts/buyer-http-v1.md quote amendment) is the cash the buyer pays on delivery for this quote: the stored
+// quote's total_minor plus the store's current whole-TWD COD surcharge — exactly what checkout.begin_hold snapshots as the COD order's
+// total_minor + cod_surcharge_minor (= cod_collect_minor). nil whenever begin_hold would refuse cash on delivery for this quote's
+// amount (switch off, not TWD/TW, not whole-TWD, outside NT$1..20,000, over the store cap). Home-only and the open-orders limit are
+// delivery/owner facts the quote does not carry: the option row's payment_modes and Begin still decide those. The quote is re-read
+// under the caller's tenant/store/owner scope (another owner's id is not found); the storefront never adds anything.
+func (s *Service) CodDue(ctx context.Context, token, storeID, quoteID string) (*int64, error) {
+	if ctx == nil || s == nil || s.pool == nil || !command.ValidID(quoteID) {
+		return nil, command.ErrInvalid
+	}
+	tokenHash := sha256.Sum256([]byte(token))
+	var due *int64
+	err := buyer.WithScope(ctx, s.pool, token, storeID, func(callCtx context.Context, tx pgx.Tx, scope buyer.Scope) error {
+		quote, err := storefront.GetQuote(callCtx, tx, scope, quoteID)
+		if err != nil {
+			return err
+		}
+		var cod codOffer
+		if err = tx.QueryRow(callCtx, `SELECT enabled,surcharge_twd,carrier,max_twd FROM checkout.read_cod_offer($1,$2::uuid)`,
+			tokenHash[:], storeID).Scan(&cod.enabled, &cod.surchargeTWD, &cod.carrier, &cod.maxTWD); err != nil {
+			return err
+		}
+		due = codDue(cod, quote.Currency, quote.Policy.Country, quote.Amount.TotalMinor)
+		return checkCapability(callCtx, tx, tokenHash[:], storeID, scope)
+	})
+	if err != nil {
+		return nil, safeError(ctx, err)
+	}
+	return due, nil
+}
+
+// codDue mirrors begin_hold's cash-on-delivery amount checks (post_river/0021): enabled, TWD in TW, whole-TWD total in 100..2,000,000
+// minor units, total + surcharge within max_twd. Change both together.
+func codDue(cod codOffer, currency, country string, totalMinor int64) *int64 {
+	if !cod.enabled || currency != "TWD" || country != "TW" || totalMinor%100 != 0 || totalMinor < 100 || totalMinor > 2000000 {
+		return nil
+	}
+	due := totalMinor + int64(cod.surchargeTWD)*100
+	if due > int64(cod.maxTWD)*100 {
+		return nil
+	}
+	return &due
 }
 
 // Official chain store-search pages shown next to the code field of a buyer_entered store (§16.1, retrieved 2026-09-30). They are

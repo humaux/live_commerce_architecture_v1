@@ -586,14 +586,14 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 			})
 		}
 		if err == nil {
-			out = projectQuote(out.(storefront.Quote))
+			out, err = h.quoteWithCodDue(ctx, token, storeID, out.(storefront.Quote))
 		}
 	case quoteRoute:
 		out, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (storefront.Quote, error) {
 			return storefront.GetQuote(c, tx, s, selected.id)
 		})
 		if err == nil {
-			out = projectQuote(out.(storefront.Quote))
+			out, err = h.quoteWithCodDue(ctx, token, storeID, out.(storefront.Quote))
 		}
 	case destinationRoute:
 		if r.Method == http.MethodGet {
@@ -780,4 +780,16 @@ func writeOK(w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(value)
+}
+
+// quoteWithCodDue projects a quote and adds the server-computed cod_due_minor (OC-09b) read through the checkout service under the
+// same buyer token and store; a failed read fails the request rather than showing a quote without its known due.
+func (h *handler) quoteWithCodDue(ctx context.Context, token, storeID string, quote storefront.Quote) (any, error) {
+	projected := projectQuote(quote)
+	due, err := h.checkout.CodDue(ctx, token, storeID, quote.ID)
+	if err != nil {
+		return nil, err
+	}
+	projected.CodDueMinor = due
+	return projected, nil
 }

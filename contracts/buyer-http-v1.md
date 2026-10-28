@@ -110,6 +110,13 @@ tests assert exact recursive JSON keys and preservation, not just denylist text.
   tax_minor,total_minor`. Quote amount: `subtotal_minor,discount_minor,
   shipping_minor,shipping_tax_minor,tax_minor,total_minor`. Empty lines is `[]`.
   Market/country/method come from its existing immutable policy snapshot.
+  Optional `cod_due_minor` (OC-09b amendment, 2026-10-28, owner choice OC-Q5): the cash due on delivery for this
+  quote = its `total_minor` + the store's current whole-TWD COD surcharge, i.e. what a `cash_on_delivery` order
+  placed from this quote records as `cod_collect_minor`. Computed by `checkout.Service.CodDue` under the same buyer
+  token/store (the quote is re-read in the owner's scope) on both POST quotes and GET quotes/{id}; absent whenever
+  begin_hold would refuse COD for the quote's amount (switch off, not TWD/TW, not whole TWD, outside NT$1..20,000,
+  over the store cap). Home-only and the open-orders limit stay with the option row's `payment_modes` and Begin.
+  The storefront shows it verbatim (checkout bottom bar 「到貨需付」) and never adds to it.
 - Destination workflow: `id,version,cart_id,cart_version,kind,country,
   recipient_name,phone,home_address,selected_at,expires_at`; optional `pickup`.
   Home address: `region,city,postal_code,line1,line2`. Pickup: `id,kind,namespace,
