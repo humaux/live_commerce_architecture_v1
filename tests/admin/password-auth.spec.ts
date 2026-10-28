@@ -208,9 +208,18 @@ for (const locale of locales) {
 
   test(`#245 ${locale}: aborted page chunks show loading then a native reload that recovers`, async ({ page }) => {
     let aborted = 0;
+    let continued = 0;
+    const seenChunkURLs = new Set<string>();
     await page.route(/\/_next\/static\/chunks\/.*\.js(?:\?|$)/, async (route) => {
-      aborted++;
-      await route.abort("failed");
+      const chunkURL = route.request().url().split("?")[0];
+      if (!seenChunkURLs.has(chunkURL)) {
+        seenChunkURLs.add(chunkURL);
+        aborted++;
+        await route.abort("failed");
+      } else {
+        await route.continue();
+        continued++;
+      }
     });
     await page.goto(`/${locale}/?recovery=1`, { waitUntil: "domcontentloaded" });
     expect(aborted, "page JavaScript chunks were actually aborted").toBeGreaterThan(0);
@@ -223,11 +232,11 @@ for (const locale of locales) {
     const reload = page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true });
     await expect(reload).toBeHidden();
     await expect(reload).toBeVisible({ timeout: 15_000 });
-    await page.unrouteAll({ behavior: "wait" });
     const currentURL = page.url();
     await Promise.all([page.waitForEvent("load"), reload.click()]);
     expect(page.url()).toBe(currentURL);
     await hydrated(page);
+    expect(continued, "previously aborted page JavaScript chunks were requested again and continued").toBeGreaterThan(0);
     await expect(emailInput(page)).toBeEnabled();
     await expect(status).toHaveCount(0);
     await expect(reload).toHaveCount(0);
