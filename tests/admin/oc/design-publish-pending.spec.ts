@@ -18,17 +18,21 @@ const c = designCopy.en;
 const okPublished = new RegExp(c.okPublished.replace("{n}", "\\d+"));
 test.use({ baseURL: origin });
 
-type Cut = "none" | "after-commit" | "before-commit";
+type Cut = "none" | "after-commit" | "before-commit" | "held-after-commit";
 async function open(page: Page) {
   const publishes: { key: string | undefined; body: string | null }[] = [];
   const writes: string[] = [];
-  const state = { cut: "none" as Cut };
+  const state = { cut: "none" as Cut, release: () => {} };
   await page.route("**/design/publish", async (route: Route) => {
     const req = route.request();
     publishes.push({ key: req.headers()["idempotency-key"], body: req.postData() });
     if (state.cut === "after-commit") {
       await route.fetch(); // Go commits...
       await route.abort("connectionreset"); // ...but the browser never hears
+    } else if (state.cut === "held-after-commit") {
+      await route.fetch(); // Go commits, then the answer is held back while the test reloads the page
+      await new Promise<void>((resolve) => (state.release = resolve));
+      await route.abort("connectionreset").catch(() => {}); // the page that asked is gone
     } else if (state.cut === "before-commit") await route.abort("connectionreset"); // never reached Go
     else await route.continue();
   });
@@ -111,4 +115,35 @@ test("OC11 old publish row of the same draft version never confirms a new lost p
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
   await expect(page.getByTestId("design-publish")).toBeDisabled();
   await expect(page.getByTestId("design-note"), "no success note of any kind").toHaveCount(0);
+});
+
+test("OC11 reload while the publish request is in flight: pending is armed before the request, no second publish", async ({ page }) => {
+  const { publishes, state } = await open(page);
+  state.cut = "held-after-commit";
+  await edit(page, "d");
+  await page.getByTestId("design-publish").click();
+  await expect.poll(() => publishes.length, { message: "the publish request left the page" }).toBe(1);
+  await page.reload(); // Go has committed, the answer has not come back: this is still UNKNOWN
+  await expect(page.getByTestId("design-publish-pending"), "OC11-A9 pending armed before the request").toContainText(c.publishPending);
+  await expect(page.getByTestId("design-publish")).toBeDisabled();
+  state.release();
+  await page.getByTestId("design-publish-recheck").click();
+  await expect(page.getByTestId("design-note")).toContainText(okPublished);
+  expect(publishes, "OC11-A10 the publish POST count stays 1").toHaveLength(1);
+});
+
+test("OC11 stale versions list: confirmed publish, failed refresh, second publish aborted before commit never shows success", async ({ page }) => {
+  const { state } = await open(page);
+  await page.route("**/design/versions", (route) => route.abort("connectionreset")); // every versions read fails from here on
+  await edit(page, "e");
+  await page.getByTestId("design-publish").click(); // real publish; its answer arrives, the list refresh after it fails
+  await expect(page.getByTestId("design-note")).toContainText(okPublished);
+  state.cut = "before-commit"; // the same draft again; nothing commits
+  await page.getByTestId("design-publish").click();
+  await expect(page.getByTestId("design-publish-pending")).toContainText(c.publishPending);
+  await page.unroute("**/design/versions");
+  await page.getByTestId("design-publish-recheck").click();
+  await expect(page.getByTestId("design-publish-notyet"), "OC11-A11 the first (confirmed) publish row must not confirm the second").toBeVisible();
+  await expect(page.getByTestId("design-publish-pending")).toBeVisible();
+  await expect(page.getByTestId("design-note")).toHaveCount(0);
 });
