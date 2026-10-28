@@ -11,7 +11,8 @@
 // Merchant orders page (approved C inline row). BFF: GET /api/stores/{store}/orders[/{id}] and order-actions
 // -> Go internal/httpapi/orders.go + shipments.go. The refund and shipment sections live in OrderRefunds /
 // OrderShipment (their BFF routes are listed there); the export button is a plain GET download of
-// orders/unshipped.csv streamed by the BFF from Go, never fetched into JS memory. The CVS section (OrderCvsShipment:
+// orders/unshipped.csv streamed by the BFF from Go; ReauthDialog sends that control through its shared re-auth download path.
+// The CVS section (OrderCvsShipment:
 // BFF orders/{id}/cvs-shipment*, collection, pay-at-pickup-release -> Go internal/httpapi/cvs.go) sits next to the
 // 0063 section in the same inline row; the list filter `cvs_pending` is one more state in the existing filter.
 // Live feel (ops-polish OP2): while the tab is visible the first page is re-read from the same list route every POLL_MS; ids not seen
