@@ -1,4 +1,9 @@
+// Purpose: Supported locales, shared seller messages and validated locale-aware URL helpers.
+// Depends on: state-recovery copy; no runtime, network or storage dependency.
+// Used by: admin/storefront routes, shared UI callers and locale tests.
+// Invariants: only supported locales and validated local paths can enter generated URLs.
 export const locales = ['zh-CN', 'zh-TW', 'en'] as const;
+export { stateRecoveryCopy } from './state-recovery.ts';
 export type Locale = (typeof locales)[number];
 
 export const localeNames: Record<Locale, string> = {

@@ -9,6 +9,7 @@ import { runInNewContext } from "node:vm";
 import { test } from "node:test";
 import ts from "typescript-api";
 import * as logic from "../../packages/ui/src/ds/logic.ts";
+import { stateRecoveryCopy } from "../../packages/i18n/src/state-recovery.ts";
 const app = createRequire(new URL("../../apps/admin/package.json", import.meta.url));
 const React = app("react");
 const { renderToStaticMarkup } = app("react-dom/server");
@@ -33,6 +34,37 @@ const { MenuButton, DataTable } = load("./Data");
 const { UploadGrid, EmptyState, StatePanel, InlineError } = load("./States");
 const el = React.createElement;
 const html = node => renderToStaticMarkup(node);
+
+// Compile the actual gallery caller, rather than asserting against an unused StatePanel prop.
+const galleryState = {};
+runInNewContext(ts.transpileModule(readFileSync("apps/admin/src/ui-gallery-state.ts", "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS },
+}).outputText, { exports: galleryState, require: app });
+const galleryRecovery = {};
+runInNewContext(ts.transpileModule(readFileSync("apps/admin/components/UiGalleryRecovery.tsx", "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+}).outputText, { exports: galleryRecovery, require: name => {
+  if (name === "@live-commerce/ui/ds") return load("./States");
+  if (name === "@live-commerce/i18n") return { stateRecoveryCopy };
+  if (name === "../src/ui-gallery-state") return galleryState;
+  return app(name);
+} });
+
+test("forbidden caller renders safe localized copy even when the actual failure contains a resource identifier", () => {
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    const c = stateRecoveryCopy[locale];
+    const out = html(el(galleryRecovery.GalleryForbidden, {
+      locale, href: `/${locale}/ui-gallery`,
+      failure: { status: 403, message: "Access denied to private-order-123", resourceName: "private-order-123" },
+    }));
+    // Assert the actual rendered slots, including the full text content, not a discarded prop.
+    assert.doesNotMatch(out, /private-order-123|Access denied to/);
+    assert.match(out, new RegExp(`<h2[^>]*>${c.forbidden}</h2>`));
+    assert.ok(out.includes(c.forbiddenBody));
+    assert.ok(out.includes(c.forbiddenNote));
+    assert.equal(out.replace(/<[^>]*>/g, ""), c.forbidden + c.forbiddenBody + c.forbiddenNote + c.back);
+  }
+});
 
 test("icons: fixed optical box, stroke, sizes and decorative semantics; labelled variant has a title", () => {
   for (const name of ["dashboard", "orders", "live", "messages", "products", "customers", "marketing", "store", "analytics", "settings", "chevronRight", "chevronDown", "search", "close", "check", "alert", "info", "warning", "danger", "upload", "image", "more", "plus", "externalLink", "help", "bell", "user", "spinner"]) {
