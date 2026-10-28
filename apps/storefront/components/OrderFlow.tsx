@@ -1,7 +1,7 @@
 "use client";
 
 // Purpose: confirmed-address checkout and current order details, with stable layout while delivery facts load.
-// Depends on: purchase.ts CAS/recovery, buyer BFF destination/options/orders routes, payment and fulfilment components.
+// Depends on: purchase.ts CAS/recovery, buyer BFF routes, CheckoutReview/CheckoutPaymentChoices and payment/fulfilment components.
 // Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
 // Invariants: submit remains gated by destination, server quote and explicit changed-total acknowledgment; money is never added here.
 // Local extension of approved B: native address form after the real quotation;
@@ -30,6 +30,7 @@ import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { codCopy } from "../lib/cod-copy";
 import { checkoutCopy } from "../lib/checkout-copy";
 import CheckoutReview from "./checkout/CheckoutReview";
+import CheckoutPaymentChoices from "./checkout/CheckoutPaymentChoices";
 import { countryName } from "../lib/country-name";
 import {
   isTransferErrorCode,
@@ -543,49 +544,15 @@ export default function OrderFlow({
       {codError && <p role="alert" data-testid="cod-checkout-error">{codError}</p>}
       {quote && <CheckoutReview locale={locale} quote={quote} destination={confirmed ?? head} fee={codFee} timing={timing}
         method={paymentMode === "bank_transfer" ? bank.payBank : paymentMode === "cash_on_delivery" ? cod.orderTitle : paymentMode === "pay_at_pickup" ? cvsCopy[locale].createPickup : bank.payCard}>
-          {!cvsOption && option && (
-            <fieldset disabled={busy || blocked || expired} className="sku-options wide" data-testid="home-payment-mode">
-              <legend>{bank.paymentLegend}</legend>
-              {paymentChoices.map((mode) => (
-                // Keep the existing native radio and selected-state affordance in the final review.
-                <label
-                  key={mode}
-                  className={mode === paymentMode ? "sku-row selected" : "sku-row"}
-                  style={{ display: "flex", gap: 16, minHeight: 44 }}
-                >
-                  <input
-                    type="radio"
-                    name="home_payment_mode"
-                    style={{ width: 20, height: 20, padding: 0, flex: "none" }}
-                    value={mode}
-                    checked={mode === paymentMode}
-                    onChange={() => {
-                      try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote!.id}`, mode); }
-                      catch { setOption(null); setNotice("failed"); return; }
-                      setPaymentMode(mode);
-                      setConfirmed(null);
-                      setTransferError(null);
-                      setCodError(null);
-                    }}
-                  />
-                  <span>
-                    {mode === "bank_transfer"
-                      ? bank.payBank
-                      : mode === "cash_on_delivery"
-                        ? cod.codLabel(
-                            quote
-                              ? money(quote.amount.total_minor, quote.currency)
-                              : "",
-                            option && option.cod_surcharge_minor
-                              ? money(option.cod_surcharge_minor, option.currency)
-                              : null,
-                          )
-                        : bank.payCard}
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-          )}
+          {!cvsOption && option && <CheckoutPaymentChoices locale={locale} quote={quote} option={option} modes={paymentChoices}
+            selected={paymentMode} disabled={busy || blocked || expired} money={money} onChange={(mode) => {
+              try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, mode); }
+              catch { setOption(null); setNotice("failed"); return; }
+              setPaymentMode(mode);
+              setConfirmed(null);
+              setTransferError(null);
+              setCodError(null);
+            }} />}
       </CheckoutReview>}
       {/* Why the button below is disabled, in words (never colour alone): the address must be confirmed first. */}
       {needsConfirm && (

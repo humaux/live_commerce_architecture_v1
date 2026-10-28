@@ -32,7 +32,6 @@ export default function CheckoutReview({ locale, quote, destination, fee, timing
           : [destination.home_address.region, destination.home_address.city, destination.home_address.postal_code, destination.home_address.line1, destination.home_address.line2].filter(Boolean).join(" · ")}</p>
       </>}
       {children}
-      {!children && <label className="sku-row selected" style={{ minHeight: 44 }}><input type="radio" checked readOnly disabled aria-label={method} />{method}</label>}
       <p>{c.payment} · {method}</p>
       <p>{timing}</p>
       {!readOnly && <><button type="button" data-testid="payment-help-toggle" aria-expanded={open} aria-controls="payment-help-content"

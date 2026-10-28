@@ -1,7 +1,7 @@
 "use client";
 
 // Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
-// Depends on: buyer BFF cart/options/quotes/destination/checkout/orders and purchase recovery; lib/cod-copy codFooter (OC-09b bottom bar).
+// Depends on: buyer BFF/recovery, CheckoutQuoteAmounts, checkout-copy and codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
 // Invariants: server money only; a changed quote needs acknowledgment; an unknown checkout can only replay its original intent/key.
 
@@ -29,6 +29,7 @@ import { codFooter } from "../lib/cod-copy";
 import { checkoutCopy } from "../lib/checkout-copy";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
 import CheckoutPendingReview from "./checkout/CheckoutPendingReview";
+import CheckoutQuoteAmounts from "./checkout/CheckoutQuoteAmounts";
 import PromoCode from "./PromoCode";
 import OrderHistory from "./OrderHistory";
 import { CartLines } from "./CartLines";
@@ -38,7 +39,6 @@ import { checkoutPath } from "../lib/routes";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { freeShippingProgress } from "../lib/shop-contract";
 import { formatMoney } from "../lib/money";
-import { displayTime } from "../../../packages/format/src/index";
 import Link from "next/link";
 import { claimCopy } from "../lib/claim-copy";
 import { historyCopy } from "../lib/history-copy";
@@ -401,6 +401,7 @@ export default function CheckoutFlow({
   return (
     <>
       <style>{`
+        body:has(.checkout-fixed-bar) .sf-footer { padding-bottom: calc(${footerHeight + 40}px + env(safe-area-inset-bottom, 0px)); }
         @media (max-width: 600px) {
           .checkout-fixed-bar .footer-inner { grid-template-columns: minmax(0, 1fr); gap: 8px; }
           .checkout-fixed-bar .footer-inner > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; }
@@ -638,48 +639,7 @@ export default function CheckoutFlow({
                 aria-labelledby="quote-title"
               >
                 <h2 id="quote-title">{copy.lines}</h2>
-                <ul>
-                  {quote.lines.map((line) => (
-                    <li key={line.sku_id}>
-                      <span>
-                        {line.name} · {line.code} × {line.quantity}
-                      </span>
-                      <span>
-                        {money(
-                          line.unit_price_minor * line.quantity,
-                          quote.currency,
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <dl>
-                  <div>
-                    <dt>{copy.shipping}</dt>
-                    <dd>
-                      {money(quote.amount.shipping_minor, quote.currency)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>{copy.taxes}</dt>
-                    <dd>{money(quote.amount.tax_minor, quote.currency)}</dd>
-                  </div>
-                  <div>
-                    <dt>{copy.discount}</dt>
-                    <dd>
-                      {money(quote.amount.discount_minor, quote.currency)}
-                    </dd>
-                  </div>
-                  <div className="total">
-                    <dt>{copy.orderTotal}</dt>
-                    <dd>{money(quote.amount.total_minor, quote.currency)}</dd>
-                  </div>
-                </dl>
-                <p>
-                  {copy.expires}{" "}
-                  {displayTime(locale, quote.expires_at)} · {copy.taipeiTime}
-                </p>
-                <p>{copy.noPayment}</p>
+                <CheckoutQuoteAmounts quote={quote} locale={locale} money={money} />
                 {/* storefront-v2 §F: discount code; re-quotes this cart + delivery through writePurchase and replaces the quote. */}
                 {!orderLocked && error !== "session" && (
                   <PromoCode context={context} quote={quote} locale={locale} busy={busy || pending} run={act} onQuote={acceptQuote} money={money} />

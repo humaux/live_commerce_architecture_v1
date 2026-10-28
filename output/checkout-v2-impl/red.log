@@ -27,3 +27,11 @@ job122784411546 bundle02: TestBrowserBuyerOrderUI / browser.log fails added BO05
 Raw artifacts gate-browser-home-cod12818385680 and gate-browser-order12819118918 retained locally in red-cod/ and red-order/.
 Foundation40665214376 job122737878511 independently fails gate-waits.test.mjs on checkout-v2.mjs quoted promise wait; sanctioned Promise.all correction included with implementation, assertions retained.
 No GREEN claimed. No local tests/server.
+
+Fix-1 original implementation CI failures read 2026-10-29:
+PR head8c096b508; tested mergefaf6278d4b99db75352c529061c0a25c88bbfd7c.
+Foundation40714216294 job122907355910: actual G-UI3/G-UI5 line-count failures CheckoutFlow839>0 and OrderFlow880>854 (not a hard-coded-string assertion).
+Gates40714216874 job122974825473: buyer/order footer locale link clicks intercepted by fixed bar; claim-checkout strict radio locator sees both real CVS group and fake summary radio.
+Gates40714216874 job122974825642: promotions-gate254 create-order disabled because changed total not yet explicitly confirmed.
+Preserved raw failed logs and relevant browser artifact text; fix1 DELIVERY details retrieval limits.
+Fix-1 is one repair batch after recorded causal tests-only RED; no assertion weakening or extra local verification.

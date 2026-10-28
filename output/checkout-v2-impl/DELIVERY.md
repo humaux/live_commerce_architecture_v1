@@ -24,7 +24,7 @@ Static commands: node --check tests/storefront/checkout-v2.mjs, home-cod-buyer.m
 
 Next: read exact implementation SHA's Gates/Foundation runs. Integrator relays a fresh session when runs conclude; bounded observation <=10 minutes, no detached local process, no manual re-dispatch. Workflow timeout/failure conclusions are wake-up conditions. GREEN run/jobs remain PENDING; never infer GREEN from this delivery.
 
-Scope question pending: promotions-gate.mjs currently applies a changed quote then submits without the new acknowledgment. A single ADD-only real acknowledgment click is needed there, preserving every old assertion. It remains untouched pending integrator write-path ruling; this is a known compatibility risk, not claimed green. No other module is changed.
+Historical scope question (implementation batch): promotions-gate.mjs needed a changed-total acknowledgment click. The fix-1 dispatch now authorizes ADD-only confirmation adaptation; see the fix-1 section below.
 
 ## Required desktop / mobile / review parity
 
@@ -103,3 +103,24 @@ Applied the supplied ux-audit-ref/FIGMA-GUIDE.md (read2026-10-28): G1 auto-layou
 ## NOT_RUN and cleanup
 
 Local tests/servers/browser/PG/race/vet/builds: NOT_RUN. GREEN: PENDING. Independent review, SANDBOX/LIVE provider, production, real buyer acceptance, new Figma Present/copy-lint/density acceptance: NOT_RUN. No temporary process remains. Read-only dependency symlink is removed after final tsc; retained evidence includes failed CI artifacts, source design PNGs and red.log. Rollback: revert this card's commits; no other worktree or main checkout is mutated.
+
+## PR273 fix-1 — 2026-10-29 (CI acceptance PENDING)
+
+Authority: integrator cxf-273-fix.md and original cxf-checkout-v2-impl.md; AGENTS.md; 架构.md §§0/1/2/26/27; buyer-checkout-v1 and checkout-quote-validation-v1. Same UI/UX design and three-language/parity/process contract above; no redesign or Figma writes. Delegated worker only; no recursive delegation or separate task claim. Current source hashes: fix1-hashes.txt. This batch first merged origin/r3/integration without conflicts (merge816030165a0681ae45de3b4e51b6f8b0045dd9c9, including required co-author trailer).
+
+Read every failed PR job. Original implementation head8c096b508db6cc99899bf0f5d9731f83a96b5655 was tested as merge faf6278d4b99db75352c529061c0a25c88bbfd7c:
+
+| Failed job | Observed root cause | Fix / unchanged acceptance |
+|---|---|---|
+| Foundation40714216294 /122907355910 | G-UI3/G-UI5 actual error is line-count ratchet: CheckoutFlow839>0, OrderFlow880>854; the dispatch's hard-coded-string diagnosis was inaccurate | Extract only quotation display and native payment choices into checkout siblings; CheckoutFlow798 lines, OrderFlow846 lines. No allowance/baseline or gate edits. Checkout v2 strings now live once in packages/i18n/src/checkout.ts with zh-TW/zh-CN/en; existing storefront import facade retained. |
+| Gates40714216874 /122974825473 WebKit buyer + order | browser-gate228 and shop-helpers31 language links are visible but fixed bar intercepts clicks | Reserve the measured bar height after site-footer content, scoped to pages containing the bar. Existing real-click locale assertions unchanged. |
+| Same WebKit job, claim-checkout | strict radio locator resolves to CVS picker and a second disabled summary radio | Remove the fake read-only fallback radio; keep original selectable CVS group and summary method/timing text. All claim-checkout assertions unchanged. |
+| Gates40714216874 /122974825642 bundle05 promotions | promotions-gate254 expects create-order enabled after changed quote, but has not acknowledged the new total | ADD one real quote-reconfirm button click before existing confirm-address click. Every pre-existing assertion is verbatim and in order. |
+
+Evidence: fix1-foundation.log / fix1-webkit.log / fix1-bundle05.log are raw job logs. gh run view --log-failed --job read Foundation; it refuses logs for a still-running Gates workflow, so the completed jobs were read through gh api actions/jobs/<id>/logs. Browser artifact12838715776 was slow; complete relevant buyer/order/claim browser.log entries were extracted from the downloading archive before a later incomplete entry caused tar's decompression error. Each retained log ends at Node's final error; the partial archive is not claimed complete, and the owned download was terminated after extracting required logs. Promotions artifact12840603221 downloaded in full. Retained logs pinpoint the above failures; no local browser, tests or servers ran.
+
+Static E1: node --check promotions-gate.mjs, strict tsc --noEmit --incremental false, git diff --check all exit0 (fix1-static.log). Initial tsc without app dependency links was unavailable; read-only existing dependency links resolved it, with no install or build. Component import impact search found only cod-footer.spec.ts and oc09b_cod_due_test.go source-reading assertions; neither compiles these components with a custom import harness, so no harness allowlist change was needed. Browser ownership regenerated with the mandated derive-browser-ownership.mjs (53 modes) after merging integration, because storefront test hashes changed. No Go dependency changes; dependency-map generation unnecessary.
+
+Source scope: two new checkout siblings, CheckoutFlow, previously authorized OrderFlow, CheckoutReview and storefront copy facade. packages/i18n/src/checkout.ts is explicitly required by this fix dispatch. Relative to the original card, promotions-gate.mjs (ADD-only confirm adaptation) and generated output/ci-select-backend-browser/browser-ownership.json must be reviewed by the integrator as the declared path extension. Evidence lives under output/checkout-v2-impl. All original next-startup gate assertions, fixtures, ceilings, exemptions, contractdrift baseline and route-table dispatchers remain unchanged.
+
+Fix-1 gate: this PR's own exact-head Foundation + Gates, including original buyer/order/claim language/radio clicks, promotions confirmation, checkout3locale and persistence suites. Existing recorded causal RED is retained; this is the single authorized repair batch, not a new tests-only cycle. Author assessment E0, static E1; GREEN/independent review remain PENDING. NOT_RUN: local tests/server/browser/Go/PG/runtime gates, SANDBOX/LIVE/provider/production, runtime density and new Figma work. Integrator relays a fresh session on the new workflow conclusions; bounded CI observation <=10min and no detached process. Rollback: revert this fix commit; no production changes.

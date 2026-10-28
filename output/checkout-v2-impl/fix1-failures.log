@@ -1,0 +1,351 @@
+PR273 fix1 failed CI raw excerpts; PR head8c096b508; tested mergefaf6278d4b99db75352c529061c0a25c88bbfd7c.
+
+Foundation40714216294 job122907355910
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.7966675Z ✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (667.448744ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.7967822Z ✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.767741ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8164931Z ✔ Readiness jump controls expose the actual active section, not a click flag (0.944218ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8165811Z ✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.278561ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8167453Z ✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.419535ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8168334Z ✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.599036ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8169142Z ✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.636095ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8169824Z ✔ G-UI1 copy key parity: no missing or extra key in any locale (0.19181ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8170525Z ✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.335147ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8171621Z ✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (45.111255ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8172325Z ✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.738817ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8172958Z ✔ W6-U2 ledger is a settings in-page route, preserving existing navigation (0.341156ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8174001Z ✔ Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false (0.418263ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8174554Z ℹ tests 13
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8174762Z ℹ suites 0
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8174972Z ℹ pass 12
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8175175Z ℹ fail 1
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8175392Z ℹ cancelled 0
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8175612Z ℹ skipped 0
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8175820Z ℹ todo 0
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8176065Z ℹ duration_ms 872.752991
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8178705Z 
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8179089Z ✖ failing tests:
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8179399Z 
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8179672Z test at tests/admin/shell-architecture.test.mjs:10:1
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8180183Z ✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (667.448744ms)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8180583Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8180836Z   + actual - expected
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8180978Z   
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8181089Z   + [
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8181314Z   +   'apps/storefront/components/CheckoutFlow.tsx: lines 839 > 0',
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8181732Z   +   'apps/storefront/components/OrderFlow.tsx: lines 880 > 854'
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8181924Z   + ]
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8182037Z   - []
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8182147Z   
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8182704Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shell-architecture.test.mjs:11:10)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8183180Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8183463Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8183970Z       at Test.start (node:internal/test_runner/test:1262:17)
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8184405Z       at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8184669Z     generatedMessage: true,
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8184838Z     code: 'ERR_ASSERTION',
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8185532Z     actual: [ 'apps/storefront/components/CheckoutFlow.tsx: lines 839 > 0', 'apps/storefront/components/OrderFlow.tsx: lines 880 > 854' ],
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8185869Z     expected: [],
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8186039Z     operator: 'deepStrictEqual',
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8186202Z     diff: 'simple'
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8186326Z   }
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8248249Z ##[error]Process completed with exit code 1.
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8338166Z Post job cleanup.
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.8963488Z [command]/usr/bin/git version
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9028353Z git version 2.56.0
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9053579Z Temporarily overriding HOME='/home/runner/work/_temp/ed772a2c-c54a-4e08-82aa-3381b6e74d13' before making global git config changes
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9054582Z Adding repository directory to the temporary git global config as a safe directory
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9057841Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9094868Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9129016Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9368425Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9408846Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9647909Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+foundation	UNKNOWN STEP	2026-10-28T15:59:28.9687212Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+foundation	UNKNOWN STEP	2026-10-28T15:59:29.0028028Z Cleaning up orphan processes
+
+Gates40714216874 job122974825473 buyer:
+browser engine: webkit
+(node:9928) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS multi-tab initialization reuses one context; HttpOnly cookie absent from JS
+PASS actual catalog/options/cart/quote/home/checkout/order; cross-instance replay
+PASS Next process restart preserves cookie and real-PG order
+PASS reset denies stale-tab write; logout leaves inert cookie
+PASS definite local422 clears pending journal and permits explicit retry
+PASS lost prepare before headers stays fail-closed without remint
+PASS abort after Set-Cookie headers recovers same prepared context
+PASS tab death releases Web Lock; another tab reconciles persisted journal
+PASS lost activation response reads committed session without duplicate issue
+PASS logout retires token before delayed activation from closed tab
+PASS cross-origin, private authority injection, malformed/forged inputs rejected
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('footer a[hreflang="en"]')
+    - locator resolved to <a lang="en" hreflang="en" href="/en/checkout">English</a>
+  - attempting click action
+    - waiting for element to be visible, enabled and stable
+    - element is visible, enabled and stable
+    - scrolling into view if needed
+    - done scrolling
+    - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+  - retrying click action
+    - waiting for element to be visible, enabled and stable
+    - element is visible, enabled and stable
+    - scrolling into view if needed
+    - done scrolling
+    - <button class="primary">選擇配送</button> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+  - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+    - retrying click action
+      - waiting 100ms
+    14 × waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+     - retrying click action
+       - waiting 500ms
+       - waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <button class="primary">選擇配送</button> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+     - retrying click action
+       - waiting 500ms
+       - waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+     - retrying click action
+       - waiting 500ms
+       - waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+     - retrying click action
+       - waiting 500ms
+
+    at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/browser-gate.mjs:228:47 {
+  log: [
+    `  - waiting for locator('footer a[hreflang="en"]')`,
+    '    - locator resolved to <a lang="en" hreflang="en" href="/en/checkout">English</a>',
+    '  - attempting click action',
+    '    - waiting for element to be visible, enabled and stable',
+    '    - element is visible, enabled and stable',
+    '    - scrolling into view if needed',
+    '    - done scrolling',
+    '    - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '  - retrying click action',
+    '    - waiting for element to be visible, enabled and stable',
+    '    - element is visible, enabled and stable',
+    '    - scrolling into view if needed',
+    '    - done scrolling',
+    '    - <button class="primary">選擇配送</button> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '  - retrying click action',
+    '    - waiting 20ms',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is visible, enabled and stable',
+    '      - scrolling into view if needed',
+    '      - done scrolling',
+    '      - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '    - retrying click action',
+    '      - waiting 100ms',
+    '    14 × waiting for element to be visible, enabled and stable',
+    '       - element is visible, enabled and stable',
+    '       - scrolling into view if needed',
+    '       - done scrolling',
+    '       - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '     - retrying click action',
+    '       - waiting 500ms',
+    '       - waiting for element to be visible, enabled and stable',
+    '       - element is visible, enabled and stable',
+    '       - scrolling into view if needed',
+    '       - done scrolling',
+    '       - <button class="primary">選擇配送</button> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '     - retrying click action',
+    '       - waiting 500ms',
+    '       - waiting for element to be visible, enabled and stable',
+    '       - element is visible, enabled and stable',
+    '       - scrolling into view if needed',
+    '       - done scrolling',
+    '       - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '     - retrying click action',
+    '       - waiting 500ms',
+    '       - waiting for element to be visible, enabled and stable',
+    '       - element is visible, enabled and stable',
+    '       - scrolling into view if needed',
+    '       - done scrolling',
+    '       - <small>運費於下一步確認</small> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '     - retrying click action',
+    '       - waiting 500ms'
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.22.1
+
+Gates40714216874 job122974825473 order:
+browser engine: webkit
+PASS BC01 en drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC02 native focus failure preserves held real cart on retained drawer and fresh mount
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('footer nav a[hreflang="zh-TW"]')
+    - locator resolved to <a lang="zh-TW" hreflang="zh-TW" href="/zh-TW/checkout">繁體中文</a>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <footer class="purchase-footer checkout-fixed-bar has-quote">…</footer> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <footer class="purchase-footer checkout-fixed-bar has-quote">…</footer> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+    - retrying click action
+      - waiting 100ms
+    56 × waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <footer class="purchase-footer checkout-fixed-bar has-quote">…</footer> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events
+     - retrying click action
+       - waiting 500ms
+
+    at switchLocale (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/shop-helpers.mjs:31:60)
+    at async stableLocaleTarget (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:216:10)
+    at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:506:3 {
+  log: [
+    `  - waiting for locator('footer nav a[hreflang="zh-TW"]')`,
+    '    - locator resolved to <a lang="zh-TW" hreflang="zh-TW" href="/zh-TW/checkout">繁體中文</a>',
+    '  - attempting click action',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is visible, enabled and stable',
+    '      - scrolling into view if needed',
+    '      - done scrolling',
+    '      - <footer class="purchase-footer checkout-fixed-bar has-quote">…</footer> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '    - retrying click action',
+    '    - waiting 20ms',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is visible, enabled and stable',
+    '      - scrolling into view if needed',
+    '      - done scrolling',
+    '      - <footer class="purchase-footer checkout-fixed-bar has-quote">…</footer> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '    - retrying click action',
+    '      - waiting 100ms',
+    '    56 × waiting for element to be visible, enabled and stable',
+    '       - element is visible, enabled and stable',
+    '       - scrolling into view if needed',
+    '       - done scrolling',
+    '       - <footer class="purchase-footer checkout-fixed-bar has-quote">…</footer> from <div id="main" tabindex="-1" class="sf-main">…</div> subtree intercepts pointer events',
+    '     - retrying click action',
+    '       - waiting 500ms'
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.22.1
+
+Gates40714216874 job122974825473 claim:
+browser engine: webkit
+CDC visible alerts [""]
+FAIL CDC expect(locator).toBeChecked() failed
+
+Locator: getByRole('radio', { name: /取貨付款/ })
+Expected: checked
+Error: strict mode violation: getByRole('radio', { name: /取貨付款/ }) resolved to 2 elements:
+    1) <input type="radio" name="payment_mode" value="pay_at_pickup"/> aka getByTestId('cvs-payment-mode').getByRole('radio', { name: '取貨付款' })
+    2) <input checked readonly disabled type="radio" aria-label="送出取貨付款訂單"/> aka getByRole('radio', { name: '送出取貨付款訂單' })
+
+Call log:
+  - Expect "toBeChecked" getByRole('radio', { name: /取貨付款/ }) with timeout 5000ms
+  - waiting for getByRole('radio', { name: /取貨付款/ })
+
+
+Gates40714216874 job122974825642 promotions:
+browser engine: chromium
+PASS zh-TW/desktop merchant created a 10% code with a NT$500 minimum and a Taipei window, and a NT$5,000-minimum code, in /promotions
+PASS zh-TW/desktop buyer: 2 products in the cart, checkout, delivery, quote without a code = goods + shipping
+PASS zh-TW/desktop buyer: an unknown code and a below-minimum code show their own messages and change nothing
+PASS zh-TW/desktop buyer: the code (typed in lower case) is applied by the server quote: discount 100, shipping untouched, total 960 in the quotation and the footer
+PASS zh-TW/desktop buyer: removing the code restores goods + shipping, applying it again restores 960
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(locator).toBeEnabled() failed
+
+Locator:  getByTestId('create-order')
+Expected: enabled
+Received: disabled
+Timeout:  5000ms
+
+Call log:
+  - Expect "toBeEnabled" getByTestId('create-order') with timeout 5000ms
+  - waiting for getByTestId('create-order')
+    2 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order" aria-describedby="create-order-hint">送出訂單（銀行轉帳）</button>
+      - unexpected value "disabled"
+    12 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order">送出訂單（銀行轉帳）</button>
+       - unexpected value "disabled"
+
+    at captureRawStack (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toBeEnabled (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at scenario (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/promotions-gate.mjs:254:51)
+    at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/promotions-gate.mjs:339:61 {
+  matcherResult: {
+    message: 'expect(locator).toBeEnabled() failed\n' +
+      '\n' +
+      "Locator:  getByTestId('create-order')\n" +
+      'Expected: enabled\n' +
+      'Received: disabled\n' +
+      'Timeout:  5000ms\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeEnabled" getByTestId('create-order') with timeout 5000ms\n` +
+      "  - waiting for getByTestId('create-order')\n" +
+      '    2 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order" aria-describedby="create-order-hint">送出訂單（銀行轉帳）</button>\n' +
+      '      - unexpected value "disabled"\n' +
+      '    12 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order">送出訂單（銀行轉帳）</button>\n' +
+      '       - unexpected value "disabled"\n',
+    pass: false,
+    actual: 'disabled',
+    name: 'toBeEnabled',
+    expected: 'enabled',
+    log: [
+      `  - Expect "toBeEnabled" getByTestId('create-order') with timeout 5000ms`,
+      "  - waiting for getByTestId('create-order')",
+      '    2 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order" aria-describedby="create-order-hint">送出訂單（銀行轉帳）</button>',
+      '      - unexpected value "disabled"',
+      '    12 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order">送出訂單（銀行轉帳）</button>',
+      '       - unexpected value "disabled"'
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- button "送出訂單（銀行轉帳）" [disabled]'
+  }
+}
+
+Node.js v24.22.1
