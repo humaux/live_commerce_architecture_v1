@@ -729,3 +729,149 @@ func TestReauthRA07OIDCFlow(t *testing.T) {
 		t.Errorf("a new session must be authenticated at issue: %v", err)
 	}
 }
+
+// RA08 (issue #215 item 3): both re-auth throttle call sites are live. Ten wrong passwords on the start step and ten
+// wrong codes on the complete step pass; the eleventh call on each step is a ThrottleError. Removing either
+// reauthBuckets call (reauth.go:102 / :189) would let the eleventh call through.
+func TestReauthRA08ReauthThrottleKeys(t *testing.T) {
+	e := fixture(t)
+	ctx := context.Background()
+	const phrase = "correct horse battery 1"
+	phc, err := identity.HashPassword(phrase)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := principal(t, e, "", "")
+	email := fmt.Sprintf("ra08.%d.%d@example.test", os.Getpid(), seq.Add(1))
+	mustExec(t, e.owner, `INSERT INTO identity.password_credentials(principal_id,email,password_hash,email_verified_at) VALUES ($1::uuid,$2,$3,clock_timestamp())`, p, email, phc)
+	tok := session(t, e, p)
+	pw := passwords(t, e, &mailer{})
+
+	for i := 0; i < 10; i++ {
+		if _, err := pw.StartReauth(ctx, freshIP(), tok, "wrong horse battery 9", "en"); !errors.Is(err, identity.ErrReauthFailed) {
+			t.Fatalf("start %d: %v, want ErrReauthFailed", i+1, err)
+		}
+	}
+	var throttled identity.ThrottleError
+	if _, err := pw.StartReauth(ctx, freshIP(), tok, phrase, "en"); !errors.As(err, &throttled) {
+		t.Fatalf("start 11: %v, want ThrottleError (reauth-pw-principal/session bucket)", err)
+	}
+	for i := 0; i < 10; i++ {
+		if _, err := pw.CompleteReauth(ctx, freshIP(), tok, "000000"); !errors.Is(err, identity.ErrInvalidCode) {
+			t.Fatalf("complete %d: %v, want ErrInvalidCode", i+1, err)
+		}
+	}
+	if _, err := pw.CompleteReauth(ctx, freshIP(), tok, "000000"); !errors.As(err, &throttled) {
+		t.Fatalf("complete 11: %v, want ThrottleError (reauth-code-principal/session bucket)", err)
+	}
+}
+
+// RA09 (issue #215 item 3): the PD5 budget of complete_reauth_challenge (0201:279-283) refuses before comparing the
+// code: 10 attempts in the same ip bucket, or 50 in total, answer INVALID and leave authenticated_at unchanged even
+// when the presented code is the right one.
+func TestReauthRA09PD5BudgetRefusesBeforeCompare(t *testing.T) {
+	e := fixture(t)
+	ctx := context.Background()
+	phrase := "correct horse battery 1"
+	phc, err := identity.HashPassword(phrase)
+	if err != nil {
+		t.Fatal(err)
+	}
+	open := func(prefix string) (tok string, code, binding []byte, email string) {
+		t.Helper()
+		p := principal(t, e, "", "")
+		email = fmt.Sprintf("%s.%d.%d@example.test", prefix, os.Getpid(), seq.Add(1))
+		mustExec(t, e.owner, `INSERT INTO identity.password_credentials(principal_id,email,password_hash,email_verified_at) VALUES ($1::uuid,$2,$3,clock_timestamp())`, p, email, phc)
+		tok = session(t, e, p)
+		code, binding = rnd32(), rnd32()
+		mustExec(t, e.owner, `INSERT INTO identity.email_challenges(id,purpose,email,locale,principal_id,password_version,binding_hash,code_hmac,ip_hmac,session_hash,expires_at)
+			VALUES ($1::uuid,'reauth',$2,'en',$3::uuid,1,$4,$5,$6,$7,clock_timestamp()+interval '10 minutes')`,
+			uuid(), email, p, binding, code, rnd32(), hash(tok))
+		return tok, code, binding, email
+	}
+	history := func(email, principalID string, ip []byte, n int) {
+		t.Helper()
+		for i := 0; i < n; i++ {
+			mustExec(t, e.owner, `INSERT INTO identity.email_challenges(id,purpose,email,locale,principal_id,password_version,binding_hash,code_hmac,ip_hmac,session_hash,expires_at,attempts)
+				VALUES ($1::uuid,'reauth',$2,'en',$3::uuid,1,$4,$5,$6,$7,clock_timestamp()+interval '10 minutes',5)`,
+				uuid(), email, principalID, rnd32(), rnd32(), ip, rnd32())
+		}
+	}
+	principalOf := func(tok string) string {
+		t.Helper()
+		var p string
+		if err := e.owner.QueryRow(ctx, `SELECT principal_id::text FROM identity.sessions WHERE token_hash=$1`, hash(tok)).Scan(&p); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	assertRefused := func(what, tok string, code []byte) {
+		t.Helper()
+		before := authAt(t, e, tok)
+		var outcome string
+		if err := e.id.QueryRow(ctx, `SELECT outcome FROM identity.complete_reauth_challenge($1,$2)`, hash(tok), code).Scan(&outcome); err != nil {
+			t.Fatalf("%s: %v", what, err)
+		}
+		if outcome != "INVALID" {
+			t.Errorf("%s: outcome = %q, want INVALID (over budget, no compare)", what, outcome)
+		}
+		if at := authAt(t, e, tok); !at.Equal(before) {
+			t.Errorf("%s: over-budget call moved authenticated_at %v -> %v", what, before, at)
+		}
+	}
+
+	// Same ip bucket: two history rows with 5 attempts each = 10.
+	tok, code, _, email := open("ra09.same-ip")
+	shared := rnd32()
+	history(email, principalOf(tok), shared, 2)
+	mustExec(t, e.owner, `UPDATE identity.email_challenges SET ip_hmac=$2 WHERE session_hash=$1 AND purpose='reauth' AND consumed_at IS NULL`, hash(tok), shared)
+	assertRefused("same ip bucket 10", tok, code)
+
+	// Total: ten rows with 5 attempts each across ten different ip buckets = 50 and no same-bucket hit.
+	tok, code, _, email = open("ra09.total")
+	for i := 0; i < 10; i++ {
+		history(email, principalOf(tok), rnd32(), 1)
+	}
+	assertRefused("total 50", tok, code)
+}
+
+// RA10 (issue #215 item 5): the session INSERT in complete_email_challenge really writes authenticated_at. The column
+// DEFAULT would otherwise hide a missing column: drop the default inside the transaction, then the sign-up path must
+// still issue a session with a finite authenticated_at. Rolled back with the transaction.
+func TestReauthRA10IssuePathWritesAuthenticatedAt(t *testing.T) {
+	e := fixture(t)
+	ctx := context.Background()
+	phc, err := identity.HashPassword("correct horse battery 1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx, err := e.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, `ALTER TABLE identity.sessions ALTER COLUMN authenticated_at DROP DEFAULT`); err != nil {
+		t.Fatalf("drop default: %v", err)
+	}
+	binding, code, sessionHash := rnd32(), rnd32(), rnd32()
+	email := fmt.Sprintf("ra10.%d.%d@example.test", os.Getpid(), seq.Add(1))
+	if _, err := tx.Exec(ctx, `INSERT INTO identity.email_challenges(id,purpose,email,locale,binding_hash,code_hmac,ip_hmac,pending_password_hash,expires_at)
+		VALUES ($1::uuid,'signup',$2,'en',$3,$4,$5,$6,clock_timestamp()+interval '10 minutes')`,
+		uuid(), email, binding, code, rnd32(), phc); err != nil {
+		t.Fatalf("signup challenge: %v", err)
+	}
+	var outcome string
+	if err := tx.QueryRow(ctx, `SELECT outcome FROM identity.complete_email_challenge($1,'signup',$2,NULL,$3,3600)`, binding, code, sessionHash).Scan(&outcome); err != nil {
+		t.Fatalf("complete_email_challenge without the column default: %v", err)
+	}
+	if outcome != "SESSION" {
+		t.Fatalf("outcome = %q, want SESSION", outcome)
+	}
+	var written bool
+	if err := tx.QueryRow(ctx, `SELECT authenticated_at > '-infinity' AND authenticated_at <= clock_timestamp() FROM identity.sessions WHERE token_hash=$1`, sessionHash).Scan(&written); err != nil {
+		t.Fatalf("read authenticated_at: %v", err)
+	}
+	if !written {
+		t.Error("complete_email_challenge did not write a finite authenticated_at (only the DEFAULT covered it)")
+	}
+}
