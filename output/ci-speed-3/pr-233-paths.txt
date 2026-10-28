@@ -1,0 +1,2 @@
+contracts/merchant-password-auth-v1.md
+docs/runbooks/mail.md

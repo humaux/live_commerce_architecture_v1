@@ -1,0 +1,65 @@
+2386:foundation	UNKNOWN STEP	2026-10-28T05:40:48.8437734Z ℹ fail 0
+2407:foundation	UNKNOWN STEP	2026-10-28T05:40:50.2790155Z ℹ tests 14
+2410:foundation	UNKNOWN STEP	2026-10-28T05:40:50.2791642Z ℹ fail 0
+2428:foundation	UNKNOWN STEP	2026-10-28T05:40:50.5465295Z ℹ tests 11
+2431:foundation	UNKNOWN STEP	2026-10-28T05:40:50.5468034Z ℹ fail 0
+2456:foundation	UNKNOWN STEP	2026-10-28T05:40:51.0596627Z ℹ tests 17
+2459:foundation	UNKNOWN STEP	2026-10-28T05:40:51.0597842Z ℹ fail 0
+2472:foundation	UNKNOWN STEP	2026-10-28T05:40:51.2476334Z ℹ tests 4
+2475:foundation	UNKNOWN STEP	2026-10-28T05:40:51.2486325Z ℹ fail 0
+2496:foundation	UNKNOWN STEP	2026-10-28T05:40:52.0492042Z ℹ tests 14
+2499:foundation	UNKNOWN STEP	2026-10-28T05:40:52.0493529Z ℹ fail 0
+2536:foundation	UNKNOWN STEP	2026-10-28T05:40:53.2198814Z ℹ tests 30
+2539:foundation	UNKNOWN STEP	2026-10-28T05:40:53.2200635Z ℹ fail 0
+2664:foundation	UNKNOWN STEP	2026-10-28T05:40:57.2060013Z ℹ tests 118
+2667:foundation	UNKNOWN STEP	2026-10-28T05:40:57.2061032Z ℹ fail 0
+2731:foundation	UNKNOWN STEP	2026-10-28T05:40:59.5036692Z ℹ tests 57
+2734:foundation	UNKNOWN STEP	2026-10-28T05:40:59.5037647Z ℹ fail 0
+2758:foundation	UNKNOWN STEP	2026-10-28T05:40:59.9487251Z ✖ CI-SPEED-3: generated browser ownership is current and covers the registry (1.101454ms)
+2759:foundation	UNKNOWN STEP	2026-10-28T05:40:59.9488522Z ✖ CI-SPEED-3: drift checker rejects a corrupted ownership artifact on its own assertion (0.390159ms)
+2908:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7692145Z ##[error]ℹ tests/foundation/catalog_matrix_ledger_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2909:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7725459Z ##[error]ℹ tests/foundation/catalog_matrix_evidence_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2910:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7728487Z ##[error]ℹ tests/foundation/browser_catalog_core_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2911:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7730575Z ℹ tests/admin/product-editor.acceptance.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2912:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7732129Z ℹ tests/admin/product-editor-matrix-ledger.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2913:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7733798Z ℹ tests/foundation/testdata/product_editor_matrix_cases.json: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2914:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7735512Z ℹ tests/ci/product-editor-matrix-ledger.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2915:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7737348Z ℹ tests/ci/product-editor-matrix-claims.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2916:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7738912Z ℹ tests/ci/product-editor-matrix-source.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2917:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7740509Z ℹ tests/ci/product-editor-matrix-execution.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2918:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7741851Z ℹ tests/ci/product-editor-matrix-execution.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2919:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7743458Z ℹ tests/ci/product-editor-matrix-controls.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2920:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7745137Z ℹ tests/ci/product-editor-matrix-controls.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+2964:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7807991Z ✖ new selection never drops legacy modes or deploy for any tracked path (467.638725ms)
+2981:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7830075Z ✖ CI-SPEED-3: a registered admin spec selects only its executing modes (4.658093ms)
+2982:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7831160Z ✖ CI-SPEED-3: real stdin and GITHUB_OUTPUT preserve narrowed spec selection (57.642378ms)
+2983:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7832383Z ✖ CI-SPEED-3: storefront component selects storefront owners and no admin-only mode (0.354647ms)
+2984:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7833549Z ✖ CI-SPEED-3: shared helper import closure selects all importing modes (0.238495ms)
+2985:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7834698Z ✖ CI-SPEED-3: packages and conservative infrastructure paths still select ALL (42.999097ms)
+2986:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7835992Z ✔ CI-SPEED-3: unknown specs, helpers and apps cannot silently select zero modes (21.022487ms)
+2987:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7837293Z ✖ CI-SPEED-3: UI selections union with each other and backend/deploy guards (9.796604ms)
+2988:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7838394Z ✖ CI-SPEED-3: every derived owner of an old-ALL tracked path is retained (0.377837ms)
+2989:foundation	UNKNOWN STEP	2026-10-28T05:41:13.7839713Z ✔ CI-SPEED-3: schedule and full-universe dispatch still plan the FULL browser universe (56.796962ms)
+3106:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5029391Z ℹ tests 327
+3109:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5030045Z ℹ fail 10
+3115:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5100427Z ✖ failing tests:
+3118:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5102008Z ✖ CI-SPEED-3: generated browser ownership is current and covers the registry (1.101454ms)
+3119:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5102787Z   AssertionError [ERR_ASSERTION]: CI-SPEED-3 requires the ownership generator
+3136:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5111489Z ✖ CI-SPEED-3: drift checker rejects a corrupted ownership artifact on its own assertion (0.390159ms)
+3137:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5112089Z   AssertionError [ERR_ASSERTION]: CI-SPEED-3 requires the ownership generator
+3154:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5119366Z ✖ new selection never drops legacy modes or deploy for any tracked path (467.638725ms)
+3155:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5120180Z   AssertionError [ERR_ASSERTION]: CI-SPEED-3 must commit generated browser ownership beside covers-derivation.json
+3174:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5131347Z ✖ CI-SPEED-3: a registered admin spec selects only its executing modes (4.658093ms)
+3175:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5132121Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+3279:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5169482Z ✖ CI-SPEED-3: real stdin and GITHUB_OUTPUT preserve narrowed spec selection (57.642378ms)
+3280:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5170019Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+3384:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5206430Z ✖ CI-SPEED-3: storefront component selects storefront owners and no admin-only mode (0.354647ms)
+3385:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5207500Z   AssertionError [ERR_ASSERTION]: CI-SPEED-3 must commit generated browser ownership beside covers-derivation.json
+3403:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5215142Z ✖ CI-SPEED-3: shared helper import closure selects all importing modes (0.238495ms)
+3404:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5215970Z   AssertionError [ERR_ASSERTION]: CI-SPEED-3 must commit generated browser ownership beside covers-derivation.json
+3422:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5223683Z ✖ CI-SPEED-3: packages and conservative infrastructure paths still select ALL (42.999097ms)
+3423:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5224243Z   AssertionError [ERR_ASSERTION]: tests/foundation/browser_removed_test.go
+3510:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5260179Z ✖ CI-SPEED-3: UI selections union with each other and backend/deploy guards (9.796604ms)
+3511:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5260870Z   AssertionError [ERR_ASSERTION]: CI-SPEED-3 must commit generated browser ownership beside covers-derivation.json
+3530:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5269791Z ✖ CI-SPEED-3: every derived owner of an old-ALL tracked path is retained (0.377837ms)
+3531:foundation	UNKNOWN STEP	2026-10-28T05:41:34.5270458Z   AssertionError [ERR_ASSERTION]: CI-SPEED-3 must commit generated browser ownership beside covers-derivation.json

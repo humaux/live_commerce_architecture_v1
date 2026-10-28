@@ -1,0 +1,43 @@
+CI-SPEED-3 tests-only RED attempt
+Evidence: E1 syntax only; CI assertion result PENDING (not RED yet)
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/266
+BASE_SHA: 5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248
+HEAD_SHA: 04036e51ba4e7ed1236a825e1f96c635f563ec44
+
+Local static commands, both exit 0:
+node --check tests/ci/pr-modes.test.mjs
+node --check tests/ci/backend-coverage.test.mjs
+No local tests, builds, servers, containers or generators executed.
+
+GitHub raw run-list receipt (pull_request, exact HEAD_SHA):
+Foundation checks RUN_ID: 40631602073
+Foundation JOB_ID: 122629013295 (foundation, pending; no assertions executed yet)
+Foundation URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40631602073/job/122629013295
+Gates (GitHub runners) RUN_ID: 40631602098
+Gates URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40631602098
+Gates test JOB_ID: PENDING (only the plan is currently registered; do not count it as test evidence)
+Receipt command: gh pr checks 266 --repo humaux/live_commerce_architecture_v1
+Receipt exit: 8 (pending checks)
+
+Expected own-assertion RED (not observed yet):
+- registered live-settings spec selects only --browser-live-settings, but old planPr selects full universe
+- real stdin/GITHUB_OUTPUT must preserve the same narrowed set
+- generated browser ownership + generator must exist; currently intentionally absent
+No implementation commit until an actual CI assertion failure is read.
+
+WAIT_RUN: 40631602073
+WAIT_RUN: 40631602098
+Wakeup: integrator resumes this worker with the run conclusion, per card CI-WAITS.
+CI bounds: Foundation timeout 90 minutes; Gates plan 10, gate legs 150 minutes, plus GitHub queue.
+On resume: gh run view <id> --log-failed, filtered for CI-SPEED-3/assertions; record exact failed jobs here.
+Unrelated gate failure => STOP/report. At most 2 targeted fixes per blocker.
+Do not merge/auto-merge. Do not modify gates.yml, ci-plan.mjs, test-node.sh or next-startup.test.mjs.
+
+2026-10-28 resumed: original GitHub CI results inspected, no RED rerun/push.
+RED verified (E3, tests-only SHA 04036e51ba4e7ed1236a825e1f96c635f563ec44):
+Foundation run 40631602073 / job 122629013295, completed FAILURE.
+Own assertion failures: registered admin spec + stdin/GITHUB_OUTPUT still ALL;
+missing ownership artifact/generator; shared-helper/storefront/owner monotonicity;
+conservative browser_removed expected universe. See red-assertions.log (filtered raw gh log).
+Gates run 40631602098 completed SUCCESS on the RED SHA, but Foundation's new unit assertions
+failed: this is not GREEN for CI-SPEED-3. Implementation GREEN remains pending.

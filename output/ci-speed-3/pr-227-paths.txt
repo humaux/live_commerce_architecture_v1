@@ -1,0 +1,13 @@
+apps/admin/app/api/stores/[store]/[...resource]/route.ts
+apps/admin/components/Inbox.tsx
+apps/admin/lib/inbox-bff.ts
+contracts/live-console-v1.md
+internal/httpapi/inbox.go
+internal/inbox/read.go
+internal/inbox/unread_test.go
+migrations/0204_inbox_unread.sql
+output/oc-12/DELIVERY.md
+output/oc-12/UNREAD.md
+output/oc-12/out-of-scope-allowlist.patch
+tests/admin/inbox-ui.spec.ts
+tests/foundation/r2_integration_upgrade_test.go

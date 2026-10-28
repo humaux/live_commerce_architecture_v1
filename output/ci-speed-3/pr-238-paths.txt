@@ -1,0 +1,10 @@
+.github/workflows/gates.yml
+docs/delivery/GATES.md
+output/ci-speed/DELIVERY-20261027.md
+output/ci-speed/DOCS-ONLY-FOLLOWUP.md
+scripts/dev/ci-plan.mjs
+scripts/dev/prebuilt.mjs
+scripts/dev/test-local.sh
+scripts/dev/test-node.sh
+tests/ci/ci-plan.test.mjs
+tests/ci/prebuilt.test.mjs

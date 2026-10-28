@@ -1,0 +1,2 @@
+tests/storefront/shop-gate.mjs
+tests/storefront/shop-real-gate.mjs
