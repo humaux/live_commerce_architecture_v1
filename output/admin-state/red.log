@@ -18,3 +18,49 @@ Command: gh run view 40690045203 --log-failed (filtered to the AD-09 failure)
 Actual prefix: <html lang="en"><head></head><body><main class="admin-state-page">
 Suite: tests 9; pass 8; fail 1. Process completed with exit code 1.
 No new RED push: the directed fix card authorizes this existing CI failure as RED.
+
+Directed disabled-gallery 404 blocker (read directly 2026-10-29)
+PR head: a1673cff8fa909866d01051d759a74bf3cf941f5
+Gates run: 40705999120; job: 122933199700; gate (bundle:01); conclusion: failure
+Raw receipt: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/122933199700/logs
+2026-10-28T16:17:34.0433267Z AssertionError [ERR_ASSERTION]: /zh-TW/ui-gallery must be 404 when LC_UI_GALLERY is not 1
+2026-10-28T16:17:34.0435631Z at tests/admin/ui-gallery-runner.mjs:109:12
+actual: 200; expected: 404; operator: strictEqual
+Bundle receipt SHA (synthetic merge): 0f71a089741768940fcca9da8f60a1fca614cb43
+Local tests/servers: NOT_RUN. Existing gate assertion is unchanged.
+
+Directed fix 2b: all four completed jobs read directly (2026-10-29)
+Head: a1673cff8fa909866d01051d759a74bf3cf941f5
+Run: 40705999120; synthetic merge: 0f71a089741768940fcca9da8f60a1fca614cb43
+Requested gh run view --log-failed --job commands were attempted for all four jobs first.
+They returned: run 40705999120 is still in progress; logs will be available when it is complete.
+Fallback: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/<job-id>/logs
+bundle:01 / 122933199700: ui-gallery-runner.mjs:109, actual 200, expected 404.
+bundle:09 / 122933201564: shell-browser.mjs:414, server rejects an unknown store before mounting the shell; actual 200, expected 404.
+bundle:09 also records TestBrowserMerchantOrdersUIRealChain failure at browser_merchant_orders_ui_test.go:439.
+bundle:08 / 122933201753: TestBrowserStaffTeam failure at browser_staff_team_test.go:182.
+Artifact 12839086450 (gate-browser-password-auth), playwright/run.BEnh0Clp/staff-team-20261028T175124.723373186/playwright.log:
+  14: Error: request.headerValue: Target page, context or browser has been closed
+  18: > 175 | void r.headerValue("referer").then((referer) => net.requests.push({ url: r.url(), type: r.resourceType(), method: r.method(), referer }));
+  23: at _Page.<anonymous> (.../tests/admin/staff-team.spec.ts:175:12)
+  35-38: 1 failed; 3 did not run; 2 passed (8.5s).
+This is a different observed failure from the HTTP 404 assertions; no shared-cause claim is made for it.
+bundle:06 / 122933200181: TestBrowserCardPayments failed at browser_card_payments_test.go:192.
+Artifact 12834974786 download timed out after 150 seconds; reader exit 1; detailed cause UNKNOWN.
+Merchant-orders artifact 12839256540 was NOT_READ: sequential download stopped at that timeout.
+No code fix/commit/push made; no new RED/GREEN/WAIT_RUN assigned. No test expectation was edited.
+
+FIX-RED #268 current-head readback (2026-10-29)
+PR head before fix: a1673cff8fa909866d01051d759a74bf3cf941f5
+Gates run 40705999120 attempt 1; synthetic merge 0f71a089741768940fcca9da8f60a1fca614cb43.
+Read all 5 failing jobs selected by gh pr checks 268.
+gh run view 40705999120 --log-failed --job <id> rejected each read while the overall run is unfinished.
+Fallback for each: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/<id>/logs.
+122933199700 bundle:01: ui-gallery-runner.mjs:109 disabled zh-TW gallery returned 200, expected 404 (strictEqual).
+122933201582 bundle:04: TestBrowserStoreDesign; browser_store_design_test.go:170 browser failed; line 193 mobile zh-TW history [] instead of two publishes plus rollback.
+122933200181 bundle:06: TestBrowserCardPayments; browser_card_payments_test.go:192 admin browser exit 1.
+122933201753 bundle:08: TestBrowserStaffTeam; browser_staff_team_test.go:182 browser exit 1; accepted invitations 2 vs >=4, audit role changes/removals 1 vs >=4, canary count 19.
+122933201564 bundle:09: TestBrowserMerchantOrdersUIRealChain at browser_merchant_orders_ui_test.go:439 parcel-merge browser exit 1; shell-browser.mjs:414 unknown-store returned 200, expected 404 (strictEqual).
+These are existing current-head RED receipts, not evidence for the forthcoming fix.
+No local tests or servers. The directed repair reuses this RED and batches the approved implementation in one push.
+Artifact-level read limits: gh ZIP reads timed out at 90 seconds. A direct-reader fallback was terminated as hung (own PID 49912). Final cache-busted ZIP reads timed out at 60 seconds for 12834974786 (card-payments), 12839256540 (orders), 12839086450 (staff), 12841765213 (store-design). Detailed causes beyond job-log assertions remain UNKNOWN. No local archive files were created.

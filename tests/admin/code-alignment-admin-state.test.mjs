@@ -51,11 +51,12 @@ const renderRoute = (path, props = {}, pathname = "/en/orders") => {
 const boundaries = [
   "apps/admin/app/[locale]/error.tsx",
   "apps/admin/app/[locale]/not-found.tsx",
-  "apps/admin/app/[locale]/loading.tsx",
+  "apps/admin/components/AdminLoading.tsx",
   "apps/admin/app/global-error.tsx",
 ];
 
 test("AD-09: all localized and root boundaries exist with source ownership headers", () => {
+  assert.equal(existsSync("apps/admin/app/[locale]/loading.tsx"), false, "locale-wide loading would stream before route validation");
   for (const path of [...boundaries, sharedPath, forbiddenPath, "apps/admin/components/admin-state-block.css"]) {
     assert.ok(existsSync(path), `${path} is missing`);
   }

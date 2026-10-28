@@ -31,6 +31,7 @@
     "tests/admin/claims-model.test.ts": "2472e57eec9d86f4f9ae4ff32acd274b998c35d5a10c2bfd8251e34bc21e3a19",
     "tests/admin/claims-request.test.ts": "0812f41b5df04ce7eaa8d0d7885d887a5a024469e824a865ddcb7d0aafd6f391",
     "tests/admin/claims-ui.spec.ts": "67c620807e50fbc29fe696fc21fc9d7ada17d16f7a6a8e374dc71dcc2ad7baf5",
+    "tests/admin/code-alignment-admin-state.test.mjs": "3b117c551b789df979b1d7116326069791588fe8b6765b8374168b31a6d01445",
     "tests/admin/comment-label-print.spec.ts": "daf089ec93a495f25697230778add4d299f66efb90babf4e483004e390cb9e24",
     "tests/admin/comment-label-print.test.ts": "1156d8f68891fe3ac8186a154dda09ecf3b17f370f43a60567187e7a402aa126",
     "tests/admin/comment-label-strict-fixture.ts": "5da974b95e514b6f9853bbc4879e5001665aa9593a1b7467a933998bf1495f62",
@@ -41,7 +42,7 @@
     "tests/admin/customer-tags-draft.test.mjs": "b15d380c60400e3b32b74c883c37ab7eaba8ad8cdac592e18b5bc1d41b28d06c",
     "tests/admin/customer-tags-node-loader.mjs": "fd7f67a3447553683623298a873857381ef429ba1a7c58251e22ac87fc06382d",
     "tests/admin/customer-tags-proxy.test.ts": "f510771e0a98f0d1d41e1f153f644ce5ed3cb92bf0a4ea79d20c220937e39495",
-    "tests/admin/customer-tags-scope.test.mjs": "870335d796f99e8286f6708a73de6a8d3194aed9afa6486a6b2efb58fa4268ce",
+    "tests/admin/customer-tags-scope.test.mjs": "e223f92e607477581b20ff93025b7b583f77b4f1b939976209104f98611e5b3c",
     "tests/admin/customer-tags-ui.test.mjs": "3003a9c9d960f233e6e757e4e1570cf9c2d0ecffe690d5ecaee45bdb59472525",
     "tests/admin/customer-tags-write.test.mjs": "e7814246a33ae277ffb7a8e74fff7c4e3d0454c4b0780868fc42503ced02c023",
     "tests/admin/customer-tags.spec.ts": "5298e1505fb5ebd0f378f2f1ff0db2c7d23cb506540d201cb2ba9fabc6b8bcf8",
@@ -71,7 +72,7 @@
     "tests/admin/import-history-model.test.ts": "adbf29ecbba29887450fc39b80b89edb5ad7e60112cc5ade267d538dfddad250",
     "tests/admin/import-history-test-loader.mjs": "60d51c21ec4a9b6f8c97833f994469c75628c1613f3c8bd916e649da3ce36117",
     "tests/admin/import-history-ui.test.mjs": "87f7f59982d43c1b5b92b2a555c6e99db09bc4ebfa041c83db987d830578873e",
-    "tests/admin/import-integration.test.ts": "9fd3b5c0b0ca224eded2f9b6d876cdf0a5801fb3d7a5fb38d2540b5a11371c0b",
+    "tests/admin/import-integration.test.ts": "b7b94ca7e72e927e526e1fbfaf46879a542b5aa2c29f09e3d4ad112bb56bb2f2",
     "tests/admin/import-readiness.test.mjs": "85d01d70568393c10f7419c1888800924b8d73aff373dc435bd0cec8fefecb56",
     "tests/admin/import-view.test.ts": "fcc67bb573680c5ce99e84bf7b2a6dea46550f29f2b524ed1bf7d6948b39a8b5",
     "tests/admin/import-wire-header.test.ts": "113c81af046f27252bc6c1fba4b1d25ad4c8905b13d8c355b3460fe32270640f",
@@ -134,7 +135,7 @@
     "tests/admin/orders-bff.spec.ts": "28963e8f589eed64858f7e41c48b67f1f7bc3cbc211a5dadf4a682e875fd756a",
     "tests/admin/orders-model.test.ts": "aaa4b12d5a6c4a2c876341b98fd73c5a812b94a7ee05bd51f1415058d1d427c0",
     "tests/admin/orders-request.test.ts": "ccb87d390afac556c21fd6a050aba65cc43096021015109afe236f0e0390031b",
-    "tests/admin/orders-ui.spec.ts": "7bcf11d033de56ea9fdb7f8d99bdb9e1abd22f560b3f8296751ea72800d0f9c3",
+    "tests/admin/orders-ui.spec.ts": "fb70ca9dc925156340caa07cb9ebd25da6cfef0afa94e119b8ef29d99de20548",
     "tests/admin/orders-v2.test.ts": "688a6e9c082513399efc876ecdf05279e4f35c2fb4f6fda5817ca0a71f64fb7e",
     "tests/admin/parcel-merge.spec.ts": "6a00cac5f539e4792ce84dc89c312e125fa8fa7c5b173c945a44a1b6123fbd0e",
     "tests/admin/parcels-bff.test.ts": "4496e04ca16357e2c758e0c881f3dbca00af9a4a58703137d1d9e73a675daedf",
@@ -761,7 +762,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "6117b0ca39d4563f1785da5e01bee984945cfb9df44d3d73366c941f682baddf"
+    "scripts/dev/test-node.sh": "eee4e24d3557aef6d1d9736b6bbd13d481eb50cf72a3ef4a8acfdd39356b9c31"
   },
   "modes": {
     "--browser-inbox": {
