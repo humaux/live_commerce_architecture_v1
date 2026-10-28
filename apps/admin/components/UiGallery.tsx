@@ -39,6 +39,7 @@ import {
   AlertsSection,
   BadgesSection,
   ButtonsSection,
+  FigmaSection,
   DropzoneSection,
   FormSectionDemo,
   KpiSection,
@@ -305,6 +306,7 @@ export function UiGallery({ locale, initial, search: initialSearch }: { locale: 
         <TemplateLinks locale={locale} />
         <TokensSection c={c} />
         <ButtonsSection c={c} />
+        <FigmaSection c={c} />
         <SwitchTabsSection c={c} params={params} setParam={setParam} />
         <BadgesSection c={c} />
         <AlertsSection c={c} />

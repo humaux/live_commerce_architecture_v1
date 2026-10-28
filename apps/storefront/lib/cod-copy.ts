@@ -1,6 +1,6 @@
 // Buyer-facing copy (zh-CN / zh-TW / en) for the cash-on-delivery payment mode (home-cod R5, migration 0107):
-// the checkout choice (amount + surcharge) and the order page collection status. Rendered by components/OrderFlow.tsx and
-// components/CodOrderStatus.tsx; no BFF route of its own. Rules encoded here: the order is never "paid" online — the buyer
+// the checkout choice (amount + surcharge), the checkout bottom bar due (codFooter) and the order page collection status. Rendered by
+// components/OrderFlow.tsx, components/CheckoutFlow.tsx and components/CodOrderStatus.tsx; no BFF route of its own. Rules encoded here: the order is never "paid" online — the buyer
 // pays the carrier in cash on delivery; the surcharge is the fee shown at checkout and is never folded into the order total.
 import type { Locale } from "@live-commerce/i18n";
 import type { CollectionState } from "./cvs-contract";
@@ -98,6 +98,15 @@ const zhTW: typeof en = {
 };
 
 export const codCopy: Record<Locale, typeof en> = { en, "zh-CN": zhCN, "zh-TW": zhTW };
+
+// Checkout bottom bar (OC-09b, owner-approved 「到貨需付 {total}（含貨到付款手續費 {fee}）」): the server quote's cod_due_minor verbatim
+// while cash on delivery is the selected, offered mode (fee = that option's server surcharge, null = another mode). No due from the
+// server, or another mode, hides it (null): the amount is never computed here. No fee omits the bracket.
+export function codFooter(locale: Locale, codDueMinor: number | undefined, fee: number | null, money: (minor: number) => string) {
+  if (fee === null || codDueMinor === undefined) return null;
+  const c = codCopy[locale];
+  return { label: c.due, amount: money(codDueMinor), note: fee > 0 ? c.includesFee(money(fee)) : "" };
+}
 
 // Order-page amount label (OC-09a): the owner-approved wording only while the buyer still has to pay; every other state keeps `recorded`.
 export function codAmountLabel(locale: Locale, collection: CollectionState): string {

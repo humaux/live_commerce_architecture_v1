@@ -1,0 +1,52 @@
+2026-10-28T08:37:31.5348860Z ✔ the failure download contains only failed row metadata, with no source cell or success identifier (0.303787ms)
+2026-10-28T08:37:31.5349309Z ✖ CU-01 explains source IDs and safe failure-download metadata in every locale (0.685683ms)
+2026-10-28T08:37:31.6111838Z ✔ reads quoted/BOM header only, without decoding malformed bytes from data rows (3.238751ms)
+2026-10-28T08:37:31.6161172Z ✔ guess only unique metadata aliases with explicit unmapped values (0.506043ms)
+2026-10-28T08:37:31.6204769Z ✔ shared dynamic leaf admits only exact import methods/actions and bounded mapping/count (23.260719ms)
+2026-10-28T08:37:31.6205947Z ✔ failed CSV emits only row/outcome/code, refusing any unexpected identifier or raw cell (0.409947ms)
+2026-10-28T08:37:31.6206794Z ✔ raw-byte cap does not decode/rebuild uploads and cancels oversized chunks (3.505833ms)
+2026-10-28T08:37:31.6317814Z ✔ backend privacy projection strips all source IDs on successful and failed rows (1.748174ms)
+2026-10-28T08:37:31.6322579Z ✔ closed preview parser refuses data-bearing rows, unknown keys and inconsistent counts (0.48424ms)
+2026-10-28T08:37:31.6323897Z ✔ order preview counts units while first CSV record numbers can exceed rows_total (0.146391ms)
+2026-10-28T08:37:31.6324671Z ✔ commit receipt has exactly five keys and no extra customer cells (0.272671ms)
+2026-10-28T08:37:31.6338334Z ℹ tests 41
+2026-10-28T08:37:31.6338574Z ℹ suites 0
+2026-10-28T08:37:31.6338779Z ℹ pass 40
+2026-10-28T08:37:31.6338999Z ℹ fail 1
+2026-10-28T08:37:31.6339199Z ℹ cancelled 0
+2026-10-28T08:37:31.6339416Z ℹ skipped 0
+2026-10-28T08:37:31.6339612Z ℹ todo 0
+2026-10-28T08:37:31.6339978Z ℹ duration_ms 818.676748
+2026-10-28T08:37:31.6340137Z 
+2026-10-28T08:37:31.6340256Z ✖ failing tests:
+2026-10-28T08:37:31.6340374Z 
+2026-10-28T08:37:31.6340569Z test at tests/admin/import-view.test.ts:27:1
+2026-10-28T08:37:31.6341180Z ✖ CU-01 explains source IDs and safe failure-download metadata in every locale (0.685683ms)
+2026-10-28T08:37:31.6341772Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2026-10-28T08:37:31.6342142Z   + actual - expected
+2026-10-28T08:37:31.6342344Z   
+2026-10-28T08:37:31.6342530Z   + undefined
+2026-10-28T08:37:31.6342859Z   - 'Unique customer ID in your old system (source_id).'
+2026-10-28T08:37:31.6343145Z   
+2026-10-28T08:37:31.6343987Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/import-view.test.ts:46:12)
+2026-10-28T08:37:31.6344735Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+2026-10-28T08:37:31.6345151Z       at Test.run (node:internal/test_runner/test:1402:25)
+2026-10-28T08:37:31.6345644Z       at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+2026-10-28T08:37:31.6346149Z       at Test.postRun (node:internal/test_runner/test:1542:19)
+2026-10-28T08:37:31.6346577Z       at Test.run (node:internal/test_runner/test:1467:12)
+2026-10-28T08:37:31.6347102Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+2026-10-28T08:37:31.6347514Z     generatedMessage: true,
+2026-10-28T08:37:31.6347769Z     code: 'ERR_ASSERTION',
+2026-10-28T08:37:31.6348005Z     actual: undefined,
+2026-10-28T08:37:31.6348388Z     expected: 'Unique customer ID in your old system (source_id).',
+2026-10-28T08:37:31.6348768Z     operator: 'strictEqual',
+2026-10-28T08:37:31.6349016Z     diff: 'simple'
+2026-10-28T08:37:31.6349223Z   }
+2026-10-28T08:37:31.6388254Z ## matrix-receipts node-test end
+2026-10-28T08:37:31.6420766Z ##[endgroup]
+2026-10-28T08:37:31.6421091Z bundle member --browser-migration-import: failure
+2026-10-28T08:37:31.6669629Z matrix-receipts: {"mode":"--browser-migration-import","run_id":"40645100039","run_attempt":"1","sha":"e799fd4392ee83eaca7ff7cc0a14da3a2cff033e","status":"FAIL","test_count":41,"spec_count":0}
+2026-10-28T08:37:31.6735017Z ##[group]bundle member --browser-returns-ui
+2026-10-28T08:37:31.7311018Z ## matrix-receipts node-test begin
+2026-10-28T08:37:31.8387035Z ✔ RMA list decodes every state with the exact rma_json keys (2.475961ms)
+2026-10-28T08:37:31.8391482Z ✔ RMA parser refuses drifted keys, states, quantities and timestamps (2.204912ms)

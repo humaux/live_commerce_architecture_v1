@@ -1,7 +1,7 @@
 "use client";
 
 // Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
-// Depends on: buyer BFF cart/options/quotes/destination/checkout/orders and purchase recovery.
+// Depends on: buyer BFF cart/options/quotes/destination/checkout/orders and purchase recovery; lib/cod-copy codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
 
 // Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
@@ -24,6 +24,7 @@ import {
 import { purchaseCopy } from "../lib/purchase-copy";
 import { orderCopy } from "../lib/order-copy";
 import { cvsCopy } from "../lib/cvs-copy";
+import { codFooter } from "../lib/cod-copy";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
 import PromoCode from "./PromoCode";
 import OrderHistory from "./OrderHistory";
@@ -93,6 +94,8 @@ export default function CheckoutFlow({
   const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [options, setOptions] = useState<OptionRow[]>([]);
   const [optionCursor, setOptionCursor] = useState("");
+  // OC-09b: the selected cash-on-delivery option's server surcharge reported by OrderFlow (null = card or another mode).
+  const [codFee, setCodFee] = useState<number | null>(null);
   const [method, setMethod] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [pending, setPending] = useState(false);
@@ -665,6 +668,7 @@ export default function CheckoutFlow({
                   recoveringDestination={pendingKind === "destination"}
                   run={act}
                   money={money}
+                  onCodFee={setCodFee}
                   onOrder={acceptOrder}
                   reload={async () => {
                     // Requotation may unmount the form, so first resolve its
@@ -684,17 +688,31 @@ export default function CheckoutFlow({
       {cart && cart.items.length > 0 && !historyOpen && !order && !orderLocked && (
         <footer className={`purchase-footer${quote ? " has-quote" : ""}`}>
           <div className="footer-inner">
-            <div>
-              <span>{quote ? copy.orderTotal : copy.subtotal}</span>
-              <strong>
-                {quote
-                  ? money(quote.amount.total_minor, quote.currency)
-                  : subtotal === null
-                    ? "—"
-                    : money(subtotal, cart.currency)}
-              </strong>
-              <small>{quote ? copy.unpaid : copy.shippingLater}</small>
-            </div>
+            {/* OC-09b: 「到貨需付」 shows the server quote due (codFooter) while cash on delivery is selected; hidden for card. */}
+            {(() => {
+              const due = quote
+                ? codFooter(locale, quote.cod_due_minor, codFee, (minor) => money(minor, quote.currency))
+                : null;
+              return due ? (
+                <div data-testid="footer-cod-due">
+                  <span>{due.label}</span>
+                  <strong>{due.amount}</strong>
+                  {due.note && <small>{due.note}</small>}
+                </div>
+              ) : (
+                <div>
+                  <span>{quote ? copy.orderTotal : copy.subtotal}</span>
+                  <strong>
+                    {quote
+                      ? money(quote.amount.total_minor, quote.currency)
+                      : subtotal === null
+                        ? "—"
+                        : money(subtotal, cart.currency)}
+                  </strong>
+                  <small>{quote ? copy.unpaid : copy.shippingLater}</small>
+                </div>
+              );
+            })()}
             <button
               className={quote ? "quote-navigation" : "primary"}
               disabled={
