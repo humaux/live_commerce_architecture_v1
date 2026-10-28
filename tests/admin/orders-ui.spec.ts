@@ -1,6 +1,8 @@
 // Purpose: Exercises orders, filters and details with supplied isolated browser identities.
 // Depends on: @playwright/test, node:fs/promises, node:path, node:http, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_ORDER_STORE, LC_BROWSER_ORDER_IDS, LC_BROWSER_FROZEN_SKU_CODE, LC_BROWSER_FOREIGN_STORE, LC_BROWSER_FOREIGN_ORDER_ID, LC_BROWSER_UNLISTED_STORE, LC_BROWSER_SECOND_TOKEN, LC_BROWSER_NO_ORDERS_TOKEN, LC_BROWSER_EXPIRED_TOKEN, LC_BROWSER_REVOKED_TOKEN
 // Used by: apps/admin/src/features/orders/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_merchant_orders_ui_test.go
+// Invariants: ORDERS-V2-IMPL uses real clicks and response-derived identities/counts; shipment writes are explicitly MOCK,
+//   never reach PG, and preserve this harness's read-only fingerprints. Existing MOU assertions remain unchanged.
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -1032,3 +1034,289 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
     );
   }
 });
+
+// ORDERS-V2-IMPL: additive acceptance on the registered signed-MOCK-identity chain.
+// Count/row assertions read real BFF responses. Only the manual shipment command/readback below is MOCK.
+type OrdersDesignPage = {
+  items: Array<{ order_id: string; order_number: string }>;
+  counts: Record<string, number>;
+  total: number;
+  next_cursor: string;
+};
+const designQueues = ["all", "unpaid", "transfer_review", "ready_to_ship", "ready_to_consign", "shipped", "completed", "cancelled"] as const;
+const designOrderNumber = (id: string) => `LC-${id.replaceAll("-", "").toUpperCase()}`;
+
+async function designClick(control: string, expected: string, action: () => Promise<void>) {
+  const directory = resolve(evidence, "orders-v2-impl", test.info().testId);
+  await mkdir(directory, { recursive: true });
+  const record = { page: "Orders", control, action: control, expected, actual: "", status: "FAIL" };
+  try {
+    await action();
+    record.actual = expected;
+    record.status = "PASS";
+  } catch (error) {
+    record.actual = error instanceof Error ? error.message : String(error);
+    throw error;
+  } finally {
+    // One file per action retains a failed assertion too; never pre-fill a PASS ledger.
+    await writeFile(resolve(directory, `${control.replaceAll(/[^a-zA-Z0-9-]/g, "-")}.json`), JSON.stringify(record, null, 2));
+  }
+}
+
+async function designRead(page: Page, action: () => Promise<unknown>, bucket = "all", cursor?: string): Promise<OrdersDesignPage> {
+  const response = page.waitForResponse(r => {
+    const url = new URL(r.url());
+    return [ `/api/stores/${store}/orders`, `/api/stores/${store}/orders/search` ].includes(url.pathname)
+      && url.searchParams.get("view") === "v2"
+      && (url.searchParams.get("bucket") ?? "all") === bucket
+      && (cursor === undefined || (url.searchParams.get("cursor") ?? "") === cursor);
+  });
+  await action();
+  const result = await response;
+  expect(result.status()).toBe(200);
+  expect(result.headers()["cache-control"]).toBe("private, no-store");
+  const data = await result.json() as OrdersDesignPage;
+  await expect(page.getByTestId("orders-total")).toHaveText(new RegExp(`: ${data.total}$`));
+  await expect(page.locator('[data-testid^="order-row-"]')).toHaveCount(data.items.length);
+  await expect.poll(() => page.locator('[data-testid^="order-row-"]').evaluateAll(nodes => nodes.map(node => node.getAttribute("data-testid")!.slice("order-row-".length)))).toEqual(data.items.map(row => row.order_id));
+  for (const key of designQueues) await expect(page.getByTestId(`orders-count-${key}`)).toHaveText(String(data.counts[key]));
+  if (data.next_cursor) await expect(page.getByTestId("orders-next")).toBeEnabled();
+  else await expect(page.getByTestId("orders-next")).toBeDisabled();
+  return data;
+}
+
+async function designActiveVisible(page: Page, bucket: string) {
+  const rail = page.getByTestId("orders-tabs");
+  const active = page.getByTestId(`orders-bucket-${bucket}`);
+  await expect(active).toHaveAttribute("aria-pressed", "true");
+  // READ/MEASURE only: geometry cannot scroll a chip or change selection.
+  await expect.poll(async () => {
+    const parent = await rail.boundingBox(), chip = await active.boundingBox();
+    return !!parent && !!chip && chip.x >= parent.x - 1 && chip.x + chip.width <= parent.x + parent.width + 1;
+  }, { message: `The whole active ${bucket} chip is inside its horizontal viewport` }).toBe(true);
+}
+
+test("ORDERS-V2-IMPL queue tabs, all paginated rows and result total agree with the server after refresh", async ({ page }) => {
+  test.setTimeout(120_000);
+  await signedLogin(page);
+  for (const bucket of designQueues) await designClick(`queue-${bucket}-and-refresh`, "Every page has the response rows/counts; unique traversed rows equal the queue count and result total", async () => {
+    let data = await designRead(page, () => page.getByTestId(`orders-bucket-${bucket}`).click(), bucket, "");
+    expect(data.total).toBe(data.counts[bucket]);
+    const total = data.total;
+    data = await designRead(page, () => page.reload(), bucket, "");
+    expect(data.total).toBe(total);
+    await expect(page.getByTestId(`orders-bucket-${bucket}`)).toHaveAttribute("aria-pressed", "true");
+    const seen = new Set<string>();
+    for (let number = 0; ; number++) {
+      expect(number, "Bounded synthetic fixture traversal").toBeLessThan(10);
+      for (const row of data.items) {
+        expect(seen.has(row.order_id), "No duplicate order across cursor pages").toBe(false);
+        seen.add(row.order_id);
+      }
+      if (!data.next_cursor) break;
+      data = await designRead(page, () => page.getByTestId("orders-next").click(), bucket, data.next_cursor);
+      expect(data.total).toBe(total);
+      expect(data.counts[bucket]).toBe(total);
+    }
+    expect(seen.size).toBe(total);
+  });
+});
+
+for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+  test(`ORDERS-V2-IMPL mobile later queue stays visible through detail, back and refresh (${locale})`, async ({ page }) => {
+    await signedLogin(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByTestId("locale-switch").selectOption(locale);
+    await expect(page.getByTestId("orders-table")).toBeVisible();
+    let selected = "";
+    await designClick("later-queue", "Cancelled chip is fully visible after native click and refresh", async () => {
+      // Native wheel reveals later queues; there is no evaluate scroll mutation.
+      await page.getByTestId("orders-tabs").hover();
+      await page.mouse.wheel(1200, 0);
+      const data = await designRead(page, () => page.getByTestId("orders-bucket-cancelled").click(), "cancelled");
+      expect(data.items.length).toBeGreaterThan(0);
+      selected = data.items[0].order_id;
+      await designActiveVisible(page, "cancelled");
+      await designRead(page, () => page.reload(), "cancelled");
+      await designActiveVisible(page, "cancelled");
+    });
+    const before = page.url();
+    await designClick("detail-and-return", "Visible return control restores the same filter/page and active chip", async () => {
+      await page.getByTestId(`order-expand-${selected}`).click();
+      await expect(page.getByTestId("order-detail")).toBeVisible();
+      await page.getByTestId("order-detail-back").click();
+      await expect(page.getByTestId("order-detail")).toHaveCount(0);
+      await expect(page).toHaveURL(before);
+      await designActiveVisible(page, "cancelled");
+      await designRead(page, () => page.reload(), "cancelled");
+      await designActiveVisible(page, "cancelled");
+    });
+  });
+}
+
+test("ORDERS-V2-IMPL mobile sticky search and private page survive detail/back without persisting the search on refresh", async ({ page }) => {
+  await signedLogin(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByTestId("orders-search").fill("0001");
+  let data = await designRead(page, () => page.getByTestId("orders-apply").click());
+  await designClick("sticky-search", "Search stays fully on screen while order rows scroll", async () => {
+    const first = page.getByTestId(`order-row-${data.items[0].order_id}`);
+    const before = await first.boundingBox();
+    await first.hover();
+    await page.mouse.wheel(0, 500);
+    // READ/MEASURE: prove the document actually moved, then inspect the search viewport.
+    await expect.poll(async () => (await first.boundingBox())!.y).toBeLessThan(before!.y - 50);
+    const search = await page.getByTestId("orders-search").boundingBox();
+    expect(search).not.toBeNull();
+    expect(search!.y).toBeGreaterThanOrEqual(0);
+    expect(search!.y + search!.height).toBeLessThanOrEqual(844);
+  });
+  await designClick("private-page-detail-back", "Search and page-two rows survive detail/back; refresh clears only private search", async () => {
+    expect(data.next_cursor).not.toBe("");
+    data = await designRead(page, () => page.getByTestId("orders-next").click(), "all", data.next_cursor);
+    const before = page.url(), rows = data.items.map(row => row.order_id);
+    await page.getByTestId(`order-expand-${rows[0]}`).click();
+    await expect(page.getByTestId("order-detail")).toBeVisible();
+    await page.getByTestId("order-detail-back").click();
+    await expect(page).toHaveURL(before);
+    await expect(page.getByTestId("orders-search")).toHaveValue("0001");
+    await expect.poll(() => page.locator('[data-testid^="order-row-"]').evaluateAll(nodes => nodes.map(node => node.getAttribute("data-testid")!.slice("order-row-".length)))).toEqual(rows);
+    expect(new URL(page.url()).searchParams.has("q")).toBe(false);
+    expect(new URL(page.url()).searchParams.has("cursor")).toBe(false);
+    await page.reload();
+    await expect(page.getByTestId("orders-search")).toHaveValue("");
+    await expect(page.getByTestId("state-filter")).toHaveValue("all");
+    await expect(page.getByTestId("orders-bucket-all")).toHaveAttribute("aria-pressed", "true");
+    await noPersistentOrderBody(page);
+  });
+});
+
+test("ORDERS-V2-IMPL desktop selection names the actual orders and uses the existing preview/cancel flow", async ({ page }) => {
+  await signedLogin(page);
+  const chosen = [ids.captured, ids.authorized];
+  await designClick("select-orders-and-view", "Selection bar names both selected order numbers and preview uses the original pick-list endpoint", async () => {
+    for (const id of chosen) await page.getByTestId(`order-row-${id}`).getByRole("checkbox").check();
+    const bar = page.getByTestId("orders-selection-bar");
+    await expect(bar).toBeVisible();
+    for (const id of chosen) await expect(bar).toContainText(designOrderNumber(id));
+    await expect(bar.getByTestId("orders-selection-count")).toHaveText("2");
+    // READ/MEASURE only: sticky positioning belongs to the whole selection bar, not a screenshot.
+    expect(await bar.evaluate(node => getComputedStyle(node).position)).toBe("sticky");
+    await bar.getByTestId("orders-selection-view").click();
+    const preview = page.waitForResponse(r => new URL(r.url()).pathname === `/api/stores/${store}/orders/pick-list` && r.request().method() === "POST");
+    await page.getByTestId("pick-toolbar").getByRole("button", { name: "Pick list", exact: true }).click();
+    const response = await preview;
+    expect(response.status()).toBe(200);
+    expect(response.request().postDataJSON()).toEqual({ order_ids: chosen });
+    const document = await response.json() as { orders: Array<{ order_id: string; order_number: string }> };
+    expect(document.orders.length).toBeGreaterThan(0);
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    for (const row of document.orders) await expect(dialog).toContainText(row.order_number);
+    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    for (const id of chosen) await expect(bar).toContainText(designOrderNumber(id));
+    await bar.getByTestId("orders-selection-cancel").click();
+    await expect(page.getByTestId("pick-count")).toHaveText("0");
+    for (const id of chosen) await expect(page.getByTestId(`order-row-${id}`).getByRole("checkbox")).not.toBeChecked();
+    await page.reload();
+    for (const id of chosen) await expect(page.getByTestId(`order-row-${id}`).getByRole("checkbox")).not.toBeChecked();
+  });
+});
+
+for (const [locale, width] of [["en", 1586], ["zh-TW", 390], ["zh-CN", 390]] as const) {
+  test(`ORDERS-V2-IMPL MOCK manual shipment requires confirmation, one identity, cancel and refreshed readback (${locale}/${width})`, async ({ page }) => {
+    await signedLogin(page);
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
+    await page.getByTestId("locale-switch").selectOption(locale);
+    await expect(page.getByTestId("orders-table")).toBeVisible();
+    const id = ids.captured;
+    const path = `/api/stores/${store}/orders/${id}`;
+    let saved = false;
+    const submissions: Array<Record<string, unknown>> = [];
+    const head = { version: 1, status: "SHIPPED", carrier_code: "black_cat", carrier_name: null, tracking_number: "MOCK-ORDERS-V2-001", tracking_url: null, recorded_at: "2026-10-28T00:00:00Z" };
+    // MOCK preparation/readback: intercept the existing route only. A real PUT would invalidate the PG read-only harness.
+    await page.route(url => url.pathname === `${path}/shipment`, async route => {
+      expect(route.request().method()).toBe("PUT");
+      expect(route.request().headers()["idempotency-key"]).toBeTruthy();
+      submissions.push(route.request().postDataJSON() as Record<string, unknown>);
+      saved = true;
+      await route.fulfill({ status: 200, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify(head) });
+    });
+    await page.route(url => url.pathname === path, async route => {
+      // fetch prepares a synthetic readback from the unchanged real fixture; it never validates a user action.
+      const response = await route.fetch();
+      const detail = await response.json();
+      await route.fulfill({ response, json: saved ? { ...detail, fulfillment_state: "MERCHANT_SHIPPED", shipment: head } : detail });
+    });
+    await page.route(url => url.pathname === `${path}/shipment/history`, async route => {
+      if (!saved) { await route.continue(); return; }
+      await route.fulfill({ status: 200, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify({ items: [{ ...head, note: null, void_reason: null, principal_id: "10000000-0000-4000-8000-000000000001" }] }) });
+    });
+    await expand(page, id);
+    await expect(page.getByTestId("shipment-form")).toBeVisible();
+    await page.getByTestId("ship-carrier").selectOption("black_cat");
+    await page.getByTestId("ship-tracking").fill(head.tracking_number);
+    await designClick("review-before-shipment-write", "Review contains one order identity, carrier, tracking and the manual fulfilment note; no command sent", async () => {
+      await page.getByTestId("shipment-submit").click();
+      const confirm = page.getByRole("dialog").filter({ has: page.getByTestId("shipment-confirm") });
+      await expect(confirm).toBeVisible();
+      const text = await confirm.innerText();
+      expect(text.split(designOrderNumber(id)).length - 1).toBe(1);
+      await expect(confirm).toContainText(head.tracking_number);
+      await expect(confirm).toContainText(locale === "en" ? /Black Cat/i : /黑貓|黑猫/);
+      await expect(confirm.getByTestId("shipment-manual-note")).toContainText(locale === "en" ? /label|carrier/i : /面單|面单/);
+      expect(submissions).toHaveLength(0);
+      await confirm.getByTestId("shipment-confirm-cancel").click();
+      await expect(confirm).toHaveCount(0);
+      expect(submissions).toHaveLength(0);
+      await expect(page.getByTestId("ship-tracking")).toHaveValue(head.tracking_number);
+    });
+    await designClick("confirm-shipment-and-refresh", "Exactly one existing shipment PUT follows confirm; its MOCK state persists after refresh", async () => {
+      await page.getByTestId("shipment-submit").click();
+      await page.getByTestId("shipment-confirm").click();
+      await expect(page.getByTestId("shipment-record")).toContainText(head.tracking_number);
+      expect(submissions).toHaveLength(1);
+      expect(submissions[0]).toEqual({ expected_version: 0, status: "SHIPPED", carrier_code: "black_cat", carrier_name: null, tracking_number: head.tracking_number, tracking_url: null, note: null, void_reason: null });
+      await page.reload();
+      await expect(page.getByTestId("shipment-record")).toContainText(head.tracking_number);
+      expect(submissions).toHaveLength(1);
+    });
+  });
+}
+
+for (const state of ["PROVIDER_LABEL_CREATED", "REVIEW_REQUIRED"] as const) {
+  test(`ORDERS-V2-IMPL status help explains ${state} without treating it as shipment/payment`, async ({ page }) => {
+    await signedLogin(page);
+    const id = state === "REVIEW_REQUIRED" ? ids.review : ids.captured;
+    if (state === "PROVIDER_LABEL_CREATED") {
+      // MOCK list projection: the existing chain has no CVS CREATED fixture. Keep that boundary explicit;
+      // this projection tests help only, never proves a real provider label or carrier handover.
+      await page.route(url => url.pathname === `/api/stores/${store}/orders/search`, async route => {
+        const response = await route.fetch();
+        const data = await response.json();
+        expect(data.items).toHaveLength(1);
+        await route.fulfill({ response, json: { ...data,
+          items: [{ ...data.items[0], fulfillment_state: state }],
+          counts: Object.fromEntries(designQueues.map(key => [key, key === "all" || key === "ready_to_consign" ? 1 : 0])),
+        } });
+      });
+    }
+    await page.getByTestId("orders-search").fill(id);
+    await designRead(page, () => page.getByTestId("orders-apply").click());
+    await designClick(`status-help-${state}`, "Status help opens beside the badge, distinguishes the fact and closes by the same real control", async () => {
+      const row = page.getByTestId(`order-row-${id}`);
+      const help = row.getByTestId(`order-status-help-${state}`);
+      await help.click();
+      await expect(help).toHaveAttribute("aria-expanded", "true");
+      const note = row.getByTestId(`order-status-explanation-${state}`);
+      await expect(note).toBeVisible();
+      await expect(note).toContainText(state === "REVIEW_REQUIRED" ? /review|paid/i : /carrier|hand|print/i);
+      await help.click();
+      await expect(help).toHaveAttribute("aria-expanded", "false");
+      await expect(note).not.toBeVisible();
+      await page.reload();
+      await expect(page.getByTestId("orders-search")).toHaveValue("");
+    });
+  });
+}
