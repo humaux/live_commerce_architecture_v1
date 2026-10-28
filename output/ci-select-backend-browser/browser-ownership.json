@@ -226,7 +226,7 @@
     "tests/foundation/ads_attribution_session_test.go": "786191ab77688ad062f0f506849d6bacc85cf9669b511c912a6967a59b6138b1",
     "tests/foundation/ads_attribution_signals_test.go": "48d224ccbf9ce521f9a022b5c1c4ae9a71a6e7ae54814469ebf18530de42769e",
     "tests/foundation/ads_attribution_test.go": "a3b8f0560976abe4ae676d5bcf4f1360c1e1621e2ac0137067b066af4f8189b7",
-    "tests/foundation/bank_transfer_closed_test.go": "864ca21da53f2417ad34d0e43aa04481799240b78955def96a482c0c21cc775c",
+    "tests/foundation/bank_transfer_closed_test.go": "30482268f71262394740a220c195c0cb4f4fdab4af6a9de37076c605bea80568",
     "tests/foundation/blocklist_test.go": "9a1646cd78e880994b48bd0ce958cfc5627d357fc32460df4a92715ed1fafbe2",
     "tests/foundation/browser_admin_legacy_test.go": "b8cf053044f00e7e1c0c6a8594dc5f05ad46480d6f1ba453e715ba0016290a60",
     "tests/foundation/browser_admin_relay_test.go": "91396089f26ced835186ef839212e9d906d5d52a0731aadd23554ae24879aa4b",
