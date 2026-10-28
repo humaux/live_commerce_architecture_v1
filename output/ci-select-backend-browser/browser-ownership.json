@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "718729e925920fd1b9b80bab166c01d717c36700d45750b7b168eb5217992f95",
+  "registryHash": "cd5cc734d31d1d3ad6db65b5198b9e551179051c3c1f5071d9247f2d784d71f1",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -128,6 +128,7 @@
     "tests/admin/meta-health-ui.spec.ts": "f9b4605ec02bf1d39c3146892830fa5c31d0f121b011d74476faab013681d872",
     "tests/admin/money-time-model.test.ts": "e74353a55056e559e07607dc584fbe91b46ad5e16b65f6258241282c17a908d4",
     "tests/admin/notify-model.test.ts": "5421dd95172a3941e06c330509b0a94e330f686c7d4abcea4461eea7dfe3c8d8",
+    "tests/admin/oc/reauth.spec.ts": "420beb138a671026f24c0439e1fdc6bf9ccf9dddadb4e2adc7415ed6fb2c38b2",
     "tests/admin/operations-ads.spec.ts": "b9f600b9cce56a14d55912a396fd94cb885954cabfbd08611350b367c74c348d",
     "tests/admin/operations-model.test.ts": "57c33347733823f50e60db4d6f969511323855d26b4c3961ff38d68baf61f29d",
     "tests/admin/ops-polish-model.test.ts": "a98ebf77dbf005f6cb5c43e1a30e5add834b1fcc775a05dd10990f77ae4cf99d",
@@ -266,6 +267,7 @@
     "tests/foundation/browser_meta_connect_test.go": "da790bf52680476dd06e7a451e75ad8b4ee4eb083ab7b67da26c15fbbe5ae586",
     "tests/foundation/browser_meta_health_ui_test.go": "0a90fbf4988333402d0934db5bf8139855c4c53cc8b40dc27e59218074553249",
     "tests/foundation/browser_migration_import_ui_test.go": "2ccfcd0a06067d73536d308891e7d28e6ceb66888d98d210314af0028b62d9ab",
+    "tests/foundation/browser_oc_test.go": "23851ecd8adecca436a21429098c5a7372e5dbab82d82f7e8660cf8aa84f9904",
     "tests/foundation/browser_operations_ads_test.go": "1d25eb9632f10dbef68a6b155046da4d4c2438f3a020819539df7303b14ca7d1",
     "tests/foundation/browser_ops_polish_test.go": "1bd05c73623b63c399f63dd801e8c3c5af2a16c53cf23816cc30074c9b386692",
     "tests/foundation/browser_order_chain_test.go": "008b21e7e0972486567b7bc10f1160a673f89b174b2f641dc874aa11d6980a29",
@@ -755,8 +757,8 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "718729e925920fd1b9b80bab166c01d717c36700d45750b7b168eb5217992f95",
-    "playwright.config.ts": "659853d6b0a627aec3235c6ad91c999b72d3c2a4e85579f3b84c0b631c5695d0",
+    "scripts/dev/test-local.sh": "cd5cc734d31d1d3ad6db65b5198b9e551179051c3c1f5071d9247f2d784d71f1",
+    "playwright.config.ts": "2e9f39bc4a23c36f46119ab0742016a59642c9460fda94620194bd0bf7fa6039",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
     "package.json": "dfa3b54b5ffe4382bd9ec06971526e0e82c33e4303e916d50a85c121196bfca0",
@@ -1258,11 +1260,13 @@
     },
     "--browser-password-auth": {
       "specs": [
+        "tests/admin/oc/reauth.spec.ts",
         "tests/admin/password-auth.spec.ts",
         "tests/admin/password-bff.test.ts",
         "tests/admin/staff-team.spec.ts"
       ],
       "inputs": [
+        "tests/admin/oc/reauth.spec.ts",
         "tests/admin/password-auth.spec.ts",
         "tests/admin/password-bff.test.ts",
         "tests/admin/password-response-canaries.ts",
@@ -1275,8 +1279,10 @@
       "foundationInputs": [],
       "foundationUnresolvedInputs": [],
       "evidence": [
+        "harness:tests/foundation/browser_oc_test.go",
         "harness:tests/foundation/browser_password_auth_test.go",
         "harness:tests/foundation/browser_staff_team_test.go",
+        "registry:--browser-password-auth -> tests/admin/oc/reauth.spec.ts",
         "registry:--browser-password-auth -> tests/admin/password-auth.spec.ts",
         "registry:--browser-password-auth -> tests/admin/password-bff.test.ts",
         "registry:--browser-password-auth -> tests/admin/staff-team.spec.ts",
@@ -1284,6 +1290,7 @@
         "tests/admin/password-bff.test.ts:import apps/admin/lib/auth.ts",
         "tests/admin/password-bff.test.ts:import apps/admin/lib/password-request.ts",
         "tests/admin/password-bff.test.ts:server/import apps/admin",
+        "tests/foundation/browser_oc_test.go:server/import apps/admin",
         "tests/foundation/browser_password_auth_test.go -> tests/admin/password-auth.spec.ts",
         "tests/foundation/browser_password_auth_test.go:server/import apps/admin",
         "tests/foundation/browser_password_auth_test.go:suite=password-auth -> tests/admin/password-auth.spec.ts",

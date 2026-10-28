@@ -677,7 +677,7 @@ test("CI-SPEED-3: packages and conservative infrastructure paths still select AL
 });
 
 test("CI-SPEED-3: unknown specs, helpers and apps cannot silently select zero modes", () => {
-  for (const file of ["tests/admin/oc/reauth.spec.ts", "tests/admin/future-fixture.ts", "tests/e2e/unknown.spec.ts", "tests/ui/unknown-helper.mjs", "tests/storefront/unknown.spec.ts", "apps/future/components/X.tsx"])
+  for (const file of ["tests/admin/oc/unregistered-future.spec.ts", "tests/admin/future-fixture.ts", "tests/e2e/unknown.spec.ts", "tests/ui/unknown-helper.mjs", "tests/storefront/unknown.spec.ts", "apps/future/components/X.tsx"])
     assert.deepEqual(planPr([file], usage).modes, [...FOUNDATION, ...full], file);
 });
 
