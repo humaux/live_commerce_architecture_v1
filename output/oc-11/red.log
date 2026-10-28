@@ -23,3 +23,10 @@ DIRECTED FIX 1 RED (existing CI; no new RED push required by the dispatch):
 - Root cause from current source: page.goto returns before useLoad's loadAll (draft/media/versions) completes. Installing the versions-abort route before edit can abort that initial read; Design renders the unavailable state instead of Editor, so design-name is absent.
 - Fix: complete the real design-name fill before installing the versions-abort route. Subsequent refresh reads still fail; the second publish is still aborted before commit; every existing A11 assertion remains unchanged.
 - This setup timeout is not assertion-level RED evidence for A11. The earlier mutation/assertion RED records above remain unchanged. New-head CI and independent review are pending.
+
+REVIEW FIX RED BATCH (2026-10-29, PR #221, #253/#264):
+Base after integration merge: 77627f4fd (origin/r3/integration bf161bac96252c35337e07713c08a275d48e3e17).
+Tests plus explicitly labelled minimal mutations: arm-after-response and stale-list-only watermark.
+Expected own-assertion failures: OC11-A9 persisted key while POST held; OC11-A10 actual second POST after reload; OC11-A11 stale row must not confirm; OC11-P1a key metadata and other-tab identity; OC11-P1b local rollback disabled, superseded resolution/unlock/persistence and bounded recheck read.
+Run/job ids: PENDING until push. No assertion RED or GREEN claimed yet. Initial-load/fill/timeouts outside the bounded-read assertion do not count.
+Local tests: NOT_RUN (prohibited). Humaux: unavailable, no shared memory/canvas write.

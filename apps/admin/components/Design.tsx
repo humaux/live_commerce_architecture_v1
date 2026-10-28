@@ -383,13 +383,14 @@ function Editor({
     if (!window.confirm(fill(c.publishConfirm, { n: version }))) return;
     setBusy("publish");
     const key = crypto.randomUUID();
-    // Armed BEFORE the request leaves: a reload while Go may already have committed must find UNKNOWN, never a free Publish button.
+    // OC11 RED MUTATION (#264): restore the unfixed arm-after-response order and stale-list watermark.
+    // Remove this mutation only after CI witnesses A9/A10/A11 on their own assertions.
     setNotYet(false);
     setUnconfirmed(false);
-    setPending({ version, key, watermark: Math.max(versions.items[0]?.version ?? 0, known.current) });
     const r = await publish(store, version, boundary, key);
     setBusy("");
     if (!r.ok && r.uncertain) {
+      setPending({ version, key, watermark: versions.items[0]?.version ?? 0 });
       setNote(null);
       return; // pending stays: the recheck reads the result of this same request
     }
