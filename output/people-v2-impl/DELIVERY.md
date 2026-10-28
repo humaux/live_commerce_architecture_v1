@@ -358,3 +358,37 @@ and peopleCopy exports and described both dependencies in the header. Other impo
 code is unchanged from integration. Regenerated ownership and depmap; strict mapped
 admin tsc and index syntax check exit 0. One repair push is required to let PR CI start;
 no item-by-item implementation pushes or test weakening. Temporary links/config removed.
+
+## Previous-head wait receipt (superseded by RELAY 2)
+
+PR #289 is MERGEABLE at `5aeb6529d84fd3fd5ad342badc8e97c6337d3ed2`.
+Gates run `40775436305` and Foundation run `40775436307` are QUEUED; test job IDs
+and GREEN are PENDING. WAIT_RUN: 40775436305,40775436307. The integrator relays
+completion in a fresh session. No polling loop or local process remains. Humaux
+store/canvas NOT_RUN because those tools are not exposed; no completion claim.
+
+## RELAY 2 · shared formatter gate repair · attempt 1
+
+The current implementation head `5aeb6529d84fd3fd5ad342badc8e97c6337d3ed2`
+failed Foundation run `40775436307`, job `123123404293`, at the unchanged
+G-UI3/G-UI5 architecture assertion: `CustomerDetail.tsx: format 1 > 0`.
+Original filtered receipt: `evidence/relay2-foundation-failure.log`. This is an
+implementation gate regression, separate from the historical tests-only search RED.
+
+Root cause: a date-only display introduced a component-local `Intl.DateTimeFormat`
+instead of using the shared formatting authority. Reused the existing imported
+`displayTime("sv-SE", value)` and selected its date portion; it retains Asia/Taipei
+and the signed YYYY-MM-DD display. The shared implementation remains in
+`packages/format/src/index.ts`, re-exported by `orders-model.ts`. No new import,
+dependency, harness global, exemption, baseline or assertion change. All three
+discovered component harnesses retain their existing `displayTime` injection.
+The existing browser main path asserts `2026-09-12` and consent date `2026-10-20`
+in all three locales on both desktop and mobile; those assertions stay unchanged.
+
+Static diff whitespace check exits 0. `node --check` cannot parse `.tsx` in this
+Node runtime (`ERR_UNKNOWN_FILE_EXTENSION`); it is not a successful syntax receipt.
+No local compiler rerun (worktree dependencies unavailable), tests or servers.
+Previous compiler receipts predate this edit. Current-head GREEN and independent
+acceptance remain PENDING; author assessment E0. No product completion claim.
+No new path outside PLAN.md. Rollback: revert the single formatter repair commit.
+Humaux store/canvas/coord unavailable; no shared-state update is claimed.

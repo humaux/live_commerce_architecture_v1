@@ -127,7 +127,7 @@ function Body({
 }) {
   const oc = ordersCopy[locale];
   const m = (value: number) => (detail.currency ? money(locale, detail.currency, value) : String(value));
-  const date = (value: string) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
+  const date = (value: string) => displayTime("sv-SE", value).slice(0, 10);
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
   const p = c.people;

@@ -15,4 +15,6 @@ Generated browser ownership is included after merging origin/r3/integration. dep
 
 CI startup repair (attempt 1): GitHub reported DIRTY/CONFLICTING with no checks on implementation 7eed1ab3c. Merged current integration dcecd6220, reconciled only the i18n header while preserving both feature exports, and regenerated ownership. Strict mapped tsc and index syntax checks exit 0. Other imported code is unchanged from integration. A single integration repair push allows the PR workflows to start.
 
+RELAY 2 formatter repair (attempt 1): Foundation 40775436307 / job 123123404293 on head 5aeb6529 failed the unchanged G-UI3/G-UI5 assertion (`CustomerDetail.tsx: format 1 > 0`). Reuse the existing shared displayTime import for the signed Taipei YYYY-MM-DD date instead of creating Intl.DateTimeFormat inside the component. No new import, harness change, test/baseline/exemption change or extra write path. Existing three-locale desktop/mobile date assertions remain intact. Static whitespace check exits 0; node --check does not support TSX and failed with ERR_UNKNOWN_FILE_EXTENSION. Compiler receipts above precede this repair; no local compiler/test/server rerun. Repair-head CI and independent acceptance PENDING, author E0.
+
 🤖 Generated with Codex (dispatched by Claude Code integrator).
