@@ -1,6 +1,32 @@
-# inbox-p2 RED: #242 item 1
-Status: PENDING; no test has been run locally.
-Test: INU01, tests/admin/inbox-ui.spec.ts
-Expected assertion: marked-read row disappears immediately from the unread list
-Production behavior retained: Inbox.tsx onRead only maps unread=false.
-CI run/job IDs will be recorded after PR creation; this file is not a PASS receipt.
+# inbox-p2 RED: #242 item 1 — observed CI assertion failure (E3)
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/259
+Head: 8c12cec74644d3c1134ced0a3a8f4cd7b8820396
+Gates run: 40628056371 (pull_request), conclusion failure
+Synthetic merge tested: dd3f3a1ca852b997031e1f2205eb06eee1a9c197
+Job: 122622864648, gate (--browser-inbox), conclusion failure
+2026-10-28T05:44:02Z: Playwright 1 failed, 18 passed; failed INU01.
+Artifact: gate-browser-inbox / 12794009779 (2,404,531 bytes)
+Artifact playwright/inbox-ui/20261028T054254.574524459/playwright.log:
+  Error: marked-read row disappears immediately from the unread list
+  expect(locator).toHaveCount(expected) failed
+  Expected: 0
+  Received: 1
+  Timeout: 10000ms
+  tests/admin/inbox-ui.spec.ts:135:5
+Filtered excerpt (title's trailing space removed): output/inbox-p2/red-assertion.log (SHA256
+d46b52bf6dff83b0ff28ade46c48cf59cd46543791ed291dedbae842dfe70838).
+The failure follows A10 status=200 and the thread-content assertion; it is the
+new row-removal assertion itself, not setup or infrastructure failure.
+receipts 122668012337 and required 122680263780 fail as downstream consequences
+of this FAIL receipt. Every other executed gate matrix job is success.
+
+Historical OC-12 final GREEN independently read from run 40538883929:
+head 52f3ae7adaa85b4ef8dd90ffc627352a05d30e12; conclusion success;
+shard:unit 122316890900 success; browser-inbox 122316892730 success.
+These historical results do not accept PR #259's implementation head.
+
+Evidence gaps: item 2 read-row exclusion and item 3 trigger fixture replacement
+were absent from the inherited tests-only push. No separate failing CI assertion
+for those hardening changes is claimed. Original SQL invalid_filter RED does not
+by itself prove BFF/HTTP allowlist/browser assertion sensitivity (item 4).
+No local tests or servers run; implementation GREEN is pending.
