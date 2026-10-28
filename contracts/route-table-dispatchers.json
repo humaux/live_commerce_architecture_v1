@@ -274,6 +274,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "pending independent review (OC-09b, 2026-10-28)"
+    "reviewed": "2026-10-28 integrator + independent review (Opus, OC-09b quoteWithCodDue + quoteResponse.CodDueMinor; output/buyer-route-table/review-oc09b-pin.md)"
   }
 ]
