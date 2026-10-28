@@ -499,6 +499,7 @@
     "tests/foundation/meta_runtime_process_test.go": "d51d6ed749c069bdde2d0be05e0cd410639a2480b70551e4a4825be01125758a",
     "tests/foundation/meta_runtime_test.go": "bfe1be69116fbb17b07ebddd1ae14daa32521dd768bf9a5d00e1a7dfcdcd8e38",
     "tests/foundation/oc09b_cod_due_test.go": "76620249ff3f525bd476f8f2465c083244bbd18a4bd8b33c27e1f92fbc374942",
+    "tests/foundation/oc11_publish_receipt_test.go": "3a822cdf16401a9fb5556dc8b6c0c2b8e8607e3767a41a7fd6cd900cc6ee921f",
     "tests/foundation/operations_queue_flow_test.go": "56d365d1d8c0b64e6e4a04a055dda29997dbbe335e51f46d1b16c8e85be02d21",
     "tests/foundation/operations_queue_helpers_test.go": "7eee77df06aca17c52faa83776ad09702e0eb49df1803926c5fca2557917a7be",
     "tests/foundation/operations_queue_test.go": "3dd314537a9d3fb54fcdcd412db054ce05a4bdb25522fda878ebf5989911c80c",
