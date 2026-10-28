@@ -1,4 +1,4 @@
-# STORE-PROFILE-API — implementation awaiting CI
+# STORE-PROFILE-API — RELAY 3 drift repair awaiting CI
 
 Assigned implementer: Codex, dispatched by Claude integrator; no recursive delegation.
 Exact runtime model identifier/reasoning setting are not exposed by this session.
@@ -29,6 +29,20 @@ the actual merged set. This lane never merges or pushes integration.
 
 ## Evidence and remaining acceptance
 
+- RELAY 3: implementation head `216d2979312f1a0f6e78654646562df40abfd223`
+  failed Gates run **40765780013**, plan job **123096837291**, with five
+  contract-drift findings before any Gates test job. Raw filtered receipt:
+  `relay3-drift.log`. Root causes: methods outside Markdown code spans and
+  shorthand PUT path were not explicit contract routes; destructured BFF store
+  was outside the scanner's supported leaf grammar. Repair attempt **1/2**
+  uses full method/path spans and the existing `p.store` forwarding pattern.
+  No scanner, baseline, exemption, dispatcher, test or fixture was changed.
+- Fetched integration again in RELAY 3: still `313c2c36f4ac064975c1c7c170d710cb63fa457f`;
+  R2 pin remains 136. This relay changes no route identity, import, browser spec
+  or ownership discovery input; no generated ownership refresh is needed.
+- RELAY 3 static: `node --check apps/admin/app/api/stores/[store]/profile/route.ts`
+  and `git diff --check` exit 0. Runtime tests and contract-drift execution are
+  reserved for GitHub CI; E1 syntax only, author assessment E0.
 - Causal RED: Foundation **40762550914 / 123078018073**, PR head
   `24cac517c734c0d09cd017f523c98d31738c8a24`, tested synthetic merge
   `e431a572b1a5b24eee6a5ffaef99b8714d2ad11f` into base `313c2c36f`.

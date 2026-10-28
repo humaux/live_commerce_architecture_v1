@@ -170,8 +170,8 @@ this amendment owns the profile transport and simplified delivery mapping.
 
 | Method/path | Input/output | Permission |
 |---|---|---|
-| GET `/v1/admin/stores/{store_id}/profile` | `{name, contact_email, contact_phone, version}` | `store:read` |
-| PUT same `/profile` | `{name, contact_email, contact_phone?, expected_version}`; same output | `integration:manage` |
+| `GET /v1/admin/stores/{store_id}/profile` | `{name, contact_email, contact_phone, version}` | `store:read` |
+| `PUT /v1/admin/stores/{store_id}/profile` | `{name, contact_email, contact_phone?, expected_version}`; same output | `integration:manage` |
 
 Admin BFF: GET/PUT `/api/stores/{store}/profile`, actual signed session only,
 Origin/CSRF protection on writes, no fixture identity. Tenant, principal and store
