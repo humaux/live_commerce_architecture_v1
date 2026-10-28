@@ -83,3 +83,50 @@ not production fixes and this mutation head must never be merged.
 At most one restoration push remains after this batch. Item 4's historical
 GREEN and source-counterfactual explanation remain in output/oc-12/DELIVERY.md;
 its historical allowlist/browser mutation RED is not claimed.
+
+## 2026-10-29 FIX-RED #259 restoration (E1; own-head CI PENDING)
+
+Authority: current integrator FIX-RED card; issue #242; current repository
+contracts/live-console-v1.md §3.6, A8-A10; architecture §§0,1,2,26,27 read.
+Worktree/branch remain the assigned inbox-p2/unit/issue-242-inbox-p2 lane.
+Integration fetched and merged before edits (original merge 054661a88; coauthor
+trailer added before push). No delegation; runtime model/effort UNKNOWN.
+
+Current remote RED head c4a02e25de0e082be7aa1d356ada05d9104a2c2a was checked
+against GitHub run40690611280 attempt2. All four failing jobs were independently
+read: g09/123014757576, bundle06/123014763947, receipts/123021219884 and
+required/123021536575. UR02 fails its exact committed row/sequence assertion;
+INU01 fails distinct-read exclusion after authoritative reload. See red.log and
+item2-red.log. This supersedes earlier items2/3 RED-pending statements above.
+The subsequent marked-read reload exclusion was not reached; no RED for it claimed.
+
+Root cause: the previous head intentionally retained two sensitivity mutations.
+Removed only the browser route that replaced unread data with filter=all, and
+restored the second signed synthetic postDM instead of the direct sequence UPDATE.
+All permanent tests and barriers stay intact. No test weakening, threshold changes,
+exemption changes or frozen gate adapter changes. No app/source imports changed.
+
+Current CardPayments is PASS67.79s (same bundle06 job), and current WebKit is PASS
+(job123014763427); the previous unrelated WebKit STOP checkpoint is superseded.
+No payment or WebKit changes are justified by current receipts.
+
+Generated static browser ownership is refreshed with the repository generator:
+it hashes both changed test files and records the new foundation direct test.
+Outside original issue write paths: output/ci-select-backend-browser/browser-ownership.json
+(generated; explicitly allowed by the FIX-RED preamble). No other scope expansion.
+No dependency graph/import changes; depmap regeneration is unnecessary.
+
+Local static checks: gofmt, go vet ./tests/foundation, python3 scripts/check_packet.py
+all exit0. Packet output says PASS_PACKET_STRUCTURE_ONLY, not runtime acceptance.
+Timestamp-only generated packet change was cleaned; static logs retained.
+No tests/servers/browser/PG/containers run locally. No local fixtures/ports created.
+
+Gate: this PR's own new Gates and Foundation workflows, bound to the restored head,
+including real-click browser-inbox, UR02 REAL_PG, receipt/required aggregation and
+ownership drift checks. Pending run IDs will be posted to the PR after the one
+implementation push. Integrator relays completed run conclusions in a fresh session;
+no long polling and no evidence-only push after GREEN.
+NOT_RUN: new-head GREEN, independent acceptance, local tests/servers/browser/PG,
+local tsc (dependencies absent), LIVE Meta and production. Author verdict remains E0.
+
+Original artifact12835468093 playwright.log independently read in FIX-RED259 via bounded byte-range download; ZIP member CRC verified. Exact own assertion expected0/received1 at :171:131 is retained in fix-red-browser-assertion.log. Full download stalled and its partial temporary archive was removed.

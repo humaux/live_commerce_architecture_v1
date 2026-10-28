@@ -150,15 +150,6 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   ).toHaveCount(0);
   await expect.poll(async () => (await facts(page)).read_seq).toBeGreaterThan(0);
   record("unread row", "click unread thread", "read thread remains open and its row immediately disappears");
-  // #242 item 2 mutation RED: emulate an ignored unread filter using real, unfiltered BFF data.
-  // Fixture fault injection only; remove this route after CI proves the unchanged exclusion assertions fail.
-  await page.route(`**/api/stores/${store}/inbox/conversations?*`, async (route) => {
-    const url = new URL(route.request().url());
-    if (url.searchParams.get("filter") !== "unread") return route.continue();
-    url.searchParams.set("filter", "all");
-    const response = await route.fetch({ url: url.toString() });
-    await route.fulfill({ response });
-  });
   await page.reload();
   const reloadedUnreadList = page.waitForResponse(
     (r) => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/stores/${store}/inbox/conversations`
