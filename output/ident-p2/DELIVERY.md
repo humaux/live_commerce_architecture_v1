@@ -79,6 +79,21 @@ this PR retains 137 (base + 1). No migration was renamed or changed.
 
 ## NOT_RUN
 
+### Relay 1: ownership drift at c75427321
+
+- Raw Foundation run `40785196419`, job `123156510026`, failed only the generated browser ownership assertion
+  at `tests/ci/backend-coverage.test.mjs:274`. The affected Node suite reported 335 tests, 334 passing, one failing.
+  Filtered receipt: `fix2/foundation-123156510026.log`. This is E3 failure evidence, not card acceptance.
+- `git fetch origin r3/integration` followed by `git merge --no-edit origin/r3/integration` reported already up to date
+  at base `2bc6d482606a2b0583af15789086fdad727b27ec` (#262 merged). Migration 0207 and exact R2 pin 137 stay unchanged.
+- Root cause: ownership hashes still described the pre-fix-2 R2 and Stripe upgrade fixture sources. Ran the authorized
+  static generator `node scripts/dev/derive-browser-ownership.mjs` (exit 0, 53 modes). Only those two source hashes
+  changed; no mode, test, threshold, registry, fixture or exemption changed. The generator was not run as a local test.
+- Gates run `40785196486` on c75427321 still had 37 pending jobs and no failed jobs when inspected. No conclusion
+  for pending g04/CVS/meta-health jobs is inferred. New-head run IDs belong in the PR comment; integrator relays completion.
+- Additional generated path: `output/ci-select-backend-browser/browser-ownership.json`, explicitly authorized by relay.
+- No local tests, servers, PG or browser were started. Independent review and current-head GREEN remain NOT_RUN/PENDING.
+
 - Local `go test` / PostgreSQL (repo rule). All test results are the CI runs above.
 - New-head GREEN and independent review (await CI and integrator).
 - Real IdP / real SMTP / deployed environment.

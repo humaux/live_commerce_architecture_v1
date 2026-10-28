@@ -1,0 +1,7 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:20:42.9016179Z ✖ CI-SPEED-3: generated browser ownership is current and covers the registry (4653.134655ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:21:33.2918325Z ℹ tests 335
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:21:33.2919013Z ℹ pass 334
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:21:33.2919227Z ℹ fail 1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:21:33.2920971Z test at tests/ci/backend-coverage.test.mjs:274:1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:21:33.2921654Z ✖ CI-SPEED-3: generated browser ownership is current and covers the registry (4653.134655ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:21:33.2923403Z   browser ownership drift: regenerate with node scripts/dev/derive-browser-ownership.mjs

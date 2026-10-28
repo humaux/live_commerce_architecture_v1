@@ -8,6 +8,7 @@ The prior g10 log also exposed a fixture dependency error: the pre-0077 Stripe u
 
 Evidence:
 
+- Relay 1: Foundation run `40785196419` / job `123156510026` on `c75427321` failed only browser ownership drift (335-test suite: 334 passing, one failure). After fetching and merging the base (already up to date), regenerated the ownership artifact: exactly the two source hashes for the fix-2 R2 and Stripe fixture changes. Modes and tests remain unchanged. Filtered raw log: `output/ident-p2/fix2/foundation-123156510026.log`. Gates on that head was still pending with no failed jobs at inspection; new-head GREEN remains pending.
 - Historical causal RED: `05c641166990fcc04470da95b63497e5acd5e1c8`, run [40655692256](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40655692256), job [122727348722](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40655692256/job/122727348722): OG07 assertion failed with `infinity=true capped=false, want false/true`. Filtered raw log: `output/ident-p2/red.log`.
 - Prior-head g04: run 40634706241 / job 122681056072 failed exact R2 count 135 vs 137. g10 / job 122681056834 exposed the 0207 fixture error before cancellation. Filtered logs and dispositions of all other failed jobs are in `output/ident-p2/DELIVERY.md` and `fix2/`.
 - CVS and g07 logs terminate in cancellation; cancelled meta-health job has no available log (404). Their outcomes need current-head CI.
@@ -20,6 +21,7 @@ Paths outside the original OC-02/OC-03 write paths, for integrator approval:
 - `tests/foundation/stripe_live_schema_test.go`: identity migration dependency in the upgrade fixture (fix 2).
 - `contracts/merchant-password-auth-v1.md`, `deploy/README.md`: existing window/skew and backfill notes.
 - `output/ident-p2/**`: delivery, filtered evidence, and PR text.
+- `output/ci-select-backend-browser/browser-ownership.json`: generated source hashes, explicitly authorized by relay 1.
 
 No authored browser spec/page/route changes in fix 2; no UI design change. No edits to the drift baseline or route dispatcher table. Merge-only base files are not additional lane-authored changes. R2 pin changes are explicitly authorized by the fix-2 card.
 
