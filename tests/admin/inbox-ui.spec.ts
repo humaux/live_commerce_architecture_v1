@@ -1,6 +1,7 @@
 // Purpose: LC-U2b inbox acceptance plus LC-U2b2 customer-link denial for the real live_operator session.
 // Depends on: real Next/BFF/Go/PG fixture, signed MOCK OIDC, native-device.ts; LC_BROWSER_INBOX_* env.
 // Used by: browser_inbox_ui_test.go via --browser-inbox on GitHub runners; live Meta remains NOT_RUN.
+// Invariants: unread excludes read conversations immediately and after reload; all actions use real UI controls.
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -112,6 +113,16 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   await expect(page.getByTestId(`conversation-${ids.instagram}`)).toHaveCount(0);
   await page.getByTestId("inbox-filter").selectOption("unreplied");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
+  // #242 item 2: prepare a distinct read conversation through the real A9/A10 UI path.
+  await page.getByTestId("inbox-filter").selectOption("all");
+  await expect(page.getByTestId(`conversation-${ids.closed}`)).toBeVisible();
+  const closedRead = page.waitForResponse(
+    (r) => r.request().method() === "POST" && r.url().includes(`/conversations/${ids.closed}/read`),
+  );
+  await open(page, ids.closed);
+  expect((await closedRead).status()).toBe(200);
+  await expect(page.getByTestId("inbox-thread")).toContainText("SYNTHETIC-CLOSED-WINDOW");
+  record("read fixture", "open a distinct conversation", "real A10 marks the closed-window conversation read");
   // OC-12: the unread option reaches the real BFF/Go/PG chain as filter=unread (no 400); the open thread has an
   // inbound message and read_seq 0 until it is opened below, so it is listed as unread.
   const unreadList = page.waitForResponse(
@@ -121,7 +132,36 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   await page.getByTestId("inbox-filter").selectOption("unread");
   expect((await unreadList).status(), "filter=unread real BFF result").toBe(200);
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
+  await expect(
+    page.getByTestId(`conversation-${ids.closed}`),
+    "unread excludes the distinct read conversation even if an unfiltered list would include it",
+  ).toHaveCount(0);
   record("filter", "select unread", "A8 filter=unread answered 200 and lists the unread thread");
+  // #242 item 1: opening the unread thread must remove its list row immediately.
+  const unreadRead = page.waitForResponse(
+    (r) => r.request().method() === "POST" && r.url().includes(`/conversations/${ids.open}/read`),
+  );
+  await open(page, ids.open);
+  expect((await unreadRead).status()).toBe(200);
+  await expect(page.getByTestId("inbox-thread")).toContainText(dm);
+  await expect(
+    page.getByTestId(`conversation-${ids.open}`),
+    "marked-read row disappears immediately from the unread list",
+  ).toHaveCount(0);
+  await expect.poll(async () => (await facts(page)).read_seq).toBeGreaterThan(0);
+  record("unread row", "click unread thread", "read thread remains open and its row immediately disappears");
+  await page.reload();
+  const reloadedUnreadList = page.waitForResponse(
+    (r) => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/stores/${store}/inbox/conversations`
+      && new URL(r.url()).searchParams.get("filter") === "unread",
+  );
+  await page.getByTestId("inbox-filter").selectOption("unread");
+  expect((await reloadedUnreadList).status(), "reloaded filter=unread real BFF result").toBe(200);
+  await expect(page.getByTestId("inbox-list")).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
+  await expect(page.getByTestId(`conversation-${ids.closed}`), "completed unread reload excludes the distinct read conversation").toHaveCount(0);
+  await expect(page.getByTestId(`conversation-${ids.open}`), "completed unread reload excludes the marked-read conversation").toHaveCount(0);
+  record("unread row persistence", "reload then select unread", "marked-read thread remains absent after authoritative reload");
   await page.getByTestId("inbox-filter").selectOption("live_comment");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
   await page.getByTestId("inbox-filter").selectOption("all");

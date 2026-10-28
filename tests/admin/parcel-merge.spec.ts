@@ -352,6 +352,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
       const refusal = page.waitForResponse((response) => response.request().method() === "PUT" &&
         new URL(response.url()).pathname === `/api/stores/${store}/orders/${ps1}/shipment`);
       await detail.getByTestId("shipment-submit").click();
+      await detail.getByTestId("shipment-confirm").click();
       const response = await refusal;
       expect(response.status()).toBe(409);
       expect(await response.json()).toMatchObject({ code: "in_parcel_group" });

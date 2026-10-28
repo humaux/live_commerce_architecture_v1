@@ -486,6 +486,7 @@ async function journeyAdminOrder(state, placed, journeys) {
       await shipment.getByTestId("ship-carrier").selectOption("black_cat");
       await shipment.getByTestId("ship-tracking").fill("BC1234567890");
       await shipment.getByTestId("shipment-submit").click();
+      await shipment.getByTestId("shipment-confirm").click();
       await expect(shipment.getByTestId("shipment-record")).toBeVisible();
     }, page);
     await step(unit, "click Collected, confirm in the dialog", "the order shows COLLECTED and the button is gone", async () => {
