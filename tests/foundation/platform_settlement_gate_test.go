@@ -157,6 +157,66 @@ func (g *gateEnv) fnArgs(t *testing.T, oid string) []gateArg {
 	return out
 }
 
+// TestPlatformSettlementGateArgumentKeys keeps distinct monetary parameters distinct (#220.3), including the real
+// p_returned_minor spelling that previously failed before the registrar call (#216).
+func TestPlatformSettlementGateArgumentKeys(t *testing.T) {
+	for _, name := range []string{"amount_minor", "returned_minor", "payout_minor"} {
+		t.Run(name, func(t *testing.T) {
+			if got := gateKey("p_" + name); got != name {
+				t.Fatalf("gateKey(%q) = %q, want %q; monetary arguments must not alias", "p_"+name, got, name)
+			}
+		})
+	}
+}
+
+// TestPlatformSettlementGateFunctionArguments pins every discovered argument of the five registrar entry points used
+// by PF16-PF18. Checking both the SQL names and their canonical keys catches missing, unexpected and colliding bindings.
+func TestPlatformSettlementGateFunctionArguments(t *testing.T) {
+	g := gateNew(t)
+	for _, tc := range []struct {
+		name string
+		args []string
+		keys []string
+	}{
+		{"record_settlement_lines",
+			[]string{"p_tenant", "p_store", "p_principal", "p_environment", "p_lines", "p_window_from", "p_window_to", "p_connection", "p_ticket", "p_window_manifest"},
+			[]string{"tenant", "store", "principal", "environment", "lines", "from", "to", "connection", "ticket", "manifest"}},
+		{"close_settlement",
+			[]string{"p_tenant", "p_store", "p_principal", "p_environment", "p_period_start", "p_operator", "p_target_store", "p_ticket"},
+			[]string{"tenant", "store", "principal", "environment", "period", "operator", "target", "ticket"}},
+		{"record_settlement_payout",
+			[]string{"p_tenant", "p_store", "p_principal", "p_statement", "p_payout_ref", "p_payout_minor", "p_paid_at", "p_operator", "p_ticket"},
+			[]string{"tenant", "store", "principal", "statement", "payout_ref", "payout_minor", "paid_at", "operator", "ticket"}},
+		{"record_settlement_payout_return",
+			[]string{"p_tenant", "p_store", "p_principal", "p_statement", "p_return_ref", "p_returned_minor", "p_returned_at", "p_operator", "p_ticket"},
+			[]string{"tenant", "store", "principal", "statement", "return_ref", "returned_minor", "returned_at", "operator", "ticket"}},
+		{"read_settlement_payables",
+			[]string{"p_tenant", "p_store", "p_principal", "p_environment", "p_limit"},
+			[]string{"tenant", "store", "principal", "environment", "limit"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			oid := g.fn(t, tc.name, len(tc.args))
+			args, err := g.lookupArgs(oid)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var names, keys []string
+			seen := map[string]string{}
+			for _, arg := range args {
+				key := gateKey(arg.name)
+				if previous, ok := seen[key]; ok {
+					t.Fatalf("%s arguments %q and %q alias key %q", tc.name, previous, arg.name, key)
+				}
+				seen[key] = arg.name
+				names = append(names, arg.name)
+				keys = append(keys, key)
+			}
+			lcSameSet(t, tc.name+" SQL arguments", names, tc.args)
+			lcSameSet(t, tc.name+" value keys", keys, tc.keys)
+		})
+	}
+}
+
 // gateKey maps the contract's parameter names to the test's canonical value keys. The wildcard manifest branch keeps the
 // call independent of where SA-1 places the new argument.
 func gateKey(name string) string {

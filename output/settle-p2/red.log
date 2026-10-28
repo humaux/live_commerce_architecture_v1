@@ -1,0 +1,10 @@
+Card: settle-p2
+Base: 5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248
+Phase: #220 item 3 tests-only RED; implementation intentionally unchanged.
+CI conclusion: PENDING (not observed yet).
+Expected own-assertion failures:
+- TestPlatformSettlementGateArgumentKeys/amount_minor: got amount, want amount_minor
+- TestPlatformSettlementGateArgumentKeys/returned_minor: got amount, want returned_minor
+- TestPlatformSettlementGateFunctionArguments/record_settlement_payout_return: value keys contain amount, want returned_minor
+Local tests/servers: NOT_RUN (owner prohibition).
+Run/job identifiers will be appended after GitHub creates the PR jobs.
