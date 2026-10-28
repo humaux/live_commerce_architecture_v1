@@ -40,3 +40,16 @@ Per RELAY 1, merged origin/r3/integration at 313c2c36f4ac064975c1c7c170d710cb63f
 #254 is now MERGED (GitHub mergedAt 2026-10-28T20:07:09Z, merge commit 313c2c36f4ac064975c1c7c170d710cb63fa457f) and is included by that merge. Quick-start must reuse its code. The old base/pin estimate above is historical; refresh at implementation push. This relay creates no migration and changes no pin. Base-owned files arriving through the merge are not this card's authored changes.
 
 Humaux tools became discoverable in this relay: memory search, rejected enumeration (3/9 representative entries), coord list and canvas read succeeded. One developer-rules memory_get had a transport failure; no full-text success is claimed. This is an assigned lane, so no separate task claim or recursive delegation. CI-only-evidence and ponytail skills were read; the card specifically authorizes this static generator. The integrator owns completion wakeup via a new relay after the new Gates/Foundation runs finish; no background process is left. Final run IDs are recorded in the PR handoff comment.
+
+## RELAY 2 — supersedes the candidate-PENDING/implementation-withheld state
+
+Foundation 40762550914 / job 123078018073 reached four NEW profile BFF/contract
+assertion failures at head24cac517, synthetic merge e431a572 into313c2c36f. Raw
+receipt and the exact scope of RED are recorded in red.log. The implementation is
+now written; DELIVERY.md and PR.md describe its current behavior and acceptance.
+#254 is reused; 0209 adds one migration to base135, pin136. #262/#265 remain open;
+integrator must enforce merge order and refresh the pin after its prerequisites.
+Static checks return0 (static.log), no local tests/servers/PG/browser. GREEN and
+independent review remain PENDING/NOT_RUN. No completion is claimed. The PR handoff
+comment records the exact implementation head and new workflow WAIT_RUN IDs; the
+integrator relays their conclusions in a fresh session. No background poller.

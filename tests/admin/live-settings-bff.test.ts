@@ -623,6 +623,9 @@ test("store profile BFF GET and idempotent PUT use only authenticated authority"
   } finally { permissions = savedPermissions; }
 });
 test("store profile BFF rejects absent session, foreign store, CSRF and changed origin before upstream writes", async () => {
+  const savedPermissions = permissions;
+  permissions = ["store:read", "integration:manage"];
+  try {
   reply(profile);
   const before = seen.length;
   assert.equal((await call("profile", "GET", undefined, {cookie: ""})).status, 401);
@@ -630,8 +633,12 @@ test("store profile BFF rejects absent session, foreign store, CSRF and changed 
   assert.equal((await call("profile", "PUT", profileCommand, {"x-csrf-token": "wrong"})).status, 403);
   assert.equal((await call("profile", "PUT", profileCommand, {origin: "https://foreign.example.test"})).status, 403);
   assert.equal(seen.length, before, "denied requests must never reach the profile upstream");
+  } finally { permissions = savedPermissions; }
 });
 test("store profile BFF preserves version conflicts and rejects invalid request grammar", async () => {
+  const savedPermissions = permissions;
+  permissions = ["store:read", "integration:manage"];
+  try {
   reply({code: "conflict", message: "Conflict.", request_id: "synthetic-profile-conflict", retryable: false, details: {}}, 409);
   assert.equal((await call("profile", "PUT", profileCommand)).status, 409);
   const before = seen.length;
@@ -642,6 +649,7 @@ test("store profile BFF preserves version conflicts and rejects invalid request 
   assert.equal((await call("profile", "DELETE")).status, 405);
   assert.equal((await call("profile", "PUT", profileCommand, {"idempotency-key": ""})).status, 422);
   assert.equal(seen.length, before);
+  } finally { permissions = savedPermissions; }
 });
 test("store profile BFF never falls back to fixture identity", async () => {
   const enabled = process.env.COMMERCE_IDENTITY_ENABLED;
@@ -664,4 +672,55 @@ test("settings contract freezes profile versioning, five existing MANUAL TW mapp
   assert.match(amendment, /policy_version/);
   assert.match(amendment, /#254/);
   assert.match(amendment, /OC-05/);
+});
+
+test("profile BFF rejects malformed commands before dispatch and mismatched success receipts", async () => {
+  const savedPermissions = permissions;
+  permissions = ["store:read", "integration:manage"];
+  try {
+  const before = seen.length;
+  for (const command of [
+    {...profileCommand, tenant_id: crypto.randomUUID()},
+    {...profileCommand, store_id: store},
+    {...profileCommand, name: "  "},
+    {...profileCommand, contact_email: "Name <merchant@example.test>"},
+    {...profileCommand, contact_phone: "line\nbreak"},
+    {...profileCommand, contact_phone: "1".repeat(33)},
+    {...profileCommand, expected_version: null},
+    {...profileCommand, expected_version: -1},
+  ]) assert.equal((await call("profile", "PUT", command)).status, 422);
+  assert.equal(seen.length, before);
+  for (const receipt of [
+    {...profile, name: "Another command"},
+    {...profile, contact_email: "other@example.test"},
+    {...profile, contact_phone: "unexpected"},
+    {...profile, version: 3},
+  ]) {
+    reply(receipt);
+    assert.equal((await call("profile", "PUT", profileCommand)).status, 503);
+  }
+  } finally { permissions = savedPermissions; }
+});
+
+test("profile BFF needs store:read for reads and integration:manage for writes", async () => {
+  const savedPermissions = permissions;
+  try {
+    const before = seen.length;
+    permissions = [];
+    assert.equal((await call("profile")).status, 403);
+    permissions = ["store:read"];
+    assert.equal((await call("profile", "PUT", profileCommand)).status, 403);
+    assert.equal(seen.length, before);
+    reply(profile);
+    assert.equal((await call("profile")).status, 200);
+  } finally { permissions = savedPermissions; }
+});
+
+test("profile middleware admits the exact leaf and enforces its method/query grammar", async () => {
+  const {NextRequest} = await import("../../apps/admin/node_modules/next/server.js");
+  const {proxy} = await import("../../apps/admin/proxy.ts");
+  const invoke = (suffix = "", method = "GET") => proxy(new NextRequest(`${origin}/api/stores/${store}/profile${suffix}`, {method}));
+  for (const method of ["GET", "PUT"]) assert.equal(invoke("", method).headers.get("x-middleware-next"), "1");
+  assert.equal(invoke("", "DELETE").status, 405);
+  assert.equal(invoke("?tenant_id=forged").status, 422);
 });

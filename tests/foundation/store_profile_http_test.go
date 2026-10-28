@@ -281,3 +281,26 @@ func TestStoreProfileRevocationDuringWriteWait(t *testing.T) {
 		t.Fatal("permission revoked during lock wait did not roll back profile/audit/receipt")
 	}
 }
+
+func TestStoreProfileRestrictedDatabaseWriter(t *testing.T) {
+	f := newT06GoFixture(t)
+	var restricted bool
+	err := f.base.owner.QueryRow(context.Background(), `SELECT
+	 NOT has_column_privilege('commerce_runtime','control.stores','name','UPDATE') AND
+	 NOT has_column_privilege('commerce_runtime','control.stores','contact_email','UPDATE') AND
+	 NOT has_column_privilege('commerce_runtime','control.stores','profile_version','UPDATE') AND
+	 NOT has_column_privilege('commerce_store_profile_writer','control.stores','active','UPDATE') AND
+	 NOT has_column_privilege('commerce_store_profile_writer','control.stores','tenant_id','UPDATE') AND
+	 NOT has_table_privilege('commerce_store_profile_writer','control.stores','DELETE') AND
+	 has_function_privilege('commerce_runtime','control.set_store_profile(bytea,uuid,text,text,text,bigint)','EXECUTE') AND
+	 NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='commerce_store_profile_writer'
+	  AND (rolcanlogin OR rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb)) AND
+	 NOT pg_has_role('commerce_runtime','commerce_store_profile_writer','MEMBER') AND
+	 EXISTS(SELECT 1 FROM pg_proc WHERE oid='control.set_store_profile(bytea,uuid,text,text,text,bigint)'::regprocedure
+	  AND prosecdef AND proowner='commerce_store_profile_writer'::regrole
+	  AND 'search_path=pg_catalog'=ANY(proconfig)
+	  AND NOT EXISTS(SELECT 1 FROM aclexplode(proacl) WHERE grantee=0 AND privilege_type='EXECUTE'))`).Scan(&restricted)
+	if err != nil || !restricted {
+		t.Fatalf("profile writer escaped its restricted capability: restricted=%v err=%v", restricted, err)
+	}
+}

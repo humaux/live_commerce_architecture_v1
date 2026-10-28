@@ -1,6 +1,7 @@
-// Purpose: authenticate and forward only the W3-U2 settings/claims command grammar.
+// Purpose: authenticate and forward only the W3-U2 settings/claims and STORE-PROFILE-API command grammar.
 // Depends on: real auth cookie/CSRF/store helpers, frozen live-settings-model and Go private endpoints.
 // Used by: dedicated admin BFF leaves; one explicit request, never an automatic write retry.
+// Invariants: server session is the only authority; profile PUT receipts match the exact submitted CAS command.
 import {
   authConfig,
   authenticatedStores,
@@ -192,18 +193,21 @@ export async function liveSettingsProxy(
       ) as Record<string, unknown>;
       if (
         body !== undefined &&
-        (route.kind === "settings" || route.kind === "templates")
+        (route.kind === "settings" || route.kind === "templates" || route.kind === "profile")
       ) {
         const sent = JSON.parse(body) as Record<string, unknown>;
         const fields =
-          route.kind === "settings"
+          route.kind === "profile"
+            ? ["name", "contact_email"]
+            : route.kind === "settings"
             ? ["enabled", "template_id", "template_version"]
             : ["template_id", "public_safe"];
         // A 200 with a different receipt is still UNKNOWN: never advance to a new command from it.
         if (
           fields.some((key) => projected[key] !== sent[key]) ||
-          (route.kind === "settings" &&
+          ((route.kind === "settings" || route.kind === "profile") &&
             projected.version !== Number(sent.expected_version) + 1) ||
+          (route.kind === "profile" && projected.contact_phone !== (sent.contact_phone ?? "")) ||
           (route.kind === "templates" &&
             JSON.stringify(projected.kinds) !== JSON.stringify(sent.kinds))
         )
