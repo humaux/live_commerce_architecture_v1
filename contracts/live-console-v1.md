@@ -593,7 +593,7 @@ they do not claim an implemented endpoint or current-SHA test acceptance. Existi
 
 ### 7.0.1 META-STREAM-READ DTO (new read surface; not yet registered)
 
-`GET /v1/admin/stores/{store_id}/live-sessions/{sid}/stream` requires **both `live:read` and `inbox:read`**; scope is
+The stream read surface (exact method and path are fixed in `docs/delivery/units/meta-stream-read.md` and enter this contract in the same PR as the handler, per the contract-drift gate) requires **both `live:read` and `inbox:read`**; scope is
 server-authenticated, foreign tenant/store/session returns non-disclosing 404. A live-only reader continues to
 use A2 and receives no DM-derived metadata. Query keys only `filter`, `cursor`, `before_cursor`, `limit`;
 `cursor` and `before_cursor` are mutually exclusive. Default `filter=all`, `limit=50`, integer range 1..100;

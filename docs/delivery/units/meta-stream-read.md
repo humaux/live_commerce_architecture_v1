@@ -8,7 +8,7 @@ Invariants: exact source identity, explicit session membership, authenticated sc
 
 ## Scope and write paths
 
-- Implement `/live-sessions/{sid}/stream` exactly as §7.0.1: fields/nulls, all/keyword/private/unreplied filters,
+- Implement `GET /v1/admin/stores/{store_id}/live-sessions/{sid}/stream` exactly as live-console-v1 §7.0.1 and, in the SAME PR, write this exact method+path back into §7.0.1 (contract-drift gate: a contract route must have its handler): fields/nulls, all/keyword/private/unreplied filters,
   total ordering, vector cursor, late arrivals, epoch/linkage reset, per-source EOF and bounded scans.
 - Include a non-bundle DM only with explicit session proof; a customer link alone or nickname is insufficient.
   Keep comment deletion/read eviction independent of accepted claim quantity (intake §3 / META-00 R1).
