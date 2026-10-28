@@ -12,6 +12,7 @@
 //   owner role = 403 owner_role_disabled; the OIDC route returns via /api/auth/callback with no session Set-Cookie, the session cookie
 //   unchanged and the originating page as Location; an OIDC account is offered the OIDC route; the mail_unavailable OIDC hint only for
 //   an OIDC account (MOCK 503); zh-TW / zh-CN / en; focus trap, focus return, 44 px targets at 390 px.
+//   Review P1: real orders/finance CSV controls open re-auth for stale sessions, replay once and download valid CSV bytes.
 import { createHmac, randomBytes } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -129,6 +130,64 @@ async function createStore(page: Page, locale: Locale) {
 
 const dialog = (page: Page) => page.getByTestId("reauth-dialog");
 const modal = (page: Page) => page.locator("dialog[open]");
+
+for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+  for (const kind of ["orders", "finance"] as const) {
+    test(`OC-04 ${locale} ${kind}: expired re-auth CSV click opens dialog and downloads after one replay`, async ({ browser }) => {
+      const owner = ownerEmail(), password = newPassword();
+      const { context, page } = await person(browser, locale === "en" ? "mobile" : "desktop");
+      try {
+        await signUp(page, locale, owner, password);
+        const store = await createStore(page, locale);
+        const { from, to } = days();
+        const route = kind === "orders" ? `orders?store=${store}` : `finance?store=${store}&from=${from}&to=${to}`;
+        const endpoint = `/api/stores/${store}/${kind === "orders" ? "orders/unshipped.csv" : "finance/summary.csv"}`;
+        const statuses: number[] = [];
+        const urls: string[] = [];
+        const downloads: string[] = [];
+        page.on("request", (request) => { if (new URL(request.url()).pathname === endpoint) urls.push(request.url()); });
+        page.on("response", (response) => { if (new URL(response.url()).pathname === endpoint) statuses.push(response.status()); });
+        page.on("download", (download) => downloads.push(download.suggestedFilename()));
+        await page.goto(`/${locale}/${route}`);
+        const control = page.getByTestId(kind === "orders" ? "orders-export" : "finance-csv");
+        await expect(control).toBeVisible();
+        await age(owner); // Fixture preparation only; the export itself is a real user click.
+        const refused = page.waitForResponse((response) => new URL(response.url()).pathname === endpoint);
+        await control.click();
+        expect((await refused).status(), "the clicked export reaches the real expired re-auth guard").toBe(403);
+        await expect(dialog(page), "the real CSV control must open the shared re-auth dialog").toBeVisible();
+        await expect(modal(page)).toContainText(copy[locale].title);
+        expect(urls, "only the refused request precedes re-auth").toHaveLength(1);
+        expect(downloads, "a refused export must not download an error document").toEqual([]);
+        const downloadReady = page.waitForEvent("download");
+        await passwordReauth(page, owner, password, 2);
+        const download = await downloadReady;
+        expect(await download.failure()).toBeNull();
+        expect(download.suggestedFilename()).toMatch(kind === "orders" ? /^unshipped-.*\.csv$/ : /^finance-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.csv$/);
+        const stream = await download.createReadStream();
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+        const csv = Buffer.concat(chunks).toString("utf8").replace(/^\uFEFF/, "");
+        expect(csv.split(/\r?\n/, 1)[0]).toBe(kind === "orders"
+          ? "order_id,created_at_utc,service_code,destination_kind,recipient_name,phone,country,region,city,postal_code,line1,line2,pickup_namespace,pickup_code,pickup_name,pickup_address,items,total_minor,currency,pickup_source,payment_mode,collect_minor"
+          : "day,currency,environment,captured_count,captured_minor,refunded_minor,net_minor,pickup_collected_count,pickup_collected_minor,bank_transfer_confirmed_count,bank_transfer_confirmed_minor,cod_collected_count,cod_collected_minor");
+        expect(statuses, "one refused export and exactly one successful replay").toEqual([403, 200]);
+        expect(urls).toHaveLength(2);
+        expect(urls[1], "the replay preserves the store and date query").toBe(urls[0]);
+        expect(downloads, "one successful file download").toHaveLength(1);
+        await signedIn(page);
+        expect(new URL(page.url()).pathname).toBe(`/${locale}/${kind}`);
+        await page.reload();
+        await expect(control).toBeVisible();
+        await expect(modal(page)).toHaveCount(0);
+        expect(urls, "refresh must not repeat the download").toHaveLength(2);
+        expect(downloads).toHaveLength(1);
+      } finally {
+        await context.close();
+      }
+    });
+  }
+}
 
 // The re-auth mail is throttled per email: email-mail-login allows 1 per aligned 60 s window (internal/identity/throttle.go winMailLogin).
 // A second start for the same owner must therefore begin >= 61 s after the previous one; the production limit is left as is.
