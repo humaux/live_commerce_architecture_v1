@@ -1,6 +1,7 @@
 // Purpose: CA-ADMIN-STATE static and server-render contract for shared admin empty, loading, error, forbidden and not-found displays.
 // Depends on: node:test/assert/fs, typescript-api, React SSR and the real DS state/action primitives; no browser, server or network.
 // Used by: scripts/dev/test-node.sh; browser interaction and persistence remain separate CI acceptance evidence.
+// Invariants: no fetch, ACL decision, error-internal rendering, technical status copy or unsaved-draft safety claim.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -24,10 +25,11 @@ function load(path, resolve) {
 }
 
 const icon = load("packages/ui/src/ds/Icon.tsx", requireApp);
+const logic = load("packages/ui/src/ds/logic.ts", requireApp);
 const controls = load("packages/ui/src/ds/Controls.tsx", (name) =>
-  name.endsWith(".css") ? css : name === "./Icon" ? icon : requireApp(name));
+  name.endsWith(".css") ? css : name === "./Icon" ? icon : name === "./logic" ? logic : requireApp(name));
 const states = load("packages/ui/src/ds/States.tsx", (name) =>
-  name.endsWith(".css") ? css : name === "./Controls" ? controls : name === "./Icon" ? icon : requireApp(name));
+  name.endsWith(".css") ? css : name === "./Controls" ? controls : name === "./Icon" ? icon : name === "./logic" ? logic : requireApp(name));
 const ds = { ...controls, ...states };
 const sharedPath = "apps/admin/components/AdminStateBlock.tsx";
 const forbiddenPath = "apps/admin/components/AdminForbidden.tsx";

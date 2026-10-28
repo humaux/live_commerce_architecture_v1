@@ -1,5 +1,5 @@
 // Purpose: Owns order list loading, filtering, bulk selection and selected-order detail.
-// Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, @/lib/orders-v2, @/lib/orders-v2-copy, ./OrderListFilters, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./OrderDetailPanel, ./Icon, ./orders.css, ./order-actions.css, ./orders-v2.css, ./ParcelGroup, @/lib/parcels-copy
+// Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, @/lib/orders-v2, @/lib/orders-v2-copy, ./OrderListFilters, ./WorkspaceFrame, ./AdminPageHeader, ./AdminStateBlock, ./AdminForbidden, @live-commerce/ui, @/lib/presentation-copy, ./OrderDetailPanel, ./Icon, ./orders.css, ./order-actions.css, ./orders-v2.css, ./ParcelGroup, @/lib/parcels-copy
 // Used by: apps/admin/app/[locale]/orders/page.tsx
 "use client";
 
@@ -43,6 +43,8 @@ import { ordersV2Copy } from "@/lib/orders-v2-copy";
 import { OrderListFilters } from "./OrderListFilters";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { AdminStateBlock } from "./AdminStateBlock";
+import { AdminForbidden } from "./AdminForbidden";
 import { TabStrip } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
 import { amount, badge, detailPanel, type Sections } from "./OrderDetailPanel";
@@ -607,28 +609,21 @@ export function MerchantOrders({
           {store && actions?.fulfillment_write && <TrackingImport key={`${store.id}:${locale}`} locale={locale} store={store} onComplete={retry} />}
         </div>
         </OrderListFilters>}
-        {current.status === "loading" && (
-          <p className="orders-message" role="status">
-            {c.loading}
-          </p>
+        {(current.status === "loading" || current.status === "initial") && (
+          <AdminStateBlock variant="loading" title={c.loading} />
         )}
+        {current.status === "forbidden" && <AdminForbidden locale={locale} />}
         {current.status !== "ready" &&
           current.status !== "loading" &&
-          current.status !== "hidden" && (
-            <div className="orders-message" role="status">
-              <p>
-                {current.status === "initial"
-                  ? c.loading
-                  : current.status === "not-found" && !store
-                    ? c.noStore
-                    : message(current.status)}
-              </p>
-              {current.status !== "initial" && (
-                <button type="button" onClick={retry}>
-                  {c.retry}
-                </button>
-              )}
-            </div>
+          current.status !== "initial" &&
+          current.status !== "hidden" &&
+          current.status !== "forbidden" && (
+            <AdminStateBlock
+              variant="error"
+              title={current.status === "not-found" && !store ? c.noStore : message(current.status)}
+              onRetry={retry}
+              retryLabel={c.retry}
+            />
           )}
         {store && session.current && !["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && <PickList key={`${store.id}:${session.current}`} locale={locale} store={store.id} boundary={session.current}
           ids={selectedIDs} cvsIDs={selectedIDs.filter(id=>bulkRows[id])} sessionID={filters.session_id}
@@ -724,9 +719,11 @@ export function MerchantOrders({
               </table>
             </div>
             {current.page.items.length === 0 && (
-              <p className="orders-message" role="status" aria-live="polite">
-                {c.empty}
-              </p>
+              <AdminStateBlock
+                variant="empty"
+                title={v2.emptyTitle}
+                description={v2.emptyDescription}
+              />
             )}
             <footer className="orders-pager">
               <span>

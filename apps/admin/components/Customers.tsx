@@ -1,5 +1,5 @@
 // Purpose: Owns the paginated merchant customer search page.
-// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/customers-copy, ./CustomerTags, @/lib/customer-tags-client, @/lib/customer-tags-copy, ./WorkspaceFrame, ./AdminPageHeader, ./Icon, ./orders.css, ./order-actions.css, ./customers.css
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/customers-copy, ./CustomerTags, @/lib/customer-tags-client, @/lib/customer-tags-copy, ./WorkspaceFrame, ./AdminPageHeader, ./AdminStateBlock, ./AdminForbidden, ./Icon, ./orders.css, ./order-actions.css, ./customers.css
 // Used by: apps/admin/app/[locale]/customers/page.tsx
 "use client";
 
@@ -23,6 +23,8 @@ import { displayTime } from "@/lib/orders-model";
 import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { AdminStateBlock } from "./AdminStateBlock";
+import { AdminForbidden } from "./AdminForbidden";
 import { Icon } from "./Icon";
 import "./orders.css";
 import "./order-actions.css";
@@ -80,7 +82,7 @@ export function Customers({
   }
   const failure =
     read.status === "signed-out" ? c.signedOut
-    : read.status === "forbidden" ? c.forbidden
+    : read.status === "forbidden" ? ""
     : read.status === "not-found" ? (store ? c.notFound : c.noStore)
     : read.status === "unavailable" ? c.unavailable
     : "";
@@ -145,13 +147,16 @@ export function Customers({
           <p id="customers-search-hint" className="orders-export-hint">{c.searchHint}</p>
         </div>
         {(read.status === "loading" || read.status === "hidden") && (
-          <p className="orders-message" role="status">{c.loading}</p>
+          <AdminStateBlock variant="loading" title={c.loading} />
         )}
+        {read.status === "forbidden" && <AdminForbidden locale={locale} />}
         {failure && (
-          <div className="orders-message" role="status">
-            <p>{failure}</p>
-            <button type="button" onClick={read.reload}>{c.retry}</button>
-          </div>
+          <AdminStateBlock
+            variant="error"
+            title={failure}
+            onRetry={read.reload}
+            retryLabel={c.retry}
+          />
         )}
         {read.status === "ready" && page && (
           <>
@@ -175,7 +180,11 @@ export function Customers({
               </table>
             </div>
             {page.items.length === 0 && (
-              <p className="orders-message" role="status" aria-live="polite">{q || tag ? c.emptySearch : c.empty}</p>
+              <AdminStateBlock
+                variant="empty"
+                title={q || tag ? c.emptySearch : c.empty}
+                description={q || tag ? c.emptySearchDescription : c.emptyDescription}
+              />
             )}
             <footer className="orders-pager">
               <span>{c.pageCount}: {page.items.length}</span>

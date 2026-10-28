@@ -1,0 +1,9 @@
+CA-ADMIN-STATE RED evidence (CI only)
+
+Head: b02a185628b9b1c6bc07eb538df635c75f8a761f
+PR: #268
+Gates (GitHub runners): run 40645302418, completed success.
+Foundation checks: run 40645302665, completed failure.
+Expected RED subject: tests/admin/code-alignment-admin-state.test.mjs; the shared state components, localized/root route boundaries and new empty-copy keys were absent at this head.
+Job IDs / failed-log lines: NOT_READ. The integrator relay supplied the run conclusions; this sandbox rejected gh run view before execution, so no job ID or log excerpt is claimed here.
+Local RED execution: NOT_RUN (owner CI-only rule).

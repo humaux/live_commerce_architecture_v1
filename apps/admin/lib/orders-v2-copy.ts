@@ -2,6 +2,7 @@
 import type { Locale } from "@live-commerce/i18n";
 const en = {
   selectedSession: "Selected session",
+  emptyTitle: "No orders match this view", emptyDescription: "Orders that match the current queue and filters will appear here. Try another queue or clear the filters.",
   moreFilters: "More filters", lessFilters: "Fewer filters", dateHint: "Year / month / day (YYYY-MM-DD)",
   tabs: { all: "All", unpaid: "Awaiting payment", transfer_review: "Review transfers", ready_to_ship: "Ready to ship", ready_to_consign: "Ready to drop off", shipped: "Shipped", completed: "Completed", cancelled: "Cancelled" },
   modes: { card: "Card", bank_transfer: "Bank transfer", pay_at_pickup: "Pay at pickup", cash_on_delivery: "Cash on delivery" },
@@ -12,6 +13,7 @@ export const ordersV2Copy: Record<Locale, typeof en> = {
   en,
   "zh-TW": {
     selectedSession: "已選場次",
+    emptyTitle: "沒有符合目前檢視的訂單", emptyDescription: "符合目前分類和篩選的訂單會顯示在這裡，請嘗試其他分類或清除篩選。",
     moreFilters: "更多篩選", lessFilters: "收合篩選", dateHint: "年／月／日（YYYY-MM-DD）",
     tabs: { all: "全部", unpaid: "待付款", transfer_review: "待核對轉帳", ready_to_ship: "待出貨", ready_to_consign: "待交寄", shipped: "已出貨", completed: "已完成", cancelled: "已取消" },
     modes: { card: "信用卡", bank_transfer: "銀行轉帳", pay_at_pickup: "取貨付款", cash_on_delivery: "貨到付款" },
@@ -20,6 +22,7 @@ export const ordersV2Copy: Record<Locale, typeof en> = {
   },
   "zh-CN": {
     selectedSession: "已选场次",
+    emptyTitle: "没有符合当前查看的订单", emptyDescription: "符合当前分类和筛选的订单会显示在这里，请尝试其他分类或清除筛选。",
     moreFilters: "更多筛选", lessFilters: "收起筛选", dateHint: "年／月／日（YYYY-MM-DD）",
     tabs: { all: "全部", unpaid: "待付款", transfer_review: "待核对转账", ready_to_ship: "待出货", ready_to_consign: "待交寄", shipped: "已出货", completed: "已完成", cancelled: "已取消" },
     modes: { card: "信用卡", bank_transfer: "银行转账", pay_at_pickup: "取货付款", cash_on_delivery: "货到付款" },
