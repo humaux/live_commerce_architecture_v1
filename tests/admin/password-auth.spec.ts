@@ -172,6 +172,80 @@ async function startSignup(page: Page, locale: string, email: string, password: 
 }
 
 // ---------------------------------------------------------------------------------------------------
+// #245: exercise the SSR recovery UI without using component state or importing its copy.
+const hydrationCopy = {
+  "zh-CN": { loading: "正在加载登录表单…", noScript: "登录需要启用 JavaScript。请在浏览器中启用 JavaScript，然后重新加载此页面。", reload: "重新加载" },
+  "zh-TW": { loading: "正在載入登入表單…", noScript: "登入需要啟用 JavaScript。請在瀏覽器中啟用 JavaScript，然後重新載入此頁面。", reload: "重新載入" },
+  en: { loading: "Loading sign-in…", noScript: "Sign-in needs JavaScript. Enable JavaScript in your browser, then reload this page.", reload: "Reload" },
+} as const;
+
+for (const locale of locales) {
+  test(`#245 ${locale}: no JavaScript explains the inert form and reload stays native`, async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      const page = await context.newPage();
+      for (const path of [`/${locale}/`, `/${locale}/signup`, `/${locale}/reset`]) {
+        await page.goto(`${publicOrigin}${path}?recovery=1`);
+        await expect(page.locator("noscript")).toContainText(hydrationCopy[locale].noScript);
+        await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toBeVisible();
+        await expect(emailInput(page)).toBeDisabled();
+        if (!path.endsWith("/reset")) await expect(passwordInput(page)).toBeDisabled();
+        await expect(submitButton(page)).toBeDisabled();
+      }
+      const reload = page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true });
+      await expect(reload).toBeVisible({ timeout: 15_000 });
+      const currentURL = page.url();
+      await Promise.all([page.waitForEvent("load"), reload.click()]);
+      expect(page.url()).toBe(currentURL);
+      await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toBeVisible();
+      await expect(emailInput(page)).toBeDisabled();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`#245 ${locale}: aborted page chunks show loading then a native reload that recovers`, async ({ page }) => {
+    let aborted = 0;
+    await page.route(/\/_next\/static\/chunks\/.*\.js(?:\?|$)/, async (route) => {
+      aborted++;
+      await route.abort("failed");
+    });
+    await page.goto(`/${locale}/?recovery=1`, { waitUntil: "domcontentloaded" });
+    expect(aborted, "page JavaScript chunks were actually aborted").toBeGreaterThan(0);
+    const status = page.getByRole("status").filter({ hasText: hydrationCopy[locale].loading });
+    await expect(status).toBeVisible();
+    await expect(status).toHaveAttribute("aria-live", "polite");
+    await expect(emailInput(page)).toBeDisabled();
+    await expect(passwordInput(page)).toBeDisabled();
+    await expect(submitButton(page)).toBeDisabled();
+    const reload = page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true });
+    await expect(reload).toBeHidden();
+    await expect(reload).toBeVisible({ timeout: 15_000 });
+    await page.unrouteAll({ behavior: "wait" });
+    const currentURL = page.url();
+    await Promise.all([page.waitForEvent("load"), reload.click()]);
+    expect(page.url()).toBe(currentURL);
+    await hydrated(page);
+    await expect(emailInput(page)).toBeEnabled();
+    await expect(status).toHaveCount(0);
+    await expect(reload).toHaveCount(0);
+  });
+
+  test(`#245 ${locale}: hydrated forms have no loading or reload, including after ten seconds`, async ({ page }) => {
+    for (const path of [`/${locale}/`, `/${locale}/signup`, `/${locale}/reset`]) {
+      await page.goto(path);
+      await hydrated(page);
+      await expect(emailInput(page)).toBeEnabled();
+      await expect(page.getByText(hydrationCopy[locale].loading, { exact: true })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true })).toHaveCount(0);
+    }
+    // Real time: CSS recovery must not reappear after its deadline on an interactive page.
+    await page.waitForTimeout(11_000);
+    await expect(page.getByText(hydrationCopy[locale].loading, { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true })).toHaveCount(0);
+  });
+}
+
 test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> workspace; forgot -> reset -> signed in, old session revoked (zh-TW, desktop)", async ({ browser, page, context }) => {
   test.setTimeout(150_000);
   const locale: Locale = "zh-TW";
