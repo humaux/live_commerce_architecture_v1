@@ -3,6 +3,7 @@
 // Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
 // Depends on: buyer BFF cart/options/quotes/destination/checkout/orders and purchase recovery; lib/cod-copy codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
+// Invariants: checkout renders server money; OrderFlow publishes only a quote matched to its current option.
 
 // Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
 // address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page
@@ -669,6 +670,7 @@ export default function CheckoutFlow({
                   run={act}
                   money={money}
                   onCodFee={setCodFee}
+                  onQuote={setQuote}
                   onOrder={acceptOrder}
                   reload={async () => {
                     // Requotation may unmount the form, so first resolve its

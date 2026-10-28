@@ -3,16 +3,9 @@
 // Purpose: confirmed-address checkout and current order details, with stable layout while delivery facts load.
 // Depends on: purchase.ts CAS/recovery, buyer BFF destination/options/orders routes, payment and fulfilment components.
 // Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
-// Local extension of approved B: native address form after the real quotation;
-// no new wizard, payment claim or persistent address cache. Transport/CAS and
-// receipt recovery live in purchase.ts, not in this rendering component.
-// OrderDetails hosts <OrderPayment> (BFF orders/{id}/payment[/prepare|handoff|refresh|cancel]);
-// its Refresh order button also fires the Stripe payment/refresh signal via paymentSignalRef.
-// The shipment block renders Go GET /v1/buyer/orders/{id} `shipment` (BFF orders/{id}); no route of its own.
-// CVS options (taiwan-cvs-logistics-v1 §5, §16): the address form is replaced by <CvsPickup> (BFF cvs-selections,
-// cvs-selections/{id}/verify, cvs-stores -> Go /v1/buyer/cvs-*), the destination is written with kind=cvs_* +
-// pickup_id (BFF PUT destination -> Go SetDestination) and Begin carries payment_mode (BFF POST checkout ->
-// Go checkout.Begin). A pay-at-pickup order takes no Stripe step: OrderPayment is not mounted for it.
+// Invariants: confirmation waits for matching server quote/options and an explicitly confirmed destination.
+// OrderDetails hosts payment refresh and shipment readback; no local transaction authority.
+// CVS pickup/destination/payment follow taiwan-cvs-logistics-v1 §5/§16; COD bypasses Stripe.
 import { useEffect, useRef, useState } from "react";
 import OrderPayment from "./OrderPayment";
 import { ConsentChoices, noConsentChoices, submitCheckoutConsents } from "./ConsentChoices";
@@ -47,6 +40,7 @@ import {
 } from "../lib/cvs-contract";
 import {
   checkoutInput,
+  refreshCodQuote,
   offeredPaymentModes,
   currentDestination,
   pendingPurchase,
@@ -111,6 +105,7 @@ export default function OrderFlow({
   onOrder,
   money,
   onCodFee,
+  onQuote,
 }: {
   context: string;
   cart: Cart;
@@ -127,6 +122,7 @@ export default function OrderFlow({
   // OC-09b: reports the selected cash-on-delivery option's server surcharge (null = another mode or COD not offered) so the
   // checkout bottom bar can show the quote's cod_due_minor; never an amount of its own.
   onCodFee?: (fee: number | null) => void;
+  onQuote: (quote: Quote) => void;
 }) {
   const copy = orderCopy[locale];
   // A destination journal intentionally stores no PII or quotation. A fresh
@@ -169,6 +165,8 @@ export default function OrderFlow({
 
   useEffect(() => {
     const version = ++live.current;
+    setOption(null);
+    setConfirmed(null);
     void (async () => {
       try {
         const [current, currentCart] = await Promise.all([
@@ -215,10 +213,12 @@ export default function OrderFlow({
           seen.add(cursor);
         } while (!found && cursor);
         if (!found) throw new BuyerClientError("request_failed");
+        const latest = await refreshCodQuote(context, quote, found);
         if (version !== live.current) return;
+        onQuote(latest);
         setOption(found);
         // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
-        const offered = offeredPaymentModes(found, quote.amount.total_minor);
+        const offered = offeredPaymentModes(found, latest.amount.total_minor);
         if (offered?.length) setPaymentMode((current) => (offered.includes(current) ? current : offered[0]));
         // Options can arrive after the buyer edits or confirms a recovered
         // address. Never hydrate fields/head again from that older snapshot.
