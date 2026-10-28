@@ -1,0 +1,34 @@
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:35.7611173Z === RUN   TestOC05NewStoreDerivedSteps
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:35.9289463Z     quickstart_test.go:164: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"4469d9917c840278bf240c48dbef6a60","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:35.9323112Z --- FAIL: TestOC05NewStoreDerivedSteps (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:35.9324633Z === RUN   TestOC05CompleteIdempotentAndPersistent
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.0999959Z     quickstart_test.go:185: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"ee8ce3357c52af20f0699a01a7d69d1c","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.1031030Z --- FAIL: TestOC05CompleteIdempotentAndPersistent (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.1031875Z === RUN   TestOC05CrossTenantAndStoreRefused
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.2695728Z     quickstart_test.go:214: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"cf334e0494dc74845e54111b9e359e83","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.2701503Z --- FAIL: TestOC05CrossTenantAndStoreRefused (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.2703223Z === RUN   TestOC05ReadOnlyCannotDismissAndNoClientState
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.4328348Z     quickstart_test.go:241: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"a02532084090df4b91757d8332280d24","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.4334041Z --- FAIL: TestOC05ReadOnlyCannotDismissAndNoClientState (0.16s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.4335333Z === RUN   TestOC05ShippingDerivedFromCurrentStoreData
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.5959990Z     quickstart_test.go:260: GET quickstart status=422 want 200 (new server route); body={"code":"invalid_request","message":"Request validation failed.","request_id":"2543196135d2de340668d2f5689b9645","retryable":false,"details":{}}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.5972064Z --- FAIL: TestOC05ShippingDerivedFromCurrentStoreData (0.16s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.5973041Z === RUN   TestOC05MigrationBackfillsOnlyExistingStores
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.7804633Z --- PASS: TestOC05MigrationBackfillsOnlyExistingStores (0.18s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.7808053Z === RUN   TestOC05MarkerRLSAndTimestampAuthority
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.9713972Z --- PASS: TestOC05MarkerRLSAndTimestampAuthority (0.19s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:36.9780429Z FAIL	livecommerce/tests/quickstart	1.278s
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:37.4899484Z ##[error]Process completed with exit code 1.
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:37.5545267Z matrix-receipts: {"mode":"shard:unit","run_id":"40650048011","run_attempt":"1","sha":"e5bc7ce102d45fc30179be9677d28a4839b4d7ab","status":"FAIL","test_count":1465,"spec_count":0}
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9050409Z --- FAIL: TestOC05NewStoreDerivedSteps (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9051862Z --- FAIL: TestOC05CompleteIdempotentAndPersistent (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9053146Z --- FAIL: TestOC05CrossTenantAndStoreRefused (0.17s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9054129Z --- FAIL: TestOC05ReadOnlyCannotDismissAndNoClientState (0.16s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9055367Z --- FAIL: TestOC05ShippingDerivedFromCurrentStoreData (0.16s)
+gate (shard:unit)	UNKNOWN STEP	2026-10-28T11:43:38.9056523Z FAIL	livecommerce/tests/quickstart	1.278s
+receipts	UNKNOWN STEP	2026-10-28T15:17:08.2194493Z FAIL: shard:unit: status FAIL
+receipts	UNKNOWN STEP	2026-10-28T15:17:08.2243531Z   receipt shard:unit: FAIL test_count=1465 run=40650048011/1 sha=e5bc7ce102d45fc30179be9677d28a4839b4d7ab
+receipts	UNKNOWN STEP	2026-10-28T15:17:08.2244107Z matrix-receipts: RED (1 problem(s))
+receipts	UNKNOWN STEP	2026-10-28T15:17:08.2255716Z ##[error]Process completed with exit code 1.
+required	UNKNOWN STEP	2026-10-28T16:06:01.3941263Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure
+required	UNKNOWN STEP	2026-10-28T16:06:01.3960609Z ##[error]Process completed with exit code 1.
