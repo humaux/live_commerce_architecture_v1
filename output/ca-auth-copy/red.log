@@ -19,3 +19,11 @@ The earlier queued observation is retained in checks-at-handoff.json and red-wat
 Implementation GREEN, independent review and LIVE: pending/NOT_RUN.
 
 FIX 1/2 continuation RED: Gates 40619949465 / job 122622312675, head 7cf853a1b874b920346705c47bb9d9c6f14366a1, tested merge ac3addbe7d09a6003325e1859bdced827c74ab93. The noscript root matcher returned an empty string although the artifact screenshot shows the complete explanation. See fix1-red.log and fix1-webkit-no-js.png.
+
+FIX 2 investigation: Gates 40635584904 / job 122683191221, head afe85b80ce03c5d182881f06506e677ddef56289. WebKit no-JS zh-CN passes; aborted-chunks/native-link recovery fails at password-auth.spec.ts:143 (called at230): data-hydrated=true absent after10000ms. Native click/load and unchanged URL assertions completed.19 tests did not run. See fix2-playwright.log, fix2-next.log, fix2-webkit.png and fix2-RCA.md. Original artifact contains no trace/client-console/network evidence. Root cause UNKNOWN; no speculative code/test patch, commit or push.
+
+FIX-RED #251 current-head RED (2026-10-29): head e0c9f10723f5b0108cd34c7544e990b5a334e054; Gates run 40660830574 attempt 1; tested synthetic merge 253d9ef77e5c8901d6d4623898d853d7884c5ec0.
+Read gh pr checks 251 and gh run view 40660830574 --log-failed --job <id> for ALL three failed jobs: WebKit 122779975258, receipts 122873118983, required 122909226199.
+WebKit: password-auth: pass=0 fail=1 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=1 verdict=1 duration=39s; FAIL: password-auth (go test exit=1, parse verdict=1).
+receipts: --browser-webkit: status FAIL; required: gate=failure receipts=failure. Other checked jobs passed (deploy skipped). Foundation run/job 40660830515/122723156559 passed for the OLD head only.
+Original tests-only assertion RED remains 40612180005/122576061200 at tests-only head 781887326d96ae0e291e3ce3ab2a87a2e28636f9. No GREEN claimed for FIX-RED.

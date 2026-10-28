@@ -209,16 +209,17 @@ for (const locale of locales) {
   test(`#245 ${locale}: aborted page chunks show loading then a native reload that recovers`, async ({ page }) => {
     let aborted = 0;
     let continued = 0;
-    const seenChunkURLs = new Set<string>();
+    let networkRecovered = false;
+    const abortedChunkURLs = new Set<string>();
     await page.route(/\/_next\/static\/chunks\/.*\.js(?:\?|$)/, async (route) => {
       const chunkURL = route.request().url().split("?")[0];
-      if (!seenChunkURLs.has(chunkURL)) {
-        seenChunkURLs.add(chunkURL);
+      if (!networkRecovered) {
+        abortedChunkURLs.add(chunkURL);
         aborted++;
         await route.abort("failed");
       } else {
         await route.continue();
-        continued++;
+        if (abortedChunkURLs.has(chunkURL)) continued++;
       }
     });
     await page.goto(`/${locale}/?recovery=1`, { waitUntil: "domcontentloaded" });
@@ -233,6 +234,9 @@ for (const locale of locales) {
     await expect(reload).toBeHidden();
     await expect(reload).toBeVisible({ timeout: 15_000 });
     const currentURL = page.url();
+    // Restore the network for the whole reload, including chunks first discovered by the recovered runtime.
+    // Keep routing installed so both navigations use the same HTTP-cache policy.
+    networkRecovered = true;
     await Promise.all([page.waitForEvent("load"), reload.click()]);
     expect(page.url()).toBe(currentURL);
     await hydrated(page);
