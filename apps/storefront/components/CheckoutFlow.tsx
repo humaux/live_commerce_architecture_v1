@@ -3,7 +3,7 @@
 // Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
 // Depends on: buyer BFF/recovery, checkout display components, checkout-copy and codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
-// Invariants: server quote matches its option; changed totals need acknowledgment; unknown checkout replays its original intent/key; brand-change contact stays ephemeral.
+// Invariants: server quote matches its option; changed totals need acknowledgment; unknown checkout withholds payable and replays its original intent/key; brand-change contact stays ephemeral.
 
 // Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
 // address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page
@@ -688,7 +688,7 @@ export default function CheckoutFlow({
           <div className="footer-inner">
             {/* OC-09b: 「到貨需付」 shows the server quote due (codFooter) while cash on delivery is selected; hidden for card. */}
             {(() => {
-              const due = quote
+              const due = quote && pendingKind !== "checkout"
                 ? codFooter(locale, quote.cod_due_minor, codFee, (minor) => money(minor, quote.currency))
                 : null;
               return due ? (
@@ -702,11 +702,13 @@ export default function CheckoutFlow({
                 <div>
                   <span>{quote ? copy.orderTotal : copy.subtotal}</span>
                   <strong>
-                    {quote
-                      ? money(quote.amount.total_minor, quote.currency)
-                      : subtotal === null
-                        ? "—"
-                        : money(subtotal, cart.currency)}
+                    {pendingKind === "checkout"
+                      ? "—"
+                      : quote
+                        ? money(quote.amount.total_minor, quote.currency)
+                        : subtotal === null
+                          ? "—"
+                          : money(subtotal, cart.currency)}
                   </strong>
                   <small>{quote ? reviewState?.quoteID === quote.id ? reviewState.timing : v2.online : copy.shippingLater}</small>
                 </div>

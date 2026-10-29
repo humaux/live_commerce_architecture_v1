@@ -1,9 +1,9 @@
 "use client";
 
 // Purpose: read-only review of the original unresolved checkout; no new checkout operation.
-// Depends on: validated pending intent, original server Quote and authenticated currentDestination read.
+// Depends on: validated pending intent, current server Quote and authenticated currentDestination read.
 // Used by: CheckoutFlow while its original order-lock guard removes the writable address controller.
-// Invariants: destination id must equal the original intent; no recipient persistence, amount arithmetic or new key.
+// Invariants: destination id must equal the original intent; withhold payable until recovery; no recipient persistence, amount arithmetic or new key.
 import { useEffect, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { currentDestination, pendingPurchase, type Destination, type Quote } from "../../lib/purchase";

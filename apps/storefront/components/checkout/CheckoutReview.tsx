@@ -2,8 +2,8 @@
 
 // Purpose: same-source final money, recipient and destination review with optional payment help.
 // Depends on: server Quote/Destination DTOs, storefront checkout-copy and shared money formatter.
-// Used by: OrderFlow immediately before order submission.
-// Invariants: never computes money or stores recipient data; help is a native accessible disclosure.
+// Used by: OrderFlow before submission and CheckoutPendingReview during original-order recovery.
+// Invariants: never computes money or stores recipient data; unresolved review withholds payable; help is a native accessible disclosure.
 import { useState, type ReactNode } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Destination, Quote } from "../../lib/purchase";
@@ -14,7 +14,8 @@ export default function CheckoutReview({ locale, quote, destination, fee, timing
   locale: Locale; quote: Quote; destination: Destination | null; fee: number | null; timing: string; method: string; children?: ReactNode; readOnly?: boolean;
 }) {
   const c = checkoutCopy[locale], [open, setOpen] = useState(false);
-  const total = fee === null ? quote.amount.total_minor : quote.cod_due_minor;
+  // A re-read quote is the current offer, not the unresolved order's monetary snapshot.
+  const total = readOnly ? undefined : fee === null ? quote.amount.total_minor : quote.cod_due_minor;
   const money = (amount: number) => formatMoney(locale, amount, quote.currency);
   return (
     <section data-testid="checkout-review" aria-labelledby="checkout-review-title" style={{ borderTop: "1px solid var(--line)", paddingTop: 24, marginTop: 24, overflowWrap: "anywhere" }}>

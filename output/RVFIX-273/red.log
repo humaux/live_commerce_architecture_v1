@@ -118,3 +118,20 @@ Current RED: PENDING; no new assertion failure observed yet. Historical automati
 Integration fetch+merge already current at d0e7331525fec046fbe9361906fa66367ae583c6.
 Static node --check checkout-v2/home-cod-buyer and gofmt browser_home_cod_test.go exit0. No local tests/server/browser/PG.
 Native workflow completion/failure/timeout plus integrator fresh-session relay is wake-up mechanism; no detached process.
+
+Native RED CI registration: head6f8d62992064593e58480472bffdd0c5f9421632; PR273 OPEN -> r3/integration.
+WAIT_RUN:40895464832 Gates (GitHub runners), in_progress; test job id not allocated yet (plan123523229269 is NOT test evidence).
+WAIT_RUN:40895464842 Foundation checks, job123523228596 in_progress. Both workflow headSha match current PR head.
+RED assertion result PENDING; GREEN NOT_RUN; implementation NOT_RUN pending integrator relay of causal RED.
+Native completion/failure/timeout plus integrator fresh session is wake-up path. No detached watcher, local processes or tests.
+
+Unresolved COD causal RED verified 2026-10-29 (implementation attempt1 follows):
+PR273 tests-only head6f8d62992064593e58480472bffdd0c5f9421632; Gates40895464832/job123525742645 bundle:06 FAILURE; synthetic merge6bce60ad020109cf577711699d812dabb49734eb; attempt1. Workflow still in_progress at read; job failure is not a completed workflow result.
+Raw job: pending-cod-red-bundle06.log; native artifact12908192424 gate-browser-home-cod (7126669bytes), locally retained pending-cod-red-12908192424.zip.
+Ledger playwright/run.qahiLboy/home-cod/20261029T150418.383372398/rvfix-273-click-ledger.json sha256772e0b2cfbb6042e6f739e7caee3f2877530543f3042974f56a23fab11db2276:29rows,12FAIL. All zh-TW/zh-CN/en desktop/mobile pending-review and fixed-footer assertions expected em-dash, received NT$85. Each original-fee assertion precedes the failing total and passed. Six original intent/key recovery plus original order dueNT$75/reload rows PASS. Existing changed-fee/automatic-mode rows PASS.
+Pending orders sha256eca6115241996a83c893151d4b285fe23c69ac2391ec6109ad10b82429e6ef5d,6distinct original orders. Failure aggregates at checkout-v2.mjs:252; Go exits before cod255-retry-tw-desktop-up-start after browser assertion failure, not a fixture/setup failure.
+Tests-only Foundation40895464842/job123523228596 SUCCESS; not implementation GREEN.
+Integration fetch+merge d0e7331525fec046fbe9361906fa66367ae583c6 already up-to-date. No integration/main push or PR merge.
+Implementation attempt1: CheckoutReview's existing readOnly original-recovery mode withholds payable; fixed footer skips codFooter and withholds fallback total for pending checkout, also before async review snapshot arrives. No browser-computed amount or replacement snapshot; saved fee/destination/timing and explicit identical intent/key recovery unchanged. CheckoutPendingReview header now describes current quote authority. Existing assertions and codFooter source matcher remain verbatim/in order. No imports added/renamed; harness search only found existing cod-footer source checks and OC09b Go metadata; no compiling harness to update.
+Static git diff --check exit0. tsc --noEmit --incremental false -p apps/storefront/tsconfig.json exit127 (compiler absent); typecheck NOT_RUN, no install. Go dependency graph unchanged; depmap NOT_RUN/unnecessary. Official ownership generator runs last before push. GREEN and independent re-review PENDING; author assessment E0.
+No local tests/server/browser/PG, provider SANDBOX/LIVE, production or Figma changes. Native workflow completion/failure/timeout plus integrator relay is wake-up path; final run/job IDs in PR comment, no evidence-only GREEN push.
