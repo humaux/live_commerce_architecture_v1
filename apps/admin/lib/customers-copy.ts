@@ -27,7 +27,7 @@ const en = {
   detailLoading: "Loading customer…",
   empty: "No customers yet.",
   emptySearch: "No customers match this search.",
-  emptyDescription: "Customer records will appear here after buyers place orders or you import existing customers.",
+  emptyDescription: "",
   emptySearchDescription: "Try a different name or phone digits, or clear the search and tag filters.",
   signedOut: "Sign in to view customers.",
   forbidden: "This account does not have permission to view customers.",

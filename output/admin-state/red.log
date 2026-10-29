@@ -1,3 +1,13 @@
+RVFIX #268 — causal RED repair (2026-10-29)
+Authority: integrator RVFIX card; independent review cxf-rv-268.log final verdict.
+Original b02a1856 RED is INVALID as an assertion witness: Foundation40645302665/job122672616500 failed loading ./logic before test declarations. Later SSR prefix/regex failures are harness corrections, not AD09/10/11 product RED.
+Corrected existing SSR harness is retained unchanged. Restored original MOU08 order-denial assertion before the existing neutral-guidance assertion; the loop covers both private-cursor variants.
+Approved minimal mutation, one batch: AdminStateBlock loading status role -> presentation (AD09); AdminForbidden caller denial removed while neutral guidance retained (AD10); Customers en emptyDescription -> empty (AD11).
+No tests/assertions/thresholds/fixtures/exemptions weakened. Expected causal assertions are status markup, Customers en denial and nonempty customers en.emptyDescription. CI must execute these assertions; loader/type/transport failures alone are not valid RED.
+RED run/job/head: PENDING push registration. Restore exactly these three mutated source lines only after causal CI receipt. Current GREEN: PENDING.
+
+Historical evidence follows; superseded claims above take precedence.
+
 CA-ADMIN-STATE RED evidence (CI only)
 
 Relay3 current-head Foundation blocker (read directly 2026-10-29)
@@ -95,3 +105,36 @@ Root cause: shared AdminForbidden branch omitted existing per-module localized d
 Approved fix3 loading boundary relocation already present; not replayed. Integration merged before repair.
 This directed repair uses the existing failing assertion as RED; no extra tests-only push or local tests/servers.
 New-head CI GREEN PENDING; old Foundation success is not new-head acceptance.
+
+CONT relay6 current-head failure (2026-10-29)
+PR head: c88effdd4afb3ff6b144a1e0469cd64bcbfa2181
+Gates run40802912905 / WebKit job123216109068 / synthetic merge3765f80f32f8fb0bf60fd586ff01efefb78b5212.
+gh pr checks268: only current failure at readback is gate(--browser-webkit).
+gh run view40802912905 --log-failed --job123216109068 attempted; workflow still in progress.
+Read completed job via jobs API; downloaded artifact12866524889 using gh run download (gate-browser-webkit), plus receipt12867626071.
+Actual failure: TestBrowserBuyerOrderUI; tests/storefront/order-gate.mjs:101 historyRead called at745, page.waitForResponse timeout30000ms waiting for200 GET/api/buyer/orders?limit=20.
+Browser log reached BH03 then timed out before BH04. Screenshot text is synthetic storefront checkout/history, not admin.
+Raw preserved: relay6-webkit-browser.log, relay6-webkit-order.jsonl, relay6-failure-{0,1,2}.txt, relay6-webkit-receipt.json.
+Foundation40802912918/job123214960378 SUCCESS on c88effdd; AD-10 is not the current blocker.
+Scope STOP: storefront app and tests/storefront are outside admin module; causal product/harness diagnosis UNKNOWN. No root-cause claim from timeout alone.
+Required integration merge completed locally (integration7a2c4e763), no conflict. No source/test repair, no push, no new GREEN or WAIT_RUN.
+Local tests/servers NOT_RUN. Self-review E0; exact-head CI receipts are E3 within their recorded MOCK scope.
+
+RELAY7 direct recheck 2026-10-29: remote head c88effdd4afb3ff6b144a1e0469cd64bcbfa2181.
+Only current failure Gates40802912905/job123216109068, WebKit TestBrowserBuyerOrderUI.
+Downloaded artifact12866524889 anew with gh run download exit0; raw relay7-webkit-browser.log:
+page.waitForResponse Timeout30000ms at tests/storefront/order-gate.mjs:101 called745, after BH03, before BH04.
+Current Foundation40802912918/job123214960378 SUCCESS; both AD-10 assertions PASS; group10/10.
+STOP storefront outside admin scope. No source repair, commit or push. Full relay7-handoff.md.
+WAIT_RUN40802912905 existing workflow; integrator relays/reassigns. Evidence E3 MOCK only, ownPASS E0.
+
+
+Relay8 current-head CI failure readback (2026-10-29)
+Head c88effdd4afb3ff6b144a1e0469cd64bcbfa2181; synthetic merge 3765f80f32f8fb0bf60fd586ff01efefb78b5212.
+Gates40802912905/job123216109068 FAIL. Artifact12866524889 downloaded anew via gh run download (exit0).
+Actual: page.waitForResponse Timeout30000ms, historyRead order-gate.mjs:101, caller:745 (BH04 locale history).
+BO03 quote-less new tab recovery PASS in artifact browser.log:23. NOT known issue299/line660.
+Foundation40802912918/job123214960378 SUCCESS; card group10/10 including contextual AD-10 (relay8-foundation.log:3519).
+Only failing job remains WebKit; receipts123222397624/aggregate123222397650 QUEUED.
+STOP: storefront blocker outside card ownership. No new RED push, implementation, commit, push or GREEN claim.
+WAIT_RUN:40802912905 existing. Local head fb652c1c664f1cb97646b590acaf62556a1799ff remains unpushed.

@@ -137,7 +137,7 @@
     "tests/admin/orders-bff.spec.ts": "28963e8f589eed64858f7e41c48b67f1f7bc3cbc211a5dadf4a682e875fd756a",
     "tests/admin/orders-model.test.ts": "aaa4b12d5a6c4a2c876341b98fd73c5a812b94a7ee05bd51f1415058d1d427c0",
     "tests/admin/orders-request.test.ts": "ccb87d390afac556c21fd6a050aba65cc43096021015109afe236f0e0390031b",
-    "tests/admin/orders-ui.spec.ts": "fb615d85dd12606557ae7c5ebcf092202b8ca0c520ce7c0d0cf84d1c7c9baf84",
+    "tests/admin/orders-ui.spec.ts": "85b163f2347405e3ec518c894a1776bf4c4074408e235488a394c20198e189e0",
     "tests/admin/orders-v2.test.ts": "688a6e9c082513399efc876ecdf05279e4f35c2fb4f6fda5817ca0a71f64fb7e",
     "tests/admin/parcel-merge.spec.ts": "848450092e2159ac9ea174fc2116379f24fb03697d53756be89e8d08f512d469",
     "tests/admin/parcels-bff.test.ts": "4496e04ca16357e2c758e0c881f3dbca00af9a4a58703137d1d9e73a675daedf",

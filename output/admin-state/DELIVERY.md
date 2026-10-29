@@ -1,3 +1,28 @@
+# RVFIX #268 (2026-10-29)
+
+- Dispatched implementer Codex, current runtime model/effort not exposed; no delegation. Assigned worktree/branch unit/ca-admin-state; reviewed base a631d9c5e373e75483311a86e67d5d1b07c10131. Git fetch and required merge of origin/r3/integration d8093bc43: exit 0, already up to date.
+- Authority: current RVFIX card plus independent review final verdict cxf-rv-268.log. Repository AGENTS.md, architecture sections 0/1/2/26/27, owner choices OC-Q7 and existing AD09/10/11 SSR suite read. Current review requires both caller-specific denial and neutral guidance. Original card backlog path is absent in this checkout; historical output is not treated as current product status.
+- P1 evidence root: original RED failed harness module loading, before assertions. Retain corrected harness; run the card-authorized minimal mutation against loading semantics (AD09), caller denial (AD10), and empty guidance (AD11), in one push. No new gate and no assertion weakening. Source restoration and GREEN remain PENDING causal RED.
+- P1 test root: MOU08 replaced contextual denial with neutral guidance in a loop covering two variants. Restore the original assertion verbatim before the new assertion; retain native login/filter/detail clicks, list/detail removal, and noPII checks.
+- P2: asynchronous empty/forbidden status announcements are deferred by the explicit card to a PR comment `P2 for issue`; no P2 repair mixed into this mutation.
+- Allowed mutation paths: AdminStateBlock.tsx, AdminForbidden.tsx, customers-copy.ts; restored regression: tests/admin/orders-ui.spec.ts. Generated ownership last. Output/admin-state evidence paths retained; prior uncommitted/untracked relay files preserved. No imports changed, so existing harness dependency maps remain applicable; no dependency-edge change requires Go depmap regeneration.
+- Evidence: author assessment E0; local static syntax/whitespace receipts to follow. All local tests/servers NOT_RUN; CI assertion RED/GREEN, browser click/persistence acceptance and independent delta review PENDING. Integrator completion relay is the wakeup; no local watcher. Never merge, auto-merge, force-push, post statuses or deploy.
+- Rollback point: a631d9c5e; restore the three source lines from that commit after causal RED. Existing worktree delivery changes preserved.
+
+## BOURDIEU
+Q1 task = recognize and recover from admin read states; Q2 novice/expert means recent experience with this task; Q3 safe guidance and existing actions unchanged after restoration; Q4 locale wording unchanged after restoration; Q5 no role inference or advanced setting; Q6 aesthetics UNKNOWN, owner-only. No new design acceptance claim.
+
+## PROJECT UNDERSTANDING
+Architecture 0 separates source/model/runtime evidence; 1 requires existing TS/React baseline; 2 prevents invented merchant facts; 26 requires independent acceptance and isolated writes; 27 requires actual gates. Existing read clients and server-owned ACL remain unchanged. OC-Q7 neutral guidance is preserved, alongside contextual denial as explicitly required by current RVFIX review.
+
+## MOBBIN → EAGLE
+No visual pattern is created or redesigned; this card repairs test evidence and restores an assertion. No reference imported or used; no new Mobbin query needed.
+
+## FIGMA OFFICIAL GUIDANCE
+No Figma edits or design hand-in. Figma guidance/copy-lint/density/mobile parity NOT_RUN in this repair; no new design claim. UI click ledger remains the existing CI orders scenario: native login, order expansion, backend-denial fixture, visible contextual denial plus neutral guidance, no list/detail/PII. Actual result PENDING CI; refresh/persistence acceptance not claimed from SSR.
+
+---
+
 # CA-ADMIN-STATE delivery
 
 ## Relay3 current correction (2026-10-29)
@@ -233,3 +258,50 @@ No new layout/pattern/reference creation in this relay. Existing permission-stat
 No Figma design or write in this relay; no new auto-layout/components/variables/prototype claim. output/ux-audit-ref/FIGMA-GUIDE.md was not available/read for this repair. Figma parity/copy-lint/density acceptance NOT_RUN, not implied by SSR or source inspection.
 
 Evidence formatting: staged diff check initially caught two trailing spaces from the downloaded Playwright log; trimmed only those line endings. Assertion text and original artifact12860707314 remain unchanged. Final staged diff check must pass before commit. Own downloaded archive/full wrapper log removed after preserving selected failure evidence; pre-existing fix3-proposed.patch retained.
+
+## CONT relay6 blocked at storefront boundary (2026-10-29)
+
+
+CONT relay6 current-head failure (2026-10-29)
+PR head: c88effdd4afb3ff6b144a1e0469cd64bcbfa2181
+Gates run40802912905 / WebKit job123216109068 / synthetic merge3765f80f32f8fb0bf60fd586ff01efefb78b5212.
+gh pr checks268: only current failure at readback is gate(--browser-webkit).
+gh run view40802912905 --log-failed --job123216109068 attempted; workflow still in progress.
+Read completed job via jobs API; downloaded artifact12866524889 using gh run download (gate-browser-webkit), plus receipt12867626071.
+Actual failure: TestBrowserBuyerOrderUI; tests/storefront/order-gate.mjs:101 historyRead called at745, page.waitForResponse timeout30000ms waiting for200 GET/api/buyer/orders?limit=20.
+Browser log reached BH03 then timed out before BH04. Screenshot text is synthetic storefront checkout/history, not admin.
+Raw preserved: relay6-webkit-browser.log, relay6-webkit-order.jsonl, relay6-failure-{0,1,2}.txt, relay6-webkit-receipt.json.
+Foundation40802912918/job123214960378 SUCCESS on c88effdd; AD-10 is not the current blocker.
+Scope STOP: storefront app and tests/storefront are outside admin module; causal product/harness diagnosis UNKNOWN. No root-cause claim from timeout alone.
+Required integration merge completed locally (integration7a2c4e763), no conflict. No source/test repair, no push, no new GREEN or WAIT_RUN.
+Local tests/servers NOT_RUN. Self-review E0; exact-head CI receipts are E3 within their recorded MOCK scope.
+
+### BOURDIEU
+No design changes; Q1-Q6 not reassessed. Q6 remains owner-only.
+
+### PROJECT UNDERSTANDING
+Read AGENTS.md, architecture0/1/2/26/27, original card blob fb520c93a9962d0abb67348ba39491862b47b960 lines698-728, current CI and storefront failure call site. Card remains display-only admin work; no ACL change or cross-app ownership expansion.
+
+### MOBBIN → EAGLE
+No new UI or reference usage; not applicable to this CI diagnosis.
+
+### FIGMA OFFICIAL GUIDANCE
+No Figma/design writes or design acceptance claimed. Existing click ledger is not upgraded by this diagnosis.
+
+Rollback point before required merge: c88effdd4afb3ff6b144a1e0469cd64bcbfa2181. Untracked prior handoff files preserved. No local runtime, test, browser, server, PG, SANDBOX, LIVE, deployment or independent review. No source changed, no new import/harness changes, no generator required.
+
+
+## Relay 8 — exact-current-head readback, stopped on out-of-card browser failure (2026-10-29)
+
+- Assigned continuation: PR #268, branch unit/ca-admin-state; no delegation or new task claim. Humaux tools are unavailable in this runtime: memory search/store, coord and canvas NOT_RUN. No completion claim.
+- Authority: current human CONT instruction and its STOP boundary, repository AGENTS.md, architecture sections 0/1/2/26/27, original CA-ADMIN-STATE card read from git blob fb520c93a9962d0abb67348ba39491862b47b960 lines 698–728, contracts/owner-choices-20261026-v1.md OC-Q7.
+- Remote PR head independently read: c88effdd4afb3ff6b144a1e0469cd64bcbfa2181. CI synthetic merge: 3765f80f32f8fb0bf60fd586ff01efefb78b5212 (base f5202be535b0b9e0c709dba3cdb27619ff961dd0). These receipts do not validate the local unpushed merge.
+- Entry and exit local HEAD: fb652c1c664f1cb97646b590acaf62556a1799ff, an existing unpushed merge of integration 7a2c4e7639634dd9bd70fcd0c2dfbeaae59b4910. git fetch origin: exit 0; required git merge --no-edit origin/r3/integration: exit 0, Already up to date. Existing dirty handoff files preserved. No new commit or push.
+- gh pr checks 268 selected exactly one failed job: Gates run 40802912905, gate (--browser-webkit), job 123216109068. gh run view --log-failed --job was attempted; workflow still unfinished, so read the completed job directly through the GitHub jobs logs API (exit 0).
+- Downloaded again with gh run download (both commands exit 0): artifact 12866524889 gate-browser-webkit and artifact 12867626071 receipt-gate-browser-webkit. Raw files: relay8-webkit-job.log; relay8-artifact/playwright/buyer-order-129935673/browser.log; relay8-artifact/playwright/run.QcomZmtV/webkit/3765f80f32f8-order.jsonl; relay8-receipt/receipt-browser-webkit.json.
+- Actual failure: page.waitForResponse Timeout 30000ms at tests/storefront/order-gate.mjs:101 historyRead, called at line 745 during the BH04 locale-switch history loop. The predicate waits for a 200 GET /api/buyer/orders with limit=20. This proves a missing matching response within the timeout, not its underlying cause. Root cause UNKNOWN; requires the storefront lane.
+- This is NOT issue #299: artifact browser.log explicitly reports PASS for BO03 expired pending address / quote-less new tab recovery. Issue #299 was independently read and concerns stored(noQuoteTab).toBeNull at line 660.
+- Foundation run 40802912918 / job 123214960378 SUCCESS at the remote head; raw relay8-foundation.log lines 3513–3530 show this card group 10/10, zero failures/skips, including both AD-10 assertions. E3 limited to those GitHub CI results. Overall GREEN absent; author assessment E0; independent review E4 NOT_RUN.
+- Final check inventory: WebKit FAILURE; receipts job 123222397624 and aggregate job 123222397650 QUEUED. WAIT_RUN: 40802912905 (existing run, no new dispatch). Integrator receives this handoff; no continuing watcher/process.
+- STOP per card boundary: only failing test belongs to storefront, outside this admin lane. No product/test/assertion/timeout/fixture changes; zero targeted fix attempts on this blocker. No source files authored outside original write_paths. Only this lane's output/admin-state evidence updated; no evidence-only commit, PR merge, auto-merge or deployment.
+- Static git diff --check: exit 0 before evidence append. No local tests, servers, browser, PG, SANDBOX, LIVE, production or independent acceptance executed. No application process started. Downloaded artifacts retained as failure evidence.
