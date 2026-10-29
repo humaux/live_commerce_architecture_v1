@@ -1,0 +1,44 @@
+
+  1) tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-TW-1440 ───────────────────
+
+    Error: PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt
+
+    expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByTestId('customers-search')
+    Expected: "姓名開頭／電話末碼"
+    Received: ""
+    Timeout:  10000ms
+
+    Call log:
+      - PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt getByTestId('customers-search') with timeout 10000ms
+      - waiting for getByTestId('customers-search')
+        24 × locator resolved to <input value="" type="search" maxlength="40" autocomplete="off" data-testid="customers-search" aria-describedby="customers-search-hint"/>
+           - unexpected value "null"
+
+
+      125 |     await signed(page, width); await fixture(page); await page.goto(mainURL(locale));
+      126 |     await expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible(); // Existing baseline reaches new assertion.
+    > 127 |     await expect(page.getByTestId("customers-search"), "PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt").toHaveAttribute("placeholder", c.search);
+          |                                                                                                                 ^
+      128 |     await fits(page);
+      129 |     await act(page, c.search, "customer search draft is visible", () => page.getByTestId("customers-search").fill("示範林"), () => expect(page.getByTestId("customers-search")).toHaveValue("示範林"), "fill");
+      130 |     await act(page, c.submit, "search results retain the customer and query", () => page.getByTestId("customers-search-submit").click(), async () => { await expect(page).toHaveURL(/q=/); await expect(page.getByTestId(`customer-open-${customer}`)).toContainText(name); });
+  16 failed
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-TW-1440 ────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-TW-390 ─────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-CN-1440 ────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-CN-390 ─────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path en-1440 ───────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path en-390 ────────────────────────
+    tests/admin/people-v2.spec.ts:149:3 › PEOPLE-V2 export confirmation and persistence en-1440 ────
+    tests/admin/people-v2.spec.ts:160:3 › PEOPLE-V2 erasure name checkbox and persistence en-1440 ──
+    tests/admin/people-v2.spec.ts:169:3 › PEOPLE-V2 blocked erasure retains customer and orders en-1440
+    tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 export uncertain read-only return en-1440 ──────
+    tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 erase uncertain read-only return en-1440 ───────
+    tests/admin/people-v2.spec.ts:149:3 › PEOPLE-V2 export confirmation and persistence en-390 ─────
+    tests/admin/people-v2.spec.ts:160:3 › PEOPLE-V2 erasure name checkbox and persistence en-390 ───
+    tests/admin/people-v2.spec.ts:169:3 › PEOPLE-V2 blocked erasure retains customer and orders en-390
+    tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 export uncertain read-only return en-390 ───────
+    tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 erase uncertain read-only return en-390 ────────
+  12 passed (3.5m)
