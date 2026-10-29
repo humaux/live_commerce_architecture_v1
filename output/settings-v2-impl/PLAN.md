@@ -1,5 +1,11 @@
 # SETTINGS-V2-IMPL — current RED plan (2026-10-29)
 
+FIX #303 current status: causal RED confirmed; implementation prepared for one batched push.
+Merged origin/r3/integration d8093bc43f16f8eb4e209eeb6c7b698efcd27b0e first.
+Fresh OC artifact proves signup/createStore navigation ERR_ABORTED; the merged
+integration already adds the canonical signup navigation fence. No OC file edited here.
+GREEN and independent acceptance remain NOT_RUN pending the new PR-head CI.
+
 Supersedes the historical blocked preflight below. Authority: current source at
 `e324e01a93219c099d6d2a9d35ed1f112595fe90` plus the dispatched card, signed
 ux-settings DELIVERY.md latest polish/simplify sections and
@@ -10,6 +16,7 @@ No local tests, servers or builds. Only static checks and mandatory static gener
 
 ## Exact write paths (Step 0)
 
+- apps/admin/components/SettingsV2.tsx — signed simplified surface, mounted by SettingsWizard; existing complex operations remain behind one advanced entry.
 - apps/admin/components/SettingsWizard.tsx — replace merchant surface with signed states; preserve existing command safety.
 - apps/admin/components/settings.css — signed responsive three-row overview, editor and review.
 - apps/admin/lib/settings-v2.ts — response-driven state, profile CAS and sequential existing commands; no invented settings.
@@ -41,7 +48,7 @@ path must be reconciled in the implementation without losing their safety covera
 CI only: PR's own --browser-identity (signed MOCK IdP + isolated PG), Foundation,
 Gates selected checks. E3 requires current implementation SHA receipts. Author
 judgment is E0. No production/platform acceptance. No recursive delegation.
-No shared-state claim/store/canvas: Humaux tools are not available in this session.
+RELAY 2: Humaux is available; integrator retains ownership, child writes only its own canvas. No separate claim or recursive delegation.
 RED/GREEN/persistence execution is NOT_RUN until CI runs; queue handoff uses workflow
 run ids, never the completed plan job id. No force push, merge or auto-merge.
 

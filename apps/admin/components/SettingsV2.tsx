@@ -1,0 +1,228 @@
+// Purpose: Owner-signed three-row settings, direct edit/review and optional three-step quick setup.
+// Depends on: react, @live-commerce/i18n, ./WorkspaceFrame, @/lib/settings-v2, @/lib/settings-client, @/lib/catalog-v2-model, @/lib/settings-model and SettingsWizard's settings.css.
+// Used by: SettingsWizard; localized authenticated settings route.
+// Invariants: server response baselines, one explicit keyed command at a time, no eligibility claim or new business defaults.
+"use client";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { settingsV2Copy, type Locale } from "@live-commerce/i18n";
+import { WorkspaceFrame } from "./WorkspaceFrame";
+import { readSettings, sessionBoundary } from "@/lib/settings-client";
+import { parseProduct, toMinor } from "@/lib/catalog-v2-model";
+import type { SettingsInitial } from "@/lib/settings-model";
+import { deliveryKinds, draftOf, execute, parseProfile, readSnapshot, reconciled, SaveFailure, serviceInput,
+  type Journal, type Profile, type Quickstart, type SimpleDraft, type Snapshot } from "@/lib/settings-v2";
+
+type Screen = "overview" | "editor" | "review" | "saved" | "uncertain" | "failed" | "step1" | "step2" | "step3";
+const empty: SimpleDraft = { name: "", contact_email: "", contact_phone: "", enabled: {}, productName: "", price: "", stock: "" };
+
+/** A compact merchant surface over the incumbent authenticated commands. */
+export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; initial: SettingsInitial; onAdvanced: () => void }) {
+  const c = settingsV2Copy[locale], store = initial.store;
+  const [data, setData] = useState<Snapshot | null>(null), [draft, setDraft] = useState<SimpleDraft>(empty);
+  const [screen, setScreen] = useState<Screen>("overview"), [fromQuickstart, setFromQuickstart] = useState(false);
+  const [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [partial, setPartial] = useState(false);
+  const [notice, setNotice] = useState("");
+  const scope = useRef(""), key = useRef(""), pending = useRef<Journal | null>(null);
+  const active = useRef(true), generation = useRef(0), writing = useRef(false), heading = useRef<HTMLHeadingElement>(null);
+  const names = { home: c.home, cvs_711: c.seven, cvs_familymart: c.family, cvs_hilife: c.hilife, cvs_okmart: c.ok };
+  const currency = store?.currency ?? "";
+  const priceLabel = c.price.replace("{currency}", currency);
+  const canManage = !!store && (store.role === "owner" || store.role === "admin" || !!store.permissions?.includes("integration:manage"));
+  const canCatalog = !!store && (store.role === "owner" || store.role === "admin" || !!store.permissions?.includes("catalog:write"));
+
+  function journal(value: Journal | null) {
+    if (value) sessionStorage.setItem(`${key.current}:command`, JSON.stringify(value));
+    else sessionStorage.removeItem(`${key.current}:command`);
+    pending.current = value;
+  }
+  function change(patch: Partial<SimpleDraft>) {
+    const next = { ...draft, ...patch };
+    try { sessionStorage.setItem(key.current, JSON.stringify({ version: data?.profile.version, draft: next })); setDraft(next); }
+    catch { setScreen("failed"); setNotice(c.retained); }
+  }
+  async function load(discardDraft = false) {
+    if (!store) { setLoading(false); setScreen("uncertain"); return; }
+    const at = ++generation.current;
+    setLoading(true); setNotice("");
+    try {
+      const boundary = await sessionBoundary(), fresh = await readSnapshot(store.id, currency);
+      if (!active.current || at !== generation.current) return;
+      if (boundary !== await sessionBoundary()) throw new Error("session_changed");
+      scope.current = boundary; key.current = `commerce-settings-v2:${store.id}:${boundary}`;
+      let next = draftOf(fresh);
+      const rawPending = sessionStorage.getItem(`${key.current}:command`);
+      pending.current = null;
+      if (rawPending) {
+        const value = JSON.parse(rawPending) as Journal;
+        if (typeof value.key !== "string" || !/^[0-9a-f-]{36}$/.test(value.key) || typeof value.body !== "string" ||
+            value.body.length > 8192 || !["POST", "PUT"].includes(value.method) ||
+            !/^(?:profile|quickstart|products|skus|inventory\/adjustments|markets\/[0-9a-f-]{36}\/countries\/TW\/delivery-services\/[a-z][a-z0-9_-]{0,39})$/.test(value.resource)) throw new Error("journal_shape");
+        pending.current = value;
+        if (reconciled(value, fresh)) journal(null);
+      }
+      const cached = sessionStorage.getItem(key.current);
+      if (!discardDraft && cached) {
+        const saved = JSON.parse(cached) as { version: number; draft: SimpleDraft };
+        const d = saved.draft;
+        if (saved.version === fresh.profile.version && d &&
+            [d.name, d.contact_email, d.contact_phone, d.productName, d.price, d.stock].every(s => typeof s === "string" && s.length <= 254) &&
+            d.enabled && Object.entries(d.enabled).every(([k, v]) => deliveryKinds.includes(k as typeof deliveryKinds[number]) && typeof v === "boolean")) next = d;
+      }
+      setData(fresh); setDraft(next); setScreen("overview");
+      sessionStorage.setItem(key.current, JSON.stringify({ version: fresh.profile.version, draft: next }));
+    } catch { if (active.current && at === generation.current) setScreen("uncertain"); }
+    finally { if (active.current && at === generation.current) setLoading(false); }
+  }
+  useEffect(() => { active.current = true; void load(); return () => { active.current = false; generation.current++; }; }, [store?.id]);
+  useEffect(() => { heading.current?.focus(); }, [screen]);
+
+  async function save() {
+    if (!store || !data || writing.current || !canManage) return;
+    writing.current = true; setBusy(true); setNotice(""); setPartial(false);
+    let changed = false;
+    const send = async <T,>(resource: string, method: "POST" | "PUT", body: unknown): Promise<T> => {
+      const result = await execute<T>(store.id, scope.current, resource, method, body, pending.current, journal);
+      changed = true;
+      if (!active.current || scope.current !== await sessionBoundary()) throw new SaveFailure(false, true, true);
+      return result;
+    };
+    try {
+      // The browser's per-store lock also covers other tabs. No lock/storage capability => no unsafe write.
+      if (!navigator.locks) throw new SaveFailure(false, false);
+      await navigator.locks.request(`settings-v2:${store.id}:${scope.current}`, { ifAvailable: true }, async lock => {
+        if (!lock) throw new SaveFailure(false, false);
+        let profile = { name: draft.name, contact_email: draft.contact_email, contact_phone: draft.contact_phone, expected_version: data.profile.version };
+        if (pending.current?.resource === "profile") {
+          const original = JSON.parse(pending.current.body) as typeof profile;
+          if (original.name !== draft.name || original.contact_email !== draft.contact_email || original.contact_phone !== draft.contact_phone) throw new SaveFailure(true, false);
+          profile = original; // durable replay, including its original version after another operator's save
+        }
+        if (pending.current?.resource === "profile" || draft.name !== data.profile.name || draft.contact_email !== data.profile.contact_email || draft.contact_phone !== data.profile.contact_phone) {
+          const saved = parseProfile(await send<Profile>("profile", "PUT", profile));
+          if (saved.name !== profile.name || saved.contact_email !== profile.contact_email || saved.contact_phone !== profile.contact_phone || saved.version !== profile.expected_version + 1) throw new SaveFailure(true, changed);
+          data.profile = saved;
+          sessionStorage.setItem(key.current, JSON.stringify({ version: saved.version, draft }));
+        }
+        for (const d of data.delivery) {
+          if (!d.service || d.service.enabled === draft.enabled[d.kind]) continue;
+          const service = d.service, enabled = !!draft.enabled[d.kind];
+          const saved = await send<typeof service>(`markets/${service.market_id}/countries/TW/delivery-services/${service.code}`, "PUT", serviceInput(service, enabled));
+          if (saved.code !== service.code || saved.enabled !== enabled || saved.version !== service.version + 1) throw new SaveFailure(true, changed);
+          d.service = saved;
+        }
+        if (draft.productName && fromQuickstart) {
+          if (!canCatalog || data.warehouses.length !== 1) throw new SaveFailure(false, changed);
+          const price = toMinor(draft.price, currency), stock = Number(draft.stock);
+          if (price === null || !Number.isSafeInteger(stock) || stock < 0) throw new SaveFailure(false, changed);
+          let product = data.product;
+          if (!product || pending.current?.resource === "products") {
+            const saved = await send<{ id: string }>("products", "POST", { name: draft.productName, description: "", status: "draft" });
+            product = parseProduct(await readSettings(store.id, `products/${saved.id}`));
+          }
+          if (product.name !== draft.productName || product.status !== "draft" || product.skus.length > 1) throw new SaveFailure(false, changed);
+          data.product = product; // retain accepted progress if a later command fails
+          if (!product.skus.length || pending.current?.resource === "skus") {
+            await send("skus", "POST", { product_id: product.id, code: `setup-${product.id}`, price_minor: price });
+            product = parseProduct(await readSettings(store.id, `products/${product.id}`));
+            data.product = product;
+          }
+          const sku = product.skus[0];
+          if (!sku || sku.price_minor !== price || sku.currency !== currency) throw new SaveFailure(false, changed);
+          if (pending.current?.resource === "inventory/adjustments" || (sku.on_hand === null && stock > 0)) {
+            await send("inventory/adjustments", "POST", { warehouse_id: data.warehouses[0].id, sku_id: sku.id, delta: stock, expected_version: 0, reason: "quickstart_initial_stock" });
+          } else if ((sku.on_hand ?? sku.available) !== stock) throw new SaveFailure(false, changed);
+        }
+        if (pending.current) throw new SaveFailure(true, changed);
+        const fresh = await readSnapshot(store.id, currency);
+        // A partial quick start is not called complete. The server derives these steps.
+        if (fromQuickstart && !fresh.marker.completed && Object.values(fresh.marker.steps).every(Boolean)) {
+          fresh.marker = await send<Quickstart>("quickstart", "POST", {});
+        }
+        if (!active.current || scope.current !== await sessionBoundary()) throw new SaveFailure(false, changed, true);
+        setData(fresh); setDraft(draftOf(fresh)); sessionStorage.removeItem(key.current); setScreen("saved");
+      });
+    } catch (error) {
+      if (!active.current) return;
+      const failure = error instanceof SaveFailure ? error : new SaveFailure(true, changed);
+      setPartial(changed || failure.partial); setNotice(failure.session ? c.session : failure.uncertain && pending.current ? c.pending : "");
+      setScreen(failure.uncertain ? "uncertain" : "failed");
+    } finally { writing.current = false; if (active.current) setBusy(false); }
+  }
+  async function skip() {
+    if (!store || !canManage || writing.current) return;
+    writing.current = true; setBusy(true);
+    try {
+      await execute<Quickstart>(store.id, scope.current, "quickstart", "POST", {}, pending.current, journal);
+      await load(true);
+    } catch { setScreen("uncertain"); }
+    finally { writing.current = false; if (active.current) setBusy(false); }
+  }
+  function review(event: FormEvent) { event.preventDefault(); setScreen("review"); }
+  const button = (label: string, action: () => void, primary = false) => <button type="button" className={primary ? "settings-v2-primary" : "settings-v2-secondary"} disabled={busy || loading} onClick={action}>{label}</button>;
+  const title = screen === "editor" ? c.edit : screen === "review" ? c.review : screen === "saved" ? c.saved : screen === "failed" ? c.failed : screen === "uncertain" ? c.uncertain : screen === "step1" ? c.step1 : screen === "step2" ? c.step2 : screen === "step3" ? c.step3 : c.title;
+  const profileFields = <>
+    <label>{c.name}<input required maxLength={120} value={draft.name} onChange={e => change({ name: e.target.value })} /></label>
+    <label>{c.email}<input required type="email" maxLength={254} value={draft.contact_email} onChange={e => change({ contact_email: e.target.value })} /></label>
+    <label>{c.phone}<input type="tel" maxLength={32} value={draft.contact_phone} onChange={e => change({ contact_phone: e.target.value })} /></label>
+  </>;
+  const deliveryFields = <>
+    {data?.delivery.map(d => <label className="settings-v2-switch" key={d.kind}>
+      <input type="checkbox" checked={!!draft.enabled[d.kind]} disabled={!canManage || !d.service || busy} aria-describedby={!d.service ? "settings-v2-prerequisite" : undefined}
+        onChange={e => change({ enabled: { ...draft.enabled, [d.kind]: e.target.checked } })} />{names[d.kind]}
+    </label>)}
+    {data?.delivery.some(d => !d.service) && <p id="settings-v2-prerequisite" className="settings-v2-hint">{c.prerequisite}</p>}
+  </>;
+  return <WorkspaceFrame locale={locale} storeName={store?.name ?? ""} active="settings" locked={busy}>
+    <div className="settings-v2 settings-page" data-testid="settings-wizard" aria-busy={busy || loading}>
+      <h1 ref={heading} tabIndex={-1}>{title}</h1>
+      {loading ? <p role="status">{c.loading}</p> : <>
+        {screen === "overview" && data && <section data-testid="settings-v2-overview">
+          <div className="settings-v2-rows">{[
+            data.profile.name && data.profile.contact_email ? c.complete : c.incomplete,
+            c.delivery.replace("{n}", String(data.delivery.filter(d => d.service?.enabled).length)), c.payment,
+          ].map(label => <button type="button" key={label} disabled={!canManage} onClick={() => { setFromQuickstart(false); setScreen("editor"); }}>
+            <span>{label}</span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth="1.5" /></svg>
+          </button>)}</div>
+          {canManage && <div className="settings-v2-actions">{button(c.edit, () => { setFromQuickstart(false); setScreen("editor"); }, true)}
+            {!data.marker.completed && <span data-testid="settings-v2-quickstart-prompt">{button(c.start, () => { setFromQuickstart(true); setScreen("step1"); })}</span>}
+          </div>}
+        </section>}
+        {(screen === "editor" || screen.startsWith("step")) && <form data-testid={screen === "editor" ? "settings-v2-editor" : "settings-v2-quickstart"} onSubmit={review}>
+          <fieldset disabled={busy || !canManage}>
+            <p className="settings-v2-shipping">{c.shipping}</p>
+            {(screen === "editor" || screen === "step1") && profileFields}
+            {(screen === "editor" || screen === "step2") && deliveryFields}
+            {screen === "step3" && <>
+              <label>{c.product}<input required maxLength={120} disabled={!canCatalog || !!data?.product} value={draft.productName} onChange={e => change({ productName: e.target.value })} /></label>
+              <label>{priceLabel}<input required inputMode="decimal" disabled={!canCatalog || !!data?.product?.skus.length} value={draft.price} onChange={e => change({ price: e.target.value })} /></label>
+              <label>{c.stock}<input required type="number" min="0" step="1" disabled={!canCatalog || !!data?.product?.skus.length} value={draft.stock} onChange={e => change({ stock: e.target.value })} /></label>
+              <p>{c.draft}</p>
+            </>}
+            <div className="settings-v2-actions">
+              {screen === "step1" ? button(c.nextDelivery, () => { if (draft.name.trim() && /^[^\s@]+@[^\s@]+$/.test(draft.contact_email)) setScreen("step2"); }, true)
+                : screen === "step2" ? <>{button(c.backName, () => setScreen("step1"))}{button(c.nextProduct, () => setScreen("step3"), true)}</>
+                : <>{screen === "step3" && button(c.backDelivery, () => setScreen("step2"))}<button className="settings-v2-primary" type="submit">{c.review}</button></>}
+              {screen.startsWith("step") ? button(c.skip, () => void skip()) : button(c.back, () => setScreen("overview"))}
+            </div>
+          </fieldset>
+        </form>}
+        {screen === "review" && <section data-testid="settings-v2-review">
+          <p>{c.paymentReview}</p><p>{c.shippingReview}</p><p>{c.checkout}</p>
+          <div className="settings-v2-facts">
+            <p>{`${c.name}: ${draft.name}`}</p><p>{`${c.email}: ${draft.contact_email}`}</p><p>{`${c.phone}: ${draft.contact_phone || c.unavailable}`}</p>
+            {data?.publicURL && <p>{`${c.publicURL}: ${data.publicURL}`}</p>}
+          </div>
+          {deliveryKinds.map(kind => <p key={kind}>{`${names[kind]}: ${draft.enabled[kind] ? c.on : c.off}`}</p>)}
+          {draft.productName && <div className="settings-v2-product"><p>{`${c.productDraft}: ${draft.productName}`}</p><p>{`${priceLabel}: ${draft.price}`}</p><p>{`${c.stock}: ${draft.stock}`}</p><p>{c.draft}</p></div>}
+          <div className="settings-v2-actions">{button(c.save, () => void save(), true)}{button(c.backEdit, () => setScreen(fromQuickstart ? "step3" : "editor"))}</div>
+        </section>}
+        {screen === "saved" && <section><p>{c.eligibility}</p>{button(c.back, () => { setFromQuickstart(false); setScreen("overview"); }, true)}</section>}
+        {(screen === "uncertain" || screen === "failed") && <section role="alert">
+          <p>{notice || (screen === "uncertain" ? c.reloadHelp : partial ? c.partial : c.retained)}</p>
+          {screen === "uncertain" ? button(c.reload, () => void load(true), true) : <>{button(c.backEdit, () => setScreen(fromQuickstart ? "step3" : "editor"), true)}{partial && button(c.reload, () => void load(true))}</>}
+        </section>}
+        {screen === "overview" && button(c.advanced, onAdvanced)}
+      </>}
+    </div>
+  </WorkspaceFrame>;
+}

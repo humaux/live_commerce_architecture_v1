@@ -1,6 +1,7 @@
 // Purpose: Owns the merchant setup sequence and composes integration settings cards.
-// Depends on: react, @live-commerce/i18n, ./AdminPageHeader, ./WorkspaceFrame, ./LogisticsSettings, ./BankTransferSettings, ./CodSettings, ./NotifySettings, ./StorefrontSettings, ./MetaConnect, @/lib/operations-copy, @/lib/operations-model, @/lib/settings-copy, @/lib/catalog-v2-model, @/lib/client, @/lib/orders-model, @/lib/settings-client, @/lib/settings-model, @/lib/logistics-client, @/lib/logistics-model, @/lib/logistics-copy, @/lib/model, @/lib/settings-draft, ./settings.css
+// Depends on: react, @live-commerce/i18n, ./SettingsV2, ./AdminPageHeader, ./WorkspaceFrame, ./LogisticsSettings, ./BankTransferSettings, ./CodSettings, ./NotifySettings, ./StorefrontSettings, ./MetaConnect, @/lib/operations-copy, @/lib/operations-model, @/lib/settings-copy, @/lib/catalog-v2-model, @/lib/client, @/lib/orders-model, @/lib/settings-client, @/lib/settings-model, @/lib/logistics-client, @/lib/logistics-model, @/lib/logistics-copy, @/lib/model, @/lib/settings-draft, ./settings.css
 // Used by: apps/admin/app/[locale]/settings/page.tsx
+// Invariants: SettingsV2 is the default; advanced commands retain session, idempotency and version fences.
 "use client";
 
 // Purpose: merchant setup and provider/Meta settings, forwarding the authenticated store permissions.
@@ -24,6 +25,7 @@ import {
   type FormEvent,
 } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { settingsV2Copy } from "@live-commerce/i18n";
 import { operationsCopy } from "@/lib/operations-copy";
 import { canReadOperations } from "@/lib/operations-model";
 import { AdminPageHeader } from "./AdminPageHeader";
@@ -66,6 +68,7 @@ import {
   type Observation,
 } from "@/lib/settings-draft";
 import "./settings.css";
+import { SettingsV2 } from "./SettingsV2";
 
 // A missing/unresolved read is not a version conflict. Do not offer Save until
 // the target's baseline is known; retain baseline()'s real stale-version guard.
@@ -73,13 +76,41 @@ function hasBaseline(observed: Observation | null, target: string) {
   return !!observed && !!target && observed.target === target && observed.version >= 0;
 }
 
-/** Owns the merchant setup sequence and composes integration settings cards. User actions submit setup changes through settings-client; nested cards own their commands. */
+/** Signed simplified settings is the default; rare existing commands stay behind one explicit advanced entry. */
 export function SettingsWizard({
   locale,
   initial,
+}: { locale: Locale; initial: SettingsInitial }) {
+  const [advanced, setAdvanced] = useState(false);
+  const viewKey = useRef("");
+  useEffect(() => {
+    let active = true;
+    sessionBoundary().then(boundary => {
+      if (!active || !initial.store) return;
+      viewKey.current = `commerce-settings-view:${initial.store.id}:${boundary}`;
+      setAdvanced(sessionStorage.getItem(viewKey.current) === "advanced");
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [initial.store?.id]);
+  function showAdvanced(value: boolean) {
+    try {
+      if (viewKey.current) value ? sessionStorage.setItem(viewKey.current, "advanced") : sessionStorage.removeItem(viewKey.current);
+    } catch { /* View choice only; mutation journals have their own fail-closed storage fence. */ }
+    setAdvanced(value);
+  }
+  return advanced ? <AdvancedSettings locale={locale} initial={initial} onBack={() => showAdvanced(false)} />
+    : <SettingsV2 locale={locale} initial={initial} onAdvanced={() => showAdvanced(true)} />;
+}
+
+/** Existing advanced configuration commands retain their original session, journal and CAS safety. */
+function AdvancedSettings({
+  locale,
+  initial,
+  onBack,
 }: {
   locale: Locale;
   initial: SettingsInitial;
+  onBack: () => void;
 }) {
   const c = settingsCopy[locale],
     lc = logisticsCopy[locale],
@@ -1044,6 +1075,7 @@ export function SettingsWizard({
     >
       <div className="settings-page" data-testid="settings-wizard">
         <AdminPageHeader className="settings-heading" locale={locale} description={c.subtitle} />
+        <p><button type="button" disabled={busy} onClick={onBack}>{settingsV2Copy[locale].back}</button></p>
         {store && canReadOperations(store) && <p><a data-testid="settings-operations-link" href={`/${locale}/settings/operations?store=${store.id}`}>{operationsCopy[locale].title}</a></p>}
         <ol className="settings-steps" aria-label={c.title}>
           {c.steps.map((label, index) => {

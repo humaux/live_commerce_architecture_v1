@@ -1,0 +1,40 @@
+
+Running 9 tests using 1 worker
+
+  ✓  1 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay (1.9s)
+  ✓  2 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay (1.2s)
+  ✓  3 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN orders: expired re-auth CSV click opens dialog and downloads after one replay (1.2s)
+  ✓  4 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay (1.1s)
+  ✓  5 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en orders: expired re-auth CSV click opens dialog and downloads after one replay (1.1s)
+  ✓  6 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay (1.1s)
+  ✘  7 tests/admin/oc/reauth.spec.ts:240:1 › OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay, OIDC re-auth, routing and hints (510ms)
+  ✓  8 tests/admin/oc/reauth.spec.ts:370:3 › OC-04 zh-CN desktop: the refused invite opens the localized dialog and is replayed once after password re-auth (1.4s)
+  ✓  9 tests/admin/oc/reauth.spec.ts:370:3 › OC-04 en mobile: the refused invite opens the localized dialog and is replayed once after password re-auth (1.3s)
+
+
+  1) tests/admin/oc/reauth.spec.ts:240:1 › OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay, OIDC re-auth, routing and hints
+
+    Error: page.goto: net::ERR_ABORTED at http://127.0.0.1:40919/zh-TW/
+    Call log:
+      - navigating to "http://127.0.0.1:40919/zh-TW/", waiting until "load"
+
+
+      118 |
+      119 | async function createStore(page: Page, locale: Locale) {
+    > 120 |   await page.goto(`/${locale}/`);
+          |              ^
+      121 |   const created = await page.evaluate(async () => {
+      122 |     const csrf = document.cookie.split(";").map((p) => p.trim()).find((p) => p.startsWith("__Host-commerce_csrf="))!.slice(21);
+      123 |     const r = await fetch("/api/onboarding/initial-store", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf, "Idempotency-Key": `oc4-${crypto.randomUUID()}` },
+        at createStore (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:120:14)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:246:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.4j0uGC76/oc-20261029T064831.158935330/results/oc-reauth-OC-04-zh-TW-desk-e5acb-C-re-auth-routing-and-hints/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.4j0uGC76/oc-20261029T064831.158935330/results/oc-reauth-OC-04-zh-TW-desk-e5acb-C-re-auth-routing-and-hints/error-context.md
+
+  1 failed
+    tests/admin/oc/reauth.spec.ts:240:1 › OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay, OIDC re-auth, routing and hints
+  8 passed (15.1s)

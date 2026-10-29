@@ -1,8 +1,57 @@
 /*
  * Purpose: Styles merchant settings, team controls and setup forms.
+ * Invariants: SettingsV2 reuses semantic tokens; advanced styles retain their original scope.
  * Depends on: CSS custom properties and matching component DOM classes; no API calls.
  * Used by: apps/admin/app/[locale]/orders/cvs-print/CvsPrint.tsx, apps/admin/components/BankTransferSettings.tsx, apps/admin/components/CodSettings.tsx, apps/admin/components/LogisticsSettings.tsx, apps/admin/components/MetaConnect.tsx, apps/admin/components/NotifySettings.tsx, apps/admin/components/SettingsWizard.tsx, apps/admin/components/StorefrontSettings.tsx
  */
+.settings-v2 {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+  color: var(--ds-ink);
+  overflow-wrap: anywhere;
+}
+.settings-v2 h1 { margin: 0 0 28px; font-size: 24px; line-height: 1.4; }
+.settings-v2 h1:focus { outline: none; }
+.settings-v2 p { margin: 0 0 16px; line-height: 1.6; }
+.settings-v2-rows { border-block: 1px solid var(--ds-border); }
+.settings-v2-rows button {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: 100%; min-height: 56px; padding: 16px 0; text-align: start;
+  border: 0; border-bottom: 1px solid var(--ds-border); border-radius: 0;
+  background: transparent; color: var(--ds-ink); font-size: 16px;
+}
+.settings-v2-rows button:last-child { border-bottom: 0; }
+.settings-v2 button:focus-visible, .settings-v2 input:focus-visible { outline: 2px solid var(--ds-focus); outline-offset: 3px; }
+.settings-v2 button:hover:not(:disabled) { background: var(--ds-surface-muted); }
+.settings-v2 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.settings-v2 label:not(.settings-v2-switch) { display: flex; flex-direction: column; gap: 8px; margin: 0 0 20px; font-size: 14px; }
+.settings-v2 input:not([type="checkbox"]) {
+  width: 100%; min-height: 48px; padding: 12px; box-sizing: border-box;
+  border: 1px solid var(--ds-border-input); border-radius: 6px;
+  background: var(--ds-surface); color: var(--ds-ink); font: inherit; font-size: 16px;
+}
+.settings-v2-switch { display: flex; align-items: center; gap: 20px; min-height: 64px; padding: 12px; border-bottom: 1px solid var(--ds-border); cursor: pointer; }
+.settings-v2-switch input { width: 20px; height: 20px; margin: 0; accent-color: var(--ui-primary); }
+.settings-v2-hint { font-size: 14px; color: var(--ds-ink); padding-top: 12px; }
+.settings-v2-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
+.settings-v2-actions span { display: contents; }
+.settings-v2 button { min-height: 44px; white-space: normal; }
+.settings-v2-primary { background: var(--ui-primary); color: var(--ds-on-primary); border: 1px solid var(--ui-primary); padding: 12px 20px; border-radius: 6px; font: inherit; }
+.settings-v2 .settings-v2-primary:hover:not(:disabled) { background: var(--ui-primary); filter: brightness(.94); }
+.settings-v2-secondary { background: var(--ds-surface); color: var(--ds-ink); border: 1px solid var(--ds-border-input); padding: 12px 20px; border-radius: 6px; font: inherit; }
+.settings-v2 button:disabled { cursor: default; opacity: .6; }
+.settings-v2-facts { margin: 24px 0; }
+.settings-v2-facts div { display: flex; flex-wrap: wrap; gap: 8px; padding-block: 6px; }
+.settings-v2-facts dt { font-weight: 600; }
+.settings-v2-facts dd { margin: 0; }
+.settings-v2-product { margin-top: 24px; }
+@media (max-width: 600px) {
+  .settings-v2 { padding: 24px 16px 48px; }
+  .settings-v2-actions { flex-direction: column; }
+  .settings-v2-actions button { width: 100%; }
+  .settings-v2-switch { min-height: 76px; }
+}
 .settings-page {
   /* Scoped contrast fix: inherited muted ink failed 4.5:1 on the canvas. */
   --muted: #5f7083;

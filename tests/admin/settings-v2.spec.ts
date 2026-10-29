@@ -102,9 +102,11 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await page.getByRole("button", { name: "Back to edit", exact: true }).click();
   await expect(page.getByLabel("Phone (optional)", { exact: true })).toHaveValue("000-000-1111");
   await page.unroute(profileURL);
+  let uncertainCommand: { key: string; body: string } | null = null;
   await page.route(profileURL, async route => {
     if (route.request().method() !== "PUT") return route.continue();
     writes++;
+    uncertainCommand = { key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" };
     await route.abort("failed"); // MOCK uncertain transport, never a blind fresh-key retry.
   });
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
@@ -116,6 +118,22 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   expect(writes).toBe(2);
   await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
   await expect(page.getByLabel("Phone (optional)", { exact: true })).toHaveValue("000-000-0000");
+  // Reload above is read-only even when an aborted request has no receipt. An
+  // explicit save of the original attempted values must reuse its exact key/body;
+  // reading an unchanged profile is not proof the earlier command cannot commit.
+  const recovery: Array<{ key: string; body: string }> = [];
+  await page.route(profileURL, async route => {
+    if (route.request().method() === "PUT") recovery.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" });
+    await route.continue();
+  });
+  await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-1111");
+  await page.getByRole("button", { name: "Review settings", exact: true }).click();
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
+  expect(recovery).toEqual([uncertainCommand]);
+  await page.unroute(profileURL);
+  await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
+  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
 
   // All three signed quick-start steps, back controls and explicit dismissal.

@@ -1,3 +1,16 @@
+FIX303 current readback: causal RED confirmed; implementation GREEN pending.
+Original tests-only head: 696629d92e786e70bc70545089bc114d1b7cb7e4.
+RED run40828407097/job123300694776, artifact12878213371 freshly downloaded:
+settings-v2.spec.ts:22, zh-TW signed three-row overview, expected visible,
+settings-v2-overview not found. Raw fix303-red-playwright.log.
+Same run/job123300694974, artifact12879157189 freshly downloaded:
+OC signup -> createStore page.goto ERR_ABORTED. Raw fix303-oc-playwright.log.
+Merged origin/r3/integration d8093bc43 first; its canonical signup URL wait
+addresses this exact OC navigation race. No new OC edit in this implementation.
+Old Foundation40828407094/job123296691356 SUCCESS applies to RED only.
+GREEN/independent E4 NOT_RUN. Integrator relays new workflow completion.
+
+Historical RED queue records follow:
 SETTINGS-V2-IMPL RED: pending push/CI; no assertion failure claimed yet.
 Environment: GitHub CI only, MOCK IdP / isolated PG; delivery faults MOCK.
 
@@ -18,3 +31,48 @@ This is gate-registration failure, NOT causal RED. New UI assertions NOT_RUN.
 Targeted fix attempt 1: register both imported helper and calling spec in the
 existing settings-real Playwright suite. No test/assertion or gate changes.
 Implementation remains NOT_RUN until CI reaches and fails the new assertions.
+
+RELAY 1 replacement RED queue handoff:
+HEAD: 696629d92e786e70bc70545089bc114d1b7cb7e4
+Foundation WAIT_RUN: 40828407094 / job 123296691356, IN_PROGRESS at readback.
+Gates WAIT_RUN: 40828407097, PENDING at readback.
+Causal RED: PENDING; GREEN: NOT_RUN; implementation: NOT_RUN.
+Integrator relay owns wakeup. No local background process was started.
+
+RELAY 2 causal RED confirmed from original artifact12878213371:
+Head696629d92e786e70bc70545089bc114d1b7cb7e4; synthetic merge d6954bf22d0f8536de0c2b7ddb1380e17974debd.
+Gates40828407097/job123300694776: settings-v2.spec.ts22 zh-TW signed three-row overview; expected visible, element settings-v2-overview not found.
+Raw relay2-playwright.log. Compile/registration succeeded; Foundation40828407094/job123296691356 success.
+Outside-card STOP: same run/job123300694974 bundle08 TestBrowserOC; browser_oc_test.go259 reauth invitation replay2 want>=3; line279 two auth BFF routes not exercised.
+Deeper root cause UNKNOWN; no outside-scope fixes. Implementation is only local WIP, no implementation push/commit.
+GREEN implementation/independent E4 NOT_RUN. WAIT_RUN none; integrator owns continuation after OC disposition.
+
+RELAY 3 original CI readback, 2026-10-29:
+PR303 remote/local head696629d92e786e70bc70545089bc114d1b7cb7e4 confirmed by gh pr view.
+Gates40828407097 completed/failure; required job123312817883 is aggregate failure only.
+Foundation40828407094 completed/success on the same tests-only head.
+Artifact API12878213371: gate-browser-identity, expired=false, workflow40828407097,
+head696629d92e786e70bc70545089bc114d1b7cb7e4. Original ZIP playwright log:
+Error: zh-TW: signed three-row overview; getByTestId('settings-v2-overview');
+expect(locator).toBeVisible() failed; element(s) not found; settings-v2.spec.ts:22.
+Original job123300694974 log API, outside-card failure:
+2026-10-29T06:48:47.7063411Z browser_oc_test.go:259: invitations replayed after re-auth: 2, want >= 3 (one per chain)
+2026-10-29T06:48:47.7086295Z browser_oc_test.go:279: POST /v1/identity/login/reauth/start was not exercised through the BFF
+2026-10-29T06:48:47.7087561Z browser_oc_test.go:279: POST /v1/identity/login/complete was not exercised through the BFF
+2026-10-29T06:48:47.7226370Z --- FAIL: TestBrowserOC (19.04s)
+STOP retained under explicit card rule; root cause beyond observations UNKNOWN.
+No source edits/commit/push/rerun this relay. Existing implementation WIP preserved.
+GREEN/E4 NOT_RUN. WAIT_RUN: none; integrator resolves/reassigns OC and relays continuation.
+
+RELAY4 fresh original CI readback, 2026-10-29:
+Head696629d92e786e70bc70545089bc114d1b7cb7e4 unchanged local/remote.
+Gates40828407097 failure; required123312817883 aggregate only.
+Foundation40828407094/job123296691356 success, same tests-only head.
+CausalRED E3 retained: job123300694776 artifact12878213371,
+settings-v2.spec.ts22 zh-TW signed three-row overview missing.
+Fresh job123300694974 original log confirms TestBrowserOC outside-card STOP:
+replay2 want>=3; two login BFF routes unexercised; deeper cause UNKNOWN.
+No implementation push or source edits; existing WIP preserved.
+GREEN/E4 NOT_RUN. WAIT_RUN none; integrator disposition/relay required.
+
+RELAY4 artifact refresh: download12878213371 did not finish after74s; terminated own gh process. ZIP parse then failed on incomplete stream. No fresh artifact verification claimed; causal assertion receipt remains the previously retained relay2-playwright.log. Fresh workflow/job-log readbacks above succeeded. No background process remains from that download.

@@ -63,6 +63,10 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.getByTestId("nav-settings").click();
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
   await settingsV2Acceptance(page, receipt.store_id);
+  // Signed simplified settings is the default. Existing rare configuration and
+  // every legacy safety assertion remain reachable through one explicit entry.
+  await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
+  await page.getByRole("button", { name: "Advanced", exact: true }).click();
   await expect(
     page.getByText("Loading saved configuration…", { exact: true }),
   ).toBeHidden();

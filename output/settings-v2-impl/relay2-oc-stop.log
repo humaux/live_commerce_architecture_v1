@@ -1,0 +1,14 @@
+2135-2026-10-29T06:48:47.4719791Z     browser_oc_test.go:193: Go transport POST /v1/identity/staff/list -> 200
+2136-2026-10-29T06:48:47.7053033Z     browser_oc_test.go:247: browser spec failed; local evidence: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.4j0uGC76/oc-20261029T064831.158935330
+2137:2026-10-29T06:48:47.7063411Z     browser_oc_test.go:259: invitations replayed after re-auth: 2, want >= 3 (one per chain)
+2138:2026-10-29T06:48:47.7086295Z     browser_oc_test.go:279: POST /v1/identity/login/reauth/start was not exercised through the BFF
+2139:2026-10-29T06:48:47.7087561Z     browser_oc_test.go:279: POST /v1/identity/login/complete was not exercised through the BFF
+2140:2026-10-29T06:48:47.7226370Z --- FAIL: TestBrowserOC (19.04s)
+2141-2026-10-29T06:48:47.7227989Z === RUN   TestBrowserPasswordAuth
+2142-2026-10-29T06:48:50.5790845Z     browser_password_auth_test.go:97: Go transport POST /v1/identity/password/signup -> 202
+--
+2897-2026-10-29T06:53:04.8544832Z ##[endgroup]
+2898-2026-10-29T06:53:04.8622589Z PASS: meta-connect isolated admin Next, Go API with the metaconnect service, PG; Meta = MOCK (tests/metaconnect/fakegraph + the Facebook Login dialog answered by the browser route); merchant connects Page A + Instagram, a forged state and a missing permission are refused, disconnect and a Facebook-only reconnect, en/zh-TW/zh-CN, desktop + 390px; the independent gate (MCG10) adds the Studio claim-source picker, state replay and hostile-cookie callback refusals; not Meta, provider or deployment acceptance; Meta SANDBOX/LIVE are NOT_RUN.
+2899:2026-10-29T06:53:04.8626111Z --- FAIL: TestBrowserOC (19.04s)
+2900-2026-10-29T06:53:04.8626461Z FAIL
+2901-2026-10-29T06:53:04.8626829Z FAIL	livecommerce/tests/foundation	121.409s
