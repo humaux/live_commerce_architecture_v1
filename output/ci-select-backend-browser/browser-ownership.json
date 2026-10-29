@@ -65,7 +65,7 @@
     "tests/admin/fixtures/ledger-identity.ts": "7daa1ab102da0a6c9b7fcc8be918337ce3e304479055ab617dd91e83c8068a02",
     "tests/admin/fixtures/native-device.ts": "09f82fc5705fd2f3c6af025742757be37bcbbd45159563c981e8d5d07813fb83",
     "tests/admin/guarded-read-logout.test.mjs": "5a70f3f46ad3340fd693bae276b660b2aa0edf4157431e81e481e05479369ef9",
-    "tests/admin/home-cod.spec.ts": "fcdcff8e39185e2a29b894715020efdcf16bd2a30407970f160de4aac02970f9",
+    "tests/admin/home-cod.spec.ts": "93115e5700a70d55fa9ad705521848e57d9253902a24b01203e089239898c5ed",
     "tests/admin/import-client.test.mjs": "4428bbfeca2ab7276a007ed5341df4ad56260e7ac75eea394229a17ce47060f2",
     "tests/admin/import-coordinator.test.mjs": "ea4f3195d5ee1cda7e7fd9f407966c477fc42b883289261445c85b807ee75022",
     "tests/admin/import-history-bff.test.mjs": "a9410e5984c9d66ec6383cdcd7996c83a67e9a0e5d4a029b02e6aeab650a55e5",

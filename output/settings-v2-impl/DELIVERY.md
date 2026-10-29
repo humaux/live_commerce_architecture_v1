@@ -1,3 +1,96 @@
+# FIX #303 — relay 5 home-COD Settings entry repair (2026-10-29)
+
+Current authority: dispatched FIX #303, repository code and original GitHub
+run/job/artifact receipts. This section supersedes historical relay status below.
+Role: dispatched UI implementer, Codex; runtime model/effort not exposed.
+Assigned branch/worktree only. Humaux/coord/canvas unavailable; no shared-memory
+store, task claim or completion is asserted. No recursive delegation.
+
+Merged freshly fetched `origin/r3/integration` **d0e7331525fec046fbe9361906fa66367ae583c6**
+in merge commit **c0c04328e** before repair. Conflict resolution keeps integration's
+OC fixture separation (`oc/reauth.spec.ts`, design recovery in `store-design`) and
+this card's `settings-real.spec.ts` + `settings-v2.spec.ts` registration. Generated
+ownership was regenerated, never hand-edited. Upstream changes, including its
+baseline cleanup, are imported unchanged; no authored baseline/contract edit.
+
+## Current failing receipt and root cause
+
+PR head **e77b68066dd8baccbe3ce466769f79412de405ce**, Gates **40859454162**,
+bundle:06 job **123404720296**, synthetic checkout
+**cc3e6dd9cfafcbce0856ac0bde6914a057321be3**. Original artifact **12893162493**,
+`gate-browser-home-cod`: `playwright-settings.log` proves
+`home-cod.spec.ts:90` waits for the old `繼續` control until the unchanged
+240000 ms timeout. Error-context snapshot shows the simplified Settings overview.
+No apt/dpkg/exit-100 failure: a runner rerun is not warranted.
+Filtered original assertion is retained in `relay5-home-cod-assertion.log`;
+full raw job/artifact downloads remain local under this task directory.
+
+Root cause: the remaining direct Settings consumer still starts at the old
+wizard. Add one real localized `進階` button click before the existing Continue
+click. Session-scoped Advanced selection already survives refresh and locale
+navigation; every original COD, server readback, persistence, money, touch-target
+and three-locale assertion remains unchanged. First targeted home-COD repair
+(second Settings-entry consumer repair including relay 4); no further blind retry.
+
+## Scope and verification
+
+Outside original paths: **tests/admin/home-cod.spec.ts** (direct Settings consumer,
+module-scope pre-approval); **playwright.config.ts** (merge conflict resolution,
+historical scope addition). List both in PR body for integrator review. Generated
+`output/ci-select-backend-browser/browser-ownership.json` reflects merged inputs
+and the changed spec. No source dependency/import changed; depmap not forced.
+The planned `profile.go` and `internal/quickstart` BACKEND_ONLY removal is already
+present, with both under `--browser-identity` lc_covers; retained unchanged.
+
+E1: `node --check tests/admin/home-cod.spec.ts`, `bash -n scripts/dev/test-local.sh`,
+`git diff --check`, and the mandatory ownership generator all exit **0**.
+No local tests, servers, dependency installs or test runners. Existing causal
+tests-only RED remains **40828407097 / 123300694776**, head **696629d92e786e70bc70545089bc114d1b7cb7e4**,
+new signed overview assertion missing. This relay's observed regression is not
+relabeled as a new tests-only RED. Prior-head Foundation
+**40859454253 / 123398659931** is green only for **e77b6806**.
+
+Acceptance: new PR-head Foundation + Gates, including home-COD real clicks,
+Settings three-locale save/reload and exact profile CAS tests. New-head E3 GREEN
+is PENDING; independent E4 is NOT_RUN; author judgment E0. Final run/job IDs go
+in a PR comment, without an evidence-only push after GREEN. Integrator provides
+workflow-completion relay. Rollback: revert relay repair commit on this branch.
+No own background process/server remains at handoff; failure artifacts retained.
+
+## UI PROCESS — BOURDIEU
+
+Existing Q1–Q6 verdicts below still apply; task experience defines novice/expert.
+Q6 aesthetics and five-second comprehension remain UNKNOWN until owner evidence.
+This relay changes a test journey only, with no design or merchant copy change.
+
+## UI PROCESS — PROJECT UNDERSTANDING
+
+Read 架构.md §§0/1/2/26/27: evidence labels, Go/TS strict baseline, server authority,
+isolated ownership, independent CI acceptance. Read merchant-settings-wizard-v1
+STORE-PROFILE-API and quick-start acceptance: profile CAS/original replay and
+existing marker authority. Current SettingsWizard preserves Advanced selection
+through the session/store boundary; test navigation must use its real control.
+
+## UI PROCESS — MOBBIN → EAGLE
+
+Existing reference principles and folder receipt below remain the design record.
+No new design, reference import or pattern required by this test navigation repair.
+
+## UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+Existing official-guide applications, parity and three-column copy tables below
+remain the design record. No Figma writes, new frames or visible strings here.
+
+|Page/control|Real operation|Expected visible result|Actual acceptance|
+|---|---|---|---|
+|zh-TW Settings / 進階|button.click()|existing wizard shows Continue|new-head CI PENDING|
+|Advanced / Continue and COD controls|original clicks/check/fill/select|save, validation, refresh values, three locales|new-head CI PENDING|
+
+NOT_RUN: new-head CI GREEN, independent review, provider SANDBOX/LIVE and production;
+all local tests/servers prohibited. No merge, auto-merge or deployment performed.
+
+---
+
 # FIX #303 — relay 4 Settings entry/callback repair, attempt 1 (2026-10-29)
 
 Current authority: dispatched FIX #303 and original GitHub receipts for head
