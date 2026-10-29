@@ -1,3 +1,14 @@
+RVFIX3 relay 3 — VALID causal RED, verified 2026-10-29
+Head ea0b7f9f0a7a8ce78f2f4e9359eebd89d03cf2f8; pull_request Foundation run 40883939766 / job 123482504315 FAILURE.
+Checkout 19cc819b: Merge ea0b7f9f0a7a8ce78f2f4e9359eebd89d03cf2f8 into d0e7331525fec046fbe9361906fa66367ae583c6.
+Command: gh run view 40883939766 --log-failed --job 123482504315.
+Six NEW completed-ACK versus later queued/blocked cases (en, zh-TW, zh-CN) fail at inbox-unknown.test.ts:158:16.
+Assertion: completed ACK cannot reopen the composer over a later unresolved outbound; actual false, expected true.
+The header Refresh is reachable; read 4 has committed the later row. This is the intended business assertion, unlike the invalidated historical node lookup failures.
+Inbox suite: 217 tests, 211 passed, 6 failed; Node unit step exit 1. E3 causal RED only.
+Filtered original assertion lines: relay3-foundation-failure.log. No browser RED claim; separate Gates run 40883939962 is not implementation acceptance.
+Restore the isolated ACK handoff implementation, retaining every corrected regression. Implementation-head GREEN and independent review PENDING. Author acceptance E0.
+
 CORRECTION — RVFIX3 relay 2, 2026-10-29
 Current stage: corrected regression + deliberate RED mutation; new CI receipt PENDING.
 Foundation 40881614504 / job 123474306476 at implementation head ad3d2b606ec24093b83cbd682e72d6aa2a582b93 failed six cases.
@@ -22,3 +33,5 @@ Suite: 217 tests, 211 passed, 6 failed; process exit 1. Assertion failure, not c
 E3 causal RED only. Gates 40879608745 is a separate historical tests-only run; no browser RED claim.
 Author runtime assessment E0. Implementation follows this receipt; GREEN and independent acceptance PENDING.
 No local test/server/browser/PG/container/LIVE. Humaux/coord store/canvas/index/link NOT_RUN (interfaces unavailable).
+
+POST-PUSH corrected RED: head ea0b7f9f0a7a8ce78f2f4e9359eebd89d03cf2f8; Foundation WAIT_RUN 40883939766 / job 123482504315 IN_PROGRESS; Gates WAIT_RUN 40883939962 PENDING. Both exact-head native workflow IDs verified. Actual causal RED remains PENDING; no evidence-only push. Integrator supplies completion relay.

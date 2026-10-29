@@ -1,0 +1,114 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3476310Z ℹ tests 217
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3476722Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3477019Z ℹ pass 211
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3477245Z ℹ fail 6
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3477469Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3477759Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3477989Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3478250Z ℹ duration_ms 9493.143594
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3478478Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3478630Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3478773Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3479003Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3479711Z ✖ completed ACK cannot mask later queued evidence or its omission (en) (16.993753ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3480533Z   AssertionError [ERR_ASSERTION]: completed ACK cannot reopen the composer over a later unresolved outbound
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3481082Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3481322Z   false !== true
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3481535Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3482553Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:158:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3483933Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3484631Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3485180Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3485483Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3485770Z     actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3486034Z     expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3486338Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3486668Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3486901Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3487014Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3487251Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3487968Z ✖ completed ACK cannot mask later blocked evidence or its omission (en) (29.203233ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3488796Z   AssertionError [ERR_ASSERTION]: completed ACK cannot reopen the composer over a later unresolved outbound
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3489340Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3489547Z   false !== true
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3489781Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3491002Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:158:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3491924Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3492615Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3493388Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3493708Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3493989Z     actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3494251Z     expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3494515Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3494805Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3495018Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3495123Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3495356Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3496090Z ✖ completed ACK cannot mask later queued evidence or its omission (zh-TW) (16.645355ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3496941Z   AssertionError [ERR_ASSERTION]: completed ACK cannot reopen the composer over a later unresolved outbound
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3497488Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3497714Z   false !== true
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3497919Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3498942Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:158:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3499820Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3500520Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3501001Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3501454Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3501808Z     actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3502208Z     expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3502944Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3503408Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3503795Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3503979Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3504330Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3505559Z ✖ completed ACK cannot mask later blocked evidence or its omission (zh-TW) (28.771461ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3506399Z   AssertionError [ERR_ASSERTION]: completed ACK cannot reopen the composer over a later unresolved outbound
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3506916Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3507119Z   false !== true
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3507331Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3508255Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:158:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3509137Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3509797Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3510276Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3510571Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3510837Z     actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3511075Z     expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3511344Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3511619Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3511822Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3511930Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3512137Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3513097Z ✖ completed ACK cannot mask later queued evidence or its omission (zh-CN) (20.33998ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3513920Z   AssertionError [ERR_ASSERTION]: completed ACK cannot reopen the composer over a later unresolved outbound
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3514416Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3514613Z   false !== true
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3514817Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3515743Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:158:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3516613Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3517266Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3517742Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3518224Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3518493Z     actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3518731Z     expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3518992Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3519267Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3519471Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3519582Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3519782Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3520465Z ✖ completed ACK cannot mask later blocked evidence or its omission (zh-CN) (12.466887ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3521273Z   AssertionError [ERR_ASSERTION]: completed ACK cannot reopen the composer over a later unresolved outbound
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3521773Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3521985Z   false !== true
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3522186Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3523381Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:158:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3524277Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3524967Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3525447Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3525743Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3526003Z     actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3526243Z     expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3526498Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3526766Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3526970Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3545962Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:47:38.3556740Z ##[error]Process completed with exit code 1.

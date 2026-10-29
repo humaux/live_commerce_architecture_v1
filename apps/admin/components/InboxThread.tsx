@@ -149,6 +149,7 @@ export function InboxThread({
         historyClear.current = data.has_unknown_outbound === false;
         if (!before) {
           const ack = acknowledged.current;
+          let ackComplete = false;
           if (ack) {
             // A9 omits operation identity. Never adopt a display row as this ACK's result,
             // even on its first read. No permission, missing ID, failed or mismatched read stays locked.
@@ -161,6 +162,7 @@ export function InboxThread({
                   operation.provider === (conversation.platform === "instagram" ? "instagram" : "facebook") &&
                   operation.object?.kind === "conversation" && operation.object.id === cid) {
                   const state = operationDelivery[operation.state];
+                  ackComplete = state === "sent" || state === "failed";
                   setDelivery(state);
                   deliveryLock.current = state === "queued" || state === "blocked";
                   persistedUnknown.current ||= state === "unknown";
@@ -174,7 +176,8 @@ export function InboxThread({
                 }
               }
             }
-          } else {
+          }
+          if (!ack || ackComplete) {
             const observed = lockedOutbound.current;
             // A9 can hide a pending/policy-blocked row below its display floor. Neither absence nor
             // another send reconciles it; retain the lock until its projected row has a known result.
@@ -183,12 +186,16 @@ export function InboxThread({
                 item.at === observed.at && item.kind === observed.kind && item.principal_id === observed.principal_id)
               : [...data.items].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
                 .find(item => item.direction === "out");
-            if (latest?.send_state) {
+            // An exact completed ACK settles only that operation. Hand a newly observed
+            // pending/policy-blocked result to the projection lock, including its omission guard.
+            // Other display results cannot overwrite the ACK or its original-text recovery.
+            if (latest?.send_state && (!ack || latest.send_state === "queued" || latest.send_state === "blocked")) {
+              acknowledged.current = null;
               setDelivery(latest.send_state);
               deliveryLock.current = latest.send_state === "queued" || latest.send_state === "blocked";
               lockedOutbound.current = deliveryLock.current
                 ? { at: latest.at, kind: latest.kind, principal_id: latest.principal_id } : null;
-            } else if (!deliveryLock.current) {
+            } else if (!deliveryLock.current && !ack) {
               setDelivery(null);
             }
           }
