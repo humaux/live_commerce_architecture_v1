@@ -293,7 +293,8 @@ test("round 2 BACKEND_ONLY_PACKAGES: the real cmd/worker-only entries select no 
   // is exercised by browser gates and must not resolve to none. Floor is now tlsask + retention.
   assert.ok(Object.keys(BACKEND_ONLY_PACKAGES).length >= 2, "round 2 classified tlsask, retention and ecpayroute; round 5 removed ecpayroute (real dispatcher wiring)");
   for (const pkg of Object.keys(BACKEND_ONLY_PACKAGES))
-    assert.deepEqual(backendBrowserModes([`${pkg}/x.go`], usage), [], `${pkg} must select nothing (a cmd/** change still selects all Go-booting modes via the cmd rule)`);
+    // An entry may be an exact split-package file (check-backend-coverage allows file entries); test that file itself.
+    assert.deepEqual(backendBrowserModes([pkg.endsWith(".go") ? pkg : `${pkg}/x.go`], usage), [], `${pkg} must select nothing (a cmd/** change still selects all Go-booting modes via the cmd rule)`);
 });
 
 test("round 2: the conservative rules reach the Go-booting 48th mode (--browser-tracking-backfill)", () => {
