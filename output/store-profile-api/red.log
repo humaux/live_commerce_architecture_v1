@@ -1,0 +1,160 @@
+CONT #287 regression RED: Foundation 40818415986 / job 123264887369,
+head 027c75a0590f4eec90701db0d21943f36909ad9f, conclusion FAILURE.
+tests/admin/live-settings-bff.test.ts:654 fails its unchanged 404 assertion (actual 403).
+Raw filtered current-head receipt is appended below. No new tests or assertions in this continuation.
+
+STORE-PROFILE-API — historical RED dispatch (superseded by causal receipts below)
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/287
+Head: cb7d00c2d97504367599ff77d07db7c20cf3f4e6
+Base at dispatch: bf161bac96252c35337e07713c08a275d48e3e17
+Commit: tests-only; no implementation, contract, migration or BFF route added.
+Observed via gh run list and gh pr checks 287 on 2026-10-29:
+Gates workflow run: 40760270998 — QUEUED
+Foundation workflow run: 40760270986 — QUEUED
+Foundation job: 123069991728 — QUEUED
+Gates test jobs: NOT_CREATED (plan still queued; its job id is not a WAIT_RUN).
+New assertion failures: NOT_RUN; no causal RED is claimed.
+GREEN: NOT_RUN; implementation must wait for CI assertion failure.
+Static only: gofmt exit 0; go vet ./tests/foundation exit 0;
+node --check tests/admin/live-settings-bff.test.ts exit 0; git diff --check exit 0.
+No local tests, servers, PostgreSQL, containers or browser execution.
+Wakeup owner: integrator relays a fresh session when these workflow runs conclude,
+as required by the implementation-card CI-WAITS protocol; no background poller left running.
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5907760Z ℹ duration_ms 56387.210255
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5907897Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5908001Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5908107Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5908286Z test at tests/ci/backend-coverage.test.mjs:274:1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5909116Z ✖ CI-SPEED-3: generated browser ownership is current and covers the registry (3425.535525ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5909834Z   Error: Command failed: /opt/hostedtoolcache/node/24.22.1/x64/bin/node scripts/dev/derive-browser-ownership.mjs --check
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5910464Z   browser ownership drift: regenerate with node scripts/dev/derive-browser-ownership.mjs
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5910799Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5911097Z       at genericNodeError (node:internal/errors:986:15)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5911490Z       at wrappedFn (node:internal/errors:540:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5911847Z       at checkExecSyncError (node:child_process:943:11)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5912202Z       at execFileSync (node:child_process:979:15)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5912999Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ci/backend-coverage.test.mjs:277:3)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5913637Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5914020Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5914480Z       at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5914929Z       at Test.postRun (node:internal/test_runner/test:1542:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5915331Z       at Test.run (node:internal/test_runner/test:1467:12) {
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5915602Z     status: 1,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5915792Z     signal: null,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5916475Z     output: [ null, <Buffer >, <Buffer 62 72 6f 77 73 65 72 20 6f 77 6e 65 72 73 68 69 70 20 64 72 69 66 74 3a 20 72 65 67 65 6e 65 72 61 74 65 20 77 69 74 68 20 6e 6f 64 65 20 73 63 72 69 ... 37 more bytes> ],
+--
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5918167Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5922232Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:17:34.5932680Z ##[error]Process completed with exit code 1.
+
+RELAY 1 receipt — 2026-10-29 Asia/Shanghai
+Head cb7d00c2d97504367599ff77d07db7c20cf3f4e6
+Foundation run 40760270986 / job 123069991728 failed ONLY on browser ownership drift.
+This is NOT causal RED for STORE-PROFILE-API. New profile assertions remain unproven.
+Gates run 40760270998 was queued when inspected; no candidate assertion failure observed.
+Targeted reachability fix attempt 1: normal merge of origin/r3/integration 313c2c36f4ac064975c1c7c170d710cb63fa457f; regenerate using owning static generator.
+No test/fixture/threshold changes; no local tests or servers. Implementation remains withheld.
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.7835590Z ✖ store profile BFF GET and idempotent PUT use only authenticated authority (41.205801ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.7841486Z ✖ store profile BFF rejects absent session, foreign store, CSRF and changed origin before upstream writes (1.617736ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.7843466Z ✖ store profile BFF preserves version conflicts and rejects invalid request grammar (1.074794ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.7845384Z ✔ store profile BFF never falls back to fixture identity (0.53064ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.7850309Z ✖ settings contract freezes profile versioning, five existing MANUAL TW mappings and OC-05 reuse (0.410786ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8098651Z test at tests/admin/live-settings-bff.test.ts:601:1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8099950Z ✖ store profile BFF GET and idempotent PUT use only authenticated authority (41.205801ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8102049Z   AssertionError [ERR_ASSERTION]: GET profile must reach the signed BFF route
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8103231Z   404 !== 200
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8104803Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/live-settings-bff.test.ts:610:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8110144Z test at tests/admin/live-settings-bff.test.ts:625:1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8111251Z ✖ store profile BFF rejects absent session, foreign store, CSRF and changed origin before upstream writes (1.617736ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8112752Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8113426Z   404 !== 401
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8114845Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/live-settings-bff.test.ts:628:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8119483Z test at tests/admin/live-settings-bff.test.ts:634:1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8120296Z ✖ store profile BFF preserves version conflicts and rejects invalid request grammar (1.074794ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8120989Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8121605Z   404 !== 409
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8123160Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/live-settings-bff.test.ts:636:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8128237Z test at tests/admin/live-settings-bff.test.ts:655:1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8129128Z ✖ settings contract freezes profile versioning, five existing MANUAL TW mappings and OC-05 reuse (0.410786ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8129947Z   AssertionError [ERR_ASSERTION]: missing STORE-PROFILE-API contract amendment
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8131212Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/live-settings-bff.test.ts:658:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T20:29:11.8187622Z ##[error]Process completed with exit code 1.
+foundation	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-28T20:21:50.1733674Z HEAD is now at e431a572 Merge 24cac517c734c0d09cd017f523c98d31738c8a24 into 313c2c36f4ac064975c1c7c170d710cb63fa457f
+
+RELAY 2 causal RED receipt — supersedes earlier candidate-PENDING state
+PR #287 head 24cac517c734c0d09cd017f523c98d31738c8a24
+Foundation run 40762550914 / job 123078018073 conclusion FAILURE.
+Tested merge e431a572b1a5b24eee6a5ffaef99b8714d2ad11f, base 313c2c36f4ac064975c1c7c170d710cb63fa457f.
+Four NEW BFF/contract assertions failed on their own assertions, as excerpted above.
+The Node unit block reported 43 tests, 39 pass, 4 fail; the downstream PG assertions
+were not established by this failure. This is causal RED for the missing profile
+boundary and contract, not a claim that the PG suite executed.
+Implementation is now authorized by the card's RED-first condition.
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6177706Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6177962Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6178406Z test at tests/admin/live-settings-bff.test.ts:654:1
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6179544Z ✖ store profile BFF never falls back to fixture identity (2.527246ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6180653Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6181376Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6181771Z   403 !== 404
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6182127Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6184207Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/live-settings-bff.test.ts:659:12)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6186703Z       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6187953Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6189220Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6190135Z     generatedMessage: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6190692Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6191171Z     actual: 403,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6191618Z     expected: 404,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6192115Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6192621Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6193016Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6242059Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6251515Z ##[error]Process completed with exit code 1.
+
+RELAY5 current-head RED: Gates40821040503/job123274609828, head5f82635fd81dabb73a8fe8694a94193c0a28017e, mergec214b634fdd3b9adfbfa53990e0aa66f89371fc8.
+Card-local generic header helper mismatch; no new causal RED push needed.
+574-2026-10-29T05:06:31.5999288Z 
+575-2026-10-29T05:06:31.5999400Z Turn off this advice by setting config variable advice.detachedHead to false
+576-2026-10-29T05:06:31.5999556Z 
+577:2026-10-29T05:06:31.5999734Z HEAD is now at c214b634 Merge 5f82635fd81dabb73a8fe8694a94193c0a28017e into 61951609f1dd0937d7d6a8c2f8b0d2faf3d4d05d
+578-2026-10-29T05:06:31.6096830Z ##[endgroup]
+579-2026-10-29T05:06:31.6144889Z [command]/usr/bin/git log -1 --format=%H
+580-2026-10-29T05:06:31.6176456Z c214b634fdd3b9adfbfa53990e0aa66f89371fc8
+--
+2592-2026-10-29T05:18:27.7249968Z     --- PASS: TestStoreDomainsNumericCandidateRetryAndBound/exhausted=false (0.00s)
+2593-2026-10-29T05:18:27.7250597Z     --- PASS: TestStoreDomainsNumericCandidateRetryAndBound/exhausted=true (0.01s)
+2594-2026-10-29T05:18:27.7251076Z === RUN   TestStoreProfileRevocationDuringWriteWait
+2595:2026-10-29T05:18:27.7700373Z     store_profile_http_test.go:278: unsafe error headers: map[Cache-Control:[private, no-store] Content-Type:[application/json] X-Content-Type-Options:[nosniff] X-Request-Id:[3e77cf024735dc2173592ec03f32afe3]]
+2596:2026-10-29T05:18:27.7843867Z --- FAIL: TestStoreProfileRevocationDuringWriteWait (0.06s)
+2597-2026-10-29T05:18:27.7847237Z === RUN   TestStorefrontPublishSPW10DeployWiring
+2598-2026-10-29T05:18:27.7998756Z --- PASS: TestStorefrontPublishSPW10DeployWiring (0.01s)
+2599-2026-10-29T05:18:27.7999186Z === RUN   TestStripeAuthorityRegistrarMatrix
+--
+3072-2026-10-29T05:20:11.8422629Z         --- PASS: TestCvsSelectionFlow/stores_and_environments/SANDBOX_and_LIVE_selections_produce_different_namespaces (0.43s)
+3073-2026-10-29T05:20:11.8423982Z     --- PASS: TestCvsSelectionFlow/open-selection_limit:_10_OPEN_per_owner_and_cart,_then_429_(§4.3) (0.05s)
+3074-2026-10-29T05:20:11.8424605Z FAIL
+3075:2026-10-29T05:20:11.8788190Z FAIL	livecommerce/tests/foundation	740.154s
+3076-2026-10-29T05:20:11.8896556Z FAIL
+3077:2026-10-29T05:20:12.2028315Z ##[error]Process completed with exit code 1.
+3078-2026-10-29T05:20:12.2081601Z ##[group]Run shopt -s nullglob globstar
+3079-2026-10-29T05:20:12.2082078Z [36;1mshopt -s nullglob globstar[0m
+3080-2026-10-29T05:20:12.2082531Z [36;1mnode scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl[0m
+--
+3097-2026-10-29T05:20:12.2101329Z   COREPACK_ENABLE_NETWORK: 0
+3098-2026-10-29T05:20:12.2101514Z   GATE_OUTCOME: failure
+3099-2026-10-29T05:20:12.2101644Z ##[endgroup]
+3100:2026-10-29T05:20:12.2486678Z matrix-receipts: {"mode":"shard:g07","run_id":"40821040503","run_attempt":"1","sha":"c214b634fdd3b9adfbfa53990e0aa66f89371fc8","status":"FAIL","test_count":224,"spec_count":0}
+3101-2026-10-29T05:20:12.2570660Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+3102-2026-10-29T05:20:12.2570907Z with:
+3103-2026-10-29T05:20:12.2571190Z   name: receipt-gate-shard_g07
+--
+3156-2026-10-29T05:20:13.6901666Z   EXTRA_ENV: 
+3157-2026-10-29T05:20:13.6901968Z   COREPACK_ENABLE_NETWORK: 0
+3158-2026-10-29T05:20:13.6902112Z ##[endgroup]
+3159:2026-10-29T05:20:13.6955591Z --- FAIL: TestStoreProfileRevocationDuringWriteWait (0.06s)
+3160-2026-10-29T05:20:13.6955975Z FAIL
+3161:2026-10-29T05:20:13.6956260Z FAIL	livecommerce/tests/foundation	740.154s
+3162-2026-10-29T05:20:13.6956783Z FAIL
+3163-2026-10-29T05:20:13.7005686Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+3164-2026-10-29T05:20:13.7006061Z with:
