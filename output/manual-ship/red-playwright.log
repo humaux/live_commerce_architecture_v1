@@ -1,0 +1,54 @@
+
+Running 7 tests using 1 worker
+
+  ✓  1 tests/admin/manual-fulfilment.spec.ts:137:1 › MF07 merchant marks a paid order shipped, corrects, voids and re-ships; buyer-visible facts never say delivered (3.5s)
+  ✓  2 tests/admin/manual-fulfilment.spec.ts:215:1 › MF07 export downloads a CSV that opens with the expected header and lists only unshipped paid orders (988ms)
+  ✓  3 tests/admin/manual-fulfilment.spec.ts:239:1 › MF07 a member without fulfillment:write / orders:export sees no shipment action and no export (1.3s)
+  ✘  4 tests/admin/manual-fulfilment.spec.ts:263:1 › MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists (11.1s)
+  ✓  5 tests/admin/manual-fulfilment.spec.ts:302:3 › MF07 en: carrier names and no overflow at desktop and 390 px (1.6s)
+  ✓  6 tests/admin/manual-fulfilment.spec.ts:302:3 › MF07 zh-TW: carrier names and no overflow at desktop and 390 px (1.6s)
+  ✓  7 tests/admin/manual-fulfilment.spec.ts:302:3 › MF07 zh-CN: carrier names and no overflow at desktop and 390 px (1.7s)
+
+
+  1) tests/admin/manual-fulfilment.spec.ts:263:1 › MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByTestId('order-detail')
+    Expected substring: "六甲民生附店"
+    Received string:    "LC-99475A9D00364896890C32284D6ED461Back to ordersItemsProductUnit priceQuantityLine totalt04-6c0e5437a131T04-6c0e5437a131-0NT$12.502NT$25Items subtotalNT$25DiscountNT$0ShippingNT$0Shipping taxNT$0TaxNT$0Order totalNT$25Receiving detailsRecipientSynthetic RecipientPhone+886900000002Delivery methodFamilyMart pickupAddress台南市六甲區工研路８號Saved checkout details; store selection and merchant attestation do not confirm current carrier eligibility.Order statusOrder statusConfirmedPayment statusCapturedFulfillmentPreparingPayment workReady for payment workPayment modeCardTest environmentRefundCapturedNT$25RefundedNT$0In progressNT$0RefundableNT$25No refunds yet.Refund…Cancel orderCancelling ends the order and releases the reserved stock. This cannot be undone.Cancel orderStore pickupECPay cannot create a shipment for a store the buyer typed. Ship it yourself with the shipment form.Manual shipmentNot shipped yet.Records the shipment you arranged yourself. It does not create a carrier label or track delivery.Carrier—7-ELEVENFamilyMartHi-LifeOK martSF ExpressBlack CatHsinchuChunghwa PostOtherCarrier nameTracking numberTracking link (optional, https)Internal note (optional, never shown to the buyer)Mark shippedShipment history (0)No shipment records."
+    Timeout: 10000ms
+
+    Call log:
+      - Expect "toContainText" getByTestId('order-detail') with timeout 10000ms
+      - waiting for getByTestId('order-detail')
+        24 × locator resolved to <section class="orders-expanded" data-testid="order-detail" aria-label="Order 99475a9d-0036-4896-890c-32284d6ed461">…</section>
+           - unexpected value "LC-99475A9D00364896890C32284D6ED461Back to ordersItemsProductUnit priceQuantityLine totalt04-6c0e5437a131T04-6c0e5437a131-0NT$12.502NT$25Items subtotalNT$25DiscountNT$0ShippingNT$0Shipping taxNT$0TaxNT$0Order totalNT$25Receiving detailsRecipientSynthetic RecipientPhone+886900000002Delivery methodFamilyMart pickupAddress台南市六甲區工研路８號Saved checkout details; store selection and merchant attestation do not confirm current carrier eligibility.Order statusOrder statusConfirmedPayment statusCapturedFulfillmentPreparingPayment workReady for payment workPayment modeCardTest environmentRefundCapturedNT$25RefundedNT$0In progressNT$0RefundableNT$25No refunds yet.Refund…Cancel orderCancelling ends the order and releases the reserved stock. This cannot be undone.Cancel orderStore pickupECPay cannot create a shipment for a store the buyer typed. Ship it yourself with the shipment form.Manual shipmentNot shipped yet.Records the shipment you arranged yourself. It does not create a carrier label or track delivery.Carrier—7-ELEVENFamilyMartHi-LifeOK martSF ExpressBlack CatHsinchuChunghwa PostOtherCarrier nameTracking numberTracking link (optional, https)Internal note (optional, never shown to the buyer)Mark shippedShipment history (0)No shipment records."
+
+
+      270 |   const detail = await expand(page, cvsOrder);
+      271 |   // The destination is the frozen #262/#298 snapshot, not the buyer's typed text and not revalidated here.
+    > 272 |   await expect(detail).toContainText(cvsPickupName);
+          |                        ^
+      273 |   await expect(detail).toContainText(cvsPickupCode);
+      274 |   await expect(detail.getByTestId("pickup-source")).toHaveAttribute("data-source", "buyer_entered");
+      275 |   // A buyer-entered store cannot use ECPay Create; the merchant is told to ship it by hand.
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/manual-fulfilment.spec.ts:272:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.dd8lwfa7/manual-fulfilment/20261029T145640.094456336/results/manual-fulfilment-MF07-CVS-be85b-manual-ship-reload-persists/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.dd8lwfa7/manual-fulfilment/20261029T145640.094456336/results/manual-fulfilment-MF07-CVS-be85b-manual-ship-reload-persists/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.dd8lwfa7/manual-fulfilment/20261029T145640.094456336/results/manual-fulfilment-MF07-CVS-be85b-manual-ship-reload-persists/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.dd8lwfa7/manual-fulfilment/20261029T145640.094456336/results/manual-fulfilment-MF07-CVS-be85b-manual-ship-reload-persists/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/manual-fulfilment.spec.ts:263:1 › MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists 
+  6 passed (23.4s)
