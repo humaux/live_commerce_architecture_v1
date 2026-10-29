@@ -40,7 +40,16 @@ async function signed(browser: Browser, locale: "en" | "zh-TW", width: number, a
 }
 async function detail(page: Page, locale: string) {
   await page.goto(`${origin}/${locale}/customers/${customer}?store=${store}`);
+  await tools(page, "customer");
   await expect(page.getByTestId("customer-notes")).toBeVisible();
+}
+async function tools(page: Page, target: "list" | "customer") {
+  // A client-side navigation can leave the previous page visible after click() returns.
+  // Wait for the destination disclosure, never the already-open source page's tools.
+  const disclosure = page.getByTestId(`people-${target}-tools`);
+  await expect(disclosure).toBeVisible();
+  if (await disclosure.getAttribute("open") === null) await disclosure.locator(":scope > summary").click();
+  await expect(disclosure).toHaveAttribute("open", "");
 }
 async function fill(page: Page, field: Locator, value: string, name: string) {
   await step(page, name, "typed draft is visible", async () => { await field.fill(value); await expect(field).toHaveValue(value); }, "fill");
@@ -78,13 +87,13 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
       await step(page, "Create tag", "catalogue contains the created tag", async () => { await editor.getByRole("button", { name: c.create, exact: true }).click(); await expect(editor.getByRole("checkbox", { name: created, exact: true })).toBeVisible(); });
       await step(page, "select tag and Save tags", "whole selection persists after refresh", async () => {
         await editor.getByRole("checkbox", { name: created, exact: true }).check(); await editor.getByRole("button", { name: c.editorSave, exact: true }).click();
-        await expect(page.getByText(c.editorSaved, { exact: true })).toBeVisible(); await page.reload();
+        await expect(page.getByText(c.editorSaved, { exact: true })).toBeVisible(); await page.reload(); await tools(page, "customer");
         await expect(page.getByTestId("customer-tags-editor").getByRole("checkbox", { name: created, exact: true })).toBeChecked();
       });
       await fill(page, notes.getByRole("textbox"), text, c.noteAdd);
       await step(page, "Add note", "new note persists and shows staff/time without raw principal ID", async () => {
         await notes.getByRole("button", { name: c.noteAdd, exact: true }).click(); await expect(noteRow(page, text)).toHaveCount(1);
-        await page.reload(); await expect(noteRow(page, text)).toHaveCount(1);
+        await page.reload(); await tools(page, "customer"); await expect(noteRow(page, text)).toHaveCount(1);
         await expect(noteRow(page, text).locator("time").first()).toHaveAttribute("datetime", /\d{4}-\d\d-\d\dT/);
         await expect(noteRow(page, text)).toContainText(c.noteAuthor);
         expect(await noteRow(page, text).textContent()).not.toContain(required("LC_W6UI_PRINCIPAL"));
@@ -100,7 +109,7 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
       });
       await step(page, "Save note", "the existing note changes once; no accidental new note", async () => {
         await notes.getByRole("button", { name: c.noteSave, exact: true }).click(); await expect(noteRow(page, draft)).toHaveCount(1); await expect(noteRow(page, text).filter({ hasText: c.noteEdited })).toHaveCount(1);
-        await page.reload(); await expect(noteRow(page, draft)).toHaveCount(1);
+        await page.reload(); await tools(page, "customer"); await expect(noteRow(page, draft)).toHaveCount(1);
       });
       await step(page, "Edit then Cancel", "cancel restores saved body without mutation", async () => {
         await noteRow(page, draft).getByRole("button", { name: c.noteEdit, exact: true }).click(); await notes.getByRole("textbox").fill("discard-me");
@@ -111,10 +120,10 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
         await noteRow(page, draft).getByRole("group").getByRole("button", { name: c.noteCancel, exact: true }).click(); await expect(noteRow(page, draft)).toHaveCount(1);
         await noteRow(page, draft).getByRole("button", { name: c.noteDelete, exact: true }).click();
         await noteRow(page, draft).getByRole("group").getByRole("button", { name: c.noteDelete, exact: true }).click(); await expect(noteRow(page, draft)).toHaveCount(0);
-        await page.reload(); await expect(noteRow(page, draft)).toHaveCount(0);
+        await page.reload(); await tools(page, "customer"); await expect(noteRow(page, draft)).toHaveCount(0);
       });
 
-      await page.goto(`${origin}/${locale}/customers?store=${store}`);
+      await page.goto(`${origin}/${locale}/customers?store=${store}`); await tools(page, "list");
       await step(page, "Manage tags", "catalogue modal opens", async () => { await page.getByTestId("customers-tag-manage").click(); await expect(page.getByTestId("tag-manage-dialog")).toBeVisible(); });
       // `has` resolves inside each li: its inner locator must not include the ancestor dialog again.
       const dialog = page.getByTestId("tag-manage-dialog"), item = () => dialog.locator("li").filter({ has: page.locator(".ct-badge", { hasText: created }) });
@@ -152,7 +161,7 @@ test("CTUI catalogue duplicate/length, tag filter clear and persistence, notes p
       await step(page, `${fault} Retry`, "failed genuine read is visible and Retry restores controls/notes", async () => {
         const resource = fault === "tag-read-503" ? "/customers/tags" : `/customers/${customer}/notes`;
         const failedRead = page.waitForResponse(response => response.request().method() === "GET" && new URL(response.url()).pathname.endsWith(resource));
-        await page.reload(); expect((await failedRead).status()).toBe(503);
+        await page.reload(); await tools(page, "customer"); expect((await failedRead).status()).toBe(503);
         const region = fault === "tag-read-503" ? page.getByTestId("customer-tags-editor") : notes;
         await expect(region).toContainText(c.unavailable); await region.getByRole("button", { name: c.retry, exact: true }).click();
         if (fault === "tag-read-503") await expect(region.getByRole("checkbox", { name: "Seed01", exact: true })).toBeVisible();
@@ -168,14 +177,14 @@ test("CTUI catalogue duplicate/length, tag filter clear and persistence, notes p
       for (const checkbox of await editor.getByRole("checkbox").all()) if (await checkbox.isChecked()) await checkbox.uncheck();
       for (let i = 1; i <= 20; i++) await editor.getByRole("checkbox", { name: `Seed${String(i).padStart(2, "0")}`, exact: true }).check();
       await expect(editor.getByRole("checkbox", { name: "Seed21", exact: true })).toBeDisabled();
-      await editor.getByRole("button", { name: c.editorSave, exact: true }).click(); await page.reload();
+      await editor.getByRole("button", { name: c.editorSave, exact: true }).click(); await page.reload(); await tools(page, "customer");
       await expect(page.getByTestId("customer-tags-editor").locator('input[type="checkbox"]:checked')).toHaveCount(20);
     });
     await fill(page, notes.getByRole("textbox"), "x".repeat(1001), "1001-character note");
     await expect(notes.getByRole("button", { name: c.noteAdd, exact: true })).toBeDisabled();
     await fill(page, notes.getByRole("textbox"), "x".repeat(1000), "1000-character note"); await expect(notes.getByRole("button", { name: c.noteAdd, exact: true })).toBeEnabled();
     await fill(page, notes.getByRole("textbox"), "", "clear draft");
-    await page.goto(`${origin}/en/customers?store=${store}`);
+    await page.goto(`${origin}/en/customers?store=${store}`); await tools(page, "list");
     const filter = page.getByTestId("customers-tag-filter");
     // The tag manager (with its own forms) must not be nested in the search form, or its submit bubbles into search navigation.
     await expect(page.getByTestId("customers-tag-manage")).toBeVisible();
@@ -183,11 +192,11 @@ test("CTUI catalogue duplicate/length, tag filter clear and persistence, notes p
     await step(page, "Filter by tag", "matching first customer only and URL persists", async () => {
       await filter.selectOption({ label: "Seed01" }); await expect(page).toHaveURL(/tag=/);
       await expect(page.getByTestId(`customer-row-${customer}`)).toBeVisible(); await expect(page.getByTestId(`customer-row-${second}`)).toHaveCount(0);
-      await page.reload(); await expect(filter.locator("option:checked")).toHaveText("Seed01");
+      await page.reload(); await tools(page, "list"); await expect(filter.locator("option:checked")).toHaveText("Seed01");
       await filter.selectOption(""); await expect(page.getByTestId(`customer-row-${second}`)).toBeVisible(); await expect(page).not.toHaveURL(/tag=/);
     }, "selectOption");
     await step(page, "customer detail link and browser Back", "real customer link opens detail and Back restores list", async () => {
-      await page.getByTestId(`customer-open-${customer}`).click(); await expect(page.getByTestId("customer-notes")).toBeVisible(); await page.goBack(); await expect(page.getByTestId("customers-tag-filter")).toBeVisible();
+      await page.getByTestId(`customer-open-${customer}`).click(); await tools(page, "customer"); await expect(page.getByTestId("customer-notes")).toBeVisible(); await page.goBack(); await tools(page, "list"); await expect(page.getByTestId("customers-tag-filter")).toBeVisible();
     });
     await page.getByTestId("customers-tag-manage").click(); const dialog = page.getByTestId("tag-manage-dialog");
     await fill(page, dialog.getByLabel(c.nameLabel, { exact: true }), "z".repeat(21), "21-character name"); await expect(dialog.getByRole("button", { name: c.create, exact: true })).toBeDisabled();
@@ -236,7 +245,7 @@ test("CTUI UNKNOWN explicit same-key retry commits once, revoked session cannot 
       await expect.poll(async () => (await state()).unknown_notes).toBe(1); const committed = await state(); expect(committed.note_posts - before.note_posts).toBe(1);
       await page.waitForTimeout(500); expect((await state()).note_posts).toBe(committed.note_posts); expect(sent).toHaveLength(1);
       await page.getByRole("button", { name: c.retry, exact: true }).click(); await expect(noteRow(page, "w6ui-unknown-once")).toHaveCount(1);
-      expect(sent).toHaveLength(2); expect(sent[0]).not.toBe(""); expect(sent[1]).toBe(sent[0]); await page.reload(); await expect(noteRow(page, "w6ui-unknown-once")).toHaveCount(1);
+      expect(sent).toHaveLength(2); expect(sent[0]).not.toBe(""); expect(sent[1]).toBe(sent[0]); await page.reload(); await tools(page, "customer"); await expect(noteRow(page, "w6ui-unknown-once")).toHaveCount(1);
     });
     await ctl("fault", "drop-note"); await fill(page, notes.getByRole("textbox"), "w6ui-revoked-unknown", c.noteAdd); await notes.getByRole("button", { name: c.noteAdd, exact: true }).click(); await expect(page.getByTestId("customer-detail").getByRole("alert")).toContainText(c.unknown);
     const pending = await state(), postsBeforeRevocation = sent.length; await ctl("revoke");
@@ -274,7 +283,7 @@ test("CTUI signed reader and non-privacy writer show conservative note permissio
           await notes.getByRole("button", { name: c.noteSave, exact: true }).click(); await expect(noteRow(page, "w6ui-writer-edited")).toHaveCount(1);
         });
         // After a reload the server's own flag still proves authorship: own notes keep Edit/Delete, another author's note does not.
-        await page.reload();
+        await page.reload(); await tools(page, "customer");
         await expect(noteRow(page, "w6ui-concurrent-version")).toBeVisible();
         for (const name of [c.noteEdit, c.noteDelete]) {
           await expect(noteRow(page, "w6ui-writer-edited").getByRole("button", { name, exact: true })).toHaveCount(1);

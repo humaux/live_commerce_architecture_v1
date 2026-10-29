@@ -1,0 +1,161 @@
+apps/admin/app/[locale]/ads/attribution/page.tsx(5,33): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/AdminPageHeader.tsx(8,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Ads.tsx(29,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Ads.tsx(30,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsDraft.tsx(5,29): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsDraft.tsx(15,8): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsDraft.tsx(221,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AdsDraft.tsx(231,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AdsResults.tsx(5,29): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsResults.tsx(10,32): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AdsResults.tsx(11,25): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/AdsResults.tsx(112,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AdsResults.tsx(122,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/Attribution.tsx(13,45): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Attribution.tsx(180,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/Attribution.tsx(193,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AttributionPanels.tsx(10,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/AttributionPanels.tsx(11,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Billing.tsx(24,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/BuyerPanel.tsx(10,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/CardPayments.tsx(13,23): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CodSettings.tsx(15,32): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CollectionManager.tsx(21,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CollectionManager.tsx(551,22): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/CommentLabelPrint.tsx(7,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/CommentStream.tsx(7,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/CustomerDetail.tsx(16,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CustomerHistoricalOrders.tsx(7,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/CustomerHistoricalOrders.tsx(8,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Customers.tsx(15,23): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Dashboard.tsx(21,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Design.tsx(20,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Design.tsx(21,45): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/DesignField.tsx(13,38): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/DesignMedia.tsx(13,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/DesignMedia.tsx(148,24): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Finance.tsx(25,41): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Finance.tsx(107,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Finance.tsx(112,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Inbox.tsx(10,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/InboxThread.tsx(7,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Ledger.tsx(16,23): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/LedgerTable.tsx(9,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/LiveConsole.tsx(8,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/LiveSettings.tsx(7,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/ManualOrder.tsx(16,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/ManualOrder.tsx(17,39): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/MerchantOrders.tsx(46,26): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/MetaConnect.tsx(18,23): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/OperationFacts.tsx(6,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/OperationsLedger.tsx(9,29): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/OrderDetailPanel.tsx(14,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/OrderListFilters.tsx(13,29): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/OrderListFilters.tsx(44,191): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/OrderListFilters.tsx(45,185): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/ProductDocumentForm.tsx(7,26): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/ProductImport.tsx(13,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/ProductImport.tsx(207,30): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/ProductList.tsx(22,45): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/ProductPhoto.tsx(14,28): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/ProductPhoto.tsx(271,20): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/ProductQuickEdit.tsx(16,30): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Promotions.tsx(25,41): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Promotions.tsx(164,173): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Promotions.tsx(168,169): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Reports.tsx(9,39): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Reports.tsx(142,22): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Reports.tsx(145,22): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/ReturnsList.tsx(13,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/ReturnsList.tsx(14,36): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Settlements.tsx(11,35): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/StorefrontSettings.tsx(15,30): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Studio.tsx(10,52): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Studio.tsx(11,23): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/Studio.tsx(702,28): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/StudioClaims.tsx(29,66): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/Team.tsx(13,51): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/components/UiGallery.tsx(36,8): error TS2307: Cannot find module '@live-commerce/ui/ds' or its corresponding type declarations.
+apps/admin/components/UiGallery.tsx(101,47): error TS7006: Parameter 'p' implicitly has an 'any' type.
+apps/admin/components/UiGallery.tsx(102,45): error TS7006: Parameter 'p' implicitly has an 'any' type.
+apps/admin/components/UiGallery.tsx(103,47): error TS7006: Parameter 'p' implicitly has an 'any' type.
+apps/admin/components/UiGallery.tsx(104,47): error TS7006: Parameter 'p' implicitly has an 'any' type.
+apps/admin/components/UiGallery.tsx(105,49): error TS7006: Parameter 'p' implicitly has an 'any' type.
+apps/admin/components/UiGallery.tsx(158,26): error TS7006: Parameter 'v' implicitly has an 'any' type.
+apps/admin/components/UiGallery.tsx(169,26): error TS7006: Parameter 'q' implicitly has an 'any' type.
+apps/admin/components/UiGallery.tsx(190,26): error TS7006: Parameter 'v' implicitly has an 'any' type.
+apps/admin/components/UiGallery.tsx(202,19): error TS7006: Parameter 'p' implicitly has an 'any' type.
+apps/admin/components/UiGallery.tsx(221,21): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryFrame.tsx(8,66): error TS2307: Cannot find module '@live-commerce/ui/ds' or its corresponding type declarations.
+apps/admin/components/UiGallerySections.tsx(30,8): error TS2307: Cannot find module '@live-commerce/ui/ds' or its corresponding type declarations.
+apps/admin/components/UiGallerySections.tsx(119,50): error TS7006: Parameter 'next' implicitly has an 'any' type.
+apps/admin/components/UiGallerySections.tsx(122,70): error TS7006: Parameter 'id' implicitly has an 'any' type.
+apps/admin/components/UiGallerySections.tsx(125,90): error TS7006: Parameter 'id' implicitly has an 'any' type.
+apps/admin/components/UiGallerySections.tsx(136,42): error TS7053: Element implicitly has an 'any' type because expression of type 'Tone' can't be used to index type '{ neutral: string; info: string; success: string; warning: string; danger: string; }'.
+apps/admin/components/UiGallerySections.tsx(141,43): error TS7053: Element implicitly has an 'any' type because expression of type 'StatusDomain' can't be used to index type '{ payment: string; fulfilment: string; refund: string; connection: string; }'.
+apps/admin/components/UiGallerySections.tsx(159,48): error TS7053: Element implicitly has an 'any' type because expression of type 'Tone' can't be used to index type '{ neutral: string; info: string; success: string; warning: string; danger: string; }'.
+apps/admin/components/UiGallerySections.tsx(206,19): error TS7006: Parameter 'files' implicitly has an 'any' type.
+apps/admin/components/UiGallerySections.tsx(206,49): error TS7006: Parameter 'f' implicitly has an 'any' type.
+apps/admin/components/UiGallerySections.tsx(243,91): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGallerySections.tsx(244,14): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGallerySections.tsx(244,72): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(8,23): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/components/UiGalleryTemplates.tsx(15,8): error TS2307: Cannot find module '@live-commerce/ui/ds' or its corresponding type declarations.
+apps/admin/components/UiGalleryTemplates.tsx(89,68): error TS7006: Parameter 'state' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(93,72): error TS7006: Parameter 'payment' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(94,79): error TS7006: Parameter 'value' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(96,81): error TS7006: Parameter 'o' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(101,47): error TS7006: Parameter 'o' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(102,47): error TS7006: Parameter 'o' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(103,51): error TS7006: Parameter 'o' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(104,49): error TS7006: Parameter 'o' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(111,46): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(111,78): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(112,21): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(112,70): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(114,89): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(116,20): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(116,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(117,74): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(136,120): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(136,123): error TS7006: Parameter 'max' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(136,151): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(136,208): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(176,92): error TS7006: Parameter 'section' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(179,125): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(179,128): error TS7006: Parameter 'max' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(179,156): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(179,247): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(180,38): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(180,130): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(181,129): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(181,132): error TS7006: Parameter 'max' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(181,160): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(181,257): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(182,100): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(183,100): error TS7006: Parameter 'value' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(184,111): error TS7006: Parameter 'value' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(188,76): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(188,201): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(189,80): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(189,203): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(236,16): error TS7006: Parameter 'files' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(238,75): error TS7006: Parameter 'file' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(245,83): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(246,138): error TS7006: Parameter 'name' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(246,181): error TS7006: Parameter 'name' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(246,226): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(247,17): error TS7006: Parameter 'id' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(247,206): error TS7006: Parameter 'id' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(277,187): error TS7006: Parameter 'n' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(277,190): error TS7006: Parameter 'max' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(277,218): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(277,309): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(278,70): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(278,162): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(279,56): error TS7006: Parameter 'control' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(279,148): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(280,109): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/WorkspaceFrame.tsx(23,44): error TS2307: Cannot find module '@live-commerce/ui' or its corresponding type declarations.
+apps/admin/lib/attribution-format.ts(3,25): error TS2307: Cannot find module '@live-commerce/format' or its corresponding type declarations.
+apps/admin/src/ui-gallery-nav.ts(4,31): error TS2307: Cannot find module '@live-commerce/ui/ds' or its corresponding type declarations.

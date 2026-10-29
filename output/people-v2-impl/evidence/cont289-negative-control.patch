@@ -1,0 +1,19 @@
+diff --git a/apps/admin/components/CustomerDetail.tsx b/apps/admin/components/CustomerDetail.tsx
+index 1b6b9322e..b21c4db50 100644
+--- a/apps/admin/components/CustomerDetail.tsx
++++ b/apps/admin/components/CustomerDetail.tsx
+@@ -160 +160,2 @@ function Body({
+-  const locked = !storageReady || pendingKind !== "";
++  // CONT-289 RED-only negative control: ignore the unresolved-command fence. Restore before GREEN.
++  const locked = !storageReady;
+@@ -283 +284,2 @@ function Body({
+-          <button type="button" data-testid="customer-download" disabled={busy !== "" || locked} onClick={() => setExportOpen(true)}>
++          {/* CONT-289 RED-only negative control: bypass export review. Restore before GREEN. */}
++          <button type="button" data-testid="customer-download" disabled={busy !== "" || locked} onClick={() => void download()}>
+@@ -420 +422,2 @@ function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, be
+-    if (typed !== name || !checked || writing.current || otherBusy || !beforeSend()) return;
++    // CONT-289 RED-only negative control: omit scope acknowledgement. Restore before GREEN.
++    if (typed !== name || writing.current || otherBusy || !beforeSend()) return;
+@@ -450 +453 @@ function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, be
+-          <button type="submit" className="primary danger" data-testid="erase-submit" disabled={typed !== name || !checked || busy || otherBusy}>
++          <button type="submit" className="primary danger" data-testid="erase-submit" disabled={typed !== name || busy || otherBusy}>

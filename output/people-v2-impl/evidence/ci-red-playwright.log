@@ -1,0 +1,667 @@
+
+Running 28 tests using 1 worker
+
+  ✓   1 tests/admin/customers-billing.spec.ts:92:1 › CB11 customers list: table, phone last 3 only, search by name and phone digits, no actor or PSP data, nav entries (1.8s)
+  ✓   2 tests/admin/customers-billing.spec.ts:126:1 › CB11 customer detail: facts, orders, claims, consent; withdrawal is one keyed strict request; export downloads and the page survives its refresh (1.5s)
+  ✓   3 tests/admin/customers-billing.spec.ts:188:1 › CB11 erase: typed confirmation, what is kept, refused while a payment is open, done for an erasable customer (1.8s)
+  ✓   4 tests/admin/customers-billing.spec.ts:247:1 › CB11 finance: native date inputs, the 91-day rule, one summary table, the CSV, the test-mode badge (1.2s)
+  ✓   5 tests/admin/customers-billing.spec.ts:309:1 › CB11 billing: standing, subscribe redirects to hosted Checkout (MOCK), the return updates, portal redirect, no URL kept (4.6s)
+  ✓   6 tests/admin/customers-billing.spec.ts:358:1 › CB11 banner: GRACE and RESTRICTED show one banner on every page linking to billing; GOOD and UNBILLED show none (4.1s)
+  ✓   7 tests/admin/customers-billing.spec.ts:388:1 › CB11 studio: opening a claim window under RESTRICTED says why and links to billing; nothing else changes; GOOD opens it (1.5s)
+  ✓   8 tests/admin/customers-billing.spec.ts:417:5 › CB11 screenshots en desktop: customers, detail, finance, billing with banner, Studio refusal (hashed, no overflow) (2.4s)
+  ✓   9 tests/admin/customers-billing.spec.ts:417:5 › CB11 screenshots en mobile: customers, detail, finance, billing with banner, Studio refusal (hashed, no overflow) (2.1s)
+  ✓  10 tests/admin/customers-billing.spec.ts:417:5 › CB11 screenshots zh-TW desktop: customers, detail, finance, billing with banner, Studio refusal (hashed, no overflow) (2.1s)
+  ✓  11 tests/admin/customers-billing.spec.ts:417:5 › CB11 screenshots zh-TW mobile: customers, detail, finance, billing with banner, Studio refusal (hashed, no overflow) (2.1s)
+  ✓  12 tests/admin/customers-billing.spec.ts:462:1 › CB11 permission fence: a member without customers:read / billing:manage sees refusals in the UI (1.2s)
+  ✘  13 tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-TW-1440 (10.9s)
+  ✘  14 tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-TW-390 (10.9s)
+  ✘  15 tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-CN-1440 (10.9s)
+  ✘  16 tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-CN-390 (10.9s)
+  ✘  17 tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path en-1440 (10.9s)
+  ✘  18 tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path en-390 (10.9s)
+  ✘  19 tests/admin/people-v2.spec.ts:149:3 › PEOPLE-V2 export confirmation and persistence en-1440 (10.9s)
+  ✘  20 tests/admin/people-v2.spec.ts:160:3 › PEOPLE-V2 erasure name checkbox and persistence en-1440 (10.8s)
+  ✘  21 tests/admin/people-v2.spec.ts:169:3 › PEOPLE-V2 blocked erasure retains customer and orders en-1440 (10.8s)
+  ✘  22 tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 export uncertain read-only return en-1440 (10.9s)
+  ✘  23 tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 erase uncertain read-only return en-1440 (10.8s)
+  ✘  24 tests/admin/people-v2.spec.ts:149:3 › PEOPLE-V2 export confirmation and persistence en-390 (10.8s)
+  ✘  25 tests/admin/people-v2.spec.ts:160:3 › PEOPLE-V2 erasure name checkbox and persistence en-390 (10.8s)
+  ✘  26 tests/admin/people-v2.spec.ts:169:3 › PEOPLE-V2 blocked erasure retains customer and orders en-390 (10.8s)
+  ✘  27 tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 export uncertain read-only return en-390 (10.8s)
+  ✘  28 tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 erase uncertain read-only return en-390 (10.8s)
+
+
+  1) tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-TW-1440 ───────────────────
+
+    Error: PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt
+
+    expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByTestId('customers-search')
+    Expected: "姓名開頭／電話末碼"
+    Received: ""
+    Timeout:  10000ms
+
+    Call log:
+      - PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt getByTestId('customers-search') with timeout 10000ms
+      - waiting for getByTestId('customers-search')
+        24 × locator resolved to <input value="" type="search" maxlength="40" autocomplete="off" data-testid="customers-search" aria-describedby="customers-search-hint"/>
+           - unexpected value "null"
+
+
+      125 |     await signed(page, width); await fixture(page); await page.goto(mainURL(locale));
+      126 |     await expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible(); // Existing baseline reaches new assertion.
+    > 127 |     await expect(page.getByTestId("customers-search"), "PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt").toHaveAttribute("placeholder", c.search);
+          |                                                                                                                 ^
+      128 |     await fits(page);
+      129 |     await act(page, c.search, "customer search draft is visible", () => page.getByTestId("customers-search").fill("示範林"), () => expect(page.getByTestId("customers-search")).toHaveValue("示範林"), "fill");
+      130 |     await act(page, c.submit, "search results retain the customer and query", () => page.getByTestId("customers-search-submit").click(), async () => { await expect(page).toHaveURL(/q=/); await expect(page.getByTestId(`customer-open-${customer}`)).toContainText(name); });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:127:113
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-TW-1440/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-TW-1440/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-TW-1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-TW-1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-TW-390 ────────────────────
+
+    Error: PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt
+
+    expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByTestId('customers-search')
+    Expected: "姓名開頭／電話末碼"
+    Received: ""
+    Timeout:  10000ms
+
+    Call log:
+      - PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt getByTestId('customers-search') with timeout 10000ms
+      - waiting for getByTestId('customers-search')
+        24 × locator resolved to <input value="" type="search" maxlength="40" autocomplete="off" data-testid="customers-search" aria-describedby="customers-search-hint"/>
+           - unexpected value "null"
+
+
+      125 |     await signed(page, width); await fixture(page); await page.goto(mainURL(locale));
+      126 |     await expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible(); // Existing baseline reaches new assertion.
+    > 127 |     await expect(page.getByTestId("customers-search"), "PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt").toHaveAttribute("placeholder", c.search);
+          |                                                                                                                 ^
+      128 |     await fits(page);
+      129 |     await act(page, c.search, "customer search draft is visible", () => page.getByTestId("customers-search").fill("示範林"), () => expect(page.getByTestId("customers-search")).toHaveValue("示範林"), "fill");
+      130 |     await act(page, c.submit, "search results retain the customer and query", () => page.getByTestId("customers-search-submit").click(), async () => { await expect(page).toHaveURL(/q=/); await expect(page.getByTestId(`customer-open-${customer}`)).toContainText(name); });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:127:113
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-TW-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-TW-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-TW-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-TW-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-CN-1440 ───────────────────
+
+    Error: PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt
+
+    expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByTestId('customers-search')
+    Expected: "姓名开头／手机号尾号"
+    Received: ""
+    Timeout:  10000ms
+
+    Call log:
+      - PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt getByTestId('customers-search') with timeout 10000ms
+      - waiting for getByTestId('customers-search')
+        24 × locator resolved to <input value="" type="search" maxlength="40" autocomplete="off" data-testid="customers-search" aria-describedby="customers-search-hint"/>
+           - unexpected value "null"
+
+
+      125 |     await signed(page, width); await fixture(page); await page.goto(mainURL(locale));
+      126 |     await expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible(); // Existing baseline reaches new assertion.
+    > 127 |     await expect(page.getByTestId("customers-search"), "PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt").toHaveAttribute("placeholder", c.search);
+          |                                                                                                                 ^
+      128 |     await fits(page);
+      129 |     await act(page, c.search, "customer search draft is visible", () => page.getByTestId("customers-search").fill("示範林"), () => expect(page.getByTestId("customers-search")).toHaveValue("示範林"), "fill");
+      130 |     await act(page, c.submit, "search results retain the customer and query", () => page.getByTestId("customers-search-submit").click(), async () => { await expect(page).toHaveURL(/q=/); await expect(page.getByTestId(`customer-open-${customer}`)).toContainText(name); });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:127:113
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-CN-1440/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-CN-1440/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-CN-1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-CN-1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-CN-390 ────────────────────
+
+    Error: PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt
+
+    expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByTestId('customers-search')
+    Expected: "姓名开头／手机号尾号"
+    Received: ""
+    Timeout:  10000ms
+
+    Call log:
+      - PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt getByTestId('customers-search') with timeout 10000ms
+      - waiting for getByTestId('customers-search')
+        24 × locator resolved to <input value="" type="search" maxlength="40" autocomplete="off" data-testid="customers-search" aria-describedby="customers-search-hint"/>
+           - unexpected value "null"
+
+
+      125 |     await signed(page, width); await fixture(page); await page.goto(mainURL(locale));
+      126 |     await expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible(); // Existing baseline reaches new assertion.
+    > 127 |     await expect(page.getByTestId("customers-search"), "PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt").toHaveAttribute("placeholder", c.search);
+          |                                                                                                                 ^
+      128 |     await fits(page);
+      129 |     await act(page, c.search, "customer search draft is visible", () => page.getByTestId("customers-search").fill("示範林"), () => expect(page.getByTestId("customers-search")).toHaveValue("示範林"), "fill");
+      130 |     await act(page, c.submit, "search results retain the customer and query", () => page.getByTestId("customers-search-submit").click(), async () => { await expect(page).toHaveURL(/q=/); await expect(page.getByTestId(`customer-open-${customer}`)).toContainText(name); });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:127:113
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-CN-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-CN-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-CN-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-zh-CN-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path en-1440 ──────────────────────
+
+    Error: PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt
+
+    expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByTestId('customers-search')
+    Expected: "Name prefix / last phone digits"
+    Received: ""
+    Timeout:  10000ms
+
+    Call log:
+      - PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt getByTestId('customers-search') with timeout 10000ms
+      - waiting for getByTestId('customers-search')
+        24 × locator resolved to <input value="" type="search" maxlength="40" autocomplete="off" data-testid="customers-search" aria-describedby="customers-search-hint"/>
+           - unexpected value "null"
+
+
+      125 |     await signed(page, width); await fixture(page); await page.goto(mainURL(locale));
+      126 |     await expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible(); // Existing baseline reaches new assertion.
+    > 127 |     await expect(page.getByTestId("customers-search"), "PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt").toHaveAttribute("placeholder", c.search);
+          |                                                                                                                 ^
+      128 |     await fits(page);
+      129 |     await act(page, c.search, "customer search draft is visible", () => page.getByTestId("customers-search").fill("示範林"), () => expect(page.getByTestId("customers-search")).toHaveValue("示範林"), "fill");
+      130 |     await act(page, c.submit, "search results retain the customer and query", () => page.getByTestId("customers-search-submit").click(), async () => { await expect(page).toHaveURL(/q=/); await expect(page.getByTestId(`customer-open-${customer}`)).toContainText(name); });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:127:113
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-en-1440/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-en-1440/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-en-1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-en-1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path en-390 ───────────────────────
+
+    Error: PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt
+
+    expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByTestId('customers-search')
+    Expected: "Name prefix / last phone digits"
+    Received: ""
+    Timeout:  10000ms
+
+    Call log:
+      - PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt getByTestId('customers-search') with timeout 10000ms
+      - waiting for getByTestId('customers-search')
+        24 × locator resolved to <input value="" type="search" maxlength="40" autocomplete="off" data-testid="customers-search" aria-describedby="customers-search-hint"/>
+           - unexpected value "null"
+
+
+      125 |     await signed(page, width); await fixture(page); await page.goto(mainURL(locale));
+      126 |     await expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible(); // Existing baseline reaches new assertion.
+    > 127 |     await expect(page.getByTestId("customers-search"), "PEOPLE-V2-SIGNED-SEARCH: signed concise search prompt").toHaveAttribute("placeholder", c.search);
+          |                                                                                                                 ^
+      128 |     await fits(page);
+      129 |     await act(page, c.search, "customer search draft is visible", () => page.getByTestId("customers-search").fill("示範林"), () => expect(page.getByTestId("customers-search")).toHaveValue("示範林"), "fill");
+      130 |     await act(page, c.submit, "search results retain the customer and query", () => page.getByTestId("customers-search-submit").click(), async () => { await expect(page).toHaveURL(/q=/); await expect(page.getByTestId(`customer-open-${customer}`)).toContainText(name); });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:127:113
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-en-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-en-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-en-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-signed-main-path-en-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) tests/admin/people-v2.spec.ts:149:3 › PEOPLE-V2 export confirmation and persistence en-1440 ───
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-download')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-download') with timeout 10000ms
+      - waiting for getByTestId('customer-download')
+
+
+      149 |   test(`PEOPLE-V2 export confirmation and persistence en-${width}`, async ({ page }) => {
+      150 |     await signed(page, width); const f = await fixture(page); await page.goto(detailURL("en"));
+    > 151 |     await expect(page.getByTestId("customer-download")).toBeVisible();
+          |                                                         ^
+      152 |     await act(page, "Download data", "PEOPLE-V2-EXPORT-CONFIRM: review opens before any POST", () => page.getByTestId("customer-download").click(), () => expect(page.getByRole("button", { name: copy.en.confirmDownload, exact: true })).toBeVisible());
+      153 |     expect(f.posts).toHaveLength(0);
+      154 |     for (const fact of [name, "805", copy.en.verify, copy.en.protected, copy.en.permissions]) await expect(page.getByTestId("customer-detail")).toContainText(fact);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:151:57
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-80999-ion-and-persistence-en-1440/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-80999-ion-and-persistence-en-1440/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-80999-ion-and-persistence-en-1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-80999-ion-and-persistence-en-1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) tests/admin/people-v2.spec.ts:160:3 › PEOPLE-V2 erasure name checkbox and persistence en-1440 ─
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-erase')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-erase') with timeout 10000ms
+      - waiting for getByTestId('customer-erase')
+
+
+      160 |   test(`PEOPLE-V2 erasure name checkbox and persistence en-${width}`, async ({ page }) => {
+      161 |     await signed(page, width); const f = await fixture(page); await page.goto(detailURL("en"));
+    > 162 |     await expect(page.getByTestId("customer-erase")).toBeVisible(); await eraseReady(page);
+          |                                                      ^
+      163 |     expect(f.posts).toHaveLength(0);
+      164 |     await act(page, copy.en.confirmErase, "erasure success reflects server deactivation", () => page.getByTestId("erase-submit").click(), () => expect(page.getByTestId("customer-erased")).toBeVisible());
+      165 |     expect(f.posts).toHaveLength(1); expect(f.posts[0].body).toBe(JSON.stringify({ confirm: "ERASE" }));
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:162:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erasur-70d43-box-and-persistence-en-1440/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erasur-70d43-box-and-persistence-en-1440/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erasur-70d43-box-and-persistence-en-1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erasur-70d43-box-and-persistence-en-1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) tests/admin/people-v2.spec.ts:169:3 › PEOPLE-V2 blocked erasure retains customer and orders en-1440
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-erase')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-erase') with timeout 10000ms
+      - waiting for getByTestId('customer-erase')
+
+
+      169 |   test(`PEOPLE-V2 blocked erasure retains customer and orders en-${width}`, async ({ page }) => {
+      170 |     await signed(page, width); const f = await fixture(page, "blocked"); await page.goto(detailURL("en"));
+    > 171 |     await expect(page.getByTestId("customer-erase")).toBeVisible(); await eraseReady(page);
+          |                                                      ^
+      172 |     await act(page, copy.en.confirmErase, "server refusal is visible without claiming erasure", () => page.getByTestId("erase-submit").click(), () => expect(page.getByTestId("erase-problem")).toContainText(/payment|order|refund/i));
+      173 |     expect(f.posts).toHaveLength(1); expect(f.detail.active).toBe(true);
+      174 |     await expect(page.getByTestId("customer-erased")).toHaveCount(0);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:171:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-blocke-9aa5e-customer-and-orders-en-1440/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-blocke-9aa5e-customer-and-orders-en-1440/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-blocke-9aa5e-customer-and-orders-en-1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-blocke-9aa5e-customer-and-orders-en-1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 export uncertain read-only return en-1440 ────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-download')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-download') with timeout 10000ms
+      - waiting for getByTestId('customer-download')
+
+
+      181 |       if (kind === "erase") { await expect(page.getByTestId("customer-erase")).toBeVisible(); await eraseReady(page); }
+      182 |       else {
+    > 183 |         await expect(page.getByTestId("customer-download")).toBeVisible();
+          |                                                             ^
+      184 |         await act(page, copy.en.download, "PEOPLE-V2-EXPORT-CONFIRM: opens confirmation", () => page.getByTestId("customer-download").click(), () => expect(page.getByRole("button", { name: copy.en.confirmDownload, exact: true })).toBeVisible());
+      185 |       }
+      186 |       await act(page, kind === "erase" ? copy.en.confirmErase : copy.en.confirmDownload, "unconfirmed result offers only the signed read-only path", () => kind === "erase" ? page.getByTestId("erase-submit").click() : page.getByRole("button", { name: copy.en.confirmDownload, exact: true }).click(), () => expect(page.getByRole("button", { name: copy.en.pending, exact: true })).toBeVisible());
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:183:61
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-bf93e-in-read-only-return-en-1440/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-bf93e-in-read-only-return-en-1440/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-bf93e-in-read-only-return-en-1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-bf93e-in-read-only-return-en-1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 erase uncertain read-only return en-1440 ─────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-erase')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-erase') with timeout 10000ms
+      - waiting for getByTestId('customer-erase')
+
+
+      179 |     test(`PEOPLE-V2 ${kind} uncertain read-only return en-${width}`, async ({ page }) => {
+      180 |       await signed(page, width); const f = await fixture(page, kind); await page.goto(detailURL("en"));
+    > 181 |       if (kind === "erase") { await expect(page.getByTestId("customer-erase")).toBeVisible(); await eraseReady(page); }
+          |                                                                                ^
+      182 |       else {
+      183 |         await expect(page.getByTestId("customer-download")).toBeVisible();
+      184 |         await act(page, copy.en.download, "PEOPLE-V2-EXPORT-CONFIRM: opens confirmation", () => page.getByTestId("customer-download").click(), () => expect(page.getByRole("button", { name: copy.en.confirmDownload, exact: true })).toBeVisible());
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:181:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erase-uncertain-read-only-return-en-1440/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erase-uncertain-read-only-return-en-1440/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erase-uncertain-read-only-return-en-1440/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erase-uncertain-read-only-return-en-1440/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) tests/admin/people-v2.spec.ts:149:3 › PEOPLE-V2 export confirmation and persistence en-390 ───
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-download')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-download') with timeout 10000ms
+      - waiting for getByTestId('customer-download')
+
+
+      149 |   test(`PEOPLE-V2 export confirmation and persistence en-${width}`, async ({ page }) => {
+      150 |     await signed(page, width); const f = await fixture(page); await page.goto(detailURL("en"));
+    > 151 |     await expect(page.getByTestId("customer-download")).toBeVisible();
+          |                                                         ^
+      152 |     await act(page, "Download data", "PEOPLE-V2-EXPORT-CONFIRM: review opens before any POST", () => page.getByTestId("customer-download").click(), () => expect(page.getByRole("button", { name: copy.en.confirmDownload, exact: true })).toBeVisible());
+      153 |     expect(f.posts).toHaveLength(0);
+      154 |     for (const fact of [name, "805", copy.en.verify, copy.en.protected, copy.en.permissions]) await expect(page.getByTestId("customer-detail")).toContainText(fact);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:151:57
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-0cf9f-tion-and-persistence-en-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-0cf9f-tion-and-persistence-en-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-0cf9f-tion-and-persistence-en-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-0cf9f-tion-and-persistence-en-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) tests/admin/people-v2.spec.ts:160:3 › PEOPLE-V2 erasure name checkbox and persistence en-390 ─
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-erase')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-erase') with timeout 10000ms
+      - waiting for getByTestId('customer-erase')
+
+
+      160 |   test(`PEOPLE-V2 erasure name checkbox and persistence en-${width}`, async ({ page }) => {
+      161 |     await signed(page, width); const f = await fixture(page); await page.goto(detailURL("en"));
+    > 162 |     await expect(page.getByTestId("customer-erase")).toBeVisible(); await eraseReady(page);
+          |                                                      ^
+      163 |     expect(f.posts).toHaveLength(0);
+      164 |     await act(page, copy.en.confirmErase, "erasure success reflects server deactivation", () => page.getByTestId("erase-submit").click(), () => expect(page.getByTestId("customer-erased")).toBeVisible());
+      165 |     expect(f.posts).toHaveLength(1); expect(f.posts[0].body).toBe(JSON.stringify({ confirm: "ERASE" }));
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:162:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erasur-1a35d-kbox-and-persistence-en-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erasur-1a35d-kbox-and-persistence-en-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erasur-1a35d-kbox-and-persistence-en-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erasur-1a35d-kbox-and-persistence-en-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) tests/admin/people-v2.spec.ts:169:3 › PEOPLE-V2 blocked erasure retains customer and orders en-390
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-erase')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-erase') with timeout 10000ms
+      - waiting for getByTestId('customer-erase')
+
+
+      169 |   test(`PEOPLE-V2 blocked erasure retains customer and orders en-${width}`, async ({ page }) => {
+      170 |     await signed(page, width); const f = await fixture(page, "blocked"); await page.goto(detailURL("en"));
+    > 171 |     await expect(page.getByTestId("customer-erase")).toBeVisible(); await eraseReady(page);
+          |                                                      ^
+      172 |     await act(page, copy.en.confirmErase, "server refusal is visible without claiming erasure", () => page.getByTestId("erase-submit").click(), () => expect(page.getByTestId("erase-problem")).toContainText(/payment|order|refund/i));
+      173 |     expect(f.posts).toHaveLength(1); expect(f.detail.active).toBe(true);
+      174 |     await expect(page.getByTestId("customer-erased")).toHaveCount(0);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:171:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-blocke-43aee--customer-and-orders-en-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-blocke-43aee--customer-and-orders-en-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-blocke-43aee--customer-and-orders-en-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-blocke-43aee--customer-and-orders-en-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 export uncertain read-only return en-390 ─────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-download')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-download') with timeout 10000ms
+      - waiting for getByTestId('customer-download')
+
+
+      181 |       if (kind === "erase") { await expect(page.getByTestId("customer-erase")).toBeVisible(); await eraseReady(page); }
+      182 |       else {
+    > 183 |         await expect(page.getByTestId("customer-download")).toBeVisible();
+          |                                                             ^
+      184 |         await act(page, copy.en.download, "PEOPLE-V2-EXPORT-CONFIRM: opens confirmation", () => page.getByTestId("customer-download").click(), () => expect(page.getByRole("button", { name: copy.en.confirmDownload, exact: true })).toBeVisible());
+      185 |       }
+      186 |       await act(page, kind === "erase" ? copy.en.confirmErase : copy.en.confirmDownload, "unconfirmed result offers only the signed read-only path", () => kind === "erase" ? page.getByTestId("erase-submit").click() : page.getByRole("button", { name: copy.en.confirmDownload, exact: true }).click(), () => expect(page.getByRole("button", { name: copy.en.pending, exact: true })).toBeVisible());
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:183:61
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-uncertain-read-only-return-en-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-uncertain-read-only-return-en-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-uncertain-read-only-return-en-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-export-uncertain-read-only-return-en-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 erase uncertain read-only return en-390 ──────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('customer-erase')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('customer-erase') with timeout 10000ms
+      - waiting for getByTestId('customer-erase')
+
+
+      179 |     test(`PEOPLE-V2 ${kind} uncertain read-only return en-${width}`, async ({ page }) => {
+      180 |       await signed(page, width); const f = await fixture(page, kind); await page.goto(detailURL("en"));
+    > 181 |       if (kind === "erase") { await expect(page.getByTestId("customer-erase")).toBeVisible(); await eraseReady(page); }
+          |                                                                                ^
+      182 |       else {
+      183 |         await expect(page.getByTestId("customer-download")).toBeVisible();
+      184 |         await act(page, copy.en.download, "PEOPLE-V2-EXPORT-CONFIRM: opens confirmation", () => page.getByTestId("customer-download").click(), () => expect(page.getByRole("button", { name: copy.en.confirmDownload, exact: true })).toBeVisible());
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:181:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erase-uncertain-read-only-return-en-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erase-uncertain-read-only-return-en-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erase-uncertain-read-only-return-en-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.k9vWh5tR/customers-billing/20261028T211818.536210121/results/people-v2-PEOPLE-V2-erase-uncertain-read-only-return-en-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16 failed
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-TW-1440 ────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-TW-390 ─────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-CN-1440 ────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path zh-CN-390 ─────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path en-1440 ───────────────────────
+    tests/admin/people-v2.spec.ts:123:3 › PEOPLE-V2 signed main path en-390 ────────────────────────
+    tests/admin/people-v2.spec.ts:149:3 › PEOPLE-V2 export confirmation and persistence en-1440 ────
+    tests/admin/people-v2.spec.ts:160:3 › PEOPLE-V2 erasure name checkbox and persistence en-1440 ──
+    tests/admin/people-v2.spec.ts:169:3 › PEOPLE-V2 blocked erasure retains customer and orders en-1440
+    tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 export uncertain read-only return en-1440 ──────
+    tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 erase uncertain read-only return en-1440 ───────
+    tests/admin/people-v2.spec.ts:149:3 › PEOPLE-V2 export confirmation and persistence en-390 ─────
+    tests/admin/people-v2.spec.ts:160:3 › PEOPLE-V2 erasure name checkbox and persistence en-390 ───
+    tests/admin/people-v2.spec.ts:169:3 › PEOPLE-V2 blocked erasure retains customer and orders en-390
+    tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 export uncertain read-only return en-390 ───────
+    tests/admin/people-v2.spec.ts:179:5 › PEOPLE-V2 erase uncertain read-only return en-390 ────────
+  12 passed (3.5m)

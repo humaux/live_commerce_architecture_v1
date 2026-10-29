@@ -1,0 +1,29 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8691904Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8692147Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8692520Z test at tests/ui/ds-hex-ratchet.test.mjs:87:1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8693712Z ✖ the live tree holds the baseline (apps/admin hex colours did not increase) (189.760697ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8694879Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8695652Z   + actual - expected
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8696027Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8696344Z   + [
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8696829Z   +   'total hex colours 388 > baseline 386',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8698545Z   +   'apps/admin/components/customers.css: 10 hex colours > baseline 8 (use a --ds-* token from packages/ui/src/tokens.css)'
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8699488Z   + ]
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8699813Z   - []
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8700119Z   
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8701727Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ui/ds-hex-ratchet.test.mjs:88:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8703221Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8704070Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8705100Z       at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8706572Z       at Test.postRun (node:internal/test_runner/test:1542:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8707701Z       at Test.run (node:internal/test_runner/test:1467:12)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8708788Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8709603Z     generatedMessage: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8710065Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8711534Z     actual: [ 'total hex colours 388 > baseline 386', 'apps/admin/components/customers.css: 10 hex colours > baseline 8 (use a --ds-* token from packages/ui/src/tokens.css)' ],
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8712692Z     expected: [],
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8713185Z     operator: 'deepStrictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8713646Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8713983Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8765037Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:10:01.8775897Z ##[error]Process completed with exit code 1.
