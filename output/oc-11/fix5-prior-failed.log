@@ -1,0 +1,14 @@
+gate (bundle:04)	Gate	2026-10-29T04:00:34.9626237Z [36;1m    # BUNDLE-258: the writer already scores an exit-0 member FAIL from a failure line in its log (#147 CI-6). The step's own verdict[0m
+gate (bundle:04)	Gate	2026-10-29T04:00:34.9649748Z   MEMBERS: --browser-ads-attribution --browser-admin-legacy --browser-studio-ui --browser-design --browser-claim-checkout --browser-merchant-buyer
+gate (bundle:04)	Gate	    "mode": "--browser-design",
+gate (bundle:04)	Gate	    "art": "gate-browser-design"
+gate (bundle:04)	Gate	2026-10-29T04:04:49.6905962Z ##[group]bundle member --browser-design
+gate (bundle:04)	Gate	2026-10-29T04:04:54.6269470Z === RUN   TestBrowserStoreDesign
+gate (bundle:04)	Gate	2026-10-29T04:08:06.5201177Z     browser_store_design_test.go:170: SDB browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/store-design/20261029T040456.559039589
+gate (bundle:04)	Gate	2026-10-29T04:08:06.5475958Z --- FAIL: TestBrowserStoreDesign (191.92s)
+gate (bundle:04)	Gate	2026-10-29T04:08:06.5500010Z FAIL
+gate (bundle:04)	Gate	2026-10-29T04:08:06.5675399Z FAIL	livecommerce/tests/foundation	192.032s
+gate (bundle:04)	Gate	2026-10-29T04:08:06.5776982Z FAIL
+gate (bundle:04)	Gate	2026-10-29T04:08:06.8156768Z bundle member --browser-design: failure
+gate (bundle:04)	Gate	2026-10-29T04:08:06.8547268Z matrix-receipts: {"mode":"--browser-design","run_id":"40814762280","run_attempt":"1","sha":"ff3e587b02d5ab7b7733ea64c27e764cd0c3b97c","status":"FAIL","test_count":59,"spec_count":20}
+gate (bundle:04)	Gate	2026-10-29T04:08:06.8624533Z bundle member --browser-design: receipt receipt-browser-design.json is not PASS

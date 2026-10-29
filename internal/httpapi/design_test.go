@@ -28,6 +28,7 @@ func TestDesignRoutesRequireLogin(t *testing.T) {
 	} {
 		r := httptest.NewRequest(tt.method, tt.path, strings.NewReader("{}"))
 		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("Idempotency-Key", "design-login-guard")
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, r)
 		if w.Code != 401 {

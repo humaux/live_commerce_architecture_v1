@@ -177,3 +177,36 @@ Merge resolves CheckoutFlow/OrderFlow conflicts by preserving both the incoming 
 Current-head acceptance is PENDING CI; author assessment E0. No local tests or servers. Storefront tsc NOT_RUN: this worktree has no local node_modules/.bin/tsc. Whole-merge whitespace check reports only incoming historical logs under output/cvs-pick-impl and output/people-v2-impl; those upstream evidence files are preserved. Card diff whitespace and node syntax checks are recorded in the PR relay comment. No new visual/UI controls, locale strings or Figma deliverables. Existing process/parity disclosures above remain scoped to the original implementation.
 
 This relay adds no out-of-card authored source repair: only existing card components, DELIVERY.md and generated browser ownership. Upstream-only paths arrive through the requested base merge. No backend/package/migration/lockfile/pin edits authored. Rollback: revert the relay merge with its first parent on this task branch via the same PR process. CI results will be relayed by the integrator into a fresh session; no local background task or server remains.
+
+## RELAY 3 synchronization (2026-10-29)
+
+Current instruction explicitly requests merge, ownership regeneration and push. Starting head
+62e13c814b180af0773b498001ab98b3df70aee1; fetched integration
+aa4c5eb65724fe14afa7e10a9aaa9cf140a1517f (git rev-parse origin/r3/integration).
+The requested merge is conflict-free. #306 and #313 were already in the starting head;
+both internal/httperror files still match integration. This relay authors no product source repair.
+Incoming #221 paths, including its contract/baseline changes, are upstream-only merge content.
+
+Re-read PR checks and failed required job 123435870227 in Gates run 40865131138.
+The originating failure is bundle:07 job 123419600464, TestBrowserTaiwanCvs/MOCK admin half.
+Fresh official artifact 12894619037 (gate-browser-cvs) is retained locally in relay18/cvs.
+Its playwright.log reports the unchanged 180000 ms total test deadline, with openOrders
+at tests/admin/taiwan-cvs.spec.ts:54 called from the locale/viewport print loop at :168.
+Browser closure follows the deadline; the root cause of the navigation delay is UNKNOWN.
+Under the explicit scope STOP rule, no admin/shared-harness change, timeout increase,
+fixture/assertion weakening or targeted fix was attempted. The merge push is only the
+explicitly requested baseline synchronization; it does not claim to fix this external blocker.
+
+Historical causal RED remains Foundation 40757493836/job 123060219251 (red.log).
+Starting-head Foundation 40865131209/job 123417850037 passed; starting-head Gates
+40865131138 failed. Neither is acceptance of the new merge head. New-head CI is PENDING.
+Ownership generator exit 0 (53 modes); regenerated output matches the automatic merge.
+Card-relative diff whitespace, node syntax for home-cod-buyer.mjs and ownership generator,
+and httperror integration parity checks exit 0 (E1 only). No new imports or UI strings.
+Existing UI process, parity, locale and click-ledger disclosures above remain applicable.
+
+NOT_RUN: local tests/servers/builds/tsc, provider SANDBOX/LIVE, production, Figma,
+independent acceptance. Humaux tools are absent; no store/coord/canvas receipt claimed.
+Integrator owns CI completion relay. No server or test process was started locally.
+Rollback point is the starting head; revert the merge with first-parent mainline through
+the same task PR if required. No integration/main push, PR merge, auto-merge or deployment.
