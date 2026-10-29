@@ -144,7 +144,7 @@
     "tests/admin/parcels-model.test.ts": "4af0a4b7881802004e29343b7361076ae333fcc50a89b2b8fd527254685148ff",
     "tests/admin/parcels-request.test.ts": "2e6b5ce176f30a273a9eeb9aee7fef931676c8bcee2569842b361ed1bcf8957f",
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
-    "tests/admin/password-auth.spec.ts": "4732afae8b6ff27d03394c30b83c275b475d9561b9665d08e7ab2961480fd758",
+    "tests/admin/password-auth.spec.ts": "dab2f29f4838ce590e2da4774ef628d94bf3bb3581f43249fb77143f4bb2eabc",
     "tests/admin/password-bff.test.ts": "a0aef82247f79280f4f950dee28cff5116c98be35e1d09898ddfee6d623922a4",
     "tests/admin/password-response-canaries.ts": "19567bd49311a0b0ba1f13923b29c48a4a90fbbc0a224772aacdd7bc3452c9fb",
     "tests/admin/photo-preprocess.test.ts": "42ad51c0cb5e53744ad61fad69dff7bece1c212d9ce9315e6f947249da9cdc07",

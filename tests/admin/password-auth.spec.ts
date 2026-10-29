@@ -209,7 +209,17 @@ for (const locale of locales) {
   });
 
   test.describe(`#245 ${locale}: recovery diagnostics without credentials`, () => {
-    test.use({ trace: { mode: "retain-on-failure", screenshots: true, snapshots: true, sources: false } });
+    // Trace is a worker option, so describe-level test.use would prevent all tests from loading.
+    // Manual tracing stays inside this credential-free group; password/code flows keep trace off.
+    test.beforeEach(async ({ context }) => {
+      await context.tracing.start({ screenshots: true, snapshots: true, sources: false });
+    });
+    test.afterEach(async ({ context }, testInfo) => {
+      const failed = testInfo.status !== testInfo.expectedStatus;
+      const path = testInfo.outputPath("trace.zip");
+      await context.tracing.stop(failed ? { path } : {});
+      if (failed) await testInfo.attach("recovery-trace", { path, contentType: "application/zip" });
+    });
     test(`#245 ${locale}: aborted page chunks show loading then a native reload that recovers`, async ({ page }, testInfo) => {
       let aborted = 0;
       let continued = 0;

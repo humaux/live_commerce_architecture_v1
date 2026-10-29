@@ -53,3 +53,57 @@ Humaux decision cc3ccd16-a978-4fab-a992-63773744b64b; own canvas ca-auth-copy-su
 CI run IDs will be added in a PR comment and local post-push handoff, never an evidence-only commit. Integrator owns completion notification and fresh-session relay. No local watcher/server remains.
 NOT_RUN: local tests/builds/servers/browser/PG/containers, new-head CI completion, independent review, LIVE.
 Rollback: revert this diagnostic commit on unit/ca-auth-copy; no production effect.
+
+## RELAY 1 — repair diagnostic collection, not the unobserved hydration cause
+
+2026-10-29: fetched and merged origin/r3/integration first (exit0, already up to date).
+Starting/local/remote head2791d1047b7ad00dd72dbc4fb55866273cb8b048;
+integration2bc6d482606a2b0583af15789086fdad727b27ec. Pre-existing dirty reports preserved.
+Role: dispatched implementation worker, Codex; runtime model/effort identifiers unavailable;
+no delegation, parent coord/canvas untouched.
+
+Read gh pr checks251 and requested gh run view40791315248 --log-failed --job123179228091.
+Workflow remains active, so the latter refuses logs. The completed-job official logs API
+and original artifact were then read. Only WebKit123179228091 is failed at observation;
+Foundation40791310598/job123176921293 passed this head; other Gates jobs remain pending.
+Downloaded gate-browser-webkit with gh run download40791315248 (exit0), artifact12861954499,
+17223868 bytes, original ZIP digest01641a4869be8e8f73fec0a5e3259a636ac9b807b9e3139fbc9f7727d7161a44;
+tested synthetic merge329dd3d234e2 (not the PR head).
+
+**Exact current failure:** password-auth.spec.ts212 calls test.use({trace}) inside a describe.
+playwright.log repeats `Cannot use({ trace }) in a describe group, because it forces a new worker.`
+for each locale. TestBrowserPasswordAuth fails4.14s before any browser case executes.
+There is no current failing hydration assertion, trace.zip or recovery-events.jsonl.
+Zero downstream principal/session/mail/canary counts follow collection failure.
+Password playwright.log SHA25651946d1bd54df6d2a25b73546d4fd53dcf51cff9ccb9d499a62e4d06f4b84563;
+Go JSONL67b361c623725426a84b35e05666185cc79774921cc83172cf525a19c606ff72.
+Original extracted files remain in output/ca-auth-copy/relay1-40791315248/webkit/.
+
+**Engine comparison:** current Chromium bundle01/job123179228208 is still running at observation;
+no Chromium password artifact is available. The current declaration error precedes engine actions,
+so this head supplies no WebKit-vs-Chromium recovery comparison. Prior de45bd50 remains historical:
+Chromium21pass, WebKit no-JS1pass then recovery hydration143/caller242 fails after10000ms,
+19notrun. This relay cannot infer the old product/engine root from absent traces. It remains UNKNOWN.
+
+**One targeted repair:** remove only the unsupported describe-level trace option. The same
+credential-free describe now starts manual context tracing in beforeEach and stops it in afterEach,
+saving/attaching trace.zip only for an unexpected outcome. Global trace:off remains for every
+password/code flow. Existing recovery-events, all assertions, waits, routes, outage phases, native
+clicks, locales and engines are unchanged. No product or shared WebKit gate change. This corrects
+the previous lane's diagnostic configuration; it is not a third guessed hydration repair.
+Manual tracing records browser/network operations; assertion results remain in playwright.log/JSONL.
+Official API authority read2026-10-29: https://playwright.dev/docs/api/class-tracing
+(start/stop, screenshots/snapshots/sources options; manual trace does not record expect assertions).
+
+Local static node --check tests/admin/password-auth.spec.ts and git diff --check exit0 (E1).
+Required node scripts/dev/derive-browser-ownership.mjs exit0; generated one spec hash only.
+No imports changed, so no component harness or dependency-map input changed.
+Outside original paths: output/ci-select-backend-browser/browser-ownership.json (pre-approved generated scope).
+No local tests/builds/servers/browser/PG/containers. Acceptance remains this PR's own Gates/Foundation
+and independent review; GREEN PENDING, author E0. Original assertion RED40612180005/job122576061200
+remains historical, and this collection failure is not counted as an assertion-failing RED.
+After the single push, run/job IDs go in a PR comment and own Humaux canvas. Integrator owns completion
+notification and fresh-session relay. Download finished, no watcher/server/process remains.
+On relay, read all new-head failures and both engines' recovery-events plus failed trace before any
+product repair. STOP if evidence identifies a shared WebKit gate defect. No evidence-only follow-up push.
+Rollback: revert this relay commit on unit/ca-auth-copy; production unaffected.
