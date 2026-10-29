@@ -1,3 +1,86 @@
+# FIX #303 — pending SKU negative-case synchronization, attempt 1 (2026-10-30)
+
+Authority: dispatched relay/card; AGENTS.md; architecture 0/1/2/26/27;
+merchant-settings-wizard-v1.md Session, drafts and uncertainty / STORE-PROFILE-API;
+SettingsV2.tsx load/render and the current PR's original GitHub job/artifact.
+Assigned UI implementer; no delegation. Runtime identifies GPT-6-based Codex;
+exact model/effort selector unavailable. Base e977991eb89f823cd56e5756e318cdce864faeee,
+branch unit/settings-v2-ui, assigned settings-v2-ui worktree only. Fresh fetch and
+merge of origin/r3/integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2 reports
+Already up to date. Authored paths: existing settings browser helper, this delivery,
+red.log and mandatory generated browser ownership. No app imports/source changed.
+
+## Current failure / root repair / acceptance gate
+
+Gates 40915958297 / bundle:07 job 123598450349 FAILED for e977991e;
+synthetic merge 6e3b24e25360afde48014d06ddd8f5b036441af2. Fresh artifact
+12916383922 gate-browser-identity shows a NEW failure at settings-v2.spec.ts:244:
+Reload locator timeout after restoring the original cache. Snapshot shows overview.
+It reached this line after the stock-10 assertions and negative-case loop; the
+old expected-10/received-0 failure is not the current failure. This is an
+implementation-phase harness regression, never relabeled as tests-only RED.
+Raw extracted relay6-settings-playwright.log SHA256:
+fa94fedbd0094c26506c48647a2b5663d18c47de5044bf03fd8493dac28c318f.
+
+load() leaves the unavailable h1 mounted during async reads, while loading hides
+its controls. The heading assertion could pass before the last negative Reload
+finished; restoring the valid cache then let that in-flight read reach overview,
+removing Reload. Add an enabled-Reload assertion after each negative Reload to
+wait for the controls to return before checking or replacing that fixture. All
+original assertions remain verbatim/in order. No removed assertions, changed
+fixture values, timeout increase, retries, weakened gates or production changes.
+This is attempt 1 for the synchronization blocker; pending-SKU product repair
+remains e977991e. P2 CAS-conflict recovery remains deferred.
+
+Gate: the PR's own --browser-identity chain must complete the unchanged original
+SKU exact-key/body replay, initial inventory command/replay and refresh-persisted
+stock 10, plus every invalid-cache fail-closed assertion after a completed read.
+Historical causal RED E3 remains tests-only 5d85294c1a7eda43ec70bbf11f0c9186c7f034c7,
+Gates 40908912713/job 123573702372, stock expected 10 / received 0 at line 202.
+Foundation 40915957832/job 123596111488 SUCCESS applies to e977991e only.
+Current push GREEN/E3 and independent E4 PENDING. Author judgment E0.
+
+|Page / control|Operation|Expected|Actual evidence|
+|---|---|---|---|
+|Pending SKU / Reload, refresh, setup navigation|real clicks|stock 10 preserved, no writes|Reached past assertions in e977991e CI|
+|Invalid cache / Reload|real click, await enabled Reload|completed read; unavailable; original cache/journal; no writes|New synchronization PENDING CI|
+|Restored cache / Reload / setup / Save|real clicks|exact SKU replay then unchanged inventory recovery; persisted 10|Prior CI timed out at Reload; PENDING CI|
+
+Local verification: node --check tests/admin/settings-v2.spec.ts exit 0;
+git diff --check exit 0 (E1 syntax/whitespace only). Mandatory static browser
+ownership generator runs last. No source import or Go graph change needs depmap.
+NOT_RUN: local tests/servers (prohibited), new-head CI GREEN, independent E4,
+provider/SANDBOX/LIVE/production. No current completion or acceptance claimed.
+Humaux/coord/canvas tools unavailable; no store/canvas write claimed. Preserve all
+pre-existing untracked evidence. No local servers/background tests were started.
+
+## UI PROCESS — BOURDIEU
+
+Existing Q1–Q6 verdicts below remain: experience means recent task experience,
+never class/device; Q6 aesthetics UNKNOWN to owner. This test-only change adds
+no merchant decision, visible string or layout.
+
+## UI PROCESS — PROJECT UNDERSTANDING
+
+Architecture 0/1/2 separates evidence, stock authority and product boundary;
+26/27 requires assigned worktree, bounded repair, CI and independent acceptance.
+Wizard session/draft contract requires original scoped uncertainty identity;
+STORE-PROFILE-API keeps server scope and exact versioned replay. Current
+SettingsV2 load/render establishes the read-completion boundary used here.
+
+## UI PROCESS — MOBBIN → EAGLE
+
+No design/reference change; prior module references and structural principles
+below remain. No Mobbin/Eagle access or new import claimed for this test repair.
+
+## UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No canvas/component/layout/prototype writes; existing official-guidance citations,
+fact parity and three-column locale copy below remain unchanged. Figma lint and
+density remeasurement are NOT_RUN because no visual artifact changed.
+
+---
+
 # FIX #303 — pending SKU recovery, implementation attempt 1 (2026-10-30)
 
 Authority: the dispatched FIX #303 card; AGENTS.md; architecture sections

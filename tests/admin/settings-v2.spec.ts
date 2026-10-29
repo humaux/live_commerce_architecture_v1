@@ -229,6 +229,9 @@ export async function settingsV2Acceptance(page: Page, store: string) {
     await page.reload();
     await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true }), scenario).toBeVisible();
     await page.getByRole("button", { name: "Reload", exact: true }).click();
+    // The heading persists while load() is pending. Wait for its controls to
+    // return before checking storage or replacing this recovery fixture.
+    await expect(page.getByRole("button", { name: "Reload", exact: true }), scenario).toBeEnabled();
     await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true }), scenario).toBeVisible();
     await expect(overview).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Save settings", exact: true })).toHaveCount(0);

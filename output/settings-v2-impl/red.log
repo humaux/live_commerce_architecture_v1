@@ -180,3 +180,17 @@ Supplemental negative browser assertions added for missing, version/product/pric
 mismatch and blank/negative/fractional stock; NOT_RUN until this push's CI.
 Existing exact SKU/inventory replay and persisted-stock assertions unchanged.
 No local tests/servers. GREEN and independent E4 remain PENDING/NOT_RUN.
+
+FIX #303 relay current-head failure review — 2026-10-30
+Implementation head e977991eb89f823cd56e5756e318cdce864faeee.
+Gates 40915958297 / bundle:07 job 123598450349 FAILED;
+synthetic merge 6e3b24e25360afde48014d06ddd8f5b036441af2.
+Artifact 12916383922 gate-browser-identity: settings-v2.spec.ts:244 Reload
+locator timeout after restoring valid cache. Snapshot is overview, not stock 0.
+Original log SHA256 fa94fedbd0094c26506c48647a2b5663d18c47de5044bf03fd8493dac28c318f.
+Not a new causal tests-only RED; original stock-loss RED above stays unchanged.
+Synchronization repair attempt 1 adds an enabled-Reload assertion after every
+negative Reload, before fixture readback/replacement. h1 survives in-flight reads;
+controls return only after loading ends. No existing assertion/fixture weakened.
+Foundation 40915957832/job 123596111488 passed e977991e only.
+Static node --check and git diff --check exit 0. New GREEN/E4 PENDING.
