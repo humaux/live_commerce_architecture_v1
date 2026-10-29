@@ -35,3 +35,17 @@ Current implementation GREEN/independent re-review PENDING. Refusal-path503 rema
 Local tsc --noEmit --incremental false -p apps/storefront/tsconfig.json and git diff --check exited0, E1 only. No tests/server/browser/PG run locally.
 No spec/page/route change in implementation, so no browser-ownership input change after RED generation. Go dependency graph unchanged; depmap regeneration not needed.
 This session has no Humaux tools: memory_store/canvas/coord/code_index/code_memory_link NOT_RUN; retain this repository handoff for integrator relay.
+
+RESUME #273 / #313 baseline repair — 2026-10-29:
+Dispatch authorizes merging origin/r3/integration, regenerating ownership, one push and bounded CI handoff.
+Live GitHub readback: #313 MERGED at bf174df6b8a2c23e44dc8290a1baddf926149c6e; the httperror allowlist now retains cod_surcharge_changed as409 instead of rewriting to internal. Upstream regression: TestCODSurchargeChangedKeepsItsCode.
+Latest pre-resume PR head e63a71234979243df663bdd4ae8cab64ceed3b65: Gates40830651847 / bundle:06 job123306424440 fails TestBrowserHomeCod; Foundation40830651887 / job123303847633 succeeds. These are historical, not resumed-head acceptance.
+Original causal RED remains Gates40827205253 / job123293920220 at fcf88c8dbac75ecbb47e3c1d60bc4714d0f2273c. No duplicate tests-only push, weakened assertion, or backend worker edit.
+Merge starts at local HEAD56255de10a39c6047e9adf6ed9f944ca9a8c9387, tracked clean. Existing untracked artifacts preserved. Resolved CheckoutFlow/OrderFlow conflicts by keeping both CVS brand-change state and COD review state; the new chain's server quote uses acceptQuote so changed totals still require acknowledgment.
+Generated ownership with node scripts/dev/derive-browser-ownership.mjs (exit0;53modes), never hand-edited. Existing compiling harnesses inspected; no new require/import allowlist needed. Go import graph unchanged by this worker; no depmap edit.
+Static E1: node --check tests/storefront/{checkout-v2,home-cod-buyer,cvs-buyer}.mjs and git diff --check exit0.
+Local tsc attempt: worktree node_modules/.bin/tsc absent (127). Read-only main-checkout TypeScript binary with --noEmit --incremental false returned1 because this worktree lacks next/react/@live-commerce/i18n/type dependencies (TS2307/TS2875/TS2591 and cascading diagnostics). No typecheck PASS, dependency install, local test, build or server claimed.
+Evidence level: E1 syntax only; author assessment E0; resumed-head GREEN and independent re-review PENDING. No new visual design or locale string.
+NOT_RUN: local tests/servers/browser/PG, provider SANDBOX/LIVE, production, independent re-review, Humaux store/canvas/coord/index/link. No recursive delegation.
+Wake-up: native workflow conclusion/failure/timeout plus integrator relay; record exact Gates/Foundation WAIT_RUN IDs after push. No polling beyond10min or detached watcher.
+Full staged merge diff --check additionally returned2 for two pre-existing trailing spaces imported verbatim from integration's output/cvs-pick-impl/fix298-red.log lines20/44. Worker source/ownership diff --check returned0. Upstream evidence was not modified to hide these warnings; no full-merge whitespace PASS.

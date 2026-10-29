@@ -1,9 +1,9 @@
 "use client";
 
 // Purpose: confirmed-address checkout and current order details, with stable layout while delivery facts load.
-// Depends on: purchase.ts CAS/recovery, buyer BFF routes, CheckoutReview/CheckoutPaymentChoices and payment/fulfilment components.
+// Depends on: purchase.ts CAS/recovery, order-fields, buyer BFF routes, CheckoutReview/CheckoutPaymentChoices and payment/fulfilment components.
 // Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
-// Invariants: submit remains gated by destination, server quote and explicit changed-total acknowledgment; money is never added here.
+// Invariants: destination, server quote and changed-total acknowledgment gate submit; brand changes requote; money is never added here.
 // OrderDetails hosts <OrderPayment> (BFF orders/{id}/payment[/prepare|handoff|refresh|cancel]);
 // its Refresh order button also fires the Stripe payment/refresh signal via paymentSignalRef.
 // The shipment block renders Go GET /v1/buyer/orders/{id} `shipment` (BFF orders/{id}); no route of its own.
@@ -30,6 +30,12 @@ import CheckoutReview from "./checkout/CheckoutReview";
 import CheckoutPaymentChoices from "./checkout/CheckoutPaymentChoices";
 import { checkoutOption } from "../lib/checkout-review";
 import { countryName } from "../lib/country-name";
+import {
+  emptyOrderFields as empty,
+  orderFieldsOf as fieldsOf,
+  orderInputs as inputs,
+  type OrderFields as Fields,
+} from "../lib/order-fields";
 import {
   isTransferErrorCode,
   settledCommercialState,
@@ -69,33 +75,9 @@ import type {
   Quote,
 } from "../lib/purchase";
 
-type Fields = HomeAddress & { recipient_name: string; phone: string };
-const empty: Fields = {
-  recipient_name: "",
-  phone: "",
-  region: "",
-  city: "",
-  postal_code: "",
-  line1: "",
-  line2: "",
-};
-const fieldsOf = (d: DestinationWrite | Destination): Fields => ({
-  recipient_name: d.recipient_name,
-  phone: d.phone,
-  ...d.home_address,
-});
 type Run = (work: (isCurrent: () => boolean) => Promise<void>) => Promise<void>;
 type Money = (amount: number, currency: string) => string;
 const noHome: HomeAddress = { region: "", city: "", postal_code: "", line1: "", line2: "" };
-const inputs = [
-  ["recipient_name", "name", 120, true],
-  ["phone", "tel", 32, true],
-  ["region", "address-level1", 100, false],
-  ["city", "address-level2", 100, true],
-  ["postal_code", "postal-code", 20, false],
-  ["line1", "address-line1", 200, true],
-  ["line2", "address-line2", 200, false],
-] as const;
 
 export default function OrderFlow({
   context,
@@ -115,6 +97,9 @@ export default function OrderFlow({
   onFeeChanged,
   onQuoteRefresh,
   onReviewState,
+  cvsResume,
+  onCvsBrand,
+  cvsKinds,
 }: {
   context: string;
   cart: Cart;
@@ -135,12 +120,15 @@ export default function OrderFlow({
   onFeeChanged?: () => void;
   onQuoteRefresh?: (quote: Quote) => void;
   onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean }) => void;
+  cvsResume?: CvsDraft;
+  onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
+  cvsKinds?: CvsKind[];
 }) {
   const copy = orderCopy[locale];
   // A destination journal intentionally stores no PII or quotation. A fresh
   // tab must still offer explicit address recovery when it has no quote ID.
   const country = quote?.country ?? recoveryCountry ?? "";
-  const [fields, setFields] = useState<Fields>(empty);
+  const [fields, setFields] = useState<Fields>(() => ({ ...empty, ...(cvsResume ? { recipient_name: cvsResume.recipient_name, phone: cvsResume.phone } : {}) }));
   const [head, setHead] = useState<Destination | null>(null);
   const [option, setOption] = useState<Option | null>(null);
   const [confirmed, setConfirmed] = useState<Destination | null>(null);
@@ -155,7 +143,7 @@ export default function OrderFlow({
   const live = useRef(0);
   const attempt = useRef<{ body: DestinationWrite; key: string } | null>(null);
   // CVS (§16): payment mode, the picker's ensure() handle and the one refusal shown next to the create button.
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>("card");
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>(cvsResume?.payment_mode ?? "card");
   const [createError, setCreateError] = useState<CvsErrorCode | null>(null);
   const [codError, setCodError] = useState<string | null>(null);
   const [optionRefresh, setOptionRefresh] = useState(0);
@@ -201,7 +189,8 @@ export default function OrderFlow({
         if (version !== live.current) return;
         setHead(current);
         setHeadLoaded(true);
-        if (current?.kind === "home" && current.country === country) {
+        // A quote-bound CVS draft wins over older home fields; the CAS head still loads above.
+        if (!cvsResume && current?.kind === "home" && current.country === country) {
           setFields(fieldsOf(current));
           setNotice((notice) => notice === "failed" ? notice : "recovered");
         } else setNotice((notice) => notice === "failed" ? notice : null);
@@ -248,7 +237,7 @@ export default function OrderFlow({
       window.clearTimeout(timer);
       attempt.current = null;
     };
-  }, [context, quote?.id, country, cart.id, cart.version, optionRefresh]);
+  }, [context, quote?.id, country, cart.id, cart.version, optionRefresh, cvsResume]);
 
   useEffect(() => {
     let active = true;
@@ -438,6 +427,9 @@ export default function OrderFlow({
               run={run}
               handle={pickup}
               total={quote ? money(quote.amount.total_minor, quote.currency) : ""}
+              onBrand={onCvsBrand}
+              availableKinds={cvsKinds}
+              pickerInitiallyOpen={!!cvsResume}
             />
           )}
           {cvsOption && <label className="sku-row cod-home-only"><input type="radio" disabled aria-label={cod.homeOnly} />{cod.homeOnly}</label>}

@@ -275,3 +275,17 @@ Existing three-language review/help/radio/refresh/fixed-submit suite and all ori
 Evidence: cont-static.log and cont-hashes.txt. TypeScript strict/noEmit/incrementalfalse, node --check, diff check exit0; E1 only. No component import changes; every matching harness enumerated. Generated ownership53modes updated in same batch. No Go dependency changes require depmap regeneration. In-module scope extension: tests/storefront/claim-checkout.mjs compatibility action + stronger assertions; generated output/ci-select-backend-browser/browser-ownership.json required by card. Record both in integrator ledger. No other new source scope.
 
 NOT_RUN: local tests/servers/browser/PG/runtime, provider SANDBOX/LIVE, production, independent review and runtime density. GREEN PENDING new push. Integrator relays a fresh session upon the recorded Gates/Foundation WAIT_RUN conclusion; no >10minute polling or silent background process. No merge, auto-merge, force push, statuses or production action.
+
+## RESUME #273 / #313 — 2026-10-29
+
+Authority: latest integrator dispatch; current integration bf174df6b8a2c23e44dc8290a1baddf926149c6e; GitHub #313 merge receipt and internal/httperror/error.go/error_test.go. The shared safe error mapping now preserves the real COD fee-change refusal. No new backend implementation by this lane.
+
+Merged integration into this lane, retaining upstream CVS brand-switch contact state and this card's explicit changed-total acknowledgment. The brand-switch server quote enters acceptQuote, matching every other quote replacement. Ownership regenerated with the official static generator (53 modes). No new UI string or visual layout was designed. Existing parity, three-language copy and four UI-process sections above remain the applicable implementation brief; current browser acceptance remains pending CI.
+
+Receipt: output/RVFIX-273/red.log resume section. node --check for checkout-v2/home-cod-buyer/cvs-buyer and git diff --check exit0 (E1). Typecheck returned1 due to missing worktree dependencies, so type acceptance is unavailable locally. Existing source-compiling harness search found no affected injected require allowlist. No local tests or servers. No worker Go import change or dependency-map edit.
+
+Gate: this resumed head's own Foundation and Gates, including real fee-refusal/held-read/acknowledgment/persistence/order-collection assertions. Original RED40827205253/job123293920220 retained. Latest historical failure40830651847/job123306424440 is not current acceptance. GREEN and independent re-review PENDING; author assessment E0. Exact new head/run IDs will be handed off in a PR comment without an evidence-only push.
+
+NOT_RUN: local tests/browser/PG/server, provider SANDBOX/LIVE, production, independent re-review, Figma/copy-lint/density; Humaux store/canvas/coord/index/link unavailable. Integrator relay on workflow conclusion/failure/timeout is the wake-up path. No detached process or polling beyond10minutes. Upstream imports retain their attribution; worker conflict resolutions are limited to CheckoutFlow/OrderFlow plus generated ownership and card evidence.
+
+Static limitation: the full staged integration merge diff --check returned2 for two existing trailing spaces in upstream output/cvs-pick-impl/fix298-red.log lines20/44. Worker source/ownership whitespace check returned0. Upstream evidence retained unchanged; no full-merge whitespace PASS.

@@ -36,7 +36,7 @@ test("the actual list offers import only to privacy holders and carries the curr
       useEffect: () => {}, useState: (value: unknown) => [value, () => {}], useRef: (value: unknown) => ({ current: value }), useRouter: () => ({ push() {} }),
       useGuardedRead: () => ({ status: "ready", boundary: "scope", reload() {}, data: ++read === 1 ? { items: [], next_cursor: "" } : { items: [] } }),
       WorkspaceFrame: (p: any) => React.createElement("div", null, p.children), AdminPageHeader: () => null,
-      Icon: () => null, CustomerTagManager: () => null,
+      Icon: () => null, CustomerTagManager: () => null, AdminStateBlock: () => null, AdminForbidden: () => null,
       Link: (p: any) => React.createElement("a", p, p.children),
     });
     const store = { id: "abcdef11-1111-4111-8111-111111111111", name: "Synthetic store", permissions: ["customers:read", ...(permission ? ["customers:privacy"] : [])] };

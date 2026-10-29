@@ -1,0 +1,60 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/admin/parcel-merge.spec.ts:154:1 › W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped -> dissolve -> block -> 409 (21.1s)
+
+
+  1) tests/admin/parcel-merge.spec.ts:154:1 › W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped -> dissolve -> block -> 409 › suggestions 403 clears orders/detail/bulk/groups before stale read completions
+
+    Error: Timed out waiting for held order poll release
+
+      403 |     let timer: ReturnType<typeof setTimeout>;
+      404 |     const timeout = new Promise<never>((_, reject) => {
+    > 405 |       timer = setTimeout(() => reject(new Error(`Timed out waiting for ${description}`)), 10_000);
+          |                                       ^
+      406 |     });
+      407 |     try { return await Promise.race([work, timeout]); }
+      408 |     finally { clearTimeout(timer!); }
+        at Timeout.<anonymous> (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parcel-merge.spec.ts:405:39)
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByTestId('merchant-orders')
+    Expected substring: "This account does not have permission to read orders."
+    Received string:    "OrdersReview saved orders and their frozen checkout details.You can’t use this featureYour current role can’t use this feature. Contact the store owner.Back to dashboard"
+    Timeout: 10000ms
+
+    Call log:
+      - Expect "toContainText" getByTestId('merchant-orders') with timeout 10000ms
+      - waiting for getByTestId('merchant-orders')
+        24 × locator resolved to <div class="orders-page orders-v2" data-testid="merchant-orders">…</div>
+           - unexpected value "OrdersReview saved orders and their frozen checkout details.You can’t use this featureYour current role can’t use this feature. Contact the store owner.Back to dashboard"
+
+
+      460 |         });
+      461 |         const expectPurged = async () => {
+    > 462 |           await expect(page.getByTestId("merchant-orders")).toContainText(copy);
+          |                                                             ^
+      463 |           await expect(page.getByTestId("orders-table")).toHaveCount(0);
+      464 |           await expect(page.getByTestId("order-detail")).toHaveCount(0);
+      465 |           await expect(page.getByTestId("pick-toolbar")).toHaveCount(0);
+        at expectPurged (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parcel-merge.spec.ts:462:61)
+        at test.step.timeout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parcel-merge.spec.ts:474:17)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parcel-merge.spec.ts:418:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261028T233352.625978768/results-parcel/parcel-merge-W3-07B-parcel-a4812-ed---dissolve---block---409/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261028T233352.625978768/results-parcel/parcel-merge-W3-07B-parcel-a4812-ed---dissolve---block---409/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261028T233352.625978768/results-parcel/parcel-merge-W3-07B-parcel-a4812-ed---dissolve---block---409/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261028T233352.625978768/results-parcel/parcel-merge-W3-07B-parcel-a4812-ed---dissolve---block---409/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/parcel-merge.spec.ts:154:1 › W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped -> dissolve -> block -> 409

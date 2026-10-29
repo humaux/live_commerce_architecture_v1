@@ -26,6 +26,7 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
+import { exerciseCvsPicker, exerciseCvsPaste, assertPickerDensity } from "./cvs-picker.mjs";
 
 const env = (name) => {
   const value = process.env[name];
@@ -268,6 +269,19 @@ try {
     pass("OK mart and Hi-Life are disabled with 即將開放 until verified");
     await ctx.close();
   }
+
+  // CVS-PICK-IMPL: extra real-click cases; existing map and snapshot assertions below remain in place.
+  const pickerLedger = [], pickerDensities = [];
+  for (const [locale, mobile] of [["zh-TW", true], ["zh-CN", false], ["en", true]]) {
+    const ctx = await newContext(mobile), page = await ctx.newPage();
+    await exerciseCvsPicker({ page, locale, mobile, openCheckout: () => toQuote(page, stores.entered, locale, "cvs_711"), ledger: pickerLedger, densities: pickerDensities });
+    await exerciseCvsPaste({ page, locale, openCheckout: () => toQuote(page, stores.entered, locale, "cvs_familymart"), ledger: pickerLedger });
+    await shot(page, "picker", locale, mobile ? "mobile" : "desktop");
+    await ctx.close();
+  }
+  await writeFile(path.join(evidence, "cvs-picker-click-ledger.json"), JSON.stringify(pickerLedger, null, 2));
+  await writeFile(path.join(evidence, "cvs-picker-density-raw.json"), JSON.stringify(pickerDensities, null, 2));
+  await writeFile(path.join(evidence, "cvs-picker-density.json"), JSON.stringify(assertPickerDensity(pickerDensities), null, 2));
 
   // ---- buyer_entered store (no ECPay profile): TCV14 UI half ----------------------------------------------------------------
   const snapshotClicks = [];

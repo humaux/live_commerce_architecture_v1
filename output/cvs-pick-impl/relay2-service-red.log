@@ -1,0 +1,16 @@
+RELAY 2 / CONT298, 2026-10-29: head67356ed0ac9bd0aa3f5afa594850a198bb24b953.
+Requirements: integrator continuation and original cxf-cvs-pick-impl.md incl A1-A5.
+Fetch+merge origin/r3/integration: exit0, Already up to date.
+Foundation40806240500/job123225750299 SUCCESS, this old head only.
+Gates40806240517/job123227892593 bundle:07 FAILURE; synthetic merge checkout3caaeab2cc738f2bff395a76f9b2b5a8c43a6122.
+gh run view --log-failed --job123227892593: unfinished run refuses logs; read completed raw logs with gh api actions/jobs/123227892593/logs instead (exit0).
+gh run download40806240517 -n gate-browser-cvs: exit0, artifact12869720127, extracted ci-relay2-67356ed0/.
+Read both cvs-buyer.mjs.log files personally: Chromium and WebKit fail unchanged service_code strictEqual at cvs-picker.mjs137.
+Expected was full option key market_id:TW:delivery:<service>, actual correct request was <service>.
+Authority: apps/storefront/lib/purchase.ts optionKey and CheckoutFlow select option value; CVS contract16.1 requires service_code only.
+Other five bundle07 members PASS; SANDBOX skipped, not acceptance. Dedicated WebKit job123227892985 remains QUEUED at last read. Current Foundation is green; earlier Foundation failures are historical.
+Repair attempt1 for this distinct test-input blocker: parse and assert full option-key shape, extract only service suffix, retain original request service_code strictEqual and all other assertions.
+No product behavior, fixture, wait, retry, threshold, gate or exemption changes. Browser source hash changed, so regenerated browser-ownership.json (53 modes); no hand edit.
+Static commands: node --check tests/storefront/cvs-picker.mjs and git diff --check exit0. No local runtime tests/server/build/browser/PG.
+GREEN for new head PENDING. E3 negative CI evidence only; E1 syntax; author verdict E0; independent review NOT_RUN.
+Humaux search/store/canvas/coord unavailable; no shared-memory writes. Integrator owns completion relay for new run IDs posted on PR.
