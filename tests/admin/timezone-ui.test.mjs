@@ -80,6 +80,7 @@ test("Design version published_at cell uses Taipei at the year boundary", () => 
     "@/lib/catalog-v2-copy": { catalogPresentationCopy: { "zh-TW": { tableScroll: "scroll" } } },
     "@/lib/design-copy": { fill: () => "source" },
     "@/lib/customers-client": {}, "@/lib/storefront-client": {}, "@/lib/design-client": {}, "@/lib/design-model": {},
+    "@/lib/use-design-load": {},
     "./DesignProfile": {}, "./DesignNav": {}, "./DesignSections": {}, "./DesignPages": {}, "./design.css": {},
   }, "\nexport { Versions as __testVersions };\n");
   const c = { versions: { help: "help", none: "none", version: "version", at: "at",
