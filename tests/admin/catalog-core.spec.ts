@@ -17,6 +17,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { catalogTaskCopy } from "../../packages/i18n/src/catalog";
 import { driveDocument } from "./catalog-document-driver";
 import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy";
 import { copy } from "../../apps/admin/lib/copy";
@@ -232,7 +233,7 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       await page.getByTestId("products-search-submit").click();
       const row = page.getByTestId(`product-row-${productId}`);
       await expect(row).toBeVisible();
-      await expect(row).toContainText(cc.status.active);
+      await expect(row).toContainText(catalogTaskCopy[L as "en" | "zh-TW"].active);
       await expect(row).toContainText("10");
       await expect(row).toContainText("20");
       await expect(row).toContainText("24"); // 10+3+0+6+5+0 units

@@ -1,5 +1,235 @@
+CURRENT FIX318 / 2026-10-30: implementation batch resumes under the integrator's signed-path ruling. Causal RED remains run40872483030/job123445416316 on PR headc36ab5b434f02e103fdd60e802d82ff37b39d8a3; CATV2:148 expected0 quick-price received3. Fresh GitHub run metadata confirms head/conclusion/attempt1; fresh filtered bundle confirms PE12-17-TWD failure, CC12-frozen pass, tested mergebebeff21262ec9dd04ee29f23387e205dadec806. Required123457272340/receipts123457131946 fail downstream. No new test-only push needed. GREEN/PENDING must bind the implementation push; prior BLOCKED notes below are historical.
+
 CATALOG-V2-IMPL RED batch
-Status: PENDING_CI; no causal RED claimed.
+LATEST FIX318 REDISPATCH / 2026-10-29: remote c36ab5b434f02e103fdd60e802d82ff37b39d8a3, local b4ed344782e25cfe3a6c9219a22d62f43d588d40 unpushed; integration d0e73315 already merged. Gates40872483030/job123445416316 E3 causal RED CATV2:148 expected0/received3. Downstream failed jobs123457131946/123457272340 read. Artifact12896838030 fresh GitHub digest matches retained ZIP b463a86911dae8b86c5e1b102d6f948980b200a472597b85b098aa6c781de498. Fresh gh run download stopped after60s+ without output(exit143). BLOCKED_GATE_CONFLICT: legacy product-editor595-658 requires same quick controls absent in new CATV2:148-149. No source/test edits or push. WAIT_RUN:none; gate adjudication required, authorE0.
+LATEST RELAY 5 / 2026-10-29 -- supersedes earlier pending/in-progress WAIT_RUN notes
+PR318 head c36ab5b434f02e103fdd60e802d82ff37b39d8a3 remains tests-only; no comments or gate-reconciliation authorization.
+Gates40872483030 completed/failure; bundle job123445416316 failure; required job123457272340 failure.
+Foundation40872482994/job123442803793 success is not product GREEN.
+gh run view40872483030 --log-failed --job123445416316 now exit0; product-editor failed, CC12-frozen passed; tested merge bebeff21262ec9dd04ee29f23387e205dadec806.
+Retained artifact transcript relay-2-playwright.log:80-128: CATV2 line148 quick-price expected0 received3;12 prior passed;12 remaining not run. E3 causal RED only; author E0.
+Fresh current integration d0e7331525fec046fbe9361906fa66367ae583c6 still requires quick-price/quick-stock click/save/refresh/focus; signed latest simplify/fix-2 authority and CATV2 remove these entries.
+STOP BLOCKED_GATE_CONFLICT; integrator must reconcile legacy acceptance with signed design. No code/test change, commit, push or new CI run; targeted fix attempts0.
+Only planned own DELIVERY.md/red.log updated; prior dirty files preserved. Humaux unavailable, no store/canvas claimed. No local tests/server/build/browser or background processes.
+WAIT_RUN: none (existing RED completed). Wake-up: integrator after gate-authority reconciliation. Implementation/GREEN/remaining CATV2 coverage/independent review/LIVE NOT_RUN.
+
+Status: CAUSAL_RED_CONFIRMED; implementation BLOCKED_GATE_CONFLICT. Earlier queued notes below are historical.
 Expected own-assertion failure: signed product rows remove quick-price/quick-stock editors; existing rendered quick-price count is expected to differ from 0.
 Additional assertions: archive confirmation/partial results, simplified edit/stock/media/review/save, three locales,15-state density.
 RUN/JOB ids will be appended after the tests-only push. GREEN NOT_RUN.
+
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/318 (draft; base r3/integration)
+RED head: c36ab5b434f02e103fdd60e802d82ff37b39d8a3
+Foundation run: 40872482994; foundation job: 123442803793; status queued/pending.
+Gates run: 40872483030; plan job 123442802868 is not test evidence; browser job not yet assigned.
+No new assertion failure observed yet. Causal RED PENDING; GREEN NOT_RUN.
+WAIT_RUN: 40872482994 (Foundation)
+WAIT_RUN: 40872483030 (Gates)
+Wake-up: integrator to relay completed run conclusion into fresh session; no local background process or polling loop.
+This append is intentionally local evidence for next implementation commit; no evidence-only push.
+
+RELAY 1 / 2026-10-29 -- supersedes pending outcomes above
+PR head: c36ab5b434f02e103fdd60e802d82ff37b39d8a3
+Gates run: 40872483030; failed job: 123445416316 (gate bundle:01).
+Tested synthetic merge SHA (job member receipt): bebeff21262ec9dd04ee29f23387e205dadec806
+Official artifact: 12896838030, gate-browser-product-editor.
+Original log path in artifact: playwright/run.wV0lNnPH/catalog-core/20261029T123255.788125320/playwright.log
+Retained raw extracts: relay-1-job.log; relay-1-playwright.log.
+New assertion failure: tests/admin/catalog-v2-simplified.acceptance.ts:148
+Test: CATV2 list zh-TW 390: signed copy, all filters and row identity
+Assertion: signed rows expose one Edit action rather than inline price/stock editors
+Locator: getByTestId('products-page').getByTestId('quick-price')
+Expected: 0; Received: 3; timeout: 10000ms.
+Previous 12 browser tests passed; 1 new test failed; remaining 12 CATV2 cases did not run.
+CC12-frozen passed; no compile, setup or missing-component failure.
+E3 applies to causal RED execution only; implementation/GREEN remain NOT_RUN, author assessment E0.
+Foundation run 40872482994 / job 123442803793: success, not product acceptance.
+STOP: frozen legacy product-editor.acceptance.ts:595-658 requires quick-price/quick-stock clicks and popover persistence; signed design and new main-list tests remove those entry points. Integrator must reconcile gate authority; no weakening, no test-specific alternate UI, no code push.
+Fix attempts: 0. No implementation or evidence-only commit pushed.
+WAIT_RUN: 40872483030 (remaining RED workflow only; not implementation/GREEN).
+Humaux store/canvas: unavailable tools. Integrator relay owns wake-up; no local CI poll loop.
+
+RELAY 2 / 2026-10-29 -- reverified original receipts, no new push
+Head remains c36ab5b434f02e103fdd60e802d82ff37b39d8a3; PR318 remains draft into r3/integration.
+gh pr checks 318: bundle:01 failed; foundation passed; remaining Gates shards pending.
+gh run view 40872483030 --log-failed --job 123445416316: exit1, workflow still in progress.
+Fallback official completed-job log API: exit0, relay-2-job.log.
+Official artifact 12896838030 downloaded/read: exit0, relay-2-product-editor.zip and relay-2-playwright.log.
+Reconfirmed new assertion line148: quick-price expected0 received3; 12 old tests passed, 1 new failed.
+Current r3/integration source read through GitHub contents API still requires quick-price/quick-stock at lines595-658.
+No gate-retirement authorization found in current card or PR comments; no implementation/test weakening/commit/push.
+STOP remains BLOCKED_GATE_CONFLICT; targeted attempts0. E3 causal RED only; author E0.
+Humaux tools became available: targeted lookup performed; shared problem/canvas handoff recorded separately.
+WAIT_RUN: 40872483030 (existing overall RED workflow; not an implementation/GREEN run).
+Wake-up owner: integrator relay after gate-authority reconciliation. GREEN/implementation/independent review NOT_RUN.
+
+RELAY 3 / 2026-10-29 -- current source and official receipts rechecked
+PR318 head: c36ab5b434f02e103fdd60e802d82ff37b39d8a3; base r3/integration; comments empty.
+gh pr checks 318: gate bundle:01 failed, Foundation passed; other Gates jobs remain pending.
+gh run view 40872483030 --log-failed --job 123445416316: workflow still in progress; logs unavailable through this command.
+Official completed-job logs downloaded successfully to relay-3-job.log; artifact12896838030 metadata confirms matching head and expired=false.
+Current r3/integration SHA aa4c5eb65724fe14afa7e10a9aaa9cf140a1517f read through GitHub API.
+Its product-editor.acceptance.ts:595-658 still clicks quick-price/quick-stock and verifies save/reload.
+Signed simplify DELIVERY requires one Edit entry per row; CATV2 line148 requires zero quick-price entries (causal RED expected0/received3).
+STOP remains BLOCKED_GATE_CONFLICT. Card forbids weakening existing tests or inventing fixture-specific UI.
+No source/test edits, commit, push or new CI run; targeted implementation fix attempts0.
+Only planned output/catalog-v2-impl evidence changed; prior dirty handoff files preserved.
+Supplemental artifact re-download was slow and explicitly terminated (exit143); partial retained as relay-3-product-editor.zip.partial, not treated as evidence. Existing relay-2-playwright.log contains the recorded assertion; fresh job log/metadata and current source independently rechecked above.
+git diff --check: exit0 (static whitespace check only). All spawned command sessions ended; no background watcher/download remains.
+Humaux tools unavailable in this session; no shared store/canvas update claimed.
+WAIT_RUN: 40872483030 (existing RED workflow only; not a new GREEN run).
+Wake-up owner: integrator must relay gate-authority reconciliation; implementation/GREEN/independent review NOT_RUN.
+
+RELAY 4 / 2026-10-29 -- same RED, authority conflict remains
+PR318 head c36ab5b434f02e103fdd60e802d82ff37b39d8a3; base r3/integration; PR comments empty.
+gh pr checks 318 confirms bundle:01 failure; Foundation40872482994/job123442803793 success.
+gh run view40872483030 --log-failed --job123445416316 unavailable while workflow in_progress; official job logs API succeeded, relay-4-job.log.
+Run40872483030 API confirms exact head; job123445416316 original log identifies product-editor artifact12896838030.
+Retained artifact playwright.log: CATV2 line148 quick-price expected0 received3; 12 prior tests passed, 1 new assertion failed, 12 not run. E3 causal RED only.
+Fresh GitHub contents read at current integration aa4c5eb65724fe14afa7e10a9aaa9cf140a1517f confirms legacy quick-price/quick-stock clicks remain at595-658.
+Signed simplify authority still requires one Edit entry. Card does not authorize retiring legacy assertions; implementation cannot satisfy both without an unauthorized alternate surface or changing gate contract.
+STOP BLOCKED_GATE_CONFLICT; targeted fix attempts0; no implementation/test changes, commit, push, merge or local tests/server.
+Only own planned output evidence changed; preexisting dirty files preserved. Shared Humaux problem/canvas handoff recorded under lock.
+WAIT_RUN:40872483030 (existing RED workflow only, no new push); integrator wake-up must include gate-authority reconciliation, not repeat the same completed-job relay.
+
+
+## Relay-6 · completed RED reverified; STOP pending gate adjudication · 2026-10-29
+
+Current GitHub PR318 head remains tests-only c36ab5b434f02e103fdd60e802d82ff37b39d8a3, base r3/integration, no PR comments. Run40872483030 is completed/failure on this head; required123457272340 is an aggregate failure, originating browser bundle job123445416316 failed PE12-17-TWD while CC12-frozen passed. Fresh filtered official log: relay-6-job.log. Retained official artifact12896838030 transcript relay-2-playwright.log:80-128 records the new CATV2 assertion at148: quick-price expected0/received3;12 prior tests passed,12 new cases did not run. E3 causal RED only. Foundation40872482994/job123442803793 success is not product GREEN.
+
+Fresh GitHub contents read pinned to current integration d0e7331525fec046fbe9361906fa66367ae583c6 confirms product-editor.acceptance.ts:595-658 still requires quick-price/quick-stock clicks, save/reload and focus. Signed authority DELIVERY.md latest simplify line18 requires compact rows with Edit entry; SHA256815d8b7a56ecd725c66286eee0d428b010e88b9a9c9756b695b85ef0e9a4007b. New CATV2:148-149 requires zero quick-price/quick-stock entries. Card forbids weakening old tests and requires STOP on an out-of-card gate conflict. BLOCKED_GATE_CONFLICT remains; integrator adjudication needed before another implementation relay. No fixture/query-specific alternate UI. Targeted fix attempts0.
+
+Only planned own output evidence updated/added this relay (DELIVERY.md,red.log,relay-6-job.log); inherited dirty files preserved. No source/test edits, commit,push,merge,local tests/server or background processes. Author E0; implementation/GREEN,remaining CATV2 locale/density/persistence coverage,independent review,LIVE NOT_RUN. WAIT_RUN:none; existing RED finished. Integrator wake-up must include gate adjudication. Humaux available: problem store and own child canvas update under acquired catalog-v2-impl-relay6-handoff lock; parent ownership retained, no new claim/delegation.
+
+
+## Relay-7 · current-source gate conflict reverified · 2026-10-29T13:15:39.533685+00:00
+
+PR #318 is OPEN into r3/integration; exact head c36ab5b434f02e103fdd60e802d82ff37b39d8a3 remains the tests-only batch. Fresh gh pr checks / run view confirms Gates 40872483030 failed: bundle job123445416316 (PE12-17-TWD), required123457272340 and receipts123457131946. Foundation40872482994/job123442803793 succeeded; it is not product GREEN. Filtered raw job receipt: relay-7-job.log.
+
+Official run artifact12896838030 (gate-browser-product-editor) API digest sha256:b463a86911dae8b86c5e1b102d6f948980b200a472597b85b098aa6c781de498 matches the existing relay-2-product-editor.zip byte-for-byte (fresh shasum). Read-only ZIP inspection confirms CATV2 list zh-TW390 line148 fails on its own assertion: quick-price expected0/received3; 12 passed,1 failed,12 did not run. E3 causal RED only.
+
+Current integration commit from GitHub API: d0e7331525fec046fbe9361906fa66367ae583c6. Its product-editor.acceptance.ts:595-658 still mandates native quick-price/quick-stock clicks, edits, saves, reload and focus. Existing and new registrations remain enabled in catalog-core.spec.ts:101/311. Signed simplify authority DELIVERY.md:18 specifies compact rows with Edit; new CATV2:148-149 requires zero quick-price/quick-stock. These requirements cannot coexist on the same signed list without changing a gate or introducing an unauthorized alternate surface. BLOCKED_GATE_CONFLICT: stop under the current card's explicit no-weaken/stop instruction; integrator must adjudicate gate authority before implementation resumes. Targeted fix attempts0; no speculative implementation or test changes.
+
+This relay only appends own output evidence; inherited dirty files preserved. No commit,push,merge,auto-merge,status posting,local tests/server or background processes. No outside-plan paths changed this relay. GREEN, implementation, remaining CATV2 locales/states/density/persistence, independent review and LIVE: NOT_RUN. Author E0. WAIT_RUN:none (both existing runs completed); do not relay this completed required job again without gate adjudication. Humaux tools absent in this session: store/canvas/coord NOT_RUN; this local record is an equivalent handoff, not a claim of Humaux persistence.
+
+
+## Relay-8 · completed RED and current integration gate conflict
+
+Fresh `gh pr checks 318`, `gh run view --job 123457272340 --log-failed`, browser bundle job123445416316 and receipts job123457131946 bind PR head `c36ab5b434f02e103fdd60e802d82ff37b39d8a3`. Gates40872483030 is completed/failure; the required aggregate failure originates in the new CATV2 assertion, not browser-ownership drift. Foundation40872482994/job123442803793 passed, not product GREEN. Filtered fresh browser job receipt: `relay-8-job.log`.
+
+Official artifact12896838030 metadata binds the same PR head; digest sha256:b463a86911dae8b86c5e1b102d6f948980b200a472597b85b098aa6c781de498 matches the retained ZIP. Read-only ZIP inspection confirms quick-price expected0/received3. E3 causal RED only.
+
+Current integration SHA from GitHub refs API: `d0e7331525fec046fbe9361906fa66367ae583c6`. Fresh GitHub contents read still requires quick-price/quick-stock click/save/reload/focus in `tests/admin/product-editor.acceptance.ts:595-658`. Current branch CATV2:148-149 requires both controls absent; signed simplify DELIVERY:18 lists the single Edit entry. Both suites remain registered in catalog-core.spec.ts:101/311. PR comments remain empty. Existing acceptance cannot remain unchanged while implementing the signed list; current card explicitly forbids weakening tests and requires STOP for a conflicting out-of-card gate. Status BLOCKED_GATE_CONFLICT; no implementation or speculative UI workaround. Integrator must reconcile acceptance authority before resuming. Fix attempts0.
+
+Only this lane's output evidence appended; pre-existing dirty files preserved. No source/test edits, commit, push, local tests/server/build, new CI run or background processes. Outside-plan edits:none. GREEN/implementation/remaining CATV2 coverage/density/persistence/independent review/LIVE:NOT_RUN. Author E0. WAIT_RUN:none (existing RED completed). Wake-up owner:integrator after gate adjudication. Humaux tools unavailable; shared store/canvas/coord NOT_RUN, no shared persistence claim.
+
+RELAY 4 recheck / 2026-10-29: fresh original CI receipts, artifact digest and current integration source reconfirm completed causal RED and BLOCKED_GATE_CONFLICT. See relay4-recheck-handoff.md and relay4-recheck-job.log. Head c36ab5b434f02e103fdd60e802d82ff37b39d8a3; RED40872483030/job123445416316; Foundation40872482994/job123442803793 success is not GREEN. Attempts0; no code/tests/commit/push/local runtime/new run. WAIT_RUN:none; integrator must adjudicate acceptance before relaunch. Humaux problem accepted for background indexing under lock.
+
+
+FIX318 current-head audit: fetched and merged integration d0e73315 into local b4ed344782e25cfe3a6c9219a22d62f43d588d40 (unpushed). All failed current-head jobs read; E3 causal RED only. BLOCKED_GATE_CONFLICT remains. Details: fix318-handoff.md; fresh raw filtered receipt: fix318-current-job.log. No source/test edit or push. WAIT_RUN:none; integrator gate adjudication required.
+
+
+FIX318 recheck / 2026-10-29T14:54:26.546058+00:00
+Fresh fetch/merge origin/r3/integration d0e7331525fec046fbe9361906fa66367ae583c6: already up to date. PR318 tests-only head c36ab5b434f02e103fdd60e802d82ff37b39d8a3; local b4ed344782e25cfe3a6c9219a22d62f43d588d40 remains unpushed. All current-head failed jobs reread: Gates40872483030 bundle123445416316 root CATV2:148 expected0/received3; downstream receipts123457131946/required123457272340. Fresh filtered originals: fix318-current-job.log. Synthetic checkout bebeff21262ec9dd04ee29f23387e205dadec806. E3 causal RED only, authorE0.
+Official artifact12896838030 digest sha256:b463a86911dae8b86c5e1b102d6f948980b200a472597b85b098aa6c781de498 freshly matches retained relay-2-product-editor.zip; read-only ZIP log confirms12passed1failed12notrun. New gh run download timed out at90s and stopped; no partial treated as evidence. No runner infrastructure failure; no rerun.
+BLOCKED_GATE_CONFLICT: fresh merged product-editor.acceptance.ts595-658 requires quick-price/quick-stock click/save/reload/focus, while CATV2:148-149 requires both absent. Both registrations enabled. Signed simplify authority reread, SHA256815d8b7a56ecd725c66286eee0d428b010e88b9a9c9756b695b85ef0e9a4007b; PR comments/reviews empty. Explicit no-weaken/STOP applies. Integrator must reconcile acceptance authority before redispatch. Fix attempts0.
+Only own evidence updated; no source/test edit,commit,push,local tests/server/build/browser,new CI or background process. Outside-plan authored paths:none. Foundation40872482994/job123442803793 success is not product GREEN. Implementation,GREEN,remaining locales/states/density/persistence,independent review,LIVE:NOT_RUN. WAIT_RUN:none (existing RED completed); integrator wakes after gate adjudication.
+Humaux became available: directed search/grep/get,coord/canvas reads,development detail read; rejected representative subset3/9 coverage0.3333,truncated. Problem accepted for background indexing, own child canvas integrator-catalog-v2-impl-sub-fix318-recheck updated under acquired lock, lock released. Parent ownership retained; no separate claim/delegation.
+
+## FIX318 relay9 · fresh current-head recheck · 2026-10-29
+
+BLOCKED_GATE_CONFLICT; implementation still missing. Fresh fetch+merge origin/r3/integration d0e7331525fec046fbe9361906fa66367ae583c6: Already up to date. Local merge b4ed344782e25cfe3a6c9219a22d62f43d588d40 remains unpushed; PR318 head c36ab5b434f02e103fdd60e802d82ff37b39d8a3.
+
+E3 causal RED: Gates40872483030/job123445416316, new CATV2 list zh-TW390 assertion at tests/admin/catalog-v2-simplified.acceptance.ts:148 expects zero quick-price controls, receives3. Fresh gh run download exit0, artifact12896838030; retained official ZIP digest freshly matches GitHub API sha256:b463a86911dae8b86c5e1b102d6f948980b200a472597b85b098aa6c781de498. Detailed filtered original receipts: relay9-current-job.log; original download: relay9-download/. Receipts123457131946 and required123457272340 fail downstream; all three failed jobs read. No apt/dpkg/mirror infrastructure failure identified; no rerun.
+
+Fresh current integration source tests/admin/product-editor.acceptance.ts:595-658 still mandates quick-price and quick-stock clicks/save/refresh/focus, while new CATV2:148-149 mandates their absence. Both suites registered in catalog-core.spec.ts:101,311. Signed simplify authority DELIVERY.md:18 requires compact rows and Edit. Existing card forbids weakening tests and requires STOP for an outside-card gate conflict. Integrator must reconcile conflicting acceptance before redispatch; repeating unchanged CI relay cannot resolve it. Fix attempts0; no source/test edits or push.
+
+Foundation40872482994/job123442803793 success applies only to remote tests-only head, not local merge acceptance or product GREEN. GREEN, implementation, remaining locale/state/density/persistence acceptance, E4 independent review and LIVE NOT_RUN. Author assessment E0. Outside-card changes: none this relay; evidence only in authorized output/catalog-v2-impl/. No local tests, servers or runtime verification. No active child/background process after artifact download. WAIT_RUN:none (existing runs completed; no push).
+
+
+## FIX318 relay10 · current-head verification · 2026-10-29
+
+BLOCKED_GATE_CONFLICT. Fresh fetch/merge integration d0e73315: already up to date; local b4ed344782e25cfe3a6c9219a22d62f43d588d40 unpushed; PR318 head c36ab5b434f02e103fdd60e802d82ff37b39d8a3. Gates40872483030 failed bundle123445416316; receipts123457131946 and required123457272340 failed downstream. All three logs freshly read and retained as relay10-job-<id>.log. E3 causal RED at CATV2:148 quick-price expected0/received3. Foundation40872482994/job123442803793 succeeded only for remote tests-only head; not product GREEN.
+
+Fresh source read of integration product-editor.acceptance.ts:595-658 confirms required quick-price/quick-stock interactions still conflict with CATV2:148-149 and signed simplified list. No PR comment adjudication. STOP; integrator must reconcile gate authority before redispatch. No implementation, source/test edits, commit or push. Fix attempts0. Full handoff: relay10-handoff.md. Outside-card writes:none. Implementation/GREEN, remaining acceptance, independent review, local tests/servers and LIVE NOT_RUN; author E0. WAIT_RUN:none.
+
+Fresh gh run download attempt was bounded and terminated (exit143) after about2min without downloaded files; no background process remains. Existing official ZIP relay-2-product-editor.zip was rehashed this relay: sha256:b463a86911dae8b86c5e1b102d6f948980b200a472597b85b098aa6c781de498 exactly matches current GitHub artifact12896838030 API digest. Reused official extracted playwright.log in relay9-download/; no claim of a successful fresh download. git diff --check exit0; no local tests/server/runtime action. Humaux unavailable; no store/canvas write claimed.
+
+
+## FIX318 relay11 · 2026-10-30 · BLOCKED_GATE_CONFLICT
+
+Fresh integration a050a17e9 merged locally as cd9413a659bdb4f377dee2ab236cb5513e58c6c1, unpushed. Remote PR318 head c36ab5b4 unchanged. All3 failed jobs read: Gates40872483030 bundle123445416316, receipts123457131946, required123457272340. Fresh browser artifact download exit0 confirms CATV2:148 quick-price expected0/received3 (12passed1failed12notrun). Current integration PE:595-658 still requires both forbidden quick controls; no PR adjudication. STOP; no source/test edits or push; attempts0. E3 causal RED only; authorE0. Full receipts and handoff: relay11-current-job.log, relay11-handoff.md, relay11-download/. GREEN/implementation/remaining acceptance/E4/local tests/server/LIVE NOT_RUN. WAIT_RUN:none. Humaux store and own child canvas updated under acquired handoff lock.
+
+
+## FIX318 relay12 · 2026-10-30 · BLOCKED_GATE_CONFLICT
+
+Fresh fetch/merge integration a050a17e9: Already up to date; local cd9413a659bdb4f377dee2ab236cb5513e58c6c1 unpushed; PR318 head c36ab5b434f02e103fdd60e802d82ff37b39d8a3 unchanged. Read all current-head failures: Gates40872483030 bundle123445416316, receipts123457131946, required123457272340. Fresh official browser download exit0: CATV2:148 expected quick-price0/received3;12passed,1failed,12notrun. E3 causal RED only. Current PE:595-658 still requires those quick controls; both suites enabled; PR comments/reviews empty. Explicit no-weaken/STOP applies; integrator gate reconciliation required. No source/test changes,commit,push,local tests/server or rerun. Fix attempts0; outside-card authored paths:none. Full handoff and fresh original logs: relay12-handoff.md,relay12-{bundle,receipts,required}.log,relay12-download/. GREEN/implementation/remaining acceptance/E4/LIVE NOT_RUN; authorE0. Humaux unavailable, store/canvas/coord NOT_RUN. WAIT_RUN:none (existing runs complete).
+
+
+## FIX318 current-head recheck · 2026-10-30 · relay13
+
+claim_type: problem · project: live_commerce_architecture_v1 · module: catalog UI · date: 2026-10-30
+
+Fresh fetch origin/r3/integration exit0; merge exit0 (Already up to date). Local HEAD cd9413a659bdb4f377dee2ab236cb5513e58c6c1 includes integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2 and remains unpushed. PR318 remote head c36ab5b434f02e103fdd60e802d82ff37b39d8a3 is still tests-only. Existing dirty/untracked files preserved.
+
+Fresh gh pr checks and all failed jobs read successfully: Gates40872483030 attempt1 bundle123445416316, receipts123457131946, required123457272340. Raw logs relay13-{bundle,receipts,required}.log; all downloads exit0. Tested synthetic merge bebeff21262ec9dd04ee29f23387e205dadec806. PE12-17-TWD is the root failure; receipts/required propagate it. No apt/dpkg/mirror failure identified; no infrastructure rerun.
+
+Fresh browser-artifact download attempted with a50-second subprocess timeout; TIMEOUT, child terminated. Fresh GitHub artifact API confirms artifact12896838030 gate-browser-product-editor belongs to the current PR head, expired=false, digest sha256:b463a86911dae8b86c5e1b102d6f948980b200a472597b85b098aa6c781de498. Read the already-retained original artifact at relay12-download/playwright/run.wV0lNnPH/catalog-core/20261029T123255.788125320/playwright.log:80-105,125-128: CATV2:148 quick-price expected0/received3;1failed12notrun12passed. E3 causal RED only; not implementation acceptance. Fresh download failure is transport evidence, not a new CI outcome.
+
+BLOCKED_GATE_CONFLICT: current merged tests/admin/product-editor.acceptance.ts:595-658 requires quick-price/quick-stock click/save/reload/focus; tests/admin/catalog-v2-simplified.acceptance.ts:148-149 requires both absent. Both suites registered in catalog-core.spec.ts:101/311. Signed design DELIVERY.md simplify:18 requires compact rows and one Edit entry; fresh SHA256815d8b7a56ecd725c66286eee0d428b010e88b9a9c9756b695b85ef0e9a4007b. Fresh PR comments/reviews empty. Current card forbids weakening old gates and requires STOP on an outside-card gate blocker. No fixture/query/locale-specific UI bypass. Integrator must reconcile the old interaction acceptance with the signed design before implementation redispatch. Targeted code fix attempts0.
+
+No source/test edit, commit, push, merge-to-integration, auto-merge, or local tests/servers. Only evidence within output/catalog-v2-impl changed; outside-card authored paths none. Foundation40872482994/job123442803793 success applies to remote tests-only head; GREEN/implementation/remaining locale-state-density-persistence acceptance/E4 review/local runtime/PG/LIVE NOT_RUN. Humaux unavailable: store/canvas/coord NOT_RUN; local evidence is not shared-memory persistence. Author assessment E0. WAIT_RUN:none (all observed runs completed; no push). No live background process remains. Wake-up condition: integrator gate-authority decision, not another relay of the same failed required check.
+# FIX318 current recheck 2026-10-30
+# PR head c36ab5b434f02e103fdd60e802d82ff37b39d8a3; Gates40872483030 jobs123445416316/123457131946/123457272340 freshly read.
+# Browser artifact fresh download exit0: CATV2:148 quick-price expected0 received3;12passed1failed12did-not-run. E3 causal RED only.
+# Existing PE:595-658 requires both quick controls; CATV2:148-149 forbids both; both registered. BLOCKED_GATE_CONFLICT; no source edits or push.
+# Local cd9413a65 includes latest integration a050a17e9; merge Already up to date. Full evidence current-recheck-handoff.md and current-recheck-*.
+# GREEN/implementation/E4 NOT_RUN; WAIT_RUN:none. Humaux problem stored and own child canvas updated under acquired handoff lock.
+
+
+## FIX318 current-head recheck · 2026-10-29T16:54:54.373157+00:00
+
+claim_type: problem · project: live_commerce_architecture_v1 · module: catalog UI · date: 2026-10-30
+
+BLOCKED_GATE_CONFLICT. Fresh fetch/merge origin/r3/integration exit 0, Already up to date. Local HEAD cd9413a659bdb4f377dee2ab236cb5513e58c6c1 includes integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2; local merges remain unpushed. PR #318 head c36ab5b434f02e103fdd60e802d82ff37b39d8a3 is the tests-only batch. Inherited dirty/untracked files preserved.
+
+All current-head failed jobs freshly read, raw receipts fix318-latest-{bundle,receipts,required}.log: Gates run40872483030 attempt1; bundle123445416316 root failure PE12-17-TWD; receipts123457131946 and required123457272340 propagate browser failure. Tested synthetic merge bebeff21262ec9dd04ee29f23387e205dadec806. No apt/dpkg/mirror infrastructure failure identified; no rerun. Foundation40872482994/job123442803793 success on PR head is not implementation GREEN or acceptance of local HEAD.
+
+Fresh gh run download attempted with 50-second timeout; timed out, no successful fresh download claimed. Fresh GitHub artifact API:12896838030 gate-browser-product-editor, unexpired, head c36ab5b4, digest sha256:b463a86911dae8b86c5e1b102d6f948980b200a472597b85b098aa6c781de498. Existing relay-2-product-editor.zip matches that official digest; inspected original ZIP member directly and saved fix318-latest-browser-excerpt.log. New CATV2 assertion at tests/admin/catalog-v2-simplified.acceptance.ts:148 expects quick-price count0, received3; 1 failed,12 did not run,12 passed. E3 causal RED only.
+
+Current origin/r3/integration source tests/admin/product-editor.acceptance.ts:595-658 still requires real quick-price/quick-stock clicks, save, reload and focus. Current local catalog-v2-simplified.acceptance.ts:148-149 requires both controls absent. catalog-core.spec.ts:101/311 registers both in PRODUCT_EDITOR_ACCEPTANCE=1. Signed simplified design authority was read, SHA256815d8b7a56ecd725c66286eee0d428b010e88b9a9c9756b695b85ef0e9a4007b; row scope has one Edit entry. Fresh PR comments/reviews empty. No source-authority reconciliation supplied.
+
+STOP under card no-weaken / gate-conflict requirement. Integrator must reconcile legacy quick-editor acceptance with signed simplified rows. No fixture-conditioned alternate UI, test changes, source changes, new commit, push, merge-to-integration, auto-merge, or status posting. Targeted code fixes0. This relay writes only output/catalog-v2-impl evidence; outside-card authored files none.
+
+NOT_RUN: implementation, GREEN, remaining CATV2 locale/state/density/persistence acceptance, independent E4 review, all local tests/servers/browser/PG, LIVE/deploy. Author assessment E0. Humaux tools unavailable: coord/store/canvas NOT_RUN; this is a local handoff only. No child agents or background process remain. WAIT_RUN:none (existing runs completed; no new push). Resume requires integrator gate adjudication, rather than another relay of these same completed jobs.
+
+## FIX318 ruling applied to authority; additional protected acceptance conflict · 2026-10-30
+
+claim_type: problem · project: live_commerce_architecture_v1 · module: catalog UI · date: 2026-10-30
+
+The latest human dispatch explicitly supersedes the quick-price/quick-stock interaction steps in product-editor.acceptance.ts:595–658. The PREVIOUS blocker about authority to replace those steps is resolved. This handoff reports a DIFFERENT conflict outside that authorization; do not relay the old quick-editor adjudication again.
+
+Fresh fetch and merge origin/r3/integration 17328372dea91220050e9583259312e2db2e5d97 succeeded. Local head 7335d1b554031e29f8cd6dab519dbbe402118be7 (unpushed); merge has the required Codex trailer. Imported changes are integration-owned tests/admin/taiwan-cvs.spec.ts and generated browser ownership only; no authored source or test change. Prior dirty/untracked evidence preserved. No implementation push or new CI run.
+
+Current protected conflicts, read from this merged source:
+
+|Protected assertion|Conflict with the signed path|Required integrator decision|
+|---|---|---|
+|tests/admin/product-editor.acceptance.ts:454–462|Requires a visible Copy button INSIDE product-row and reload proving an additional product. The new ruling requires ONE Edit action per list row.|Choose the approved destination for Copy and authorize equal-strength real-click replacement; preserve persisted clone/count semantics.|
+|tests/admin/product-editor.acceptance.ts:1989–2019 and tests/admin/product-review.acceptance.ts:178–186|Requires the same row Copy button for lost-response and authorization-refusal/recovery gates. Merely removing Copy would delete safety coverage.|Approve moving these triggers with the same one-command/reload fence and refusal assertions; never remove recovery coverage.|
+|tests/admin/product-list-layout.acceptance.ts:34–37,47–67, called at product-editor.acceptance.ts:480|Unconditionally measures quick-price/quick-stock elements, their click-target size and numeric alignment. Removing quick editors leaves missing elements before the authorized replacement block runs.|Move geometry coverage to read-only prices/stock plus the sole Edit target; retain containment and 44px checks. This is beyond the explicitly named interaction block; focus/a11y migration alone does not resolve Copy.|
+|tests/admin/product-editor.acceptance.ts:552–583,668–683|Requires readiness toggle, direct price→save and full section-strip layout on edit; the signed editor uses task screens and review→save.|Reconcile these edit-specific assertions with signed review flow; preserve create and SKU-matrix coverage.|
+
+STOP under the explicit outside-card gate-conflict rule. No fixture/locale/query-conditioned UI, hidden quick editors, deleted assertions or weakened gate. Targeted code-fix attempts 0 of 2. No old→new assertion mapping is claimed implemented; all protected assertions remain unchanged. Needed ruling is the full list/editor acceptance migration boundary, especially Copy and its recovery tests, rather than permission for the already-authorized 595–658 replacement.
+
+Fresh GitHub receipt: PR318 head c36ab5b434f02e103fdd60e802d82ff37b39d8a3, Gates40872483030 completed/failure; browser bundle123445416316 and required123457272340 failed. Original artifact transcript relay-2-playwright.log records CATV2:148 quick-price expected0/received3,12passed1failed12notrun. E3 causal RED applies ONLY to that tests-only head/synthetic merge bebeff21262ec9dd04ee29f23387e205dadec806; it is not evidence of this newly identified static conflict or local implementation. Signed design source SHA256 freshly matches 815d8b7a56ecd725c66286eee0d428b010e88b9a9c9756b695b85ef0e9a4007b.
+
+NOT_RUN: implementation, GREEN, replacement assertions, current-head CI, local tests/servers/browser/PG, independent E4 review, LIVE/deploy. Humaux tools not exposed (discovery found no matching tools): shared store/coord/canvas NOT_RUN. This is a local handoff, not a Humaux store claim. No new process, artifact download or delegation. WAIT_RUN:none; no new push, integrator owns wake-up after acceptance reconciliation. Author assessment E0. Authored writes only output/catalog-v2-impl/{DELIVERY.md,red.log,fix318-latest-handoff.md}.
+
+---
+
+# FIX318 ruling recheck 2026-10-29T17:46:54.820646+00:00
+# PR318 head c36ab5b434f02e103fdd60e802d82ff37b39d8a3; Gates40872483030/job123445416316 causal RED; required123457272340 failure.
+# Original artifact12896838030 digest matched retained ZIP; original browser log reread. CATV2:148 expected0/received3.
+# Integration 17328372dea91220050e9583259312e2db2e5d97; local 7335d1b554031e29f8cd6dab519dbbe402118be7; no push. Separate Copy gate conflict remains; see fix318-latest-handoff.md. GREEN NOT_RUN; WAIT_RUN:none.
+FIX318 current dispatch recheck 2026-10-30: PR318 head c36ab5b434f02e103fdd60e802d82ff37b39d8a3; fresh checks and required123457272340/browser123445416316 logs confirm Gates40872483030 completed/failure. Existing original artifact relay-2-playwright.log:80-105: CATV2:148 expected quick-price0/received3. E3 causal RED only. Fresh fetch/merge exit0 Already up to date; local7335d1b554031e29f8cd6dab519dbbe402118be7 unpushed. Quick-editor migration authorized; separate protected Copy persistence/lost-response/authorization trigger conflict remains. No source/test changes, commit, push or local runtime; attempts0/2; GREEN NOT_RUN; WAIT_RUN:none. See DELIVERY.md current dispatch recheck. Humaux unavailable, shared store/canvas NOT_RUN.

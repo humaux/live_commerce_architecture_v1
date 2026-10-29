@@ -1,11 +1,12 @@
 // Purpose: Loads the selected catalog product and hosts its document editor.
-// Depends on: next/link, react, @live-commerce/i18n, @/lib/model, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-copy, @/lib/product-editor-copy, @/lib/use-product-leave-guard, ./WorkspaceFrame, ./AdminPageHeader, ./ProductDocumentForm, ./orders.css, ./ProductAdmin.css, ./ProductDocument.css
+// Depends on: next/link, react, @live-commerce/i18n, @/lib/model, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-copy, @/lib/product-editor-copy, @/lib/use-product-leave-guard, ./WorkspaceFrame, ./AdminPageHeader, ./ProductDocumentForm, ./CatalogSimplifiedEditor, ./orders.css, ./ProductAdmin.css, ./ProductDocument.css
 // Used by: apps/admin/app/[locale]/products/[product]/page.tsx
+// Invariants: server product scope; explicit view selection; dirty navigation and uncertain-write fences remain active.
 "use client";
 // Approved 03: one document form. The old PATCH/ProductVariants writer is retired.
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { catalogTaskCopy, type Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { readProduct } from "@/lib/catalog-v2-client";
@@ -18,6 +19,7 @@ import {
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { ProductDocumentForm } from "./ProductDocumentForm";
+import { CatalogSimplifiedEditor } from "./CatalogSimplifiedEditor";
 import "./orders.css";
 import "./ProductAdmin.css";
 import "./ProductDocument.css";
@@ -38,6 +40,16 @@ export function ProductEditor({
 }) {
   const c = catalogCopy[locale],
     creating = productID === "new";
+  // An explicit merchant choice, scoped to this store/session; never inferred from fixtures or locale.
+  const preferenceKey = `catalog-advanced:${store?.id ?? ''}`;
+  const [advanced, setAdvanced] = useState(false), [preferenceReady, setPreferenceReady] = useState(false);
+  useEffect(() => { try { setAdvanced(sessionStorage.getItem(preferenceKey) === 'true'); } catch { setAdvanced(false); } setPreferenceReady(true); }, [preferenceKey]);
+  function switchEditor() {
+    if (!beforeNavigate()) return;
+    const next = !advanced;
+    try { sessionStorage.setItem(preferenceKey, String(next)); } catch { /* the choice still works for this visit */ }
+    setAdvanced(next);
+  }
   const [navigation, setNavigation] = useState<ProductNavigationState>({
     dirty: false,
     locked: false,
@@ -76,7 +88,7 @@ export function ProductEditor({
       locale={locale}
       storeName={store?.name ?? c.list.noStore}
       active="products"
-      locked={navigation.locked}
+      locked={navigation.locked || (!creating && !advanced && navigation.dirty)}
       onBeforeNavigate={beforeNavigate}
     >
       <div
@@ -85,15 +97,21 @@ export function ProductEditor({
       >
         <AdminPageHeader
           locale={locale}
-          description={creating ? undefined : read.data?.name}
+          title={!creating && !advanced && read.data ? `${catalogTaskCopy[locale].editorTitle} · ${catalogTaskCopy[locale][read.data.status]}` : undefined}
+          description={advanced && !creating ? read.data?.name : undefined}
           actions={
+            <>
+            {!creating && <button type="button" data-testid="catalog-advanced-toggle" disabled={navigation.locked} onClick={switchEditor}>
+              {advanced ? catalogTaskCopy[locale].standard : catalogTaskCopy[locale].advanced}
+            </button>}
             <Link
               className="product-back"
               href={`/${locale}/products${store ? `?store=${store.id}` : ""}`}
               data-testid="product-back"
             >
-              {c.edit.back}
+              {creating || advanced ? c.edit.back : <svg aria-label={c.edit.back} role="img" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m14 5-7 7 7 7" /></svg>}
             </Link>
+            </>
           }
         />
         {leaveBlocked && navigation.locked && (
@@ -112,8 +130,11 @@ export function ProductEditor({
             </button>
           </div>
         )}
-        {read.status === "ready" && store && (
-          <ProductDocumentForm
+        {read.status === "ready" && store && preferenceReady && (
+          !creating && !advanced && read.data ? <CatalogSimplifiedEditor
+            key={`${store.id}:${productID}:${read.boundary}:simple`}
+            locale={locale} store={store} detail={read.data} boundary={read.boundary} onNavigationChange={setNavigation}
+          /> : <ProductDocumentForm
             key={`${store.id}:${productID}:${read.boundary}`}
             locale={locale}
             store={store}

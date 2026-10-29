@@ -14,6 +14,7 @@
 //   playwright.config.ts and --browser-product-media-v2 in scripts/dev/test-local.sh are integrator wiring.
 // PE-FIX-1 (owner report 2026-10-15) adds the media failure/recovery/editor-lock describe at the end of this file.
 // Status: BROWSER + REAL_PG evidence; MOCK IdP, synthetic TLS edge; no provider, no order placement, no payment.
+import { openAdvancedProductEditor } from "./catalog-document-driver";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
@@ -276,6 +277,7 @@ test.describe("PM-U product media v2", () => {
       "session established",
     );
     await page.goto(`${origin}/zh-TW/products/${product.id}?store=${store}`);
+    await openAdvancedProductEditor(page);
     const mainList = page.getByTestId("media-main-list");
     const detailList = page.getByTestId("media-detail-list");
     const skuList = page.getByTestId("media-sku-list");
@@ -748,6 +750,7 @@ test.describe("PE-FIX-1 media failure, recovery and editor lock", () => {
       .click();
     await page.waitForURL(`${origin}/**`);
     await page.goto(editorURL);
+    await openAdvancedProductEditor(page);
     await expect(page.getByTestId("media-detail-list")).toBeVisible();
     // The container renders before the first images GET resolves: wait for a real row so every later count starts from the loaded list.
     await expect(page.getByTestId("photo-row-detail").first()).toBeVisible();

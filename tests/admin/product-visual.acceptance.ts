@@ -1,6 +1,7 @@
 // Purpose: Assert and capture real product-editor layouts across modes, locales and viewport sizes.
 // Depends on: Playwright; Node evidence I/O; product-editor-copy; the caller's production Next/Go/isolated PG fixture.
 // Used by: catalog-core.spec.ts under --browser-product-editor; no DOM mutation or API substitute for UI clicks.
+import { openAdvancedProductEditor } from "./catalog-document-driver";
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -71,6 +72,7 @@ export function registerProductVisualAcceptance() {
       const result = page.getByTestId("product-save-result");
       await expect(result).toBeVisible();
       await result.locator('a[href*="/products/"]').click();
+      await openAdvancedProductEditor(page);
       await expect(page.getByTestId("product-save")).toBeEnabled();
       await page.reload();
       await expect(page.getByTestId("new-price-1")).toHaveValue("90");
@@ -188,6 +190,7 @@ export function registerProductVisualAcceptance() {
       const result = page.getByTestId("product-save-result");
       await expect(result).toBeVisible();
       await result.locator('a[href*="/products/"]').click();
+      await openAdvancedProductEditor(page);
       await expect(page.getByTestId("product-save")).toBeEnabled();
       existing.push(/products\/([0-9a-f-]{36})/.exec(page.url())![1]);
     }

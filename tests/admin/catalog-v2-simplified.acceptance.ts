@@ -300,6 +300,63 @@ export function registerCatalogSimplifiedAcceptance() {
         } finally { await saveLedger(ledger, info); }
       });
     }
+    test("CATV2 price edit keeps the historical order's server amount after reload (MOCK)", async ({ page }, info) => {
+      const ledger: Ledger = [];
+      try {
+        const f = await setup(page, 'en');
+        const orderID = id(90);
+        const otherWrites: string[] = [];
+        page.on('request', request => { if (request.url().includes('/api/stores/') && request.method() !== 'GET' && !new URL(request.url()).pathname.endsWith(`/products/${productID}/document`)) otherWrites.push(new URL(request.url()).pathname); });
+        // Synthetic placement-time projection. This tests frontend isolation, not PostgreSQL snapshot durability.
+        const historical = { order_id: orderID, created_at: '2026-10-27T00:00:00Z', updated_at: '2026-10-27T00:00:00Z', currency: 'TWD', total_minor: 128000,
+          commercial_state: 'CONFIRMED', fulfillment_state: 'MANUAL_UNASSIGNED', payment_state: 'CAPTURED', test_mode: false, work_state: 'READY',
+          refunded_minor: 0, refund_pending_minor: 0, pickup_source: null, payment_mode: 'card', collection_state: null,
+          cod_surcharge_minor: null, cod_collect_minor: null, source: 'storefront', order_number: `LC-${orderID.replaceAll('-', '').toUpperCase()}`,
+          recipient_masked: 'S***', delivery_kind: 'home', live_sessions: [] };
+        await page.route(`**/api/stores/${process.env.LC_BROWSER_STORE}/orders?*`, route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+          items: [historical], next_cursor: '', total: 1, sessions: [], counts: { all: 1, unpaid: 0, transfer_review: 0, ready_to_ship: 1, ready_to_consign: 0, shipped: 0, completed: 0, cancelled: 0 },
+        }) }));
+        const orderRow = page.getByTestId(`order-row-${orderID}`);
+        await page.getByTestId('nav-orders').click();
+        await expect(orderRow).toContainText('1,280');
+        await f.open(`/${productID}`);
+        await page.getByTestId('catalog-common-price').fill('1380');
+        await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+        await page.getByRole('button', { name: 'Confirm save', exact: true }).click();
+        await expect(page.getByRole('heading', { name: 'Product saved', exact: true })).toBeVisible();
+        await page.reload();
+        await expect(page.getByTestId('catalog-common-price')).toHaveValue('1380');
+        await action(ledger, page, 'existing order', 'click orders/reload', 'old server amount stays 1,280 after new price 1,380', async () => {
+          await page.getByTestId('nav-orders').click(); await page.reload();
+          await expect(orderRow).toContainText('1,280'); await expect(orderRow).not.toContainText('1,380');
+          expect(f.writes).toHaveLength(1); expect(f.writes[0].resource).toBe(`products/${productID}/document`); expect(otherWrites).toEqual([]);
+        });
+      } finally { await saveLedger(ledger, info); }
+    });
+    test("CATV2 concurrent committed-stock refusal rolls back every edit and keeps the input (MOCK 409)", async ({ page }, info) => {
+      const ledger: Ledger = [], c = signed.en;
+      try {
+        const f = await setup(page, 'en'); await f.open(`/${productID}`);
+        await page.getByTestId('product-name').fill(`${c.names[0]} unsaved`);
+        await page.getByRole('button', { name: c.variants, exact: true }).click();
+        await page.getByTestId('catalog-stock-0').click();
+        await page.getByLabel(c.total, { exact: true }).fill('6');
+        await page.getByRole('button', { name: c.checkStock, exact: true }).click();
+        await page.getByRole('button', { name: c.backEditor, exact: true }).click();
+        await page.getByRole('button', { name: c.review, exact: true }).click();
+        // Fixture preparation: another transaction commits more inventory after the user's check.
+        f.detail.skus[0].committed = 7;
+        await action(ledger, page, c.confirm, 'click/server 409', 'all edits refused; draft and quantity 6 remain editable', async () => {
+          await page.getByRole('button', { name: c.confirm, exact: true }).click();
+          await expect(page.getByRole('alert')).toBeVisible();
+          expect(f.detail.name).toBe(c.names[0]); expect(f.detail.skus[0].on_hand).toBe(8); expect(f.detail.version).toBe(1);
+          await page.getByRole('button', { name: c.continueEdit, exact: true }).click();
+          await expect(page.getByTestId('product-name')).toHaveValue(`${c.names[0]} unsaved`);
+          await page.getByRole('button', { name: c.variants, exact: true }).click(); await page.getByTestId('catalog-stock-0').click();
+          await expect(page.getByLabel(c.total, { exact: true })).toHaveValue('6'); expect(f.writes).toHaveLength(1);
+        });
+      } finally { await saveLedger(ledger, info); }
+    });
     test("CATV2 mobile density: all signed states, median 12 blocks / 100 characters, no state over 20 blocks", async ({}, info) => {
       const states = ["list", "active", "draft", "archived", "selected", "bulkReview", "bulkResult", "updated", "edit", "variants", "stock", "stockError", "media", "review", "saved"];
       const metrics = states.map((state) => ({ state, ...mobileDensity.get(state) }));
