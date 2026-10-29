@@ -99,7 +99,7 @@ test("CB11 customers list: table, phone last 3 only, search by name and phone di
   await expect(page).toHaveURL(/\/en\/customers/);
   await page.goto(`/en/customers?store=${store}`);
   await expect(page.getByTestId("customers-table")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy.en.customerList);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(en.people.title);
   const row = page.getByTestId(`customer-row-${main}`);
   await expect(row).toBeVisible();
   await expect(row).toContainText(`${en.phoneEnding} ${phoneTail}`);
@@ -132,8 +132,8 @@ test("CB11 customer detail: facts, orders, claims, consent; withdrawal is one ke
   await expect(page.getByTestId(`customer-order-${order}`)).toBeVisible();
   await expect(page.getByTestId(`customer-order-${order}`).getByRole("link").first()).toHaveAttribute("href", /\/en\/orders/);
   await expect(page.getByTestId("customer-claims").locator("tbody tr")).toHaveCount(1);
-  await expect(page.getByTestId("consent-marketing_messages")).toContainText(en.consentGranted);
-  await expect(page.getByTestId("consent-ads_personalization")).toContainText(en.consentGranted);
+  await expect(page.getByTestId("consent-marketing_messages")).toContainText(en.people.granted);
+  await expect(page.getByTestId("consent-ads_personalization")).toContainText(en.people.granted);
   await noSecrets(page);
 
   // withdrawal: exactly {purpose, channel}, one Idempotency-Key, 201, the UI shows the outcome after a re-read
@@ -149,8 +149,9 @@ test("CB11 customer detail: facts, orders, claims, consent; withdrawal is one ke
   expect(withdrawals[0].key).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
   expect(Object.keys(JSON.parse(withdrawals[0].body ?? "{}")).sort()).toEqual(["channel", "purpose"]);
   expect(JSON.parse(withdrawals[0].body ?? "{}")).toEqual({ purpose: "marketing_messages", channel: "meta_dm" });
-  await expect(page.getByTestId("consent-marketing_messages")).toContainText(en.consentNone);
-  await expect(page.getByTestId("consent-ads_personalization")).toContainText(en.consentGranted);
+  await expect(page.getByTestId("consent-marketing_messages")).toContainText(en.people.withdrawn);
+  await expect(page.getByTestId("consent-ads_personalization")).toContainText(en.people.granted);
+  await page.getByTestId("people-customer-tools").locator(":scope > summary").click();
   await expect(page.getByTestId("consent-history").locator("tbody tr")).not.toHaveCount(0);
   // the merchant can withdraw, never grant: no grant control exists (CD4)
   await expect(page.getByRole("button", { name: /grant|授予|授權|授权/i })).toHaveCount(0);
@@ -161,7 +162,10 @@ test("CB11 customer detail: facts, orders, claims, consent; withdrawal is one ke
     if (r.request().method() === "POST" && /\/exports$/.test(new URL(r.url()).pathname))
       exports.push({ key: keyOf(r.request().headers()), body: r.request().postData(), status: r.status() });
   });
-  const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("customer-download").click()]);
+  await page.getByTestId("customer-download").click();
+  await expect(page.getByRole("dialog")).toContainText(en.people.protected);
+  expect(exports).toHaveLength(0);
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: en.people.confirmDownload, exact: true }).click()]);
   expect(download.suggestedFilename()).toMatch(new RegExp(`^customer-${main.slice(0, 8)}[0-9a-f-]*\\.json$`)); // the Go header names the full id (D9); the page may shorten it
   const file = (await download.path())!;
   const doc = JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
@@ -179,6 +183,7 @@ test("CB11 customer detail: facts, orders, claims, consent; withdrawal is one ke
   await page.reload();
   await expect(page.getByTestId("customer-detail")).toBeVisible();
   await expect(page.getByText(en.unavailable)).toHaveCount(0);
+  await page.getByTestId("people-customer-tools").locator(":scope > summary").click();
   await expect(page.getByTestId("privacy-actions")).toBeVisible();
   await expect(page.getByTestId("privacy-actions").locator("tbody tr")).toHaveCount(1);
   await expect(page.getByTestId("privacy-actions")).toContainText(/export/i);
@@ -198,7 +203,7 @@ test("CB11 erase: typed confirmation, what is kept, refused while a payment is o
   await page.getByTestId("customer-erase").click();
   const dialog = page.getByTestId("erase-dialog");
   await expect(dialog).toBeVisible();
-  await expect(page.getByTestId("erase-kept")).toHaveText(en.eraseKept);
+  await expect(page.getByTestId("erase-kept")).toHaveText(en.people.eraseKept(1));
   const typed = page.getByTestId("erase-typed");
   const submit = page.getByTestId("erase-submit");
   await expect(submit).toBeDisabled();
@@ -211,7 +216,9 @@ test("CB11 erase: typed confirmation, what is kept, refused while a payment is o
   expect(posts).toHaveLength(0);
   await page.getByTestId("customer-erase").click();
   await typed.fill("");
-  await typed.fill("ERASE");
+  await typed.fill(await page.locator(".people-facts h2").innerText());
+  await expect(submit).toBeDisabled();
+  await dialog.getByRole("checkbox", { name: en.people.checked, exact: true }).check();
   await expect(submit).toBeEnabled();
   await submit.click();
   await expect(page.getByTestId("erase-problem")).toHaveText(en.errors.erasure_blocked);
@@ -227,8 +234,10 @@ test("CB11 erase: typed confirmation, what is kept, refused while a payment is o
   await expect(page.getByTestId("customer-detail")).toBeVisible();
   await expect(page.getByTestId("customer-erased")).toHaveCount(0);
   await page.getByTestId("customer-erase").click();
-  await expect(page.getByTestId("erase-kept")).toHaveText(en.eraseKept);
-  await typed.fill("ERASE");
+  await expect(page.getByTestId("erase-kept")).toHaveText(en.people.eraseKept(0));
+  await typed.fill(await page.locator(".people-facts h2").innerText());
+  await expect(submit).toBeDisabled();
+  await dialog.getByRole("checkbox", { name: en.people.checked, exact: true }).check();
   posts.length = 0;
   await Promise.all([page.waitForResponse((r) => /\/erasure$/.test(new URL(r.url()).pathname)), submit.dblclick()]);
   await expect(page.getByTestId("customer-erased")).toHaveText(en.erasedState);
@@ -237,7 +246,7 @@ test("CB11 erase: typed confirmation, what is kept, refused while a payment is o
   expect(posts[0].url).toContain(`/customers/${erasable}/erasure`);
   await page.reload();
   await expect(page.getByTestId("customer-erased")).toBeVisible();
-  await expect(page.getByTestId("consent-marketing_messages")).toContainText(en.consentNone);
+  await expect(page.getByTestId("consent-marketing_messages")).toContainText(en.people.withdrawn);
   await page.goto(`/en/customers?store=${store}`);
   await expect(page.getByTestId(`customer-row-${erasable}`)).toContainText(en.erased);
   await expect(page.getByTestId(`customer-row-${erasable}`)).toContainText(en.consentNone);

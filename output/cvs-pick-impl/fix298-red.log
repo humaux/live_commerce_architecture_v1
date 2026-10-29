@@ -1,0 +1,45 @@
+PR #298 head 32cc17cf1a6164a4093dd44b99ec33a35cebdbc4
+Gates run 40830596290 attempt 1; job 123306495317; synthetic checkout d9ba08f0e6f440b38d81252afc171afe828675e8
+Artifact 12879638106 gate-browser-password-auth, downloaded using gh run download.
+Existing CI failure, not a newly introduced assertion RED.
+
+
+Running 9 tests using 1 worker
+
+  ✘  1 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay (682ms)
+  ✓  2 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay (1.1s)
+  ✓  3 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN orders: expired re-auth CSV click opens dialog and downloads after one replay (1.0s)
+  ✓  4 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay (953ms)
+  ✓  5 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en orders: expired re-auth CSV click opens dialog and downloads after one replay (844ms)
+  ✓  6 tests/admin/oc/reauth.spec.ts:136:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay (887ms)
+  ✓  7 tests/admin/oc/reauth.spec.ts:240:1 › OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay, OIDC re-auth, routing and hints (1.0m)
+  ✓  8 tests/admin/oc/reauth.spec.ts:370:3 › OC-04 zh-CN desktop: the refused invite opens the localized dialog and is replayed once after password re-auth (941ms)
+  ✓  9 tests/admin/oc/reauth.spec.ts:370:3 › OC-04 en mobile: the refused invite opens the localized dialog and is replayed once after password re-auth (988ms)
+
+
+  1) tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay 
+
+    Error: page.goto: net::ERR_ABORTED at http://127.0.0.1:42663/zh-TW/
+    Call log:
+      - navigating to "http://127.0.0.1:42663/zh-TW/", waiting until "load"
+
+
+      118 |
+      119 | async function createStore(page: Page, locale: Locale) {
+    > 120 |   await page.goto(`/${locale}/`);
+          |              ^
+      121 |   const created = await page.evaluate(async () => {
+      122 |     const csrf = document.cookie.split(";").map((p) => p.trim()).find((p) => p.startsWith("__Host-commerce_csrf="))!.slice(21);
+      123 |     const r = await fetch("/api/onboarding/initial-store", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf, "Idempotency-Key": `oc4-${crypto.randomUUID()}` },
+        at createStore (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:120:14)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:141:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.CpD6FsJO/oc-20261029T070917.562740299/results/oc-reauth-OC-04-zh-TW-orde-d1e6f--downloads-after-one-replay/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.CpD6FsJO/oc-20261029T070917.562740299/results/oc-reauth-OC-04-zh-TW-orde-d1e6f--downloads-after-one-replay/error-context.md
+
+  1 failed
+    tests/admin/oc/reauth.spec.ts:136:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay 
+  8 passed (1.2m)

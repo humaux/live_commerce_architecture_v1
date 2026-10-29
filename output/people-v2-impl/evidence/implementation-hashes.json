@@ -1,0 +1,16 @@
+{
+  "apps/admin/app/[locale]/customers/[customer]/page.tsx": "3cce698a63b99bceefb862dc48fae4187f4e90a8aaa25b6721aec0720ad22334",
+  "apps/admin/components/Customers.tsx": "23e21a6df8d56282059a9f8ec2c8fe4e19264f345510c2edf89709340fa5de5f",
+  "apps/admin/components/CustomerDetail.tsx": "528f3c1d68f61721329ae7b0d97765bd224ccb3d9f95887c32a6a60d58a1eb3e",
+  "apps/admin/components/customers.css": "1d798d3005876d6083406c9ce7a5ec7fdb5c47355acc3ad52345a9255807c591",
+  "apps/admin/lib/customers-copy.ts": "81d9557d18909de6828f871da32ba77715bc6c7d472078ee49ffd0eaa42ee5d9",
+  "packages/i18n/src/people.ts": "38a886120211a42ad57a691a7f485bcdad6c0a47884eee6e8314d2d0288dd3da",
+  "packages/i18n/src/index.ts": "2935e7b97beea2509e5306bfb0cc74ee6cc6f70990106f44ee9144a0f4dfcd4d",
+  "tests/admin/people-v2.spec.ts": "df30036be948743d02685cad109b03678e7f5e1bb0b2beebc8c2ae610bc91293",
+  "tests/admin/customer-tags.spec.ts": "0eedc8dfb8ecc6876c90732bc37f6d80ccb3ea41306d2edcfe3bef0b657d9f3d",
+  "tests/admin/import-wizard.spec.ts": "4564d819c1879949573839dca3bcab193a14f2d178cadca4a043be98559c3435",
+  "tests/admin/customers-billing.spec.ts": "5d7f04f323b35c6de4b6aa29b65a1b7a8570b1f3dd302f5dca8f3ef2cbfaa2fa",
+  "tests/admin/customer-tags-scope.test.mjs": "e1b696d4a61533954d3523dcb133cdf50c81f19d068de5658a0009400372b88b",
+  "tests/admin/import-integration.test.ts": "fa2f3db8559201079435463a361bae126aa4e6758b391d6ef3c05fcc507afed6",
+  "tests/admin/w6-integration.test.ts": "5a71d9a3b4931612d4c0731d340a4f65c57059f17e9d0533294b12a791c6d689"
+}
