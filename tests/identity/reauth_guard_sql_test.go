@@ -3,7 +3,9 @@
 // reauth_required; a fresh session passes the guard; the owner role cannot be created (staff_invite, staff_set_role,
 // accepting an old owner invitation: PT403 owner_role_disabled); EXECUTE on identity.require_recent_auth is held by the
 // owners of the guarded definers and nobody else; plus the two OC-02 follow-ups of issue #215 (an OIDC re-auth never moves
-// authenticated_at backwards; a future or infinite authenticated_at is not recent).
+// authenticated_at backwards; a future or infinite authenticated_at is not recent) and the #228 follow-ups (the guard
+// carries interval '10 minutes' and precedes the first write/lock; 11-minute sessions are refused and 9-minute sessions
+// pass; an infinite authenticated_at cannot survive an OIDC re-auth).
 // Depends on: reauth_test.go (same package: disposable lc_foundation_test database, fixtures and helpers), migrations 0089
 // (staff), 0137 (platform Stripe), 0079 (billing), 0074 (ads), 0078 (privacy), 0147 (reports), post_river/0016 (refund), 0203.
 // Used by: go test ./tests/identity (CI shard:unit via scripts/dev/test-local.sh).
@@ -235,8 +237,39 @@ func TestGuardOG03OwnerRoleDisabled(t *testing.T) {
 	}
 }
 
-// OG04: each guarded definer calls require_recent_auth, and EXECUTE on it is held by commerce_identity_writer (its
-// owner), commerce_identity (0201) and exactly the owners of the guarded definers; PUBLIC never.
+// firstWriteOffset is the first INSERT/UPDATE/DELETE/FOR UPDATE/require_idempotency in a function definition, after
+// dropping whole-line "--" comments so a comment cannot satisfy (or trip) the ordering assertion.
+func firstWriteOffset(def string) (int, string) {
+	var b strings.Builder
+	for _, line := range strings.Split(def, "\n") {
+		if i := strings.Index(line, "--"); i >= 0 {
+			line = line[:i]
+		}
+		b.WriteString(line)
+		b.WriteByte('\n')
+	}
+	body := b.String()
+	best, token := -1, ""
+	for _, tok := range []string{"INSERT INTO", "UPDATE ", "DELETE FROM", "FOR UPDATE", "require_idempotency"} {
+		if i := strings.Index(body, tok); i >= 0 && (best < 0 || i < best) {
+			best, token = i, tok
+		}
+	}
+	return best, token
+}
+
+// guardCallEnd returns the end offset of the require_recent_auth(...) statement starting at start.
+func guardCallEnd(def string, start int) int {
+	tail := def[start:]
+	if end := strings.Index(tail, ");"); end >= 0 {
+		return start + end + 2
+	}
+	return -1
+}
+
+// OG04: each guarded definer calls require_recent_auth with the fixed 10-minute window, before its first write or
+// row lock (issue #228 item 2), and EXECUTE on it is held by commerce_identity_writer (its owner), commerce_identity
+// (0201) and exactly the owners of the guarded definers; PUBLIC never.
 func TestGuardOG04GuardPresentAndExecuteGrantsExact(t *testing.T) {
 	e := fixture(t)
 	ctx := context.Background()
@@ -247,8 +280,17 @@ func TestGuardOG04GuardPresentAndExecuteGrantsExact(t *testing.T) {
 			t.Errorf("%s: %v", sig, err)
 			continue
 		}
-		if !strings.Contains(def, "identity.require_recent_auth(") {
+		guard := strings.Index(def, "identity.require_recent_auth(")
+		if guard < 0 {
 			t.Errorf("%s does not call identity.require_recent_auth", sig)
+			owners[owner] = true
+			continue
+		}
+		if end := guardCallEnd(def, guard); end < 0 || !strings.Contains(def[guard:end], "interval '10 minutes'") {
+			t.Errorf("%s: require_recent_auth does not carry the fixed interval '10 minutes'", sig)
+		}
+		if write, tok := firstWriteOffset(def); write >= 0 && guard > write {
+			t.Errorf("%s: require_recent_auth() at %d comes after the first %q at %d; the guard must precede every lock/write", sig, guard, tok, write)
 		}
 		owners[owner] = true
 	}
@@ -328,5 +370,61 @@ func TestGuardOG06FutureOrInfiniteAuthenticatedAtIsNotRecent(t *testing.T) {
 	wantReauthRequired(t, "authenticated_at infinity", requireRecent(e, hash(infinite), "10 minutes"))
 	if err := requireRecent(e, hash(skew), "10 minutes"); err != nil {
 		t.Errorf("authenticated_at 10 s ahead (clock skew) must pass: %v", err)
+	}
+}
+
+// OG07 (issue #228 item 6): a session whose authenticated_at is infinity cannot stay infinite after a successful
+// OIDC re-auth: the GREATEST of the old value and the IdP auth_time is capped at the database clock.
+func TestGuardOG07OIDCReauthCapsInfiniteAuthenticatedAt(t *testing.T) {
+	e := fixture(t)
+	issuer, subject := "https://idp.oc03-cap.example/"+uuid(), "sub-oc03-cap"
+	tok := session(t, e, principal(t, e, issuer, subject))
+	mustExec(t, e.owner, `UPDATE identity.sessions SET authenticated_at='infinity' WHERE token_hash=$1`, hash(tok))
+	var outcome string
+	if err := e.id.QueryRow(context.Background(), `SELECT outcome FROM identity.complete_oidc_reauth($1,$2,$3,clock_timestamp()-interval '1 minute')`,
+		hash(tok), issuer, subject).Scan(&outcome); err != nil {
+		t.Fatalf("complete_oidc_reauth: %v", err)
+	}
+	if outcome != "REAUTHENTICATED" {
+		t.Fatalf("complete_oidc_reauth outcome = %q, want REAUTHENTICATED", outcome)
+	}
+	var infinite, capped bool
+	if err := e.owner.QueryRow(context.Background(), `SELECT authenticated_at='infinity',
+		authenticated_at <> 'infinity' AND authenticated_at <= clock_timestamp() FROM identity.sessions WHERE token_hash=$1`, hash(tok)).
+		Scan(&infinite, &capped); err != nil {
+		t.Fatalf("read authenticated_at: %v", err)
+	}
+	if infinite || !capped {
+		t.Errorf("after OIDC re-auth authenticated_at infinity=%v capped=%v, want false/true", infinite, capped)
+	}
+}
+
+// OG08 (issue #228 item 1): a session authenticated 11 minutes ago is refused by every guarded definer. A guard
+// widened to 60 minutes (or any window above 11) turns this red.
+func TestGuardOG08ElevenMinuteSessionRefusedByEveryDefiner(t *testing.T) {
+	w := newWorld(t, fixture(t))
+	setAuthAge(t, w.e, w.stale, "11 minutes")
+	for _, c := range guardCases() {
+		t.Run(c.name, func(t *testing.T) {
+			wantReauthRequired(t, c.name, w.call(t, c.sql, c.args(w, w.stale)...))
+		})
+	}
+}
+
+// OG09 (issue #228 item 1): a session authenticated 9 minutes ago passes every guard. A guard narrowed below 10
+// minutes turns this red.
+func TestGuardOG09NineMinuteSessionPassesTheGuard(t *testing.T) {
+	w := newWorld(t, fixture(t))
+	setAuthAge(t, w.e, w.stale, "9 minutes")
+	for _, c := range guardCases() {
+		t.Run(c.name, func(t *testing.T) {
+			err := w.call(t, c.sql, c.args(w, w.stale)...)
+			if isReauthRequired(err) {
+				t.Fatalf("%s: a 9-minute-old session was refused: %v", c.name, err)
+			}
+			if c.mustSucceed && err != nil {
+				t.Errorf("%s: 9-minute-old session: %v, want success", c.name, err)
+			}
+		})
 	}
 }

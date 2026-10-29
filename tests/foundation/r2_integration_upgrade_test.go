@@ -126,8 +126,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0204 (OC-12 inbox unread filter on social.list_conversations) adds one: 133 -> 134.
 	// 0205 (OC-05 per-store quick-start marker) adds one: 134 -> 135.
 	// 0206 (CVS-SNAP directory) adds one: 135 -> 136.
-	if len(r2) != 136 {
-		t.Fatalf("R2 migration set = %d files %v, want 136", len(r2), r2)
+	// 0207 (IDENT-P2: OIDC re-auth infinity cap; #215/#228) adds one: 136 -> 137.
+	if len(r2) != 137 {
+		t.Fatalf("R2 migration set = %d files %v, want 137", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
