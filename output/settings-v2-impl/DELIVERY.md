@@ -1,4 +1,59 @@
-# RVFIX #303 — P1 implementation attempt 1 (2026-10-29)
+# RVFIX #303 — SKU-response-loss RED phase (2026-10-30)
+
+Authority: current dispatched RVFIX instruction and the final P1 finding in
+`output/integrator/tools/logs/cxf-rv-303.log` (main checkout, read only), checked
+against `SettingsV2.tsx` and `settings-v2.ts` at d6982f50450006656d564bed16c218bb587c9858.
+Read AGENTS.md, architecture sections 0/1/2/26/27, existing task write paths and
+merchant-settings-wizard-v1.md. The repository code/contract remains the source
+of command behavior. Review reports are defect leads, not runtime acceptance.
+Fetched and merged origin/r3/integration a250dec75961364de166cdd50190f21d07ddccd0
+first, in merge 8583df4d2. Only the assigned worktree/branch is written.
+
+Root path: Reload calls load(true), replaces the cached setup stock with the
+new SKU's available 0, and only restores inventory/adjustments journals. A pending
+skus command therefore loses the quantity of its not-yet-executed stock command.
+The exact SKU command remains journaled; its eventual replay can succeed while
+stock initialization is skipped. This is static analysis (E0), not a local run.
+
+One tests-only push adds a preceding SKU fault to the existing single-session
+quick-setup journey: forward its real UI POST to PG, assert a successful matching
+receipt, then abort the browser response. All original assertions remain, in order.
+Reload and refresh must perform no writes and preserve stock 10. Explicit Save
+must replay the identical SKU key/body exactly once; the existing inventory-abort,
+explicit replay, saved-state and persisted-10 assertions then run unchanged.
+No implementation change before an own-assertion CI RED witness is read.
+
+|Page / control|Operation|Expected|Actual|
+|---|---|---|---|
+|Quick setup / Save|real click; commit SKU then lose reply|uncertain state; no stock write|PENDING CI|
+|Unavailable / Reload|real click, then refresh|reads only; pending stock 10 survives|PENDING CI|
+|Quick setup / Next controls / Review|real clicks|product, price and stock 10 retained|PENDING CI|
+|Review / Save|real click|same SKU key/body replay; inventory attempted|PENDING CI|
+|Existing inventory recovery / Save / refresh|existing real clicks|one committed initial quantity; persisted 10|PENDING CI|
+
+No visible UI/copy/locale/design changes: existing BOURDIEU, PROJECT UNDERSTANDING,
+MOBBIN → EAGLE, FIGMA OFFICIAL GUIDANCE sections, parity/copy tables and three-locale
+main-screen coverage remain below. No new imports/harness bindings or test timeout,
+fixture, threshold, exemption, baseline, dispatcher or gate-adapter changes.
+Browser ownership is regenerated last using the assigned static generator.
+Authored paths in this phase are the existing settings-v2 spec, this delivery,
+red.log and generated ownership; none outside the card. Integration merge inputs
+are upstream changes, not new work on other modules.
+
+RED/GREEN for the new SKU-loss regression: PENDING. Prior inventory RED and prior
+head GREEN do not accept it. P2 for issue: existing CAS recovery remains deferred
+in PR comment 6499957731; no P2 implementation. Author judgment E0; syntax only
+E1 after static checks. NOT_RUN: all local tests/servers (prohibited), new-head
+CI acceptance, implementation, independent review, providers/SANDBOX/LIVE/production.
+No background process or local fixture created. Integrator owns CI-completion
+relay; handoff records actual Gates/Foundation workflow ids after push, never a
+plan job as WAIT_RUN. Humaux/coord/canvas tools unavailable; no store/canvas update
+or shared-memory completion claimed. Preserve all pre-existing untracked files.
+Rollback point: revert this phase's tests-only commit on unit/settings-v2-ui.
+
+---
+
+# Historical RVFIX #303 — P1 implementation attempt 1 (2026-10-29)
 
 Authority: dispatched RVFIX card, REVIEW-303.md (hash below), current source at
 bc38a7bfa67eb73cd0b99cd36bd7a5a4f7de4c6e, and merchant-settings-wizard-v1.md

@@ -134,3 +134,18 @@ own-assertion RED, not fixture/compile/timeout-only failure. Serial test stopped
 there, so marker lost-response assertion was NOT_REACHED, not separately RED.
 Foundation 40895321668 / job 123522717118 passed only this tests-only head.
 Targeted implementation attempt 1 for both review P1 roots; GREEN pending.
+
+RVFIX #303 SKU-response-loss RED PHASE — 2026-10-30 (PENDING CI)
+Source under test: d6982f50450006656d564bed16c218bb587c9858, then freshly merged
+origin/r3/integration a250dec75961364de166cdd50190f21d07ddccd0 via 8583df4d2.
+New real-click regression forwards SKU creation to PG, verifies its successful
+matching receipt, then loses only the browser response. No inventory write has
+yet been sent. Reload + refresh + setup navigation must retain initial stock 10,
+explicit Save must replay the original SKU key/body, and existing inventory
+recovery must persist stock 10. Original assertions preserved in their order.
+No implementation change or actual new RED witness yet. This entry is a phase
+registration, not a fabricated failing result. Tests-only head and actual workflow
+run/job ids will be recorded in the PR comment and local handoff after push.
+Integrator relay must inspect the original failed job/artifact and append actual
+assertion evidence here before implementing the SKU-stage recovery fix.
+NOT_RUN: local tests/servers; new RED, GREEN, independent E4; SANDBOX/LIVE/production.

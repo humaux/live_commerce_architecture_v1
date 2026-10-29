@@ -161,9 +161,53 @@ export async function settingsV2Acceptance(page: Page, store: string) {
     inventoryCommands.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" });
     await route.abort("failed"); // MOCK transport loss BEFORE commit; product/SKU creation still uses REAL_PG.
   });
+  // The preceding SKU command can commit before its response is lost. Its
+  // unexecuted initial stock must survive recovery, not become the read balance.
+  const skuURL = `**/api/stores/${store}/skus`;
+  const skuCommands: Array<{ key: string; body: string }> = [];
+  await page.route(skuURL, async route => {
+    expect(route.request().method()).toBe("POST");
+    skuCommands.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" });
+    // Fault injection only: forward this real UI command to PG, then lose its
+    // response. This never creates a separate API mutation or synthetic receipt.
+    const committed = await route.fetch();
+    expect(committed.ok()).toBe(true);
+    expect(await committed.json()).toMatchObject(JSON.parse(skuCommands[0].body));
+    await route.abort("failed");
+  });
   const productSaved = page.waitForResponse(r => r.request().method() === "POST" && /\/api\/stores\/[^/]+\/products$/.test(new URL(r.url()).pathname));
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
   expect((await productSaved).ok()).toBe(true);
+  await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
+  expect(skuCommands).toHaveLength(1);
+  const originalSku = skuCommands[0];
+  expect(originalSku.key).toBeTruthy();
+  expect(inventoryCommands, "initial stock has not been submitted after the lost SKU response").toHaveLength(0);
+  await page.unroute(skuURL);
+  await page.route(skuURL, async route => {
+    skuCommands.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" });
+    await route.continue();
+  });
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(overview).toBeVisible();
+  expect(skuCommands, "Reload must not replay the SKU command").toEqual([originalSku]);
+  expect(inventoryCommands, "Reload must not initialize stock").toHaveLength(0);
+  await page.reload();
+  await expect(overview).toBeVisible();
+  await page.getByRole("button", { name: "Start quick setup", exact: true }).click();
+  await page.getByRole("button", { name: "Next: delivery", exact: true }).click();
+  await page.getByRole("button", { name: "Next: product", exact: true }).click();
+  await expect(page.getByLabel("Product name", { exact: true })).toHaveValue("Acceptance draft bag");
+  await expect(page.getByLabel("Price (TWD)", { exact: true })).toHaveValue("1280");
+  await expect(page.getByLabel("Stock (units)", { exact: true }), "a committed SKU with a lost response must retain the unexecuted initial stock across Reload and refresh").toHaveValue("10");
+  expect(skuCommands, "refresh and reopening setup must remain read-only").toEqual([originalSku]);
+  expect(inventoryCommands).toHaveLength(0);
+  await page.getByRole("button", { name: "Review settings", exact: true }).click();
+  await expect(review).toContainText("Stock (units): 10");
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
+  expect(skuCommands, "explicit Save must replay the identical SKU key and body exactly once").toEqual([originalSku, originalSku]);
+  await page.unroute(skuURL);
   await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
   expect(inventoryCommands).toHaveLength(1);
   const originalInventory = inventoryCommands[0];
