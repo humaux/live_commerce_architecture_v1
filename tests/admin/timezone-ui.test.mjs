@@ -76,12 +76,17 @@ test("Ads merchant timestamp uses Taipei at the year boundary", () => {
 });
 
 test("Design version published_at cell uses Taipei at the year boundary", () => {
+  const { Versions } = compile("apps/admin/components/DesignVersions.tsx", {
+    "@/lib/catalog-v2-copy": { catalogPresentationCopy: { "zh-TW": { tableScroll: "scroll" } } },
+    "@/lib/design-copy": { fill: () => "source" },
+  });
   const { __testVersions } = compile("apps/admin/components/Design.tsx", {
+    "./DesignVersions": { Versions },
     "@/lib/catalog-v2-copy": { catalogPresentationCopy: { "zh-TW": { tableScroll: "scroll" } } },
     "@/lib/design-copy": { fill: () => "source" },
     "@/lib/customers-client": {}, "@/lib/storefront-client": {}, "@/lib/design-client": {}, "@/lib/design-model": {},
     "@/lib/use-design-load": {},
-    "./DesignProfile": {}, "./DesignNav": {}, "./DesignSections": {}, "./DesignPages": {}, "./design.css": {},
+    "./DesignProfile": {}, "./DesignNav": {}, "./DesignSections": {}, "./DesignPages": {}, "./DesignSummary": {}, "./DesignDomains": {}, "./design.css": {},
   }, "\nexport { Versions as __testVersions };\n");
   const c = { versions: { help: "help", none: "none", version: "version", at: "at",
     live: "live", rollback: "rollback", kind: { publish: "published" } }, tabs: { versions: "versions" } };
