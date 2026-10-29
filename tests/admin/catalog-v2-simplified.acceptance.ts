@@ -330,7 +330,8 @@ export function registerCatalogSimplifiedAcceptance() {
         await page.reload();
         await expect(page.getByTestId('catalog-common-price')).toHaveValue('1380');
         await action(ledger, page, 'existing order', 'click orders/reload', 'old server amount stays 1,280 after new price 1,380', async () => {
-          await page.getByTestId('nav-orders').click(); await page.reload();
+          // nav-orders is a client-side router push; reload only after the orders URL commits, or it reloads the editor.
+          await page.getByTestId('nav-orders').click(); await expect(page).toHaveURL(/\/orders(?:[/?#]|$)/); await page.reload();
           await expect(orderRow).toContainText('1,280'); await expect(orderRow).not.toContainText('1,380');
           expect(f.writes).toHaveLength(1); expect(f.writes[0].resource).toBe(`products/${productID}/document`); expect(otherWrites).toEqual([]);
         });
