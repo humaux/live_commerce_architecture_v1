@@ -1,0 +1,9 @@
+Head bdb555c590319204bb1eb244ec41196c5facac0b
+Foundation40804532414/job123220179988
+foundation	Package docs and gate map are current	2026-10-29T02:17:07.9498822Z ✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (1023.013111ms)
+foundation	Package docs and gate map are current	2026-10-29T02:17:07.9744648Z test at tests/admin/shell-architecture.test.mjs:10:1
+foundation	Package docs and gate map are current	2026-10-29T02:17:07.9745853Z ✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (1023.013111ms)
+foundation	Package docs and gate map are current	2026-10-29T02:17:07.9748203Z   +   'apps/storefront/components/CvsStorePicker.tsx: fetch 1 > 0',
+foundation	Package docs and gate map are current	2026-10-29T02:17:07.9748974Z   +   'apps/storefront/components/OrderFlow.tsx: lines 863 > 854'
+foundation	Package docs and gate map are current	2026-10-29T02:17:07.9755069Z     actual: [ 'apps/storefront/components/CvsStorePicker.tsx: fetch 1 > 0', 'apps/storefront/components/OrderFlow.tsx: lines 863 > 854' ],
+foundation	Package docs and gate map are current	2026-10-29T02:17:07.9824142Z ##[error]Process completed with exit code 1.

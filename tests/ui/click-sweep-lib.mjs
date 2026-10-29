@@ -1,3 +1,7 @@
+// Purpose: shared G-UI8 click measurement, bounded page readiness, recovery and evidence ledgers.
+// Depends on: Node fs/promises, Playwright page/context APIs and the installed read-only __sweepHelpers.
+// Used by: click-sweep.mjs, visual-audit.mjs and click-sweep-lib.test.mjs.
+// Invariants: readiness shares the existing settle deadline; busy pages fail before heading/control checks; no DOM writes.
 // G-UI8 click-sweep library (owner rule 2026-10-03, docs/engineering/ui-architecture.md 10.6b): every check here is a REAL Playwright
 // interaction (locator.click / selectOption / check, no force, no dispatchEvent). page.evaluate is used ONLY to read/measure: it lists the
 // controls, reads their state and counts DOM mutations; it never changes a value, clicks or fires an event.
@@ -211,16 +215,29 @@ export const degradedMessages = (page) => safe(() => page.evaluate(() => window.
 export const pageState = (page) => safe(() => page.evaluate(() => window.__sweepHelpers.state()), { url: page.url(), mut: -2, layers: 0, layerNames: [], active: "", scrollY: 0, invalid: 0, ariaInvalid: 0, alerts: "", navigated: true });
 export const listControls = (page, rootSelector, scope, exclude = "") => safe(() => page.evaluate(([r, s, x]) => window.__sweepHelpers.enumerate(r, s, x), [rootSelector, scope, exclude]), []);
 
-// Wait until the page is quiet: no request in flight and no DOM mutation for `quiet` ms (bounded by `max`: a page that never settles is "noisy").
-export async function settle(page, mon, { quiet = 350, max = 6000 } = {}) {
+// Wait until the page is quiet, optionally also ready. A quiet loading placeholder is not a rendered page.
+// Readiness and quiet share `max`; a page that stays busy fails explicitly rather than crediting an empty control list.
+export async function settle(page, mon, { quiet = 350, max = 6000, ready = false } = {}) {
   const deadline = Date.now() + max;
-  let last = -9, since = Date.now();
+  let last = -9, since = Date.now(), busy = ready;
   while (Date.now() < deadline) {
     const st = await pageState(page);
-    if (st.mut !== last || !mon.idle()) { last = st.mut; since = Date.now(); }
+    // Read-only DOM measurement: root/descendant aria-busy plus visible loading status/skeleton markers.
+    if (ready) busy = await safe(() => page.evaluate(() => {
+      for (const main of document.querySelectorAll('main, [role="main"]')) {
+        if (main.matches('[aria-busy="true"]') || main.querySelector('[aria-busy="true"]')) return true;
+        for (const el of main.querySelectorAll('[role="status"], .sf-skel, [data-loading="true"], [data-skeleton]')) {
+          if (el.getClientRects().length > 0 && (el.matches('.sf-skel, [data-loading="true"], [data-skeleton]') ||
+            /loading|載入|加载|讀取中|读取中|正在讀取|正在读取/i.test(el.textContent ?? ""))) return true;
+        }
+      }
+      return false;
+    }), true);
+    if (busy || st.mut !== last || !mon.idle()) { last = st.mut; since = Date.now(); }
     else if (Date.now() - since >= quiet) return true;
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(Math.min(80, Math.max(0, deadline - Date.now())));
   }
+  if (busy) throw new Error(`page stayed busy after ${max} ms`);
   if (process.env.LC_SWEEP_DEBUG) console.log(`  dbg settle timeout url=${page.url().slice(-50)} mut=${last} inflight=${mon.idle() ? "idle" : "busy"}`);
   return false;
 }
@@ -381,13 +398,13 @@ export async function cancelLayer(page, mon) {
 
 // Back to the page state before the control: leave a layer by its cancel path, otherwise reload the unit URL ("reload if needed").
 export async function restore(page, mon, url, row) {
-  if (row.layer && !row.urlChanged) { if (await cancelLayer(page, mon)) { const st = await pageState(page); if (st.url === url) return "layer closed"; } }
+  if (row.layer && !row.urlChanged) { if (await cancelLayer(page, mon)) { const st = await pageState(page); if (st.url === url) { await settle(page, mon, { ready: true }); return "layer closed"; } } }
   // Let the click's own requests finish first: the effect loop above stops at the first DOM change, which for the storefront cart is the optimistic busy
   // state while the CAS write is still in flight. Reloading then aborts the write, the cart journals an UNKNOWN outcome ("check the previous attempt"), and
   // the next steps meet a recovery notice instead of the cart (slow CI runners; CI run 37426264136). Bounded by settle's own max.
   await settle(page, mon);
   await page.goto(url, { waitUntil: "domcontentloaded" }).catch(() => {});
-  await settle(page, mon);
+  await settle(page, mon, { ready: true });
   return "reloaded";
 }
 

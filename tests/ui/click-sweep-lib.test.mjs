@@ -1,10 +1,68 @@
 // Purpose: G-UI8 classification and media journey protocol regressions without starting a browser.
 // Depends on: Node assert/test, click-sweep-lib and the real J1 cover driver with controlled page/check doubles.
 // Used by: scripts/dev/test-node.sh and the click-sweep mode preflight.
+// Invariants: busy placeholders cannot earn readiness; recovery shares bounded waits; classification assertions remain unchanged.
 // Run by scripts/dev/test-node.sh and by `test-local.sh --browser-click-sweep` before any build.
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
+import { runInNewContext } from "node:vm";
+import { settle, restore } from "./click-sweep-lib.mjs";
 import { classKey, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, matchKnown, renderMarkdown, CANCEL_RE, protocolHrefOK } from "./click-sweep-lib.mjs";
+
+// A deterministic read-only DOM/clock double: no browser, timer sleeps or server.
+function readinessFixture(t, { readyAt = 1200, marker = "busy" } = {}) {
+  let now = 0;
+  t.mock.method(Date, "now", () => now);
+  const pending = () => now < readyAt;
+  const loading = {
+    textContent: marker === "status" ? "載入中…" : "",
+    getClientRects: () => [1],
+    matches: (selector) => marker === "skeleton" && selector.includes(".sf-skel"),
+  };
+  const main = {
+    matches: () => marker === "busy" && pending(),
+    querySelector: () => null,
+    querySelectorAll: () => pending() && marker !== "busy" ? [loading] : [],
+  };
+  const page = {
+    url: () => "https://shop.example.invalid/zh-TW/orders/order",
+    evaluate: async (fn) => runInNewContext(`(${fn.toString()})()`, {
+      window: { __sweepHelpers: { state: () => ({ mut: 0, layers: 0 }) } },
+      document: { querySelectorAll: () => [main] },
+    }),
+    waitForTimeout: async (ms) => { now += ms; },
+    goto: async () => { now = 0; },
+  };
+  return { page, mon: { idle: () => true }, elapsed: () => now };
+}
+
+for (const marker of ["busy", "status", "skeleton"]) {
+  test(`readiness: briefly quiet but still loading (${marker}) waits before assertions`, async (t) => {
+    const f = readinessFixture(t, { marker });
+    assert.equal(await settle(f.page, f.mon, { ready: true, max: 2000 }), true);
+    assert.ok(f.elapsed() >= 1200, "quiet DOM/network must not credit a still-loading page");
+    assert.ok(f.elapsed() <= 2000, "readiness must share the existing settle budget");
+  });
+}
+
+test("readiness: a page that stays busy fails explicitly within the bound", async (t) => {
+  const f = readinessFixture(t, { readyAt: Infinity });
+  await assert.rejects(settle(f.page, f.mon, { ready: true, max: 800 }), /page stayed busy/i);
+  assert.ok(f.elapsed() <= 800, "the busy page must not extend the bound");
+});
+
+test("readiness: recovery reload waits for the page, not just DOM/network quiet", async (t) => {
+  const f = readinessFixture(t);
+  assert.equal(await restore(f.page, f.mon, f.page.url(), { layer: false }), "reloaded");
+  assert.ok(f.elapsed() >= 1200, "recovery must not enumerate the loading placeholder");
+});
+
+test("readiness: initial and fresh-context navigations opt in before unchanged page assertions", async () => {
+  const source = await readFile(new URL("./click-sweep.mjs", import.meta.url), "utf8");
+  assert.match(source, /const open = async \(\) => \{[^]*?await settle\(cur.page, cur.mon, \{ ready: true \}\);/);
+  assert.match(source, /const quiet = await settle\(cur.page, cur.mon, \{ max: 8000, ready: true \}\);[^]*?const headings = await cur.page.locator\("h1, h2"\).count\(\);/);
+});
 
 test("storefront cart-line removal is reversible: clicked for real, not guarded", () => {
   for (const name of ["Remove Sweep Wool Scarf from the cart", "將 Sweep Wool Scarf 移出購物車", "将 Scarf 移出购物车"]) {

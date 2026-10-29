@@ -1,0 +1,38 @@
+/* Purpose: signed CVS sheet geometry, scrollable canonical rows and fixed confirmation.
+ * Depends on: storefront semantic tokens and native dialog top layer.
+ * Used by: CvsStorePicker only.
+ * Invariants: 44px controls, no clipped store facts, bounded mobile viewport. */
+.picker { width: min(640px, calc(100vw - 32px)); max-width: none; padding: 0; border: 1px solid var(--sf-line); border-radius: 12px; background: var(--on-accent); color: var(--sf-ink); }
+.picker::backdrop { background: rgb(0 0 0 / 38%); }
+.layout { display: flex; flex-direction: column; max-height: min(740px, calc(100dvh - 32px)); }
+.header { display: grid; gap: 12px; padding: 20px 20px 12px; }
+.title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.title h2 { margin: 0; font-size: 20px; }
+.title button { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; }
+.tabs, .brands, .region { display: flex; gap: 8px; }
+.tabs button { flex: 1; }
+.brands button { flex: 1; white-space: nowrap; padding: 8px 6px; font-size: 14px; }
+.picker button, .picker select { min-height: 44px; }
+.picker button[aria-pressed=true] { border-color: var(--accent-text); background: var(--sf-paper); }
+.header textarea { box-sizing: border-box; width: 100%; min-height: 60px; max-height: 140px; resize: vertical; font: inherit; }
+.region select { min-width: 0; width: 50%; font: inherit; }
+.results { overflow-y: auto; min-height: 90px; max-height: 320px; padding: 0 20px; overscroll-behavior: contain; }
+.results p { margin: 10px 0; }
+.row { display: flex; width: 100%; gap: 12px; text-align: start; align-items: flex-start; padding: 14px 12px; margin: 0 0 8px; border: 1px solid var(--sf-line); border-radius: 8px; background: var(--on-accent); color: inherit; }
+.facts { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; line-height: 1.5; }
+.facts strong { font-size: 15px; }
+.facts > span { font-size: 14px; color: var(--sf-mute); }
+.radio { flex: none; margin-top: 2px; width: 20px; height: 20px; border: 1px solid var(--sf-line); border-radius: 50%; }
+.row[aria-pressed=true] .radio { border: 6px solid var(--accent-text); }
+.match { background: transparent; color: var(--accent-text); text-decoration: underline; }
+.footer { display: grid; gap: 12px; padding: 12px 20px 20px; border-top: 1px solid var(--sf-line); }
+.footer small { font-size: 12px; color: var(--sf-mute); }
+.footer p { margin: 0; }
+.footer button { width: 100%; }
+@media (max-width: 600px) {
+  .picker { position: fixed; inset: 0; width: 100%; height: 100%; max-height: none; margin: 0; border: 0; border-radius: 0; }
+  .layout { height: 100dvh; max-height: none; }
+  .header { padding: 12px 16px; gap: 8px; }
+  .results { flex: 0 1 176px; max-height: 176px; padding: 0 16px; }
+  .footer { margin-top: auto; padding: 12px 16px max(16px, env(safe-area-inset-bottom)); }
+}

@@ -1,0 +1,53 @@
+{
+  "evidence": "E1 static only; all runtime tests NOT_RUN locally",
+  "checks": [
+    {
+      "command": [
+        "tsc",
+        "--project",
+        "apps/storefront/tsconfig.json",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 0,
+      "output_file": "cont298-static-tsc.log"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "apps/storefront/lib/cvs-directory-client.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "apps/storefront/lib/order-fields.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "apps/storefront/tests/cvs-picker.test.mjs"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": ""
+    }
+  ]
+}
