@@ -34,7 +34,7 @@ BEGIN
     SELECT x.balance_txn_id AS id,x.settle_currency AS cur,x.settle_net AS net FROM payments.settlement_lines x
      WHERE x.environment=p_environment AND x.txn_created_at>=p_window_from AND x.txn_created_at<p_window_to
     UNION ALL
-    SELECT y.balance_txn_id,y.settle_currency,y.settle_net FROM payments.settlement_unattributed y
+    SELECT y.balance_txn_id,y.settle_currency,(y.settle_amount-y.settle_fee) AS net FROM payments.settlement_unattributed y
      WHERE y.environment=p_environment AND y.txn_created_at>=p_window_from AND y.txn_created_at<p_window_to
       AND NOT EXISTS(SELECT 1 FROM payments.settlement_lines z WHERE z.balance_txn_id=y.balance_txn_id)),
    zs AS (SELECT cur,sum(net)::bigint AS net,count(*)::integer AS n FROM manifest_items GROUP BY cur),

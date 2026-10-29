@@ -1223,6 +1223,28 @@ func TestPlatformSettlementPF17Reconciliation(t *testing.T) {
 		}
 	})
 
+	// Unsupported row whose stored net is authoritative and differs from amount-fee (txn_C3, fresh window).
+	// 0150:361-363 saves amount-fee<>net as unsupported_type and 0150:467 stores the source net; the comparison must sum
+	// that stored settle_net, never re-derive amount-fee (100-5=95 != 90) or drop a NULL fee.
+	t.Run("PF17_amount_minus_fee_not_net", func(t *testing.T) {
+		c3 := gateRaw("txn_PF17C3", "stripe_fee", 100, pslI(5), gateAt(2026, 9, 23, 12))
+		c3.Net = 90 // Stripe's own net; amount-fee would be 95
+		from, to := gateAt(2026, 9, 23, 0), gateAt(2026, 9, 24, 0)
+		g.sync(t, from, to, []stripe.BalanceTransaction{c3}, []stripe.BalanceTransaction{c3})
+		run := g.latestRun(t)
+		if got := g.reconOf(t, run); got.diff != 0 || got.stripe != 90 || got.recorded != 90 || got.stripeCount != 1 || got.recordedCount != 1 {
+			t.Fatalf("C3 alone %+v, want 0 90/90 1/1 (stored settle_net, not amount-fee=95)", got)
+		}
+		var fee, net int64
+		var reason string
+		if err := g.f.owner.QueryRow(context.Background(), `SELECT settle_fee,settle_net,reason FROM payments.settlement_unattributed WHERE balance_txn_id='txn_PF17C3'`).Scan(&fee, &net, &reason); err != nil {
+			t.Fatal(err)
+		}
+		if fee != 5 || net != 90 || reason != "unsupported_type" {
+			t.Fatalf("C3 settle_fee=%d settle_net=%d reason=%s, want 5/90/unsupported_type", fee, net, reason)
+		}
+	})
+
 	// Overlap supersession in its own database: a wider legacy clean run cannot mask r1, and a partial clean repair cannot
 	// erase r1 over the remaining dirty segment.
 	t.Run("PF17_overlap_supersession", func(t *testing.T) {
