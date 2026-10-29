@@ -640,6 +640,7 @@ export default function CheckoutFlow({
               >
                 <h2 id="quote-title">{copy.lines}</h2>
                 <CheckoutQuoteAmounts quote={quote} locale={locale} money={money} />
+                <p>{copy.unpaid}</p>
                 {/* storefront-v2 §F: discount code; re-quotes this cart + delivery through writePurchase and replaces the quote. */}
                 {!orderLocked && error !== "session" && (
                   <PromoCode context={context} quote={quote} locale={locale} busy={busy || pending} run={act} onQuote={acceptQuote} money={money} />

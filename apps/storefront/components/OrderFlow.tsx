@@ -204,8 +204,15 @@ export default function OrderFlow({
         setHeadLoaded(true);
         if (current?.kind === "home" && current.country === country) {
           setFields(fieldsOf(current));
-          setNotice("recovered");
-        } else setNotice(null);
+          setNotice((notice) => notice === "failed" ? notice : "recovered");
+        } else setNotice((notice) => notice === "failed" ? notice : null);
+      } catch {
+        if (version === live.current) setNotice("failed");
+      }
+    })();
+    // Options must not wait for the destination head: their controls affect page height.
+    void (async () => {
+      try {
         if (!quote) return;
         let found: Option | undefined,
           cursor = "";
@@ -369,6 +376,7 @@ export default function OrderFlow({
   return (
     <section
       className="address-section"
+      hidden={!!quote && !option && !recoveringDestination && notice !== "failed"}
       data-testid="address-section"
       aria-labelledby="address-title"
     >
@@ -542,10 +550,10 @@ export default function OrderFlow({
         </div>
       )}
       {codError && <p role="alert" data-testid="cod-checkout-error">{codError}</p>}
-      {quote && <CheckoutReview locale={locale} quote={quote} destination={confirmed ?? head} fee={codFee} timing={timing}
+      {quote && <CheckoutReview locale={locale} quote={quote} destination={confirmed} fee={codFee} timing={timing}
         method={paymentMode === "bank_transfer" ? bank.payBank : paymentMode === "cash_on_delivery" ? cod.orderTitle : paymentMode === "pay_at_pickup" ? cvsCopy[locale].createPickup : bank.payCard}>
           {!cvsOption && option && <CheckoutPaymentChoices locale={locale} quote={quote} option={option} modes={paymentChoices}
-            selected={paymentMode} disabled={busy || blocked || expired} money={money} onChange={(mode) => {
+            selected={paymentMode} disabled={busy || blocked || expired || !headLoaded} money={money} onChange={(mode) => {
               try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, mode); }
               catch { setOption(null); setNotice("failed"); return; }
               setPaymentMode(mode);

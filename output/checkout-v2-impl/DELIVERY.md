@@ -124,3 +124,58 @@ Static E1: node --check promotions-gate.mjs, strict tsc --noEmit --incremental f
 Source scope: two new checkout siblings, CheckoutFlow, previously authorized OrderFlow, CheckoutReview and storefront copy facade. packages/i18n/src/checkout.ts is explicitly required by this fix dispatch. Relative to the original card, promotions-gate.mjs (ADD-only confirm adaptation) and generated output/ci-select-backend-browser/browser-ownership.json must be reviewed by the integrator as the declared path extension. Evidence lives under output/checkout-v2-impl. All original next-startup gate assertions, fixtures, ceilings, exemptions, contractdrift baseline and route-table dispatchers remain unchanged.
 
 Fix-1 gate: this PR's own exact-head Foundation + Gates, including original buyer/order/claim language/radio clicks, promotions confirmation, checkout3locale and persistence suites. Existing recorded causal RED is retained; this is the single authorized repair batch, not a new tests-only cycle. Author assessment E0, static E1; GREEN/independent review remain PENDING. NOT_RUN: local tests/server/browser/Go/PG/runtime gates, SANDBOX/LIVE/provider/production, runtime density and new Figma work. Integrator relays a fresh session on the new workflow conclusions; bounded CI observation <=10min and no detached process. Rollback: revert this fix commit; no production changes.
+
+## CONT #273 · current-head root causes · 2026-10-29
+
+Dispatched continuation; second targeted repair batch. Current RED head9919a3e393d9ffce6485c7ed42755fec6626fdc0, Gates40749460713, synthesized merge f327c2adfe3a9bc39ba837b151c81f9bdbaf99e6. Read all six failed jobs and downloaded all four relevant browser artifacts. Exact job mapping: red.log; both-engine raw errors: cont-failures.log. Foundation40749460453/job123031931976 passed **that old head only**. This delivery makes no current GREEN or acceptance claim.
+
+Merged integration2bc6d482606a2b0583af15789086fdad727b27ec into this lane as b3cb130f39053c90d45258c0c6981c5601c388da. Regenerated the sole browser-ownership conflict; retained upstream changes. Rollback repair by reverting the implementation commit containing this section to b3cb130f3; no production operation.
+
+Buyer had lost the existing localized unpaid quote fact; restored purchaseCopy.unpaid beside the authoritative quote, keeping every original browser assertion verbatim/in order. Claim's recovery **action locator** used the obsolete label; update it to the signed v2 query label and additionally assert disabled submission and exact visible query wording. No existing assertion, threshold, fixture or exemption changed.
+
+Order's destination completion appended payment-choice geometry after the footer language target was positioned (Chromium +126.796875px). Options and destination now load independently. Ordinary address content waits until server option geometry is available; destination recovery still permits explicit metadata-intent replacement while options are delayed. A destination failure cannot be erased by the other request's completion. Payment radios stay disabled until head validation. The editable final recipient review shows the explicitly confirmed destination, so loading an unconfirmed head does not append recipient paragraphs or display stale recipient text after an edit. Read-only pending review keeps its existing original-intent destination-ID binding. Current BO01 desktop/mobile exact-position checks and R2 delayed-options/address race assertions are unchanged.
+
+### CONT UI PROCESS · Bourdieu
+
+Q1 existing unpaid fact and clear query action preserved; Q2 no new step; Q3 confirmed same-source recipient and payment timing retained; Q4 CVS selector unchanged; Q5 original desktop/mobile stability gate retained; Q6 aesthetics UNKNOWN until owner. Novice/expert remains task experience only. Source assessment E1, real interaction PENDING exact-head CI.
+
+### CONT UI PROCESS · Project understanding
+
+Read AGENTS.md; architecture §§0/1/2/26/27 (evidence, server authority, scope, independent acceptance), buyer-checkout-v1 Decisions (durable original intent and immutable snapshots), buyer-payment-ui-v1 Shared order entry/controller (never infer payment), current OrderFlow/CheckoutFlow and all failing original browser paths. Read signed checkout design entry and state contract in the design lane's output/ux-checkout/DELIVERY.md (reference only, not current product status). Its explicit re-confirmation and UNKNOWN query naming govern this repair. Current status comes solely from current source and exact-head CI, never historical output. No payment transport/contract/migration change.
+
+### CONT UI PROCESS · Mobbin → Eagle
+
+Retains the original card's module folder MVQL9YPJVZ5FT and reference provenance above: Thrive Market MVNM2RJ3M6VBW for grouped review; Selfridges MVOVHC45BTJIX for stable amount/commitment hierarchy. No new reference or visual pattern introduced. No Mobbin import needed; no reference image/brand/fact copied.
+
+### CONT UI PROCESS · Figma official guidance
+
+Retains original FIGMA-GUIDE G1 layout, G4/G5 state and recovery, G6 same-source bindings as documented above; no Figma write, frame change or new official-guidance research. Runtime position/real-click verification is GitHub CI only. Figma copy lint/density NOT_RUN (no design frames changed).
+
+### CONT required desktop / mobile / review parity
+
+| Required fact | Desktop + mobile editable review | Pending/review state |
+|---|---|---|
+| Recipient name + phone | Explicitly confirmed server destination; source preserved | Existing original-intent ID-matched server snapshot |
+| Home address / selected CVS | Same confirmed snapshot | Existing matched snapshot; never substitute a different head |
+| Subtotal, shipping, fee, total | Existing server fields, no arithmetic | Existing quote/original attempt |
+| Payment choice + timing | Server options, disabled until head ready; fixed bar retained | Read-only original timing; disabled submit |
+| Payment not taken | Existing purchaseCopy.unpaid restored in quotation, all3locales | Never claims capture/order success |
+
+Existing three-language review/help/radio/refresh/fixed-submit suite and all original BO05/storage/revoked assertions remain. No new visible string: restored existing fact uses these existing entries:
+
+| zh-TW | zh-CN | en |
+|---|---|---|
+| 尚未付款 | 尚未付款 | Not paid |
+| 查詢訂單狀態 | 查询订单状态 | Check order status |
+
+### CONT click ledger and gate
+
+| Page/control | Real operation | Expected | Current result |
+|---|---|---|---|
+| Buyer quote/locale/refresh | Existing quote click, language click, refresh | Not paid and quote remain visible | RED missing fact; repaired CI PENDING |
+| Order footer locale, desktop/mobile | Held destination GET then real click/tap | Exact target position unchanged, navigation succeeds | RED layout shift; repaired CI PENDING |
+| Claim pending recovery | Existing new-claim navigation then query click | No new redeem, disabled submit, original order displayed | RED old name; repaired CI PENDING |
+
+Evidence: cont-static.log and cont-hashes.txt. TypeScript strict/noEmit/incrementalfalse, node --check, diff check exit0; E1 only. No component import changes; every matching harness enumerated. Generated ownership53modes updated in same batch. No Go dependency changes require depmap regeneration. In-module scope extension: tests/storefront/claim-checkout.mjs compatibility action + stronger assertions; generated output/ci-select-backend-browser/browser-ownership.json required by card. Record both in integrator ledger. No other new source scope.
+
+NOT_RUN: local tests/servers/browser/PG/runtime, provider SANDBOX/LIVE, production, independent review and runtime density. GREEN PENDING new push. Integrator relays a fresh session upon the recorded Gates/Foundation WAIT_RUN conclusion; no >10minute polling or silent background process. No merge, auto-merge, force push, statuses or production action.

@@ -35,3 +35,15 @@ Gates40714216874 job122974825473: buyer/order footer locale link clicks intercep
 Gates40714216874 job122974825642: promotions-gate254 create-order disabled because changed total not yet explicitly confirmed.
 Preserved raw failed logs and relevant browser artifact text; fix1 DELIVERY details retrieval limits.
 Fix-1 is one repair batch after recorded causal tests-only RED; no assertion weakening or extra local verification.
+
+CONT #273 current-head RED, read 2026-10-29 (second targeted repair batch)
+PR head 9919a3e393d9ffce6485c7ed42755fec6626fdc0; Gates40749460713 tested synthetic merge f327c2adfe3a9bc39ba837b151c81f9bdbaf99e6.
+Read every failed job via gh run view 40749460713 --log-failed --job <id>:
+123156510022 bundle01 buyer: original visible Not paid assertion fails (v2 dropped existing localized quote fact).
+123156510329 bundle02 order: stableLocaleTarget original strictEqual top2973.15625 vs3099.953125 fails; asynchronous payment controls add126.796875px after the held destination read.
+123156510841 bundle04 claim: 17 preceding scenarios pass; final real recovery click times out on old button name確認上一次的結果; actual query button查詢訂單狀態.
+123156510961 WebKit: same three suites fail, other WebKit suites pass.
+123172965803 receipts: four modes marked FAIL;123173249921 required: gate/receipts failure propagated.
+Downloaded gate-browser-buyer, gate-browser-order, gate-browser-claim-checkout, gate-browser-webkit with gh run download; original raw browser logs copied into cont-failures.log (both engines). All owned raw downloads remain under cont-273/.
+Historical tests-only causal RED40665214452/jobs122784411665,122784411546 remains unchanged; CONT reuses already failing original assertions and batches fixes in one push as dispatched. No new local test run, mutation, or duplicate RED push.
+GREEN for continuation: PENDING; use this new push's own CI only.
