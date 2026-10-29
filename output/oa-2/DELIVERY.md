@@ -7,11 +7,22 @@
 - Status: **BLOCKED on the integrator-assigned migration and composition paths**.
   This is not OA-2 acceptance and not dispatch activation.
 
+## Task record
+
+- Role: integration_worker (backend); model: deepseek-flash; reasoning: harness default.
+- Base SHA: `7ce347b70` (RED), synced with `origin/r3/integration` `d8093bc43` by merge `3cb6787a`.
+- Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/oa-2`.
+- Allowed write paths: `internal/inbox/order_attempt_notification*.go`,
+  `internal/integrations/metareply/order_attempt*.go`,
+  `tests/foundation/order_attempt_notification*.go`, `output/oa-2/**`.
+  `output/ci-select-backend-browser/browser-ownership.json` was regenerated only to
+  register the new test file (hash-checked by `scripts/dev/derive-browser-ownership.mjs`).
+
 ## What is implemented
 
 | File | Content |
 | --- | --- |
-| `internal/integrations/metareply/order_attempt.go` | Frozen C3/C4 command and result DTOs for OA-3; one-permit dispatch state machine; ambiguous-outcome handling; stale-generation error mapping; lease sweep; `NotRetryable` hook; reminder semantic/intent keys; pgx coordinator seam calling the requested definers. |
+| `internal/integrations/metareply/order_attempt.go` | Frozen C3/C4 command and result DTOs for OA-3; one-permit dispatch state machine; ambiguous-outcome handling; stale-generation error mapping; lease sweep; `NotRetryable` hook; reminder semantic/intent keys; pgx coordinator seam for the five requested C3/C4/sweep definers. |
 | `tests/foundation/order_attempt_notification_dispatch_test.go` | MODEL tests: one permit, duplicate job zero calls, accepted-then-disconnected → DELIVERY_UNKNOWN, stale generation refusal, M4 retry refusal for READY/VOID/FAILED_FINAL/DISPATCHING/ACCEPTED/UNKNOWN, M2a/M2b cancel-before-C3 zero calls, M7 sweep, reminder key isolation/replay, dispatch-mode VOID refusal. |
 | `output/oa-2/SQL-REQUEST.md` | Exact schema delta, definer signatures/lock order, grants, and the composition paths the integrator must assign. No migration number is invented. |
 
@@ -40,9 +51,12 @@ cancel, reminder or scheduler path is edited.
   `undefined: metareply.OrderPaymentClaim`. Gates run `40844363876` failed on the
   same compile break. This is a tests-first API-absence RED, **not** a behavioral
   assertion and not E3.
-- IMPL: **MODEL_ONLY** (`order_attempt.go` + the model tests). The GREEN run id is
-  recorded in PR #305 once the implementation push completes. E3 remains NOT_RUN:
-  no REAL_PG, ACL, lock-barrier, mutation or scheduler receipt exists.
+- IMPL: **MODEL_ONLY** at `5edaaa082`. Foundation checks run `40849140762`
+  (SUCCESS, 09:22:37Z→09:31:02Z) and Gates run `40849140547` (SUCCESS,
+  09:22:37Z→09:59:05Z; plan/build, shards unit/g01–g10 and browser-e2e,
+  receipts, required). The nine model tests are in the catch-all g10 per the
+  Foundation shard-plan log. E3 remains NOT_RUN: no REAL_PG, ACL, lock-barrier,
+  mutation or scheduler receipt exists, so this is not OA-2 acceptance.
 
 ## NOT_RUN
 
