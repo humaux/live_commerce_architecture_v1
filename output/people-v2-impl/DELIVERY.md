@@ -653,3 +653,41 @@ Next integrator action: resolve or reassign OC blocker under the card hard STOP.
 P2 issue batching remains in PR comment 6485713106: definite export refusal hidden outside active modal; page-size count labeled as total. No new outside-PLAN path authored; prior in-module extensions remain listed in PR body. Only assigned card evidence changed here. Humaux search/store/canvas/coord/index/link unavailable; no shared-state write claimed.
 
 WAIT_RUN: 40803107511 (workflow in progress; target privacy job has finished). Integrator relays final conclusion and OC disposition in a fresh session. No local tests, servers, browsers, builds, production actions, merge, auto-merge or background processes left. Final GREEN and independent acceptance NOT_RUN/PENDING.
+# CONT289 relay 8 — destination disclosure race
+
+Current pre-repair head: `bd45be307e407ba2bd665925cfc867f898935c81`.
+Required fetch/merge exited 0, already up to date. GitHub Gates `40828788718`,
+bundle07 job `123300007913` failed at synthetic merge
+`88476ab5c25f8c0fe9b60f5a6733aa071eb80fb2`. This was the sole failed job
+when read; bundle08 and other jobs were still running. `gh run view --log-failed`
+refused logs while the workflow was in progress, so the completed job's original
+REST log was retrieved instead. Both browser artifacts were downloaded with
+`gh run download`; compact excerpts, trace events and original hashes are in
+`evidence/relay8-root-cause.log`.
+
+The current-head customers artifact confirms 32/32 customer/PEOPLE tests passed;
+the migration-import artifact confirms 15/15 passed (E3 for those executed cases).
+The W6 customer suite failed its unchanged expansion assertion at
+`customer-tags.spec.ts:50`, called from the customer link / Back journey. Its trace
+shows the helper read `people-list-tools` already open immediately after clicking
+the customer link, skipped the click, then asserted against the new, closed
+`people-customer-tools`. This is a test destination-selection race, not a failed
+merchant click or hydration reset. No previous repair attempt targeted this cause.
+
+First targeted repair: every tools caller explicitly selects list or customer
+tools. The helper waits for that destination, performs the original real summary
+click when closed, and retains the exact expansion assertion. Original behavioral
+assertions, timeouts, retries, fixtures and product source are unchanged.
+Browser ownership was regenerated (53 modes); no dependency graph change.
+`node --check tests/admin/customer-tags.spec.ts` exited 0 (E1).
+Rollback checkpoint: `bd45be307e407ba2bd665925cfc867f898935c81`.
+
+Privacy negative-control RED remains `40803107511 / 123216904686`; review P1's
+causal evidence is recorded, while final-head GREEN and independent acceptance
+remain PENDING. Both P2 findings remain assigned to integrator issue batching.
+No additional outside-PLAN paths in this relay (`customer-tags.spec.ts` was
+already listed under the card's same-admin preapproval). Humaux/coord/canvas and
+code-index/link tools are unavailable: no shared-state write claimed.
+NOT_RUN: local tests/builds/servers/browser, tsc, independent runtime review,
+LIVE/production. Author assessment E0. Integrator relays new workflow conclusions;
+new head/run IDs belong in the PR comment, without an evidence-only follow-up push.

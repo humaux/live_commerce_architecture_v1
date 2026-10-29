@@ -44,7 +44,7 @@
     "tests/admin/customer-tags-scope.test.mjs": "e1b696d4a61533954d3523dcb133cdf50c81f19d068de5658a0009400372b88b",
     "tests/admin/customer-tags-ui.test.mjs": "3003a9c9d960f233e6e757e4e1570cf9c2d0ecffe690d5ecaee45bdb59472525",
     "tests/admin/customer-tags-write.test.mjs": "e7814246a33ae277ffb7a8e74fff7c4e3d0454c4b0780868fc42503ced02c023",
-    "tests/admin/customer-tags.spec.ts": "0eedc8dfb8ecc6876c90732bc37f6d80ccb3ea41306d2edcfe3bef0b657d9f3d",
+    "tests/admin/customer-tags.spec.ts": "a1ddf6018f77ad48860c313ca66f60e4e9952238b529f5cb1879020d06524cfa",
     "tests/admin/customers-bff.test.ts": "d0858c7ed73323e1761e51bf3d38cc644d19cfaa95ef81992f9fc3105ec2110e",
     "tests/admin/customers-billing.spec.ts": "5d7f04f323b35c6de4b6aa29b65a1b7a8570b1f3dd302f5dca8f3ef2cbfaa2fa",
     "tests/admin/customers-model.test.ts": "87406512c886a9cdef3fd27d63c66070702ab65fbc998584422b0cb6de89e6f3",
