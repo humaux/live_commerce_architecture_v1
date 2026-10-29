@@ -1,0 +1,10 @@
+CONT #273 local STATIC only, 2026-10-29
+node --check tests/storefront/claim-checkout.mjs: exit0
+git diff --check: exit0
+Initial tsc with root dependencies only: exit1 (unresolved React/Next/i18n app dependencies; no source workaround).
+tsc --noEmit --incremental false -p apps/storefront/tsconfig.json with read-only existing root+storefront dependency links: exit0.
+No dependency install or lockfile change; owned links removed after checking.
+node scripts/dev/derive-browser-ownership.mjs: exit0,53modes; generated after integration merge, same batch as browser spec change.
+No import added/renamed; all four source-reader harness/allowlist paths enumerated. No new injected global or module allowlist.
+No Go dependency change; dependency-map unchanged by repair, upstream generated map retained in merge.
+Local tests/servers/browser/PG/runtime gates NOT_RUN by instruction. Source evidence E1; author assessment E0.
