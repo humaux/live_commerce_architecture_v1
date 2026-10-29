@@ -1,4 +1,4 @@
-RVFIX #315 — causal negative control (PENDING CI, not a RED result)
+RVFIX #315 — causal negative control observed (E3: GitHub CI / MOCK)
 Review: /Volumes/data/live_commerce_architecture_v1/.worktrees/rv-315/REVIEW-315.md
 PR: https://github.com/humaux/live_commerce_architecture_v1/pull/315
 Prior accepted fixture head: 1a9e588c41ee698ae347de19743e067bf6f2d8bf
@@ -13,7 +13,7 @@ unchanged. The frozen pickup address and manual shipping command remain intact.
 Expected causal witness:
   TestBrowserManualFulfilment -> manual-fulfilment.spec.ts
   MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists
-  expect(detail).toContainText(cvsPickupName) at tests/admin/manual-fulfilment.spec.ts:277
+  expect(detail).toContainText(cvsPickupName) at tests/admin/manual-fulfilment.spec.ts:272
   Missing expected pickup name: 六甲民生附店
 The witness must reach this new assertion. Setup, fixture, build, unrelated gate
 or expectation failures do not satisfy this negative control.
@@ -26,8 +26,43 @@ Unchanged test Git blobs for the eventual RED/GREEN comparison:
 Previous failures 40862588166/123412043535 and 40866448838/123426070828
 are fixture/test failures, not causal business RED evidence.
 
-Next: record actual RED run/job/head/tested-merge SHA and assertion excerpt here;
-restore only the product mutation, regenerate browser ownership, then push GREEN.
-Do not restore before the causal failure is observed. Do not merge this mutation.
+The causal failure below was observed before restoring the product mutation.
+GREEN must come from this PR's own CI after restoration; historical GREEN does
+not establish acceptance of the restored head. Do not merge the mutation.
 NOT_RUN: local tests, local servers, LIVE/SANDBOX provider validation.
 Humaux search/store/canvas/coord: unavailable in the dispatch environment.
+
+Dispatched RED head: 3af546796168d004fad181f91283818d3fef10ce
+Gates run: 40894928493 / job 123523684330 (FAILURE)
+Job head_sha: 3af546796168d004fad181f91283818d3fef10ce
+Job started_at: 2026-10-29T14:51:03Z; completed_at: 2026-10-29T14:59:34Z
+Foundation run: 40894928475 / job 123521321106 (SUCCESS; not the browser RED)
+Tested merge checkout SHA: faa4b79f5d2e95988735415fc03e3f848234eb32
+Raw checkout receipt (job log, 2026-10-29T14:51:14.7504551Z):
+  HEAD is now at faa4b79f Merge 3af546796168d004fad181f91283818d3fef10ce into d0e7331525fec046fbe9361906fa66367ae583c6
+Prebuilt admin/storefront were restored from that same tested merge SHA.
+
+Raw browser receipt: output/manual-ship/red-playwright.log
+Source artifact: gate-browser-refund-fulfilment, id 12906493634
+https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40894928493/artifacts/12906493634
+Artifact entry: playwright/run.dd8lwfa7/manual-fulfilment/20261029T145640.094456336/playwright.log
+The complete log entry was extracted and its ZIP CRC/length verified.
+
+Assertion excerpt (original lines 13-18, 31-36, 52-54):
+  MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists
+  Error: expect(locator).toContainText(expected) failed
+  Locator: getByTestId('order-detail')
+  Expected substring: "六甲民生附店"
+  > 272 | await expect(detail).toContainText(cvsPickupName);
+  tests/admin/manual-fulfilment.spec.ts:272:24
+  1 failed; 6 passed (23.4s)
+The received detail retained recipient, FamilyMart method, frozen address and
+manual-shipment controls, but omitted pickup name/code/source. This is the
+product mutation's exact effect, not a fixture/setup/expectation error.
+
+Restoration: remove only the buyer_entered exclusion in OrderDetailPanel.tsx.
+The component returns to its pre-mutation Git blob; all three test blobs above
+remain identical to RED and the valid pre-mutation fixture head.
+Integration merge first: origin/r3/integration remains d0e7331525fec046fbe9361906fa66367ae583c6 (already up to date).
+GREEN: PENDING the restoration push. Integrator resumes from the final WAIT_RUN
+ids; final run/job receipts belong in a PR comment, not an evidence-only push.
