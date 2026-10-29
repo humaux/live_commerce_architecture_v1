@@ -190,3 +190,14 @@ Fresh `gh run download 40785921695 -n gate-browser-design` and `-n gate-browser-
 CONTINUATION IMPLEMENTATION PREPARATION 2026-10-29
 Starting head f78a3977cc00f9e081efc1b625bfbdcca3b40736; integration merge already present. Existing Go RED eec62d477 / Gates40785921695 / shard:g09 job123162345931 covers R1/R2; no duplicate RED push. Browser-design RED123162345030, password-auth collection123162344940.
 R1-R5 implementation and authorized count-oracle replacement prepared. Non-count legacy GET/key-metadata/empty-list assertions remain unchanged pending explicit clarification. Current f78 head had no failed test job/artifact at readback (Foundation40811863742/job123243793356 and Gates40811863847/build123244033318 pending). No historical result is candidate acceptance. New-head CI/GREEN pending; local tests/servers/PG/browser NOT_RUN.
+
+
+RELAY9: b11016111 Gates40812890163 plan123247737838 failed four TOUCHED GO_ONLY design GET routes; required123247923418 aggregate failed. NOT assertion RED. Concurrent integrator b32cf4001 added R6 and removed matching baseline entries; worker edited neither. Current-head CI pending: Gates40813368114, Foundation40813368385/job123248703415. Historical assertion RED unchanged. GREEN PENDING. See relay9-comment.md.
+
+RELAY10 b32cf4001 Gates40813368114 plan123248661255: two METHOD_MISMATCH errors, contract GET vs runtime/BFF GET,PUT draft and GET,POST media. required123248930659 aggregate failed; tests skipped; NOT assertion RED. STOP: contract correction is integrator-owned. Foundation40813368385/job123248703415 pending. No push. See relay10-comment.md and relay10-*-failed.log.
+
+RELAY10 CORRECTION: integrator1c2885bfa added missing absolute PUT draft/POST media R6 declarations. b32 failures now historical; old Foundation cancelled. CURRENT WAIT_RUN Gates40813706262 and Foundation40813706245/job123249826514; pending, not GREEN. Worker changed no contract/source and made no push.
+
+RELAY11: 1c2885bfa Gates40813706262 plan123249746885 failed STALE GO_ONLY PUT draft / POST media after R6; required123249966631 failed from plan; tests skipped, NOT assertion RED. Raw logs relay11-*-failed.log; artifacts0. Integrator efd1eb4a0 removed obsolete baseline entries, worker did not edit baseline/contract. CURRENT HEAD efd1eb4a084341fc573ac9f860c077f9f6e2571e; WAIT_RUN Gates40813908638 and Foundation40813908687/job123250468197. GREEN PENDING; no worker push. Historical assertion RED unchanged.
+
+RELAY12 architecture gate RED: efd1eb4a084341fc573ac9f860c077f9f6e2571e, Foundation40813908687 job123250468197; shell-architecture.test.mjs Design.tsx lines831 >0 (findings threshold800). Original R1/R2 assertion RED and browser RED above retained. Repair attempt1 extracts unchanged read-only load hook; new-head CI pending.

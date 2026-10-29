@@ -1,5 +1,5 @@
 // Purpose: Owns storefront design draft editing, publication and rollback controls.
-// Depends on: @live-commerce/format (Taipei store timestamps), react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/customers-client, @/lib/settings-client, @/lib/storefront-client, @/lib/design-client, @/lib/design-copy, @/lib/design-model, ./WorkspaceFrame, ./AdminPageHeader, ./DesignProfile, ./DesignNav, ./DesignSections, ./DesignPages, ./DesignMedia, ./orders.css, ./design.css
+// Depends on: @live-commerce/format (Taipei store timestamps), react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/customers-client, @/lib/settings-client, @/lib/storefront-client, @/lib/design-client, @/lib/design-copy, @/lib/design-model, @/lib/use-design-load, ./WorkspaceFrame, ./AdminPageHeader, ./DesignProfile, ./DesignNav, ./DesignSections, ./DesignPages, ./DesignMedia, ./orders.css, ./design.css
 // Used by: apps/admin/app/[locale]/design/page.tsx
 "use client";
 
@@ -22,7 +22,8 @@ import { displayTime } from "@live-commerce/format";
 import { Badge, TabStrip, TableFrame } from "@live-commerce/ui";
 import { catalogPresentationCopy } from "@/lib/catalog-v2-copy";
 import type { Store } from "@/lib/model";
-import { ReadError, type ReadCode } from "@/lib/customers-client";
+import type { ReadCode } from "@/lib/customers-client";
+import { useDesignLoad, type Loaded } from "@/lib/use-design-load";
 import { sessionBoundary } from "@/lib/settings-client";
 import { readStorefront } from "@/lib/storefront-client";
 import {
@@ -30,8 +31,6 @@ import {
   issuePreview,
   mediaFileProblem,
   publish,
-  readDraft,
-  readMedia,
   readVersions,
   rollback,
   saveDraft,
@@ -43,8 +42,6 @@ import {
   cleanForSave,
   localIssues,
   type DesignDocument,
-  type Draft,
-  type MediaItem,
   type VersionList,
 } from "@/lib/design-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -57,75 +54,9 @@ import type { MediaOps } from "./DesignMedia";
 import "./orders.css";
 import "./design.css";
 
-type Loaded = { draft: Draft; media: MediaItem[]; versions: VersionList };
 type Tab = "profile" | "nav" | "home" | "pages" | "versions";
 const TABS: Tab[] = ["profile", "nav", "home", "pages", "versions"];
 type Note = { kind: "ok" | "error"; text: string } | null;
-
-async function loadAll(store: string, signal: AbortSignal): Promise<Loaded> {
-  const [draft, media, versions] = await Promise.all([
-    readDraft(store, signal),
-    readMedia(store, signal),
-    readVersions(store, signal),
-  ]);
-  return { draft, media, versions };
-}
-
-// One read per (store, reload). The boundary is the session fence write requests must still match.
-function useLoad(
-  storeID: string | null,
-  initialError: ReadCode | null,
-  renderKey: string,
-) {
-  const [tick, setTick] = useState(0);
-  const key = `${renderKey}|${storeID ?? ""}|${tick}`;
-  const [view, setView] = useState<{
-    key: string;
-    status: "loading" | "ready" | ReadCode;
-    data: Loaded | null;
-    boundary: string;
-  }>({ key: "", status: "loading", data: null, boundary: "" });
-  useEffect(() => {
-    if (initialError || !storeID) {
-      setView({
-        key,
-        status: initialError ?? "not-found",
-        data: null,
-        boundary: "",
-      });
-      return;
-    }
-    let live = true;
-    const controller = new AbortController();
-    void (async () => {
-      try {
-        const boundary = await sessionBoundary();
-        const data = await loadAll(storeID, controller.signal);
-        if (!live) return;
-        if ((await sessionBoundary()) !== boundary)
-          throw new ReadError("signed-out");
-        setView({ key, status: "ready", data, boundary });
-      } catch (error) {
-        if (live)
-          setView({
-            key,
-            status: error instanceof ReadError ? error.code : "unavailable",
-            data: null,
-            boundary: "",
-          });
-      }
-    })();
-    return () => {
-      live = false;
-      controller.abort();
-    };
-  }, [key, storeID, initialError]);
-  const current =
-    view.key === key
-      ? view
-      : { key, status: "loading" as const, data: null, boundary: "" };
-  return { ...current, reload: () => setTick((value) => value + 1) };
-}
 
 type Pending = { version: number; key: string; boundary: string; retries: number };
 const pendingKey = (store: string) => `lc.design.publishPending.${store}`;
@@ -161,7 +92,7 @@ export function Design({
   renderKey: string;
 }) {
   const c = designCopy[locale];
-  const read = useLoad(store?.id ?? null, initialError, renderKey);
+  const read = useDesignLoad(store?.id ?? null, initialError, renderKey);
   const dirtyRef = useRef(false);
   const guard = () => !dirtyRef.current || window.confirm(c.guard);
   const failure =

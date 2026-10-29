@@ -279,3 +279,111 @@ WAIT_RUN: NONE (no new push; Gates 40785921695 completed failure). Resume requir
 
 
 Relay8: current remote75a31f92 RED verified (40785921695; Go123162345931). Frozen R3/R5 still contradict unchanged browser assertions. No implementation/push. See relay8-comment.md. Humaux problem stored, own subtask canvas updated under lock. WAIT_RUN NONE.
+
+
+## Relay 9 — current-head correction and bounded CI handoff
+
+OC-11 relay 9 — CI handoff; GREEN PENDING (author assessment E0).
+
+PR #221 current head: b32cf40015d6d56a6d7c5c0bbcb5a2947557848e.
+Initial head: b11016111dfbcb4d51bae1e5114831c0da9ec7fe. Required git fetch origin && git merge origin/r3/integration exited 0 (already up to date). Read AGENTS.md, architecture sections 0/1/2/26/27, and frozen storefront-v2 continuation. cards/cxf-221-cont.md is absent; dispatch supplies the card.
+
+Read every failing job of the initially current head with gh run view --log-failed --job: Gates 40812890163 / plan 123247737838 and required 123247923418 (exit 0). Plan failed on four TOUCHED GO_ONLY design GET routes (draft, versions, media, media/{image_id}); required failed because plan failed and downstream jobs skipped. This is gate failure, NOT new-assertion RED. Synthetic checkout a97daa0d12795041d29f744d7a582a43913b5dda; base 61951609f1dd0937d7d6a8c2f8b0d2faf3d4d05d. Raw logs: relay9-plan-failed.log and relay9-required-failed.log. No current failed browser job/artifact existed to download. Historical RED remains Gates 40785921695 / Go 123162345931 / browser-design 123162345030; collection 123162344940 is not assertion RED.
+
+Concurrent integrator correction: commit b32cf4001 (Claude trailer) added R6 absolute GET route declarations in contracts/storefront-v2.md and removed their legacy baseline rows in scripts/dev/contractdrift/baseline.json. This worker did not edit either forbidden path. Fresh PR/head/run reads verified the updated head; initial-head failure is historical and must not be called current acceptance. New head has no failed jobs at handoff. No duplicate implementation/evidence-only push.
+
+WAIT_RUN: 40813368114 — Gates, queued plan 123248661255 (not a test job; not acceptance).
+WAIT_RUN: 40813368385 — Foundation, queued foundation job 123248703415 (not a plan job).
+GREEN: PENDING. Integrator fresh-session completion relay is the wakeup; do not continue polling this session.
+
+Commands: fetch/merge exit0; failed-job reads exit0; run/head/API/source reads exit0; latest gh pr checks221 exit8=pending. No local tests, builds, static gates, servers, PG or browser executed. No worker source/test/config edit, commit or push. Own writes only output/oc-11/**; outside-card worker paths NONE. Existing untracked evidence preserved. Integrator's contract/baseline changes are separately attributed above. No task processes or temporary downloads remain.
+
+NOT_RUN: current-head GREEN, local tests/servers/PG/browser, independent review, LIVE; Humaux store/canvas/coord (tools unavailable). Evidence trail is local output plus this PR comment, not a fabricated Humaux receipt. E3 applies only to the stated historical CI failures, not candidate acceptance.
+
+🤖 Generated with Codex (dispatched by Claude Code integrator).
+
+
+## Relay 10 — current-head out-of-scope contract drift
+
+OC-11 relay 10 — BLOCKED by out-of-scope contract drift; no GREEN claim (author E0).
+
+PR #221 head: b32cf40015d6d56a6d7c5c0bbcb5a2947557848e. Fetch/merge origin/r3/integration exited 0, already up to date. R1–R5 implementation is already committed in b11016111; no duplicate implementation or RED push.
+
+Current-head Gates 40813368114 completed failure. Read EVERY failed job with gh run view --log-failed --job (exit 0):
+- plan 123248661255: METHOD_MISMATCH for /v1/admin/stores/{}/design/draft (Go/BFF GET,PUT; contract GET) and /v1/admin/stores/{}/design/media (Go/BFF GET,POST; contract GET).
+- required 123248930659: aggregate failure because plan failed; build/gate/receipts skipped. This is NOT assertion RED or candidate test acceptance.
+Raw logs: output/oc-11/relay10-plan-failed.log and relay10-required-failed.log. The run has zero artifacts and no failed browser job; no browser artifact to download.
+
+Root: integrator commit b32cf4001 added absolute GET-only R6 declarations at contracts/storefront-v2.md:405. Existing section B already declares GET/PUT design/draft (:116), and the Go route registry (:46–50,76–79) and BFF retain legitimate save/upload writes. Correct the contract's absolute method inventory by including PUT /v1/admin/stores/{store_id}/design/draft and POST /v1/admin/stores/{store_id}/design/media, both integration:manage, under integrator ownership. Worker STOP boundary explicitly forbids contract text changes. Removing runtime methods, changing baseline, or weakening drift detection would violate this card. No workaround attempted.
+
+Historical assertion RED, not current acceptance: Gates40785921695, Go123162345931 (R1/R2), browser-design123162345030 (six browser failures); OC collection123162344940 is setup failure. Historical IDs are recorded in red.log; no historical result is called current GREEN.
+
+WAIT_RUN: 40813368385 — current-head Foundation in progress, job123248703415; integrator completion relay is the wakeup. Gates40813368114 is completed failure, not a pending test run. No new push/run; no evidence-only commit.
+
+Commands: git fetch/merge exit0; gh pr checks221 exit1; two failed-job reads and run/jobs/artifact API reads exit0. No local tests, servers, builds, static gates, PG or browsers executed. This relay writes only output/oc-11/**; outside-card worker files NONE. Prior dirty/untracked evidence preserved. No task process remains running.
+
+NOT_RUN: current-head GREEN, independent acceptance, local tests/servers/PG/browser, LIVE. Humaux memory/coord/canvas tools unavailable; store/update NOT_RUN. Current acceptance awaits the integrator-owned contract correction plus the ensuing PR CI; no further polling this session.
+
+🤖 Generated with Codex (dispatched by Claude Code integrator).
+
+
+### Relay 10 correction — integrator advanced head during handoff
+
+OC-11 relay 10 — corrected current-head CI handoff; GREEN PENDING (author E0).
+
+PR #221 CURRENT head: 1c2885bfa3bdd178cafd54265b8770ff1d0cefb6. R1–R5 implementation already exists in b11016111; no duplicate implementation/RED/evidence-only push.
+
+Initially current b32cf4001: fetch/merge origin/r3/integration exited0, already up to date. Read EVERY failed job of Gates40813368114 via gh run view --log-failed --job (exit0): plan123248661255 reported two METHOD_MISMATCH errors (Go/BFF GET,PUT draft and GET,POST media vs contract GET); required123248930659 failed from plan, with test jobs skipped. Raw logs: output/oc-11/relay10-plan-failed.log and relay10-required-failed.log. No browser job or artifact existed (artifact count0). This was gate failure, not assertion RED.
+
+Concurrent integrator correction 1c2885bfa adds the missing absolute PUT draft and POST media declarations to R6, both integration:manage. Read the commit and independently verified local and remote PR head. Worker did NOT edit contract text, baseline, or runtime methods. The prior blocker report applies only to b32cf4001; current correction awaits CI, not acceptance by static inspection. Old Foundation40813368385 was cancelled.
+
+WAIT_RUN: 40813706262 — Gates on 1c2885bfa, in progress; plan123249746885 is NOT a test job/result.
+WAIT_RUN: 40813706245 — Foundation on 1c2885bfa, in progress; foundation123249826514.
+Integrator fresh-session completion relay is the wakeup. No current-head failed jobs at readback; GREEN PENDING.
+
+Historical assertion RED (not current acceptance): Gates40785921695 / Go123162345931 (R1/R2) / browser-design123162345030 (six failures); OC123162344940 was collection/setup failure. Recorded in red.log. No historical green claimed.
+
+Commands: fetch/merge exit0; gh pr checks initially exit1, current exit8 (pending); failed-job/API/commit/head reads exit0. No local tests, builds, static gates, servers, PG or browsers executed. This relay writes only output/oc-11/**; outside-card WORKER files NONE. Integrator-owned contracts/storefront-v2.md change separately attributed above. Existing dirty/untracked evidence preserved. No worker commit/push/merge/deployment; no task process left running.
+
+NOT_RUN: current-head GREEN, independent review, local tests/servers/PG/browser, LIVE; Humaux memory/coord/canvas unavailable, store/update NOT_RUN. Author E0 only; E3 historical failures apply solely to their stated heads.
+
+🤖 Generated with Codex (dispatched by Claude Code integrator).
+OC-11 relay 11 — GREEN PENDING; author assessment E0.
+
+PR #221 current head: `efd1eb4a084341fc573ac9f860c077f9f6e2571e`. R1–R5 implementation already exists in `b11016111`; no duplicate implementation/RED push or evidence-only commit.
+
+Read every failing job of the initially current head `1c2885bfa3bdd178cafd54265b8770ff1d0cefb6` using `gh run view 40813706262 --log-failed --job <id>` (exit 0):
+- plan `123249746885`: STALE GO_ONLY entries for PUT `/v1/admin/stores/{}/design/draft` and POST `/v1/admin/stores/{}/design/media` after R6 declared these methods.
+- required `123249966631`: failed because plan failed; test jobs skipped. This is a gate failure, not assertion RED.
+- Raw logs: `output/oc-11/relay11-plan-failed.log`, `output/oc-11/relay11-required-failed.log`. Run artifacts total 0; no failed browser artifact exists to download.
+
+Static root confirmation: `scripts/dev/contractdrift/main.go:190–194` rejects baseline entries absent from current findings. Integrator-owned commit `efd1eb4a0` removed the two obsolete entries while this relay was reading CI. Worker did not edit the forbidden baseline or contract, remove runtime methods, weaken tests, or attempt a workaround. Local/remote branch head independently reread after fetch/fast-forward check; they match. No failed job exists on the new head at readback.
+
+WAIT_RUN: `40813908638` — Gates (workflow ID, not plan job ID), in progress.
+WAIT_RUN: `40813908687` — Foundation, job `123250468197`, in progress.
+Wakeup: integrator's explicitly promised fresh-session relay when these workflows conclude. No further polling or task process remains.
+
+Historical assertion RED, not current acceptance: Gates `40785921695`, Go `123162345931` (R1/R2), browser-design `123162345030` (six failures); OC `123162344940` was collection/setup failure. Already recorded in `red.log`. GREEN run/job IDs: none yet.
+
+Commands: initial `git fetch origin && git merge origin/r3/integration` exit 0; failed-log/API/head reads exit 0; initial `gh pr checks 221` exit 1, current exit 8 (pending); own-branch fast-forward check exit 0. No local tests, servers, builds, static gates, PG or browsers ran. No worker commit/push/merge to integration/auto-merge/deployment.
+
+Worker writes this relay: `output/oc-11/**` only (delivery, red-log checkpoint, this comment, two failed logs). Outside-card worker paths: NONE. Integrator's forbidden baseline edit is separately attributed above. Existing dirty/untracked checkpoints preserved; no new fixtures, containers, ports or background processes.
+
+NOT_RUN: current-head GREEN, independent review, all local tests/servers/PG/browser, LIVE. Humaux/coord/canvas tools unavailable; store/update NOT_RUN, no fabricated receipt. Missing card file `cards/cxf-221-cont.md`: dispatched card text plus frozen contract used as authority. E3 historical CI failures apply solely to their stated head/run; candidate completion remains unclaimed.
+
+🤖 Generated with Codex (dispatched by Claude Code integrator).
+
+
+## Relay 12 — repair the current-head architecture gate
+
+Authority: dispatched CARD221-cont and frozen storefront-v2 continuation R1–R5; contract unchanged. `git fetch origin && git merge origin/r3/integration` exited 0 (already current). Start head `efd1eb4a084341fc573ac9f860c077f9f6e2571e`. The requested card file is absent; dispatched text is the task authority.
+
+Read every currently failed job: Foundation run `40813908687`, job `123250468197`, `gh run view --log-failed --job` exit 0. Its sole failing assertion is the existing G-UI3/G-UI5 architecture gate: `Design.tsx: lines 831 > 0`. `findings()` emits the line finding above 800; no line waiver exists. This is gate RED, distinct from historical R1/R2 and browser assertion RED in red.log. Gates `40813908638` is still running and has no failed browser jobs at this checkpoint, hence no failed-browser artifact to download.
+
+Root repair (targeted attempt 1): move the existing read-only snapshot loading hook into `apps/admin/lib/use-design-load.ts`; Design imports it. The loader's session fence, abort cleanup, read/error behavior and all publication/recovery logic are retained. Design falls below the unchanged 800-line threshold. All Design.tsx compilation harnesses were located; the sole one, `tests/admin/timezone-ui.test.mjs`, registers the new import in the same push. Its timestamp and unknown-import assertions stay unchanged. No gate, waiver, threshold, contract, migration, R2 pin or lockfile change.
+
+Scope: new hook and Design are within authorized admin lib/components. `tests/admin/timezone-ui.test.mjs` is the existing Design compilation harness; listed outside the explicitly OC-11-named tests for integrator review under COMPONENT HARNESSES. No route/spec added, renamed or removed, so browser ownership regeneration is not triggered. No Go import/package changes, so dependency map unchanged. No visual layout/copy changes; existing UI process and locale delivery applies unchanged.
+
+Commands: `node --check tests/admin/timezone-ui.test.mjs` exit 0; `git diff --check` exit 0. `./node_modules/.bin/tsc -p apps/admin/tsconfig.json --noEmit --incremental false` exit 127: worktree has no compiler binary, so TypeScript verification NOT_RUN (no dependency install). E1 syntax/whitespace only; author's acceptance E0. GitHub Foundation and required Gates remain the acceptance oracle. No local tests, builds, servers, browser or PG executed.
+
+Existing dirty/untracked evidence preserved. Humaux read available this relay; fix stored and own sub-canvas updated under coordination lock. Exact new run/job IDs and final SHA are recorded in the PR comment after the source push; no evidence-only follow-up commit. Integrator's completion relay is the wakeup; no worker background process remains. NOT_RUN: current-head GREEN, independent review, local runtime verification, LIVE. No integration push, merge or auto-merge.
