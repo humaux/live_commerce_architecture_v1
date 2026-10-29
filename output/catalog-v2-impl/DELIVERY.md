@@ -1,3 +1,39 @@
+# FIX318 relay15 · English picker oracle casing · 2026-10-30
+
+Current-head raw evidence: 7eb42d0d42e1217b3fa54000f7a652bf35e1cd66, Gates40944073779/job123697108854. Fresh gh run download exit0: product-editor artifact12930200321 reports23passed/1failed/3notrun; catalog-core artifact12929681844 passes. Only bundle03 is failed at inspection; other pending jobs are not accepted. Foundation40944073780/job123694686290 succeeded on that head. gh run view --log-failed refuses the unfinished workflow; completed-job raw logs fetched through gh api actions/jobs/123697108854/logs instead (relay15-bundle03.log). No runner infrastructure failure and no rerun.
+
+Root cause: the English exact-name oracle lowercased the merchant values Ivory/Navy, while the fixture, visible headings and signed template Choose {value} image retain them. CI ARIA snapshot explicitly shows Choose Ivory image / Choose Navy image. Change only the two literal expected names, plus a comment documenting case preservation. No regex/case-insensitive match, fixture mutation, assertion deletion, skipped control, timeout increase or production UI change. Previous semantic-container repair is demonstrated by passing zh-CN pickers and the English main picker. This is picker blocker attempt2/2. If this blocker persists, STOP for integrator adjudication.
+
+## Click ledger and desktop/mobile/review parity
+
+|Control/fact|Operation/requirement|Receipt|
+|---|---|---|
+|English main, Ivory, Navy, detail picker|Exact accessible-name real click, native chooser cancel, return and writes0|Main passed; Ivory RED from casing; new-head CI PENDING|
+|zh-CN main/variant/detail pickers|Same real operations|Passed on7eb42d0d; new-head CI PENDING|
+|Required product/SKU/price/stock/image facts|Existing full desktop/mobile/review checklist below|No source change; new-head CI PENDING|
+
+## BOURDIEU
+
+Q1 novices locate the visible named role; Q2 experienced sellers use the same native picker; Q3 preserve seller-owned option values; Q4 no class/device inference; Q5 exact accessible name follows visible text; Q6 aesthetics UNKNOWN until owner. No visual design change.
+
+## PROJECT UNDERSTANDING
+
+Read AGENTS.md, 架构.md §§0/1/2/26/27 and catalog-inventory-v1 media/API acceptance sections. CI/MOCK is distinct from production; server owns scope, money, stock, CAS and media limits. Current human ruling retrieved verbatim from Humaux8a0a0a7e-6c37-4c8a-b1cc-ed05a2da6442. Referenced cards/cxf-fix10-318.md absent in this checkout and main; original dispatch plus human memory supply the ruling. Signed three-language template below interpolates values verbatim; no business or design revision.
+
+## MOBBIN → EAGLE
+
+No new reference or pattern needed for a test-oracle case correction. Existing signed module provenance below retained; live Mobbin/Eagle NOT_RUN.
+
+## FIGMA OFFICIAL GUIDANCE
+
+Existing applied guide and layout/component/variable/prototype mapping below retained. No Figma write or visual change. No new product strings; existing zh-TW/zh-CN/en inventory retained. Impeccable context/harden and ponytail read; detector unnecessary for test-only change. No local runtime validation.
+
+## Scope, evidence and handoff
+
+Changed tests/admin/catalog-v2-simplified.acceptance.ts and output/catalog-v2-impl/{DELIVERY.md,red.log,relay15-static.log}, all original write paths. No import/spec/page/route add/rename/delete; browser ownership and dependency map need no regeneration. Parent retains coord ownership; no separate claim or delegation. Humaux search/grep/get, rejected representative5/9 coverage0.5556 and canvas/coord read performed; shared handoff persistence under acquired lock. Original causal tests-only RED40872483030/job123445416316 remains recorded in red.log. New GREEN PENDING, author assessment E0. E3 failure receipt is not completion.
+
+NOT_RUN: local tests/server/browser/build/PG/container/install, new-head runtime/GREEN, independent E4, provider SANDBOX/LIVE and production/deploy. Integrator relays registered Gates/Foundation run completion; no long CI poll and no evidence-only push.
+
 # FIX318 relay14 · compact picker accessible name · 2026-10-30
 
 claim_type: fix · project: live_commerce_architecture_v1 · module: catalog UI · date: 2026-10-30
