@@ -1,10 +1,12 @@
 // Purpose: OC-11 / OC-Q10 admin gate: an uncertain publish shows 「發布結果待確認」, blocks re-publish, survives a reload and resolves only with the original request identity (R1-R5).
-// Depends on: @playwright/test, design-copy; the same harness env as tests/admin/design.spec.ts (LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_BFF_STORE).
+// Depends on: @playwright/test, design-copy, design-model (VersionInfo only); the same harness env as tests/admin/design.spec.ts (LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_BFF_STORE).
 // Used by: tests/foundation/browser_store_design_test.go (same playwright invocation as design.spec.ts; playwright.config.ts store-design testMatch).
+// Invariants: transport loss never implies an outcome; only the original key/body POST receipt confirms, with one committed row per attempt.
 // Publish answers are cut by interception only (route.fetch then abort = committed but unheard; plain abort = never reached Go); every user step is a
 // real click/fill. Tests share one store and run in file order (workers: 1).
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { designCopy, fill } from "../../../apps/admin/lib/design-copy";
+import type { VersionInfo } from "../../../apps/admin/lib/design-model";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -33,13 +35,16 @@ function expectAttempts(publishes: { key: string | undefined; body: string | nul
 type Cut = "none" | "after-commit" | "before-commit" | "held-before-commit";
 async function open(page: Page) {
   const publishes: { key: string | undefined; body: string | null }[] = [];
+  const committed: VersionInfo[] = []; // transport-fixture observations, never supplied to the product
   const writes: string[] = [];
   const state = { cut: "none" as Cut, release: () => {} };
   await page.route("**/design/publish", async (route: Route) => {
     const req = route.request();
     publishes.push({ key: req.headers()["idempotency-key"], body: req.postData() });
     if (state.cut === "after-commit") {
-      await route.fetch(); // Go commits...
+      const answer = await route.fetch(); // Go commits (or replays the same receipt)...
+      expect(answer.status(), "the lost answer really committed").toBe(200);
+      committed.push(await answer.json());
       await route.abort("connectionreset"); // ...but the browser never hears
     } else if (state.cut === "held-before-commit") {
       // Install the release BEFORE doing any I/O: request arrival is the exact in-flight boundary.
@@ -57,23 +62,25 @@ async function open(page: Page) {
   await page.getByTestId("nav-group-storefront").waitFor({ state: "attached" });
   await page.goto(`/en/design?store=${store}`);
   await expect(page.getByTestId("design-name"), "initial editor is ready before any fault injection").toBeVisible();
-  return { publishes, writes, state };
+  return { publishes, committed, writes, state };
 }
 const edit = (page: Page, tag: string) => page.getByTestId("design-name").fill(`oc11 ${tag} ${Date.now()}`);
 async function recheckSettled(page: Page) {
-  const read = page.waitForResponse((r) => r.url().endsWith("/design/versions") && r.request().method() === "GET");
-  await page.getByTestId("design-publish-recheck").click();
-  await read;
   const button = page.getByTestId("design-publish-recheck");
+  await expect(button).toBeEnabled(); // automatic same-key recovery must settle before a merchant click
+  const sent = page.waitForRequest((r) => r.url().endsWith("/design/publish") && r.method() === "POST");
+  await page.getByTestId("design-publish-recheck").click();
+  const response = await (await sent).response(); // null on transport failure; never wait for an unrelated versions GET
   await expect.poll(async () => (await button.count()) === 0 || await button.isEnabled(), {
-    message: "the recheck read settled and its busy state cleared",
+    message: "the request-bound recovery settled and its busy state cleared",
   }).toBe(true);
+  return response;
 }
 
 test("OC11 publish lost after commit: pending, no second publish, recheck finds it", async ({ page }) => {
   expect(designCopy["zh-TW"].publishPending).toBe("發布結果待確認");
   expect(designCopy["zh-CN"].publishPending).toBe("发布结果待确认");
-  const { publishes, writes, state } = await open(page);
+  const { publishes, committed, writes, state } = await open(page);
   state.cut = "after-commit";
   await edit(page, "a");
   await page.getByTestId("design-publish").click();
@@ -82,48 +89,82 @@ test("OC11 publish lost after commit: pending, no second publish, recheck finds 
   await expect(pending).toContainText(c.publishPending);
   await expect(page.getByTestId("design-note")).toHaveCount(0); // never a success note
   await expect(page.getByTestId("design-publish")).toBeDisabled(); // no second publish possible
+  await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible(); // the first failed transport has returned, automatic recovery is armed
   expectAttempts(publishes, 1);
-  writes.length = 0; // the save before publish is legitimate; from here on nothing may be written
+  writes.length = 0; // the save is legitimate; only the original-key recovery may be transmitted now
+
+  await recheckSettled(page); // transport still down: even a stored receipt cannot yet confirm the result
+  await expect(pending).toContainText(c.publishPending);
+  await expect(page.getByTestId("design-note")).toHaveCount(0);
+  await expect(page.getByTestId("design-publish")).toBeDisabled();
+  state.cut = "none"; // restore transport; the same key/body POST must return the stored receipt
 
   const recheckRead = page.waitForResponse((r) => r.url().endsWith("/design/versions") && r.request().method() === "GET");
-  await page.getByTestId("design-publish-recheck").click();
-  await expect(page.getByTestId("design-note")).toContainText(okPublished);
+  const receipt = await recheckSettled(page);
+  expect(receipt?.status(), "the original request has a successful recovery receipt").toBe(200);
+  expect(receipt!.request().headers()["idempotency-key"]).toBe(publishes[0].key);
+  expect(receipt!.request().postData()).toBe(publishes[0].body);
+  const returned: VersionInfo = await receipt!.json();
+  expect(returned, "R2 same key/body returns the first stored answer").toEqual(committed[0]);
+  expect(committed.every((v) => v.version === returned.version)).toBe(true);
+  await expect(page.getByTestId("design-note")).toContainText(fill(c.okPublished, { n: returned.version }));
   await expect(pending).toHaveCount(0);
   expectAttempts(publishes, 1);
   expect(writes, "OC11-A3 no other write was sent").toEqual([]);
   const history = await (await recheckRead).json();
   const sentVersion = JSON.parse(publishes[0].body!).expected_draft_version;
+  expect(returned.source_version).toBe(sentVersion);
+  expect(returned.kind).toBe("publish");
   expect(history.items.filter((v: { kind: string; source_version: number }) => v.kind === "publish" && v.source_version === sentVersion),
     "R2 one committed published row for the single attempt").toHaveLength(1);
-  expect(history.items.find((v: { idempotency_key?: string }) => v.idempotency_key === publishes[0].key),
-    "OC11-P1a versions expose the committed original request key, not just a draft version").toBeTruthy();
+  expect(history.items.find((v: VersionInfo) => v.version === returned.version),
+    "OC11-P1a the header-bound receipt identifies the exact committed history version").toEqual(returned);
 });
 
-test("OC11 publish never reached Go: survives reload, failed read is unconfirmed, empty read is not-yet, never success", async ({ page }) => {
+test("OC11 publish never reached Go: reload stays pending offline, restored same-key resend commits once", async ({ page }) => {
   const { publishes, state } = await open(page);
   state.cut = "before-commit";
   await edit(page, "b");
   await page.getByTestId("design-publish").click();
   await expect(page.getByTestId("design-publish-pending")).toContainText(c.publishPending);
+  await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
+  await expect(page.getByTestId("design-publish-recheck")).toBeEnabled();
   expectAttempts(publishes, 1);
 
   await page.reload(); // OC11-A5: UNKNOWN is still UNKNOWN after a refresh
   await expect(page.getByTestId("design-publish-pending"), "OC11-A5 pending survives a reload").toContainText(c.publishPending);
   await expect(page.getByTestId("design-publish"), "OC11-A5 Publish stays disabled after reload").toBeDisabled();
 
-  await page.route("**/design/versions", (route) => route.abort("connectionreset")); // the recheck read itself fails
-  await page.getByTestId("design-publish-recheck").click();
-  await expect(page.getByTestId("design-publish-unconfirmed"), "OC11-A6 a failed read is 'could not confirm', not 'no record'").toContainText(c.publishUnconfirmed);
+  await page.route("**/design/versions", (route) => route.abort("connectionreset")); // display failures cannot resolve a request
+  await recheckSettled(page);
+  await expect(page.getByTestId("design-publish-unconfirmed"), "OC11-A6 a failed recovery is 'could not confirm', not 'no record'").toContainText(c.publishUnconfirmed);
   await expect(page.getByTestId("design-publish-notyet")).toHaveCount(0);
   await expect(page.getByTestId("design-note")).toHaveCount(0);
   await page.unroute("**/design/versions");
 
-  await page.getByTestId("design-publish-recheck").click();
-  await expect(page.getByTestId("design-publish-notyet"), "OC11-A7 empty read: not recorded yet").toBeVisible();
+  await recheckSettled(page); // readable history still cannot prove this request's outcome while POST is down
+  await expect(page.getByTestId("design-publish-notyet"), "OC11-A7 no list-derived terminal outcome").toHaveCount(0);
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
   await expect(page.getByTestId("design-publish")).toBeDisabled();
   await expect(page.getByTestId("design-note")).toHaveCount(0);
   expectAttempts(publishes, 1);
+
+  state.cut = "none";
+  const read = page.waitForResponse((r) => r.url().endsWith("/design/versions") && r.request().method() === "GET");
+  const receipt = await recheckSettled(page);
+  expect(receipt?.status()).toBe(200);
+  const returned: VersionInfo = await receipt!.json();
+  const sentVersion = JSON.parse(publishes[0].body!).expected_draft_version;
+  expect(returned.source_version).toBe(sentVersion);
+  await expect(page.getByTestId("design-note")).toContainText(fill(c.okPublished, { n: returned.version }));
+  await expect(page.getByTestId("design-publish-pending")).toHaveCount(0);
+  const history = await (await read).json();
+  expect(history.items.filter((v: VersionInfo) => v.kind === "publish" && v.source_version === sentVersion),
+    "R2 resend after no commit creates exactly one published row").toHaveLength(1);
+  expectAttempts(publishes, 1);
+  await page.reload();
+  await expect(page.getByTestId("design-name")).toBeVisible();
+  await expect(page.getByTestId("design-publish-pending")).toHaveCount(0);
 });
 
 test("OC11 old publish row of the same draft version never confirms a new lost publish (publish, rollback, publish again)", async ({ page }) => {
@@ -139,8 +180,9 @@ test("OC11 old publish row of the same draft version never confirms a new lost p
   state.cut = "before-commit"; // publish this same draft version again; the answer is lost and nothing committed
   await page.getByTestId("design-publish").click();
   await expect(page.getByTestId("design-publish-pending")).toContainText(c.publishPending);
-  await page.getByTestId("design-publish-recheck").click();
-  await expect(page.getByTestId("design-publish-notyet"), "OC11-A4 the old publish row (source_version equal) must not confirm").toBeVisible();
+  await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
+  await recheckSettled(page);
+  await expect(page.getByTestId("design-publish-notyet"), "OC11-A4 the old publish row (source_version equal) cannot determine the outcome").toHaveCount(0);
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
   await expect(page.getByTestId("design-publish")).toBeDisabled();
   await expect(page.getByTestId("design-note"), "no success note of any kind").toHaveCount(0);
@@ -201,8 +243,9 @@ test("OC11 stale versions list: confirmed publish, failed refresh, second publis
   await page.getByTestId("design-publish").click();
   await expect(page.getByTestId("design-publish-pending")).toContainText(c.publishPending);
   await page.unroute("**/design/versions");
-  await page.getByTestId("design-publish-recheck").click();
-  await expect(page.getByTestId("design-publish-notyet"), "OC11-A11 the first (confirmed) publish row must not confirm the second").toBeVisible();
+  await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
+  await recheckSettled(page);
+  await expect(page.getByTestId("design-publish-notyet"), "OC11-A11 an unrelated confirmed row cannot determine the outcome").toHaveCount(0);
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
   await expect(page.getByTestId("design-note")).toHaveCount(0);
 });
@@ -221,10 +264,41 @@ test("OC11 P1a another tab publishes the same draft: only its own key can confir
   state.cut = "before-commit"; // A's stale request never reaches Go; B's publish is the only committed one.
   await page.getByTestId("design-publish").click();
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
+  await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
   await recheckSettled(page);
   await expect(page.getByTestId("design-note"), "OC11-P1a another request must never be reported as our success").toHaveCount(0);
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
   expectAttempts(publishes, 1);
+});
+
+test("OC11 stale draft: restoring transport keeps the original version and ends pending with conflict", async ({ page, context }) => {
+  const { publishes, state } = await open(page);
+  state.cut = "before-commit";
+  await edit(page, "stale-request");
+  await page.getByTestId("design-publish").click();
+  await expect(page.getByTestId("design-publish-pending")).toBeVisible();
+  await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
+  await recheckSettled(page); // retain the original request before another tab changes the draft
+
+  const other = await context.newPage();
+  await other.goto(`/en/design?store=${store}`);
+  await expect(other.getByTestId("design-name")).toBeVisible();
+  await edit(other, "newer-draft");
+  await other.getByTestId("design-save").click();
+  await expect(other.getByTestId("design-note")).toContainText(c.okSaved);
+  state.cut = "none";
+  const receipt = await recheckSettled(page);
+  expect(receipt?.status(), "R4 stale original version is refused, never replaced by the new draft").toBe(409);
+  expect(await receipt!.json()).toMatchObject({ code: "conflict" });
+  expect(receipt!.request().headers()["idempotency-key"]).toBe(publishes[0].key);
+  expect(receipt!.request().postData()).toBe(publishes[0].body);
+  await expect(page.getByTestId("design-publish-pending")).toHaveCount(0);
+  await expect(page.getByTestId("design-note")).toContainText(c.publishChanged);
+  await expect(page.getByTestId("design-note")).not.toContainText(okPublished);
+  expectAttempts(publishes, 1);
+  await page.reload();
+  await expect(page.getByTestId("design-name")).toBeVisible();
+  await expect(page.getByTestId("design-publish-pending")).toHaveCount(0);
 });
 
 test("OC11 P1b pending blocks local rollback, external rollback resolves the committed request as superseded", async ({ page, context }) => {
@@ -246,8 +320,12 @@ test("OC11 P1b pending blocks local rollback, external rollback resolves the com
   await other.getByTestId("design-tab-versions").click();
   await other.getByTestId("design-rollback").last().click();
   await expect(other.getByTestId("design-note")).toContainText(/Rolled back/);
+  await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
+  await expect(page.getByTestId("design-publish-recheck")).toBeEnabled();
+  state.cut = "none"; // only delivery of our stored POST receipt may resolve, even after external rollback
   await recheckSettled(page);
   await expect.soft(page.getByTestId("design-publish-pending"), "OC11-P1b the original committed receipt resolves despite a newer rollback").toHaveCount(0);
+  await expect(page.getByTestId("design-publish-superseded")).toBeVisible(); // allow the post-receipt display refresh to settle
   // recheckSettled already observed completion; take independent snapshots so every oracle runs on RED.
   expect.soft(await page.getByTestId("design-publish-superseded").isVisible(), "OC11-P1b explain that a later version replaced this publication").toBe(true);
   expect.soft(await page.getByTestId("design-publish").isEnabled(), "OC11-P1b terminal resolution unlocks Publish").toBe(true);
@@ -258,41 +336,65 @@ test("OC11 P1b pending blocks local rollback, external rollback resolves the com
   expectAttempts(publishes, 2);
 });
 
-test("OC11 P1b a hung recheck has a bounded read and releases its busy control", async ({ page }) => {
-  const { state } = await open(page);
+test("OC11 P1b a hung recovery POST has a bounded timeout and releases its busy control", async ({ page }) => {
+  const { publishes, state } = await open(page);
   await edit(page, "bounded-read");
   state.cut = "before-commit";
   await page.getByTestId("design-publish").click();
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
+  await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
+  await expect(page.getByTestId("design-publish-recheck")).toBeEnabled(); // exhaust/settle automatic recovery before holding the merchant's POST
   let release = () => {};
-  await page.route("**/design/versions", async (route) => {
+  const held = page.waitForRequest((r) => r.url().endsWith("/design/publish") && r.method() === "POST");
+  await page.route("**/design/publish", async (route) => {
     await new Promise<void>((done) => { release = done; });
     await route.abort("connectionreset").catch(() => {});
   });
   try {
+    const started = Date.now();
     await page.getByTestId("design-publish-recheck").click();
+    const request = await held; // the recovery POST really reached the suspended transport
+    expect(request.headers()["idempotency-key"]).toBe(publishes[0].key);
+    expect(request.postData()).toBe(publishes[0].body);
     await expect(page.getByTestId("design-publish-recheck")).toBeDisabled();
-    await expect(page.getByTestId("design-publish-recheck"), "OC11-P1b a hung read releases Recheck within five seconds plus scheduling margin").toBeEnabled({ timeout: 7000 });
+    await expect(page.getByTestId("design-publish-recheck"), "OC11-P1b a hung POST releases Recheck within five seconds plus scheduling margin").toBeEnabled({ timeout: 7000 });
+    expect(Date.now() - started, "the held POST really reached the five-second timeout, not an immediate failed GET").toBeGreaterThanOrEqual(5000);
     await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
     await expect(page.getByTestId("design-note")).toHaveCount(0);
+    await expect(page.getByTestId("design-publish-pending")).toBeVisible();
+    await expect(page.getByTestId("design-publish")).toBeDisabled();
   } finally {
     release();
   }
 });
 
 for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
-  test(`OC11 pending and read-only recheck render in ${locale} and survive refresh`, async ({ page }) => {
+  test(`OC11 pending and same-key recovery render in ${locale} and survive refresh`, async ({ page }) => {
     const { publishes, state } = await open(page);
     await page.goto(`/${locale}/design?store=${store}`);
     await edit(page, `locale-${locale}`);
     state.cut = "before-commit";
     await page.getByTestId("design-publish").click();
     await expect(page.getByTestId("design-publish-pending")).toContainText(designCopy[locale].publishPending);
+    await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
+    await expect(page.getByTestId("design-publish-recheck")).toBeEnabled();
     await page.reload();
     await expect(page.getByTestId("design-publish-pending")).toContainText(designCopy[locale].publishPending);
-    await page.getByTestId("design-publish-recheck").click();
-    await expect(page.getByTestId("design-publish-notyet")).toBeVisible();
+    await recheckSettled(page);
+    await expect(page.getByTestId("design-publish-notyet")).toHaveCount(0);
+    await expect(page.getByTestId("design-publish-pending")).toContainText(designCopy[locale].publishPending);
+    await expect(page.getByTestId("design-publish")).toBeDisabled();
     await expect(page.getByTestId("design-note")).toHaveCount(0);
     expectAttempts(publishes, 1);
+    state.cut = "none";
+    const receipt = await recheckSettled(page);
+    expect(receipt?.status()).toBe(200);
+    const returned: VersionInfo = await receipt!.json();
+    await expect(page.getByTestId("design-note")).toContainText(fill(designCopy[locale].okPublished, { n: returned.version }));
+    await expect(page.getByTestId("design-publish-pending")).toHaveCount(0);
+    expectAttempts(publishes, 1);
+    await page.reload();
+    await expect(page.getByTestId("design-name")).toBeVisible();
+    await expect(page.getByTestId("design-publish-pending")).toHaveCount(0);
   });
 }

@@ -1,3 +1,43 @@
+## FIX5 / 2026-10-29 — authorized recovery-oracle migration (CI pending)
+
+Authority: the current integrator FIX5 dispatch for #221; diagnosis `output/integrator/tools/logs/cxf-diag-221.log` (read-only main checkout); frozen `contracts/storefront-v2.md:396–406` R1–R6 and current implementation. Architecture sections 0/1/2/26/27 read. This section supersedes the older oracle-authorization blockers below; historical entries remain evidence, not current status. Implementation b11016111 stands; this change only migrates its browser acceptance at equal strength.
+
+Base before work: d4a2c73ab3995ea5d800dee1e10e8baf1fdd5b4a; merged origin/r3/integration d8093bc43f16f8eb4e209eeb6c7b698efcd27b0e first, merge 059a0afdc. Only conflict: generated browser ownership; resolved by `node scripts/dev/derive-browser-ownership.mjs`, never hand-edited. Assigned branch `unit/oc11-publish-pending-offline`, worktree `oc11`, role dispatched implementation worker; runtime Codex / GPT-6 family, effort not exposed. No recursive delegation or separate claim.
+
+### Old → new oracle checklist (original spec line numbers)
+
+| Original oracle / fixture | FIX5 replacement and retained strength |
+| --- | --- |
+| :41–44 after-commit transport | While cut, every successful server answer is observed by the transport fixture then aborted to the browser; pending, disabled Publish and no success remain. Only after transport is restored can identical-key/body POST deliver the stored original VersionInfo. All observed server receipts and recovered version must agree. |
+| :48 before-commit transport / :108–127 | Requests remain aborted before Go while down, including across reload and manual confirmation. Failed or readable versions display never establishes an outcome. Restore transport: the same original key/body commits once; receipt source_version and exactly one published row are checked, then resolved storage stays clear after reload. |
+| :64 recheckSettled; :224/:249 callers | Wait for the real recovery POST request and its response/failure, then the busy control settling. No versions GET is required to resolve. GET remains only post-receipt display/row-count evidence. |
+| :90 published expectation | First prove continued pending while the original receipt is unheard. Restore transport, assert 200 and exact returned version in the visible success note. |
+| :98 idempotency_key on VersionInfo | Frozen DTO unchanged. Correlate original Idempotency-Key header + exact body with recovered POST response; compare its full VersionInfo with the original lost receipt and its exact history version. Preserve the single-published-row assertion. |
+| :122 not-yet / :143 old row / :205 stale list | No not-yet/list inference while POST remains cut; pending, no success and disabled Publish retained. Old same-draft publish/rollback and stale-list counterexamples still execute via real clicks. |
+| :224 other tab | Another tab really publishes the same draft; A's original POST remains aborted. Manual same-key resolution stays pending and cannot show B's success. Original key/body identity assertions retained. |
+| :249 external rollback | Pending still blocks local rollback. A different tab really rolls back. After automatic recovery settles, restore transport and receive A's original stored receipt; only then display superseded, unlock Publish and verify resolved storage after reload. Wait for post-receipt supersession display before sampling the existing independent predicates. |
+| :268–275 hung read | Hold the recovery POST itself after automatic retries settle. Observe its original header/body, real click, disabled busy control and actual five-second timeout. Existing `toBeEnabled({ timeout: 7000 })` unchanged; additional elapsed >=5000ms check prevents an immediate unrelated GET failure from passing. Pending, disabled Publish and no success retained; release in finally. |
+| :294 zh-TW / zh-CN / en | In each locale, pending survives reload and aborted POST recheck without success/list-derived not-yet. Restore transport: original-key/body receipt yields the localized success version; resolved pending stays clear on another reload. |
+| R4 stale draft counterexample | Added a real second-tab draft edit/save while the original never-committed request is pending. Restored POST must keep original key/body/version, return 409 conflict and visible draft-changed feedback, clear pending without publishing the newer draft, and remain cleared after reload. |
+
+All existing scenarios remain; no DTO, production source, timeout increase, test retry, threshold, fixture exemption or gate-adapter change. Every interaction uses click/fill/reload. Existing read-only sessionStorage measurement and in-flight transport fixture are retained. No page.evaluate mutation, forced click or direct API substitute for UI acceptance.
+
+### Evidence and click ledger
+
+Historical assertion RED: tests-only eec62d477 → Gates 40785921695 / Go shard:g09 job 123162345931 (`TestStoreDesignOC11PublishReceipt`); browser job 123162345030. Most recent pre-FIX5 oracle RED: PR head 9228365da9b27c4f1e99a1d5952fe9e62f28758d → Gates 40814762280 / bundle:04 job 123254463571, synthetic ff3e587b02d5ab7b7733ea64c27e764cd0c3b97c. Official artifact 12871899297: 9 failed / 10 passed; all eight original SDB tests pass. Original playwright.log SHA256 47fc9a904925efd3506fb4f3500231b8630a50a6c377c11fd7a90c4f0f5c7b37. Fresh failed-job read in fix5-prior-failed.log. Historical Foundation 40814762081 / 123253219083 success is partial evidence only. RED precedes implementation; no duplicate RED or mutation of the accepted implementation.
+
+| Page / control | Action and required visible result | Candidate actual |
+| --- | --- | --- |
+| Design / Publish + Confirm | Lost answer → pending; same-key/body recovery → exact published version, one row | NOT_RUN; CI pending |
+| Design / Reload + Confirm (three locales) | Pending survives reload, offline remains pending, online receipt resolves, cleared state survives reload | NOT_RUN; CI pending |
+| Design / Versions + Rollback, two tabs | Local rollback blocked pending; external rollback followed by original receipt shows superseded | NOT_RUN; CI pending |
+| Design / Save in second tab | Newer draft makes original pending request return conflict; never success | NOT_RUN; CI pending |
+| Design / Confirm with hung POST | Busy disabled, five-second timeout releases within unchanged 7000ms margin, still pending | NOT_RUN; CI pending |
+
+Static only: Node v24.15.0 `node --check tests/admin/oc/design-publish-pending.spec.ts` exit 0 (E1 syntax only); ownership generator exit 0. `git diff --check` initially found a pre-existing blank EOF in dirty DELIVERY.md; the new current section is prepended and final whitespace validation follows. tsc NOT_RUN: worktree dependencies are absent. No local tests/builds/servers/PG/browser/containers. No new Go import; Go dependency map unchanged. Author assessment E0. Current-head GREEN, independent review and LIVE remain NOT_RUN/PENDING.
+
+Scope: authored test `tests/admin/oc/design-publish-pending.spec.ts` + delivery/red evidence under `output/oc-11/`; outside named spec/fixtures only mandatory generated `output/ci-select-backend-browser/browser-ownership.json`, listed for integrator approval. Other merge-arriving changes are integration content. Pre-existing dirty DELIVERY additions and all untracked historical evidence are preserved; only this section is staged by FIX5. PR head/run/job IDs are posted in a PR comment after the one batched push, never an evidence-only follow-up commit. Wakeup: integrator relays fresh Gates/Foundation conclusions in a new session; no silent background poll/process.
+
 # OC-11 continuation — 2026-10-29 current implementation candidate
 
 This section supersedes the historical delivery/status sections below. Authority: dispatched CARD 221-cont and frozen `contracts/storefront-v2.md:396-405` at starting head f78a3977cc00f9e081efc1b625bfbdcca3b40736. `cards/cxf-221-cont.md` is absent. Role: dispatched implementation worker, Codex; actual model/effort not exposed by runtime. Worktree: oc11; branch: unit/oc11-publish-pending-offline. No recursive delegation.
