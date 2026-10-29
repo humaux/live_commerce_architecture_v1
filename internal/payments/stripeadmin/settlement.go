@@ -4,7 +4,7 @@
 //   owner already saw the money come back; SQL carries it into the next statement) and list the payables (§6.9, read only). Sync is the only
 //   step that calls Stripe (GET balance transactions with the STORED platform key); every other step is SQL only. Nothing here calls a bank, a
 //   Stripe payout or a transfer API, and none takes a secret as input; resolve and return move no money.
-// Depends on: SQL payments.record_settlement_lines (ten arguments, 0200), close_settlement, record_settlement_payout, read_settlement_statement
+// Depends on: SQL payments.record_settlement_lines (ten arguments, 0200/0208), close_settlement (0208 item gate), record_settlement_payout, read_settlement_statement
 //   (0150), record_settlement_resolution (0163), record_settlement_payout_return and read_settlement_payables (0200); owner registry writer,
 //   EXECUTE commerce_payment_registrar only; payments.stripe_registrar_credential via storedCredential; Stripe GET /v1/balance_transactions
 //   through stripe.Client.ListBalanceTransactions; internal/payments/settlement (types).
@@ -216,10 +216,10 @@ func validManifest(txns []stripe.BalanceTransaction) bool {
 func settledWindow(to time.Time) bool { return !to.After(time.Now().Add(-settleMargin)) }
 
 // RecordSettlementLines hands the projected transactions to payments.record_settlement_lines in chunks of at most 500 (attribution is
-// done in SQL from Stripe ids). The LAST chunk carries the window AND the window manifest (every balance transaction of the run as
-// {id,currency,net}, built from the same slice that is chunked): SQL records the sync coverage that close requires, computes both totals and
-// stores the per-currency comparison with the ledger in the same transaction (§6.8). The report reads those numbers back. Replaying a
-// window inserts nothing new (duplicates are counted), but a line that still has no statement and carries a mismatch is re-checked
+// done in SQL from Stripe ids). EVERY chunk carries the window AND the full window manifest (every balance transaction of the run as
+// {id,currency,net}, built from the same slice that is chunked): SQL stores an observation and compares every item with the ledger in the
+// same transaction (0208). A partial chunk supersedes older coverage but blocks close until all items match. The report reads the final
+// comparison back. Replaying a window inserts nothing new (duplicates are counted), but a line that still has no statement and carries a mismatch is re-checked
 // (rechecked). connection (optional) is asserted in SQL to be the designated platform connection; ticket (optional) goes into the audit
 // row. SQL applies the same window rules as SettlementSync (whole seconds, 15-minute margin).
 func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connection, ticket string, txns []stripe.BalanceTransaction, from, to time.Time) (SyncReport, error) {
@@ -238,7 +238,7 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connecti
 	if ticket != "" {
 		ticketArg = ticket
 	}
-	// the whole manifest is checked BEFORE the first chunk (SQL checks it only on the last one, after earlier chunks committed): any bad
+	// the whole manifest is checked BEFORE the first chunk (SQL also checks it on every chunk): any bad
 	// entry means zero writes (§6.8 "before any write")
 	if !validManifest(txns) {
 		return SyncReport{}, ErrRejected
@@ -261,15 +261,11 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connecti
 			return SyncReport{}, ErrConfig
 		}
 		var out string
-		var winFrom, winTo, winManifest any // only the LAST chunk carries the window and the manifest: coverage exists only after a complete record
-		if last {
-			winFrom, winTo, winManifest = from.UTC(), to.UTC(), string(manifestJSON)
-		}
 		// payments.record_settlement_lines: platform-scope operator definer; attribution, cross-checks, the unattributed rows and the
 		// stored comparison are SQL. A window without a manifest is refused there (22023) before any write.
 		err = r.settlementScan(ctx, &out, `SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,$4::text,$5::jsonb,
 			$6::timestamptz,$7::timestamptz,$8::uuid,$9::text,$10::jsonb)::text`, s.TenantID, s.StoreID, s.PrincipalID, r.environment(), string(payload),
-			winFrom, winTo, connArg, ticketArg, winManifest)
+			from.UTC(), to.UTC(), connArg, ticketArg, string(manifestJSON))
 		if err != nil {
 			return SyncReport{}, err
 		}

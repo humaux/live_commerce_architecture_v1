@@ -8,6 +8,7 @@
 // Used by: internal/identityhttp (OC-15: the re-auth start route and POST /v1/identity/login/complete).
 // Invariants: the session comes only from the bearer token (never a body field); a re-auth flow never inserts a
 // session row or a session.issued event, on success or refusal; a refusal is ErrReauthFailed (403), never 401.
+
 package identity
 
 import (

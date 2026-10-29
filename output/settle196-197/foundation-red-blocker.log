@@ -1,0 +1,17 @@
+1842-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0274000Z ℹ todo 0
+1843-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0274139Z ℹ duration_ms 42060.744174
+1844-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0274244Z 
+1845:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0274325Z ✖ failing tests:
+1846-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0274395Z 
+1847-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0274567Z test at tests/ci/backend-coverage.test.mjs:274:1
+1848:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0275253Z ✖ CI-SPEED-3: generated browser ownership is current and covers the registry (2731.544491ms)
+1849-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0276085Z   Error: Command failed: /opt/hostedtoolcache/node/24.22.1/x64/bin/node scripts/dev/derive-browser-ownership.mjs --check
+1850:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0276515Z   browser ownership drift: regenerate with node scripts/dev/derive-browser-ownership.mjs
+1851-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0276772Z   
+1852-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0276982Z       at genericNodeError (node:internal/errors:986:15)
+1853-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0277317Z       at wrappedFn (node:internal/errors:540:14)
+--
+1867-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0281572Z     stderr: <Buffer 62 72 6f 77 73 65 72 20 6f 77 6e 65 72 73 68 69 70 20 64 72 69 66 74 3a 20 72 65 67 65 6e 65 72 61 74 65 20 77 69 74 68 20 6e 6f 64 65 20 73 63 72 69 ... 37 more bytes>
+1868-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0281850Z   }
+1869-foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0305432Z ## matrix-receipts node-test end
+1870:foundation	Node unit suites (storefront, i18n)	2026-10-28T19:59:38.0322511Z ##[error]Process completed with exit code 1.

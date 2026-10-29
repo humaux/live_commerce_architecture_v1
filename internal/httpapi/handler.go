@@ -1,6 +1,7 @@
 // Purpose: httpapi owns the composition layer for authenticated merchant/admin routes — routing, bearer resolution, request bounds and error mapping. Domains do not import it; they receive only the transaction and resolved Scope. It never implements a domain rule, never opens a pool of its own, and never trusts a tenant or store id from a request body.
 // Depends on: the mounted domain packages (ads, billing, catalog, claims, fulfillment, inventory, live, merchantorders, storefront*, ...), platform.WithScope/RequirePermission, httperror, river.
 // Used by: cmd/api (NewHandler); every route family registered here (studio/claims/ads/customers/finance/live_flow/...) and their *_test.go files.
+// Invariants: server-resolved scope, bounded private requests and caller-owned atomic domain transactions.
 package httpapi
 
 import (
@@ -208,6 +209,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerDesignRoutes(mux, pool) // unit store-design: storefront-v2 section B, design.go
 	registerCatalogV2Routes(mux, pool)
 	registerSettingsRoutes(mux, pool)
+	registerProfileRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
 	registerStorefrontRoutes(mux, pool, configured.StoreBaseDomain)
 	registerAccountRoutes(mux, pool, configured.Accounts)
