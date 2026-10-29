@@ -14,6 +14,7 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -243,6 +244,8 @@ func TestPlatformSettlementSA1PF16Return(t *testing.T) {
 // TestPlatformSettlementSA1PF17Reconciliation: the sync run stores its comparison, close refuses a window whose latest observation is dirty
 // until a clean resync supersedes it, and the nine-argument entry point is gone.
 func TestPlatformSettlementSA1PF17Reconciliation(t *testing.T) {
+	t.Run("196_item_completeness", srItemCompleteness)
+	t.Run("197_failed_final_chunk", srIncompleteChunks)
 	e := pslNew(t)
 	ctx := context.Background()
 	w0, w1, w2 := pslDay(2026, 8, 31), pslDay(2026, 9, 7), pslDay(2026, 9, 14)
@@ -383,5 +386,188 @@ func TestPlatformSettlementSA1PF18Payables(t *testing.T) {
 	var live string
 	if err := e.f.owner.QueryRow(ctx, `SELECT payments.read_settlement_payables($1::uuid,$2::uuid,$3::uuid,'LIVE',50)::text`, e.op.TenantID, e.op.StoreID, e.op.PrincipalID).Scan(&live); err != nil || !strings.Contains(live, `"payables": []`) && !strings.Contains(live, `"payables":[]`) {
 		t.Fatalf("f: LIVE read with only SANDBOX statements: %q %v", live, err)
+	}
+}
+
+// srNoCloseWrites checks all close effects, including the audit, after a refused call.
+func srNoCloseWrites(t *testing.T, e *pslEnv) {
+	t.Helper()
+	for _, q := range []string{
+		`SELECT count(*) FROM payments.settlement_statements`,
+		`SELECT count(*) FROM payments.settlement_lines WHERE statement_id IS NOT NULL`,
+		`SELECT count(*) FROM ops.audit_events WHERE action='stripe.settlement.close'`,
+	} {
+		if n := countRows(t, e.f.owner, q); n != 0 {
+			t.Fatalf("refused close wrote %d rows: %s", n, q)
+		}
+	}
+}
+
+// srItemCompleteness keeps aggregate net equal on purpose. Count alone cannot catch equal-size ID or per-item changes.
+// Raw unsupported Stripe fee rows are valid stored history, as in PF17 above; the actual payable is a fact-backed charge.
+func srItemCompleteness(t *testing.T) {
+	for _, name := range []string{"offsetting_missing_pair", "equal_count_replaced_id", "offsetting_item_nets", "offsetting_currency_changes"} {
+		t.Run(name, func(t *testing.T) {
+			e := pslNew(t)
+			w0, w1, w2 := pslDay(2026, 8, 31), pslDay(2026, 9, 7), pslDay(2026, 9, 14)
+			at := w1.Add(24 * time.Hour)
+			charge := pslCharge("txn_ICcharge", e.oa1.pi, e.oa1.captured, e.oa1.captured*2564/10000, 31, at)
+			a := pslRaw("txn_ICplus", "stripe_fee", "fee", 100, nil, nil, at)
+			b := pslRaw("txn_ICminus", "stripe_fee", "fee", -100, nil, nil, at)
+			complete := []stripe.BalanceTransaction{charge, a, b}
+			lines := append([]stripe.BalanceTransaction{}, complete...)
+			manifest := append([]stripe.BalanceTransaction{}, complete...)
+			switch name {
+			case "offsetting_missing_pair":
+				lines = lines[:1]
+			case "equal_count_replaced_id":
+				manifest[1].ID = "txn_ICreplacement"
+			case "offsetting_item_nets":
+				manifest[1].Net++
+				manifest[2].Net--
+			case "offsetting_currency_changes":
+				manifest[1].Currency, manifest[2].Currency = "USD", "USD"
+			}
+			e.srRun(t, w0, w1, nil, nil)
+			e.srRun(t, w1, w2, lines, lines) // old clean observation must not win over the newer incomplete one
+			if _, err := e.srCloseProbe(t, w1, e.storeA); err != nil {
+				t.Fatalf("clean control before counterexample: %v", err)
+			}
+			e.srRun(t, w1, w2, lines, manifest)
+			if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_sync_reconciliations WHERE difference_minor<>0`); n != 0 {
+				t.Fatalf("counterexample must have matching aggregate nets, got %d differences", n)
+			}
+			_, err := e.closeWeek(w1, e.storeA)
+			if err == nil || !strings.Contains(err.Error(), "sync_unreconciled") {
+				t.Fatalf("RED #196 %s: equal totals must not hide item differences; want sync_unreconciled, got %v", name, err)
+			}
+			srNoCloseWrites(t, e)
+			// Correct the projection/manifest, then replay it: complete identical items restore coverage without duplicates.
+			e.srRun(t, w1, w2, complete, complete)
+			e.srRun(t, w1, w2, complete, complete)
+			got, err := e.closeWeek(w1, e.storeA)
+			if err != nil || len(got) != 1 || got[0].LineCount != 1 {
+				t.Fatalf("complete replay must close exactly one payable line: %+v %v", got, err)
+			}
+		})
+	}
+}
+
+// srIncompleteChunks uses the real Registrar and independently committed 500+1 SQL calls. A test-only trigger aborts the last refund,
+// after the first 500 rows committed. The failed final transaction releases the environment lock, reproducing a stopped worker.
+// Fixture DDL is confined to pslNew's disposable database; it never changes production functions or ledger data directly.
+func srIncompleteChunks(t *testing.T) {
+	e := pslNew(t)
+	ctx := context.Background()
+	w0, w1, w2 := pslDay(2026, 8, 31), pslDay(2026, 9, 7), pslDay(2026, 9, 14)
+	at := w1.Add(24 * time.Hour)
+	a := pslCharge("txn_CHold", e.oa1.pi, e.oa1.captured, e.oa1.captured*2564/10000, 31, at)
+	b := pslCharge("txn_CHnew", e.oa2.pi, e.oa2.captured, e.oa2.captured*2564/10000, 31, at)
+	refund := pslRefund("txn_CHlast", e.refundA1, 800, 800*2564/10000, 0, at)
+	e.srRun(t, w0, w1, nil, nil)
+	e.srRun(t, w1, w2, []stripe.BalanceTransaction{a}, []stripe.BalanceTransaction{a})
+	if _, err := e.srCloseProbe(t, w1, e.storeA); err != nil {
+		t.Fatalf("old clean coverage control: %v", err)
+	}
+	txns := []stripe.BalanceTransaction{a, b}
+	for i := 0; i < 498; i++ {
+		txns = append(txns, pslRaw(fmt.Sprintf("txn_CHzero%d", i), "stripe_fee", "fee", 0, nil, nil, at))
+	}
+	txns = append(txns, refund)
+	mustExec(t, e.f.owner, `CREATE FUNCTION public.sr197_abort_tail() RETURNS trigger LANGUAGE plpgsql AS $$
+	 BEGIN IF NEW.balance_txn_id='txn_CHlast' THEN PERFORM pg_advisory_xact_lock(196197);
+	 RAISE EXCEPTION 'sr197_tail_failure' USING ERRCODE='22023'; END IF; RETURN NEW; END $$`)
+	mustExec(t, e.f.owner, `CREATE TRIGGER sr197_abort_tail BEFORE INSERT ON payments.settlement_lines FOR EACH ROW EXECUTE FUNCTION public.sr197_abort_tail()`)
+	barrier, err := e.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer barrier.Rollback(ctx)
+	if _, err := barrier.Exec(ctx, `SELECT pg_advisory_xact_lock(196197)`); err != nil {
+		t.Fatal(err)
+	}
+	syncCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	syncDone := make(chan error, 1)
+	go func() {
+		_, err := e.reg.RecordSettlementLines(syncCtx, e.op, e.plat.connection, pslTicket, txns, w1, w2)
+		syncDone <- err
+	}()
+	// This is an actual two-chunk barrier: the first SQL call committed and the last INSERT is waiting on our fixture lock.
+	deadline := time.Now().Add(20 * time.Second)
+	for {
+		if n := countRows(t, e.f.owner, `SELECT count(*) FROM pg_stat_activity WHERE datname=current_database()
+		 AND wait_event='advisory' AND query LIKE '%payments.record_settlement_lines%'`); n > 0 {
+			break
+		}
+		select {
+		case err := <-syncDone:
+			t.Fatalf("sync exited before reaching the final-chunk barrier: %v", err)
+		default:
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("final-chunk barrier was not reached")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	closeDone := make(chan error, 1)
+	go func() { _, err := e.closeWeek(w1, e.storeA); closeDone <- err }()
+	// Close may wait for the sync's environment lock or refuse immediately; it must never succeed with a partial run.
+	closeFinished := false
+	select {
+	case err := <-closeDone:
+		closeFinished = true
+		if err == nil || !strings.Contains(err.Error(), "sync_unreconciled") {
+			t.Fatalf("RED #197: close at the chunk barrier must wait or refuse, got %v", err)
+		}
+	case <-time.After(100 * time.Millisecond):
+	}
+	if err := barrier.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err := <-syncDone:
+		if err == nil {
+			t.Fatal("tail failure fixture did not abort the 501st item")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("sync did not stop after the tail failure")
+	}
+	if !closeFinished {
+		select {
+		case err := <-closeDone:
+			if err == nil || !strings.Contains(err.Error(), "sync_unreconciled") {
+				t.Fatalf("RED #197: concurrent close after tail failure must refuse, got %v", err)
+			}
+		case <-time.After(10 * time.Second):
+			t.Fatal("close did not finish after failed sync released its lock")
+		}
+	}
+	if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_lines WHERE balance_txn_id IN ('txn_CHold','txn_CHnew')`); n != 2 {
+		t.Fatalf("first chunk must have committed both charges, got %d", n)
+	}
+	if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_unattributed WHERE balance_txn_id LIKE 'txn_CHzero%'`); n != 498 {
+		t.Fatalf("first chunk must have committed all 498 zero-net rows, got %d", n)
+	}
+	_, err = e.closeWeek(w1, e.storeA)
+	if err == nil || !strings.Contains(err.Error(), "sync_unreconciled") {
+		t.Fatalf("RED #197: aborted final chunk must invalidate old clean coverage, got %v", err)
+	}
+	srNoCloseWrites(t, e)
+	mustExec(t, e.f.owner, `DROP TRIGGER sr197_abort_tail ON payments.settlement_lines`)
+	mustExec(t, e.f.owner, `DROP FUNCTION public.sr197_abort_tail()`)
+	// Complete retry and a duplicate-only replay must both finish clean; no permanent dirty flag or duplicate accounting.
+	for i := 0; i < 2; i++ {
+		if _, err := e.reg.RecordSettlementLines(ctx, e.op, e.plat.connection, pslTicket, txns, w1, w2); err != nil {
+			t.Fatalf("complete retry %d: %v", i, err)
+		}
+	}
+	got, err := e.closeWeek(w1, e.storeA)
+	if err != nil || len(got) != 1 || got[0].LineCount != 3 {
+		t.Fatalf("complete retry must assign two charges and one refund once: %+v %v", got, err)
+	}
+	again, err := e.closeWeek(w1, e.storeA)
+	if err != nil || len(again) != 1 || again[0].NetPayableMinor != got[0].NetPayableMinor || again[0].LineCount != 3 {
+		t.Fatalf("close replay changed accounting: %+v %v", again, err)
 	}
 }

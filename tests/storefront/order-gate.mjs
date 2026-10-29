@@ -4,6 +4,7 @@
 // Purpose: real buyer checkout/order/history gate, including stable locale targets and complete context privacy audits.
 // Depends on: production Next/Go/PG, Playwright, shared Taipei formatting, browser-engine and shop-helpers.
 // Used by: TestBrowserBuyerOrderUI in --browser-order and the WebKit order scenario; only synthetic TLS/fixture faults.
+// Invariants: original acceptance assertions/timeouts stay intact; focus setup never replaces real pointer activation.
 import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -656,7 +657,12 @@ try {
   assert.equal(await noQuoteTab.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith("commerce-purchase-quote-v1:")).length),0);
   await expect(noQuoteTab.getByTestId("address-section")).toBeVisible();
   await expect(noQuoteTab.locator('input[name="line1"]')).toHaveValue(pii.line1);
-  await expect(noQuoteTab.getByTestId("confirm-address")).toBeEnabled();await noQuoteTab.getByTestId("confirm-address").click();
+  await expect(noQuoteTab.getByTestId("confirm-address")).toBeEnabled();
+  // Settle focus scrolling before WebKit targets the pointer: the failed run focused
+  // the sticky Choose delivery action instead. Still submit with one real click.
+  await noQuoteTab.getByTestId("confirm-address").focus();
+  await expect(noQuoteTab.getByTestId("confirm-address")).toBeFocused();
+  await noQuoteTab.getByTestId("confirm-address").click();
   await expect.poll(()=>stored(noQuoteTab)).toBeNull();
   const replacement=calls.filter(x=>x.path==="/api/buyer/destination"&&x.method==="PUT").at(-1);assert.notEqual(replacement.key,expiredMarker.key);
   assert(JSON.parse(replacement.body).expected_version>expiredMarker.body.expected_version);
@@ -742,7 +748,16 @@ try {
   assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);assert.deepEqual((await api(a,"GET","cart")).body,cartB);
   await a.getByRole("button",{name:"Back to orders",exact:true}).click();
   for(const [locale,title] of [["zh-CN","我的订单"],["zh-TW","我的訂單"],["en","Your orders"]]){
-    await switchLocale(a,locale);const localeHistory=historyRead(a);await Promise.all([localeHistory,a.getByTestId("toggle-order-history").click()]); // full navigation: the history view is reopened from the pinned order
+    await switchLocale(a,locale);const localeHistory=historyRead(a);
+    // A locale navigation restores the pinned order and scrolls to it. Settle the
+    // history target's focus before its one pointer action; keep the response wait
+    // in this aggregate so a failed readiness assertion cannot orphan that wait.
+    await Promise.all([localeHistory,(async()=>{
+      await expect(a.getByTestId("toggle-order-history")).toBeEnabled();
+      await a.getByTestId("toggle-order-history").focus();
+      await expect(a.getByTestId("toggle-order-history")).toBeFocused();
+      await a.getByTestId("toggle-order-history").click();
+    })()]); // full navigation: the history view is reopened from the pinned order
     await expect(a.getByTestId("order-history").getByRole("heading",{name:title,exact:true})).toBeVisible();
     await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,locale,await localeHistory);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
   }
@@ -824,7 +839,11 @@ try {
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,cart_retries:cartRetries,cart_refreshes:cartRefreshes,click_ledger:clickLedger,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
 }catch(error){
   // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
-  if(browser)for(const context of browser.contexts())for(const [index,page] of context.pages().entries()){
+  // Page indexes restart in each context. A global index keeps later contexts
+  // from overwriting the failing locale-history page's evidence (PR #268).
+  let failureIndex=0;
+  if(browser)for(const context of browser.contexts())for(const page of context.pages()){
+    const index=failureIndex++;
     await page.screenshot({path:path.join(evidence,`failure-${index}.png`),fullPage:true}).catch(()=>{});
     await writeFile(path.join(evidence,`failure-${index}.txt`),`${page.url()}\n${await page.locator("body").innerText().catch(()=>"")}`.slice(0,6000)).catch(()=>{});
   }
