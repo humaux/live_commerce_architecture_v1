@@ -61,6 +61,15 @@ Existing gate-adapter assertions, baseline.json, route-table-dispatchers.json an
 
 ## Acceptance and sequence
 
+RVFIX #323 (2026-10-29) assigns the review's P1 selector defect: additionally edit
+`tests/foundation/browser_store_design_test.go` to ADD the new editor-v2 spec to the actual
+Playwright invocation. This is an explicit test-harness path beyond the original table;
+list it for integrator review in the PR. No backend implementation or fixture changes.
+The earlier tests-only push excluded the new suite, so its green runs are not causal RED/GREEN.
+Merge origin/r3/integration first (Already up to date at d0e7331525fec046fbe9361906fa66367ae583c6),
+push the complete wired tests-only suite, and wait for assertion-level RED before implementing.
+Regenerate browser ownership last. This session has no Humaux tool; no persistence is claimed.
+
 1. One tests-only commit and PR push: baseline must reach the existing design page and fail new UI
    assertions, never a missing import/component or compilation failure. CI mode `--browser-design`.
 2. Record exact RED head/run/job and assertion excerpt in red.log. Do not implement before causal RED.

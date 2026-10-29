@@ -1,4 +1,79 @@
 EDITOR-V2-IMPL
+2026-10-29 RVFIX323 tests-only selector repair
+pre_edit_head=145e8a44cc9214915e383ac4be7ae225c8ff549d
+integration=d0e7331525fec046fbe9361906fa66367ae583c6; fetch+merge=Already up to date
+authority=final REQUEST_CHANGES cxf-rv-323.log; P1 actual Go harness omits editor-v2.spec.ts
+repair=ADD editor-v2.spec.ts to existing positional filters; existing2specs/assertions/PGfacts unchanged
+outside_original_PLAN=tests/foundation/browser_store_design_test.go; explicit RVFIX target, integrator review required
+phase=tests-only; implementation=NOT_RUN; causal_RED=PENDING; GREEN=NOT_RUN
+old_green=40880540678 attempt2 / 40880540347; excluded suite, NOT causal evidence
+monitor=10min maximum; wakeup=integrator completion relay; failures=failure/cancelled/timed_out
+local_tests/server/LIVE=NOT_RUN; Humaux store/canvas=NOT_RUN (tools unavailable)
+static_checks=gofmt -d tests/foundation/browser_store_design_test.go (empty diff), node --check tests/admin/editor-v2.spec.ts, git diff --check; all exit=0
+generator=node scripts/dev/derive-browser-ownership.mjs; exit=0; generated hash+direct spec ownership evidence only
+
+2026-10-29 RELAY 5 — FIX #323 current-head investigation:
+head=145e8a44cc9214915e383ac4be7ae225c8ff549d; integration fetch+merge=Already up to date
+Gates.run=40880540678 attempt=1; failed jobs=123475733454,123509362170,123509362328,123509626358
+root=hosted runner lost communication; original job log unavailable; downstream evidence missing
+targeted infrastructure rerun authorized by FIX #323; retry budget=1; dispatch follows this entry
+monitor=integrator completion relay; timeout=10 minutes this session; failure=job conclusion failure/cancelled/timed_out
+dispatch=gh run rerun 40880540678 --job 123475733454; exit=0; infrastructure reruns=1
+rerun=Gates40880540678 attempt2; replacement job123521163566 in_progress at handoff
+WAIT_RUN: 40880540678 (attempt 2, integrator completion relay)
+artifact=12901574277 freshly downloaded relay5-browser-design; Playwright Running26tests/26passed; new17 NOT_RUN
+selector=tests/foundation/browser_store_design_test.go:163 excludes editor-v2.spec.ts; unowned path NOT_EDITED
+RED=NOT_OBTAINED; implementation/GREEN NOT_RUN; source changes=0
+
+2026-10-29 RELAY 4 — current-head receipts independently rechecked:
+PR323 OPEN -> r3/integration; head=145e8a44cc9214915e383ac4be7ae225c8ff549d (tests-only)
+Gates.run=40880540678 completed/failure; required.job=123509626358 downstream failure
+root.job=123475733454 browser-visual-lint1/4; annotation=hosted runner lost communication
+root.log=log not found on fresh gh run view --log-failed --job; not assertion RED
+Foundation.run=40880540347 job=123470549113 success; not product acceptance
+current_source=tests/foundation/browser_store_design_test.go:163 explicitly selects old2specs only
+retained CI playwright.log=26 old tests passed; new17 editor-v2 cases excluded
+RED=NOT_OBTAINED; implementation/GREEN/independent review=NOT_RUN
+STOP=out-of-card runner gate blocker; integrator to resolve runner issue and harness selector
+fix_attempts=0; source_edits=0; commits=0; pushes=0; reruns=0 this relay
+outside_card_edits=NONE; proposed unedited harness path=tests/foundation/browser_store_design_test.go
+WAIT_RUN: NONE (all current-head runs completed; no new push)
+local_tests/server/LIVE/Figma_writes=NOT_RUN; diagnostics/source E1; author E0
+raw_receipts=relay4-required.log, relay4-runner-annotation.json, relay4-run.json
+
+2026-10-29 RELAY 3 — current-head original receipts rechecked:
+head=145e8a44cc9214915e383ac4be7ae225c8ff549d; PR323 OPEN -> r3/integration
+Gates.run=40880540678 completed/failure; required.job=123509626358 downstream failure
+root.job=123475733454 browser-visual-lint1/4; original annotation=hosted runner lost communication
+root.log=log not found (rechecked); this is NOT new editor assertion RED
+Foundation.run=40880540347 job=123470549113 success; product acceptance NOT_RUN
+current_source=tests/foundation/browser_store_design_test.go:163 selects only old2specs
+artifact.playwright.log=26 existing tests passed; new17cases excluded
+RED=NOT_OBTAINED; GREEN=NOT_RUN; implementation=NOT_RUN
+STOP=out-of-card runner failure; foundation selector needs integrator repair/explicit authorization
+fix_attempts=0; source_edits=0; commits=0; pushes=0; reruns=0 in relay3
+evidence=relay3-required.log,relay3-runner-annotation.json,relay3-run.json
+WAIT_RUN: NONE (both workflows complete; integrator owns next relay)
+local_tests/server/LIVE/Figma_writes=NOT_RUN; diagnostics only, author E0, source inspection E1
+
+2026-10-29 RELAY 2 current-head recheck:
+head=145e8a44cc9214915e383ac4be7ae225c8ff549d (unchanged tests-only)
+Gates.run=40880540678 status=completed conclusion=failure
+required.job=123509626358 failure is downstream: gate=failure aggregate=failure receipts=failure
+root.failed_job=123475733454 (--browser-visual-lint@1/4)
+root.annotation=The hosted runner lost communication with the server.
+root.log=gh run view --log-failed --job reports log not found
+receipts.job=123509362328 FAIL: --browser-visual-lint@1/4: no receipt (job wrote none)
+aggregate.job=123509362170 missing visual-lint shard1/4, 265/348 shots captured
+browser_design.receipt_test_count=65 (gate-wide count, NOT new browser test execution)
+browser_design.playwright_test_count=26 existing tests; 17 editor-v2 cases excluded by explicit CLI filters
+Foundation.run=40880540347 job=123470549113 success; NOT product acceptance
+RED=NOT_OBTAINED; GREEN=NOT_RUN; implementation=NOT_RUN
+STOP=out-of-card runner failure and unowned foundation harness selector; integrator action required
+fix_attempts=0; code_changes=0; commits=0; pushes=0; reruns=0 in relay2
+WAIT_RUN: NONE (all current-head runs completed; no new push)
+evidence=relay2-required.log, relay2-receipts.log, relay2-runner-annotation.json
+
 phase=tests-only RED preparation
 base=d0e7331525fec046fbe9361906fa66367ae583c6
 environment=MOCK
@@ -13,3 +88,45 @@ static.node_check_playwright_config=exit 0
 static.check_packet=exit 0, PASS_PACKET_STRUCTURE_ONLY
 static.browser_ownership_generation=exit 0, 53 modes (explicitly required generator)
 new_browser_cases=17
+
+2026-10-29 CI dispatch receipt (uncommitted until implementation push; no second RED push):
+PR=https://github.com/humaux/live_commerce_architecture_v1/pull/323
+head=145e8a44cc9214915e383ac4be7ae225c8ff549d
+Gates.workflow_run=40880540678
+Gates.url=https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40880540678
+Gates.status=PENDING (only plan queued; browser-design job not yet assigned)
+Foundation.workflow_run=40880540347
+Foundation.job=123470549113
+Foundation.url=https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40880540347/job/123470549113
+Foundation.status=PENDING
+RED=PENDING, no causal assertion failure observed yet
+GREEN=NOT_RUN, no implementation commit
+WAIT_RUN: 40880540678
+WAIT_RUN: 40880540347
+Wakeup owner=integrator; current card explicitly provides fresh-session relay when CI completes.
+Resume: read this file and CI failed-job logs; accept RED only if editor-v2 assertions execute and fail.
+No local server/test/background process was started. No merge, auto-merge or production operation.
+
+2026-10-29 RELAY 1 — BLOCKED, not causal RED:
+Verified PR head=145e8a44cc9214915e383ac4be7ae225c8ff549d (tests-only).
+Gates.workflow_run=40880540678 conclusion=failure
+Gates.failed_job=123475733454 name=gate (--browser-visual-lint@1/4)
+check_run.annotation=The hosted runner lost communication with the server.
+Gate step remains in_progress in completed job API response; no assertion failure available.
+gh run view 40880540678 --log-failed --job 123475733454: log not found.
+GET /actions/jobs/123475733454/logs: HTTP404 BlobNotFound.
+Foundation.workflow_run=40880540347 job=123470549113 conclusion=success
+browser_design.artifact=12901574277 receipt_artifact=12901204992
+browser_design.receipt_sha=26bc71e2dd686c1711defc6ecf59b58210a8e857 (CI checkout; not PR head)
+browser_design.receipt_spec_count=26; playwright.log confirms only26 pre-existing tests passed.
+ROOT_CAUSE: tests/foundation/browser_store_design_test.go:163 explicitly passes only
+tests/admin/design.spec.ts and tests/admin/oc/design-publish-pending.spec.ts to Playwright.
+New editor-v2.spec.ts never executes despite playwright.config.ts inclusion.
+RED=NOT_OBTAINED; new assertion failures=0, new test cases executed=0
+GREEN=NOT_RUN; implementation=NOT_RUN
+STOP=card requires stopping for out-of-card gate failure (hosted runner communication).
+fix_attempts=0; new commits=0; pushes=0; no rerun dispatched.
+Proposed next in-module harness path (not edited): tests/foundation/browser_store_design_test.go
+WAIT_RUN: NONE (prior workflow runs completed; integrator decision/relay required)
+Local tests/servers=NOT_RUN; CI artifact downloaded under ci-red-browser-design/.
+Humaux memory search/get/store now available; previous unavailable statements apply only to prior session.
