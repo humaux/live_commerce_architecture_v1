@@ -2,7 +2,7 @@
 // Depends on: Node test/http/registerHooks; actual store catchall BFF and a synthetic Go HTTP boundary.
 // Used by: focused Node gate and integrator independent verification; no real PII or provider traffic.
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";
 import { createRequire, registerHooks } from "node:module";
@@ -122,6 +122,7 @@ const sid = crypto.randomUUID(),
   entry = crypto.randomUUID();
 const roots = `live-sessions/${sid}`;
 const leaves: Record<string, string> = {
+  "profile": "profile",
   "live-settings/sold-out-reply": "live-settings/sold-out-reply",
   "message-templates": "message-templates",
   [`${roots}/reminders`]: "live-sessions/[session]/reminders",
@@ -592,4 +593,134 @@ test("W3-U2 Next proxy admits settings routes without weakening Studio raw-path 
   assert.equal(invoke(`${root}/claims/blocklist`,"GET","?limit=51").status,422);
   assert.equal(invoke(`${root}/claims/blocklist/check`).status,422);
   for(const path of [`${root}/%72eminders`,`${root}/reminders/extra`,`${root}/claims/blocklist/unknown`]) assert.equal(invoke(path).status,404);
+});
+
+// STORE-PROFILE-API: actual BFF Request -> signed-session/store resolution -> synthetic Go boundary.
+const profile = {name: "Synthetic merchant", contact_email: "merchant@example.test", contact_phone: "", version: 2};
+const profileCommand = {name: profile.name, contact_email: profile.contact_email, expected_version: 1};
+test("store profile BFF GET and idempotent PUT use only authenticated authority", async () => {
+  const savedPermissions = permissions;
+  permissions = ["store:read", "integration:manage"];
+  try {
+    reply(profile);
+    for (const method of ["GET", "PUT"]) {
+      const result = await call("profile", method, method === "PUT" ? profileCommand : undefined, {
+        "x-tenant-id": crypto.randomUUID(), "x-principal-id": crypto.randomUUID(), "x-forwarded-host": "forged.example.test",
+      });
+      assert.equal(result.status, 200, `${method} profile must reach the signed BFF route`);
+      assert.deepEqual(result.body, profile);
+      assert.match(result.headers.get("cache-control") ?? "", /no-store/);
+      const request = seen.at(-1)!;
+      assert.equal(request.url, `/v1/admin/stores/${store}/profile`);
+      assert.equal(request.method, method);
+      assert.equal(request.headers.authorization, `Bearer ${session}`);
+      for (const key of ["cookie", "x-tenant-id", "x-principal-id", "x-forwarded-host"]) assert.equal(request.headers[key], undefined);
+      if (method === "PUT") {
+        assert.equal(request.headers["idempotency-key"], "settings-synthetic-key");
+        assert.deepEqual(JSON.parse(request.body), profileCommand);
+      }
+    }
+  } finally { permissions = savedPermissions; }
+});
+test("store profile BFF rejects absent session, foreign store, CSRF and changed origin before upstream writes", async () => {
+  const savedPermissions = permissions;
+  permissions = ["store:read", "integration:manage"];
+  try {
+  reply(profile);
+  const before = seen.length;
+  assert.equal((await call("profile", "GET", undefined, {cookie: ""})).status, 401);
+  assert.equal((await call("profile", "GET", undefined, {}, crypto.randomUUID())).status, 404);
+  assert.equal((await call("profile", "PUT", profileCommand, {"x-csrf-token": "wrong"})).status, 403);
+  assert.equal((await call("profile", "PUT", profileCommand, {origin: "https://foreign.example.test"})).status, 403);
+  assert.equal(seen.length, before, "denied requests must never reach the profile upstream");
+  } finally { permissions = savedPermissions; }
+});
+test("store profile BFF preserves version conflicts and rejects invalid request grammar", async () => {
+  const savedPermissions = permissions;
+  permissions = ["store:read", "integration:manage"];
+  try {
+  reply({code: "conflict", message: "Conflict.", request_id: "synthetic-profile-conflict", retryable: false, details: {}}, 409);
+  assert.equal((await call("profile", "PUT", profileCommand)).status, 409);
+  const before = seen.length;
+  for (const path of ["profile?", "profile?tenant_id=forged", "profile/unknown"]) {
+    const result = await call(path);
+    assert.equal(result.status, path.includes("?") ? 422 : 404);
+  }
+  assert.equal((await call("profile", "DELETE")).status, 405);
+  assert.equal((await call("profile", "PUT", profileCommand, {"idempotency-key": ""})).status, 422);
+  assert.equal(seen.length, before);
+  } finally { permissions = savedPermissions; }
+});
+test("store profile BFF never falls back to fixture identity", async () => {
+  const enabled = process.env.COMMERCE_IDENTITY_ENABLED;
+  try {
+    delete process.env.COMMERCE_IDENTITY_ENABLED;
+    const before = seen.length;
+    assert.equal((await call("profile")).status, 404);
+    assert.equal(seen.length, before);
+  } finally { process.env.COMMERCE_IDENTITY_ENABLED = enabled; }
+});
+test("settings contract freezes profile versioning, five existing MANUAL TW mappings and OC-05 reuse", () => {
+  const contract = readFileSync(new URL("../../contracts/merchant-settings-wizard-v1.md", import.meta.url), "utf8");
+  const amendment = contract.split("## STORE-PROFILE-API")[1];
+  assert.ok(amendment, "missing STORE-PROFILE-API contract amendment");
+  for (const field of ["contact_email", "contact_phone", "expected_version", "Idempotency-Key", "integration:manage", "store:read"])
+    assert.ok(amendment.includes(field), `profile contract missing ${field}`);
+  for (const kind of ["home", "cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"])
+    assert.match(amendment, new RegExp(`\\|[^\\n]*\\b${kind}\\b[^\\n]*\\|`), `missing existing TW mapping: ${kind}`);
+  assert.match(amendment, /MANUAL/);
+  assert.match(amendment, /policy_version/);
+  assert.match(amendment, /#254/);
+  assert.match(amendment, /OC-05/);
+});
+
+test("profile BFF rejects malformed commands before dispatch and mismatched success receipts", async () => {
+  const savedPermissions = permissions;
+  permissions = ["store:read", "integration:manage"];
+  try {
+  const before = seen.length;
+  for (const command of [
+    {...profileCommand, tenant_id: crypto.randomUUID()},
+    {...profileCommand, store_id: store},
+    {...profileCommand, name: "  "},
+    {...profileCommand, contact_email: "Name <merchant@example.test>"},
+    {...profileCommand, contact_phone: "line\nbreak"},
+    {...profileCommand, contact_phone: "1".repeat(33)},
+    {...profileCommand, expected_version: null},
+    {...profileCommand, expected_version: -1},
+  ]) assert.equal((await call("profile", "PUT", command)).status, 422);
+  assert.equal(seen.length, before);
+  for (const receipt of [
+    {...profile, name: "Another command"},
+    {...profile, contact_email: "other@example.test"},
+    {...profile, contact_phone: "unexpected"},
+    {...profile, version: 3},
+  ]) {
+    reply(receipt);
+    assert.equal((await call("profile", "PUT", profileCommand)).status, 503);
+  }
+  } finally { permissions = savedPermissions; }
+});
+
+test("profile BFF needs store:read for reads and integration:manage for writes", async () => {
+  const savedPermissions = permissions;
+  try {
+    const before = seen.length;
+    permissions = [];
+    assert.equal((await call("profile")).status, 403);
+    permissions = ["store:read"];
+    assert.equal((await call("profile", "PUT", profileCommand)).status, 403);
+    assert.equal(seen.length, before);
+    reply(profile);
+    assert.equal((await call("profile")).status, 200);
+  } finally { permissions = savedPermissions; }
+});
+
+test("profile middleware admits the exact leaf and enforces its method/query grammar", async () => {
+  const {NextRequest} = await import("../../apps/admin/node_modules/next/server.js");
+  const {proxy} = await import("../../apps/admin/proxy.ts");
+  const invoke = (suffix = "", method = "GET") => proxy(new NextRequest(`${origin}/api/stores/${store}/profile${suffix}`, {method}));
+  for (const method of ["GET", "PUT"]) assert.equal(invoke("", method).headers.get("x-middleware-next"), "1");
+  assert.equal(invoke("", "DELETE").status, 405);
+  assert.equal(invoke("?tenant_id=forged").status, 422);
 });
