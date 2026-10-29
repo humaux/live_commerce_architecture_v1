@@ -1,8 +1,15 @@
-RVFIX2 #294 tests-only regression; execution PENDING.
+RVFIX2 #294 tests-only regression; causal assertion RED confirmed (E3).
 Baseline reviewed: 3e8fa84460b9f6824b6c11c5db365b44e9856efe
 Integration merged: d8093bc43f16f8eb4e209eeb6c7b698efcd27b0e
 Cases: actual A12 queued ACK -> first A9 with unrelated sent + newer inbound,
        own queued row visible/omitted x zh-TW/zh-CN/en, Node + native browser.
 Expected causal assertion: unrelated sent must not unlock an acknowledged queued operation before its first projection.
-RED run/job IDs: PENDING after push; WAIT-RUN.md holds native run registration.
+Tests-only SHA: 9035853d86f13a672d0eba01f2bd8fb14a1f9093
+Foundation RUN 40845262610 / job 123351070904: FAILURE, exact head verified through GitHub.
+Gates RUN 40845262722: IN_PROGRESS; native test jobs pending, plan is not evidence.
+Causal assertion RED: six new cases (visible/omitted x en/zh-TW/zh-CN) fail their own hidden-composer assertion at inbox-unknown.test.ts:68; 191 pass / 6 fail.
+Synthetic merge checkout: 86db5772b6fe36e325e0418c3abeab09dca79e95.
+Raw filtered original job output: red-assertions.log. This is not an import/compile failure.
+Gates 40845262722 belongs to tests-only head; not implementation GREEN.
+Implementation attempt 1 follows this confirmed RED; exact-head GREEN awaits its own CI.
 No local tests or server executed; no RED/GREEN PASS claimed.

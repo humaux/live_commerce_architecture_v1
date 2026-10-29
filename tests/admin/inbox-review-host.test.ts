@@ -243,6 +243,8 @@ const mock = (code: string) => `data:text/javascript,${encodeURIComponent(code)}
 const runtimeURL = mock(`const r=globalThis.__inboxReviewRuntime;
 export const {createContext,useContext,useState,useRef,useCallback,useEffect,jsx,Fragment}=r;export const jsxs=jsx;`);
 const adapters: Record<string, string> = {
+  // InboxThread's operations-client/model imports use the generic real-source resolver below;
+  // only transport is mocked, so response parsing and exact operation identity remain exercised.
   react: runtimeURL,
   "react/jsx-runtime": runtimeURL,
   "react-dom": mock("export const flushSync=callback=>callback(); export const createPortal=(...args)=>globalThis.__inboxReviewRuntime.createPortal(...args);"),
@@ -407,7 +409,7 @@ const response = (value: unknown, status = 200) =>
       "Cache-Control": "no-store",
     },
   });
-function transport(read: () => any, send?: () => any) {
+function transport(read: () => any, send?: () => any, operation?: () => any) {
   const calls: {
     path: string;
     method: string;
@@ -426,6 +428,7 @@ function transport(read: () => any, send?: () => any) {
     if (path.endsWith("message-templates")) return response({ items: [] });
     if (method === "POST" && path.endsWith("/read")) return response({ read_seq: 1 });
     if (method === "GET" && path.includes("/messages?")) return read();
+    if (method === "GET" && path.includes("/operations/") && operation) return operation();
     if (method === "POST" && path.endsWith("/messages")) return send?.() ?? response({ send_state: "queued" });
     throw new Error(`unexpected MOCK route ${method} ${path}`);
   };

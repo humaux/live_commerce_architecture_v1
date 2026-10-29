@@ -51,13 +51,14 @@ const fixtureBindings = {
   instagram: "10000000-0000-4000-8000-000000000073",
 } as const;
 const fixtureAgent = "10000000-0000-4000-8000-000000000072";
+const fixtureOperation = "10000000-0000-4000-8000-000000000075";
 
 /** Prepare isolated transport fixtures, never product state via DOM/evaluate or an actual Meta write. */
 async function mockInbox(page: Page, copy: Copy) {
   const future = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
   const incoming = copy.locale === "en" ? "What material is it?" : copy.locale === "zh-CN" ? "想了解材质。" : "想了解材質。";
   const state = { mode: "eligible", delivery: null as Delivery | null, omitOutbound: false, concurrentSent: false, original: "", posts: 0, queries: 0,
-    methods: [] as string[], read: new Set<string>() };
+    methods: [] as string[], read: new Set<string>(), operationConversation: "", operationReads: 0 };
   const rows = [ids.open, ids.instagram, ids.closed, ids.retry].map((id, i) => ({
     conversation_id: id, platform: i === 1 || i === 2 ? "instagram" : "messenger",
     display_name: `${copy.locale === "en" ? "Buyer" : copy.locale === "zh-CN" ? "买家" : "買家"} ${String.fromCharCode(65 + i)}`,
@@ -67,6 +68,18 @@ async function mockInbox(page: Page, copy: Copy) {
   }));
   const answer = (body: unknown, status = 200) => ({ status, contentType: "application/json",
     headers: { "Cache-Control": "private, no-store" }, body: JSON.stringify(body) });
+  // Transport preparation: the existing W6-05B detail read is tied to the actual A12 receipt.
+  await page.route(`**/api/stores/${store}/operations/${fixtureOperation}`, async route => {
+    expect(route.request().method()).toBe("GET");
+    state.operationReads++;
+    const row = rows.find(row => row.conversation_id === state.operationConversation)!;
+    const states = { queued: "READY", sent: "SUCCEEDED", failed: "FAILED_FINAL", blocked: "BLOCKED_POLICY", unknown: "UNKNOWN" };
+    await route.fulfill(answer({ operation_id: fixtureOperation, provider: row.platform === "instagram" ? "instagram" : "facebook",
+      action: "meta.dm_send", purpose: "service", state: states[state.delivery ?? "queued"], reason_code: "", attempts: 1,
+      created_at: "2026-10-29T06:35:00Z", updated_at: "2026-10-29T06:35:30Z",
+      object: { kind: "conversation", id: state.operationConversation },
+      actions: Object.fromEntries(["query", "cancel", "retry"].map(key => [key, { available: false, reason: "operation_closed" }])), events: [] }));
+  });
   await page.route(`**/api/stores/${store}/meta/health`, async (route) => {
     const health = state.mode === "connection" ? "unknown" : state.mode === "permission" ? "missing_permission" : "ok";
     await route.fulfill(answer({ severity: "none", pages: [{ page_id: "900007320071", page_name: "Fixture channel",
@@ -100,7 +113,9 @@ async function mockInbox(page: Page, copy: Copy) {
       expect(request.headers()["idempotency-key"]).toMatch(/^[A-Za-z0-9_-]{8,128}$/);
       state.original = body.text;
       state.delivery = "queued";
-      return route.fulfill(answer({ send_state: "queued", takeover_generation: 2 }));
+      state.operationConversation = id;
+      return route.fulfill(answer({ send_state: "queued", takeover_generation: 2,
+        operation_id: fixtureOperation, outbound_id: "10000000-0000-4000-8000-000000000076" }));
     }
     if (path.endsWith("/messages")) {
       state.queries++;
@@ -283,8 +298,15 @@ for (const copy of copies) {
         await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
         expect(state.posts).toBe(1);
       }
+      expect(state.operationReads).toBe(3);
+      state.delivery = "sent"; // MOCK worker completion; only the native status click observes it.
+      await query(page);
+      await expect(page.getByTestId("reply-text")).toBeVisible();
+      await page.getByTestId("reply-text").fill(copy.draft);
+      await expect(page.getByTestId("reply-send")).toBeEnabled();
+      expect(state.posts).toBe(1);
       record(`ACK concurrency ${copy.locale}/${omitted ? "omitted" : "visible"}`, "fill, click Send, click status twice",
-        "own pending result retained despite unrelated sent + newer inbound; composer hidden/disabled and only one POST");
+        "pending retained despite unrelated sent + newer inbound; exact-operation success alone reopens composer; only one POST");
     });
   }
 

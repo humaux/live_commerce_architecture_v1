@@ -1,5 +1,5 @@
 // Purpose: render one private conversation and explicit keyed read/takeover/reply/release actions.
-// Depends on: React, @live-commerce/format, inbox-client/types, Meta health, published templates and InboxFence.
+// Depends on: React, @live-commerce/format, inbox/operations clients and types, Meta health, templates and InboxFence.
 // Used by: Inbox; content/drafts/retry keys live only until the thread unmounts.
 // Invariants: server eligibility, CAS and UNKNOWN latches control every send; collapsed UI never grants authority.
 "use client";
@@ -8,6 +8,9 @@ import type { Store } from "@/lib/model";
 import { displayTime, instantToTaipei } from "@live-commerce/format";
 import type { ConversationItem, Thread, Template } from "@/lib/inbox-types";
 import { inboxRead, inboxWrite, InboxError } from "@/lib/inbox-client";
+import { readOperation } from "@/lib/operations-client";
+import { operationID } from "@/lib/operations-model";
+import { OrderReadError } from "@/lib/orders-client";
 import { useMetaHealth } from "@/lib/meta-health-hook";
 import {
   InboxFence,
@@ -20,6 +23,12 @@ import styles from "@/src/features/messages/Inbox.module.css";
 
 // A12 Plan and Check refuse at last_inbound + 24h - 5m (0128_lc_b4_sends.sql).
 const replyWindowSafetyMs = 5 * 60 * 1000;
+// W6-05B ACKNOWLEDGED is uncertain; only SUCCEEDED confirms this exact operation.
+const operationDelivery = {
+  READY: "queued", DISPATCHING: "queued", SUCCEEDED: "sent", FAILED_FINAL: "failed",
+  BLOCKED_POLICY: "blocked", STALE_BINDING: "blocked", CANCELLED: "blocked",
+  UNKNOWN: "unknown", ACKNOWLEDGED: "unknown",
+} as const;
 
 /** Show server-authoritative generation and delivery states; retries reuse the exact original submission. */
 export function InboxThread({
@@ -59,6 +68,7 @@ export function InboxThread({
   const [help, setHelp] = useState(false);
   const deliveryLock = useRef(false);
   const lockedOutbound = useRef<Pick<Thread["items"][number], "at" | "kind" | "principal_id"> | null>(null);
+  const acknowledged = useRef<{ id: string | null; text: string | null } | null>(null);
   const [delivery, setDelivery] = useState<string | null>(null);
   const persistedUnknown = useRef(false);
   const historyClear = useRef(false);
@@ -78,6 +88,7 @@ export function InboxThread({
     setDetails(false); setReadMarked(false); setEditing(false); setQueriedUnknown(false);
     deliveryLock.current = false;
     lockedOutbound.current = null;
+    acknowledged.current = null;
     persistedUnknown.current = false;
     historyClear.current = false;
     inFlight.current = false;
@@ -137,21 +148,49 @@ export function InboxThread({
         // Null, absent or malformed authority is not proof of a clear history, including on older pages.
         historyClear.current = data.has_unknown_outbound === false;
         if (!before) {
-          const observed = lockedOutbound.current;
-          // A9 can hide a pending/policy-blocked row below its display floor. Neither absence nor
-          // another send reconciles it; retain the lock until its projected row has a known result.
-          const latest = deliveryLock.current && observed
-            ? data.items.find(item => item.direction === "out" && observed.at !== null &&
-              item.at === observed.at && item.kind === observed.kind && item.principal_id === observed.principal_id)
-            : [...data.items].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
-              .find(item => item.direction === "out");
-          if (latest?.send_state) {
-            setDelivery(latest.send_state);
-            deliveryLock.current = latest.send_state === "queued" || latest.send_state === "blocked";
-            lockedOutbound.current = deliveryLock.current
-              ? { at: latest.at, kind: latest.kind, principal_id: latest.principal_id } : null;
-          } else if (!deliveryLock.current) {
-            setDelivery(null);
+          const ack = acknowledged.current;
+          if (ack) {
+            // A9 omits operation identity. Never adopt a display row as this ACK's result,
+            // even on its first read. No permission, missing ID, failed or mismatched read stays locked.
+            if (ack.id && permitted(store, "integration:read")) {
+              try {
+                const operation = await readOperation(store.id, ack.id,
+                  AbortSignal.any([ticket.signal, AbortSignal.timeout(8000)]));
+                if (!fence.current.current(ticket)) return;
+                if (operation.action === "meta.dm_send" && operation.purpose === "service" &&
+                  operation.provider === (conversation.platform === "instagram" ? "instagram" : "facebook") &&
+                  operation.object?.kind === "conversation" && operation.object.id === cid) {
+                  const state = operationDelivery[operation.state];
+                  setDelivery(state);
+                  deliveryLock.current = state === "queued" || state === "blocked";
+                  persistedUnknown.current ||= state === "unknown";
+                }
+              } catch (cause) {
+                // Historical read only: never query/retry/cancel a provider effect or clear the ACK.
+                if (!fence.current.current(ticket)) return;
+                if (cause instanceof OrderReadError && cause.code === "signed-out") {
+                  callbacks.current.onUnauthorized();
+                  return;
+                }
+              }
+            }
+          } else {
+            const observed = lockedOutbound.current;
+            // A9 can hide a pending/policy-blocked row below its display floor. Neither absence nor
+            // another send reconciles it; retain the lock until its projected row has a known result.
+            const latest = deliveryLock.current && observed
+              ? data.items.find(item => item.direction === "out" && observed.at !== null &&
+                item.at === observed.at && item.kind === observed.kind && item.principal_id === observed.principal_id)
+              : [...data.items].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
+                .find(item => item.direction === "out");
+            if (latest?.send_state) {
+              setDelivery(latest.send_state);
+              deliveryLock.current = latest.send_state === "queued" || latest.send_state === "blocked";
+              lockedOutbound.current = deliveryLock.current
+                ? { at: latest.at, kind: latest.kind, principal_id: latest.principal_id } : null;
+            } else if (!deliveryLock.current) {
+              setDelivery(null);
+            }
           }
         }
         setThread((old) =>
@@ -189,7 +228,7 @@ export function InboxThread({
         }
       }
     },
-    [cid, store.id, reply, clearGone],
+    [cid, store.id, store.role, store.permissions, conversation.platform, reply, clearGone],
   );
   useEffect(() => {
     fence.current.invalidate(true);
@@ -309,6 +348,7 @@ export function InboxThread({
     try {
       const result = await inboxWrite<{
         send_state: string;
+        operation_id?: string;
         takeover_generation?: number;
       }>(
         store.id,
@@ -324,6 +364,10 @@ export function InboxThread({
       setDelivery(result.send_state);
       deliveryLock.current = result.send_state === "queued" || result.send_state === "blocked";
       lockedOutbound.current = null;
+      acknowledged.current = deliveryLock.current ? {
+        id: typeof result.operation_id === "string" && operationID.test(result.operation_id) ? result.operation_id : null,
+        text: typeof submission.body.text === "string" ? submission.body.text : null,
+      } : null;
       setEditing(false); setQueriedUnknown(false);
       if (result.takeover_generation !== undefined)
         setThread((old) =>
@@ -423,9 +467,10 @@ export function InboxThread({
       {folded && <section className={styles.result}>
         <p role="status" data-testid="inbox-delivery-state">{resultCopy}</p>
         {(uncertainDelivery || delivery === "queued" || delivery === "blocked") && <button data-testid="inbox-send-locked" className={styles.button} disabled>{c.locked}</button>}
-        {delivery === "failed" && !uncertainDelivery && latestOutbound && !latestOutbound.unreadable &&
+        {delivery === "failed" && !uncertainDelivery && (acknowledged.current
+          ? acknowledged.current.text !== null : latestOutbound && !latestOutbound.unreadable) &&
           <button className={styles.button} data-testid="inbox-edit-original" disabled={busy} onClick={() => {
-            setText(latestOutbound.text); setTemplate(""); setEditing(true); setError(null);
+            setText(acknowledged.current?.text ?? latestOutbound!.text); setTemplate(""); setEditing(true); setError(null);
           }}>{c.editOriginal}</button>}
         <button className={styles.button} data-testid="inbox-send-status" disabled={busy || retry} onClick={() => {
           setError(null); setQueriedUnknown(uncertainDelivery); void load();
