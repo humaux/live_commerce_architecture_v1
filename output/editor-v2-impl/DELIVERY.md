@@ -1,3 +1,66 @@
+## RVFIX323 RELAY 1 — original publication content fixed; CI PENDING
+
+2026-10-30. Base/causal RED head `8709197df65b1190ca1eb2f8627994d02cc325cd`,
+branch `unit/editor-v2-ui`, assigned worktree, PR #323 into `r3/integration`.
+Role: dispatched UI worker; runtime Codex / GPT-6, exact variant and effort UNKNOWN.
+No delegation. Authority: latest relay; independent review's original P1 text in
+`/Volumes/data/live_commerce_architecture_v1/output/integrator/tools/logs/cxf-rv-323.log`
+review patch; current `contracts/storefront-v2.md` §B and SF-04/R1–R5;
+`Design.tsx`, `design-client.ts` and `internal/design/store.go`. Read AGENTS.md and
+架构.md §§0/1/2/26/27. Humaux tools absent; search/rejected/coord/store/canvas/index/link
+NOT_RUN; assigned ownership only, no invented shared persistence.
+
+Causal RED (E3 negative, MOCK): Gates `40933762355`, test job `123660587541`
+(`bundle:04`), artifact `12924102742`. All six new real-click cases fail their own
+assertions in three locales; 43 existing cases pass. Without reload: line 179 sees
+Unpublished B in A's pending details. With reload: line 191 expects no original
+summary but finds one. `required` job `123672670761` and `receipts` job `123672470036`
+are downstream only. Foundation `40933762352` / `123658758020` success accepts the
+RED head's structure only. See `rvfix323-red-assertions.log` and `red.log`.
+
+Root repair (attempt 1/2): freeze the original server-saved document by parsing
+`saved` into existing `publishedDoc` state BEFORE arming/sending the publication.
+Draft saves/cancel do not replace that snapshot. Recovery preserves it instead of
+looking at newer `base` / `saved`. Pending, result and published-content render the
+same snapshot; a reload loses the memory-only content and shows the explicit
+localized message. Request identity/body, durable three-resend budget, CAS, session
+fences and receipt handling are unchanged. No document added to sessionStorage.
+The two P2 findings remain deferred per the existing RVFIX assignment/comment.
+
+|Required fact|Desktop, mobile, pending/result/view behavior and CI oracle|
+|---|---|
+|Original source version A|Pending names A; success names receipt source A|
+|Name/contact/page content A|All three summaries use the original document, never saved B; six click cases|
+|Unavailable original after reload|No summary; explicit locale message in pending/result/view|
+|Newer saved draft B|Separate saved draft remains B after final reload|
+|Publication identity / count|Every send original key/body; exactly one receipt|
+
+|zh-TW|zh-CN|en|
+|---|---|---|
+|無法顯示這次發布的內容，請前往網店查看。|无法显示本次发布的内容，请前往网店查看。|This publication's content is unavailable. Visit your store to check it.|
+
+UI PROCESS: BOURDIEU / PROJECT UNDERSTANDING / MOBBIN → EAGLE /
+FIGMA OFFICIAL GUIDANCE sections and the full visible-copy table below remain in force.
+This repair introduces no visual pattern, control, option or Figma change. Q6 UNKNOWN.
+No new/renamed imports; checked every `Design.tsx` compiler harness using
+`grep -rlE 'Design\.tsx' tests/`; timezone harness requires no injected dependency change.
+Browser spec/route/import inventory unchanged; ownership generator explicitly excludes
+app implementation hashes, so no regeneration/merge is required. Go graph unchanged;
+depmap not regenerated. All unchanged tests/fixtures/budgets/density thresholds retained.
+
+Static E1: `node --check packages/i18n/src/editor.ts`,
+`node --check tests/admin/editor-v2.spec.ts`, `git diff --check`: exit 0.
+Local tsc executable/dependencies unavailable; full TSX type/build verification CI-only.
+Own acceptance E0; new-head GREEN PENDING; no completion or independent acceptance claim.
+This relay source paths: only `Design.tsx`, `packages/i18n/src/editor.ts`, evidence here.
+Earlier whole-PR exceptions still listed for integrator approval:
+`apps/admin/components/DesignVersions.tsx`, `tests/foundation/browser_store_design_test.go`.
+NOT_RUN: local tests/builds/servers/containers/PG/browser; Figma/copy-lint; Humaux;
+independent acceptance; LIVE/production. No local processes started. Integrator owns
+terminal CI notification and fresh-session relay; failure/cancelled/timed_out are
+terminal failure matchers. Record exact Gates/Foundation WAIT_RUN after the one
+implementation push and end monitoring under ten minutes. No merge/auto-merge.
+
 ## RVFIX #323 — independent review P1, tests-only RED PENDING
 
 2026-10-30. Authority: current RVFIX assignment; independent review final verdict in
@@ -643,3 +706,23 @@ GREEN PENDING; static E1; author acceptance E0. Integrator owns terminal notific
 fresh-session relay, with failure/cancelled/timed_out matched; CI timeouts unchanged.
 No local process, no merge/auto-merge, no evidence-only push. Shared Humaux persistence
 and independent review NOT_RUN. Preserve all prior failure artifacts and dirty evidence.
+RVFIX #323 tests-only RED handoff, 2026-10-30.
+
+Head: 8709197df65b1190ca1eb2f8627994d02cc325cd
+WAIT_RUN: 40933762355 — Gates (GitHub runners), in_progress; test job not assigned at readback.
+WAIT_RUN: 40933762352 — Foundation checks, in_progress; foundation job 123658758020.
+Both workflow headSha values equal this head. No assertion-level RED observed yet; GREEN PENDING.
+
+Six new real-click regressions cover publication A committed with response loss, newer saved B, and original-key recovery with/without reload in all three locales. Fixture receipt lookup now precedes new-operation CAS and every replay body must match the original receipt source. Product code intentionally unchanged until causal CI RED.
+
+Next session: read the exact Gates test job and raw browser artifact. Required RED is each new case failing its no-B/original-document assertion, not a setup/import/runner failure. Record failing run/job IDs and excerpts in red.log before product edits. Keep at most two targeted attempts per blocker. Implement the P1 at the root, preserving original key/body, durable retry budget and session fences. Bind pending/result/view summaries to the original publication document; explicitly say when a reload loses that document. Add the three-locale copy already specified in DELIVERY.md; preserve existing UI process/parity tables. Push one implementation batch, await the PR's own GREEN, and obtain independent review through the integrator. Never merge or enable auto-merge.
+
+P2 for issue:
+- Review-entry race, Design.tsx openReview: delayed storefront GET can open review after navigation/edits; confirmation then silently returns. Future regression should hold the GET while using real navigation/edit clicks.
+- Reorder action selection, DesignSections.tsx / DesignNav.tsx: index-based open menu moves to another item after reorder/removal, enabling wrong-item actions. Future regression should perform consecutive actions and verify the persisted selected item/order.
+These are deferred per the RVFIX assignment; no P2 code edits or issue creation claimed.
+
+Evidence: node --check tests/admin/editor-v2.spec.ts and git diff --check exit 0 (E1). Author PASS E0. CI results PENDING.
+Current relay files outside PLAN paths: none. Earlier PR exceptions remain DesignVersions.tsx and tests/foundation/browser_store_design_test.go for integrator approval.
+NOT_RUN: local tests/builds/servers/containers/PG/browser; Figma/copy-lint; Humaux coord/store/canvas/index/link unavailable; independent acceptance; LIVE/production.
+No local processes to stop, no temporary fixture/server resources created. Integrator owns completion notification/fresh-session relay; failure/cancelled/timed_out are terminal handoff outcomes. Monitoring stopped under ten minutes. Receipts stay uncommitted; no evidence-only push.

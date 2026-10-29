@@ -287,3 +287,37 @@ Both run headSha values match this push. GREEN PENDING; static E1, author accept
 PR body + handoff comment updated. Integrator receives completion and relays a fresh session.
 Monitoring stopped under ten minutes; failure/cancelled/timed_out terminal, job timeouts unchanged.
 No local process to stop, no merge/auto-merge/evidence-only push. Post-push evidence uncommitted.
+RVFIX #323 tests-only RED handoff, 2026-10-30.
+
+Head: 8709197df65b1190ca1eb2f8627994d02cc325cd
+WAIT_RUN: 40933762355 — Gates (GitHub runners), in_progress; test job not assigned at readback.
+WAIT_RUN: 40933762352 — Foundation checks, in_progress; foundation job 123658758020.
+Both workflow headSha values equal this head. No assertion-level RED observed yet; GREEN PENDING.
+
+Six new real-click regressions cover publication A committed with response loss, newer saved B, and original-key recovery with/without reload in all three locales. Fixture receipt lookup now precedes new-operation CAS and every replay body must match the original receipt source. Product code intentionally unchanged until causal CI RED.
+
+Next session: read the exact Gates test job and raw browser artifact. Required RED is each new case failing its no-B/original-document assertion, not a setup/import/runner failure. Record failing run/job IDs and excerpts in red.log before product edits. Keep at most two targeted attempts per blocker. Implement the P1 at the root, preserving original key/body, durable retry budget and session fences. Bind pending/result/view summaries to the original publication document; explicitly say when a reload loses that document. Add the three-locale copy already specified in DELIVERY.md; preserve existing UI process/parity tables. Push one implementation batch, await the PR's own GREEN, and obtain independent review through the integrator. Never merge or enable auto-merge.
+
+P2 for issue:
+- Review-entry race, Design.tsx openReview: delayed storefront GET can open review after navigation/edits; confirmation then silently returns. Future regression should hold the GET while using real navigation/edit clicks.
+- Reorder action selection, DesignSections.tsx / DesignNav.tsx: index-based open menu moves to another item after reorder/removal, enabling wrong-item actions. Future regression should perform consecutive actions and verify the persisted selected item/order.
+These are deferred per the RVFIX assignment; no P2 code edits or issue creation claimed.
+
+Evidence: node --check tests/admin/editor-v2.spec.ts and git diff --check exit 0 (E1). Author PASS E0. CI results PENDING.
+Current relay files outside PLAN paths: none. Earlier PR exceptions remain DesignVersions.tsx and tests/foundation/browser_store_design_test.go for integrator approval.
+NOT_RUN: local tests/builds/servers/containers/PG/browser; Figma/copy-lint; Humaux coord/store/canvas/index/link unavailable; independent acceptance; LIVE/production.
+No local processes to stop, no temporary fixture/server resources created. Integrator owns completion notification/fresh-session relay; failure/cancelled/timed_out are terminal handoff outcomes. Monitoring stopped under ten minutes. Receipts stay uncommitted; no evidence-only push.
+
+RVFIX323 RELAY 1 — causal RED verified before product edits, 2026-10-30
+Head: 8709197df65b1190ca1eb2f8627994d02cc325cd; PR #323.
+Gates run 40933762355, completed failure, bundle:04 test job 123660587541.
+required 123672670761 and receipts 123672470036 fail downstream; not assertion evidence themselves.
+Foundation run 40933762352 / job 123658758020 success at the RED head only.
+Read gh pr checks 323 and gh run view 40933762355 --log-failed --job 123672670761 / 123660587541.
+Downloaded raw artifact gate-browser-design id 12924102742 into rvfix323-red-browser/.
+Browser log: rvfix323-red-browser/playwright/store-design/20261029T185340.286020705/playwright.log.
+All six new cases fail their own assertions; 43 existing cases pass (3.7m).
+No reload, all three locales: editor-v2.spec.ts:179, Expected not "Unpublished B"; Received pending summary includes Unpublished B, draft-b@example.test, Unpublished policy B.
+With reload, all three locales: editor-v2.spec.ts:191, missing original content must not fall back to the newer draft; Expected summary count 0, Received 1.
+This is E3 negative behavior evidence (MOCK), not import/setup/runner failure. No CI rerun.
+Implementation attempt 1/2 for this P1 follows: freeze original saved document in existing publishedDoc state before arming the attempt; never replace it from current saved/base. Render original content or explicit unavailable message across pending/result/published. No storage document, request/retry/session/CAS changes.

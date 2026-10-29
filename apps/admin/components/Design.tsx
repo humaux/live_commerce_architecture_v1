@@ -10,7 +10,7 @@
 // .../preview-token, GET .../design/versions, GET|POST .../design/media, GET .../design/media/{id}, POST
 // .../design/media/{id}/delete, plus GET .../storefront (the active address, to open the preview) -> Go
 // /v1/admin/stores/{id}/design/* (internal/httpapi/design.go; integration:read / integration:manage).
-// Invariants: pending publication is armed durably before send and resolved only by its original key/body.
+// Invariants: pending publication is armed durably before send and resolved only by its original key/body; summaries retain that attempt's document.
 // Owns: the editable copy of the document, the dirty/unsaved guard, the local "what is still missing" hints and the
 // request choreography (save before publish/preview, compare-and-set versions). It never validates what the server
 // owns (the server's 422 path is shown on the field) and never keeps the preview token (it only opens the link).
@@ -340,7 +340,9 @@ function Editor({
     const version = base;
     setBusy("publish");
     setReceipt(null);
-    setPublishedDoc(null);
+    // Keep this attempt's content in memory only; later saves must not change its summary.
+    // Reload retains the request identity, but unavailable content must never fall back to a newer draft.
+    setPublishedDoc(JSON.parse(saved) as DesignDocument);
     setResultError('');
     const attempt: Pending = { version, key: crypto.randomUUID(), boundary, retries: 0 };
     setPending(attempt); // synchronous sessionStorage write BEFORE the first POST
@@ -385,7 +387,6 @@ function Editor({
     setIntegrity(false);
     setLive(r.value.version);
     setReceipt(r.value);
-    setPublishedDoc(attempt.version === base ? JSON.parse(saved) as DesignDocument : null);
     setVersions(previous => ({ live_version: r.value.version, items: [r.value, ...previous.items.filter(v => v.version !== r.value.version)] }));
     setTab('result');
     setNote({ kind: "ok", text: fill(c.okPublished, { n: r.value.version }) });
@@ -618,7 +619,7 @@ function Editor({
           <button type="button" onClick={() => void recheckPublish()} disabled={rechecking} data-testid="design-publish-recheck">
             {rechecking ? c.publishRechecking : c.editor.query}
           </button>
-          <details><summary>{c.editor.details}</summary><DesignSummary store={store} doc={JSON.parse(saved) as DesignDocument} c={c} /></details>
+          {publishedDoc ? <details><summary>{c.editor.details}</summary><DesignSummary store={store} doc={publishedDoc} c={c} /></details> : <p>{c.editor.contentUnavailable}</p>}
         </div>
       )}
       {superseded && <p className="design-note" data-testid="design-publish-superseded">{c.publishSuperseded}</p>}
@@ -661,12 +662,13 @@ function Editor({
         {resultError ? <p role="alert">{resultError}</p> : receipt && <p>{displayTime(locale, receipt.published_at)}</p>}
         <p>{c.editor.scope}</p><p>{c.editor.unchanged}</p>
         <p>{address || c.editor.noAddress}{address && ` · ${c.editor.available}`}</p>
-        <details><summary>{c.editor.details}</summary><DesignSummary store={store} doc={publishedDoc ?? JSON.parse(saved) as DesignDocument} c={c} /></details>
+        {publishedDoc ? <details><summary>{c.editor.details}</summary><DesignSummary store={store} doc={publishedDoc} c={c} /></details> : <p>{c.editor.contentUnavailable}</p>}
         {!resultError && <button type="button" data-testid="design-view-published" onClick={() => setTab('published')}>{c.editor.view}</button>}
       </section>}
       {tab === 'published' && <section className="design-panel" data-testid="design-published-content">
         <h2>{live === null ? c.neverPublished : fill(c.liveVersion, { n: live })}</h2>
         {publishedDoc && !superseded && <DesignSummary store={store} doc={publishedDoc} c={c} />}
+        {!publishedDoc && <p>{c.editor.contentUnavailable}</p>}
         {address && <a href={address} target="_blank" rel="noopener noreferrer">{c.editor.visit}</a>}
       </section>}
       <fieldset
