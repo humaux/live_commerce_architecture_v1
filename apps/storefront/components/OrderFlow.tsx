@@ -4,7 +4,7 @@
 // Depends on: purchase.ts CAS/recovery, buyer BFF destination/options/orders routes, payment and fulfilment components.
 // Address field definitions and projection live in lib/order-fields.ts.
 // Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
-// Invariants: destination needs explicit confirmation; a CVS brand change gets a fresh server quote.
+// Invariants: confirmation waits for matching server quote/options and an explicitly confirmed destination; a CVS brand change gets a fresh server quote.
 // Local extension of approved B: native address form after the real quotation;
 // no new wizard, payment claim or persistent address cache. Transport/CAS and
 // receipt recovery live in purchase.ts, not in this rendering component.
@@ -55,6 +55,7 @@ import {
 } from "../lib/cvs-contract";
 import {
   checkoutInput,
+  refreshCodQuote,
   offeredPaymentModes,
   currentDestination,
   pendingPurchase,
@@ -95,6 +96,7 @@ export default function OrderFlow({
   onOrder,
   money,
   onCodFee,
+  onQuote,
   cvsResume,
   onCvsBrand,
   cvsKinds,
@@ -114,6 +116,7 @@ export default function OrderFlow({
   // OC-09b: reports the selected cash-on-delivery option's server surcharge (null = another mode or COD not offered) so the
   // checkout bottom bar can show the quote's cod_due_minor; never an amount of its own.
   onCodFee?: (fee: number | null) => void;
+  onQuote: (quote: Quote) => void;
   cvsResume?: CvsDraft;
   onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
   cvsKinds?: CvsKind[];
@@ -159,6 +162,8 @@ export default function OrderFlow({
 
   useEffect(() => {
     const version = ++live.current;
+    setOption(null);
+    setConfirmed(null);
     void (async () => {
       try {
         const [current, currentCart] = await Promise.all([
@@ -206,10 +211,12 @@ export default function OrderFlow({
           seen.add(cursor);
         } while (!found && cursor);
         if (!found) throw new BuyerClientError("request_failed");
+        const latest = await refreshCodQuote(context, quote, found);
         if (version !== live.current) return;
+        onQuote(latest);
         setOption(found);
         // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
-        const offered = offeredPaymentModes(found, quote.amount.total_minor);
+        const offered = offeredPaymentModes(found, latest.amount.total_minor);
         if (offered?.length) setPaymentMode((current) => (offered.includes(current) ? current : offered[0]));
         // Options can arrive after the buyer edits or confirms a recovered
         // address. Never hydrate fields/head again from that older snapshot.

@@ -1,0 +1,220 @@
+RED (deliberate mutation, head c918028953847faba5ca12a5809e63d47c3e1d91 for the storefront; 80dc8a55 mutation for admin; same Design.tsx mutation kept through c918028):
+Mutation: Design.tsx recheck also called publish() (new Idempotency-Key); error.tsx offline banner disabled (`false && !online`).
+
+Admin  - Gates run 40462789529, job 122056953409 (gate --browser-design, head 0222d531 merge sha), TestBrowserStoreDesign:
+  tests/admin/oc/design-publish-pending.spec.ts:20 "OC11 publish pending (en, three-locale wording)"
+  FAILED at assertion "OC11-A2 recheck is a read: still exactly one publish request, one key" (received two publish requests, keys c0dc87bc... and bd30bd02..., both expected_draft_version 4). design.spec.ts: 8 passed.
+Storefront - Gates run 40502862891, job 122191823469 (gate --browser-storefront), shop-real-gate.mjs -> tests/storefront/offline-error.spec.ts:
+  FAILED at "OC11-B2 zh-TW offline banner text" (getByTestId('offline-banner') never appeared). SFR01-SFR09 and OC11-B0/B1 (error state renders, no banner while online) passed.
+
+Setup errors seen first, NOT counted as RED: run 40459757322 Foundation check-gates "offline-error.spec.ts is run by no gate"; run 40462789529 job 122056952289 OC11-B00 (cart link absent on home); run 40480095274 job 122137183144 OC11-B0 (garbage RSC payload did not reach the error boundary).
+Also not counted: run 40453952388 Foundation, shell-architecture.test.mjs "error.tsx: fetch 1 > 0" (an earlier fetch-in-reload mutation caught by the existing architecture test, dropped).
+
+REVIEW ROUND 1 RED (tests only, implementation of ca1be4157; heads c76884a0d then 100ae6fdb):
+- admin, Gates run 40524211987 attempt 2, job 122371308525: OC11-A5 "pending survives a reload" failed (pending banner gone after page.reload()).
+- storefront, same run, job 122371307295: OC11-B3 "zh-TW the only actionable control is the reload" failed (the 回到商店 link present).
+- admin rollback case, Gates run 40569219761, job 122433760269 (head 100ae6fdb, after a setup fix that opened the versions tab): OC11-A4 "the old publish row (source_version equal) must not confirm" failed (old publish row confirmed a new lost publish).
+- A6/A7 (unconfirmed state, not-yet) and B6/B6b (reload really re-reads) were not reached by the red runs; they are asserted for the first time in the GREEN run. Setup failure not counted: run 40524211987 attempt 1 was cancelled before any job ran; test 3 first failed on the missing versions-tab click.
+GREEN for the final SHA: recorded in the PR comment after the run (not in this file, to avoid a docs-only push during Gates).
+
+DIRECTED FIX 1 RED (existing CI; no new RED push required by the dispatch):
+- Head deb79b87dbe933267a23a89b9e48c368dcc75556, Gates run 40630002101, job 122684528117 (gate --browser-design, TestBrowserStoreDesign).
+- GitHub job API confirms completed/failure at that head. Artifact gate-browser-design (id 12812066011), playwright/store-design/20261028T111753.399966496/results/oc-design-publish-pending--3c5de--commit-never-shows-success/error-context.md confirms locator.fill timed out after 30000 ms waiting for getByTestId('design-name'). Its page snapshot shows only the unavailable state: "The store design is temporarily unavailable. Try again." and a Try again button, with no editor.
+- Root cause from current source: page.goto returns before useLoad's loadAll (draft/media/versions) completes. Installing the versions-abort route before edit can abort that initial read; Design renders the unavailable state instead of Editor, so design-name is absent.
+- Fix: complete the real design-name fill before installing the versions-abort route. Subsequent refresh reads still fail; the second publish is still aborted before commit; every existing A11 assertion remains unchanged.
+- This setup timeout is not assertion-level RED evidence for A11. The earlier mutation/assertion RED records above remain unchanged. New-head CI and independent review are pending.
+
+REVIEW FIX RED BATCH (2026-10-29, PR #221, #253/#264):
+Base after integration merge: 77627f4fd (origin/r3/integration bf161bac96252c35337e07713c08a275d48e3e17).
+Tests plus explicitly labelled minimal mutations: arm-after-response and stale-list-only watermark.
+Expected own-assertion failures: OC11-A9 persisted key while POST held; OC11-A10 actual second POST after reload; OC11-A11 stale row must not confirm; OC11-P1a key metadata and other-tab identity; OC11-P1b local rollback disabled, superseded resolution/unlock/persistence and bounded recheck read.
+Run/job ids: PENDING until push. No assertion RED or GREEN claimed yet. Initial-load/fill/timeouts outside the bounded-read assertion do not count.
+Local tests: NOT_RUN (prohibited). Humaux: unavailable, no shared memory/canvas write.
+
+REVIEW FIX RED PUSH RECEIPT (PENDING; not assertion evidence):
+Head: 33bbc7e8d4f0da89ee7b28cff9c94d7f65d6873c.
+Gates workflow WAIT_RUN: 40758862245 (pull_request, in_progress); only plan job materialized at handoff, so no test job id or assertion failure yet. Do not use plan job as acceptance.
+Foundation workflow WAIT_RUN: 40758862052; foundation job 123065015466 in_progress. gh pr checks 221 exit 8 = pending.
+GREEN: NOT_RUN. Implementation push: NOT_DONE, waiting for causal assertion RED.
+Wakeup: integrator relays these workflows' conclusions in a fresh session per dispatch. Next session inspect failed browser-design job logs and recover each named assertion; if setup fails, count targeted attempt and do not call it RED. Record synthetic checkout SHA when actual test job materializes.
+This receipt is intentionally retained as a local evidence-only diff for the implementation commit; no extra CI-triggering evidence push. PR comment also records the receipt remotely.
+
+RELAY 1 RAW ASSERTION AUDIT (2026-10-29; no GREEN claim):
+Head 33bbc7e8d4f0da89ee7b28cff9c94d7f65d6873c; Gates 40758862245, bundle:04 job 123067989372, completed/failure.
+Synthetic checkout 2d6b62b0cf35b762ccdb1917d3e170a091eef3d5 (head into base bf161bac96252c35337e07713c08a275d48e3e17).
+Source: official artifact gate-browser-design id 12849931133, member playwright/store-design/20261028T202735.230547984/playwright.log; preserved as output/oc-11/review-red-playwright.log. Artifact transport was slow: bounded 90s API download yielded a partial ZIP; tar recovered the earlier complete log member. Independently verified that member's deflate EOF, compressed/uncompressed sizes and ZIP CRC32 5978702a (23574 bytes, compressed 3236). Full ZIP download NOT_DONE; incomplete container removed, original artifact remains on GitHub. No local test executed.
+Preserved log SHA256: e7a49529bf3c217c2b4b514fda0bae40b96f780348cc3f1b6467085d0668e419.
+Observed 6 failed / 13 passed. Assertion RED witnessed:
+- OC11-P1a versions expose the committed original request key: received undefined.
+- OC11-A9 identity durable while original POST held: expected intercepted request key, received undefined.
+- OC11-A11 first confirmed publish must not confirm second: design-publish-notyet absent, own assertion timeout 10000ms (not setup/fill timeout).
+- OC11-P1a another request must never be our success: design-note count expected 0, received 1.
+- OC11-P1b bounded read: Recheck remained disabled after the own 7000ms assertion budget.
+NOT witnessed: OC11-A10 count failure. The in-flight test reported only A9; do not claim #264 closed. Source inference: reload can reject the old document's fetch before teardown, letting arm-after-response persist pending during cancellation. Corrected transport fixture withholds publish rejections until document destruction, preserving real native requests/routes/reload/clicks, so old-context cleanup cannot mask the second POST.
+P1b supersession NOT_REACHED: timeout:0 on the enabled local rollback control exhausted the 30000ms whole-test timeout, then newPage failed against the disposed context. This is not terminal-resolution RED. Replaced unbounded soft locator waits with immediate predicate samples after existing boundaries so all independent oracles execute. Primary Playwright v1.63.0 matcher/progress source checked; references in DELIVERY.md.
+Foundation 40758862052 / job 123065015466 passed on the old head; current candidate acceptance remains PENDING. This directed test-oracle correction is attempt 1; both labelled product mutations remain solely for RED. No implementation push because current storefront-v2:390 requires an integrator-frozen receipt contract; requested that contract + backend ownership, no migration assigned.
+
+RELAY 1 CORRECTED RED PUSH RECEIPT (local handoff; do not push evidence-only):
+Head c3d4abb0099821c0e0a7aa10bf9f932fc390b7d3; integration merge checkpoint e810e77d064d4050b001a5426d35d95f9835e1b0; upstream integration 313c2c36f4ac064975c1c7c170d710cb63fa457f.
+WAIT_RUN Gates 40765842298; WAIT_RUN Foundation 40765842391. Both refer to pull_request workflows at the pushed head, not plan jobs. Test jobs/results not yet available; RED sensitivity still PENDING, GREEN NOT_RUN, no implementation pushed.
+Foundation job 123089643032 queued; gh pr checks shows pending. Gates has no test job at handoff; no plan job is acceptance.
+Wakeup: integrator relays workflow completion in a fresh session and supplies the frozen receipt contract/backend ownership continuation. Recheck A10's own two-POST count failure and supersession assertions, never infer them from another RED. Attempt 1 on the oracle-blocker; at most one further targeted attempt if the same blocker remains, then STOP.
+This receipt remains a local red.log diff for the eventual implementation commit; the remote PR comment records the same run IDs. No extra evidence push; no local test/server/process remains.
+
+RELAY 2 ASSERTION RED VERIFIED (2026-10-29; implementation BLOCKED):
+Tested PR head c3d4abb0099821c0e0a7aa10bf9f932fc390b7d3; Gates 40765842298 / bundle:04 job 123102003431 completed/failure; synthetic checkout 503296911fd8086695fba0e934fdd16cb20cc022 into integration 313c2c36f4ac064975c1c7c170d710cb63fa457f.
+Official job logs read using gh pr checks 221, gh run view --log-failed --job 123102003431 (workflow still running, refused logs), then GitHub jobs logs API. Artifact gate-browser-design 12852169827 member playwright/store-design/20261028T213725.933332995/playwright.log preserved as relay2-red-playwright.log. Download bounded at 45 seconds: partial ZIP 556010 bytes; recovered member independently validated deflate EOF, ZIP data-descriptor CRC32 f43ad651, uncompressed 32346 bytes / compressed 4202 bytes; SHA256 4f4b85034952c6bc0a1d1ebea90bf1d7706fa07d859336e9f0d9b5558924dc82. Partial container removed; official artifact remains authoritative.
+Observed 6 failed / 13 passed. Each required RED reached its own assertion:
+- A9: expected sent key while original POST held, received undefined; after reload pending absent and Publish enabled.
+- A10: expected 1 publish POST, received 2 (both same expected_draft_version 7, different keys), spec line 173. No setup or whole-test timeout masks this witness.
+- A11: stale first publication falsely confirms second request; design-publish-notyet absent, spec line 190 own 10000ms assertion timeout, not fill/setup timeout.
+- P1a: original key missing from versions DTO; another tab's publish incorrectly creates our success note (expected count 0, received 1).
+- P1b: local rollback enabled while pending; after external rollback, pending remains (expected 0, received 1), superseded message absent, Publish disabled, persisted pending still present after reload. All these assertions executed.
+- P1b bounded recheck: own 7000ms assertion fails because Recheck stays disabled. UNKNOWN was not relabelled as failure.
+Foundation 40765842391 / job 123089643032 SUCCESS only at tested c3d4abb0; not acceptance of any later head. GREEN NOT_RUN.
+Current local checkpoint: merged origin/r3/integration c12fac9a2acafc04a7be5222c10ff2573975dde6 as fd7c8b03bc7b686c83d7d3ee62e6d3d95105c73b. Merge-only checkpoint NOT_PUSHED; no new CI started; no implementation committed. Existing local red.log receipt preserved.
+STOP: current contracts/storefront-v2.md:390 requires a frozen request-bound terminal-receipt/read contract; internal/design/store.go:51,223,234,307 and internal/httpapi/design.go:47 still drop the request key. OC-11 write_paths exclude these backend packages; current dispatch says STOP for contract/unowned backend changes. No migration number or R2 pin assigned. Need integrator-frozen receipt semantics (including authoritative failure versus unknown/in-flight), explicit backend ownership and assigned migration/pin if needed. No migration/contract/backend edit, no test weakening, no local tests or servers. Deliberate RED mutations remain; DO NOT MERGE.
+Wakeup: integrator supplies contract/ownership continuation and relays remaining Gates conclusion. WAIT_RUN 40765842298 remains the tested RED workflow, not a new implementation run. Test sensitivity RED verified; issue #264 not closed because implementation GREEN is absent.
+
+RELAY 3 (2026-10-29):
+Official jobs API rechecked 123102003431: completed/failure, run 40765842298, exact head c3d4abb0099821c0e0a7aa10bf9f932fc390b7d3, Gate step failure. Foundation 40765842391 / 123089643032 completed/success at that RED head. gh run view --log-failed refuses logs while whole Gates workflow remains in_progress; direct job logs endpoint readable. Raw browser evidence above re-read and SHA256 verified unchanged; A9/A10/A11 and both P1 reached their own assertions.
+Merged latest origin/r3/integration dcecd6220 locally as cf5add082b9519dd628e68410ebfd96fc97139f9 (not pushed). Current storefront-v2:390 still requires a frozen original-request terminal-receipt/read contract; backend still discards the request key. No contract continuation/backend ownership/migration allocation arrived in Relay 3. Same explicit STOP remains. No implementation/new RED attempt/new CI/evidence-only push. GREEN NOT_RUN. WAIT_RUN 40765842298 is the prior RED workflow only. Integrator continuation required; never infer failure from timeout/absence, never merge the deliberate RED mutations.
+
+RELAY 4 (2026-10-29):
+Fetched origin/r3/integration; tip remains dcecd6220, git merge returns Already up to date. Local checkpoint cf5add082b9519dd628e68410ebfd96fc97139f9 is unpushed; PR head remains c3d4abb0099821c0e0a7aa10bf9f932fc390b7d3. Read requested review, contracts, issues #253/#264, gh pr checks and official job API/logs. gh run view --log-failed --job refuses logs while the overall workflow runs; jobs logs API succeeds. Job 123102003431 / run 40765842298 is completed/failure at that PR head; Foundation 123089643032 / 40765842391 is completed/success at the same RED head only.
+Preserved raw browser log SHA256 reverified as 4f4b85034952c6bc0a1d1ebea90bf1d7706fa07d859336e9f0d9b5558924dc82. A9 durable-key, A10 actual two-POST count, A11 stale-row rejection and both P1 counterexamples reach their own assertions; 6 failed / 13 passed. E3 RED sensitivity only, no GREEN.
+STOP unchanged: storefront-v2.md:390 requires a frozen original-request terminal-receipt/read contract; issue #253 requires a DTO contract change. internal/design/store.go still discards the key, and contracts/tasks.json assigns no backend ownership or migration/R2 allocation to OC-11. Relay 4 supplies no frozen continuation and retains the explicit contract/unowned-backend STOP. Need integrator-frozen receipt semantics, explicit internal/design + internal/httpapi/design.go ownership, and assigned migration/R2 pin if needed. Absence/timeout must remain UNKNOWN.
+No new implementation, test correction, commit, push or workflow. Do not merge deliberate RED mutations. Local tests/builds/servers/PG/browser NOT_RUN. This relay edits only red.log and DELIVERY.md; preserved previous evidence changes remain. Humaux tools discovered after deferred inventory refresh; targeted records read and locked problem/canvas handoff written. No queue claim (dispatched subtask), delegation or Figma action. Wakeup is integrator continuation; WAIT_RUN 40765842298 is prior RED only, no new WAIT_RUN.
+
+CONTINUATION 221-cont (2026-10-29):
+Authority read: frozen R1–R5 at 3eedb4aa9; integrator's concurrent b929716c0 changes only R1's route spelling to the absolute path, preserving semantics.
+Author RED-only commit eec62d477b8475238b7132b48c35875981c784b5 adds tests/foundation/oc11_publish_receipt_test.go (five R1/R2 subcases: original replay after draft change, other body 409 idempotency_conflict, missing/duplicate key 422, concurrent same-key one version and one receipt). Existing browser oracles unchanged. gofmt exit 0; git commit/push exit 0. No local tests/builds/servers/PG/browser.
+The eec62d477 push started Gates 40784283080 and Foundation 40784283074. Both superseded/cancelled by integrator contract-only head b929716c0e833c6bde4a7ad4a3af2c1e7df12489; no new Go assertion RED established. Cancelled gate job 123153525476 is not assertion failure evidence; aggregate required failure 123153525602 is not assertion RED.
+Current-head WAIT_RUN: Gates 40784295574; Foundation 40784295705. Run/job states are recorded in PR comment when read; no plan job is a verification receipt. Integrator relays completion in a fresh session. GREEN NOT_RUN; author assessment E0 only.
+Implementation STOP: frozen R3 requires identical same-key POST resend and forbids versions-list inference; tests/admin/oc/design-publish-pending.spec.ts:76-84 instead requires a GET versions read, exactly one total POST, and idempotency_key on version history. Frozen R5 drops pending on reload; lines 95-97 and 157-163 require durable pending across reload/sessionStorage. These requirements cannot all pass unchanged. Integrator must explicitly authorize superseding the obsolete browser assertions with equally strict R3/R5 oracles, or revise the frozen contract. No weakening/removal, production implementation, contract/migration/R2 change, second push, merge, or auto-merge performed by this worker.
+
+RELAY 1 CURRENT-HEAD TRIAGE (2026-10-29):
+Verified PR #221 head b929716c0e833c6bde4a7ad4a3af2c1e7df12489, base r3/integration.
+Gates 40784295574 failed before tests: plan job 123153575637, Contract drift step, ERROR (STALE) GO_ONLY POST /v1/admin/stores/{}/design/publish. required job 123153884075 reports PLAN=failure; browser gate and aggregate skipped. This is NOT new-test assertion RED. Raw logs: relay1-plan-failed.log and relay1-required-failed.log.
+Static root: scripts/dev/contractdrift/main.go:190-194 fails when a legacy baseline finding disappears from the current findings. The new absolute contract route resolves an old GO_ONLY finding, leaving its baseline entry stale. Card explicitly forbids editing scripts/dev/contractdrift/baseline.json and frozen contract text. STOP; integrator must reconcile its contract/baseline change. No targeted worker fix attempted, no source change, no push or new run.
+Foundation 40784295705 / 123153571312 remains in_progress at this read; WAIT_RUN 40784295705. Integrator relays its conclusion in a fresh session. Go R1/R2 assertion RED remains pending; GREEN and independent review NOT_RUN. Existing R3/R5 browser-oracle conflict remains unresolved.
+
+CURRENT-HEAD UPDATE (same relay, supersedes previous WAIT/STOP for contract drift):
+Integrator concurrently committed/pushed cfd4787146835d1ee799709f1f5e07cd1f844b04, removing the stale design/publish baseline entry. Worker did not edit that forbidden file. Old Gates40784295574 checkout was synthetic merge2f54e1347d4833c26542ae876f1e696aeabb66ed, not current acceptance. Old Foundation40784295705 is cancelled.
+Fresh gh pr view/checks confirms current PR head cfd4787146835d1ee799709f1f5e07cd1f844b04; plan123154800586 success. WAIT_RUN Gates40784683907 (build123155070830 pending), Foundation40784683790 (foundation123154911427 in_progress). No new assertion RED or GREEN yet. Integrator relays completion; worker did not push. Existing R3/R5 browser-oracle conflict still requires integrator ruling before implementation/oracle edits.
+
+RELAY 2 CURRENT-HEAD TRIAGE (2026-10-29):
+Read gh pr checks 221 and gh run view40784683790 --log-failed --job123154911427. Exact relay head cfd4787146835d1ee799709f1f5e07cd1f844b04: only failing test is CI-SPEED-3 generated browser ownership, tests/ci/backend-coverage.test.mjs:274. Raw failure excerpt preserved in relay2-foundation-drift.log. No Go R1/R2 assertion RED; Foundation skips real-PG on PRs into r3/integration (Go evidence must come from Gates shards).
+Concurrent integrator commit75a31f92255281c232bc84a8276b03e9d0f09d78 regenerated ownership and pushed while this worker was reading. Current remote PR head confirmed75a31f922. WAIT_RUN Foundation40785921607 / foundation job123158957762 in_progress. WAIT_RUN Gates40785921695 pending, no test job yet. Do not treat a plan job as RED/GREEN.
+Worker followed relay instruction: fetched and merged origin/r3/integration2bc6d482606a2b0583af15789086fdad727b27ec; own merge checkpoint342bd2b6b86e240a8cdfc8feb06a8087fb80bb4b NOT_PUSHED. Regenerated browser ownership (exit0, no diff after merge); git diff --check exit0. No repeated push cancelling integrator's active RED. Merge brings upstream CVS files only; worker did not author/alter forbidden migration/pin/contracts. Merge commit has required Codex trailer.
+Existing tests-only eec62d477 already covers five R1/R2 subcases; no duplicate RED commit. Still no production implementation because required Go assertion RED is pending and frozen R3/R5 conflict with unchanged browser assertions (GET-only/one POST/history idempotency_key vs same-key resend; reload-persisted pending vs memory-only). Requested one explicit ruling authorizing strict R3/R5 replacement assertions; did not weaken/remove existing oracles.
+Humaux lookup initially deferred then discovered on refreshed inventory; read targeted decision and full development rule. Locked problem store accepted/queued; own subtask canvas checkpoint updated. No separate queue claim for integrator-dispatched subtask. Evidence E0 author assessment; drift failure is not feature RED/acceptance. No completion claim. Wakeup: integrator relays current-head workflow conclusions and oracle ruling in fresh session. No local tests/builds/PG/browser/servers, GREEN, independent review or LIVE.
+
+RELAY 3 CURRENT-HEAD TRIAGE (2026-10-29):
+Remote PR head 75a31f92255281c232bc84a8276b03e9d0f09d78; local head 342bd2b6b86e240a8cdfc8feb06a8087fb80bb4b remains unpushed. Gates 40785921695 / bundle:08 job 123162344940 fails TestBrowserOC before spec collection completes. gh run view --log-failed --job refuses logs while the workflow runs, so read the completed job via gh api actions/jobs/123162344940/logs and its gate-browser-password-auth artifact 12860142604. playwright.log: Error: LC_BROWSER_BFF_STORE is required at tests/admin/oc/design-publish-pending.spec.ts:11/16. NOT assertion RED. Root: playwright.config.ts:22 oc/*.spec.ts collects OC-11 under the identity/reauth fixture, which supplies no BFF store; line35 also correctly includes OC-11 under store-design. Fixing suite ownership requires out-of-card root Playwright config; no skip/env fallback or exemption added. STOP per card; zero fix attempts on this blocker.
+Existing eec62d477 already covers all Go R1/R2 RED subcases; no duplicate tests/push. Foundation40785921607/job123158957762 success at remote head, but not REAL_PG R1/R2 acceptance. Go shard jobs still pending/running; WAIT_RUN40785921695. No implementation without own-assertion RED. Frozen R3/R5 still contradict immutable existing browser oracles (GET-only/history key lines76-84; persistent reload lines95-97,157-165); integrator ruling still needed.
+Evidence: relay3-collection-failed.log (raw artifact error); relay3-gate-failed.log (filtered job log). Commands: gh pr checks221 (failure/pending), gh run view40785921695 --log-failed --job123162344940 (workflow-in-progress refusal), gh api completed job logs/artifact and current PR/run/jobs (exit0), static source reads only. No local tests/builds/servers/PG/browser. No source/test/config change, commit or push. Write paths this relay only output/oc-11/**; previous uncommitted checkpoint files retained. Author assessment E0; GREEN, independent review and LIVE NOT_RUN. Wakeup: integrator fresh-session relay when Gates40785921695 finishes and suite/oracle authority is resolved.
+
+RELAY 4 CURRENT-HEAD TRIAGE (2026-10-29):
+Fresh PR/API reads confirm remote head75a31f92255281c232bc84a8276b03e9d0f09d78 and local unpushed342bd2b6b86e240a8cdfc8feb06a8087fb80bb4b. Gates40785921695/job123162344940 is TestBrowserOC collection failure, NOT new-assertion RED. Fresh artifact12860142604 confirms LC_BROWSER_BFF_STORE is required at tests/admin/oc/design-publish-pending.spec.ts:11/16; tested synthetic merge97ebc55fc2a102058647220af3d38e7a5acefcfc. Evidence: relay4-collection-failed.log. Archive removed after extraction. Root remains playwright.config.ts:22 broad OC glob plus :35 correct store-design selection; root config outside card authorization, STOP, zero fix attempts.
+Frozen R3/R5 conflicts remain with immutable GET-only/one-POST/history-key and reload/sessionStorage oracles. No implementation can satisfy both unchanged; integrator must authorize strict R3/R5 oracle replacement and fix suite ownership. Existing Go tests-only eec62d477 already covers requested cases; no duplicate RED push. Go assertion RED pending Gates shards. Foundation40785921607/job123158957762 success is not REAL_PG receipt acceptance. WAIT_RUN40785921695; integrator completion relay is wakeup. No local tests/builds/servers, source edits, commits, push or new run. GREEN/independent review/LIVE NOT_RUN; author E0 only.
+Commands: gh pr checks221 exit1; gh run view --log-failed --job refuses incomplete workflow; gh api logs/metadata/artifact exit0. Authored writes confined output/oc-11 (red.log, DELIVERY.md, relay4-collection-failed.log, relay4-comment.md). Prior checkpoint diffs preserved. Humaux unavailable: store/canvas NOT_RUN; no fabricated memory receipt.
+
+RELAY 5 CURRENT-HEAD TRIAGE (2026-10-29):
+Remote PR75a31f92255281c232bc84a8276b03e9d0f09d78; completed Gates40785921695, synthetic97ebc55fc2a102058647220af3d38e7a5acefcfc.
+Read all five failed jobs using gh run view --log-failed --job (exit0). shard:g09 job123162345931 establishes genuine R1/R2 assertion RED for all existing Go subcases (replay, receipt atomicity, changed body, absent/duplicate key, concurrent replay). Go RED is now established; no duplicate tests-only push.
+Browser-design job123162345030/artifact12861212245 confirms six failed tests including A9/A10/A11 and P1 assertions. Browser-password-auth job123162344940/artifact12860142604 remains collection failure (LC_BROWSER_BFF_STORE absent), not assertion RED. receipts123183207201 and required123183927027 aggregate these failures.
+Downloaded both browser artifacts via gh run download exit0 and inspected actual logs. See relay5-comment.md and r5-job-*.log; retained artifacts under relay5-artifacts/.
+Implementation STOP: unchanged spec:76-84 requires GET recovery and exactly one total POST, contradicting frozen R3 identical same-key POST recovery. Spec:95-97,157-173 requires durable pending/sessionStorage across reload, contradicting frozen R5 page-memory-only pending lost on reload. No implementation can satisfy both. Need integrator ruling to supersede obsolete assertions with strict R3-R5 oracles and assign root suite configuration. No assertion/fixture/gate weakening.
+Required fetch/merge succeeded, local unpushed merge d09613a0f735a23dd87e061d836d575168910306 (Codex trailer), integration7a2c4e7639634dd9bd70fcd0c2dfbeaae59b4910. No worker-authored changes outside output/oc-11/**. Upstream migration/pin/contracts arrived via merge only. No source/test/config change or push. Local tests/builds/servers/PG/browser NOT_RUN. GREEN/independent review/LIVE NOT_RUN; author E0, historical RED E3 at its stated SHA only. New WAIT_RUN NONE. Wakeup integrator continuation with oracle/suite ruling. Humaux/coord unavailable; store/canvas NOT_RUN.
+OC-11 relay 6: **BLOCKED; no implementation/GREEN claim (author E0).**
+
+PR #221 remote head: `75a31f92255281c232bc84a8276b03e9d0f09d78`. Required fetch/merge exited 0 (already up to date). Local unpushed merge: `d09613a0f735a23dd87e061d836d575168910306`.
+
+Read every failed job via `gh run view 40785921695 --log-failed --job <id>` (all exit 0), saving `output/oc-11/relay6-job-*.log`:
+
+- `123162345931`: genuine R1/R2 assertion RED for replay/atomic receipt, changed body, missing/duplicate key, concurrent replay. Existing Go RED covers the card; no duplicate push.
+- `123162345030`: browser-design, six failed tests including identity/reload/stale-list/other-tab/supersession/bounded recheck.
+- `123162344940`: OC collection failure, `LC_BROWSER_BFF_STORE is required`; not assertion RED.
+- `123183207201` and `123183927027`: receipt/required aggregates fail from those members.
+
+Both browser artifacts freshly downloaded with `gh run download 40785921695 -n <name> -D <dir>` (exit 0), and actual playwright logs read. Retained under `output/oc-11/relay6-artifacts/{design,password-auth}`. Tested synthetic checkout `97ebc55fc2a102058647220af3d38e7a5acefcfc`; E3 assertion evidence applies only to it and the stated PR head.
+
+**Unresolved acceptance contradiction:** frozen contract R3 at `contracts/storefront-v2.md:402` requires identical same-key/body POST recovery; spec `tests/admin/oc/design-publish-pending.spec.ts:76–84` requires GET recovery and one total POST. Frozen R5 at contract line 404 requires pending lost on reload; spec lines 95–97 and 156–173 require durable pending/sessionStorage. The card explicitly forbids removing existing RED oracles. No implementation satisfies both. Integrator must explicitly supersede obsolete predicates with R1–R5 checks, preserving request identity, at most one committed version, cross-tab/old-row counterexamples, bounded recovery, real clicks and all three locales. That ruling remains unanswered; no test was changed or weakened.
+
+Separate collection root: OC wildcard also collects this design-only spec under a fixture lacking its store. No skip, fallback, exemption or root config edit.
+
+Worker writes this relay: `output/oc-11/**` only; outside-card authored paths NONE. Existing dirty evidence preserved. No source change, commit, push, merge, auto-merge or deployment. `cards/cxf-221-cont.md` is absent; authority is dispatched card plus frozen contract. Downloads finished; no task process remains running.
+
+NOT_RUN: implementation, GREEN, local-merge CI, independent review, local tests/servers/builds/PG/browser, LIVE. Humaux/coord unavailable; store/canvas NOT_RUN. **WAIT_RUN: NONE — no new push.** Resume needs explicit oracle ruling, not another relay of this completed run.
+
+🤖 Generated with Codex (dispatched by Claude Code integrator).
+OC-11 relay 7: BLOCKED by acceptance conflict; no implementation/GREEN claim (author E0).
+
+PR #221 remote head 75a31f92255281c232bc84a8276b03e9d0f09d78. Required git fetch origin && git merge origin/r3/integration exited 0, already up to date. Local d09613a0f735a23dd87e061d836d575168910306 is the existing unpushed integration-merge checkpoint, not a new Go test commit (correction to this session's initial description). Go RED commit eec62d477 is already in the remote head.
+
+Read every failed current-head job with gh run view 40785921695 --log-failed --job <id>, exit 0: 123162345030 (bundle:04, six browser failures), 123162344940 (bundle:08, OC collection error), 123162345931 (shard:g09, R1/R2 assertion RED), 123183207201 (receipts aggregate), 123183927027 (required aggregate). Fresh gh run download of both browser artifacts exited 0; actual playwright logs inspected under output/oc-11/relay7-artifacts. Synthetic checkout 97ebc55fc2a102058647220af3d38e7a5acefcfc. E3 RED evidence applies only to that tested head/checkout.
+
+Frozen contracts/storefront-v2.md R3: same-key/body POST recovery; immutable tests/admin/oc/design-publish-pending.spec.ts:76-84: GET recovery, POST total remains 1, history contains key. Frozen R5: reload loses pending; spec:95-97,156-173: reload retains pending/sessionStorage. These cannot all pass by implementation. Requested explicit authorization to replace conflicting legacy predicates with strict R3-R5 oracles; no answer received. Separate collection blocker: playwright.config.ts:22 oc/*.spec.ts includes the design-owned spec without LC_BROWSER_BFF_STORE (it is correctly selected in store-design too). No skip, fallback or exemption added.
+
+Commands: git fetch/merge exit 0; gh pr checks 221 exit 1; five gh run view calls exit 0; gh run download exit 0; source inspection only. No source/test/config edits, commit or push. Existing dirty evidence preserved. Writes this relay output/oc-11/** only; outside-card authored paths NONE. cards/cxf-221-cont.md absent; dispatch and frozen contract used as authority. Downloads completed; no background process remains.
+
+NOT_RUN: implementation, GREEN, local tests/servers/builds/PG/browser, independent review, LIVE, Humaux store/canvas/coord (tools unavailable).
+WAIT_RUN: NONE (no new push; Gates 40785921695 completed failure). Resume requires the oracle/suite ruling, not another relay of this completed run.
+
+🤖 Generated with Codex (dispatched by Claude Code integrator).
+
+RELAY8 CURRENT READBACK
+OC-11 relay8: BLOCKED by incompatible acceptance requirements; author assessment E0.
+
+PR #221 remote head `75a31f92255281c232bc84a8276b03e9d0f09d78`; local existing unpushed integration merge `d09613a0f735a23dd87e061d836d575168910306`. `git fetch origin && git merge origin/r3/integration` exit0, already up to date. Dispatched card file is absent from this worktree; supplied dispatch and frozen contract are the authority.
+
+Read all failed jobs on current head with `gh pr checks 221` (exit1) and `gh run view 40785921695 --log-failed --job <id>` (exit0 each):
+- `123162345931` shard:g09: genuine R1/R2 RED, all five Go subcases fail their assertions (replay/atomic receipt, other body, missing key, duplicate key, concurrent same key). Existing tests-only eec62d477 covers the request; no duplicate RED push.
+- `123162345030` bundle:04: store-design browser failures.
+- `123162344940` bundle:08: TestBrowserOC collection failure, LC_BROWSER_BFF_STORE missing.
+- `123183207201` receipts and `123183927027` required: aggregate failures.
+
+Frozen R3 (`contracts/storefront-v2.md:402`) requires identical same-key/body POST recovery. Existing `tests/admin/oc/design-publish-pending.spec.ts:76-84` instead requires GET versions recovery, exactly one total POST, and a history key. Frozen R5 (`:404`) discards page-memory pending on reload; spec `:95-97,157-173` requires sessionStorage/pending persistence and continued Publish lock after reload. Card explicitly forbids removing/weaking existing RED assertions. These predicates cannot all pass by implementation. Separate suite root: `playwright.config.ts:22` collects the design spec under OC without its store fixture; `:35` also selects it under store-design. No skip/exemption/fallback introduced.
+
+Integrator must explicitly authorize superseding the incompatible legacy predicates with equally strict R3/R5 checks (same request identity/body, one committed version, bounded recovery, stale/other-tab counterexamples, real clicks, three locales), plus root suite correction. No source/test/config/contract edit, push, merge, auto-merge, or production action. Outside-card authored paths: NONE. Writes only output/oc-11/**. Existing dirty evidence preserved.
+
+NOT_RUN: implementation/GREEN, local tests/builds/servers/PG/browser, independent review, LIVE. E3 applies to RED sensitivity at stated remote head/synthetic checkout97ebc55fc2a102058647220af3d38e7a5acefcfc only. Humaux problem store accepted, own subtask canvas updated under acquired shared lock. No separate queue claim for dispatched subtask.
+WAIT_RUN: NONE (no new push; 40785921695 completed failure). Resume requires the explicit ruling, not another relay of this completed run.
+
+🤖 Generated with Codex (dispatched by Claude Code integrator).
+
+Fresh `gh run download 40785921695 -n gate-browser-design` and `-n gate-browser-password-auth` both exit0; actual playwright.log files read under output/oc-11/relay8-artifacts. Artifacts12861212245 and12860142604 corroborate A9/A10/A11/P1 and missing-store collection failure. Downloads finished; no background process remains.
+
+
+CONTINUATION IMPLEMENTATION PREPARATION 2026-10-29
+Starting head f78a3977cc00f9e081efc1b625bfbdcca3b40736; integration merge already present. Existing Go RED eec62d477 / Gates40785921695 / shard:g09 job123162345931 covers R1/R2; no duplicate RED push. Browser-design RED123162345030, password-auth collection123162344940.
+R1-R5 implementation and authorized count-oracle replacement prepared. Non-count legacy GET/key-metadata/empty-list assertions remain unchanged pending explicit clarification. Current f78 head had no failed test job/artifact at readback (Foundation40811863742/job123243793356 and Gates40811863847/build123244033318 pending). No historical result is candidate acceptance. New-head CI/GREEN pending; local tests/servers/PG/browser NOT_RUN.
+
+
+RELAY9: b11016111 Gates40812890163 plan123247737838 failed four TOUCHED GO_ONLY design GET routes; required123247923418 aggregate failed. NOT assertion RED. Concurrent integrator b32cf4001 added R6 and removed matching baseline entries; worker edited neither. Current-head CI pending: Gates40813368114, Foundation40813368385/job123248703415. Historical assertion RED unchanged. GREEN PENDING. See relay9-comment.md.
+
+RELAY10 b32cf4001 Gates40813368114 plan123248661255: two METHOD_MISMATCH errors, contract GET vs runtime/BFF GET,PUT draft and GET,POST media. required123248930659 aggregate failed; tests skipped; NOT assertion RED. STOP: contract correction is integrator-owned. Foundation40813368385/job123248703415 pending. No push. See relay10-comment.md and relay10-*-failed.log.
+
+RELAY10 CORRECTION: integrator1c2885bfa added missing absolute PUT draft/POST media R6 declarations. b32 failures now historical; old Foundation cancelled. CURRENT WAIT_RUN Gates40813706262 and Foundation40813706245/job123249826514; pending, not GREEN. Worker changed no contract/source and made no push.
+
+RELAY11: 1c2885bfa Gates40813706262 plan123249746885 failed STALE GO_ONLY PUT draft / POST media after R6; required123249966631 failed from plan; tests skipped, NOT assertion RED. Raw logs relay11-*-failed.log; artifacts0. Integrator efd1eb4a0 removed obsolete baseline entries, worker did not edit baseline/contract. CURRENT HEAD efd1eb4a084341fc573ac9f860c077f9f6e2571e; WAIT_RUN Gates40813908638 and Foundation40813908687/job123250468197. GREEN PENDING; no worker push. Historical assertion RED unchanged.
+
+RELAY12 architecture gate RED: efd1eb4a084341fc573ac9f860c077f9f6e2571e, Foundation40813908687 job123250468197; shell-architecture.test.mjs Design.tsx lines831 >0 (findings threshold800). Original R1/R2 assertion RED and browser RED above retained. Repair attempt1 extracts unchanged read-only load hook; new-head CI pending.
+
+FIX5 2026-10-29 — authorization resolved, historical RED retained (not current GREEN).
+Existing tests-only eec62d477; Gates40785921695 / Go123162345931 TestStoreDesignOC11PublishReceipt assertion failures; browser123162345030.
+Pre-FIX5 exact PR head9228365da9b27c4f1e99a1d5952fe9e62f28758d, Gates40814762280 job123254463571 bundle04: TestBrowserStoreDesign failed, 9 failed / 10 passed, original SDB8 pass. Artifact12871899297; syntheticff3e587b02d5ab7b7733ea64c27e764cd0c3b97c; playwright.log SHA25647fc9a904925efd3506fb4f3500231b8630a50a6c377c11fd7a90c4f0f5c7b37.
+Fresh gh run view40814762280 --job123254463571 --log-failed exit0; filtered raw log fix5-prior-failed.log.
+FIX5 only changes authorized browser recovery oracles/fault timing (equal strength), preserves b11016111 implementation, all negative cases, R5 reload, three locales and 7000ms timeout. Old-to-new checklist in DELIVERY.md. No duplicate RED push or new product mutation. Current GREEN pending, authorE0; no local tests/servers/PG/browser.
+
+RVFIX #221 — 2026-10-29 tests-only RED candidate:
+Authority: cxf-rv-221.log final P1; cross-session pending blocks all recovery controls.
+Merged integration f8fd8900577815a328643ed878d88a6a247d2ab2 before edits (merge f06e7c72c).
+Six new real-click locale x lost-answer cases; expected assertion failure: RVFIX-P1 a new login must offer a usable explicit recovery path.
+No product fix yet. New run/job receipt PENDING; setup errors are not RED. Existing historical receipts above are unchanged.
+Static node --check and git diff --check exit 0, E1 only; no local tests/servers. Author assessment E0.
+Wakeup: integrator relays Gates/Foundation conclusion in fresh session. P2 storage failure -> PR comment, as dispatched.
+RVFIX RED push head fbaec2b35f5bd9504035c0ca81a41a9f07edf5df: Gates WAIT_RUN 40858325183; Foundation WAIT_RUN 40858325259 / foundation job 123394865334. New assertion-level RED not received; Gates test job allocation pending. No implementation push. Raw receipts read via gh run list, gh run view and gh pr checks 221 (pending exit 8).
+
+RVFIX RELAY1 causal assertion RED verified 2026-10-29: fbaec2b35f5bd9504035c0ca81a41a9f07edf5df / Gates40858325183 bundle04 job123396762919 / artifact12892706712. All6 new locale x before/after-commit tests fail at spec:123 RVFIX-P1 a new login must offer a usable explicit recovery path (expected enabled, received disabled);20other tests pass. Original log output/oc-11/rvfix/relay1-playwright.log SHA256 a69f8d1a69f1ce48664c0653d5fed6f4c92f64651166923543151d3a27a570d5. Foundation40858325259/job123394865334 success at RED head only. Implementation attempt1 follows; GREEN pending.
