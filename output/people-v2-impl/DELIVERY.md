@@ -1,6 +1,8 @@
-# PEOPLE-V2-IMPL · implementation awaiting own PR CI
+# PEOPLE-V2-IMPL · CONT-289 privacy negative-control CI pending
 
-**Structure ready (E1); author assessment E0. GREEN / independent acceptance PENDING.**
+**CURRENT HEAD IS RED-ONLY: three safeguards deliberately mutated for CI. DO NOT MERGE.**
+The implementation descriptions below describe the restoration target, not current product safety.
+Author assessment E0; syntax/static structure E1; current-head RED/GREEN and independent acceptance PENDING.
 PR #289 · branch `unit/people-v2-ui` · target `r3/integration`. No merge or auto-merge.
 This relay implements the signed UI; it does not claim product completion.
 
@@ -422,3 +424,67 @@ scripts are omitted because they are outside the card's local-check allowlist;
 the signed authority and current source were read directly. Humaux tools remain
 unavailable; no store/canvas/coord write is claimed. Author E0; repair-head CI and
 independent acceptance PENDING. No completion claim.
+
+### RELAY 3 · repair-head wait receipt (local, no evidence-only push)
+
+Head `94af3eb5845339d16eca1291d2347b7d04937e1f`; PR #289 MERGEABLE.
+Foundation `40778192522` / job `123132835742` IN_PROGRESS; Gates `40778192684`
+PENDING, observed 2026-10-28 22:13:12 UTC. GREEN PENDING; author E0.
+WAIT_RUN: 40778192522,40778192684. Integrator relays these conclusions in a fresh
+session. No local tests/servers, merge/auto-merge, deployment or polling process.
+
+
+## CONT-289 · independent-review P1 acceptance repair · 2026-10-29
+
+Authority: dispatched CONT #289 card; final verdict in integrator's `cxf-rv-289.log`.
+Read current source, AGENTS.md, architecture §§0/1/2/14/26/27 and
+`contracts/customers-billing-v1.md` CD1–CD8 / §§5/6/7. No new design, copy or API.
+Original source is the authority for behavior; earlier output snapshots are historical only.
+Humaux MCP tools are unavailable: search/store/canvas/coord and code-index/link NOT_RUN;
+no shared-state claim, new delegation or outside-worktree write is asserted.
+
+GitHub readback confirms reviewed head `94af3eb5845339d16eca1291d2347b7d04937e1f`
+Gates `40778192684` and Foundation `40778192522` both completed successfully at that head.
+`gh pr checks 289` has no failing job for that head, so there is no current failed
+browser artifact to download. These are historical E3 receipts, not acceptance of this relay.
+Required integration merge completed without conflict; source restoration checkpoint is
+`98bab18f307d58ae43a80f34faa45e9292abd23a`. Only this assigned branch may be pushed.
+
+Root cause: the first RED fixture failed DTO parsing before privacy assertions. A passing
+implementation cannot establish that those assertions detect a bypass. Retain corrected
+six-fractional-digit fixtures and EVERY existing assertion. In one batched negative control:
+
+| Safeguard intentionally mutated | Required assertion-level CI RED | Restoration |
+|---|---|---|
+| Customer download directly dispatches rather than opening review | Existing PEOPLE-V2-EXPORT-CONFIRM cannot find confirmation before POST | Restore review-open click handler |
+| Exact-name erasure no longer requires scope checkbox in control/submit guard | Existing PEOPLE-V2-ERASE-SCOPE sees enabled submit before scope check | Restore both checkbox conditions |
+| Shared privacy lock ignores unresolved pending kind | Independent uncertainty-fence RETURN / RELOAD sees enabled commands after one failed erasure POST | Restore pending-kind lock |
+
+Added four independent real-click cases (desktop/mobile × return/reload). They positively
+fill exact name and check scope before dispatch, then assert BOTH privacy commands locked
+and exactly one POST. This keeps the uncertainty oracle reachable while earlier safeguards
+are mutated. Existing export/erasure uncertainty cases remain unchanged; they may stop at
+the earlier deliberate bypass. Shared-lock evidence must come from the added cases, not
+those earlier failures. No timeout, retry, fixture/parser, threshold, baseline, exemption,
+gate assertion, API or backend is relaxed. Mutation is expected RED, never production code.
+
+Rollback/restoration: `git apply --unidiff-zero -R output/people-v2-impl/evidence/cont289-negative-control.patch`
+restores only the component, retaining new tests. Compare restored component with checkpoint
+above. Once own CI proves all three assertion families, retain failed browser artifact/log
+and run/job IDs in red.log, reverse the patch, regenerate ownership if required, and make
+ONE restoration implementation push. Require that final head's own GREEN and independent
+review; never merge/auto-merge/deploy. If any target fails before its assertion, report the
+actual blocker rather than claiming causal RED. At most two targeted repairs per blocker.
+
+Static commands this relay: `node --check tests/admin/people-v2.spec.ts` exit 0;
+`node scripts/dev/derive-browser-ownership.mjs` exit 0 (53 modes);
+`bash scripts/dev/depmap.sh` exit 0 (no dependency-map diff).
+No component tsc, local tests, browsers, servers, containers, PG or provider actions run.
+No import changed; component harness allowlists require no modification.
+
+P2 issues to batch by integrator, as requested by card: export refusal notice outside active
+dialog (CustomerDetail.tsx); paginated page size labeled as total (Customers.tsx / three
+locale copy). They are listed in the PR comment; this P1 evidence relay does not modify them.
+Files outside original PLAN write paths this relay: none. Generated ownership is planned.
+Wait registration and final head/run IDs are appended locally and in PR comments after push;
+integrator relays completion in a fresh session. No unattended local process remains.

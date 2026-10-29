@@ -216,4 +216,25 @@ for (const width of [1440, 390]) {
       expect(f.posts).toHaveLength(1); await fits(page);
     });
   }
+  // Reach the shared uncertainty fence independently of the negative name/checkbox assertions above.
+  // These positive preparations still use real controls and the same closed DTO/fault fixture.
+  for (const reload of [false, true]) {
+    test(`PEOPLE-V2 independent uncertainty fence ${reload ? "reload" : "return"} en-${width}`, async ({ page }) => {
+      await signed(page, width); const f = await fixture(page, "erase"); await page.goto(detailURL("en"));
+      await expect(page.getByTestId("customer-erase")).toBeEnabled();
+      await act(page, copy.en.erase, "erasure review opens", () => page.getByTestId("customer-erase").click(), () => expect(page.getByTestId("erase-dialog")).toBeVisible());
+      await act(page, name, "exact customer name is visible", () => page.getByTestId("erase-typed").fill(name), () => expect(page.getByTestId("erase-typed")).toHaveValue(name), "fill");
+      await act(page, copy.en.checked, "scope is explicitly acknowledged", () => page.getByRole("checkbox", { name: copy.en.checked, exact: true }).check(), () => expect(page.getByTestId("erase-submit")).toBeEnabled(), "check");
+      expect(f.posts).toHaveLength(0);
+      await act(page, copy.en.confirmErase, "lost response reaches the unconfirmed result", () => page.getByTestId("erase-submit").click(), () => expect(page.getByRole("button", { name: copy.en.pending, exact: true })).toBeVisible());
+      expect(f.posts).toHaveLength(1);
+      await act(page, copy.en.pending, "pending entry offers the read-only customer view", () => page.getByRole("button", { name: copy.en.pending, exact: true }).click(), () => expect(page.getByRole("button", { name: copy.en.viewData, exact: true })).toBeVisible());
+      await act(page, copy.en.viewData, "customer profile remains readable", () => page.getByRole("button", { name: copy.en.viewData, exact: true }).click(), () => expect(page.getByTestId("customer-detail")).toContainText(name));
+      if (reload) await act(page, "Refresh", "server customer remains readable after reload", () => page.reload(), () => expect(page.getByTestId("customer-detail")).toContainText(name), "reload");
+      await expect(page.getByTestId("customer-download"), `PEOPLE-V2-UNKNOWN-FENCE-${reload ? "RELOAD" : "RETURN"}: export stays locked`).toBeDisabled();
+      await expect(page.getByTestId("customer-erase"), `PEOPLE-V2-UNKNOWN-FENCE-${reload ? "RELOAD" : "RETURN"}: erasure stays locked`).toBeDisabled();
+      expect(f.posts).toHaveLength(1);
+      await fits(page);
+    });
+  }
 }
