@@ -1,9 +1,10 @@
 // Purpose: Add signed simplified catalog acceptance using native merchant clicks and synthetic server responses.
-// Depends on: @playwright/test, node:fs/promises; existing catalog-core signed MOCK identity harness.
+// Depends on: @playwright/test, node:fs/promises, ./fixtures/native-device; existing catalog-core signed MOCK identity harness.
 // Used by: catalog-core.spec.ts in the existing TWD product-editor CI browser mode.
 // Invariants: additive assertions; MOCK response state survives reload, never claims PG/LIVE acceptance; no UI writes via API/evaluate.
 import { expect, test, type Page, type Route, type TestInfo } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
+import { nativePage } from "./fixtures/native-device";
 
 const id = (n: number) => `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`;
 const productID = id(1);
@@ -361,6 +362,99 @@ export function registerCatalogSimplifiedAcceptance() {
         });
       } finally { await saveLedger(ledger, info); }
     });
+    for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const state of ["review", "results"] as const) {
+      test(`CATV2 authority ${locale} ${state}: native tab return clears cached facts on 403`, async ({}, info) => {
+        const ledger: Ledger = [], c = signed[locale];
+        const deniedCopy = {
+          "zh-TW": { message: "此帳號沒有查看商品的權限。", retry: "重試" },
+          "zh-CN": { message: "此账号没有查看商品的权限。", retry: "重试" },
+          en: { message: "This account does not have permission to view products.", retry: "Try again" },
+        }[locale];
+        const { page, close } = await nativePage(process.env.LC_BROWSER_EVIDENCE!, `catalog-authority-${locale}-${state}-`);
+        let cover: Page | undefined, release = () => {};
+        try {
+          await page.setViewportSize({ width: locale === "en" ? 1440 : 390, height: 900 });
+          const f = await setup(page, locale); await f.open();
+          const screen = page.getByTestId("products-page");
+          await expect(page.getByTestId(`product-row-${productID}`)).toBeVisible();
+          await action(ledger, page, c.select, "click", "all products selected", async () => {
+            await page.getByRole("checkbox", { name: c.select, exact: true }).click();
+            await expect(page.getByRole("button", { name: c.archive, exact: true })).toBeEnabled();
+          });
+          await action(ledger, page, c.archive, "click", "authorized review shows product identities, money and stock", async () => {
+            await page.getByRole("button", { name: c.archive, exact: true }).click();
+            await expect(page.getByRole("heading", { name: c.archiveTitle, exact: true })).toBeVisible();
+            for (const name of c.names) await expect(screen.getByText(name, { exact: true })).toBeVisible();
+            await expect(screen).toContainText("1,280");
+            await expect(screen).toContainText(c.soldOut);
+          });
+          if (state === "results") await action(ledger, page, c.confirmArchive, "click", "one batch command and authorized per-item outcomes", async () => {
+            const refreshed = page.waitForResponse(r => r.url().includes("/catalog-products") && r.status() === 200);
+            await page.getByRole("button", { name: c.confirmArchive, exact: true }).click();
+            await (await refreshed).finished();
+            await expect(page.getByTestId("product-batch-results")).toBeVisible();
+            for (const name of c.names) await expect(screen).toContainText(name);
+            await expect(screen).toContainText("1,280");
+            await expect(screen).toContainText(c.soldOut);
+            expect(f.writes).toHaveLength(1);
+          });
+          await page.bringToFront();
+          // READ/MEASURE only: the native fixture owns visibility; never dispatch events or change the DOM.
+          await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+          let denied = true, calls = 0;
+          const gate = new Promise<void>(resolve => { release = resolve; });
+          // MOCK authority-loss fixture: keep catalog shell access; only the inventory-bearing summary GET is denied.
+          await page.route(`**/api/stores/${process.env.LC_BROWSER_STORE}/catalog-products**`, async route => {
+            if (!denied || route.request().method() !== "GET") return route.fallback();
+            calls++;
+            await gate;
+            await route.fulfill({ status: 403, contentType: "application/json", headers: { "cache-control": "no-store" }, body: JSON.stringify({ code: "forbidden" }) });
+          });
+          await action(ledger, page, `${state} authority lifecycle`, "native tab hide/return; GET 403", "cached product facts and archive controls removed; forbidden is visible", async () => {
+            cover = await page.context().newPage();
+            await cover.goto("about:blank"); await cover.bringToFront();
+            // READ/MEASURE only: observe the browser's actual hidden state and rendered content.
+            await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
+            expect.soft(await screen.innerText(), "hidden tab must conceal cached product facts").not.toContain(c.names[0]);
+            const response = page.waitForResponse(r => r.url().includes("/catalog-products") && r.status() === 403);
+            await page.bringToFront();
+            await expect.poll(() => calls).toBe(1);
+            expect.soft(await screen.innerText(), "revalidation must not display unapproved snapshots").not.toContain(c.names[0]);
+            release(); await response;
+            // This must fail on the old review/results branches themselves, never on a missing import or skipped setup.
+            await expect(screen.getByText(c.names[0], { exact: false }), "403 removes previously authorized product facts").toHaveCount(0);
+            for (const name of c.names) await expect(screen).not.toContainText(name);
+            await expect(screen).not.toContainText("1,280"); await expect(screen).not.toContainText(c.soldOut);
+            await expect(screen.getByRole("button", { name: c.confirmArchive, exact: true })).toHaveCount(0);
+            await expect(screen.getByRole("button", { name: c.archive, exact: true })).toHaveCount(0);
+            await expect(screen.getByRole("heading", { name: c.archiveTitle, exact: true })).toHaveCount(0);
+            await expect(page.getByTestId("product-batch-results")).toHaveCount(0);
+            await expect(screen.getByRole("alert")).toContainText(deniedCopy.message);
+          });
+          await cover!.close(); cover = undefined;
+          await action(ledger, page, deniedCopy.retry, "click after fixture restores permission", "fresh list without resurrecting review/results or selection", async () => {
+            denied = false;
+            await screen.getByRole("button", { name: deniedCopy.retry, exact: true }).click();
+            await expect(page.getByTestId(`product-row-${productID}`)).toBeVisible();
+            await expect(page.getByTestId("product-batch-results")).toHaveCount(0);
+            await expect(screen.getByRole("heading", { name: c.archiveTitle, exact: true })).toHaveCount(0);
+            await expect(screen.getByRole("button", { name: c.archive, exact: true })).toHaveCount(0);
+            expect(f.writes).toHaveLength(state === "results" ? 1 : 0);
+          });
+          await action(ledger, page, "403 refresh", "reload with permission denied", "denial persists without cached facts or further commands", async () => {
+            denied = true; await page.reload();
+            await expect(screen.getByRole("alert")).toContainText(deniedCopy.message);
+            for (const name of c.names) await expect(screen).not.toContainText(name);
+            await expect(page.getByTestId("products-table")).toHaveCount(0);
+            await expect(page.getByTestId("product-batch-results")).toHaveCount(0);
+            expect(f.writes).toHaveLength(state === "results" ? 1 : 0);
+          });
+        } finally {
+          release();
+          try { await saveLedger(ledger, info); } finally { await close(); }
+        }
+      });
+    }
     test("CATV2 mobile density: all signed states, median 12 blocks / 100 characters, no state over 20 blocks", async ({}, info) => {
       const states = ["list", "active", "draft", "archived", "selected", "bulkReview", "bulkResult", "updated", "edit", "variants", "stock", "stockError", "media", "review", "saved"];
       const metrics = states.map((state) => ({ state, ...mobileDensity.get(state) }));

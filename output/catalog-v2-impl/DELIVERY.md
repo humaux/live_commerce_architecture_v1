@@ -1,3 +1,45 @@
+# RVFIX318 · display authorization regression · tests-only RED · 2026-10-30
+
+Author E0; syntax E1 only. New causal RED, implementation GREEN and independent E4 PENDING. Assigned UI worker in unit/catalog-v2-ui; parent retains coord ownership. Base ff056786a8382451c7446bc3767f07b4181180c1; origin/r3/integration21eaceb5c72ce6b55955607529daef31fe3163b7 fetched/merged, already current. Runtime model/effort UNKNOWN. No recursive delegation or local runtime.
+
+## Authority, root cause and gate
+
+Requirement: integrator RVFIX dispatch and designated cxf-rv-318.log final P1 finding. Current ProductList.tsx renders cached review/resultRows outside useGuardedRead ready/data branches. The shell requires catalog:read; internal/httpapi/collections.go also requires inventory:read for catalog-products. Shared hook already clears data when hidden/loading/forbidden. This tests-only batch leaves production source unchanged; after verified CI assertion RED, repair all product-bearing branches and invalidate local snapshots on authority loss without changing the shared hook or server contract.
+
+Gate: six new native-click cases (zh-TW/zh-CN/en × review/results). Native-device fixture switches actual browser tabs; evaluate reads visibility/content only. The inventory-bearing summary GET is delayed then returns MOCK403 while shell access remains. Tests require old identities/price/stock and archive controls to disappear, the localized forbidden alert to appear, retry to restore a fresh unselected list without resurrecting cached states, and reload under403 to retain denial. Review sends0 commands; results send exactly1 existing archive command. Native profiles/processes close in finally. Existing assertions, density/geometry thresholds, fixtures and gate adapters are unchanged. RED is only valid when these assertions fail after native setup; infrastructure/setup failure is not causal RED.
+
+## Click ledger and required-fact parity
+
+|Required fact/control|Desktop/mobile authorized state|Hidden, loading,403|Retry/refresh|Evidence|
+|---|---|---|---|---|
+|Product names, server prices and stock|Review and results retain original facts; no UI changes|Must conceal all cached facts|Only fresh authorized list may restore facts;403 reload stays empty|6 new CI cases, PENDING|
+|Selection/archive/review confirmation/results|Real select/archive/confirm clicks; review0writes/results1write|No cached archive controls or results|No resurrected review/results/selection; write count unchanged|Per-case click-ledger attachment, PENDING|
+|Localized denial and retry|Existing zh-TW/zh-CN/en copy|Current forbidden alert visible|Real retry click; reload repeats denial|6 new CI cases, PENDING|
+
+## BOURDIEU
+
+Q1–Q2 recent task novices/experts keep the same authorized workflow. Q3 read authorization controls fact visibility. Q4 no class/device inference. Q5 the same boundary applies at mobile/desktop widths. Q6 aesthetics separate, UNKNOWN until owner. No redesign.
+
+## PROJECT UNDERSTANDING
+
+Read AGENTS.md and 架构.md §§0/1/2/26/27: evidence levels, scoped physical goods, isolated worker, independent acceptance. contracts/catalog-inventory-v1 Boundary/§g retains scoped facts, server-owned inventory and explicit per-item archive outcomes. Read current ProductList, guarded-read hook, shell route metadata, summary GET authorization and existing native-device gate fixture. Humaux development detail7bdb220b read; rejected representative coverage4/9, not exhaustive. Current source and specified review are authority; historical delivery sections below are provenance only.
+
+## MOBBIN → EAGLE
+
+No visual/pattern change or new reference needed. Existing approved catalog composition remains. No live Mobbin/Eagle import/read claimed; no additional Mobbin query.
+
+## FIGMA OFFICIAL GUIDANCE
+
+No Figma/frame/layout/token/copy edits or design hand-in. Existing applied guidance in earlier sections retained; fresh guide access/copy lint NOT_RUN. All three existing locales remain unchanged; denial expectations independently quote their current visible wording. No new product string or setting.
+
+## Static checks, scope and handoff
+
+node --check tests/admin/catalog-v2-simplified.acceptance.ts and git diff --check exit0. Only test file and output/catalog-v2-impl evidence authored; generated ownership is regenerated last with the required script. No component import change or Go dependency graph change; no depmap change needed. No new custom tool, dependency, API, route, contract, migration, baseline or exemption. P2×3 routed to authorized PR comment "P2 for issue"; not implemented in this P1 card.
+
+Rollback point: base ff056786a; revert the tests-only commit through normal review/CI, preserve existing untracked evidence. No owned local processes/fixtures. NOT_RUN: local tests/server/browser/build/install/PG/container; new causal RED; implementation/GREEN; independent E4; provider SANDBOX/LIVE/deployment. One batched RED push, register exact-head Gates/Foundation run IDs, then end; integrator completion relay wakes a fresh session. No implementation before verified assertion RED; no merge/automerge/status/force-push.
+
+---
+
 # FIX12 RELAY1 · complete mobile density gate · 2026-10-30
 
 Current author assessment E0; static E1; new-head CI GREEN/E4 PENDING. Assigned UI worker, unit/catalog-v2-ui, original worktree only. Base d26d8f1f7d16baa21ed67fab8058d641a74dc616. git fetch + normal merge origin/r3/integration21eaceb5c: already up to date. Actual runtime model/effort UNKNOWN. Parent retains task ownership; no recursive delegation. FIX12 targeted follow-up 2/2: stop/escalate if the density gate remains red.
