@@ -118,6 +118,58 @@ for (const locale of Object.keys(warning)) {
   });
 }
 
+for (const locale of Object.keys(warning)) {
+  for (const state of ["queued", "blocked"]) {
+    test(`completed ACK cannot mask later ${state} evidence or its omission (${locale})`, async (t) => {
+      const env = environment(t);
+      let reads = 0, operationState = "READY", showLater = false, omitLater = false;
+      const own = { direction: "out", at: "2030-01-01T00:00:01Z", text: "MOCK_COMPLETED_OWN_ACK",
+        attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071", send_state: "sent" };
+      const later = { ...own, at: "2030-01-01T00:00:03Z", text: "MOCK_LATER_UNRESOLVED_STAFF",
+        principal_id: "70000000-0000-4000-8000-000000000072", send_state: state };
+      const calls = transport(() => {
+        reads++;
+        return response(reads === 1 ? thread : { ...thread, has_unknown_outbound: false, items: [
+          ...thread.items, own, ...(showLater && !omitLater ? [later] : []),
+          { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER" },
+        ] });
+      }, () => response({ operation_id: ackOperation, send_state: "queued", takeover_generation: 8 }),
+      () => operationResponse(operationState));
+      const host = mount(env, locale);
+      await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
+      change(host, "reply-text", own.text);
+      submit(host);
+      await host.waitFor(() => reads === 2 && idle(host), "actual queued ACK committed");
+      operationState = "SUCCEEDED";
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await host.waitFor(() => reads === 3 && idle(host), "own successful operation committed before later staff send");
+      assert.equal(node(host, n => n.type === "form").props.hidden, false);
+      change(host, "reply-text", "MOCK_NEXT_VALID_DRAFT");
+      assert.equal(sendControl(host).props.disabled, false);
+      const captured = node(host, n => n.type === "form").props.onSubmit;
+      showLater = true;
+      for (const expectedReads of [4, 5, 6]) {
+        omitLater = expectedReads === 5;
+        node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+        await host.waitFor(() => reads === expectedReads && idle(host), "later staff result or omission committed");
+        assert.equal(node(host, n => n.type === "form").props.hidden, true,
+          "completed ACK cannot reopen the composer over a later unresolved outbound");
+        assert.equal(sendControl(host).props.disabled, true,
+          "later queued/blocked evidence remains locked even when its page omits it");
+        const result = textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state"));
+        assert.equal(result, state === "queued"
+          ? locale === "en" ? "Sending; delivery unconfirmed. Do not resend."
+            : locale === "zh-CN" ? "发送中；尚未确认送达，不要重发。" : "傳送中；尚未確認送達，勿重送。"
+          : locale === "en" ? "Sending locked" : locale === "zh-CN" ? "发送已锁定" : "已鎖定");
+        captured({ preventDefault() {} });
+        node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+        assert.equal(host.ref(ReplyReceipt).pending(), null);
+        assert.equal(sends(calls).length, 1, "current and captured handlers cannot create a second A12");
+      }
+    });
+  }
+}
+
 for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "different-operation", "different-conversation", "different-action", "different-provider", "different-purpose", "missing-ack-id", "no-read-permission", "acknowledged", "unknown"]) {
   test(`acknowledged send stays locked on ${refusal} operation evidence`, async (t) => {
     const env = environment(t);

@@ -1,0 +1,6 @@
+RVFIX3 #294 tests-only RED stage
+Review head: 3826d19c5336f672f81d85c4c63cadde9acb303f
+Expected causal failures: six completed-ACK versus later queued/blocked composer-lock assertions.
+Tests-only head, Foundation/Gates run/job IDs: recorded after push in the PR handoff comment.
+Conclusion: PENDING. No causal RED or implementation GREEN claimed yet.
+Resume only after actual assertion-failure receipt; replace this pending record with exact run/job/SHA and filtered failure evidence before implementation.

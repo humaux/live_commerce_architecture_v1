@@ -59,6 +59,7 @@ async function mockInbox(page: Page, copy: Copy) {
   const future = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
   const incoming = copy.locale === "en" ? "What material is it?" : copy.locale === "zh-CN" ? "想了解材质。" : "想了解材質。";
   const state = { mode: "eligible", delivery: null as Delivery | null, omitOutbound: false, concurrentSent: false, original: "", posts: 0, queries: 0,
+    laterDelivery: null as Delivery | null, omitLater: false,
     methods: [] as string[], read: new Set<string>(), operationConversation: "", operationReads: 0 };
   const rows = [ids.open, ids.instagram, ids.closed, ids.retry].map((id, i) => ({
     conversation_id: id, platform: i === 1 || i === 2 ? "instagram" : "messenger",
@@ -133,6 +134,13 @@ async function mockInbox(page: Page, copy: Copy) {
           send_state: "sent", principal_id: "10000000-0000-4000-8000-000000000074" } as typeof items[number],
         { direction: "in", seq: 100, at: "2026-10-29T06:36:00Z", text: incoming, attachments: null },
       );
+      // MOCK transport: after our operation succeeds, another staff send can remain unresolved.
+      if (state.laterDelivery) {
+        if (!state.omitLater) items.push({ direction: "out", at: "2026-10-29T06:36:00Z",
+          text: "MOCK_LATER_UNRESOLVED_STAFF", attachments: null, send_state: state.laterDelivery,
+          principal_id: "10000000-0000-4000-8000-000000000074" } as typeof items[number]);
+        items.push({ direction: "in", seq: 101, at: "2026-10-29T06:37:00Z", text: incoming, attachments: null });
+      }
       return route.fulfill(answer({ items, has_unknown_outbound: state.delivery === "unknown", mode: "human", takeover_generation: 2,
       human_until: future, window_open_until: state.mode === "closed" ? "2020-01-01T00:00:00Z" : future,
       binding_id: fixtureBindings[row.platform === "instagram" ? "instagram" : "facebook"], link_version: 1 }));
@@ -317,6 +325,43 @@ for (const copy of copies) {
       expect(state.posts).toBe(1);
       record(`ACK concurrency ${copy.locale}/${omitted ? "omitted" : "visible"}`, "fill, click Send, click status twice",
         "pending retained despite unrelated sent + newer inbound; exact-operation success alone reopens composer; only one POST");
+    });
+  }
+
+  for (const later of ["queued", "blocked"] as const) {
+    test(`INV2 ${copy.locale} completed ACK before later ${later}`, async ({ page }) => {
+      const state = await enter(page, copy, "qualified");
+      await page.setViewportSize({ width: 390, height: 844 });
+      await open(page, ids.instagram);
+      await send(page, copy);
+      state.delivery = "sent"; // Transport setup; native status click observes exact own success.
+      state.concurrentSent = true;
+      await query(page);
+      await expect(page.getByTestId("reply-text")).toBeVisible();
+      await page.getByTestId("reply-text").fill(copy.draft);
+      await expect(page.getByTestId("reply-send")).toBeEnabled();
+      state.laterDelivery = later;
+      for (const omitted of [false, true, false]) {
+        state.omitLater = omitted;
+        await query(page);
+        await expect(page.getByTestId("inbox-delivery-state")).toHaveText(later === "queued" ? copy.pending
+          : copy.locale === "en" ? "Sending locked" : copy.locale === "zh-CN" ? "发送已锁定" : "已鎖定");
+        await expect(page.getByTestId("reply-text")).toBeHidden();
+        await expect(page.getByTestId("reply-send")).toBeDisabled();
+        await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
+        expect(state.posts).toBe(1);
+      }
+      await page.reload();
+      await open(page, ids.instagram);
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      state.omitLater = true;
+      await query(page);
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      expect(state.posts).toBe(1);
+      record(`completed ACK ${copy.locale}/${later}`, "fill, Send, status, status with later row visible/omitted; reload and status",
+        "own success never resolves later pending/policy-blocked send; composer locked; one POST; reload retains visible server result");
     });
   }
 
