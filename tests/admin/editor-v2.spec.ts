@@ -1,7 +1,7 @@
 // Purpose: Accept the owner-signed simplified store editor with real clicks in three locales and two layouts.
 // Depends on: @playwright/test; existing design-copy/model; store-design signed MOCK login and BFF-store fixture.
 // Used by: playwright.config.ts store-design suite, tests/foundation/browser_store_design_test.go, --browser-design CI.
-// Invariants: server-shaped MOCK replies only; no DOM/storage writes, API-driven user actions, force clicks or live facts.
+// Invariants: server-shaped, no-store MOCK replies only; no DOM/storage writes, API-driven user actions, force clicks or live facts.
 import { expect, test, type Page, type Locator } from "@playwright/test";
 import { designCopy } from "../../apps/admin/lib/design-copy";
 import type { DesignDocument, Draft, VersionInfo } from "../../apps/admin/lib/design-model";
@@ -65,7 +65,9 @@ async function open(page: Page, locale: Locale, mobile: boolean) {
     saved: [] as DesignDocument[],
     receipts: new Map<string, VersionInfo>(),
   };
-  // Fixture setup only: replace existing API responses at the network boundary. All product writes originate from clicks.
+  // Fixture setup only: match the BFF's no-store read contract (customers-client.readJSON).
+  // All product writes originate from clicks; keep the production response checks intact.
+  const readHeaders = { "Cache-Control": "no-store" };
   await page.route(`**/api/stores/${store}/design/**`, async (route) => {
     const request = route.request();
     const resource = new URL(request.url()).pathname.split("/design/")[1];
@@ -73,7 +75,7 @@ async function open(page: Page, locale: Locale, mobile: boolean) {
     if (method === "GET") {
       const values: Record<string, unknown> = { draft: state.draft, versions: { live_version: state.draft.published_version, items: state.versions }, media: { items: [] } };
       if (!(resource in values)) throw new Error(`unexpected fixture read ${resource}`);
-      await route.fulfill({ json: values[resource] });
+      await route.fulfill({ headers: readHeaders, json: values[resource] });
     } else if (method === "PUT" && resource === "draft") {
       state.operations.push("save");
       const body = request.postDataJSON();
@@ -102,8 +104,8 @@ async function open(page: Page, locale: Locale, mobile: boolean) {
       await route.fulfill({ json: receipt });
     } else throw new Error(`unexpected fixture write ${method} ${resource}`);
   });
-  await page.route(`**/api/stores/${store}/storefront`, (route) => route.fulfill({ json: { published: true, version: 5, domains: [{ origin: address, valid_until: "2099-01-01T00:00:00Z", serving: true }] } }));
-  await page.route(`**/api/stores/${store}/storefront/domains`, (route) => route.fulfill({ json: { domains: [
+  await page.route(`**/api/stores/${store}/storefront`, (route) => route.fulfill({ headers: readHeaders, json: { published: true, version: 5, domains: [{ origin: address, valid_until: "2099-01-01T00:00:00Z", serving: true }] } }));
+  await page.route(`**/api/stores/${store}/storefront/domains`, (route) => route.fulfill({ headers: readHeaders, json: { domains: [
     { origin: address, kind: "platform", state: "ACTIVE", version: 1, token: null, verify_deadline: null, serving: true },
     { origin: customAddress, kind: "custom", state: "OWNERSHIP_PENDING", version: 1, token: null, verify_deadline: null, serving: false },
   ] } }));

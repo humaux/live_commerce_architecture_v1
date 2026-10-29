@@ -54,7 +54,7 @@
     "tests/admin/design-model.test.ts": "d25d83d536ec555ab2b7c6090952915cc5b8c46aa75d27c839a9bdb1d4027159",
     "tests/admin/design.spec.ts": "81e6a55fc66f5ae283a9ee7d26c89da425f6d33e41a1bff4ec83bea3ea61130c",
     "tests/admin/ds-states-clicks.mjs": "82c913d8470a1531cae0ef06d29d8a3fe12d43be91fb6e1d7ce4afd701bce521",
-    "tests/admin/editor-v2.spec.ts": "3bd2dca3188f69f6e9b51d39f561f88010e5b55495dda51626c37c09b6154c88",
+    "tests/admin/editor-v2.spec.ts": "2c3e26c247821fef05c0ddb5ce5cfba276dab17cd1d37e73a3ab00bba1c6b29a",
     "tests/admin/entry.spec.ts": "beade727cbfb0a01831ba461791ca2abc46d8477d5af9c51818b22725b878b38",
     "tests/admin/fixtures/card-payments-wire/card-enabled.json": "2850608c957f6dbd8850e3a10455d2f9831d88cabba81bd1ffc7e6235e0eef47",
     "tests/admin/fixtures/card-payments-wire/settlement-carried.json": "a4027b6bc3684f1720c8bc9daf3e2abb3afcf39f8cc4d27391b46d2538574080",

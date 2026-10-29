@@ -1,4 +1,15 @@
 EDITOR-V2-IMPL
+RVFIX323 push receipt 2026-10-29T15:07:47Z
+head=f45c77aa9808f7b64095654d6a5613a49cae9c8f; base=d0e7331525fec046fbe9361906fa66367ae583c6; PR323 OPEN/BLOCKED
+push=exit0; PR body update=exit0; no implementation/evidence-only follow-up push
+WAIT_RUN: 40898396353 (Gates, attempt1, queued; test job not assigned)
+WAIT_RUN: 40898396326 (Foundation, attempt1, queued; job123533694016 queued)
+gh_pr_checks=exit8 (pending); no new assertion failed yet; causal_RED=PENDING; GREEN=NOT_RUN
+checkout_sha=UNKNOWN (queued; PR synthetic merge must be recorded from actual test receipt)
+wakeup=integrator relays completion in fresh session per card; no local background process
+failure_match=conclusion failure/cancelled/timed_out; next=read browser-design log before any implementation
+post_push_receipt=uncommitted by design; actual CI assertion excerpt must be appended on relay
+
 2026-10-29 RVFIX323 tests-only selector repair
 pre_edit_head=145e8a44cc9214915e383ac4be7ae225c8ff549d
 integration=d0e7331525fec046fbe9361906fa66367ae583c6; fetch+merge=Already up to date
@@ -130,3 +141,26 @@ Proposed next in-module harness path (not edited): tests/foundation/browser_stor
 WAIT_RUN: NONE (prior workflow runs completed; integrator decision/relay required)
 Local tests/servers=NOT_RUN; CI artifact downloaded under ci-red-browser-design/.
 Humaux memory search/get/store now available; previous unavailable statements apply only to prior session.
+
+2026-10-30 FIX #323 — targeted fixture repair attempt 1
+PR current tested head: f45c77aa9808f7b64095654d6a5613a49cae9c8f
+Merged origin/r3/integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2 before edits.
+Read all failed jobs: Gates 40898396353/123536914327 (bundle:04),
+40898396353/123551605533 (receipts), 40898396353/123553296386 (required).
+Foundation 40898396326/123533694016 passed at the tested head, not product GREEN.
+CI checkout/receipt SHA: b07966fec4d178e41aff3878f81459473eb9ed8c (synthetic merge).
+Artifact 12909617694 gate-browser-design; receipt artifact 12909691702.
+Downloaded: fix323-current-browser/playwright/store-design/20261029T152126.986550789/.
+playwright.log: Running 43 tests using 1 worker; 17 failed; 26 passed.
+All new cases stop in open() line 117: design-status missing, expected substring 42.
+error-context.md: existing design-page renders unavailable/retry, not the editor.
+trace.zip network: draft/media/versions intercepted GET 200 application/json;
+fixture route.fulfill omitted Cache-Control: no-store.
+Root authority: apps/admin/lib/customers-client.ts:33-44 readJSON rejects JSON
+reads without no-store; design-client.ts routes all three snapshot reads through get().
+Not causal behavior RED: new hub assertions never reached. No runner infra rerun.
+Repair: add no-store only to intercepted editor and storefront read responses;
+production checks, assertions, fixture values, retries/timeouts/thresholds unchanged.
+Targeted attempt count: 1/2. Application implementation stays NOT_RUN pending causal RED.
+Static only: node --check tests/admin/editor-v2.spec.ts exit 0; git diff --check exit 0.
+Humaux/coord/store/canvas unavailable; no database persistence claimed.

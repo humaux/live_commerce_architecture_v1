@@ -1,4 +1,34 @@
+## FIX #323 · fixture read contract repaired; causal RED pending (2026-10-30)
+
+Merged `origin/r3/integration@a050a17e9aecfe5b3322bfdffd14de297c3e73c2` first.
+Read all three failed jobs of tested PR head `f45c77aa9808f7b64095654d6a5613a49cae9c8f`:
+Gates `40898396353` / `123536914327` fails in browser-design; receipts `123551605533`
+and required `123553296386` are downstream failures. No runner infrastructure fault.
+Downloaded browser artifact `12909617694`: 43 cases, 17 new failures, 26 old passes.
+Every new case stops at the existing snapshot assertion in `open()`, before the hub assertion.
+Trace and current source show the MOCK GET replies omitted `Cache-Control: no-store`,
+which the production `readJSON` contract requires; the page correctly rejects those replies.
+This is setup failure, not the card's required causal behavior RED.
+
+Added that header to the design and storefront MOCK read replies. No application code,
+assertion, fixture value, timeout, retry, threshold, exemption or production parser changed.
+Targeted fix attempt 1/2; this push remains tests-only. Fresh CI must load version 42 and
+then fail the unchanged missing-hub behavior assertion before implementation may begin.
+Browser ownership regenerated after integration merge. Static syntax/diff checks: exit 0 (E1).
+CI verification pending; author acceptance E0; no E3/E4 completion claim.
+No newly edited source outside PLAN paths. Existing PR delta includes explicitly assigned
+`tests/foundation/browser_store_design_test.go`, still declared for integrator approval.
+No local tests/servers, implementation, production or Figma writes. Humaux store/canvas unavailable.
+Integrating agent owns CI completion relay; WAIT_RUN receipts are appended after push.
+
 ## RVFIX #323 — P1 test selection repair; causal RED pending
+
+Pushed tests-only HEAD `f45c77aa9808f7b64095654d6a5613a49cae9c8f` to PR #323.
+WAIT_RUN: Gates `40898396353` (queued; browser-design job not yet assigned).
+WAIT_RUN: Foundation `40898396326`, job `123533694016` (queued).
+`gh pr checks 323` exits 8 for pending checks. RED PENDING; GREEN NOT_RUN.
+No implementation may start until assertion-level RED. Post-push receipts are intentionally
+uncommitted; no follow-up evidence-only push. Integrator owns completion relay.
 
 2026-10-29. Authority: final REQUEST_CHANGES in integrator's cxf-rv-323.log,
 current Go harness and editor-v2.spec.ts at pre-edit head
