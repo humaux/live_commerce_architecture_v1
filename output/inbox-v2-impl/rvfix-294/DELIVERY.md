@@ -1,6 +1,6 @@
 # RVFIX #294 — P1 display-window omission
 
-Status: tests-only RED push prepared; implementation NOT_STARTED; author E0. No local tests or servers.
+Status: causal RED VERIFIED at tests-only head fee26469; P1 implementation prepared for one push; exact implementation-head GREEN and independent acceptance PENDING. Author assessment E0. No local tests or servers.
 
 ## Authority, ownership and rollback
 
@@ -13,7 +13,7 @@ P1 root: first-page load replaces delivery and deliveryLock from the displayed l
 - Node: six new cases (queued/blocked × zh-TW/zh-CN/en) begin with an enabled captured form, observe the unresolved operation, then read inbound-only pages with explicit false UNKNOWN authority twice. Assert disabled sending, folded composer, retained result, no fresh receipt, and no POST from captured/current handlers.
 - Browser: extend the existing three-locale state cases with queued and blocked omission fixtures, real Check status clicks twice, visible retained result, disabled sending and unchanged POST count. Existing reload/persistence, confirmed-sent transition, privacy and density checks remain.
 - Click ledger (execution PENDING): messages → Check status → inbound-only page → original result retained/send disabled → second Check status → same visible result/no POST. MOCK fixture setup only; no DOM mutation, forced click or direct API substitutes for acceptance.
-- CI must fail on these new assertions before implementation. Exact RED run/job/log goes in `red.log` after the integrator relays completion. Current GREEN is PENDING; older PR green does not cover this counterexample.
+- E3 causal RED: Foundation `40827000050` / job `123292220975`, exact tests-only head `fee26469298672ca2c1e7537c121f1b3abc5ee43`: six new omission assertions fail, 185 passed / 6 failed. See `red.log` and filtered original `red-assertions.log`. Current implementation GREEN remains PENDING; prior green is historical.
 - Static checks: `node --check` on both changed test files, required `node scripts/dev/derive-browser-ownership.mjs`, and `git diff --check` exited 0 (E1 syntax/generation only). No local runtime verification.
 
 ## BOURDIEU
@@ -38,6 +38,14 @@ Tests-only changes: `tests/admin/inbox-unknown.test.ts`, `tests/admin/inbox-v2-u
 
 P2 for issue: compare RFC3339 instants numerically for nextReply/latest-outbound selection; mixed fractional precision currently misorders them. Integrator to open issue; not fixed by this P1 card.
 
-Humaux tool discovery returned no search/grep/get/enumerate/store/canvas/coord tools. Shared store/canvas/code index/link NOT_RUN; no local/platform memory accessed. This file and the PR relay preserve the handoff until tools return. Role: dispatched UI worker; model GPT-6, effort not exposed. No local process/fixture/temp directory started; evidence retained in the assigned output subtree. Integrator owns resumption when WAIT_RUN finishes; no unattended local process or polling loop remains.
+Humaux is available in relay1: directed search/get and rejected enumeration (9/9, coverage 1), code map/search, locked fix store and incremental code index used. The store is `[fix] RVFIX294 causal omission RED verified; P1 implementation pending CI`; receipt `57545b32-16d8-40e8-8ade-371fe0d2368b`. Own relay canvas and link receipts are in the final PR handoff. Parent task remains with the integrator; no new queue claim or delegation. Role: dispatched UI worker; model GPT-6, effort not exposed. No local process/fixture/temp directory started; evidence retained in the assigned output subtree. Integrator owns resumption when WAIT_RUN finishes; no unattended local process or polling loop remains.
 
-NOT_RUN: local tests/build/tsc/browser/server/PG/container/LIVE; RED and GREEN conclusions pending; independent review pending; Humaux store/canvas/index/link unavailable. No completion claim.
+NOT_RUN: local tests/build/tsc/browser/server/PG/container/LIVE; exact implementation-head CI GREEN/browser click ledger/density/persistence; independent review. `tsc` is not installed in this worktree. No completion claim.
+
+## Relay 1 implementation and evidence
+
+Before edits, fetched and merged `origin/r3/integration`; it remains `e324e01a93219c099d6d2a9d35ed1f112595fe90` and merge reported already up to date. Rollback point is tests-only `fee26469298672ca2c1e7537c121f1b3abc5ee43`; existing task handoff files were preserved.
+
+`InboxThread` now remembers only the observed outbound projection metadata (at/kind/principal_id; no duplicate message body). An unresolved queued/blocked lock and result survive inbound-only pages or another outbound. A visible matching projection with a known result updates the lock; absent/missing-state projections cannot unlock it. The ref is cleared on the privacy reset and a new acknowledged A12. No draft persistence, new copy, layout or import was introduced. The existing six RED cases retain their original omission/captured-handler assertions and additionally cover an unrelated sent projection and the observed projection's confirmed sent result. A9 has no operation id in its frozen browser DTO: this repair uses existing projection fields, adds no backend/contract changes, and remains conservative when the observed row stays outside the display window.
+
+`node --check` on changed Node tests and existing browser spec, required ownership regeneration (53 modes), and `git diff --check` exit 0 (E1 only). No Go graph/import change: dependency-map generation unnecessary. No harness import change. Exact source hashes are in `source-sha256.txt`. First implementation attempt for this P1 blocker; no weakened test/baseline/threshold/exemption. Additional outside-initial-list paths remain `tests/admin/inbox-unknown.test.ts` and the already-declared generated browser ownership artifact. P2 is already posted under “P2 for issue” at PR comment 6489297640; integrator owns issue creation.

@@ -58,6 +58,7 @@ export function InboxThread({
   const [queriedUnknown, setQueriedUnknown] = useState(false);
   const [help, setHelp] = useState(false);
   const deliveryLock = useRef(false);
+  const lockedOutbound = useRef<Pick<Thread["items"][number], "at" | "kind" | "principal_id"> | null>(null);
   const [delivery, setDelivery] = useState<string | null>(null);
   const persistedUnknown = useRef(false);
   const historyClear = useRef(false);
@@ -76,6 +77,7 @@ export function InboxThread({
     setDelivery(null);
     setDetails(false); setReadMarked(false); setEditing(false); setQueriedUnknown(false);
     deliveryLock.current = false;
+    lockedOutbound.current = null;
     persistedUnknown.current = false;
     historyClear.current = false;
     inFlight.current = false;
@@ -135,10 +137,22 @@ export function InboxThread({
         // Null, absent or malformed authority is not proof of a clear history, including on older pages.
         historyClear.current = data.has_unknown_outbound === false;
         if (!before) {
-          const latest = [...data.items].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
-            .find(item => item.direction === "out");
-          setDelivery(latest?.send_state ?? null);
-          deliveryLock.current = latest?.send_state === "queued" || latest?.send_state === "blocked";
+          const observed = lockedOutbound.current;
+          // A9 can hide a pending/policy-blocked row below its display floor. Neither absence nor
+          // another send reconciles it; retain the lock until its projected row has a known result.
+          const latest = deliveryLock.current && observed
+            ? data.items.find(item => item.direction === "out" && observed.at !== null &&
+              item.at === observed.at && item.kind === observed.kind && item.principal_id === observed.principal_id)
+            : [...data.items].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
+              .find(item => item.direction === "out");
+          if (latest?.send_state) {
+            setDelivery(latest.send_state);
+            deliveryLock.current = latest.send_state === "queued" || latest.send_state === "blocked";
+            lockedOutbound.current = deliveryLock.current
+              ? { at: latest.at, kind: latest.kind, principal_id: latest.principal_id } : null;
+          } else if (!deliveryLock.current) {
+            setDelivery(null);
+          }
         }
         setThread((old) =>
           before && old
@@ -309,6 +323,7 @@ export function InboxThread({
       setTemplate("");
       setDelivery(result.send_state);
       deliveryLock.current = result.send_state === "queued" || result.send_state === "blocked";
+      lockedOutbound.current = null;
       setEditing(false); setQueriedUnknown(false);
       if (result.takeover_generation !== undefined)
         setThread((old) =>

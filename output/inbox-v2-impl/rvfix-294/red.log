@@ -1,5 +1,14 @@
 RVFIX #294 — tests-only RED receipt
-Status: PENDING; this file is not a test-result claim.
+Status: CAUSAL RED VERIFIED from original GitHub job log; E3 applies to the six omission counterexamples only.
 Target: six queued/blocked A9 display-omission Node assertions plus native-click checks in the existing three-locale browser state cases.
 Run/job ids and raw assertion failures must be appended after CI executes, before any implementation push.
 Prior PR green at ae59f693 does not establish coverage of these counterexamples.
+
+Registered tests-only head: fee26469298672ca2c1e7537c121f1b3abc5ee43
+Foundation WAIT_RUN: 40827000050 / foundation job 123292220975 (in_progress; no assertion result yet).
+Gates WAIT_RUN: 40827000061 (in_progress; no test job registered at initial read).
+These are pending registration receipts, not a causal RED witness. Integrator relays completion; no implementation before new-assertion RED is read.
+
+Verified 2026-10-29 relay1: Foundation run 40827000050 / job 123292220975, head fee26469298672ca2c1e7537c121f1b3abc5ee43, conclusion failure; started 06:04:15Z, completed 06:11:30Z.
+Node suite: 185 passed / 6 failed. All six NEW A9 display omission cannot reconcile observed queued/blocked in en/zh-TW/zh-CN fail their own assertion at inbox-unknown.test.ts:176: explicit false UNKNOWN authority does not reconcile an omitted queued/blocked operation (actual false, expected true). No import/collection/compile failure.
+Filtered raw log: red-assertions.log. The pending receipts above are historical registration state; this verified result authorizes the one P1 implementation push. Gates40827000061 browser conclusion remains separate and PENDING.

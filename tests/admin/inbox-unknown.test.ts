@@ -154,13 +154,16 @@ for (const locale of Object.keys(warning)) {
     test(`A9 display omission cannot reconcile observed ${state} in ${locale}`, async (t) => {
       const env = environment(t);
       let reads = 0;
+      let unrelated = false, recovered = false;
       const page = { ...thread, has_unknown_outbound: false,
         items: Array.from({ length: 50 }, (_, index) => ({
           ...thread.items[0], seq: index + 2, at: "2030-01-01T00:00:02Z",
           text: "MOCK_NEWER_INBOUND_PAGE",
         })) };
       const calls = transport(() => response(++reads === 1 ? projection("sent") :
-        reads === 2 ? projection(state) : page));
+        reads === 2 ? projection(state) : recovered ? projection("sent") : unrelated
+          ? { ...page, items: [...page.items, { ...projection("sent").items.at(-1), at: "2030-01-01T00:00:03Z" }] }
+          : page));
       const host = mount(env, locale);
       await loaded(host, "sent");
       change(host, "reply-text", "MOCK_CAPTURED_DRAFT");
@@ -182,6 +185,19 @@ for (const locale of Object.keys(warning)) {
         assert.equal(host.ref(ReplyReceipt).pending(), null);
         assert.equal(sends(calls).length, 0, "neither captured nor current form may POST a fresh send");
       }
+      unrelated = true;
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await host.waitFor(() => reads === 5 && idle(host), "unrelated sent row committed");
+      assert.equal(sendControl(host).props.disabled, true, "a different sent row cannot reconcile the observed operation");
+      assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), result);
+      captured({ preventDefault() {} });
+      assert.equal(sends(calls).length, 0);
+      recovered = true;
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await loaded(host, "sent");
+      assert.equal(sendControl(host).props.disabled, false, "the observed row's confirmed result can release its lock");
+      assert.equal(host.ref(ReplyReceipt).pending(), null);
+      assert.equal(sends(calls).length, 0, "querying a resolved result never sends");
     });
   }
 }
