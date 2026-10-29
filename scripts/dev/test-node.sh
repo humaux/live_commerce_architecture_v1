@@ -27,6 +27,7 @@ node() {
 }
 
 node --test tests/design/*.test.mjs
+node --test --experimental-strip-types packages/format/tests/cvs-match.test.ts
 node --test --experimental-strip-types apps/storefront/tests/*.test.mjs packages/i18n/tests/*.test.ts packages/markdown-lite/tests/*.test.ts tests/admin/design-model.test.ts tests/admin/team-model.test.ts tests/admin/design-gate.test.ts tests/admin/promotions-model.test.ts tests/admin/team-bff.test.ts tests/admin/notify-model.test.ts tests/admin/meta-health-model.test.ts tests/admin/meta-connect-model.test.ts tests/admin/merchant-tools-model.test.ts tests/admin/meta-connect-gate.test.ts tests/deploy/meta-connect-preflight.test.mjs tests/deploy/ops-alert-preflight.test.mjs tests/deploy/deploy-prep-r3.test.mjs tests/deploy/admin-edge-body-cap.test.mjs tests/admin/invite-next.test.ts tests/admin/safe-json-cancel.test.ts tests/admin/money-time-model.test.ts tests/admin/store-domains-ui.test.ts tests/admin/shell-registry.test.ts tests/admin/shell-render.test.ts tests/admin/shell-architecture.test.mjs tests/ui/click-sweep-lib.test.mjs tests/ui/visual-lint-lib.test.mjs tests/storefront/amount-match.test.mjs
 node --test --experimental-strip-types tests/storefront/cod-footer.spec.ts
 node --test tests/ui/visual-scroll-capture.test.mjs

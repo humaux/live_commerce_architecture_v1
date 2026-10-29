@@ -715,8 +715,9 @@
     "tests/storefront/claim-checkout.mjs": "7c673fa1cb0872d155cb25725be9f51a8dcdd5a43fb597caac7dcf8123f1ca69",
     "tests/storefront/cod-footer.spec.ts": "a6fc969d7189f98edd2c1fb90deb9175aafe5150524046de79a0b69f34fc761b",
     "tests/storefront/collector-buyer.mjs": "6d4dc2824450901bfd2cf9389452ff3013a767ce944023994108b1f54045a7cf",
-    "tests/storefront/cvs-buyer.mjs": "da069a0c9068329ded59336879d6c3f4d5fa4fe28b7f985d92bb370d95bbc7b4",
+    "tests/storefront/cvs-buyer.mjs": "7dbb8845d62c6f5024633454ea60af77c9b66a4f8de01d5e7337a030025412fc",
     "tests/storefront/cvs-pap-only.mjs": "aca08fab00471cd7615a7fcbc36d6cc62f314e0c1f8e8beb45b8398e734589ea",
+    "tests/storefront/cvs-picker.mjs": "8b808a86fde9672acff0b61cbc58ddac74f7cb850fe25710c8c311e2e00fbc66",
     "tests/storefront/home-cod-buyer.mjs": "74c8b288da987dc96724ce140060824a1498c2b403c38be668bc3914c8125968",
     "tests/storefront/legal-pages.mjs": "75096e2148250a804a3ed4a35d29eae48aa017dec6978c569deb2a03d9341cbf",
     "tests/storefront/manual-order-link-gate.mjs": "5e58a7e8414a47e511b88f079f3bad20ca269b03b4e3e793f146cb0157ca04f3",
@@ -768,7 +769,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "646456ab6d0215d4845b992eda01361db7d34fe5efd32715e38a5e114091f5bb"
+    "scripts/dev/test-node.sh": "8aebfb5c6eb32438509b2085bdf846eca549f58d553d8e4c3146286b46e63205"
   },
   "modes": {
     "--browser-inbox": {
@@ -2216,6 +2217,7 @@
         "tests/helpers/next-startup.mjs",
         "tests/storefront/browser-engine.mjs",
         "tests/storefront/cvs-buyer.mjs",
+        "tests/storefront/cvs-picker.mjs",
         "tests/storefront/shop-helpers.mjs"
       ],
       "apps": [
@@ -2445,6 +2447,7 @@
         "tests/storefront/browser-gate.mjs",
         "tests/storefront/claim-checkout.mjs",
         "tests/storefront/cvs-buyer.mjs",
+        "tests/storefront/cvs-picker.mjs",
         "tests/storefront/merchant-buyer-gate.mjs",
         "tests/storefront/merchant-product.mjs",
         "tests/storefront/order-gate.mjs",
