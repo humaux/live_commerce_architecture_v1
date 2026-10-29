@@ -1,0 +1,2 @@
+gate (shard:g10)	UNKNOWN STEP	2026-10-28T08:26:42.0774678Z     stripe_live_schema_test.go:628: historical migration ../../migrations/0207_recent_auth_followups.sql: ERROR: identity.complete_oidc_reauth has an unexpected shape for the 0207 patch: 0 (SQLSTATE P0001)
+gate (shard:g10)	UNKNOWN STEP	2026-10-28T08:44:46.7388120Z matrix-receipts: {"mode":"shard:g10","run_id":"40634706241","run_attempt":"1","sha":"1c81a01a85345fc53b0154f425a52e2f72624e8f","status":"FAIL","test_count":207,"spec_count":0}
