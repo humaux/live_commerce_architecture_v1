@@ -302,3 +302,27 @@ CheckoutFlow now has772 newline-terminated lines (773 with the gate's split coun
 Regenerated browser ownership through the official script: exit0,53modes, artifact unchanged. No Go import changes and no dependency-map generation. node --check for checkout-v2/home-cod-buyer/cvs-buyer/order-gate and git diff --check exit0 (E1 syntax/whitespace only); local TypeScript dependencies absent, tsc NOT_RUN. No local tests or servers. Receipt: output/RVFIX-273/red.log; current file hashes: output/RVFIX-273/source-hashes.txt. Author assessment E0; new-head Foundation/Gates and independent review PENDING. Final run/job IDs go in a PR comment, no evidence-only post-GREEN push.
 
 Scope addition this resume: apps/storefront/components/checkout/CheckoutDeliveryOptions.tsx (same storefront module, authorized by scope pre-approval); existing evidence files updated. No migrations/contracts/backend/shared module/lockfile/gate changes. Humaux store/canvas/coord/code-index/link unavailable; this repository handoff does not claim those writes. NOT_RUN: local tests/server/browser/PG, tsc, provider SANDBOX/LIVE, production, Figma/copy-lint/density, independent re-review. Integrator relay of the native CI conclusion/failure/timeout is the wake-up path.
+
+## RELAY — current bundle:06 route cleanup, 2026-10-29
+
+Authority: current dispatch; PR273 head5eba511b5e58450580c68f3ec8a537031a0d24f5; Gates40866696860/job123427467246 and its raw home-COD artifact. Synthetic merge44c8cfbaa79edfbb8b5cdbcc4bd2b99e45342dba. Fetch+merge integration bf174df6b reports already up to date; #313 is present. Raw browser receipt proves real409 and four desktop changed-fee ledger PASS rows. Current failure is route.fulfill: Route is already handled! during cleanup after desktop collection, before mobile recovery. No current503 claim. See output/RVFIX-273/red.log and current-5eba511b-homecod/ (raw artifact retained locally).
+
+Attempt1 for this separate harness blocker: drain both read interceptors with page.unrouteAll({ behavior: "wait" }) before disabling interception. The per-buyer page has no unrelated route. No swallowed error, changed assertion, fixture, retry, threshold or timeout. [Official Playwright guidance](https://playwright.dev/docs/api/class-page#page-unroute-all), read2026-10-29, documents wait versus default cleanup. Gate remains the existing real-click tests, both recovery orders and PG collection parity; new-head results PENDING.
+
+### UI PROCESS · Bourdieu
+
+Q1–Q5 remain as recorded above; this cleanup changes no user behavior or visible screen. Q6 aesthetics remains UNKNOWN pending owner.
+
+### UI PROCESS · Project understanding
+
+Read architecture §§0/1/2/26/27 and buyer-checkout-v1: server quote/transaction authority, isolated worker scope and independent CI acceptance. No browser-computed replacement payable; all unchanged business assertions remain required.
+
+### UI PROCESS · Mobbin → Eagle
+
+No new visual pattern, asset or import in this harness repair; existing reference principles and missing-query handoff above remain applicable.
+
+### UI PROCESS · Figma official guidance
+
+No Figma write, layout or prototype change. Prior guide availability limitation remains; no new guide-read claim. Existing desktop/mobile/review field checklist and zh-TW/zh-CN/en copy table remain unchanged.
+
+Official ownership generation exit0 (53modes), checkout-v2 source hash updated. node --check and git diff --check exit0 (E1 only). Current-head Foundation40866696687/job123423141654 succeeds; new-head CI/independent acceptance PENDING, author E0. Scope: checkout-v2.mjs cleanup, generated ownership, existing red.log/DELIVERY.md/source-hashes.txt. No new out-of-card source file. No Go graph change. NOT_RUN: local tests/server/browser/PG/build/tsc, provider SANDBOX/LIVE, production, Figma/copy-lint/density, Humaux store/canvas/coord/index/link, independent re-review. Exact post-push WAIT_RUN IDs go in PR comment; integrator relay is the wake-up path.

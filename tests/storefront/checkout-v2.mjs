@@ -120,8 +120,8 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
         await expect(page.getByTestId("order-cod-amount")).toContainText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));
         orders.push({ id, total: freshQuote.amount.total_minor, due: freshQuote.cod_due_minor });
       });
-      await page.unroute("**/api/buyer/checkout-options?**", readRoute);
-      await page.unroute(`**/api/buyer/quotes/${quote.id}`, readRoute);
+      // Drain in-flight reads before disabling interception; never swallow handler failures.
+      await page.unrouteAll({ behavior: "wait" });
     }
     await writeFile(path.join(evidence, "rvfix-273-orders.json"), JSON.stringify(orders, null, 2));
     assert.deepEqual(failures, [], "RVFIX #273 changed COD payable assertions");
