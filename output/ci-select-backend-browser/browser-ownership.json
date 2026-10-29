@@ -31,7 +31,7 @@
     "tests/admin/claims-model.test.ts": "2472e57eec9d86f4f9ae4ff32acd274b998c35d5a10c2bfd8251e34bc21e3a19",
     "tests/admin/claims-request.test.ts": "0812f41b5df04ce7eaa8d0d7885d887a5a024469e824a865ddcb7d0aafd6f391",
     "tests/admin/claims-ui.spec.ts": "67c620807e50fbc29fe696fc21fc9d7ada17d16f7a6a8e374dc71dcc2ad7baf5",
-    "tests/admin/code-alignment-admin-state.test.mjs": "641c775ba14359e35a24db58dd86b7750d4821506d41ef29f074e29a367f6d8a",
+    "tests/admin/code-alignment-admin-state.test.mjs": "facc95785e9dee3ab950dca17f0e899e2b4633ef422d54ffab55e0e195d1167d",
     "tests/admin/comment-label-print.spec.ts": "daf089ec93a495f25697230778add4d299f66efb90babf4e483004e390cb9e24",
     "tests/admin/comment-label-print.test.ts": "1156d8f68891fe3ac8186a154dda09ecf3b17f370f43a60567187e7a402aa126",
     "tests/admin/comment-label-strict-fixture.ts": "5da974b95e514b6f9853bbc4879e5001665aa9593a1b7467a933998bf1495f62",
