@@ -1,0 +1,220 @@
+// Purpose: the admin re-authentication dialog and the one place that handles HTTP 403 `reauth_required` (contracts/
+//   merchant-password-auth-v1.md §16, card OC-04). @ds-page: built only from DS components (ConfirmDialog, Field/TextInput,
+//   Button, Alert, Stack), so scripts/dev/check-ds-rules.mjs covers this file.
+// Depends on: @live-commerce/ui/ds; lib/reauth-copy.ts; lib/reauth-client.ts, which calls the BFF /api/auth/password/reauth/{method,start,complete,oidc}
+//   (app/api/auth/password/reauth/[step]/route.ts) and the OIDC callback's #reauth-done / #reauth-failed return
+//   (app/api/auth/callback/route.ts).
+//   reauth-client also fetches the existing orders/finance CSV anchors through this shared re-auth handler.
+// Used by: app/[locale]/layout.tsx (mounted once per page); tests/admin/oc/reauth.spec.ts.
+// Invariants: a 403 reauth_required never signs out - every same-origin /api/ call (except /api/auth/*) that gets one waits for
+//   the dialog; on success the ORIGINAL request (same method, URL, headers - including its Idempotency-Key - and body, from the
+//   caller's own arguments) is sent again exactly once and its answer is what the caller sees; on cancel the caller gets the
+//   original 403. Concurrent refusals share one dialog. Password and code live only in component state and go only to the BFF.
+//   Orders/finance CSV bytes download only after a successful private attachment response; error documents never download.
+"use client";
+import { useEffect, useRef, useState } from "react";
+import type { Locale } from "@live-commerce/i18n";
+import { Alert, Button, ConfirmDialog, Field, Stack, TextInput } from "@live-commerce/ui/ds";
+import { reauthCopy, reauthError } from "../lib/reauth-copy";
+import { reauthDownload, reauthMethod, reauthStep, type ReauthMethod } from "../lib/reauth-client";
+
+const CHANNEL = "commerce-reauth";
+const POPUP = "commerce-reauth";
+type Method = ReauthMethod;
+type Step = "password" | "code" | "oidc" | "waiting";
+
+/** Wraps fetch: a guarded same-origin /api/ call answered 403 reauth_required waits for `confirm`, then is replayed once. */
+export function reauthFetch(native: typeof fetch, confirm: () => Promise<boolean>): typeof fetch {
+  return async (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input), window.location.href);
+    if (url.origin !== window.location.origin || !url.pathname.startsWith("/api/") || url.pathname.startsWith("/api/auth/")) return native(input, init);
+    // The first send is the caller's own call, untouched (a Request built here would turn the body into a stream that devtools and
+    // Playwright can no longer read). Only a Request input is cloned up front, because sending consumes its body.
+    const source = input instanceof Request ? input.clone() : input;
+    const response = await native(input, init);
+    if (response.status !== 403) return response;
+    const code = await response.clone().json().then((b: { code?: unknown } | null) => b?.code, () => null);
+    if (code !== "reauth_required" || !(await confirm())) return response;
+    // Same URL, method, headers (Idempotency-Key included) and body. The caller's own timeout may have run out while the person
+    // re-authenticated; an explicit abort still applies.
+    const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+    const timedOut = !!signal?.aborted && (signal.reason as { name?: string } | undefined)?.name === "TimeoutError";
+    return native(source, { ...init, signal: timedOut ? AbortSignal.timeout(16000) : signal });
+  };
+}
+
+export function ReauthDialog({ locale }: { locale: Locale }) {
+  const c = reauthCopy[locale];
+  const [open, setOpen] = useState(false);
+  const [method, setMethod] = useState<Method | null>(null);
+  const [step, setStep] = useState<Step>("password");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const waiters = useRef<((ok: boolean) => void)[]>([]);
+  const opener = useRef<HTMLElement | null>(null);
+  const lastFocus = useRef<HTMLElement | null>(null);
+  const form = useRef<HTMLFormElement>(null); // the page control focused last (a clicked button is often disabled by the 403 time)
+
+  const finish = (ok: boolean) => {
+    for (const resolve of waiters.current.splice(0)) resolve(ok);
+    setOpen(false); setPassword(""); setCode(""); setError(""); setBusy(false);
+    // Return focus to the control that started the refused request. It is often disabled until the replay settles, so retry
+    // briefly; stop as soon as focus is somewhere else on purpose.
+    const target = opener.current;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      const idle = document.activeElement === null || document.activeElement === document.body;
+      if (++tries > 50 || !idle || !target?.isConnected) return window.clearInterval(timer);
+      if (!target.matches(":disabled")) { target.focus(); window.clearInterval(timer); }
+    }, 100);
+  };
+
+  useEffect(() => {
+    // The OIDC re-auth window lands back on its opener's page with #reauth-done / #reauth-failed: tell the opener, then close.
+    const mark = window.location.hash;
+    if (mark === "#reauth-done" || mark === "#reauth-failed") {
+      new BroadcastChannel(CHANNEL).postMessage(mark === "#reauth-done" ? "done" : "failed");
+      history.replaceState(null, "", window.location.pathname + window.location.search);
+      if (window.name === POPUP || window.opener) window.close();
+    }
+    const track = (event: FocusEvent) => {
+      if (event.target instanceof HTMLElement && event.target !== document.body && !event.target.closest("dialog")) lastFocus.current = event.target;
+    };
+    document.addEventListener("focusin", track);
+    const native = window.fetch;
+    const confirm = () => new Promise<boolean>((resolve) => {
+      if (waiters.current.length === 0) opener.current = lastFocus.current;
+      waiters.current.push(resolve);
+      setOpen(true);
+    });
+    window.fetch = reauthFetch(native, confirm);
+    // Native attachment navigation bypasses fetch. Keep the existing controls, but send these two guarded exports
+    // through the same refusal/dialog/replay path; the Blob download itself causes no additional API request.
+    const active = new AbortController();
+    const downloads = new Set<string>();
+    const download = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[download]") : null;
+      if (!link) return;
+      const url = new URL(link.href);
+      if (url.origin !== window.location.origin || !/^\/api\/stores\/[0-9a-f-]{36}\/(?:orders\/unshipped|finance\/summary)\.csv$/.test(url.pathname)) return;
+      event.preventDefault();
+      if (downloads.has(url.href)) return;
+      downloads.add(url.href);
+      setDownloadError(null);
+      void reauthDownload(url, active.signal).then((code) => {
+        if (!active.signal.aborted) setDownloadError(code);
+      }).finally(() => downloads.delete(url.href));
+    };
+    document.addEventListener("click", download);
+    return () => {
+      active.abort();
+      window.fetch = native;
+      document.removeEventListener("focusin", track);
+      document.removeEventListener("click", download);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    setBusy(true);
+    reauthMethod()
+      .then((m) => { if (live) { setMethod(m); setStep(m.account === "oidc" ? "oidc" : "password"); setBusy(false); } })
+      .catch(() => { if (live) { setError(reauthError(c, "retry_later")); setBusy(false); } });
+    const channel = new BroadcastChannel(CHANNEL);
+    channel.onmessage = (event) => {
+      if (event.data === "done") finish(true);
+      else { setStep("oidc"); setError(reauthError(c, "reauth_failed")); }
+    };
+    return () => { live = false; channel.close(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    // Focus stays in the open dialog: on open and on every step it settles on the first field, and if focus ever falls out to
+    // nothing (a re-rendered control, a blur) it comes back. Leaving through a control inside the dialog is untouched.
+    if (!open) return;
+    const box = form.current?.closest("dialog");
+    if (!box) return;
+    const settle = () => window.requestAnimationFrame(() => {
+      if (box.open && !box.contains(document.activeElement)) (box.querySelector<HTMLElement>("input") ?? box.querySelector<HTMLElement>("button"))?.focus();
+    });
+    settle();
+    const lost = (event: FocusEvent) => { if (!event.relatedTarget || !box.contains(event.relatedTarget as Node)) settle(); };
+    box.addEventListener("focusout", lost);
+    return () => box.removeEventListener("focusout", lost);
+  }, [open, step]);
+
+  const fail = (status: number, body: Record<string, unknown>) => {
+    const reason = typeof body.code === "string" ? body.code : "retry_later";
+    setError(reauthError(c, reason) + (reason === "mail_unavailable" && method?.oidc && method.account === "oidc" ? ` ${c.mailUnavailableOidc}` : ""));
+    if (status === 401) setStep("password");
+  };
+
+  async function confirm() {
+    if (busy) return;
+    setError("");
+    if (step === "oidc" || step === "waiting") {
+      // Opened synchronously from the click so pop-up blockers allow it; the IdP address is filled in after the BFF answers.
+      const popup = window.open("about:blank", POPUP, "popup,width=520,height=680");
+      if (!popup) return setError(reauthError(c, "popup_blocked"));
+      setBusy(true);
+      const search = /^\?[A-Za-z0-9=&._~%-]{0,512}$/.test(window.location.search) ? window.location.search : "";
+      const sent = await reauthStep("oidc", { locale, return_to: window.location.pathname + search });
+      setBusy(false);
+      if (sent.status !== 200 || typeof sent.body.authorization_url !== "string") { popup.close(); return fail(sent.status, sent.body); }
+      popup.location.href = sent.body.authorization_url;
+      return setStep("waiting");
+    }
+    setBusy(true);
+    const sent = step === "password" ? await reauthStep("start", { password, locale }) : await reauthStep("complete", { code: code.trim() });
+    setBusy(false);
+    if (sent.status !== 200) return fail(sent.status, sent.body);
+    if (step === "password") { setPassword(""); setStep("code"); return; }
+    finish(true);
+  }
+
+  const switchTo = (next: Step) => { setError(""); setStep(next); };
+  const both = !!method?.password && !!method?.oidc;
+  return (
+    <>
+    {downloadError && <Alert tone="danger">{reauthError(c, downloadError)}</Alert>}
+    <ConfirmDialog
+      open={open}
+      title={c.title}
+      description={step === "oidc" || step === "waiting" ? c.introOidc : c.introPassword}
+      confirmLabel={step === "password" ? c.sendCode : step === "code" ? c.verify : c.oidc}
+      cancelLabel={c.cancel}
+      tone="primary"
+      busy={busy}
+      busyLabel={c.working}
+      onConfirm={() => void confirm()}
+      onCancel={() => finish(false)}
+    >
+      <form ref={form} data-testid="reauth-dialog" data-step={step} onSubmit={(event) => { event.preventDefault(); void confirm(); }}>
+        <Stack>
+          {step === "password" && (
+            <Field label={c.password}>
+              {(control) => <TextInput {...control} type="password" autoComplete="current-password" maxLength={1024} value={password} onChange={(e) => setPassword(e.target.value)} />}
+            </Field>
+          )}
+          {step === "code" && (
+            <Field label={c.code} help={c.codeSent}>
+              {(control) => <TextInput {...control} autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} />}
+            </Field>
+          )}
+          {step === "waiting" && <Alert tone="info">{c.waitingOidc}</Alert>}
+          {error && <Alert tone="danger">{error}</Alert>}
+          {step === "code" && <Button variant="link" onClick={() => switchTo("password")}>{c.startOver}</Button>}
+          {both && (step === "password" || step === "code") && <Button variant="link" onClick={() => switchTo("oidc")}>{c.useOidc}</Button>}
+          {both && (step === "oidc" || step === "waiting") && <Button variant="link" onClick={() => switchTo("password")}>{c.usePassword}</Button>}
+        </Stack>
+      </form>
+    </ConfirmDialog>
+    </>
+  );
+}

@@ -1,0 +1,90 @@
+1883-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:44.5981596Z ℹ suites 0
+1884-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:44.5983512Z ℹ pass 23
+1885:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:44.5984772Z ℹ fail 0
+1886-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:44.5985241Z ℹ cancelled 0
+1887-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:44.5985800Z ℹ skipped 0
+1888-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:44.5986318Z ℹ todo 0
+--
+1910-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:47.2955417Z ℹ tests 15
+1911-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:47.2955658Z ℹ suites 0
+1912-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:47.2955883Z ℹ pass 15
+1913:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:47.2956108Z ℹ fail 0
+1914-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:47.2956371Z ℹ cancelled 0
+1915-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:47.2956615Z ℹ skipped 0
+1916-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:47.2956840Z ℹ todo 0
+1917-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:47.2957104Z ℹ duration_ms 234.046369
+1918-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:47.3012215Z ## matrix-receipts node-test end
+1919-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:39:49.1633505Z === RUN   TestBrowserStoreDesign
+1920:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:01.7845262Z 2026/10/28 15:40:01 http: proxy error: context canceled
+1921:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:01.7867640Z 2026/10/28 15:40:01 http: proxy error: context canceled
+1922:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:01.7868759Z 2026/10/28 15:40:01 http: proxy error: context canceled
+1923:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:01.7869550Z 2026/10/28 15:40:01 http: proxy error: context canceled
+1924:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:01.7870351Z 2026/10/28 15:40:01 http: proxy error: context canceled
+1925:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:01.7871114Z 2026/10/28 15:40:01 http: proxy error: context canceled
+1926:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:02.1018686Z 2026/10/28 15:40:02 http: proxy error: context canceled
+1927:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:06.2348456Z 2026/10/28 15:40:06 http: proxy error: context canceled
+1928:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:06.2356484Z 2026/10/28 15:40:06 http: proxy error: context canceled
+1929:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:06.2357982Z 2026/10/28 15:40:06 http: proxy error: context canceled
+1930:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:06.2359457Z 2026/10/28 15:40:06 http: proxy error: context canceled
+1931:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:06.7669364Z 2026/10/28 15:40:06 http: proxy error: context canceled
+1932:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:06.7674749Z 2026/10/28 15:40:06 http: proxy error: context canceled
+1933:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:06.7680938Z 2026/10/28 15:40:06 http: proxy error: context canceled
+1934:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:11.2616955Z 2026/10/28 15:40:11 http: proxy error: context canceled
+1935:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:11.2619670Z 2026/10/28 15:40:11 http: proxy error: context canceled
+1936-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:17.1959332Z     browser_store_design_test.go:264: SDB: 4 journeys, PG facts, BFF probes and 20 hashed screenshots checked; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/store-design/20261028T153951.758322063
+1937-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:17.2210811Z --- PASS: TestBrowserStoreDesign (28.06s)
+1938-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:17.2247813Z PASS
+--
+1946-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:20.3827635Z ## matrix-receipts browser-run begin
+1947-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:22.2203007Z === RUN   TestBrowserClaimDirectCheckout
+1948-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:22.2203999Z === RUN   TestBrowserClaimDirectCheckout/RealClick
+1949:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:27.4037653Z 2026/10/28 15:40:27 http: TLS handshake error from 127.0.0.1:51524: remote error: tls: unknown certificate
+1950:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:27.5793951Z 2026/10/28 15:40:27 http: TLS handshake error from 127.0.0.1:51564: remote error: tls: unknown certificate
+1951:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:27.5796206Z 2026/10/28 15:40:27 http: TLS handshake error from 127.0.0.1:51578: remote error: tls: unknown certificate
+1952:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:27.5797738Z 2026/10/28 15:40:27 http: TLS handshake error from 127.0.0.1:51548: remote error: tls: unknown certificate
+1953:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:27.5799623Z 2026/10/28 15:40:27 http: TLS handshake error from 127.0.0.1:51580: remote error: tls: unknown certificate
+1954:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:27.5816129Z 2026/10/28 15:40:27 http: TLS handshake error from 127.0.0.1:51586: remote error: tls: unknown certificate
+1955:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:40:28.5067567Z 2026/10/28 15:40:28 http: TLS handshake error from 127.0.0.1:51634: remote error: tls: unknown certificate
+1956:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.1569556Z     browser_claim_checkout_test.go:157: CDC browser failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.RtXv7cAE/claim-checkout/20261028T154022.220284964
+1957:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.1751297Z --- FAIL: TestBrowserClaimDirectCheckout (37.95s)
+1958:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.1756687Z     --- FAIL: TestBrowserClaimDirectCheckout/RealClick (37.95s)
+1959:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.1818912Z FAIL
+1960:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.1921885Z FAIL	livecommerce/tests/foundation	38.075s
+1961:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.2025789Z FAIL
+1962-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.4119890Z ##[endgroup]
+1963:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.4129590Z bundle member --browser-claim-checkout: failure
+1964:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.4577714Z matrix-receipts: {"mode":"--browser-claim-checkout","run_id":"40663921173","run_attempt":"1","sha":"326c10203c3b441aedc8e709af8b252c7fd986f2","status":"FAIL","test_count":3,"spec_count":2}
+1965-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.4672572Z ##[group]bundle member --browser-merchant-buyer
+1966-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:00.6639166Z prebuilt: storefront restored from 326c10203c3b441aedc8e709af8b252c7fd986f2
+1967-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:01.2731885Z prebuilt: admin restored from 326c10203c3b441aedc8e709af8b252c7fd986f2
+--
+1969-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:03.0732640Z ## matrix-receipts browser-run begin
+1970-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:04.8752819Z === RUN   TestBrowserMerchantBuyerRealChain
+1971-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:07.7564282Z     browser_merchant_buyer_chain_test.go:83: HARNESS_SETUP_POOLS released=3
+1972:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:09.8812358Z 2026/10/28 15:41:09 http: proxy error: context canceled
+1973:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:09.8881934Z 2026/10/28 15:41:09 http: proxy error: context canceled
+1974:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:10.0146569Z 2026/10/28 15:41:10 http: proxy error: context canceled
+1975:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:10.6375966Z 2026/10/28 15:41:10 http: proxy error: context canceled
+1976:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:10.6378162Z 2026/10/28 15:41:10 http: proxy error: context canceled
+1977-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:14.4780880Z     browser_merchant_buyer_chain_test.go:230: PASS: production admin/Next + signed MOCK IdP + real catalog BFF/Go/PG -> exact buyer URL; cases=8; 3 locales; zero purchase effects; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/merchant-buyer-real-2582731758
+1978-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:14.4789907Z     harness_pool_capacity_test.go:159: HARNESS_PG_CAPACITY sampled_peak=16 samples=136 limit=54 max=60 reserved=0 super=3 margin=3 observer_timeout_retries=0
+1979-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:14.4870178Z --- PASS: TestBrowserMerchantBuyerRealChain (9.61s)
+--
+1986-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7717029Z ##[error]Process completed with exit code 1.
+1987-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7782378Z ##[group]Run shopt -s nullglob
+1988-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7782882Z [36;1mshopt -s nullglob[0m
+1989:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7783742Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true[0m
+1990-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7847116Z shell: /usr/bin/bash -e {0}
+1991-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7847388Z env:
+1992-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7847601Z   GOTOOLCHAIN: local
+--
+2026-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7853793Z   COREPACK_ENABLE_NETWORK: 0
+2027-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7854098Z   LC_PREBUILT_DIR: /home/runner/work/_temp/prebuilt
+2028-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7854419Z ##[endgroup]
+2029:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7958961Z --- FAIL: TestBrowserClaimDirectCheckout (37.95s)
+2030:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7959498Z FAIL
+2031:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7959845Z FAIL	livecommerce/tests/foundation	38.075s
+2032:gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.7960225Z FAIL
+2033-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.8034080Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2034-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.8034510Z with:
+2035-gate (bundle:04)	UNKNOWN STEP	2026-10-28T15:41:15.8034778Z   name: receipt-gate-browser-ads-attribution

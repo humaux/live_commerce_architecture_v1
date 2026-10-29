@@ -1,8 +1,10 @@
 // Purpose: The static-state sections of the design-system gallery: tokens, buttons, the DS-3 Figma specimen card (one control per Figma master variant, data-figma = node id), switch and tabs, badges, alerts, state blocks, upload area, form with save bars, settings layout and KPI cards.
-// Depends on: react, @live-commerce/ui/ds, ../src/ui-gallery-copy, ./UiGallery.module.css; sample data only, no API.
+// Depends on: react, @live-commerce/ui/ds, ../src/ui-gallery-copy, ./UiGalleryRecovery, ./UiGallery.module.css; sample data only, no API.
 // Used by: apps/admin/components/UiGallery.tsx.
 "use client";
 import { useState } from "react";
+import type { Locale } from "@live-commerce/i18n";
+import { UiGalleryRecovery } from "./UiGalleryRecovery";
 import {
   FormActionBar,
   Field,
@@ -171,7 +173,7 @@ export function AlertsSection({ c }: { c: GalleryCopy }) {
   );
 }
 
-export function StatesSection({ c }: { c: GalleryCopy }) {
+export function StatesSection({ c, locale }: { c: GalleryCopy; locale: Locale }) {
   const [retried, setRetried] = useState(false);
   const [added, setAdded] = useState(false);
   return (
@@ -185,6 +187,7 @@ export function StatesSection({ c }: { c: GalleryCopy }) {
       {/* one line per control: retry must not hide the empty-state result (and vice versa) */}
       <p className={s.result} role="status">{retried ? c.retryDone : ""}</p>
       <p className={s.result} role="status">{added ? c.clicked(c.emptyAction) : ""}</p>
+      <UiGalleryRecovery locale={locale} />
     </Card>
   );
 }

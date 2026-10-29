@@ -618,7 +618,9 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 				filepath.Base(path) == "0150_platform_settlement.sql" || filepath.Base(path) == "0163_settlement_resolve.sql" ||
 				filepath.Base(path) == "0200_settlement_returns_recon.sql" || filepath.Base(path) == "0208_settlement_item_completeness.sql" ||
 				// 0203 / post_river/0028 (OC-03 re-auth guards) patch set_platform_stripe (0137) and the refund definers in place.
-				filepath.Base(path) == "0203_recent_auth_guards.sql" || filepath.Base(path) == "0028_recent_auth_refund_guard.sql" {
+				filepath.Base(path) == "0203_recent_auth_guards.sql" || filepath.Base(path) == "0028_recent_auth_refund_guard.sql" ||
+				// 0207 patches the OIDC function shape installed by 0203; defer it with its prerequisite.
+				filepath.Base(path) == "0207_recent_auth_followups.sql" {
 				continue
 			}
 			body, err := os.ReadFile(path)
@@ -701,7 +703,7 @@ func slsUpgrade(t *testing.T) {
 	owner := mciStartPG(t)
 	ctx := context.Background()
 	slsApplyWithout(t, owner, "0077_stripe_live_enable.sql", "0016_stripe_live.sql")
-	for _, v := range []string{"0077_stripe_live_enable.sql", "post_river/0016_stripe_live.sql"} {
+	for _, v := range []string{"0077_stripe_live_enable.sql", "post_river/0016_stripe_live.sql", "0207_recent_auth_followups.sql"} {
 		var n int
 		if err := owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1`, v).Scan(&n); err != nil || n != 0 {
 			t.Fatalf("fixture is not pre-0077: %s recorded (%d, %v)", v, n, err)
@@ -774,10 +776,11 @@ func slsUpgrade(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016, and 0150 (settlement ledger) plus
-	// 0163 (settlement-resolve), 0200 (settlement returns), 0208 (item completeness) with them, and 0203 / post_river/0028
-	// (OC-03 re-auth guards, which patch 0137's set_platform_stripe in place); the same Apply runs all ten.
-	if ledgerAfter != ledgerBefore+10 {
-		t.Fatalf("ledger grew by %d, want exactly 10 (0077, post_river/0016, 0137, post_river/0022, 0150, 0163, 0200, 0203, post_river/0028 and 0208, once)", ledgerAfter-ledgerBefore)
+	// 0163 (settlement-resolve), 0200 (settlement returns) and 0208 (item completeness) with them, and 0203 / post_river/0028 (OC-03 re-auth guards, which patch
+	// 0137's set_platform_stripe in place), plus 0207 (the OIDC follow-up needs 0203's function shape).
+	// The same Apply runs all eleven, in migration order, with no duplicate ledger entry on the second Apply.
+	if ledgerAfter != ledgerBefore+11 {
+		t.Fatalf("ledger grew by %d, want exactly 11 (0077, post_river/0016, 0137, post_river/0022, 0150, 0163, 0200, 0203, 0207, 0208 and post_river/0028, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))
