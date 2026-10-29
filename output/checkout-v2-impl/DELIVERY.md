@@ -1,5 +1,31 @@
 # CHECKOUT-V2-IMPL — implementation handoff, 2026-10-28
 
+## RELAY 1 — Foundation ceiling repair, 2026-10-29
+
+Exact inspected head: 636df8b9055492193f498d470348329822e31048. Fetch/merge origin/r3/integration: already up to date. Current-head checks had one completed failure: Foundation run40791490840/job123177531196, shell-architecture.test.mjs:11, OrderFlow.tsx lines855 >854. All browser gates of run40791490842 were pending; no current-head failed browser artifact existed to download. Older failures are historical evidence only. Original tests-only RED below is retained.
+
+The previous loading fix added enough lines to exceed the unchanged ceiling. Removed three redundant historical header lines; Purpose/Depends on/Used by/Invariants and specific transport/payment/CVS documentation remain. No executable code, import, test, threshold, fixture or exemption changed. Source now has852 lines by the gate's split-on-newline rule (851 newline characters). This is the second targeted repair of the line-ceiling blocker; a further failure of that blocker must be escalated. Browser repair acceptance remains pending, with no third browser repair attempted.
+
+### RELAY 1 UI PROCESS · Bourdieu
+
+Q1–Q5 retain the existing verdicts and pending click evidence below: this documentation-only source change changes no task, screen or user control. Q6 aesthetic preference remains UNKNOWN until owner; no new aesthetic claim.
+
+### RELAY 1 UI PROCESS · Project understanding
+
+Read architecture §§0/1/2/26/27, buyer-checkout-v1 Decisions, buyer-checkout-options-v1, original signed card cxf-checkout-v2-impl.md and fix dispatch cxf-273-fix.md. They retain server money authority, original-attempt recovery, immutable destination/options and independent CI acceptance. Current status is from source/current-head CI, not historical output. UI parity and every three-language entry below remain unchanged.
+
+### RELAY 1 UI PROCESS · Mobbin → Eagle
+
+No new visual pattern or reference used. Existing module references and their structural principles below remain the design provenance; no new import requested.
+
+### RELAY 1 UI PROCESS · Figma official guidance
+
+No frame or visual change; existing documented FIGMA-GUIDE G1/G4/G5/G6 applications remain. No browser/Figma runtime used. Figma lint/density are NOT_RUN in this repair.
+
+Static inspection: git diff --check exit0; executable code and imports identical. No local tests/server or new compiler run (comments only). E1 structure only; author assessment E0. Current own CI and independent acceptance PENDING. Evidence: relay1-foundation.log plus original red.log. No newly expanded source path beyond already authorized OrderFlow.tsx; no depmap or browser ownership inputs changed. No background process started. Integrator relays a fresh session after new WAIT_RUN conclusion; final IDs go in a PR comment without an evidence-only push.
+
+NOT_RUN: local tests/servers/browser/PG/runtime, provider SANDBOX/LIVE, production, independent review, runtime density. Existing real-click ledger below remains pending own CI; no completion claim.
+
 PR #273 targets r3/integration, branch unit/checkout-v2-ui. Base d187d7fbac1492ca8fe6c507ab61340b6b9fb616; tests-only head 83fb57206dd7745c66c91ed7d54ecd8fe050227f. Implementation head is the commit containing this delivery (no evidence-only push after GREEN). Author assessment E0; static structure E1; current implementation CI/independent acceptance PENDING, not complete.
 
 Delegated UI worker; assigned checkout-v2-ui worktree only; no recursive delegation, merge, auto-merge, force-push, statuses or production action. Runtime identifies GPT-6-based Codex; exact configured variant/effort UNKNOWN. No migration, API, route-table, lockfile or baseline change.

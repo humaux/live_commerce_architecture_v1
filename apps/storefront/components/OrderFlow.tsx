@@ -4,9 +4,6 @@
 // Depends on: purchase.ts CAS/recovery, buyer BFF routes, CheckoutReview/CheckoutPaymentChoices and payment/fulfilment components.
 // Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
 // Invariants: submit remains gated by destination, server quote and explicit changed-total acknowledgment; money is never added here.
-// Local extension of approved B: native address form after the real quotation;
-// no new wizard, payment claim or persistent address cache. Transport/CAS and
-// receipt recovery live in purchase.ts, not in this rendering component.
 // OrderDetails hosts <OrderPayment> (BFF orders/{id}/payment[/prepare|handoff|refresh|cancel]);
 // its Refresh order button also fires the Stripe payment/refresh signal via paymentSignalRef.
 // The shipment block renders Go GET /v1/buyer/orders/{id} `shipment` (BFF orders/{id}); no route of its own.

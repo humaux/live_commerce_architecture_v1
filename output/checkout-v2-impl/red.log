@@ -47,3 +47,10 @@ Read every failed job via gh run view 40749460713 --log-failed --job <id>:
 Downloaded gate-browser-buyer, gate-browser-order, gate-browser-claim-checkout, gate-browser-webkit with gh run download; original raw browser logs copied into cont-failures.log (both engines). All owned raw downloads remain under cont-273/.
 Historical tests-only causal RED40665214452/jobs122784411665,122784411546 remains unchanged; CONT reuses already failing original assertions and batches fixes in one push as dispatched. No new local test run, mutation, or duplicate RED push.
 GREEN for continuation: PENDING; use this new push's own CI only.
+
+RELAY 1 current-head Foundation RED, 2026-10-29
+head636df8b9055492193f498d470348329822e31048
+run40791490840/job123177531196: shell-architecture.test.mjs:11 own assertion OrderFlow.tsx lines855 >854; exit1.
+Raw filtered receipt: relay1-foundation.log.
+Browser run40791490842 all pending at inspection; no failed current-head browser artifact to download. Older heads ignored for current acceptance.
+Repair: delete three redundant historical comment lines, keep required headers and all executable code, assertions and ceiling854 unchanged. New source split-on-newline count852. git diff --check exit0. No local tests/server.
