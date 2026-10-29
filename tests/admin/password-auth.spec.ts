@@ -181,8 +181,11 @@ const hydrationCopy = {
   en: { loading: "Loading sign-in…", noScript: "Sign-in needs JavaScript. Enable JavaScript in your browser, then reload this page.", reload: "Reload" },
 } as const;
 
+// FIX5 comparison: register all three real-transport cases before the known inspector-abort RED.
+// Keep one assertion body for both faults; CI decides whether the product or the injector needs fixing.
+for (const fault of ["offline", "inspector"] as const) {
 for (const locale of locales) {
-  test(`#245 ${locale}: no JavaScript explains the inert form and reload stays native`, async ({ browser }) => {
+  if (fault === "inspector") test(`#245 ${locale}: no JavaScript explains the inert form and reload stays native`, async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     try {
       const page = await context.newPage();
@@ -208,7 +211,7 @@ for (const locale of locales) {
     }
   });
 
-  test.describe(`#245 ${locale}: recovery diagnostics without credentials`, () => {
+  test.describe(`#245 ${locale}: ${fault} recovery diagnostics without credentials`, () => {
     // Trace is a worker option, so describe-level test.use would prevent all tests from loading.
     // Manual tracing stays inside this credential-free group; password/code flows keep trace off.
     test.beforeEach(async ({ context }) => {
@@ -220,21 +223,34 @@ for (const locale of locales) {
       await context.tracing.stop(failed ? { path } : {});
       if (failed) await testInfo.attach("recovery-trace", { path, contentType: "application/zip" });
     });
-    test(`#245 ${locale}: aborted page chunks show loading then a native reload that recovers`, async ({ page }, testInfo) => {
+    test(`#245 ${locale}: ${fault} page chunks show loading then a native reload that recovers`, async ({ page, context }, testInfo) => {
       let aborted = 0;
       let continued = 0;
       let networkRecovered = false;
       const abortedChunkURLs = new Set<string>();
-      // Observations only: keep the outage, real link click and every assertion unchanged.
+      // Fault injection differs; the real link click and every recovery assertion stay shared.
       // This test never fills a field or calls an auth API; omit URL queries, headers and bodies.
       mkdirSync(testInfo.outputDir, { recursive: true });
       const record = (event: string, detail: Record<string, unknown>) => appendFileSync(
         testInfo.outputPath("recovery-events.jsonl"),
-        JSON.stringify({ event, phase: networkRecovered ? "recovered" : "outage", ...detail }) + "\n",
+        JSON.stringify({ event, fault, locale, phase: networkRecovered ? "recovered" : "outage", ...detail }) + "\n",
       );
-      page.on("requestfailed", (request) => record("requestfailed", {
-        path: new URL(request.url()).pathname, type: request.resourceType(), error: request.failure()?.errorText,
-      }));
+      const isChunk = (url: string) => /\/_next\/static\/chunks\/.*\.js(?:\?|$)/.test(url);
+      page.on("requestfailed", (request) => {
+        if (fault === "offline" && !networkRecovered && isChunk(request.url())) {
+          abortedChunkURLs.add(request.url().split("?")[0]);
+          aborted++;
+        }
+        record("requestfailed", {
+          path: new URL(request.url()).pathname, type: request.resourceType(), error: request.failure()?.errorText, aborted,
+        });
+      });
+      page.on("request", (request) => {
+        if (fault === "offline" && networkRecovered && abortedChunkURLs.has(request.url().split("?")[0])) {
+          continued++;
+          record("continue", { path: new URL(request.url()).pathname, continued });
+        }
+      });
       page.on("response", (response) => {
         if (["document", "script"].includes(response.request().resourceType())) record("response", {
           path: new URL(response.url()).pathname, status: response.status(), type: response.request().resourceType(),
@@ -244,7 +260,22 @@ for (const locale of locales) {
       page.on("console", (message) => {
         if (message.type() === "error") record("console-error", { message: message.text() });
       });
-      await page.route(/\/_next\/static\/chunks\/.*\.js(?:\?|$)/, async (route) => {
+      if (fault === "offline") {
+        // FIXTURE/SETUP: buffer the actual server HTML, then disconnect before the browser parses it.
+        // No script request is intercepted or aborted: setOffline drives the browser transport failure.
+        // Keep this document-only route on reload too, matching the existing disabled-cache policy.
+        await page.route(`/${locale}/?recovery=1`, async (route) => {
+          if (networkRecovered) {
+            await route.continue();
+            return;
+          }
+          const response = await route.fetch();
+          const body = await response.body();
+          await context.setOffline(true);
+          record("offline", { documentStatus: response.status() });
+          await route.fulfill({ response, body });
+        });
+      } else await page.route(/\/_next\/static\/chunks\/.*\.js(?:\?|$)/, async (route) => {
         const chunkURL = route.request().url().split("?")[0];
         if (!networkRecovered) {
           abortedChunkURLs.add(chunkURL);
@@ -257,7 +288,10 @@ for (const locale of locales) {
           record("continue", { path: new URL(chunkURL).pathname, continued });
         }
       });
+      const offlineChunkFailure = fault === "offline"
+        ? page.waitForEvent("requestfailed", (request) => isChunk(request.url())) : undefined;
       await page.goto(`/${locale}/?recovery=1`, { waitUntil: "domcontentloaded" });
+      await offlineChunkFailure;
       expect(aborted, "page JavaScript chunks were actually aborted").toBeGreaterThan(0);
       const status = page.getByRole("status").filter({ hasText: hydrationCopy[locale].loading });
       await expect(status).toBeVisible();
@@ -271,6 +305,10 @@ for (const locale of locales) {
       const currentURL = page.url();
       // Restore the network for the whole reload, including chunks first discovered by the recovered runtime.
       // Keep routing installed so both navigations use the same HTTP-cache policy.
+      if (fault === "offline") {
+        await context.setOffline(false);
+        record("online", {});
+      }
       networkRecovered = true;
       record("native-reload-click", { path: new URL(currentURL).pathname });
       await Promise.all([page.waitForEvent("load"), reload.click()]);
@@ -284,7 +322,7 @@ for (const locale of locales) {
     });
   });
 
-  test(`#245 ${locale}: hydrated forms have no loading or reload, including after ten seconds`, async ({ page }) => {
+  if (fault === "inspector") test(`#245 ${locale}: hydrated forms have no loading or reload, including after ten seconds`, async ({ page }) => {
     for (const path of [`/${locale}/`, `/${locale}/signup`, `/${locale}/reset`]) {
       await page.goto(path);
       await hydrated(page);
@@ -299,6 +337,7 @@ for (const locale of locales) {
     await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toHaveCount(0);
     await expect(page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true })).toHaveCount(0);
   });
+}
 }
 
 test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> workspace; forgot -> reset -> signed in, old session revoked (zh-TW, desktop)", async ({ browser, page, context }) => {

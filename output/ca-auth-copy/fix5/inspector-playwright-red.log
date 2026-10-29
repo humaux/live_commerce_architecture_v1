@@ -1,0 +1,66 @@
+
+Running 21 tests using 1 worker
+
+  ✓   1 tests/admin/password-auth.spec.ts:185:3 › #245 zh-CN: no JavaScript explains the inert form and reload stays native (11.4s)
+  ✘   2 tests/admin/password-auth.spec.ts:223:5 › #245 zh-CN: recovery diagnostics without credentials › #245 zh-CN: aborted page chunks show loading then a native reload that recovers (20.8s)
+  -   3 tests/admin/password-auth.spec.ts:287:3 › #245 zh-CN: hydrated forms have no loading or reload, including after ten seconds
+  -   4 tests/admin/password-auth.spec.ts:185:3 › #245 zh-TW: no JavaScript explains the inert form and reload stays native
+  -   5 tests/admin/password-auth.spec.ts:223:5 › #245 zh-TW: recovery diagnostics without credentials › #245 zh-TW: aborted page chunks show loading then a native reload that recovers
+  -   6 tests/admin/password-auth.spec.ts:287:3 › #245 zh-TW: hydrated forms have no loading or reload, including after ten seconds
+  -   7 tests/admin/password-auth.spec.ts:185:3 › #245 en: no JavaScript explains the inert form and reload stays native
+  -   8 tests/admin/password-auth.spec.ts:223:5 › #245 en: recovery diagnostics without credentials › #245 en: aborted page chunks show loading then a native reload that recovers
+  -   9 tests/admin/password-auth.spec.ts:287:3 › #245 en: hydrated forms have no loading or reload, including after ten seconds
+  -  10 tests/admin/password-auth.spec.ts:304:1 › full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> workspace; forgot -> reset -> signed in, old session revoked (zh-TW, desktop)
+  -  11 tests/admin/password-auth.spec.ts:432:1 › BFF contract: Origin, query, client IP, strict keys, cookie clearing on 200/409 only, sessions survive a failed verify, no secret in any body
+  -  12 tests/admin/password-auth.spec.ts:559:1 › SSR: no form with a password field lacks method=post (/, /signup, /reset)
+  -  13 tests/admin/password-auth.spec.ts:579:1 › slow hydration: an early typist on the invite sign-up never loses the address (#236)
+  -  14 tests/admin/password-auth.spec.ts:612:1 › throttled UI state and the 60 s resend cooldown
+  -  15 tests/admin/password-auth.spec.ts:667:5 › matrix zh-CN desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -  16 tests/admin/password-auth.spec.ts:667:5 › matrix zh-TW desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -  17 tests/admin/password-auth.spec.ts:667:5 › matrix en desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -  18 tests/admin/password-auth.spec.ts:667:5 › matrix zh-CN mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  19 tests/admin/password-auth.spec.ts:667:5 › matrix zh-TW mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  20 tests/admin/password-auth.spec.ts:667:5 › matrix en mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  21 tests/admin/password-auth.spec.ts:723:1 › matrix: locale copy differs per locale and the reset wording is the same for known and unknown addresses
+
+
+  1) tests/admin/password-auth.spec.ts:223:5 › #245 zh-CN: recovery diagnostics without credentials › #245 zh-CN: aborted page chunks show loading then a native reload that recovers 
+
+    Error: auth form hydrated before typing
+
+    expect(locator).toBeVisible() failed
+
+    Locator: locator('form[data-hydrated="true"]')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - auth form hydrated before typing locator('form[data-hydrated="true"]') with timeout 10000ms
+      - waiting for locator('form[data-hydrated="true"]')
+
+
+      143 | // the SSR form would never reach React state). Wait for the public marker before typing.
+      144 | async function hydrated(page: Page) {
+    > 145 |   await expect(page.locator('form[data-hydrated="true"]'), "auth form hydrated before typing").toBeVisible();
+          |                                                                                                ^
+      146 | }
+      147 |
+      148 | async function fillCredentials(page: Page, email: string, password?: string) {
+        at hydrated (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/password-auth.spec.ts:145:96)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/password-auth.spec.ts:279:13
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.oxfQt0ii/password-auth-20261029T005548.585320064/results/password-auth--245-zh-CN-r-38a2f-native-reload-that-recovers/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: recovery-trace (application/zip) ────────────────────────────────────────────────
+    output/playwright/run.oxfQt0ii/password-auth-20261029T005548.585320064/results/password-auth--245-zh-CN-r-38a2f-native-reload-that-recovers/attachments/recovery-trace-a63aea77b8665401d6bff2836eaad38778eaeb35.zip
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.oxfQt0ii/password-auth-20261029T005548.585320064/results/password-auth--245-zh-CN-r-38a2f-native-reload-that-recovers/error-context.md
+
+  1 failed
+    tests/admin/password-auth.spec.ts:223:5 › #245 zh-CN: recovery diagnostics without credentials › #245 zh-CN: aborted page chunks show loading then a native reload that recovers 
+  19 did not run
+  1 passed (32.8s)

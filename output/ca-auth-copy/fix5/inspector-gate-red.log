@@ -1,0 +1,25 @@
+gate (--browser-webkit)	Gate	2026-10-29T00:51:29.6407742Z   MEMBERS_JSON: [
+gate (--browser-webkit)	Gate	  {
+gate (--browser-webkit)	Gate	    "mode": "--browser-webkit",
+gate (--browser-webkit)	Gate	    "art": "gate-browser-webkit"
+gate (--browser-webkit)	Gate	  }
+gate (--browser-webkit)	Gate	]
+gate (--browser-webkit)	Gate	2026-10-29T00:51:29.6408094Z   LC_SWEEP_WORKERS: 1
+gate (--browser-webkit)	Gate	2026-10-29T00:51:29.6408286Z   EXTRA_ENV: 
+gate (--browser-webkit)	Gate	2026-10-29T00:51:29.6408477Z   COREPACK_ENABLE_NETWORK: 0
+gate (--browser-webkit)	Gate	2026-10-29T00:51:29.6408726Z   LC_PREBUILT_DIR: /home/runner/work/_temp/prebuilt
+gate (--browser-webkit)	Gate	2026-10-29T00:51:29.6408992Z ##[endgroup]
+gate (--browser-webkit)	Gate	2026-10-29T00:51:35.5160124Z prebuilt: storefront restored from bed33406f91ea0d7177a4602c9adbe05ecab6079
+gate (--browser-webkit)	Gate	2026-10-29T00:51:35.7588677Z prebuilt: admin restored from bed33406f91ea0d7177a4602c9adbe05ecab6079
+gate (--browser-webkit)	Gate	2026-10-29T00:51:35.8267017Z check-gallery-bundle: OK expect=absent files=67 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+gate (--browser-webkit)	Gate	2026-10-29T00:51:38.8766218Z ## matrix-receipts browser-run begin
+gate (--browser-webkit)	Gate	2026-10-29T00:52:12.9544117Z buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=32s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.oxfQt0ii/webkit/bed33406f91e-buyer.jsonl
+gate (--browser-webkit)	Gate	2026-10-29T00:53:26.6036265Z order: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=72s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.oxfQt0ii/webkit/bed33406f91e-order.jsonl
+gate (--browser-webkit)	Gate	2026-10-29T00:54:08.9433963Z payment: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=40s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.oxfQt0ii/webkit/bed33406f91e-payment.jsonl
+gate (--browser-webkit)	Gate	2026-10-29T00:54:25.3802717Z merchant-buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=14s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.oxfQt0ii/webkit/bed33406f91e-merchant-buyer.jsonl
+gate (--browser-webkit)	Gate	2026-10-29T00:55:43.3571317Z cvs: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=76s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.oxfQt0ii/webkit/bed33406f91e-cvs.jsonl
+gate (--browser-webkit)	Gate	2026-10-29T00:56:22.6212781Z password-auth: pass=0 fail=1 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=1 verdict=1 duration=37s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.oxfQt0ii/webkit/bed33406f91e-password-auth.jsonl
+gate (--browser-webkit)	Gate	2026-10-29T00:56:22.6213952Z FAIL: password-auth (go test exit=1, parse verdict=1)
+gate (--browser-webkit)	Gate	2026-10-29T00:57:01.3176546Z claim-checkout: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=37s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.oxfQt0ii/webkit/bed33406f91e-claim-checkout.jsonl
+gate (--browser-webkit)	Gate	2026-10-29T00:57:01.3178407Z FAIL: --browser-webkit (see logs in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.oxfQt0ii/webkit)
+gate (--browser-webkit)	Gate	2026-10-29T00:57:01.5020677Z ##[error]Process completed with exit code 1.
