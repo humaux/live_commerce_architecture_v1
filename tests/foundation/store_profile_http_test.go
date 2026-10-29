@@ -6,6 +6,7 @@ package foundation_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -34,6 +35,54 @@ func profilePut(t *testing.T, h http.Handler, f *t06GoFixture, key string, in an
 	return adminRequest(h, "PUT", profilePath(f.store), f.token, settingsBody(t, in), "application/json", map[string]string{"Idempotency-Key": key})
 }
 
+// Profile PUT uses claimsRoute's private boundary; GET uses the ordinary settings boundary.
+// Keep exact header expectations and every generic envelope assertion without changing shared helpers.
+func profileWriteRead(t *testing.T, response *httptest.ResponseRecorder) profileWire {
+	t.Helper()
+	if response.Code != http.StatusOK {
+		t.Fatalf("settings status %d: %s", response.Code, response.Body.String())
+	}
+	if response.Header().Get("Cache-Control") != "private, no-store" || response.Header().Get("X-Request-ID") == "" || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Fatal("missing private profile write response headers")
+	}
+	var out profileWire
+	if err := json.Unmarshal(response.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func assertProfileError(t *testing.T, method string, response *httptest.ResponseRecorder, status int, code string, forbidden ...string) adminErrorEnvelope {
+	t.Helper()
+	if response.Code != status {
+		t.Fatalf("status=%d body=%s, want %d", response.Code, response.Body.String(), status)
+	}
+	cache := "no-store"
+	if method != http.MethodGet {
+		cache = "private, no-store"
+	}
+	if response.Header().Get("Cache-Control") != cache || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Fatalf("unsafe profile error headers: %v, want Cache-Control %q", response.Header(), cache)
+	}
+	var envelope adminErrorEnvelope
+	if err := json.Unmarshal(response.Body.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode error envelope: %v body=%q", err, response.Body.String())
+	}
+	if envelope.Code != code || envelope.Message == "" || envelope.RequestID == "" || envelope.Details == nil {
+		t.Fatalf("incomplete envelope: %+v", envelope)
+	}
+	if response.Header().Get("X-Request-ID") != envelope.RequestID {
+		t.Fatalf("request id header/body mismatch: %q / %q", response.Header().Get("X-Request-ID"), envelope.RequestID)
+	}
+	text := strings.ToLower(response.Body.String())
+	for _, value := range forbidden {
+		if value != "" && strings.Contains(text, strings.ToLower(value)) {
+			t.Fatalf("error leaked %q: %s", value, response.Body.String())
+		}
+	}
+	return envelope
+}
+
 func profileFacts(t *testing.T, f *t06GoFixture) [3]int64 {
 	t.Helper()
 	var out [3]int64
@@ -58,26 +107,26 @@ func TestStoreProfilePersistenceReplayAndVersion(t *testing.T) {
 		t.Fatal("profile GET produced durable effects")
 	}
 	key, in := t04Key("profile-create"), profileInput(0)
-	first := settingsRead[profileWire](t, profilePut(t, h, f, key, in))
+	first := profileWriteRead(t, profilePut(t, h, f, key, in))
 	if first.Name != in["name"] || first.ContactEmail != in["contact_email"] || first.ContactPhone != in["contact_phone"] || first.Version != 1 {
 		t.Fatalf("profile PUT lost required/optional fields or initial version: %+v", first)
 	}
 	secondInput := profileInput(1)
 	secondInput["name"] = "Updated store"
 	delete(secondInput, "contact_phone") // Optional phone is cleared by a complete replacement PUT.
-	second := settingsRead[profileWire](t, profilePut(t, h, f, t04Key("profile-update"), secondInput))
+	second := profileWriteRead(t, profilePut(t, h, f, t04Key("profile-update"), secondInput))
 	if second.Version != 2 || second.Name != "Updated store" || second.ContactPhone != "" {
 		t.Fatalf("replacement PUT failed: %+v", second)
 	}
 	// Replaying an earlier successful request returns its ORIGINAL result, even after a later version exists.
-	if replay := settingsRead[profileWire](t, profilePut(t, h, f, key, in)); !reflect.DeepEqual(replay, first) {
+	if replay := profileWriteRead(t, profilePut(t, h, f, key, in)); !reflect.DeepEqual(replay, first) {
 		t.Fatal("retry did not recover the original successful command")
 	}
 	changed := profileInput(0)
 	changed["name"] = "Different body"
-	assertAdminError(t, profilePut(t, h, f, key, changed), 409, "conflict")
-	assertAdminError(t, profilePut(t, h, f, t04Key("profile-stale"), in), 409, "conflict")
-	assertAdminError(t, profilePut(t, h, f, "", profileInput(2)), 422, "invalid_request")
+	assertProfileError(t, "PUT", profilePut(t, h, f, key, changed), 409, "conflict")
+	assertProfileError(t, "PUT", profilePut(t, h, f, t04Key("profile-stale"), in), 409, "conflict")
+	assertProfileError(t, "PUT", profilePut(t, h, f, "", profileInput(2)), 422, "invalid_request")
 	got := settingsRead[profileWire](t, adminRequest(httpapi.NewHandler(f.base.runtime), "GET", profilePath(f.store), f.token, nil, "", nil))
 	if !reflect.DeepEqual(got, second) {
 		t.Fatal("a fresh handler did not read the latest database profile")
@@ -95,7 +144,7 @@ func TestStoreProfilePersistenceReplayAndVersion(t *testing.T) {
 func TestStoreProfileConcurrentEditors(t *testing.T) {
 	f := newT06GoFixture(t)
 	h := httpapi.NewHandler(f.base.runtime)
-	settingsRead[profileWire](t, profilePut(t, h, f, t04Key("profile-seed"), profileInput(0)))
+	profileWriteRead(t, profilePut(t, h, f, t04Key("profile-seed"), profileInput(0)))
 	before := profileFacts(t, f)
 	start, done := make(chan struct{}), make(chan *httptest.ResponseRecorder, 2)
 	for _, name := range []string{"Editor one", "Editor two"} {
@@ -110,9 +159,9 @@ func TestStoreProfileConcurrentEditors(t *testing.T) {
 		r := <-done
 		counts[r.Code]++
 		if r.Code == 200 {
-			winner = settingsRead[profileWire](t, r)
+			winner = profileWriteRead(t, r)
 		} else {
-			assertAdminError(t, r, 409, "conflict")
+			assertProfileError(t, "PUT", r, 409, "conflict")
 		}
 	}
 	if counts[200] != 1 || counts[409] != 1 || winner.Version != 2 {
@@ -130,8 +179,8 @@ func TestStoreProfileConcurrentEditors(t *testing.T) {
 	for range 2 {
 		go func() { done <- profilePut(t, h, f, key, in) }()
 	}
-	a := settingsRead[profileWire](t, <-done)
-	b := settingsRead[profileWire](t, <-done)
+	a := profileWriteRead(t, <-done)
+	b := profileWriteRead(t, <-done)
 	if a.Version != 3 || !reflect.DeepEqual(a, b) || profileFacts(t, f) != [3]int64{before[0] + 1, before[1] + 1, before[2]} {
 		t.Fatal("concurrent identical requests were applied twice")
 	}
@@ -156,7 +205,7 @@ func TestStoreProfileScopeAndReadOnlyAuthority(t *testing.T) {
 			"Idempotency-Key": t04Key("profile-denied"), "X-Tenant-ID": f.tenant, "X-Store-ID": f.store,
 			"X-Principal-ID": f.principal, "X-Forwarded-Host": "forged.example.test",
 		})
-		assertAdminError(t, r, tc.status, tc.code, f.token, f.tenant)
+		assertProfileError(t, tc.method, r, tc.status, tc.code, f.token, f.tenant)
 	}
 	// A store:read-only identity may read the profile without inventory/integration grants.
 	settingsRead[profileWire](t, adminRequest(h, "GET", profilePath(f.store), f.missingPermission, nil, "", nil))
@@ -164,10 +213,10 @@ func TestStoreProfileScopeAndReadOnlyAuthority(t *testing.T) {
 		t.Fatal("denied/readonly requests produced effects")
 	}
 	key := t04Key("profile-revoked-replay")
-	settingsRead[profileWire](t, profilePut(t, h, f, key, profileInput(0)))
+	profileWriteRead(t, profilePut(t, h, f, key, profileInput(0)))
 	before = profileFacts(t, f)
 	mustExec(t, f.base.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='integration:manage'`, f.tenant, f.store, f.principal)
-	assertAdminError(t, profilePut(t, h, f, key, profileInput(0)), 403, "forbidden")
+	assertProfileError(t, "PUT", profilePut(t, h, f, key, profileInput(0)), 403, "forbidden")
 	if profileFacts(t, f) != before {
 		t.Fatal("revoked replay changed durable facts")
 	}
@@ -190,12 +239,12 @@ func TestStoreProfileValidationAndTransport(t *testing.T) {
 	} {
 		in := profileInput(0)
 		in[tc.field] = tc.value
-		assertAdminError(t, profilePut(t, h, f, t04Key("profile-invalid"), in), 422, "invalid_request")
+		assertProfileError(t, "PUT", profilePut(t, h, f, t04Key("profile-invalid"), in), 422, "invalid_request")
 	}
 	for _, field := range []string{"name", "contact_email", "expected_version"} {
 		in := profileInput(0)
 		delete(in, field)
-		assertAdminError(t, profilePut(t, h, f, t04Key("profile-missing"), in), 422, "invalid_request")
+		assertProfileError(t, "PUT", profilePut(t, h, f, t04Key("profile-missing"), in), 422, "invalid_request")
 	}
 	for _, tc := range []struct {
 		method, suffix, media, body, code string
@@ -214,7 +263,7 @@ func TestStoreProfileValidationAndTransport(t *testing.T) {
 		{"GET", "/unknown", "", "", "not_found", 404},
 	} {
 		r := adminRequest(h, tc.method, profilePath(f.store)+tc.suffix, f.token, []byte(tc.body), tc.media, map[string]string{"Idempotency-Key": t04Key("profile-transport"), "X-Request-ID": "caller-chosen"})
-		err := assertAdminError(t, r, tc.status, tc.code, "forged-private-value", f.token)
+		err := assertProfileError(t, tc.method, r, tc.status, tc.code, "forged-private-value", f.token)
 		if err.RequestID == "caller-chosen" {
 			t.Fatal("request ID came from client")
 		}
@@ -226,7 +275,7 @@ func TestStoreProfileValidationAndTransport(t *testing.T) {
 	in := profileInput(0)
 	in["name"] = strings.Repeat("店", 120)
 	delete(in, "contact_phone")
-	if got := settingsRead[profileWire](t, profilePut(t, h, f, t04Key("profile-boundary"), in)); got.Name != in["name"] || got.ContactPhone != "" {
+	if got := profileWriteRead(t, profilePut(t, h, f, t04Key("profile-boundary"), in)); got.Name != in["name"] || got.ContactPhone != "" {
 		t.Fatal("valid boundary/optional phone was rejected or changed")
 	}
 }
@@ -275,7 +324,7 @@ func TestStoreProfileRevocationDuringWriteWait(t *testing.T) {
 	}
 	r := <-done
 	joined = true
-	assertAdminError(t, r, 403, "forbidden")
+	assertProfileError(t, "PUT", r, 403, "forbidden")
 	got := settingsRead[profileWire](t, adminRequest(h, "GET", profilePath(f.store), f.token, nil, "", nil))
 	if !reflect.DeepEqual(got, initial) || profileFacts(t, f) != before {
 		t.Fatal("permission revoked during lock wait did not roll back profile/audit/receipt")

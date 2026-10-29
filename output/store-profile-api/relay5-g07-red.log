@@ -1,0 +1,44 @@
+574-2026-10-29T05:06:31.5999288Z 
+575-2026-10-29T05:06:31.5999400Z Turn off this advice by setting config variable advice.detachedHead to false
+576-2026-10-29T05:06:31.5999556Z 
+577:2026-10-29T05:06:31.5999734Z HEAD is now at c214b634 Merge 5f82635fd81dabb73a8fe8694a94193c0a28017e into 61951609f1dd0937d7d6a8c2f8b0d2faf3d4d05d
+578-2026-10-29T05:06:31.6096830Z ##[endgroup]
+579-2026-10-29T05:06:31.6144889Z [command]/usr/bin/git log -1 --format=%H
+580-2026-10-29T05:06:31.6176456Z c214b634fdd3b9adfbfa53990e0aa66f89371fc8
+--
+2592-2026-10-29T05:18:27.7249968Z     --- PASS: TestStoreDomainsNumericCandidateRetryAndBound/exhausted=false (0.00s)
+2593-2026-10-29T05:18:27.7250597Z     --- PASS: TestStoreDomainsNumericCandidateRetryAndBound/exhausted=true (0.01s)
+2594-2026-10-29T05:18:27.7251076Z === RUN   TestStoreProfileRevocationDuringWriteWait
+2595:2026-10-29T05:18:27.7700373Z     store_profile_http_test.go:278: unsafe error headers: map[Cache-Control:[private, no-store] Content-Type:[application/json] X-Content-Type-Options:[nosniff] X-Request-Id:[3e77cf024735dc2173592ec03f32afe3]]
+2596:2026-10-29T05:18:27.7843867Z --- FAIL: TestStoreProfileRevocationDuringWriteWait (0.06s)
+2597-2026-10-29T05:18:27.7847237Z === RUN   TestStorefrontPublishSPW10DeployWiring
+2598-2026-10-29T05:18:27.7998756Z --- PASS: TestStorefrontPublishSPW10DeployWiring (0.01s)
+2599-2026-10-29T05:18:27.7999186Z === RUN   TestStripeAuthorityRegistrarMatrix
+--
+3072-2026-10-29T05:20:11.8422629Z         --- PASS: TestCvsSelectionFlow/stores_and_environments/SANDBOX_and_LIVE_selections_produce_different_namespaces (0.43s)
+3073-2026-10-29T05:20:11.8423982Z     --- PASS: TestCvsSelectionFlow/open-selection_limit:_10_OPEN_per_owner_and_cart,_then_429_(§4.3) (0.05s)
+3074-2026-10-29T05:20:11.8424605Z FAIL
+3075:2026-10-29T05:20:11.8788190Z FAIL	livecommerce/tests/foundation	740.154s
+3076-2026-10-29T05:20:11.8896556Z FAIL
+3077:2026-10-29T05:20:12.2028315Z ##[error]Process completed with exit code 1.
+3078-2026-10-29T05:20:12.2081601Z ##[group]Run shopt -s nullglob globstar
+3079-2026-10-29T05:20:12.2082078Z [36;1mshopt -s nullglob globstar[0m
+3080-2026-10-29T05:20:12.2082531Z [36;1mnode scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl[0m
+--
+3097-2026-10-29T05:20:12.2101329Z   COREPACK_ENABLE_NETWORK: 0
+3098-2026-10-29T05:20:12.2101514Z   GATE_OUTCOME: failure
+3099-2026-10-29T05:20:12.2101644Z ##[endgroup]
+3100:2026-10-29T05:20:12.2486678Z matrix-receipts: {"mode":"shard:g07","run_id":"40821040503","run_attempt":"1","sha":"c214b634fdd3b9adfbfa53990e0aa66f89371fc8","status":"FAIL","test_count":224,"spec_count":0}
+3101-2026-10-29T05:20:12.2570660Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+3102-2026-10-29T05:20:12.2570907Z with:
+3103-2026-10-29T05:20:12.2571190Z   name: receipt-gate-shard_g07
+--
+3156-2026-10-29T05:20:13.6901666Z   EXTRA_ENV: 
+3157-2026-10-29T05:20:13.6901968Z   COREPACK_ENABLE_NETWORK: 0
+3158-2026-10-29T05:20:13.6902112Z ##[endgroup]
+3159:2026-10-29T05:20:13.6955591Z --- FAIL: TestStoreProfileRevocationDuringWriteWait (0.06s)
+3160-2026-10-29T05:20:13.6955975Z FAIL
+3161:2026-10-29T05:20:13.6956260Z FAIL	livecommerce/tests/foundation	740.154s
+3162-2026-10-29T05:20:13.6956783Z FAIL
+3163-2026-10-29T05:20:13.7005686Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+3164-2026-10-29T05:20:13.7006061Z with:

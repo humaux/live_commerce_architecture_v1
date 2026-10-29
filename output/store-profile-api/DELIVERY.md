@@ -156,3 +156,33 @@ ownership and depmap generation exit0; no depmap diff. Shared CI classification
 remains outside scope, so STOP without gate/exemption/test changes. New exact-head
 WAIT_RUNs go in the PR comment; GREEN PENDING, author E0. Humaux is unavailable
 in this follow-up; no new store/canvas/coord action claimed. No local tests or servers.
+
+## Relay5 — current-head CI diagnosis and card-local header assertions
+
+Authority: card relay, contracts/merchant-settings-wizard-v1.md STORE-PROFILE-API
+(private no-store), and source at 5f82635fd81dabb73a8fe8694a94193c0a28017e.
+The identity-disabled BFF assertion is GREEN at Foundation40821040430 /
+job123273320136, tested merge c214b634fdd3b9adfbfa53990e0aa66f89371fc8
+(head5f82635f + base61951609f). No middleware or re-auth regression remains there.
+
+Current RED is Gates40821040503 / job123274609828, TestStoreProfileRevocationDuringWriteWait:
+store_profile_http_test.go:278 calls assertAdminError, which requires exact no-store.
+PUT correctly routes through claimsRoute/studioRoute, which sets private, no-store.
+This same helper mismatch also prevents PUT success receipts from being inspected.
+Fix attempt1: use card-local exact PUT private,no-store header assertions, retaining
+all status, envelope, server request-ID, nosniff, leak, CAS, revocation and atomic
+rollback assertions. GET still requires exact no-store. No permissive alternatives,
+response normalization, fixture changes, generic helper changes or production changes.
+The error helper preserves every assertAdminError check; PUT success adds nosniff.
+
+Static only: gofmt, go vet ./tests/foundation, git diff --check and native depmap
+regeneration exit0; no dependency-map diff. No local tests or servers. E1 structural
+checks; author assessment E0; GREEN PENDING new-head PR CI and independent review
+NOT_RUN. No new Test name, browser spec/page/route, migration, pin or contract change.
+Changed paths: tests/foundation/store_profile_http_test.go and output/store-profile-api/**;
+new outside-card paths: none. Rollback reference: 5f82635f (ordinary revert only).
+
+Humaux is available in relay5. Child-only canvas update under acquired resource
+store-profile-api:relay5; no new task claim because this is integrator-delegated work.
+Integrator owns CI completion wakeup via fresh relay, maximum10-minute queue read;
+final workflow/job receipts are posted in the PR comment, without an evidence-only push.
