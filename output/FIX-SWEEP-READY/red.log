@@ -1,0 +1,26 @@
+FIX-SWEEP-READY — RED attempt handoff
+Observed: 2026-10-29T08:54:53Z
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/306
+Base: d8093bc43f16f8eb4e209eeb6c7b698efcd27b0e
+Tests-only head: c5c473a32000ecca3301ef7454ee9e1080759bad
+Foundation run: 40845524523
+Foundation job: 123351940744 (foundation), FAILURE, Node unit suites exit 1
+Gates run: 40845524660 (tests-only head; not implementation acceptance)
+RED assertion failures: CONFIRMED on the tests-only head above (E3 causal RED only)
+Read directly via gh pr checks 306 and gh run view 40845524523 --log-failed --job 123351940744.
+At 2026-10-29T09:00:38Z all six NEW readiness cases failed on their own assertions:
+  busy/status/skeleton: quiet DOM/network must not credit a still-loading page (:43)
+  permanently busy: Missing expected rejection, expected /page stayed busy/i (:50)
+  recovery reload: recovery must not enumerate the loading placeholder (:57)
+  first/fresh navigation: source missing ready:true opt-in before unchanged assertions (:62)
+Expected regression failures: quiet-but-loading busy/status/skeleton accepted too early;
+permanently busy page does not reject; reload returns too early; initial/fresh navigation lacks readiness opt-in.
+Local static command: node --check tests/ui/click-sweep-lib.test.mjs (exit 0, E1)
+Required static generator: node scripts/dev/derive-browser-ownership.mjs (exit 0, 53 modes)
+Local tests/servers: NOT_RUN (prohibited)
+Implementation: bounded ready:true opt-in; GREEN/independent review pending implementation CI
+Gate parity: tests/ci/next-startup.test.mjs untouched
+Resume: integrator relays the implementation Foundation/Gates conclusion; use only that head.
+Notification owner: integrator; implementation WAIT_RUN ids will be in the PR comment/final handoff.
+Humaux now callable: causal RED fix record queued; own sub-canvas submitted under acquired locks.
+This log is included with the implementation commit; no evidence-only push after GREEN.

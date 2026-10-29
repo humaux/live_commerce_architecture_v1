@@ -1,6 +1,7 @@
 // Purpose: G-UI8 classification and media journey protocol regressions without starting a browser.
 // Depends on: Node assert/test, click-sweep-lib and the real J1 cover driver with controlled page/check doubles.
 // Used by: scripts/dev/test-node.sh and the click-sweep mode preflight.
+// Invariants: busy placeholders cannot earn readiness; recovery shares bounded waits; classification assertions remain unchanged.
 // Run by scripts/dev/test-node.sh and by `test-local.sh --browser-click-sweep` before any build.
 import assert from "node:assert/strict";
 import test from "node:test";
