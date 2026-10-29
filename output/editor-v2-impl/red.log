@@ -234,3 +234,38 @@ Targeted implementation blocker fix attempt 1/2; fresh CI only will establish ou
 Static node --check editor-v2.spec.ts and git diff --check exit 0 (E1).
 Browser ownership regenerated, no Go dependency graph change. No local tests/servers/builds.
 Current product GREEN PENDING; own acceptance E0; Humaux persistence NOT_RUN (tools unavailable).
+FIX323 RELAY 2 — root repair pushed; CI PENDING
+
+PR #323, head 01976522ec64388debd0414cd0dff980d14e98f3.
+Merged origin/r3/integration@17328372dea91220050e9583259312e2db2e5d97 first.
+Original tests-only causal RED: Gates 40914495431/job 123593141674 at 7d19e61394cb8450416e12e036439b9be52bff46 — 17 new missing-hub assertions after loading draft v42.
+Current implementation negative evidence: Gates 40920310953/job 123613924536 at f3e4130071b2296d498377c2aba4dd4ca9ad0cd4 — 26 old cases passed, 17 new cases failed (storefront fixture read envelope, English hub 114 characters, menu 22 text nodes). Artifact 12919092181 downloaded; completed-job raw log read through GitHub API because the full workflow was still running. No runner infrastructure failure or rerun.
+
+Repair attempt 1/2 for these blockers: match private, no-store on both storefront fixture reads; native hidden descriptions retain aria-describedby targets; render menu counts as complete text values. Assertions, fixture data, thresholds, timeouts, retries, production parsers and exemptions unchanged. Ownership regenerated. No new outside-PLAN edits; existing exceptions remain DesignVersions.tsx (same module) and tests/foundation/browser_store_design_test.go (explicit RVFIX), listed for integrator approval. Integration's inherited CVS popup fix is not a new card edit.
+
+WAIT_RUN: 40923838267 — Gates (GitHub runners), pending, no test job assigned yet.
+WAIT_RUN: 40923838194 — Foundation checks, foundation job 123623938542 in_progress.
+Both workflow headSha values independently match 01976522ec64388debd0414cd0dff980d14e98f3.
+GREEN PENDING. Static node --check editor-v2.spec.ts and git diff --check exit 0 (E1); author acceptance E0. No new-head E3/E4 completion claim.
+NOT_RUN: local tests/builds/servers/containers/PG/browser execution, Figma writes/copy-lint, Humaux coord/store/canvas/index/link, independent review, LIVE/production.
+Integrator owns completion notification and fresh-session relay; terminal failure matchers failure/cancelled/timed_out. Worker ends CI monitoring under ten minutes. No background process remains. Post-push receipts uncommitted; no evidence-only push, merge or auto-merge.
+
+FIX323 RELAY 3 — 2026-10-30, current head 01976522ec64388debd0414cd0dff980d14e98f3
+Gates run 40923838267 attempt 1 / failed bundle:04 job 123626905255.
+Foundation 40923838194/job 123623938542 success at that head only.
+Synthetic merge f96a530817c47cd2a332ec7e456243fedb491ea4; browser artifact 12920532928 downloaded.
+All exposed current-head failed jobs read (only bundle:04); raw job API used while workflow still runs.
+Playwright: 37 passed / 6 failed; three locales x summary-role locator and recovery sequencing.
+Native summary was wrongly selected as role=button; real-click the exact labelled summary, add open assertion.
+EN network trace: aborted POST at 17:58:56.196Z, same-key receipt 200 at 17:58:56.651Z.
+Test restored transport during automatic recovery, which correctly completed before manual query.
+Wait for query label and enabled state before restoring transport; retain every identity/receipt/refresh assertion.
+No product behaviour, fixture fact, threshold, timeout, retry budget, exemption or production parser changed.
+Targeted attempt=1/2 for these newly exposed test blockers; overall implementation repair push=2.
+Integration 17328372dea91220050e9583259312e2db2e5d97 merged first: Already up to date.
+Original causal tests-only RED remains 40914495431/job 123593141674 at 7d19e61394cb8450416e12e036439b9be52bff46.
+Browser ownership regenerated; only spec hash differs. No imports/Go graph changes or outside-PLAN edits.
+Static node --check editor-v2.spec.ts and git diff --check exit 0, E1; no local tests/servers.
+Evidence=old-head negative E3; new-head GREEN PENDING; author acceptance E0.
+Raw receipt: relay3-current-job.log + relay3-browser-design/; filtered relay3-failure-summary.log.
+Humaux coord/store/canvas/index/link NOT_RUN (tools unavailable); no shared persistence claim.

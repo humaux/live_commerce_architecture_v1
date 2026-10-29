@@ -316,7 +316,12 @@ for (const locale of locales) {
     await popup.close();
     await review(page, locale);
     expect(state.attempts, "review alone never publishes").toHaveLength(0);
-    await page.getByRole("button", { name: ui[locale].details, exact: true }).click();
+    // Native summary has browser-specific accessibility roles; click the labelled disclosure itself.
+    const reviewDetails = page.getByTestId("design-publish-review").locator("details").first();
+    const disclosure = reviewDetails.locator("summary").first();
+    await expect(disclosure).toHaveText(ui[locale].details);
+    await disclosure.click();
+    await expect(reviewDetails).toHaveAttribute("open", "");
     const summary = page.getByTestId("design-summary");
     for (const text of ["Preview name", "#247965", "Welcome", "Products", "8", "Shipping", "Returns", "shipping", "returns", ui[locale].empty]) await expect(summary).toContainText(text);
     for (const group of ["profile", "home", "nav", "pages"]) {
@@ -381,8 +386,11 @@ for (const locale of locales) {
     await page.reload();
     await expect(pending).toContainText(ui[locale].pending);
     await expect(page.getByTestId("design-publish")).toBeHidden();
-    state.outcome = "success";
+    // Keep transport down until automatic same-key recovery settles, as in the existing OC11 journeys.
+    // Otherwise automatic recovery can succeed before the merchant gets to click the query control.
     await expect(page.getByTestId("design-publish-recheck")).toHaveText(ui[locale].query);
+    await expect(page.getByTestId("design-publish-recheck")).toBeEnabled();
+    state.outcome = "success";
     await page.getByTestId("design-publish-recheck").click();
     await expect(page.getByTestId("design-publish-result")).toContainText("28");
     expect(state.attempts.length).toBeGreaterThan(1);

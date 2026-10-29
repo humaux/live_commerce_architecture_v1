@@ -1,0 +1,25 @@
+2026-10-30 FIX323 RELAY 3 — current-head negative CI evidence
+PR=323 branch=unit/editor-v2-ui head=01976522ec64388debd0414cd0dff980d14e98f3
+Gates run=40923838267 attempt=1 job=123626905255 name=gate(bundle:04) conclusion=failure
+Synthetic merge checkout=f96a530817c47cd2a332ec7e456243fedb491ea4
+Browser artifact=12920532928 gate-browser-design; downloaded with gh run download
+Raw log=relay3-current-job.log (GitHub completed-job logs endpoint)
+gh run view --log-failed --job: workflow still in progress, raw API fallback used.
+All exposed failed current-head jobs read: only 123626905255 at pre-push recheck.
+Foundation run=40923838194 job=123623938542 conclusion=success at OLD head only.
+Playwright: 43 cases, 37 passed, 6 failed (three locales x two cases).
+All 26 old cases passed. New three-locale desktop/mobile hub, two edit/density journeys and three refusal cases passed.
+Failure 1: editor-v2.spec.ts:319 locator.click waiting for getByRole(button, exact View details).
+Current snapshot: review contains native summary View details, generic inside a group, not button role.
+Fix: exact label assertion + real summary.click + open attribute assertion; all existing fact/group checks retained.
+Failure 2: editor-v2.spec.ts:385 expected query label, saw disabled Rechecking then element disappeared.
+Trace EN: 2026-10-29T17:58:56.196Z POST abort; 17:58:56.651Z POST 200, identical idempotency key.
+Current snapshot correctly says Published as version 28; the test restored transport too early.
+Fix: retain outage until exact query label AND enabled state; restore transport then real query click.
+No product code, fixture facts, assertions, retry budgets, thresholds, timeouts or exemptions weakened.
+No infrastructure failure or infrastructure rerun. Newly exposed blockers attempt=1/2; overall implementation repair push=2.
+Original tests-only causal RED: head=7d19e61394cb8450416e12e036439b9be52bff46 run=40914495431 job=123593141674.
+Static node --check tests/admin/editor-v2.spec.ts exit=0; git diff --check exit=0. No local tests/servers.
+New spec SHA256=593527a8ea1fa940279083d5e69bf6f85a212596fee841397ab17579e35a56bb
+Browser ownership regenerated; only spec hash changed. No import or Go dependency graph changes.
+Evidence=E3 negative old-head CI; new static=E1; author acceptance=E0; GREEN=PENDING.

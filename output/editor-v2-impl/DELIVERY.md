@@ -1,4 +1,59 @@
-## FIX323 RELAY 2 — current-head failures repaired; fresh CI PENDING
+## FIX323 RELAY 3 — disclosure locator and recovery sequencing; fresh CI PENDING
+
+2026-10-30. Assigned worker on `unit/editor-v2-ui`, PR #323; no delegation.
+Authority: the current FIX #323 relay, AGENTS.md, 架构.md §§0/1/2/26/27,
+contracts/storefront-v2.md §B/B-acceptance and current source plus CI raw receipts.
+Fetched and merged `origin/r3/integration@17328372dea91220050e9583259312e2db2e5d97`
+before editing: Already up to date. Pre-existing uncommitted relay evidence retained.
+
+Inspected all currently exposed failed jobs for exact head
+`01976522ec64388debd0414cd0dff980d14e98f3`: Gates `40923838267`, bundle:04
+job `123626905255`, attempt 1. `gh pr checks 323` and the paginated jobs API both
+identify only this failed job while other jobs remain queued/running. Requested
+`gh run view --log-failed --job 123626905255`; workflow still running, so read the
+original completed-job log via GitHub jobs/logs instead. Downloaded browser artifact
+`12920532928` (`gate-browser-design`) using `gh run download`; inspected log,
+error contexts, screenshot and network trace. Synthetic merge checkout
+`f96a530817c47cd2a332ec7e456243fedb491ea4`. 37 browser cases pass and 6 fail;
+all old suites plus new three-locale hubs, edits, density and refusal cases pass.
+Same-head Foundation `40923838194` / job `123623938542` succeeded. Neither result
+accepts this repair. Original causal tests-only RED: `40914495431/123593141674`.
+
+|Failure in each locale|Root correction|Acceptance preserved or added|
+|---|---|---|
+|Review cannot find a button named View details|The rendered control is native `summary`, shown as generic/group in the current CI accessibility snapshot. Real-click its exact labelled summary within the review disclosure.|Keep all summary facts/group clicks; ADD exact label and native `open` assertions. No product role workaround.|
+|Query control disappears after refresh|Test restores transport before automatic original-key recovery finishes. Trace at 17:58:56.196Z has an aborted POST; at 17:58:56.651Z the same key returns 200, correctly rendering Published. Wait for existing query text and enabled state while transport remains down, then restore transport and click.|Keep refresh persistence, exact query copy, real click, every original key/body comparison, one receipt, no second publish and final refresh assertions. ADD enabled assertion; no timeout or retry change.|
+
+Targeted fix attempt 1/2 for these newly exposed selector/sequencing blockers;
+this is the second implementation-repair push overall. No runner infrastructure
+failure, no rerun, no new product behaviour or fixture facts. Existing failing CI
+assertions are the negative evidence; no separate behavioural RED push is needed
+for this harness correction. Full runtime verification remains CI-only.
+
+Regenerated browser ownership with `node scripts/dev/derive-browser-ownership.mjs`:
+only the changed spec's source hash differs. No Go graph or import changes;
+dependency-map generation and component-harness edits are unnecessary.
+Static `node --check tests/admin/editor-v2.spec.ts` and `git diff --check`: exit 0,
+E1 only. Spec SHA256 `593527a8ea1fa940279083d5e69bf6f85a212596fee841397ab17579e35a56bb`.
+New edits remain within PLAN write paths. Existing whole-PR exceptions remain
+`DesignVersions.tsx` (same module) and `tests/foundation/browser_store_design_test.go`
+(explicit RVFIX); both stay listed for integrator approval in the PR body.
+
+UI process: BOURDIEU, PROJECT UNDERSTANDING, MOBBIN → EAGLE and FIGMA OFFICIAL
+GUIDANCE each remain recorded in their own sections below. This tests-only repair
+changes no design, copy, fields, Figma frame or reference; Q6 remains UNKNOWN.
+Current CI screenshot/source audit precedes this correction. The REQUIRED parity
+table, three-language table and all click/density gates remain in force; whole-card
+GREEN and independent acceptance are PENDING, author PASS=E0. E3 here is negative
+CI evidence for the previous head, not completion. NOT_RUN: local tests/builds/
+servers/containers/PG/browser execution, Figma writes/copy-lint, LIVE/production,
+Humaux coord/store/canvas/index/link (tools unavailable), independent review.
+Integrator owns CI completion relay; record new Gates/Foundation WAIT_RUN IDs
+after the push and stop within ten minutes. No merge, auto-merge or evidence-only
+push after GREEN. Raw downloaded evidence remains in `relay3-browser-design/`
+and `relay3-current-job.log`; filtered receipt is `relay3-failure-summary.log`.
+
+## FIX323 RELAY 2 — historical repair; outcome superseded by RELAY 3 above
 
 2026-10-30. Authority: assigned FIX #323 relay, repository AGENTS.md, 架构.md §§0/1/2/26/27,
 contracts/storefront-v2.md §B/B-acceptance, and current source/CI. No delegation.
@@ -515,3 +570,11 @@ Head `f3e4130071b2296d498377c2aba4dd4ca9ad0cd4`, PR #323.
 WAIT_RUN: 40920310953 — Gates, in_progress, test jobs not assigned yet.
 WAIT_RUN: 40920310991 — Foundation, job 123611432672 in_progress.
 Both workflow headSha values match the pushed implementation. GREEN and independent acceptance PENDING; author PASS=E0. Integrator owns completion relay; no evidence-only push, merge or auto-merge.
+
+## RELAY 2 push receipt (uncommitted)
+
+PR #323 head `01976522ec64388debd0414cd0dff980d14e98f3`.
+WAIT_RUN: `40923838267` — Gates, pending; no test job assigned yet.
+WAIT_RUN: `40923838194` — Foundation, job `123623938542` in_progress.
+Both run headSha values match the pushed head. GREEN PENDING; author acceptance E0,
+static checks E1. Integrator owns completion relay; no evidence-only push or merge.
