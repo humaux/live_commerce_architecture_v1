@@ -37,3 +37,5 @@ foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0987157Z   As
 foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0993157Z     actual: undefined,
 foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.0993424Z     expected: 'Store inbox',
 foundation	Node unit suites (storefront, i18n)	2026-10-28T21:36:32.1031317Z ##[error]Process completed with exit code 1.
+
+Relay5 current-head regression: head a2de7f28, Gates40781650346, synthetic fcdba1b4; jobs sweep5=123146834016 sweep6=123146833228 sweep8=123146834038 bundle06=123146833634. Sweep All0 no-effect; inbox 19 passed/6 failed (INU07 hidden heading x3; INV2 invalid duplicate provider binding fixture x3). See relay5/failures.log and artifact-index.tsv. Original causal tests-only RED above remains distinct.

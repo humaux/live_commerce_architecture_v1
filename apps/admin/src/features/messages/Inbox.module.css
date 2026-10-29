@@ -297,6 +297,7 @@
 .iconButton { border-color: transparent; flex-shrink: 0; }
 .chip:hover, .iconButton:hover, .extraFilters > summary:hover { box-shadow: inset 0 0 0 1px var(--ds-border-input); }
 .chip:disabled, .iconButton:disabled { opacity: .58; cursor: not-allowed; }
+.chip[aria-pressed="true"]:disabled { opacity: 1; cursor: default; }
 .extraFilters { position: relative; }
 .extraFilters > summary { list-style: none; }
 .extraFilters > summary::-webkit-details-marker { display: none; }

@@ -626,12 +626,13 @@ for (const copy of localeCases) {
       await page.setViewportSize({ width, height: 900 });
       if (width === 390) await page.getByRole("button", { name: copy.back, exact: true }).click();
       await filter(page, "messenger");
+      // The list heading belongs to the list view; mobile hides it while a thread is open.
+      await expect(page.getByTestId("inbox-page").getByRole("heading", { level: 1 })).toHaveText(copy.title);
       await open(page, ids.open);
       await expect(page.getByTestId("inbox-thread")).toContainText(dm);
       // Independent literal expectations catch zh-CN falling back to Traditional Chinese.
       await expect(page.getByTestId("reply-send")).toHaveText(copy.send);
       await expect(page.getByTestId("buyer-panel").getByRole("heading", { level: 2 })).toHaveText(copy.buyer);
-      await expect(page.getByTestId("inbox-page").getByRole("heading", { level: 1 })).toHaveText(copy.title);
       await privateBoundary(page, consoleMessages);
       record(
         `locale ${copy.locale}/${width}`,

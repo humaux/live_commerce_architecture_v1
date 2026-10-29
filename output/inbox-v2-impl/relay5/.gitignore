@@ -1,0 +1,3 @@
+# Raw CI downloads are retained locally; tracked failures.log and artifact-index.tsv identify their sources.
+artifacts/
+job-*.log

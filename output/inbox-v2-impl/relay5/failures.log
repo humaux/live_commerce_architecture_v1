@@ -1,0 +1,89 @@
+PR294 continuation — failed CURRENT head a2de7f28cf8652c70450ead68dc41c3720032c6f
+Gates run 40781650346; synthetic merge fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+Downloaded artifacts: see artifact-index.tsv. Raw downloads retained locally under artifacts/.
+gh run view --log-failed job123146834016 hit gh zip cache error; raw job logs fetched via gh api actions/jobs/123146834016/logs.
+
+job-123146833228.log
+gate (--browser-click-sweep@6/10)	UNKNOWN STEP	2026-10-28T23:02:25.4890088Z     browser_click_sweep_test.go:558: click sweep FAILED (exit: exit status 1); the ledger and the failing controls are in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.0aBmRQWp/ui-click-sweep (ledger.md, DEFECTS in the runner log /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.0aBmRQWp/click-sweep/20261028T224638.734119581/click-sweep.mjs.log)
+gate (--browser-click-sweep@6/10)	UNKNOWN STEP	2026-10-28T23:02:25.5224842Z --- FAIL: TestBrowserClickSweep (946.79s)
+gate (--browser-click-sweep@6/10)	UNKNOWN STEP	2026-10-28T23:02:27.4148156Z --- FAIL: TestBrowserClickSweep (946.79s)
+
+job-123146833634.log
+gate (bundle:06)	UNKNOWN STEP	2026-10-28T22:51:32.3104192Z --- FAIL: TestBrowserInboxUIRealChain (172.40s)
+gate (bundle:06)	UNKNOWN STEP	2026-10-28T22:54:21.4687613Z --- FAIL: TestBrowserInboxUIRealChain (172.40s)
+
+job-123146834016.log
+2026-10-28T23:01:45.8754309Z     browser_click_sweep_test.go:558: click sweep FAILED (exit: exit status 1); the ledger and the failing controls are in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.ggRsnpUC/ui-click-sweep (ledger.md, DEFECTS in the runner log /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.ggRsnpUC/click-sweep/20261028T224618.922536399/click-sweep.mjs.log)
+2026-10-28T23:01:45.8996027Z --- FAIL: TestBrowserClickSweep (926.98s)
+2026-10-28T23:01:47.4055274Z --- FAIL: TestBrowserClickSweep (926.98s)
+
+job-123146834038.log
+gate (--browser-click-sweep@8/10)	UNKNOWN STEP	2026-10-28T23:02:59.7188689Z     browser_click_sweep_test.go:558: click sweep FAILED (exit: exit status 1); the ledger and the failing controls are in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.APG4ocRl/ui-click-sweep (ledger.md, DEFECTS in the runner log /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.APG4ocRl/click-sweep/20261028T224622.499056715/click-sweep.mjs.log)
+gate (--browser-click-sweep@8/10)	UNKNOWN STEP	2026-10-28T23:02:59.7581022Z --- FAIL: TestBrowserClickSweep (997.26s)
+gate (--browser-click-sweep@8/10)	UNKNOWN STEP	2026-10-28T23:03:01.6614544Z --- FAIL: TestBrowserClickSweep (997.26s)
+
+job-123157025018.log
+aggregate	Click sweep covers every route x variant and journey	2026-10-28T23:15:04.8297339Z click sweep: 10 shards, 150 page units opened of 150 planned (33 admin registry routes x 3 variants + storefront), 1185 control clicks, 18 journey steps, 3 failing rows
+aggregate	Click sweep covers every route x variant and journey	2026-10-28T23:15:04.8299499Z - FAIL (shard 5) admin /messages mobile/zh-TW "全部 0" no-effect: no visible change within 3 s
+aggregate	Click sweep covers every route x variant and journey	2026-10-28T23:15:04.8300382Z - FAIL (shard 6) admin /messages desktop/en "All 0" no-effect: no visible change within 3 s
+aggregate	Click sweep covers every route x variant and journey	2026-10-28T23:15:04.8301307Z - FAIL (shard 8) admin /messages desktop/zh-TW "全部 0" no-effect: no visible change within 3 s
+
+job-123157025160.log
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2409239Z   receipt --browser-click-sweep@10/10: PASS test_count=12 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2411834Z   receipt --browser-click-sweep@1/10: PASS test_count=13 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2414573Z   receipt --browser-click-sweep@2/10: PASS test_count=12 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2417161Z   receipt --browser-click-sweep@3/10: PASS test_count=12 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2419645Z   receipt --browser-click-sweep@4/10: PASS test_count=12 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2422164Z   receipt --browser-click-sweep@5/10: FAIL test_count=12 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2424864Z   receipt --browser-click-sweep@6/10: FAIL test_count=12 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2427651Z   receipt --browser-click-sweep@7/10: PASS test_count=12 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2430163Z   receipt --browser-click-sweep@8/10: FAIL test_count=12 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2432626Z   receipt --browser-click-sweep@9/10: PASS test_count=12 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2450146Z   receipt --browser-inbox: FAIL test_count=27 run=40781650346/1 sha=fcdba1b4d91bfc0e8fea88cd5b6e3b8975af0417
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2466298Z FAIL: --browser-inbox: status FAIL
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2467258Z FAIL: --browser-click-sweep@5/10: status FAIL
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2468165Z FAIL: --browser-click-sweep@6/10: status FAIL
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-28T23:15:03.2469049Z FAIL: --browser-click-sweep@8/10: status FAIL
+
+job-123159261686.log
+required	Run echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"	2026-10-28T23:15:28.1766059Z plan=success build=success (expected true) gate=failure aggregate=failure (expected true) deploy=skipped (expected false) receipts=failure
+
+Browser assertion excerpts (19 passed / 6 failed):
+  1) tests/admin/inbox-ui.spec.ts:622:3 › INU07 zh-TW localized controls at1440/mobile390 ──────────
+    Error: expect(locator).toHaveText(expected) failed
+    Locator: getByTestId('inbox-page').getByRole('heading', { level: 1 })
+    Expected: "全店訊息"
+    Error: element(s) not found
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-ui.spec.ts:634:87
+  2) tests/admin/inbox-ui.spec.ts:622:3 › INU07 zh-CN localized controls at1440/mobile390 ──────────
+    Error: expect(locator).toHaveText(expected) failed
+    Locator: getByTestId('inbox-page').getByRole('heading', { level: 1 })
+    Expected: "全店消息"
+    Error: element(s) not found
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-ui.spec.ts:634:87
+  3) tests/admin/inbox-ui.spec.ts:622:3 › INU07 en localized controls at1440/mobile390 ─────────────
+    Error: expect(locator).toHaveText(expected) failed
+    Locator: getByTestId('inbox-page').getByRole('heading', { level: 1 })
+    Expected: "Store inbox"
+    Error: element(s) not found
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-ui.spec.ts:634:87
+  4) tests/admin/inbox-v2-ui.spec.ts:240:3 › INV2 zh-TW states ─────────────────────────────────────
+    Error: expect(locator).toBeEnabled() failed
+    Locator:  getByTestId('reply-send')
+    Expected: enabled
+    Received: disabled
+        at send (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:145:48)
+  5) tests/admin/inbox-v2-ui.spec.ts:240:3 › INV2 zh-CN states ─────────────────────────────────────
+    Error: expect(locator).toBeEnabled() failed
+    Locator:  getByTestId('reply-send')
+    Expected: enabled
+    Received: disabled
+        at send (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:145:48)
+  6) tests/admin/inbox-v2-ui.spec.ts:240:3 › INV2 en states ────────────────────────────────────────
+    Error: expect(locator).toBeEnabled() failed
+    Locator:  getByTestId('reply-send')
+    Expected: enabled
+    Received: disabled
+        at send (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:145:48)
+  6 failed
+  19 passed (2.6m)

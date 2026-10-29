@@ -44,7 +44,12 @@ const copies = [
 ] as const;
 type Copy = typeof copies[number];
 type Delivery = "queued" | "sent" | "failed" | "blocked" | "unknown";
-const fixtureBinding = "10000000-0000-4000-8000-000000000071";
+// B1 identifies a provider binding, not the Page. Sharing one ID would duplicate
+// binding_id:dm_session and correctly fail the unchanged health parser closed.
+const fixtureBindings = {
+  facebook: "10000000-0000-4000-8000-000000000071",
+  instagram: "10000000-0000-4000-8000-000000000073",
+} as const;
 const fixtureAgent = "10000000-0000-4000-8000-000000000072";
 
 /** Prepare isolated transport fixtures, never product state via DOM/evaluate or an actual Meta write. */
@@ -65,8 +70,8 @@ async function mockInbox(page: Page, copy: Copy) {
   await page.route(`**/api/stores/${store}/meta/health`, async (route) => {
     const health = state.mode === "connection" ? "unknown" : state.mode === "permission" ? "missing_permission" : "ok";
     await route.fulfill(answer({ severity: "none", pages: [{ page_id: "900007320071", page_name: "Fixture channel",
-      status: "active", severity: "none", capabilities: ["facebook", "instagram"].map(provider => ({
-        binding_id: fixtureBinding, provider, capability: "dm_session", state: health,
+      status: "active", severity: "none", capabilities: (["facebook", "instagram"] as const).map(provider => ({
+        binding_id: fixtureBindings[provider], provider, capability: "dm_session", state: health,
         reason: "fixture_only", evidence: "MOCK",
       })) }] }));
   });
@@ -105,7 +110,7 @@ async function mockInbox(page: Page, copy: Copy) {
           attachments: null, send_state: state.delivery, principal_id: fixtureAgent }] : []),
       ], has_unknown_outbound: state.delivery === "unknown", mode: "human", takeover_generation: 2,
       human_until: future, window_open_until: state.mode === "closed" ? "2020-01-01T00:00:00Z" : future,
-      binding_id: fixtureBinding, link_version: 1 }));
+      binding_id: fixtureBindings[row.platform === "instagram" ? "instagram" : "facebook"], link_version: 1 }));
     }
     if (path.endsWith("/buyer-panel")) return route.fulfill(answer({ display_name: row.display_name,
       platform: row.platform, purchase_ordinal: 0, claims: [], claim_total_minor: 0,
@@ -188,10 +193,16 @@ for (const copy of copies) {
       await expect(chips.nth(0)).toHaveText(`${copy.all} 4`);
       await expect(chips.nth(1)).toHaveText(`${copy.unread} 2`);
       await expect(chips.nth(2)).toHaveText(`${copy.assigned} 3`);
+      await expect(chips.nth(0)).toHaveAttribute("aria-pressed", "true");
+      await expect(chips.nth(0)).toBeDisabled();
+      await expect(chips.nth(1)).toBeEnabled();
+      await expect(chips.nth(2)).toBeEnabled();
       await page.getByTestId("inbox-filter-assigned").click();
       await expect(page.getByTestId(`conversation-${ids.retry}`)).toBeHidden();
       await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
       await expect(chips.nth(2)).toHaveAttribute("aria-pressed", "true");
+      await expect(chips.nth(2)).toBeDisabled();
+      await expect(chips.nth(0)).toBeEnabled();
       await page.getByTestId("inbox-filter-unread").click();
       await expect(page.getByTestId(`conversation-${ids.open}`)).toBeHidden();
       await open(page, ids.instagram);
@@ -219,6 +230,7 @@ for (const copy of copies) {
       await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeHidden();
       await page.getByTestId("inbox-filter-all").click();
       await page.getByTestId("inbox-filter-instagram").click();
+      await expect(page.getByTestId("inbox-filter-instagram")).toBeDisabled();
       await expect(page.getByTestId(`conversation-${ids.open}`)).toBeHidden();
       await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
       await page.getByTestId("inbox-filter-all").click();
