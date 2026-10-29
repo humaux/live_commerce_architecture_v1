@@ -27,6 +27,10 @@ const reshipOrder = required("LC_BROWSER_RESHIP_ORDER");
 const draftOrder = required("LC_BROWSER_DRAFT_ORDER");
 const restrictedToken = required("LC_BROWSER_RESTRICTED_TOKEN");
 const tracking = required("LC_BROWSER_TRACKING"); // leading zeroes on purpose
+const cvsOrder = required("LC_BROWSER_CVS_ORDER"); // buyer_entered CVS snapshot order, unshipped
+const cvsPickupName = required("LC_BROWSER_CVS_PICKUP_NAME");
+const cvsPickupCode = required("LC_BROWSER_CVS_PICKUP_CODE");
+const cvsTracking = "0012345679"; // leading zeroes on purpose
 const cookieName = "__Host-commerce_session";
 const csvHeader =
   "order_id,created_at_utc,service_code,destination_kind,recipient_name,phone,country,region,city,postal_code,line1,line2,pickup_namespace,pickup_code,pickup_name,pickup_address,items,total_minor,currency,pickup_source,payment_mode,collect_minor";
@@ -254,6 +258,44 @@ test("MF07 a member without fulfillment:write / orders:export sees no shipment a
   // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (restricted role export status)
   const csv = await page.evaluate(async (s) => (await fetch(`/api/stores/${s}/orders/unshipped.csv`)).status, store);
   expect(csv).toBe(403);
+});
+
+test("MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists", async ({ page }) => {
+  await signedLogin(page);
+  const requests: Array<{ url: string; key: string | null; body: string | null }> = [];
+  page.on("request", (r) => {
+    if (r.url().includes(`/orders/${cvsOrder}/shipment`) && r.method() === "PUT")
+      requests.push({ url: r.url(), key: r.headers()["idempotency-key"] ?? null, body: r.postData() });
+  });
+  const detail = await expand(page, cvsOrder);
+  // The destination is the frozen #262/#298 snapshot, not the buyer's typed text and not revalidated here.
+  await expect(detail).toContainText(cvsPickupName);
+  await expect(detail).toContainText(cvsPickupCode);
+  await expect(detail.getByTestId("pickup-source")).toHaveAttribute("data-source", "buyer_entered");
+  // A buyer-entered store cannot use ECPay Create; the merchant is told to ship it by hand.
+  await expect(detail.getByTestId("cvs-manual-only")).toBeVisible();
+  await fillShipment(detail, "seven_eleven_cvs", cvsTracking, `https://track.example.com/t?n=${cvsTracking}`, "MF07 internal note");
+  await detail.getByRole("button", { name: ui.markShipped }).click();
+  await detail.getByTestId("shipment-confirm").click();
+  await expect(detail.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
+  await expect(detail).toContainText(cvsTracking);
+  await expect(detail).not.toContainText(ui.delivered);
+  // exactly one keyed command, with the frozen §5.1 eight-key body
+  expect(requests).toHaveLength(1);
+  expect(requests[0].url).toContain(`/orders/${cvsOrder}/shipment`);
+  expect(requests[0].key).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
+  expect(JSON.parse(requests[0].body ?? "{}")).toMatchObject({
+    expected_version: 0, status: "SHIPPED", carrier_code: "seven_eleven_cvs", tracking_number: cvsTracking,
+    carrier_name: null, tracking_url: `https://track.example.com/t?n=${cvsTracking}`, note: "MF07 internal note", void_reason: null,
+  });
+  // A refresh re-reads the order: the shipped head and the snapshot pickup store both survive.
+  await page.reload();
+  await expect(page.getByTestId("orders-table")).toBeVisible();
+  const after = await expand(page, cvsOrder);
+  await expect(after.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
+  await expect(after).toContainText(cvsTracking);
+  await expect(after).toContainText(cvsPickupName);
+  await shot(page, "cvs-manual-ship", "en", "desktop");
 });
 
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) {

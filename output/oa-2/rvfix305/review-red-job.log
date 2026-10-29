@@ -1,0 +1,57 @@
+Source: GitHub native job logs endpoint, job 123524293876 / run 40895129665, attempt 1.
+Filtered to checkout, reviewed assertions and exit/receipt; no local execution.
+2026-10-29T14:52:17.5859263Z HEAD is now at 08bf99f4 Merge 76497fd0ee3ccf57bd49585892b651c4f6e1ed2b into d0e7331525fec046fbe9361906fa66367ae583c6
+2026-10-29T15:03:21.5906102Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal
+2026-10-29T15:03:21.5928370Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/cancel-after-UNKNOWN
+2026-10-29T15:03:21.5940177Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/rotation-after-UNKNOWN
+2026-10-29T15:03:21.5946104Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/policy-loss-after-UNKNOWN
+2026-10-29T15:03:21.5952995Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-authority
+2026-10-29T15:03:21.5954727Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses
+2026-10-29T15:03:21.5956752Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/eligible-OA-READY
+2026-10-29T15:03:21.5958932Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/consent-refused-before-C3
+2026-10-29T15:03:21.5964407Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/window-closed-before-C3
+2026-10-29T15:03:21.5966658Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/takeover-changed-before-C3
+2026-10-29T15:03:21.5972683Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/recent-operation-excludes-current-scoped-pair
+2026-10-29T15:03:21.5975877Z     order_attempt_notification_review_test.go:108: recent-operation refusal must scope and exclude the admitted operation: missing "recent.tenant_id=o.tenant_id"
+2026-10-29T15:03:21.5979105Z     order_attempt_notification_review_test.go:108: recent-operation refusal must scope and exclude the admitted operation: missing "recent.store_id=o.store_id"
+2026-10-29T15:03:21.5982383Z     order_attempt_notification_review_test.go:108: recent-operation refusal must scope and exclude the admitted operation: missing "recent.request->>'order_id'=n.order_id::text"
+2026-10-29T15:03:21.5986175Z     order_attempt_notification_review_test.go:108: recent-operation refusal must scope and exclude the admitted operation: missing "recent.action='meta.dm_send'"
+2026-10-29T15:03:21.5990231Z     order_attempt_notification_review_test.go:108: recent-operation refusal must scope and exclude the admitted operation: missing "recent.id<>p_operation"
+2026-10-29T15:03:21.5994652Z     order_attempt_notification_review_test.go:108: recent-operation refusal must scope and exclude the admitted operation: missing "recent.created_at>clock_timestamp()-interval '30 seconds'"
+2026-10-29T15:03:21.5998265Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/void-schema-covers-fixed-dispositions
+2026-10-29T15:03:21.6001717Z     order_attempt_notification_review_test.go:116: schema delta must replace the restrictive existing void_code CHECK
+2026-10-29T15:03:21.6004664Z     order_attempt_notification_review_test.go:120: schema delta must replace the void_code CHECK with the complete fixed-code inventory
+2026-10-29T15:03:21.6006782Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/void-code-mapping-is-explicit
+2026-10-29T15:03:21.6009577Z     order_attempt_notification_review_test.go:141: paired VOID writes need a schema-admitted fixed mapping: | invalid_request, outbound_missing | invalid_request | BLOCKED_POLICY | before_c3 |
+2026-10-29T15:03:21.6013547Z     order_attempt_notification_review_test.go:141: paired VOID writes need a schema-admitted fixed mapping: | principal_revoked | forbidden | BLOCKED_POLICY | before_c3 |
+2026-10-29T15:03:21.6017965Z     order_attempt_notification_review_test.go:141: paired VOID writes need a schema-admitted fixed mapping: | consent_refused | consent_refused | BLOCKED_POLICY | before_c3 |
+2026-10-29T15:03:21.6022340Z     order_attempt_notification_review_test.go:141: paired VOID writes need a schema-admitted fixed mapping: | authoritative-no-effect | no_effect | FAILED_FINAL | after_c3 |
+2026-10-29T15:03:21.6025278Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses
+2026-10-29T15:03:21.6027670Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses/eligible-OA-READY
+2026-10-29T15:03:21.6031017Z     order_attempt_notification_review_test.go:158: acceptance handoff must pin eligible-OA-READY: immediately after OA-1 admission; operation age < 30 seconds; no other same-scope/order operation
+2026-10-29T15:03:21.6034013Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses/distinct-recent-operation-before-C3
+2026-10-29T15:03:21.6038160Z     order_attempt_notification_review_test.go:158: acceptance handoff must pin distinct-recent-operation-before-C3: VOID/BLOCKED_POLICY; duplicate_recent; before_c3; zero provider calls; no dispatch permit
+2026-10-29T15:03:21.6041497Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses/consent-refused-before-C3
+2026-10-29T15:03:21.6044464Z     order_attempt_notification_review_test.go:158: acceptance handoff must pin consent-refused-before-C3: commit succeeds under the requested void_code CHECK; raw paired readback
+2026-10-29T15:03:21.6048158Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses/authoritative-no-effect-after-C3
+2026-10-29T15:03:21.6052094Z     order_attempt_notification_review_test.go:158: acceptance handoff must pin authoritative-no-effect-after-C3: VOID/FAILED_FINAL; no_effect; after_c3; commit succeeds under the requested void_code CHECK; raw paired readback
+2026-10-29T15:03:21.6054765Z --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal (0.01s)
+2026-10-29T15:03:21.6056588Z     --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/cancel-after-UNKNOWN (0.00s)
+2026-10-29T15:03:21.6058496Z     --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/rotation-after-UNKNOWN (0.00s)
+2026-10-29T15:03:21.6060461Z     --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/policy-loss-after-UNKNOWN (0.00s)
+2026-10-29T15:03:21.6062681Z     --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-authority (0.00s)
+2026-10-29T15:03:21.6064530Z     --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses (0.00s)
+2026-10-29T15:03:21.6066764Z         --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/eligible-OA-READY (0.00s)
+2026-10-29T15:03:21.6069256Z         --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/consent-refused-before-C3 (0.00s)
+2026-10-29T15:03:21.6071941Z         --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/window-closed-before-C3 (0.00s)
+2026-10-29T15:03:21.6074705Z         --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/takeover-changed-before-C3 (0.00s)
+2026-10-29T15:03:21.6077281Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/recent-operation-excludes-current-scoped-pair (0.00s)
+2026-10-29T15:03:21.6080486Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/void-schema-covers-fixed-dispositions (0.00s)
+2026-10-29T15:03:21.6083247Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/void-code-mapping-is-explicit (0.00s)
+2026-10-29T15:03:21.6086351Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses (0.00s)
+2026-10-29T15:03:21.6089504Z         --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses/eligible-OA-READY (0.00s)
+2026-10-29T15:03:21.6092971Z         --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses/distinct-recent-operation-before-C3 (0.00s)
+2026-10-29T15:03:21.6096105Z         --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses/consent-refused-before-C3 (0.00s)
+2026-10-29T15:03:21.6099896Z         --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/immediate-and-distinct-refusal-witnesses/authoritative-no-effect-after-C3 (0.00s)
+2026-10-29T15:08:55.4397780Z ##[error]Process completed with exit code 1.
+2026-10-29T15:08:55.5006268Z matrix-receipts: {"mode":"shard:g10","run_id":"40895129665","run_attempt":"1","sha":"08bf99f4182dafcb94d94104fcdfae693d303eb7","status":"FAIL","test_count":237,"spec_count":0}

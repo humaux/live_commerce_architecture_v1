@@ -27,6 +27,8 @@ const env = (name) => {
 const root = process.cwd(), evidence = env("LC_RF_EVIDENCE"), origin = env("LC_RF_ORIGIN");
 const productID = env("LC_RF_PRODUCT"), orderID = env("LC_RF_ORDER"), buyerToken = env("LC_RF_BUYER_TOKEN");
 const tracking = env("LC_RF_TRACKING"), carrierEN = env("LC_RF_CARRIER"), urlHost = env("LC_RF_URL_HOST");
+// Optional CVS half: the buyer page must keep showing the frozen pickup store, not only the shipment.
+const pickupName = process.env.LC_RF_PICKUP_NAME ?? "", pickupCode = process.env.LC_RF_PICKUP_CODE ?? "";
 const cookieKey = env("COMMERCE_BUYER_COOKIE_KEY");
 const children = new Set(), sockets = new Set(), contexts = [], logs = [];
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -133,6 +135,8 @@ try {
       for (const banned of ["note", "void_reason", "principal_id", "version"]) assert(!(banned in body.shipment), `${banned} leaked to the buyer`);
       const text = await page.locator("body").innerText();
       assert(text.includes(tracking), "tracking number not shown"); // leading zeroes kept
+      if (pickupName) assert(text.includes(pickupName), "pickup store name from the order snapshot not shown");
+      if (pickupCode) assert(text.includes(pickupCode), "pickup code from the order snapshot not shown");
       assert(text.includes(carrier[locale]), `carrier display name for ${locale}`);
       assert(!delivered.test(text), "the buyer page claims transit or delivery (I13)");
       assert(!(await page.content()).includes("MF07 internal note"), "merchant-only note reached the storefront");

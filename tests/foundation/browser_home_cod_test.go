@@ -2,6 +2,11 @@
 
 package foundation_test
 
+// Purpose: real-click COD lifecycle and changed-payable buyer acceptance in isolated CI.
+// Depends on: tcv fixtures, merchant settings API, production Next/Go and Playwright.
+// Used by: GitHub CI --browser-home-cod.
+// Invariants: original lifecycle assertions retained; fixture-only merchant writes; no provider calls.
+
 // home-cod R5 (unit home-cod, migration 0107): the independent browser gate `TestBrowserHomeCod`, prefix `hcod`. Run through
 // `bash scripts/dev/test-local.sh --browser-home-cod` (isolated PG 18, production storefront + admin Next builds).
 //
@@ -94,6 +99,7 @@ func TestBrowserHomeCod(t *testing.T) {
 	if st != 200 || out["enabled"] != true || out["max_twd"] != float64(20000) || out["surcharge_twd"] != float64(50) || out["carrier"] != "black_cat" {
 		t.Fatalf("the settings wizard did not store the COD settings: %d %s", st, raw)
 	}
+	codSettingsVersion := int64(out["version"].(float64))
 	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='checkout.cash_on_delivery_settings_changed'`, e.store()); n < 1 {
 		t.Error("the COD settings change was not audited")
 	}
@@ -213,6 +219,52 @@ func TestBrowserHomeCod(t *testing.T) {
 
 	// ---- phase 5: order A's buyer sees COLLECTED (still AWAITING_COLLECTION); B, C, D stay PENDING -------------------------------
 	release("1")
+	wait("fee-change")
+	// FIXTURE/SETUP only: change the saved fee after both regression buyers quoted.
+	// Merchant settings UI acceptance remains phase 1 above; this is no substitute for clicks.
+	st, out = e.hcodSettings(codSettingsVersion, true, 20000, 60, "black_cat")
+	if st != 200 || out["surcharge_twd"] != float64(60) {
+		t.Fatalf("changed-fee fixture: %d %v", st, out)
+	}
+	release("fee-change")
+	// RVFIX273: lost receipts must recover the original fee50 collection, despite the current fee60 offer.
+	wait("pending-recovered")
+	pendingRaw, pendingErr := os.ReadFile(filepath.Join(evidence, "rvfix-273-pending-orders.json"))
+	var pendingOrders []struct {
+		ID    string `json:"id"`
+		Total int64  `json:"total"`
+		Due   int64  `json:"due"`
+	}
+	if pendingErr != nil || json.Unmarshal(pendingRaw, &pendingOrders) != nil || len(pendingOrders) != 6 {
+		t.Fatalf("unresolved COD recovered orders: %v %s", pendingErr, pendingRaw)
+	}
+	for _, order := range pendingOrders {
+		_, _, mode, collection, amount, fee := e.hcodRow(order.ID)
+		if mode != "cash_on_delivery" || collection == nil || *collection != "PENDING" || fee != surchargeMinor || amount != total || amount != order.Total || amount+fee != order.Due {
+			t.Errorf("recovered COD order %s must retain original collection %d: total=%d fee=%d", order.ID, order.Due, amount, fee)
+		}
+	}
+	// Fixture cleanup, not UI acceptance: these six new witnesses must not consume the
+	// unchanged store-wide 20-open-order budget of the following COD-255 cases.
+	// Record manual shipments through the merchant API only after recovery/money checks;
+	// keep collection PENDING and every original order/amount assertion above intact.
+	openCOD := func() int {
+		return e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1 AND payment_mode='cash_on_delivery' AND collection_state='PENDING' AND fulfillment_state='MANUAL_UNASSIGNED'`, e.store())
+	}
+	beforeCleanup := openCOD()
+	for _, order := range pendingOrders {
+		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order.ID+"/shipment", t04Key("rv273-fixture-ship"), mfxShip(0, "black_cat", "RV273SYNTHETIC")); st != 200 {
+			t.Fatalf("recovered-order fixture shipment: %d %s", st, raw)
+		}
+		_, fulfilment, mode, collection, amount, fee := e.hcodRow(order.ID)
+		if fulfilment != "MERCHANT_SHIPPED" || mode != "cash_on_delivery" || collection == nil || *collection != "PENDING" || amount != order.Total || fee != surchargeMinor || amount+fee != order.Due {
+			t.Fatalf("fixture shipment changed original COD money/state for %s", order.ID)
+		}
+	}
+	if after := openCOD(); after != beforeCleanup-len(pendingOrders) {
+		t.Fatalf("recovered witnesses must release exactly their six open-order slots: before=%d after=%d", beforeCleanup, after)
+	}
+	release("pending-recovered")
 	// COD-255 fixture preparation: mutate the REAL merchant settings API between the browser's quote and options/checkout requests.
 	// No forged cod_surcharge_changed response; the buyer must hit begin_hold's actual amount guard.
 	cod255Cases := []struct {
@@ -281,6 +333,36 @@ func TestBrowserHomeCod(t *testing.T) {
 	}
 	if err := <-exited; err != nil {
 		t.Fatalf("buyer browser gate failed: %v; evidence=%s", err, evidence)
+	}
+	changedRaw, changedErr := os.ReadFile(filepath.Join(evidence, "rvfix-273-orders.json"))
+	var changed []struct {
+		ID    string `json:"id"`
+		Total int64  `json:"total"`
+		Due   int64  `json:"due"`
+	}
+	if changedErr != nil || json.Unmarshal(changedRaw, &changed) != nil || len(changed) != 2 {
+		t.Fatalf("changed-payable orders: %v %s", changedErr, changedRaw)
+	}
+	for _, order := range changed {
+		_, _, mode, collection, amount, fee := e.hcodRow(order.ID)
+		if mode != "cash_on_delivery" || collection == nil || *collection != "PENDING" || fee != 6000 || amount != order.Total || amount+fee != order.Due {
+			t.Errorf("order %s collection does not match acknowledged server payable %d: total=%d fee=%d", order.ID, order.Due, amount, fee)
+		}
+	}
+	automaticRaw, automaticErr := os.ReadFile(filepath.Join(evidence, "rvfix-273-automatic-orders.json"))
+	var automatic []struct {
+		ID    string `json:"id"`
+		Total int64  `json:"total"`
+		Due   int64  `json:"due"`
+	}
+	if automaticErr != nil || json.Unmarshal(automaticRaw, &automatic) != nil || len(automatic) != 2 {
+		t.Fatalf("automatic COD acknowledged orders: %v %s", automaticErr, automaticRaw)
+	}
+	for _, order := range automatic {
+		_, _, mode, collection, amount, fee := e.hcodRow(order.ID)
+		if mode != "cash_on_delivery" || collection == nil || *collection != "PENDING" || fee != 6000 || amount != order.Total || amount+fee != order.Due {
+			t.Errorf("automatic COD order %s collection differs from acknowledged server payable %d: total=%d fee=%d", order.ID, order.Due, amount, fee)
+		}
 	}
 	bcoShots(t, evidence, 8)
 	if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND commercial_state='AWAITING_COLLECTION' AND collection_state='COLLECTED'`, orders["A"].ID); n != 1 {

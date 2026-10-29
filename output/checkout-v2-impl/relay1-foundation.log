@@ -1,0 +1,6 @@
+foundation	Package docs and gate map are current	2026-10-29T00:09:16.7767184Z ✖ failing tests:
+foundation	Package docs and gate map are current	2026-10-29T00:09:16.7767835Z test at tests/admin/shell-architecture.test.mjs:10:1
+foundation	Package docs and gate map are current	2026-10-29T00:09:16.7770322Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+foundation	Package docs and gate map are current	2026-10-29T00:09:16.7772298Z   +   'apps/storefront/components/OrderFlow.tsx: lines 855 > 854'
+foundation	Package docs and gate map are current	2026-10-29T00:09:16.7781855Z     actual: [ 'apps/storefront/components/OrderFlow.tsx: lines 855 > 854' ],
+foundation	Package docs and gate map are current	2026-10-29T00:09:16.7849082Z ##[error]Process completed with exit code 1.
