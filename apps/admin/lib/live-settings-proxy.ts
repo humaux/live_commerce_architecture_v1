@@ -62,7 +62,8 @@ export async function liveSettingsProxy(
   transport: typeof fetch,
 ): Promise<Response> {
   const route = settingsResource(path);
-  if (!authConfig || !settingsUUID.test(store) || !route)
+  // Config is a startup snapshot; a disabled identity switch must hide routes before any auth/scope work.
+  if (process.env.COMMERCE_IDENTITY_ENABLED !== "1" || !authConfig || !settingsUUID.test(store) || !route)
     return denied(404, "not_found");
   if (!route.methods.includes(request.method)) {
     const r = denied(405, "method_not_allowed");

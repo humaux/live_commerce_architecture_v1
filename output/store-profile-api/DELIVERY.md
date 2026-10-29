@@ -1,4 +1,36 @@
-# STORE-PROFILE-API — rebase-pin relay, acceptance blocked
+# STORE-PROFILE-API — CONT #287 identity-disabled guard, CI pending
+
+## CONT #287 current handoff (2026-10-29)
+
+Authority: integrator's CONT #287 message; base/head before repair
+`027c75a0590f4eec90701db0d21943f36909ad9f`; merchant-password-auth-v1 §16
+and merchant-settings-wizard-v1 STORE-PROFILE-API. Historical sections below are
+prior receipts, not current acceptance or remaining-work claims.
+
+- Root cause: `authConfig` is evaluated once at module import. Removing
+  `COMMERCE_IDENTITY_ENABLED` afterwards leaves that snapshot enabled. The shared
+  `liveSettingsProxy` therefore reaches `authenticatedStores` and `scopeRefusal`,
+  which returns 403 for the test's unrelated live-only grants. No middleware,
+  route wrapper or recent-auth guard produced this failure.
+- Repair attempt 1/2: the shared proxy's first denial also requires the current
+  identity switch to equal `1`, before session, Origin/CSRF, membership or upstream
+  work. This hides all its leaves when identity is disabled; startup configuration
+  must still be present. No fixture fallback or authorization grant was added.
+- Regression RED (E3 failure evidence): Foundation **40818415986**, job
+  **123264887369**, head above; unchanged `live-settings-bff.test.ts:654`
+  assertion failed **403 !== 404**. Raw filtered CI receipt appended to `red.log`.
+  Historical original-card tests-only RED remains recorded below.
+- Static E1: `node --check apps/admin/lib/live-settings-proxy.ts` exit 0;
+  `bash scripts/dev/depmap.sh` exit 0, no generated diff. No imports, route identity,
+  browser spec, test, fixture, migration, pin, gate or shared contract changed.
+- This continuation touches only the existing card helper and its evidence files.
+  New outside-card paths: none. GREEN pending PR CI; author assessment E0.
+- NOT_RUN: all local tests/servers/builds/PG/browser, provider SANDBOX/LIVE,
+  production and independent review. No background process started. Integrator
+  relays the workflow completion in a fresh session; exact WAIT_RUNs are in the
+  final handoff and PR comment. No merge, auto-merge or deployment authorized.
+- Humaux search/store/canvas/coord tools are not exposed in this session. No shared
+  state write claimed; integrator must mirror this handoff under its lock protocol.
 
 Assigned implementer: Codex, dispatched by Claude integrator; no recursive delegation.
 Exact runtime model identifier/reasoning setting are not exposed by this session.

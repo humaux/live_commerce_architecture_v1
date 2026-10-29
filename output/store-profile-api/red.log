@@ -1,4 +1,9 @@
-STORE-PROFILE-API — RED dispatch, NOT a RED assertion receipt yet
+CONT #287 regression RED: Foundation 40818415986 / job 123264887369,
+head 027c75a0590f4eec90701db0d21943f36909ad9f, conclusion FAILURE.
+tests/admin/live-settings-bff.test.ts:654 fails its unchanged 404 assertion (actual 403).
+Raw filtered current-head receipt is appended below. No new tests or assertions in this continuation.
+
+STORE-PROFILE-API — historical RED dispatch (superseded by causal receipts below)
 PR: https://github.com/humaux/live_commerce_architecture_v1/pull/287
 Head: cb7d00c2d97504367599ff77d07db7c20cf3f4e6
 Base at dispatch: bf161bac96252c35337e07713c08a275d48e3e17
@@ -85,3 +90,24 @@ The Node unit block reported 43 tests, 39 pass, 4 fail; the downstream PG assert
 were not established by this failure. This is causal RED for the missing profile
 boundary and contract, not a claim that the PG suite executed.
 Implementation is now authorized by the card's RED-first condition.
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6177706Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6177962Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6178406Z test at tests/admin/live-settings-bff.test.ts:654:1
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6179544Z ✖ store profile BFF never falls back to fixture identity (2.527246ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6180653Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6181376Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6181771Z   403 !== 404
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6182127Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6184207Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/live-settings-bff.test.ts:659:12)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6186703Z       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6187953Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6189220Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6190135Z     generatedMessage: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6190692Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6191171Z     actual: 403,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6191618Z     expected: 404,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6192115Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6192621Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6193016Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6242059Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-29T04:41:34.6251515Z ##[error]Process completed with exit code 1.
