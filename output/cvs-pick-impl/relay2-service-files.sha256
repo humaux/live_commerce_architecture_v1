@@ -1,0 +1,5 @@
+3d0bb0ce48b27141bbb9e1fe6683a10943ccb1395bcc54e37fe052cbaca7c965  tests/storefront/cvs-picker.mjs
+ab4356deeebd7af0da4aa43a035154eb0b6a0bcd21a0558e6812e60cf8cfe864  output/ci-select-backend-browser/browser-ownership.json
+fad99f6fc7ab73073cf81c661f32958d41eccce5740a97f41d43958bdf26bd07  output/cvs-pick-impl/DELIVERY.md
+98bebf0740921964c3138561ecd23c693082f0603305b709bfaff924eb465c56  output/cvs-pick-impl/red.log
+c06cc5a07b725ed22756e9b24cc2bdea7491953baab029ca89b48cf698b7c78d  output/cvs-pick-impl/relay2-service-red.log
