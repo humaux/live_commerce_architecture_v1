@@ -3,6 +3,7 @@
 // Purpose: confirmed-address checkout and current order details, with stable layout while delivery facts load.
 // Depends on: purchase.ts CAS/recovery, buyer BFF destination/options/orders routes, payment and fulfilment components.
 // Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
+// Invariants: destination needs explicit confirmation; a CVS brand change gets a fresh server quote.
 // Local extension of approved B: native address form after the real quotation;
 // no new wizard, payment claim or persistent address cache. Transport/CAS and
 // receipt recovery live in purchase.ts, not in this rendering component.
@@ -111,6 +112,9 @@ export default function OrderFlow({
   onOrder,
   money,
   onCodFee,
+  cvsResume,
+  onCvsBrand,
+  cvsKinds,
 }: {
   context: string;
   cart: Cart;
@@ -127,12 +131,15 @@ export default function OrderFlow({
   // OC-09b: reports the selected cash-on-delivery option's server surcharge (null = another mode or COD not offered) so the
   // checkout bottom bar can show the quote's cod_due_minor; never an amount of its own.
   onCodFee?: (fee: number | null) => void;
+  cvsResume?: CvsDraft;
+  onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
+  cvsKinds?: CvsKind[];
 }) {
   const copy = orderCopy[locale];
   // A destination journal intentionally stores no PII or quotation. A fresh
   // tab must still offer explicit address recovery when it has no quote ID.
   const country = quote?.country ?? recoveryCountry ?? "";
-  const [fields, setFields] = useState<Fields>(empty);
+  const [fields, setFields] = useState<Fields>(() => ({ ...empty, ...(cvsResume ? { recipient_name: cvsResume.recipient_name, phone: cvsResume.phone } : {}) }));
   const [head, setHead] = useState<Destination | null>(null);
   const [option, setOption] = useState<Option | null>(null);
   const [confirmed, setConfirmed] = useState<Destination | null>(null);
@@ -147,7 +154,7 @@ export default function OrderFlow({
   const live = useRef(0);
   const attempt = useRef<{ body: DestinationWrite; key: string } | null>(null);
   // CVS (§16): payment mode, the picker's ensure() handle and the one refusal shown next to the create button.
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>("card");
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>(cvsResume?.payment_mode ?? "card");
   const [createError, setCreateError] = useState<CvsErrorCode | null>(null);
   const [codError, setCodError] = useState<string | null>(null);
   const [optionRefresh, setOptionRefresh] = useState(0);
@@ -432,6 +439,9 @@ export default function OrderFlow({
               run={run}
               handle={pickup}
               total={quote ? money(quote.amount.total_minor, quote.currency) : ""}
+              onBrand={onCvsBrand}
+              availableKinds={cvsKinds}
+              pickerInitiallyOpen={!!cvsResume}
             />
           )}
           {cvsOption && <label className="sku-row cod-home-only"><input type="radio" disabled aria-label={cod.homeOnly} />{cod.homeOnly}</label>}

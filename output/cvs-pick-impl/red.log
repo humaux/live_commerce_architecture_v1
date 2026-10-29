@@ -1,4 +1,68 @@
 CVS-PICK-IMPL — batched tests-only RED
-State: NOT_RUN at commit creation. CI run/job identifiers will be recorded here after push and in the PR comment.
+
+RELAY 2 independent readback — 2026-10-29T00:04:15Z:
+- PR head: 29fc35479039a0a20e1ee0c441f843cd3a69aad7. Fetch/merge origin/r3/integration exited 0: Already up to date.
+- Foundation 40785841792/job123158692798: personally read gh run view --log-failed; check-gates rejects packages/format/tests/cvs-match.test.ts as run by no gate. Matcher assertions NOT_RUN.
+- Gates 40785846830/job123161410421 and job123161410849: gh run view --log-failed refuses unfinished overall run; independently read both completed job logs via gh api actions/jobs/<id>/logs (exit 0). Only CVS is a failing member in these completed jobs.
+- Downloaded gate-browser-cvs and gate-browser-webkit with gh run download (exit 0) into ci-current/. Read all three cvs-buyer.mjs.log files: new exerciseCvsPicker times out at cvs-picker.mjs:90/105 waiting for missing cvs-open-picker. Confirmed browser RED; do not confuse this with executed matcher assertions.
+- Final observed run state: in_progress; 9 unfinished jobs, same two failed Gates jobs. Final current-head failure inventory UNKNOWN. WAIT_RUN: 40785846830.
+- Read original card, named architecture sections/contracts, signed matching spec and existing ensure()/POST path. Gate registration scanner does not traverse the existing wrapper import; retain all assertions when resolving registration.
+- No source edits, local tests/servers, commit or push. Explicit CONT wait-before-implementation rule remains in effect; integrator completion relay is the wakeup mechanism.
+- Humaux memory/coord/canvas tools unavailable; no store or shared-state update claimed. Product completion, GREEN, independent review NOT_RUN.
+
+CONT298 relay re-read 2026-10-29 (head unchanged 29fc35479039a0a20e1ee0c441f843cd3a69aad7):
+- git fetch origin && git merge origin/r3/integration: exit 0, Already up to date.
+- Independently read Foundation 40785841792/job123158692798 --log-failed: package matcher test unregistered; its assertions remain NOT_RUN.
+- Independently attempted gh run view --log-failed for both failed Gates jobs; command refuses while run in_progress. Read completed job logs through gh api actions/jobs/<id>/logs instead (exit 0).
+- Gates 40785846830/job123161410421 bundle:07: only CVS failed; five other bundle members PASS. job123161410849 WebKit: only CVS failed; other seven substeps PASS.
+- Downloaded both gate-browser-cvs and gate-browser-webkit again to ci-cont298/ (exit 0). All three CVS logs fail new exerciseCvsPicker at cvs-picker.mjs:90/105: Timeout 30000ms waiting for cvs-open-picker. This is the missing picker on tests-only head, not a reason to weaken assertions.
+- Last GitHub read: Gates still in_progress, nine jobs unfinished; failed jobs remain the two above. Current-head final failure inventory is not yet available.
+- Per explicit CONT298 requirement to wait current-head results first and <=~10-minute polling bound, no implementation/commit/push; WAIT_RUN40785846830, integrator owns completion relay.
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/298
+Head: 29fc35479039a0a20e1ee0c441f843cd3a69aad7
+Foundation run: 40785841792; job: 123158692798 (foundation), QUEUED at handoff.
+Gates run: 40785846830, QUEUED at handoff. No test job has been assigned yet; plan job is not test evidence.
+State: PENDING CI RED. No new assertion failure has been observed yet; do not treat queueing as RED acceptance.
 Expected assertions, not observed results: pure matcher export exists; deterministic static-directory generator exists; real browser picker controls exist.
 No local test/server executed. Do not implement until CI records the new assertion failures.
+WAIT_RUN: 40785841792
+WAIT_RUN: 40785846830
+Integrator owns CI completion relay and continuation. No further push is made for these receipts; include this updated log in the implementation commit after confirmed RED.
+
+CONT #298 readback 2026-10-29 (current PR head 29fc35479039a0a20e1ee0c441f843cd3a69aad7):
+- git fetch origin && git merge origin/r3/integration: exit 0, Already up to date.
+- Foundation run 40785841792 / job 123158692798 FAILURE: check-gates: packages/format/tests/cvs-match.test.ts is run by no gate. Unit matcher assertions NOT_RUN.
+- Gates run 40785846830 / job 123161410421 bundle:07 FAILURE, --browser-cvs MOCK and WebKit fail.
+- Same run / job 123161410849 --browser-webkit FAILURE, CVS only failing member.
+- Downloaded gate-browser-cvs and gate-browser-webkit via gh run download into output/cvs-pick-impl/ci-red. Each cvs-buyer.mjs.log: locator.click Timeout 30000ms waiting for getByTestId('cvs-open-picker'), at exerciseCvsPicker tests/storefront/cvs-picker.mjs. Picker implementation is absent on tests-only head.
+- gh run view --log-failed refuses Gates while overall run remains in_progress; read completed failed job raw logs via gh api actions/jobs/<id>/logs instead. Foundation --log-failed read successfully.
+- Gates receipts execute synthetic merge b9a8597e279fef900b85f442002d380370b69cd5, run metadata headSha matches PR head 29fc35479039a0a20e1ee0c441f843cd3a69aad7.
+- Overall Gates still IN_PROGRESS; wait before implementation per CONT card. No implementation or push in this continuation. WAIT_RUN: 40785846830.
+- Local tests/server/browser/build NOT_RUN. GREEN and independent review NOT_RUN; no completion claimed.
+
+RELAY 3 fresh readback 2026-10-29T00:07:34.848970+00:00:
+- PR head 29fc35479039a0a20e1ee0c441f843cd3a69aad7; fetch/merge origin/r3/integration exit 0, Already up to date.
+- Foundation 40785841792/job123158692798 --log-failed read personally: check-gates rejects packages/format/tests/cvs-match.test.ts as run by no gate. Matcher assertions NOT_RUN.
+- Gates 40785846830/job123161410421 and job123161410849 --log-failed refuse unfinished overall run; completed raw job logs read via gh api actions/jobs/<id>/logs, exit 0. Only CVS fails in each inspected failed job.
+- Downloaded both gate-browser-cvs and gate-browser-webkit with gh run download (exit 0), into ci-relay3/. Read all three CVS browser logs: new tests time out at cvs-picker.mjs:90/105 waiting for missing cvs-open-picker. Browser RED confirmed on tests-only head; not matcher assertion evidence.
+- Latest Gates status in_progress; 3 unfinished jobs: 123161410423, 123161410971, 123161411001. Final failure inventory remains UNKNOWN while unfinished. Raw receipts: foundation-relay3.log, bundle07-relay3-raw.log, webkit-relay3-raw.log, run-relay3-final.json and downloaded artifacts.
+- No source edit, local test/build/server/browser, commit or push. Per CONT wait-current-head-results requirement, implementation remains pending. No failed fix attempt consumed this relay.
+- Humaux tools unavailable; store/canvas/coord NOT_RUN. Evidence saved locally only. GREEN/independent review/SANDBOX/LIVE/production NOT_RUN.
+- WAIT_RUN: 40785846830. Integrator completion relay is the wakeup mechanism.
+
+
+## RELAY 4 — original CI receipts, implementation waiting
+
+Readback 2026-10-29T00:11:50.394762+00:00; PR head 29fc35479039a0a20e1ee0c441f843cd3a69aad7.
+- git fetch origin && git merge origin/r3/integration: exit 0, Already up to date. No source changes.
+- Personally read Foundation 40785841792/job123158692798 with gh run view --log-failed: check-gates rejects packages/format/tests/cvs-match.test.ts as run by no gate. Matcher assertions NOT_RUN.
+- Personally attempted gh run view --log-failed for Gates jobs123161410421 and123161410849; overall unfinished run refuses logs. Read completed original logs via gh api actions/jobs/<id>/logs, exit0. Bundle07 fails only CVS (MOCK/WebKit); five other members PASS. WebKit fails CVS.
+- Downloaded both failed artifacts via gh run download (exit0), into ci-relay4/cvs and ci-relay4/webkit. Read all three cvs-buyer.mjs.log files: Timeout30000ms waiting for cvs-open-picker in new cvs-picker.mjs90/105. Causal browser RED on tests-only head, not matcher assertion execution.
+- Gates40785846830 status=queued, conclusion=PENDING; unfinished jobs: 123180155671 aggregate queued, 123180155735 receipts queued. Final failure inventory remains pending until these finish. No implementation push before current-head final results per CONT instruction.
+- Original card re-read directly from read-only main output/integrator/tools/cards/cxf-cvs-pick-impl.md. Named architecture sections/contracts and signed matcher/picker behavior re-read. Gate scanner root cause: it recognizes literal tests/globs, not wrapper import reachability. Preserve all unit assertions when placing them in an already registered storefront suite; no exemption/shared-runner weakening.
+- Raw evidence: ci-relay4/foundation.log, bundle07.log, webkit.log, both downloaded browser artifacts, checks.json, run-final.json. E3 negative CI receipts only; author judgment E0; no completed product claim.
+- No implementation edit, local test/build/server/browser, commit, push, merge, auto-merge, status post or repair attempt. Only own evidence output changed; no new outside-card path this relay. Existing PR outside-card generated browser-ownership file remains disclosed. No local process remains.
+- WAIT_RUN:40785846830. Integrator owns completion relay; wake only after final aggregate/receipts conclusion, then read every final failed job and implement original card in one batch. GREEN/independent review/SANDBOX/LIVE/production NOT_RUN.
+
+CONT298 final RED readback before implementation push (2026-10-29):
+Head29fc35479039a0a20e1ee0c441f843cd3a69aad7. All failures personally read from completed runs. Foundation40785841792/job123158692798: matcher test registration rejects before assertions. Gates40785846830/job123161410421 bundle07 and123161410849 WebKit: CVS absent cvs-open-picker Timeout30000ms. Downstream receipts123180155735 and required123182844527 fail on those receipts. Both failed browser artifacts downloaded to ci-cont298-final; three nested CVS failure logs read. Unit/static RED assertions remain NOT_RUN, not claimed assertion RED. Integration merged before implementation; no local runtime tests/server. Implementation uses one batched push; GREEN pending.

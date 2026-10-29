@@ -1,6 +1,6 @@
 // Purpose: CVS-PICK-IMPL matcher acceptance against the frozen public-store snapshot.
 // Depends on: node:test/assert, cvs-match.ts and the owner-sanitized R1–R8 fixture.
-// Used by: apps/storefront/tests/cvs-picker.test.mjs in Foundation's Node suite.
+// Used by: explicit packages/format invocation in Foundation's scripts/dev/test-node.sh.
 // Invariants: string codes, selected-brand isolation, no automatic selection or query mutation.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";

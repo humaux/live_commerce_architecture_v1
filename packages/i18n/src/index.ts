@@ -4,6 +4,7 @@
 // Invariants: only supported locales and validated local paths can enter generated URLs.
 export const locales = ['zh-CN', 'zh-TW', 'en'] as const;
 export { stateRecoveryCopy } from './state-recovery.ts';
+export { cvsPickerCopy } from './cvs-picker.ts';
 export type Locale = (typeof locales)[number];
 
 export const localeNames: Record<Locale, string> = {

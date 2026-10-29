@@ -1,0 +1,98 @@
+{
+  "evidence": "E1 only; no local tests, server or browser",
+  "checks": [
+    {
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/.bin/tsc",
+        "--project",
+        "apps/storefront/tsconfig.json",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "scripts/dev/cvs-static-json.mjs"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "packages/format/src/cvs-match.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "packages/format/tests/cvs-match.test.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "packages/i18n/src/cvs-picker.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/storefront/cvs-picker.mjs"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/storefront/cvs-buyer.mjs"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "apps/storefront/tests/cvs-picker.test.mjs"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "scripts/dev/test-node.sh"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": ""
+    }
+  ]
+}

@@ -190,6 +190,10 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
       const row = source.UNIMART.find((store) => store.store_id === id.replace("cvs-candidate-", ""));
       assert.ok(row && /^[台臺]北市大安區/.test(row.address), "county/district never leaks another region or brand");
     }
+    const firstPageCount = await visibleRows.count();
+    await picker.getByRole("button", { name: locale === "en" ? "Load more" : locale === "zh-CN" ? "加载更多" : "載入更多", exact: true }).click();
+    assert.ok(await visibleRows.count() > firstPageCount, "explicit more control exposes additional stores in the same district");
+    record("more stores", "additional canonical rows without an API search");
     await measure("region-list");
     await visibleRows.first().click();
     await expect(page.getByTestId("cvs-picker-confirm")).toBeEnabled();
@@ -205,6 +209,58 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     record("close", "unconfirmed choice discarded");
     assert.ok(apiReads.every((route) => route === "/api/buyer/cvs-stores"), "no server-side search requests");
     assert.ok(!/已驗證可收件|已验证可收件|verified for delivery/i.test(await page.getByTestId("address-section").innerText()));
+
+    // Brand changes use the actual delivery/quote controller, preserving only the ephemeral contact draft.
+    // Interception prepares a static-directory outage fixture; retry is still a real user click.
+    let directoryAttempts = 0;
+    await page.route("**/cvs/okmart-20261028.json", async (route) => {
+      directoryAttempts++;
+      if (directoryAttempts === 1) await route.fulfill({ status: 503, body: "" });
+      else await route.continue();
+    });
+    await page.getByTestId("cvs-open-picker").click();
+    for (const [brand, code] of [["FAMI", "024793"], ["HILIFE", "2656"], ["OKMART", "000005"], ["UNIMART", "231196"]]) {
+      await page.getByTestId(`cvs-brand-${brand}`).click();
+      await expect(page.getByTestId(`cvs-brand-${brand}`)).toHaveAttribute("aria-pressed", "true");
+      if (brand === "OKMART") {
+        await picker.getByRole("button", { name: locale === "en" ? "Retry" : locale === "zh-CN" ? "重试" : "重試", exact: true }).click();
+        await expect.poll(() => directoryAttempts, { message: "directory only retried by an explicit click" }).toBe(2);
+      }
+      await page.getByTestId("cvs-picker-search-tab").click();
+      await query.fill(code);
+      await expect(choose(code)).toBeVisible();
+      await expect(picker.locator('[data-testid^="cvs-candidate-"]')).toHaveCount(1);
+      await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+      await expect(page.getByTestId("cvs-recipient-name")).toHaveValue("王小明");
+      await expect(page.getByTestId("cvs-recipient-phone")).toHaveValue("0912345678");
+      record(`brand ${brand}`, "fresh server quote, exact selected-brand code, retained contact and no preselection");
+    }
+    await page.unroute("**/cvs/okmart-20261028.json");
+
+    // Refusal fixtures exercise UI recovery; the existing real Go/PG refusal assertions stay in cvs-buyer.mjs.
+    let confirmations = 0;
+    await page.route("**/api/buyer/cvs-stores", async (route) => {
+      confirmations++;
+      await route.fulfill({ status: confirmations === 1 ? 422 : 429, headers: { "Content-Type": "application/json", "Retry-After": "1" }, body: JSON.stringify({ code: confirmations === 1 ? "store_not_found" : "too_many_stores_entered" }) });
+    });
+    await choose("231196").click();
+    await page.getByTestId("cvs-picker-confirm").click();
+    await expect(choose("231196")).toHaveCount(0);
+    await expect(query).toHaveValue("231196");
+    await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+    await query.fill("131386");
+    await choose("131386").click();
+    await page.getByTestId("cvs-picker-confirm").click();
+    await expect(picker.getByRole("alert")).toContainText(locale === "en" ? "Please wait" : locale === "zh-CN" ? "请稍后" : "請稍後");
+    await expect(choose("131386")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("cvs-picker-confirm")).toBeEnabled();
+    assert.equal(confirmations, 2, "cooldown expiration cannot auto-replay a POST");
+    await page.unroute("**/api/buyer/cvs-stores");
+    const retry = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
+    const [confirmedRetry] = await Promise.all([retry, page.getByTestId("cvs-picker-confirm").click()]);
+    assert.equal(confirmedRetry.status(), 200);
+    await expect(page.getByTestId("cvs-store-code")).toHaveText("131386");
+    record("422 / 429 / explicit retry", "invalid row removed with query retained; cooldown keeps choice; no auto replay; explicit retry persists canonical identity");
   } finally { page.off("request", request); }
 }
 

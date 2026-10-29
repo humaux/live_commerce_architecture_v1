@@ -1,8 +1,7 @@
-// Purpose: register matcher acceptance and immutable static-directory drift in existing CI.
+// Purpose: check immutable static-directory drift in existing storefront CI.
 // Depends on: Node24, the frozen ECPay snapshot and the committed static JSON generator.
 // Used by: scripts/dev/test-node.sh via the existing storefront test glob.
 // Invariants: generation is byte-identical; browser payload contains only public UI fields.
-import "../../../packages/format/tests/cvs-match.test.ts";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
