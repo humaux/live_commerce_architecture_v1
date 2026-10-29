@@ -1,5 +1,5 @@
 // Purpose: plain customer/privacy/finance copy, including import origin and report entry.
-// Depends on: current routed locales; no formatting or data access.
+// Depends on: current routed locales and packages/i18n/src/people.ts; no data access.
 // Used by: Customers, CustomerDetail and Finance; consent authority remains server-side.
 // Copy for the admin Customers, Customer detail and Finance pages (BFF customers*, finance/summary* -> Go
 // internal/customers + internal/reporting; contract customers-billing-v1 §5, U9 locales zh-CN / zh-TW / en).
@@ -7,8 +7,10 @@
 // frozen Go error codes. Non-goals: no money/date formatting (components use Intl), no consent or privacy rule.
 // Depends on: @live-commerce/i18n (Locale) only. Nav labels for the integrator's WorkspaceFrame hook live in `nav`.
 import type { Locale } from "@live-commerce/i18n";
+import { peopleCopy } from "../../../packages/i18n/src/people.ts";
 
 const en = {
+  people: peopleCopy.en,
   nav: { customers: "Customers", finance: "Finance", billing: "Billing" },
   title: "Customers",
   subtitle: "Buyers of this store, with their orders, consent and privacy actions.",
@@ -25,6 +27,8 @@ const en = {
   detailLoading: "Loading customer…",
   empty: "No customers yet.",
   emptySearch: "No customers match this search.",
+  emptyDescription: "Customer records will appear here after buyers place orders or you import existing customers.",
+  emptySearchDescription: "Try a different name or phone digits, or clear the search and tag filters.",
   signedOut: "Sign in to view customers.",
   forbidden: "This account does not have permission to view customers.",
   notFound: "This customer is unavailable in the selected store.",
@@ -155,6 +159,7 @@ export type CustomersCopy = typeof en;
 export const customersCopy: Record<Locale, CustomersCopy> = {
   en,
   "zh-CN": {
+    people: peopleCopy["zh-CN"],
     nav: { customers: "客户", finance: "财务", billing: "账单" },
     title: "客户",
     subtitle: "本店买家，及其订单、授权与隐私操作。",
@@ -171,6 +176,8 @@ export const customersCopy: Record<Locale, CustomersCopy> = {
     detailLoading: "正在加载客户…",
     empty: "还没有客户。",
     emptySearch: "没有符合搜索的客户。",
+    emptyDescription: "买家下单或你导入现有客户后，客户记录会显示在这里。",
+    emptySearchDescription: "请尝试其他姓名或手机数字，或清除搜索和标签筛选。",
     signedOut: "请登录后查看客户。",
     forbidden: "此账号无权查看客户。",
     notFound: "所选店铺中没有这位客户。",
@@ -290,6 +297,7 @@ export const customersCopy: Record<Locale, CustomersCopy> = {
     financeSignedOut: "请登录后查看财务。",
   },
   "zh-TW": {
+    people: peopleCopy["zh-TW"],
     nav: { customers: "客戶", finance: "財務", billing: "帳單" },
     title: "客戶",
     subtitle: "本店買家，及其訂單、授權與隱私操作。",
@@ -306,6 +314,8 @@ export const customersCopy: Record<Locale, CustomersCopy> = {
     detailLoading: "正在載入客戶…",
     empty: "目前還沒有客戶。",
     emptySearch: "沒有符合搜尋的客戶。",
+    emptyDescription: "買家下單或你匯入現有客戶後，客戶記錄會顯示在這裡。",
+    emptySearchDescription: "請嘗試其他姓名或手機數字，或清除搜尋和標籤篩選。",
     signedOut: "請登入後查看客戶。",
     forbidden: "此帳號無權查看客戶。",
     notFound: "所選店鋪中沒有這位客戶。",

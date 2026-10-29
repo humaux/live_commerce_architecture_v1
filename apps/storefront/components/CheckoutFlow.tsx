@@ -3,7 +3,7 @@
 // Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
 // Depends on: buyer BFF cart/options/quotes/destination/checkout/orders and purchase recovery; lib/cod-copy codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
-// Invariants: checkout renders server money; OrderFlow publishes only a quote matched to its current option.
+// Invariants: checkout renders server money; OrderFlow publishes only a quote matched to its current option; each CVS chain gets a fresh server quote; contact stays ephemeral during brand changes.
 
 // Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
 // address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page
@@ -25,6 +25,7 @@ import {
 import { purchaseCopy } from "../lib/purchase-copy";
 import { orderCopy } from "../lib/order-copy";
 import { cvsCopy } from "../lib/cvs-copy";
+import { isCvsKind, type CvsDraft, type CvsKind } from "../lib/cvs-contract";
 import { codFooter } from "../lib/cod-copy";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
 import PromoCode from "./PromoCode";
@@ -99,6 +100,8 @@ export default function CheckoutFlow({
   const [codFee, setCodFee] = useState<number | null>(null);
   const [method, setMethod] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
+  // Contact survives an explicit brand change in component memory only, never a new storage journal.
+  const [cvsResume, setCvsResume] = useState<{ context: string; quoteID: string; draft: CvsDraft } | null>(null);
   const [pending, setPending] = useState(false);
   const [pendingKind, setPendingKind] = useState<string | null>(null);
   const [recoveryCountry, setRecoveryCountry] = useState<string | null>(null);
@@ -671,6 +674,22 @@ export default function CheckoutFlow({
                   money={money}
                   onCodFee={setCodFee}
                   onQuote={setQuote}
+                  cvsResume={cvsResume?.context === context && cvsResume.quoteID === quote?.id ? cvsResume.draft : undefined}
+                  cvsKinds={options.filter((row) => !isUnavailable(row) && row.pickup_selection === "buyer_entered" && row.market_id === quote?.market_id && row.country === quote?.country && row.currency === quote?.currency && isCvsKind(row.delivery_kind)).map((row) => row.delivery_kind as CvsKind)}
+                  onCvsBrand={(kind, draft) => {
+                    void act(async (current) => {
+                      if (!cart || !quote) return;
+                      const target = options.find((row) => !isUnavailable(row) && row.pickup_selection === "buyer_entered" && row.market_id === quote.market_id && row.country === quote.country && row.currency === quote.currency && row.delivery_kind === kind);
+                      if (!target) throw new BuyerClientError("invalid_response");
+                      // The server recomputes the quote for this chain; client selection supplies no price or tenant.
+                      const result = await writePurchase(context, { kind: "quote", body: { cart_version: cart.version, market_id: target.market_id, country: target.country, method: target.method } });
+                      if (!current()) return;
+                      if (result.kind !== "quote") throw new BuyerClientError("invalid_response");
+                      setCvsResume({ context, quoteID: result.value.id, draft });
+                      setMethod(optionKey(target));
+                      setQuote(result.value);
+                    });
+                  }}
                   onOrder={acceptOrder}
                   reload={async () => {
                     // Requotation may unmount the form, so first resolve its

@@ -8,6 +8,7 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
+import { customersCopy } from "../../apps/admin/lib/customers-copy.ts";
 import { customerTagsCopy } from "../../apps/admin/lib/customer-tags-copy.ts";
 import * as model from "../../apps/admin/lib/customer-tags-model.ts";
 import * as customersModel from "../../apps/admin/lib/customers-model.ts";
@@ -85,8 +86,10 @@ function customers() {
       if (p === "@/lib/customer-tags-copy") return { customerTagsCopy };
       if (p === "./CustomerTags") return { CustomerTagManager: "CustomerTagManager", TagBadges: "TagBadges" };
       if (p === "@/lib/orders-model") return { displayTime: () => "" };
-      if (p === "@/lib/customers-copy") return { customersCopy: { en: new Proxy({}, { get: () => "x" }) } };
+      if (p === "@/lib/customers-copy") return { customersCopy };
       if (["./WorkspaceFrame", "./AdminPageHeader", "./Icon"].includes(p)) return { WorkspaceFrame: "div", AdminPageHeader: "div", Icon: "i" };
+      if (p === "./AdminStateBlock") return { AdminStateBlock: "div" };
+      if (p === "./AdminForbidden") return { AdminForbidden: "div" };
       if (/\.css$/.test(p) || p === "@live-commerce/i18n" || p === "@/lib/model") return {};
       throw new Error(`Unexpected import ${p}`);
     } });
@@ -119,7 +122,7 @@ test("CustomerDetail forwards a scope-lost signal to the guarded read once per p
       if (p === "@/lib/customers-model") return { consentPairs: [], newKey: () => "k" };
       if (p === "@/lib/presentation-copy") return { presentationCopy: {} }; if (p === "@/lib/client") return { money: () => "" };
       if (p === "@/lib/orders-model") return { displayTime: () => "" }; if (p === "@/lib/orders-copy") return { ordersCopy: { en: {} } };
-      if (p === "@/lib/customers-copy") return { customersCopy: { en: new Proxy({}, { get: () => "x" }) } };
+      if (p === "@/lib/customers-copy") return { customersCopy };
       if (["./WorkspaceFrame", "./AdminPageHeader", "./CustomerTags"].includes(p)) return { WorkspaceFrame: "div", AdminPageHeader: "div", CustomerTags: "CustomerTags" };
       if (p === "./CustomerHistoricalOrders") return { CustomerHistoricalOrders: "CustomerHistoricalOrders" };
       if (/\.css$/.test(p) || p === "@live-commerce/i18n" || p === "@/lib/model") return {};

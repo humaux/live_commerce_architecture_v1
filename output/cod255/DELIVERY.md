@@ -167,3 +167,13 @@ Not touched: other apps/backend, migrations/contracts/OpenAPI/go.mod/locks, R2 p
 NOT_RUN: local tests/servers/builds, local tsc, provider SANDBOX/LIVE, production, Figma, independent acceptance.
 Humaux search/store/coord/canvas/code-index tools are absent: no store/claim/canvas receipt is claimed.
 Risk: transient quote/options inconsistency intentionally requires existing Reload recovery; no automatic write retry.
+
+## Resume after #306 / #313 (2026-10-29)
+
+Authority: integrator resume instruction for PR #285; integration bf174df6b8a2c23e44dc8290a1baddf926149c6e contains readiness fix #306 and HTTP error mapping #313. Starting local head 5e9234555; remote PR head fadc622f1eef85129021575529a320bdc6955ce7.
+
+Merge resolves CheckoutFlow/OrderFlow conflicts by preserving both the incoming CVS brand-switch draft/quotation props and COD-255 onQuote/refreshCodQuote behavior. Both httperror files match integration verbatim. Browser ownership is regenerated from the merged source, never hand-edited. No new imports beyond the existing card implementation and incoming baseline; component harness references inspected. No changes to assertions, fixtures, thresholds, routes, contract baselines or dispatcher lists. Existing RED remains output/cod255/red.log (Foundation 40757493836/job 123060219251).
+
+Current-head acceptance is PENDING CI; author assessment E0. No local tests or servers. Storefront tsc NOT_RUN: this worktree has no local node_modules/.bin/tsc. Whole-merge whitespace check reports only incoming historical logs under output/cvs-pick-impl and output/people-v2-impl; those upstream evidence files are preserved. Card diff whitespace and node syntax checks are recorded in the PR relay comment. No new visual/UI controls, locale strings or Figma deliverables. Existing process/parity disclosures above remain scoped to the original implementation.
+
+This relay adds no out-of-card authored source repair: only existing card components, DELIVERY.md and generated browser ownership. Upstream-only paths arrive through the requested base merge. No backend/package/migration/lockfile/pin edits authored. Rollback: revert the relay merge with its first parent on this task branch via the same PR process. CI results will be relayed by the integrator into a fresh session; no local background task or server remains.

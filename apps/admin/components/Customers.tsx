@@ -1,5 +1,6 @@
 // Purpose: Owns the paginated merchant customer search page.
-// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/customers-copy, ./CustomerTags, @/lib/customer-tags-client, @/lib/customer-tags-copy, ./WorkspaceFrame, ./AdminPageHeader, ./Icon, ./orders.css, ./order-actions.css, ./customers.css
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/customers-copy, ./CustomerTags, ./AdminStateBlock, ./AdminForbidden, @/lib/customer-tags-client, @/lib/customer-tags-copy, ./WorkspaceFrame, ./AdminPageHeader, ./Icon, ./orders.css, ./order-actions.css, ./customers.css
+// Invariants: server-scoped reads; signed simple search; optional existing tools stay collapsed.
 // Used by: apps/admin/app/[locale]/customers/page.tsx
 "use client";
 
@@ -19,10 +20,11 @@ import { canSeeReports, type Customer } from "@/lib/customers-model";
 import { readTagCatalog } from "@/lib/customer-tags-client";
 import { customerTagsCopy } from "@/lib/customer-tags-copy";
 import { CustomerTagManager, TagBadges } from "./CustomerTags";
-import { displayTime } from "@/lib/orders-model";
 import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { AdminStateBlock } from "./AdminStateBlock";
+import { AdminForbidden } from "./AdminForbidden";
 import { Icon } from "./Icon";
 import "./orders.css";
 import "./order-actions.css";
@@ -61,6 +63,7 @@ export function Customers({
   renderKey: string;
 }) {
   const c = customersCopy[locale];
+  const p = c.people;
   const router = useRouter();
   const [draft, setDraft] = useState(q);
   const previous = useRef<string[]>([]);
@@ -80,28 +83,28 @@ export function Customers({
   }
   const failure =
     read.status === "signed-out" ? c.signedOut
-    : read.status === "forbidden" ? c.forbidden
+    : read.status === "forbidden" ? ""
     : read.status === "not-found" ? (store ? c.notFound : c.noStore)
     : read.status === "unavailable" ? c.unavailable
     : "";
   const page = read.data;
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="customers">
-      <div className="orders-page customers-page" data-testid="customers-page">
-        <AdminPageHeader locale={locale} description={c.subtitle} />
+      <div className="orders-page customers-page people-v2" data-testid="customers-page">
+        <AdminPageHeader locale={locale} title={p.title} />
         {/* The search <form> is display:contents inside the controls row: the tag manager dialog has its own <form>s,
             which must not nest in (and bubble submit to) the search form (Codex review P2, PR #3). */}
         <div className="orders-controls">
         <form className="customers-search-form" role="search" onSubmit={search}>
           <label className="customers-search">
-            {c.search}
+            <span className="people-sr-only">{p.search}</span>
             <input
               type="search"
               data-testid="customers-search"
+              placeholder={p.search}
               value={draft}
               maxLength={40}
               autoComplete="off"
-              aria-describedby="customers-search-hint"
               onChange={(event) => setDraft(event.target.value)}
             />
           </label>
@@ -118,9 +121,13 @@ export function Customers({
                 go(store?.id ?? "", "", "");
               }}
             >
-              {c.clear}
+              {p.clear}
             </button>
           )}
+        </form>
+        </div>
+        <details className="people-advanced" data-testid="people-list-tools"><summary>{p.advanced}</summary>
+          <div className="orders-controls">
           <button type="button" data-testid="customers-refresh" disabled={read.status === "loading"} onClick={read.reload}>
             <Icon name="refresh" size={18} />
             {c.refresh}
@@ -134,7 +141,6 @@ export function Customers({
             </select>
           </label>
           {catalog.status === "unavailable" && <button type="button" onClick={catalog.reload}>{tc.retry}</button>}
-        </form>
           {/* After a write the catalogue is re-read IN PLACE (refresh): reload() would flip the status to loading, unmount the
               manager and its open dialog before the success notice shows (Codex review P2, PR #3). */}
           {store && catalog.status === "ready" && <CustomerTagManager locale={locale} store={store} boundary={catalog.boundary}
@@ -142,42 +148,48 @@ export function Customers({
             onScopeLost={() => { catalog.reload(); read.reload(); }} />}
           {store && canSeeReports(store) && <Link className="orders-export" href={`/${locale}/finance/reports?store=${store.id}`} data-testid="customers-reports">{c.reportsLink}</Link>}
           {store?.permissions?.includes("customers:privacy") && <Link className="orders-export" href={`/${locale}/customers/import?store=${store.id}`} data-testid="customers-import">{c.importLink}</Link>}
-          <p id="customers-search-hint" className="orders-export-hint">{c.searchHint}</p>
-        </div>
-        {(read.status === "loading" || read.status === "hidden") && (
-          <p className="orders-message" role="status">{c.loading}</p>
-        )}
-        {failure && (
-          <div className="orders-message" role="status">
-            <p>{failure}</p>
-            <button type="button" onClick={read.reload}>{c.retry}</button>
           </div>
+        </details>
+        {(read.status === "loading" || read.status === "hidden") && (
+          <AdminStateBlock variant="loading" title={c.loading} />
+        )}
+        {read.status === "forbidden" && <AdminForbidden locale={locale} description={c.forbidden} />}
+        {failure && (
+          <AdminStateBlock
+            variant="error"
+            title={failure}
+            onRetry={read.reload}
+            retryLabel={c.retry}
+          />
         )}
         {read.status === "ready" && page && (
           <>
+            <h2 className="people-result-count">{q ? p.found(page.items.length) : p.storeCount(page.items.length)}</h2>
             <div className="orders-table-scroll">
               <table className="orders-table customers-table" data-testid="customers-table">
                 <thead>
                   <tr>
                     <th>{c.customer}</th>
                     <th>{c.orders}</th>
-                    <th>{c.spent}</th>
-                    <th>{c.claims}</th>
-                    <th>{c.consents}</th>
-                    <th>{c.lastActivity}</th>
+                    <th>{p.net}</th>
+                    <th>{p.consent}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {page.items.map((row) => (
-                    <CustomerRow key={row.customer_id} row={row} c={c} locale={locale} store={store?.id ?? ""} />
+                    <CustomerRow key={row.customer_id} row={row} c={c} locale={locale} store={store?.id ?? ""} q={q} tag={tag} />
                   ))}
                 </tbody>
               </table>
             </div>
             {page.items.length === 0 && (
-              <p className="orders-message" role="status" aria-live="polite">{q || tag ? c.emptySearch : c.empty}</p>
+              <AdminStateBlock
+                variant="empty"
+                title={q || tag ? c.emptySearch : c.empty}
+                description={q || tag ? c.emptySearchDescription : c.emptyDescription}
+              />
             )}
-            <footer className="orders-pager">
+            {(after || page.next_cursor) && <footer className="orders-pager">
               <span>{c.pageCount}: {page.items.length}</span>
               <div>
                 <button
@@ -200,7 +212,7 @@ export function Customers({
                   {c.next}
                 </button>
               </div>
-            </footer>
+            </footer>}
           </>
         )}
       </div>
@@ -208,46 +220,26 @@ export function Customers({
   );
 }
 
-function CustomerRow({ row, c, locale, store }: { row: Customer; c: CustomersCopy; locale: Locale; store: string }) {
+function CustomerRow({ row, c, locale, store, q = "", tag = "" }: { row: Customer; c: CustomersCopy; locale: Locale; store: string; q?: string; tag?: string }) {
   const m = (value: number) => (row.currency ? money(locale, row.currency, value) : String(value));
   const name = row.display_name ?? c.noName;
+  const p = c.people;
   return (
     <tr data-testid={`customer-row-${row.customer_id}`}>
       <td data-label={c.customer}>
-        <Link href={detailHref(locale, store, row.customer_id)} data-testid={`customer-open-${row.customer_id}`}
+        <Link href={`${detailHref(locale, store, row.customer_id)}${q ? `&q=${encodeURIComponent(q)}` : ""}${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`} data-testid={`customer-open-${row.customer_id}`}
           aria-label={`${c.open}: ${name}`}>
           <strong>{name}</strong>
-          {row.phone_last3 && <small>{c.phoneEnding} {row.phone_last3}</small>}
+          <small>{row.phone_last3 && <>{c.phoneEnding} {row.phone_last3} · </>}{p.customerID} {row.customer_id.slice(0, 8)}</small>
+          <span className="people-view">{p.view}</span>
         </Link>
         {!row.active && <Badge tone="neutral">{c.erased}</Badge>}
         {row.imported && <Badge tone="neutral">{c.imported}</Badge>}
         <TagBadges tags={row.tags} locale={locale} />
       </td>
-      <td data-label={c.orders}>{c.ordersPaid(row.orders_count, row.paid_orders_count)}</td>
-      <td data-label={c.spent}>
-        {row.currency ? `${m(row.captured_minor)} / ${m(row.refunded_minor)}` : "—"}
-      </td>
-      <td data-label={c.claims}>
-        {row.claims_count}
-        {row.platforms.length > 0 && <small>{row.platforms.map((p) => c.platforms[p] ?? p).join(" · ")}</small>}
-      </td>
-      <td data-label={c.consents}>
-        <ConsentChip label={c.marketing} short="DM" on={row.consents.marketing_messages} c={c} />
-        <ConsentChip label={c.ads} short="Ads" on={row.consents.ads_personalization} c={c} />
-      </td>
-      <td data-label={c.lastActivity}>{displayTime(locale, row.last_activity_at)}</td>
+      <td data-label={c.orders}>{row.orders_count}<span className="people-mobile-label"> {p.orders}</span></td>
+      <td data-label={p.net}><span className="people-mobile-label">{p.net} </span>{row.currency ? m(row.captured_minor - row.refunded_minor) : "—"}</td>
+      <td data-label={p.consent}><span>{c.marketing}: {row.consents.marketing_messages ? c.consentGranted : c.consentNone}</span></td>
     </tr>
-  );
-}
-// Text + tone, never colour alone; the full purpose name is the accessible label.
-function ConsentChip({ label, short, on, c }: { label: string; short: string; on: boolean; c: CustomersCopy }) {
-  return (
-    <Badge
-      tone={on ? "success" : "neutral"}
-      title={label}
-      aria-label={`${label}: ${on ? c.consentGranted : c.consentNone}`}
-    >
-      {short}: {on ? c.consentGranted : c.consentNone}
-    </Badge>
   );
 }

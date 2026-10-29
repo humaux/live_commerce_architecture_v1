@@ -33,10 +33,10 @@ test("the actual list offers import only to privacy holders and carries the curr
     let read = 0;
     const Customers = component("../../apps/admin/components/Customers.tsx", "Customers", {
       customersCopy, canSeeReports, customerTagsCopy: { en: { filterLabel: "Tags", filterAll: "All" } },
-      useState: (value: unknown) => [value, () => {}], useRef: (value: unknown) => ({ current: value }), useRouter: () => ({ push() {} }),
+      useEffect: () => {}, useState: (value: unknown) => [value, () => {}], useRef: (value: unknown) => ({ current: value }), useRouter: () => ({ push() {} }),
       useGuardedRead: () => ({ status: "ready", boundary: "scope", reload() {}, data: ++read === 1 ? { items: [], next_cursor: "" } : { items: [] } }),
       WorkspaceFrame: (p: any) => React.createElement("div", null, p.children), AdminPageHeader: () => null,
-      Icon: () => null, CustomerTagManager: () => null,
+      Icon: () => null, CustomerTagManager: () => null, AdminStateBlock: () => null, AdminForbidden: () => null,
       Link: (p: any) => React.createElement("a", p, p.children),
     });
     const store = { id: "abcdef11-1111-4111-8111-111111111111", name: "Synthetic store", permissions: ["customers:read", ...(permission ? ["customers:privacy"] : [])] };
@@ -48,7 +48,7 @@ test("the actual list offers import only to privacy holders and carries the curr
 test("the actual detail mounts archive only for an active imported customer and passes its fenced identity", () => {
   const mounts: any[] = [];
   const Body = component("../../apps/admin/components/CustomerDetail.tsx", "Body", {
-    useState: (value: unknown) => [value, () => {}], useRef: (value: unknown) => ({ current: value }),
+    useEffect: () => {}, useState: (value: unknown) => [value, () => {}], useRef: (value: unknown) => ({ current: value }),
     ordersCopy: { en: { statuses: {} } }, consentPairs: [], money: () => "NT$0", displayTime: () => "stamp",
     CustomerTags: () => null, EraseDialog: () => null, Badge: (p: any) => React.createElement("span", null, p.children),
     CustomerHistoricalOrders: (p: any) => { mounts.push(p); return React.createElement("div", null, "private archive"); },
