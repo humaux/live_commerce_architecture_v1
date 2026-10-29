@@ -1,3 +1,57 @@
+## RVFIX #323 — independent review P1, tests-only RED PENDING
+
+2026-10-30. Authority: current RVFIX assignment; independent review final verdict in
+`output/integrator/tools/logs/cxf-rv-323.log`; `contracts/storefront-v2.md` §B/B-acceptance;
+current `Design.tsx` and `internal/design/store.go` publication identity flow. Reviewed
+AGENTS.md and 架构.md §§0/1/2/26/27. Branch/worktree ownership comes from the dispatch;
+Humaux search/coord/store/canvas/index/link are unavailable, so no shared persistence claimed.
+Fetched and merged `origin/r3/integration@17328372dea91220050e9583259312e2db2e5d97`
+first (Already up to date). Starting head `39abc45b10d800e432010b1202897400c4b267c2`.
+Pre-existing uncommitted delivery/logs retained; no other worktrees modified.
+
+P1 root: pending details use the current saved draft; successful recovery falls back
+to that same newer draft if the original version is no longer the editing base.
+This push adds six real-click cases (three locales × recovery with/without reload),
+with original name/contact/page content A, committed response loss, saved content B,
+original-key manual recovery and final saved-draft readback. Pending/result/view must
+describe A; after reload when A's document is unavailable, show an explicit message
+and never substitute B. The original key/body, one receipt, CAS for new operations,
+three-resend budget, locale assertions and existing test coverage remain intact.
+The fixture now looks up existing receipts before checking the current draft's CAS,
+and asserts every replay body still matches that receipt's original source version.
+The committed-loss mode aborts replies only after retaining the server-shaped receipt.
+
+|Required fact|Mobile/desktop/recovery parity gate|
+|---|---|
+|Publication source version|Original A version remains visible in pending and result|
+|Name, contact and page content|Pending/result/view show A, never saved B|
+|Unavailable original document after reload|Explicit locale message; no substituted summary|
+|Saved newer draft|Reload and reopen profile: B remains saved separately|
+|Publication identity|Every send keeps the original key/body; exactly one receipt|
+
+Additional message specified by the regression (implementation pending RED):
+
+|zh-TW|zh-CN|en|
+|---|---|---|
+|無法顯示這次發布的內容，請前往網店查看。|无法显示本次发布的内容，请前往网店查看。|This publication's content is unavailable. Visit your store to check it.|
+
+UI process: existing BOURDIEU Q1–Q6, PROJECT UNDERSTANDING, MOBBIN → EAGLE,
+FIGMA OFFICIAL GUIDANCE and required-field tables below remain applicable. No visual
+redesign, reference acquisition or Figma action in this tests-only stage; Q6 UNKNOWN.
+Click actions/assertions are attached by the existing test ledger and screenshots.
+No component imports changed, so no component compiler harness adaptations required.
+P2 review findings (review-entry race; reorder menu selection) are deferred to a PR
+comment labelled `P2 for issue`, per this card. No P2 product edits.
+
+RED/GREEN: PENDING, no new runtime acceptance yet. Local `node --check` and
+`git diff --check` exit 0 (E1). Product implementation intentionally pending causal RED.
+Browser ownership regenerated last using its required generator. No gate baseline,
+route dispatcher, migrations, contracts/OpenAPI, locks, backend or new source imports.
+This stage changes only existing PLAN write paths. NOT_RUN: all local tests/builds/
+servers/PG/browser execution; Figma; Humaux persistence; independent acceptance; LIVE.
+Integrator owns completion relay; register exact Gates/Foundation workflow IDs after
+the single RED push and stop monitoring under ten minutes. No merge/auto-merge.
+
 ## FIX323 RELAY 3 — disclosure locator and recovery sequencing; fresh CI PENDING
 
 2026-10-30. Assigned worker on `unit/editor-v2-ui`, PR #323; no delegation.
@@ -578,3 +632,14 @@ WAIT_RUN: `40923838267` — Gates, pending; no test job assigned yet.
 WAIT_RUN: `40923838194` — Foundation, job `123623938542` in_progress.
 Both run headSha values match the pushed head. GREEN PENDING; author acceptance E0,
 static checks E1. Integrator owns completion relay; no evidence-only push or merge.
+
+## RELAY 3 push receipt (uncommitted)
+
+PR #323 head `39abc45b10d800e432010b1202897400c4b267c2`.
+WAIT_RUN: `40927737920` — Gates, pending; no test job assigned yet.
+WAIT_RUN: `40927737550` — Foundation, job `123637637188` in_progress.
+Both workflow headSha values match this head; PR body and handoff comment updated.
+GREEN PENDING; static E1; author acceptance E0. Integrator owns terminal notification/
+fresh-session relay, with failure/cancelled/timed_out matched; CI timeouts unchanged.
+No local process, no merge/auto-merge, no evidence-only push. Shared Humaux persistence
+and independent review NOT_RUN. Preserve all prior failure artifacts and dirty evidence.

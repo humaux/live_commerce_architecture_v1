@@ -59,7 +59,7 @@ async function open(page: Page, locale: Locale, mobile: boolean) {
     // Deliberately different from Figma's 12/8, 13/9: no screen may hard-code the example versions.
     draft: { version: 42, published_version: 27, updated_at: "2026-10-28T12:30:00Z", document: documentFixture() } as Draft,
     versions: [{ version: 27, source_version: 41, kind: "publish", published_at: "2026-10-27T12:30:00Z", published_by: "fixture" }] as VersionInfo[],
-    outcome: "success" as "success" | "forbidden" | "uncertain",
+    outcome: "success" as "success" | "forbidden" | "uncertain" | "committed-lost",
     attempts: [] as { key: string | undefined; body: string | null }[],
     operations: [] as string[],
     saved: [] as DesignDocument[],
@@ -92,15 +92,19 @@ async function open(page: Page, locale: Locale, mobile: boolean) {
       state.attempts.push({ key, body: request.postData() });
       if (state.outcome === "uncertain") return route.abort("connectionreset");
       if (state.outcome === "forbidden") return route.fulfill({ status: 403, json: { code: "forbidden" } });
-      expect(request.postDataJSON()).toEqual({ expected_draft_version: state.draft.version });
       expect(key).toBeTruthy();
       let receipt = state.receipts.get(key!);
       if (!receipt) {
+        // Existing keyed receipts replay before CAS against a possibly newer draft, as in the server contract.
+        expect(request.postDataJSON()).toEqual({ expected_draft_version: state.draft.version });
         receipt = { version: (state.draft.published_version ?? 0) + 1, source_version: state.draft.version, kind: "publish", published_at: "2026-10-28T12:30:00Z", published_by: "fixture" };
         state.receipts.set(key!, receipt);
         state.versions.unshift(receipt);
         state.draft.published_version = receipt.version;
       }
+      expect(request.postDataJSON(), "replay body still identifies the original published draft").toEqual({ expected_draft_version: receipt.source_version });
+      // Transport fault only: retain the committed receipt while initial and automatic replies are lost.
+      if (state.outcome === "committed-lost") return route.abort("connectionreset");
       await route.fulfill({ json: receipt });
     } else throw new Error(`unexpected fixture write ${method} ${resource}`);
   });
@@ -120,6 +124,106 @@ async function open(page: Page, locale: Locale, mobile: boolean) {
   await expect(page.getByTestId("design-page"), "existing route loads before signed-design assertions").toBeVisible();
   await expect(page.getByTestId("design-status"), "existing API snapshot loaded, not a missing component/import failure").toContainText("42");
   return state;
+}
+
+// RVFIX #323 P1: publishing A must never describe a later saved B as that publication.
+// Run both recovery paths in every locale; fixture faults do not perform merchant actions.
+for (const locale of locales) for (const reloadBeforeRecovery of [false, true]) {
+  test(`EDITOR-V2 ${locale}: receipt-bound content after committed response loss and newer save${reloadBeforeRecovery ? " with reload" : ""}`, async ({ page }) => {
+    const state = await open(page, locale, true);
+    const c = designCopy[locale];
+    const unavailable = {
+      "zh-TW": "無法顯示這次發布的內容，請前往網店查看。",
+      "zh-CN": "无法显示本次发布的内容，请前往网店查看。",
+      en: "This publication's content is unavailable. Visit your store to check it.",
+    }[locale];
+
+    await task(page, locale, "profile");
+    await fill(page, page.getByTestId("design-name"), "Published A", "Original store name");
+    await page.getByTestId("design-profile-contact-toggle").click();
+    await fill(page, page.getByLabel(c.profile.email, { exact: true }), "published-a@example.test", "Original contact");
+    await save(page, state, locale);
+    await back(page, locale);
+    const originalVersion = state.draft.version;
+    state.outcome = "committed-lost";
+    await review(page, locale);
+    await page.getByTestId("design-publish-confirm").click();
+    const pending = page.getByTestId("design-publish-pending");
+    const query = page.getByTestId("design-publish-recheck");
+    await expect(pending).toBeVisible();
+    await expect(query).toHaveText(ui[locale].query);
+    await expect(query).toBeEnabled(); // original automatic resend budget is exhausted while transport is still down
+    expect(state.receipts.size, "the initial request committed despite losing every reply").toBe(1);
+    const original = { ...state.attempts[0] };
+    expect(JSON.parse(original.body!)).toEqual({ expected_draft_version: originalVersion });
+
+    await task(page, locale, "profile");
+    await fill(page, page.getByTestId("design-name"), "Unpublished B", "New draft store name");
+    await page.getByTestId("design-profile-contact-toggle").click();
+    await fill(page, page.getByLabel(c.profile.email, { exact: true }), "draft-b@example.test", "New draft contact");
+    await back(page, locale);
+    await task(page, locale, "pages");
+    await page.getByTestId("design-page-open").filter({ hasText: "Shipping" }).click();
+    await fill(page, page.getByLabel(c.pages.body, { exact: true }), "Unpublished policy B", "New draft page content");
+    await save(page, state, locale);
+    await back(page, locale);
+    const newerVersion = state.draft.version;
+    expect(newerVersion).toBeGreaterThan(originalVersion);
+
+    async function assertOriginalContent(container: Locator, outerDetails: boolean) {
+      if (outerDetails) {
+        const details = container.locator("details").first();
+        await click(page, details.locator("summary").first(), ui[locale].details, "publication details open", () => expect(details).toHaveAttribute("open", ""));
+      }
+      for (const text of ["Unpublished B", "draft-b@example.test", "Unpublished policy B"]) {
+        await expect(container, "a later saved draft must never be shown as the original publication").not.toContainText(text);
+      }
+      const summary = container.getByTestId("design-summary");
+      const profile = summary.getByTestId("design-summary-profile");
+      await profile.locator("summary").click();
+      await expect(profile).toContainText("Published A");
+      await expect(profile).toContainText("published-a@example.test");
+      const pages = summary.getByTestId("design-summary-pages");
+      await pages.locator("summary").click();
+      await expect(pages).toContainText("See checkout.");
+    }
+    async function assertUnavailable(container: Locator) {
+      await expect(container.getByTestId("design-summary"), "missing original content must not fall back to the newer draft").toHaveCount(0);
+      await expect(container).toContainText(unavailable);
+      for (const text of ["Unpublished B", "draft-b@example.test", "Unpublished policy B"]) await expect(container).not.toContainText(text);
+    }
+
+    if (reloadBeforeRecovery) {
+      await page.reload();
+      await hub(page, locale);
+      await expect(page.getByTestId("design-status")).toContainText(String(newerVersion));
+      await expect(query).toHaveText(ui[locale].query);
+      await expect(query).toBeEnabled();
+      await assertUnavailable(pending);
+    } else {
+      await assertOriginalContent(pending, true);
+    }
+    await expect(pending).toContainText(String(originalVersion));
+    state.outcome = "success";
+    await query.click();
+    const result = page.getByTestId("design-publish-result");
+    await expect(result).toBeVisible();
+    await expect(pending).toHaveCount(0);
+    await expect(result).toContainText(String(originalVersion));
+    if (reloadBeforeRecovery) await assertUnavailable(result);
+    else await assertOriginalContent(result, true);
+    await page.getByTestId("design-view-published").click();
+    const published = page.getByTestId("design-published-content");
+    await expect(published).toBeVisible();
+    if (reloadBeforeRecovery) await assertUnavailable(published);
+    else await assertOriginalContent(published, false);
+    expect(state.receipts.size, "manual recovery reuses the single committed publication").toBe(1);
+    for (const attempt of state.attempts) expect(attempt).toEqual(original);
+    await back(page, locale);
+    await page.reload();
+    await task(page, locale, "profile");
+    await expect(page.getByTestId("design-name"), "the newer unpublished draft remains saved separately").toHaveValue("Unpublished B");
+  });
 }
 
 async function hub(page: Page, locale: Locale) {

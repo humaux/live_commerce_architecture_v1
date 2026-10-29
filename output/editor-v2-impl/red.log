@@ -269,3 +269,21 @@ Static node --check editor-v2.spec.ts and git diff --check exit 0, E1; no local 
 Evidence=old-head negative E3; new-head GREEN PENDING; author acceptance E0.
 Raw receipt: relay3-current-job.log + relay3-browser-design/; filtered relay3-failure-summary.log.
 Humaux coord/store/canvas/index/link NOT_RUN (tools unavailable); no shared persistence claim.
+
+RVFIX323 independent review P1 / 2026-10-30 / tests-only RED preparation
+Base head 39abc45b10d800e432010b1202897400c4b267c2; integration 17328372dea91220050e9583259312e2db2e5d97 merged first (Already up to date).
+Six added real-click cases: zh-TW/zh-CN/en x after-commit response loss, save B, original-key recovery with/without reload.
+RED assertions: pending/result/view must not describe unpublished B as published A; missing original document after reload is explicit, never current-draft fallback.
+Fixture commits before aborting replies; receipt lookup precedes new-operation CAS; replay body must equal original receipt source_version.
+Retains original key/body, one receipt, CAS for new commands, three-retry budget and all existing cases.
+node --check tests/admin/editor-v2.spec.ts and git diff --check exit 0 (E1).
+No product code changed before causal CI RED. RED run/job PENDING; GREEN NOT_RUN; author PASS E0.
+P2 findings deferred via PR comment per assignment. Humaux store/canvas NOT_RUN: tools unavailable.
+
+FIX323 RELAY 3 push receipt: 39abc45b10d800e432010b1202897400c4b267c2, PR #323.
+WAIT_RUN: 40927737920 Gates pending; no test job assigned yet.
+WAIT_RUN: 40927737550 Foundation / job 123637637188 in_progress.
+Both run headSha values match this push. GREEN PENDING; static E1, author acceptance E0.
+PR body + handoff comment updated. Integrator receives completion and relays a fresh session.
+Monitoring stopped under ten minutes; failure/cancelled/timed_out terminal, job timeouts unchanged.
+No local process to stop, no merge/auto-merge/evidence-only push. Post-push evidence uncommitted.
