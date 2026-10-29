@@ -1,3 +1,38 @@
+# RELAY 4 repair · 2026-10-30 · current status
+
+claim_type: fix · project: live_commerce_architecture_v1 · module: catalog UI · date: 2026-10-30
+
+Implementation regression repair attempt1/2; author assessment E0. Current code is structurally checked (E1), browser GREEN and independent E4 remain PENDING. This section supersedes older status notes below. Humaux is unavailable: coord/store/canvas NOT_RUN; this file is local delivery evidence only.
+
+Authority: current human FIX318 ruling plus repository code/gates; unchanged signed design source documented below. Fetched/merged origin/r3/integration17328372dea91220050e9583259312e2db2e5d97 before edits (already up to date). Rollback parent1772c5323ad0759faac0a14a051238f8a46f11d9. No new delegation or separate claim: integrator's existing lane ownership retained.
+
+E3 failure receipt: Gates40929312778/job123647490881 on head1772c532; tested merge718dfb5cafd85e0391457de1bf7aececdc556efa. Original product-editor artifact12922677077, digest81fdbf423fa6c08808fa47bc84522a1ea4a235343e067be8fa0993a0c80dbca8; filtered original assertions in relay4-ci-failure.log. This implementation regression is distinct from the tests-only causal RED40872483030/job123445416316 (CATV2:148 expected0 quick-price controls/received3).
+
+|Failure / root cause|Repair and acceptance strength|
+|---|---|
+|PE list geometry: selection.right64 exceeds selectionCell.right60 (+1 allowed). The mobile 44px grid cell inherited 4px padding per side around a minimum44px target.|Remove padding only from selection cells; retain44px target and all original containment/alignment/overflow thresholds. No test modified to permit overflow.|
+|CC12 ledger-link attachment: simplified list removed the existing stock-ledger route.|Restore scoped inventory link under the one shared Advanced entry, available before selection and with selected-item actions. Row still has exactly one Edit action. Existing CC12 assertions remain verbatim/in order; additive real clicks open Advanced→ledger, verify ≥44px link geometry, verify route, reload and verify route/merchant shell before continuing unchanged cases.|
+
+|New click ledger entry|Action|Expected|Actual|
+|---|---|---|---|
+|Products, desktop en/mobile zh-TW, shared Advanced|click then Inventory ledger link; reload|Scoped inventory route remains after reload; shell visible; products can be revisited|PENDING new CI|
+|Product row selection and Edit|existing real-click workflow plus unchanged read-only geometry measurement|44px targets contained in cells, no horizontal overflow|PENDING new CI|
+
+Three-language reused copy (no new locale keys or hard-coded UI strings):
+
+|zh-TW|zh-CN|en|
+|---|---|---|
+|進階|进阶|Advanced|
+|庫存帳|库存台账|Inventory ledger|
+
+UI process: BOURDIEU Q1–Q6, PROJECT UNDERSTANDING, MOBBIN→EAGLE and FIGMA OFFICIAL GUIDANCE sections below remain the signed implementation basis. This repair retains that layout and density intent; no new reference, design frame, setting or business fact. Impeccable layout/craft guidance was read; its local context/detector scripts were not run under the card's static-only rule. Local source inspection and exact-head CI artifacts provide the audit evidence; browser/density confirmation belongs to new CI.
+
+Static commands/exit codes and source hashes: relay4-static.log (app strict tsc0, browser spec node --check0, diff whitespace0; initial missing React dependency resolution was corrected only with temporary links). No imports changed, so component compile-harness allowlists unchanged. No Go changes; no dependency-map regeneration required. Browser ownership is regenerated last before this single repair push.
+
+Outside original PLAN this relay: none. Existing same-module paths beyond original PLAN remain listed below and in PR body for integrator review. Protected baselines/exemptions/gate-adapter assertions/contracts/migrations/backend/locks untouched. CI/browser/density/persistence GREEN and independent E4 PENDING; local tests/server/browser/PG, provider SANDBOX/LIVE/deploy NOT_RUN. Integrator relays new Gates/Foundation completion; no evidence-only push after GREEN.
+
+---
+
 # FIX318 implementation batch · current source · 2026-10-30
 
 Status: implementation prepared for one push; GREEN and E4 review PENDING. This section supersedes historical BLOCKED_GATE_CONFLICT status below. Author assessment E0; local structural evidence E1 only. Do not treat the old Foundation success as current acceptance.

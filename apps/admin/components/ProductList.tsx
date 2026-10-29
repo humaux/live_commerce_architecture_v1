@@ -115,15 +115,18 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
             <label className="pe-select"><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
               checked={!!rows.length && rows.every(r => selected.includes(r.id))} disabled={locked || !rows.length}
               onChange={e => setSelected(e.target.checked ? rows.slice(0, 100).map(r => r.id) : [])} /></label>
-            {(selected.length > 0 || locked) && <div data-testid="product-batch" className="cat-actions">
+            <div data-testid="product-batch" className="cat-actions">
               {selected.length > 0 && <strong>{catalogText(c.selected, { n: selected.length })}</strong>}
-              <button type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>
-              <details><summary>{c.advanced}</summary><div className="cat-actions">
+              {(selected.length > 0 || locked) && <button type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>}
+              <details><summary data-testid="products-advanced">{c.advanced}</summary><div className="cat-actions">
+                <Link data-testid="products-ledger-link" href={`/${locale}/inventory?store=${sid}`}>{legacy.inventory}</Link>
+                {(selected.length > 0 || locked) && <>
                 <button type="button" disabled={locked} onClick={() => void bulk('active')}>{pc.publishSelected}</button>
                 <button type="button" disabled={locked} onClick={() => void bulk('draft')}>{pc.unpublish}</button>
                 <button type="button" data-testid="products-copy-selected" disabled={locked || selected.length !== 1} onClick={() => void copySelected()}>{pc.copy}</button>
+                </>}
               </div></details>
-            </div>}
+            </div>
           </div>
           {rows.length ? <table data-testid="products-table" aria-label={c.title} className="cat-products-table"><thead className="cat-sr-only"><tr>
             <th scope="col" aria-label={pc.select} /><th scope="col" aria-label={legacy.product} /><th scope="col" aria-label={legacy.status} />

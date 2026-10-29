@@ -1,6 +1,7 @@
-/* Purpose: Product editor, matrix and quick-edit layout using the shared admin visual tokens.
- * Depends on: packages/ui tokens; ProductDocumentForm/Variants/BulkFill/Readiness and useProductEditorLayout markup/height.
- * Used by: ProductEditor and product list quick edits; styles only, no command or data ownership.
+/* Purpose: Catalog task/list and full document editor layout using shared admin visual tokens.
+ * Depends on: packages/ui tokens; ProductList, CatalogSimplifiedEditor, ProductDocumentForm/Variants/BulkFill/Readiness and useProductEditorLayout markup/height.
+ * Used by: ProductEditor and ProductList.
+ * Invariants: usable control targets and contained facts; styles own no commands or data.
  */
 .pe-page,
 .pe-catalog {
@@ -1055,10 +1056,11 @@
 .cat-products-table td { padding: 14px 12px; border-bottom: 1px solid var(--ui-border); vertical-align: middle; }
 .cat-products-table .pe-row-actions a { display: inline-flex; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; }
 .cat-products-table .product-cell { display: flex; gap: 12px; align-items: center; min-width: 0; }
-.cat-products-table .pe-selection-cell { width: 44px; }
+.cat-products-table .pe-selection-cell { width: 44px; padding: 0; }
 .cat-products-table .pe-price-cell { font-variant-numeric: tabular-nums; text-align: right; }
 .cat-products-table .pe-product-identity { min-width: 0; overflow-wrap: anywhere; }
 .cat-task-list .cat-list-tools details { position: relative; }
+.cat-task-list .cat-actions > a { min-height: 44px; }
 .cat-task-list .cat-list-tools details[open] > .cat-actions { padding: 12px; border: 1px solid var(--ui-border); background: var(--ui-surface); }
 @media (max-width: 680px) {
   .cat-task-editor, .cat-task-panel { padding: 16px; }

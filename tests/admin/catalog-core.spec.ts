@@ -128,6 +128,21 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       await expect(page.getByTestId("products-ledger-link")).toBeAttached();
       // stop-bleed D03: the "stock ledger" link opens the inventory page, not the dashboard at /{locale}/
       await expect(page.getByTestId("products-ledger-link")).toHaveAttribute("href", new RegExp(`^/${L}/inventory(\\?store=[0-9a-f-]{36})?$`));
+      // The ledger remains a real merchant route under the single shared Advanced entry.
+      await page.getByTestId("products-advanced").click();
+      await expect(page.getByTestId("products-ledger-link")).toBeVisible();
+      // Read-only geometry measurement; the navigation itself uses the real click below.
+      const ledgerTarget = await page.getByTestId("products-ledger-link").boundingBox();
+      expect(ledgerTarget).not.toBeNull();
+      expect(ledgerTarget!.width).toBeGreaterThanOrEqual(44);
+      expect(ledgerTarget!.height).toBeGreaterThanOrEqual(44);
+      await page.getByTestId("products-ledger-link").click();
+      await expect(page).toHaveURL(new RegExp(`/${L}/inventory/?(\\?.*)?$`));
+      await page.reload();
+      await expect(page).toHaveURL(new RegExp(`/${L}/inventory/?(\\?.*)?$`));
+      await expect(page.getByTestId("nav-orders")).toBeAttached();
+      await page.goto(url("/products"));
+      await expect(page.getByTestId("products-page")).toBeVisible();
       if (v.vp === "mobile") await page.locator('button[aria-controls="workspace-navigation"]').click();
       const rail = page.locator("[data-shell-rail]");
       for (const id of ["products", "collections", "inventory"])

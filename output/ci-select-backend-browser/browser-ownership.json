@@ -22,7 +22,7 @@
     "tests/admin/card-payments-request.test.ts": "8558573d1e07ad00642197ad56be4ea565c4fb14c9ac50dab70ffe04badce0bf",
     "tests/admin/card-payments-wire.test.ts": "09e24bdcc3d1f0a5d44e9d4e56a8e89ea63f5d95991782b008727482556c72be",
     "tests/admin/card-payments.spec.ts": "4f868a0b2e48fa61fb7cee3a19eff3099b075444849348f2b9e9721c1b36bc44",
-    "tests/admin/catalog-core.spec.ts": "835b8d27b7ac0479a14db2c3870fb13363d9775142ea21cf3a429f301a7964ca",
+    "tests/admin/catalog-core.spec.ts": "261cc448395ee2e71c3ffbba76732fc642643d54ad5dc64882cc1966fb5b49c7",
     "tests/admin/catalog-document-driver.ts": "ac2306db3a48162abb01c23d74cc1ffec796bc41a1410922d99387e44a4ccd2b",
     "tests/admin/catalog-receipt.test.ts": "972625dffcda9c32dee20554bad573dc842bfdc82887b84f7899579dd8e1c1b4",
     "tests/admin/catalog-v2-simplified.acceptance.ts": "e53f1da6f1cf88f727bd771ae1acade1c0ded795fb80a58f14c93f45e58db58c",

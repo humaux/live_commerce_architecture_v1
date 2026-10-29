@@ -1,0 +1,51 @@
+PR318 implementation regression receipt (E3 failure only)
+Head: 1772c5323ad0759faac0a14a051238f8a46f11d9
+Gates run40929312778 attempt1 job123647490881; tested synthetic merge718dfb5cafd85e0391457de1bf7aececdc556efa
+Official product-editor artifact12922677077 digest sha256:81fdbf423fa6c08808fa47bc84522a1ea4a235343e067be8fa0993a0c80dbca8
+
+output/catalog-v2-impl/relay4-current-product-editor/playwright/run.y5Y3qE2T/catalog-core/20261029T182646.794506224/playwright.log
+1) tests/admin/product-editor.acceptance.ts:18:3 › PE12-17 document workflow, matrix, list actions and click ledger
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 61
+    Received:    64
+
+       at product-list-layout.acceptance.ts:27
+
+      25 |     }
+      26 |     expect(row.selection.x).toBeGreaterThanOrEqual(row.selectionCell.x - 1);
+    > 27 |     expect(row.selection.right).toBeLessThanOrEqual(row.selectionCell.right + 1);
+         |                                 ^
+      28 |     expect(row.status.x).toBeGreaterThanOrEqual(row.statusCell.x - 1);
+      29 |     expect(row.status.right).toBeLessThanOrEqual(row.statusCell.right + 1);
+      30 |     expect(row.amount.x).toBeGreaterThanOrEqual(row.amountCell.x - 1);
+        at assertProductListLayout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-list-layout.acceptance.ts:27:33)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/product-editor.acceptance.ts:474:11
+
+output/catalog-v2-impl/relay4-current-product-editor/playwright/run.y5Y3qE2T/catalog-core/20261029T182803.584650402/playwright.log
+1) tests/admin/catalog-core.spec.ts:112:5 › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)
+
+    Error: expect(locator).toBeAttached() failed
+
+    Locator: getByTestId('products-ledger-link')
+    Expected: attached
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeAttached" getByTestId('products-ledger-link') with timeout 10000ms
+      - waiting for getByTestId('products-ledger-link')
+
+
+      126 |       await expect(page.getByTestId("products-page")).toBeVisible();
+      127 |       await expect(page.getByTestId("product-new")).toBeVisible();
+    > 128 |       await expect(page.getByTestId("products-ledger-link")).toBeAttached();
+          |                                                              ^
+      129 |       // stop-bleed D03: the "stock ledger" link opens the inventory page, not the dashboard at /{locale}/
+      130 |       await expect(page.getByTestId("products-ledger-link")).toHaveAttribute("href", new RegExp(`^/${L}/inventory(\\?store=[0-9a-f-]{36})?$`));
+      131 |       if (v.vp === "mobile") await page.locator('button[aria-controls="workspace-navigation"]').click();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/catalog-core.spec.ts:128:62
+
+Same job: product-media-v2 SUCCESS (12 browser cases), meta-ads SUCCESS, store-domains SUCCESS; product-editor and catalog-core FAILURE.
+These are implementation failures, not a new tests-only RED.
