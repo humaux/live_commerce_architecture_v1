@@ -12,3 +12,18 @@ Original tests-only RED retained in parent red.log: 40612180005 / 122576061200 a
 This tests-only push adds real offline transport comparison before the unchanged inspector scenario.
 New comparison run IDs: PENDING until push; register in handoff/PR comment without evidence-only push.
 GREEN: PENDING. No product claim; exact inspector cache mechanism UNKNOWN.
+
+FIX5 comparison pushed head f8aabd5901a970048b3987a5b0c322a0e43543d0: WAIT_RUN Gates 40846075289 (queued), Foundation 40846075228 (in_progress). Fresh comparison/RED/GREEN PENDING; implementation not selected. Run receipts saved locally; no evidence-only push.
+
+RELAY 1, 2026-10-29: exact comparison head f8aabd5901a970048b3987a5b0c322a0e43543d0.
+Gates 40846075289 / Chromium bundle:08 job 123356791076: FAILURE.
+Raw artifact gate-browser-password-auth, id 12885924093; comparison-chromium-red.log copied from its password-auth playwright.log (trailing whitespace normalized; raw artifact retained).
+First zh-CN offline case timed out at spec:293 page.goto after 150000ms; 23 remaining cases NOT_RUN.
+This is a SETUP FAILURE, not the required recovery-assertion RED and not product-failure evidence.
+Trace: call@22 BrowserContext.setOffline(offline=true) starts inside the paused document route; no after event before timeout.
+Only failed request: document /zh-CN/, net::ERR_ABORTED, aborted script count 0; no offline record or recovery click.
+WebKit comparison job 123356791253 was still in progress at handoff preparation; no result inferred.
+Foundation 40846075228 / job 123353775895 SUCCESS at the same exact head, not GREEN for the changed fixture.
+Targeted FIX5 attempt 2: prefetch unmodified server HTML with context.request before navigation, set the idle context offline outside the route, then fulfill only the document. No script interception/abort for offline injection.
+Both fault scenarios, all locales, all assertions and thresholds preserved. Product/injector verdict UNKNOWN until new own-PR CI.
+New run IDs go in PR comment/HANDOFF after push; no evidence-only push. If this final setup repair fails, STOP and escalate.

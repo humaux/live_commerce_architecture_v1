@@ -261,20 +261,21 @@ for (const locale of locales) {
         if (message.type() === "error") record("console-error", { message: message.text() });
       });
       if (fault === "offline") {
-        // FIXTURE/SETUP: buffer the actual server HTML, then disconnect before the browser parses it.
+        // FIXTURE/SETUP: buffer actual server HTML before disconnecting the idle browser context.
+        // Awaiting setOffline inside a paused document route stalls Chromium's navigation (FIX5 RED).
         // No script request is intercepted or aborted: setOffline drives the browser transport failure.
         // Keep this document-only route on reload too, matching the existing disabled-cache policy.
+        const response = await context.request.get(`${publicOrigin}/${locale}/?recovery=1`);
+        const body = await response.body();
         await page.route(`/${locale}/?recovery=1`, async (route) => {
           if (networkRecovered) {
             await route.continue();
             return;
           }
-          const response = await route.fetch();
-          const body = await response.body();
-          await context.setOffline(true);
-          record("offline", { documentStatus: response.status() });
           await route.fulfill({ response, body });
         });
+        await context.setOffline(true);
+        record("offline", { documentStatus: response.status() });
       } else await page.route(/\/_next\/static\/chunks\/.*\.js(?:\?|$)/, async (route) => {
         const chunkURL = route.request().url().split("?")[0];
         if (!networkRecovered) {
