@@ -49,3 +49,14 @@ Evidence level: E1 syntax only; author assessment E0; resumed-head GREEN and ind
 NOT_RUN: local tests/servers/browser/PG, provider SANDBOX/LIVE, production, independent re-review, Humaux store/canvas/coord/index/link. No recursive delegation.
 Wake-up: native workflow conclusion/failure/timeout plus integrator relay; record exact Gates/Foundation WAIT_RUN IDs after push. No polling beyond10min or detached watcher.
 Full staged merge diff --check additionally returned2 for two pre-existing trailing spaces imported verbatim from integration's output/cvs-pick-impl/fix298-red.log lines20/44. Worker source/ownership diff --check returned0. Upstream evidence was not modified to hide these warnings; no full-merge whitespace PASS.
+
+
+RELAY current-head Foundation root repair, 2026-10-29
+Authority: integrator resume dispatch; GitHub PR273 head141a7a93d9971f26da44c824c23a0db3c163949a; raw Foundation40865374033/job123418686535.
+Tested synthetic merge4ca9c3c5d38d4c38a22acbbd1d795fdfe1b1cbbb. Failure is tests/admin/shell-architecture.test.mjs:10, G-UI3/G-UI5: CheckoutFlow.tsx lines813 exceeds the unchanged800-line ceiling (reported as lines813>0 because no legacy allowance).
+#313 was already merged in this head; verified GitHub mergedAt2026-10-29T11:21:40Z and merge bf174df6b8a2c23e44dc8290a1baddf926149c6e. Fetch+merge origin/r3/integration returned Already up to date at bf174df6b8a2c23e44dc8290a1baddf926149c6e.
+Attempt1 for the post-merge813-line blocker: extract delivery selection/hints to CheckoutDeliveryOptions.tsx. Parent still owns selection, invalidation, quote writes and guards. No changed amounts, identifiers, controls, locale strings or browser assertions. No test/threshold/allowance/baseline edits.
+RED precedes this fix: existing Foundation assertion above (E3 failing CI); original card causal tests-only RED40665214452/jobs122784411665,122784411546; RVFIX RED40827205253/job123293920220 retained.
+Static: git diff --check exit0; node --check checkout-v2/home-cod-buyer/cvs-buyer/order-gate exit0 (E1 syntax only). TypeScript compiler/dependencies absent in worktree; tsc NOT_RUN, no fresh typecheck acceptance.
+Regenerated ownership using node scripts/dev/derive-browser-ownership.mjs: exit0,53modes, byte-identical artifact. No Go graph change; depmap NOT_RUN. Component source harness search found only cod-footer.spec.ts source assertions and oc09b_cod_due_test.go comment, no injected require/import allowlist; existing codFooter call remains verbatim.
+GREEN and independent acceptance PENDING new head CI; author E0. No local tests/server/browser/PG/build or provider/production action. Humaux store/canvas/coord/index/link NOT_RUN: tools unavailable; repository receipt is the equivalent handoff only. Native workflow conclusion/failure/timeout and integrator relay provide wake-up.

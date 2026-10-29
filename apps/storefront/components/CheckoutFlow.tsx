@@ -1,7 +1,7 @@
 "use client";
 
 // Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
-// Depends on: buyer BFF/recovery, CheckoutQuoteAmounts, checkout-copy and codFooter (OC-09b bottom bar).
+// Depends on: buyer BFF/recovery, checkout display components, checkout-copy and codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
 // Invariants: server money only; changed quotes need acknowledgment; unknown checkout replays its original intent/key; brand-change contact stays ephemeral.
 
@@ -24,7 +24,6 @@ import {
 } from "../lib/buyer-client";
 import { purchaseCopy } from "../lib/purchase-copy";
 import { orderCopy } from "../lib/order-copy";
-import { cvsCopy } from "../lib/cvs-copy";
 import { isCvsKind, type CvsDraft, type CvsKind } from "../lib/cvs-contract";
 import { codFooter } from "../lib/cod-copy";
 import { checkoutCopy } from "../lib/checkout-copy";
@@ -32,14 +31,14 @@ import { changedCheckoutQuote, rememberCheckoutQuote } from "../lib/checkout-rev
 import OrderFlow, { OrderDetails } from "./OrderFlow";
 import CheckoutPendingReview from "./checkout/CheckoutPendingReview";
 import CheckoutQuoteAmounts from "./checkout/CheckoutQuoteAmounts";
+import CheckoutDeliveryOptions from "./checkout/CheckoutDeliveryOptions";
 import PromoCode from "./PromoCode";
 import OrderHistory from "./OrderHistory";
 import { CartLines } from "./CartLines";
 import { useCart } from "./CartProvider";
 import { useCartDetails } from "./CartLines";
 import { checkoutPath } from "../lib/routes";
-import { fmt, shopCopy } from "../lib/shop-copy";
-import { freeShippingProgress } from "../lib/shop-contract";
+import { shopCopy } from "../lib/shop-copy";
 import { formatMoney } from "../lib/money";
 import Link from "next/link";
 import { claimCopy } from "../lib/claim-copy";
@@ -137,8 +136,6 @@ export default function CheckoutFlow({
   const found = options.find((o) => optionKey(o) === method);
   // Unavailable rows are listed disabled, so they can never be the chosen delivery.
   const chosen = found && !isUnavailable(found) ? found : undefined;
-  const chosenProgress =
-    chosen && subtotal !== null && !quote ? freeShippingProgress(subtotal, chosen.free_shipping_threshold_minor ?? null) : null;
   // One money format for the whole storefront (lib/money.ts): the bar, the quotation, the order and the history read like the cart lines.
   const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
@@ -572,49 +569,12 @@ export default function CheckoutFlow({
                 {!options.length ? (
                   <p>{copy.noDelivery}</p>
                 ) : (
-                  <>
-                    <label className="delivery-label" htmlFor="delivery">
-                      {copy.selectDelivery}
-                    </label>
-                    <select
-                      id="delivery"
-                      value={method}
-                      disabled={
-                        busy || pending || orderLocked || error === "session"
-                      }
-                      onChange={(e) => {
-                        setMethod(e.target.value);
-                        setQuote(null);
-                      }}
-                    >
-                      {options.map((o) => (
-                        <option
-                          key={optionKey(o)}
-                          value={optionKey(o)}
-                          disabled={isUnavailable(o)}
-                        >
-                          {locale === "zh-CN"
-                            ? o.name_hans
-                            : locale === "zh-TW"
-                              ? o.name_hant
-                              : o.name_en}{" "}
-                          · {o.country}
-                          {isUnavailable(o) ? ` · ${cvsCopy[locale].comingSoon}` : ""}
-                        </option>
-                      ))}
-                    </select>
-                    {chosen && chosen.delivery_kind !== "home" && (
-                      <p data-testid="cvs-next-step">{copy.cvs}</p>
-                    )}
-                    {chosenProgress && (
-                      // Hint only (from checkout-options, delivery policy): the quote below stays the sole authority on shipping.
-                      <p className="sf-muted" data-testid="checkout-free-shipping">
-                        {chosenProgress.reached
-                          ? shopCopy[locale].freeShipReached
-                          : fmt(shopCopy[locale].freeShipRemaining, { amount: formatMoney(locale, chosenProgress.remaining, cart?.currency ?? "TWD") })}
-                      </p>
-                    )}
-                  </>
+                  <CheckoutDeliveryOptions
+                    locale={locale} options={options} method={method} chosen={chosen}
+                    subtotal={quote ? null : subtotal} currency={cart.currency}
+                    disabled={busy || pending || orderLocked || error === "session"}
+                    onSelect={(value) => { setMethod(value); setQuote(null); }}
+                  />
                 )}
                 {optionCursor && (
                   <button
