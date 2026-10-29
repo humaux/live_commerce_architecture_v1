@@ -1,21 +1,33 @@
-OA-2 freezes the C3/C4 command surface while integrator-assigned SQL and composition paths remain blocked. `LC_ORDER_ATTEMPT_ENABLED` stays `0`.
+OA-2 freezes the C3/C4 command surface and SQL migration handoff. Executable SQL/composition remain blocked on integrator assignment; `LC_ORDER_ATTEMPT_ENABLED` stays `0`.
 
-## RVFIX305 policy handoff fix — implementation CI pending
+## RVFIX305 independent review: both P1 handoff corrections
 
-The reviewed C3 request called legacy `inbox.check_send`, which accepts only `lcn-policy/v1`; OA-1 stores `order-attempt-notification/v1`, so eligible OA READY notifications would be refused. The handoff now requires a narrow OA validator, its exact owner/EXECUTE inventory, and C3 use under the existing lock suffix. Legacy validation remains unchanged; stored policy rewriting is forbidden. UNKNOWN reconciliation still branches before fresh-send eligibility.
+OA-1 creates the payment-DM operation and READY outbox together. The old C3 request counted that operation as its own recent duplicate, voiding a valid immediate claim. The request now scopes the predicate by tenant/store/order/action and excludes `p_operation`; it pins an immediate eligible claim, a distinct recent-operation refusal, and cross-scope/order isolation witnesses.
 
-The SQL acceptance handoff now requires separate eligible-READY positive, consent refusal, window closure and changed-takeover REAL_PG witnesses. This is a corrected migration request, not an implemented SQL authority or dispatch activation. No migration number has been assigned.
+The old schema request could not persist its own consent_refused or default no_effect dispositions. It now replaces the restrictive void_code CHECK, retaining all 14 OA-1 codes and adding cancelled, rotated, consent_refused, invalid_request and no_effect. Fixed helper-to-paired-code mappings precede both writes. Consent refusal and authoritative-no-effect witnesses require successful commit under that CHECK plus raw paired readback; UNKNOWN alone never proves no effect.
 
-- Assertion RED: head `4a84a5dfe82231fff4b511672a340ab25ddad655`; Gates `40879903464` / g10 `123470232597`, failure exit 1. New authority/ACL/C3 assertions and all four policy witnesses failed at their assertions. Existing consumed-permit witnesses passed. Native synthetic merge `e720aee049612c36894c7a1636ee6cdda1c32e1e`. Filtered native evidence: `output/oa-2/rvfix305/policy-red-job.log` and `red.log`.
-- Foundation `40879903437` / `123468328227` passed on the RED head; it does not run this document test. Current implementation GREEN pending; new run/job ids will be recorded in a PR comment without an evidence-only commit.
-- Fetched/merged `origin/r3/integration@d0e7331525fec046fbe9361906fa66367ae583c6` first (already current). Browser ownership regenerated last before push.
-- No local tests/servers. Diff whitespace check only; document gate awaits native CI. Own assessment E0. Independent delta review pending.
+This implements the review corrections in the SQL request, not deployed SQL. No migration number, executable migration, shared schema, contract, R2 pin, dependency, composition or activation change is included. The P1 tests from the tests-only RED push are unchanged.
 
-P2 for issue: reminder identity CHECK still permits NULL keys. The earlier delivery's claim that explicit NOT NULL predicates were added was false and is now corrected. Keep P2 open for the integrator's schema task: both explicit predicates plus separate omitted-key REAL_PG negatives before schema adoption.
+## CI evidence
 
-Scope: this implementation batch touches only `output/oa-2/**`; outside-card files: none. Browser ownership regeneration is card-authorized (commit only if it changes). No migration, contract, OpenAPI, dependency, R2 pin, composition or activation changes. Assertions are unchanged.
+- Tests-only RED head: `76497fd0ee3ccf57bd49585892b651c4f6e1ed2b`.
+- Gates `40895129665`, g10 job `123524293876`, attempt 1, failure / exit 1. Tested merge: `08bf99f4182dafcb94d94104fcdfae693d303eb7` into integration `d0e7331525fec046fbe9361906fa66367ae583c6`.
+- The new scoped current-operation exclusion, CHECK/inventory, fixed-code mapping and all four immediate/distinct/consent/no-effect witnesses failed their intended assertions. Existing policy and UNKNOWN assertions passed. Native filtered evidence is committed under `output/oa-2/rvfix305/review-red-job.log`; receipts are in `output/oa-2/red.log` and `output/oa-2/rvfix305/red.log`.
+- Foundation `40895129674` / job `123522034094` passed on the RED head; it does not execute this document suite.
+- Current implementation GREEN and independent delta review: PENDING. Exact implementation head and native Gates/Foundation WAIT_RUN IDs will be recorded in a PR comment after push. Historical green is not current acceptance.
+- E3 applies to the observed RED document gate only. Own assessment E0; no SQL runtime acceptance. No local tests or servers.
 
-NOT_RUN: REAL_PG C3/C4 paired state; actual-login ACLs; lock barriers; M2a/M2b/M4/M7 DB mutations; scheduler/cancel/rotation/copy/reminder composition; provider I/O; OA-3 cutover; SANDBOX/LIVE; production. Humaux/coord tools are unavailable, so no store/canvas update was performed. The integrator relay resumes this worker when native CI completes; no local background job is running.
+## Scope and handoff
+
+Current implementation batch: `output/oa-2/SQL-REQUEST.md`, delivery/RED receipts under `output/oa-2/**`. No source or test edits. Fetched/merged `origin/r3/integration@d0e7331525fec046fbe9361906fa66367ae583c6` first (already current); browser ownership regenerated last before push.
+
+Outside-card file in this PR: generated `output/ci-select-backend-browser/browser-ownership.json`, required by CI ownership policy and explicitly pre-authorized; no hand edits. No other out-of-card edits by this batch. Integrator final review remains pending.
+
+P2 for issue: reminder identity NULL gap remains open. Integrator schema follow-up must require both keys IS NOT NULL and separate omitted-key REAL_PG negatives before adoption. Existing follow-up: https://github.com/humaux/live_commerce_architecture_v1/pull/305#issuecomment-6498353837.
+
+NOT_RUN: current-head GREEN; REAL_PG C3/C4/ACL/lock barriers/DB mutations; scheduler/cancel/rotation/copy/reminder composition; provider I/O; OA-3; SANDBOX/LIVE; production; independent delta review. Document assertions cannot prove executable SQL behavior.
+
+Wake-up owner: integrator relay on native CI completion/failure/cancel or >3h timeout. No local background process, merge, auto-merge, workflow rerun or evidence-only push. Humaux/coord unavailable this relay: no store/canvas update claimed. Pre-existing untracked work retained.
 
 Rollback: revert this documentation implementation commit on `unit/oa-2`; no DB effect exists.
 

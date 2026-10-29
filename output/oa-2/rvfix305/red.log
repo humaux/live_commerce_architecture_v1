@@ -116,3 +116,25 @@ Raw filtered evidence: policy-red-job.log (source: GitHub job logs endpoint).
 Foundation run 40879903437 / job 123468328227 passed on RED head; not this suite.
 No local tests/servers. Implementation batch changes handoff documentation only.
 Current implementation GREEN PENDING; integrator relay remains wake-up mechanism.
+
+RELAY RVFIX305: both independent-review P1 assertion RED confirmed.
+Head: 76497fd0ee3ccf57bd49585892b651c4f6e1ed2b (tests-only batch).
+Base: d0e7331525fec046fbe9361906fa66367ae583c6.
+Tested merge/receipt: 08bf99f4182dafcb94d94104fcdfae693d303eb7.
+Gates run 40895129665, attempt 1, gate (shard:g10) job 123524293876:
+failure / exit 1; started 2026-10-29T14:52:05Z, completed 2026-10-29T15:08:59Z.
+New subtests reached and failed their own assertions:
+- recent-operation-excludes-current-scoped-pair: six scope/self-exclusion clauses absent.
+- void-schema-covers-fixed-dispositions: restrictive CHECK not replaced/inventory absent.
+- void-code-mapping-is-explicit: four fixed paired mappings absent.
+- immediate-and-distinct-refusal-witnesses: immediate READY, distinct operation,
+  consent CHECK commit and authoritative-no-effect CHECK commit witnesses absent.
+Existing UNKNOWN branch, OA policy authority and four policy witnesses passed.
+Foundation 40895129674 / 123522034094 passed on RED head; not this assertion suite.
+Native filtered evidence: output/oa-2/rvfix305/review-red-job.log.
+Source: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/123524293876/logs.
+gh run view --log-failed could not yet return logs while the run awaited receipts;
+native completed-job endpoint provided the evidence, independently of overall run status.
+E3 applies only to this document assertion RED. SQL runtime/REAL_PG remains NOT_RUN.
+Both P1 handoff corrections implemented together after RED; existing tests unchanged.
+Current implementation GREEN PENDING. Integrator relay owns continuation.

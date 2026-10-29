@@ -6,8 +6,8 @@ and `docs/delivery/units/oa-2-order-attempt-notify.md` (write paths and
 "Root/post-River migration numbers, exact ACL/COMMENT/upgrade pins and R2 pin:
 integrator assigns").
 
-One root migration is required. It adds two reminder-identity columns, one
-`void_code` value, seven coordinator definers, one OA policy definer, two checkout definers, one
+One root migration is required. It adds two reminder-identity columns, five
+`void_code` values, seven coordinator definers, one OA policy definer, two checkout definers, one
 `integration.retry_operation` replacement, and the grants/ACL pins below.
 No new job kind and no `external_operation_v1` arg change (`{operation_id,
 version: 1}` stays exact). Lease expiry reuses `integration.operations.lease_until`
@@ -32,8 +32,16 @@ CREATE UNIQUE INDEX order_payment_reminder_version_key
 CREATE UNIQUE INDEX order_payment_reminder_intent_key
   ON inbox.order_payment_notifications(tenant_id,store_id,order_id,kind,reminder_intent_key)
   WHERE kind='reminder';
--- The existing void_code CHECK must also admit the cancel/rotation reasons:
--- 'cancelled' and 'rotated'.
+-- Replace the existing CHECK, retaining every OA-1 code and admitting all
+-- fixed paired C3/C4/cancel/rotation dispositions below.
+ALTER TABLE inbox.order_payment_notifications
+  DROP CONSTRAINT order_payment_notifications_void_code_check;
+ALTER TABLE inbox.order_payment_notifications
+  ADD CONSTRAINT order_payment_notifications_void_code_check
+  CHECK (void_code IN ('forbidden','window_closed','capability','conversation_gone',
+    'takeover_changed','duplicate_recent','rate_limited','template_not_found','template_kind',
+    'recipient_invalid','format_invalid','pay_entry_unavailable','storefront_unavailable',
+    'domain_selection_required','cancelled','rotated','consent_refused','invalid_request','no_effect'));
 ```
 
 The existing `guard_order_payment_notification` identity list must include
@@ -142,13 +150,23 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 --    binding enabled, semantic_version=o.binding_version and asset/provider identical;
 --    checkout.order_payment_payable(order,link_version),
 --    active tenant/store/owner, pay entry version unrevoked/unexpired, current
---    takeover/window/consent through inbox.payment_dm_check_send(p_operation)='OK', and no
---    same-order meta.dm_send operation created in the last 30 seconds.
+--    takeover/window/consent through inbox.payment_dm_check_send(p_operation)='OK', and
+--    NOT EXISTS (SELECT 1 FROM integration.operations recent
+--      WHERE recent.tenant_id=o.tenant_id AND recent.store_id=o.store_id
+--        AND recent.request->>'order_id'=n.order_id::text AND recent.action='meta.dm_send'
+--        AND recent.id<>p_operation
+--        AND recent.created_at>clock_timestamp()-interval '30 seconds').
+--    o and n are the locked operation/outbox pair. OA-1 creates this operation
+--    with READY; it must never count as its own duplicate. A distinct recent
+--    same-scope/order operation refuses with duplicate_recent. Do not sleep or
+--    defer a new eligible job until its own operation ages out of the window.
 -- h. on refusal (READY/READY AND dispatch_authorized_at IS NULL only): operation
 --    generation+1 state=BLOCKED_POLICY for consent_refused, window_closed,
 --    takeover_changed and other message-policy refusals (CANCELLED for business
 --    cancellation), outbox VOID/before_c3/void_code, insert operation_events,
 --    return disposition='void'. Zero HTTP. Never refuse a consumed permit here.
+--    Use the fixed-code mapping below for BOTH operation.result_code and
+--    outbox.void_code; never persist an unmapped helper/provider code.
 -- i. otherwise PERFORM claim_operation(p_operation,p_lease_seconds,p_token).
 -- j. when disposition='claimed' and mode=dispatch: outbox state=DISPATCHING;
 --    worker_generation=claimed generation;
@@ -172,6 +190,11 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 --    p_code,p_reference). complete_operation already clears the lease.
 -- c. outbox state = ACCEPTED | DELIVERY_UNKNOWN | VOID; VOID uses
 --    void_stage='after_c3' and the fixed code. worker_generation stays p_generation.
+--    VOID requires authoritative no-external-effect proof in reconcile mode;
+--    normalize that result (including the Go default no_effect) to no_effect
+--    for BOTH complete_operation's p_code and outbox.void_code. Mere policy
+--    loss, timeout, missing evidence or an unrecognized code is not such proof:
+--    keep DELIVERY_UNKNOWN/UNKNOWN and its evidence, never infer VOID.
 -- d. return the paired notification JSON.
 END $$;
 
@@ -265,6 +288,47 @@ END $$;
 --   THEN RAISE EXCEPTION 'not_retryable' USING ERRCODE='PT409'; END IF;
 ```
 
+## Fixed VOID codes and paired writes
+
+The CHECK above is the complete stored `void_code` inventory. For paired C3/C4
+transitions, normalize the authority's result before either write, then commit
+the operation state/result_code and outbox state/void_stage/void_code together.
+Never copy arbitrary helper/provider text into `void_code`. The table is a
+fixed mapping, not permission to manufacture an authority result or proof.
+
+| Authority result | Stored void_code and operation.result_code | Operation state | void_stage |
+| --- | --- | --- | --- |
+| invalid_request, outbound_missing | invalid_request | BLOCKED_POLICY | before_c3 |
+| principal_revoked | forbidden | BLOCKED_POLICY | before_c3 |
+| forbidden | forbidden | BLOCKED_POLICY | before_c3 |
+| consent_refused | consent_refused | BLOCKED_POLICY | before_c3 |
+| window_closed, deadline | window_closed | BLOCKED_POLICY | before_c3 |
+| human_takeover, takeover_changed | takeover_changed | BLOCKED_POLICY | before_c3 |
+| capability | capability | BLOCKED_POLICY | before_c3 |
+| conversation_gone | conversation_gone | BLOCKED_POLICY | before_c3 |
+| recipient_invalid | recipient_invalid | BLOCKED_POLICY | before_c3 |
+| duplicate_recent | duplicate_recent | BLOCKED_POLICY | before_c3 |
+| pay_entry_unavailable | pay_entry_unavailable | CANCELLED | before_c3 |
+| cancelled | cancelled | CANCELLED | before_c3 |
+| rotated | rotated | CANCELLED | before_c3 |
+| authoritative-no-effect | no_effect | FAILED_FINAL | after_c3 |
+
+`rate_limited`, `template_not_found`, `template_kind`, `format_invalid`,
+`storefront_unavailable` and `domain_selection_required` remain admitted for
+OA-1's existing refused plans: outbox VOID/before_c3 with the identical fixed
+code, NULL operation and no notification job. They are not new C3/C4 helper
+results. Claim-time rate limiting/backoff/budget refusal returns no permit and
+leaves the pair unchanged, as step f requires; it must not be remapped to VOID.
+Unknown helper results fail closed without a dispatch permit or partial writes
+and require fenced repair. Disabled/stale binding uses the contract's binding
+disposition, never an invented policy code; post-C3 it stays blocked_binding
+with the existing UNKNOWN pair/evidence. `payment_dm_void_ready` accepts only
+`cancelled` or `rotated`, rejecting other input before writes. For C4, the
+authoritative-no-effect mapping applies only with actual no-effect proof;
+preserve dispatch_authorized_at, link_version and provider evidence in the
+terminal VOID/FAILED_FINAL pair. ACCEPTED/DELIVERY_UNKNOWN use NULL void_code
+and void_stage='none'; their operation result codes are not VOID codes.
+
 ## Composition paths the integrator must assign before edits
 
 - `cmd/claims-worker/main.go`: register the payment-DM handler and
@@ -303,13 +367,22 @@ timestamp stays NULL and no dispatch permit is returned.
 
 | Event | Setup | Required paired result |
 | --- | --- | --- |
-| eligible-OA-READY | READY/READY; valid OA policy, live permission/consent/window/takeover, payable current link | DISPATCHING/DISPATCHING; exactly one dispatch permit; duplicate claim returns busy and no second permit |
-| consent-refused-before-C3 | eligible OA READY fixture except current domain consent/recipient authority refuses | VOID/BLOCKED_POLICY; zero provider calls; consent_refused; before_c3; no dispatch permit |
+| eligible-OA-READY | READY/READY; valid OA policy, live permission/consent/window/takeover, payable current link; claim immediately after OA-1 admission; operation age < 30 seconds; no other same-scope/order operation | DISPATCHING/DISPATCHING; exactly one dispatch permit; duplicate claim returns busy and no second permit |
+| distinct-recent-operation-before-C3 | eligible OA READY fixture plus a different same-tenant/store/order meta.dm_send operation created < 30 seconds ago; current operation remains excluded | VOID/BLOCKED_POLICY; duplicate_recent; before_c3; zero provider calls; no dispatch permit |
+| consent-refused-before-C3 | eligible OA READY fixture except current domain consent/recipient authority refuses | VOID/BLOCKED_POLICY; zero provider calls; consent_refused; before_c3; no dispatch permit; commit succeeds under the requested void_code CHECK; raw paired readback |
 | window-closed-before-C3 | eligible OA READY fixture except deadline/current reply window expired | VOID/BLOCKED_POLICY; zero provider calls; window_closed; before_c3; no dispatch permit |
 | takeover-changed-before-C3 | eligible OA READY fixture except frozen takeover generation/assignee no longer matches | VOID/BLOCKED_POLICY; zero provider calls; takeover_changed; before_c3; no dispatch permit |
 | cancel-after-UNKNOWN | C3 won, provider outcome unknown, operator cancels | outbox keeps DELIVERY_UNKNOWN until authoritative no-effect proof; VOID only with `void_stage='after_c3'`; operation evidence and `dispatch_authorized_at` preserved; no second send |
 | rotation-after-UNKNOWN | UNKNOWN row exists, merchant CAS-rotates | old version revoked, old row keeps UNKNOWN and provider evidence; only a new explicit reminder intent can create a new send |
 | policy-loss-after-UNKNOWN | consent/window lost after C3 | state stays UNKNOWN; no before-C3 VOID and no resend |
+| authoritative-no-effect-after-C3 | C3 consumed its permit; DELIVERY_UNKNOWN/UNKNOWN; matching generation/token and authoritative provider no-effect proof; reconcile adapter returns VOID with its default empty code normalized to no_effect | VOID/FAILED_FINAL; no_effect; after_c3; commit succeeds under the requested void_code CHECK; raw paired readback; both result codes no_effect; dispatch_authorized_at/link_version/provider evidence preserved; no second send |
+
+The distinct-operation witness must also isolate tenant/store/order boundaries:
+an otherwise identical recent operation in another tenant, another store, or
+another order must not block the immediate eligible claim. Consent and
+authoritative-no-effect witnesses assert both rows' exact fixed codes after
+commit, using the newly requested CHECK, rather than bypassing constraints or
+asserting only a returned disposition.
 
 These are REAL_PG/ACL cases and remain NOT_RUN until the migration exists.
 

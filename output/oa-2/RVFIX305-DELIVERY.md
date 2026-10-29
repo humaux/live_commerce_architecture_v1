@@ -1,4 +1,51 @@
-# RVFIX305 — OA policy handoff fix; current CI pending
+# RVFIX305 — scoped duplicate and VOID schema handoff; CI pending
+
+## Current relay: independent review of 1a47719e4
+
+Authority: owner RVFIX305 card and `.worktrees/rv-305/REVIEW-305.md`, both P1
+findings; `contracts/order-attempt-v1.md` §4; OA-1 migration 0188's admitted
+codes and atomic READY/operation creation; metareply's default `no_effect`.
+This is a SQL implementation request, not an executable migration or deployed fix.
+
+- Executor: Codex (GPT-6 family; actual model/reasoning setting not exposed),
+  integration_worker responsibility, no delegation. Worktree `.worktrees/oa-2`,
+  branch `unit/oa-2`, PR #305 into `r3/integration`.
+- Starting head: `76497fd0ee3ccf57bd49585892b651c4f6e1ed2b`. Fetched and merged
+  `origin/r3/integration@d0e7331525fec046fbe9361906fa66367ae583c6` before edits;
+  already up to date. Rollback: revert this documentation implementation commit.
+- RED: Gates `40895129665`, g10 job `123524293876`, failure / exit 1,
+  2026-10-29 14:52:05–15:08:59 UTC. Native run head equals the starting head;
+  tested merge `08bf99f4182dafcb94d94104fcdfae693d303eb7`. New current-operation
+  exclusion, CHECK/inventory, fixed mapping and immediate/distinct/consent/
+  no-effect witnesses all failed their own assertions. Existing policy and
+  UNKNOWN assertions passed. Filtered native log: `rvfix305/review-red-job.log`;
+  receipt: `rvfix305/red.log`. Foundation `40895129674` / `123522034094`
+  passed on the RED head but does not execute this document suite.
+- P1 duplicate predicate: require tenant/store/order/action scope and
+  `recent.id<>p_operation`. Eligible READY must claim immediately after OA-1
+  admission; a different recent operation still refuses. Cross-scope/order
+  distractors must not block the eligible claim.
+- P1 VOID persistence: replace the CHECK while retaining all 14 OA-1 values;
+  add cancelled/rotated/consent_refused/invalid_request/no_effect. Pin fixed
+  authority-to-paired-code mappings and committed raw consent/no-effect
+  readbacks. Post-C3 VOID requires actual no-effect proof and keeps evidence.
+- Tests from the RED commit are unchanged. Scope this implementation batch:
+  `output/oa-2/**` only; regenerate browser ownership last before push, reporting
+  any generated diff in the PR. No migration number, shared schema, contract,
+  R2 pin, composition, dependency or activation edit. `LC_ORDER_ATTEMPT_ENABLED`
+  remains `0`. P2 reminder NULL gap remains open under the existing PR follow-up:
+  https://github.com/humaux/live_commerce_architecture_v1/pull/305#issuecomment-6498353837.
+- Evidence: observed assertion RED is E3 for the document gate at the RED SHA;
+  implementation GREEN and independent delta review are PENDING. Own assessment
+  E0. No local tests/servers. No claim of REAL_PG/runtime acceptance.
+- NOT_RUN: REAL_PG C3/C4/ACL/locks/DB mutations, scheduler/cancel/rotation/copy/
+  reminder composition, provider I/O, OA-3, SANDBOX/LIVE, production.
+- Humaux/coord tools unavailable: no store, canvas update or code-memory link.
+  No shared task claimed or modified. Integrator relay wakes the next session
+  on native Gates/Foundation completion, failure/cancel, or a >3h timeout.
+  Native run IDs are recorded in the PR comment after push; no evidence-only push.
+
+## Historical batches (receipts below do not accept the current implementation)
 
 Authority: owner RVFIX305 card; final findings of cxf-rv-305.log; OA-2 unit
 brief and contracts/order-attempt-v1.md §4. No migration assignment was added.
