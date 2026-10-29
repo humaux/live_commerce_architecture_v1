@@ -1,0 +1,12 @@
+gate (bundle:06)	Gate	2026-10-29T18:28:50.2889331Z ##[group]bundle member --browser-inbox
+gate (bundle:06)	Gate	2026-10-29T18:28:54.6102197Z === RUN   TestBrowserInboxUIRealChain
+gate (bundle:06)	Gate	2026-10-29T18:28:54.6102988Z === RUN   TestBrowserInboxUIRealChain/failure_diagnostics
+gate (bundle:06)	Gate	2026-10-29T18:31:39.1617747Z === NAME  TestBrowserInboxUIRealChain
+gate (bundle:06)	Gate	2026-10-29T18:31:39.1618749Z     browser_inbox_ui_test.go:358: Playwright 6 failed
+gate (bundle:06)	Gate	2026-10-29T18:31:39.1619163Z     browser_inbox_ui_test.go:358: Playwright 34 passed
+gate (bundle:06)	Gate	2026-10-29T18:31:40.2833911Z     browser_inbox_ui_test.go:402: inbox browser failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/inbox-ui/20261029T182900.584943710
+gate (bundle:06)	Gate	2026-10-29T18:31:47.4575858Z --- FAIL: TestBrowserInboxUIRealChain (172.84s)
+gate (bundle:06)	Gate	2026-10-29T18:31:47.4576993Z     --- PASS: TestBrowserInboxUIRealChain/failure_diagnostics (0.00s)
+gate (bundle:06)	Gate	2026-10-29T18:31:47.7109652Z bundle member --browser-inbox: failure
+gate (bundle:06)	Gate	2026-10-29T18:31:47.7459770Z matrix-receipts: {"mode":"--browser-inbox","run_id":"40929100369","run_attempt":"1","sha":"dae2426493bbd92628972abd8c7127a42b24b300","status":"FAIL","test_count":42,"spec_count":41}
+gate (bundle:06)	Gate	2026-10-29T18:31:47.7543413Z bundle member --browser-inbox: receipt receipt-browser-inbox.json is not PASS

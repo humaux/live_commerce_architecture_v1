@@ -67,7 +67,7 @@ export function InboxThread({
   const [queriedUnknown, setQueriedUnknown] = useState(false);
   const [help, setHelp] = useState(false);
   const deliveryLock = useRef(false);
-  const lockedOutbound = useRef<Pick<Thread["items"][number], "at" | "kind" | "principal_id"> | null>(null);
+  const lockedOutbounds = useRef<Pick<Thread["items"][number], "at" | "kind" | "principal_id" | "send_state">[]>([]);
   const acknowledged = useRef<{ id: string | null; text: string | null } | null>(null);
   const [delivery, setDelivery] = useState<string | null>(null);
   const persistedUnknown = useRef(false);
@@ -87,7 +87,7 @@ export function InboxThread({
     setDelivery(null);
     setDetails(false); setReadMarked(false); setEditing(false); setQueriedUnknown(false);
     deliveryLock.current = false;
-    lockedOutbound.current = null;
+    lockedOutbounds.current = [];
     acknowledged.current = null;
     persistedUnknown.current = false;
     historyClear.current = false;
@@ -178,25 +178,31 @@ export function InboxThread({
             }
           }
           if (!ack || ackComplete) {
-            const observed = lockedOutbound.current;
-            // A9 can hide a pending/policy-blocked row below its display floor. Neither absence nor
-            // another send reconciles it; retain the lock until its projected row has a known result.
-            const latest = deliveryLock.current && observed
-              ? data.items.find(item => item.direction === "out" && observed.at !== null &&
-                item.at === observed.at && item.kind === observed.kind && item.principal_id === observed.principal_id)
-              : [...data.items].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
-                .find(item => item.direction === "out");
+            const latest = [...data.items].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
+              .find(item => item.direction === "out");
             // An exact completed ACK settles only that operation. Hand a newly observed
             // pending/policy-blocked result to the projection lock, including its omission guard.
             // Other display results cannot overwrite the ACK or its original-text recovery.
-            if (latest?.send_state && (!ack || latest.send_state === "queued" || latest.send_state === "blocked")) {
+            if (!ack || latest?.send_state === "queued" || latest?.send_state === "blocked") {
               acknowledged.current = null;
-              setDelivery(latest.send_state);
-              deliveryLock.current = latest.send_state === "queued" || latest.send_state === "blocked";
-              lockedOutbound.current = deliveryLock.current
-                ? { at: latest.at, kind: latest.kind, principal_id: latest.principal_id } : null;
-            } else if (!deliveryLock.current && !ack) {
-              setDelivery(null);
+              // Track every observed obligation, including older rows below a newer sent result.
+              // Absence and another row's completion settle nothing. A null timestamp cannot
+              // identify a matching settlement; conflicting matches also keep the lock closed.
+              const unresolved = lockedOutbounds.current.filter(observed => {
+                const matches = data.items.filter(item => item.direction === "out" && observed.at !== null &&
+                  item.at === observed.at && item.kind === observed.kind && item.principal_id === observed.principal_id);
+                return matches.length === 0 || matches.some(item => item.send_state !== "sent" && item.send_state !== "failed");
+              });
+              for (const item of data.items) {
+                if (item.direction !== "out" || (item.send_state !== "queued" && item.send_state !== "blocked")) continue;
+                const observed = unresolved.find(row => row.at === item.at && row.kind === item.kind && row.principal_id === item.principal_id);
+                if (observed) observed.send_state = item.send_state;
+                else unresolved.push({ at: item.at, kind: item.kind, principal_id: item.principal_id, send_state: item.send_state });
+              }
+              lockedOutbounds.current = unresolved;
+              const pendingProjection = [...unresolved].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))[0];
+              setDelivery(pendingProjection?.send_state ?? latest?.send_state ?? null);
+              deliveryLock.current = unresolved.length > 0;
             }
           }
         }
@@ -370,7 +376,7 @@ export function InboxThread({
       setTemplate("");
       setDelivery(result.send_state);
       deliveryLock.current = result.send_state === "queued" || result.send_state === "blocked";
-      lockedOutbound.current = null;
+      lockedOutbounds.current = [];
       acknowledged.current = deliveryLock.current ? {
         id: typeof result.operation_id === "string" && operationID.test(result.operation_id) ? result.operation_id : null,
         text: typeof submission.body.text === "string" ? submission.body.text : null,
