@@ -154,10 +154,41 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await expect(page.getByLabel("Product name", { exact: true })).toHaveValue("Acceptance draft bag");
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   for (const fact of ["Acceptance draft bag", "1280", "10", "TWD"]) await expect(review).toContainText(fact);
+  const inventoryURL = `**/api/stores/${store}/inventory/adjustments`;
+  const inventoryCommands: Array<{ key: string; body: string }> = [];
+  await page.route(inventoryURL, async route => {
+    expect(route.request().method()).toBe("POST");
+    inventoryCommands.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" });
+    await route.abort("failed"); // MOCK transport loss BEFORE commit; product/SKU creation still uses REAL_PG.
+  });
   const productSaved = page.waitForResponse(r => r.request().method() === "POST" && /\/api\/stores\/[^/]+\/products$/.test(new URL(r.url()).pathname));
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
   expect((await productSaved).ok()).toBe(true);
+  await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
+  expect(inventoryCommands).toHaveLength(1);
+  const originalInventory = inventoryCommands[0];
+  expect(originalInventory.key).toBeTruthy();
+  expect(JSON.parse(originalInventory.body)).toMatchObject({ delta: 10, expected_version: 0, reason: "quickstart_initial_stock" });
+  await page.unroute(inventoryURL);
+  await page.route(inventoryURL, async route => {
+    inventoryCommands.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" });
+    await route.continue();
+  });
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(overview).toBeVisible();
+  expect(inventoryCommands, "Reload must only read; replay requires an explicit Save").toEqual([originalInventory]);
+  await page.getByRole("button", { name: "Start quick setup", exact: true }).click();
+  await page.getByRole("button", { name: "Next: delivery", exact: true }).click();
+  await page.getByRole("button", { name: "Next: product", exact: true }).click();
+  await expect(page.getByLabel("Product name", { exact: true })).toHaveValue("Acceptance draft bag");
+  await expect(page.getByLabel("Price (TWD)", { exact: true })).toHaveValue("1280");
+  await expect(page.getByLabel("Stock (units)", { exact: true }), "Reload must retain the original pending stock, not replace it with the current zero balance").toHaveValue("10");
+  await page.getByRole("button", { name: "Review settings", exact: true }).click();
+  await expect(review).toContainText("Stock (units): 10");
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
+  expect(inventoryCommands, "exactly one explicit replay of the original key and body").toEqual([originalInventory, originalInventory]);
+  await page.unroute(inventoryURL);
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
   await page.reload();
   await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
@@ -167,12 +198,39 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
   await page.getByRole("button", { name: "Start quick setup", exact: true }).click();
   // Skip is an explicit dismissal; it must persist in the existing server marker.
-  const skipped = page.waitForResponse(r => new URL(r.url()).pathname === `/api/stores/${store}/quickstart` && r.request().method() === "POST");
+  // MOCK only the lost response AFTER the real authenticated PG command commits.
+  const quickstartURL = `**/api/stores/${store}/quickstart`;
+  const markerCommands: Array<{ key: string; body: string }> = [];
+  let skippedStatus: number | undefined;
+  await page.route(quickstartURL, async route => {
+    if (route.request().method() !== "POST") return route.continue();
+    markerCommands.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" });
+    const committed = await route.fetch(); // Fault injection: forward the UI command, never initiate a separate API mutation.
+    skippedStatus = committed.status();
+    expect(await committed.json()).toMatchObject({ completed: true });
+    await route.abort("failed");
+  });
   await page.getByRole("button", { name: "Skip", exact: true }).click();
-  expect((await skipped).status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
+  expect(skippedStatus).toBe(200);
+  expect(markerCommands).toHaveLength(1);
+  expect(markerCommands[0].key).toBeTruthy();
+  expect(markerCommands[0].body).toBe("{}");
+  await page.unroute(quickstartURL);
   await page.reload();
   await expect(overview).toBeVisible();
   await expect(page.getByTestId("settings-v2-quickstart-prompt")).toHaveCount(0);
+  // No storage clearing or hidden setup control: ordinary profile edits must
+  // work after the completed marker is read, including across another refresh.
+  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-2222");
+  await page.getByRole("button", { name: "Review settings", exact: true }).click();
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Settings saved", exact: true }), "a committed marker with a lost response must not block later profile saves").toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId("settings-v2-quickstart-prompt")).toHaveCount(0);
+  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await expect(page.getByLabel("Phone (optional)", { exact: true })).toHaveValue("000-000-2222");
   await deliverySwitches(page, store, path);
   await page.setViewportSize({ width: 1586, height: 992 });
 }

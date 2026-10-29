@@ -1,3 +1,92 @@
+# RVFIX #303 — independent review recovery regressions, tests-only RED (2026-10-29)
+
+Current authority: dispatched RVFIX #303 and
+`/Volumes/data/live_commerce_architecture_v1/.worktrees/rv-303/REVIEW-303.md`,
+SHA-256 `8ceea5bd32bc10b1ca428aebd19b63cbc288184d43d048d0ec74c4740399d50b`.
+Review head and starting SHA: `be463ea8ba7468eb8467b8874d7f2673cd804a0b`.
+Freshly fetched and merged `origin/r3/integration` at
+`d0e7331525fec046fbe9361906fa66367ae583c6`: already up to date.
+Assigned worktree/branch only; role: dispatched UI implementer, Codex;
+runtime model/effort not exposed. No recursive delegation.
+
+## RED plan and root causes
+
+- P1 inventory: `load(true)` overwrites the intended stock with a zero server
+  balance while the original adjustment journal survives. Reconstructing the
+  adjustment from that replacement fails the exact-body guard. Extend the real
+  product/SKU creation journey with a MOCK inventory transport abort before
+  commit, real Reload and wizard navigation, retained stock 10, explicit Save
+  and byte/key-identical replay exactly once. Existing product receipt and
+  refresh/review stock assertions remain. No local fixture mutation/storage clear.
+- P1 completion marker: a real Skip POST commits in PG, then a MOCK lost response
+  leaves its journal. The completed marker hides setup without reconciling that
+  command, so ordinary profile writes conflict forever. Forward the clicked UI
+  command with `route.fetch`, assert its original 200/completed receipt, drop only
+  the response, reload, and save/refresh a profile edit using visible controls.
+- P2 profile CAS conflict: report `P2 for issue` in the PR as directed; no scope
+  expansion to implement that finding.
+
+One batched tests-only push covers both P1 findings. Source implementation stays
+unchanged until CI supplies a real failing assertion; serial acceptance can stop
+at the first regression. CI-only gate: the PR's own Gates/Foundation, including
+`--browser-identity` settings-real suite. E0 author analysis only; CI RED and
+current-head E3 GREEN are PENDING. Historical green at the starting SHA does not
+accept these new recovery cases. Run/job receipts will be written to `red.log`
+when available. Integrator workflow-completion relay is the wake-up mechanism;
+no CI polling beyond ten minutes and no local tests/servers.
+
+## UI PROCESS — BOURDIEU
+
+Q1: retain the seller's intended quantity after a failed operation; comprehension
+UNKNOWN pending observation. Q2: recent task experts can explicitly replay from
+existing setup/review controls. Q3: review retains quantity and contact facts.
+Q4: no new seller choice or configuration. Q5: mobile and desktop share the flow.
+Q6: aesthetics separate, UNKNOWN until owner. Task experience defines novice/expert.
+
+## UI PROCESS — PROJECT UNDERSTANDING
+
+Read architecture §§0/1/2/26/27: evidence labels, TS strict, PG truth, isolated
+worktree ownership and independent acceptance. Read merchant-settings-wizard-v1
+AD-03/OC-05: completion is an append-only per-store marker and GET can establish
+completion independently of the lost POST response. STORE-PROFILE-API: uncertain
+commands retain their original key/body and no client tenant authority. Read
+SettingsV2, settings-v2 model, their direct browser harness and catalog parsers.
+Humaux search/rejected/coord/canvas/code-index tools are unavailable in this
+runtime; no shared-memory store, task claim or canvas update is asserted.
+
+## UI PROCESS — MOBBIN → EAGLE
+
+This tests-only recovery card introduces no visual pattern. Existing design
+reference record below is historical, not fresh inspection. No import or query
+is needed for the existing Reload/setup/review controls.
+
+## UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No design/frame/copy changes. Existing design handoff below references the guide;
+`output/ux-audit-ref/FIGMA-GUIDE.md` is absent here, so no fresh direct guide-read
+claim. No Figma write or copy-lint acceptance is claimed.
+
+## Click ledger — authored, execution pending CI
+
+|Page / control|Operation|Expected visible / persistent result|Actual|
+|---|---|---|---|
+|Quick setup / Save|click after stock 10|product/SKU accepted; inventory transport fault shows unavailable|PENDING|
+|Unavailable / Reload|click, then start/next/next|stock remains 10; no automatic inventory write|PENDING|
+|Review / Save|click|original key/body replay once; saved; refresh/review shows stock 10|PENDING|
+|Quick setup / Skip|click, commit real command, lose reply|unavailable; reload hides completed setup prompt|PENDING|
+|Editor / Review / Save|fill phone, click twice|saved and phone remains after refresh, without storage clearing|PENDING|
+
+Scope: `tests/admin/settings-v2.spec.ts`, task evidence/docs and generated browser
+ownership only. No source imports changed; no component harness/dependency-map
+change required. Existing three-locale main-screen assertions remain unchanged.
+Static `node --check` and `git diff --check` exit 0; E1 syntax only. No claim that
+syntax proves runtime acceptance. Rollback: revert this tests-only commit on the
+assigned branch; no existing untracked task artifacts removed or overwritten.
+NOT_RUN: local tests/servers (prohibited), CI RED/GREEN until receipts, independent
+review of fixes, provider SANDBOX/LIVE and production. No own process started.
+
+---
+
 # FIX #303 — relay 5 home-COD Settings entry repair (2026-10-29)
 
 Current authority: dispatched FIX #303, repository code and original GitHub
