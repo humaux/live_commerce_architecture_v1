@@ -180,7 +180,14 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           fresh.marker = await send<Quickstart>("quickstart", "POST", {});
         }
         if (!active.current || scope.current !== await sessionBoundary()) throw new SaveFailure(false, changed, true);
-        setData(fresh); setDraft(draftOf(fresh)); sessionStorage.removeItem(key.current); setScreen("saved");
+        let next = draftOf(fresh);
+        if (sessionStorage.getItem(`${key.current}:initial-stock`)) {
+          // Ordinary settings saves do not submit initial stock. Keep its
+          // quantity-bearing draft paired with the intent at the fresh version.
+          next = { ...next, productName: draft.productName, price: draft.price, stock: draft.stock };
+          sessionStorage.setItem(key.current, JSON.stringify({ version: fresh.profile.version, draft: next }));
+        } else sessionStorage.removeItem(key.current);
+        setData(fresh); setDraft(next); setScreen("saved");
       });
     } catch (error) {
       if (!active.current) return;

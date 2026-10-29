@@ -238,3 +238,33 @@ Tests-only batch: ordinary Edit settings -> Review -> Save -> refresh, no edit a
 Causal RED run/job: PENDING GitHub CI. Expected original defect: refreshed overview absent because ordinary Save deletes the required draft but leaves initial-stock intent.
 GREEN: NOT_RUN; no implementation edits before causal assertion RED.
 Local node --check tests/admin/settings-v2.spec.ts and git diff --check: exit 0 (E1 only).
+
+PR303 RVFIX ordinary-save tests-only RED handoff
+head: 64b26a3a9196fca6788c9008355c05101c9869c0
+WAIT_RUN: 40945100061 (Foundation), job 123698301383 pending
+WAIT_RUN: 40945100133 (Gates), test jobs await allocation; plan job is not acceptance evidence
+Causal assertion RED: PENDING; GREEN: NOT_RUN; author acceptance E0; node syntax/whitespace E1 exit0.
+Single batched tests-only push. No implementation before causal assertion RED.
+Integrator relays completion/failure in a fresh session; queued >3h/cancelled/timeout is an escalation, not acceptance.
+No local test/server or background process. No merge, auto-merge, force-push, commit status or deployment.
+Next: inspect own-head failed job/artifact for ordinary-save refresh assertion, then repair shared save completion to retain intent + required draft through ordinary saves, including current profile version. No new test weakening.
+
+RVFIX303 ordinary-save causal RED confirmed — 2026-10-30
+Tests-only head 64b26a3a9196fca6788c9008355c05101c9869c0.
+Gates 40945100133 / bundle:07 job 123702895883 FAILED; synthetic merge
+3cd9d04290a3fd50d2386a37fb2d5883a96d9a72.
+Fresh artifact gate-browser-identity 12929443731: settings-v2.spec.ts:323,
+"ordinary save (profile edit: false) must retain usable stock recovery after refresh"
+expected visible settings-v2-overview; element absent after ordinary Save + reload.
+Raw witness: ordinary-save-red-playwright.log;
+SHA256 4b53826a840a6b5b5bab2e4684f7c7cd095da9fac54059244d7cee9e7ba92601.
+New assertion causal RED is E3;
+profile-edit branch and subsequent stock assertions were not reached in RED.
+Foundation 40945100061/job 123698301383 succeeded for the tests-only head only.
+Required 123713188224 and receipts 123712959440 propagate bundle:07 failure.
+Root cause: shared successful-save cleanup removes quantity-bearing draft while
+leaving :initial-stock intent. Reload requires both, so cannot recover.
+Implementation attempt 1 will retain product draft fields with fresh profile
+version when initial-stock intent remains; ordinary saves send no stock command.
+No tests/assertions/thresholds/fixtures changed. GREEN/E4 PENDING; local tests
+and servers prohibited. Humaux tools unavailable; parent retains coord ownership.

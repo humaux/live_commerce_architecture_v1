@@ -1184,6 +1184,50 @@ Rollback: revert the relay3 repair commit on the assigned branch.
 Humaux fix stored under `[fix] PR303 relay3 J4 domain journey omitted signed Advanced navigation`.
 # RVFIX #303 — ordinary settings Save retains stock recovery (2026-10-30)
 
+## Relay implementation attempt 1 — causal RED confirmed
+
+Original GitHub authority: tests-only head `64b26a3a9196fca6788c9008355c05101c9869c0`,
+Gates `40945100133`, bundle:07 job `123702895883`, synthetic checkout
+`3cd9d04290a3fd50d2386a37fb2d5883a96d9a72`. Fresh artifact `12929443731`
+(`gate-browser-identity`) fails the NEW assertion at settings-v2.spec.ts:323:
+ordinary save (profile edit: false) must retain usable stock recovery after refresh.
+The overview is absent after successful Save and reload; profile-edit branch is
+not reached. Raw `ordinary-save-red-playwright.log`, SHA256
+`4b53826a840a6b5b5bab2e4684f7c7cd095da9fac54059244d7cee9e7ba92601`.
+This is E3 causal RED, not implementation acceptance. Required `123713188224`
+and receipts `123712959440` merely propagate this failure. Foundation
+`40945100061` / `123698301383` passes the tests-only head only.
+
+Root cause: shared successful-save cleanup deletes the draft needed by the
+retained initial-stock intent. Repair the shared completion path: when that intent
+remains, pair its product name/price/stock with fresh server profile/delivery
+values and the latest profile version, persist it, then expose Saved. With no
+intent, retain existing cleanup. SKU/inventory command dispatch, intent retirement,
+reconciliation, invalid-evidence refusal and scoped session boundaries stay intact.
+Both ordinary-save branches and the existing explicit stock/exact-replay/refresh
+assertions remain unchanged. No new imports/harness allowlists, dependency edges,
+routes or browser specs; no generator or depmap change required.
+
+Authored paths this relay: SettingsV2.tsx and this card's delivery/red evidence.
+No new outside-card paths. Preserve all pre-existing untracked artifacts; downloaded
+CI artifact is retained locally as failed evidence, with only the focused raw
+Playwright log committed. No new product strings, visual decisions or settings.
+The four UI PROCESS sections and existing fact/locale tables apply below.
+
+Dispatched UI implementer; exact runtime model/effort selector unavailable.
+Parent retains coordination ownership; no delegation. Humaux interfaces are not
+available this session: lookup/store/canvas/index/link NOT_RUN, no shared-state
+mutation or claim of completion. Evidence lives in the assigned card directory.
+Rollback: revert the isolated implementation commit. No local test/server/process;
+no merge/auto-merge/status/deploy. Current-head GREEN and independent E4 PENDING.
+Integrator relays workflow completion; stop monitoring within ten minutes and
+record Foundation/Gates run IDs in PR comment and local handoff.
+
+Static checks before implementation push: `node --check tests/admin/settings-v2.spec.ts`
+and `git diff --check` exit 0 (E1 syntax/whitespace only). `tsc` NOT_RUN:
+neither PATH compiler nor local node_modules/.bin/tsc exists. No dependency install.
+Implementation author assessment E0; runtime acceptance awaits PR-head CI.
+
 Authority: current dispatched RVFIX card; final P1 in cxf-rv-303.log at
 reviewed head 06d234d1aa341dd44de66170cac36e25bcf1e63e; current SettingsV2
 save/load paths; merchant-settings-wizard-v1.md Session, drafts and uncertainty;
