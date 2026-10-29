@@ -1,3 +1,51 @@
+# FIX318 relay14 · compact picker accessible name · 2026-10-30
+
+claim_type: fix · project: live_commerce_architecture_v1 · module: catalog UI · date: 2026-10-30
+
+Current author assessment E0; strict TypeScript structure E1; GREEN/E4 PENDING. This section supersedes earlier current-status headings, not their historical evidence. Integrator-dispatched worker on unit/catalog-v2-ui; no recursive delegation. Humaux tools unavailable: search/rejected/coord/store/canvas/code-index NOT_RUN; repository receipts are not shared-memory persistence. Runtime exact model/effort UNKNOWN.
+
+Authority: current human relay/card, AGENTS.md, 架构.md §§0/1/2/26/27, catalog-inventory-v1 §g/Boundary/product-media-v2, and original current-head CI job/artifact. Read integrator ruling output/integrator/tools/cards/cxf-fix10-318.md without writing main. Fetched/merged origin/r3/integration17328372dea91220050e9583259312e2db2e5d97 before edits: already up to date. Rollback41c64ab39c4a3108021e4e3ee164f4d6a0a6e6ae. Existing untracked evidence preserved.
+
+## Root cause and RED
+
+PR318 head41c64ab39c4a3108021e4e3ee164f4d6a0a6e6ae; Gates40939355650, job123680357463, tested merge2625b904116546dddf16d5aa8f02ede991d7edf1. Read the only failing current-head job via raw job-log API because gh run view --log-failed rejects an unfinished workflow; downloaded gate-browser-product-editor artifact12928765094 with gh run download. Its playwright.log reports20passed/1failed/6notrun: CATV2 images zh-CN at catalog-v2-simplified.acceptance.ts290–291 times out locating the exact-name native-picker button. The ARIA snapshot shows visible 选择图片 text but an unnamed button; main, both variant and detail buttons share that structure. No apt/dpkg/mirror failure; no infrastructure rerun.
+
+Static diagnosis: compact picker wraps its button and file input in one implicit label. The first labelable descendant is the button, so the wrapping label associates with the button itself. [WHATWG HTML label rules](https://html.spec.whatwg.org/multipage/forms.html#the-label-element), accessed2026-10-30, prohibit the additional labelable descendant. Removing that unintended association lets the button derive its name from its existing localized text. This is a new independent picker blocker, attempt1/2; the earlier shared-entry/visual/description/ledger failures now pass in current-head CI. No third repair of those blockers is attempted.
+
+Repair: compact mode uses a div container; full mode retains its label. Same CSS class, visible copy, role-specific hidden file inputs, genuine button handler, caps, disabled guards and upload/recovery code. No imports, routes, tests, thresholds, fixtures, exemptions or gate adapters changed. Existing native click/filechooser tests already demonstrate RED on this exact implementation head; no duplicate tests-only push. Original causal tests-only RED remains40872483030/job123445416316 at c36ab5b434f02e103fdd60e802d82ff37b39d8a3 (CATV2:148 zero quick-price expected/three received).
+
+## Click ledger and parity
+
+|Page/control|Real operation|Expected result|Current new-head result|
+|---|---|---|---|
+|Compact images, main and both variant pickers (zh-CN/en)|Existing exact accessible-name click, native filechooser cancel|Each picker opens for its own role, no upload/write|PENDING CI|
+|Compact images, detail picker (zh-CN/en)|Existing last exact-name button click, native filechooser cancel|Detail picker opens; return preserves product; writes0|PENDING CI|
+|Desktop/mobile and review/summary required facts|Existing signed parity table and assertions below|Name, description, status, SKU identity/prices/stock and media counts retained|Unchanged source; PENDING CI|
+
+## BOURDIEU
+
+Q1 task novice needs named picker; Q2 experienced seller uses the same role-specific controls; Q3 currency/stock remain server-owned; Q4 no class/device inference; Q5 visible and accessible names now share the same localized text; Q6 aesthetic judgment UNKNOWN until owner. Existing signed layout retained.
+
+## PROJECT UNDERSTANDING
+
+§§0/1 require CI/MOCK/production distinction and strict TS; §2 bounds merchant products; §§26/27 isolate lane and require independent acceptance. Catalog §g retains CAS/stock rollback; product-media-v2 retains main4/detail20/one image per axis value and publication prerequisites. No business-rule changes.
+
+## MOBBIN → EAGLE
+
+No new design or reference. Existing signed module folder MVS1D5NC7KI5T and candidate structural principles below remain provenance only; no live Eagle/Mobbin read claimed. No additional pattern/import needed for semantic-container repair.
+
+## FIGMA OFFICIAL GUIDANCE
+
+Existing guide items and implementation mapping below remain the design basis; no frame/token/prototype change. No new visible strings: unchanged zh-TW/zh-CN/en copy inventory and parity table below. Figma/copy-lint/density not rerun locally under static-only restriction. Impeccable harden/craft-floor and ponytail read; skill helper execution omitted under that restriction.
+
+## Static evidence and scope
+
+Strict admin/i18n tsc --noEmit -p output/catalog-v2-impl/tsconfig.static.json exit0. Compiler/dependencies read from main; temporary dependency links only in this worktree, removed after execution. Initial compiler-path lookup failed before compiler launch, corrected to root node_modules/.bin/tsc; no install. git diff --check exit0. Source SHA256 ProductMediaManager.tsx=15b83db3a8d46e3bbd8e67bd01c5a9671c8558fbbe59d758718a0632e4c14b28. No component import change; harness discovery found no new allowlist requirement. No browser spec/page/route added/renamed/deleted, so no ownership regeneration; no Go graph change, so no depmap regeneration.
+
+Authored paths: apps/admin/components/ProductMediaManager.tsx and output/catalog-v2-impl evidence only, all in original PLAN write paths. Earlier additional-path changes remain listed in PR body for integrator review. No server/test/browser/PG/container/process started. Preserve downloaded failure evidence. New Gates/Foundation run IDs will be registered in PR comment and relay14-handoff.md after push, with no evidence-only commit. Integrator owns completion relay. NOT_RUN: local tests/server/browser/PG, remaining current-head serial tests, new-head runtime verification, independent E4, provider SANDBOX/LIVE, production/deploy, Humaux persistence. No merge-to-integration/auto-merge/force-push/status posting.
+
+---
+
 # FIX318 shared-cause repair · 2026-10-30 · current status
 
 claim_type: fix · project: live_commerce_architecture_v1 · module: catalog UI · date: 2026-10-30

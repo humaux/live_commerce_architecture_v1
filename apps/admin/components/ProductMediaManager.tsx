@@ -507,7 +507,9 @@ export function ProductMediaManager({
   const picker = (role: MediaRole, value?: string) => {
     const inputID = `${id}-picker-${role}-${value ?? ''}`;
     const label = compact ? (role === 'sku' ? catalogText(task.chooseVariant, { value: value ?? '' }) : task.choose) : role === 'sku' ? c.addOption : c.add;
-    return <label className="pm-upload">
+    // A label would associate with the compact button, obscuring its own text name.
+    const PickerContainer = compact ? 'div' : 'label';
+    return <PickerContainer className="pm-upload">
       {compact ? <button type="button" disabled={locked || group(role).length >= mediaCaps[role]}
         onClick={() => document.getElementById(inputID)?.click()}>{label}</button> : <span>{label}</span>}
       <input id={inputID} hidden={compact} type="file"
@@ -515,7 +517,7 @@ export function ProductMediaManager({
         data-testid={role === 'main' ? 'photo-input' : `photo-input-${role}`}
         accept={PHOTO_ACCEPT} multiple={role !== 'sku'} disabled={locked || group(role).length >= mediaCaps[role]}
         onChange={e => { void upload(e.target.files, role, value); e.target.value = ''; }} />
-    </label>;
+    </PickerContainer>;
   };
   const section = (role: "main" | "detail") => (
     <section aria-labelledby={`${id}-${role}`}>
