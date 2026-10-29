@@ -12,3 +12,21 @@ Expected assertion RED: TestOrderAttemptNotificationDispatchSinglePermit (call r
 New document gate: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal — branch before eligibility, READY-only refusal, preserved evidence, three post-UNKNOWN witness requirements.
 CI run/job/head/checkout receipts: PENDING; append after push. No current-head GREEN.
 REAL_PG/ACL/lock barriers/DB mutations/scheduler/provider wiring/SANDBOX/LIVE: NOT_RUN.
+
+Native receipts read after the g10 job finished (GitHub CLI API):
+Head: 873af502837246f5617c46a9a008646232f6cbe6
+Foundation run: 40858545449; job: 123395597238; conclusion SUCCESS. This suite
+  (vet + REAL_PG subset) does not execute the OA-2 model tests, so it is not RED.
+Gates run: 40858545479; g10 job: 123400292908; conclusion FAILURE (09:58Z→11:19Z).
+g10 failed exactly the intended assertions, no compile break:
+  DispatchSinglePermit line 88 (Calls:0), UnknownNeverSecondSend line 120,
+  StaleGenerationFence line 138 (<nil>), RetryRefusal line 164 (blocked=false),
+  CancelBeforeC3ZeroCalls line 196 (State:READY), LeaseSweep line 218 (Expired:[]),
+  ReminderKeys line 238, OutcomeClassification line 278 (ACCEPTED),
+  LeaseExpiryOnlyUnknown line 319 (query sent).
+Document gate review_test.go:33/44/52 failed branch order, six clauses and all
+  three post-UNKNOWN witnesses.
+Both run headSha fields equal the pushed head 873af5028.
+RED observed; fix pushed separately (restore aace3b5a5 + SQL handoff). GREEN:
+  recorded in PR #305 after the implementation push.
+REAL_PG/ACL/lock barriers/DB mutations/scheduler/provider wiring/SANDBOX/LIVE: NOT_RUN.

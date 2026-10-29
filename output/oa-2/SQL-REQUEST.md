@@ -72,23 +72,42 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 --    AND o.request->>'policy'='order-attempt-notification/v1'. Missing -> PT404.
 -- b. take hashtextextended('checkout.order|tenant|store|order',0) ExclusiveLock
 --    (same key the C2 Begin/pay-entry path already uses).
--- c. re-read outbox FOR UPDATE; verify order/conversation/binding unchanged.
+-- c. re-read discovery without row locks; verify order/conversation/binding unchanged.
 -- d. lock inbox.conversation_state FOR UPDATE (if conversation_id is not null).
--- e. lock integration.bindings FOR SHARE; verify enabled and semantic_version =
---    o.binding_version and asset/provider identical.
--- f. revalidate under those locks: checkout.order_payment_payable(order,link_version),
+-- e. lock integration.bindings FOR SHARE, then outbox FOR UPDATE, then operation
+--    FOR UPDATE; re-read the pair and verify immutable identity still matches discovery.
+--    Do not apply current binding/send eligibility before the locked-state branch.
+-- f. branch on the locked paired state BEFORE fresh-send eligibility:
+--    READY/READY AND dispatch_authorized_at IS NULL -> mode=dispatch, continue to g.
+--    DISPATCHING/DISPATCHING returns busy (no new permit, no second call).
+--    DELIVERY_UNKNOWN/(UNKNOWN|ACKNOWLEDGED) -> mode=reconcile; never enter steps g/h;
+--      preserve dispatch_authorized_at, link_version and provider evidence;
+--      if the binding is stale, return blocked_binding without mutating the pair.
+--      Otherwise PERFORM claim_operation(p_operation,p_lease_seconds,p_token).
+--      Only when it returns claimed in reconcile mode, atomically persist its
+--      generation as outbox.worker_generation; keep DELIVERY_UNKNOWN and all evidence.
+--      Return its disposition/generation/mode (busy/backoff/budget refusal is not a permit).
+--    ACCEPTED/SUCCEEDED or a contract-valid VOID pair -> terminal; return unchanged.
+--    Any inconsistent pair -> fail closed without HTTP; quarantine for fenced repair.
+--    A consumed permit (dispatch_authorized_at IS NOT NULL) never qualifies for a fresh send.
+--    A stale binding after C3 returns blocked_binding without changing either state.
+-- g. fresh-send eligibility revalidation under the same locks, dispatch mode only:
+--    binding enabled, semantic_version=o.binding_version and asset/provider identical;
+--    checkout.order_payment_payable(order,link_version),
 --    active tenant/store/owner, pay entry version unrevoked/unexpired, current
 --    takeover/window/consent through inbox.check_send(p_operation)='OK', and no
 --    same-order meta.dm_send operation created in the last 30 seconds.
--- g. on refusal: operation generation+1 state=CANCELLED (or BLOCKED_POLICY when
---    check_send names consent/policy), outbox VOID/before_c3/void_code, insert
---    operation_events, return disposition='void'. Zero HTTP.
--- h. otherwise PERFORM claim_operation(p_operation,p_lease_seconds,p_token).
--- i. when disposition='claimed': outbox state=DISPATCHING (mode=dispatch) or keeps
---    DELIVERY_UNKNOWN (mode=reconcile); worker_generation=claimed generation;
+-- h. on refusal (READY/READY AND dispatch_authorized_at IS NULL only): operation
+--    generation+1 state=CANCELLED (or BLOCKED_POLICY when check_send names
+--    consent/policy), outbox VOID/before_c3/void_code, insert operation_events,
+--    return disposition='void'. Zero HTTP. Never refuse a consumed permit here.
+-- i. otherwise PERFORM claim_operation(p_operation,p_lease_seconds,p_token).
+-- j. when disposition='claimed' and mode=dispatch: outbox state=DISPATCHING;
+--    worker_generation=claimed generation;
 --    dispatch_authorized_at=coalesce(dispatch_authorized_at,clock_timestamp()).
+--    In mode=reconcile keep DELIVERY_UNKNOWN and the existing dispatch_authorized_at.
 --    Never clear dispatch_authorized_at and never touch a terminal row.
--- j. return the JSON shape above plus notification fields.
+-- k. return the JSON shape above plus notification fields.
 END $$;
 
 -- 2. C4: generation+token fence, paired outcome in one commit.
@@ -220,6 +239,19 @@ END $$;
   keys derive from `(batch_intent_id,order_id)`.
 - No-op hooks, dispatcher-side sleeps, widened timeouts, new retries or a second
   job kind are not acceptable substitutes.
+
+## Counterexample acceptance witnesses (§6g/l)
+
+The SQL implementation must pin these three consumed-permit refinements; each is a
+paired outbox/operation row read back raw, not a model fake.
+
+| Event | Setup | Required paired result |
+| --- | --- | --- |
+| cancel-after-UNKNOWN | C3 won, provider outcome unknown, operator cancels | outbox keeps DELIVERY_UNKNOWN until authoritative no-effect proof; VOID only with `void_stage='after_c3'`; operation evidence and `dispatch_authorized_at` preserved; no second send |
+| rotation-after-UNKNOWN | UNKNOWN row exists, merchant CAS-rotates | old version revoked, old row keeps UNKNOWN and provider evidence; only a new explicit reminder intent can create a new send |
+| policy-loss-after-UNKNOWN | consent/window lost after C3 | state stays UNKNOWN; no before-C3 VOID and no resend |
+
+These are REAL_PG/ACL cases and remain NOT_RUN until the migration exists.
 
 ## Pins to increment with the assigned number
 
