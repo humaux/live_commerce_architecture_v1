@@ -1,0 +1,43 @@
+OA-2 FIX / PR #305 / 2026-10-29
+Tests-only head: 48546ecd6fc3a89ca5cefe814b2c328a0916f3fc
+Foundation: run 40844363540 / job 123348127167 / failure
+Gates: run 40844363876 / job 123348409574 (unit) / failure
+Gates: run 40844363876 / job 123348409839 (g01) / failure
+Command: gh run view <run> --log-failed --job <job>
+Failure: tests/foundation/order_attempt_notification_dispatch_test.go:19:24:
+undefined: metareply.OrderPaymentClaim (and other command DTOs).
+Root cause: implementation file was untracked and absent from the tests-only head.
+Filtered original receipts: red-foundation.log, red-unit.log, red-g01.log.
+Evidence: API-absence RED only. Own behavioral assertions were NOT_REACHED.
+No behavioral RED or REAL_PG/mutation acceptance is claimed.
+Concurrent writer committed and pushed implementation head 5edaaa082d02dd7e4c7efe3c5611a81b6ed507bc.
+WAIT_RUN: 40849140547 (Gates, queued); 40849140762 (Foundation, in_progress).
+Foundation pending job: 123363948641. GREEN PENDING; no evidence-only push.
+
+2026-10-29 RVFIX305 latest review at 1a47719e4 — new tests-only batch
+HEAD 76497fd0ee3ccf57bd49585892b651c4f6e1ed2b
+WAIT_RUN Gates 40895129665; native head_sha matches; test job pending allocation (plan not evidence).
+WAIT_RUN Foundation 40895129674 / foundation job 123522034094; native head_sha matches; in progress.
+RED PENDING: no assertion failure read yet. GREEN NOT_RUN. Tests-only current-operation exclusion, complete VOID CHECK and mapping, immediate/distinct/consent/no-effect paired persistence witnesses. No local tests/servers. Integrator relay resumes on completion/failure/cancel/>3h timeout.
+
+RELAY RVFIX305: both independent-review P1 assertion RED confirmed.
+Head: 76497fd0ee3ccf57bd49585892b651c4f6e1ed2b (tests-only batch).
+Base: d0e7331525fec046fbe9361906fa66367ae583c6.
+Tested merge/receipt: 08bf99f4182dafcb94d94104fcdfae693d303eb7.
+Gates run 40895129665, attempt 1, gate (shard:g10) job 123524293876:
+failure / exit 1; started 2026-10-29T14:52:05Z, completed 2026-10-29T15:08:59Z.
+New subtests reached and failed their own assertions:
+- recent-operation-excludes-current-scoped-pair: six scope/self-exclusion clauses absent.
+- void-schema-covers-fixed-dispositions: restrictive CHECK not replaced/inventory absent.
+- void-code-mapping-is-explicit: four fixed paired mappings absent.
+- immediate-and-distinct-refusal-witnesses: immediate READY, distinct operation,
+  consent CHECK commit and authoritative-no-effect CHECK commit witnesses absent.
+Existing UNKNOWN branch, OA policy authority and four policy witnesses passed.
+Foundation 40895129674 / 123522034094 passed on RED head; not this assertion suite.
+Native filtered evidence: output/oa-2/rvfix305/review-red-job.log.
+Source: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/123524293876/logs.
+gh run view --log-failed could not yet return logs while the run awaited receipts;
+native completed-job endpoint provided the evidence, independently of overall run status.
+E3 applies only to this document assertion RED. SQL runtime/REAL_PG remains NOT_RUN.
+Both P1 handoff corrections implemented together after RED; existing tests unchanged.
+Current implementation GREEN PENDING. Integrator relay owns continuation.

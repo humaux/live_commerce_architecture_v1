@@ -23,6 +23,7 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -39,12 +40,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"livecommerce/internal/buyer"
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
 	"livecommerce/internal/oidclogin"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/storefront"
 )
 
 type brfStack struct {
@@ -280,6 +283,60 @@ func brfShots(t *testing.T, evidence string, min int) {
 	}
 }
 
+// mfxBuyerEnteredCVSOrder adds a paid PICKUP order whose store identity comes from the owner-approved
+// #262/#298 directory snapshot: fulfillment.record_buyer_cvs_store resolves the exact code (never the
+// buyer's typed text), the destination freezes that BUYER_ENTERED pickup, and the order is paid through
+// the real capture path. Kept in this browser harness so the planner narrows to the refund-fulfilment mode
+// instead of treating an otherwise-unowned foundation helper as an unknown input.
+func (e *rfxEnv) mfxBuyerEnteredCVSOrder(t *testing.T, base rfxOrder, storeCode string, converted *bool) rfxOrder {
+	t.Helper()
+	e.ensureStock(t, base)
+	s := base.s
+	q := s.p
+	q.bcHarness.prepare(t, mustIssue(t, q.cqHarness.service, q.f.storeA1), []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 2}})
+	in := q.delivery
+	if !*converted {
+		in.ExpectedVersion = 1
+		in.DeliveryKind = "cvs_familymart"
+		if _, err := dsSet(q.cqHarness, t04Key("mfx-cvs-entered-service"), in); err != nil {
+			t.Fatalf("switch the delivery service to a pickup kind: %v", err)
+		}
+		*converted = true
+	}
+	// The buyer capability is the only holder of the BUYER_ENTERED pickup namespace; the merchant later
+	// selects the frozen snapshot by pickup_id, exactly as the storefront does.
+	tokenHash := sha256.Sum256([]byte(q.cap.Token))
+	var raw []byte
+	err := buyer.WithScope(context.Background(), q.pool, q.cap.Token, q.f.storeA1, func(ctx context.Context, tx pgx.Tx, _ buyer.Scope) error {
+		return tx.QueryRow(ctx, `SELECT fulfillment.record_buyer_cvs_store($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10)`,
+			tokenHash[:], q.f.storeA1, t04Key("mfx-cvs-entered"), randomBytes(32), q.bcHarness.input.CartVersion, q.market.ID,
+			in.Code, storeCode, "", "").Scan(&raw)
+	})
+	if err != nil {
+		t.Fatalf("record the buyer-entered snapshot store: %v", err)
+	}
+	var pickup struct {
+		PickupID string `json:"pickup_id"`
+	}
+	if json.Unmarshal(raw, &pickup) != nil || pickup.PickupID == "" {
+		t.Fatalf("buyer-entered pickup response: %s", raw)
+	}
+	dest, err := bdSet(q.cqHarness, t04Key("mfx-cvs-entered-select"), storefront.DestinationInput{ExpectedVersion: q.destination.Version, CartVersion: q.bcHarness.input.CartVersion, Kind: "cvs_familymart", Country: "TW", RecipientName: "Synthetic Recipient", Phone: "+886900000002", PickupID: pickup.PickupID})
+	if err != nil {
+		t.Fatalf("select the buyer-entered pickup: %v", err)
+	}
+	q.destination = dest
+	q.bcHarness.input.DestinationID = dest.ID
+	q.bcHarness.input.ServiceVersion = 2
+	hold, err := q.bcHarness.begin(t04Key("mfx-cvs-entered-hold"))
+	if err != nil {
+		t.Fatalf("begin the buyer-entered CVS hold: %v", err)
+	}
+	q.hold = hold
+	s.p = q
+	return e.pay(t, s, base.endpoint, base.secret)
+}
+
 func TestBrowserManualFulfilment(t *testing.T) {
 	brfRequire(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
@@ -290,6 +347,10 @@ func TestBrowserManualFulfilment(t *testing.T) {
 	reship := e.payMore(t, ship)
 	e.ensureStock(t, ship)
 	drafts := sstMoreHold(t, ship.s.p) // a DRAFT order: never eligible, must be absent from the export
+	// CVS half: a buyer-entered pickup resolved from the #262/#298 directory snapshot, paid by card. This is
+	// the card's headline case (the merchant must ship it by hand because ECPay cannot create the label).
+	converted := false
+	cvs := e.mfxBuyerEnteredCVSOrder(t, ship, "011344", &converted)
 	restricted, _ := e.member(t, ship, "orders:read")
 	// Copied orders share this family; retain the buyer pools for the later buyer half.
 	harnessReleaseSetupPools(t,
@@ -300,7 +361,10 @@ func TestBrowserManualFulfilment(t *testing.T) {
 	evidence := brfEvidence(t, root, "manual-fulfilment")
 	stack := brfStartAdmin(t, ctx, e, ship.s.p.f.principalA, evidence)
 	env := map[string]string{"LC_BROWSER_STORE": ship.store(), "LC_BROWSER_SHIP_ORDER": ship.order, "LC_BROWSER_RESHIP_ORDER": reship.order, "LC_BROWSER_DRAFT_ORDER": drafts.hold.OrderID,
-		"LC_BROWSER_RESTRICTED_TOKEN": restricted, "LC_BROWSER_TRACKING": "0012345678"}
+		"LC_BROWSER_RESTRICTED_TOKEN": restricted, "LC_BROWSER_TRACKING": "0012345678",
+		"LC_BROWSER_CVS_ORDER": cvs.order, "LC_BROWSER_CVS_PICKUP_NAME": "六甲民生附店", "LC_BROWSER_CVS_PICKUP_CODE": "011344"}
+	// ops.audit_events has no order id (0001_foundation.sql:54-64), so count the store's recorded actions before and after.
+	auditBefore := e.mfxAudit(t, cvs, "fulfillment.shipment_recorded")
 	brfPlaywright(t, ctx, stack, []string{"manual-fulfilment.spec.ts"}, env)
 	// PG facts after the admin half: the UI drove real commands (record v1, correct v2, void v3, re-record v4 of `ship`).
 	if n := e.mfxVersions(t, ship); n != 4 {
@@ -319,9 +383,29 @@ func TestBrowserManualFulfilment(t *testing.T) {
 	if err := e.f.owner.QueryRow(ctx, `SELECT fulfillment_state FROM checkout.orders WHERE id=$1`, drafts.hold.OrderID).Scan(&draftState); err != nil || draftState == "MERCHANT_SHIPPED" {
 		t.Fatalf("MF07: the DRAFT order is %s (err %v): drafts are never shippable", draftState, err)
 	}
+	// CVS PG facts after the admin half: one keyed command, one version, one recorded action, no provider effect.
+	// The store-scoped audit delta is 3: the home half records twice (v1 and the v4 re-record) and the CVS half once.
+	if n := e.mfxVersions(t, cvs); n != 1 {
+		t.Fatalf("MF07 CVS: order %s has %d shipment versions, want 1; evidence=%s", cvs.order, n, evidence)
+	}
+	if got := e.mfxFulfilmentState(t, cvs); got != "MERCHANT_SHIPPED" {
+		t.Fatalf("MF07 CVS: final fulfilment state %s", got)
+	}
+	if n := e.mfxAudit(t, cvs, "fulfillment.shipment_recorded") - auditBefore; n != 3 {
+		t.Fatalf("MF07 CVS: %d shipment_recorded audit rows during the admin half, want 3 (home record + re-record + CVS)", n)
+	}
 	// Buyer half: the shipped order's buyer sees carrier, tracking and the link host, never "delivered".
 	brfBuyerNode(t, ctx, e, ship, "tests/storefront/shipment-buyer.mjs", evidence, map[string]string{"LC_RF_TRACKING": "0012345678", "LC_RF_CARRIER": "7-ELEVEN", "LC_RF_URL_HOST": "track.example.com"})
 	brfShots(t, evidence, 12)
+	// CVS buyer half: the same page keeps showing the frozen snapshot pickup store next to the tracking.
+	cvsEvidence := filepath.Join(evidence, "cvs")
+	if err := os.MkdirAll(cvsEvidence, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	brfBuyerNode(t, ctx, e, cvs, "tests/storefront/shipment-buyer.mjs", cvsEvidence, map[string]string{
+		"LC_RF_TRACKING": "0012345679", "LC_RF_CARRIER": "7-ELEVEN", "LC_RF_URL_HOST": "track.example.com",
+		"LC_RF_PICKUP_NAME": "六甲民生附店", "LC_RF_PICKUP_CODE": "011344"})
+	brfShots(t, cvsEvidence, 6)
 	t.Logf("MF07 BROWSER (MOCK Stripe capture): admin + buyer halves passed; screenshots hashed; evidence=%s", evidence)
 }
 

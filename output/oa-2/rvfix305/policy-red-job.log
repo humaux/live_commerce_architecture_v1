@@ -1,0 +1,38 @@
+Source: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/123470232597/logs
+Filtered native job log; full job retained by GitHub.
+2026-10-29T13:24:53.6369645Z HEAD is now at e720aee0 Merge 4a84a5dfe82231fff4b511672a340ab25ddad655 into d0e7331525fec046fbe9361906fa66367ae583c6
+2026-10-29T13:34:19.3116883Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal
+2026-10-29T13:34:19.3117798Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/cancel-after-UNKNOWN
+2026-10-29T13:34:19.3119856Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/rotation-after-UNKNOWN
+2026-10-29T13:34:19.3121181Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/policy-loss-after-UNKNOWN
+2026-10-29T13:34:19.3121988Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-authority
+2026-10-29T13:34:19.3123313Z     order_attempt_notification_review_test.go:68: OA policy authority handoff must specify "CREATE FUNCTION inbox.payment_dm_check_send(p_operation uuid)"
+2026-10-29T13:34:19.3125074Z     order_attempt_notification_review_test.go:68: OA policy authority handoff must specify "ALTER FUNCTION inbox.payment_dm_check_send(uuid) OWNER TO commerce_integration_writer;"
+2026-10-29T13:34:19.3126591Z     order_attempt_notification_review_test.go:68: OA policy authority handoff must specify "REVOKE ALL ON FUNCTION inbox.payment_dm_check_send(uuid) FROM PUBLIC;"
+2026-10-29T13:34:19.3128085Z     order_attempt_notification_review_test.go:68: OA policy authority handoff must specify "GRANT EXECUTE ON FUNCTION inbox.payment_dm_check_send(uuid) TO commerce_order_attempt_owner;"
+2026-10-29T13:34:19.3129413Z     order_attempt_notification_review_test.go:68: OA policy authority handoff must specify "inbox.check_send remains unchanged"
+2026-10-29T13:34:19.3130723Z     order_attempt_notification_review_test.go:68: OA policy authority handoff must specify "never rewrite a stored request policy"
+2026-10-29T13:34:19.3132445Z     order_attempt_notification_review_test.go:72: eligible OA READY must use an OA-aware policy validator before receiving a dispatch permit
+2026-10-29T13:34:19.3133766Z     order_attempt_notification_review_test.go:75: legacy check_send rejects order-attempt-notification/v1; C3 cannot use it as OA eligibility authority
+2026-10-29T13:34:19.3134816Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses
+2026-10-29T13:34:19.3135794Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/eligible-OA-READY
+2026-10-29T13:34:19.3137084Z     order_attempt_notification_review_test.go:93: REAL_PG acceptance handoff needs a separate eligible-OA-READY witness requiring "DISPATCHING/DISPATCHING; exactly one dispatch permit"
+2026-10-29T13:34:19.3141141Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/consent-refused-before-C3
+2026-10-29T13:34:19.3142408Z     order_attempt_notification_review_test.go:93: REAL_PG acceptance handoff needs a separate consent-refused-before-C3 witness requiring "VOID/BLOCKED_POLICY; zero provider calls"
+2026-10-29T13:34:19.3143721Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/window-closed-before-C3
+2026-10-29T13:34:19.3145148Z     order_attempt_notification_review_test.go:93: REAL_PG acceptance handoff needs a separate window-closed-before-C3 witness requiring "VOID/BLOCKED_POLICY; zero provider calls"
+2026-10-29T13:34:19.3197856Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/takeover-changed-before-C3
+2026-10-29T13:34:19.3200003Z     order_attempt_notification_review_test.go:93: REAL_PG acceptance handoff needs a separate takeover-changed-before-C3 witness requiring "VOID/BLOCKED_POLICY; zero provider calls"
+2026-10-29T13:34:19.3202218Z --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal (0.01s)
+2026-10-29T13:34:19.3203354Z     --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/cancel-after-UNKNOWN (0.00s)
+2026-10-29T13:34:19.3204763Z     --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/rotation-after-UNKNOWN (0.00s)
+2026-10-29T13:34:19.3206225Z     --- PASS: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/policy-loss-after-UNKNOWN (0.00s)
+2026-10-29T13:34:19.3207545Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-authority (0.00s)
+2026-10-29T13:34:19.3208988Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses (0.01s)
+2026-10-29T13:34:19.3210772Z         --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/eligible-OA-READY (0.00s)
+2026-10-29T13:34:19.3212777Z         --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/consent-refused-before-C3 (0.00s)
+2026-10-29T13:34:19.3214368Z         --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/window-closed-before-C3 (0.00s)
+2026-10-29T13:34:19.3215983Z         --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/oa-policy-witnesses/takeover-changed-before-C3 (0.00s)
+2026-10-29T13:39:07.2569625Z ##[error]Process completed with exit code 1.
+2026-10-29T13:39:07.2982395Z matrix-receipts: {"mode":"shard:g10","run_id":"40879903464","run_attempt":"1","sha":"e720aee049612c36894c7a1636ee6cdda1c32e1e","status":"FAIL","test_count":237,"spec_count":0}
+2026-10-29T13:39:08.6327673Z --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal (0.01s)

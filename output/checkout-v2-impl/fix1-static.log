@@ -1,0 +1,8 @@
+node --check tests/storefront/promotions-gate.mjs
+exit=0
+
+/Volumes/data/live_commerce_architecture_v1/node_modules/.bin/tsc --noEmit --incremental false -p apps/storefront/tsconfig.json
+exit=0
+
+git diff --check
+exit=0

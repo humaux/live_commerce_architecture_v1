@@ -1,0 +1,6 @@
+RELAY2 static receipts, 2026-10-29; no local tests/server/runtime
+node --check tests/storefront/cvs-buyer.mjs: exit0
+git diff --check: exit0 before delivery edit; final check recorded in session
+node scripts/dev/derive-browser-ownership.mjs: exit0; 53modes
+31d0263904b9dbe1fe664a35fe961210df4c73cf8604742d7f048f26241c03be  tests/storefront/cvs-buyer.mjs
+8bc7f578207419f64f0939f7005b4b9818202606fd238328cd0b966893224464  output/ci-select-backend-browser/browser-ownership.json
