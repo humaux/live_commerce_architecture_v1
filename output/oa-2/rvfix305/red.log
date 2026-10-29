@@ -1,0 +1,140 @@
+RVFIX305 — native CI assertion RED pending
+LATEST REVIEW ROUND — OA policy authority RED pending (2026-10-29)
+Reviewed head: 2768fb91776212d17906f29d969ecdfe70a89bad.
+Integration merged first: d0e7331525fec046fbe9361906fa66367ae583c6.
+Tests-only regression extends the existing C3 document gate, preserving every
+earlier assertion. Expected failures: missing OA-aware eligibility definer,
+its exact owner/EXECUTE inventory, C3 calling legacy check_send, and missing
+separate eligible-OA-READY/consent/window/takeover REAL_PG witness rows.
+The SQL handoff is deliberately unchanged until assertion-level native CI RED.
+Static: gofmt -w changed Go test; go vet ./tests/foundation; git diff --check:
+all exit 0. No local tests, servers, provider calls or migration edits.
+Native run/job/head/checkout receipts: PENDING; append after the RED push.
+Native first readback (gh run view, 2026-10-29T13:13Z):
+RED head: 4a84a5dfe82231fff4b511672a340ab25ddad655.
+Foundation run40879903437/job123468328227 in_progress.
+Gates run40879903464 in_progress; no native test jobs allocated yet.
+Both native run headSha fields match RED head. Assertion RED/GREEN PENDING.
+Synthetic checkout SHA PENDING until logs are available. No plan-job evidence used.
+WAIT_RUN: 40879903437; 40879903464. Integrator relay is the wake-up mechanism.
+After intended policy assertions fail, fix the SQL handoff and false P2 claim,
+regenerate ownership last, and push implementation once; no evidence-only push.
+Earlier runs below prove only their historical heads, not this policy regression.
+The P2 reminder nullable-key request remains open; the prior fixed claim is false.
+REAL_PG, actual ACLs/lock barriers, DB mutations, composition, providers,
+SANDBOX/LIVE and production: NOT_RUN. Own assessment E0; static E1 only.
+
+PR: 305; branch: unit/oa-2; target: r3/integration
+Base: a57cdb1a76a5ccfc72defc9a8b751bc29ea1f786
+Integration: f8fd8900577815a328643ed878d88a6a247d2ab2
+Merge/restore source: aace3b5a50a660be6f6f1f337214aacadce84aea
+Static: gofmt -w internal/integrations/metareply/order_attempt.go tests/foundation/order_attempt_notification_review_test.go — exit 0
+Static: go vet ./internal/integrations/metareply ./tests/foundation — exit 0
+No local tests, servers or provider calls.
+Historical API-absence RED 40844363540/job123348127167 was a compile failure, NOT behavioral RED.
+Current push intentionally mutates the model command surface; do not merge it.
+Expected assertion RED: TestOrderAttemptNotificationDispatchSinglePermit (call receipt), UnknownNeverSecondSend (call receipt/outcome), StaleGenerationFence (swallowed fence), RetryRefusal (generic retry allowed), CancelBeforeC3ZeroCalls (terminal projection lost), LeaseSweep (receipt omitted), ReminderKeys (order identity omitted), OutcomeClassification (ACK becomes accepted), LeaseExpiryOnlyUnknown (query replaced by send).
+New document gate: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal — branch before eligibility, READY-only refusal, preserved evidence, three post-UNKNOWN witness requirements.
+CI run/job/head/checkout receipts: PENDING; append after push. No current-head GREEN.
+REAL_PG/ACL/lock barriers/DB mutations/scheduler/provider wiring/SANDBOX/LIVE: NOT_RUN.
+
+Native receipts read after the g10 job finished (GitHub CLI API):
+Head: 873af502837246f5617c46a9a008646232f6cbe6
+Foundation run: 40858545449; job: 123395597238; conclusion SUCCESS. This suite
+  (vet + REAL_PG subset) does not execute the OA-2 model tests, so it is not RED.
+Gates run: 40858545479; g10 job: 123400292908; conclusion FAILURE (09:58Z→11:19Z).
+g10 failed exactly the intended assertions, no compile break:
+  DispatchSinglePermit line 88 (Calls:0), UnknownNeverSecondSend line 120,
+  StaleGenerationFence line 138 (<nil>), RetryRefusal line 164 (blocked=false),
+  CancelBeforeC3ZeroCalls line 196 (State:READY), LeaseSweep line 218 (Expired:[]),
+  ReminderKeys line 238, OutcomeClassification line 278 (ACCEPTED),
+  LeaseExpiryOnlyUnknown line 319 (query sent).
+Document gate review_test.go:33/44/52 failed branch order, six clauses and all
+  three post-UNKNOWN witnesses.
+Both run headSha fields equal the pushed head 873af5028.
+RED observed; fix pushed separately (restore aace3b5a5 + SQL handoff). GREEN:
+  recorded in PR #305 after the implementation push.
+REAL_PG/ACL/lock barriers/DB mutations/scheduler/provider wiring/SANDBOX/LIVE: NOT_RUN.
+995:gate (shard:g10)	Gate	2026-10-29T11:09:46.2310775Z     order_attempt_notification_dispatch_test.go:88: one permit must make exactly one accepted call: calls=1 out={Disposition:claimed Outcome:{State:ACCEPTED Code:provider_accepted ProviderReference:m_mock} Notification:{NotificationID: State:ACCEPTED OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage: VoidCode: ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0}
+996:gate (shard:g10)	Gate	2026-10-29T11:09:46.2313802Z --- FAIL: TestOrderAttemptNotificationDispatchSinglePermit (0.00s)
+997-gate (shard:g10)	Gate	2026-10-29T11:09:46.2314963Z === RUN   TestOrderAttemptNotificationUnknownNeverSecondSend
+998:gate (shard:g10)	Gate	2026-10-29T11:09:46.2318508Z     order_attempt_notification_dispatch_test.go:120: ambiguous call must be made once: calls=1 out={Disposition:claimed Outcome:{State:ACCEPTED Code:callback_failed ProviderReference:} Notification:{NotificationID: State:DELIVERY_UNKNOWN OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage: VoidCode: ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0}
+999:gate (shard:g10)	Gate	2026-10-29T11:09:46.2321898Z --- FAIL: TestOrderAttemptNotificationUnknownNeverSecondSend (0.00s)
+1000-gate (shard:g10)	Gate	2026-10-29T11:09:46.2323407Z === RUN   TestOrderAttemptNotificationStaleGenerationFence
+1001:gate (shard:g10)	Gate	2026-10-29T11:09:46.2325297Z     order_attempt_notification_dispatch_test.go:138: stale completion must be refused: <nil>
+1002:gate (shard:g10)	Gate	2026-10-29T11:09:46.2327886Z --- FAIL: TestOrderAttemptNotificationStaleGenerationFence (0.00s)
+1003-gate (shard:g10)	Gate	2026-10-29T11:09:46.2329300Z === RUN   TestOrderAttemptNotificationRetryRefusal
+1004:gate (shard:g10)	Gate	2026-10-29T11:09:46.2332866Z     order_attempt_notification_dispatch_test.go:164: M4: READY must refuse generic retry: blocked=false state="READY" err=<nil>
+1005:gate (shard:g10)	Gate	2026-10-29T11:09:46.2336552Z --- FAIL: TestOrderAttemptNotificationRetryRefusal (0.00s)
+1006-gate (shard:g10)	Gate	2026-10-29T11:09:46.2338732Z === RUN   TestOrderAttemptNotificationCancelBeforeC3ZeroCalls
+1007:gate (shard:g10)	Gate	2026-10-29T11:09:46.2344932Z     order_attempt_notification_dispatch_test.go:196: terminal: cancel-before-C3 must keep zero calls: calls=0 out={Disposition:terminal Outcome:{State: Code: ProviderReference:} Notification:{NotificationID: State:READY OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage:before_c3 VoidCode:cancelled ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0}
+1008:gate (shard:g10)	Gate	2026-10-29T11:09:46.2348392Z --- FAIL: TestOrderAttemptNotificationCancelBeforeC3ZeroCalls (0.00s)
+1009-gate (shard:g10)	Gate	2026-10-29T11:09:46.2350711Z === RUN   TestOrderAttemptNotificationLeaseSweep
+1010:gate (shard:g10)	Gate	2026-10-29T11:09:46.2351984Z     order_attempt_notification_dispatch_test.go:218: M7: one discarded job must become one expired lease: {Scanned:1 Expired:[]}
+1011:gate (shard:g10)	Gate	2026-10-29T11:09:46.2353079Z --- FAIL: TestOrderAttemptNotificationLeaseSweep (0.00s)
+1012-gate (shard:g10)	Gate	2026-10-29T11:09:46.2353647Z === RUN   TestOrderAttemptNotificationReminderKeys
+1013:gate (shard:g10)	Gate	2026-10-29T11:09:46.2354548Z     order_attempt_notification_dispatch_test.go:238: buyer A's reminder key must not collide with buyer B's order
+1014:gate (shard:g10)	Gate	2026-10-29T11:09:46.2355682Z --- FAIL: TestOrderAttemptNotificationReminderKeys (0.00s)
+1015-gate (shard:g10)	Gate	2026-10-29T11:09:46.2356370Z === RUN   TestOrderAttemptNotificationOutcomeClassification
+1016:gate (shard:g10)	Gate	2026-10-29T11:09:46.2358821Z     order_attempt_notification_dispatch_test.go:278: acknowledgement without acceptance proof is not success: {Disposition:claimed Outcome:{State:ACCEPTED Code:delivery_unknown ProviderReference:} Notification:{NotificationID: State:DELIVERY_UNKNOWN OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage: VoidCode: ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0}
+1017:gate (shard:g10)	Gate	2026-10-29T11:09:46.2361436Z --- FAIL: TestOrderAttemptNotificationOutcomeClassification (0.00s)
+1018-gate (shard:g10)	Gate	2026-10-29T11:09:46.2362464Z === RUN   TestOrderAttemptNotificationLeaseExpiryOnlyUnknown
+1019:gate (shard:g10)	Gate	2026-10-29T11:09:46.2364689Z     order_attempt_notification_dispatch_test.go:319: reconcile may only query: {Disposition:claimed Outcome:{State:ACCEPTED Code:callback_failed ProviderReference:} Notification:{NotificationID: State:ACCEPTED OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage: VoidCode: ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0} calls=0
+1020:gate (shard:g10)	Gate	2026-10-29T11:09:46.2366296Z --- FAIL: TestOrderAttemptNotificationLeaseExpiryOnlyUnknown (0.00s)
+1021-gate (shard:g10)	Gate	2026-10-29T11:09:46.2366805Z === RUN   TestOrderAttemptNotificationOriginPin
+--
+1028:gate (shard:g10)	Gate	2026-10-29T11:09:50.9439241Z     order_attempt_notification_review_test.go:33: post-C3 reconciliation must branch before payable/link/window/consent refusal
+1029:gate (shard:g10)	Gate	2026-10-29T11:09:50.9441425Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "READY/READY AND dispatch_authorized_at IS NULL"
+1030:gate (shard:g10)	Gate	2026-10-29T11:09:50.9444343Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "DELIVERY_UNKNOWN/(UNKNOWN|ACKNOWLEDGED)"
+1031:gate (shard:g10)	Gate	2026-10-29T11:09:50.9446439Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "mode=reconcile; never enter steps g/h"
+1032:gate (shard:g10)	Gate	2026-10-29T11:09:50.9448169Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "DISPATCHING/DISPATCHING returns busy"
+1033:gate (shard:g10)	Gate	2026-10-29T11:09:50.9450392Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "preserve dispatch_authorized_at, link_version and provider evidence"
+1034:gate (shard:g10)	Gate	2026-10-29T11:09:50.9452530Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "stale binding after C3 returns blocked_binding without changing either state"
+1035-gate (shard:g10)	Gate	2026-10-29T11:09:50.9454214Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/cancel-after-UNKNOWN
+1036:gate (shard:g10)	Gate	2026-10-29T11:09:50.9456006Z     order_attempt_notification_review_test.go:52: SQL acceptance handoff is missing the cancel-after-UNKNOWN paired-state witness
+1037-gate (shard:g10)	Gate	2026-10-29T11:09:50.9463329Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/rotation-after-UNKNOWN
+1038:gate (shard:g10)	Gate	2026-10-29T11:09:50.9465828Z     order_attempt_notification_review_test.go:52: SQL acceptance handoff is missing the rotation-after-UNKNOWN paired-state witness
+1039-gate (shard:g10)	Gate	2026-10-29T11:09:50.9468474Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/policy-loss-after-UNKNOWN
+1040:gate (shard:g10)	Gate	2026-10-29T11:09:50.9470975Z     order_attempt_notification_review_test.go:52: SQL acceptance handoff is missing the policy-loss-after-UNKNOWN paired-state witness
+1041:gate (shard:g10)	Gate	2026-10-29T11:09:50.9472857Z --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal (0.00s)
+1042:gate (shard:g10)	Gate	2026-10-29T11:09:50.9474893Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/cancel-after-UNKNOWN (0.00s)
+1043:gate (shard:g10)	Gate	2026-10-29T11:09:50.9476885Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/rotation-after-UNKNOWN (0.00s)
+1044:gate (shard:g10)	Gate	2026-10-29T11:09:50.9478662Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/policy-loss-after-UNKNOWN (0.00s)
+1045-gate (shard:g10)	Gate	2026-10-29T11:09:50.9545734Z === RUN   TestOrderAttemptPayEntryStoreRefusesInvalidReplay
+
+RELAY 1 assertion RED confirmed (native API job logs):
+Head 4a84a5dfe82231fff4b511672a340ab25ddad655.
+Gates run 40879903464 / gate (shard:g10) job 123470232597: failure, exit 1.
+Started 2026-10-29T13:24:41Z; completed 2026-10-29T13:39:13Z.
+Checkout and receipt SHA e720aee049612c36894c7a1636ee6cdda1c32e1e,
+merge of RED head into integration d0e7331525fec046fbe9361906fa66367ae583c6.
+The new oa-policy-authority subtest failed at review_test.go:68/72/75:
+missing OA helper/ACL, legacy validator still used. Four oa-policy-witnesses
+failed at line 93: eligible READY, consent refusal, closed window, takeover.
+The pre-existing cancel/rotation/policy-loss-after-UNKNOWN subtests passed.
+Raw filtered evidence: policy-red-job.log (source: GitHub job logs endpoint).
+Foundation run 40879903437 / job 123468328227 passed on RED head; not this suite.
+No local tests/servers. Implementation batch changes handoff documentation only.
+Current implementation GREEN PENDING; integrator relay remains wake-up mechanism.
+
+RELAY RVFIX305: both independent-review P1 assertion RED confirmed.
+Head: 76497fd0ee3ccf57bd49585892b651c4f6e1ed2b (tests-only batch).
+Base: d0e7331525fec046fbe9361906fa66367ae583c6.
+Tested merge/receipt: 08bf99f4182dafcb94d94104fcdfae693d303eb7.
+Gates run 40895129665, attempt 1, gate (shard:g10) job 123524293876:
+failure / exit 1; started 2026-10-29T14:52:05Z, completed 2026-10-29T15:08:59Z.
+New subtests reached and failed their own assertions:
+- recent-operation-excludes-current-scoped-pair: six scope/self-exclusion clauses absent.
+- void-schema-covers-fixed-dispositions: restrictive CHECK not replaced/inventory absent.
+- void-code-mapping-is-explicit: four fixed paired mappings absent.
+- immediate-and-distinct-refusal-witnesses: immediate READY, distinct operation,
+  consent CHECK commit and authoritative-no-effect CHECK commit witnesses absent.
+Existing UNKNOWN branch, OA policy authority and four policy witnesses passed.
+Foundation 40895129674 / 123522034094 passed on RED head; not this assertion suite.
+Native filtered evidence: output/oa-2/rvfix305/review-red-job.log.
+Source: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/123524293876/logs.
+gh run view --log-failed could not yet return logs while the run awaited receipts;
+native completed-job endpoint provided the evidence, independently of overall run status.
+E3 applies only to this document assertion RED. SQL runtime/REAL_PG remains NOT_RUN.
+Both P1 handoff corrections implemented together after RED; existing tests unchanged.
+Current implementation GREEN PENDING. Integrator relay owns continuation.

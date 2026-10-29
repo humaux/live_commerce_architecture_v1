@@ -1,0 +1,83 @@
+PR273 head e75a2ab9ae7b4185443e482175a702bc502998e5
+Gates40792663760 job123185314146; merge ea87541b342f528defc52818d50899ea5a6eb777
+Original CVS assertion, downloaded GitHub artifact12862364859:
+browser engine: webkit
+PASS store 1 map round trip zh-TW/desktop: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip en/mobile: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip zh-CN/desktop: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip zh-TW/mobile: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 2: the map return lands on the originating store's host with its own __Host- cookie and shows the store card
+PASS OK mart and Hi-Life are disabled with 即將開放 until verified
+HTTP 422 POST /api/buyer/cvs-stores {"code":"store_not_found","message":"Request refused.","request_id":"a411781e5a2132b1504ef9320972fb64","retryable":false,"details":{}}
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(locator).toBeEnabled() failed
+
+Locator:  getByTestId('create-order')
+Expected: enabled
+Received: disabled
+Timeout:  5000ms
+
+Call log:
+  - Expect "toBeEnabled" getByTestId('create-order') with timeout 5000ms
+  - waiting for getByTestId('create-order')
+    2 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order" aria-describedby="create-order-hint">建立未付款訂單</button>
+      - unexpected value "disabled"
+    12 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order">建立未付款訂單</button>
+       - unexpected value "disabled"
+
+    at captureRawStack (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toBeEnabled (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/cvs-buyer.mjs:328:52 {
+  matcherResult: {
+    message: 'expect(locator).toBeEnabled() failed\n' +
+      '\n' +
+      "Locator:  getByTestId('create-order')\n" +
+      'Expected: enabled\n' +
+      'Received: disabled\n' +
+      'Timeout:  5000ms\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeEnabled" getByTestId('create-order') with timeout 5000ms\n` +
+      "  - waiting for getByTestId('create-order')\n" +
+      '    2 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order" aria-describedby="create-order-hint">建立未付款訂單</button>\n' +
+      '      - unexpected value "disabled"\n' +
+      '    12 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order">建立未付款訂單</button>\n' +
+      '       - unexpected value "disabled"\n',
+    pass: false,
+    actual: 'disabled',
+    name: 'toBeEnabled',
+    expected: 'enabled',
+    log: [
+      `  - Expect "toBeEnabled" getByTestId('create-order') with timeout 5000ms`,
+      "  - waiting for getByTestId('create-order')",
+      '    2 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order" aria-describedby="create-order-hint">建立未付款訂單</button>',
+      '      - unexpected value "disabled"',
+      '    12 × locator resolved to <button disabled type="submit" data-testid="create-order" class="primary create-order">建立未付款訂單</button>',
+      '       - unexpected value "disabled"'
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- button "建立未付款訂單" [disabled]'
+  }
+}
+
+Node.js v24.22.1
+
+Raw suite receipt:
+prebuilt: storefront restored from ea87541b342f528defc52818d50899ea5a6eb777
+prebuilt: admin restored from ea87541b342f528defc52818d50899ea5a6eb777
+check-gallery-bundle: OK expect=absent files=67 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+## matrix-receipts browser-run begin
+buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=22s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.LgUU8Gxh/webkit/ea87541b342f-buyer.jsonl
+order: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=68s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.LgUU8Gxh/webkit/ea87541b342f-order.jsonl
+payment: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=37s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.LgUU8Gxh/webkit/ea87541b342f-payment.jsonl
+merchant-buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=13s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.LgUU8Gxh/webkit/ea87541b342f-merchant-buyer.jsonl
+cvs: pass=0 fail=2 skip=0 leaf_pass=0 leaf_fail=1 leaf_skip=0 exit=1 verdict=1 duration=43s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.LgUU8Gxh/webkit/ea87541b342f-cvs.jsonl
+FAIL: cvs (go test exit=1, parse verdict=1)
+password-auth: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=88s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.LgUU8Gxh/webkit/ea87541b342f-password-auth.jsonl
+claim-checkout: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=35s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.LgUU8Gxh/webkit/ea87541b342f-claim-checkout.jsonl
+FAIL: --browser-webkit (see logs in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.LgUU8Gxh/webkit)
