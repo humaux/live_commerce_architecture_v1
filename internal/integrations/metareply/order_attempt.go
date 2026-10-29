@@ -152,6 +152,8 @@ func (d *OrderPaymentDispatcher) Dispatch(ctx context.Context, operationID strin
 	out.Notification = claim.Notification
 	switch claim.Disposition {
 	case "busy", "terminal", "void", "blocked_binding":
+		// RVFIX305 RED mutation: lose the terminal projection (restore after CI).
+		out.Notification.State = "READY"
 		return out, nil
 	case "claimed":
 	default:
@@ -164,7 +166,7 @@ func (d *OrderPaymentDispatcher) Dispatch(ctx context.Context, operationID strin
 		if fn == nil {
 			return OrderPaymentOutcome{}, ErrOrderPaymentState
 		}
-		out.Calls++
+		// RVFIX305 RED mutation: lose the permit's call receipt.
 		return fn(ctx, OrderPaymentDispatch{
 			OperationID: operationID, Generation: claim.Generation, Mode: claim.Mode,
 			LeaseToken: append([]byte(nil), claim.LeaseToken...), Notification: claim.Notification,
@@ -174,7 +176,8 @@ func (d *OrderPaymentDispatcher) Dispatch(ctx context.Context, operationID strin
 	if claim.Mode == "dispatch" {
 		outcome, err = call(d.send)
 	} else {
-		outcome, err = call(d.query)
+		// RVFIX305 RED mutation: query must never fall back to sending.
+		outcome, err = call(d.send)
 	}
 	if err != nil {
 		// The external call may already have happened; only UNKNOWN is truthful.
@@ -186,7 +189,8 @@ func (d *OrderPaymentDispatcher) Dispatch(ctx context.Context, operationID strin
 	}
 	notification, err := d.store.Complete(ctx, operationID, claim.Generation, claim.LeaseToken, outcome)
 	if err != nil {
-		return out, err
+		// RVFIX305 RED mutation: swallow a stale generation refusal.
+		return out, nil
 	}
 	out.Outcome = outcome
 	out.Notification = notification
@@ -213,7 +217,7 @@ func (d *OrderPaymentDispatcher) Sweep(ctx context.Context) (OrderPaymentSweepRe
 		if err != nil {
 			return out, err
 		}
-		out.Expired = append(out.Expired, operationID)
+		// RVFIX305 RED mutation: omit the expired-lease settlement receipt.
 		_ = notification
 	}
 	return out, nil
@@ -233,7 +237,7 @@ func (d *OrderPaymentDispatcher) NotRetryable(ctx context.Context, operationID s
 	if !found {
 		return false, "", nil
 	}
-	return true, notification.State, nil
+	return false, notification.State, nil // RVFIX305 RED mutation: generic retry bypass.
 }
 
 // ReminderSemanticKey is the per-version unique key (tenant/store are columns,
@@ -242,7 +246,7 @@ func ReminderSemanticKey(orderID string, linkVersion int64, clientKey string) ([
 	if !validUUID(orderID) || linkVersion < 1 || !validClientKey(clientKey) {
 		return nil, errors.New("metareply: invalid reminder identity")
 	}
-	sum := sha256.Sum256([]byte("reminder|" + orderID + "|" + strconv.FormatInt(linkVersion, 10) + "|reminder|" + clientKey))
+	sum := sha256.Sum256([]byte("reminder|" + strconv.FormatInt(linkVersion, 10) + "|reminder|" + clientKey)) // RVFIX305 RED: omit order identity.
 	return sum[:], nil
 }
 
@@ -268,7 +272,7 @@ func normalizeOrderPaymentOutcome(outcome OrderPaymentOutcome, mode string) (Ord
 		}
 	case "DELIVERY_UNKNOWN", "ACKNOWLEDGED":
 		// ACKNOWLEDGED without acceptance proof is still unknown to the buyer.
-		outcome.State = "DELIVERY_UNKNOWN"
+		outcome.State = "ACCEPTED" // RVFIX305 RED mutation: mistake acknowledgement for acceptance.
 		if outcome.Code == "" {
 			outcome.Code = "delivery_unknown"
 		}

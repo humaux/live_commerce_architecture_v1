@@ -1,0 +1,14 @@
+RVFIX305 — native CI assertion RED pending
+PR: 305; branch: unit/oa-2; target: r3/integration
+Base: a57cdb1a76a5ccfc72defc9a8b751bc29ea1f786
+Integration: f8fd8900577815a328643ed878d88a6a247d2ab2
+Merge/restore source: aace3b5a50a660be6f6f1f337214aacadce84aea
+Static: gofmt -w internal/integrations/metareply/order_attempt.go tests/foundation/order_attempt_notification_review_test.go — exit 0
+Static: go vet ./internal/integrations/metareply ./tests/foundation — exit 0
+No local tests, servers or provider calls.
+Historical API-absence RED 40844363540/job123348127167 was a compile failure, NOT behavioral RED.
+Current push intentionally mutates the model command surface; do not merge it.
+Expected assertion RED: TestOrderAttemptNotificationDispatchSinglePermit (call receipt), UnknownNeverSecondSend (call receipt/outcome), StaleGenerationFence (swallowed fence), RetryRefusal (generic retry allowed), CancelBeforeC3ZeroCalls (terminal projection lost), LeaseSweep (receipt omitted), ReminderKeys (order identity omitted), OutcomeClassification (ACK becomes accepted), LeaseExpiryOnlyUnknown (query replaced by send).
+New document gate: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal — branch before eligibility, READY-only refusal, preserved evidence, three post-UNKNOWN witness requirements.
+CI run/job/head/checkout receipts: PENDING; append after push. No current-head GREEN.
+REAL_PG/ACL/lock barriers/DB mutations/scheduler/provider wiring/SANDBOX/LIVE: NOT_RUN.
