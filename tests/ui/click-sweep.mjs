@@ -1,6 +1,7 @@
 // Purpose: sweep every registered admin/buyer surface and run real-click merchant/buyer journeys.
 // Depends on: Playwright, signed Go/PG fixture, click-sweep-lib and the role-aware product-media journey driver.
 // Used by: --browser-click-sweep (and visual-audit delegation); no browser mutation shortcuts.
+// Invariants: first/fresh/recovered pages become ready within existing bounds before unchanged heading/error/control assertions.
 // G-UI8 click-sweep runner (owner 2026-10-03, docs/engineering/ui-architecture.md 10.6b), started by tests/foundation/browser_click_sweep_test.go
 // (`bash scripts/dev/test-local.sh --browser-click-sweep`). One real stack: production admin Next (signed MOCK IdP) + production storefront Next (started
 // here behind a synthetic TLS edge for the virtual host) over the real Go API and an isolated PG. This process never sees a database credential.
@@ -132,7 +133,7 @@ async function sweepPage({ make, unit, scopes, fresh = false, session = null }) 
   const ctx = { page: cur.page, mon: cur.mon, unit, rootSelector: "body", fingerprint, window: 3000 };
   const open = async () => {
     await cur.page.goto(unit.url, { waitUntil: "domcontentloaded" }).catch(() => {});
-    await settle(cur.page, cur.mon);
+    await settle(cur.page, cur.mon, { ready: true });
   };
   const back = async (row) => {
     if (fresh) {
@@ -144,7 +145,7 @@ async function sweepPage({ make, unit, scopes, fresh = false, session = null }) 
   try {
     cur.mon.seenAt.clear(); // the storm check counts the requests of THIS page load only
     const response = await cur.page.goto(unit.url, { waitUntil: "domcontentloaded" }).catch((e) => ({ error: e }));
-    const quiet = await settle(cur.page, cur.mon, { max: 8000 });
+    const quiet = await settle(cur.page, cur.mon, { max: 8000, ready: true });
     const status = response?.status?.() ?? 0;
     const lr = ledger.add(rowBase(unit, "page", "(page load)", { expected: "the route renders: HTTP < 400, a heading, no console/page error, no degraded-state message", actual: `HTTP ${status}${quiet ? "" : " (keeps updating)"}` }));
     const headings = await cur.page.locator("h1, h2").count();
