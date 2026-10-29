@@ -75,7 +75,7 @@ test("an authoritative erased customer immediately unmounts the cached private t
   assert.ok(declaration);
   let mounts = 0;
   const { Body } = compiled("export " + declaration.getText(tree), {
-    useState: (value: unknown) => [value, () => {}], useRef: (value: unknown) => ({ current: value }),
+    useEffect: () => {}, useState: (value: unknown) => [value, () => {}], useRef: (value: unknown) => ({ current: value }),
     ordersCopy: { en: { statuses: {} } }, consentPairs: [],
     money: () => "NT$0", displayTime: () => "10/07/2026",
     CustomerTags: () => { mounts++; return React.createElement("div", null, "cached private note"); },

@@ -289,7 +289,7 @@ func TestBrowserCustomersBilling(t *testing.T) {
 		"LC_BROWSER_SESSION": studioSession, "LC_BROWSER_PRICE": "price_Cb11Month", "LC_BROWSER_CONTROL": control.URL, "LC_BROWSER_CONTROL_KEY": controlKey,
 		"LC_BROWSER_PHONE_TAIL": "001", "LC_BROWSER_PHONE_FULL": "886900000001", "LC_BROWSER_ACTOR_KEY": actorKey, "LC_BROWSER_RESTRICTED_TOKEN": restricted, "LC_BROWSER_NOFIN_TOKEN": nofinance,
 	}
-	brfPlaywright(t, ctx, stack, []string{"customers-billing.spec.ts"}, env)
+	brfPlaywright(t, ctx, stack, []string{"customers-billing.spec.ts", "people-v2.spec.ts"}, env)
 
 	// ---- PG facts after the admin half: the UI drove real commands ----
 	count := func(q string, args ...any) int { return countRows(t, e.f.owner, q, args...) }
