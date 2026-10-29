@@ -3083,28 +3083,6 @@
     {
       "kind": "GO_ONLY",
       "method": "POST",
-      "path": "/v1/admin/stores/{}/design/media",
-      "locations": [
-        {
-          "file": "internal/httpapi/design.go",
-          "line": 40,
-          "end": 40
-        },
-        {
-          "file": "internal/httpapi/design.go",
-          "line": 62,
-          "end": 62
-        },
-        {
-          "file": "internal/httpapi/handler.go",
-          "line": 198,
-          "end": 198
-        }
-      ]
-    },
-    {
-      "kind": "GO_ONLY",
-      "method": "POST",
       "path": "/v1/admin/stores/{}/design/media/{}/delete",
       "locations": [
         {
@@ -5823,33 +5801,6 @@
           "file": "internal/httpapi/handler.go",
           "line": 222,
           "end": 222
-        }
-      ]
-    },
-    {
-      "kind": "GO_ONLY",
-      "method": "PUT",
-      "path": "/v1/admin/stores/{}/design/draft",
-      "locations": [
-        {
-          "file": "internal/httpapi/design.go",
-          "line": 40,
-          "end": 40
-        },
-        {
-          "file": "internal/httpapi/design.go",
-          "line": 44,
-          "end": 44
-        },
-        {
-          "file": "internal/httpapi/design.go",
-          "line": 44,
-          "end": 46
-        },
-        {
-          "file": "internal/httpapi/handler.go",
-          "line": 198,
-          "end": 198
         }
       ]
     },
