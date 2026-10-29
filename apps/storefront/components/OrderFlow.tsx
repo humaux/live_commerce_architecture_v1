@@ -28,6 +28,7 @@ import { codCopy } from "../lib/cod-copy";
 import { checkoutCopy } from "../lib/checkout-copy";
 import CheckoutReview from "./checkout/CheckoutReview";
 import CheckoutPaymentChoices from "./checkout/CheckoutPaymentChoices";
+import { checkoutOption } from "../lib/checkout-review";
 import { countryName } from "../lib/country-name";
 import {
   isTransferErrorCode,
@@ -51,11 +52,9 @@ import {
   offeredPaymentModes,
   currentDestination,
   pendingPurchase,
-  purchasePage,
   readPurchase,
   validCart,
-  validOptionRow,
-  isUnavailable,
+  validQuote,
   validDestinationWrite,
   writeDestination,
   writeCheckout,
@@ -114,6 +113,7 @@ export default function OrderFlow({
   onCodFee,
   reconfirmRequired = false,
   onFeeChanged,
+  onQuoteRefresh,
   onReviewState,
 }: {
   context: string;
@@ -133,7 +133,8 @@ export default function OrderFlow({
   onCodFee?: (fee: number | null) => void;
   reconfirmRequired?: boolean;
   onFeeChanged?: () => void;
-  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string }) => void;
+  onQuoteRefresh?: (quote: Quote) => void;
+  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean }) => void;
 }) {
   const copy = orderCopy[locale];
   // A destination journal intentionally stores no PII or quotation. A fresh
@@ -172,10 +173,11 @@ export default function OrderFlow({
   const checkout = checkoutCopy[locale];
   const timing = paymentMode === "cash_on_delivery" ? checkout.cod : paymentMode === "pay_at_pickup" ? checkout.pickup : checkout.online;
   const canSubmit = !busy && !blocked && !expired && !!confirmed && !!option && paymentChoices.includes(paymentMode) && !reconfirmRequired && (codFee === null || quote?.cod_due_minor !== undefined);
+  const quoteReady = !!option && paymentChoices.includes(paymentMode) && (codFee === null || quote?.cod_due_minor !== undefined);
   useEffect(() => {
-    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing });
+    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady });
     return () => { if (quote) onReviewState?.({ quoteID: quote.id, ready: false, timing }); };
-  }, [quote?.id, canSubmit, timing, onReviewState]);
+  }, [quote?.id, canSubmit, timing, quoteReady, onReviewState]);
   useEffect(() => {
     onCodFee?.(codFee);
     return () => onCodFee?.(null);
@@ -211,32 +213,13 @@ export default function OrderFlow({
     void (async () => {
       try {
         if (!quote) return;
-        let found: Option | undefined,
-          cursor = "";
-        const seen = new Set<string>();
-        do {
-          const page = await purchasePage(
-            `checkout-options?market_id=${quote.market_id}&country=${quote.country}&limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
-            context,
-            validOptionRow,
-          );
-          // A row the store lists but cannot sell yet ("coming soon") is never checkout-able here.
-          found = page.items.find(
-            (o): o is Option =>
-              !isUnavailable(o) &&
-              o.market_id === quote.market_id &&
-              o.country === quote.country &&
-              o.method === quote.method &&
-              o.currency === quote.currency &&
-              (o.delivery_kind !== "home" || o.mode === "MANUAL"),
-          );
-          cursor = page.next_cursor;
-          if (cursor && (seen.has(cursor) || seen.size >= 100))
-            throw new BuyerClientError("invalid_response");
-          seen.add(cursor);
-        } while (!found && cursor);
-        if (!found) throw new BuyerClientError("request_failed");
+        // A fee refusal invalidates both reads. Publish neither until both are ready.
+        const [currentQuote, found] = await Promise.all([
+          optionRefresh ? readPurchase(`quotes/${quote.id}`, context, validQuote) : Promise.resolve(quote),
+          checkoutOption(context, quote),
+        ]);
         if (version !== live.current) return;
+        if (optionRefresh) onQuoteRefresh?.(currentQuote);
         // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
         const offered = offeredPaymentModes(found, quote.amount.total_minor);
         const savedMode = sessionStorage.getItem(`commerce-checkout-mode-v2:${context}:${quote.id}`);

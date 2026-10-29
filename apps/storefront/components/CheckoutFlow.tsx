@@ -27,6 +27,7 @@ import { orderCopy } from "../lib/order-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import { codFooter } from "../lib/cod-copy";
 import { checkoutCopy } from "../lib/checkout-copy";
+import { changedCheckoutQuote, rememberCheckoutQuote } from "../lib/checkout-review";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
 import CheckoutPendingReview from "./checkout/CheckoutPendingReview";
 import CheckoutQuoteAmounts from "./checkout/CheckoutQuoteAmounts";
@@ -102,7 +103,7 @@ export default function CheckoutFlow({
   const [method, setMethod] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteChange, setQuoteChange] = useState<number | null>(null);
-  const [reviewState, setReviewState] = useState<{ quoteID: string; ready: boolean; timing: string } | null>(null);
+  const [reviewState, setReviewState] = useState<{ quoteID: string; ready: boolean; timing: string; quoteReady?: boolean } | null>(null);
   const v2 = checkoutCopy[locale];
   const [pending, setPending] = useState(false);
   const [pendingKind, setPendingKind] = useState<string | null>(null);
@@ -141,15 +142,7 @@ export default function CheckoutFlow({
   // Only quote identifiers and server totals, scoped to this buyer context; never recipient data or authority to charge.
   // Keeping the previous total through delivery selection AND reload prevents a changed quote silently becoming accepted.
   function acceptQuote(value: Quote, ctx = currentContext.current) {
-    const key = `commerce-checkout-review-v2:${ctx}`;
-    const raw = sessionStorage.getItem(key);
-    const previous = raw ? JSON.parse(raw) : null;
-    if (previous && (typeof previous.id !== "string" || !Number.isSafeInteger(previous.total) || typeof previous.currency !== "string" || (previous.old !== null && !Number.isSafeInteger(previous.old))))
-      throw new BuyerClientError("invalid_response");
-    const old = previous?.currency === value.currency && previous.cartID === value.cart_id
-      ? previous.id === value.id ? previous.old : previous.total !== value.amount.total_minor ? previous.total : previous.old
-      : null;
-    sessionStorage.setItem(key, JSON.stringify({ id: value.id, cartID: value.cart_id, total: value.amount.total_minor, currency: value.currency, old }));
+    const old = changedCheckoutQuote(value, ctx);
     setQuoteChange(old);
     setReviewState(null);
     setQuote(value);
@@ -158,7 +151,7 @@ export default function CheckoutFlow({
   function requireFeeConfirmation() {
     if (!quote) return;
     const old = quote.cod_due_minor ?? quote.amount.total_minor;
-    sessionStorage.setItem(`commerce-checkout-review-v2:${context}`, JSON.stringify({ id: quote.id, cartID: quote.cart_id, total: quote.amount.total_minor, currency: quote.currency, old }));
+    rememberCheckoutQuote(quote, context, old);
     setQuoteChange(old);
   }
 
@@ -666,9 +659,9 @@ export default function CheckoutFlow({
             {quote && quoteChange !== null && <section data-testid="quote-reconfirm" role="status" style={{ marginTop: 24 }}>
               <p>{v2.changed}</p>
               <p>{money(quoteChange, quote.currency)} → {money(codFee === null ? quote.amount.total_minor : quote.cod_due_minor ?? quote.amount.total_minor, quote.currency)}</p>
-              <button style={{ minHeight: 44, minWidth: 44 }} disabled={busy || pending || orderLocked || error === "session"}
+              <button style={{ minHeight: 44, minWidth: 44 }} disabled={busy || pending || orderLocked || error === "session" || reviewState?.quoteID !== quote.id || !reviewState.quoteReady}
                 onClick={() => { try {
-                  sessionStorage.setItem(`commerce-checkout-review-v2:${context}`, JSON.stringify({ id: quote.id, cartID: quote.cart_id, total: quote.amount.total_minor, currency: quote.currency, old: null }));
+                  rememberCheckoutQuote(quote, context, null);
                   setQuoteChange(null);
                 } catch (reason) { showError(reason); } }}>{v2.confirm}</button>
             </section>}
@@ -691,6 +684,7 @@ export default function CheckoutFlow({
                   onCodFee={setCodFee}
                   reconfirmRequired={quoteChange !== null}
                   onFeeChanged={requireFeeConfirmation}
+                  onQuoteRefresh={acceptQuote}
                   onReviewState={setReviewState}
                   onOrder={acceptOrder}
                   reload={async () => {

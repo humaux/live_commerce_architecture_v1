@@ -1,5 +1,41 @@
 # CHECKOUT-V2-IMPL — implementation handoff, 2026-10-28
 
+## RVFIX #273 — COD payable acknowledgment, 2026-10-29 (GREEN PENDING)
+
+Authority: current integrator RVFIX dispatch and final REQUEST_CHANGES findings in cxf-rv-273.log; repository AGENTS.md; 架构.md §§0/1/2/26/27; buyer-http-v1 quote amendment (server COD due on GET and POST); owner-choices-20261026-v1 OC-Q5; signed cxf-checkout-v2-impl.md. Current base93b5d6a3e includes origin/r3/integration e324e01a9; merge rechecked this session, already up to date. Assigned UI worker, this worktree/branch only, no recursive delegation. Runtime identifies GPT-6-based Codex; exact configured variant/effort UNKNOWN.
+
+Root: the review journal compared only ordinary totals and skipped comparison for the same quote ID; the fee-refusal handler refreshed only the offer. The implementation retains server COD due in the PII-free journal, compares the saved selected payment mode's payable across same-ID reloads, jointly refreshes the quote and offer after refusal, and disables amount acknowledgment until that review is ready. No client replacement total. The existing bounded offer lookup and journal live in checkout-review.ts to keep CheckoutFlow below its unwaived 800-line ceiling; OrderFlow remains below its existing ceiling. No waiver, gate, assertion, threshold or fixture was changed. Existing component import references were searched throughout tests; no compiling allowlist/injected-global harness found. Strict tsc exits0.
+
+Evidence: output/RVFIX-273/red.log, source-hashes.txt and raw red-artifact/ retained. Causal RED head fcf88c8dbac75ecbb47e3c1d60bc4714d0f2273c: Gates40827205253 / bundle:06 job123293920220; synthetic merge311c285925b20b486e7159708fa66b3d1aba8191; artifact12877683729. New real-click ledger fails the same-ID updated-due and persisted-acknowledgment assertions (missing quote-reconfirm after server due7500→8500). The refusal case received503 instead of409, so its loading/block assertions are NOT_REACHED, not proven RED. That503 root is UNKNOWN and remains a CI risk; preserve the assertion and hand off if diagnosis requires an unowned backend. Tests-only Foundation40827205209/job123292863940 is green, not implementation acceptance. Implementation own CI and independent re-review PENDING; author assessment E0, local tsc/diff structure E1, causal failing CI assertions E3. No completion claim.
+
+### RVFIX UI PROCESS · Bourdieu
+
+Q1 plain costs: server due and surcharge retained. Q2 repeated task: acknowledgment survives reload. Q3 informed commitment: both submits and acknowledgment wait for the refreshed view. Q4 destination selection: unchanged. Q5 mobile/desktop task parity: added real-click paths at390/1440, GREEN PENDING. Q6 aesthetics UNKNOWN until owner; no new visual choice. Novice/expert means recent experience with this checkout task only.
+
+### RVFIX UI PROCESS · Project understanding
+
+Architecture §§0/1/2 require evidence/environment separation, TypeScript strict and server-owned transaction facts; §§26/27 require isolated ownership and independent acceptance. buyer-http-v1 and OC-Q5 require the server's COD due without frontend addition; the signed card requires explicit amount-change acknowledgment, original-attempt recovery and existing zh-TW/zh-CN/en copy. Current source and current-head CI determine status. No new string, setting, payment method, route, backend, contract or migration.
+
+Required desktop/mobile/summary parity (source inspection only; current GREEN PENDING):
+
+| Required fact | Desktop and mobile final review | Fixed/review state |
+| --- | --- | --- |
+| Recipient name and phone | Same confirmed destination | Existing CheckoutReview fields retained |
+| Home address or pickup destination | Same destination snapshot | Existing summary retained |
+| Subtotal and shipping | Server quote fields | Existing review retained |
+| COD fee and final payable | Server offer and quote due | Joint refresh; notice and bar use quote due |
+| Payment method and timing | Existing selected mode and localized timing | Readiness blocks both submits; amount change requires separate click |
+
+### RVFIX UI PROCESS · Mobbin → Eagle
+
+No new visual pattern/reference or imported image used. Existing signed checkout grouping is preserved. No Mobbin query/import needed. The historical reference provenance below is unchanged and is not evidence of current runtime acceptance.
+
+### RVFIX UI PROCESS · Figma official guidance
+
+No Figma frame or design write. Preserve the signed components and existing guidance mapping below: components/variants for review state and explicit prototype action/result for amount acknowledgment. output/ux-audit-ref/FIGMA-GUIDE.md is absent in both this worktree and the main checkout at inspection; no fresh guide-read claim. Figma lint, density and visual runtime checks NOT_RUN. Existing three-column copy table applies unchanged to every visible string.
+
+Local tsc --noEmit --incremental false -p apps/storefront/tsconfig.json and git diff --check exit0. Temporary dependency symlinks were removed; failed CI evidence retained. No local tests, servers, browser, PG, provider SANDBOX/LIVE or production action. No new spec/page/route in this implementation, so RED browser-ownership inputs remain unchanged; Go dependency graph unchanged. Extra in-module scope: OrderFlow.tsx and new apps/storefront/lib/checkout-review.ts; evidence output/RVFIX-273/; list in PR body. No P2 findings in the final independent review. Humaux unavailable this session: store/canvas/coord/code-index/link NOT_RUN; integrator must retain this handoff. Native CI completion plus integrator relay is the wake-up path; stop polling within10min. Final run IDs go in a PR comment, no evidence-only GREEN commit.
+
 ## RELAY 2 — CVS re-quote acknowledgment, 2026-10-29
 
 Current inspected PR head: e75a2ab9ae7b4185443e482175a702bc502998e5; tested merge ea87541b342f528defc52818d50899ea5a6eb777. Foundation40792663748/job123181426785 succeeds. Gates40792663760/job123185314146 fails only CVS: cvs-buyer.mjs:328 expects create-order enabled after reload/re-quote. Its raw artifact explicitly passes buyer, order and claim-checkout; current Chromium bundle01/job123185314249 and bundle02/job123185314471 also succeed. Bundle04 and other gates were still running at inspection. Older failing heads are not current evidence. `gh run view --log-failed --job 123185314146` declined logs while the workflow was running; retrieved the completed job's REST logs instead and downloaded gate-browser-webkit with `gh run download`. Raw receipt and artifact retained under cont-273/relay2-webkit*; filtered evidence: relay2-failures.log.

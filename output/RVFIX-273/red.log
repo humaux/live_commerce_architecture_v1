@@ -1,0 +1,37 @@
+RVFIX #273 — tests-only RED phase, 2026-10-29
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/273
+Branch: unit/checkout-v2-ui -> r3/integration
+Tests-only head: fcf88c8dbac75ecbb47e3c1d60bc4714d0f2273c
+Integration merge: 93b5d6a3e687470aa000aec0866bb75fa6b8ae2c (origin e324e01a93219c099d6d2a9d35ed1f112595fe90)
+Foundation WAIT_RUN: 40827205209; job 123292863940 pending when registered
+Gates WAIT_RUN: 40827205253; test job pending (plan is NOT test evidence)
+Causal RED: PENDING — no failure or success assertion claimed.
+Expected test: TestBrowserHomeCod / rvfix-273-click-ledger.json.
+New cases: isolated merchant fee50->60 after two buyers quote; actual409 loading block; quote GET+options refresh; old->new due in review+footer; same quoteID updated due on reload; acknowledgment/reload persistence; real order expected fee and PG collection parity.
+Original four-order lifecycle assertions unchanged and in order. Fee mutation only occurs afterward.
+Static checks: gofmt, node --check tests/storefront/checkout-v2.mjs, node --check tests/storefront/home-cod-buyer.mjs, git diff --check: exit0 (E1 only).
+Generated browser ownership: official generator exit0, 53modes; generated hashes committed.
+No local tests/servers/build/runtime. No migration/contract/API/lockfile/gate change by worker.
+RED acceptance requires raw new assertion failures, not setup/compile failure. Do not push implementation before reading them.
+Next source fix: OrderFlow 409 refresh quote and offer together; prevent amount acknowledgment and submit until authoritative view is ready; CheckoutFlow persist/compare selected payable including COD for same quoteID. No browser total calculation.
+Integrator relays fresh session on these native workflow conclusions/failure/timeout (25min browser timeout; queue may be1-3h). No detached local watcher. Do not poll beyond10min.
+Current author assessment E0; syntax E1; E3 new assertions NOT_RUN/PENDING. GREEN/independent review PENDING.
+Scope extension: tests/foundation/browser_home_cod_test.go is the storefront COD browser harness; generated output/ci-select-backend-browser/browser-ownership.json; output/RVFIX-273/red.log. List in PR body, integrator approval.
+Existing untracked output/checkout-v2-impl files preserved. No main checkout or other worktree writes.
+Humaux handoff verified by exact grep: 07270d51-0a5f-40b0-a027-6f185bdc6780; dedicated sub-canvas updated after push.
+code_index accepted 3changed source files; code_memory_link returned entity not found while index pending, so no link completion claimed.
+PR body updated and RED handoff comment posted; no evidence-only commit created.
+
+RELAY 1 raw RED readback, 2026-10-29:
+Gates40827205253 / bundle:06 job123293920220 FAILED TestBrowserHomeCod.
+Actions head_sha=fcf88c8dbac75ecbb47e3c1d60bc4714d0f2273c; synthetic merge checkout=311c285925b20b486e7159708fa66b3d1aba8191.
+Foundation40827205209 / job123292863940 SUCCESS at the tests-only head (not implementation acceptance).
+Raw artifact gate-browser-home-cod12877683729 downloaded into red-artifact/ (retained, not committed).
+rvfix-273-click-ledger.json: reload updated due FAIL, quote-reconfirm missing; freshQuote.cod_due_minor reached8500 against initial7500, same immutable quote ID.
+reload persisted acknowledgment FAIL, quote-reconfirm missing after another reload. These new assertions prove the same-ID payable defect (E3 causal RED).
+Separate refusal path: expected409 cod_surcharge_changed, received503 unavailable; then no fresh quote read and no writable address section. This does NOT prove the held-read loading assertions. Cause UNKNOWN from available raw evidence; no backend edit or passing assertion claimed.
+Implementation attempt1 addresses the reviewed frontend root: joint quote/offer refresh after definite fee refusal; quote readiness blocks amount acknowledgment; journal retains server COD due and compares selected payable even at the same quote ID.
+Current implementation GREEN/independent re-review PENDING. Refusal-path503 remains an explicit verification risk; do not weaken or mock away this real endpoint assertion. If traced to an unowned backend, stop and hand off.
+Local tsc --noEmit --incremental false -p apps/storefront/tsconfig.json and git diff --check exited0, E1 only. No tests/server/browser/PG run locally.
+No spec/page/route change in implementation, so no browser-ownership input change after RED generation. Go dependency graph unchanged; depmap regeneration not needed.
+This session has no Humaux tools: memory_store/canvas/coord/code_index/code_memory_link NOT_RUN; retain this repository handoff for integrator relay.
