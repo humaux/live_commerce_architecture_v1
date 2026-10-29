@@ -1,0 +1,64 @@
+CI RED: run40827107757 / job123294071349 / artifact12878526024
+PR head ff370360c73739f649a2707f45a2ed57afbe8174; synthetic merge a8d3f6970e2dffb31771063da4c49a1eeb1ed862
+Source: output/cvs-pick-impl/ci-rvfix-relay1-webkit/playwright/run.xufpptCe/taiwan-cvs/20261029T063147.967338506/cvs-buyer.mjs.log
+Synthetic fixture names only; no real buyer PII.
+
+browser engine: webkit
+PASS store 1 map round trip zh-TW/desktop: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip en/mobile: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip zh-CN/desktop: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip zh-TW/mobile: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 2: the map return lands on the originating store's host with its own __Host- cookie and shows the store card
+PASS OK mart and Hi-Life are disabled with 即將開放 until verified
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(locator).toHaveValue(expected) failed
+
+Locator:  getByTestId('cvs-recipient-name')
+Expected: "王小明"
+Received: "陳大文"
+Timeout:  5000ms
+
+Call log:
+  - Expect "toHaveValue" getByTestId('cvs-recipient-name') with timeout 5000ms
+  - waiting for getByTestId('cvs-recipient-name')
+    14 × locator resolved to <input required="" type="text" value="陳大文" maxlength="120" autocomplete="name" name="recipient_name" data-testid="cvs-recipient-name"/>
+       - unexpected value "陳大文"
+
+    at captureRawStack (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toHaveValue (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at exerciseCvsPicker (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/cvs-picker.mjs:265:60)
+    at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/cvs-buyer.mjs:274:5 {
+  matcherResult: {
+    name: 'toHaveValue',
+    expected: '王小明',
+    message: 'expect(locator).toHaveValue(expected) failed\n' +
+      '\n' +
+      "Locator:  getByTestId('cvs-recipient-name')\n" +
+      'Expected: "王小明"\n' +
+      'Received: "陳大文"\n' +
+      'Timeout:  5000ms\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toHaveValue" getByTestId('cvs-recipient-name') with timeout 5000ms\n` +
+      "  - waiting for getByTestId('cvs-recipient-name')\n" +
+      '    14 × locator resolved to <input required="" type="text" value="陳大文" maxlength="120" autocomplete="name" name="recipient_name" data-testid="cvs-recipient-name"/>\n' +
+      '       - unexpected value "陳大文"\n',
+    pass: false,
+    actual: '陳大文',
+    log: [
+      `  - Expect "toHaveValue" getByTestId('cvs-recipient-name') with timeout 5000ms`,
+      "  - waiting for getByTestId('cvs-recipient-name')",
+      '    14 × locator resolved to <input required="" type="text" value="陳大文" maxlength="120" autocomplete="name" name="recipient_name" data-testid="cvs-recipient-name"/>',
+      '       - unexpected value "陳大文"'
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- textbox "收件人": 陳大文'
+  }
+}
+
+Node.js v24.22.1

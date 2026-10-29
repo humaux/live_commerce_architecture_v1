@@ -16,7 +16,9 @@
 // handle.ensure() to get a pickup_id, then writes the destination and Begin (checkout) itself.
 // Also exports CvsOrderStatus, the CVS/pay-at-pickup block of the buyer order page (§5.3, §16.4, §16.8).
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { cvsPickerCopy, type Locale } from "@live-commerce/i18n";
+import type { CvsBrand, CvsStore } from "../../../packages/format/src/cvs-match";
+import CvsStorePicker from "./CvsStorePicker";
 import { BuyerClientError, buyerRequest } from "../lib/buyer-client";
 import {
   CVS_SEARCH_LINKS,
@@ -97,6 +99,9 @@ export default function CvsPickup({
   run,
   handle,
   total,
+  pickerInitiallyOpen = false,
+  onBrand,
+  availableKinds = [option.delivery_kind],
 }: {
   context: string;
   locale: Locale;
@@ -111,6 +116,9 @@ export default function CvsPickup({
   run: Run;
   handle: MutableRefObject<PickupHandle | null>;
   total: string;
+  pickerInitiallyOpen?: boolean;
+  onBrand?: (kind: CvsKind, draft: CvsDraft) => void;
+  availableKinds?: CvsKind[];
 }) {
   const copy = cvsCopy[locale];
   const kind = option.delivery_kind;
@@ -123,6 +131,16 @@ export default function CvsPickup({
   const [retryReady, setRetryReady] = useState(true);
   const [copied, setCopied] = useState<"" | "ok" | "failed">("");
   const [entered, setEntered] = useState({ code: "" });
+  const [pickerOpen, setPickerOpen] = useState(pickerInitiallyOpen);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const fromPicker = useRef(false);
+  const confirmOutcome = useRef<"saved" | "rejected" | "retry">("retry");
+  const pickerBrand: CvsBrand = kind === "cvs_familymart" ? "FAMI" : kind === "cvs_hilife" ? "HILIFE" : kind === "cvs_okmart" ? "OKMART" : "UNIMART";
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const timer = window.setTimeout(() => setCooldownUntil(0), Math.max(0, cooldownUntil - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [cooldownUntil]);
   // One key per distinct typed store; a retry of the same body replays the same server record.
   const attempt = useRef<{ key: string; body: string } | null>(null);
   const live = useRef(0);
@@ -219,6 +237,7 @@ export default function CvsPickup({
     setNotice(null);
     clearReturn();
     changed.current();
+    if (!mapMode && fromPicker.current) setPickerOpen(true);
   }
 
   // Same-tab hand-off to the ECPay map (§5.2, U5): the recipient inputs are saved first because the whole page
@@ -284,7 +303,7 @@ export default function CvsPickup({
     form.submit();
   }
 
-  async function ensure(): Promise<string | null> {
+  async function ensure(pickerCode?: string): Promise<string | null> {
     setErrors({});
     // C3/F5 mirror: pay-at-pickup and ECPay-created shipments need the real name and a 09 mobile.
     const strict = payAtPickup || mapMode;
@@ -301,7 +320,7 @@ export default function CvsPickup({
       }
       return store.pickup_id;
     }
-    const code = entered.code.trim();
+    const code = (pickerCode ?? entered.code).trim();
     if (store?.source === "entered" && store.code === code)
       return store.pickup_id;
     const next: FieldErrors = {};
@@ -326,6 +345,13 @@ export default function CvsPickup({
     if (attempt.current?.body !== text) attempt.current = { key: crypto.randomUUID(), body: text };
     const response = await buyerRequest("POST", "cvs-stores", context, body, attempt.current.key);
     if (!response.ok) {
+      if (response.status === 429) {
+        const seconds = Number(response.headers.get("Retry-After"));
+        setCooldownUntil(Date.now() + (Number.isInteger(seconds) && seconds > 0 && seconds <= 3600 ? seconds : 5) * 1000);
+        setErrors({ store: cvsPickerCopy[locale].busy });
+        confirmOutcome.current = "retry";
+        return null;
+      }
       const refused = await refusalCode(response);
       if (refused) {
         attempt.current = null;
@@ -337,12 +363,13 @@ export default function CvsPickup({
         const shown: FieldErrors = {};
         shown[slot] = copy.errors[refused];
         setErrors(shown);
+        confirmOutcome.current = refused === "store_not_found" || refused === "bad_store_code" ? "rejected" : "retry";
         return null;
       }
       throw new BuyerClientError("request_failed", response.status);
     }
     const data: unknown = await response.json();
-    if (!validBuyerStore(data) || data.kind !== kind) throw new BuyerClientError("invalid_response");
+    if (!validBuyerStore(data) || data.kind !== kind || data.code !== code) throw new BuyerClientError("invalid_response");
     await assertPurchaseContext(context);
     attempt.current = null;
     setStore({
@@ -358,7 +385,25 @@ export default function CvsPickup({
   }
   handle.current = { ensure };
 
+  async function confirmPicker(choice: CvsStore): Promise<"saved" | "rejected" | "retry"> {
+    confirmOutcome.current = "retry";
+    if (cooldownUntil > Date.now()) return "retry";
+    await run(async (current) => {
+      setEntered({ code: choice.code });
+      changed.current();
+      try {
+        const id = await ensure(choice.code);
+        if (id && current()) { fromPicker.current = true; confirmOutcome.current = "saved"; }
+      } catch (reason) {
+        if (current()) setErrors({ store: copy.unavailable });
+        throw reason;
+      }
+    });
+    return confirmOutcome.current;
+  }
+
   function edit(value: string) {
+    fromPicker.current = false;
     setEntered({ code: value });
     setStore(null);
     setErrors({});
@@ -529,6 +574,7 @@ export default function CvsPickup({
         </div>
       ) : (
         <>
+          <div className="wide"><button type="button" className="primary" data-testid="cvs-open-picker" onClick={() => { setErrors({}); setPickerOpen(true); }}>{cvsPickerCopy[locale].open}</button></div>
           <p className="wide">{copy.enteredIntro}</p>
           <p className="wide">
             <a href={CVS_SEARCH_LINKS[kind]} target="_blank" rel="noopener noreferrer" data-testid="cvs-search-link">
@@ -556,6 +602,14 @@ export default function CvsPickup({
           <p className="order-note wide">{copy.enteredNote}</p>
         </>
       )}
+      {!mapMode && <CvsStorePicker open={pickerOpen} brand={pickerBrand} locale={locale}
+        availableBrands={availableKinds.map((value) => value === "cvs_familymart" ? "FAMI" : value === "cvs_hilife" ? "HILIFE" : value === "cvs_okmart" ? "OKMART" : "UNIMART")}
+        onClose={() => setPickerOpen(false)}
+        onBrand={(brand) => {
+          if (brand === pickerBrand) return;
+          onBrand?.(brand === "FAMI" ? "cvs_familymart" : brand === "HILIFE" ? "cvs_hilife" : brand === "OKMART" ? "cvs_okmart" : "cvs_711", { v: 1, ...recipient, payment_mode: paymentMode });
+        }}
+        onEdit={() => setErrors({})} onConfirm={confirmPicker} error={errors.store ?? errors.store_code ?? errors.recipient ?? null} coolingDown={cooldownUntil > Date.now()} />}
     </>
   );
 }

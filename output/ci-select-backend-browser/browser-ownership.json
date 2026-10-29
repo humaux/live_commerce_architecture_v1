@@ -715,8 +715,9 @@
     "tests/storefront/claim-checkout.mjs": "7c673fa1cb0872d155cb25725be9f51a8dcdd5a43fb597caac7dcf8123f1ca69",
     "tests/storefront/cod-footer.spec.ts": "a6fc969d7189f98edd2c1fb90deb9175aafe5150524046de79a0b69f34fc761b",
     "tests/storefront/collector-buyer.mjs": "6d4dc2824450901bfd2cf9389452ff3013a767ce944023994108b1f54045a7cf",
-    "tests/storefront/cvs-buyer.mjs": "da069a0c9068329ded59336879d6c3f4d5fa4fe28b7f985d92bb370d95bbc7b4",
+    "tests/storefront/cvs-buyer.mjs": "7dbb8845d62c6f5024633454ea60af77c9b66a4f8de01d5e7337a030025412fc",
     "tests/storefront/cvs-pap-only.mjs": "aca08fab00471cd7615a7fcbc36d6cc62f314e0c1f8e8beb45b8398e734589ea",
+    "tests/storefront/cvs-picker.mjs": "8b808a86fde9672acff0b61cbc58ddac74f7cb850fe25710c8c311e2e00fbc66",
     "tests/storefront/home-cod-buyer.mjs": "74c8b288da987dc96724ce140060824a1498c2b403c38be668bc3914c8125968",
     "tests/storefront/legal-pages.mjs": "75096e2148250a804a3ed4a35d29eae48aa017dec6978c569deb2a03d9341cbf",
     "tests/storefront/manual-order-link-gate.mjs": "5e58a7e8414a47e511b88f079f3bad20ca269b03b4e3e793f146cb0157ca04f3",
@@ -738,10 +739,10 @@
     "tests/storefront/storefront-publish-gate.mjs": "5cbc5ddb1e2cfdc6d41f69d6a20792ed56da79f62e38e478ee0545376e1a78c5",
     "tests/storefront/stripe-browser.mjs": "0e968a4ee71a2cd9aa13adb3c3d38704e266943e016cb64873237b017848cbbe",
     "tests/ui/click-sweep-known-defects.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-    "tests/ui/click-sweep-lib.mjs": "e834c41f2daeb3d56979c0e84e5cba5a09b1e85c50cc970d1fbacd61014d122f",
-    "tests/ui/click-sweep-lib.test.mjs": "603f954fa7004d7c067ce8a8fbd147669578d3053baaae37fc64c3314eeca431",
+    "tests/ui/click-sweep-lib.mjs": "5cd36a9104e3589076a62f067f62105a932c3f0b9088a2e214a337807bc914e6",
+    "tests/ui/click-sweep-lib.test.mjs": "1141c0b49fd0975dd6a8b27a1208829f1c368c67cce23df2e03634a50489f914",
     "tests/ui/click-sweep-weights.json": "1ce9453d358225ba0b69268cc19b431d18b0da701834301a04079c22e6f1aaa3",
-    "tests/ui/click-sweep.mjs": "538536eb38c1c07b095cb4c11149b1315a77bca5897189306a3063967b4f53e9",
+    "tests/ui/click-sweep.mjs": "fc798321f35528e97e1fd367731b1668e7e6b5ba3edbaa9229ca447fbd5eca7e",
     "tests/ui/ds-figma-parity.mjs": "f79a93f632c98c20c56b2167fbfa6898d54930ec8da6654e25c465355a89c6ed",
     "tests/ui/ds-hex-ratchet.test.mjs": "2c28f6fa575cad74475d40f2cd44518f8b393903badd7d3f749593a8a1bc6b8d",
     "tests/ui/ds-logic.test.ts": "cf897067751b3cc56b3531e143e9544e396b0ef9c99ad69886f3f618603ed3f0",
@@ -768,7 +769,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "4b0fa105a5045308a0f9ee4bf8875e43243b005d4f7576293a777f76a32a7903"
+    "scripts/dev/test-node.sh": "6285ca15e7a87117fa74fc091a648689e472d0a1ed7c1d61db8e49794562d67a"
   },
   "modes": {
     "--browser-inbox": {
@@ -2219,6 +2220,7 @@
         "tests/helpers/next-startup.mjs",
         "tests/storefront/browser-engine.mjs",
         "tests/storefront/cvs-buyer.mjs",
+        "tests/storefront/cvs-picker.mjs",
         "tests/storefront/shop-helpers.mjs"
       ],
       "apps": [
@@ -2448,6 +2450,7 @@
         "tests/storefront/browser-gate.mjs",
         "tests/storefront/claim-checkout.mjs",
         "tests/storefront/cvs-buyer.mjs",
+        "tests/storefront/cvs-picker.mjs",
         "tests/storefront/merchant-buyer-gate.mjs",
         "tests/storefront/merchant-product.mjs",
         "tests/storefront/order-gate.mjs",
