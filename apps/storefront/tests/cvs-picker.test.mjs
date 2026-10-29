@@ -1,5 +1,5 @@
-// Purpose: check immutable static-directory drift in existing storefront CI.
-// Depends on: Node24, the frozen ECPay snapshot and the committed static JSON generator.
+// Purpose: check directory transport and immutable snapshot drift.
+// Depends on: Node24, cvs-directory-client, frozen snapshot and static JSON generator.
 // Used by: scripts/dev/test-node.sh via the existing storefront test glob.
 // Invariants: generation is byte-identical; browser payload contains only public UI fields.
 import assert from "node:assert/strict";
@@ -9,6 +9,41 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { loadCvsDirectory } from "../lib/cvs-directory-client.ts";
+
+test("CVS directory transport validates, retries and caches without buyer credentials", async (t) => {
+  const row = { code: "000001", name: "Synthetic store", address: "Synthetic address", county: "Synthetic county", district: "Synthetic district" };
+  const calls = [];
+  let reply = async () => ({ ok: true, json: async () => [row] });
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    calls.push({ url, options });
+    return reply();
+  });
+  const signal = new AbortController().signal;
+  assert.deepEqual(await loadCvsDirectory("UNIMART", signal), [row]);
+  assert.equal(calls[0].url, "/cvs/unimart-20261028.json");
+  assert.deepEqual(calls[0].options, { signal, credentials: "omit" });
+  assert.deepEqual(await loadCvsDirectory("UNIMART", signal), [row]);
+  assert.equal(calls.length, 1, "reopening/searching a loaded brand needs no request");
+
+  reply = async () => ({ ok: false });
+  await assert.rejects(loadCvsDirectory("FAMI", signal), /directory_unavailable/);
+  reply = async () => ({ ok: true, json: async () => [{ ...row, code: 1 }] });
+  await assert.rejects(loadCvsDirectory("FAMI", signal), /invalid_directory/);
+  reply = async () => ({ ok: true, json: async () => [row] });
+  assert.deepEqual(await loadCvsDirectory("FAMI", signal), [row], "failed loads do not poison retry");
+
+  const aborted = new AbortController();
+  reply = async () => ({ ok: true, json: async () => { aborted.abort(); return [row]; } });
+  await assert.rejects(loadCvsDirectory("HILIFE", aborted.signal), { name: "AbortError" });
+  const beforeRetry = calls.length;
+  reply = async () => ({ ok: true, json: async () => [row] });
+  assert.deepEqual(await loadCvsDirectory("HILIFE", signal), [row]);
+  assert.equal(calls.length, beforeRetry + 1, "an aborted response never populates the cache");
+  await assert.rejects(loadCvsDirectory("UNIMART", aborted.signal), { name: "AbortError" });
+  await assert.rejects(loadCvsDirectory("../buyer", signal), /invalid_directory_brand/);
+  assert.equal(calls.length, beforeRetry + 1, "aborted/invalid input starts no transport");
+});
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 test("CVS static JSON regenerates byte-identically from all snapshot brands", () => {

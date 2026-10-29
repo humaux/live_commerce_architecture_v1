@@ -2,6 +2,7 @@
 
 // Purpose: confirmed-address checkout and current order details, with stable layout while delivery facts load.
 // Depends on: purchase.ts CAS/recovery, buyer BFF destination/options/orders routes, payment and fulfilment components.
+// Address field definitions and projection live in lib/order-fields.ts.
 // Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
 // Invariants: destination needs explicit confirmation; a CVS brand change gets a fresh server quote.
 // Local extension of approved B: native address form after the real quotation;
@@ -29,6 +30,12 @@ import { cvsCopy } from "../lib/cvs-copy";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { codCopy } from "../lib/cod-copy";
 import { countryName } from "../lib/country-name";
+import {
+  emptyOrderFields as empty,
+  orderFieldsOf as fieldsOf,
+  orderInputs as inputs,
+  type OrderFields as Fields,
+} from "../lib/order-fields";
 import {
   isTransferErrorCode,
   settledCommercialState,
@@ -70,33 +77,9 @@ import type {
   Quote,
 } from "../lib/purchase";
 
-type Fields = HomeAddress & { recipient_name: string; phone: string };
-const empty: Fields = {
-  recipient_name: "",
-  phone: "",
-  region: "",
-  city: "",
-  postal_code: "",
-  line1: "",
-  line2: "",
-};
-const fieldsOf = (d: DestinationWrite | Destination): Fields => ({
-  recipient_name: d.recipient_name,
-  phone: d.phone,
-  ...d.home_address,
-});
 type Run = (work: (isCurrent: () => boolean) => Promise<void>) => Promise<void>;
 type Money = (amount: number, currency: string) => string;
 const noHome: HomeAddress = { region: "", city: "", postal_code: "", line1: "", line2: "" };
-const inputs = [
-  ["recipient_name", "name", 120, true],
-  ["phone", "tel", 32, true],
-  ["region", "address-level1", 100, false],
-  ["city", "address-level2", 100, true],
-  ["postal_code", "postal-code", 20, false],
-  ["line1", "address-line1", 200, true],
-  ["line2", "address-line2", 200, false],
-] as const;
 
 export default function OrderFlow({
   context,

@@ -1,20 +1,16 @@
 "use client";
 
 // Purpose: signed buyer CVS discovery sheet with explicit store choice and confirmation.
-// Depends on: public/cvs immutable JSON, shared pure matcher, i18n and native dialog.
+// Depends on: cvs-directory-client, shared pure matcher, i18n and native dialog.
 // Used by: CvsPickup; parent alone validates/persists the selection through the buyer BFF.
 // Invariants: no search API, no automatic selection, no raw paste persistence, canonical display.
 import { useEffect, useRef, useState } from "react";
 import { cvsPickerCopy, type Locale } from "@live-commerce/i18n";
 import { matchCvsStores, normalizeCvsText, type CvsBrand, type CvsStore } from "../../../packages/format/src/cvs-match";
+import { loadCvsDirectory } from "../lib/cvs-directory-client";
 import styles from "./CvsStorePicker.module.css";
 
 const brands: CvsBrand[] = ["UNIMART", "FAMI", "HILIFE", "OKMART"];
-const directories = new Map<CvsBrand, CvsStore[]>();
-function validDirectory(value: unknown): value is CvsStore[] {
-  return Array.isArray(value) && value.length > 0 && value.every((row) =>
-    row !== null && typeof row === "object" && ["code", "name", "address", "county", "district"].every((key) => typeof row[key] === "string" && row[key].length > 0));
-}
 
 // Comparison uses normalized offsets while the rendered name/address always stays verbatim.
 function MatchedText({ text, query }: { text: string; query: string }) {
@@ -68,18 +64,13 @@ export default function CvsStorePicker({ open, brand, locale, onClose, onBrand, 
   }, [brand]);
   useEffect(() => {
     if (!open) return;
-    const cached = directories.get(brand);
-    if (cached) { setRows(cached); setLoading(false); setFailed(false); return; }
     const controller = new AbortController();
     setRows([]); setLoading(true); setFailed(false);
     void (async () => {
       try {
-        const response = await fetch(`/cvs/${brand.toLowerCase()}-20261028.json`, { signal: controller.signal, credentials: "omit" });
-        if (!response.ok) throw new Error("directory_unavailable");
-        const data: unknown = await response.json();
-        if (!validDirectory(data)) throw new Error("invalid_directory");
+        const data = await loadCvsDirectory(brand, controller.signal);
         if (controller.signal.aborted) return;
-        directories.set(brand, data); setRows(data);
+        setRows(data);
       } catch {
         if (!controller.signal.aborted) setFailed(true);
       } finally { if (!controller.signal.aborted) setLoading(false); }
