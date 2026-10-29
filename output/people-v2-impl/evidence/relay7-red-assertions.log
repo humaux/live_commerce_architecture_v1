@@ -1,0 +1,162 @@
+CONT289 CAUSAL RED — Gates 40803107511 / bundle07 job 123216904686
+REMOTE_HEAD=d409e4094b797aa86987f49923f3e64ce6bf2f99
+SYNTHETIC_MERGE=23f0dac876c0296755cfee8522ec8dce4c0245c6
+Fresh gh run download: all three failed browser artifacts independently read; SHA256 matched retained same-run originals.
+
+ARTIFACT_LOG=relay7-artifacts/gate-browser-customers-billing/playwright/run.k0OVhMp7/customers-billing/20261029T023319.732814483/playwright.log
+SHA256=10bc6836ece25f69c16079aaa9c29a858cdba20102b481d655bf278a27160447
+  2) tests/admin/people-v2.spec.ts:171:3 › PEOPLE-V2 export confirmation and persistence en-1440 › Download data: PEOPLE-V2-EXPORT-CONFIRM: review opens before any POST
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'Confirm download', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('button', { name: 'Confirm download', exact: true }) with timeout 10000ms
+      - waiting for getByRole('button', { name: 'Confirm download', exact: true })
+
+
+      172 |     await signed(page, width); const f = await fixture(page); await page.goto(detailURL("en"));
+      173 |     await expect(page.getByTestId("customer-download")).toBeVisible();
+    > 174 |     await act(page, "Download data", "PEOPLE-V2-EXPORT-CONFIRM: review opens before any POST", () => page.getByTestId("customer-download").click(), () => expect(page.getByRole("button", { name: copy.en.confirmDownload, exact: true })).toBeVisible());
+          |                                                                                                                                                                                                                                            ^
+      175 |     expect(f.posts).toHaveLength(0);
+      176 |     for (const fact of [name, "805", copy.en.verify, copy.en.protected, copy.en.permissions]) await expect(page.getByTestId("customer-detail")).toContainText(fact);
+      177 |     const download = page.waitForEvent("download");
+        at verify (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:174:236)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:40:29
+        at act (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:38:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:174:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.k0OVhMp7/customers-billing/20261029T023319.732814483/results/people-v2-PEOPLE-V2-export-80999-ion-and-persistence-en-1440/test-failed-1.png
+  3) tests/admin/people-v2.spec.ts:183:3 › PEOPLE-V2 erasure name checkbox and persistence en-1440 › Customer name: correct name alone does not authorize erasure
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator:  getByTestId('erase-submit')
+    Expected: disabled
+    Received: enabled
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeDisabled" getByTestId('erase-submit') with timeout 10000ms
+      - waiting for getByTestId('erase-submit')
+        24 × locator resolved to <button type="submit" class="primary danger" data-testid="erase-submit">Confirm erasure</button>
+           - unexpected value "enabled"
+
+
+      130 |   await expect(submit, "PEOPLE-V2-ERASE-NAME-AND-CHECK: empty confirmation is disabled").toBeDisabled();
+      131 |   await act(page, "Customer name", "wrong customer name keeps erasure disabled", () => page.getByTestId("erase-typed").fill("other customer"), () => expect(submit).toBeDisabled(), "fill");
+    > 132 |   await act(page, "Customer name", "correct name alone does not authorize erasure", () => page.getByTestId("erase-typed").fill(name), () => expect(submit).toBeDisabled(), "fill");
+          |                                                                                                                                                            ^
+      133 |   const scope = dialog.getByRole("checkbox", { name: copy.en.checked, exact: true });
+      134 |   await expect(scope, "PEOPLE-V2-ERASE-SCOPE: signed confirmation requires an explicit scope checkbox").toBeVisible();
+      135 |   await act(page, copy.en.checked, "correct name and checked scope enable confirmation", () => scope.check(), () => expect(submit).toBeEnabled(), "check");
+        at verify (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:132:156)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:40:29
+        at act (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:38:3)
+        at eraseReady (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:132:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:185:69
+  7) tests/admin/people-v2.spec.ts:222:5 › PEOPLE-V2 independent uncertainty fence return en-1440 ──
+
+    Error: PEOPLE-V2-UNKNOWN-FENCE-RETURN: export stays locked
+
+    expect(locator).toBeDisabled() failed
+
+    Locator:  getByTestId('customer-download')
+    Expected: disabled
+    Received: enabled
+    Timeout:  10000ms
+
+    Call log:
+      - PEOPLE-V2-UNKNOWN-FENCE-RETURN: export stays locked getByTestId('customer-download') with timeout 10000ms
+      - waiting for getByTestId('customer-download')
+        24 × locator resolved to <button type="button" data-testid="customer-download">Download customer data</button>
+           - unexpected value "enabled"
+
+
+      232 |       await act(page, copy.en.viewData, "customer profile remains readable", () => page.getByRole("button", { name: copy.en.viewData, exact: true }).click(), () => expect(page.getByTestId("customer-detail")).toContainText(name));
+      233 |       if (reload) await act(page, "Refresh", "server customer remains readable after reload", () => page.reload(), () => expect(page.getByTestId("customer-detail")).toContainText(name), "reload");
+    > 234 |       await expect(page.getByTestId("customer-download"), `PEOPLE-V2-UNKNOWN-FENCE-${reload ? "RELOAD" : "RETURN"}: export stays locked`).toBeDisabled();
+          |                                                                                                                                           ^
+      235 |       await expect(page.getByTestId("customer-erase"), `PEOPLE-V2-UNKNOWN-FENCE-${reload ? "RELOAD" : "RETURN"}: erasure stays locked`).toBeDisabled();
+      236 |       expect(f.posts).toHaveLength(1);
+      237 |       await fits(page);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:234:139
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+  8) tests/admin/people-v2.spec.ts:222:5 › PEOPLE-V2 independent uncertainty fence reload en-1440 ──
+
+    Error: PEOPLE-V2-UNKNOWN-FENCE-RELOAD: export stays locked
+
+    expect(locator).toBeDisabled() failed
+
+    Locator:  getByTestId('customer-download')
+    Expected: disabled
+    Received: enabled
+    Timeout:  10000ms
+
+    Call log:
+      - PEOPLE-V2-UNKNOWN-FENCE-RELOAD: export stays locked getByTestId('customer-download') with timeout 10000ms
+      - waiting for getByTestId('customer-download')
+        24 × locator resolved to <button type="button" data-testid="customer-download">Download customer data</button>
+           - unexpected value "enabled"
+
+
+      232 |       await act(page, copy.en.viewData, "customer profile remains readable", () => page.getByRole("button", { name: copy.en.viewData, exact: true }).click(), () => expect(page.getByTestId("customer-detail")).toContainText(name));
+      233 |       if (reload) await act(page, "Refresh", "server customer remains readable after reload", () => page.reload(), () => expect(page.getByTestId("customer-detail")).toContainText(name), "reload");
+    > 234 |       await expect(page.getByTestId("customer-download"), `PEOPLE-V2-UNKNOWN-FENCE-${reload ? "RELOAD" : "RETURN"}: export stays locked`).toBeDisabled();
+          |                                                                                                                                           ^
+      235 |       await expect(page.getByTestId("customer-erase"), `PEOPLE-V2-UNKNOWN-FENCE-${reload ? "RELOAD" : "RETURN"}: erasure stays locked`).toBeDisabled();
+      236 |       expect(f.posts).toHaveLength(1);
+      237 |       await fits(page);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/people-v2.spec.ts:234:139
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+
+ARTIFACT_LOG=relay7-artifacts/gate-browser-migration-import/playwright/run.Zn0uFtSs/migration-import/20261029T023758.126229252/playwright.log
+SHA256=3f4c93579fd4411340d33716b0d469b262f87372c21b25a776c239e29ca9f287
+  1) tests/admin/import-wizard.spec.ts:323:1 › MIUI imported-only erasure removes history and tombstone blocks same source ID
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator:  getByTestId('erase-submit')
+    Expected: disabled
+    Received: enabled
+    Timeout:  15000ms
+
+    Call log:
+      - Expect "toBeDisabled" getByTestId('erase-submit') with timeout 15000ms
+      - waiting for getByTestId('erase-submit')
+        34 × locator resolved to <button type="submit" class="primary danger" data-testid="erase-submit">Confirm erasure</button>
+           - unexpected value "enabled"
+
+
+      331 |       await page.getByTestId("customer-erase").click();
+      332 |       await page.getByTestId("erase-typed").fill(await page.locator(".people-facts h2").innerText());
+    > 333 |       await expect(page.getByTestId("erase-submit")).toBeDisabled();
+          |                                                      ^
+      334 |       await page.getByTestId("erase-dialog").getByRole("checkbox", { name: customersCopy.en.people.checked, exact: true }).check();
+
+ARTIFACT_LOG=relay7-artifacts/gate-browser-password-auth/playwright/run.kgFtEHsF/oc-20261029T022532.994674064/playwright.log
+SHA256=7acce278f9d91ec47f40b7b66628b152367f15975ff3b5be632bdd4ee8e6a5bf
+  1) tests/admin/oc/reauth.spec.ts:370:3 › OC-04 zh-CN desktop: the refused invite opens the localized dialog and is replayed once after password re-auth
+
+    Error: page.goto: net::ERR_ABORTED at http://127.0.0.1:35979/zh-CN/
+    Call log:
+      - navigating to "http://127.0.0.1:35979/zh-CN/", waiting until "load"
+
+
+      118 |
+      119 | async function createStore(page: Page, locale: Locale) {
+    > 120 |   await page.goto(`/${locale}/`);
+          |              ^
+      121 |   const created = await page.evaluate(async () => {
+      122 |     const csrf = document.cookie.split(";").map((p) => p.trim()).find((p) => p.startsWith("__Host-commerce_csrf="))!.slice(21);
+      123 |     const r = await fetch("/api/onboarding/initial-store", { method: "POST", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf, "Idempotency-Key": `oc4-${crypto.randomUUID()}` },
+        at createStore (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:120:14)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:374:25
