@@ -634,7 +634,7 @@
     "tests/foundation/store_domains_backfill_test.go": "d3cebd7f03af4c737116f95c61ce2881168b4cf76127286b1e4e01633cf41b29",
     "tests/foundation/store_domains_test.go": "8fb8be48b8f055e62d5c1ecb824a3f6a181543997c458edf3576abecc439f0de",
     "tests/foundation/store_number_test.go": "aedcd27672c6982e81537a316604ffef34d5ddd4ff615368f259c6e48e20567d",
-    "tests/foundation/store_profile_http_test.go": "0dacd7ee694922ee20a73823cdc3bbaaaf0d3ceaf1b5e9397d159c0c3504f14c",
+    "tests/foundation/store_profile_http_test.go": "ee75826848733eed8e49c781ce23fa173294ac8256f38ccff9ab510a52498058",
     "tests/foundation/storefront_integration_smoke_test.go": "79af047c03393d93d6ffb1426c37fbfc7df410f224418af0095d7af64e71029f",
     "tests/foundation/storefront_publish_test.go": "5b071869cb8b55d88ffbb5a630678aa5180823327472bc519efc27eff9762657",
     "tests/foundation/stripe_authority_test.go": "912595f4b8764431d4f99671b45a2ba647c2fba04e8d3cbecd35769e1995413a",
