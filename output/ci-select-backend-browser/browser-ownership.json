@@ -738,7 +738,7 @@
     "tests/storefront/stripe-browser.mjs": "0e968a4ee71a2cd9aa13adb3c3d38704e266943e016cb64873237b017848cbbe",
     "tests/ui/click-sweep-known-defects.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
     "tests/ui/click-sweep-lib.mjs": "e834c41f2daeb3d56979c0e84e5cba5a09b1e85c50cc970d1fbacd61014d122f",
-    "tests/ui/click-sweep-lib.test.mjs": "603f954fa7004d7c067ce8a8fbd147669578d3053baaae37fc64c3314eeca431",
+    "tests/ui/click-sweep-lib.test.mjs": "6601ea57f6ecd3b20204c6e0f94c90a6bf3a9278342267a74efe6ea25ae63441",
     "tests/ui/click-sweep-weights.json": "1ce9453d358225ba0b69268cc19b431d18b0da701834301a04079c22e6f1aaa3",
     "tests/ui/click-sweep.mjs": "538536eb38c1c07b095cb4c11149b1315a77bca5897189306a3063967b4f53e9",
     "tests/ui/ds-figma-parity.mjs": "f79a93f632c98c20c56b2167fbfa6898d54930ec8da6654e25c465355a89c6ed",
