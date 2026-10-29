@@ -127,8 +127,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0205 (OC-05 per-store quick-start marker) adds one: 134 -> 135.
 	// 0206 (CVS-SNAP directory) adds one: 135 -> 136.
 	// 0207 (IDENT-P2: OIDC re-auth infinity cap; #215/#228) adds one: 136 -> 137.
-	if len(r2) != 137 {
-		t.Fatalf("R2 migration set = %d files %v, want 137", len(r2), r2)
+	// 0208 (#196/#197 settlement item completeness) adds one: 137 -> 138.
+	if len(r2) != 138 {
+		t.Fatalf("R2 migration set = %d files %v, want 138", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
