@@ -187,7 +187,8 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
             {!data.marker.completed && <span data-testid="settings-v2-quickstart-prompt">{button(c.start, () => { setFromQuickstart(true); setScreen("step1"); })}</span>}
           </div>}
         </section>}
-        {(screen === "editor" || screen.startsWith("step")) && <form data-testid={screen === "editor" ? "settings-v2-editor" : "settings-v2-quickstart"} onSubmit={review}>
+        {/* Remount between steps so a clicked navigation button cannot become the next step's submit button before its native default action. */}
+        {(screen === "editor" || screen.startsWith("step")) && <form key={screen} data-testid={screen === "editor" ? "settings-v2-editor" : "settings-v2-quickstart"} onSubmit={review}>
           <fieldset disabled={busy || !canManage}>
             <p className="settings-v2-shipping">{c.shipping}</p>
             {(screen === "editor" || screen === "step1") && profileFields}

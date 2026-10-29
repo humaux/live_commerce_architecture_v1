@@ -1,3 +1,9 @@
+## FIX #303 relay 2 — prevent navigation from submitting the next step
+
+Current-head CI **40846464956 / job 123357007118**, artifact **12886400573**, failed `settings-v2.spec.ts:154`: after filled product fields, Back: delivery → Next: product unexpectedly opened Review settings. React reused the clicked navigation button as a submit button before its native default action. Key the form by screen so navigation removes its original target while retaining the controlled draft. Existing assertions, fixtures, waits and gates stay intact. First attempt for this browser blocker.
+
+Fetched/merged origin/r3/integration first; already up to date at `d8093bc43`. Strict static TypeScript and diff checks exit 0 (E1); no local tests/servers/builds. Original failure, snapshot, screenshot and source hash are in `output/settings-v2-impl/fix303-relay2-*`; DELIVERY.md has the root-cause record. No new outside-plan path or import; historical playwright.config.ts registration remains for integrator approval. No generated map change required: no browser spec/page/route or Go dependency changed. Current repair GREEN/E4 pending. Revert this repair commit on the assigned branch to undo it.
+
 ## Problem and change
 
 The tests-only head fails because the signed simplified settings surface is absent. Implement the three-row overview, profile editor/review/save/recovery and optional three-step setup in zh-TW, zh-CN and en. Existing advanced configuration remains reachable by real clicks. Reuse existing profile CAS, quick-start marker, unique MANUAL delivery services and catalog commands; preserve original command bytes/key after uncertain results. No market, policy, payment or carrier defaults are invented.

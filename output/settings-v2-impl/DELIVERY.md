@@ -1,3 +1,48 @@
+# FIX #303 — relay 2 browser navigation repair, attempt 1 (2026-10-29)
+
+Authority: current dispatched FIX #303; repository source at head
+`5aab07763ac6657c402bd06f5ff6f00ea752b2e9`; original GitHub Gates
+**40846464956 / job 123357007118**, artifact **12886400573**.
+Fetched and merged `origin/r3/integration` first: already up to date at
+`d8093bc43f16f8eb4e209eeb6c7b698efcd27b0e`.
+The job API binds this failure to the current head; matrix receipt tests synthetic
+merge `701eebb5b11866cb172e61f7dcb2de676a2c6ca9`.
+Foundation **40846464937 / job 123355171013** succeeded on `5aab0776` only.
+
+Original Playwright assertion failure: `settings-v2.spec.ts:154`, Product name
+expected `Acceptance draft bag`, element not found. The independent CI snapshot
+shows Review settings after Back: delivery then Next: product. React reused the
+navigation button as the next screen's submit button during its click; after the
+fields were filled, the native default action submitted the new form. Empty-field
+validation masked this on the first forward pass. The filled-draft/back/forward
+case already exists in CI; no new test or assertion relaxation is needed.
+
+Root-cause fix: key the controlled form by screen, so a step transition removes
+the original navigation target rather than changing it into a submit button.
+Draft values remain in the component's state/session journal. This is the first
+targeted attempt for this browser blocker, separate from the earlier scanner fix.
+The original click/fill/value assertion, waits, fixtures and all gates stay intact.
+No imports changed, no extra module, route, dependency, setting or locale string.
+
+Raw assertion: `fix303-relay2-browser-red.log`; CI visible snapshot:
+`fix303-relay2-error-context.md`, `fix303-relay2-failed.png`.
+Static strict TypeScript and diff check exit 0, **E1**; source SHA-256:
+`70612c9a43ed2cdb31c779cd799bab73329ee2d8c20b66cea0fa42a7cffbf399`. Static receipt: `fix303-relay2-static.log`.
+Original tests-only causal RED remains **40828407097 / 123300694776**, head
+`696629d92e786e70bc70545089bc114d1b7cb7e4`; `red.log`.
+This implementation failure is not relabeled as tests-only RED.
+
+Current repair GREEN and independent E4: **PENDING/NOT_RUN**. Author verdict E0.
+One batched source/evidence push; integrator owns completed-workflow relay and
+fresh-session wakeup. No local tests/servers/builds, merge, auto-merge or deploy.
+Outside original card paths: no new paths; historical `playwright.config.ts`
+registration still requires integrator approval. Required UI process, fact parity,
+three-language copy and click ledger remain in the sections below; this repair
+changes no visual content. Humaux problem record and child-only canvas updated;
+final fix record/canvas will bind the pushed SHA and WAIT_RUN ids.
+
+---
+
 # FIX #303 — contract-drift repair, attempt 1 (2026-10-29)
 
 Current relay authority: dispatched FIX #303 and GitHub job 123352982732 on

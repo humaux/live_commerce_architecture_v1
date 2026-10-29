@@ -1,0 +1,7 @@
+Allowed static verification, 2026-10-29
+node <installed-typescript>/bin/tsc --noEmit -p output/settings-v2-impl/tsconfig.static.json
+exit=0; strict TypeScript, no emit, incremental=false
+git diff --check: exit=0
+SettingsV2.tsx SHA-256: 70612c9a43ed2cdb31c779cd799bab73329ee2d8c20b66cea0fa42a7cffbf399
+No new/renamed imports; harness search rg -rl SettingsV2\.tsx tests/: no direct compiler harness.
+No local tests, servers or builds. No Go dependency or browser-spec/page/route change; generated maps unchanged.
