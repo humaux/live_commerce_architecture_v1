@@ -199,7 +199,7 @@
     "tests/admin/studio-input.test.ts": "6fbfa353cfe6be733fcf44de842246af8af464ad7f532e72478e3ac11123d27e",
     "tests/admin/studio-request.test.ts": "5fa7349f872b332e92816bc0bf9f9c5e7523e57c9a18107f0ae9f21c77a0a045",
     "tests/admin/studio-ui.spec.ts": "c6e8d2aac1f40eda620f9fdc4d072f8f60a7152d9508fc56477f6b0881c4c0a9",
-    "tests/admin/taiwan-cvs.spec.ts": "66e65a7ecd7b09c994a4cfb3e2b3ca7b4aca746aa1d724a078bb3cb03aa40fad",
+    "tests/admin/taiwan-cvs.spec.ts": "36a853564b69f27198d4e237e8e51618379136ced4b40a7be7b33f8f03b2bc08",
     "tests/admin/team-bff.test.ts": "85ae24dc3ff4c27fac4cc5418acfdf584f08a4ab5cf7afd8c30d09f2d9e36533",
     "tests/admin/team-model.test.ts": "d11c2e907da6ed6079e83394dbe28c88d5552d353650b290d488ce1eff51a5d0",
     "tests/admin/timezone-ui.test.mjs": "d337f4e4d0495265aefaca8cda62c7876462893438fee36a8e4fba9bb874f137",
