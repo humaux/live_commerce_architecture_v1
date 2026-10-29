@@ -1,6 +1,7 @@
 // Purpose: buyer purchase transport, strict wire validation and crash-safe recovery.
 // Depends on: buyer-client BFF, purchase types, claim/CVS/promotion contracts and Web Locks.
 // Used by: storefront cart, ClaimLink, CheckoutFlow and order/payment components.
+// Invariants: only matching server quote/option money can authorize COD confirmation; amounts sent remain server-checked.
 import {
   buyerRequest,
   BuyerClientError,
@@ -518,6 +519,24 @@ export function offeredPaymentModes(option: Option, total: number): PaymentMode[
       total + (option.cod_surcharge_minor ?? 0) <= (option.cod_max_minor ?? -1)));
 }
 
+// Compare server facts only; never manufacture the amount shown or sent to checkout.
+export function codQuoteMatches(quote: Quote, option: Option): boolean {
+  return quote.cod_due_minor !== undefined &&
+    quote.cod_due_minor - quote.amount.total_minor === (option.cod_surcharge_minor ?? 0);
+}
+
+// GET quotes/{id} recomputes COD due under current settings (buyer-http-v1).
+// Keep the original quotation, promotion and expiry; a concurrent second fee change fails closed.
+export async function refreshCodQuote(context: string, quote: Quote, option: Option): Promise<Quote> {
+  if (!offeredPaymentModes(option, quote.amount.total_minor).includes("cash_on_delivery") || codQuoteMatches(quote, option)) return quote;
+  const latest = await readPurchase(`quotes/${quote.id}`, context, validQuote);
+  if (latest.id !== quote.id || latest.cart_id !== quote.cart_id || latest.cart_version !== quote.cart_version ||
+    latest.market_id !== option.market_id || latest.country !== option.country || latest.method !== option.method ||
+    latest.currency !== option.currency || Date.parse(latest.expires_at) <= Date.now() || !codQuoteMatches(latest, option))
+    throw new BuyerClientError("request_failed");
+  return latest;
+}
+
 export function checkoutInput(
   quote: Quote,
   option: Option,
@@ -553,6 +572,7 @@ export function checkoutInput(
         : !option.payment_modes.includes(paymentMode ?? "card")) ||
     (email !== "" && !validBuyerEmail(email)) ||
     !offeredPaymentModes(option, quote.amount.total_minor).includes(paymentMode ?? "card") ||
+    (paymentMode === "cash_on_delivery" && !codQuoteMatches(quote, option)) ||
     destination.cart_id !== cart.id ||
     destination.cart_version !== cart.version ||
     destination.country !== quote.country ||
