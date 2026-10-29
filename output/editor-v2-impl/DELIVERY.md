@@ -1,4 +1,49 @@
-## FIX323 RELAY 1 — implementation prepared; CI acceptance PENDING
+## FIX323 RELAY 2 — current-head failures repaired; fresh CI PENDING
+
+2026-10-30. Authority: assigned FIX #323 relay, repository AGENTS.md, 架构.md §§0/1/2/26/27,
+contracts/storefront-v2.md §B/B-acceptance, and current source/CI. No delegation.
+Read exact PR head `f3e4130071b2296d498377c2aba4dd4ca9ad0cd4`: Gates `40920310953`,
+attempt 1, failed job `123613924536` (`bundle:04`). Workflow remains in progress;
+all failed jobs currently exposed by its jobs API were inspected (only this job).
+`gh run view --log-failed --job` cannot retrieve logs until the workflow completes;
+the GitHub jobs/logs endpoint supplies the original completed-job log instead.
+Artifact `12919092181` (`gate-browser-design`) was downloaded with `gh run download`.
+Its receipt checkout SHA is `b75a300da827563981aefa3e3260732208015784` (synthetic merge).
+26 existing Playwright cases pass; 17 new cases fail. This is implementation negative E3,
+not a tests-only push or GREEN. Original causal RED remains `40914495431/123593141674`.
+Same-head Foundation `40920310991/123611432672` passed, without product acceptance.
+
+Root causes and bounded fix attempt 1/2 for these implementation blockers:
+
+|Failure|Root and correction|Unchanged acceptance|
+|---|---|---|
+|Domains/review address unavailable, preview popup closed|The MOCK storefront reads supplied `no-store`, but the existing `orders-client.read` requires exactly `private, no-store`. Match that BFF envelope on both storefront fixture reads; keep design reads and all body facts intact.|All address, domain-state, preview navigation/order, session/CAS/key/body assertions and production parsers|
+|English mobile hub reports 114 characters|The clipped disabled explanation still has layout/text ranges. Use native `hidden` for the existing `aria-describedby` targets; they remain available as accessible descriptions without rendering a second state sentence.|100-character/12-block budget, copy, controls and disabled reasons|
+|Both menu journeys report 22 text blocks|Each `2/8` counter was three adjacent React text nodes. Render the complete counter as one text string inside its existing span; order, count and style are preserved.|20-block ceiling, every link and all real-click edit/persistence assertions|
+
+Merged `origin/r3/integration@17328372dea91220050e9583259312e2db2e5d97` first in this worktree;
+merge commit `2f8b2df69` includes the required co-author footer. Its inherited CVS popup fix and
+ownership update belong to integration, not new edits to that module. No runner apt/dpkg/network
+failure, so no infrastructure rerun. Browser ownership regenerated using its mandated generator.
+No Go dependency graph change; dependency-map regeneration is unnecessary.
+
+UI process for this repair: BOURDIEU Q1–Q6 and PROJECT UNDERSTANDING remain the sections below;
+Q6 stays UNKNOWN. MOBBIN → EAGLE and FIGMA OFFICIAL GUIDANCE remain the signed implementation
+references below; this relay adds no layout, copy, reference or Figma frame. Audited current CI
+screenshots, trace/error contexts and current Design/DesignNav/CSS before editing. All three locale
+copies and the REQUIRED desktop/mobile/review inventory remain intact. Native hidden descriptions
+retain their ID associations, and menu counts retain every fact. Runtime density and full clicks
+must be measured again by this PR's CI; static reasoning is not a measured pass.
+
+Static `node --check tests/admin/editor-v2.spec.ts` and `git diff --check`: exit 0 (E1).
+No local tests, builds, servers, containers or fixtures. No import changes or new harness dependencies.
+No new outside-PLAN source edits. Existing PR exceptions remain `apps/admin/components/DesignVersions.tsx`
+and explicitly assigned `tests/foundation/browser_store_design_test.go`, listed in the PR body.
+Humaux store/canvas/coord/index/link unavailable (NOT_RUN); output evidence is not shared memory.
+New-head GREEN and independent review PENDING, own acceptance E0. Integrator owns CI completion
+relay; workflow run IDs will be posted in the PR comment with no evidence-only push after GREEN.
+
+## FIX323 RELAY 1 — historical implementation preparation
 
 2026-10-30. Branch `unit/editor-v2-ui`, dispatched UI worker, no delegation. Runtime exact model/effort not exposed. Rollback code base: `7d19e61394cb8450416e12e036439b9be52bff46`; pre-existing dirty handoff files retained. `origin/r3/integration` fetched and merged first: Already up to date at `a050a17e9aecfe5b3322bfdffd14de297c3e73c2`.
 
@@ -463,3 +508,10 @@ Static literal inventory from current design-copy.ts and packages/i18n/src/edito
 |editor.versions.1|發布記錄|发布记录|Publication history|
 |editor.summary.1|網店內容|网店内容|Store content|
 |editor.newPage.1|新增資訊頁|添加信息页|New page|
+
+## Implementation push receipt (uncommitted by design)
+
+Head `f3e4130071b2296d498377c2aba4dd4ca9ad0cd4`, PR #323.
+WAIT_RUN: 40920310953 — Gates, in_progress, test jobs not assigned yet.
+WAIT_RUN: 40920310991 — Foundation, job 123611432672 in_progress.
+Both workflow headSha values match the pushed implementation. GREEN and independent acceptance PENDING; author PASS=E0. Integrator owns completion relay; no evidence-only push, merge or auto-merge.

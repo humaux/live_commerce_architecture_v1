@@ -104,8 +104,10 @@ async function open(page: Page, locale: Locale, mobile: boolean) {
       await route.fulfill({ json: receipt });
     } else throw new Error(`unexpected fixture write ${method} ${resource}`);
   });
-  await page.route(`**/api/stores/${store}/storefront`, (route) => route.fulfill({ headers: readHeaders, json: { published: true, version: 5, domains: [{ origin: address, valid_until: "2099-01-01T00:00:00Z", serving: true }] } }));
-  await page.route(`**/api/stores/${store}/storefront/domains`, (route) => route.fulfill({ headers: readHeaders, json: { domains: [
+  // Storefront reads use orders-client.read, whose BFF envelope requires the exact private cache policy.
+  const storefrontReadHeaders = { "Cache-Control": "private, no-store" };
+  await page.route(`**/api/stores/${store}/storefront`, (route) => route.fulfill({ headers: storefrontReadHeaders, json: { published: true, version: 5, domains: [{ origin: address, valid_until: "2099-01-01T00:00:00Z", serving: true }] } }));
+  await page.route(`**/api/stores/${store}/storefront/domains`, (route) => route.fulfill({ headers: storefrontReadHeaders, json: { domains: [
     { origin: address, kind: "platform", state: "ACTIVE", version: 1, token: null, verify_deadline: null, serving: true },
     { origin: customAddress, kind: "custom", state: "OWNERSHIP_PENDING", version: 1, token: null, verify_deadline: null, serving: false },
   ] } }));

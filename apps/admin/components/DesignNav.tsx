@@ -28,7 +28,7 @@ function List({
   const edit = (i: number, patch: Partial<NavItem>) => onChange(items.map((item, j) => (j === i ? { ...item, ...patch } : item)));
   return (
     <section className="design-block" data-testid={`design-nav-${name}`}>
-      <h3>{name === "header" ? n.header : n.footer} <span className="design-count">{items.length}/{max}</span></h3>
+      <h3>{name === "header" ? n.header : n.footer} <span className="design-count">{`${items.length}/${max}`}</span></h3>
       {items.length === 0 && <p className="design-muted">{n.empty}</p>}
       {items.map((item, i) => {
         const path = `nav.${name}[${i}]`;

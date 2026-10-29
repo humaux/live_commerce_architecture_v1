@@ -196,3 +196,41 @@ Temporary dependency link/config removed. Existing external caches untouched.
 Implementation root fix: authoritative receipts update live + versions immediately; saved document only on cancel;
 initial definite refusal distinct from uncertain recovery; atomic test read fixes the observed OC11 race.
 Implementation CI/GREEN pending next push. No implementation tests run locally.
+PR #323 implementation pushed: f3e4130071b2296d498377c2aba4dd4ca9ad0cd4.
+
+RED E3 negative evidence: Gates 40914495431/job 123593141674 at 7d19e61394cb8450416e12e036439b9be52bff46 (synthetic merge 77da99167540cc5e4c722f049582d705c159e334). 17 new cases load draft v42, then fail their missing-hub assertion; 1 old OC11 count/isEnabled race, 25 old passes. Receipts 123604023027 / required 123604294796 are downstream only. No infra rerun. Raw browser artifact downloaded and inspected; causal RED recorded in output/editor-v2-impl/red.log.
+
+Implementation CI headSha verified exact:
+WAIT_RUN: 40920310953 — Gates (GitHub runners), in_progress; gate test jobs not assigned yet.
+WAIT_RUN: 40920310991 — Foundation checks, job 123611432672 in_progress.
+These are workflow run IDs, not the plan job. No implementation GREEN yet.
+
+Static syntax/diff checks exit 0 (E1); tsc exit 1 due unavailable local dependency/workspace resolution, not acceptance. Own PASS=E0. Runtime density, locale/field parity, click ledger, persistence and independent review=PENDING. Local tests/builds/servers/containers/PG, Figma writes/lint and production NOT_RUN. Humaux coord/store/canvas/index/link unavailable.
+
+Outside original PLAN: apps/admin/components/DesignVersions.tsx, same-app extraction under scope pre-approval; existing explicitly assigned tests/foundation/browser_store_design_test.go remains for integrator approval and was not edited this relay. No other scope expansion.
+
+Post-push receipts remain uncommitted; no evidence-only push. Integrator owns completion notification/fresh-session relay for both WAIT_RUN IDs; terminal matchers failure/cancelled/timed_out. Worker ends monitoring well within ten minutes. No local background processes remain. No merge or auto-merge.
+
+FIX323 RELAY 2 — 2026-10-30, implementation head f3e4130071b2296d498377c2aba4dd4ca9ad0cd4
+Gates run 40920310953 attempt 1, failed bundle:04 job 123613924536.
+Raw original log: implementation-relay2-job.log (GitHub jobs/logs endpoint;
+gh run view --log-failed reports workflow still in progress).
+All exposed failed jobs inspected: only 123613924536 at inspection; no infrastructure failure.
+Foundation run 40920310991 job 123611432672 success at this head; not product acceptance.
+Browser artifact 12919092181 gate-browser-design downloaded via gh run download.
+Synthetic merge checkout b75a300da827563981aefa3e3260732208015784.
+43 Playwright cases: 26 existing pass / 17 new fail.
+New assertion failures: domain address unavailable (5 hub cases + 6 review cases),
+English mobile hub characters 114 > 100, desktop/mobile nav text blocks 22 > 20,
+and 3 preview popups closed after storefront read refusal.
+Root: storefront fixture Cache-Control no-store != private, no-store required by orders-client.read.
+Fix only those two fixture response headers, never the production check/body/assertions.
+Density root: clipped accessible explanations retain text ranges; use native hidden + existing aria-describedby.
+Menu counter root: adjacent JSX expressions split one count across 3 text nodes; emit one complete count string.
+Keep thresholds, exemptions, fixture data, retries, timeouts and every assertion unchanged.
+Original causal tests-only RED remains Gates 40914495431/job 123593141674 at 7d19e61394cb8450416e12e036439b9be52bff46.
+Integration 17328372dea91220050e9583259312e2db2e5d97 merged first; merge 2f8b2df69.
+Targeted implementation blocker fix attempt 1/2; fresh CI only will establish outcome.
+Static node --check editor-v2.spec.ts and git diff --check exit 0 (E1).
+Browser ownership regenerated, no Go dependency graph change. No local tests/servers/builds.
+Current product GREEN PENDING; own acceptance E0; Humaux persistence NOT_RUN (tools unavailable).

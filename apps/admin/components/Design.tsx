@@ -597,7 +597,7 @@ function Editor({
         </div>
       </div>
       {(saveReason || publishReason) && (
-        <div className="design-disabled-reasons design-visually-hidden">
+        <div className="design-disabled-reasons" hidden>
           {saveReason && <p id="design-save-reason">{saveReason}</p>}
           {publishReason && publishReason !== saveReason && (
             <p id="design-publish-reason">{publishReason}</p>
