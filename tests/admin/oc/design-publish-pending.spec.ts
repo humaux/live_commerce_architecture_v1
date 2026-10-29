@@ -6,6 +6,7 @@
 // real click/fill. Tests share one store and run in file order (workers: 1).
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { designCopy, fill } from "../../../apps/admin/lib/design-copy";
+import { entryCopy } from "../../../apps/admin/lib/entry-copy";
 import type { VersionInfo } from "../../../apps/admin/lib/design-model";
 
 const required = (name: string) => {
@@ -19,6 +20,12 @@ const store = required("LC_BROWSER_BFF_STORE");
 const c = designCopy.en;
 const okPublished = new RegExp(c.okPublished.replace("{n}", "\\d+"));
 test.use({ baseURL: origin });
+
+const sessionRecoveryConfirm = {
+  "zh-TW": "確認先前草稿 v{n} 的發布請求？如果尚未完成，這會將該草稿發布給買家。",
+  "zh-CN": "确认之前草稿 v{n} 的发布请求？如果尚未完成，这会将该草稿发布给买家。",
+  en: "Confirm the earlier publish request for draft v{n}? If it has not completed, this will publish that draft for buyers.",
+};
 
 // Integrator ruling: count attempts, not HTTP transmissions. Every replay retains the exact key AND bytes.
 function expectAttempts(publishes: { key: string | undefined; body: string | null }[], count: number) {
@@ -75,6 +82,85 @@ async function recheckSettled(page: Page) {
     message: "the request-bound recovery settled and its busy state cleared",
   }).toBe(true);
   return response;
+}
+
+for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+  for (const cut of ["after-commit", "before-commit"] as const) {
+    test(`OC11 RVFIX P1 ${locale} ${cut}: new login requires explicit recovery of the original request`, async ({ page }) => {
+      const { publishes, committed, state } = await open(page);
+      await page.goto(`/${locale}/design?store=${store}`);
+      await edit(page, `rvfix-${locale}-${cut}`);
+      state.cut = cut;
+      await page.getByTestId("design-publish").click();
+      await expect(page.getByTestId("design-publish-unconfirmed")).toBeVisible();
+      await expect(page.getByTestId("design-publish-recheck")).toBeEnabled();
+      expectAttempts(publishes, 1);
+      // Read-only journal measurement: the fixture never writes browser storage or changes session identity.
+      const journal = () => page.evaluate((id) => sessionStorage.getItem(`lc.design.publishPending.${id}`), store);
+      const original = await journal();
+      expect(original).not.toBeNull();
+      const attempt = JSON.parse(original!);
+      expect(attempt.retries).toBe(3);
+
+      const signOut = page.getByTestId("workspace-sign-out");
+      await page.locator("details").filter({ has: signOut }).locator("summary").click();
+      await signOut.click(); // real logout/login rotates the production CSRF/session boundary
+      await page.getByRole("button", { name: entryCopy[locale].signIn, exact: true }).click();
+      await page.getByTestId("nav-group-storefront").waitFor({ state: "attached" });
+      const sentBeforeReturn = publishes.length;
+      state.cut = "none";
+      await page.goto(`/${locale}/design?store=${store}`);
+      await expect(page.getByTestId("design-name")).toBeVisible();
+      await expect(page.getByTestId("design-publish-pending")).toContainText(designCopy[locale].publishPending);
+      await expect(page.getByTestId("design-publish")).toBeDisabled();
+      // Observe beyond the entire 250+500+1000ms automatic retry schedule: a fresh login must not replay old intent.
+      await page.waitForTimeout(2000);
+      expect(publishes.length, "RVFIX-P1 no automatic cross-session publish").toBe(sentBeforeReturn);
+      expect(await journal(), "RVFIX-P1 login must preserve the original fenced identity").toBe(original);
+      await page.reload();
+      await expect(page.getByTestId("design-publish-pending")).toBeVisible();
+      const recover = page.getByTestId("design-publish-recheck");
+      await expect(recover, "RVFIX-P1 a new login must offer a usable explicit recovery path").toBeEnabled();
+
+      page.removeAllListeners("dialog");
+      const confirmations: string[] = [];
+      let acceptRecovery = false;
+      page.on("dialog", async (dialog) => {
+        expect(dialog.type()).toBe("confirm");
+        confirmations.push(dialog.message());
+        if (acceptRecovery) await dialog.accept();
+        else await dialog.dismiss();
+      });
+      await recover.click();
+      expect(confirmations, "RVFIX-P1 old intent requires informed confirmation in the current language")
+        .toEqual([fill(sessionRecoveryConfirm[locale], { n: attempt.version })]);
+      expect(publishes.length, "RVFIX-P1 cancelling recovery sends nothing").toBe(sentBeforeReturn);
+      expect(await journal(), "RVFIX-P1 cancelling recovery retains the unresolved original identity").toBe(original);
+      await expect(page.getByTestId("design-publish")).toBeDisabled();
+
+      acceptRecovery = true;
+      const response = page.waitForResponse((r) => r.url().endsWith("/design/publish") && r.request().method() === "POST");
+      await recover.click();
+      const receipt = await response;
+      expect(receipt.status()).toBe(200);
+      expect(receipt.request().headers()["idempotency-key"]).toBe(attempt.key);
+      expect(receipt.request().postData()).toBe(publishes[0].body);
+      const result: VersionInfo = await receipt.json();
+      expect(result.source_version).toBe(attempt.version);
+      if (cut === "after-commit") expect(result).toEqual(committed[0]);
+      await expect(page.getByTestId("design-note")).toContainText(fill(designCopy[locale].okPublished, { n: result.version }));
+      await expect(page.getByTestId("design-publish-pending")).toHaveCount(0);
+      expectAttempts(publishes, 1);
+      await expect.poll(journal).toBeNull();
+      await page.reload();
+      await expect(page.getByTestId("design-name")).toBeVisible();
+      await expect(page.getByTestId("design-publish-pending")).toHaveCount(0);
+      await edit(page, "rvfix-recovered");
+      await expect(page.getByTestId("design-publish"), "RVFIX-P1 publishing is unlocked after authenticated recovery").toBeEnabled();
+      await page.getByTestId("design-save").click();
+      await expect(page.getByTestId("design-note")).toContainText(designCopy[locale].okSaved);
+    });
+  }
 }
 
 test("OC11 publish lost after commit: pending, no second publish, recheck finds it", async ({ page }) => {

@@ -207,3 +207,11 @@ Existing tests-only eec62d477; Gates40785921695 / Go123162345931 TestStoreDesign
 Pre-FIX5 exact PR head9228365da9b27c4f1e99a1d5952fe9e62f28758d, Gates40814762280 job123254463571 bundle04: TestBrowserStoreDesign failed, 9 failed / 10 passed, original SDB8 pass. Artifact12871899297; syntheticff3e587b02d5ab7b7733ea64c27e764cd0c3b97c; playwright.log SHA25647fc9a904925efd3506fb4f3500231b8630a50a6c377c11fd7a90c4f0f5c7b37.
 Fresh gh run view40814762280 --job123254463571 --log-failed exit0; filtered raw log fix5-prior-failed.log.
 FIX5 only changes authorized browser recovery oracles/fault timing (equal strength), preserves b11016111 implementation, all negative cases, R5 reload, three locales and 7000ms timeout. Old-to-new checklist in DELIVERY.md. No duplicate RED push or new product mutation. Current GREEN pending, authorE0; no local tests/servers/PG/browser.
+
+RVFIX #221 — 2026-10-29 tests-only RED candidate:
+Authority: cxf-rv-221.log final P1; cross-session pending blocks all recovery controls.
+Merged integration f8fd8900577815a328643ed878d88a6a247d2ab2 before edits (merge f06e7c72c).
+Six new real-click locale x lost-answer cases; expected assertion failure: RVFIX-P1 a new login must offer a usable explicit recovery path.
+No product fix yet. New run/job receipt PENDING; setup errors are not RED. Existing historical receipts above are unchanged.
+Static node --check and git diff --check exit 0, E1 only; no local tests/servers. Author assessment E0.
+Wakeup: integrator relays Gates/Foundation conclusion in fresh session. P2 storage failure -> PR comment, as dispatched.
