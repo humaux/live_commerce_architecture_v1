@@ -164,3 +164,35 @@ production checks, assertions, fixture values, retries/timeouts/thresholds uncha
 Targeted attempt count: 1/2. Application implementation stays NOT_RUN pending causal RED.
 Static only: node --check tests/admin/editor-v2.spec.ts exit 0; git diff --check exit 0.
 Humaux/coord/store/canvas unavailable; no database persistence claimed.
+
+2026-10-30 push receipt — current head 7d19e61394cb8450416e12e036439b9be52bff46
+WAIT_RUN: 40914495431 (Gates (GitHub runners), in_progress; gate jobs pending plan)
+WAIT_RUN: 40914495459 (Foundation checks), job 123590985293 in_progress
+Both workflow metadata headSha match the pushed head; no plan job ID used as WAIT_RUN.
+Fresh causal RED=PENDING; implementation/GREEN/independent acceptance=NOT_RUN.
+Integrator owns completion relay/fresh session; stop monitoring within ten minutes.
+Terminal failure matcher: failure/cancelled/timed_out. No evidence-only push.
+
+FIX323 RELAY 1 — 2026-10-30, current head 7d19e61394cb8450416e12e036439b9be52bff46
+Integration merge: origin/r3/integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2, Already up to date (exit 0).
+RED Gates run 40914495431, bundle:04 job 123593141674, attempt 1, failure.
+Synthetic merge checked by CI: 77da99167540cc5e4c722f049582d705c159e334; workflow headSha 7d19e61394cb8450416e12e036439b9be52bff46.
+Artifact gate-browser-design downloaded into fix323-relay1-browser/ with gh run download.
+43 browser cases: 17 NEW editor-v2 failures AFTER v42 snapshot assertion, all on
+"signed four-task hub replaces the expanded five-tab form", locator design-hub missing.
+Causal behavior RED established (E3 negative evidence), application implementation now authorized.
+Also 1 existing OC11 zh-TW failure at recheckSettled: count/isEnabled non-atomic check races
+with successful receipt removing the button. Trace POST 200 at 16:57:44.090Z, versions 200 at 16:57:44.106Z.
+Fix read atomically; preserve busy-settled assertion and timeout. 25 existing cases passed.
+No apt/dpkg/mirror failure. Foundation run 40914495459 job 123590985293 success at same workflow head.
+Whole Gates run still in progress; neither overall GREEN nor independent acceptance claimed.
+Current RED run completed: failure. Read all failing jobs for this head:
+123593141674 browser-design behavioral RED + OC11 read race;
+123604023027 receipts: only --browser-design status FAIL;
+123604294796 required: gate=failure / receipts=failure downstream.
+Static node --check (three browser specs + timezone harness) and git diff --check: exit 0.
+Implementation tsc: exit 1, unresolved local dependency/workspace modules; NOT_PASS.
+Temporary dependency link/config removed. Existing external caches untouched.
+Implementation root fix: authoritative receipts update live + versions immediately; saved document only on cancel;
+initial definite refusal distinct from uncertain recovery; atomic test read fixes the observed OC11 race.
+Implementation CI/GREEN pending next push. No implementation tests run locally.

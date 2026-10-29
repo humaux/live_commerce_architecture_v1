@@ -317,7 +317,11 @@ for (const locale of locales) {
     await page.getByRole("button", { name: ui[locale].details, exact: true }).click();
     const summary = page.getByTestId("design-summary");
     for (const text of ["Preview name", "#247965", "Welcome", "Products", "8", "Shipping", "Returns", "shipping", "returns", ui[locale].empty]) await expect(summary).toContainText(text);
-    for (const group of ["profile", "home", "nav", "pages"]) await expect(summary.getByTestId(`design-summary-${group}`)).toBeVisible();
+    for (const group of ["profile", "home", "nav", "pages"]) {
+      const detail = summary.getByTestId(`design-summary-${group}`);
+      await expect(detail).toBeVisible();
+      await click(page, detail.locator('summary'), `Review ${group}`, 'selected review group expands', () => expect(detail.locator('details')).toHaveAttribute('open', ''));
+    }
     await page.getByTestId("design-publish-continue").click();
     await hub(page, locale);
     expect(state.attempts).toHaveLength(0);
