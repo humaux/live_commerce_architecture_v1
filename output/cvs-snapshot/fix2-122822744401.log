@@ -1,0 +1,90 @@
+2244-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:16:46.4587854Z     --- PASS: TestPasswordPA05Login/has_membership_follows_the_real_membership (0.14s)
+2245-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:16:46.4588392Z === RUN   TestPasswordPA06Reset
+--
+2615-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:23.1057514Z === RUN   TestStripeSP13WebhookHTTP/accept_atomically_and_dedupe_changed_body
+2616-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:23.1339431Z === RUN   TestStripeSP13WebhookHTTP/ignore_and_quarantine_reasons
+2617-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:23.2585173Z === RUN   TestStripeSP13WebhookHTTP/malformed_after_signature_is_200_once
+2618:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:23.2677531Z === RUN   TestStripeSP13WebhookHTTP/no_ack_before_commit_and_commit_failure_503
+2619-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:27.2205335Z === RUN   TestStripeSP13WebhookHTTP/missing_signal_linkage_cannot_ack
+2620-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:27.2357411Z === RUN   TestStripeSP13WebhookHTTP/signature_endpoint_mismatch_and_stale_key_version
+2621-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:28.2078593Z === RUN   TestStripeSP13WebhookHTTP/historical_admission_survives_binding_disable_and_api_rotation_but_not_endpoint_disable
+--
+2629-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:30.2007474Z     --- PASS: TestStripeSP13WebhookHTTP/accept_atomically_and_dedupe_changed_body (0.03s)
+2630-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:30.2009191Z     --- PASS: TestStripeSP13WebhookHTTP/ignore_and_quarantine_reasons (0.12s)
+2631-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:30.2009980Z     --- PASS: TestStripeSP13WebhookHTTP/malformed_after_signature_is_200_once (0.01s)
+2632:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:30.2011195Z     --- PASS: TestStripeSP13WebhookHTTP/no_ack_before_commit_and_commit_failure_503 (3.95s)
+2633-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:30.2013075Z     --- PASS: TestStripeSP13WebhookHTTP/missing_signal_linkage_cannot_ack (0.01s)
+2634-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:30.2014776Z     --- PASS: TestStripeSP13WebhookHTTP/signature_endpoint_mismatch_and_stale_key_version (0.97s)
+2635-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:30.2017037Z     --- PASS: TestStripeSP13WebhookHTTP/historical_admission_survives_binding_disable_and_api_rotation_but_not_endpoint_disable (0.03s)
+--
+2679-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.2797062Z === RUN   TestCvsBuyerEnteredStore/snapshot_20261028_returns_exact_directory_values_through_HTTP_and_SQL/cvs_hilife/2001
+2680-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.3153769Z === RUN   TestCvsBuyerEnteredStore/snapshot_20261028_returns_exact_directory_values_through_HTTP_and_SQL/cvs_hilife/D010
+2681-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.3500294Z === RUN   TestCvsBuyerEnteredStore/snapshot_lookup_needs_only_a_code_and_refuses_missing_stores_and_old_OK_codes
+2682:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.3859475Z     taiwan_cvs_buyer_entered_test.go:149: cvs_711/000000: want 422 store_not_found, got 422 {"code":"internal","message":"Request could not be completed.","request_id":"1842d5c9f811e91b38061b468a6ad116","retryable":false,"details":{}}
+2683-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.3961295Z === RUN   TestCvsBuyerEnteredStore/options:_buyer_entered_mode_with_the_four_official_search_links
+2684-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.4867030Z === RUN   TestCvsBuyerEnteredStore/per-chain_store-code_table_(shared_golden),_leading_zeros_kept
+2685-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.6014336Z === RUN   TestCvsBuyerEnteredStore/SQL_twin_of_the_store-code_table:_the_definer_itself_checks_the_format_(Go_validation_bypassed)
+--
+2688-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.7945475Z === RUN   TestCvsBuyerEnteredStore/request_guards:_stale_cart,_unknown_service,_rate_limit,_idempotency_header
+2689-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.8338817Z === RUN   TestCvsBuyerEnteredStore/rate_limit:_20_entries_per_owner_per_hour,_then_429_with_Retry-After_(§16.1)
+2690-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:35.9452254Z === RUN   TestCvsBuyerEnteredStore/buyer_B_cannot_read_or_bump_buyer_A's_head_(both_buyer_roles)
+2691:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.0608749Z === RUN   TestCvsBuyerEnteredStore/pay-at-pickup_order_carries_the_buyer_entered_label;_never_reused_as_verified
+2692:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3309642Z --- FAIL: TestCvsBuyerEnteredStore (1.87s)
+2693-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3312868Z     --- PASS: TestCvsBuyerEnteredStore/snapshot_directory_preserves_all_used_chains_and_is_definer-only_reference_data (0.01s)
+2694-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3315081Z     --- PASS: TestCvsBuyerEnteredStore/snapshot_20261028_returns_exact_directory_values_through_HTTP_and_SQL (0.29s)
+2695-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3318904Z         --- PASS: TestCvsBuyerEnteredStore/snapshot_20261028_returns_exact_directory_values_through_HTTP_and_SQL/cvs_711/131386 (0.05s)
+--
+2699-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3330207Z         --- PASS: TestCvsBuyerEnteredStore/snapshot_20261028_returns_exact_directory_values_through_HTTP_and_SQL/cvs_hilife/L505 (0.04s)
+2700-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3332412Z         --- PASS: TestCvsBuyerEnteredStore/snapshot_20261028_returns_exact_directory_values_through_HTTP_and_SQL/cvs_hilife/2001 (0.04s)
+2701-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3335024Z         --- PASS: TestCvsBuyerEnteredStore/snapshot_20261028_returns_exact_directory_values_through_HTTP_and_SQL/cvs_hilife/D010 (0.03s)
+2702:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3337663Z     --- FAIL: TestCvsBuyerEnteredStore/snapshot_lookup_needs_only_a_code_and_refuses_missing_stores_and_old_OK_codes (0.05s)
+2703-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3340346Z     --- PASS: TestCvsBuyerEnteredStore/options:_buyer_entered_mode_with_the_four_official_search_links (0.09s)
+2704-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3342622Z     --- PASS: TestCvsBuyerEnteredStore/per-chain_store-code_table_(shared_golden),_leading_zeros_kept (0.11s)
+2705-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3345327Z     --- PASS: TestCvsBuyerEnteredStore/SQL_twin_of_the_store-code_table:_the_definer_itself_checks_the_format_(Go_validation_bypassed) (0.08s)
+--
+2708-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3353244Z     --- PASS: TestCvsBuyerEnteredStore/request_guards:_stale_cart,_unknown_service,_rate_limit,_idempotency_header (0.04s)
+2709-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3356039Z     --- PASS: TestCvsBuyerEnteredStore/rate_limit:_20_entries_per_owner_per_hour,_then_429_with_Retry-After_(§16.1) (0.11s)
+2710-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3358847Z     --- PASS: TestCvsBuyerEnteredStore/buyer_B_cannot_read_or_bump_buyer_A's_head_(both_buyer_roles) (0.12s)
+2711:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3361228Z     --- PASS: TestCvsBuyerEnteredStore/pay-at-pickup_order_carries_the_buyer_entered_label;_never_reused_as_verified (0.26s)
+2712-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:36.3362956Z === RUN   TestCvsCloseOperationInsertScope
+2713-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:37.0609485Z --- PASS: TestCvsCloseOperationInsertScope (0.73s)
+2714-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:19:37.0610613Z === RUN   TestCvsChildWorker
+--
+2729-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.0373195Z --- PASS: TestW4U1StateSequence (15.23s)
+2730-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.0391343Z === RUN   TestWAS04OperationReadsAreLaneScoped
+2731-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.1745265Z --- PASS: TestWAS04OperationReadsAreLaneScoped (0.14s)
+2732:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.1771564Z FAIL
+2733:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.2305211Z FAIL	livecommerce/tests/foundation	846.856s
+2734:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.2419400Z FAIL
+2735-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.5788407Z ##[error]Process completed with exit code 1.
+2736-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.5843454Z ##[group]Run shopt -s nullglob globstar
+2737-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.5843836Z [36;1mshopt -s nullglob globstar[0m
+--
+2753-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.5869403Z   LC_SWEEP_WORKERS: 1
+2754-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.5869632Z   EXTRA_ENV:
+2755-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.5869848Z   COREPACK_ENABLE_NETWORK: 0
+2756:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.5870171Z   GATE_OUTCOME: failure
+2757-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.5870409Z ##[endgroup]
+2758:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.6343377Z matrix-receipts: {"mode":"shard:g08","run_id":"40663921173","run_attempt":"1","sha":"326c10203c3b441aedc8e709af8b252c7fd986f2","status":"FAIL","test_count":214,"spec_count":0}
+2759-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.6440154Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2760-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.6440598Z with:
+2761-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:08.6440823Z   name: receipt-gate-shard_g08
+--
+2795-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6535122Z Artifact download URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40663921173/artifacts/12832920458
+2796-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6659677Z ##[group]Run shopt -s nullglob
+2797-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6660220Z [36;1mshopt -s nullglob[0m
+2798:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6661624Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true[0m
+2799-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6684295Z shell: /usr/bin/bash -e {0}
+2800-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6684573Z env:
+2801-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6684803Z   GOTOOLCHAIN: local
+--
+2816-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6687904Z ##[endgroup]
+2817-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6751391Z     meta_ads_sandbox_test.go:184: NOT_RUN: META_ADS_SANDBOX=1 and the owner's sandbox inputs are required (app 大梦 roles, sandbox ad account); never run in CI
+2818-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6753574Z     stripe_live_rak_test.go:99: NOT_RUN: SL08 needs STRIPE_SANDBOX=1 and the owner's rk_test_ restricted test key (STRIPE_RESTRICTED_TEST_KEY); SANDBOX only, LIVE is refused
+2819:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6754445Z --- FAIL: TestCvsBuyerEnteredStore (1.87s)
+2820:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6754767Z FAIL
+2821:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6755077Z FAIL	livecommerce/tests/foundation	846.856s
+2822:gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6755380Z FAIL
+2823-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6810564Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2824-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6811025Z with:
+2825-gate (shard:g08)	UNKNOWN STEP	2026-10-28T16:20:09.6811244Z   name: gate-shard_g08

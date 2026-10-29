@@ -1,0 +1,23 @@
+Card: FIX-RED #275
+PR head: 7756b0dd5e0166fe42ca48e9f5a888c522da7b6e
+Foundation RED run: 40748295264, job: 123027842793, attempt: 1
+Tested synthetic merge: 0c8e0532 (head 7756b0dd into base 11f281f8c6439489e402ba70f90737cd31dc1a0a)
+Log: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40748295264/job/123027842793
+Command read: gh run view 40748295264 --log-failed --job 123027842793
+Node summary: tests 336; pass 335; fail 1; skipped 0.
+Sole failing assertion: tests/ci/backend-coverage.test.mjs:274
+CI-SPEED-3: generated browser ownership is current and covers the registry
+Error: browser ownership drift: regenerate with node scripts/dev/derive-browser-ownership.mjs
+Exit: 1
+Existing CI-SPEED-2 / BUNDLE-258 executed bundle assertions passed on this head.
+Historical Gates run 40748296279 passed; it is not acceptance of the new head.
+
+Root cause: the PR's synthetic integration checkout combined newer ownership inputs
+with a generated ownership artifact that did not match those inputs.
+Repair: merge origin/r3/integration as explicitly required by the card, then run
+node scripts/dev/derive-browser-ownership.mjs (exit 0, 53 modes).
+The generated file exactly matches the artifact brought in by that merge, so no
+additional source/test change is needed. Existing assertions remain unchanged.
+Only the existing causal CI RED is used; no extra RED push for this drift-only repair.
+Local tests, servers and runtime gates: NOT_RUN (owner CI-only instruction).
+New-head GREEN / independent review: PENDING; integrator resumes from WAIT_RUN.

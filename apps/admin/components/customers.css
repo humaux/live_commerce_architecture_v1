@@ -5,7 +5,7 @@
  */
 /* Customers, customer detail, finance, billing pages and the standing banner (customers-billing-v1 §5, U1).
    Reuses orders.css / order-actions.css classes and tokens; only what they cannot express lives here:
-   the six-column customers table (orders.css fixes widths for five), the search field, the inline sections of the
+   the responsive customers table (orders.css fixes widths for five), the search field, the inline sections of the
    customer detail, the finance totals row, and the one banner shape. No new colour tokens. */
 .customers-search { flex: 1 1 280px; max-width: 420px; }
 .customers-search input, .customers-page input[type="date"] { height: var(--ui-target); min-height: var(--ui-target); box-sizing: border-box; color: var(--ink); font-size: 14px; }
@@ -76,3 +76,56 @@
 
 /* Search form sits inside .orders-controls without its own box, so the row layout is unchanged (Customers.tsx). */
 .customers-search-form { display: contents; }
+
+/* Signed PEOPLE v2: styles are scoped so shared finance/billing consumers keep their layouts. */
+.people-v2 { --people-gap: 16px; }
+.people-mobile-label { display: none; }
+.people-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.people-v2 .orders-controls { border-radius: 12px; padding: 16px; }
+.people-v2 .customers-search input { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.people-v2 .people-advanced { margin: 0 0 16px; color: var(--ui-muted); font-size: 13px; }
+.people-v2 summary { cursor: pointer; min-height: 44px; align-content: center; }
+.people-v2 [data-testid="customers-search-submit"], .people-v2 .people-view { background: var(--ui-primary); border-color: var(--ui-primary); color: var(--ds-on-primary); }
+.people-v2 .people-result-count { font-size: 16px; margin: 20px 0 16px; }
+.people-v2 .people-profile { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--people-gap); align-items: start; }
+.people-v2 .people-primary { grid-column: 1; grid-row: 1; min-width: 0; }
+.people-v2 .people-side { grid-column: 2; grid-row: 1; min-width: 0; }
+.people-v2 .customers-section { border-radius: 12px; padding: 16px; scroll-margin-top: 24px; overflow-wrap: anywhere; }
+.people-v2 .customers-section h2 { font-size: 20px; }
+.people-v2 .people-identity, .people-v2 .people-facts p { margin: 0 0 10px; line-height: 1.65; }
+.people-v2 .people-facts p:last-child { margin-bottom: 0; }
+.people-v2 .people-event { display: block; line-height: 1.6; }
+.people-v2 .people-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.people-v2 .people-tabs a, .people-v2 .people-view { min-height: 44px; display: grid; place-items: center; padding: 8px 16px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); background: var(--ds-surface); }
+.people-v2 .customers-actions { display: grid; }
+.people-v2 .people-view { font-size: 14px; margin-top: 8px; }
+.people-v2 .orders-table.customers-table td { vertical-align: middle; }
+.people-v2 .orders-actions-table { min-width: 0; width: 100%; }
+.people-v2 .orders-actions-table td { white-space: normal; overflow-wrap: anywhere; }
+.people-v2 .orders-actions-table thead { display: none; }
+.people-v2 .people-dialog { max-width: min(560px, calc(100vw - 32px)); box-sizing: border-box; max-height: calc(100dvh - 32px); overflow: auto; border-radius: 12px; }
+.people-v2 .people-dialog input:not([type="checkbox"]) { width: 100%; box-sizing: border-box; }
+.people-v2 .people-dialog .people-check { display: flex; align-items: flex-start; gap: 10px; margin: 14px 0; }
+.people-v2 .people-check input { flex: 0 0 auto; width: 20px; height: 20px; min-height: 20px; }
+.people-v2 .people-result { max-width: 560px; margin: 32px auto; }
+@media (max-width: 680px) {
+  .people-v2 .people-profile { display: flex; flex-direction: column; }
+  .people-v2 .people-primary, .people-v2 .people-side, .people-v2 .people-privacy { width: 100%; box-sizing: border-box; }
+  .people-v2 .people-primary { order: 0; }
+  .people-v2 .people-mobile-label { display: inline; }
+  .people-v2 .people-side { order: 1; }
+  .people-v2 .people-privacy { order: 2; }
+  .people-v2 .people-tabs a { flex: 1; padding: 8px; }
+  .people-v2 .orders-controls { display: flex; flex-direction: column; align-items: stretch; }
+  .people-v2 .customers-search { flex-basis: auto; }
+  .people-v2 .orders-table.customers-table > tbody > tr:not(.orders-detail-row) { display: grid; grid-template-columns: auto minmax(0, 1fr); padding: 16px 16px 76px; border-radius: 12px; position: relative; }
+  .people-v2 .orders-table.customers-table > tbody > tr > td:nth-child(n) { display: block; width: auto; padding: 4px 0; order: 0; }
+  .people-v2 .orders-table.customers-table > tbody > tr > td:nth-child(n)::before { display: none; }
+  .people-v2 .orders-table.customers-table > tbody > tr > td:first-child { grid-column: 1 / -1; }
+  .people-v2 .orders-table.customers-table td:first-child a { display: flex; flex-direction: column; align-items: stretch; width: 100%; }
+  .people-v2 .orders-table.customers-table td:first-child strong { order: 0; }
+  .people-v2 .orders-table.customers-table td:first-child small { order: 1; }
+  .people-v2 .orders-table.customers-table td:first-child .people-view { position: absolute; inset: auto 16px 16px; }
+  .people-v2 .orders-table.customers-table > tbody > tr > td:nth-child(4) { grid-column: 1 / -1; font-size: 13px; }
+  .people-v2 .people-dialog .orders-dialog-actions { display: flex; flex-direction: column; align-items: stretch; }
+}

@@ -136,3 +136,123 @@ and shared frame extraction. Root owns this contract, BFF and independent tests.
 - The merchant-facing quick start (快速上手) has **three** steps: 店名 → 配送 → 第一個商品. No provider, key, merchant-id or payment step (payment is platform-collected, see stripe-platform-account AD-PF3). The four-step provider wizard above is not shown to merchants.
 - After login the merchant lands on the dashboard (看板). The quick start is shown only for a newly created store; existing stores are never forced through it.
 - "Newly created" = the store has no completed quick-start marker (server-side, per store, set when the 3 steps are done or dismissed). Evidence DESIGN; gate NOT_RUN.
+
+### OC-05 server marker (0205, assigned 2026-10-28)
+
+| Method/path | Input and output | Permission |
+|---|---|---|
+| GET /v1/admin/stores/{store_id}/quickstart | No query; `{completed, completed_at, steps:{store_name, shipping, first_product}}` | `store:read` |
+| POST /v1/admin/stores/{store_id}/quickstart | Strict empty JSON object `{}`, required `Idempotency-Key`, no query; same state DTO | `integration:manage` |
+
+This POST is an idempotent completion/dismissal, an exception to the older keyed
+command receipts above: the store primary key preserves the first completion time,
+even across different keys. Call it after the steps are done or on explicit dismissal.
+It never asserts that unfinished steps were performed. GET makes no writes.
+`completed_at` is nullable; `completed` means the persistent marker exists. Only the
+database chooses the timestamp. The server derives `store_name` from nonblank
+`control.stores.name`, `shipping` from at least one enabled current delivery-service
+version, and `first_product` from at least one product (including archived products).
+Derived steps remain truthful after dismissal; they are never client-supplied flags.
+0205 atomically backfills every existing store as completed while serializing store
+creation. New stores have no marker until POST. Runtime can only insert scoped
+tenant/store columns; no timestamp overwrite, marker deletion or reset is exposed.
+The normal authenticated scope and RLS apply, with permission rechecks before/after
+reads and writes. No new definer or privileged role is needed for these scoped reads
+and the append-only marker. CI tests: `tests/quickstart/quickstart_test.go`; independent
+review and runtime evidence remain NOT_RUN until the PR checks are read.
+
+## STORE-PROFILE-API — signed settings v2 (2026-10-29)
+
+Authority: owner's STORE-PROFILE-API card and the signed settings-v2 request;
+this amendment owns the profile transport and simplified delivery mapping.
+
+### Store profile
+
+| Method/path | Input/output | Permission |
+|---|---|---|
+| `GET /v1/admin/stores/{store_id}/profile` | `{name, contact_email, contact_phone, version}` | `store:read` |
+| `PUT /v1/admin/stores/{store_id}/profile` | `{name, contact_email, contact_phone?, expected_version}`; same output | `integration:manage` |
+
+Admin BFF: GET/PUT `/api/stores/{store}/profile`, actual signed session only,
+Origin/CSRF protection on writes, no fixture identity. Tenant, principal and store
+authority come exclusively from authentication; the selected path store must be
+authorized. Body `tenant_id`, `store_id`, actor fields and any other unknown fields
+are rejected. Host/forwarded-host/authority headers never select a tenant.
+
+`name` is required, nonblank, 1–120 printable Unicode characters. `contact_email`
+is required, a plain mailbox address up to 254 UTF-8 bytes, without a display name,
+whitespace, quotes, angle brackets, backslashes or controls. `contact_phone` is
+optional, up to 32 printable characters; omitted means clear to `""` on this
+replacement PUT. `expected_version` is required and non-null, an integer from 0
+through 9007199254740990. No trimming or silent rewriting of the submitted fields.
+The returned version remains within JavaScript's safe-integer range.
+
+PUT requires `Idempotency-Key` (existing 8–128 character command-key grammar).
+An identical command by the same principal returns its original durable result,
+even after newer versions exist. Changed input or another principal reusing the
+key returns 409. A fresh-key stale `expected_version` returns 409; reread before
+editing. After an uncertain result retry only the original body/key. One accepted
+command atomically updates the profile, increments version, inserts one audit
+without contact values and saves its original response in the same transaction.
+Same-key concurrent retries consume one version; competing editors have one winner.
+
+Migration **0209_store_profile.sql**, reserved by this card, adds contacts and
+`profile_version` to `control.stores`; `control.stores.name` remains the single
+authoritative name used by the store list and quick start. Legacy stores read as
+version 0 with blank contacts; GET performs no writes or backfill. A restricted
+NOLOGIN/NOBYPASSRLS writer exposes only authenticated profile CAS; runtime receives
+no direct store UPDATE grant. Reauthorize after row/advisory lock waits and replay,
+before exposing a result or committing. Revocation rolls back receipt/audit/profile.
+No provider calls, jobs, email sends, account qualification or secret configuration.
+
+Existing private no-store/generated request-ID/safe-error behavior applies.
+Go uses strict JSON, a 64 KiB body limit and a five-second scope deadline. The BFF
+uses its existing stricter 8 KiB command limit. Queries including bare `?` reject
+with 422, unknown subpaths with 404 and unsupported methods with 405. Missing auth
+is 401; forbidden permission is 403; inaccessible stores are non-disclosing 404.
+
+### Five simplified delivery switches
+
+Owner rule: 「不要配置太复杂」. **First launch ships MANUAL delivery only.**
+Each switch resolves within the authenticated store's explicitly selected existing
+market, country `TW`, and current service versions. It selects the one existing
+MANUAL service with that `delivery_kind`; never treat the kind as a guessed code.
+
+| Switch | Existing TW delivery_kind | Existing service and default policy |
+|---|---|---|
+| 宅配 | home | Unique current MANUAL home service; preserve its `code`, `policy_method`, `policy_version` and existing pricing facts |
+| 7-ELEVEN | cvs_711 | Unique current MANUAL cvs_711 service; preserve its `code`, `policy_method`, `policy_version` and existing pricing facts |
+| 全家 | cvs_familymart | Unique current MANUAL cvs_familymart service; preserve its `code`, `policy_method`, `policy_version` and existing pricing facts |
+| 萊爾富 | cvs_hilife | Unique current MANUAL cvs_hilife service; preserve its `code`, `policy_method`, `policy_version` and existing pricing facts |
+| OK 超商 | cvs_okmart | Unique current MANUAL cvs_okmart service; preserve its `code`, `policy_method`, `policy_version` and existing pricing facts |
+
+Read using the existing delivery-services discovery and per-code service/policy
+routes; the actual persisted `code` chooses the PUT path. A switch changes only
+`enabled` via the existing full `ServiceInput` and current `expected_version`;
+preserve mode MANUAL, names, visibility, order, COD choice, currency and policy
+reference. Existing default policy means the service's already-persisted pricing
+policy, not a newly invented flat fee/tax/free-shipping rule. The normal service
+command also ensures its existing default warehouse allocation atomically.
+
+No match, multiple matches, absent policy or an unmet existing activation gate
+leaves the switch unavailable; report the prerequisite rather than auto-seeding a
+market, changing policy, choosing an arbitrary duplicate, or enabling API mode.
+Never fabricate carrier configuration, buy a label or infer a shipping/tax amount.
+This amendment freezes mapping for the settings lane; it adds no second delivery
+API or automatic migration of existing services.
+
+### Quick start and acceptance
+
+Reuse **#254 (OC-05)**, merged into this card's base (`313c2c36f`), and its existing
+GET/POST `/quickstart` marker and derived steps. Profile writes update the same
+name that OC-05 reads; they do not complete or dismiss the marker implicitly.
+No replacement marker, duplicate backfill or alternate onboarding flag.
+
+Gate: existing Foundation PG tests in `tests/foundation/store_profile_http_test.go`
+cover persistence, original replay/CAS/concurrency, validation, auth-only scope,
+no read effects and real post-lock revocation rollback. Existing Node BFF tests
+cover signed sessions, scope, CSRF/Origin, exact routing and contract mapping.
+CI RED run 40762550914/job 123078018073 at head `24cac517` reached four new BFF/
+contract assertion failures (404 for absent profile route; missing amendment).
+GREEN requires this PR's own implementation-head CI and independent review;
+no local runtime or production acceptance is claimed by this amendment.

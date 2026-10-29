@@ -105,3 +105,20 @@ func TestRateLimitCodeUsesFixedPublicMessage(t *testing.T) {
 		t.Fatalf("unsafe rate response: %+v", envelope)
 	}
 }
+
+func TestStoreNotFoundPreservesSafeEnvelope(t *testing.T) {
+	w := httptest.NewRecorder()
+	Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Write(w, http.StatusUnprocessableEntity, "store_not_found")
+	})).ServeHTTP(w, httptest.NewRequest("POST", "/v1/buyer/cvs-stores", nil))
+	var envelope Envelope
+	if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != http.StatusUnprocessableEntity || envelope.Code != "store_not_found" ||
+		envelope.Message != "The store was not found. Check the chain and store number." ||
+		envelope.Retryable || envelope.Details == nil || len(envelope.RequestID) != 32 ||
+		envelope.RequestID != w.Header().Get("X-Request-ID") {
+		t.Fatalf("directory miss lost its safe public envelope: %d %+v", w.Code, envelope)
+	}
+}

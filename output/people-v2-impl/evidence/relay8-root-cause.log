@@ -1,0 +1,36 @@
+CONT289 current-head CI failure and trace evidence
+HEAD=bd45be307e407ba2bd665925cfc867f898935c81
+RUN=40828788718 JOB=123300007913 SYNTHETIC_MERGE=88476ab5c25f8c0fe9b60f5a6733aa071eb80fb2
+ARTIFACT=12878192391 gate-browser-customers-billing
+DOWNLOAD=gh run download 40828788718 -n gate-browser-customers-billing -n gate-browser-migration-import -D output/people-v2-impl/evidence/current-failed-artifacts; exit0
+gh run view --log-failed --job 123300007913 refused while workflow in_progress; raw completed-job REST logs retrieved successfully instead.
+current-failed-artifacts/gate-browser-customers-billing/playwright/run.NeBg777Y/customers-billing/20261029T063607.860459891/playwright.log
+SHA256=d2459e448530ad873d45e9ab3a37193f88abda06a78c287db718c14567dda28f
+  32 passed (54.4s)
+current-failed-artifacts/gate-browser-customers-billing/playwright/run.NeBg777Y/w6-customers/20261029T063728.310205909/playwright.log
+SHA256=b8834b9b5bac4b98c98e76f5284925207844dd4f4f7e62866a8c8c5cb4714efe
+    Error: expect(locator).toHaveAttribute(expected) failed
+           - unexpected value "null"
+        at tools (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/customer-tags.spec.ts:50:28)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/customer-tags.spec.ts:197:68
+  1 failed
+  3 did not run
+  5 passed (40.3s)
+current-failed-artifacts/gate-browser-migration-import/playwright/run.Ke9JKk6p/migration-import/20261029T063914.456156143/playwright.log
+SHA256=bf5d70af0c207452ecb0bbb4bc102db6738223a7e8536213dc1a32d080e5ac7b
+  15 passed (33.9s)
+TRACE=current-failed-artifacts/gate-browser-customers-billing/playwright/run.NeBg777Y/w6-customers/20261029T063728.310205909/results/customer-tags-CTUI-catalog-97ef4-ce-notes-pagination-and-cap/trace.zip
+TRACE_SHA256=de353c954fe4f1f6196bb99d85fbcdc94d6ac17109741b544c31c4a724fe9a8a
+Relevant trace events (monotonic milliseconds):
+25379.249 click {'selector': 'internal:testid=[data-testid="customer-open-616e4d64-5e55-43f5-b77a-8a653e8bbc9d"s]', 'strict': True}
+25382.778   locator resolved to <a aria-label="Open customer: W6 synthetic customer 1" data-testid="customer-open-616e4d64-5e55-43f5-b77a-8a653e8bbc9d" href="/en/customers/616e4d64-5e55-43f5-b77a-8a653e8bbc9d?store=1e03308a-4015-4b2c-bb4d-ac07629d5928">…</a>
+25400.566 expect {'selector': 'details[data-testid="people-list-tools"], details[data-testid="people-customer-tools"]', 'expression': 'to.be.visible', 'expectedValue': {'value': {'v': 'undefined'}, 'handles': []}, 'isNot': False, 'timeout': 15000}
+25407.324 getAttribute {'selector': 'details[data-testid="people-list-tools"], details[data-testid="people-customer-tools"]', 'strict': True, 'name': 'open'}
+25419.819   locator resolved to <details open="" class="people-advanced" data-testid="people-list-tools">…</details>
+25425.114 expect {'selector': 'details[data-testid="people-list-tools"], details[data-testid="people-customer-tools"]', 'expression': 'to.have.attribute.value', 'expressionArg': 'open', 'expectedText': [{'string': ''}], 'expectedValue': {'value': {'v': 'undefined'}, 'handles': []}, 'isNot': False, 'timeout': 15000}
+25483.842   locator resolved to <details class="people-advanced" data-testid="people-customer-tools">…</details>
+25483.861   unexpected value "null"
+ROOT_CAUSE=tools union matched open people-list-tools after customer link click, skipped click; navigation then replaced it with closed people-customer-tools.
+ATTEMPT=1 for destination-disclosure race; no previous targeted repair to this blocker.
+FIX=required explicit target at every tools caller; real click and unchanged open assertion on destination only.
+GREEN=PENDING repaired-head CI; local tests/servers NOT_RUN; author E0.

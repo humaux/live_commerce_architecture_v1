@@ -1,0 +1,35 @@
+--- a/packages/ui/src/ds/States.tsx
++++ b/packages/ui/src/ds/States.tsx
+@@ -35,2 +35,15 @@
+-  // DS-STATES-V2 review RED: renderable legacy-output stub; restore after assertion-level CI failure.
+-  return <EmptyState title={title} description={body} action={<StateActionControl action={action} />} />;
++  const transient = variant === "offline" || variant === "unknown";
++  return (
++    <section
++      className={s.statePanel}
++      data-variant={variant}
++      role={transient ? "status" : undefined}
++      aria-live={transient ? "polite" : undefined}
++    >
++      <h2 className={s.statePanelTitle}>{title}</h2>
++      <p className={s.statePanelBody}>{body}</p>
++      {note && <p className={s.statePanelNote}>{note}</p>}
++      {status && <div className={s.statePanelStatus}>{status}</div>}
++      <div className={s.statePanelAction}><StateActionControl action={action} /></div>
++    </section>
++  );
+@@ -41,2 +54,6 @@
+-  // DS-STATES-V2 review RED: legacy inline output deliberately omits the alert/action contract.
+-  return <p>{message}</p>;
++  return (
++    <div className={s.inlineError} role="alert">
++      <p className={s.inlineErrorMessage}>{message}</p>
++      {action && <div className={s.inlineErrorAction}><StateActionControl action={action} /></div>}
++    </div>
++  );
+--- a/apps/admin/components/UiGalleryRecovery.tsx
++++ b/apps/admin/components/UiGalleryRecovery.tsx
+@@ -17,2 +17 @@
+-  // DS-STATES-V2 review RED: deliberately interpolate the raw failure; restore c.forbiddenBody after assertion-level RED.
+-  return <StatePanel variant="forbidden" title={c.forbidden} body={failure.message} note={c.forbiddenNote} action={{ label: c.back, href }} />;
++  return <StatePanel variant="forbidden" title={c.forbidden} body={c.forbiddenBody} note={c.forbiddenNote} action={{ label: c.back, href }} />;

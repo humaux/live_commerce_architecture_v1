@@ -1,6 +1,7 @@
 // Purpose: httpapi owns the composition layer for authenticated merchant/admin routes — routing, bearer resolution, request bounds and error mapping. Domains do not import it; they receive only the transaction and resolved Scope. It never implements a domain rule, never opens a pool of its own, and never trusts a tenant or store id from a request body.
 // Depends on: the mounted domain packages (ads, billing, catalog, claims, fulfillment, inventory, live, merchantorders, storefront*, ...), platform.WithScope/RequirePermission, httperror, river.
 // Used by: cmd/api (NewHandler); every route family registered here (studio/claims/ads/customers/finance/live_flow/...) and their *_test.go files.
+// Invariants: server-resolved scope, bounded private requests and caller-owned atomic domain transactions.
 package httpapi
 
 import (
@@ -36,6 +37,7 @@ import (
 	"livecommerce/internal/msgtemplates"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/quickstart"
 	"livecommerce/internal/storefrontadmin"
 	"livecommerce/internal/storefrontdomains"
 )
@@ -115,6 +117,15 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 		configured = options[0]
 	}
 	const base = "/v1/admin/stores/{store_id}"
+	mux.HandleFunc("GET "+base+"/quickstart", cvsRoute(http.MethodGet, false, scoped(pool, "store:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+		return quickstart.Get(ctx, tx, s, bearerToken(r))
+	})))
+	mux.HandleFunc("POST "+base+"/quickstart", cvsRoute(http.MethodPost, true, bodyRoute(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in *struct{}) (any, error) {
+		if in == nil {
+			return nil, command.ErrInvalid
+		}
+		return quickstart.Complete(ctx, tx, s, bearerToken(r))
+	})))
 	mux.HandleFunc("GET "+base+"/catalog-ledger", scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		if err := platform.RequirePermission(ctx, tx, s, strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), "inventory:read"); err != nil {
 			return nil, err
@@ -198,6 +209,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerDesignRoutes(mux, pool) // unit store-design: storefront-v2 section B, design.go
 	registerCatalogV2Routes(mux, pool)
 	registerSettingsRoutes(mux, pool)
+	registerProfileRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
 	registerStorefrontRoutes(mux, pool, configured.StoreBaseDomain)
 	registerAccountRoutes(mux, pool, configured.Accounts)

@@ -1,0 +1,11 @@
+PEOPLE-V2-IMPL static verification only (E1; author E0)
+STRICT_TSC=exit_0 (temporary source aliases; strict/noEmit/incremental=false; temporary config and symlinks removed)
+ORDINARY_TSC=exit_1 (local shared-package links unavailable; no production config change)
+NODE_SYNTAX=exit_0 (changed .ts/.mjs sources)
+PACKET=exit_0 (structure only; generated timestamp restored)
+DEPMAP_GENERATOR=exit_0 (no source diff)
+BROWSER_OWNERSHIP=regenerated after integration merge; final regeneration before commit
+LOCAL_TESTS=NOT_RUN
+LOCAL_SERVERS=NOT_RUN
+GREEN=NOT_RUN; dispatch own PR CI after single implementation push
+FILE_HASHES=implementation-hashes.json

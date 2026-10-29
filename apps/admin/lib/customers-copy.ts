@@ -1,5 +1,5 @@
 // Purpose: plain customer/privacy/finance copy, including import origin and report entry.
-// Depends on: current routed locales; no formatting or data access.
+// Depends on: current routed locales and packages/i18n/src/people.ts; no data access.
 // Used by: Customers, CustomerDetail and Finance; consent authority remains server-side.
 // Copy for the admin Customers, Customer detail and Finance pages (BFF customers*, finance/summary* -> Go
 // internal/customers + internal/reporting; contract customers-billing-v1 §5, U9 locales zh-CN / zh-TW / en).
@@ -7,8 +7,10 @@
 // frozen Go error codes. Non-goals: no money/date formatting (components use Intl), no consent or privacy rule.
 // Depends on: @live-commerce/i18n (Locale) only. Nav labels for the integrator's WorkspaceFrame hook live in `nav`.
 import type { Locale } from "@live-commerce/i18n";
+import { peopleCopy } from "../../../packages/i18n/src/people.ts";
 
 const en = {
+  people: peopleCopy.en,
   nav: { customers: "Customers", finance: "Finance", billing: "Billing" },
   title: "Customers",
   subtitle: "Buyers of this store, with their orders, consent and privacy actions.",
@@ -155,6 +157,7 @@ export type CustomersCopy = typeof en;
 export const customersCopy: Record<Locale, CustomersCopy> = {
   en,
   "zh-CN": {
+    people: peopleCopy["zh-CN"],
     nav: { customers: "客户", finance: "财务", billing: "账单" },
     title: "客户",
     subtitle: "本店买家，及其订单、授权与隐私操作。",
@@ -290,6 +293,7 @@ export const customersCopy: Record<Locale, CustomersCopy> = {
     financeSignedOut: "请登录后查看财务。",
   },
   "zh-TW": {
+    people: peopleCopy["zh-TW"],
     nav: { customers: "客戶", finance: "財務", billing: "帳單" },
     title: "客戶",
     subtitle: "本店買家，及其訂單、授權與隱私操作。",

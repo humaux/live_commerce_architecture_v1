@@ -99,13 +99,15 @@ async function checkoutPayAtPickup(page: Page, locale: Locale, viewport: Viewpor
   expect(withoutFixtureIds(await quoted.innerText()), `${label}: the quotation must not show ${notTotal}`).not.toMatch(has(notTotal));
   await page.getByTestId("cvs-recipient-name").fill("王小明");
   await page.getByTestId("cvs-recipient-phone").fill("0912345678");
-  await page.getByTestId("cvs-entered-code").fill("123456");
-  await page.getByTestId("cvs-entered-name").fill("測試門市");
-  await page.getByTestId("cvs-entered-address").fill("台北市測試路1號");
+  await page.getByTestId("cvs-entered-code").fill("131386");
+  await expect(page.getByTestId("cvs-entered-name")).toHaveCount(0);
+  await expect(page.getByTestId("cvs-entered-address")).toHaveCount(0);
   await page.getByRole("radio", { name: new RegExp(cvs.payAtPickup) }).check();
   await expect(page.getByTestId("cvs-pay-note")).toContainText(has(expectTotal));
   await shot(page, `${label}-quote`, locale, viewport);
   await page.getByTestId("confirm-address").click();
+  await expect(page.getByTestId("cvs-store-name")).toContainText("建盛");
+  await expect(page.getByTestId("cvs-store-address")).toHaveText("新竹市東區建中一路52號1樓");
   await expect(page.getByTestId("create-order")).toBeEnabled();
   await page.getByTestId("create-order").click();
   await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30_000 });
