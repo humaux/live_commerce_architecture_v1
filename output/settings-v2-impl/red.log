@@ -1,4 +1,19 @@
-FIX303 contract-drift relay, 2026-10-29:
+RVFIX303 acknowledged SKU / failed follow-up product GET, 2026-10-30:
+Authority: final REQUEST_CHANGES in cxf-rv-303.log, reviewing3eb560907;
+review log SHA2560979b993169872ca2af373c00da9ad3f7ba6e6f466df7f6e11bb30a28cfaa810.
+Integration17328372d merged first via3e9713df86dd5eeca1d9e1a51a10385a223b0c9e.
+Tests-only regression sourceSHA25678950de160b6d14ce4afb6aad3696b0fad41d93728c7326764e7584a20e6df85.
+SKU exact replay must receive its real200 receipt; only next productGET gets one
+MOCK503. No command journal or inventory write exists at this failure boundary.
+Reload+refresh+setup must retain unsent stock10; explicitSave must not repeat SKU;
+unchanged inventory replay and final refreshed stock10 assertions still apply.
+All original assertions remain verbatim/in order. No implementation in this phase.
+Local node --check spec and git diff --check exit0 E1. Ownership generated53modes.
+Current causal RED: PENDING own CI; run/job IDs appended after push locally and
+in PR comment. No causal assertion failure claimed before execution.
+GREEN/independent E4/provider/SANDBOX/LIVE/production NOT_RUN. Author judgmentE0.
+
+Historical FIX303 contract-drift relay, 2026-10-29:
 Implementation head 63e10c47a4a5c952b04d0381b6dbb4f5d3e4a046.
 Gates run 40845839979 / plan job 123352982732 failed with three TOUCHED
 UNRESOLVED findings on quickstart/route.ts: unsupported leaf transport arguments

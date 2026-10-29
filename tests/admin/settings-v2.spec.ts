@@ -252,9 +252,48 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await expect(page.getByLabel("Stock (units)", { exact: true })).toHaveValue("10");
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   await expect(review).toContainText("Stock (units): 10");
+  // A normal SKU acknowledgement clears its command journal. Fail only the
+  // immediately following product read, before any initial stock command exists.
+  // MOCK read fault only; the replayed SKU still receives its actual PG receipt.
+  const productURL = `**/api/stores/${store}/products/${JSON.parse(originalSku.body).product_id}`;
+  let productReads = 0;
+  await page.route(productURL, async route => {
+    expect(route.request().method()).toBe("GET");
+    if (++productReads === 1) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "unavailable", request_id: "settings-v2-post-sku-read", retryable: false, details: {} }) });
+    } else await route.continue();
+  });
+  const skuAcknowledged = page.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${store}/skus`);
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
   expect(skuCommands, "explicit Save must replay the identical SKU key and body exactly once").toEqual([originalSku, originalSku]);
+  const acknowledged = await skuAcknowledged;
+  expect(acknowledged.status(), "the SKU write succeeded; only its follow-up read failed").toBe(200);
+  expect(await acknowledged.json()).toMatchObject(JSON.parse(originalSku.body));
+  expect(productReads, "only the immediate post-acknowledgement product read has failed").toBe(1);
+  expect(inventoryCommands, "the failed read occurs before any initial adjustment").toHaveLength(0);
+  // READ ONLY: distinguish this failure from a still-pending SKU command.
+  expect(await page.evaluate(key => sessionStorage.getItem(`${key}:command`), recoveryCache.key)).toBeNull();
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(overview).toBeVisible();
+  expect(skuCommands, "Reload after an acknowledged SKU must only read").toEqual([originalSku, originalSku]);
+  expect(inventoryCommands).toHaveLength(0);
+  await page.reload();
+  await expect(overview).toBeVisible();
+  await page.getByRole("button", { name: "Start quick setup", exact: true }).click();
+  await page.getByRole("button", { name: "Next: delivery", exact: true }).click();
+  await page.getByRole("button", { name: "Next: product", exact: true }).click();
+  await expect(page.getByLabel("Product name", { exact: true })).toHaveValue("Acceptance draft bag");
+  await expect(page.getByLabel("Price (TWD)", { exact: true })).toHaveValue("1280");
+  await expect(page.getByLabel("Stock (units)", { exact: true }), "an acknowledged SKU followed by a failed product read must retain the unsent initial stock across Reload and refresh").toHaveValue("10");
+  expect(skuCommands, "refresh and setup navigation must not repeat an acknowledged SKU").toEqual([originalSku, originalSku]);
+  expect(inventoryCommands, "reads must not initialize the retained stock").toHaveLength(0);
+  await page.unroute(productURL);
+  await page.getByRole("button", { name: "Review settings", exact: true }).click();
+  await expect(review).toContainText("Stock (units): 10");
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
+  expect(skuCommands, "explicit stock recovery must not resend the acknowledged SKU").toEqual([originalSku, originalSku]);
   await page.unroute(skuURL);
   await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
   expect(inventoryCommands).toHaveLength(1);

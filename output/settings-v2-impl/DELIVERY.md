@@ -1,4 +1,90 @@
-# FIX #303 — pending SKU negative-case synchronization, attempt 1 (2026-10-30)
+# RVFIX #303 — acknowledged SKU / failed follow-up read, tests-only RED (2026-10-30)
+
+Authority: current integrator RVFIX dispatch and the final REQUEST_CHANGES in
+`output/integrator/tools/logs/cxf-rv-303.log`, reviewing head
+3eb560907b3a6dc7efa230dbda024a79df42d99c. Read AGENTS.md; architecture
+0/1/2/26/27; merchant-settings-wizard-v1 session/draft and quickstart amendments;
+merchant-settings-http-v1; catalog-inventory-v1; current SettingsV2 load/save,
+settings-v2 execute/draftOf and their real-click caller. Assigned UI implementer,
+GPT-6-based Codex (exact runtime model/effort selector unavailable), no delegation.
+Worktree settings-v2-ui / branch unit/settings-v2-ui only. Integration
+17328372dea91220050e9583259312e2db2e5d97 merged first as
+3e9713df86dd5eeca1d9e1a51a10385a223b0c9e. Main checkout read-only.
+
+## P1 / reproduction / acceptance gate
+
+An acknowledged SKU clears its journal before the next product GET. If that GET
+fails, there is no pending SKU or inventory command. Reload discards the cached
+unsent stock and replaces 10 with server balance 0. This differs from the already
+covered lost SKU response. No implementation in this tests-only phase.
+
+Added native-click regression inside the existing one-session/store harness:
+the original exact SKU replay receives its real 200 PG acknowledgement, then
+only the immediately following product GET gets one explicit MOCK 503. Assert
+the successful receipt, absent command journal and zero inventory commands;
+Reload, refresh and reopen all three setup steps; require product/price/stock
+10 retained without any writes. Explicit Save then enters the unchanged inventory
+loss/replay checks and the final refresh-persisted stock-10 checks. This covers
+the acknowledged-to-inventory transition without a second fixture or weakening
+the original lost-response witness. All original assertions remain verbatim/in
+order; no thresholds, retries, timeouts, fixtures or exemptions changed.
+
+Gate: the PR's own --browser-identity isolated PG / signed MOCK IdP chain,
+Foundation and required Gates, bound to the new head. Current causal RED is
+PENDING CI, GREEN and independent E4 NOT_RUN. Author judgment E0. E1 only:
+node --check tests/admin/settings-v2.spec.ts and git diff --check exit 0;
+mandatory browser-ownership regeneration runs last before commit. No source
+imports/Go graph change; no depmap change required. P2 profile CAS remains
+deferred in verified PR comment 6499957731 (P2 for issue).
+
+|Page / control|Operation|Expected|Actual|
+|---|---|---|---|
+|Setup review / Save|real click; actual SKU 200 then one read 503|unavailable; no inventory command|PENDING CI|
+|Unavailable / Reload; browser refresh; setup Next controls|real clicks/reload|stock 10; zero writes|PENDING CI|
+|Setup review / explicit Save|real click|one initial adjustment with original quantity; unchanged exact recovery|PENDING CI|
+|Overview / refresh / edit / review|real clicks/reload|persisted stock 10|PENDING CI|
+
+## UI PROCESS — BOURDIEU
+
+Q1 preserve the seller's entered quantity; Q2 recovery recognizes recent task
+experience; Q3 read failure must not silently change the task; Q4 explicit Save
+retains control over writes; Q5 these verdicts do not classify class/device;
+Q6 aesthetics remains UNKNOWN pending owner. No visible UI changes in RED.
+
+## UI PROCESS — PROJECT UNDERSTANDING
+
+Architecture 0/1/2: distinguish evidence and keep PG as inventory authority.
+26/27: assigned worktree, bounded fixes and independent CI acceptance. Wizard
+session/draft contract: store/session-scoped nonsecret recovery, no read-side
+writes or automatic retries. Catalog contract: keyed initial adjustment, version
+0 and server-owned balance. Existing three-language and desktop/mobile fact
+parity tables below remain; this phase adds only test assertions.
+
+## UI PROCESS — MOBBIN → EAGLE
+
+No new design or references; existing module references/principles below apply.
+No Mobbin/Eagle access/import claimed for this correctness regression.
+
+## UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No Figma/layout/component/prototype changes. Prior guidance citations and copy
+tables below retained; no new Figma lint/density result claimed.
+
+Authored paths: tests/admin/settings-v2.spec.ts, this delivery, red.log and
+generated output/ci-select-backend-browser/browser-ownership.json. No new
+outside-card file. Preserve pre-existing untracked evidence. No local tests,
+servers, builds, containers or background processes started. NOT_RUN: local
+runtime verification (prohibited), new-head causal RED/GREEN until CI runs,
+independent E4, provider/SANDBOX/LIVE/production. Rollback: revert the forthcoming
+tests-only commit on the assigned branch. Integrator relays CI completion;
+handoff records workflow run IDs, never plan-job IDs; no long CI watch.
+Humaux recovered after one transient transport error: own subtask canvas updated
+and [problem] PR303 RVFIX acknowledged SKU post-read loses initial stock stored.
+This record supersedes historical progress descriptions below for this phase.
+
+---
+
+# Historical FIX #303 — pending SKU negative-case synchronization, attempt 1 (2026-10-30)
 
 Authority: dispatched relay/card; AGENTS.md; architecture 0/1/2/26/27;
 merchant-settings-wizard-v1.md Session, drafts and uncertainty / STORE-PROFILE-API;
