@@ -290,6 +290,10 @@ func TestBrowserManualFulfilment(t *testing.T) {
 	reship := e.payMore(t, ship)
 	e.ensureStock(t, ship)
 	drafts := sstMoreHold(t, ship.s.p) // a DRAFT order: never eligible, must be absent from the export
+	// CVS half: a buyer-entered pickup resolved from the #262/#298 directory snapshot, paid by card. This is
+	// the card's headline case (the merchant must ship it by hand because ECPay cannot create the label).
+	converted := false
+	cvs := e.mfxBuyerEnteredCVSOrder(t, ship, "011344", &converted)
 	restricted, _ := e.member(t, ship, "orders:read")
 	// Copied orders share this family; retain the buyer pools for the later buyer half.
 	harnessReleaseSetupPools(t,
@@ -300,7 +304,8 @@ func TestBrowserManualFulfilment(t *testing.T) {
 	evidence := brfEvidence(t, root, "manual-fulfilment")
 	stack := brfStartAdmin(t, ctx, e, ship.s.p.f.principalA, evidence)
 	env := map[string]string{"LC_BROWSER_STORE": ship.store(), "LC_BROWSER_SHIP_ORDER": ship.order, "LC_BROWSER_RESHIP_ORDER": reship.order, "LC_BROWSER_DRAFT_ORDER": drafts.hold.OrderID,
-		"LC_BROWSER_RESTRICTED_TOKEN": restricted, "LC_BROWSER_TRACKING": "0012345678"}
+		"LC_BROWSER_RESTRICTED_TOKEN": restricted, "LC_BROWSER_TRACKING": "0012345678",
+		"LC_BROWSER_CVS_ORDER": cvs.order, "LC_BROWSER_CVS_PICKUP_NAME": "六甲民生附店", "LC_BROWSER_CVS_PICKUP_CODE": "011344"}
 	brfPlaywright(t, ctx, stack, []string{"manual-fulfilment.spec.ts"}, env)
 	// PG facts after the admin half: the UI drove real commands (record v1, correct v2, void v3, re-record v4 of `ship`).
 	if n := e.mfxVersions(t, ship); n != 4 {
@@ -319,9 +324,28 @@ func TestBrowserManualFulfilment(t *testing.T) {
 	if err := e.f.owner.QueryRow(ctx, `SELECT fulfillment_state FROM checkout.orders WHERE id=$1`, drafts.hold.OrderID).Scan(&draftState); err != nil || draftState == "MERCHANT_SHIPPED" {
 		t.Fatalf("MF07: the DRAFT order is %s (err %v): drafts are never shippable", draftState, err)
 	}
+	// CVS PG facts after the admin half: one keyed command, one version, one audit row, no provider effect.
+	if n := e.mfxVersions(t, cvs); n != 1 {
+		t.Fatalf("MF07 CVS: order %s has %d shipment versions, want 1; evidence=%s", cvs.order, n, evidence)
+	}
+	if got := e.mfxFulfilmentState(t, cvs); got != "MERCHANT_SHIPPED" {
+		t.Fatalf("MF07 CVS: final fulfilment state %s", got)
+	}
+	if n := e.mfxAudit(t, cvs, "fulfillment.shipment_recorded"); n != 1 {
+		t.Fatalf("MF07 CVS: %d shipment audit rows, want 1", n)
+	}
 	// Buyer half: the shipped order's buyer sees carrier, tracking and the link host, never "delivered".
 	brfBuyerNode(t, ctx, e, ship, "tests/storefront/shipment-buyer.mjs", evidence, map[string]string{"LC_RF_TRACKING": "0012345678", "LC_RF_CARRIER": "7-ELEVEN", "LC_RF_URL_HOST": "track.example.com"})
 	brfShots(t, evidence, 12)
+	// CVS buyer half: the same page keeps showing the frozen snapshot pickup store next to the tracking.
+	cvsEvidence := filepath.Join(evidence, "cvs")
+	if err := os.MkdirAll(cvsEvidence, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	brfBuyerNode(t, ctx, e, cvs, "tests/storefront/shipment-buyer.mjs", cvsEvidence, map[string]string{
+		"LC_RF_TRACKING": "0012345679", "LC_RF_CARRIER": "7-ELEVEN", "LC_RF_URL_HOST": "track.example.com",
+		"LC_RF_PICKUP_NAME": "六甲民生附店", "LC_RF_PICKUP_CODE": "011344"})
+	brfShots(t, cvsEvidence, 6)
 	t.Logf("MF07 BROWSER (MOCK Stripe capture): admin + buyer halves passed; screenshots hashed; evidence=%s", evidence)
 }
 

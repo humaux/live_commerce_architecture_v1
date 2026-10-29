@@ -11,6 +11,7 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -18,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/buyer"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/storefront"
 )
@@ -154,6 +157,59 @@ func (e *rfxEnv) mfxCVSOrder(t *testing.T, base rfxOrder, code string, converted
 	hold, err := q.bcHarness.begin(t04Key("mfx-cvs-hold"))
 	if err != nil {
 		t.Fatal(err)
+	}
+	q.hold = hold
+	s.p = q
+	return e.pay(t, s, base.endpoint, base.secret)
+}
+
+// mfxBuyerEnteredCVSOrder adds a paid PICKUP order whose store identity comes from the owner-approved
+// #262/#298 directory snapshot: fulfillment.record_buyer_cvs_store resolves the exact code (never the
+// buyer's typed text), the destination freezes that BUYER_ENTERED pickup, and the order is paid through
+// the real capture path. Distinct from mfxCVSOrder, which uses a merchant MANUAL_ATTESTED pickup.
+func (e *rfxEnv) mfxBuyerEnteredCVSOrder(t *testing.T, base rfxOrder, storeCode string, converted *bool) rfxOrder {
+	t.Helper()
+	e.ensureStock(t, base)
+	s := base.s
+	q := s.p
+	q.bcHarness.prepare(t, mustIssue(t, q.cqHarness.service, q.f.storeA1), []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 2}})
+	in := q.delivery
+	if !*converted {
+		in.ExpectedVersion = 1
+		in.DeliveryKind = "cvs_familymart"
+		if _, err := dsSet(q.cqHarness, t04Key("mfx-cvs-entered-service"), in); err != nil {
+			t.Fatalf("switch the delivery service to a pickup kind: %v", err)
+		}
+		*converted = true
+	}
+	// The buyer capability is the only holder of the BUYER_ENTERED pickup namespace; the merchant later
+	// selects the frozen snapshot by pickup_id, exactly as the storefront does.
+	tokenHash := sha256.Sum256([]byte(q.cap.Token))
+	var raw []byte
+	err := buyer.WithScope(context.Background(), q.pool, q.cap.Token, q.f.storeA1, func(ctx context.Context, tx pgx.Tx, _ buyer.Scope) error {
+		return tx.QueryRow(ctx, `SELECT fulfillment.record_buyer_cvs_store($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10)`,
+			tokenHash[:], q.f.storeA1, t04Key("mfx-cvs-entered"), randomBytes(32), q.bcHarness.input.CartVersion, q.market.ID,
+			in.Code, storeCode, "", "").Scan(&raw)
+	})
+	if err != nil {
+		t.Fatalf("record the buyer-entered snapshot store: %v", err)
+	}
+	var pickup struct {
+		PickupID string `json:"pickup_id"`
+	}
+	if json.Unmarshal(raw, &pickup) != nil || pickup.PickupID == "" {
+		t.Fatalf("buyer-entered pickup response: %s", raw)
+	}
+	dest, err := bdSet(q.cqHarness, t04Key("mfx-cvs-entered-select"), storefront.DestinationInput{ExpectedVersion: q.destination.Version, CartVersion: q.bcHarness.input.CartVersion, Kind: "cvs_familymart", Country: "TW", RecipientName: "Synthetic Recipient", Phone: "+886900000002", PickupID: pickup.PickupID})
+	if err != nil {
+		t.Fatalf("select the buyer-entered pickup: %v", err)
+	}
+	q.destination = dest
+	q.bcHarness.input.DestinationID = dest.ID
+	q.bcHarness.input.ServiceVersion = 2
+	hold, err := q.bcHarness.begin(t04Key("mfx-cvs-entered-hold"))
+	if err != nil {
+		t.Fatalf("begin the buyer-entered CVS hold: %v", err)
 	}
 	q.hold = hold
 	s.p = q
