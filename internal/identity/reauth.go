@@ -8,6 +8,7 @@
 // Used by: internal/identityhttp re-auth routes (OC-15), cmd/api wiring of the window (OC-15).
 // Invariants: the session comes only from the bearer token (no email or principal in the request); a wrong password
 // is ErrReauthFailed (HTTP 403, never 401) and counts toward PD12 like a login failure; no path issues a session.
+
 package identity
 
 import (
