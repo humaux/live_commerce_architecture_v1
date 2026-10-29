@@ -232,3 +232,9 @@ negative Reload, before fixture readback/replacement. h1 survives in-flight read
 controls return only after loading ends. No existing assertion/fixture weakened.
 Foundation 40915957832/job 123596111488 passed e977991e only.
 Static node --check and git diff --check exit 0. New GREEN/E4 PENDING.
+RVFIX303 ordinary-save regression, 2026-10-30
+Reviewed source 06d234d1aa341dd44de66170cac36e25bcf1e63e; integration 17328372d already merged.
+Tests-only batch: ordinary Edit settings -> Review -> Save -> refresh, no edit and actual profile edit, before explicit stock recovery.
+Causal RED run/job: PENDING GitHub CI. Expected original defect: refreshed overview absent because ordinary Save deletes the required draft but leaves initial-stock intent.
+GREEN: NOT_RUN; no implementation edits before causal assertion RED.
+Local node --check tests/admin/settings-v2.spec.ts and git diff --check: exit 0 (E1 only).

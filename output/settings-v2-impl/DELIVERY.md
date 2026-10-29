@@ -1182,3 +1182,60 @@ NOT_RUN: new-head CI GREEN, independent review, providers/SANDBOX/LIVE, deployme
 Integrator owns completion relay; no background process left.
 Rollback: revert the relay3 repair commit on the assigned branch.
 Humaux fix stored under `[fix] PR303 relay3 J4 domain journey omitted signed Advanced navigation`.
+# RVFIX #303 — ordinary settings Save retains stock recovery (2026-10-30)
+
+Authority: current dispatched RVFIX card; final P1 in cxf-rv-303.log at
+reviewed head 06d234d1aa341dd44de66170cac36e25bcf1e63e; current SettingsV2
+save/load paths; merchant-settings-wizard-v1.md Session, drafts and uncertainty;
+catalog-inventory-v1.md initial adjustment/CAS. Read AGENTS.md and architecture
+0/1/2/26/27. Integration 17328372d fetched and merged: already up to date.
+
+Tests-only RED batch adds normal Edit settings → Review → Save → refresh,
+first without profile edits and then with an actual phone edit. Both require
+usable overview, unchanged initial-stock intent and cached stock 10, and no
+SKU/inventory command. Existing explicit stock Save, exact keyed replay and
+persisted stock 10 checks remain verbatim and in order. No production edit yet;
+causal RED and GREEN PENDING GitHub CI. Author assessment E0; syntax check E1.
+
+|Page / control|Operation|Expected|Actual|
+|---|---|---|---|
+|Recovery overview / Edit settings|native click|ordinary editor; stock 10 in review|PENDING CI|
+|Ordinary review / Save, no edits|native click then refresh|overview usable; stock draft and intent retained; zero stock writes|PENDING CI|
+|Ordinary editor / Phone / Review / Save|native fill/click then refresh|profile persists; stock 10 remains recoverable|PENDING CI|
+|Setup / explicit Save and later recovery|existing native clicks|one initial adjustment with exact keyed replay; persisted stock 10|PENDING CI|
+
+## UI PROCESS — BOURDIEU
+
+Q1 preserve entered stock; Q2 novice/expert means recent task experience;
+Q3 recovery remains available through ordinary settings; Q4 only explicit setup
+Save submits stock; Q5 no class/device classification; Q6 aesthetics UNKNOWN
+until owner. This is a recovery regression, with no visual change.
+
+## UI PROCESS — PROJECT UNDERSTANDING
+
+Architecture 0 distinguishes evidence, 1 keeps PostgreSQL inventory authority,
+2 fixes the retail scope, 26/27 require assigned worktree and independent CI.
+The wizard contract requires scoped drafts and exact uncertain-command identity;
+catalog contract requires versioned adjustments, never read-side stock writes.
+
+## UI PROCESS — MOBBIN → EAGLE
+
+No design/reference changes; existing module references below apply. No new
+Mobbin query, import, Eagle read or copied visual is needed or claimed.
+
+## UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No Figma/component/layout/prototype change; existing guidance and three-language
+copy/fact-parity tables below apply. No new Figma lint/density evidence claimed.
+
+Scope: tests/admin/settings-v2.spec.ts, generated browser ownership and existing
+settings-v2-impl delivery/red evidence only. No imports/harness allowlists or
+dependency edges change, so depmap regeneration is unnecessary. No new outside-card
+path. Parent retains coord ownership; this lane writes only its own child canvas.
+No recursive delegation. Preserve all pre-existing untracked files. No local
+tests/server/build/PG/container/browser/provider/SANDBOX/LIVE/production; runtime
+acceptance and independent E4 NOT_RUN. Integrator relays CI completion/failure;
+Foundation/Gates workflow IDs (never plan jobs) are recorded at handoff. No silent
+background process. Rollback: revert this isolated tests-only commit.
+
+---

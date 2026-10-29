@@ -309,6 +309,32 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await expect(overview).toBeVisible();
   expect(skuCommands, "Reload after an acknowledged SKU must only read").toEqual([originalSku, originalSku]);
   expect(inventoryCommands).toHaveLength(0);
+  // RVFIX #303: ordinary settings saves must keep the recovery draft paired
+  // with the unsent stock intent, even when the profile version advances.
+  // Both branches use normal controls; no storage restoration hides draft loss.
+  for (const editProfile of [false, true]) {
+    await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+    if (editProfile) await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-3333");
+    await page.getByRole("button", { name: "Review settings", exact: true }).click();
+    await expect(review).toContainText("Stock (units): 10");
+    await page.getByRole("button", { name: "Save settings", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
+    await page.reload();
+    await expect(overview, `ordinary save (profile edit: ${editProfile}) must retain usable stock recovery after refresh`).toBeVisible();
+    // READ ONLY: the same intent and its quantity-bearing draft survive; a
+    // profile save may update the draft version but must not initialize stock.
+    expect(await page.evaluate(key => sessionStorage.getItem(key), stockIntentKey)).toBe(stockIntent);
+    const retained = await page.evaluate(key => sessionStorage.getItem(key), recoveryCache.key);
+    expect(retained).not.toBeNull();
+    expect(JSON.parse(retained!).draft).toMatchObject({ productName: "Acceptance draft bag", price: "1280", stock: "10" });
+    expect(skuCommands, "ordinary settings save cannot repeat the acknowledged SKU").toEqual([originalSku, originalSku]);
+    expect(inventoryCommands, "ordinary settings save cannot send the retained stock").toHaveLength(0);
+    if (editProfile) {
+      await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+      await expect(page.getByLabel("Phone (optional)", { exact: true })).toHaveValue("000-000-3333");
+      await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
+    }
+  }
   await page.reload();
   await expect(overview).toBeVisible();
   await page.getByRole("button", { name: "Start quick setup", exact: true }).click();
