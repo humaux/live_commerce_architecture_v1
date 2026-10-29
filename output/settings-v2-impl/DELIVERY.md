@@ -1,3 +1,69 @@
+# FIX #303 — relay 4 Settings entry/callback repair, attempt 1 (2026-10-29)
+
+Current authority: dispatched FIX #303 and original GitHub receipts for head
+`54277a01cd8cc825026e4911d7aafc8ce23e82af`. Fetched integration first and
+merged `origin/r3/integration`: already up to date at `f8fd8900577815a328643ed878d88a6a247d2ab2`.
+This section supersedes historical relay status below. Assigned UI implementer:
+Codex; exact runtime model/effort unavailable. Same assigned branch/worktree only.
+No separate coord claim: dispatched child; Humaux/coord/canvas tools unavailable.
+
+Gates run **40854772776**, synthetic checkout `59a5827442b0cf557712718d367cd2a96c138785`:
+
+|Job / original artifact|Failed original assertion|Root cause / repair|
+|---|---|---|
+|123388493726 / 12889124423|attribution.spec.ts:521, metaconnect-card not visible|Report reconnect reaches simplified Settings; add actual Advanced click before unchanged card/reload assertions|
+|123388493413 / 12890221828|storefront-publish-gate.mjs:207, storefront-card not visible|Enter Advanced on fresh tab; respect already-restored session view|
+|123388493445 / 12889414651|store-domains-gate.mjs:217, storefront-card not visible|Same direct Settings caller; original publication/DNS/audit assertions stay intact|
+|123388493579 / 12889973751|meta-connect*.spec.ts, metaconnect-card not visible|Update ordinary Settings navigation and Studio link journey through actual Advanced control|
+|123388493579 / 12890756112|checkout-offline.spec.ts:96, legacy Continue button absent|Enter Advanced before the unchanged bank/policy/readback journey|
+
+Read `gh pr checks 303` and attempted `gh run view --log-failed --job`;
+the in-progress workflow withheld aggregated logs. Read original job-log API,
+then `gh run download` and original artifact ZIPs (GitHub connector fallback for
+bounded download). Filtered original assertions: `relay4-*-assertion.log`.
+These are implementation regressions, not a replacement tests-only RED.
+Original causal tests-only RED remains **40828407097 / 123300694776**,
+head `696629d92e786e70bc70545089bc114d1b7cb7e4`, missing signed overview.
+Foundation **40854772560 / 123382888753** passed the old head only.
+
+Shared cause: existing consumers assumed every settings card was on the landing
+page. Reconcile every identified direct configuration journey, including card
+payments and health details, using the actual localized Advanced button. Restore
+existing OAuth `meta_connect`/`meta_error` returns and `#facebook-instagram`
+recovery targets in SettingsWizard; target selection changes only the view,
+never authorization or write behavior. Existing callback/health browser assertions
+cover those targets. No new imports, routes, settings, visible strings or packages.
+No assertion, fixture, threshold, timeout, permission fence or exemption relaxed.
+This is the first targeted repair for this remaining Settings-entry blocker.
+
+Outside original card paths, directly affected Settings consumers (module-scope
+pre-approval; each listed in PR body): tests/admin/{attribution,card-payments,
+checkout-offline,meta-connect-gate,meta-connect,meta-health-ui}.spec.ts;
+tests/storefront/{store-domains-gate,storefront-publish-gate}.mjs.
+Historical playwright.config.ts and tests/ui/click-sweep.mjs remain listed.
+Browser ownership regenerated with the assigned script (53 modes); no Go
+dependencies changed, so depmap unchanged. No contract/migration/lockfile edits.
+
+Static node syntax checks for all eight changed drivers and diff whitespace:
+exit 0 (**E1 syntax only**). Targeted strict tsc failed (exit 1: missing installed
+Next/CSS declarations, plus existing WorkspaceFrame nullability diagnostic);
+`relay4-tsc.log`. No dependency install or gate relaxation. Typecheck acceptance
+is pending CI. No local tests, builds, servers or browser runs.
+Current repair GREEN / independent E4: PENDING/NOT_RUN; author verdict E0.
+Acceptance: this PR's own Foundation + Gates, including the original real-click,
+refresh/persistence, exact PG and three-locale assertions. No new gate introduced.
+Rollback: revert this repair commit on the assigned branch. No destructive or
+production operation. Integrator relays the next workflow completion; final
+head/run IDs go in PR comment without an evidence-only follow-up push.
+
+UI PROCESS: existing BOURDIEU Q1–Q6, PROJECT UNDERSTANDING, MOBBIN → EAGLE,
+FIGMA OFFICIAL GUIDANCE, parity/copy tables and authored click ledger below still
+apply. This repair changes navigation only; no Figma/design/copy changes.
+NOT_RUN: new-head CI GREEN, independent review, providers/SANDBOX/LIVE/deploy.
+Failed artifacts retained locally; no own background processes remain at handoff.
+
+---
+
 # FIX #303 — relay 2 browser navigation repair, attempt 1 (2026-10-29)
 
 Authority: current dispatched FIX #303; repository source at head

@@ -100,6 +100,9 @@ async function answerDialog(page: Page) {
 }
 async function openSettings(page: Page, locale: Loc) {
   await page.goto(`/${locale}/settings?store=${store}`);
+  const advanced = page.getByRole("button", { name: /^(Advanced|進階|进阶)$/, exact: true });
+  await expect(advanced.or(page.getByTestId("metaconnect-card"))).toBeVisible();
+  if (await advanced.isVisible()) await advanced.click();
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
 }
 async function openStudio(page: Page, locale: Loc) {
@@ -121,6 +124,7 @@ test.describe("meta-connect independent browser gate", () => {
     await expect(page.locator("#claims-source-platform")).toHaveCount(0); // nothing to choose
     await shot(page, "studio-no-page", "zh-TW", "desktop");
     await link.click();
+    await page.getByRole("button", { name: "進階", exact: true }).click();
     await expect(page.getByTestId("metaconnect-card")).toBeVisible();
     await expect(page.getByTestId("metaconnect-none")).toHaveText(c.notConnected);
     await expect(page.getByTestId("metaconnect-connect")).toBeVisible();

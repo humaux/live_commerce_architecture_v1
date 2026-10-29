@@ -88,7 +88,11 @@ export function SettingsWizard({
     sessionBoundary().then(boundary => {
       if (!active || !initial.store) return;
       viewKey.current = `commerce-settings-view:${initial.store.id}:${boundary}`;
-      setAdvanced(sessionStorage.getItem(viewKey.current) === "advanced");
+      // Existing OAuth returns and connection-recovery anchors must still reach their target card.
+      const target = new URL(window.location.href);
+      if (target.searchParams.has("meta_connect") || target.searchParams.has("meta_error")
+        || target.hash === "#facebook-instagram") showAdvanced(true);
+      else setAdvanced(sessionStorage.getItem(viewKey.current) === "advanced");
     }).catch(() => {});
     return () => { active = false; };
   }, [initial.store?.id]);

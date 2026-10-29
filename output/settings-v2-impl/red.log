@@ -92,3 +92,14 @@ J4 custom domain fails unchanged storefront-domains-card visible assertion;
 journey omitted the signed Advanced entry. 111 controls:108pass,0fail,3skip.
 Raw filtered runner receipt: relay3-browser-red.log. This is a regression
 failure, not original tests-only RED. New-head GREEN pending.
+
+RELAY4 current-head implementation regressions (not tests-only RED):
+head54277a01cd8cc825026e4911d7aafc8ce23e82af; Gates40854772776.
+Job123388493726/artifact12889124423: attribution metaconnect-card absent after Settings link.
+Job123388493413/artifact12890221828: publication storefront-card absent.
+Job123388493445/artifact12889414651: domain storefront-card absent.
+Job123388493579/artifact12889973751: both Meta connection Settings callers fail card visibility.
+Job123388493579/artifact12890756112: offline Settings Continue control absent.
+Shared cause: signed overview hides rare cards behind Advanced. First batched targeted fix.
+Original assertions preserved; real Advanced clicks added; OAuth/hash targets restored.
+Foundation40854772560/job123382888753 passes old head only. New-head GREEN pending.

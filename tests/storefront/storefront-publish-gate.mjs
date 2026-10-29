@@ -204,6 +204,10 @@ try {
     await page.setViewportSize(VIEW[view]);
     await page.goto(`${adminOrigin}/${locale}/settings?store=${store}`);
     const card = page.getByTestId("storefront-card");
+    // Settings remembers Advanced per session; a fresh tab must enter it through the merchant control.
+    const advanced = page.getByRole("button", { name: locale === "en" ? "Advanced" : "進階", exact: true });
+    await expect(advanced.or(card)).toBeVisible();
+    if (await advanced.isVisible()) await advanced.click();
     await expect(card).toBeVisible();
     await expect(card.getByRole("heading", { level: 2 })).toHaveText(COPY[locale].title);
     await expect(card.getByTestId("storefront-state")).toBeVisible();
