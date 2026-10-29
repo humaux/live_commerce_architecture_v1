@@ -3,6 +3,7 @@
 // Purpose: signed buyer CVS discovery sheet with explicit store choice and confirmation.
 // Depends on: cvs-directory-client, shared pure matcher, i18n and native dialog.
 // Used by: CvsPickup; parent alone validates/persists the selection through the buyer BFF.
+// Confirmation: CvsPickup.ensure posts /api/buyer/cvs-stores -> Go /v1/buyer/cvs-stores.
 // Invariants: no search API, no automatic selection, no raw paste persistence, canonical display.
 import { useEffect, useRef, useState } from "react";
 import { cvsPickerCopy, type Locale } from "@live-commerce/i18n";

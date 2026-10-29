@@ -86,3 +86,16 @@ No product behavior, fixture, wait, retry, threshold, gate or exemption changes.
 Static commands: node --check tests/storefront/cvs-picker.mjs and git diff --check exit0. No local runtime tests/server/build/browser/PG.
 GREEN for new head PENDING. E3 negative CI evidence only; E1 syntax; author verdict E0; independent review NOT_RUN.
 Humaux search/store/canvas/coord unavailable; no shared-memory writes. Integrator owns completion relay for new run IDs posted on PR.
+
+
+RELAY3 / current-head header guard RED, 2026-10-29:
+Head4e864046da3a8029a8beb69db1374314be7e56bd; Gates40808984375/job123236328416 shard:g04.
+gh pr checks298 read; gh run view --log-failed --job123236328416 refused while workflow in_progress.
+Fallback gh api actions/jobs/123236328416/logs exit0; raw log retained as relay5-g04-raw.log.
+TestCvsNoIframeAndPrivacy/PROCESS_section_5:_package_comments_and_app_file_headers fails at taiwan_cvs_guards_test.go229:
+CvsStorePicker.tsx header names neither a BFF route /api/ nor Go endpoint /v1/. All three sibling subtests PASS.
+Current-head Foundation40808984336/job123234558501, WebKit123236328304 and bundle07123236328384 SUCCESS; other checks pending at repair.
+First targeted fix for this distinct blocker: document existing CvsPickup.ensure POST /api/buyer/cvs-stores -> /v1/buyer/cvs-stores.
+No test, threshold, fixture, exemption, import, route or behavior changed. No new browser failure artifact exists to download.
+Original tests-only RED remains run40785846830/jobs123161410421,123161410849 (absent cvs-open-picker).
+No local tests/build/server/browser/PG. Current repair acceptance is PENDING; author verdict E0.
