@@ -97,3 +97,15 @@ Product fix NOT_IMPLEMENTED: automatic effective-mode persistence is unchanged. 
 Static E1: node --check checkout-v2.mjs and home-cod-buyer.mjs exit0; gofmt -d browser_home_cod_test.go exit0 with empty diff; git diff --check and merge-owned-source diff --check exit0. No new component module import; harness search matched cod-footer source-read assertions and static metadata only, no compiling allowlist to update. Official browser ownership generator must run last before this push; current file hashes accompany this receipt.
 Local verification restricted to static syntax/format/whitespace; no tests, servers or browser/PG runtime. No new product copy/design/route. Humaux search/store/canvas/coord/index/link NOT_RUN because no callable tools; this file is repository handoff only.
 Wake-up: native Gates/Foundation completion/failure/timeout plus integrator relay; record WAIT_RUN after push and end session without more than10min polling.
+Post-push registration: tests-only HEAD2ff7e717b1e7bf900f87bed94164bbb501641886, pushed to unit/checkout-v2-ui. WAIT_RUN40880274439 Gates queued, test job not yet allocated; WAIT_RUN40880274518 Foundation job123469615777 pending. GitHub returned both runs with matching headSha and createdAt2026-10-29T13:15:28Z. New causal RED/implementation/GREEN PENDING. This receipt remains uncommitted until the implementation batch; no evidence-only push.
+
+Automatic COD causal RED verified 2026-10-29:
+Head2ff7e717b1e7bf900f87bed94164bbb501641886; Gates40880274439/job123474890015 bundle:06 failure; workflow tests merge9507c7387ff98763a1a03ec71b4ebaf3538ebba0.
+Native artifact12900309272 gate-browser-home-cod; ledger SHA256 3175e9740494ba29434fa18d996af66148f57156d719bf369b2bb7c9219fadf9.
+automatic COD desktop updated due: expect(locator).toContainText(expected) failed; quote-reconfirm absent, expected visible changed-total acknowledgment.
+automatic COD desktop persisted acknowledgment: expect(locator).toContainText(expected) failed; quote-reconfirm absent, expected visible changed-total acknowledgment.
+automatic COD mobile updated due: expect(locator).toContainText(expected) failed; quote-reconfirm absent, expected visible changed-total acknowledgment.
+automatic COD mobile persisted acknowledgment: expect(locator).toContainText(expected) failed; quote-reconfirm absent, expected visible changed-total acknowledgment.
+Both automatic initial reviews PASS without a radio operation. Existing refusal/reload/collection assertions PASS. New assertion aggregation fails at checkout-v2.mjs:170, before COD-255 scenarios start; this is causal RED, not setup failure.
+Foundation40880274518/job123469615777 success at the tests-only head, not implementation GREEN.
+Implementation attempt1: persist every currently offered effective mode, including automatic COD, before later reload comparisons; storage failure clears the eligible option and blocks submit. Existing selection logic and all assertions unchanged. Local tests/servers NOT_RUN; own implementation assessment E0 until CI.

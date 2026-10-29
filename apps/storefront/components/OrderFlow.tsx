@@ -173,6 +173,13 @@ export default function OrderFlow({
   }, [codFee, onCodFee]);
 
   useEffect(() => {
+    if (!quote || !option || !offeredPaymentModes(option, quote.amount.total_minor).includes(paymentMode)) return;
+    // Remember automatic choices too: reload must compare the payable the buyer actually reviewed.
+    try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, paymentMode); }
+    catch { setOption(null); setNotice("failed"); }
+  }, [context, quote, option, paymentMode]);
+
+  useEffect(() => {
     const version = ++live.current;
     setOption(null);
     setConfirmed(null);
