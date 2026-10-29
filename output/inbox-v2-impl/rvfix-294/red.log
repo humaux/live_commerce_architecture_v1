@@ -1,0 +1,5 @@
+RVFIX #294 — tests-only RED receipt
+Status: PENDING; this file is not a test-result claim.
+Target: six queued/blocked A9 display-omission Node assertions plus native-click checks in the existing three-locale browser state cases.
+Run/job ids and raw assertion failures must be appended after CI executes, before any implementation push.
+Prior PR green at ae59f693 does not establish coverage of these counterexamples.

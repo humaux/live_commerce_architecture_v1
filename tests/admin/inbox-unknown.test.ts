@@ -149,6 +149,43 @@ for (const state of ["sent", "queued", "blocked", "unknown"]) {
   });
 }
 
+for (const locale of Object.keys(warning)) {
+  for (const state of ["queued", "blocked"]) {
+    test(`A9 display omission cannot reconcile observed ${state} in ${locale}`, async (t) => {
+      const env = environment(t);
+      let reads = 0;
+      const page = { ...thread, has_unknown_outbound: false,
+        items: Array.from({ length: 50 }, (_, index) => ({
+          ...thread.items[0], seq: index + 2, at: "2030-01-01T00:00:02Z",
+          text: "MOCK_NEWER_INBOUND_PAGE",
+        })) };
+      const calls = transport(() => response(++reads === 1 ? projection("sent") :
+        reads === 2 ? projection(state) : page));
+      const host = mount(env, locale);
+      await loaded(host, "sent");
+      change(host, "reply-text", "MOCK_CAPTURED_DRAFT");
+      assert.equal(sendControl(host).props.disabled, false);
+      const captured = node(host, n => n.type === "form").props.onSubmit;
+      node(host, n => n.type === "button" && !!n.props["aria-label"]).props.onClick();
+      await loaded(host, state);
+      const result = textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state"));
+      for (const expectedReads of [3, 4]) {
+        node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+        await host.waitFor(() => reads === expectedReads && idle(host) &&
+          textOf(host.output).includes("MOCK_NEWER_INBOUND_PAGE"), "inbound-only A9 refresh committed");
+        assert.equal(sendControl(host).props.disabled, true,
+          "explicit false UNKNOWN authority does not reconcile an omitted queued/blocked operation");
+        assert.equal(node(host, n => n.type === "form").props.hidden, true);
+        assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), result);
+        captured({ preventDefault() {} });
+        node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+        assert.equal(host.ref(ReplyReceipt).pending(), null);
+        assert.equal(sends(calls).length, 0, "neither captured nor current form may POST a fresh send");
+      }
+    });
+  }
+}
+
 for (const fact of [true, null, undefined, "false"]) {
   test(`fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=${String(fact)})`, async (t) => {
     const env = environment(t);

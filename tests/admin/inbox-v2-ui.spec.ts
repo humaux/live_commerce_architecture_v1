@@ -56,7 +56,7 @@ const fixtureAgent = "10000000-0000-4000-8000-000000000072";
 async function mockInbox(page: Page, copy: Copy) {
   const future = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
   const incoming = copy.locale === "en" ? "What material is it?" : copy.locale === "zh-CN" ? "想了解材质。" : "想了解材質。";
-  const state = { mode: "eligible", delivery: null as Delivery | null, original: "", posts: 0, queries: 0,
+  const state = { mode: "eligible", delivery: null as Delivery | null, omitOutbound: false, original: "", posts: 0, queries: 0,
     methods: [] as string[], read: new Set<string>() };
   const rows = [ids.open, ids.instagram, ids.closed, ids.retry].map((id, i) => ({
     conversation_id: id, platform: i === 1 || i === 2 ? "instagram" : "messenger",
@@ -104,7 +104,9 @@ async function mockInbox(page: Page, copy: Copy) {
     }
     if (path.endsWith("/messages")) {
       state.queries++;
-      return route.fulfill(answer({ items: [
+      return route.fulfill(answer({ items: state.omitOutbound ? Array.from({ length: 50 }, (_, index) => ({
+        direction: "in", seq: index + 2, at: "2026-10-29T06:36:00Z", text: incoming, attachments: null,
+      })) : [
         { direction: "in", seq: 1, at: row.last_at, text: incoming, attachments: null },
         ...(state.delivery ? [{ direction: "out", at: "2026-10-29T06:35:00Z", text: state.original,
           attachments: null, send_state: state.delivery, principal_id: fixtureAgent }] : []),
@@ -273,6 +275,18 @@ for (const copy of copies) {
     await send(page, copy);
     expect(state.posts).toBe(1);
     await capture("queued");
+    // Fixture setup: the A9 display floor now hides the unresolved outbound, with explicit false UNKNOWN authority.
+    state.omitOutbound = true;
+    for (let refresh = 0; refresh < 2; refresh++) {
+      await query(page);
+      await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.pending);
+      await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      expect(state.posts).toBe(1);
+    }
+    record(`queued omission ${copy.locale}`, "click status twice", "inbound-only refresh retains pending result and send lock; no fresh POST");
+    state.omitOutbound = false;
     state.delivery = "sent"; // MOCK worker result; only the subsequent real status click observes it.
     await query(page);
     await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.sent);
@@ -318,6 +332,18 @@ for (const copy of copies) {
     await expect(page.getByTestId("reply-send")).toBeDisabled();
     await capture("blocked");
     expect(state.posts).toBe(1);
+    const blockedResult = await page.getByTestId("inbox-delivery-state").textContent();
+    state.omitOutbound = true; // Fixture setup only; the real status clicks observe the changed A9 display page.
+    for (let refresh = 0; refresh < 2; refresh++) {
+      await query(page);
+      await expect(page.getByTestId("inbox-delivery-state")).toHaveText(blockedResult!);
+      await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      expect(state.posts).toBe(1);
+    }
+    record(`blocked omission ${copy.locale}`, "click status twice", "inbound-only refresh retains blocked result and send lock; no fresh POST");
+    state.omitOutbound = false;
 
     state.delivery = null;
     for (const [mode, reason] of [["closed", copy.closed], ["connection", copy.connection], ["permission", copy.permission]]) {
