@@ -1,7 +1,7 @@
 // Purpose: Browse catalog summaries and review explicit bulk changes before submitting them.
 // Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/catalog-v2-copy, @/lib/product-editor-copy, @/lib/product-document, @/lib/catalog-v2-write, @/lib/use-product-leave-guard, @/lib/images-client, ./WorkspaceFrame, ./AdminPageHeader, ./ProductPhoto, ./orders.css, ./ProductAdmin.css, ./ProductDocument.css
 // Used by: apps/admin/app/[locale]/products/page.tsx
-// Invariants: one Edit action per row; commands are fenced; archive preserves history; no inline editors.
+// Invariants: selection replaces browse chrome; one Edit action per row; commands are fenced; archive preserves history; no inline editors.
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -99,6 +99,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
         })}</ul>
         <button type="button" onClick={() => setResults([])}>{c.view}</button>
       </section> : <>
+        {!selected.length && <>
         <TabStrip label={legacy.status} previousLabel={catalogPresentationCopy[locale].previousTabs} nextLabel={catalogPresentationCopy[locale].nextTabs}>
           {(['all', 'active', 'draft', 'archived'] as const).map(s => <button type="button" key={s} disabled={locked}
             data-testid={`products-tab-${s}`} aria-pressed={status === s} onClick={() => { previous.current = []; go(s); }}>
@@ -108,6 +109,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
           <input type="search" aria-label={legacy.search} data-testid="products-search" placeholder={legacy.search} value={draft} maxLength={120} onChange={e => setDraft(e.target.value)} />
           <button type="submit" aria-label={legacy.searchButton} data-testid="products-search-submit" disabled={locked || !store}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg></button>
         </form>
+        </>}
         {(read.status === 'loading' || read.status === 'hidden') && <p role="status">{legacy.loading}</p>}
         {failure && <div role="alert"><p>{failure}</p><button type="button" onClick={read.reload}>{legacy.retry}</button></div>}
         {read.status === 'ready' && page && <>

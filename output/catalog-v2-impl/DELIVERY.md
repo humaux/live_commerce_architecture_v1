@@ -1,3 +1,49 @@
+# FIX12 · selected-list density · 2026-10-30
+
+Author assessment E0; static E1 only; new-head CI GREEN and independent E4 PENDING. Dispatched UI worker, branch unit/catalog-v2-ui, assigned cwd only. Starting head 9cbf84597761d5d9dc5256e8ecc738b68f78e9ee; merged origin/r3/integration 21eaceb5c with normal merge 9adec24fd. Only conflict: i18n dependency header, resolved by retaining catalog and editor copy. Exact runtime model/effort UNKNOWN. No recursive delegation.
+
+## Root cause and repair
+
+Selection added bulk actions while retaining four browse filters and search. ProductList now renders filters/search only while selection is empty. Selected count, select-all/individual checkboxes, archive, Advanced/ledger/publish/draft/copy and every product fact/action remain. Clear selection restores browse controls and retained search draft. No new strings, settings, imports, tests or assertions. Unselected list/updated markup is unchanged. Static inference: removing the four filter text parents takes the reported selected24 to at most20; measured result belongs to CI, not this report.
+
+RED E3 failure receipt: Gates40957126831/job123742141350, head9cbf84597761d5d9dc5256e8ecc738b68f78e9ee, official gate-browser-product-editor artifact12934264501. Fresh gh run download exit0; original playwright.log:26passed/1failed, historical-order passes, CATV2:371 expected<=20 received24. Original tests-only RED40872483030/job123445416316 remains below. Per FIX12 push once; no duplicate RED push. red.log contains original assertion excerpt. New GREEN PENDING.
+
+## Click ledger and required-fact parity
+
+|Required fact/control|Desktop and 390px selected/browse|Review/result|Current acceptance|
+|---|---|---|---|
+|Product name, status, server price, available/sold-out stock, image, Edit|Same unchanged row render in both modes|Names/price/stock in archive review, per-item outcomes in result|Existing CATV2 assertions; new CI PENDING|
+|Selected count, select-all, individual selection|One count; same native checkboxes; deselect all restores filters/search|Back to selection preserves chosen products|Existing archive select/cancel/confirm real clicks; new CI PENDING|
+|Archive, Advanced ledger/publish/draft/copy|Same controls and guards in bulk toolbar|Confirmation and per-item refusal preserved|Existing catalog/product-editor click ledger; new CI PENDING|
+|All/active/draft/archived, search, New|Available when selection is cleared|Return to list restores browsing|Existing filter/search/navigation checks; new CI PENDING|
+|Name/description/SKUs/prices/stock/images in edit and summary|Editor unchanged, all locales retained|Existing review/save/refresh paths unchanged|Existing CATV2 three-locale suite; new CI PENDING|
+
+## BOURDIEU
+
+Q1 recent task novices get one task toolbar. Q2 experienced sellers retain selection, identities and batch actions. Q3 server facts remain the authority. Q4 no ability/class/device inference. Q5 same facts/actions at both widths with native controls. Q6 aesthetics separate, UNKNOWN until owner; no new aesthetic choice.
+
+## PROJECT UNDERSTANDING
+
+Read AGENTS.md; 架构.md §§0/1 distinguish static/MOCK/production evidence, §2 physical-goods merchant scope, §§26/27 isolate work and require independent acceptance. Read contracts/tasks.json T04 dependency T03/G03 and catalog-inventory-v1 boundary/§g: backend owns amounts, scoped stock, atomic edit and per-item archive refusals. Read original PLAN write paths, ProductList/CSS, unchanged CATV2 density measurer and direct catalog/product-editor callers. Latest authority is the owner's FIX12 instruction, not historical output reports. Humaux tools unavailable: lookup/rejected enumeration/store/canvas/code-index NOT_RUN; no shared persistence claim.
+
+## MOBBIN → EAGLE
+
+Read retained design/eagle-read.json for provenance only: folder MVS1D5NC7KI5T; Shopify Products iOS MVS1D603YAUS5 supplies compact identity/price/state/actions; Square variations MVS1D5ZMW22YA remains the unchanged editor reference. This fix applies the owner-specified replacement toolbar. No new pattern or Mobbin query needed; no live Eagle/Mobbin read/import claimed.
+
+## FIGMA OFFICIAL GUIDANCE
+
+The specified output/ux-audit-ref/FIGMA-GUIDE.md is absent in this worktree and main checkout; fresh guide verification NOT_RUN. Existing guide mapping below is provenance only: G1 auto layout→flow, G2 variables→tokens, G3 component states→browse/selection composition, G4 prototypes→review/back/result. No Figma/frame/string edits or design hand-in; copy lint NOT_RUN. Existing complete zh-TW/zh-CN/en copy inventory below remains applicable without additions.
+
+## Static checks, scope and handoff
+
+TypeScript noEmit using existing tsconfig.static.json: exit0 after resolving local dependency access with temporary worktree-only symlinks; symlinks removed. First tsc exit1 was missing shared UI React dependency resolution, preserved in fix12-tsc.log; no source changed to clear it. Impeccable source detector exit0, findings[]. Source hash and final ownership-generation/check exit codes in fix12-static.log. No import/harness migration or Go dependency change; depmap not regenerated. Tests, thresholds, measurer, fixtures, exemptions and forbidden baseline/route files untouched.
+
+Authored outside original PLAN: none. i18n/index header is already allowed; browser-ownership generated is allowed. Incoming #323 files are upstream merge content, not additional implementation. Rollback: revert the FIX12 implementation commit through normal review; do not reset inherited work. All pre-existing untracked evidence retained. No task processes remain.
+
+NOT_RUN: local tests/servers/browsers/build/install/PG/containers; new-head runtime/density/persistence GREEN; independent E4; Humaux shared bookkeeping; live reference/guide checks; provider SANDBOX/LIVE/deployment. Integrator relay owns wake-up after the new Gates/Foundation run concludes; exact SHA/run IDs will be a PR comment, no evidence-only commit after GREEN.
+
+---
+
 # FIX318 relay17 · historical-order private response envelope · 2026-10-30
 
 Author E0; static E1; new-head GREEN/E4 PENDING. Dispatched child integrator-catalog-v2-impl-sub-relay17; parent retains coord ownership, no separate claim/delegation. Base/rollback3259bc50ec85f3ed6b17ab5e2f1740e0f7c3f249; origin/r3/integration17328372dea91220050e9583259312e2db2e5d97 fetched and merged: already up to date. Existing untracked evidence preserved. Exact runtime model/effort not exposed.
