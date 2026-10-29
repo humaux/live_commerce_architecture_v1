@@ -278,3 +278,33 @@ Native Catalog Copy creates B; read-only catalog list proves B is newest; later 
 All existing exact-replay, stock 10, invalid evidence, ordinary-save and three-locale assertions preserved.
 No implementation change; causal RED run/job PENDING until CI executes.
 Local syntax E1 only; runtime/servers prohibited; author judgment E0.
+
+Pushed tests-only head: 4c316fdef4931099f3cf2579ec4f251d5eb700e9
+WAIT_RUN: 40962897623 (Gates; assertion RED PENDING; test job not yet allocated).
+WAIT_RUN: 40962897667 (Foundation); foundation job 123759972008 pending.
+Receipt appended locally after push; no second/evidence-only push. Integrator relays CI result.
+
+FIX12 #303 setup-only RED retry — 2026-10-30
+Authority: integrator FIX12 ruling supplied in the dispatch.
+Prior tests-only head 4c316fdef4931099f3cf2579ec4f251d5eb700e9 is NOT causal RED.
+Gates run 40962897623 / gate (bundle:07) job 123761788576 conclusion failure
+(job id/conclusion independently read from GitHub API).
+Per integrator artifact gate-browser-identity: settings-real.spec.ts:28 failed at
+settings-v2.spec.ts:211 latestDraft.ok(), before the new behavioural assertion.
+Root cause of invalid witness: APIRequestContext BFF probe returned non-OK.
+Fix: observe settings page's own signed GET catalog-products with status=draft
+and limit=1 via waitForResponse, registered before native page navigation.
+Keep ok + items[0].id === productB preconditions and all behavioural assertions
+unchanged. No settings implementation changes in this retry.
+Pulled unit/settings-v2-ui --ff-only: already up to date.
+Merged origin/r3/integration 21eaceb5c72ce6b55955607529daef31fe3163b7 via
+b17414db10eac0098f1438fb006db9de6f56d779; only conflict was generated browser
+ownership, resolved by its generator (never hand-edited).
+Static syntax: node --check --experimental-strip-types tests/admin/settings-v2.spec.ts
+exit 0 (E1 only). tsc attempt exit 127: worktree has no node_modules/.bin/tsc;
+full TypeScript checking NOT_RUN; no dependency install or local runtime attempted.
+Final browser ownership regeneration + --check exit 0; git diff --check exit 0.
+Causal RED and GREEN PENDING; next Gates/Foundation run ids will be recorded in
+PR comment and this local log after the single tests-only push, without another
+push. Local tests, servers, browsers NOT_RUN by instruction. Author verdict E0.
+Humaux unavailable; memory_store/canvas/coord NOT_RUN, parent retains task ownership.

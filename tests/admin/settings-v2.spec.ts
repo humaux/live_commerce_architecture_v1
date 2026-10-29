@@ -206,8 +206,14 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   const baselineB = await (await beforeB).json();
   expect(baselineB).toMatchObject({ id: productB, status: "draft" });
   await expect(catalog.getByTestId("product-name")).toHaveValue(baselineB.name);
-  // READ ONLY: verify the real list ordering that triggers this regression.
-  const latestDraft = await catalog.request.get(`/api/stores/${store}/catalog-products?status=draft&limit=1`);
+  // READ ONLY: observe settings' own signed discovery request, as with readB.
+  const discovery = catalog.waitForResponse(r => {
+    const url = new URL(r.url());
+    return r.request().method() === "GET" && url.pathname === `/api/stores/${store}/catalog-products` &&
+      url.searchParams.get("status") === "draft" && url.searchParams.get("limit") === "1";
+  });
+  await catalog.goto(`/en/settings?store=${store}`);
+  const latestDraft = await discovery;
   expect(latestDraft.ok()).toBe(true);
   expect((await latestDraft.json()).items[0].id, "B really precedes A in catalog discovery").toBe(productB);
   await page.unroute(skuURL);
