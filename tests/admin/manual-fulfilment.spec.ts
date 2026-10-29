@@ -274,7 +274,7 @@ test("MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists
   await expect(detail.getByTestId("pickup-source")).toHaveAttribute("data-source", "buyer_entered");
   // A buyer-entered store cannot use ECPay Create; the merchant is told to ship it by hand.
   await expect(detail.getByTestId("cvs-manual-only")).toBeVisible();
-  await fillShipment(detail, "seven_eleven_cvs", cvsTracking, "", "MF07 internal note");
+  await fillShipment(detail, "seven_eleven_cvs", cvsTracking, `https://track.example.com/t?n=${cvsTracking}`, "MF07 internal note");
   await detail.getByRole("button", { name: ui.markShipped }).click();
   await detail.getByTestId("shipment-confirm").click();
   await expect(detail.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
@@ -286,7 +286,7 @@ test("MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists
   expect(requests[0].key).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
   expect(JSON.parse(requests[0].body ?? "{}")).toMatchObject({
     expected_version: 0, status: "SHIPPED", carrier_code: "seven_eleven_cvs", tracking_number: cvsTracking,
-    carrier_name: null, tracking_url: null, note: "MF07 internal note", void_reason: null,
+    carrier_name: null, tracking_url: `https://track.example.com/t?n=${cvsTracking}`, note: "MF07 internal note", void_reason: null,
   });
   // A refresh re-reads the order: the shipped head and the snapshot pickup store both survive.
   await page.reload();
