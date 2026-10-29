@@ -1,4 +1,22 @@
-# RVFIX #268 (2026-10-29)
+# RVFIX #268 RELAY1 implementation restoration (2026-10-29)
+
+- Authority: integrator RELAY1 and RVFIX card; independent review final verdict in cxf-rv-268.log; actual current source and GitHub receipts. Historical output is not current acceptance.
+- Causal RED verified directly: head37f2620a89f93812b4ad9c1e2e00beb7aa9e3ec4, Foundation40849065235/job123363703284 FAILURE. Corrected harness reached AD09 loading status (two assertions), AD10 caller denial, AD11 customer empty guidance. Raw filtered log: rvfix268-red-assertions.log; summary red.log. E3 CI negative control only, not implementation acceptance.
+- Required base merge: integration1f0437cccc56113e377fc15aa10dca381b9f12be, merge8049b4afe. Generated ownership was the only conflict, resolved by its existing generator. Integration-inherited storefront/format/i18n/script changes are not authored repairs in this lane.
+- Restored exactly three source lines from reviewed a631d9c5e: loading role=status, caller denial plus neutral guidance, English customer emptyDescription. Imports unchanged. Both MOU08 contextual-denial and neutral-guidance assertions retained, in that order.
+- P2 asynchronous empty/forbidden announcements: existing PR comment beginning `P2 for issue` verified directly; deferred per RVFIX card, no duplicate comment or mixed P2 fix.
+- Static checks: `node --check tests/admin/code-alignment-admin-state.test.mjs` exit0; `git diff --check` exit0; final `node scripts/dev/derive-browser-ownership.mjs` exit0 (53 modes), no further diff after merge generation. E1 only. No imports/dependency edges changed; no harness allowlist or Go depmap changes required. New-head GREEN and independent delta review PENDING; author assessment E0.
+- BOURDIEU: Q1 recognize/recover from read states; Q2 recent task experience; Q3 safe existing actions; Q4 restored wording in existing locale flow; Q5 no role inference or new settings; Q6 aesthetics UNKNOWN, owner-only. No new visual design.
+- PROJECT UNDERSTANDING: AGENTS.md, architecture0/1/2/26/27, owner-choices OC-Q7 and current AD09/10/11 SSR/MOU08 browser contracts read. Server scopes remain authoritative; neutral role-free guidance plus contextual denial follows current RVFIX requirement.
+- MOBBIN → EAGLE: no new pattern/reference used in this evidence repair and source restoration; no query/import needed.
+- FIGMA OFFICIAL GUIDANCE: no Figma design/write/hand-in; guide application, copy lint, density/mobile parity NOT_RUN. Existing UI acceptance requires CI real clicks; SSR cannot establish browser persistence.
+- Click ledger: orders page, MOU08 both polling-denial variants; existing native login/filter/order-expansion actions followed by backend fault fixture; expected visible contextual denial and neutral guidance, list/detail removed and no PII. Actual on restored head PENDING CI; refresh/persistence not inferred from SSR.
+- Humaux search/coord/store/canvas unavailable; this trail is not a Humaux store. Prior uncommitted/untracked evidence preserved. No background process; integrator relays registered CI completion in a fresh session. No merge/automerge/deploy/status posting.
+- Rollback: pre-restoration merge8049b4afe and reviewed sourcea631d9c5e. Local tests/servers/browser/PG, SANDBOX/LIVE/production and independent review NOT_RUN.
+
+---
+
+# RVFIX #268 original RED-stage record (historical, 2026-10-29)
 
 - Dispatched implementer Codex, current runtime model/effort not exposed; no delegation. Assigned worktree/branch unit/ca-admin-state; reviewed base a631d9c5e373e75483311a86e67d5d1b07c10131. Git fetch and required merge of origin/r3/integration d8093bc43: exit 0, already up to date.
 - Authority: current RVFIX card plus independent review final verdict cxf-rv-268.log. Repository AGENTS.md, architecture sections 0/1/2/26/27, owner choices OC-Q7 and existing AD09/10/11 SSR suite read. Current review requires both caller-specific denial and neutral guidance. Original card backlog path is absent in this checkout; historical output is not treated as current product status.

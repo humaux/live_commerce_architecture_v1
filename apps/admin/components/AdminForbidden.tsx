@@ -32,7 +32,7 @@ export function AdminForbidden({ locale, description }: { locale: Locale; descri
       <PermissionState
         mode="full"
         title={c.title}
-        reason={c.body}
+        reason={description ? `${description} ${c.body}` : c.body}
         action={<ButtonLink href={`/${locale}`} variant="secondary">{c.home}</ButtonLink>}
       />
     </div>

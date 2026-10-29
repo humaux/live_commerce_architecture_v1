@@ -69,7 +69,7 @@ export function AdminStateBlock(props: AdminStateBlockProps) {
   const { title, description, actionHref, actionLabel } = props;
   if (props.variant === "loading") {
     return (
-      <div className="admin-state-loading" role="presentation" aria-live="polite">
+      <div className="admin-state-loading" role="status" aria-live="polite">
         <div className="admin-state-skeleton" aria-hidden="true">
           <span className="admin-state-skeleton-mark" />
           <span className="admin-state-skeleton-line admin-state-skeleton-line-title" />
