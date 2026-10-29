@@ -2,6 +2,7 @@
  * Purpose: Styles storefront design editing, media and preview.
  * Depends on: CSS custom properties and matching component DOM classes; no API calls.
  * Used by: apps/admin/components/Design.tsx
+ * Invariants: preserve accessible controls and factual state; collapsed groups remain available by real clicks.
  */
 /* Store design editor. Presentation uses the shared semantic tokens; merchant
    document values (including storefront accent colour) stay with the caller. */
@@ -383,4 +384,31 @@
   .design-row-actions {
     justify-content: flex-end;
   }
+}
+
+/* Signed editor: a task list first, one editor/disclosure at a time. Hidden native
+   disclosure contents cannot be overridden by inherited flex/grid declarations. */
+.design-page [hidden] { display: none !important; }
+.design-saved-badge { display: none; }
+.design-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.design-editor { max-width: 960px; }
+.design-task-list { display: grid; background: var(--ui-surface); border-block: 1px solid var(--ui-border); }
+.design-task-list > button { text-align: start; border: 0; border-bottom: 1px solid var(--ui-border); border-radius: 0; min-height: 48px; padding: 12px 16px; }
+.design-task-list > button:last-child { border-bottom: 0; }
+.design-block-head > button:first-child { text-align: start; flex: 1; }
+.design-row { display: block; }
+.design-row-actions { display: flex; gap: 8px; }
+.design-panel > button, .design-editor > button { min-height: 44px; }
+.design-panel details { margin-block: 12px; }
+.design-panel summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; text-decoration: underline; text-underline-offset: 3px; }
+.design-summary { display: grid; gap: 16px; overflow-wrap: anywhere; }
+.design-summary dl > div { display: grid; grid-template-columns: minmax(100px, 1fr) 2fr; gap: 8px; padding-block: 4px; }
+.design-summary dd { margin: 0; }
+.design-preserve-lines { white-space: pre-wrap; }
+.design-panel article { overflow-wrap: anywhere; }
+.design-block > [id^="design-section-fields"] { margin-top: 12px; }
+@media (max-width: 680px) {
+  .design-toolbar { position: static; padding: 12px; }
+  .design-panel, .design-block { padding: 12px; }
+  .design-summary dl > div { grid-template-columns: 1fr; gap: 2px; }
 }
