@@ -175,7 +175,8 @@ export default function OrderFlow({
         if (version !== live.current) return;
         setHead(current);
         setHeadLoaded(true);
-        if (current?.kind === "home" && current.country === country) {
+        // A quote-bound CVS draft wins over older home fields; the CAS head still loads above.
+        if (!cvsResume && current?.kind === "home" && current.country === country) {
           setFields(fieldsOf(current));
           setNotice("recovered");
         } else setNotice(null);
@@ -233,7 +234,7 @@ export default function OrderFlow({
       window.clearTimeout(timer);
       attempt.current = null;
     };
-  }, [context, quote?.id, country, cart.id, cart.version, optionRefresh]);
+  }, [context, quote?.id, country, cart.id, cart.version, optionRefresh, cvsResume]);
 
   useEffect(() => {
     let active = true;

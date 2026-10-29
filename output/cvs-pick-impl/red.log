@@ -99,3 +99,26 @@ First targeted fix for this distinct blocker: document existing CvsPickup.ensure
 No test, threshold, fixture, exemption, import, route or behavior changed. No new browser failure artifact exists to download.
 Original tests-only RED remains run40785846830/jobs123161410421,123161410849 (absent cvs-open-picker).
 No local tests/build/server/browser/PG. Current repair acceptance is PENDING; author verdict E0.
+
+RVFIX298 tests-only push — 2026-10-29T06:03:46Z
+Review authority: cxf-rv-298.log final REQUEST_CHANGES, one P1 (older home recipient overrides explicit CVS resume); no P0/P2 listed.
+Merged origin/r3/integration e324e01a93219c099d6d2a9d35ed1f112595fe90; merge119278640 includes Co-Authored-By trailer.
+Tests-only head: 5c13130ab4766b6f7d35917ac52ca66db5f519db; tests/storefront/cvs-picker.mjs adds real home fixture A then clicked CVS contact B/brand switch/confirmation/CAS and refreshed persistence checks in all three existing locale cases.
+Foundation run40826878271 / job123291837100 IN_PROGRESS, attempt1, head_sha verified exact.
+Gates run40826878160 QUEUED, attempt1, head_sha verified exact. plan123291837466 SUCCESS is NOT test evidence; browser job IDs pending allocation.
+RED assertions have NOT yet been observed failing. No implementation change made; GREEN NOT_RUN. Synthetic checkout SHA UNKNOWN until CI receipt available.
+Local static only: node --check tests/storefront/cvs-picker.mjs and git diff --check exit0 (E1); no local test/build/server/browser/PG.
+WAIT_RUN: 40826878271
+WAIT_RUN: 40826878160
+Integrator relays completion in a fresh session; next step read failed browser job/artifact, confirm new assertions fail for stale contact (not fixture/setup), then one minimal implementation push.
+Humaux store/canvas/coord/code-index tools unavailable; no such operation claimed. No local background processes started. Append-only evidence remains uncommitted for the eventual implementation commit.
+
+RVFIX298 RELAY1 confirmed assertion RED and root repair — 2026-10-29
+Exact PR head ff370360c73739f649a2707f45a2ed57afbe8174 (tests-only5c13130ab + generated ownership ff370360c, no implementation).
+Gates40827107757/job123294071349 WebKit FAILURE; gh run view --log-failed refuses unfinished overall workflow; completed original logs read via gh api actions/jobs/123294071349/logs. Downloaded gate-browser-webkit artifact12878526024; nested cvs-buyer.mjs.log fails new tests/storefront/cvs-picker.mjs265: expected CVS contact B, received older home contact A. This is causal assertion RED, not fixture/setup failure.
+Same run job123294071539 bundle07 fails TestBrowserTaiwanCvs; original completed job log read via API. Both inspected failures concern CVS. Foundation40827107585/job123292635353 SUCCESS on this exact head; historical after repair push. Gates overall still in_progress at inspection; not final PR acceptance. Synthetic merge a8d3f6970e2dffb31771063da4c49a1eeb1ed862.
+Evidence: rvfix-red-assertion.log (filtered assertion), rvfix-relay1-webkit.log and rvfix-relay1-bundle07.log (raw local job logs), ci-rvfix-relay1-webkit/ (downloaded CI artifact).
+Integration fetch/merge exit0 Already up to date at e324e01a93219c099d6d2a9d35ed1f112595fe90.
+Root repair attempt1: guard home field hydration with !cvsResume; still load current server destination/headLoaded for CAS, preserve ordinary home recovery. Include cvsResume in effect dependencies. No changed import, route, browser spec name, gate, assertion, fixture, threshold or exemption.
+Static commands: node --check tests/storefront/cvs-picker.mjs exit0; git diff --check exit0. tsc NOT_RUN: no installed compiler in this worktree; no install or dependency link created. No local runtime tests/build/server/browser/PG.
+New-head GREEN/independent re-review pending, author judgment E0. Humaux store/canvas/coord/code-index NOT_RUN (tools unavailable). No production action. New run IDs will be posted in PR comment after the single implementation push; no evidence-only push. Integrator owns completion relay.
