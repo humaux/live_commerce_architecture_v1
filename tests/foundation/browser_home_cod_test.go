@@ -2,6 +2,11 @@
 
 package foundation_test
 
+// Purpose: real-click COD lifecycle and changed-payable buyer acceptance in isolated CI.
+// Depends on: tcv fixtures, merchant settings API, production Next/Go and Playwright.
+// Used by: GitHub CI --browser-home-cod.
+// Invariants: original lifecycle assertions retained; fixture-only settings writes; no provider calls.
+
 // home-cod R5 (unit home-cod, migration 0107): the independent browser gate `TestBrowserHomeCod`, prefix `hcod`. Run through
 // `bash scripts/dev/test-local.sh --browser-home-cod` (isolated PG 18, production storefront + admin Next builds).
 //
@@ -92,6 +97,7 @@ func TestBrowserHomeCod(t *testing.T) {
 	if st != 200 || out["enabled"] != true || out["max_twd"] != float64(20000) || out["surcharge_twd"] != float64(50) || out["carrier"] != "black_cat" {
 		t.Fatalf("the settings wizard did not store the COD settings: %d %s", st, raw)
 	}
+	codSettingsVersion := int64(out["version"].(float64))
 	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='checkout.cash_on_delivery_settings_changed'`, e.store()); n < 1 {
 		t.Error("the COD settings change was not audited")
 	}
@@ -211,9 +217,32 @@ func TestBrowserHomeCod(t *testing.T) {
 
 	// ---- phase 5: order A's buyer sees COLLECTED (still AWAITING_COLLECTION); B, C, D stay PENDING -------------------------------
 	release("1")
+	wait("fee-change")
+	// FIXTURE/SETUP only: change the saved fee after both regression buyers quoted.
+	// Merchant settings UI acceptance remains phase 1 above; this is no substitute for clicks.
+	st, out = e.hcodSettings(codSettingsVersion, true, 20000, 60, "black_cat")
+	if st != 200 || out["surcharge_twd"] != float64(60) {
+		t.Fatalf("changed-fee fixture: %d %v", st, out)
+	}
+	release("fee-change")
 	wait("done")
 	if err := <-exited; err != nil {
 		t.Fatalf("buyer browser gate failed: %v; evidence=%s", err, evidence)
+	}
+	changedRaw, changedErr := os.ReadFile(filepath.Join(evidence, "rvfix-273-orders.json"))
+	var changed []struct {
+		ID    string `json:"id"`
+		Total int64  `json:"total"`
+		Due   int64  `json:"due"`
+	}
+	if changedErr != nil || json.Unmarshal(changedRaw, &changed) != nil || len(changed) != 2 {
+		t.Fatalf("changed-payable orders: %v %s", changedErr, changedRaw)
+	}
+	for _, order := range changed {
+		_, _, mode, collection, amount, fee := e.hcodRow(order.ID)
+		if mode != "cash_on_delivery" || collection == nil || *collection != "PENDING" || fee != 6000 || amount != order.Total || amount+fee != order.Due {
+			t.Errorf("order %s collection does not match acknowledged server payable %d: total=%d fee=%d", order.ID, order.Due, amount, fee)
+		}
 	}
 	bcoShots(t, evidence, 8)
 	if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND commercial_state='AWAITING_COLLECTION' AND collection_state='COLLECTED'`, orders["A"].ID); n != 1 {

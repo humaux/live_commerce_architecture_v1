@@ -28,7 +28,7 @@ import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs";
 import { reachCheckout } from "./shop-helpers.mjs";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
-import { checkoutV2Suite, checkoutV2Cod } from "./checkout-v2.mjs";
+import { checkoutV2Suite, checkoutV2Cod, checkoutV2CodFeeChange } from "./checkout-v2.mjs";
 
 const env = (name) => {
   const value = process.env[name];
@@ -377,6 +377,9 @@ try {
     }
     pass("MOCK terminal buyer headings: RETURNED / REFUNDED_OFFLINE / CANCELLED, zh-TW/en at 390/1586");
   }
+  await checkoutV2CodFeeChange({ newContext, origin, product, recipient: pii, evidence,
+    changeFee: async () => { await signal("fee-change"); await waitGo("fee-change"); },
+  });
   await signal("done");
 } finally {
   for (const c of contexts) await c.close().catch(() => {});

@@ -20,6 +20,115 @@ const localeScreen = {
   "zh-CN": { delivery: "选择配送", quote: "获取当前总额", timing: "提交订单后付款", open: "展开付款说明", close: "收起付款说明" },
 };
 
+// RVFIX #273: the isolated merchant API changes the real saved fee after BOTH buyers quote.
+// Response interception only holds reads to inspect loading; it never changes money or creates orders.
+export async function checkoutV2CodFeeChange({ newContext, origin, product, recipient, evidence, changeFee }) {
+  const ledger = [], failures = [], orders = [], buyers = [];
+  const file = path.join(evidence, "rvfix-273-click-ledger.json");
+  const step = async (page, control, expected, perform) => {
+    try { await ledgerStep(ledger, file, page, control, "real clicks / reload", expected, perform); }
+    catch (error) { failures.push(`${control}: ${error.message}`); }
+  };
+  try {
+    for (const [mobile, recovery] of [[false, "refusal"], [true, "reload"]]) {
+      const context = await newContext(mobile), page = await context.newPage();
+      await reachCheckout(page, origin, "en", product, { quantity: 2 });
+      await page.getByRole("button", { name: "Choose delivery", exact: true }).click();
+      const [response] = await Promise.all([
+        page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST"),
+        page.getByRole("button", { name: copy.en.quote, exact: true }).click(),
+      ]);
+      const quote = await response.json();
+      assert.equal(quote.cod_due_minor, quote.amount.total_minor + 5000, "initial fee is the saved NT$50 fixture");
+      for (const [key, value] of Object.entries(recipient)) await page.locator(`input[name="${key}"]`).fill(value);
+      await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
+      await page.getByTestId("confirm-address").click();
+      await expect(page.getByTestId("create-order")).toBeEnabled();
+      await expect(page.getByTestId("checkout-review").getByTestId("review-total")).toHaveText(formatMoney("en", quote.cod_due_minor, quote.currency));
+      buyers.push({ context, page, quote, recovery });
+    }
+    await changeFee();
+    for (const { page, quote, recovery } of buyers) {
+      let freshQuote, optionReads = 0, releaseReads;
+      const readsReady = new Promise((resolve) => { releaseReads = resolve; });
+      let hold = recovery === "refusal";
+      const readRoute = async (route) => {
+        const response = await route.fetch();
+        if (route.request().url().includes("checkout-options")) optionReads++;
+        else if (response.status() === 200) freshQuote = await response.json();
+        if (hold) await readsReady;
+        await route.fulfill({ response });
+      };
+      await page.route("**/api/buyer/checkout-options?**", readRoute);
+      await page.route(`**/api/buyer/quotes/${quote.id}`, readRoute);
+      if (recovery === "refusal") {
+        await step(page, "409 loading", "real fee refusal blocks both submits and amount acknowledgment while authoritative reads are held", async () => {
+          const [refused] = await Promise.all([
+            page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/checkout" && r.request().method() === "POST"),
+            page.getByTestId("create-order").click(),
+          ]);
+          assert.equal(refused.status(), 409);
+          assert.equal((await refused.json()).code, "cod_surcharge_changed");
+          await expect(page.getByTestId("quote-reconfirm")).toContainText(copy.en.changed);
+          await expect.poll(() => optionReads).toBeGreaterThan(0);
+          await expect(page.getByRole("button", { name: copy.en.confirm, exact: true })).toBeDisabled();
+          await expect(page.getByTestId("create-order")).toBeDisabled();
+          await expect(page.getByTestId("checkout-submit")).toBeDisabled();
+        });
+        hold = false; releaseReads();
+      } else {
+        releaseReads();
+        await page.reload();
+      }
+      await step(page, `${recovery} updated due`, "same quote ID re-reads server COD due and displays old → new in notice, review and fixed bar", async () => {
+        await expect.poll(() => freshQuote?.cod_due_minor).toBe(quote.amount.total_minor + 6000);
+        assert.equal(freshQuote.id, quote.id, "GET keeps the immutable quote ID while current COD due changes");
+        const notice = page.getByTestId("quote-reconfirm");
+        await expect(notice).toContainText(copy.en.changed);
+        await expect(notice).toContainText(`${formatMoney("en", quote.cod_due_minor, quote.currency)} → ${formatMoney("en", freshQuote.cod_due_minor, quote.currency)}`);
+        await expect(page.getByTestId("review-total")).toHaveText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));
+        await expect(page.locator(".purchase-footer strong")).toHaveText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));
+        await expect(page.getByTestId("review-cod-fee")).toHaveText(formatMoney("en", 6000, quote.currency));
+      });
+      await step(page, `${recovery} persisted acknowledgment`, "reload retains changed payable block; separate acknowledgment survives another reload", async () => {
+        await page.reload();
+        await expect(page.getByTestId("address-section")).toBeVisible();
+        await expect(page.getByTestId("quote-reconfirm")).toContainText(copy.en.changed);
+        await page.getByTestId("confirm-address").click();
+        await expect(page.getByTestId("create-order")).toBeDisabled();
+        await expect(page.getByTestId("checkout-submit")).toBeDisabled();
+        await page.getByRole("button", { name: copy.en.confirm, exact: true }).click();
+        await expect(page.getByTestId("create-order")).toBeEnabled();
+        await page.reload();
+        await expect(page.getByTestId("address-section")).toBeVisible();
+        await page.getByTestId("confirm-address").click();
+        await expect(page.getByTestId("quote-reconfirm")).toHaveCount(0);
+        await expect(page.getByTestId("create-order")).toBeEnabled();
+      });
+      // A failing acknowledgment must not create an order. Other cases above still record their independent assertions.
+      if (!failures.length) await step(page, `${recovery} collection`, "real order collection equals the server payable the buyer acknowledged, including after reload", async () => {
+        const [submitted] = await Promise.all([
+          page.waitForRequest((r) => new URL(r.url()).pathname === "/api/buyer/checkout" && r.method() === "POST"),
+          page.getByTestId("checkout-submit").click(),
+        ]);
+        assert.equal(submitted.postDataJSON().expected_cod_surcharge_minor, 6000);
+        await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
+        const id = (await page.getByTestId("order-id").innerText()).trim();
+        await expect(page.getByTestId("order-cod-amount")).toContainText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));
+        await page.reload();
+        await expect(page.getByTestId("order-id")).toHaveText(id);
+        await expect(page.getByTestId("order-cod-amount")).toContainText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));
+        orders.push({ id, total: freshQuote.amount.total_minor, due: freshQuote.cod_due_minor });
+      });
+      await page.unroute("**/api/buyer/checkout-options?**", readRoute);
+      await page.unroute(`**/api/buyer/quotes/${quote.id}`, readRoute);
+    }
+    await writeFile(path.join(evidence, "rvfix-273-orders.json"), JSON.stringify(orders, null, 2));
+    assert.deepEqual(failures, [], "RVFIX #273 changed COD payable assertions");
+    assert.equal(orders.length, 2, "both recovery paths create a real order");
+  } finally { for (const { context } of buyers) await context.close(); }
+}
+
 async function ledgerStep(ledger, file, page, control, action, expected, perform) {
   const row = { page: new URL(page.url()).pathname, control, action, expected, actual: "NOT_RUN", status: "NOT_RUN" };
   ledger.push(row);
