@@ -3,7 +3,7 @@
 // Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
 // Depends on: buyer BFF/recovery, checkout display components, checkout-copy and codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
-// Invariants: server money only; changed quotes need acknowledgment; unknown checkout replays its original intent/key; brand-change contact stays ephemeral.
+// Invariants: server quote matches its option; changed totals need acknowledgment; unknown checkout replays its original intent/key; brand-change contact stays ephemeral.
 
 // Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
 // address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page

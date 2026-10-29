@@ -13,6 +13,9 @@
 //   go-1    the merchant ships one order and records the cash collected
 //   after1  that buyer sees COLLECTED; the other three stay PENDING
 // Wording: the zh-TW/en strings of apps/storefront/lib/cod-copy.ts that carry a contract meaning; everything else is located by data-testid.
+// Purpose: also reproduce COD-255 with real merchant surcharge changes between requests (no mocked checkout refusal).
+// Depends on: the parent Go fixture's ready/go handshake and authoritative quote/order BFF responses.
+// Used by: TestBrowserHomeCod. Invariants: real clicks confirm money; only isolated fixture settings change; no client amount is authoritative.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import http from "node:http";
@@ -47,6 +50,10 @@ const pass = (name) => console.log(`PASS ${name}`);
 let browser, edge, proxy;
 
 const copy = {
+  "zh-CN": {
+    delivery: "选择配送", quote: "获取当前总额", cod: /货到付款/, createCod: "提交订单（货到付款）",
+    due: "到货需付",
+  },
   "zh-TW": {
     delivery: "選擇配送", quote: "取得目前總額", cod: /貨到付款/, createCod: "送出訂單（貨到付款）",
     paid: "已貨到收款", note: /現金/, orderTitle: "你的訂單",
@@ -154,6 +161,134 @@ async function waitGo(step) {
   const file = path.join(evidence, `go-${step}`);
   for (let i = 0; i < 6000; i++) { try { await access(file); return; } catch { await pause(100); } }
   throw new Error(`the Go test never released ${step}`);
+}
+
+// Fixed, bounded cases mirrored by the Go fixture. Each starts with fee 50 and its own buyer/cart.
+// Settings mutations use the merchant API in Go solely as fixture preparation; every buyer action is a real click/fill.
+const cod255Cases = [
+  { key: "retry-tw-desktop-up", locale: "zh-TW", fee: 6000 },
+  { key: "retry-tw-mobile-down", locale: "zh-TW", mobile: true, fee: 4000 },
+  { key: "retry-cn-desktop-down", locale: "zh-CN", fee: 4000 },
+  { key: "retry-cn-mobile-up", locale: "zh-CN", mobile: true, fee: 6000 },
+  { key: "retry-en-desktop-up", locale: "en", fee: 6000 },
+  { key: "retry-en-mobile-down", locale: "en", mobile: true, fee: 4000 },
+  { key: "gap-up", locale: "zh-CN", gap: true, fee: 6000 },
+  { key: "gap-down", locale: "en", mobile: true, gap: true, fee: 4000 },
+  { key: "gap-zero", locale: "zh-TW", mobile: true, gap: true, fee: 0 },
+  { key: "refresh-failed", locale: "zh-CN", mobile: true, fee: 6000, failed: true },
+  { key: "disabled", locale: "zh-TW", fee: 5000, unavailable: true },
+  { key: "over-cap", locale: "en", mobile: true, fee: 5000, unavailable: true },
+];
+const cod255Results = [];
+async function surchargeRefresh(scenario) {
+  const { key, locale, mobile = false, fee, gap, failed, unavailable } = scenario;
+  const step = (phase) => `cod255-${key}-${phase}`;
+  await signal(step("start")); await waitGo(step("start"));
+  const ctx = await newContext(mobile), page = await ctx.newPage(), c = copy[locale];
+  const quotes = [];
+  let checkouts = 0, quoteRefreshes = 0, quoteFailures = 0;
+  page.on("response", async (response) => {
+    const pathname = new URL(response.url()).pathname;
+    if (/^\/api\/buyer\/quotes(?:\/[^/]+)?$/.test(pathname)) {
+      if (response.ok()) quotes.push(await response.json());
+      else quoteFailures++;
+    }
+  });
+  page.on("request", (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname === "/api/buyer/checkout" && request.method() === "POST") checkouts++;
+    if (/^\/api\/buyer\/quotes(?:\/[^/]+)?$/.test(pathname) && quotes.length) quoteRefreshes++;
+  });
+  await reachCheckout(page, origin, locale, product, { quantity: 2 });
+  await page.getByRole("button", { name: c.delivery, exact: true }).click();
+  let releaseOptions, optionsSeen = false;
+  const heldOptions = new Promise((resolve) => { releaseOptions = resolve; });
+  const holdOptions = async (route) => { optionsSeen = true; await heldOptions; await route.continue(); };
+  if (gap) await page.route("**/api/buyer/checkout-options?**", holdOptions, { times: 1 });
+  await page.getByRole("button", { name: c.quote, exact: true }).click();
+  await expect.poll(() => quotes.length, { message: `COD-255 ${key}: initial server quote` }).toBeGreaterThan(0);
+  assert.equal(quotes[0].cod_due_minor, total + surcharge, `COD-255 ${key}: old server due`);
+  const codMode = page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]');
+  const create = page.getByTestId("create-order"), confirm = page.getByTestId("confirm-address");
+  const fillAddress = async () => { for (const [name, value] of Object.entries(pii)) await page.locator(`input[name="${name}"]`).fill(value); };
+  if (!gap) {
+    await codMode.check(); await fillAddress(); await confirm.click(); await expect(create).toBeEnabled();
+  }
+  let releaseQuote, quoteSeen = false;
+  const heldQuote = new Promise((resolve) => { releaseQuote = resolve; });
+  if (!failed && !unavailable) {
+    const holdQuote = async (route) => { quoteSeen = true; await heldQuote; await route.continue(); };
+    await page.route("**/api/buyer/quotes/*", holdQuote, { times: 1 });
+    await page.route("**/api/buyer/quotes", holdQuote, { times: 1 });
+  }
+  await signal(step("change")); await waitGo(step("change"));
+  if (failed) {
+    // MOCK transport failure of the refresh only, after the real merchant setting has changed.
+    const failQuote = (route) => route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "unavailable" }) });
+    await page.route("**/api/buyer/quotes/*", failQuote);
+    await page.route("**/api/buyer/quotes", failQuote);
+  }
+  if (!gap) {
+    await page.route("**/api/buyer/checkout-options?**", holdOptions, { times: 1 });
+    const refused = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/checkout" && r.request().method() === "POST");
+    const [response] = await Promise.all([refused, create.click()]);
+    const body = await response.json();
+    assert.equal(response.status(), unavailable ? 422 : 409, `COD-255 ${key}: real server refusal`);
+    assert.equal(body.code, unavailable ? (key === "disabled" ? "cash_on_delivery_unavailable" : "cash_on_delivery_amount_exceeds") : "cod_surcharge_changed");
+  }
+  // Hold the real options read to prove both confirmation controls fail closed during refresh.
+  try {
+    await expect.poll(() => optionsSeen, { message: `COD-255 ${key}: options refresh reached the browser` }).toBe(true);
+    await expect(create).toBeDisabled(); await expect(confirm).toBeDisabled();
+  } finally { releaseOptions(); }
+  if (unavailable) {
+    await expect(codMode).toHaveCount(0);
+    await expect(page.getByTestId("footer-cod-due")).toHaveCount(0);
+    await expect(create).toBeDisabled();
+  } else if (failed) {
+    await expect.poll(() => quoteRefreshes, { message: `COD-255 ${key}: authoritative quote refresh attempted` }).toBeGreaterThan(0);
+    await expect.poll(() => quoteFailures, { message: "COD-255: failed refresh reached the browser" }).toBeGreaterThan(0);
+    await expect(confirm).toBeDisabled(); await expect(create).toBeDisabled();
+    assert.equal(checkouts, 1, "COD-255: no retry with stale money after refresh failure");
+  } else {
+    try {
+      await expect.poll(() => quoteSeen, { message: `COD-255 ${key}: server due refresh required` }).toBe(true);
+      await expect(confirm).toBeDisabled(); await expect(create).toBeDisabled();
+      await expect(page.getByTestId("footer-cod-due")).toHaveCount(0); // stale due cannot be paired with the new fee
+    } finally { releaseQuote(); }
+    // The assertion must fail on the old implementation, which reloads options but never the server due.
+    const due = total + fee;
+    await expect.poll(() => quotes.at(-1)?.cod_due_minor, { message: `COD-255 ${key}: refreshed server due must replace the old quote amount` }).toBe(due);
+    await codMode.check(); await fillAddress();
+    await expect(page.getByTestId("checkout-cod-amount").locator(".cod-amount strong")).toHaveText(`NT$${due / 100}`);
+    await expect(page.getByTestId("footer-cod-due").locator("strong")).toHaveText(`NT$${due / 100}`);
+    await expect(create).toBeDisabled(); // new money has not yet been explicitly confirmed
+    if (await page.getByTestId("quote-reconfirm").count()) {
+      await expect(page.getByTestId("quote-reconfirm")).toBeVisible();
+      await expect(page.getByTestId("checkout-submit")).toBeDisabled();
+      const acknowledgment = { "zh-TW": "確認更新後的金額", "zh-CN": "确认更新后的金额", en: "Confirm updated total" };
+      await page.getByRole("button", { name: acknowledgment[locale], exact: true }).click();
+      await expect(page.getByTestId("quote-reconfirm")).toHaveCount(0);
+    }
+    await confirm.click(); await expect(create).toBeEnabled();
+    const submitted = page.waitForRequest((r) => new URL(r.url()).pathname === "/api/buyer/checkout" && r.method() === "POST");
+    const [request] = await Promise.all([submitted, create.click()]);
+    const body = request.postDataJSON();
+    assert.equal(body.quote_id, quotes.at(-1).id, "COD-255: submit the refreshed server quote");
+    assert.equal(body.expected_cod_surcharge_minor, fee);
+    await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
+    const id = (await page.getByTestId("order-id").innerText()).trim();
+    // READ ONLY: reconcile the user-visible outcome with the authoritative order, never create it via API.
+    const order = await api(page, "GET", `orders/${id}`);
+    assert.equal(order.status, 200); assert.equal(order.body.cod_collect_minor, due);
+    await expect(page.getByTestId("order-cod-amount")).toContainText(`NT$${due / 100}`);
+    await page.reload();
+    await expect(page.getByTestId("order-id")).toHaveText(id);
+    await expect(page.getByTestId("order-cod-amount")).toContainText(`NT$${due / 100}`);
+    cod255Results.push({ key, id, due, fee, locale, mobile });
+  }
+  pass(`COD-255 ${key}: ${locale}/${mobile ? "mobile" : "desktop"}, authoritative money / fail-closed`);
+  await signal(step("verified")); await ctx.close();
 }
 
 async function place(buyer) {
@@ -380,6 +515,8 @@ try {
   await checkoutV2CodFeeChange({ newContext, origin, product, recipient: pii, evidence,
     changeFee: async () => { await signal("fee-change"); await waitGo("fee-change"); },
   });
+  for (const scenario of cod255Cases) await surchargeRefresh(scenario);
+  await writeFile(path.join(evidence, "cod255-results.json"), JSON.stringify(cod255Results, null, 2));
   await signal("done");
 } finally {
   for (const c of contexts) await c.close().catch(() => {});

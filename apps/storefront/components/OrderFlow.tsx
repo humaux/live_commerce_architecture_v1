@@ -3,7 +3,7 @@
 // Purpose: confirmed-address checkout and current order details, with stable layout while delivery facts load.
 // Depends on: purchase.ts CAS/recovery, order-fields, buyer BFF routes, CheckoutReview/CheckoutPaymentChoices and payment/fulfilment components.
 // Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
-// Invariants: destination, server quote and changed-total acknowledgment gate submit; brand changes requote; money is never added here.
+// Invariants: matching server quote/options, confirmed destination and changed-total acknowledgment gate submit; brand changes requote; money is never added here.
 // OrderDetails hosts <OrderPayment> (BFF orders/{id}/payment[/prepare|handoff|refresh|cancel]);
 // its Refresh order button also fires the Stripe payment/refresh signal via paymentSignalRef.
 // The shipment block renders Go GET /v1/buyer/orders/{id} `shipment` (BFF orders/{id}); no route of its own.
@@ -55,6 +55,7 @@ import {
 } from "../lib/cvs-contract";
 import {
   checkoutInput,
+  refreshCodQuote,
   offeredPaymentModes,
   currentDestination,
   pendingPurchase,
@@ -173,6 +174,8 @@ export default function OrderFlow({
 
   useEffect(() => {
     const version = ++live.current;
+    setOption(null);
+    setConfirmed(null);
     void (async () => {
       try {
         const [current, currentCart] = await Promise.all([
@@ -207,10 +210,11 @@ export default function OrderFlow({
           optionRefresh ? readPurchase(`quotes/${quote.id}`, context, validQuote) : Promise.resolve(quote),
           checkoutOption(context, quote),
         ]);
+        const latest = await refreshCodQuote(context, currentQuote, found);
         if (version !== live.current) return;
-        if (optionRefresh) onQuoteRefresh?.(currentQuote);
+        if (optionRefresh || latest !== quote) onQuoteRefresh?.(latest);
         // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
-        const offered = offeredPaymentModes(found, quote.amount.total_minor);
+        const offered = offeredPaymentModes(found, latest.amount.total_minor);
         const savedMode = sessionStorage.getItem(`commerce-checkout-mode-v2:${context}:${quote.id}`);
         if (offered?.length) setPaymentMode((current) => offered.includes(savedMode as PaymentMode) ? savedMode as PaymentMode : offered.includes(current) ? current : offered[0]);
         setOption(found);
