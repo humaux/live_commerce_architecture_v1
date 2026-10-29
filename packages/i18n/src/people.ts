@@ -1,0 +1,68 @@
+// Purpose: owner-signed simplified customer screen copy in all three routed locales.
+// Depends on: Locale type only; dynamic values come from the existing customer response.
+// Used by: apps/admin/lib/customers-copy.ts and the admin customer components.
+// Invariants: no sample customer facts, inferred consent or invented server queue state.
+import type { Locale } from "./index.ts";
+
+const en = {
+  title: "Customers", search: "Name prefix / last phone digits", clear: "Clear search",
+  view: "View customer", back: "Back to results", customerID: "Customer", phone: "Phone ending",
+  orders: "Orders", consent: "Consent", privacy: "Privacy", net: "Net receipts", first: "First recorded",
+  download: "Download customer data", confirmDownload: "Confirm download", erase: "Erase customer data",
+  confirmErase: "Confirm erasure", checked: "I checked what will change and what will be kept",
+  verify: "Verify the requester's identity first",
+  protected: "Protected delivery details; up to 200 orders. Keep the file secure",
+  permissions: "Requires privacy and customer/order read permissions",
+  scope: (n: number) => `Customer, ${n} orders, consent history, live-sale records and privacy actions from this store`,
+  eraseBody: "Withdraw consent, sign out devices and deactivate the customer. Remove delivery details unused by orders and redact eligible live-sale records.",
+  eraseKept: (n: number) => `Keep ${n} orders, payments, refunds, order delivery details and legally retained records. Handle social data separately.`,
+  eraseSafety: "Open orders, payments or refunds prevent erasure. Completed erasure cannot be undone.",
+  typeName: (name: string) => `Type “${name}” to confirm`, name: "Customer name",
+  pending: "View pending request", pendingBack: "Back to pending request", viewData: "View customer data",
+  backCustomer: "Back to customer", exportSubmitted: "Download request submitted", eraseSubmitted: "Erasure request submitted",
+  exportPending: "Download request pending", erasePending: "Erasure request pending",
+  paused: "Downloads and erasure are paused. Review the customer first.",
+  unconfirmed: "The outcome has not been confirmed. Do not submit again.",
+  storeCount: (n: number) => `Store customers · ${n}`, found: (n: number) => `${n} customer${n === 1 ? "" : "s"} found`,
+  marketing: "Marketing messages · Messenger / IG DM", ads: "Personalized ads · Meta", settings: "Customer settings",
+  advanced: "Advanced", granted: "Consent given", withdrawn: "Consent withdrawn",
+};
+type PeopleCopy = typeof en;
+
+export const peopleCopy: Record<Locale, PeopleCopy> = {
+  en,
+  "zh-TW": {
+    title: "顧客", search: "姓名開頭／電話末碼", clear: "清除搜尋", view: "查看顧客", back: "返回搜尋結果",
+    customerID: "顧客編號", phone: "電話末", orders: "訂單", consent: "同意", privacy: "隱私", net: "實收金額", first: "首次紀錄",
+    download: "下載顧客資料", confirmDownload: "確認下載", erase: "抹除顧客", confirmErase: "確認抹除",
+    checked: "已核對處理與保留範圍", verify: "先核實身分", protected: "收件資料受保護；最多200筆訂單，妥善保管",
+    permissions: "需隱私及顧客／訂單讀取權限",
+    scope: (n) => `本店顧客、${n}筆訂單、同意歷史、直播登記、隱私操作`,
+    eraseBody: "撤回同意、登出裝置、停用顧客；移除未用於訂單的收件資料，改寫可處理的直播登記。",
+    eraseKept: (n) => `保留 ${n} 筆訂單、付款退款、訂單收件及法定紀錄；社群資料另行處理。`,
+    eraseSafety: "有未完結訂單、付款或退款時無法抹除；完成後無法復原。",
+    typeName: (name) => `輸入「${name}」確認`, name: "顧客姓名", pending: "查看待處理要求", pendingBack: "返回待處理要求",
+    viewData: "查看顧客資料", backCustomer: "返回顧客資料", exportSubmitted: "下載要求已送出", eraseSubmitted: "抹除要求已送出",
+    exportPending: "已有下載要求待處理", erasePending: "已有抹除要求待處理", paused: "暫停下載與抹除，請先查看顧客。",
+    unconfirmed: "尚未確認處理結果，請勿重複操作。", storeCount: (n) => `本店顧客 · ${n} 位`, found: (n) => `找到 ${n} 位顧客`,
+    marketing: "行銷訊息 · Messenger / IG DM", ads: "個人化廣告 · Meta", settings: "顧客設定",
+    advanced: "進階", granted: "已同意", withdrawn: "已撤回",
+  },
+  "zh-CN": {
+    title: "客户", search: "姓名开头／手机号尾号", clear: "清空搜索", view: "查看客户", back: "返回搜索结果",
+    customerID: "客户编号", phone: "手机尾号", orders: "订单", consent: "授权记录", privacy: "隐私", net: "实收金额", first: "首次记录",
+    download: "下载客户资料", confirmDownload: "确认下载", erase: "清除客户资料", confirmErase: "确认清除",
+    checked: "已核对清除与保留范围", verify: "先核实申请人身份", protected: "收件信息受保护；最多200笔订单，请妥善保管",
+    permissions: "需要隐私操作及客户／订单查看权限",
+    scope: (n) => `本店客户、${n}笔订单、授权历史、直播登记、隐私操作`,
+    eraseBody: "撤回授权、退出已登录设备、停用客户账号；删除未用于订单的收件信息，改写可处理的直播登记。",
+    eraseKept: (n) => `保留 ${n} 笔订单、支付退款、订单收件信息及法定记录；社交平台资料单独处理。`,
+    eraseSafety: "有未完成的订单、支付或退款时不能清除；清除后无法恢复。",
+    typeName: (name) => `输入“${name}”确认`, name: "客户姓名", pending: "查看待处理申请", pendingBack: "返回待处理申请",
+    viewData: "查看客户资料", backCustomer: "返回客户资料", exportSubmitted: "下载申请已提交", eraseSubmitted: "资料清除申请已提交",
+    exportPending: "已有下载申请待处理", erasePending: "已有资料清除申请待处理", paused: "暂时不能下载或清除资料，请先查看客户记录。",
+    unconfirmed: "尚未确认处理结果，请勿重复提交。", storeCount: (n) => `本店客户 · ${n} 位`, found: (n) => `找到 ${n} 位客户`,
+    marketing: "营销消息 · Messenger / IG DM", ads: "个性化广告 · Meta", settings: "客户设置",
+    advanced: "高级", granted: "已同意", withdrawn: "已撤回授权",
+  },
+};
