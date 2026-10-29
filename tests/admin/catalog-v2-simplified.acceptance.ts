@@ -309,7 +309,8 @@ export function registerCatalogSimplifiedAcceptance() {
         const otherWrites: string[] = [];
         page.on('request', request => { if (request.url().includes('/api/stores/') && request.method() !== 'GET' && !new URL(request.url()).pathname.endsWith(`/products/${productID}/document`)) otherWrites.push(new URL(request.url()).pathname); });
         // Synthetic placement-time projection. This tests frontend isolation, not PostgreSQL snapshot durability.
-        const historical = { order_id: orderID, created_at: '2026-10-27T00:00:00Z', updated_at: '2026-10-27T00:00:00Z', currency: 'TWD', total_minor: 128000,
+        // Match the server's canonical UTC microsecond wire format (orders-model.ts); malformed dates fail closed.
+        const historical = { order_id: orderID, created_at: '2026-10-27T00:00:00.000000Z', updated_at: '2026-10-27T00:00:00.000000Z', currency: 'TWD', total_minor: 128000,
           commercial_state: 'CONFIRMED', fulfillment_state: 'MANUAL_UNASSIGNED', payment_state: 'CAPTURED', test_mode: false, work_state: 'READY',
           refunded_minor: 0, refund_pending_minor: 0, pickup_source: null, payment_mode: 'card', collection_state: null,
           cod_surcharge_minor: null, cod_collect_minor: null, source: 'storefront', order_number: `LC-${orderID.replaceAll('-', '').toUpperCase()}`,

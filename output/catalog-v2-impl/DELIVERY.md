@@ -1,3 +1,45 @@
+# FIX318 relay16 · canonical historical-order timestamp encoding · 2026-10-30
+
+Author E0; static E1; new-head GREEN/E4 PENDING. Integrator-dispatched child integrator-catalog-v2-impl-sub-relay16; parent retains coord ownership, no new claim or delegation. Base/rollback bc9220a649f22ce63b3f2cf1baad4ec2bb784a62; fetched/merged integration17328372dea91220050e9583259312e2db2e5d97: already up to date. Existing untracked evidence preserved. Runtime model/effort not separately exposed to this lane.
+
+## Root cause, RED and scope
+
+Current-head Gates40947341445/job123708039039, synthetic checkout4aa998128547cedac53c79509d35c92dbecd22bb. Read current gh pr checks: only bundle03 failed,26 in progress,12success,1skipped at inspection. gh run view --log-failed refuses unfinished workflows; completed-job API logs obtained instead. Fresh gh run download exit0, product-editor artifact12930971083:24passed/1failed/2notrun. Pickers pass. New independent blocker attempt1/2: historical-order row absent at CATV2:322. Trace proves orders API HTTP200 with created_at/updated_at lacking six microsecond digits; current orders-model.ts date validator rejects it and the ARIA snapshot shows unavailable. No apt/dpkg/network failure or rerun.
+
+Only normalize the two timestamps from 2026-10-27T00:00:00Z to 2026-10-27T00:00:00.000000Z, plus explanatory comment. This encodes the same instant in the real server format; order amount128000, identity, statuses, counts, records and all real-click/reload/old-price assertions remain unchanged. Strict production parser untouched. Existing CI is causal RED; no duplicate tests-only push. Original tests-only RED40872483030/job123445416316 retained below and in red.log.
+
+Changed tests/admin/catalog-v2-simplified.acceptance.ts and output/catalog-v2-impl/{DELIVERY.md,red.log,relay16-static.log}: original write paths only. No added/renamed/deleted import/spec/page/route; no browser ownership or depmap change needed. Inherited additional module paths remain listed in PR body. Gate-adapter assertions, exemptions, baselines, contracts, backend, migrations and lockfiles unchanged.
+
+## Click ledger and desktop/mobile/review parity
+
+|Control/fact|Operation/expectation|Evidence|
+|---|---|---|
+|Historical order1280, new catalog price1380|Orders click → Edit/review/save → reload → Orders/reload; old amount1280 and no1380; only one document write|Existing assertions preserved; new-head CI PENDING|
+|zh-CN/en native media controls|Exact-name click/filechooser cancel/no-write|Pass on bc9220a6; new-head CI PENDING|
+|Required name/description/SKUs/prices/stock/images/status across desktop/mobile/review|Existing complete parity table and three-language tests below|No UI/copy change; new-head CI PENDING|
+
+## BOURDIEU
+
+Q1 task novices need legible saved-order facts; Q2 experienced sellers compare frozen old prices; Q3 no price inference from client state; Q4 no class/device proxy; Q5 preserve accessible real-click paths; Q6 aesthetics UNKNOWN until owner. No visual change.
+
+## PROJECT UNDERSTANDING
+
+Read AGENTS.md, 架构.md §§0/1/2/26/27, catalog-inventory-v1 merge-patch/boundary/media rules, current orders-model.ts/order-v2 parser and merchant-orders-v1 closed projection. Frozen order amounts and server-owned inventory remain independent of catalog edits. Integrator ruling read at output/integrator/tools/cards/cxf-fix10-318.md (main read-only); owner source Humaux8a0a0a7e-6c37-4c8a-b1cc-ed05a2da6442. Existing equal-strength migration retained.
+
+## MOBBIN → EAGLE
+
+No new visual pattern needed for wire encoding correction. Signed reference provenance below retained; live Mobbin/Eagle NOT_RUN. No needed new query/import.
+
+## FIGMA OFFICIAL GUIDANCE
+
+Existing auto-layout/components/variables/prototype mapping and official-guide references below retained; no Figma write, new visible string or three-language copy change. Ponytail and development details loaded; impeccable reference read for context, no UI design action. Static-only authorization prevents running additional skill scripts.
+
+## Evidence and handoff
+
+node --check on changed acceptance file and git diff --check exit0; file hash in relay16-static.log. Humaux fix3937dcc9-8d71-4b04-897c-295748bbc5d7 stored and child canvas updated under acquired lock. Source index submitted; code-memory link recorded. Full rejected enumeration9/9 coverage1.0 read. Push once and register exact-head Gates/Foundation WAIT_RUN; integrator relays completion in a fresh session, no long polling or evidence-only push.
+
+NOT_RUN: local tests/server/browser/build/install/PG/container; new-head runtime/GREEN; independent E4; provider SANDBOX/LIVE; production/deploy; PG historical-order snapshot durability. No locally started process remains.
+
 # FIX318 relay15 · English picker oracle casing · 2026-10-30
 
 Current-head raw evidence: 7eb42d0d42e1217b3fa54000f7a652bf35e1cd66, Gates40944073779/job123697108854. Fresh gh run download exit0: product-editor artifact12930200321 reports23passed/1failed/3notrun; catalog-core artifact12929681844 passes. Only bundle03 is failed at inspection; other pending jobs are not accepted. Foundation40944073780/job123694686290 succeeded on that head. gh run view --log-failed refuses the unfinished workflow; completed-job raw logs fetched through gh api actions/jobs/123697108854/logs instead (relay15-bundle03.log). No runner infrastructure failure and no rerun.
