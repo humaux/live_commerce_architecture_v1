@@ -420,3 +420,25 @@ No Figma layout/component/prototype change. Prior guide availability limitation 
 Static node --check and worker diff --check exit0 (E1 only). Full merge whitespace check exit2 from upstream OC11 source/evidence whitespace, preserved verbatim. New-head Foundation/Gates and independent re-review PENDING; author E0. Scope extension: tests/storefront/cvs-picker.mjs in the storefront browser module, plus existing evidence/generated ownership. Upstream sensitive files remain byte-identical to integration. No worker Go dependency change; depmap NOT_RUN.
 
 NOT_RUN: local tests/server/browser/PG/build/tsc, provider SANDBOX/LIVE, production, independent re-review; Humaux store/canvas/coord/index/link unavailable. Exact post-push Gates/Foundation WAIT_RUN IDs go in a PR comment; integrator relay is the wake-up path, no detached process or polling beyond10minutes.
+
+## RVFIX273 RELAY2 — shared fixture order capacity
+
+Current source head75bdd2f6 and own CI Gates40899805640/job123547370184 were read directly. Artifact12911285831 has all33RVFIX ledger rows PASS, including all18pending review/footer/original recovery cases. The member later fails the existing COD255 gap-down order-visible assertion after a real429cash_on_delivery_limit. Foundation40899805497/job123538658778 succeeds. Full GREEN and independent review remain pending; author assessment E0.
+
+The six new recovered witnesses consumed the unchanged store-wide20unshipped-PENDING COD quota. After the existing PG recovery/fee/collection assertions, this attempt records only those six manual shipments through the isolated merchant API as fixture cleanup. Additional assertions require exactly six released slots and unchanged original collection money/PENDING state. No production or UI behavior changes; no original assertion, budget, cap or fixture input changes. Static gofmt/node syntax/diff checks only locally; CI owns runtime verification.
+
+### UI PROCESS · Bourdieu
+
+Existing Q1–Q5 verdicts and behavior remain unchanged; Q6 aesthetics UNKNOWN pending owner. Fixture cleanup adds no product screen or decision.
+
+### UI PROCESS · Project understanding
+
+Read AGENTS.md and architecture sections0/1/2/26/27, buyer-checkout-v1 and buyer-http-v1 quote/recovery contract, review REVIEW-273.md. The current SQL begin_hold shared20-open COD cap (post_river/0021lines261–267) explains the real CI refusal. Original money, original intent/key and fail-closed recovery remain mandatory; cap stays intact.
+
+### UI PROCESS · Mobbin → Eagle
+
+No new visual pattern/reference/import; existing module reference mapping and parity/copy tables remain applicable. No new Mobbin query needed for fixture cleanup.
+
+### UI PROCESS · Figma official guidance
+
+Existing guide references remain as recorded above; no new Figma read/write, copy or frame claim. Figma copy lint/density NOT_RUN, since no frame changed. Existing desktop/mobile/summary parity and three-language copy tables remain unchanged. Runtime acceptance and independent re-review pending CI.

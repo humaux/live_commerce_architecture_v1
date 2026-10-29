@@ -5,7 +5,7 @@ package foundation_test
 // Purpose: real-click COD lifecycle and changed-payable buyer acceptance in isolated CI.
 // Depends on: tcv fixtures, merchant settings API, production Next/Go and Playwright.
 // Used by: GitHub CI --browser-home-cod.
-// Invariants: original lifecycle assertions retained; fixture-only settings writes; no provider calls.
+// Invariants: original lifecycle assertions retained; fixture-only merchant writes; no provider calls.
 
 // home-cod R5 (unit home-cod, migration 0107): the independent browser gate `TestBrowserHomeCod`, prefix `hcod`. Run through
 // `bash scripts/dev/test-local.sh --browser-home-cod` (isolated PG 18, production storefront + admin Next builds).
@@ -243,6 +243,26 @@ func TestBrowserHomeCod(t *testing.T) {
 		if mode != "cash_on_delivery" || collection == nil || *collection != "PENDING" || fee != surchargeMinor || amount != total || amount != order.Total || amount+fee != order.Due {
 			t.Errorf("recovered COD order %s must retain original collection %d: total=%d fee=%d", order.ID, order.Due, amount, fee)
 		}
+	}
+	// Fixture cleanup, not UI acceptance: these six new witnesses must not consume the
+	// unchanged store-wide 20-open-order budget of the following COD-255 cases.
+	// Record manual shipments through the merchant API only after recovery/money checks;
+	// keep collection PENDING and every original order/amount assertion above intact.
+	openCOD := func() int {
+		return e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1 AND payment_mode='cash_on_delivery' AND collection_state='PENDING' AND fulfillment_state='MANUAL_UNASSIGNED'`, e.store())
+	}
+	beforeCleanup := openCOD()
+	for _, order := range pendingOrders {
+		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order.ID+"/shipment", t04Key("rv273-fixture-ship"), mfxShip(0, "black_cat", "RV273SYNTHETIC")); st != 200 {
+			t.Fatalf("recovered-order fixture shipment: %d %s", st, raw)
+		}
+		_, fulfilment, mode, collection, amount, fee := e.hcodRow(order.ID)
+		if fulfilment != "MERCHANT_SHIPPED" || mode != "cash_on_delivery" || collection == nil || *collection != "PENDING" || amount != order.Total || fee != surchargeMinor || amount+fee != order.Due {
+			t.Fatalf("fixture shipment changed original COD money/state for %s", order.ID)
+		}
+	}
+	if after := openCOD(); after != beforeCleanup-len(pendingOrders) {
+		t.Fatalf("recovered witnesses must release exactly their six open-order slots: before=%d after=%d", beforeCleanup, after)
 	}
 	release("pending-recovered")
 	// COD-255 fixture preparation: mutate the REAL merchant settings API between the browser's quote and options/checkout requests.
