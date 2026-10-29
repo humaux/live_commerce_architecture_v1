@@ -1,4 +1,20 @@
 RVFIX305 — native CI assertion RED pending
+LATEST REVIEW ROUND — OA policy authority RED pending (2026-10-29)
+Reviewed head: 2768fb91776212d17906f29d969ecdfe70a89bad.
+Integration merged first: d0e7331525fec046fbe9361906fa66367ae583c6.
+Tests-only regression extends the existing C3 document gate, preserving every
+earlier assertion. Expected failures: missing OA-aware eligibility definer,
+its exact owner/EXECUTE inventory, C3 calling legacy check_send, and missing
+separate eligible-OA-READY/consent/window/takeover REAL_PG witness rows.
+The SQL handoff is deliberately unchanged until assertion-level native CI RED.
+Static: gofmt -w changed Go test; go vet ./tests/foundation; git diff --check:
+all exit 0. No local tests, servers, provider calls or migration edits.
+Native run/job/head/checkout receipts: PENDING; append after the RED push.
+Earlier runs below prove only their historical heads, not this policy regression.
+The P2 reminder nullable-key request remains open; the prior fixed claim is false.
+REAL_PG, actual ACLs/lock barriers, DB mutations, composition, providers,
+SANDBOX/LIVE and production: NOT_RUN. Own assessment E0; static E1 only.
+
 PR: 305; branch: unit/oa-2; target: r3/integration
 Base: a57cdb1a76a5ccfc72defc9a8b751bc29ea1f786
 Integration: f8fd8900577815a328643ed878d88a6a247d2ab2
@@ -30,3 +46,49 @@ Both run headSha fields equal the pushed head 873af5028.
 RED observed; fix pushed separately (restore aace3b5a5 + SQL handoff). GREEN:
   recorded in PR #305 after the implementation push.
 REAL_PG/ACL/lock barriers/DB mutations/scheduler/provider wiring/SANDBOX/LIVE: NOT_RUN.
+995:gate (shard:g10)	Gate	2026-10-29T11:09:46.2310775Z     order_attempt_notification_dispatch_test.go:88: one permit must make exactly one accepted call: calls=1 out={Disposition:claimed Outcome:{State:ACCEPTED Code:provider_accepted ProviderReference:m_mock} Notification:{NotificationID: State:ACCEPTED OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage: VoidCode: ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0}
+996:gate (shard:g10)	Gate	2026-10-29T11:09:46.2313802Z --- FAIL: TestOrderAttemptNotificationDispatchSinglePermit (0.00s)
+997-gate (shard:g10)	Gate	2026-10-29T11:09:46.2314963Z === RUN   TestOrderAttemptNotificationUnknownNeverSecondSend
+998:gate (shard:g10)	Gate	2026-10-29T11:09:46.2318508Z     order_attempt_notification_dispatch_test.go:120: ambiguous call must be made once: calls=1 out={Disposition:claimed Outcome:{State:ACCEPTED Code:callback_failed ProviderReference:} Notification:{NotificationID: State:DELIVERY_UNKNOWN OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage: VoidCode: ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0}
+999:gate (shard:g10)	Gate	2026-10-29T11:09:46.2321898Z --- FAIL: TestOrderAttemptNotificationUnknownNeverSecondSend (0.00s)
+1000-gate (shard:g10)	Gate	2026-10-29T11:09:46.2323407Z === RUN   TestOrderAttemptNotificationStaleGenerationFence
+1001:gate (shard:g10)	Gate	2026-10-29T11:09:46.2325297Z     order_attempt_notification_dispatch_test.go:138: stale completion must be refused: <nil>
+1002:gate (shard:g10)	Gate	2026-10-29T11:09:46.2327886Z --- FAIL: TestOrderAttemptNotificationStaleGenerationFence (0.00s)
+1003-gate (shard:g10)	Gate	2026-10-29T11:09:46.2329300Z === RUN   TestOrderAttemptNotificationRetryRefusal
+1004:gate (shard:g10)	Gate	2026-10-29T11:09:46.2332866Z     order_attempt_notification_dispatch_test.go:164: M4: READY must refuse generic retry: blocked=false state="READY" err=<nil>
+1005:gate (shard:g10)	Gate	2026-10-29T11:09:46.2336552Z --- FAIL: TestOrderAttemptNotificationRetryRefusal (0.00s)
+1006-gate (shard:g10)	Gate	2026-10-29T11:09:46.2338732Z === RUN   TestOrderAttemptNotificationCancelBeforeC3ZeroCalls
+1007:gate (shard:g10)	Gate	2026-10-29T11:09:46.2344932Z     order_attempt_notification_dispatch_test.go:196: terminal: cancel-before-C3 must keep zero calls: calls=0 out={Disposition:terminal Outcome:{State: Code: ProviderReference:} Notification:{NotificationID: State:READY OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage:before_c3 VoidCode:cancelled ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0}
+1008:gate (shard:g10)	Gate	2026-10-29T11:09:46.2348392Z --- FAIL: TestOrderAttemptNotificationCancelBeforeC3ZeroCalls (0.00s)
+1009-gate (shard:g10)	Gate	2026-10-29T11:09:46.2350711Z === RUN   TestOrderAttemptNotificationLeaseSweep
+1010:gate (shard:g10)	Gate	2026-10-29T11:09:46.2351984Z     order_attempt_notification_dispatch_test.go:218: M7: one discarded job must become one expired lease: {Scanned:1 Expired:[]}
+1011:gate (shard:g10)	Gate	2026-10-29T11:09:46.2353079Z --- FAIL: TestOrderAttemptNotificationLeaseSweep (0.00s)
+1012-gate (shard:g10)	Gate	2026-10-29T11:09:46.2353647Z === RUN   TestOrderAttemptNotificationReminderKeys
+1013:gate (shard:g10)	Gate	2026-10-29T11:09:46.2354548Z     order_attempt_notification_dispatch_test.go:238: buyer A's reminder key must not collide with buyer B's order
+1014:gate (shard:g10)	Gate	2026-10-29T11:09:46.2355682Z --- FAIL: TestOrderAttemptNotificationReminderKeys (0.00s)
+1015-gate (shard:g10)	Gate	2026-10-29T11:09:46.2356370Z === RUN   TestOrderAttemptNotificationOutcomeClassification
+1016:gate (shard:g10)	Gate	2026-10-29T11:09:46.2358821Z     order_attempt_notification_dispatch_test.go:278: acknowledgement without acceptance proof is not success: {Disposition:claimed Outcome:{State:ACCEPTED Code:delivery_unknown ProviderReference:} Notification:{NotificationID: State:DELIVERY_UNKNOWN OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage: VoidCode: ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0}
+1017:gate (shard:g10)	Gate	2026-10-29T11:09:46.2361436Z --- FAIL: TestOrderAttemptNotificationOutcomeClassification (0.00s)
+1018-gate (shard:g10)	Gate	2026-10-29T11:09:46.2362464Z === RUN   TestOrderAttemptNotificationLeaseExpiryOnlyUnknown
+1019:gate (shard:g10)	Gate	2026-10-29T11:09:46.2364689Z     order_attempt_notification_dispatch_test.go:319: reconcile may only query: {Disposition:claimed Outcome:{State:ACCEPTED Code:callback_failed ProviderReference:} Notification:{NotificationID: State:ACCEPTED OperationID: OrderID: LinkVersion:0 WorkerGeneration:0 VoidStage: VoidCode: ConversationID: BindingID: DispatchAuthorizedAt:<nil>} Calls:0} calls=0
+1020:gate (shard:g10)	Gate	2026-10-29T11:09:46.2366296Z --- FAIL: TestOrderAttemptNotificationLeaseExpiryOnlyUnknown (0.00s)
+1021-gate (shard:g10)	Gate	2026-10-29T11:09:46.2366805Z === RUN   TestOrderAttemptNotificationOriginPin
+--
+1028:gate (shard:g10)	Gate	2026-10-29T11:09:50.9439241Z     order_attempt_notification_review_test.go:33: post-C3 reconciliation must branch before payable/link/window/consent refusal
+1029:gate (shard:g10)	Gate	2026-10-29T11:09:50.9441425Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "READY/READY AND dispatch_authorized_at IS NULL"
+1030:gate (shard:g10)	Gate	2026-10-29T11:09:50.9444343Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "DELIVERY_UNKNOWN/(UNKNOWN|ACKNOWLEDGED)"
+1031:gate (shard:g10)	Gate	2026-10-29T11:09:50.9446439Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "mode=reconcile; never enter steps g/h"
+1032:gate (shard:g10)	Gate	2026-10-29T11:09:50.9448169Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "DISPATCHING/DISPATCHING returns busy"
+1033:gate (shard:g10)	Gate	2026-10-29T11:09:50.9450392Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "preserve dispatch_authorized_at, link_version and provider evidence"
+1034:gate (shard:g10)	Gate	2026-10-29T11:09:50.9452530Z     order_attempt_notification_review_test.go:44: C3 handoff must specify "stale binding after C3 returns blocked_binding without changing either state"
+1035-gate (shard:g10)	Gate	2026-10-29T11:09:50.9454214Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/cancel-after-UNKNOWN
+1036:gate (shard:g10)	Gate	2026-10-29T11:09:50.9456006Z     order_attempt_notification_review_test.go:52: SQL acceptance handoff is missing the cancel-after-UNKNOWN paired-state witness
+1037-gate (shard:g10)	Gate	2026-10-29T11:09:50.9463329Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/rotation-after-UNKNOWN
+1038:gate (shard:g10)	Gate	2026-10-29T11:09:50.9465828Z     order_attempt_notification_review_test.go:52: SQL acceptance handoff is missing the rotation-after-UNKNOWN paired-state witness
+1039-gate (shard:g10)	Gate	2026-10-29T11:09:50.9468474Z === RUN   TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/policy-loss-after-UNKNOWN
+1040:gate (shard:g10)	Gate	2026-10-29T11:09:50.9470975Z     order_attempt_notification_review_test.go:52: SQL acceptance handoff is missing the policy-loss-after-UNKNOWN paired-state witness
+1041:gate (shard:g10)	Gate	2026-10-29T11:09:50.9472857Z --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal (0.00s)
+1042:gate (shard:g10)	Gate	2026-10-29T11:09:50.9474893Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/cancel-after-UNKNOWN (0.00s)
+1043:gate (shard:g10)	Gate	2026-10-29T11:09:50.9476885Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/rotation-after-UNKNOWN (0.00s)
+1044:gate (shard:g10)	Gate	2026-10-29T11:09:50.9478662Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/policy-loss-after-UNKNOWN (0.00s)
+1045-gate (shard:g10)	Gate	2026-10-29T11:09:50.9545734Z === RUN   TestOrderAttemptPayEntryStoreRefusesInvalidReplay
