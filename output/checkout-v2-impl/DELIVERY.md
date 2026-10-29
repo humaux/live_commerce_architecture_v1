@@ -1,5 +1,39 @@
 # CHECKOUT-V2-IMPL — implementation handoff, 2026-10-28
 
+## Latest RVFIX review — automatic COD-only regression, 2026-10-29 (RED PENDING)
+
+Authority: current dispatch; final REQUEST_CHANGES in integrator cxf-rv-273.log, reviewed head ce3dbfe0fbc9f2d8f31ec1e45d98e86aec6a39f0. One P1: automatic COD selection is not persisted; refresh can compare base totals instead of the payable previously displayed. No P0/P2 in the final verdict. Listed review rounds: only cxf-rv-273.log exists. That head's Gates40872737722 and Foundation40872737744 are historical green and do not cover this new case.
+
+Merged integration d0e733152 (#285) as28688d466 before the tests-only change. Merge resolution preserves authoritative COD quote/option matching, separate changed-total acknowledgment, both merchant-fixture phases and both CI journeys. The upstream COD-255 adapter now clicks any required separate amount acknowledgment before its original address-confirmation assertions; all original assertions remain. No migration, contract, shared backend, lockfile, gate baseline or waiver edit.
+
+New test coverage: desktop and390px COD-only options, no radio operation, initial server-payable review, real merchant fee change50->60, same quote ID after reload, both submits blocked until separate amount acknowledgment, acknowledgment persistence after reload, actual order creation and matching PG collection. A labeled MOCK option configuration retains only already-offered COD; it never changes money/caps/versions or creates orders. Existing two recovery orders and assertions remain; two automatic-mode orders get a separate artifact and PG checks. Click ledger: rvfix-273-click-ledger.json, automatic COD desktop/mobile rows. Results PENDING CI. The automatic selection implementation is deliberately unchanged until causal RED.
+
+### UI PROCESS · Bourdieu
+
+Q1: show authoritative payable. Q2: retain the selection used in the buyer's last review. Q3: require a distinct decision after changed payable. Q4: ordinary COD-only shop requires no redundant radio gesture. Q5: desktop/mobile run the same decision sequence. Q6: aesthetics UNKNOWN until owner. Novice/expert refers only to recent checkout-task experience. These are acceptance criteria, not passing evidence.
+
+### UI PROCESS · Project understanding
+
+Read 架构.md §§0/1/2/26/27: distinguish evidence environments, Go/PG transaction authority, bounded product scope, isolated worker ownership and independent CI acceptance. Read buyer-checkout-v1 and checkout-quote-validation-v1: no silent price acceptance and server transaction authority. buyer-http-v1 quote projection: both POST/GET report current cod_due_minor. Signed cxf-checkout-v2-impl.md item3 requires changed-total acknowledgment. Current OrderFlow, checkout-review and COD-255 refreshCodQuote code establish the affected path. No client-created authoritative amount.
+
+### UI PROCESS · Mobbin → Eagle
+
+No new visual pattern or asset; this is a regression and integration conflict resolution. Existing reference principles and approved design above remain applicable. No new Mobbin query/import required; no claim of new Eagle access.
+
+### UI PROCESS · Figma official guidance
+
+No frame, component, variable or prototype change. Existing official-guide availability limitation remains; no new guide-read claim. Existing field-parity and three-language copy tables remain unchanged because no visible product string or screen was added.
+
+| Required fact/control | Desktop | Mobile | Review / reload |
+| --- | --- | --- | --- |
+| Recipient name + phone | Existing review; unchanged | Same | Existing persistence assertions retained |
+| Home destination | Existing review; unchanged | Same | Existing address-confirmation path retained |
+| Subtotal / shipping / COD fee / total | Server quote | Same | Old→new payable notice + review + fixed bar asserted |
+| Payment method + timing | Sole COD already selected | Same | No radio operation; selected-mode behavior under test |
+| Separate amount acknowledgment | Both submits blocked | Same | Explicit click, reload then enabled asserted |
+
+Evidence: author assessment E0; static checks E1 only; new causal RED/GREEN and independent re-review PENDING. No completion claim. Scope beyond original narrow paths: existing OrderFlow.tsx merge resolution, existing purchase.ts/purchase.test.mjs and output/cod255/* imported from integration without worker edits, existing home-cod-buyer.mjs merge adaptation, tests/foundation/browser_home_cod_test.go extra PG parity, generated browser ownership and existing delivery/red receipts. New implementation remains NOT_IMPLEMENTED. No owned local process. NOT_RUN: all local tests/servers/browser/PG, provider SANDBOX/LIVE, production, Figma/copy-lint/density, independent re-review, Humaux search/store/canvas/coord/index/link (unavailable). Native workflow conclusion/failure/timeout plus integrator relay wakes the continuation; final run/job IDs go in PR comment, no evidence-only post-GREEN push.
+
 ## RVFIX #273 — COD payable acknowledgment, 2026-10-29 (GREEN PENDING)
 
 Authority: current integrator RVFIX dispatch and final REQUEST_CHANGES findings in cxf-rv-273.log; repository AGENTS.md; 架构.md §§0/1/2/26/27; buyer-http-v1 quote amendment (server COD due on GET and POST); owner-choices-20261026-v1 OC-Q5; signed cxf-checkout-v2-impl.md. Current base93b5d6a3e includes origin/r3/integration e324e01a9; merge rechecked this session, already up to date. Assigned UI worker, this worktree/branch only, no recursive delegation. Runtime identifies GPT-6-based Codex; exact configured variant/effort UNKNOWN.

@@ -311,6 +311,21 @@ func TestBrowserHomeCod(t *testing.T) {
 			t.Errorf("order %s collection does not match acknowledged server payable %d: total=%d fee=%d", order.ID, order.Due, amount, fee)
 		}
 	}
+	automaticRaw, automaticErr := os.ReadFile(filepath.Join(evidence, "rvfix-273-automatic-orders.json"))
+	var automatic []struct {
+		ID    string `json:"id"`
+		Total int64  `json:"total"`
+		Due   int64  `json:"due"`
+	}
+	if automaticErr != nil || json.Unmarshal(automaticRaw, &automatic) != nil || len(automatic) != 2 {
+		t.Fatalf("automatic COD acknowledged orders: %v %s", automaticErr, automaticRaw)
+	}
+	for _, order := range automatic {
+		_, _, mode, collection, amount, fee := e.hcodRow(order.ID)
+		if mode != "cash_on_delivery" || collection == nil || *collection != "PENDING" || fee != 6000 || amount != order.Total || amount+fee != order.Due {
+			t.Errorf("automatic COD order %s collection differs from acknowledged server payable %d: total=%d fee=%d", order.ID, order.Due, amount, fee)
+		}
+	}
 	bcoShots(t, evidence, 8)
 	if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND commercial_state='AWAITING_COLLECTION' AND collection_state='COLLECTED'`, orders["A"].ID); n != 1 {
 		t.Error("order A must stay AWAITING_COLLECTION after collection (it is never CONFIRMED)")

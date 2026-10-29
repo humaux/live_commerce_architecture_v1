@@ -24,6 +24,12 @@ const localeScreen = {
 // Response interception only holds reads to inspect loading; it never changes money or creates orders.
 export async function checkoutV2CodFeeChange({ newContext, origin, product, recipient, evidence, changeFee }) {
   const ledger = [], failures = [], orders = [], buyers = [];
+  const automaticOrders = [];
+  // MOCK option configuration only: COD-only is a supported shop configuration.
+  // Preserve all server money, caps, versions and delivery facts; every order still goes to the real backend.
+  const onlyCod = (body) => ({ ...body, items: body.items.map((row) =>
+    row.delivery_kind === "home" && row.payment_modes?.includes("cash_on_delivery")
+      ? { ...row, payment_modes: ["cash_on_delivery"] } : row) });
   const file = path.join(evidence, "rvfix-273-click-ledger.json");
   const step = async (page, control, expected, perform) => {
     try { await ledgerStep(ledger, file, page, control, "real clicks / reload", expected, perform); }
@@ -47,8 +53,38 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
       await expect(page.getByTestId("checkout-review").getByTestId("review-total")).toHaveText(formatMoney("en", quote.cod_due_minor, quote.currency));
       buyers.push({ context, page, quote, recovery });
     }
+    for (const mobile of [false, true]) {
+      const context = await newContext(mobile), page = await context.newPage();
+      const recovery = `automatic COD ${mobile ? "mobile" : "desktop"}`;
+      buyers.push({ context, page, recovery, automatic: true });
+      await page.route("**/api/buyer/checkout-options?**", async (route) => {
+        const response = await route.fetch();
+        assert.equal(response.status(), 200, "COD-only option fixture requires a real successful response");
+        await route.fulfill({ response, json: onlyCod(await response.json()) });
+      });
+      await reachCheckout(page, origin, "en", product, { quantity: 2 });
+      await page.getByRole("button", { name: "Choose delivery", exact: true }).click();
+      const [response] = await Promise.all([
+        page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST"),
+        page.getByRole("button", { name: copy.en.quote, exact: true }).click(),
+      ]);
+      const quote = await response.json();
+      buyers.at(-1).quote = quote;
+      assert.equal(quote.cod_due_minor, quote.amount.total_minor + 5000, "automatic COD initial server due");
+      await ledgerStep(ledger, file, page, `${recovery} initial review`, "fill recipient and confirm address; never touch the payment radio",
+        "the sole COD choice is already checked and both submits show the initial server payable", async () => {
+          await expect(page.locator('input[name="home_payment_mode"]')).toHaveCount(1);
+          await expect(page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]')).toBeChecked();
+          for (const [key, value] of Object.entries(recipient)) await page.locator(`input[name="${key}"]`).fill(value);
+          await page.getByTestId("confirm-address").click();
+          await expect(page.getByTestId("create-order")).toBeEnabled();
+          await expect(page.getByTestId("checkout-submit")).toBeEnabled();
+          await expect(page.getByTestId("review-total")).toHaveText(formatMoney("en", quote.cod_due_minor, quote.currency));
+          await expect(page.locator(".purchase-footer strong")).toHaveText(formatMoney("en", quote.cod_due_minor, quote.currency));
+        });
+    }
     await changeFee();
-    for (const { page, quote, recovery } of buyers) {
+    for (const { page, quote, recovery, automatic } of buyers) {
       let freshQuote, optionReads = 0, releaseReads;
       const readsReady = new Promise((resolve) => { releaseReads = resolve; });
       let hold = recovery === "refusal";
@@ -57,6 +93,8 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
         if (route.request().url().includes("checkout-options")) optionReads++;
         else if (response.status() === 200) freshQuote = await response.json();
         if (hold) await readsReady;
+        if (automatic && route.request().url().includes("checkout-options"))
+          return route.fulfill({ response, json: onlyCod(await response.json()) });
         await route.fulfill({ response });
       };
       await page.route("**/api/buyer/checkout-options?**", readRoute);
@@ -104,6 +142,7 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
         await page.getByTestId("confirm-address").click();
         await expect(page.getByTestId("quote-reconfirm")).toHaveCount(0);
         await expect(page.getByTestId("create-order")).toBeEnabled();
+        await expect(page.getByTestId("checkout-submit")).toBeEnabled();
       });
       // A failing acknowledgment must not create an order. Other cases above still record their independent assertions.
       if (!failures.length) await step(page, `${recovery} collection`, "real order collection equals the server payable the buyer acknowledged, including after reload", async () => {
@@ -118,14 +157,19 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
         await page.reload();
         await expect(page.getByTestId("order-id")).toHaveText(id);
         await expect(page.getByTestId("order-cod-amount")).toContainText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));
-        orders.push({ id, total: freshQuote.amount.total_minor, due: freshQuote.cod_due_minor });
+        if (automatic) automaticOrders.push({ id, total: freshQuote.amount.total_minor, due: freshQuote.cod_due_minor });
+        else {
+          orders.push({ id, total: freshQuote.amount.total_minor, due: freshQuote.cod_due_minor });
+        }
       });
       // Drain in-flight reads before disabling interception; never swallow handler failures.
       await page.unrouteAll({ behavior: "wait" });
     }
     await writeFile(path.join(evidence, "rvfix-273-orders.json"), JSON.stringify(orders, null, 2));
+    await writeFile(path.join(evidence, "rvfix-273-automatic-orders.json"), JSON.stringify(automaticOrders, null, 2));
     assert.deepEqual(failures, [], "RVFIX #273 changed COD payable assertions");
     assert.equal(orders.length, 2, "both recovery paths create a real order");
+    assert.equal(automaticOrders.length, 2, "automatic COD on desktop and mobile creates real orders only after separate acknowledgment");
   } finally { for (const { context } of buyers) await context.close(); }
 }
 
