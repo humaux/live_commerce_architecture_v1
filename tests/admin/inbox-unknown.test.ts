@@ -92,6 +92,12 @@ for (const locale of Object.keys(warning)) {
       operationState = "SUCCEEDED";
       node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
       await host.waitFor(() => reads === 4 && idle(host), "own operation SUCCEEDED read committed");
+      assert.equal(node(host, n => n.type === "form").props.hidden, false);
+      assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, "",
+        "confirmed delivery never restores the already submitted draft");
+      assert.equal(sendControl(host).props.disabled, true, "an empty next reply cannot be sent");
+      // Like the native browser case, enter a new draft before checking send eligibility.
+      change(host, "reply-text", "MOCK_NEXT_REPLY_AFTER_OWN_SUCCESS");
       assert.equal(sendControl(host).props.disabled, false, "exact successful operation can open the next reply");
       assert.equal(node(host, n => n.type === "form").props.hidden, false);
       assert.equal(sends(calls).length, 1, "reconciliation is read-only");
@@ -130,8 +136,10 @@ for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "dif
           : refusal === "malformed" ? { state: "invented" } : {},
           refusal === "signed-out" ? 401 : refusal === "forbidden" ? 403 : refusal === "not-found" ? 404 : 200);
       });
-    const host = env.mount(() => InboxThread({ store: refusal === "no-read-permission"
-      ? { ...store, role: "staff", permissions: ["inbox:reply"] } : store,
+    // A stable authenticated store snapshot avoids changing load's dependencies on every hook render.
+    const testedStore = refusal === "no-read-permission"
+      ? { ...store, role: "staff", permissions: ["inbox:reply"] } : store;
+    const host = env.mount(() => InboxThread({ store: testedStore,
       conversation, locale: "en", onUnauthorized() { expired++; }, onRead() {},
     } as any));
     await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");

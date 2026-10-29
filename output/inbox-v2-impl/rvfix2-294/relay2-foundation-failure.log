@@ -1,0 +1,48 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:35.9587779Z ℹ tests/ci/product-editor-matrix-execution.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:35.9588587Z ℹ tests/ci/product-editor-matrix-controls.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:35.9589414Z ℹ tests/ci/product-editor-matrix-controls.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:36.0172241Z ℹ tests 336
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:36.0172614Z ℹ pass 336
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:36.0172963Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:36.9346458Z ℹ tests 11
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:36.9346959Z ℹ pass 11
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:36.9347153Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:37.1204834Z ℹ tests 10
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:37.1205508Z ℹ pass 10
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:37.1205941Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:37.7407716Z ℹ tests 28
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:37.7408087Z ℹ pass 28
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:37.7408259Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.5745084Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, en) (76.52557ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.5745764Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, en) (12.709645ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.5747119Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, zh-TW) (11.368195ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.5748197Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, zh-TW) (13.31976ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.5749679Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, zh-CN) (17.825958ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.5750334Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, zh-CN) (12.437535ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.5757407Z ✖ acknowledged send stays locked on no-read-permission operation evidence (5000.482296ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9214746Z ℹ tests 211
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9215333Z ℹ pass 204
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9215618Z ℹ fail 7
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9228569Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9229572Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, en) (76.52557ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9230211Z   AssertionError [ERR_ASSERTION]: exact successful operation can open the next reply
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9231605Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:95:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9236223Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, en) (12.709645ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9237103Z   AssertionError [ERR_ASSERTION]: exact successful operation can open the next reply
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9239263Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:95:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9244853Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, zh-TW) (11.368195ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9245446Z   AssertionError [ERR_ASSERTION]: exact successful operation can open the next reply
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9246884Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:95:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9251135Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, zh-TW) (13.31976ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9251733Z   AssertionError [ERR_ASSERTION]: exact successful operation can open the next reply
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9253461Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:95:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9257363Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, zh-CN) (17.825958ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9257994Z   AssertionError [ERR_ASSERTION]: exact successful operation can open the next reply
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9259625Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:95:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9264021Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, zh-CN) (12.437535ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9265030Z   AssertionError [ERR_ASSERTION]: exact successful operation can open the next reply
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9266442Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:95:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9269552Z test at tests/admin/inbox-unknown.test.ts:116:3
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9270098Z ✖ acknowledged send stays locked on no-read-permission operation evidence (5000.482296ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9270541Z   Error: Timed out waiting for initial authority committed
+foundation	Node unit suites (storefront, i18n)	2026-10-29T09:20:48.9308035Z ##[error]Process completed with exit code 1.

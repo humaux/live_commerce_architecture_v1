@@ -1,0 +1,6 @@
+RVFIX2 relay2 — E1 static evidence only
+node --check tests/admin/inbox-unknown.test.ts: exit0
+git diff --check: exit0 including delivery evidence
+node scripts/dev/derive-browser-ownership.mjs: exit0; wrote53modes
+No local tests, servers, builds, browser, PG, containers or LIVE.
+Author assessment E0; exact-head Foundation/Gates GREEN PENDING.
