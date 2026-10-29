@@ -1,0 +1,9 @@
+2026-10-28T20:58:34.8704515Z   CONTRACT_DRIFT_BASE: 313c2c36f4ac064975c1c7c170d710cb63fa457f
+2026-10-28T20:58:54.9516860Z ERROR (NEW) GO_ONLY GET /v1/admin/stores/{}/profile internal/httpapi/handler.go:212, internal/httpapi/profile.go:40, internal/httpapi/profile.go:50, internal/httpapi/profile.go:50, internal/httpapi/settings.go:51 
+2026-10-28T20:58:54.9520025Z ERROR (NEW) GO_ONLY PUT /v1/admin/stores/{}/profile internal/httpapi/claims.go:192, internal/httpapi/handler.go:212, internal/httpapi/profile.go:40, internal/httpapi/profile.go:57, internal/httpapi/profile.go:57 
+2026-10-28T20:58:54.9522408Z ERROR (TOUCHED) UNRESOLVED   apps/admin/app/api/stores/[store]/profile/route.ts:11 unaccounted forwarding sink value (alias, member or higher-order use)
+2026-10-28T20:58:54.9523490Z ERROR (TOUCHED) UNRESOLVED   apps/admin/app/api/stores/[store]/profile/route.ts:9 live-settings: unsupported leaf transport arguments
+2026-10-28T20:58:54.9524539Z ERROR (TOUCHED) UNRESOLVED   apps/admin/app/api/stores/[store]/profile/route.ts:9 unaccounted forwarding sink value (alias, member or higher-order use)
+2026-10-28T20:58:54.9525803Z SUMMARY routes go=335 contract=171 bff=301; errors=5 warnings=287 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=90 GO_NOT_IN_BFF=34 GO_ONLY=201 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=54
+2026-10-28T20:58:54.9526604Z exit status 1
+2026-10-28T20:58:54.9538674Z ##[error]Process completed with exit code 1.

@@ -1,0 +1,5 @@
+594:2026-10-28T20:31:14.1598034Z HEAD is now at be7e4ed5 Merge 18bd6a6629815af7844847e8a96ecc6e31c4e863 into bf161bac96252c35337e07713c08a275d48e3e17
+8410:2026-10-28T20:37:57.3961395Z     settlement_unit_test.go:117: RED #197 chunk 0: every chunk must carry the window and full manifest [fixture argument dump omitted]
+8411:2026-10-28T20:37:57.4710166Z --- FAIL: TestSettlementSyncChunksAndCarriesTheWindowAndManifestOnEveryChunk (0.07s)
+9810:2026-10-28T20:43:11.2230182Z matrix-receipts: {"mode":"shard:unit","run_id":"40759956329","run_attempt":"1","sha":"be7e4ed536f81f706e0dc3d24f2c6c24506f32f6","status":"FAIL","test_count":1459,"spec_count":0}
+9870:2026-10-28T20:43:12.8615336Z --- FAIL: TestSettlementSyncChunksAndCarriesTheWindowAndManifestOnEveryChunk (0.07s)
