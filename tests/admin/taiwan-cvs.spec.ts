@@ -151,11 +151,12 @@ test("TCV08 merchant: create a label, copy the code, print in a new tab, timelin
   const popup = context.waitForEvent("page");
   await section.getByTestId("cvs-print").click();
   const tab = await popup;
-  await tab.waitForURL(/logistics(-stage)?\.ecpay\.com\.tw|about:blank|cvs-print/, { timeout: 20000 }).catch(() => {});
   await expect.poll(() => ecpayRequests.filter((r) => r.method === "POST" && /Print/i.test(r.url)).length, { timeout: 20000 }).toBeGreaterThan(0);
   const printPost = ecpayRequests.find((r) => r.method === "POST" && /Print/i.test(r.url))!;
   expect(printPost.body ?? "").toContain("CheckMacValue");
   expect(printPost.body ?? "").not.toMatch(/HashKey|HashIV/);
+  await tab.waitForURL(/https:\/\/logistics(-stage)?\.ecpay\.com\.tw\//, { timeout: 20000 });
+  await expect(tab.locator("body")).toHaveText("label [RED mutation]"); // negative control: trapEcpay returns exactly "label"
   await tab.close();
 
   // Six real print clicks after the already-confirmed label; no extra Create or
