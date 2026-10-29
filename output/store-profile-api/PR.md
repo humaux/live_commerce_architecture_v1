@@ -9,9 +9,13 @@ Validation and evidence:
 
 Dependencies and ownership:
 - Reuses merged **#254 / OC-05**. No marker reimplementation or implicit completion.
-- Assigned migration **0209**; R2 pin **136 = 135 fetched base + this migration**, base `313c2c36f4ac064975c1c7c170d710cb63fa457f`. **Integrator must merge after #262/#265/settlement0208 and refresh the exact count for the then-current set.** #262/#265 were OPEN on readback. This lane never merges.
+- Assigned migration **0209**, unchanged. Rebase-pin relay merges base `0b831887a6ece4381a2bc01f39a5a22b92a0f049` (#286, includes0205–0208). R2 pin **139 = exact base138 + this migration**. This lane never merges.
 - Owning paths: contract amendment; internal/httpapi/profile.go and handler registration; migration0209; apps/admin exact profile BFF and existing live-settings-model/proxy helpers; profile/R2 foundation tests and existing BFF tests; output/store-profile-api/**.
 - Additional generated path for integrator review: **output/ci-select-backend-browser/browser-ownership.json**, generated after merging origin/r3/integration (already up to date). This is explicitly authorized by CI-SPEED-3/RELAY1. **apps/admin/lib/live-settings-model.ts** and **apps/admin/lib/live-settings-proxy.ts** are same-app helper scope under the card's scope pre-approval. Dependency map was regenerated and has no diff. No other outside path, OpenAPI, dispatcher pin, drift baseline, lockfile or unassigned migration change.
-- `output/store-profile-api/DELIVERY.md` records semantics, risks, rollback reference and handoff. Humaux is unavailable in this relay; integrator must mirror store/canvas evidence under its shared-state lock. No completion is claimed.
+- `output/store-profile-api/DELIVERY.md` records semantics, risks, rollback reference and handoff. Humaux problem/canvas updated under the acquired child-resource lock in the rebase-pin relay. No completion is claimed.
 
-🤖 Generated with Codex (dispatched by Claude Code integrator).
+Rebase-pin relay: merge conflicts resolved only in R2 ledger/pin and generated ownership; native ownership generator (53 modes) and depmap run (no depmap diff). No local tests or servers. Historical causal RED is unchanged; no new tests added.
+
+**BLOCKED**: prior-head Foundation40768505402/job123099180175 requires explicit profile.go coverage classification. Fresh base still lacks it. Global registry is outside this card; stopped without an exemption change. Prior Gates40768505365 jobs123102334069/123102334627 also report profile header-helper and disabled-identity status assertions, unresolved. New-head GREEN remains PENDING; exact WAIT_RUN will be commented. No new outside-card implementation file; generated ownership remains the only generated extra path requiring integrator review. All other incoming files are the requested base merge, not lane edits.
+
+🤖 Generated with Codex (dispatched by Claude Code integrator)

@@ -1,0 +1,43 @@
+FIX-RED-272 / CURRENT HEAD failure evidence
+head: 3797df6a0fc6ae2555c06edc8856ec312618e15b
+Gates run: 40746205385; synthetic merge: 5063d456e860ba83c10d1662f127772bb8a32f43
+
+bundle05: job 123029590166
+2026-10-28T19:08:07.0918423Z     browser_e2e_test.go:194: T12 browser chain failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.SkCuUUqt/e2e/20261028T190733.366738836 (defects.json lists product defects the chain recorded)
+2026-10-28T19:08:07.2913935Z --- FAIL: TestBrowserE2EDealLoop (33.92s)
+2026-10-28T19:09:07.3875146Z     browser_refund_fulfilment_test.go:304: admin browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.a8Lj8qpU/manual-fulfilment/20261028T190849.532652214
+2026-10-28T19:09:07.5909495Z --- FAIL: TestBrowserManualFulfilment (23.97s)
+2026-10-28T19:10:28.7237364Z --- FAIL: TestBrowserE2EDealLoop (33.92s)
+2026-10-28T19:10:28.7238877Z --- FAIL: TestBrowserManualFulfilment (23.97s)
+
+bundle07: job 123029590277
+2026-10-28T19:06:55.1918930Z     browser_merchant_orders_ui_test.go:356: MOU browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/merchant-orders-c-browser/20261028T190410.526426975
+2026-10-28T19:06:55.4662262Z --- FAIL: TestBrowserMerchantOrdersUIRealChain (177.39s)
+2026-10-28T19:10:20.8499137Z     browser_home_cod_test.go:175: admin browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.pNpkWL14/home-cod/20261028T190940.245547762
+2026-10-28T19:10:20.8981691Z --- FAIL: TestBrowserHomeCod (40.65s)
+2026-10-28T19:11:09.0869277Z --- FAIL: TestBrowserHomeCod (40.65s)
+2026-10-28T19:11:09.0871789Z --- FAIL: TestBrowserMerchantOrdersUIRealChain (177.39s)
+
+sweep8: job 123029590511
+2026-10-28T19:21:33.3395049Z     browser_click_sweep_test.go:540: journey 3: order 0cdb50f2-86ea-4202-91ed-c14dd25d4862 is not MERCHANT_SHIPPED + COLLECTED after the admin clicks
+2026-10-28T19:21:33.3409494Z     browser_click_sweep_test.go:558: click sweep FAILED (exit: exit status 1); the ledger and the failing controls are in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.BrkkT9Pm/ui-click-sweep (ledger.md, DEFECTS in the runner log /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.BrkkT9Pm/click-sweep/20261028T190554.746809728/click-sweep.mjs.log)
+
+aggregate: job 123056632835
+2026-10-28T19:41:44.0617586Z # G-UI8 click sweep aggregate: FAIL
+2026-10-28T19:41:44.0624071Z - FAIL (shard 8) journey J2/J3 admin orders desktop/zh-TW "record the manual shipment (carrier Black Cat + tracking) and click Record" journey-step: expect(locator).toBeVisible() failed Locator: getByTestId('order-detail').getByTestId('order-shipment').getByTestId('shipment-record') Expected: visible Timeout
+2026-10-28T19:41:44.0629177Z - FAIL (shard 8) journey J2 storefront order lookup desktop/zh-TW "a fresh buyer browser looks the order up (order id + phone) and sees it collected" journey-step: expect(locator).toHaveAttribute(expected) failed Locator: getByTestId('order-cod-state') Expected: "COLLECTED" Received: "PENDING" Timeout: 5000ms Call log: - E
+
+receipts: job 123056632718
+2026-10-28T19:41:37.3156257Z FAIL: --browser-click-sweep@8/10: status FAIL
+2026-10-28T19:41:37.3157613Z FAIL: --browser-home-cod: status FAIL
+2026-10-28T19:41:37.3159017Z FAIL: --browser-merchant-orders-ui: status FAIL
+2026-10-28T19:41:37.3160605Z FAIL: --browser-refund-fulfilment: status FAIL
+2026-10-28T19:41:37.3161985Z FAIL: --browser-e2e: status FAIL
+
+required: job 123057053190
+2026-10-28T19:41:50.5151690Z plan=success build=success (expected true) gate=failure aggregate=failure (expected true) deploy=skipped (expected false) receipts=failure
+
+Browser artifact 12843752983: orders-playwright.log: 3 failed / 18 passed; all three new manual-confirm cases fail shipment-record after PUT.
+Network trace: PUT 200; GET detail 200; GET history 200; MOCK recorded_at has no microseconds, strict timestamp regex in apps/admin/lib/orders-model.ts rejects both readbacks.
+Artifacts: e2e 12845235074; manual-fulfilment 12842769255; home-cod 12843558593.
+This is existing CI RED evidence for the dispatched FIX-RED repair; no new RED push requested by this card. GREEN is PENDING on the repair head.

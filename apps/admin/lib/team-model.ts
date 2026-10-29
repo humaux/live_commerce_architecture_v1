@@ -78,9 +78,12 @@ export function validTeamBody(action: TeamAction, body: Record<string, unknown>)
 }
 
 // Go codes the UI knows how to say (internal/identityhttp/staff.go); anything else is shown as a retry-later.
+// OC-04 (§16): the three 403 re-auth codes pass through unchanged - reauth_required opens components/ReauthDialog.tsx,
+// owner_role_disabled and reauth_failed are shown as themselves; none may become 503 retry_later.
 export const teamCodes = new Set([
   "invalid_request", "invalid_email", "unauthorized", "forbidden", "not_found", "invite_invalid", "already_member",
   "last_owner", "too_many_invitations", "conflict", "unavailable", "retry_later",
+  "reauth_required", "owner_role_disabled", "reauth_failed",
 ]);
 
 // ---- role-aware navigation (WorkspaceFrame) ---------------------------------------------------------------------------

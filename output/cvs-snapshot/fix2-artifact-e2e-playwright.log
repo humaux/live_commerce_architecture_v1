@@ -1,0 +1,122 @@
+
+Running 4 tests using 1 worker
+
+  ✘  1 tests/e2e/live-tools.spec.ts:123:3 › live tools zh-TW desktop: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (28.0s)
+  ✘  2 tests/e2e/live-tools.spec.ts:123:3 › live tools zh-TW mobile: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (27.2s)
+  ✘  3 tests/e2e/live-tools.spec.ts:123:3 › live tools en desktop: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (26.7s)
+  ✘  4 tests/e2e/live-tools.spec.ts:123:3 › live tools en mobile: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (26.5s)
+
+
+  1) tests/e2e/live-tools.spec.ts:123:3 › live tools zh-TW desktop: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price
+
+    TimeoutError: locator.fill: Timeout 20000ms exceeded.
+    Call log:
+      - waiting for getByTestId('cvs-entered-name')
+
+
+      101 |   await page.getByTestId("cvs-recipient-phone").fill("0912345678");
+      102 |   await page.getByTestId("cvs-entered-code").fill("123456");
+    > 103 |   await page.getByTestId("cvs-entered-name").fill("測試門市");
+          |                                              ^
+      104 |   await page.getByTestId("cvs-entered-address").fill("台北市測試路1號");
+      105 |   await page.getByRole("radio", { name: new RegExp(cvs.payAtPickup) }).check();
+      106 |   await expect(page.getByTestId("cvs-pay-note")).toContainText(has(expectTotal));
+        at checkoutPayAtPickup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:103:46)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:272:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-zh-T-ea941-urchase-at-the-normal-price/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-zh-T-ea941-urchase-at-the-normal-price/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-zh-T-ea941-urchase-at-the-normal-price/error-context.md
+
+  2) tests/e2e/live-tools.spec.ts:123:3 › live tools zh-TW mobile: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price
+
+    TimeoutError: locator.fill: Timeout 20000ms exceeded.
+    Call log:
+      - waiting for getByTestId('cvs-entered-name')
+
+
+      101 |   await page.getByTestId("cvs-recipient-phone").fill("0912345678");
+      102 |   await page.getByTestId("cvs-entered-code").fill("123456");
+    > 103 |   await page.getByTestId("cvs-entered-name").fill("測試門市");
+          |                                              ^
+      104 |   await page.getByTestId("cvs-entered-address").fill("台北市測試路1號");
+      105 |   await page.getByRole("radio", { name: new RegExp(cvs.payAtPickup) }).check();
+      106 |   await expect(page.getByTestId("cvs-pay-note")).toContainText(has(expectTotal));
+        at checkoutPayAtPickup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:103:46)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:272:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-zh-T-35fbb-urchase-at-the-normal-price/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-zh-T-35fbb-urchase-at-the-normal-price/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-zh-T-35fbb-urchase-at-the-normal-price/error-context.md
+
+  3) tests/e2e/live-tools.spec.ts:123:3 › live tools en desktop: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price
+
+    TimeoutError: locator.fill: Timeout 20000ms exceeded.
+    Call log:
+      - waiting for getByTestId('cvs-entered-name')
+
+
+      101 |   await page.getByTestId("cvs-recipient-phone").fill("0912345678");
+      102 |   await page.getByTestId("cvs-entered-code").fill("123456");
+    > 103 |   await page.getByTestId("cvs-entered-name").fill("測試門市");
+          |                                              ^
+      104 |   await page.getByTestId("cvs-entered-address").fill("台北市測試路1號");
+      105 |   await page.getByRole("radio", { name: new RegExp(cvs.payAtPickup) }).check();
+      106 |   await expect(page.getByTestId("cvs-pay-note")).toContainText(has(expectTotal));
+        at checkoutPayAtPickup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:103:46)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:272:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-en-d-aa10c-urchase-at-the-normal-price/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-en-d-aa10c-urchase-at-the-normal-price/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-en-d-aa10c-urchase-at-the-normal-price/error-context.md
+
+  4) tests/e2e/live-tools.spec.ts:123:3 › live tools en mobile: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price
+
+    TimeoutError: locator.fill: Timeout 20000ms exceeded.
+    Call log:
+      - waiting for getByTestId('cvs-entered-name')
+
+
+      101 |   await page.getByTestId("cvs-recipient-phone").fill("0912345678");
+      102 |   await page.getByTestId("cvs-entered-code").fill("123456");
+    > 103 |   await page.getByTestId("cvs-entered-name").fill("測試門市");
+          |                                              ^
+      104 |   await page.getByTestId("cvs-entered-address").fill("台北市測試路1號");
+      105 |   await page.getByRole("radio", { name: new RegExp(cvs.payAtPickup) }).check();
+      106 |   await expect(page.getByTestId("cvs-pay-note")).toContainText(has(expectTotal));
+        at checkoutPayAtPickup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:103:46)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:272:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-en-m-efc56-urchase-at-the-normal-price/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-en-m-efc56-urchase-at-the-normal-price/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.jMbThwjF/live-tools/20261028T155100.851583806/results/live-tools-live-tools-en-m-efc56-urchase-at-the-normal-price/error-context.md
+
+  4 failed
+    tests/e2e/live-tools.spec.ts:123:3 › live tools zh-TW desktop: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price
+    tests/e2e/live-tools.spec.ts:123:3 › live tools zh-TW mobile: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price
+    tests/e2e/live-tools.spec.ts:123:3 › live tools en desktop: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price
+    tests/e2e/live-tools.spec.ts:123:3 › live tools en mobile: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price

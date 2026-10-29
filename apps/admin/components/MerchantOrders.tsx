@@ -1,6 +1,8 @@
 // Purpose: Owns order list loading, filtering, bulk selection and selected-order detail.
 // Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, @/lib/orders-v2, @/lib/orders-v2-copy, ./OrderListFilters, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./OrderDetailPanel, ./Icon, ./orders.css, ./order-actions.css, ./orders-v2.css, ./ParcelGroup, @/lib/parcels-copy
+// Depends on: ./orders/OrderSelectionBar for the mounted shipping selection summary.
 // Used by: apps/admin/app/[locale]/orders/page.tsx
+// Invariants: Counts/rows/totals share the server snapshot; private search and selection stay in mounted memory.
 "use client";
 
 // Purpose: scoped merchant order list, existing inline details and fulfillment action entry points.
@@ -9,7 +11,8 @@
 // Merchant orders page (approved C inline row). BFF: GET /api/stores/{store}/orders[/{id}] and order-actions
 // -> Go internal/httpapi/orders.go + shipments.go. The refund and shipment sections live in OrderRefunds /
 // OrderShipment (their BFF routes are listed there); the export button is a plain GET download of
-// orders/unshipped.csv streamed by the BFF from Go, never fetched into JS memory. The CVS section (OrderCvsShipment:
+// orders/unshipped.csv streamed by the BFF from Go; ReauthDialog sends that control through its shared re-auth download path.
+// The CVS section (OrderCvsShipment:
 // BFF orders/{id}/cvs-shipment*, collection, pay-at-pickup-release -> Go internal/httpapi/cvs.go) sits next to the
 // 0063 section in the same inline row; the list filter `cvs_pending` is one more state in the existing filter.
 // Live feel (ops-polish OP2): while the tab is visible the first page is re-read from the same list route every POLL_MS; ids not seen
@@ -51,6 +54,7 @@ import { PickList } from "./PickList";
 import { selectOrders } from "@/lib/picklist-model";
 import { picklistCopy } from "@/lib/picklist-copy";
 import { TrackingImport } from "./TrackingImport";
+import { OrderSelectionBar } from "./orders/OrderSelectionBar";
 import { ParcelMerge, type ParcelGroupView } from "./ParcelGroup";
 import { groupOfOrder, parcelGenAfterPoll, parcelGenAfterShipmentRefusal } from "@/lib/parcels-model.ts";
 import { parcelCopy } from "@/lib/parcels-copy";
@@ -110,8 +114,9 @@ export function MerchantOrders({
   const c = ordersCopy[locale];
   const pc = picklistCopy[locale];
   const bulkScope = `${store?.id ?? ""}:${csrfCookie()}`;
-  // Keep only identifiers and delivery eligibility, never recipient data, across page navigation.
-  const [bulk, setBulk] = useState<{scope:string; rows:Record<string,boolean>}>({scope:"",rows:{}});
+  // Keep only server order numbers and delivery eligibility, never recipient data, across page navigation.
+  const [bulk, setBulk] = useState<{scope:string; rows:Record<string,{cvs:boolean; number:string}>}>({scope:"",rows:{}});
+  const pickTools = useRef<HTMLDivElement>(null);
   const bulkRows = bulk.scope === bulkScope ? bulk.rows : {};
   const selectedIDs = Object.keys(bulkRows);
   // W3-07B: parcel group panels, fenced by the same store+session scope as the bulk selection. OPEN groups come from GET
@@ -126,8 +131,8 @@ export function MerchantOrders({
       const retained = current.scope === bulkScope ? current.rows : {};
       try {
         const ids = selectOrders(Object.keys(retained), rows.map(r=>r.order_id), checked);
-        const types = new Map(rows.map(r=>[r.order_id,r.delivery_kind.startsWith("cvs_")]));
-        return {scope:bulkScope,rows:Object.fromEntries(ids.map(id=>[id,types.get(id) ?? retained[id] ?? false]))};
+        const summaries = new Map(rows.map(r=>[r.order_id,{cvs:r.delivery_kind.startsWith("cvs_"),number:r.order_number}]));
+        return {scope:bulkScope,rows:Object.fromEntries(ids.map(id=>[id,summaries.get(id) ?? retained[id]!]))};
       } catch { return current; }
     });
   }
@@ -630,11 +635,13 @@ export function MerchantOrders({
               )}
             </div>
           )}
+        <div ref={pickTools}>
         {store && session.current && !["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && <PickList key={`${store.id}:${session.current}`} locale={locale} store={store.id} boundary={session.current}
-          ids={selectedIDs} cvsIDs={selectedIDs.filter(id=>bulkRows[id])} sessionID={filters.session_id}
+          ids={selectedIDs} cvsIDs={selectedIDs.filter(id=>bulkRows[id]!.cvs)} sessionID={filters.session_id}
           canExport={!!actions?.orders_export} canShip={!!actions?.fulfillment_write} disabled={current.status !== "ready"}
           onClear={()=>setBulk({scope:bulkScope,rows:{}})}
           onViewOrder={id=>{previous.current=[];navigate(store.id,"all","",id,{...emptyFilters,q:`LC-${id.replaceAll("-","").toUpperCase()}`});}} />}
+        </div>
         {/* W3-07B: merge-suggestion banner + group panels, above the list; only writers may merge (Go re-checks). */}
         {store && session.current && actions?.fulfillment_write && !["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && (
           <ParcelMerge
@@ -751,6 +758,15 @@ export function MerchantOrders({
                 </button>
               </div>
             </footer>
+            {selectedIDs.length > 0 && <OrderSelectionBar numbers={selectedIDs.map(id => bulkRows[id]!.number)} c={c}
+              onClear={() => setBulk({ scope: bulkScope, rows: {} })}
+              onView={() => {
+                const tools = pickTools.current?.querySelector<HTMLDetailsElement>("details");
+                if (!tools) return;
+                tools.open = true;
+                tools.scrollIntoView({ block: "start" });
+                tools.querySelector<HTMLElement>("summary")?.focus();
+              }} />}
           </>
         )}
       </div>
@@ -843,7 +859,7 @@ function OrderRow({
         <tr className="orders-detail-row">
           <td colSpan={7}>
             {detail && sections ? (
-              detailPanel(detail, locale, c, sections)
+              detailPanel(detail, locale, c, { ...sections, orderNumber: row.order_number, onBack: onSelect })
             ) : (
               <p className="orders-detail-message" role="status">
                 {detailStatus === "loading"

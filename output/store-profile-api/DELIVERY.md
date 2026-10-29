@@ -1,4 +1,4 @@
-# STORE-PROFILE-API — RELAY 3 drift repair awaiting CI
+# STORE-PROFILE-API — rebase-pin relay, acceptance blocked
 
 Assigned implementer: Codex, dispatched by Claude integrator; no recursive delegation.
 Exact runtime model identifier/reasoning setting are not exposed by this session.
@@ -87,3 +87,30 @@ The current PR handoff comment supplies the implementation head and Gates/Founda
 workflow run IDs after push. Integrator owns the completion wakeup via a fresh relay;
 no background poller or other task process remains. Gates may test a synthetic merge;
 read its checkout/head/base receipt before final acceptance.
+
+## Current rebase-pin relay (2026-10-29)
+
+Authority: current integrator card #287 rebase-pin. Base is
+`0b831887a6ece4381a2bc01f39a5a22b92a0f049` (#286); 0205–0208 are now on base.
+The exact static R2 inventory is **138 base + unchanged assigned 0209 = 139**.
+This supersedes earlier count/OPEN-state statements in this historical delivery.
+Only R2 pin and generated ownership conflicted; the base ledger lines are retained,
+and ownership was regenerated with the existing native generator (53 modes).
+Dependency map regeneration produced no diff. Migration0209 content is unchanged.
+No local tests, servers, PG or browser ran. Syntax/build checks are not runtime acceptance.
+
+Known blocking raw CI at previous head `4bd7c4b8626a148b575ebf0df2cc6da90d494e08`:
+- Foundation40768505402/job123099180175: profile.go lacks an explicit backend
+  coverage classification. Fresh base still has no declaration. Correct registry
+  changes live in global scripts/dev/pr-modes.mjs or scripts/dev/test-local.sh,
+  outside this card's module. STOP: no registry/exemption edit or inference of
+  BACKEND_ONLY from missing browser evidence. Integrator owns this blocker.
+- Gates40768505365/job123102334069: five profile tests fail their shared header
+  helper's exact no-store comparison; actual API header is private, no-store.
+- Same Gates/job123102334627: profile fixture-identity refusal expected404, actual403.
+  These historical failures remain unresolved; this push claims only merge/pin work.
+
+GREEN pending new-head CI; author assessment E0; no completion or independent review.
+Exact workflow WAIT_RUN identifiers will be posted in a PR comment after push.
+Humaux is available this relay: problem stored under the acquired child-resource lock;
+child canvas updated. Integrator relays CI completion; no background process remains.
