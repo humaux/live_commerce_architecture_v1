@@ -358,7 +358,7 @@ func TestBrowserClickSweep(t *testing.T) {
 		Version int64 `json:"version"`
 	}
 	call("PUT", "/design/draft", "", map[string]any{"expected_version": 0, "document": design}, 200, &drafted)
-	call("POST", "/design/publish", "", map[string]any{"expected_draft_version": drafted.Version}, 200, nil)
+	call("POST", "/design/publish", t04Key("cs-design-publish"), map[string]any{"expected_draft_version": drafted.Version}, 200, nil)
 
 	// ---- delivery + payment settings and orders of every kind, through the real merchant and buyer paths -------------------------------------
 	e.cvsSettings(tcvAllChains, true, "20000", 500)

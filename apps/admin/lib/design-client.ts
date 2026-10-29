@@ -1,7 +1,7 @@
 // Storefront-design requests of the admin Design page. Browser -> BFF `/api/stores/{store}/design/*` (allowlist in
 // lib/design-request.ts) -> Go internal/httpapi/design.go (integration:read / integration:manage). Reads parse the closed Go
 // shapes (design-model.ts); every write carries the cookie CSRF + the session fence of useGuardedRead (a changed session
-// sends nothing), a fresh Idempotency-Key (the BFF requires one; the Go writes are compare-and-set on versions) and never
+// sends nothing), an Idempotency-Key (publish recovery reuses its original identity; other writes use fresh keys) and never
 // trusts its own answer for state: the caller applies the parsed response or re-reads. A 422 carries the server's field
 // `path` so the editor can say which field to fix. The upload is a single multipart `file` part; Go sniffs the type.
 import { get } from "./customers-client";
@@ -25,7 +25,7 @@ export const readMedia = (store: string, signal: AbortSignal): Promise<MediaItem
 
 async function send<T>(
   store: string, method: "POST" | "PUT", resource: string, body: BodyInit | undefined, json: boolean, boundary: string,
-  parse: (value: unknown) => T,
+  parse: (value: unknown) => T, key: string = crypto.randomUUID(),
 ): Promise<Outcome<T>> {
   const fail = (code: string, uncertain: boolean, path = "", reason = ""): Outcome<T> => ({ ok: false, code, path, reason, uncertain });
   const csrf = csrfCookie();
@@ -34,15 +34,17 @@ async function send<T>(
   } catch {
     return fail("unauthorized", false);
   }
-  const headers: Record<string, string> = { "X-CSRF-Token": csrf, "Idempotency-Key": crypto.randomUUID() };
+  const headers: Record<string, string> = { "X-CSRF-Token": csrf, "Idempotency-Key": key };
   if (json) headers["Content-Type"] = "application/json"; // multipart: the browser sets the boundary itself
   let response: Response;
   try {
-    response = await fetch(`${base(store)}/${resource}`, { method, credentials: "same-origin", cache: "no-store", headers, body, signal: AbortSignal.timeout(20000) });
+    response = await fetch(`${base(store)}/${resource}`, { method, credentials: "same-origin", cache: "no-store", headers, body, signal: AbortSignal.timeout(resource === "publish" ? 5000 : 20000) });
   } catch {
     return fail("retry_later", true);
   }
-  const value: unknown = await response.json().catch(() => null);
+  let value: unknown;
+  try { value = await response.json(); }
+  catch { return fail("retry_later", true); }
   if (!response.ok) {
     const details = value && typeof value === "object" ? (value as { details?: Record<string, unknown> }).details : undefined;
     const path = typeof details?.path === "string" ? details.path : "";
@@ -52,7 +54,7 @@ async function send<T>(
   try {
     return { ok: true, value: parse(value) };
   } catch {
-    return fail("retry_later", true); // committed but unreadable: the caller re-reads before retrying
+    return fail("retry_later", true); // publish recovery keeps the original receipt key/body
   }
 }
 
@@ -62,8 +64,9 @@ const jsonBody = (value: unknown) => JSON.stringify(value);
 export const saveDraft = (store: string, expectedVersion: number, document: unknown, boundary: string) =>
   send(store, "PUT", "draft", jsonBody({ expected_version: expectedVersion, document }), true, boundary, parseDraft);
 // Go POST design/publish {expected_draft_version}: 409 when the draft moved or is already live.
-export const publish = (store: string, expectedDraftVersion: number, boundary: string): Promise<Outcome<VersionInfo>> =>
-  send(store, "POST", "publish", jsonBody({ expected_draft_version: expectedDraftVersion }), true, boundary, parseVersionInfo);
+// Invariants: recovery retains the original key and expected draft version; Go replays its atomic command receipt.
+export const publish = (store: string, expectedDraftVersion: number, boundary: string, key: string = crypto.randomUUID()): Promise<Outcome<VersionInfo>> =>
+  send(store, "POST", "publish", jsonBody({ expected_draft_version: expectedDraftVersion }), true, boundary, parseVersionInfo, key);
 // Go POST design/rollback {version}: publishes a copy of an older version; 409 when it is already live.
 export const rollback = (store: string, version: number, boundary: string): Promise<Outcome<VersionInfo>> =>
   send(store, "POST", "rollback", jsonBody({ version }), true, boundary, parseVersionInfo);

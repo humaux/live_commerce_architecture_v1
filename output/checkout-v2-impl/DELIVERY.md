@@ -326,3 +326,30 @@ No new visual pattern, asset or import in this harness repair; existing referenc
 No Figma write, layout or prototype change. Prior guide availability limitation remains; no new guide-read claim. Existing desktop/mobile/review field checklist and zh-TW/zh-CN/en copy table remain unchanged.
 
 Official ownership generation exit0 (53modes), checkout-v2 source hash updated. node --check and git diff --check exit0 (E1 only). Current-head Foundation40866696687/job123423141654 succeeds; new-head CI/independent acceptance PENDING, author E0. Scope: checkout-v2.mjs cleanup, generated ownership, existing red.log/DELIVERY.md/source-hashes.txt. No new out-of-card source file. No Go graph change. NOT_RUN: local tests/server/browser/PG/build/tsc, provider SANDBOX/LIVE, production, Figma/copy-lint/density, Humaux store/canvas/coord/index/link, independent re-review. Exact post-push WAIT_RUN IDs go in PR comment; integrator relay is the wake-up path.
+
+
+## RELAY — current bundle:07 CVS picker acknowledgment, 2026-10-29
+
+Current raw authority: PR273 head8e2e4fbd, Gates40869923125/job123436877655, synthetic merge9a24f7bd. Chromium and WebKit both fail the existing create-order enabled assertion at cvs-picker.mjs:280. The previous Foundation40869922805/job123434050965 and bundle:06/job123436877683 succeed; they do not accept this new head. Receipt: output/RVFIX-273/red.log; native CVS artifact12895669254 retained locally.
+
+Targeted attempt1: the picker reload journey calls toQuote again, adding a product and changing the server total. Added the missing real amount-confirmation click in all3locales, with visible acknowledgment, both disabled submits, dismissal and ledger assertions. Original enabled-submit and canonical destination/CAS/persistence assertions remain verbatim/in order. No product behavior, fixture, retry, timeout, gate or threshold change. Latest integration aa4c5eb6 merged; generated ownership conflict resolved with the official generator (53modes,exit0).
+
+### UI PROCESS · Bourdieu
+
+Q1–Q5 behavior and verdicts above remain unchanged; this harness now performs the required buyer decision after a changed total. Q6 aesthetics remains UNKNOWN pending owner. No new visible screen or setting.
+
+### UI PROCESS · Project understanding
+
+Read architecture §§0/1/2/26/27 and buyer-checkout-v1 decisions: server amounts and transaction authority, isolated worker branch, independent CI acceptance. Current CheckoutFlow/OrderFlow block both submits until the changed amount is acknowledged. CVS tests must click that decision before expecting submit enabled. Existing desktop/mobile/review field parity and3language copy tables remain applicable; no new product strings.
+
+### UI PROCESS · Mobbin → Eagle
+
+No visual pattern, image or asset change; existing reference principles and missing-query handoff above remain applicable. No new import or Mobbin/Eagle access claimed.
+
+### UI PROCESS · Figma official guidance
+
+No Figma layout/component/prototype change. Prior guide availability limitation remains; no new guide read, Figma/copy-lint/density acceptance claimed.
+
+Static node --check and worker diff --check exit0 (E1 only). Full merge whitespace check exit2 from upstream OC11 source/evidence whitespace, preserved verbatim. New-head Foundation/Gates and independent re-review PENDING; author E0. Scope extension: tests/storefront/cvs-picker.mjs in the storefront browser module, plus existing evidence/generated ownership. Upstream sensitive files remain byte-identical to integration. No worker Go dependency change; depmap NOT_RUN.
+
+NOT_RUN: local tests/server/browser/PG/build/tsc, provider SANDBOX/LIVE, production, independent re-review; Humaux store/canvas/coord/index/link unavailable. Exact post-push Gates/Foundation WAIT_RUN IDs go in a PR comment; integrator relay is the wake-up path, no detached process or polling beyond10minutes.

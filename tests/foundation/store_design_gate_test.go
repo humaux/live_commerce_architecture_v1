@@ -18,6 +18,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -99,6 +100,10 @@ func sdgSetup(t *testing.T) *sdgEnv {
 
 func (e *sdgEnv) do(token, method, path, ctype string, body []byte, edit func(*http.Request)) *httptest.ResponseRecorder {
 	r := httptest.NewRequest(method, path, bytes.NewReader(body))
+	if method == "POST" && strings.HasSuffix(path, "/design/publish") {
+		// Fixture identity for a distinct publish; all existing CAS/race/isolation assertions stay unchanged.
+		r.Header.Set("Idempotency-Key", crand.Text())
+	}
 	if token != "" {
 		r.Header.Set("Authorization", "Bearer "+token)
 	}
