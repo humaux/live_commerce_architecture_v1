@@ -1,4 +1,60 @@
-# PEOPLE-V2-IMPL · CONT-289 privacy negative-control CI pending
+# PEOPLE-V2-IMPL · safeguards restored; own-head CI pending
+
+## Current CONT289 restoration · relay 7
+
+2026-10-29. CURRENT card SCOPE PRE-APPROVAL authorizes the narrow same-admin OC helper
+repair; prior relay STOP interpretations below are historical. All four failed jobs at
+remote d409e4094 were independently read. Fresh original browser artifacts prove E3
+causal privacy RED: Gates 40803107511 / bundle07 123216904686 (export review, erasure
+scope, independent uncertainty return AND reload). Exact excerpts and SHA256 values:
+`evidence/relay7-red-assertions.log`; full disposition: `evidence/relay7-restoration.md`.
+
+This commit reverses all three negative controls; CustomerDetail matches reviewed
+94af3eb58 byte-for-byte. All PEOPLE assertions and fixtures remain unchanged. OC fix
+attempt 1 waits for the signup redirect before another navigation; no retries, sleeps,
+threshold or timeout changes. Additional outside-PLAN path, same-admin preapproved:
+`tests/admin/oc/reauth.spec.ts`. Ownership regenerated; depmap has no diff.
+
+Local static syntax/generation exits 0 (E1). Author E0. tsc NOT_RUN (no compiler/admin
+dependencies). Local tests/builds/servers/browser NOT_RUN. GREEN and independent delta
+acceptance PENDING for this push's own head; historical GREEN is not acceptance.
+Integrator wakes a fresh session with the workflow conclusions; no merge or auto-merge.
+Final SHA and Gates/Foundation WAIT_RUN IDs will be posted in the PR comment after push.
+P2s remain the active-modal export refusal and page-size total wording, for issue batching.
+Humaux decision stored, own subagent canvas updated; code index submitted for both files.
+
+## Historical relay receipts (not current acceptance)
+
+## CONT-289 relay 6 · unchanged remote head; outside-card STOP
+
+2026-10-29: required fetch/merge exited 0 (already up to date); remote head remains
+`d409e4094b797aa86987f49923f3e64ce6bf2f99`, local unpublished HEAD `f63884bfc25dd4c2435e976753b9ffbcf4e2c5e3`.
+Independently read all four failing jobs of Gates 40803107511. Causal privacy RED
+is E3 at 123216904686. OC failure at 123216904501 is still outside this card;
+signup response/navigation competition is a static hypothesis, not a verified fix.
+Full evidence, command outcomes and P2 issue handoff: `evidence/relay6-status.md`.
+No source/test edits or push; original negative controls remain: DO NOT MERGE.
+Restored-head GREEN and independent acceptance PENDING; local tests/servers NOT_RUN.
+WAIT_RUN: 40803107511 — COMPLETED_FAILURE; no active wait. Humaux unavailable.
+
+## CONT-289 relay 5 · current CI concluded; hard STOP
+
+2026-10-29: independently read all four failed current-head jobs via `gh run view --log-failed --job`.
+Gates 40803107511 is now completed/failure at remote d409e4094b797aa86987f49923f3e64ce6bf2f99.
+Freshly downloaded customers, migration-import and password-auth artifacts under evidence/relay5-artifacts.
+E3 privacy RED is confirmed at bundle07/123216904686 (export confirmation, erasure scope and
+independent uncertainty return/reload). Migration-import fails the same intentional scope mutation.
+Bundle08/123216904501 still fails unrelated OC zh-CN createStore navigation with ERR_ABORTED,
+then invitation replay 2 < 3. Underlying navigation root cause UNKNOWN. Not BO03 issue299.
+Receipts/123235265909 and required/123235420197 fail downstream; no new independent root cause.
+Per explicit outside-card gate STOP: no source restoration, OC edit, retry or implementation push.
+Remote negative-control head remains unsafe to merge. No completion claim; author E0, CI failure E3.
+Foundation 40803107529/123215600971 passed at that remote head, not full GREEN.
+Required integration fetch/merge completed without conflict; local f63884bfc25dd4c2435e976753b9ffbcf4e2c5e3
+is unpushed. No authored outside-card paths; inherited integration changes came only from that merge.
+Local tests/builds/servers/browser, restored-head GREEN, independent acceptance and production NOT_RUN.
+WAIT_RUN 40803107511 has concluded; integrator must resolve/reassign OC before a restoration relay.
+P2 issue batching remains the active-modal export refusal and inaccurate page-size total; see PR comment.
 
 **CURRENT HEAD IS RED-ONLY: three safeguards deliberately mutated for CI. DO NOT MERGE.**
 The implementation descriptions below describe the restoration target, not current product safety.
@@ -488,3 +544,112 @@ locale copy). They are listed in the PR comment; this P1 evidence relay does not
 Files outside original PLAN write paths this relay: none. Generated ownership is planned.
 Wait registration and final head/run IDs are appended locally and in PR comments after push;
 integrator relays completion in a fresh session. No unattended local process remains.
+
+
+### CONT-289 · current-head wait receipt (local; no extra push)
+
+Head `d409e4094b797aa86987f49923f3e64ce6bf2f99`; PR #289 MERGEABLE/BLOCKED awaiting CI.
+Gates `40803107511` IN_PROGRESS, test jobs PENDING; Foundation `40803107529` /
+`123215600971` IN_PROGRESS, observed 2026-10-29T01:53:38Z. No causal RED result yet;
+restoration, GREEN and independent acceptance PENDING. This is an intentional RED head:
+DO NOT MERGE. WAIT_RUN: 40803107511,40803107529. Integrator relays completion in a fresh
+session. Full continuation/P2/rollback instructions: `evidence/cont289-wait.md` and PR
+comment. No local process, merge/auto-merge or production action remains. Humaux tools
+unavailable; no store/canvas claim. Author E0; no product completion claim.
+
+
+## CONT-289 relay · STOP: unrelated OC gate failure · 2026-10-29T02:33:28Z
+
+PR #289 remote head: `d409e4094b797aa86987f49923f3e64ce6bf2f99` (intentional RED).
+Read `gh pr checks 289`; only completed failing job is Gates `40803107511` /
+`123216904501` (bundle:08). `gh run view --log-failed --job 123216904501`
+refused logs while workflow remained incomplete. Downloaded the completed job's
+raw log through `gh api .../actions/jobs/123216904501/logs` instead; retained as
+`evidence/cont289-red-job.log`. Downloaded failed browser artifact with
+`gh run download 40803107511 -n gate-browser-password-auth -D ...`;
+artifact ID `12869030062`, local directory `evidence/cont289-bundle08-artifact/`.
+
+Original browser log: `playwright/run.kgFtEHsF/oc-20261029T022532.994674064/playwright.log`.
+Failure: `tests/admin/oc/reauth.spec.ts:370` zh-CN desktop case, at
+`createStore` line 120: `page.goto: net::ERR_ABORTED` opening `/zh-CN/`.
+8 OC cases passed, 1 failed. The Go wrapper then fails at
+`tests/foundation/browser_oc_test.go:259`: invitations replayed after re-auth
+2, expected >=3. No causal root cause beyond this observed navigation failure
+is established. This is NOT the known WebKit BO03 issue #299 and NOT a
+PEOPLE-V2 assertion failure. No navigation retry, timeout, fixture, assertion,
+identity/OC source, or test is changed.
+
+Per card hard STOP for an unrelated gate, no restoration/source edits or push.
+PEOPLE privacy RED remains PENDING: Gates `40803107511`, bundle:07 job
+`123216904686` IN_PROGRESS at readback. No customer-browser artifact was yet
+available. Foundation `40803107529` / `123215600971` success belongs to remote
+head d409e4094 only; it is not full GREEN. Current GREEN NOT_RUN/PENDING.
+
+Required `git fetch origin` / `git merge origin/r3/integration` succeeded without
+conflict (integration tip `7a2c4e763`). Local merge commit with required author
+trailer: `777e44fa545e9c42325936e83f0088a062fb9ab5`; NOT PUSHED.
+Pre-existing dirty evidence preserved. No tests/spec/page/route/import changed,
+so no ownership/harness update required in this stopped relay. Imported integration
+changes are unchanged from origin/r3/integration, not authored card extensions.
+Source restoration patch remains unapplied until assertion-level privacy RED is read.
+
+WAIT_RUN: 40803107511 (Gates); target privacy job 123216904686.
+Wakeup: integrator relays this run/job conclusion in a fresh session and resolves
+or explicitly reassigns the unrelated OC blocker. No local polling loop/server/test
+process remains. Humaux unavailable: store/canvas/coord/index/link NOT_RUN.
+Local tests/servers and production NOT_RUN. Author E0; raw CI failure evidence E3
+at d409e4094 only; no completion or independent acceptance claim.
+P2 to integrator issue batching: export refusal hidden outside open modal;
+page size mislabeled as total. Outside-PLAN authored paths this relay: none.
+
+### RELAY 2 independent recheck · 2026-10-29T02:36:18Z
+
+Executed the requested fetch/merge again: exit 0, already up to date. Remote PR
+head remains d409e4094; local integration merge 777e44fa5 remains unpushed.
+Read current PR checks and requested failed-job CLI logs; the latter still refuses
+while the workflow is incomplete. Independently fetched the completed job's raw
+log and re-downloaded artifact 12869030062 into
+`evidence/relay2-current-bundle08-artifact/`. Confirmed the same OC navigation
+failure at reauth.spec.ts:120, not a PEOPLE safeguard assertion. No deeper cause
+is established by the receipt. Privacy bundle:07 job 123216904686 remains running.
+The hard out-of-card gate STOP therefore still applies. No source/test edit,
+restoration, push or local execution occurred. Both P2 findings already appear in
+PR comment 6485713106 for integrator issue batching. Failure evidence E3 is bound
+to remote d409e4094 (CI synthetic merge receipt 23f0dac876c0296755cfee8522ec8dce4c0245c6);
+it supplies no privacy RED or final GREEN. WAIT_RUN: 40803107511, wakeup by
+integrator relay. Humaux unavailable; store/canvas/coord NOT_RUN. No completion claim.
+
+
+## CONT-289 RELAY 4 — causal privacy RED confirmed; OC hard STOP
+
+
+Date: 2026-10-29. Remote PR head: d409e4094b797aa86987f49923f3e64ce6bf2f99.
+Local HEAD: 777e44fa545e9c42325936e83f0088a062fb9ab5 (existing unpushed integration merge).
+Required fetch/merge exits 0, already up to date. Pre-existing dirty evidence preserved.
+No source/test edits or pushes in this relay. Current head remains intentionally mutated: DO NOT MERGE.
+
+E3 negative-control receipt: Gates 40803107511 / bundle:07 job 123216904686.
+Workflow head is d409e4094; synthetic merge tested by job is 23f0dac876c0296755cfee8522ec8dce4c0245c6.
+Downloaded artifact 12868408384, gate-browser-customers-billing, using gh run download (exit 0).
+Original log: relay4-customers-artifact/playwright/run.k0OVhMp7/customers-billing/20261029T023319.732814483/playwright.log.
+Log SHA256: 10bc6836ece25f69c16079aaa9c29a858cdba20102b481d655bf278a27160447.
+
+| Mutated safeguard | Original assertion-level CI failure on both 1440 / 390 | Source assertion |
+|---|---|---|
+| Export confirmation bypass | Confirm download button absent after real download click | people-v2.spec.ts:174, PEOPLE-V2-EXPORT-CONFIRM |
+| Erasure scope omitted | After correct name but before checkbox, erase-submit enabled instead of disabled | people-v2.spec.ts:132, correct name alone does not authorize erasure |
+| Pending privacy fence omitted | Export command enabled after read-only return and independently after reload | people-v2.spec.ts:234, PEOPLE-V2-UNKNOWN-FENCE-RETURN / RELOAD |
+
+All six signed main-screen journeys pass (three locales, two widths). Four independent uncertainty cases reach the fence assertion; earlier export/erase uncertainty cases fail at the deliberately bypassed prior safeguard and are not cited as fence evidence. Log totals: 15 failed, 10 not run, 7 passed; one failure is the existing CB11 export confirmation regression, fourteen are PEOPLE cases. No malformed-DTO blocker occurs.
+
+The same bundle's migration-import failure is also caused by the intentional checkbox mutation, not an unrelated blocker. Artifact 12868268959 downloaded using gh run download (exit 0); relay4-import-artifact/playwright/run.Zn0uFtSs/migration-import/20261029T023758.126229252/playwright.log shows import-wizard.spec.ts:333 expects erase-submit disabled after name and before checkbox, received enabled. Twelve pass, one fails, two not run.
+
+Unrelated hard STOP remains: Gates 40803107511 / bundle:08 job 123216904501. Artifact 12869030062 downloaded using gh run download (exit 0), under relay4-password-artifact. OC log playwright/run.kgFtEHsF/oc-20261029T022532.994674064/playwright.log shows zh-CN case reauth.spec.ts:370 fails at createStore :120 with page.goto net::ERR_ABORTED to /zh-CN/. Eight OC pass, one fails; Go wrapper browser_oc_test.go:259 reports replay count 2 < 3. Underlying navigation cause UNKNOWN. This is not BO03 issue #299. No OC source/test/retry/timeout/assertion changes or CI reruns.
+
+Read every currently failed job via gh pr checks and raw job API. Requested gh run view --log-failed --job commands refuse while the workflow remains incomplete; raw logs retained as relay4-bundle07.log and relay4-bundle08.log. Foundation 40803107529 / job 123215600971 is successful at d409e4094, not full GREEN. Review P1 now has the missing negative-control evidence, but restoration GREEN and independent acceptance remain pending. Author E0; no completion claim.
+
+Next integrator action: resolve or reassign OC blocker under the card hard STOP. Privacy restoration is ready via git apply --unidiff-zero -R output/people-v2-impl/evidence/cont289-negative-control.patch; retain all tests, compare component against checkpoint 98bab18f307d58ae43a80f34faa45e9292abd23a, then one implementation push and its own GREEN. Patch is NOT applied in this stopped relay.
+
+P2 issue batching remains in PR comment 6485713106: definite export refusal hidden outside active modal; page-size count labeled as total. No new outside-PLAN path authored; prior in-module extensions remain listed in PR body. Only assigned card evidence changed here. Humaux search/store/canvas/coord/index/link unavailable; no shared-state write claimed.
+
+WAIT_RUN: 40803107511 (workflow in progress; target privacy job has finished). Integrator relays final conclusion and OC disposition in a fresh session. No local tests, servers, browsers, builds, production actions, merge, auto-merge or background processes left. Final GREEN and independent acceptance NOT_RUN/PENDING.

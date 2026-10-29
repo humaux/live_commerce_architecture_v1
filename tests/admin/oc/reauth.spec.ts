@@ -97,6 +97,9 @@ async function signUp(page: Page, locale: Locale, email: string, password: strin
     page.locator('form button[type="submit"]').click(),
   ]);
   expect(response.status()).toBe(200);
+  // The verify response precedes PasswordAuth's location.assign. Finish that
+  // navigation before createStore starts another one (otherwise ERR_ABORTED).
+  await page.waitForURL(new URL(`/${locale}/`, publicOrigin).href);
 }
 
 // Raw BFF call through XMLHttpRequest: the dialog wraps window.fetch only, so these see the BFF's own answer (status + code).

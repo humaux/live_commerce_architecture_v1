@@ -157,8 +157,7 @@ function Body({
     })();
     return () => { cancelled = true; };
   }, [boundary, store, detail.customer_id]);
-  // CONT-289 RED-only negative control: ignore the unresolved-command fence. Restore before GREEN.
-  const locked = !storageReady;
+  const locked = !storageReady || pendingKind !== "";
   function mark(kind: string) {
     if (!markerKey.current) return false;
     try { sessionStorage.setItem(markerKey.current, kind); setPendingKind(kind); return true; }
@@ -281,8 +280,7 @@ function Body({
         <h2>{c.privacySection}</h2>
 
         <div className="customers-actions">
-          {/* CONT-289 RED-only negative control: bypass export review. Restore before GREEN. */}
-          <button type="button" data-testid="customer-download" disabled={busy !== "" || locked} onClick={() => void download()}>
+          <button type="button" data-testid="customer-download" disabled={busy !== "" || locked} onClick={() => setExportOpen(true)}>
             {busy === "export" ? c.downloading : p.download}
           </button>
           {detail.active && <EraseDialog detail={detail} store={store} boundary={boundary} c={c} busy={busy !== "" || locked} identity={identity} beforeSend={() => mark("erase")} clearMarker={clearMarker}
@@ -419,8 +417,7 @@ function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, be
     setTyped(""); setChecked(false); setProblem(""); setOpen(true);
   }
   async function submit() {
-    // CONT-289 RED-only negative control: omit scope acknowledgement. Restore before GREEN.
-    if (typed !== name || writing.current || otherBusy || !beforeSend()) return;
+    if (typed !== name || !checked || writing.current || otherBusy || !beforeSend()) return;
     writing.current = true; setBusy(true); setProblem("");
     const result = await postErasure(store, detail.customer_id, key.current, boundary);
     writing.current = false; setBusy(false);
@@ -450,7 +447,7 @@ function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, be
         {problem && <p className="orders-bad" role="alert" data-testid="erase-problem">{problem}</p>}
         <div className="orders-dialog-actions">
           <button type="button" disabled={busy} onClick={() => setOpen(false)}>{p.backCustomer}</button>
-          <button type="submit" className="primary danger" data-testid="erase-submit" disabled={typed !== name || busy || otherBusy}>
+          <button type="submit" className="primary danger" data-testid="erase-submit" disabled={typed !== name || !checked || busy || otherBusy}>
             {busy ? c.erasing : p.confirmErase}
           </button>
         </div>
