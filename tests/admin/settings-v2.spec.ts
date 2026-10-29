@@ -202,6 +202,51 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await expect(page.getByLabel("Stock (units)", { exact: true }), "a committed SKU with a lost response must retain the unexecuted initial stock across Reload and refresh").toHaveValue("10");
   expect(skuCommands, "refresh and reopening setup must remain read-only").toEqual([originalSku]);
   expect(inventoryCommands).toHaveLength(0);
+  // READ ONLY: locate this exact pending command's nonsecret draft, without
+  // assuming a session hash or borrowing another store/session's cache.
+  const recoveryCache = await page.evaluate(commandKey => {
+    const entry = Object.entries(sessionStorage).find(([key, value]) => key.endsWith(":command") && JSON.parse(value).key === commandKey);
+    if (!entry) return null;
+    const key = entry[0].slice(0, -":command".length), value = sessionStorage.getItem(key);
+    return value === null ? null : { key, value, command: entry[1] };
+  }, originalSku.key);
+  if (!recoveryCache) throw new Error("pending SKU must retain its original scoped draft");
+  const originalDraft = JSON.parse(recoveryCache.value);
+  const invalidDrafts: Array<[string, string | null]> = [
+    ["missing", null],
+    ["wrong profile version", JSON.stringify({ ...originalDraft, version: originalDraft.version + 1 })],
+    ...[
+      { productName: "Different product" }, { price: "1" }, { stock: "" }, { stock: "-1" }, { stock: "1.5" },
+    ].map(patch => [JSON.stringify(patch), JSON.stringify({ ...originalDraft, draft: { ...originalDraft.draft, ...patch } })] as [string, string]),
+  ];
+  for (const [scenario, invalid] of invalidDrafts) {
+    // FIXTURE PREPARATION ONLY: model missing/corrupt recovery storage. This
+    // never changes DOM or sends commands; all recovery is real Reload clicks.
+    await page.evaluate(({ key, invalid }) => {
+      if (invalid === null) sessionStorage.removeItem(key);
+      else sessionStorage.setItem(key, invalid);
+    }, { key: recoveryCache.key, invalid });
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true }), scenario).toBeVisible();
+    await page.getByRole("button", { name: "Reload", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true }), scenario).toBeVisible();
+    await expect(overview).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Save settings", exact: true })).toHaveCount(0);
+    // READ ONLY: a failed recovery must leave both the draft and command intact.
+    expect(await page.evaluate(key => sessionStorage.getItem(key), recoveryCache.key), scenario).toBe(invalid);
+    expect(await page.evaluate(key => sessionStorage.getItem(`${key}:command`), recoveryCache.key), scenario).toBe(recoveryCache.command);
+    expect(skuCommands, scenario).toEqual([originalSku]);
+    expect(inventoryCommands, scenario).toHaveLength(0);
+  }
+  // FIXTURE RESTORATION ONLY: put back the original draft, then use real UI
+  // navigation to resume the unchanged exact-replay and persisted-stock checks.
+  await page.evaluate(({ key, value }) => sessionStorage.setItem(key, value), recoveryCache);
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(overview).toBeVisible();
+  await page.getByRole("button", { name: "Start quick setup", exact: true }).click();
+  await page.getByRole("button", { name: "Next: delivery", exact: true }).click();
+  await page.getByRole("button", { name: "Next: product", exact: true }).click();
+  await expect(page.getByLabel("Stock (units)", { exact: true })).toHaveValue("10");
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   await expect(review).toContainText("Stock (units): 10");
   await page.getByRole("button", { name: "Save settings", exact: true }).click();

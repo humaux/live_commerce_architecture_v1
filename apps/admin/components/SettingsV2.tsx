@@ -61,12 +61,26 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
         if (reconciled(value, fresh)) journal(null);
       }
       const cached = sessionStorage.getItem(key.current);
-      if (!discardDraft && cached) {
+      const skuCommand = pending.current?.resource === "skus" ? pending.current : null;
+      if ((!discardDraft || skuCommand) && cached) {
         const saved = JSON.parse(cached) as { version: number; draft: SimpleDraft };
         const d = saved.draft;
         if (saved.version === fresh.profile.version && d &&
             [d.name, d.contact_email, d.contact_phone, d.productName, d.price, d.stock].every(s => typeof s === "string" && s.length <= 254) &&
-            d.enabled && Object.entries(d.enabled).every(([k, v]) => deliveryKinds.includes(k as typeof deliveryKinds[number]) && typeof v === "boolean")) next = d;
+            d.enabled && Object.entries(d.enabled).every(([k, v]) => deliveryKinds.includes(k as typeof deliveryKinds[number]) && typeof v === "boolean")) {
+          next = skuCommand ? { ...next, productName: d.productName, price: d.price, stock: d.stock } : d;
+        } else if (skuCommand) throw new Error("sku_draft_shape");
+      }
+      if (skuCommand) {
+        const original = JSON.parse(skuCommand.body) as Record<string, unknown>;
+        const product = fresh.product, price = toMinor(next.price, currency), stock = Number(next.stock);
+        if (!cached || skuCommand.method !== "POST" || !product || product.status !== "draft" ||
+            product.name !== next.productName || product.skus.length > 1 || original.product_id !== product.id ||
+            original.code !== `setup-${product.id}` || price === null || original.price_minor !== price ||
+            !next.stock.trim() || !Number.isSafeInteger(stock) || stock < 0 ||
+            product.skus.some(sku => sku.code !== original.code || sku.price_minor !== price || sku.currency !== currency)) throw new Error("sku_draft_mismatch");
+        // The SKU command has not sent initial stock yet. Its scoped draft is
+        // required even on Reload; a read balance cannot replace that quantity.
       }
       if (pending.current?.resource === "inventory/adjustments") {
         const original = JSON.parse(pending.current.body) as Record<string, unknown>;
@@ -204,8 +218,8 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
             {(screen === "editor" || screen === "step2") && deliveryFields}
             {screen === "step3" && <>
               <label>{c.product}<input required maxLength={120} disabled={!canCatalog || !!data?.product} value={draft.productName} onChange={e => change({ productName: e.target.value })} /></label>
-              <label>{priceLabel}<input required inputMode="decimal" disabled={!canCatalog || !!data?.product?.skus.length} value={draft.price} onChange={e => change({ price: e.target.value })} /></label>
-              <label>{c.stock}<input required type="number" min="0" step="1" disabled={!canCatalog || !!data?.product?.skus.length} value={draft.stock} onChange={e => change({ stock: e.target.value })} /></label>
+              <label>{priceLabel}<input required inputMode="decimal" disabled={!canCatalog || !!data?.product?.skus.length || pending.current?.resource === "skus"} value={draft.price} onChange={e => change({ price: e.target.value })} /></label>
+              <label>{c.stock}<input required type="number" min="0" step="1" disabled={!canCatalog || !!data?.product?.skus.length || pending.current?.resource === "skus"} value={draft.stock} onChange={e => change({ stock: e.target.value })} /></label>
               <p>{c.draft}</p>
             </>}
             <div className="settings-v2-actions">

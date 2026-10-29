@@ -149,3 +149,34 @@ run/job ids will be recorded in the PR comment and local handoff after push.
 Integrator relay must inspect the original failed job/artifact and append actual
 assertion evidence here before implementing the SKU-stage recovery fix.
 NOT_RUN: local tests/servers; new RED, GREEN, independent E4; SANDBOX/LIVE/production.
+
+SKU-loss tests-only push receipt — 2026-10-30
+HEAD 5d85294c1a7eda43ec70bbf11f0c9186c7f034c7; PR #303, base r3/integration.
+WAIT_RUN 40908912713 Gates: in_progress; build job 123571535145 in_progress;
+actual browser test job not assigned yet. Plan 123571192586 success is NOT RED.
+WAIT_RUN 40908912520 Foundation: in_progress; job 123571192419 in_progress.
+gh run view and gh pr checks read these receipts for the exact head.
+New own-assertion RED PENDING; no failing result invented. Implementation NOT_STARTED.
+Static syntax/diff checks exit 0; generated ownership exit 0, 53 modes.
+Integrator completion relay required; no long poll or remaining background process.
+Post-push receipt is deliberately local plus PR comment, without another CI push.
+
+FIX #303 SKU-loss causal RED confirmed — 2026-10-30
+Tests-only head 5d85294c1a7eda43ec70bbf11f0c9186c7f034c7.
+Gates 40908912713 / gate (bundle:07) job 123573702372 FAILED;
+synthetic merge under test 55be18bc3ead3d165b7a1bd33fa4ff80753c61fc.
+Original GitHub artifact gate-browser-identity 12913317531 freshly downloaded.
+settings-v2.spec.ts:202: Stock expected "10", received "0" after a committed
+SKU with its response lost, explicit Reload, refresh and real setup clicks.
+Raw retained log: fix303-sku-red-playwright.log
+SHA256 17e5f22abade53e9dd36a6dd28e8b459165e34a8f772b6832c43ef360d9d1a51.
+This is the new test's own assertion RED (E3), not setup/selector failure.
+Foundation 40908912520 / job 123571192419 SUCCESS for this tests-only head only.
+Fresh integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2 merged before repair.
+SKU-recovery implementation attempt 1: validate the original scoped cached
+product/price/quantity against the SKU command and fresh product. Preserve that
+quantity through Reload; invalid/missing cache visibly blocks without overwriting.
+Supplemental negative browser assertions added for missing, version/product/price
+mismatch and blank/negative/fractional stock; NOT_RUN until this push's CI.
+Existing exact SKU/inventory replay and persisted-stock assertions unchanged.
+No local tests/servers. GREEN and independent E4 remain PENDING/NOT_RUN.

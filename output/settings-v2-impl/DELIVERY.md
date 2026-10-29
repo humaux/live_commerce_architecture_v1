@@ -1,4 +1,92 @@
-# RVFIX #303 — SKU-response-loss RED phase (2026-10-30)
+# FIX #303 — pending SKU recovery, implementation attempt 1 (2026-10-30)
+
+Authority: the dispatched FIX #303 card; AGENTS.md; architecture sections
+0/1/2/26/27; contracts/merchant-settings-wizard-v1.md (Session, drafts and
+uncertainty / STORE-PROFILE-API); current SettingsV2/settings-v2 source.
+Fresh integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2 merged first as
+84ccc9939. Assigned worktree / unit/settings-v2-ui only; no child delegation.
+Role: dispatched UI implementer; actual model/effort identifier not exposed by
+this runtime. Authored scope: SettingsV2.tsx recovery, existing browser helper,
+delivery/red evidence and generated browser ownership. No new imports: the
+SettingsV2.tsx harness search found none; existing harness imports stay unchanged.
+
+## Root repair / acceptance gate
+
+load(true) used to discard the cached draft before the initial inventory command
+existed, replacing stock 10 with the new SKU's read balance 0. Pending SKU recovery
+now requires the exact store/session cache, validates its shape/profile version,
+product identity/status, command method/product/code/price, any existing SKU and
+nonblank nonnegative safe-integer quantity. Reload preserves only those product
+fields while refreshing other settings. Missing or mismatched recovery data stops
+visibly in the existing unavailable state before cache writeback. Price and stock
+remain locked during an uncertain SKU command, including before SKU commit.
+Read recovery sends no mutations; explicit Save retains the original key/body.
+P2 profile CAS conflict recovery stays deferred (PR comment 6499957731).
+
+Causal RED E3: tests-only 5d85294c1a7eda43ec70bbf11f0c9186c7f034c7;
+Gates 40908912713 / bundle:07 job 123573702372; tested synthetic merge
+55be18bc3ead3d165b7a1bd33fa4ff80753c61fc. Fresh artifact 12913317531,
+settings-v2.spec.ts:202 expected stock 10, received 0 after Reload + refresh.
+Retained original fix303-sku-red-playwright.log SHA256
+17e5f22abade53e9dd36a6dd28e8b459165e34a8f772b6832c43ef360d9d1a51.
+Foundation 40908912520 / 123571192419 succeeds only for that tests-only head.
+Implementation GREEN/E3 and independent E4 are PENDING; author judgment E0.
+
+|Page / control|Operation|Expected|Current evidence|
+|---|---|---|---|
+|Quick setup / Save|click; SKU commits, reply lost|unavailable; no inventory write|Reached in RED|
+|Unavailable / Reload, refresh, setup steps|real clicks|read only; stock 10 retained|RED: actual 0; repair PENDING CI|
+|Unavailable / Reload|real clicks with storage fault fixtures|missing/version/product/price/quantity mismatch blocks; cache + journal unchanged|Supplemental CI assertions PENDING|
+|Restored original draft / Reload / setup|real clicks|stock 10; no automatic replay|PENDING CI|
+|Review / Save / inventory recovery / refresh|unchanged real clicks|exact SKU/inventory replay; persisted 10|NOT_REACHED at RED; PENDING CI|
+
+All original assertions remain verbatim and in order. Supplemental negative
+cases use page.evaluate only for explicitly annotated nonsecret storage fixture
+preparation/restoration or readback, never DOM/UI simulation or API mutations.
+Local node --check of the browser helper and git diff --check exit 0 (E1 syntax).
+Targeted tsc exits 1: local Next/CSS/server-only declarations missing and unchanged
+WorkspaceFrame.tsx:72 nullability; no errors name SettingsV2.tsx or the modified
+browser helper. Full CI typecheck remains required. No dependency installation,
+local tests or servers. Browser ownership is regenerated last; no Go graph/import
+change requiring depmap. No protected gate/contract/migration/dependency changes.
+
+## UI PROCESS — BOURDIEU
+
+Q1–Q5 retain the signed task-experience verdicts below; recovery does not classify
+merchants by device/class or add decisions. Q6 aesthetics stays UNKNOWN to owner.
+
+## UI PROCESS — PROJECT UNDERSTANDING
+
+Architecture 0/1/2 distinguish evidence/PG truth/product scope; 26/27 require
+isolated ownership and independent acceptance. The wizard contract binds drafts
+to store/session and uncertain retries to original bytes/key; those are the screen
+rules repaired here. The current FIX card requires visible fail-closed recovery.
+
+## UI PROCESS — MOBBIN → EAGLE
+
+No new visual pattern/reference used; preserve the existing signed module and
+its reference record below. No new Mobbin import request or Eagle write.
+
+## UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No Figma/design change; existing frame/component/auto-layout guidance record and
+desktop/mobile fact parity / three-language copy tables below remain applicable.
+The existing main-screen browser checks still cover zh-TW, zh-CN and en. No new
+visible strings, configuration, frame or layout; no fresh Figma lint claim.
+
+Humaux/coord/canvas/code-index tools unavailable: no shared store/update or task
+completion claimed. Raw CI failure retained; only this session's duplicate
+download removed; pre-existing untracked integrator evidence preserved. No local
+background process or fixture server remains. Rollback: revert the implementation
+commit on this assigned branch. No integration push/merge/auto-merge/deployment.
+Integrator owns completion relay; post-push handoff records Gates/Foundation
+WAIT_RUN, never plan jobs. No evidence-only push after GREEN.
+NOT_RUN: local tests/servers (prohibited), current implementation CI acceptance,
+independent E4, provider/SANDBOX/LIVE/production. No acceptance claimed.
+
+---
+
+# Historical RVFIX #303 — SKU-response-loss RED phase (2026-10-30)
 
 Authority: current dispatched RVFIX instruction and the final P1 finding in
 `output/integrator/tools/logs/cxf-rv-303.log` (main checkout, read only), checked

@@ -1,0 +1,21 @@
+apps/admin/components/AdminPageHeader.tsx(5,29): error TS2307: Cannot find module 'next/navigation' or its corresponding type declarations.
+apps/admin/components/BankTransferSettings.tsx(16,8): error TS2882: Cannot find module or type declarations for side-effect import of './settings.css'.
+apps/admin/components/BillingBanner.tsx(9,18): error TS2307: Cannot find module 'next/link' or its corresponding type declarations.
+apps/admin/components/BillingBanner.tsx(14,8): error TS2882: Cannot find module or type declarations for side-effect import of './orders.css'.
+apps/admin/components/BillingBanner.tsx(15,8): error TS2882: Cannot find module or type declarations for side-effect import of './order-actions.css'.
+apps/admin/components/BillingBanner.tsx(16,8): error TS2882: Cannot find module or type declarations for side-effect import of './customers.css'.
+apps/admin/components/CodSettings.tsx(25,8): error TS2882: Cannot find module or type declarations for side-effect import of './settings.css'.
+apps/admin/components/LogisticsSettings.tsx(37,8): error TS2882: Cannot find module or type declarations for side-effect import of './settings.css'.
+apps/admin/components/MetaConnect.tsx(37,8): error TS2882: Cannot find module or type declarations for side-effect import of './settings.css'.
+apps/admin/components/MetaHealthBanner.tsx(5,18): error TS2307: Cannot find module 'next/link' or its corresponding type declarations.
+apps/admin/components/MetaHealthBanner.tsx(11,8): error TS2882: Cannot find module or type declarations for side-effect import of './meta-health.css'.
+apps/admin/components/MetaHealthCapabilities.tsx(11,8): error TS2882: Cannot find module or type declarations for side-effect import of './meta-health.css'.
+apps/admin/components/NotifySettings.tsx(14,8): error TS2882: Cannot find module or type declarations for side-effect import of './settings.css'.
+apps/admin/components/SettingsWizard.tsx(70,8): error TS2882: Cannot find module or type declarations for side-effect import of './settings.css'.
+apps/admin/components/StorefrontSettings.tsx(37,8): error TS2882: Cannot find module or type declarations for side-effect import of './settings.css'.
+apps/admin/components/WorkspaceFrame.tsx(16,57): error TS2307: Cannot find module 'next/navigation' or its corresponding type declarations.
+apps/admin/components/WorkspaceFrame.tsx(72,57): error TS18047: 'data' is possibly 'null'.
+apps/admin/lib/auth.ts(10,8): error TS2882: Cannot find module or type declarations for side-effect import of 'server-only'.
+packages/ui/src/AppShell.tsx(7,20): error TS2307: Cannot find module './AppShell.module.css' or its corresponding type declarations.
+packages/ui/src/AppShell.tsx(8,8): error TS2882: Cannot find module or type declarations for side-effect import of './tokens.css'.
+packages/ui/src/Presentation.tsx(17,15): error TS2307: Cannot find module './Presentation.module.css' or its corresponding type declarations.
