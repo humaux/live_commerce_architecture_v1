@@ -1,14 +1,65 @@
 card=FIX-299
 phase=tests-only RED
 base_sha=7a2c4e7639634dd9bd70fcd0c2dfbeaae59b4910
+head_sha=17d65036df8f7a84ffbb5b288f63867a7bfbf7ac
 branch=unit/webkit-order-299
-status=PENDING
-run_id=PENDING
-job_id=PENDING
-expected_failures=BO03 quote-less address reconfirmation reaches its control during a focus-scroll race; BH locale history activation settles focus and arms the real read before its single click
-scope=MODEL_ONLY deterministic regression; real WebKit CI required separately
+pr=301
+status=FAIL_ON_BOTH_NEW_ASSERTIONS
+run_id=40807614352
+run_attempt=1
+job_id=123230198222
+job=foundation
+step=Node unit suites (storefront, i18n)
+exit_code=1
+summary=487 tests; 485 pass; 2 fail; 0 skipped
+scope=MODEL_ONLY deterministic focus-scroll injection executing actual gate call sites; not WebKit engine proof
 historical_265=40787166900 attempt 1 job 123167610452 artifact 12861950656 order-gate.mjs:660 toBeNull 5000ms
 historical_268=40802912905 attempt 1 job 123216109068 artifact 12866524889 order-gate.mjs:745 historyRead 30000ms
-local_static=node --check apps/storefront/tests/order-gate-timeout.test.mjs; exit 0
 local_tests=NOT_RUN (prohibited)
-implementation=NOT_PUSHED (await causal CI RED)
+source=gh run view 40807614352 --log-failed --job 123230198222
+
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0346555Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0346771Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0347263Z test at apps/storefront/tests/order-gate-timeout.test.mjs:118:1
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0348701Z ✖ BO03 quote-less address reconfirmation reaches its control during a focus-scroll race (5.669055ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0350540Z   AssertionError [ERR_ASSERTION]: one real pointer action must reach address confirmation, not the sticky bar
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0351519Z   + actual - expected
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0351885Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0352181Z     [
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0352830Z   +   'sticky-purchase-action'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0353324Z   -   'confirm-address'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0353702Z     ]
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0353995Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0355914Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/storefront/tests/order-gate-timeout.test.mjs:125:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0357696Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0358924Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0359985Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0360501Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0361085Z     actual: [ 'sticky-purchase-action' ],
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0361726Z     expected: [ 'confirm-address' ],
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0362333Z     operator: 'deepStrictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0362826Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0363172Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0363351Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0363841Z test at apps/storefront/tests/order-gate-timeout.test.mjs:128:1
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0365362Z ✖ BH locale history activation settles focus and arms the real read before its single click (6.285983ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0366918Z   AssertionError [ERR_ASSERTION]: one real pointer action must open history after locale navigation
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0367832Z   + actual - expected
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0368183Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0368471Z     [
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0368874Z   +   'sticky-purchase-action'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0369345Z   -   'toggle-order-history'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0369908Z     ]
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0370198Z
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0372076Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/storefront/tests/order-gate-timeout.test.mjs:139:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0373880Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0375079Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0375930Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0376466Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0377068Z     actual: [ 'sticky-purchase-action' ],
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0377733Z     expected: [ 'toggle-order-history' ],
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0378229Z     operator: 'deepStrictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0378519Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0378724Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0379488Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-29T02:45:55.0399479Z ##[error]Process completed with exit code 1.

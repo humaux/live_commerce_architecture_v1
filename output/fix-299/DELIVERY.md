@@ -1,6 +1,6 @@
 # FIX-299 — WebKit order gate
 
-Status: RED submission; implementation and engine acceptance PENDING.
+Status: causal MODEL_ONLY RED confirmed; first implementation submitted for CI. Engine acceptance PENDING.
 
 - Role: dispatched Codex implementer; no further delegation. Runtime model/effort are not exposed by this session.
 - Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/webkit-order-299`.
@@ -17,14 +17,24 @@ Status: RED submission; implementation and engine acceptance PENDING.
 
 Candidate: focus/compositor scrolling can displace a pointer action after navigation or recovered-address rendering. The BO03 screenshot supports wrong-target delivery; it does not establish WebKit internals or establish that BH has the same cause. This remains E0 pending real-browser evidence.
 
-The tests-only commit adds two MODEL_ONLY deterministic focus-scroll injections around the actual BO03 and BH gate statements. They assert that a single pointer action reaches the intended control, and that history observation is armed before activation. They are **not** WebKit execution or independent acceptance. No existing assertion, timeout, retry policy or fixture is changed.
+The tests-only commit `17d65036df8f7a84ffbb5b288f63867a7bfbf7ac` adds two MODEL_ONLY deterministic focus-scroll injections around the actual BO03 and BH gate statements. Foundation run `40807614352`, attempt 1, job `123230198222`, failed on exactly those two new assertions: both delivered to `sticky-purchase-action` instead of the intended control. The step reports 487 tests, 485 passed, 2 failed, 0 skipped, exit 1. The raw failing assertions and receipt metadata are in `red.log`. These are **not** WebKit execution or independent acceptance.
+
+## Implementation (first targeted attempt)
+
+- BO03: wait for enabled, focus the recovered-address submit control and assert focus before the original single real pointer click. The original 5000ms journal-clear poll and replacement-key/CAS-version assertions stay verbatim and in order. No extra click, request retry, storage mutation or clock adjustment.
+- BH: retain the history response observer registered before activation. Within the same awaited aggregate, wait for the post-navigation history toggle to be enabled, focus it, assert focus, then execute the original single click. Keeping readiness in that aggregate also preserves the gate-waits rule against orphan response promises. Original server-response/time/list/locale/locator assertions remain intact.
+- Failure evidence: each page now gets a global screenshot/text index across contexts. Previously each context restarted at index 0 and overwrote earlier contexts, including the BH page. The retained historical screenshots therefore cannot establish BH's delivered click target.
+- Generated browser ownership: fetched and merged `origin/r3/integration` (`7a2c4e7639634dd9bd70fcd0c2dfbeaae59b4910`; already up to date), then ran `node scripts/dev/derive-browser-ownership.mjs`. No browser mode was narrowed.
+- Risk: focus-scroll displacement remains an E0 engine-cause hypothesis. The deterministic RED models that timing window; actual WebKit CI must establish effectiveness, and three green executions alone do not expose WebKit internals. If the same failure persists, inspect the now non-overwritten page evidence and use at most one further targeted fix before escalation.
 
 Playwright's current official documentation (read 2026-10-29) confirms that clock installation affects every page in the context: <https://playwright.dev/docs/api/class-clock>. No clock change is justified yet. Navigation/hydration guidance: <https://playwright.dev/docs/navigations#hydration>.
 
+Playwright 1.63.0 is pinned in the repository. Official API guidance re-read 2026-10-29: <https://playwright.dev/docs/api/class-locator#locator-focus>, <https://playwright.dev/docs/actionability>, <https://playwright.dev/docs/api/class-page#page-wait-for-response>. Focus preparation supplements, and never replaces, normal click actionability or the pre-armed response wait.
+
 ## Validation and continuation
 
-- Local static: `node --check apps/storefront/tests/order-gate-timeout.test.mjs`, exit 0. No local test, server, browser, build, database or container started.
-- RED: see `red.log`; new assertions must fail in this PR's own CI before implementation is pushed.
+- Local static (E1): `node --check tests/storefront/order-gate.mjs` and `node --check apps/storefront/tests/order-gate-timeout.test.mjs`, both exit 0. Ownership generator exit 0 (53 modes). No local test, server, browser, build, database or container started.
+- RED: confirmed in this PR's Foundation CI on the tests-only head; see `red.log`. This is E3 evidence for the injected model failure only, not an engine fix or product acceptance.
 - GREEN: PENDING. Must bind all results to the implementation head; retain all original gate assertions verbatim/in order and all existing timeouts.
 - WebKit stability: NOT_RUN on this branch; require at least three successful CI executions of the WebKit order suite on the implementation head, recording workflow IDs, attempt numbers and WebKit job IDs. Do not confuse rerun attempts with distinct workflow IDs.
 - Independent review: NOT_RUN; integrator owns acceptance. Never merge or enable auto-merge from this lane.
@@ -33,4 +43,4 @@ Playwright's current official documentation (read 2026-10-29) confirms that cloc
 
 ## Next session
 
-Read this PR's failing Foundation log and confirm both new assertions fail for wrong-target pointer delivery, not harness/setup errors. Then evaluate the candidate against real WebKit evidence before claiming root cause; keep unproven alternatives explicit. Any fix and generated ownership changes belong in one implementation push, with the RED run/job IDs recorded in `red.log`. After green, put final receipts in a PR comment without an evidence-only push. Stop after at most two targeted fixes to the same blocker.
+Read the implementation head's Foundation/Gates results from the PR receipt, ignoring old-head runs. After the first green WebKit job, rerun only that job twice on the unchanged head. Record all three workflow ID / attempt / WebKit job ID tuples and confirm that the order step actually ran and passed in each (not merely a successful plan). A GitHub job rerun retains its workflow run ID and increments run_attempt; do not invent three distinct workflow IDs. Put final receipts in a PR comment without an evidence-only push. Independent integrator review and engine-cause confirmation remain outstanding. Do not merge or enable auto-merge.
