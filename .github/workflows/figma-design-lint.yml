@@ -1,0 +1,42 @@
+# Purpose: lint current Merchant Figma designs nightly or on explicit dispatch, independent of PR checks.
+# Depends on: scripts/design/figma-lint.mjs, Node 24 and the FIGMA_TOKEN environment's FIGMA_TOKEN secret.
+# Used by: integrator design acceptance and the daily design hygiene audit.
+# Invariants: read-only REST and repository permissions; no PR/push trigger; report only, no source or credential artifacts.
+name: Figma design lint
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: figma-design-lint
+  cancel-in-progress: false
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    environment: FIGMA_TOKEN
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Read-only Figma hygiene checks
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+        run: node scripts/design/figma-lint.mjs --report output/FIGMA-DESIGN-LINT/report.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always()
+        with:
+          name: figma-design-lint-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/FIGMA-DESIGN-LINT/report.json
+          if-no-files-found: error
+          retention-days: 30

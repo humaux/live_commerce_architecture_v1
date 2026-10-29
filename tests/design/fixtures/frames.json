@@ -1,0 +1,30 @@
+{
+  "banned": {
+    "id": "1:1", "type": "FRAME", "name": "DESIGN v2 · Merchant · Synthetic",
+    "clipsContent": false, "absoluteBoundingBox": {"width": 390}, "absoluteRenderBounds": {"width": 390},
+    "children": [{"id": "1:2", "type": "TEXT", "characters": "MOCK 訂單"}]
+  },
+  "allowed": {
+    "id": "2:1", "type": "FRAME", "name": "DESIGN v2 · Merchant · Synthetic",
+    "children": [{"id": "2:2", "type": "TEXT", "characters": "示範資料"}]
+  },
+  "hiddenAncestor": {
+    "id": "3:1", "type": "FRAME", "name": "DESIGN v2 · Merchant · Synthetic",
+    "children": [
+      {"id": "3:2", "type": "GROUP", "visible": false, "children": [{"id": "3:3", "type": "TEXT", "characters": "UNKNOWN"}]},
+      {"id": "3:4", "type": "TEXT", "visible": false, "characters": "MOCK"}
+    ]
+  },
+  "superseded": {
+    "id": "4:1", "type": "FRAME", "name": "已被取代 · DESIGN v2 · Merchant · Synthetic",
+    "children": [{"id": "4:2", "type": "TEXT", "characters": "MOCK"}]
+  },
+  "overflow": {
+    "id": "5:1", "type": "FRAME", "name": "DESIGN v2 · Merchant · Synthetic",
+    "clipsContent": false, "absoluteBoundingBox": {"width": 390}, "absoluteRenderBounds": {"width": 1132}
+  },
+  "clipped": {
+    "id": "6:1", "type": "FRAME", "name": "DESIGN v2 · Merchant · Synthetic",
+    "clipsContent": true, "absoluteBoundingBox": {"width": 390}, "absoluteRenderBounds": {"width": 1132}
+  }
+}
