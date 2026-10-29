@@ -1,0 +1,6 @@
+node --check inbox-unknown exit=0
+node --check inbox-v2-ui exit=0
+node --check inbox-discovery exit=0
+git diff --check exit=0
+browser ownership: wrote /Volumes/data/live_commerce_architecture_v1/.worktrees/inbox-v2-ui/output/ci-select-backend-browser/browser-ownership.json (53 modes)
+required ownership generator exit=0
