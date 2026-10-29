@@ -1,0 +1,14 @@
+card=FIX-299
+phase=tests-only RED
+base_sha=7a2c4e7639634dd9bd70fcd0c2dfbeaae59b4910
+branch=unit/webkit-order-299
+status=PENDING
+run_id=PENDING
+job_id=PENDING
+expected_failures=BO03 quote-less address reconfirmation reaches its control during a focus-scroll race; BH locale history activation settles focus and arms the real read before its single click
+scope=MODEL_ONLY deterministic regression; real WebKit CI required separately
+historical_265=40787166900 attempt 1 job 123167610452 artifact 12861950656 order-gate.mjs:660 toBeNull 5000ms
+historical_268=40802912905 attempt 1 job 123216109068 artifact 12866524889 order-gate.mjs:745 historyRead 30000ms
+local_static=node --check apps/storefront/tests/order-gate-timeout.test.mjs; exit 0
+local_tests=NOT_RUN (prohibited)
+implementation=NOT_PUSHED (await causal CI RED)
