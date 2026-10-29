@@ -103,3 +103,34 @@ Job123388493579/artifact12890756112: offline Settings Continue control absent.
 Shared cause: signed overview hides rare cards behind Advanced. First batched targeted fix.
 Original assertions preserved; real Advanced clicks added; OAuth/hash targets restored.
 Foundation40854772560/job123382888753 passes old head only. New-head GREEN pending.
+
+
+RVFIX #303 RED PHASE — 2026-10-29 (CI PENDING; not a RED witness yet)
+head: bc38a7bfa67eb73cd0b99cd36bd7a5a4f7de4c6e
+Gates WAIT_RUN: 40895321677; plan 123522718447 running; actual test job not assigned yet
+Foundation WAIT_RUN: 40895321668; foundation job 123522717118 running
+New assertions: pending inventory stock must remain 10 after Reload; original
+inventory key/body replay exactly once; committed quickstart lost response must
+allow later profile save/refresh without storage clearing.
+Evidence: gh run view <run> --json databaseId,headSha,status,conclusion,jobs and
+ gh pr checks 303. No new failing assertion observed; implementation NOT_STARTED.
+Do not substitute historical green or plan success for these assertions.
+Next relay: inspect original failed test job/artifact, retain actual run/job/assertion
+here, then implement both P1 roots together and regenerate ownership before push.
+No local tests/servers. No polling/background process remains in this session.
+
+RVFIX #303 causal RED observed — 2026-10-29
+PR head bc38a7bfa67eb73cd0b99cd36bd7a5a4f7de4c6e
+Gates run 40895321677 / bundle:07 job 123525211139; test synthetic merge
+3097e3bc1599e5d807150c32eae7dae95a35f27f. Artifact gate-browser-identity
+12908705432. TestBrowserSettingsWizardRealChain failed; original Playwright log:
+rvfix303-red-artifact/playwright/settings-real-20261029T150625.645459603/playwright.log
+SHA256 5b8258250defaa67058aea82b211be0cc7d1f19638f4a9d383003c1dedb4ca17
+settings-v2.spec.ts:185: Reload must retain the original pending stock, not
+replace it with the current zero balance. Expected: "10"; Received: "0".
+Real clicked product/SKU writes succeeded; inventory POST aborted before commit;
+Reload performed reads, then the disabled stock control showed 0. This is an
+own-assertion RED, not fixture/compile/timeout-only failure. Serial test stopped
+there, so marker lost-response assertion was NOT_REACHED, not separately RED.
+Foundation 40895321668 / job 123522717118 passed only this tests-only head.
+Targeted implementation attempt 1 for both review P1 roots; GREEN pending.

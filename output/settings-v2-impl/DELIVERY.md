@@ -1,3 +1,73 @@
+# RVFIX #303 — P1 implementation attempt 1 (2026-10-29)
+
+Authority: dispatched RVFIX card, REVIEW-303.md (hash below), current source at
+bc38a7bfa67eb73cd0b99cd36bd7a5a4f7de4c6e, and merchant-settings-wizard-v1.md
+OC-05/STORE-PROFILE-API. Fresh origin/r3/integration d0e7331525fec046fbe9361906fa66367ae583c6
+was fetched and merged first: already up to date. Assigned branch/worktree only.
+
+## Root repairs and acceptance
+
+- Inventory: Reload previously replaced pending delta 10 with current balance 0.
+  Load now restores quantity from the durable command after checking SKU,
+  warehouse, nonnegative integer, initial version and reason. Other snapshot
+  fields still come from the server. The incumbent explicit Save builds the same
+  original body, and execute enforces byte/key identity; no automatic replay or
+  unchanged-balance reconciliation is introduced. Stock stays locked against edits.
+- Completion: OC-05 guarantees append-only per-store completion independent of
+  command key. Reconcile the strict empty POST against a valid completed GET
+  receipt, including its server timestamp. The hidden setup prompt no longer
+  strands the journal after a committed Skip/finish response is lost.
+- P2 remains deferred as directed: existing PR comment 6499957731 (P2 for issue).
+  No stale-CAS recovery change included.
+
+Causal RED E3: tests-only head bc38a7bf; Gates 40895321677 / bundle:07 job
+123525211139; synthetic merge 3097e3bc1599e5d807150c32eae7dae95a35f27f;
+artifact gate-browser-identity 12908705432. settings-v2.spec.ts:185 expected
+stock "10", received "0" after the real clicked product/SKU creation and MOCK
+inventory transport abort before commit. Original extracted playwright.log
+SHA256 5b8258250defaa67058aea82b211be0cc7d1f19638f4a9d383003c1dedb4ca17.
+This is the new assertion's real defect, not a fixture/compile error. Serial
+execution stopped there; marker assertion NOT_REACHED, not separately RED.
+Both regressions remain in the single batched tests-only commit unchanged.
+Foundation 40895321668 / 123522717118 passed only the tests-only head.
+GREEN/E3 and independent E4 acceptance for this repair are PENDING.
+
+|Page / control|Operation|Expected|Observed at RED / repair|
+|---|---|---|---|
+|Quick setup / Save|click stock 10|product/SKU accepted; inventory failure visible|Reached, RED CI|
+|Unavailable / Reload, setup navigation|click|no write; stock remains 10|RED failed: stock 0; repair PENDING CI|
+|Review / Save|click|original key/body once; stock 10 after refresh|NOT_REACHED at RED; PENDING CI|
+|Quick setup / Skip|click, lose committed reply|reload reads completed marker|NOT_REACHED at RED; PENDING CI|
+|Profile / Review / Save|edit phone, click, refresh|save persists without storage clearing|NOT_REACHED at RED; PENDING CI|
+
+Static commands: node --check apps/admin/lib/settings-v2.ts and
+node --check tests/admin/settings-v2.spec.ts exit 0 (E1 syntax only).
+Targeted tsc --noEmit --project output/settings-v2-impl/tsconfig.static.json
+exit 1: missing next/navigation, next/link, CSS/server-only type declarations,
+and unchanged WorkspaceFrame.tsx:72 nullability. No errors name the changed
+SettingsV2/settings-v2 files; no local typecheck PASS or gate bypass claimed.
+No dependency install or local tests/servers. Browser ownership is regenerated
+last before push. No imports, route/spec registrations or Go graph changes;
+no component harness/depmap update needed. Gate-adapter and protected baselines
+are unchanged. No authored path outside this card's write paths in this repair.
+
+UI PROCESS sections below apply: BOURDIEU task experience, PROJECT UNDERSTANDING
+(architecture 0/1/2/26/27 and marker/replay contracts), MOBBIN → EAGLE and FIGMA
+OFFICIAL GUIDANCE. This recovery fix reuses existing states/controls with no
+new layout, copy or configuration. All three locales and existing click tests
+are retained. No fresh design-reference, Figma or copy-lint claim.
+
+Humaux/coord/canvas unavailable: no shared store/update/completion claimed.
+Original failure evidence retained; own large temporary artifact transports
+removed after extracting the original log. Prior untracked relay files preserved.
+Rollback: revert this implementation commit on unit/settings-v2-ui.
+No merge into integration, auto-merge, status posting or production action.
+Integrator relays new Gates/Foundation completion; no local background process.
+NOT_RUN: local tests/servers (prohibited), implementation CI GREEN, independent
+review of repair, provider/SANDBOX/LIVE/production. Author judgment E0 only.
+
+---
+
 # RVFIX #303 — independent review recovery regressions, tests-only RED (2026-10-29)
 
 Current authority: dispatched RVFIX #303 and

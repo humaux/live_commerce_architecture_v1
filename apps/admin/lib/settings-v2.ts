@@ -135,10 +135,13 @@ function validReceipt(resource: string, sent: Record<string, unknown>, value: un
     Object.entries(sent).every(([k, v]) => k === "expected_version" || saved[k] === v);
 }
 
-/** Reads can reconcile an exact committed profile receipt, never infer an absent write from unchanged values. */
+/** Reads reconcile committed receipts and the append-only completion marker, never infer an absent write. */
 export function reconciled(pending: Journal, data: Snapshot) {
   const body = JSON.parse(pending.body) as Record<string, unknown>;
   if (pending.resource === "profile") return validReceipt("profile", body, data.profile);
+  // OC-05 completion is permanent per store, including dismissal; GET proves it
+  // independently of the POST key without claiming the derived steps are done.
+  if (pending.resource === "quickstart") return pending.method === "POST" && Object.keys(body).length === 0 && validReceipt("quickstart", body, data.marker);
   const service = data.delivery.map(d => d.service).find(s => s && pending.resource === `markets/${s.market_id}/countries/TW/delivery-services/${s.code}`);
   return service ? validReceipt(pending.resource, body, service) : false;
 }

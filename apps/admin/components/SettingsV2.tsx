@@ -68,6 +68,15 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
             [d.name, d.contact_email, d.contact_phone, d.productName, d.price, d.stock].every(s => typeof s === "string" && s.length <= 254) &&
             d.enabled && Object.entries(d.enabled).every(([k, v]) => deliveryKinds.includes(k as typeof deliveryKinds[number]) && typeof v === "boolean")) next = d;
       }
+      if (pending.current?.resource === "inventory/adjustments") {
+        const original = JSON.parse(pending.current.body) as Record<string, unknown>;
+        if (!Number.isSafeInteger(original.delta) || Number(original.delta) < 0 || original.expected_version !== 0 ||
+            original.reason !== "quickstart_initial_stock" || original.warehouse_id !== fresh.warehouses[0]?.id ||
+            original.sku_id !== fresh.product?.skus[0]?.id) throw new Error("inventory_journal_shape");
+        // The initial adjustment is an operation, not the current balance. Keep
+        // its quantity even when Reload discards edits; Save retains its key/body.
+        next = { ...next, stock: String(original.delta) };
+      }
       setData(fresh); setDraft(next); setScreen("overview");
       sessionStorage.setItem(key.current, JSON.stringify({ version: fresh.profile.version, draft: next }));
     } catch { if (active.current && at === generation.current) setScreen("uncertain"); }
