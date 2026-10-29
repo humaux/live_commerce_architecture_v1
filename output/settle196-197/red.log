@@ -1,0 +1,72 @@
+SETTLE-196-197 — RED_PENDING (not assertion-level RED yet)
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/286
+Branch: unit/settle196-v2-ui
+Head: 2c521b2a9058d73e870b74a6aa453d0b32b1c427
+Base fast-forwarded before edits: bf161bac9 (origin/r3/integration)
+Commit: tests only; one batched push covers #196 and #197.
+Observed 2026-10-28 UTC via gh pr checks / gh run view / gh api actions/runs/.../jobs:
+Gates run: 40758502896, in progress
+  https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40758502896
+  build job 123064306226, in progress; no behavioral result yet
+Foundation run: 40758502909, in progress
+  foundation job 123063752434, in progress
+  https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40758502909/job/123063752434
+No target assertion failures observed at handoff. Queue/build states are NOT RED evidence.
+Expected failure assertions:
+  TestSettlementSyncChunksAndCarriesTheWindowAndManifestOnEveryChunk
+    RED #197 chunk 0: every chunk must carry the window and full manifest
+  TestPlatformSettlementSA1PF17Reconciliation/196_item_completeness/*
+    RED #196: equal totals must not hide item differences; want sync_unreconciled
+  TestPlatformSettlementSA1PF17Reconciliation/197_failed_final_chunk
+    RED #197: concurrent close after tail failure must refuse
+Local commands: gofmt -w on the two modified test files (exit 0); git diff --check (exit 0).
+No local tests, servers, containers, PG or browser were run.
+Own acceptance: E0. CI RED/GREEN and independent review NOT_RUN/PENDING.
+WAIT_RUN: 40758502896
+WAIT_RUN: 40758502909
+Wake-up owner: integrator relays a fresh session when these runs conclude (per task instruction).
+
+RELAY 1 — 2026-10-29: causal RED NOT_RUN; prerequisite repair attempt 1/2
+Verified current PR head via gh pr view: 2c521b2a9058d73e870b74a6aa453d0b32b1c427.
+Foundation run 40758502909 / job 123063752434 failed solely at Node unit suites:
+  tests/ci/backend-coverage.test.mjs:274
+  CI-SPEED-3: generated browser ownership is current and covers the registry
+  browser ownership drift: regenerate with node scripts/dev/derive-browser-ownership.mjs
+Node summary: 335 tests, 334 pass, 1 fail; process exit 1.
+Real PostgreSQL, race detector and vet: SKIPPED. New settlement assertions: NOT_RUN in Foundation.
+Filtered raw receipt: output/settle196-197/foundation-red-blocker.log.
+Followed explicit relay exception: git fetch origin r3/integration (exit 0); git merge origin/r3/integration (exit 0, Already up to date, base bf161bac96252c35337e07713c08a275d48e3e17).
+node scripts/dev/derive-browser-ownership.mjs (exit 0): generated 53 modes; only settlement_returns_test.go source hash changed.
+This prerequisite repair contains no settlement implementation, migration or weakened test.
+Next: wait for PR-owned CI on repair head; obtain failures on the NEW settlement assertions before implementation.
+Humaux/code-index tools unavailable: no shared memory/canvas/coord writes.
+
+Repair pushed as 18bd6a6629815af7844847e8a96ecc6e31c4e863.
+WAIT_RUN: 40759956153 — Foundation checks, queued, pull_request, exact repair head.
+WAIT_RUN: 40759956329 — Gates (GitHub runners), pending, pull_request, exact repair head.
+No assertion-level RED or GREEN claimed. Integrator relays next session on completion.
+
+RELAY 2 — assertion-level RED verified on tests-only repair head 18bd6a6629815af7844847e8a96ecc6e31c4e863
+Gates run 40759956329 / job 123075243384 (gate shard:unit), failure, completed 2026-10-28T20:43:18Z.
+TestSettlementSyncChunksAndCarriesTheWindowAndManifestOnEveryChunk fails at settlement_unit_test.go:117:
+  RED #197 chunk 0: every chunk must carry the window and full manifest
+Synthetic merge tested: be7e4ed536f81f706e0dc3d24f2c6c24506f32f6 (head 18bd6a66 into base bf161bac9).
+Raw source: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/123075243384/logs
+Filtered receipt: output/settle196-197/relay2-unit-red.log (fixture argument dump omitted).
+Foundation run 40759956153 / job 123068875365: success at this RED head; this is NOT implementation GREEN.
+PF17 database counterexamples (#196 and failed-final-chunk #197) are pending in catch-all shard:g09 job 123075243146.
+No assertion-level database RED claimed; the confirmed new unit assertion satisfies the relay condition to push implementation.
+
+Implementation preparation:
+Merged origin/r3/integration at 313c2c36f (contains assigned predecessor 0205, not 0206/0207).
+0208 adds immutable items_complete per reconciliation currency; effective ledger IDs/currency/stored net must match the manifest.
+Existing 0200 aggregate-only comparisons default false (resync required); pre-0200 grandfather semantics remain unchanged.
+Every Registrar chunk carries the full manifest and window, so an incomplete committed prefix supersedes old clean coverage.
+Close retains latest-observation selection, ACLs, locks, returns, idempotence and refusal-before-writes.
+R2 pin is assigned expected final count 138; actual files on this base plus 0208 = 136 until #262/#265 merge.
+Stripe historical upgrade fixture defers 0208 with its dependencies; exact newly applied count rises from 9 to 10.
+Local: gofmt, git diff --check, python3 scripts/check_packet.py exit 0 (PASS_PACKET_STRUCTURE_ONLY).
+Browser ownership regenerated statically after foundation source changes; 53 modes, no hand edits.
+No local tests, server, PG, containers, browser, sandbox or LIVE calls.
+Own implementation assessment E0; static structure E1; current-head GREEN and independent review pending.
+Humaux/code-index unavailable; shared memory/canvas/coord writes NOT_RUN.

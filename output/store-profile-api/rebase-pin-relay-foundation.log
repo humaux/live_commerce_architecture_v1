@@ -1,0 +1,3 @@
+foundation	Package docs and gate map are current	2026-10-29T03:27:44.7709824Z check-backend-coverage: 1 finding(s):
+foundation	Package docs and gate map are current	2026-10-29T03:27:44.7710656Z   internal/httpapi/profile.go is classified by nobody: declare its exact lc_covers, SHARED or BACKEND_ONLY file entry
+foundation	Package docs and gate map are current	2026-10-29T03:27:44.7773890Z ##[error]Process completed with exit code 1.
