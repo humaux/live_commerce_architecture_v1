@@ -328,7 +328,10 @@ test("MIUI imported-only erasure removes history and tombstone blocks same sourc
     await upload(page, order, "orders"); await preview(page, order, { new: 1, update: 0, failed: 0 }); await confirm(page, { created: 1, updated: 0, failed: 0 }); const before = await state(), owner = before.owners["ERASE-A"];
     await page.goto(`${origin}/en/customers/${owner}?store=${store}`);
     await step(page, "customer erasure", "typed deliberate erasure removes the imported-only customer projection and archive", async () => {
-      await page.getByTestId("customer-erase").click(); await page.getByTestId("erase-typed").fill("ERASE");
+      await page.getByTestId("customer-erase").click();
+      await page.getByTestId("erase-typed").fill(await page.locator(".people-facts h2").innerText());
+      await expect(page.getByTestId("erase-submit")).toBeDisabled();
+      await page.getByTestId("erase-dialog").getByRole("checkbox", { name: customersCopy.en.people.checked, exact: true }).check();
       const erasedResponse = page.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname.endsWith(`/customers/${owner}/erasure`));
       const refreshedDetail = page.waitForResponse(response => response.request().method() === "GET" && new URL(response.url()).pathname.endsWith(`/customers/${owner}`));
       await page.getByTestId("erase-submit").click();
