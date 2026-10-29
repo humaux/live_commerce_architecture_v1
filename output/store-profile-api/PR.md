@@ -19,3 +19,9 @@ Rebase-pin relay: merge conflicts resolved only in R2 ledger/pin and generated o
 **BLOCKED**: prior-head Foundation40768505402/job123099180175 requires explicit profile.go coverage classification. Fresh base still lacks it. Global registry is outside this card; stopped without an exemption change. Prior Gates40768505365 jobs123102334069/123102334627 also report profile header-helper and disabled-identity status assertions, unresolved. New-head GREEN remains PENDING; exact WAIT_RUN will be commented. No new outside-card implementation file; generated ownership remains the only generated extra path requiring integrator review. All other incoming files are the requested base merge, not lane edits.
 
 🤖 Generated with Codex (dispatched by Claude Code integrator)
+
+Latest rebase-pin follow-up (2026-10-29): merged current integration `61951609f1dd0937d7d6a8c2f8b0d2faf3d4d05d` (#301 WebKit repair). Base R2 count remains138; assigned0209 unchanged, pin139 retained. Native browser ownership and depmap generation exit0; depmap has no diff. Incoming storefront and output/fix-299 files are base-owned merge content, not authored lane changes.
+
+**Still BLOCKED**: exact pre-merge head2a532359 Foundation40811803504/job123243599576 fails only `internal/httpapi/profile.go is classified by nobody`. Fresh base still lacks its exact-file coverage declaration. Correct repair needs shared scripts/dev/pr-modes.mjs or test-local.sh ownership, outside this card. STOP per card; no exemption, gate, assertion or fixture change. This is not new causal RED. Filtered raw receipt and current boundary: output/store-profile-api/rebase-pin-relay-foundation.log and rebase-pin-relay.md. New exact-head WAIT_RUNs will be posted in a comment; GREEN PENDING, author E0. Humaux unavailable in this follow-up: no new store/canvas/coord action claimed. Integrator owns shared-registry resolution and CI completion relay.
+
+🤖 Generated with Codex (dispatched by Claude Code integrator).

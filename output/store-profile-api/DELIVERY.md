@@ -114,3 +114,13 @@ GREEN pending new-head CI; author assessment E0; no completion or independent re
 Exact workflow WAIT_RUN identifiers will be posted in a PR comment after push.
 Humaux is available this relay: problem stored under the acquired child-resource lock;
 child canvas updated. Integrator relays CI completion; no background process remains.
+
+## Rebase-pin follow-up — 2026-10-29
+
+Current relay receipt: `rebase-pin-relay.md`; raw Foundation40811803504/
+job123243599576 failure in `rebase-pin-relay-foundation.log`. Merged fresh
+integration61951609f; unchanged0209 and exact base138+1 pin139. Native browser
+ownership and depmap generation exit0; no depmap diff. Shared CI classification
+remains outside scope, so STOP without gate/exemption/test changes. New exact-head
+WAIT_RUNs go in the PR comment; GREEN PENDING, author E0. Humaux is unavailable
+in this follow-up; no new store/canvas/coord action claimed. No local tests or servers.
