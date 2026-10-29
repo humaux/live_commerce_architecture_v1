@@ -156,7 +156,7 @@ test("TCV08 merchant: create a label, copy the code, print in a new tab, timelin
   expect(printPost.body ?? "").toContain("CheckMacValue");
   expect(printPost.body ?? "").not.toMatch(/HashKey|HashIV/);
   await tab.waitForURL(/https:\/\/logistics(-stage)?\.ecpay\.com\.tw\//, { timeout: 20000 });
-  await expect(tab.locator("body")).toHaveText("label [RED mutation]"); // negative control: trapEcpay returns exactly "label"
+  await expect(tab.locator("body")).toHaveText("label"); // provider response is MOCK, never provider visual evidence
   await tab.close();
 
   // Six real print clicks after the already-confirmed label; no extra Create or
