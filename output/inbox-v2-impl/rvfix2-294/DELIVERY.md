@@ -71,3 +71,34 @@ Fetched and merged `origin/r3/integration` before repair: already current at `d8
 BOURDIEU / PROJECT UNDERSTANDING / MOBBIN → EAGLE / FIGMA OFFICIAL GUIDANCE: the four sections above still apply. This relay changes test preparation only, with no new UI, copy, design, reference or setting. Additional authority read: actual composer disabled expression and textLimit; the real hook host compares dependencies by identity. Native click ledger remains PENDING exact-head Gates, with no local browser acceptance claimed.
 
 Allowed static syntax, whitespace and required ownership generation only (E1); receipts in `relay2-static.log`, current file hashes in `source-sha256.txt`. No local tests/server/build/browser/PG/container/LIVE. Humaux tools unavailable in this relay: search/claim/store/canvas/code-index/link NOT_RUN; no shared-state write claimed. Integrator retains parent ownership, independent acceptance and completion wakeup. Author assessment E0. Exact-head GREEN/browser/persistence/density/independent review PENDING; next native Foundation/Gates RUN IDs go in the PR handoff comment and WAIT-RUN.md. No evidence-only push after GREEN; no merge/automerge/status/deploy.
+
+
+## Relay 3 — browser permission preparation (first targeted attempt for this blocker)
+
+Authority: exact failed head `3713daeb014cfbd50f61fa1f1c81b8da90fc4c57`; Gates `40849465782` / bundle:06 job `123369250921`; downloaded `gate-browser-inbox` artifact `12888084373`. Foundation `40849465979` / `123365029203` SUCCESS belongs only to that old head. Browser result: 22 pass / 9 fail. Filtered original assertions are in `relay3-browser-failure.log`; raw artifact retained locally in `relay3-artifacts/`. Six ACK tests expected three operation reads but observed zero; three state tests expected sent but observed queued. This is an implementation verification failure, separate from the causal tests-only RED in `red.log`.
+
+Root cause: V2 recovery tests signed in as the real live_operator, which lacks integration:read. InboxThread correctly refuses the historical operation GET and keeps the ACK locked. The existing Go harness already provides a qualified principal with that permission and a bounded, key-protected actor selector; the customer-link browser suite already uses it. Select that existing principal before real signed OIDC only for the six exact-operation recovery scenarios and three state scenarios. Leave main-screen scenarios on the existing live_operator. Reset fixture selection after every test, including failures. No role grants, backend, contracts, product permission checks or production code change.
+
+Preserve every original send/result/query/lock/recovery assertion and every timeout/density threshold. Add three native-click live_operator counterexamples, one per locale: after a real UI queued ACK, a newer sent projection plus concurrent staff reply, with own row visible and omitted, must retain pending text, hidden/disabled composer, zero operation reads and one A12 POST. The collection gate now requires all fifteen V2 cases and each new permission title once; every legacy discovery assertion remains. MOCK actor/transport setup is fixture preparation only; all product actions use native fill/click. The existing Node refusal, captured/current handler and exact scoped-read tests remain unchanged. Acceptance remains the PR's own current-head CI plus integrator independent review.
+
+Merge-base requirement: fetched and merged origin/r3/integration `f8fd8900577815a328643ed878d88a6a247d2ab2` in `f0eadc8c81862f59ebdb4312fc5676d6034d06a5`. Only conflict: generated browser ownership, rebuilt with the required script. Incoming integration changes are merge provenance, not lane implementation. Pre-repair rollback reference `3713daeb`; no rollback performed and pre-existing untracked relay files preserved. Source edits are the original in-card browser spec and discovery test. The only generated outside-card path is the already-declared ownership JSON. No spec/page/route filename or component import changed; no component harness adapter update needed. No Go graph change; depmap unnecessary. No migration/contract/OpenAPI/pin/lockfile/baseline/exemption change.
+
+### BOURDIEU
+
+The Q1–Q6 verdicts above still apply: recent task experience, clear unresolved/recovery task, same seller copy and no inferred aesthetic decision. This relay changes test preparation and adds permission acceptance, without changing product UI.
+
+### PROJECT UNDERSTANDING
+
+Re-read architecture §§0/1/2/26/27, live-console-v1 §§3.3/3.4/3.6/4.4, external-operation-v1 W6-05B scope/read model, actual InboxThread load, operations client/parser and Go browser fixture. Business rule: a conversation display row cannot establish operation identity; exact integration:read is required for historical readback and is never automatically granted. Use existing qualified fixture for successful reconciliation; retain refusal acceptance under live_operator.
+
+### MOBBIN → EAGLE
+
+No new visual pattern, reference, asset or layout. Original reference provenance remains in ../DELIVERY.md; no fresh Mobbin/Eagle observation claimed or required for this test-only repair.
+
+### FIGMA OFFICIAL GUIDANCE
+
+No design delivery or Figma write. Existing official guide applications, copy and desktop/mobile parity remain in ../DELIVERY.md. No new visible strings, setting or component; copy lint/export NOT_RUN for this behavioral test repair.
+
+Click-ledger additions (CI PENDING): Messages / Send / fill and click / queued pending, hidden composer, one POST; Check status with own row visible then omitted / native clicks / pending retained, zero operation GETs, no second POST under live_operator. Existing qualified recovery expects exactly three reads while pending and only own SUCCEEDED reopens the composer. Actual new-head results PENDING, no local click PASS claimed.
+
+Allowed syntax/whitespace checks and required generated ownership only (E1); relay3-static.log and source-sha256.txt bind receipts to files. Local tests/build/server/browser/PG/container/LIVE NOT_RUN; tsc unavailable. Author runtime assessment E0; GREEN and independent acceptance PENDING. Humaux/coord/code tools unavailable: search/store/canvas/index/link NOT_RUN, no shared-state write claimed. Parent integrator retains ownership; no duplicate claim or delegation. One batched repair push, then native Foundation/Gates WAIT_RUN handoff; integrator completion relay is the wakeup. No local watcher/process, merge/automerge/status/deploy or evidence-only GREEN push. P2 remains existing “P2 for issue” comment 6489297640.

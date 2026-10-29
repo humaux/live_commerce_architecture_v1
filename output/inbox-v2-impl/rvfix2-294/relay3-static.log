@@ -1,0 +1,8 @@
+RVFIX2 relay3 — E1 static-only evidence
+Required node scripts/dev/derive-browser-ownership.mjs: exit0; wrote 53 modes (executed separately after final source edits).
+node --check tests/admin/inbox-v2-ui.spec.ts: exit0
+node --check tests/admin/inbox-discovery.test.ts: exit0
+git diff --check: exit0
+tsc: NOT_RUN; command -v tsc exited1 (compiler unavailable).
+No local tests, builds, servers, browser, PG, containers or LIVE.
+Author runtime assessment E0; exact-head implementation CI PENDING.

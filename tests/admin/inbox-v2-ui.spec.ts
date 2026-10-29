@@ -1,17 +1,18 @@
 // Purpose: INBOX-V2 signed simplified UI real-click acceptance across all three locales.
-// Depends on: existing signed MOCK OIDC/Next inbox runner; bounded MOCK A8/A9/A10/A12/A13 and health shapes.
+// Depends on: existing signed MOCK OIDC/Next inbox runner and actor selector; bounded MOCK A8/A9/A10/A12/A13 and health shapes.
 // Used by: --browser-inbox CI, registered in playwright.config.ts; existing real PG/BFF send tests stay intact.
 // Invariants: no LIVE send; no DOM writes; UNKNOWN queries never resend; refresh preserves fixture-server facts only.
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { evidence, store, ids, login, createInboxLedger, writeInboxLedger } from "./inbox-browser-support";
+import { api, required, evidence, store, ids, login, createInboxLedger, writeInboxLedger } from "./inbox-browser-support";
 
 const { ledger, record } = createInboxLedger();
 test.use({ headless: true, trace: "off", video: "off", screenshot: "only-on-failure" });
-test.afterEach(async ({}, info) => {
+test.afterEach(async ({ request }, info) => {
   if (info.status !== info.expectedStatus) ledger.push({ page: "Messages v2", control: info.title,
     action: "scenario", expected: "every named assertion passes", actual: info.status ?? "UNKNOWN", status: "FAIL" });
+  await actor(request, "operator");
 });
 test.afterAll(async () => { await writeInboxLedger(ledger); });
 
@@ -144,7 +145,16 @@ async function mockInbox(page: Page, copy: Copy) {
   return state;
 }
 
-async function enter(page: Page, copy: Copy) {
+async function actor(request: APIRequestContext, mode: "operator" | "qualified") {
+  // Select an existing synthetic principal only; real signed OIDC still admits the session.
+  // Never add grants to live_operator or bypass the product's integration:read check.
+  const response = await request.post(`${api}/__test/inbox-actor`, {
+    headers: { "X-Inbox-Fixture-Key": required("LC_BROWSER_INBOX_CONTROL_KEY") }, data: { mode },
+  });
+  expect(response.status(), "bounded fixture actor selection").toBe(204);
+}
+async function enter(page: Page, copy: Copy, mode: "operator" | "qualified" = "operator") {
+  await actor(page.request, mode);
   await login(page);
   if (copy.locale !== "en") {
     await page.getByTestId("locale-switch").selectOption(copy.locale);
@@ -275,7 +285,7 @@ for (const copy of copies) {
 
   for (const omitted of [false, true]) {
     test(`INV2 ${copy.locale} ACK before first projection ${omitted ? "omitted" : "visible"}`, async ({ page }) => {
-      const state = await enter(page, copy);
+      const state = await enter(page, copy, "qualified");
       await page.setViewportSize({ width: 390, height: 844 });
       await open(page, ids.instagram);
       // Prepare transport facts before the native send; no direct API or DOM write performs the action.
@@ -310,8 +320,31 @@ for (const copy of copies) {
     });
   }
 
-  test(`INV2 ${copy.locale} states`, async ({ page }) => {
+  test(`INV2 ${copy.locale} ACK without operation read permission`, async ({ page }) => {
     const state = await enter(page, copy);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, ids.instagram);
+    state.concurrentSent = true; // Transport preparation: an unrelated send must never reconcile our ACK.
+    await send(page, copy);
+    await expect(page.getByTestId("inbox-thread")).toHaveAttribute("aria-busy", "false");
+    state.delivery = "sent"; // Even a newer A9 sent projection is not exact-operation evidence.
+    for (const omitted of [false, true]) {
+      state.omitOutbound = omitted;
+      await query(page);
+      await expect(page.getByTestId("inbox-thread")).toContainText("MOCK_OTHER_STAFF_SENT");
+      await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.pending);
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
+      expect(state.operationReads).toBe(0);
+      expect(state.posts).toBe(1);
+    }
+    record(`ACK permission ${copy.locale}`, "fill, click Send, click status with visible/omitted own projection",
+      "live_operator has no operation read; unrelated/newer sent rows leave queued ACK locked; one POST");
+  });
+
+  test(`INV2 ${copy.locale} states`, async ({ page }) => {
+    const state = await enter(page, copy, "qualified");
     const helpCopy = copy.locale === "en" ? {
       window: "The reply window has ended; wait for the buyer to message again.",
       connection: "Check the connection and reply permissions in Settings before sending.",
