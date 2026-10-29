@@ -274,6 +274,37 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   expect(inventoryCommands, "the failed read occurs before any initial adjustment").toHaveLength(0);
   // READ ONLY: distinguish this failure from a still-pending SKU command.
   expect(await page.evaluate(key => sessionStorage.getItem(`${key}:command`), recoveryCache.key)).toBeNull();
+  // READ ONLY: the next unsent operation must survive independently of the
+  // acknowledged SKU journal, and remain bound to this product/warehouse.
+  const stockIntentKey = `${recoveryCache.key}:initial-stock`;
+  const stockIntent = await page.evaluate(key => sessionStorage.getItem(key), stockIntentKey);
+  expect(stockIntent).not.toBeNull();
+  if (!stockIntent) throw new Error("acknowledged SKU must retain its unsent stock intent");
+  const originalIntent = JSON.parse(stockIntent);
+  for (const patch of [
+    { product_id: "00000000-0000-4000-8000-000000000001" }, { code: "different-sku" },
+    { warehouse_id: "00000000-0000-4000-8000-000000000002" }, { currency: "USD" },
+    { price_minor: 1 }, { quantity: -1 }, { quantity: 1.5 }, { quantity: 11 },
+  ]) {
+    const invalid = JSON.stringify({ ...originalIntent, ...patch });
+    // FIXTURE PREPARATION ONLY: corrupt local recovery data, never DOM or a
+    // backend mutation. Refresh and Reload remain actual user interactions.
+    await page.evaluate(({ key, value }) => sessionStorage.setItem(key, value), { key: stockIntentKey, value: invalid });
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Reload", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Reload", exact: true })).toBeEnabled();
+    await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
+    await expect(overview).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Save settings", exact: true })).toHaveCount(0);
+    // READ ONLY: failed recovery neither rewrites its evidence nor sends a command.
+    expect(await page.evaluate(key => sessionStorage.getItem(key), stockIntentKey)).toBe(invalid);
+    expect(await page.evaluate(key => sessionStorage.getItem(`${key}:command`), recoveryCache.key)).toBeNull();
+    expect(skuCommands).toEqual([originalSku, originalSku]);
+    expect(inventoryCommands).toHaveLength(0);
+  }
+  // FIXTURE RESTORATION ONLY: resume the original positive recovery journey.
+  await page.evaluate(({ key, value }) => sessionStorage.setItem(key, value), { key: stockIntentKey, value: stockIntent });
   await page.getByRole("button", { name: "Reload", exact: true }).click();
   await expect(overview).toBeVisible();
   expect(skuCommands, "Reload after an acknowledged SKU must only read").toEqual([originalSku, originalSku]);
@@ -319,6 +350,8 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
   expect(inventoryCommands, "exactly one explicit replay of the original key and body").toEqual([originalInventory, originalInventory]);
+  // READ ONLY: only the accepted initial adjustment retires its scoped intent.
+  expect(await page.evaluate(key => sessionStorage.getItem(key), stockIntentKey)).toBeNull();
   await page.unroute(inventoryURL);
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
   await page.reload();

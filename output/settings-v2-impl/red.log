@@ -1,3 +1,22 @@
+CURRENT RVFIX303 ACK/read causal RED confirmed, 2026-10-30:
+Tests-only HEAD69651530ee66337af1b6b83dce17cbd791bbbbd4.
+Gates40927153608 / gate(bundle:07) job123637810804 FAILED --browser-identity.
+Synthetic merge e673bf0aa234be9c50ba41dac12eebca412fa682.
+Fresh artifact12922147689 gate-browser-identity downloaded with gh run download.
+settings-v2.spec.ts288 expected stock10 received0 after normal SKU200 then
+one MOCK productGET503, absent command journal, Reload+refresh+setup clicks.
+Old spec202 lost-SKU-response assertion passes; this is the new causal assertion.
+Raw ack-read-red-playwright.log SHA256b50ec8134a173a2c32e3205f490a6373adf58fd6b416c322f89bd95ed0f8aa34.
+Foundation40927153538/job123635591001 SUCCESS on tests-only head only.
+receipts123648300682 and required123648788897 propagate failed identity receipt.
+No install/mirror infrastructure failure; no job rerun. Integration17328372d
+fresh fetch+merge Already up to date. Implementation attempt1 independently
+persists scoped initial-stock intent before SKU dispatch, validates it on Reload,
+retires it after stock acceptance, and preserves exact command identity/no reads
+writing. Eight corrupt-intent negatives added; existing assertions untouched.
+GREEN/E4 PENDING new head. No local tests/servers. Author judgmentE0.
+Historical pre-push pending receipts below are superseded by this actual RED.
+
 RVFIX303 acknowledged SKU / failed follow-up product GET, 2026-10-30:
 Authority: final REQUEST_CHANGES in cxf-rv-303.log, reviewing3eb560907;
 review log SHA2560979b993169872ca2af373c00da9ad3f7ba6e6f466df7f6e11bb30a28cfaa810.
@@ -9,8 +28,12 @@ Reload+refresh+setup must retain unsent stock10; explicitSave must not repeat SK
 unchanged inventory replay and final refreshed stock10 assertions still apply.
 All original assertions remain verbatim/in order. No implementation in this phase.
 Local node --check spec and git diff --check exit0 E1. Ownership generated53modes.
-Current causal RED: PENDING own CI; run/job IDs appended after push locally and
-in PR comment. No causal assertion failure claimed before execution.
+Current tests-only head69651530ee66337af1b6b83dce17cbd791bbbbd4 pushed.
+WAIT_RUN Gates40927153608; status in_progress; browser test job not yet assigned.
+WAIT_RUN Foundation40927153538 / foundation job123635591001 in_progress.
+Original gh run view confirms both headSha values match this tests-only head.
+Current causal RED is PENDING; no assertion failure claimed before execution.
+Integrator relays completion; stop local CI watch; no implementation until RED.
 GREEN/independent E4/provider/SANDBOX/LIVE/production NOT_RUN. Author judgmentE0.
 
 Historical FIX303 contract-drift relay, 2026-10-29:

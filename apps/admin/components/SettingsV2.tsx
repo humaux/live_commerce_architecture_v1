@@ -1,7 +1,7 @@
 // Purpose: Owner-signed three-row settings, direct edit/review and optional three-step quick setup.
 // Depends on: react, @live-commerce/i18n, ./WorkspaceFrame, @/lib/settings-v2, @/lib/settings-client, @/lib/catalog-v2-model, @/lib/settings-model and SettingsWizard's settings.css.
 // Used by: SettingsWizard; localized authenticated settings route.
-// Invariants: server response baselines, one explicit keyed command at a time, no eligibility claim or new business defaults.
+// Invariants: server response baselines, one explicit keyed command at a time, durable scoped initial-stock intent, no eligibility claim or new business defaults.
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { settingsV2Copy, type Locale } from "@live-commerce/i18n";
@@ -62,14 +62,15 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
       }
       const cached = sessionStorage.getItem(key.current);
       const skuCommand = pending.current?.resource === "skus" ? pending.current : null;
-      if ((!discardDraft || skuCommand) && cached) {
+      const initialStock = sessionStorage.getItem(`${key.current}:initial-stock`);
+      if ((!discardDraft || skuCommand || initialStock) && cached) {
         const saved = JSON.parse(cached) as { version: number; draft: SimpleDraft };
         const d = saved.draft;
         if (saved.version === fresh.profile.version && d &&
             [d.name, d.contact_email, d.contact_phone, d.productName, d.price, d.stock].every(s => typeof s === "string" && s.length <= 254) &&
             d.enabled && Object.entries(d.enabled).every(([k, v]) => deliveryKinds.includes(k as typeof deliveryKinds[number]) && typeof v === "boolean")) {
-          next = skuCommand ? { ...next, productName: d.productName, price: d.price, stock: d.stock } : d;
-        } else if (skuCommand) throw new Error("sku_draft_shape");
+          next = skuCommand || initialStock ? { ...next, productName: d.productName, price: d.price, stock: d.stock } : d;
+        } else if (skuCommand || initialStock) throw new Error("sku_draft_shape");
       }
       if (skuCommand) {
         const original = JSON.parse(skuCommand.body) as Record<string, unknown>;
@@ -81,6 +82,18 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
             product.skus.some(sku => sku.code !== original.code || sku.price_minor !== price || sku.currency !== currency)) throw new Error("sku_draft_mismatch");
         // The SKU command has not sent initial stock yet. Its scoped draft is
         // required even on Reload; a read balance cannot replace that quantity.
+      }
+      if (initialStock) {
+        const intent = JSON.parse(initialStock) as Record<string, unknown>;
+        const product = fresh.product, price = toMinor(next.price, currency), stock = Number(next.stock);
+        if (!cached || !product || product.status !== "draft" || product.name !== next.productName ||
+            product.id !== intent.product_id || intent.code !== `setup-${product.id}` ||
+            price === null || intent.price_minor !== price || intent.currency !== currency ||
+            fresh.warehouses.length !== 1 || intent.warehouse_id !== fresh.warehouses[0].id ||
+            !next.stock.trim() || !Number.isSafeInteger(stock) || stock < 0 || intent.quantity !== stock ||
+            product.skus.length > 1 || product.skus.some(sku => sku.code !== intent.code || sku.price_minor !== price || sku.currency !== currency)) throw new Error("initial_stock_mismatch");
+        // A successful SKU receipt may have cleared its journal before a later
+        // read failed. This unsent stock still requires an explicit Save.
       }
       if (pending.current?.resource === "inventory/adjustments") {
         const original = JSON.parse(pending.current.body) as Record<string, unknown>;
@@ -145,6 +158,10 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           if (product.name !== draft.productName || product.status !== "draft" || product.skus.length > 1) throw new SaveFailure(false, changed);
           data.product = product; // retain accepted progress if a later command fails
           if (!product.skus.length || pending.current?.resource === "skus") {
+            // Persist before dispatch: the SKU acknowledgement clears its own
+            // journal, but cannot discard the next, still-unsent stock operation.
+            sessionStorage.setItem(`${key.current}:initial-stock`, JSON.stringify({ product_id: product.id, code: `setup-${product.id}`,
+              price_minor: price, currency, warehouse_id: data.warehouses[0].id, quantity: stock }));
             await send("skus", "POST", { product_id: product.id, code: `setup-${product.id}`, price_minor: price });
             product = parseProduct(await readSettings(store.id, `products/${product.id}`));
             data.product = product;
@@ -154,6 +171,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           if (pending.current?.resource === "inventory/adjustments" || (sku.on_hand === null && stock > 0)) {
             await send("inventory/adjustments", "POST", { warehouse_id: data.warehouses[0].id, sku_id: sku.id, delta: stock, expected_version: 0, reason: "quickstart_initial_stock" });
           } else if ((sku.on_hand ?? sku.available) !== stock) throw new SaveFailure(false, changed);
+          sessionStorage.removeItem(`${key.current}:initial-stock`);
         }
         if (pending.current) throw new SaveFailure(true, changed);
         const fresh = await readSnapshot(store.id, currency);
