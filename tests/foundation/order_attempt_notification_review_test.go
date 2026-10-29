@@ -6,6 +6,7 @@ package foundation_test
 
 import (
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -91,6 +92,70 @@ func TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal(t *testing.T) {
 					}
 				}
 				t.Fatalf("REAL_PG acceptance handoff needs a separate %s witness requiring %q", witness.event, witness.result)
+			})
+		}
+	})
+	t.Run("recent-operation-excludes-current-scoped-pair", func(t *testing.T) {
+		// OA-1 creates the operation and READY together. The predicate must
+		// distinguish that row from another recent operation, without a delay.
+		predicate := regexp.MustCompile(`(?s)NOT EXISTS\s*\(SELECT 1 FROM integration\.operations recent\b.*?interval '30 seconds'\s*\)`).FindString(c3)
+		for _, clause := range []string{
+			"recent.tenant_id=o.tenant_id", "recent.store_id=o.store_id",
+			"recent.request->>'order_id'=n.order_id::text", "recent.action='meta.dm_send'",
+			"recent.id<>p_operation", "recent.created_at>clock_timestamp()-interval '30 seconds'",
+		} {
+			if !strings.Contains(predicate, clause) {
+				t.Errorf("recent-operation refusal must scope and exclude the admitted operation: missing %q", clause)
+			}
+		}
+	})
+	t.Run("void-schema-covers-fixed-dispositions", func(t *testing.T) {
+		// Inspect the requested CHECK itself: mentioning a refusal elsewhere
+		// cannot make a paired write survive PostgreSQL's existing constraint.
+		if !strings.Contains(request, "DROP CONSTRAINT order_payment_notifications_void_code_check") {
+			t.Error("schema delta must replace the restrictive existing void_code CHECK")
+		}
+		check := regexp.MustCompile(`(?s)ADD CONSTRAINT order_payment_notifications_void_code_check\s+CHECK\s*\(void_code IN\s*\((.*?)\)\)`).FindStringSubmatch(request)
+		if len(check) != 2 {
+			t.Fatal("schema delta must replace the void_code CHECK with the complete fixed-code inventory")
+		}
+		for _, code := range []string{
+			"forbidden", "window_closed", "capability", "conversation_gone", "takeover_changed",
+			"duplicate_recent", "rate_limited", "template_not_found", "template_kind", "recipient_invalid",
+			"format_invalid", "pay_entry_unavailable", "storefront_unavailable", "domain_selection_required",
+			"cancelled", "rotated", "consent_refused", "invalid_request", "no_effect",
+		} {
+			if !strings.Contains(check[1], "'"+code+"'") {
+				t.Errorf("requested void_code CHECK cannot persist %s", code)
+			}
+		}
+	})
+	t.Run("void-code-mapping-is-explicit", func(t *testing.T) {
+		for _, mapping := range []string{
+			"| invalid_request, outbound_missing | invalid_request | BLOCKED_POLICY | before_c3 |",
+			"| principal_revoked | forbidden | BLOCKED_POLICY | before_c3 |",
+			"| consent_refused | consent_refused | BLOCKED_POLICY | before_c3 |",
+			"| authoritative-no-effect | no_effect | FAILED_FINAL | after_c3 |",
+		} {
+			if !strings.Contains(request, mapping) {
+				t.Errorf("paired VOID writes need a schema-admitted fixed mapping: %s", mapping)
+			}
+		}
+	})
+	t.Run("immediate-and-distinct-refusal-witnesses", func(t *testing.T) {
+		for _, witness := range []struct{ event, required string }{
+			{"eligible-OA-READY", "immediately after OA-1 admission; operation age < 30 seconds; no other same-scope/order operation"},
+			{"distinct-recent-operation-before-C3", "VOID/BLOCKED_POLICY; duplicate_recent; before_c3; zero provider calls; no dispatch permit"},
+			{"consent-refused-before-C3", "commit succeeds under the requested void_code CHECK; raw paired readback"},
+			{"authoritative-no-effect-after-C3", "VOID/FAILED_FINAL; no_effect; after_c3; commit succeeds under the requested void_code CHECK; raw paired readback"},
+		} {
+			t.Run(witness.event, func(t *testing.T) {
+				for _, line := range strings.Split(request, "\n") {
+					if strings.HasPrefix(line, "| "+witness.event+" |") && strings.Contains(line, witness.required) {
+						return
+					}
+				}
+				t.Fatalf("acceptance handoff must pin %s: %s", witness.event, witness.required)
 			})
 		}
 	})

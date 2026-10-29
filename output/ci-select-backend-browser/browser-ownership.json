@@ -552,7 +552,7 @@
     "tests/foundation/order_attempt_notification_format_refusal_test.go": "ed8176ede071aae911b293f54b99c9f516695924155fe0ebf6fbdc55a367bbff",
     "tests/foundation/order_attempt_notification_origin_test.go": "e1b0e91901cda9e4fc21141c51ddda916453c08c5a6187826a3d999e2be22a36",
     "tests/foundation/order_attempt_notification_resume_test.go": "4202204492f5cc3d6772e2e336bd1c238526db4fc83379cd693e0fe94b99917b",
-    "tests/foundation/order_attempt_notification_review_test.go": "ce8a473c6e842cd373b4ea82b5ff8ded2fce492bf8f963f3a82e0767aed51397",
+    "tests/foundation/order_attempt_notification_review_test.go": "cdf26619f490cc52710a4a395be4c2519e3d64bd49161d054a236907723e68db",
     "tests/foundation/order_attempt_notification_test.go": "57626f2de3c52eba18a6e94052936f0f174519a769f5f2c32d970f05433431f6",
     "tests/foundation/order_attempt_outbox_split_commit_test.go": "8dc2b90786c4ef6b40b789f19decdc39f31340ce8c64b50191ba64a5bd041775",
     "tests/foundation/order_attempt_pay_entry_codec_test.go": "212c3797a175ce4f7f81cc1d54d473202275544e86663a51ee6f3f1fd2f208a9",
