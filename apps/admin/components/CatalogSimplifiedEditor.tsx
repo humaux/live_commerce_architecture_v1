@@ -114,8 +114,8 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
       {!baseline.warehouse_id && <p>{pc.warehouse_required} <Link href={`/${locale}/inventory?store=${store.id}`}>{pc.inventoryLink}</Link></p>}
       <button type="button" disabled={locked} onClick={() => setScreen('edit')}>{c.backEditor}</button>
     </section> : screen === 'stock' && stockDraft ? <section>
-      <h2 ref={title} tabIndex={-1}>{c.stock}</h2><p>{skuFacts(stockIndex)}</p>
-      <p>{rowStock(stockIndex)}</p>
+      <h2 ref={title} tabIndex={-1}>{c.stock}</h2>
+      <p>{skuFacts(stockIndex)} · {rowStock(stockIndex)}</p>
       <fieldset className="cat-task-fields" disabled={locked}>
         <label><input data-testid="catalog-stock-tracked" type="checkbox" checked={stockDraft.tracked} onChange={e => setStockDraft({ ...stockDraft, tracked: e.target.checked })} />{c.tracked}</label>
         {stockDraft.tracked ? <><label>{c.total}<input data-testid="catalog-stock-total" inputMode="numeric" value={stockDraft.quantity} onChange={e => setStockDraft({ ...stockDraft, quantity: e.target.value })} /></label>

@@ -1,3 +1,7 @@
+FIX12 RELAY1 current regression RED / 2026-10-30
+Gates40968158604/job123779435845 head d26d8f1f7d16baa21ed67fab8058d641a74dc616 artifact12939926702
+26 passed/1 failed. Selected now20, max20 PASS; median blocks expected<=12 received13 (line372). Full original excerpt: fix12-relay1-red.log; original attachment: fix12-relay1-density-red.json. No new tests-only push; existing assertion is causal RED.
+
 FIX12 current regression RED / 2026-10-30
 Gates40957126831/job123742141350 head9cbf84597761d5d9dc5256e8ecc738b68f78e9ee artifact12934264501
 Fresh official artifact read; no duplicate tests-only push per FIX12.

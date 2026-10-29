@@ -1,0 +1,77 @@
+[
+  {
+    "state": "list",
+    "blocks": 20,
+    "chars": 81
+  },
+  {
+    "state": "active",
+    "blocks": 16,
+    "chars": 63
+  },
+  {
+    "state": "draft",
+    "blocks": 12,
+    "chars": 43
+  },
+  {
+    "state": "archived",
+    "blocks": 9,
+    "chars": 32
+  },
+  {
+    "state": "selected",
+    "blocks": 20,
+    "chars": 81
+  },
+  {
+    "state": "bulkReview",
+    "blocks": 11,
+    "chars": 74
+  },
+  {
+    "state": "bulkResult",
+    "blocks": 10,
+    "chars": 89
+  },
+  {
+    "state": "updated",
+    "blocks": 20,
+    "chars": 83
+  },
+  {
+    "state": "edit",
+    "blocks": 13,
+    "chars": 69
+  },
+  {
+    "state": "variants",
+    "blocks": 12,
+    "chars": 116
+  },
+  {
+    "state": "stock",
+    "blocks": 13,
+    "chars": 72
+  },
+  {
+    "state": "stockError",
+    "blocks": 14,
+    "chars": 95
+  },
+  {
+    "state": "media",
+    "blocks": 16,
+    "chars": 103
+  },
+  {
+    "state": "review",
+    "blocks": 12,
+    "chars": 133
+  },
+  {
+    "state": "saved",
+    "blocks": 11,
+    "chars": 132
+  }
+]

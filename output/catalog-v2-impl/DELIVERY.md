@@ -1,3 +1,46 @@
+# FIX12 RELAY1 · complete mobile density gate · 2026-10-30
+
+Current author assessment E0; static E1; new-head CI GREEN/E4 PENDING. Assigned UI worker, unit/catalog-v2-ui, original worktree only. Base d26d8f1f7d16baa21ed67fab8058d641a74dc616. git fetch + normal merge origin/r3/integration21eaceb5c: already up to date. Actual runtime model/effort UNKNOWN. Parent retains task ownership; no recursive delegation. FIX12 targeted follow-up 2/2: stop/escalate if the density gate remains red.
+
+## Root cause and RED evidence
+
+Fresh Gates40968158604/job123779435845 artifact12939926702 at base HEAD: 26passed/1failed. The original selected-state repair works (24→20 blocks); max20 assertion passes. The next assertion, median blocks<=12, fails with13. Original density attachment confirms that median; the earlier card's median12 statement was inaccurate. See fix12-relay1-red.log and fix12-relay1-density-red.json. CC12 frozen artifact12939053760 separately reports2passed. These results are regression RED E3, not new-head acceptance.
+
+Stock adjustment splits the selected SKU identity and its current stock snapshot across two context paragraphs. Use the existing variant-summary composition: one coherent SKU + inventory snapshot paragraph. Identity, SKU code, on-hand/committed/available, reason, tracking, both inputs, retained error and both buttons remain visible. No strings/imports/settings/business rules change. This in-module root repair is covered by FIX12 scope pre-approval. List/updated/selected stay unchanged. Static expectation only: stock13→12 and stockError14→13, giving median12; CI must measure it.
+
+## Click ledger and required-fact parity
+
+|Required fact/control|Desktop and mobile|Review/result|Evidence at base / new head|
+|---|---|---|---|
+|Product identity/status/price/stock/image/Edit; selection/count/archive/Advanced|Unchanged list and selection replacement toolbar|Unchanged archive confirmation and per-item outcomes|CATV2 behavior passed at base; new head PENDING|
+|SKU option/code + current on-hand/committed/available|Same facts, one stock snapshot paragraph|Same SKU facts and stock in review/save|CATV2 real-click edit/refusal cases passed at base; new head PENDING|
+|Tracking, target/delta, reason, keep/check, retained error|All remain in place and native controls stay reachable|Same review/save/cancel and persistence|No assertion/fixture/measurer changes; new head PENDING|
+|Name/description/SKUs/prices/images and all three locales|Unchanged|Unchanged|Existing complete 3-column copy table below; no new strings|
+
+## BOURDIEU
+
+Q1 task novices see the stock snapshot as one unit. Q2 experienced sellers keep SKU identity and every quantity/control. Q3 server facts remain authoritative. Q4 no class/device inference. Q5 same task facts and native controls at both widths. Q6 aesthetics UNKNOWN until owner; incumbent visual system retained.
+
+## PROJECT UNDERSTANDING
+
+Read AGENTS.md and 架构.md §§0/1/2/26/27: separate static/MOCK/LIVE evidence, preserve goods/scope rules, isolated worker and independent acceptance. Read catalog-inventory-v1 boundary/§g: backend owns stock floor, atomic edits and version fencing. Read PLAN write paths, original FIX12, current ProductList/CatalogSimplifiedEditor/CSS and unchanged full density gate. Humaux developer rules7bdb220b and visual rulesf6273516 read; rejected enumeration coverage4/9 representative (not exhaustive); code map/search used for direct scope. Requirement authority is current FIX12; execution authority is exact-head raw CI receipt.
+
+## MOBBIN → EAGLE
+
+No new pattern/reference imported. Existing Eagle provenance below: folder MVS1D5NC7KI5T; Square variations MVS1D5ZMW22YA supplies the SKU/stock grouping principle. Current variant-summary source provides the incumbent composition. No live Mobbin/Eagle access claimed; no needed new query.
+
+## FIGMA OFFICIAL GUIDANCE
+
+No Figma/design changes. Existing G1 flow/G2 tokens/G3 state components/G4 prototypes mapping below retained. FIGMA-GUIDE.md absent in this worktree; fresh guide verification and copy lint NOT_RUN. Impeccable distill/craft-floor and ponytail applied to this narrow refinement; context boot script omitted because its external cache writes conflict with worktree-only scope.
+
+## Static checks and handoff
+
+TypeScript --noEmit with existing tsconfig.static.json exit0 (fix12-relay1-tsc.log); temporary worktree-only dependency symlinks removed. Main checkout only read for existing compiler/dependencies. No import/harness change, no Go dependency change or depmap regeneration. Browser ownership regenerated last and checked before push; result recorded in fix12-relay1-static.log. All tests/assertions/thresholds/fixtures/exemptions untouched. No authored out-of-card paths.
+
+NOT_RUN: local tests/server/browser/build/install/PG/container; new-head runtime/density/persistence CI GREEN; independent E4; provider SANDBOX/LIVE/deploy. Integrator relays recorded Gates/Foundation WAIT_RUN completion; stop after one push/comment, no long polling or evidence-only commit.
+
+---
+
 # FIX12 · selected-list density · 2026-10-30
 
 Author assessment E0; static E1 only; new-head CI GREEN and independent E4 PENDING. Dispatched UI worker, branch unit/catalog-v2-ui, assigned cwd only. Starting head 9cbf84597761d5d9dc5256e8ecc738b68f78e9ee; merged origin/r3/integration 21eaceb5c with normal merge 9adec24fd. Only conflict: i18n dependency header, resolved by retaining catalog and editor copy. Exact runtime model/effort UNKNOWN. No recursive delegation.
