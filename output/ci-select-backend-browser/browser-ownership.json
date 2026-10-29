@@ -609,7 +609,7 @@
     "tests/foundation/platform_operator_authority_test.go": "a3e09eb717fd914d1f7c2641ed501e94d0ef75b39f24d4f56b85df2372212b02",
     "tests/foundation/platform_operator_inflight_test.go": "b664bff16cf944ff0ec8dbdd312071a25b2abcd59576f6c47df58d388a1e06bd",
     "tests/foundation/platform_operator_test.go": "eb1ea5a4042b4f4589180b022505361216baf9e7c6f18cc596321a47b8b211d5",
-    "tests/foundation/platform_settlement_gate_test.go": "44bae540863af8e5205d0fd7938282c8cab11e92b582f40a9836a35a0a2c3ac8",
+    "tests/foundation/platform_settlement_gate_test.go": "b67d9a1e09fcd5194c4670a9378cf721a8e6f96f1fcf3bfe67ad8c38dab3ad60",
     "tests/foundation/platform_settlement_test.go": "e206f45f386a01d52d9cff03b1d27b48efed8a33c97ec5e796d1c2aae4643d01",
     "tests/foundation/platform_stripe_test.go": "7444081e70877dac61ca1eabce5b6f65f5441bb98403bf5c6448dc8a3c331ae2",
     "tests/foundation/pricing_test.go": "d0da8bc2f87d9c06700be6959678735995ea788a4d290a100695824dbcb05cf6",
