@@ -1,0 +1,33 @@
+RVFIX #315 — causal negative control (PENDING CI, not a RED result)
+Review: /Volumes/data/live_commerce_architecture_v1/.worktrees/rv-315/REVIEW-315.md
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/315
+Prior accepted fixture head: 1a9e588c41ee698ae347de19743e067bf6f2d8bf
+Integration input: d0e7331525fec046fbe9361906fa66367ae583c6
+
+Mutation: apps/admin/components/OrderDetailPanel.tsx excludes buyer_entered
+pickup snapshots from the existing pickup name/code/source display block.
+This models incorrectly treating a resolved frozen snapshot as untrusted typed
+text. It changes product rendering; the valid final fixture and assertions stay
+unchanged. The frozen pickup address and manual shipping command remain intact.
+
+Expected causal witness:
+  TestBrowserManualFulfilment -> manual-fulfilment.spec.ts
+  MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists
+  expect(detail).toContainText(cvsPickupName) at tests/admin/manual-fulfilment.spec.ts:277
+  Missing expected pickup name: 六甲民生附店
+The witness must reach this new assertion. Setup, fixture, build, unrelated gate
+or expectation failures do not satisfy this negative control.
+
+Unchanged test Git blobs for the eventual RED/GREEN comparison:
+  tests/admin/manual-fulfilment.spec.ts e12e92cc2e6fd91e4b63a817704d6f6368ee3ddd
+  tests/foundation/browser_refund_fulfilment_test.go d42790ec885ab78041feadec1ad3c6d9e1ecfe28
+  tests/storefront/shipment-buyer.mjs 3ff7ee7665dcbae31d7c62d87c605fa838ea849f
+
+Previous failures 40862588166/123412043535 and 40866448838/123426070828
+are fixture/test failures, not causal business RED evidence.
+
+Next: record actual RED run/job/head/tested-merge SHA and assertion excerpt here;
+restore only the product mutation, regenerate browser ownership, then push GREEN.
+Do not restore before the causal failure is observed. Do not merge this mutation.
+NOT_RUN: local tests, local servers, LIVE/SANDBOX provider validation.
+Humaux search/store/canvas/coord: unavailable in the dispatch environment.

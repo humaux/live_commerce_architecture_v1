@@ -283,7 +283,7 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
             <dt>{c.method}</dt>
             <dd>{c.statuses[dest.kind]}</dd>
           </div>
-          {dest.pickup && (
+          {dest.pickup && detail.pickup_source !== "buyer_entered" && (
             <>
               <div>
                 <dt>{c.pickupName}</dt>
