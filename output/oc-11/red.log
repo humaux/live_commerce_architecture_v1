@@ -215,3 +215,6 @@ Six new real-click locale x lost-answer cases; expected assertion failure: RVFIX
 No product fix yet. New run/job receipt PENDING; setup errors are not RED. Existing historical receipts above are unchanged.
 Static node --check and git diff --check exit 0, E1 only; no local tests/servers. Author assessment E0.
 Wakeup: integrator relays Gates/Foundation conclusion in fresh session. P2 storage failure -> PR comment, as dispatched.
+RVFIX RED push head fbaec2b35f5bd9504035c0ca81a41a9f07edf5df: Gates WAIT_RUN 40858325183; Foundation WAIT_RUN 40858325259 / foundation job 123394865334. New assertion-level RED not received; Gates test job allocation pending. No implementation push. Raw receipts read via gh run list, gh run view and gh pr checks 221 (pending exit 8).
+
+RVFIX RELAY1 causal assertion RED verified 2026-10-29: fbaec2b35f5bd9504035c0ca81a41a9f07edf5df / Gates40858325183 bundle04 job123396762919 / artifact12892706712. All6 new locale x before/after-commit tests fail at spec:123 RVFIX-P1 a new login must offer a usable explicit recovery path (expected enabled, received disabled);20other tests pass. Original log output/oc-11/rvfix/relay1-playwright.log SHA256 a69f8d1a69f1ce48664c0653d5fed6f4c92f64651166923543151d3a27a570d5. Foundation40858325259/job123394865334 success at RED head only. Implementation attempt1 follows; GREEN pending.

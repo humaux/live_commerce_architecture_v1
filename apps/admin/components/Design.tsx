@@ -366,7 +366,12 @@ function Editor({
 
   async function recheckPublish(automatic = false) {
     let attempt = pendingRef.current;
-    if (!attempt || resolving.current || attempt.boundary !== boundary) return;
+    if (!attempt || resolving.current) return;
+    if (attempt.boundary !== boundary) {
+      // A new authenticated session must explicitly authorize the original intent.
+      // Keep its old fence: an ambiguous answer/reload still cannot auto-replay it.
+      if (automatic || !window.confirm(fill(c.publishRecoveryConfirm, { n: attempt.version }))) return;
+    }
     resolving.current = true;
     setRechecking(true);
     try {
@@ -565,7 +570,7 @@ function Editor({
           <p>{fill(c.publishPendingBody, { n: pending.version })}</p>
           {unconfirmed && <p data-testid="design-publish-unconfirmed">{c.publishUnconfirmed}</p>}
           {integrity && <p data-testid="design-publish-integrity">{c.publishIntegrity}</p>}
-          <button type="button" onClick={() => void recheckPublish()} disabled={rechecking || pending.boundary !== boundary} data-testid="design-publish-recheck">
+          <button type="button" onClick={() => void recheckPublish()} disabled={rechecking} data-testid="design-publish-recheck">
             {rechecking ? c.publishRechecking : c.publishRecheck}
           </button>
         </div>
