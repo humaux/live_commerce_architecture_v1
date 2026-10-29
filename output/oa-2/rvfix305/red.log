@@ -10,6 +10,15 @@ The SQL handoff is deliberately unchanged until assertion-level native CI RED.
 Static: gofmt -w changed Go test; go vet ./tests/foundation; git diff --check:
 all exit 0. No local tests, servers, provider calls or migration edits.
 Native run/job/head/checkout receipts: PENDING; append after the RED push.
+Native first readback (gh run view, 2026-10-29T13:13Z):
+RED head: 4a84a5dfe82231fff4b511672a340ab25ddad655.
+Foundation run40879903437/job123468328227 in_progress.
+Gates run40879903464 in_progress; no native test jobs allocated yet.
+Both native run headSha fields match RED head. Assertion RED/GREEN PENDING.
+Synthetic checkout SHA PENDING until logs are available. No plan-job evidence used.
+WAIT_RUN: 40879903437; 40879903464. Integrator relay is the wake-up mechanism.
+After intended policy assertions fail, fix the SQL handoff and false P2 claim,
+regenerate ownership last, and push implementation once; no evidence-only push.
 Earlier runs below prove only their historical heads, not this policy regression.
 The P2 reminder nullable-key request remains open; the prior fixed claim is false.
 REAL_PG, actual ACLs/lock barriers, DB mutations, composition, providers,
@@ -92,3 +101,18 @@ REAL_PG/ACL/lock barriers/DB mutations/scheduler/provider wiring/SANDBOX/LIVE: N
 1043:gate (shard:g10)	Gate	2026-10-29T11:09:50.9476885Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/rotation-after-UNKNOWN (0.00s)
 1044:gate (shard:g10)	Gate	2026-10-29T11:09:50.9478662Z     --- FAIL: TestOrderAttemptNotificationC3RequestReconcileBeforeRefusal/policy-loss-after-UNKNOWN (0.00s)
 1045-gate (shard:g10)	Gate	2026-10-29T11:09:50.9545734Z === RUN   TestOrderAttemptPayEntryStoreRefusesInvalidReplay
+
+RELAY 1 assertion RED confirmed (native API job logs):
+Head 4a84a5dfe82231fff4b511672a340ab25ddad655.
+Gates run 40879903464 / gate (shard:g10) job 123470232597: failure, exit 1.
+Started 2026-10-29T13:24:41Z; completed 2026-10-29T13:39:13Z.
+Checkout and receipt SHA e720aee049612c36894c7a1636ee6cdda1c32e1e,
+merge of RED head into integration d0e7331525fec046fbe9361906fa66367ae583c6.
+The new oa-policy-authority subtest failed at review_test.go:68/72/75:
+missing OA helper/ACL, legacy validator still used. Four oa-policy-witnesses
+failed at line 93: eligible READY, consent refusal, closed window, takeover.
+The pre-existing cancel/rotation/policy-loss-after-UNKNOWN subtests passed.
+Raw filtered evidence: policy-red-job.log (source: GitHub job logs endpoint).
+Foundation run 40879903437 / job 123468328227 passed on RED head; not this suite.
+No local tests/servers. Implementation batch changes handoff documentation only.
+Current implementation GREEN PENDING; integrator relay remains wake-up mechanism.

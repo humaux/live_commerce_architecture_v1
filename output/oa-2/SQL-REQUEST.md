@@ -7,7 +7,7 @@ and `docs/delivery/units/oa-2-order-attempt-notify.md` (write paths and
 integrator assigns").
 
 One root migration is required. It adds two reminder-identity columns, one
-`void_code` value, seven coordinator definers, two checkout definers, one
+`void_code` value, seven coordinator definers, one OA policy definer, two checkout definers, one
 `integration.retry_operation` replacement, and the grants/ACL pins below.
 No new job kind and no `external_operation_v1` arg change (`{operation_id,
 version: 1}` stays exact). Lease expiry reuses `integration.operations.lease_until`
@@ -49,7 +49,7 @@ and `integration.operations`; `INSERT` on `integration.operation_events`; `SELEC
 on `checkout.orders`, `checkout.order_pay_entries`, `social.conversations`,
 `inbox.conversation_state`, `integration.bindings`, `buyer.owners`,
 `control.tenants`, `control.stores`; `EXECUTE` on
-`integration.claim_operation`, `integration.complete_operation`, `inbox.check_send`,
+`integration.claim_operation`, `integration.complete_operation`, `inbox.payment_dm_check_send`,
 `checkout.order_payment_payable`; `EXECUTE` on the two `payment_dm_void_ready`
 helpers below. It must not be a member of a domain owner and must not receive
 direct domain-table DML.
@@ -58,6 +58,53 @@ Required `EXECUTE` to `commerce_claims_worker` only:
 `inbox.payment_dm_c3`, `inbox.payment_dm_c4`, `inbox.payment_dm_read`,
 `inbox.payment_dm_expired`, `inbox.payment_dm_expire`. The API runtime does not
 receive these entries.
+
+### OA-specific policy authority (required in the same assigned migration)
+
+`inbox.check_send remains unchanged`: `0128_lc_b4_sends.sql` accepts only
+`lcn-policy/v1`; OA-1 `0188_order_attempt_notification.sql` emits
+`order-attempt-notification/v1`. A second policy cannot be passed to the legacy
+validator, and the implementation must never rewrite a stored request policy
+to make it pass. The new narrow helper below is owned by the existing message
+domain writer; only the C3 coordinator owner receives EXECUTE. No runtime or
+worker receives direct helper access or new domain-table DML.
+
+```sql
+CREATE FUNCTION inbox.payment_dm_check_send(p_operation uuid) RETURNS text
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+-- Lock-free, no network, no writes other than temporary scoped GUCs. C3 already
+-- holds order -> conversation -> binding -> outbox -> operation; acquire no
+-- additional row/advisory locks here. Return OK or a fixed refusal code.
+-- Discover the MERCHANT meta.dm_send operation by ID, then derive tenant/store
+-- from that stored row, never caller input. Save and restore prior GUCs on
+-- every return and exception; pin tenant/store for all domain/RLS reads.
+-- Require exact policy order-attempt-notification/v1 and the OA-1 request
+-- shape (v=1, kind/message_type=dm, origin=human, fixed template/version).
+-- Join its outbox, order, outbound message and conversation in the same scope;
+-- require notification_id/order_id/link_version/conversation_id/binding_id/
+-- outbound_id, provider/asset/app/peer and body identity to match stored rows.
+-- Missing/malformed/mismatched identity -> invalid_request, never legacy fallback.
+-- Revalidate active tenant/store/buyer and current privacy/recipient/message
+-- consent authority required by order-attempt-v1 sections 3/4. Denial ->
+-- consent_refused. This transactional DM does not create marketing consent;
+-- a reply-window observation is not consent. The assigned migration must bind
+-- these checks to existing domain predicates; an unresolved authority is a
+-- blocked implementation, never implicit OK or a client-supplied consent flag.
+-- Preserve 0128's current deadline/window, outbound-presence, binding capability
+-- and principal inbox:reply checks, plus OA-1's inbox:read requirement. Require
+-- enabled matching binding/version and dm_session capability. Recompute the
+-- effective takeover generation (including expired human_until) and require
+-- the frozen human principal/assignee and generation still match, even though
+-- legacy check_send only compares generation for origin=auto. Changed ->
+-- takeover_changed. Current deadline or last_inbound_at + 24h - 5m expired ->
+-- window_closed. Missing capability/permission/recipient -> fixed policy denial.
+-- Return OK only after every check; do not change operation/outbox or consume
+-- a permit. UNKNOWN reconciliation never calls this fresh-send predicate.
+END $$;
+ALTER FUNCTION inbox.payment_dm_check_send(uuid) OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION inbox.payment_dm_check_send(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION inbox.payment_dm_check_send(uuid) TO commerce_order_attempt_owner;
+```
 
 ```sql
 -- 1. C3: order -> conversation -> binding -> outbox -> operation.
@@ -95,11 +142,12 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 --    binding enabled, semantic_version=o.binding_version and asset/provider identical;
 --    checkout.order_payment_payable(order,link_version),
 --    active tenant/store/owner, pay entry version unrevoked/unexpired, current
---    takeover/window/consent through inbox.check_send(p_operation)='OK', and no
+--    takeover/window/consent through inbox.payment_dm_check_send(p_operation)='OK', and no
 --    same-order meta.dm_send operation created in the last 30 seconds.
 -- h. on refusal (READY/READY AND dispatch_authorized_at IS NULL only): operation
---    generation+1 state=CANCELLED (or BLOCKED_POLICY when check_send names
---    consent/policy), outbox VOID/before_c3/void_code, insert operation_events,
+--    generation+1 state=BLOCKED_POLICY for consent_refused, window_closed,
+--    takeover_changed and other message-policy refusals (CANCELLED for business
+--    cancellation), outbox VOID/before_c3/void_code, insert operation_events,
 --    return disposition='void'. Zero HTTP. Never refuse a consumed permit here.
 -- i. otherwise PERFORM claim_operation(p_operation,p_lease_seconds,p_token).
 -- j. when disposition='claimed' and mode=dispatch: outbox state=DISPATCHING;
@@ -203,7 +251,8 @@ CREATE FUNCTION inbox.order_payment_reminder_admit(p_order uuid,p_link_version b
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 -- Replay by (tenant,store,order,kind='reminder',reminder_intent_key) BEFORE
 -- reading the current version; return the original row (any state). Else
--- revalidate payable+check_send; insert READY outbox + operation + River
+-- revalidate payable and OA-1 recipient/message planning authority (no legacy
+-- check_send policy substitution); insert READY outbox + operation + River
 -- external_operation_v1 job (args exactly {operation_id,version:1}) + send
 -- secret exactly like 0188 finish_notification; semantic_key is the Go
 -- ReminderSemanticKey and is unique per version. Buyer A's order can never
@@ -242,11 +291,22 @@ END $$;
 
 ## Counterexample acceptance witnesses (§6g/l)
 
-The SQL implementation must pin these three consumed-permit refinements; each is a
-paired outbox/operation row read back raw, not a model fake.
+The SQL implementation must pin each fresh-send and consumed-permit case below;
+each is a paired outbox/operation row read back raw, not a model fake. Fresh-send
+cases use an actual OA-1 request with policy `order-attempt-notification/v1`,
+actual worker/coordinator logins and a fake provider call counter. The positive
+case satisfies every eligibility condition. Each refusal varies only its named
+condition, keeping all others valid, so an unconditional invalid_request cannot
+stand in for the intended refusal. Read both rows after commit and prove the
+exact code, dispatch_authorized_at and number of permits/calls; on refusal the
+timestamp stays NULL and no dispatch permit is returned.
 
 | Event | Setup | Required paired result |
 | --- | --- | --- |
+| eligible-OA-READY | READY/READY; valid OA policy, live permission/consent/window/takeover, payable current link | DISPATCHING/DISPATCHING; exactly one dispatch permit; duplicate claim returns busy and no second permit |
+| consent-refused-before-C3 | eligible OA READY fixture except current domain consent/recipient authority refuses | VOID/BLOCKED_POLICY; zero provider calls; consent_refused; before_c3; no dispatch permit |
+| window-closed-before-C3 | eligible OA READY fixture except deadline/current reply window expired | VOID/BLOCKED_POLICY; zero provider calls; window_closed; before_c3; no dispatch permit |
+| takeover-changed-before-C3 | eligible OA READY fixture except frozen takeover generation/assignee no longer matches | VOID/BLOCKED_POLICY; zero provider calls; takeover_changed; before_c3; no dispatch permit |
 | cancel-after-UNKNOWN | C3 won, provider outcome unknown, operator cancels | outbox keeps DELIVERY_UNKNOWN until authoritative no-effect proof; VOID only with `void_stage='after_c3'`; operation evidence and `dispatch_authorized_at` preserved; no second send |
 | rotation-after-UNKNOWN | UNKNOWN row exists, merchant CAS-rotates | old version revoked, old row keeps UNKNOWN and provider evidence; only a new explicit reminder intent can create a new send |
 | policy-loss-after-UNKNOWN | consent/window lost after C3 | state stays UNKNOWN; no before-C3 VOID and no resend |
@@ -259,6 +319,11 @@ These are REAL_PG/ACL cases and remain NOT_RUN until the migration exists.
   count/comment increment (one per root migration) in the migration itself.
 - Actual-login negative tests: runtime/worker direct DML and direct helper
   calls must be refused; only `commerce_claims_worker` may EXECUTE 1–5.
+- Pin the OA policy helper owner and exact EXECUTE inventory separately:
+  `commerce_order_attempt_owner` only; PUBLIC, runtime and workers denied.
+  Preserve legacy `inbox.check_send` policy/ACL regression coverage. Wrong policy,
+  cross-scope identity, stale binding, revoked principal and malformed OA requests
+  must not return OK. These are migration acceptance requirements, not current PASS.
 
 ## Why this is blocked
 
