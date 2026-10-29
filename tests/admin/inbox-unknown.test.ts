@@ -150,7 +150,10 @@ for (const locale of Object.keys(warning)) {
       showLater = true;
       for (const expectedReads of [4, 5, 6]) {
         omitLater = expectedReads === 5;
-        node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+        // The successful ACK unfolded the composer; use the always-visible thread refresh.
+        const refresh = node(host, n => n.type === "button" && !!n.props["aria-label"]);
+        assert.equal(refresh.props.disabled, false, "thread refresh is available after ACK success");
+        refresh.props.onClick();
         await host.waitFor(() => reads === expectedReads && idle(host), "later staff result or omission committed");
         assert.equal(node(host, n => n.type === "form").props.hidden, true,
           "completed ACK cannot reopen the composer over a later unresolved outbound");

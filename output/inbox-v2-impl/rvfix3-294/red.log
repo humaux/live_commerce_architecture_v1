@@ -1,3 +1,17 @@
+CORRECTION — RVFIX3 relay 2, 2026-10-29
+Current stage: corrected regression + deliberate RED mutation; new CI receipt PENDING.
+Foundation 40881614504 / job 123474306476 at implementation head ad3d2b606ec24093b83cbd682e72d6aa2a582b93 failed six cases.
+Re-read Foundation 40879608359 / job 123467284173 at tests-only head 9d4d9ed1c01a9e7ff01f15455ed78af95b1a24e8: same failure.
+Both logs stop at inbox-unknown.test.ts:153, node() assertion "actual component VNode found".
+The successful ACK has unfolded the composer and removed inbox-send-status. Neither run reached the later-message refresh or safety assertions.
+The earlier description as causal product RED was incorrect and is RETRACTED. These are test-action reachability failures, not evidence of the reviewed lock defect.
+Correction: use the existing enabled header Refresh in Node and native browser cases; preserve every lock/result/one-POST/captured-handler assertion.
+RED mutation: restore InboxThread.tsx exactly from 9d4d9ed1c01a9e7ff01f15455ed78af95b1a24e8 (only the ad3d2b606 ACK-handoff implementation is reverted).
+Expected RED: after read 4 commits later queued/blocked evidence, assert form.hidden === true fails with false in each locale. No causal RED claim until CI proves this.
+After verified RED, restore the implementation from ad3d2b606ec24093b83cbd682e72d6aa2a582b93 in ONE push, retaining the corrected actions. GREEN must be that implementation head's own CI.
+No tests weakened, no gate/threshold/fixture/permission change; no deployment. New run/job/SHA receipt goes in the PR comment and local WAIT-RUN handoff after push.
+
+--- INVALIDATED historical receipt retained for audit (not current causal evidence) ---
 RVFIX3 #294 — causal RED verified 2026-10-29
 Tests-only head: 9d4d9ed1c01a9e7ff01f15455ed78af95b1a24e8
 Foundation run 40879608359 / job 123467284173: FAILURE, pull_request, exact head verified via gh run view JSON.

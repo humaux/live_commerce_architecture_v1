@@ -1,0 +1,71 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2227443Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2227635Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2228172Z ✖ completed ACK cannot mask later queued evidence or its omission (en) (13.655121ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2228684Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2229517Z       at node (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-review-host.test.ts:348:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2230841Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2231582Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2232155Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2232578Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2232818Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2233033Z     actual: undefined,
+--
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2233896Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2234074Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2234593Z ✖ completed ACK cannot mask later blocked evidence or its omission (en) (10.113003ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2235125Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2236436Z       at node (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-review-host.test.ts:348:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2237532Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2238347Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2238861Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2239218Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2239453Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2239814Z     actual: undefined,
+--
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2240696Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2240861Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2241389Z ✖ completed ACK cannot mask later queued evidence or its omission (zh-TW) (8.720342ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2241849Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2242637Z       at node (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-review-host.test.ts:348:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2243810Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2244457Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2244958Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2245318Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2245551Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2245773Z     actual: undefined,
+--
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2246624Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2246775Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2247392Z ✖ completed ACK cannot mask later blocked evidence or its omission (zh-TW) (6.888983ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2247859Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2248608Z       at node (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-review-host.test.ts:348:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2249609Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2250473Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2250979Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2251337Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2251567Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2251777Z     actual: undefined,
+--
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2252625Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2252785Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2253285Z ✖ completed ACK cannot mask later queued evidence or its omission (zh-CN) (15.661083ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2253750Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2254505Z       at node (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-review-host.test.ts:348:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2255497Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2256152Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2256638Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2256989Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2257221Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2257429Z     actual: undefined,
+--
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2258312Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2258466Z test at tests/admin/inbox-unknown.test.ts:123:5
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2258965Z ✖ completed ACK cannot mask later blocked evidence or its omission (zh-CN) (8.737959ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2259431Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2260358Z       at node (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-review-host.test.ts:348:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2261379Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2262041Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2262549Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2263068Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2263303Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2263511Z     actual: undefined,

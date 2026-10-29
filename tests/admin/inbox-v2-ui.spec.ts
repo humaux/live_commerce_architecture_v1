@@ -19,7 +19,7 @@ test.afterAll(async () => { await writeInboxLedger(ledger); });
 const copies = [
   { locale: "zh-TW", title: "全店訊息", all: "全部", unread: "未讀", assigned: "本店分派",
     details: "顧客資料", paused: "自動回覆已停", read: "店內已讀", unavailable: "訂單與累計：未提供",
-    send: "傳送", clear: "清除草稿", query: "查詢狀態", edit: "編輯原文",
+    send: "傳送", clear: "清除草稿", query: "查詢狀態", refresh: "重新整理", edit: "編輯原文",
     pending: "傳送中；尚未確認送達，勿重送。", sent: "已送出，未代表已讀。",
     failed: "傳送遭拒；原文保留，可編輯。", unknown: "送達待確認；只查詢，不重送。",
     still: "仍待確認；到 Instagram 查看，勿重送。", closed: "已超過回覆時間。",
@@ -27,7 +27,7 @@ const copies = [
     draft: "我會先核對尺寸，再回覆你。" },
   { locale: "zh-CN", title: "全店消息", all: "全部", unread: "未读", assigned: "店铺分配",
     details: "客户资料", paused: "自动回复已停", read: "店内已读", unavailable: "订单与累计消费：未提供",
-    send: "发送", clear: "清空草稿", query: "查询状态", edit: "编辑原文",
+    send: "发送", clear: "清空草稿", query: "查询状态", refresh: "刷新", edit: "编辑原文",
     pending: "发送中；尚未确认送达，不要重发。", sent: "已发送，不代表已读。",
     failed: "发送被拒；原文已保留，可以编辑。", unknown: "送达情况待确认；只查询，不重发。",
     still: "尚未确认；请到 Instagram 查看，不要重发。", closed: "已超过可回复时间。",
@@ -36,7 +36,7 @@ const copies = [
   { locale: "en", title: "Store inbox", all: "All", unread: "Unread", assigned: "Assigned in store",
     details: "Customer details", paused: "Auto-replies paused", read: "Read by store",
     unavailable: "Orders and lifetime spend: not provided", send: "Send", clear: "Clear draft",
-    query: "Check status", edit: "Edit original text", pending: "Sending; delivery unconfirmed. Do not resend.",
+    query: "Check status", refresh: "Refresh", edit: "Edit original text", pending: "Sending; delivery unconfirmed. Do not resend.",
     sent: "Sent does not mean read.", failed: "Send rejected; original text saved for editing.",
     unknown: "Delivery unconfirmed; check status without resending.",
     still: "Still unconfirmed; check Instagram. Do not resend.", closed: "The reply window has ended.",
@@ -179,10 +179,11 @@ async function open(page: Page, id: string) {
   await expect(page.getByTestId("inbox-thread")).toHaveAttribute("aria-busy", "false");
   await expect(page.getByTestId("inbox-thread").locator('time[datetime="2026-10-29T06:32:00Z"]')).toHaveText("14:32");
 }
-async function query(page: Page) {
+async function query(page: Page, refreshLabel?: string) {
   const read = page.waitForResponse(response => response.request().method() === "GET" &&
     new URL(response.url()).pathname.includes("/inbox/conversations/") && new URL(response.url()).pathname.endsWith("/messages"));
-  await page.getByTestId("inbox-send-status").click();
+  await (refreshLabel ? page.getByTestId("inbox-thread").getByRole("button", { name: refreshLabel, exact: true })
+    : page.getByTestId("inbox-send-status")).click();
   expect((await read).status()).toBe(200);
   await expect(page.getByTestId("inbox-thread")).toHaveAttribute("aria-busy", "false");
 }
@@ -343,7 +344,8 @@ for (const copy of copies) {
       state.laterDelivery = later;
       for (const omitted of [false, true, false]) {
         state.omitLater = omitted;
-        await query(page);
+        // Own success unfolded the composer and removed its status action; refresh remains available.
+        await query(page, copy.refresh);
         await expect(page.getByTestId("inbox-delivery-state")).toHaveText(later === "queued" ? copy.pending
           : copy.locale === "en" ? "Sending locked" : copy.locale === "zh-CN" ? "发送已锁定" : "已鎖定");
         await expect(page.getByTestId("reply-text")).toBeHidden();
@@ -360,7 +362,7 @@ for (const copy of copies) {
       await expect(page.getByTestId("reply-text")).toBeHidden();
       await expect(page.getByTestId("reply-send")).toBeDisabled();
       expect(state.posts).toBe(1);
-      record(`completed ACK ${copy.locale}/${later}`, "fill, Send, status, status with later row visible/omitted; reload and status",
+      record(`completed ACK ${copy.locale}/${later}`, "fill, Send, status, thread refresh with later row visible/omitted; reload and status",
         "own success never resolves later pending/policy-blocked send; composer locked; one POST; reload retains visible server result");
     });
   }
