@@ -3,6 +3,7 @@
 // Used by: cvs-buyer.mjs, TestBrowserTaiwanCvs MOCK / WebKit in GitHub CI.
 // Invariants: no per-keystroke backend writes, no automatic choice, canonical server facts persist.
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
 
@@ -215,6 +216,32 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     assert.ok(!/已驗證可收件|已验证可收件|verified for delivery/i.test(await page.getByTestId("address-section").innerText()));
 
     // Brand changes use the actual delivery/quote controller, preserving only the ephemeral contact draft.
+    // FIXTURE ONLY: persist an older home recipient through the real BFF/Go/PG stack.
+    // The regression action and confirmation below use real UI clicks, never API writes.
+    const origin = new URL(page.url()).origin;
+    const sessionResponse = await page.request.get(`${origin}/api/buyer/session`);
+    assert.equal(sessionResponse.status(), 200);
+    const session = await sessionResponse.json();
+    const fixtureHeaders = { "X-Buyer-Context": session.context, Origin: origin };
+    const cartResponse = await page.request.get(`${origin}/api/buyer/cart`, { headers: fixtureHeaders });
+    assert.equal(cartResponse.status(), 200);
+    const cart = await cartResponse.json();
+    const headResponse = await page.request.get(`${origin}/api/buyer/destination`, { headers: fixtureHeaders });
+    assert.equal(headResponse.status(), 200);
+    const { destination: previous } = await headResponse.json();
+    const homeResponse = await page.request.put(`${origin}/api/buyer/destination`, {
+      headers: { ...fixtureHeaders, "Idempotency-Key": randomUUID() },
+      data: {
+        expected_version: previous?.version ?? 0, cart_version: cart.version,
+        kind: "home", country: "TW", recipient_name: "陳大文", phone: "0923456789",
+        home_address: { region: "", city: "臺北市", postal_code: "", line1: "Synthetic Home Address", line2: "" },
+      },
+    });
+    assert.equal(homeResponse.status(), 200, "synthetic older home destination must be persisted before the brand change");
+    const oldHome = await homeResponse.json();
+    assert.equal(oldHome.kind, "home");
+    await page.getByTestId("cvs-recipient-name").fill("王小明");
+    await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     // Interception prepares a static-directory outage fixture; retry is still a real user click.
     let directoryAttempts = 0;
     await page.route("**/cvs/okmart-20261028.json", async (route) => {
@@ -241,6 +268,19 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     }
     await page.unroute("**/cvs/okmart-20261028.json");
 
+    await choose("231196").click();
+    await page.getByTestId("cvs-picker-confirm").click();
+    const destinationSaved = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/destination" && r.request().method() === "PUT");
+    const [destinationResponse] = await Promise.all([destinationSaved, page.getByTestId("confirm-address").click()]);
+    assert.equal(destinationResponse.status(), 200);
+    const resumedDestination = await destinationResponse.json();
+    assert.equal(resumedDestination.recipient_name, "王小明", "CVS resume must override the older home recipient after hydration");
+    assert.equal(resumedDestination.phone, "0912345678");
+    assert.equal(resumedDestination.version, oldHome.version + 1, "resume still loads the current server head for CAS");
+    await expect(page.getByTestId("create-order")).toBeEnabled();
+    record("older home recipient / brand switch / confirm destination", "current CVS contact retained after hydration and saved against latest home head");
+    await page.getByTestId("cvs-change-store").click();
+
     // Refusal fixtures exercise UI recovery; the existing real Go/PG refusal assertions stay in cvs-buyer.mjs.
     let confirmations = 0;
     await page.route("**/api/buyer/cvs-stores", async (route) => {
@@ -265,6 +305,15 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     assert.equal(confirmedRetry.status(), 200);
     await expect(page.getByTestId("cvs-store-code")).toHaveText("131386");
     record("422 / 429 / explicit retry", "invalid row removed with query retained; cooldown keeps choice; no auto replay; explicit retry persists canonical identity");
+    await page.reload();
+    // READ ONLY: independently read the actual persisted destination after refresh.
+    const persistedResponse = await page.request.get(`${origin}/api/buyer/destination`, { headers: fixtureHeaders });
+    assert.equal(persistedResponse.status(), 200);
+    const { destination: persisted } = await persistedResponse.json();
+    assert.equal(persisted.id, resumedDestination.id);
+    assert.equal(persisted.recipient_name, "王小明");
+    assert.equal(persisted.phone, "0912345678");
+    record("refresh / persisted resumed destination", "server retains the explicitly confirmed CVS contact B, not older home contact A");
   } finally { page.off("request", request); }
 }
 
