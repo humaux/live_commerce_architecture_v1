@@ -1,0 +1,18 @@
+COD-255 / PR #285 — confirmed CI RED
+Tests-only commit: 222dd20818aadeb19a9f615ecad8c40a873df6d8
+Head: 881c5ded343136fb51d41f35fba9a49a567ecdd8
+Integration merged: bf161bac9 (repair generated ownership conflict; no implementation)
+Foundation run: 40757493836
+Foundation job: 123060219251
+URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40757493836/job/123060219251
+Command: gh run view 40757493836 --log-failed --job 123060219251
+Step: Node unit suites (storefront, i18n), exit 1
+2026-10-28T19:54:05.8116030Z test at apps/storefront/tests/purchase.test.mjs:359:1
+2026-10-28T19:54:05.8119338Z AssertionError [ERR_ASSERTION]: Missing expected exception: COD-255: reject old due with refreshed surcharge 0
+at apps/storefront/tests/purchase.test.mjs:377:12
+operator: throws; actual: undefined
+E3 negative evidence only: new assertion fails on old implementation.
+No product completion or GREEN claimed.
+RED Gates run: 40757493902, browser gate still in progress at implementation start; browser RED unconfirmed.
+GREEN: PENDING implementation push / this PR CI.
+No local tests/servers. Humaux unavailable, no store/canvas receipt claimed.

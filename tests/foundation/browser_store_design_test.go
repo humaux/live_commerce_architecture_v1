@@ -160,7 +160,7 @@ func TestBrowserStoreDesign(t *testing.T) {
 
 	stores, _ := json.Marshal(journeys)
 	playwrightLog := browserLog(t, filepath.Join(evidence, "playwright.log"))
-	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/design.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/design.spec.ts", "tests/admin/oc/design-publish-pending.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	browser.Dir = root
 	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "store-design", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence,
 		"LC_BROWSER_DESIGN_STORES": string(stores), "LC_BROWSER_READONLY_STORE": roStore, "LC_BROWSER_BFF_STORE": bffStore, "LC_BROWSER_FOREIGN_STORES": f.storeB + "," + f.storeA2})
