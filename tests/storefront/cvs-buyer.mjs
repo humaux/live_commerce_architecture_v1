@@ -54,16 +54,19 @@ const copy = {
     delivery: "選擇配送", quote: "取得目前總額", pick: "選擇門市", change: "更換門市",
     consent: "取件人姓名與手機將提供給物流商與門市，用於通知與取貨。", enteredLabel: "你填寫的門市",
     comingSoon: "即將開放", chains: { cvs_711: "7-ELEVEN", cvs_familymart: "全家", cvs_hilife: "萊爾富", cvs_okmart: "OK超商" },
+    confirmTotal: "確認更新後的金額",
   },
   "zh-CN": {
     delivery: "选择配送", quote: "获取当前总额", pick: /选择门[市店]/, change: /更换门[市店]/,
     consent: "取件人姓名与手机将提供给物流商与门店，用于通知与取货。", comingSoon: "即将开放",
     chains: { cvs_711: "7-ELEVEN", cvs_familymart: "全家", cvs_hilife: "莱尔富", cvs_okmart: "OK超商" },
+    confirmTotal: "确认更新后的金额",
   },
   en: {
     delivery: "Choose delivery", quote: "Get current total", pick: "Choose store", change: "Change store",
     consent: "The recipient's name and mobile are shared with the carrier and store for pickup notices.", comingSoon: "Coming soon",
     chains: { cvs_711: "7-ELEVEN", cvs_familymart: "FamilyMart", cvs_hilife: "Hi-Life", cvs_okmart: "OK mart" },
+    confirmTotal: "Confirm updated total",
   },
 };
 
@@ -316,6 +319,14 @@ try {
     await expect(page.getByTestId("cvs-entered-code")).toBeVisible();
     await page.reload();
     await toQuote(page, stores.entered, locale, "cvs_711");
+    // toQuote adds the product again: the server total changed. The signed checkout-v2
+    // card requires a separate amount acknowledgment before the original pickup assertions.
+    await expect(page.getByTestId("quote-reconfirm")).toBeVisible();
+    await expect(page.getByTestId("create-order")).toBeDisabled();
+    await expect(page.getByTestId("checkout-submit")).toBeDisabled();
+    await page.getByRole("button", { name: copy[locale].confirmTotal, exact: true }).click();
+    await expect(page.getByTestId("quote-reconfirm")).toHaveCount(0);
+    snapshotClicks.push({ locale, viewport, control: "updated total", operation: "click confirmation", expected: "both submits blocked until explicit acknowledgment", actual: "both disabled; confirmation dismissed after click", result: "PASS" });
     await page.getByTestId("cvs-recipient-name").fill("王小明");
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     await page.getByTestId("cvs-entered-code").fill("131386");

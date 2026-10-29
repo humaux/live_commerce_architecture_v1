@@ -713,7 +713,7 @@
     "tests/storefront/claim-checkout.mjs": "36464fd177b07072bd0ee77f8c2376ee680edf5f8a467d37a88e3509dc477930",
     "tests/storefront/cod-footer.spec.ts": "a6fc969d7189f98edd2c1fb90deb9175aafe5150524046de79a0b69f34fc761b",
     "tests/storefront/collector-buyer.mjs": "6d4dc2824450901bfd2cf9389452ff3013a767ce944023994108b1f54045a7cf",
-    "tests/storefront/cvs-buyer.mjs": "da069a0c9068329ded59336879d6c3f4d5fa4fe28b7f985d92bb370d95bbc7b4",
+    "tests/storefront/cvs-buyer.mjs": "31d0263904b9dbe1fe664a35fe961210df4c73cf8604742d7f048f26241c03be",
     "tests/storefront/cvs-pap-only.mjs": "aca08fab00471cd7615a7fcbc36d6cc62f314e0c1f8e8beb45b8398e734589ea",
     "tests/storefront/home-cod-buyer.mjs": "93dce39caf82c583083edfaf6d77e26a8bfbaeffc4aea487aee584411cf9c949",
     "tests/storefront/legal-pages.mjs": "75096e2148250a804a3ed4a35d29eae48aa017dec6978c569deb2a03d9341cbf",

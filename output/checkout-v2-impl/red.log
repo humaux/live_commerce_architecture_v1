@@ -54,3 +54,11 @@ run40791490840/job123177531196: shell-architecture.test.mjs:11 own assertion Ord
 Raw filtered receipt: relay1-foundation.log.
 Browser run40791490842 all pending at inspection; no failed current-head browser artifact to download. Older heads ignored for current acceptance.
 Repair: delete three redundant historical comment lines, keep required headers and all executable code, assertions and ceiling854 unchanged. New source split-on-newline count852. git diff --check exit0. No local tests/server.
+
+RELAY 2 current-head CVS RED, 2026-10-29
+PR head e75a2ab9ae7b4185443e482175a702bc502998e5; Gates40792663760 tested merge ea87541b342f528defc52818d50899ea5a6eb777.
+job123185314146 WebKit: only CVS fails; cvs-buyer.mjs328 original create-order toBeEnabled receives disabled after second toQuote adds another product and changes the server total.
+Same job artifact: buyer/order/payment/merchant-buyer/password-auth/claim-checkout pass. Foundation40792663748/job123181426785 success. Chromium bundle01/job123185314249 and bundle02/job123185314471 success; other gates including bundle04 running at inspection.
+gh run view --log-failed --job declines completed job logs while workflow remains running; raw REST actions/jobs/123185314146/logs retrieved, gh run download gate-browser-webkit complete (artifact12862364859).
+Root authority: signed CHECKOUT-V2-IMPL item3 requires separate explicit re-confirm on changed total. Application gate is correct; add missing three-language acknowledgment click in existing CVS scenario, preceded by both-submit-disabled assertions. All original assertions remain verbatim and in order. No application, fixture, threshold or exemption change. Distinct CVS blocker attempt1; not a third repair of old buyer/order/claim or ceiling blockers.
+Original causal tests-only RED retained above. Own pushed-head GREEN and independent review PENDING; no local tests/server.

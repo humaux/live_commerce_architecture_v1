@@ -1,5 +1,39 @@
 # CHECKOUT-V2-IMPL — implementation handoff, 2026-10-28
 
+## RELAY 2 — CVS re-quote acknowledgment, 2026-10-29
+
+Current inspected PR head: e75a2ab9ae7b4185443e482175a702bc502998e5; tested merge ea87541b342f528defc52818d50899ea5a6eb777. Foundation40792663748/job123181426785 succeeds. Gates40792663760/job123185314146 fails only CVS: cvs-buyer.mjs:328 expects create-order enabled after reload/re-quote. Its raw artifact explicitly passes buyer, order and claim-checkout; current Chromium bundle01/job123185314249 and bundle02/job123185314471 also succeed. Bundle04 and other gates were still running at inspection. Older failing heads are not current evidence. `gh run view --log-failed --job 123185314146` declined logs while the workflow was running; retrieved the completed job's REST logs instead and downloaded gate-browser-webkit with `gh run download`. Raw receipt and artifact retained under cont-273/relay2-webkit*; filtered evidence: relay2-failures.log.
+
+Root cause is the CVS scenario's missing signed-design action: its second toQuote calls reachCheckout/addToCart again, changing the server cart total. CHECKOUT-V2-IMPL item3 requires explicit updated-total acknowledgment. The application correctly keeps both submit buttons disabled. Added three-language real acknowledgment clicks and disabled-before-click/notice-dismissed assertions at that transition; all old assertions and their order remain verbatim. No application, CVS picker, provider, fixture, threshold, baseline or exemption changes. This is attempt1 for this distinct CVS blocker; prior buyer/order/claim and source-line blockers are not being repaired a third time.
+
+Fetched and merged origin/r3/integration d3d0c6a75 first (merge2aa65a50f with required coauthor trailer); existing base changes retained. Regenerated browser-ownership.json from its script (53 modes); no new spec/import/route or Go dependency, so component harnesses and depmap inputs are unchanged. New test path extension: tests/storefront/cvs-buyer.mjs, covered by CONT in-module scope pre-approval; generated ownership and this evidence are listed in the PR body. No main/integration push or merge.
+
+### RELAY 2 UI PROCESS · Bourdieu
+
+Q1 clear fees: unchanged server amounts. Q2 repeat-buyer completion: explicitly acknowledge changed total only. Q3 amount/destination/timing: preserves signed separate acknowledgment before submission. Q4 CVS selection: unchanged picker, existing exact pickup identity/address assertions retained. Q5 narrow-screen parity: same new real-click step in en/mobile and zh-TW/zh-CN desktop cases; execution PENDING own CI. Q6 aesthetics UNKNOWN until owner; no new visual choice. Novice/expert means recent task experience only.
+
+### RELAY 2 UI PROCESS · Project understanding
+
+Read architecture §§0/1/2/26/27 (evidence boundaries, TS strict, transaction authority, isolated worktree, independent acceptance), buyer-checkout-v1 Decisions (server quote and original intent), buyer-checkout-options-v1 (current eligible option), buyer-order-ui-v1 (confirmed destination and original-attempt recovery), original CHECKOUT-V2-IMPL card item3 and cxf-273-fix dispatch (ADD-only confirm-click adaptation), and signed ux-checkout state/prototype contract. New assertions check actual user-visible blocking and acknowledgment; existing reload/persisted pickup identity checks still run afterward.
+
+### RELAY 2 UI PROCESS · Mobbin → Eagle
+
+No visual design or new reference used. Retains the existing approved checkout grouping and hierarchy provenance documented below (Eagle folder MVQL9YPJVZ5FT; Thrive Market/Selfridges structural principles). No images, brands, product facts or new Mobbin query needed for this test-only flow correction.
+
+### RELAY 2 UI PROCESS · Figma official guidance
+
+Read the module's ux-audit-ref/FIGMA-GUIDE.md (2026-10-28). G4 explicit action/result and G5 branch-specific changed-total state apply to this actual confirmation click; G1 layout, G2 variables and G3 components remain unchanged. No Figma write, export, new design hand-in, lint or density measurement performed in RELAY2; those runtime checks are NOT_RUN here.
+
+| Existing action used by new click | zh-TW | zh-CN | en |
+|---|---|---|---|
+| Updated-total acknowledgment | 確認更新後的金額 | 确认更新后的金额 | Confirm updated total |
+
+| Page/control | Operation | Expected / actual |
+|---|---|---|
+| CVS checkout after reload + cart re-add | Re-quote, inspect both disabled submits, real click on localized acknowledgment | Notice dismissed; original confirm-recipient/store and enabled-submit assertions continue. Actual PENDING own CI. Runtime row added to existing cvs-snapshot-click-ledger.json in all3 locales. |
+
+Required desktop/mobile/review field parity table below is unchanged: no UI markup/data/copy changed. Static E1: node --check tests/storefront/cvs-buyer.mjs exit0; git diff --check exit0; ownership derivation exit0. Exact file hash in relay2-static.log. Author assessment E0; new-head GREEN/independent acceptance PENDING. Original causal tests-only RED40665214452/jobs122784411665,122784411546 retained in red.log. No local tests/server/browser/PG/runtime; no provider SANDBOX/LIVE, production, independent review or runtime density. Failed evidence retained; no local background process. Integrator relays a fresh session on the final WAIT_RUN's native completion/failure/timeout; no polling beyond ten minutes or evidence-only push.
+
 ## RELAY 1 — Foundation ceiling repair, 2026-10-29
 
 Exact inspected head: 636df8b9055492193f498d470348329822e31048. Fetch/merge origin/r3/integration: already up to date. Current-head checks had one completed failure: Foundation run40791490840/job123177531196, shell-architecture.test.mjs:11, OrderFlow.tsx lines855 >854. All browser gates of run40791490842 were pending; no current-head failed browser artifact existed to download. Older failures are historical evidence only. Original tests-only RED below is retained.
