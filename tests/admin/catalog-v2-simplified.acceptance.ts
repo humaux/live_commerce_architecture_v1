@@ -315,7 +315,8 @@ export function registerCatalogSimplifiedAcceptance() {
           refunded_minor: 0, refund_pending_minor: 0, pickup_source: null, payment_mode: 'card', collection_state: null,
           cod_surcharge_minor: null, cod_collect_minor: null, source: 'storefront', order_number: `LC-${orderID.replaceAll('-', '').toUpperCase()}`,
           recipient_masked: 'S***', delivery_kind: 'home', live_sessions: [] };
-        await page.route(`**/api/stores/${process.env.LC_BROWSER_STORE}/orders?*`, route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+        // The orders client validates the BFF's private/no-store envelope before parsing the projection.
+        await page.route(`**/api/stores/${process.env.LC_BROWSER_STORE}/orders?*`, route => route.fulfill({ contentType: 'application/json', headers: { 'Cache-Control': 'private, no-store' }, body: JSON.stringify({
           items: [historical], next_cursor: '', total: 1, sessions: [], counts: { all: 1, unpaid: 0, transfer_review: 0, ready_to_ship: 1, ready_to_consign: 0, shipped: 0, completed: 0, cancelled: 0 },
         }) }));
         const orderRow = page.getByTestId(`order-row-${orderID}`);

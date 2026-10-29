@@ -1,3 +1,42 @@
+# FIX318 relay17 · historical-order private response envelope · 2026-10-30
+
+Author E0; static E1; new-head GREEN/E4 PENDING. Dispatched child integrator-catalog-v2-impl-sub-relay17; parent retains coord ownership, no separate claim/delegation. Base/rollback3259bc50ec85f3ed6b17ab5e2f1740e0f7c3f249; origin/r3/integration17328372dea91220050e9583259312e2db2e5d97 fetched and merged: already up to date. Existing untracked evidence preserved. Exact runtime model/effort not exposed.
+
+## Current evidence and root repair
+
+Current-head Gates40949912072/job123717643597 bundle03 is the sole failed job at inspection; other checks are pending/success, not accepted as GREEN. Foundation40949912106/job123715116379 succeeded on the old head only. gh run view --log-failed refuses unfinished workflows; completed-job logs fetched via actions/jobs API. Fresh gh run download product-editor artifact12932455619 exit0:24passed1failed2notrun. Historical-order323 cannot find row; CI trace shows HTTP200 JSON with canonical timestamps but ONLY content-type/content-length headers. orders-client.ts read() requires Cache-Control exactly private, no-store BEFORE JSON parsing. Current orders-v2/summary checks and fixture body inspected; previous timestamp repair alone could not reach parsing.
+
+Same historical-order blocker attempt2/2: add only required private/no-store header to this MOCK response plus comment. No body/record/count/state/amount128000/identity changes; production parser and privacy check untouched. All real clicks, price1380 review/save/reload, old order1280 and no-unrelated-write assertions retained. Existing current CI RED is causal; original tests-only RED40872483030/job123445416316 remains in red.log. No infra failure/rerun. STOP if same blocker persists.
+
+## Click ledger and desktop/mobile/review parity
+
+|Required control/fact|Operation and expected result|Current evidence|
+|---|---|---|
+|Existing order1280 / new price1380|Orders click; Edit/review/save/reload; Orders/reload retains1280 and excludes1380; exactly one document write|Assertions unchanged; new-head CI PENDING|
+|Name/description/SKUs/prices/stock/images/status desktop/mobile/review|Existing full parity and three-language table below|No UI/string change; current CI24passed, remaining2NOT_RUN|
+
+## BOURDIEU
+
+Q1 novice means recent task experience: visible historical amount must be readable; Q2 experienced sellers compare frozen facts; Q3 server amount stays authoritative; Q4 no class/device proxy; Q5 accessible real-click paths retained; Q6 aesthetics UNKNOWN until owner. No design change.
+
+## PROJECT UNDERSTANDING
+
+Read AGENTS.md, 架构.md §§0/1/2/26/27, original PLAN module contract pointers, merchant-orders-v1/v2, orders-client.ts read(), orders-model.ts summary checks and orders-v2.ts projection. Business rule: old checkout amounts remain server facts, and private order reads require the BFF privacy envelope. Root authority current source+raw CI trace and current dispatch; signed-path ruling read from output/integrator/tools/cards/cxf-fix10-318.md (main read-only). Existing signed catalog implementation retained.
+
+## MOBBIN → EAGLE
+
+Wire-header correction requires no new visual reference. Existing signed module reference principles below retained; no new query/import; live Mobbin/Eagle NOT_RUN.
+
+## FIGMA OFFICIAL GUIDANCE
+
+Existing auto-layout/components/variables/prototype guidance mapping below retained. No Figma write, layout, visible string or locale change. No visual skill scripts run because this card permits static-only local checks. Ponytail and Humaux development details loaded; rejected enumeration9/9 coverage1.0; lessons representative3/33 (not full coverage).
+
+## Scope, static evidence and handoff
+
+Only tests/admin/catalog-v2-simplified.acceptance.ts and output/catalog-v2-impl/{DELIVERY.md,red.log,relay17-static.log} committed, plus generated browser ownership only if changed. Existing source header retained; no import changes/harness migration. No dependency-graph change. Gate-adapter assertions and forbidden baselines untouched. node --check exit0; git diff --check exit0; source SHA2569cdfae9d2e1c608c3ae4480791a600cc35430c90d1d545186666d5cb9b31febc. Humaux root-fix6ae204f6-386a-4b03-a994-b64ed412bb67; own child canvas updated under acquired lock. Index/link and exact-head WAIT_RUN registered on push. Integrator relays CI completion in fresh session; no long polling/evidence-only push.
+
+NOT_RUN: local tests/server/browser/build/install/PG/container; new-head runtime/GREEN; independent E4; provider SANDBOX/LIVE; deployment; PG historical-order snapshot durability. No locally started processes. Revert repair via normal reviewed PR workflow for rollback.
+
 # FIX318 relay16 · canonical historical-order timestamp encoding · 2026-10-30
 
 Author E0; static E1; new-head GREEN/E4 PENDING. Integrator-dispatched child integrator-catalog-v2-impl-sub-relay16; parent retains coord ownership, no new claim or delegation. Base/rollback bc9220a649f22ce63b3f2cf1baad4ec2bb784a62; fetched/merged integration17328372dea91220050e9583259312e2db2e5d97: already up to date. Existing untracked evidence preserved. Runtime model/effort not separately exposed to this lane.
