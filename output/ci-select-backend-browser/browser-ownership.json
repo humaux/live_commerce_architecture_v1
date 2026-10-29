@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "cd5cc734d31d1d3ad6db65b5198b9e551179051c3c1f5071d9247f2d784d71f1",
+  "registryHash": "aba15714154152771ea22cf6eb1ef7e30ea08d6e7b7a4a991c14fc2c8c8e6698",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -178,7 +178,8 @@
     "tests/admin/returns-request.test.ts": "7716794c6a76666e182797bec5c7c8b38816101ac36de445cd3f4c8127613c80",
     "tests/admin/returns-ui.spec.ts": "d54c3ac061abbf0b0e71864e2b8f3388e368e2f143579bcbc56865493ea9555c",
     "tests/admin/safe-json-cancel.test.ts": "ab24bd8a7156d66a0f738ec12cc24c6a742c947fd8bbe08f534a07f42c60e8ee",
-    "tests/admin/settings-real.spec.ts": "d6f92274148dd0050be5bcbd766d6c5150a276f9e13755dabf499a724c55793f",
+    "tests/admin/settings-real.spec.ts": "92ed20ce4120006e50fb4e7122246dcb3003bf575df230ad484ff43acd5e40d1",
+    "tests/admin/settings-v2.spec.ts": "8aefab3513f5633a22e1e144193c2935d608a18459e74847da4b7137b52a7450",
     "tests/admin/settlements.spec.ts": "fbf66fcae09219c01f5fa3e123755dfe2b0d94e9b488667fa9951317106a9bbb",
     "tests/admin/shell-architecture.test.mjs": "f324d97d97de3c8883a35523519c1f9b7ecc6a6a90c936e8e93114b3f2ce592b",
     "tests/admin/shell-browser.mjs": "ce5ebc5fa693f9f6ec56e5e85c9644a412f81192d7a27b2c3a19141e2444a056",
@@ -758,7 +759,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "cd5cc734d31d1d3ad6db65b5198b9e551179051c3c1f5071d9247f2d784d71f1",
+    "scripts/dev/test-local.sh": "aba15714154152771ea22cf6eb1ef7e30ea08d6e7b7a4a991c14fc2c8c8e6698",
     "playwright.config.ts": "2e9f39bc4a23c36f46119ab0742016a59642c9460fda94620194bd0bf7fa6039",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
@@ -1117,6 +1118,7 @@
       "inputs": [
         "tests/admin/auth-real.spec.ts",
         "tests/admin/settings-real.spec.ts",
+        "tests/admin/settings-v2.spec.ts",
         "tests/storefront/browser-engine.mjs"
       ],
       "apps": [

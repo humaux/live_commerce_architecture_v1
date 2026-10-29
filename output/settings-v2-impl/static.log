@@ -1,0 +1,8 @@
+2026-10-29 STATIC ONLY (no local tests/server/build)
+node --experimental-strip-types --check tests/admin/settings-v2.spec.ts: exit 0
+/Volumes/data/live_commerce_architecture_v1/node_modules/.bin/tsc --noEmit --target es2022 --module esnext --moduleResolution bundler --skipLibCheck tests/admin/settings-v2.spec.ts: exit 0
+node --check scripts/dev/pr-modes.mjs: exit 0
+bash -n scripts/dev/test-local.sh: exit 0
+node scripts/dev/derive-browser-ownership.mjs: exit 0 (53 modes)
+Initial pnpm exec tsc: exit 254 (no worktree-local tsc); resolved by invoking existing read-only parent compiler above, no install.
+All runtime behavior, density, persistence, CI RED/GREEN, E4: NOT_RUN.
