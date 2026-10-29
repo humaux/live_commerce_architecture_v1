@@ -1,0 +1,15 @@
+EDITOR-V2-IMPL
+phase=tests-only RED preparation
+base=d0e7331525fec046fbe9361906fa66367ae583c6
+environment=MOCK
+local_tests=NOT_RUN (owner prohibition)
+RED=NOT_RUN (awaiting PR CI dispatch)
+GREEN=NOT_RUN (implementation not started)
+Expected causal failure: new editor-v2.spec.ts asserts signed four-task hub after existing design page loads.
+Existing imports/components stay present; no implementation source change in RED.
+Run and job IDs will be recorded after dispatch; queued or unrelated failure is not causal RED.
+static.node_check_editor_spec=exit 0
+static.node_check_playwright_config=exit 0
+static.check_packet=exit 0, PASS_PACKET_STRUCTURE_ONLY
+static.browser_ownership_generation=exit 0, 53 modes (explicitly required generator)
+new_browser_cases=17
