@@ -9,6 +9,8 @@
 // tests/admin/auth-real.spec.ts already relies on.
 // Evidence written to LC_BROWSER_EVIDENCE_DIR: screens/*.png, screenshots.jsonl (name, locale, viewport, sha256),
 // canaries.txt (every password, emailed code and address used; the Go side scans server logs for them).
+// Recovery-only diagnostics retain a failed trace and request outcomes before any credentials exist;
+// all password/code flows keep tracing off so their secrets never enter trace artifacts.
 import { createHash, randomBytes } from "node:crypto";
 import { responseBodyForSecretScan } from "./password-response-canaries.ts";
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
@@ -206,44 +208,70 @@ for (const locale of locales) {
     }
   });
 
-  test(`#245 ${locale}: aborted page chunks show loading then a native reload that recovers`, async ({ page }) => {
-    let aborted = 0;
-    let continued = 0;
-    let networkRecovered = false;
-    const abortedChunkURLs = new Set<string>();
-    await page.route(/\/_next\/static\/chunks\/.*\.js(?:\?|$)/, async (route) => {
-      const chunkURL = route.request().url().split("?")[0];
-      if (!networkRecovered) {
-        abortedChunkURLs.add(chunkURL);
-        aborted++;
-        await route.abort("failed");
-      } else {
-        await route.continue();
-        if (abortedChunkURLs.has(chunkURL)) continued++;
-      }
+  test.describe(`#245 ${locale}: recovery diagnostics without credentials`, () => {
+    test.use({ trace: { mode: "retain-on-failure", screenshots: true, snapshots: true, sources: false } });
+    test(`#245 ${locale}: aborted page chunks show loading then a native reload that recovers`, async ({ page }, testInfo) => {
+      let aborted = 0;
+      let continued = 0;
+      let networkRecovered = false;
+      const abortedChunkURLs = new Set<string>();
+      // Observations only: keep the outage, real link click and every assertion unchanged.
+      // This test never fills a field or calls an auth API; omit URL queries, headers and bodies.
+      mkdirSync(testInfo.outputDir, { recursive: true });
+      const record = (event: string, detail: Record<string, unknown>) => appendFileSync(
+        testInfo.outputPath("recovery-events.jsonl"),
+        JSON.stringify({ event, phase: networkRecovered ? "recovered" : "outage", ...detail }) + "\n",
+      );
+      page.on("requestfailed", (request) => record("requestfailed", {
+        path: new URL(request.url()).pathname, type: request.resourceType(), error: request.failure()?.errorText,
+      }));
+      page.on("response", (response) => {
+        if (["document", "script"].includes(response.request().resourceType())) record("response", {
+          path: new URL(response.url()).pathname, status: response.status(), type: response.request().resourceType(),
+        });
+      });
+      page.on("pageerror", (error) => record("pageerror", { name: error.name, message: error.message }));
+      page.on("console", (message) => {
+        if (message.type() === "error") record("console-error", { message: message.text() });
+      });
+      await page.route(/\/_next\/static\/chunks\/.*\.js(?:\?|$)/, async (route) => {
+        const chunkURL = route.request().url().split("?")[0];
+        if (!networkRecovered) {
+          abortedChunkURLs.add(chunkURL);
+          aborted++;
+          record("abort", { path: new URL(chunkURL).pathname, aborted });
+          await route.abort("failed");
+        } else {
+          await route.continue();
+          if (abortedChunkURLs.has(chunkURL)) continued++;
+          record("continue", { path: new URL(chunkURL).pathname, continued });
+        }
+      });
+      await page.goto(`/${locale}/?recovery=1`, { waitUntil: "domcontentloaded" });
+      expect(aborted, "page JavaScript chunks were actually aborted").toBeGreaterThan(0);
+      const status = page.getByRole("status").filter({ hasText: hydrationCopy[locale].loading });
+      await expect(status).toBeVisible();
+      await expect(status).toHaveAttribute("aria-live", "polite");
+      await expect(emailInput(page)).toBeDisabled();
+      await expect(passwordInput(page)).toBeDisabled();
+      await expect(submitButton(page)).toBeDisabled();
+      const reload = page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true });
+      await expect(reload).toBeHidden();
+      await expect(reload).toBeVisible({ timeout: 15_000 });
+      const currentURL = page.url();
+      // Restore the network for the whole reload, including chunks first discovered by the recovered runtime.
+      // Keep routing installed so both navigations use the same HTTP-cache policy.
+      networkRecovered = true;
+      record("native-reload-click", { path: new URL(currentURL).pathname });
+      await Promise.all([page.waitForEvent("load"), reload.click()]);
+      expect(page.url()).toBe(currentURL);
+      record("native-reload-loaded", { path: new URL(page.url()).pathname, aborted, continued });
+      await hydrated(page);
+      expect(continued, "previously aborted page JavaScript chunks were requested again and continued").toBeGreaterThan(0);
+      await expect(emailInput(page)).toBeEnabled();
+      await expect(status).toHaveCount(0);
+      await expect(reload).toHaveCount(0);
     });
-    await page.goto(`/${locale}/?recovery=1`, { waitUntil: "domcontentloaded" });
-    expect(aborted, "page JavaScript chunks were actually aborted").toBeGreaterThan(0);
-    const status = page.getByRole("status").filter({ hasText: hydrationCopy[locale].loading });
-    await expect(status).toBeVisible();
-    await expect(status).toHaveAttribute("aria-live", "polite");
-    await expect(emailInput(page)).toBeDisabled();
-    await expect(passwordInput(page)).toBeDisabled();
-    await expect(submitButton(page)).toBeDisabled();
-    const reload = page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true });
-    await expect(reload).toBeHidden();
-    await expect(reload).toBeVisible({ timeout: 15_000 });
-    const currentURL = page.url();
-    // Restore the network for the whole reload, including chunks first discovered by the recovered runtime.
-    // Keep routing installed so both navigations use the same HTTP-cache policy.
-    networkRecovered = true;
-    await Promise.all([page.waitForEvent("load"), reload.click()]);
-    expect(page.url()).toBe(currentURL);
-    await hydrated(page);
-    expect(continued, "previously aborted page JavaScript chunks were requested again and continued").toBeGreaterThan(0);
-    await expect(emailInput(page)).toBeEnabled();
-    await expect(status).toHaveCount(0);
-    await expect(reload).toHaveCount(0);
   });
 
   test(`#245 ${locale}: hydrated forms have no loading or reload, including after ten seconds`, async ({ page }) => {
