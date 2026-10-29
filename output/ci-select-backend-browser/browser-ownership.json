@@ -760,7 +760,7 @@
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
     "scripts/dev/test-local.sh": "aba15714154152771ea22cf6eb1ef7e30ea08d6e7b7a4a991c14fc2c8c8e6698",
-    "playwright.config.ts": "2e9f39bc4a23c36f46119ab0742016a59642c9460fda94620194bd0bf7fa6039",
+    "playwright.config.ts": "1a31a3146aeb626f5b1c76d8526945161ad336726295c56c6d742a3fa4d80304",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
     "package.json": "dfa3b54b5ffe4382bd9ec06971526e0e82c33e4303e916d50a85c121196bfca0",

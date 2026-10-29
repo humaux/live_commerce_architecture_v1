@@ -1,2 +1,20 @@
 SETTINGS-V2-IMPL RED: pending push/CI; no assertion failure claimed yet.
 Environment: GitHub CI only, MOCK IdP / isolated PG; delivery faults MOCK.
+
+2026-10-29 RED push/queue handoff (not an assertion failure receipt):
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/303
+HEAD: 4d4fdc657186337df39ec337b7d80c84975bcd32
+Gates workflow WAIT_RUN: 40827493126 (in_progress at readback)
+Foundation workflow WAIT_RUN: 40827493014 (in_progress at readback)
+RED assertion/job failure: NOT_RUN/PENDING. GREEN: NOT_RUN.
+Next session: read PR checks and filtered failed logs; record causal failure here before implementation.
+Integrator is the relay/wakeup owner per the dispatched card. No local background process.
+Foundation job: 123293774850, IN_PROGRESS; no failure assertion yet.
+
+2026-10-29 RELAY 1 readback (head 4d4fdc657186337df39ec337b7d80c84975bcd32):
+Foundation run 40827493014 / job 123293774850: FAILURE, exit 1.
+2026-10-29T06:14:19.1029608Z check-gates: tests/admin/settings-v2.spec.ts is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+This is gate-registration failure, NOT causal RED. New UI assertions NOT_RUN.
+Targeted fix attempt 1: register both imported helper and calling spec in the
+existing settings-real Playwright suite. No test/assertion or gate changes.
+Implementation remains NOT_RUN until CI reaches and fails the new assertions.

@@ -68,3 +68,27 @@ from importing/calling the new acceptance helper. No local test/server was run. 
 will be recorded in red.log; implementation requires causal RED first. No live credentials,
 provider calls, external messages, production changes, merge or auto-merge.
 Humaux search/grep/store/canvas/coord NOT_RUN (tools absent). No background local process.
+
+2026-10-29 RED push/queue handoff (not an assertion failure receipt):
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/303
+HEAD: 4d4fdc657186337df39ec337b7d80c84975bcd32
+Gates workflow WAIT_RUN: 40827493126 (in_progress at readback)
+Foundation workflow WAIT_RUN: 40827493014 (in_progress at readback)
+RED assertion/job failure: NOT_RUN/PENDING. GREEN: NOT_RUN.
+Next session: read PR checks and filtered failed logs; record causal failure here before implementation.
+Integrator is the relay/wakeup owner per the dispatched card. No local background process.
+
+## RELAY 1 — registration repair, 2026-10-29
+
+Current raw CI: Foundation 40827493014 / 123293774850 failed at check-gates on
+head 4d4fdc657186337df39ec337b7d80c84975bcd32: settings-v2.spec.ts was not listed
+in the selected Playwright suite. This is not causal RED and no new assertion
+result is claimed. Targeted attempt 1 adds the imported helper to settings-real's
+suite registration, preserving the existing single-session test and every assertion.
+Outside PLAN.md: playwright.config.ts, limited to this settings suite registration;
+listed in the PR body for integrator review. Browser ownership is regenerated.
+No application implementation, local tests or local servers. E3/E4 NOT_RUN.
+Humaux store/canvas/coord unavailable; this file is a handoff, not shared memory.
+Static generation: node scripts/dev/derive-browser-ownership.mjs, exit 0 (53 modes).
+Local tsc attempt: node_modules/.bin/tsc was absent, exit 127; no typecheck result
+claimed and no dependency installation performed. Type/build verification stays CI.
