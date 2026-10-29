@@ -183,12 +183,40 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   const originalSku = skuCommands[0];
   expect(originalSku.key).toBeTruthy();
   expect(inventoryCommands, "initial stock has not been submitted after the lost SKU response").toHaveLength(0);
+  // RVFIX #303 multi-product recovery: another operator's normal Catalog Copy
+  // creates the newer draft B while A's exact SKU command remains unresolved.
+  // All writes use native controls; this tab shares only the signed session.
+  const productA = JSON.parse(originalSku.body).product_id as string;
+  const catalog = await page.context().newPage();
+  await catalog.goto(`/en/products?store=${store}`);
+  const copied = catalog.waitForResponse(r => r.request().method() === "POST" &&
+    new URL(r.url()).pathname === `/api/stores/${store}/products/${productA}/copy`);
+  await catalog.getByTestId(`product-row-${productA}`).getByRole("button", { name: "Copy", exact: true }).click();
+  const copiedResponse = await copied;
+  expect(copiedResponse.ok(), "Catalog creates a real newer draft B").toBe(true);
+  const productB = (await copiedResponse.json()).id as string;
+  expect(productB).toMatch(/^[0-9a-f-]{36}$/);
+  expect(productB).not.toBe(productA);
+  const readB = () => catalog.waitForResponse(r => r.request().method() === "GET" &&
+    new URL(r.url()).pathname === `/api/stores/${store}/products/${productB}`);
+  const beforeB = readB();
+  await catalog.goto(`/en/products/${productB}?store=${store}`);
+  await expect(catalog.getByTestId("product-form")).toBeVisible();
+  // READ ONLY: baseline B's actual SKU/inventory facts, not synthetic fixtures.
+  const baselineB = await (await beforeB).json();
+  expect(baselineB).toMatchObject({ id: productB, status: "draft" });
+  await expect(catalog.getByTestId("product-name")).toHaveValue(baselineB.name);
+  // READ ONLY: verify the real list ordering that triggers this regression.
+  const latestDraft = await catalog.request.get(`/api/stores/${store}/catalog-products?status=draft&limit=1`);
+  expect(latestDraft.ok()).toBe(true);
+  expect((await latestDraft.json()).items[0].id, "B really precedes A in catalog discovery").toBe(productB);
   await page.unroute(skuURL);
   await page.route(skuURL, async route => {
     skuCommands.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" });
     await route.continue();
   });
   await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(overview, "pending SKU recovery must use intent-bound A when the newest draft is B").toBeVisible();
   await expect(overview).toBeVisible();
   expect(skuCommands, "Reload must not replay the SKU command").toEqual([originalSku]);
   expect(inventoryCommands, "Reload must not initialize stock").toHaveLength(0);
@@ -281,7 +309,9 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   expect(stockIntent).not.toBeNull();
   if (!stockIntent) throw new Error("acknowledged SKU must retain its unsent stock intent");
   const originalIntent = JSON.parse(stockIntent);
+  expect(originalIntent.product_id, "stock intent remains bound to A after a newer draft B is created").toBe(productA);
   for (const patch of [
+    { product_id: productB }, { product_id: "../profile" },
     { product_id: "00000000-0000-4000-8000-000000000001" }, { code: "different-sku" },
     { warehouse_id: "00000000-0000-4000-8000-000000000002" }, { currency: "USD" },
     { price_minor: 1 }, { quantity: -1 }, { quantity: 1.5 }, { quantity: 11 },
@@ -306,6 +336,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   // FIXTURE RESTORATION ONLY: resume the original positive recovery journey.
   await page.evaluate(({ key, value }) => sessionStorage.setItem(key, value), { key: stockIntentKey, value: stockIntent });
   await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(overview, "acknowledged SKU recovery must use stock-intent A while newer B remains a draft").toBeVisible();
   await expect(overview).toBeVisible();
   expect(skuCommands, "Reload after an acknowledged SKU must only read").toEqual([originalSku, originalSku]);
   expect(inventoryCommands).toHaveLength(0);
@@ -376,6 +407,27 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
   expect(inventoryCommands, "exactly one explicit replay of the original key and body").toEqual([originalInventory, originalInventory]);
+  expect(JSON.parse(originalInventory.body).sku_id, "the original stock command targets A's acknowledged SKU").toBe((await acknowledged.json()).id);
+  // Native refresh proves B's editor and persisted SKU/inventory facts did not
+  // change during either recovery; only A received the original command replay.
+  const afterB = readB();
+  await catalog.reload();
+  await expect(catalog.getByTestId("product-form")).toBeVisible();
+  await expect(catalog.getByTestId("product-name")).toHaveValue(baselineB.name);
+  const recoveredB = await (await afterB).json();
+  expect(recoveredB.version).toBe(baselineB.version);
+  expect(recoveredB.skus, "A's recovery must not mutate B's SKU or inventory").toEqual(baselineB.skus);
+  // Retire only this CI-owned competing draft through the real Catalog controls
+  // after both recovery scenarios, preserving the original single-draft checks.
+  await catalog.goto(`/en/products?store=${store}`);
+  await catalog.getByTestId(`product-row-${productB}`).getByRole("checkbox").click();
+  const archivedB = catalog.waitForResponse(r => r.request().method() === "POST" &&
+    new URL(r.url()).pathname === `/api/stores/${store}/products/bulk-status`);
+  await catalog.getByTestId("product-batch").getByRole("button", { name: "Archive", exact: true }).click();
+  expect((await archivedB).ok()).toBe(true);
+  await catalog.reload();
+  await expect(catalog.getByTestId(`product-row-${productB}`)).toContainText("Archived");
+  await catalog.close();
   // READ ONLY: only the accepted initial adjustment retires its scoped intent.
   expect(await page.evaluate(key => sessionStorage.getItem(key), stockIntentKey)).toBeNull();
   await page.unroute(inventoryURL);

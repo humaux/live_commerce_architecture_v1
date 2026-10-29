@@ -1283,3 +1283,72 @@ Foundation/Gates workflow IDs (never plan jobs) are recorded at handoff. No sile
 background process. Rollback: revert this isolated tests-only commit.
 
 ---
+
+## RVFIX #303 — newest competing draft recovery RED batch (2026-10-30)
+
+Authority: dispatched RVFIX card and final REQUEST_CHANGES in
+`output/integrator/tools/logs/cxf-rv-303.log` (read-only main checkout), traced
+to `apps/admin/lib/settings-v2.ts:38-53`, `SettingsV2.tsx` load/save callers,
+and `internal/catalog/productlist.go` newest-first ordering at baseline
+`cf410e08f6ee83a7a825b713c4e2fb5bb2214843`.
+Integration fetched and merged first: Already up to date (17328372d).
+
+P1: snapshot discovery selects newest draft B rather than the product A bound
+to the pending SKU command / unsent initial-stock intent. Normal Catalog Copy
+creates B during A's lost SKU response. The additive native-click regression
+requires Reload/refresh to recover A, preserves exact replay and stock 10,
+checks B's persisted SKU/inventory facts are unchanged, then archives only the
+CI-owned B through Catalog so existing single-draft checks remain intact.
+Both pending-SKU and acknowledged-SKU/unsent-stock branches are in this one batch.
+Only tests, generated static ownership and card evidence change; implementation
+must wait for CI to fail the new recovery assertion. No weakened assertion,
+fixture, timeout, retry, exemption or gate. Existing import list unchanged.
+
+|Page/control|Operation|Expected|Actual|
+|---|---|---|---|
+|Catalog A / Copy|native click in same-session second tab|newer draft B; real list confirms B first|PENDING CI|
+|Settings / Reload, refresh, quick setup|native clicks/navigation|pending SKU uses A; original stock 10 retained|PENDING CI|
+|Settings / acknowledged SKU recovery|existing fault and Reload clicks|stock intent remains A-bound despite newer B|PENDING CI|
+|Settings / explicit Save and replay|existing native clicks|identical original SKU/stock key/body; adjustment targets A|PENDING CI|
+|Catalog B editor / refresh|native refresh plus read-only receipt|same name/version/SKU/inventory after A recovery|PENDING CI|
+|Catalog B / checkbox, Archive, refresh|native clicks|only task-owned B archived; persisted status visible|PENDING CI|
+
+### UI PROCESS — BOURDIEU
+
+Q1 task: safely resume previously entered stock; Q2 novice/expert means recent
+experience with this task; Q3 another operator's normal catalog action must
+not block recovery; Q4 explicit Save retains command identity; Q5 no class or
+device inference; Q6 aesthetics UNKNOWN until owner. No visual change.
+
+### UI PROCESS — PROJECT UNDERSTANDING
+
+Read architecture 0 (evidence labels), 1 (PostgreSQL inventory authority), 2
+(retail scope), 26/27 (assigned worktree and independent acceptance), and
+merchant-settings-wizard-v1 session/draft/uncertainty plus signed v2 transport
+amendment. Commands stay session/store-scoped and exact-key replayed. Read the
+snapshot/load/save path and Catalog Copy/list response producers; no new API.
+
+### UI PROCESS — MOBBIN → EAGLE
+
+Recovery regression only; no new visual, reference import or Mobbin query.
+Existing module reference decisions remain applicable; no new Eagle evidence claimed.
+
+### UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No Figma/layout/component/prototype/visible-copy change. Existing guidance,
+three-language copy table and desktop/mobile fact parity remain applicable.
+No new design lint or density execution claimed.
+
+Evidence: E1 syntax only when recorded in `newest-draft-static.log`; author
+judgment E0. Causal RED, implementation GREEN and independent E4 PENDING.
+Local runtime tests/servers/browser/PG prohibited; providers/LIVE/production
+NOT_RUN. Existing signed three-locale assertions preserved.
+Dispatched implementer on unit/settings-v2-ui only; no recursive delegation.
+Humaux/coord/code-index tools unavailable; lookup/store/canvas/index/link
+NOT_RUN, parent retains ownership. All pre-existing untracked evidence retained.
+No new outside-card path. Integrator relays Foundation/Gates completion using
+the WAIT_RUN workflow IDs; stop watching below ten minutes, no background process.
+Rollback: revert this isolated tests-only commit. Do not implement before causal RED.
+
+P2 for issue: profile CAS conflict recovery remains deferred per review and
+prior PR comment 6499957731; no implementation in this card.

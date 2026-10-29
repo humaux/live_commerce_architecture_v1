@@ -268,3 +268,13 @@ Implementation attempt 1 will retain product draft fields with fresh profile
 version when initial-stock intent remains; ordinary saves send no stock command.
 No tests/assertions/thresholds/fixtures changed. GREEN/E4 PENDING; local tests
 and servers prohibited. Humaux tools unavailable; parent retains coord ownership.
+
+RVFIX #303 competing newest draft — tests-only RED batch 2026-10-30
+Baseline: cf410e08f6ee83a7a825b713c4e2fb5bb2214843
+Integration merge: Already up to date at 17328372d (fetched this session).
+New assertion: pending SKU recovery must use intent-bound A when the newest draft is B.
+Additional branch: acknowledged SKU recovery uses initial-stock intent A while B remains newer.
+Native Catalog Copy creates B; read-only catalog list proves B is newest; later native refresh proves B SKU/inventory unchanged.
+All existing exact-replay, stock 10, invalid evidence, ordinary-save and three-locale assertions preserved.
+No implementation change; causal RED run/job PENDING until CI executes.
+Local syntax E1 only; runtime/servers prohibited; author judgment E0.
