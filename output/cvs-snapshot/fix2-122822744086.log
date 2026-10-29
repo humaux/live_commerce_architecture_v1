@@ -1,0 +1,90 @@
+3670:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:41.9498388Z 2026/10/28 14:13:41 http: proxy error: context canceled
+3671:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:41.9499619Z 2026/10/28 14:13:41 http: proxy error: context canceled
+3672-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:42.7805826Z     browser_migration_import_ui_test.go:118: W5 BROWSER (signed MOCK OIDC, REAL_PG synthetic CSV); evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.feWiEhLC/migration-import/20261028T141305.428181193
+3673-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:42.8214920Z --- PASS: TestBrowserMigrationImport (39.84s)
+3674-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:42.8242680Z PASS
+--
+3681-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.1868243Z ## matrix-receipts node-test begin
+3682-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3555249Z ✔ RMA list decodes every state with the exact rma_json keys (5.975618ms)
+3683-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3562175Z ✔ RMA parser refuses drifted keys, states, quantities and timestamps (3.458957ms)
+3684:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3564700Z ✔ refund-gap list decodes the closed cancel_refund_failed shape only (0.755256ms)
+3685-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3574934Z ✔ register body is exactly {reason, lines:[{sku_id, quantity}]} with a composed enum reason (0.614172ms)
+3686-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3577216Z ✔ receive body names every line once with 0 <= qty, at least one unit (0.402004ms)
+3687-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3579086Z ✔ inspect body enforces qty_restock + qty_scrap = qty_received per line before send (0.407314ms)
+3688:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3581222Z ✔ merchant cancel body is exactly {expected_state, reason} with the CJK-safe reason cap (0.643617ms)
+3689-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3605973Z ✔ rmaStates is the closed §2 machine (0.237496ms)
+3690-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3815671Z ✔ BFF grammar adds exactly the returns and merchant-cancel resources (3.656498ms)
+3691-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3816948Z ✔ GET returns accepts no query or exactly one RMA state (0.443442ms)
+3692-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3818500Z ℹ tests 10
+3693-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3819103Z ℹ suites 0
+3694-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3819627Z ℹ pass 10
+3695:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3820129Z ℹ fail 0
+3696-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3820669Z ℹ cancelled 0
+3697-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3821130Z ℹ skipped 0
+3698-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:44.3821505Z ℹ todo 0
+--
+3703-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:45.1857094Z check-gallery-bundle: OK expect=absent files=62 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+3704-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:46.9002088Z ## matrix-receipts browser-run begin
+3705-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:13:48.6226786Z === RUN   TestBrowserReturnsUI
+3706:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:03.4973655Z 2026/10/28 14:14:03 http: proxy error: context canceled
+3707:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:03.5010742Z 2026/10/28 14:14:03 http: proxy error: context canceled
+3708:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:03.5014358Z 2026/10/28 14:14:03 http: proxy error: context canceled
+3709:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:04.9031761Z 2026/10/28 14:14:04 http: proxy error: context canceled
+3710:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:05.6977748Z 2026/10/28 14:14:05 http: proxy error: context canceled
+3711:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:05.6987222Z 2026/10/28 14:14:05 http: proxy error: context canceled
+3712:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:05.7003681Z 2026/10/28 14:14:05 http: proxy error: context canceled
+3713:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:05.7015365Z 2026/10/28 14:14:05 http: proxy error: context canceled
+3714:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:07.0102758Z 2026/10/28 14:14:07 http: proxy error: context canceled
+3715:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:07.0138945Z 2026/10/28 14:14:07 http: proxy error: context canceled
+3716:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:07.0170853Z 2026/10/28 14:14:07 http: proxy error: context canceled
+3717:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:07.0179729Z 2026/10/28 14:14:07 http: proxy error: context canceled
+3718:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:07.0181135Z 2026/10/28 14:14:07 http: proxy error: context canceled
+3719:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:07.0182471Z 2026/10/28 14:14:07 http: proxy error: context canceled
+3720:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:07.0183742Z 2026/10/28 14:14:07 http: proxy error: context canceled
+3721:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:07.0184744Z 2026/10/28 14:14:07 http: proxy error: context canceled
+3722:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:08.0875078Z 2026/10/28 14:14:08 http: proxy error: context canceled
+3723:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:08.0884308Z 2026/10/28 14:14:08 http: proxy error: context canceled
+3724:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:08.0900808Z 2026/10/28 14:14:08 http: proxy error: context canceled
+3725:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:09.0689214Z 2026/10/28 14:14:09 http: proxy error: context canceled
+3726:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:10.3749801Z 2026/10/28 14:14:10 http: proxy error: context canceled
+3727:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:10.3758024Z 2026/10/28 14:14:10 http: proxy error: context canceled
+3728:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:10.3818213Z 2026/10/28 14:14:10 http: proxy error: context canceled
+3729:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:10.3835157Z 2026/10/28 14:14:10 http: proxy error: context canceled
+3730:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:10.3836521Z 2026/10/28 14:14:10 http: proxy error: context canceled
+3731:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:11.2304386Z 2026/10/28 14:14:11 http: proxy error: context canceled
+3732:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:11.2384644Z 2026/10/28 14:14:11 http: proxy error: context canceled
+3733:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:11.2394037Z 2026/10/28 14:14:11 http: proxy error: context canceled
+3734:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:11.2426159Z 2026/10/28 14:14:11 http: proxy error: context canceled
+3735:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:11.2455362Z 2026/10/28 14:14:11 http: proxy error: context canceled
+3736:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:12.5535493Z 2026/10/28 14:14:12 http: proxy error: context canceled
+3737:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:12.5565813Z 2026/10/28 14:14:12 http: proxy error: context canceled
+3738-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:13.3822568Z     browser_returns_ui_test.go:151: W3-U5 BROWSER(MOCK): returns/cancel UI passed; screenshots hashed; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.IVh1DfhH/returns-ui/20261028T141400.272605853
+3739-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:13.6049119Z --- PASS: TestBrowserReturnsUI (24.98s)
+3740-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:13.6078399Z PASS
+--
+3763-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:15.2653610Z ℹ tests 15
+3764-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:15.2654106Z ℹ suites 0
+3765-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:15.2654512Z ℹ pass 15
+3766:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:15.2654899Z ℹ fail 0
+3767-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:15.2655298Z ℹ cancelled 0
+3768-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:15.2655768Z ℹ skipped 0
+3769-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:15.2656148Z ℹ todo 0
+--
+3791-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3388436Z ##[error]Process completed with exit code 1.
+3792-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3451326Z ##[group]Run shopt -s nullglob
+3793-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3451665Z [36;1mshopt -s nullglob[0m
+3794:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3452539Z [36;1mgrep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true[0m
+3795-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3516007Z shell: /usr/bin/bash -e {0}
+3796-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3516286Z env:
+3797-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3516508Z   GOTOOLCHAIN: local
+--
+3833-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3523764Z ##[endgroup]
+3834-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3622176Z PASS: CB11 isolated admin + storefront Next, Go, PG, real worker; platform billing = MOCK (independent billingtest fake, Stripe pages answered in the browser); not provider or deployment acceptance; CB10 SANDBOX and CB12 LIVE are NOT_RUN.
+3835-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3625286Z     browser_taiwan_cvs_test.go:54: NOT_RUN: the SANDBOX variant (stage map + Stripe 4242) needs ECPAY_LOGISTICS_SANDBOX=1 STRIPE_SANDBOX=1 STRIPE_BROWSER=1 and the owner's test keys
+3836:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3626363Z --- FAIL: TestBrowserTaiwanCvs (70.83s)
+3837:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3626679Z FAIL
+3838:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3626973Z FAIL	livecommerce/tests/foundation	70.961s
+3839:gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3627279Z FAIL
+3840-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3707133Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+3841-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3707575Z with:
+3842-gate (bundle:07)	UNKNOWN STEP	2026-10-28T14:14:30.3707804Z   name: receipt-gate-browser-cvs

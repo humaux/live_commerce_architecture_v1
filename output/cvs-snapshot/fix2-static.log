@@ -1,0 +1,18 @@
+CVS-SNAP fix2 static checks (E1 only; no tests or servers)
+Base merged: 313c2c36f4ac064975c1c7c170d710cb63fa457f (#254 / 0205)
+Merge head: da34e15971f23972f092796033e00728ac55f78f
+Command: gofmt -w internal/httperror/error.go internal/httperror/error_test.go tests/foundation/merchant_tools_order_smoke_test.go tests/foundation/r2_integration_upgrade_test.go ; exit 0
+Command: node --check tests/storefront/claim-checkout.mjs ; exit 0
+Command: go build ./internal/httperror ./internal/checkout ./internal/fulfillment ./migrations ; exit 0
+Command: go vet ./internal/httperror ./tests/foundation ; exit 0 (static analysis only; no test execution)
+Command: bash scripts/dev/depmap.sh ; exit 0, generated file byte-identical
+Command: git diff --check ; exit 0
+NOT_RUN: tsc (not on PATH); all local tests/PG/browser/server; new CI acceptance; independent review; SANDBOX/LIVE/production
+Source hashes at static check:
+62b12dfe0054e495aa5a0b4f72070ca11161da2be2ee7bbb50220beea7efbc8c  internal/httperror/error.go
+5ca4522d2996ea822f37f0eb996469c4c4f64370b0f59dc32fe0e1388b687143  internal/httperror/error_test.go
+0d38371365b5d6872843f95d19414dac8f5dc34f5bfbca76d99eb0b80c312d25  tests/foundation/merchant_tools_order_smoke_test.go
+afedee37e506025bcfebc1895c40ec8391b8238ac63aad9d194c52806466aaf7  tests/foundation/r2_integration_upgrade_test.go
+1b9c52947a557c7765c405490b9c9481c8c6caeb7afd4c0195b45fe49aad3891  tests/e2e/live-tools.spec.ts
+7c673fa1cb0872d155cb25725be9f51a8dcdd5a43fb597caac7dcf8123f1ca69  tests/storefront/claim-checkout.mjs
+a6a32e9897c88e4b3e4606bf9909e65a3d77de911d83e9aba62d5138d3d777e3  docs/engineering/dependency-map.md

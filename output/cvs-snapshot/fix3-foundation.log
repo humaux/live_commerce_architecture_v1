@@ -1,0 +1,31 @@
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1897983Z ✖ failing tests:
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1898122Z
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1898332Z test at tests/ci/backend-coverage.test.mjs:274:1
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1899215Z ✖ CI-SPEED-3: generated browser ownership is current and covers the registry (4428.05795ms)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1900088Z   Error: Command failed: /opt/hostedtoolcache/node/24.22.1/x64/bin/node scripts/dev/derive-browser-ownership.mjs --check
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1900891Z   browser ownership drift: regenerate with node scripts/dev/derive-browser-ownership.mjs
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1901325Z
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1901683Z       at genericNodeError (node:internal/errors:986:15)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1902124Z       at wrappedFn (node:internal/errors:540:14)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1902580Z       at checkExecSyncError (node:child_process:943:11)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1903017Z       at execFileSync (node:child_process:979:15)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1904073Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ci/backend-coverage.test.mjs:277:3)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1904891Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1905517Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1906104Z       at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1906684Z       at Test.postRun (node:internal/test_runner/test:1542:19)
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1907180Z       at Test.run (node:internal/test_runner/test:1467:12) {
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1907513Z     status: 1,
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1907758Z     signal: null,
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1908616Z     output: [ null, <Buffer >, <Buffer 62 72 6f 77 73 65 72 20 6f 77 6e 65 72 73 68 69 70 20 64 72 69 66 74 3a 20 72 65 67 65 6e 65 72 61 74 65 20 77 69 74 68 20 6e 6f 64 65 20 73 63 72 69 ... 37 more bytes> ],
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1909467Z     pid: 44288,
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1909733Z     stdout: <Buffer >,
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1910525Z     stderr: <Buffer 62 72 6f 77 73 65 72 20 6f 77 6e 65 72 73 68 69 70 20 64 72 69 66 74 3a 20 72 65 67 65 6e 65 72 61 74 65 20 77 69 74 68 20 6e 6f 64 65 20 73 63 72 69 ... 37 more bytes>
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1911082Z   }
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1921183Z ## matrix-receipts node-test end
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.1932600Z ##[error]Process completed with exit code 1.
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.2066545Z Post job cleanup.
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.2978247Z [command]/usr/bin/git version
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.3025075Z git version 2.56.0
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.3063797Z Temporarily overriding HOME='/home/runner/work/_temp/58cb9732-a4a9-414a-b68f-fbaeedc2fe1c' before making global git config changes
+foundation	UNKNOWN STEP	2026-10-28T20:29:24.3065323Z Adding repository directory to the temporary git global config as a safe directory

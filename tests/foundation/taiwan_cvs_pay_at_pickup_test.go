@@ -44,7 +44,7 @@ const tcvAllChains = `["cvs_711","cvs_familymart","cvs_hilife","cvs_okmart"]`
 // tppEntered enters a buyer store (buyer_entered mode: the store has no ECPay profile) and returns the pickup id.
 func (e *tcvEnv) tppEntered(b *tcvBuyer, code string) string {
 	e.t.Helper()
-	res := b.enteredStore(code, "123456", "取貨門市", "台北市取貨路1號")
+	res := b.enteredStore(code, "131386", "取貨門市", "台北市取貨路1號")
 	if res.status != 201 {
 		e.t.Fatalf("enter store: %d %s", res.status, res.body)
 	}

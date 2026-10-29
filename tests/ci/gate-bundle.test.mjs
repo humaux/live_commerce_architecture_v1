@@ -1,7 +1,8 @@
 // Purpose: CI-SPEED-2 gate bundles. (1) scripts/dev/ci-plan.mjs bundleJobs: every planned mode in exactly one job, only measured short legs bundled, each
 //   member keeps its own mode/art, explicit dispatches never bundled. (2) gates.yml contract: the gate matrix is `jobs`, receipts still verify `matrix`,
 //   BUNDLE_MAX unrolled per-member upload slots under the solo artifact names. (3) The REAL Gate step shell is EXECUTED with stubbed browsers: a red member
-//   must leave its own FAIL receipt, must not stop the members after it, and must turn the step (and so `required`) red.
+//   must leave its own FAIL receipt, must not stop the members after it, and must turn the step (and so `required`) red. (4) BUNDLE-258: a member that exits 0 while its
+//   log carries a failure is recorded FAIL by the writer, and the step's own verdict must follow that receipt (not only the member exit codes).
 // Depends on: scripts/dev/ci-plan.mjs, scripts/dev/matrix-receipts.mjs (verify), scripts/dev/pr-modes.mjs (registry), .github/workflows/gates.yml; bash, jq, GNU timeout (ubuntu runner).
 // Used by: scripts/dev/test-node.sh (Foundation checks).
 import assert from "node:assert/strict";
@@ -92,7 +93,7 @@ const gateScript = () => {
 };
 
 /** A throwaway checkout: copies of the real registry + receipt writer, a stub xvfb-run that plays one browser gate, and the real Gate step. */
-function runGate({ bundle, mode, members = [], fail = [], stdinEater = [] }) {
+function runGate({ bundle, mode, members = [], fail = [], loudFail = [], stdinEater = [] }) {
   const dir = mkdtempSync(path.join(tmpdir(), "gate-bundle-"));
   // Real copies, not a symlink: a CLI module run through a symlink fails its own `argv[1] === import.meta.url` main guard and silently writes nothing.
   mkdirSync(path.join(dir, "scripts/dev"), { recursive: true });
@@ -106,6 +107,8 @@ mkdir -p "$LC_BROWSER_EVIDENCE_ROOT/stub"
 printf '  \\u2713  1 [chromium] stub spec for %s (1ms)\\n' "$mode" > "$LC_BROWSER_EVIDENCE_ROOT/stub/spec.log"
 echo "ran $mode" >> "$STUB_TRACE"
 case " $STUB_FAIL " in *" $mode "*) echo "--- FAIL: TestBundleStub (0.00s)"; exit 1 ;; esac
+# BUNDLE-258: exit 0 while the log still carries a FAIL line, the CI-SPEED-2 shape the receipt writer already scores FAIL.
+case " $STUB_LOUD_FAIL " in *" $mode "*) echo "--- FAIL: TestBundleLoudFail (0.00s)"; echo "--- PASS: TestBundleStub (0.00s)"; exit 0 ;; esac
 echo "--- PASS: TestBundleStub (0.00s)"
 `);
   chmodSync(path.join(bin, "xvfb-run"), 0o755);
@@ -114,7 +117,7 @@ echo "--- PASS: TestBundleStub (0.00s)"
     ...process.env, PATH: `${bin}:${process.env.PATH}`, MODE: mode, BUNDLE: String(bundle), EXTRA_ENV: "",
     MEMBERS_JSON: JSON.stringify(members.map((m) => ({ mode: m, art: artifactName(m) }))),
     GITHUB_RUN_ID: "77", GITHUB_RUN_ATTEMPT: "1", GITHUB_SHA: "abc123", GITHUB_EVENT_NAME: "pull_request",
-    STUB_FAIL: fail.join(" "), STUB_STDIN: stdinEater.join(" "), STUB_TRACE: path.join(dir, "trace.txt"),
+    STUB_FAIL: fail.join(" "), STUB_LOUD_FAIL: loudFail.join(" "), STUB_STDIN: stdinEater.join(" "), STUB_TRACE: path.join(dir, "trace.txt"),
   };
   delete env.LC_BROWSER_EVIDENCE_ROOT; delete env.RECEIPT_SPEC_ROOT;
   // GitHub runs an unspecified-shell step as `bash -e {0}`.
@@ -154,6 +157,16 @@ test("CI-SPEED-2 executed: a red member gets its own FAIL receipt, every later m
   const byMode = Object.fromEntries(receipts.map((x) => [x.mode, x.status]));
   assert.deepEqual(byMode, { "--browser-buyer": "FAIL", "--browser-storefront": "PASS", "--browser-cvs": "PASS" });
   assert.deepEqual(verify(planned, receipts, { runId: "77", sha: "abc123" }), ["--browser-buyer: status FAIL"]);
+});
+
+test("BUNDLE-258 executed: a member that exits 0 but whose log says FAIL still turns the bundle step red", () => {
+  const { r, receipts, trace } = runGate({ bundle: true, mode: "bundle:01", members: three, loudFail: ["--browser-buyer"] });
+  // The receipt writer already scores an exit-0 member FAIL from its log (#147 CI-6); the step's verdict must follow the
+  // receipt it just wrote, otherwise the bundle job is green while `receipts` (and so `required`) is red for that member.
+  const byMode = Object.fromEntries(receipts.map((x) => [x.mode, x.status]));
+  assert.deepEqual(byMode, { "--browser-buyer": "FAIL", "--browser-storefront": "PASS", "--browser-cvs": "PASS" });
+  assert.deepEqual(trace, three.map((m) => `ran ${m}`), "an exit-0 member with a FAIL log is not a red exit; later members still run");
+  assert.notEqual(r.status, 0, "a member receipt that is not PASS must turn the bundle step red");
 });
 
 test("CI-SPEED-2 executed: a gate that reads stdin cannot swallow the remaining members", () => {
