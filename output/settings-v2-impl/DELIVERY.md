@@ -481,3 +481,40 @@ Integrator relay owns wakeup. Receipt appended locally and to PR comment without
 another CI-triggering evidence commit. Prior untracked figma readbacks preserved.
 
 RELAY4 artifact refresh: download12878213371 did not finish after74s; terminated own gh process. ZIP parse then failed on incomplete stream. No fresh artifact verification claimed; causal assertion receipt remains the previously retained relay2-playwright.log. Fresh workflow/job-log readbacks above succeeded. No background process remains from that download.
+
+## FIX #303 relay 3 — custom-domain journey entry
+
+Current CI authority: PR head `7ab9c4ceb376b9de394c6023d61478df2d6328e8`,
+Gates **40849341786 / job 123370917883**, synthetic checkout
+`61e2f2a2f66dde4a99fb1dc5ef5aec50797144db`. `gh pr checks 303` read;
+`gh run view --log-failed --job 123370917883` refused because workflow remains
+in progress. Read original jobs/logs API and `gh run download` artifact
+**12888112351** instead. Filtered original runner: `relay3-browser-red.log`.
+111 controls: 108 pass, zero fail, three skip. J4 failed its first domain-card
+visibility assertion; remaining two journey steps were not run.
+
+Root cause: `journeyDomain` assumes the old Settings landing page. The signed
+three-row overview exposes rare configuration via `進階`, already used by the
+settings-real browser harness. Add one real, exact-name Advanced click before
+the existing domain-card assertion. Keep every DNS TXT name/token/CNAME and
+reload/REQUESTED assertion unchanged. The existing SettingsWizard persists
+Advanced in session storage, so refresh needs no additional click.
+First targeted fix for this distinct blocker; no retries/thresholds/fixtures
+or exemption lists changed. No application or copy/design change.
+
+Fetched/merged integration `1f0437cccc56113e377fc15aa10dca381b9f12be` first.
+Outside original write paths: **tests/ui/click-sweep.mjs**, only its directly
+affected settings-domain journey; listed in PR for integrator review under the
+module scope pre-approval. Historical **playwright.config.ts** remains listed.
+Regenerate browser-ownership with the assigned static script in the same push.
+No import, route, spec-name or Go dependency changes; depmap not affected.
+
+Static `node --check tests/ui/click-sweep.mjs` and `git diff --check`: exit 0
+(E1 only). Original tests-only causal RED remains Gates40828407097/job123300694776.
+Prior head Foundation40849341762/job123364618086 and bundle07
+40849341786/job123370917703 succeeded; neither proves the new head.
+GREEN/E4 pending; author judgment E0. No local tests/servers/builds.
+NOT_RUN: new-head CI GREEN, independent review, providers/SANDBOX/LIVE, deployment.
+Integrator owns completion relay; no background process left.
+Rollback: revert the relay3 repair commit on the assigned branch.
+Humaux fix stored under `[fix] PR303 relay3 J4 domain journey omitted signed Advanced navigation`.

@@ -86,3 +86,9 @@ No implementation push or source edits; existing WIP preserved.
 GREEN/E4 NOT_RUN. WAIT_RUN none; integrator disposition/relay required.
 
 RELAY4 artifact refresh: download12878213371 did not finish after74s; terminated own gh process. ZIP parse then failed on incomplete stream. No fresh artifact verification claimed; causal assertion receipt remains the previously retained relay2-playwright.log. Fresh workflow/job-log readbacks above succeeded. No background process remains from that download.
+
+RELAY3: head7ab9c4ceb, Gates40849341786/job123370917883, artifact12888112351.
+J4 custom domain fails unchanged storefront-domains-card visible assertion;
+journey omitted the signed Advanced entry. 111 controls:108pass,0fail,3skip.
+Raw filtered runner receipt: relay3-browser-red.log. This is a regression
+failure, not original tests-only RED. New-head GREEN pending.
