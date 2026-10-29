@@ -1,5 +1,27 @@
 # COD-255 — PR #285 implementation, CI acceptance pending
 
+## Relay 6: persisted amount readback repair (attempt 1 for this blocker)
+
+Current-head authority: e798452b162338ffbd37dcde6e70527700b80327; required fetch/merge returned
+Already up to date. Foundation run 40790612363/job 123174615029 passed. Gates run
+40790612417/job 123177001415 failed only its home-COD member: the final PG readback
+referenced nonexistent column `cod_collect_minor` (SQLSTATE 42703).
+The job log was retrieved through the jobs logs API because `gh run view --log-failed`
+refused while the workflow was in progress. Failed artifact 12862800730 was downloaded
+with `gh run download`; its buyer log records all 12 COD-255 scenarios reaching PASS.
+The tested synthetic merge SHA is 281c682c09b015a9281034eff9679c9027cb1611.
+
+Schema authority is migrations/0107_home_cod.sql:61–65; checkout.Service.Get at
+internal/checkout/checkout.go:517–527 projects the same stored total plus surcharge
+as `cod_collect_minor`. The test now reads that persisted sum. Store/order/mode/state,
+surcharge and exact collection amount predicates remain; no assertion or fixture is weakened.
+No product UI/copy/import/layout change, migration or backend edit. Browser ownership
+is regenerated for the changed Go gate source; dependency imports are unchanged.
+Raw failure evidence is retained locally under output/cod255/relay6 (not committed).
+New-head GREEN is PENDING; prior-head browser progress is not current-head acceptance.
+Local tests/servers remain NOT_RUN. Humaux is available in this relay; fix/handoff and
+the lane's own canvas element are recorded there. Integrator owns the CI completion relay.
+
 ## Relay 3: generated ownership repair (attempt 1 for this blocker)
 
 Head ce9e96384cc568cd55e12bbcf6c93a03803401bf failed Foundation run 40761401812,

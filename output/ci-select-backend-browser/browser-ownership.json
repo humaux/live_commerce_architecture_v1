@@ -245,7 +245,7 @@
     "tests/foundation/browser_customers_billing_test.go": "bd818ff2eee93090bec3260d6f4bc5f8737bb1b0b381a79fa705172d4e68b8a3",
     "tests/foundation/browser_e2e_test.go": "4f505d1737552573b6656ae7951521d4f4859539b50bcc7f9bbf6349c66293f5",
     "tests/foundation/browser_evidence_paths_test.go": "65109e53f089ee43574dd25582648f8e0f12b465ff9569fc7eff8e92ce896a29",
-    "tests/foundation/browser_home_cod_test.go": "103c41d7bc48fea10f4fc2067bef36688f4b0b7790b5c1f12af02903efa296ac",
+    "tests/foundation/browser_home_cod_test.go": "6f176fcc5a00780d62ea869b1f4efabec1f1f342e0361fc64c89a1b1c53cb376",
     "tests/foundation/browser_identity_chain_test.go": "2c9575f776def3e276aae85e1d236d58bef85f20108511a36009c53f25f4fca2",
     "tests/foundation/browser_identity_integration_test.go": "aab780e86c0122b1645bcb6e8bf1f3b51119f67a18e77be2fee4be764b286742",
     "tests/foundation/browser_inbox_customer_link_fixture_test.go": "76ea75c51204e0cd9aaa14afbc352c0b6d100cde0101fb3cb86974c8850b6e04",

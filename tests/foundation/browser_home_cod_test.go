@@ -275,7 +275,7 @@ func TestBrowserHomeCod(t *testing.T) {
 			t.Fatalf("COD-255 unexpected browser result: %+v", result)
 		}
 		delete(wantFees, result.Key)
-		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND store_id=$2 AND payment_mode='cash_on_delivery' AND commercial_state='AWAITING_COLLECTION' AND cod_surcharge_minor=$3 AND cod_collect_minor=$4`, result.ID, e.store(), fee, total+fee); n != 1 {
+		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND store_id=$2 AND payment_mode='cash_on_delivery' AND commercial_state='AWAITING_COLLECTION' AND cod_surcharge_minor=$3 AND total_minor+cod_surcharge_minor=$4`, result.ID, e.store(), fee, total+fee); n != 1 {
 			t.Errorf("COD-255 %s: persisted collection must equal both refreshed UI amounts (%d)", result.Key, total+fee)
 		}
 	}
