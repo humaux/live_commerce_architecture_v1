@@ -255,7 +255,9 @@ try {
   const recoveryLink = await fixture("conflict"); pending.seen.redeem = 0;
   await openClaim(pending, recoveryLink); await pending.getByTestId("claim-add").click();
   await expect(pending).toHaveURL(/\/zh-TW\/checkout/); assert.equal(pending.seen.redeem, 0, "in-flight checkout never redeems a new link");
-  await action(pending,"recover-checkout",()=>pending.getByRole("button",{name:"確認上一次的結果",exact:true}).click(),"the same pending checkout recovers its order",()=>expect(pending.getByTestId("order-id")).toBeVisible());
+  await expect(pending.getByTestId("checkout-submit")).toBeDisabled();
+  await expect(pending.getByTestId("recover-purchase")).toHaveText("查詢訂單狀態");
+  await action(pending,"recover-checkout",()=>pending.getByRole("button",{name:"查詢訂單狀態",exact:true}).click(),"the same pending checkout recovers its order",()=>expect(pending.getByTestId("order-id")).toBeVisible());
   orders.push((await pending.getByTestId("order-id").innerText()).trim()); pass("in-flight order recovers without B2");
   // 409 from a pre-existing archived item: navigate to cart, really remove it, then reopen claim.
   const bad=await newPage(engine==="webkit"), badLink=await fixture("archived");

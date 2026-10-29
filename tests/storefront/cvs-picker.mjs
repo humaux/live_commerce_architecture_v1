@@ -8,9 +8,9 @@ import { readFile } from "node:fs/promises";
 import { expect } from "@playwright/test";
 
 const localeCopy = {
-  "zh-TW": { title: "選擇取貨門市", query: "地址、門市名稱或編號", empty: "找不到符合的門市", confirm: "確認取貨門市", source: "資料：綠界門市清單 · 更新 2026-10-28" },
-  "zh-CN": { title: "选择自提门店", query: "地址、门店名称或编号", empty: "未找到匹配的门店", confirm: "确认自提门店", source: "数据：绿界门店清单 · 更新 2026-10-28" },
-  en: { title: "Choose pickup store", query: "Address, store name or code", empty: "No matching stores", confirm: "Confirm pickup store", source: "Source: ECPay stores · Updated 2026-10-28" },
+  "zh-TW": { title: "選擇取貨門市", query: "地址、門市名稱或編號", empty: "找不到符合的門市", confirm: "確認取貨門市", confirmTotal: "確認更新後的金額", source: "資料：綠界門市清單 · 更新 2026-10-28" },
+  "zh-CN": { title: "选择自提门店", query: "地址、门店名称或编号", empty: "未找到匹配的门店", confirm: "确认自提门店", confirmTotal: "确认更新后的金额", source: "数据：绿界门店清单 · 更新 2026-10-28" },
+  en: { title: "Choose pickup store", query: "Address, store name or code", empty: "No matching stores", confirm: "Confirm pickup store", confirmTotal: "Confirm updated total", source: "Source: ECPay stores · Updated 2026-10-28" },
 };
 
 export async function exerciseCvsPaste({ page, locale, openCheckout, ledger }) {
@@ -150,6 +150,13 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
 
     await page.reload();
     await openCheckout();
+    // openCheckout adds another product: acknowledge its changed server total before continuing the picker journey.
+    await expect(page.getByTestId("quote-reconfirm")).toBeVisible();
+    await expect(page.getByTestId("create-order")).toBeDisabled();
+    await expect(page.getByTestId("checkout-submit")).toBeDisabled();
+    await page.getByRole("button", { name: c.confirmTotal, exact: true }).click();
+    await expect(page.getByTestId("quote-reconfirm")).toHaveCount(0);
+    record("reload / updated total", "both submits blocked until explicit acknowledgment of the changed server total");
     await page.getByTestId("cvs-recipient-name").fill("王小明");
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     await open();
@@ -277,6 +284,7 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     assert.equal(resumedDestination.recipient_name, "王小明", "CVS resume must override the older home recipient after hydration");
     assert.equal(resumedDestination.phone, "0912345678");
     assert.equal(resumedDestination.version, oldHome.version + 1, "resume still loads the current server head for CAS");
+    await expect(page.getByTestId("quote-reconfirm")).toHaveCount(0);
     await expect(page.getByTestId("create-order")).toBeEnabled();
     record("older home recipient / brand switch / confirm destination", "current CVS contact retained after hydration and saved against latest home head");
     await page.getByTestId("cvs-change-store").click();

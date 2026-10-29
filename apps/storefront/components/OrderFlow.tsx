@@ -1,13 +1,9 @@
 "use client";
 
 // Purpose: confirmed-address checkout and current order details, with stable layout while delivery facts load.
-// Depends on: purchase.ts CAS/recovery, buyer BFF destination/options/orders routes, payment and fulfilment components.
-// Address field definitions and projection live in lib/order-fields.ts.
+// Depends on: purchase.ts CAS/recovery, order-fields, buyer BFF routes, CheckoutReview/CheckoutPaymentChoices and payment/fulfilment components.
 // Used by: the storefront checkout route's purchase controller; no persistent address cache or client-owned transaction rules.
-// Invariants: confirmation waits for matching server quote/options and an explicitly confirmed destination; a CVS brand change gets a fresh server quote.
-// Local extension of approved B: native address form after the real quotation;
-// no new wizard, payment claim or persistent address cache. Transport/CAS and
-// receipt recovery live in purchase.ts, not in this rendering component.
+// Invariants: matching server quote/options, confirmed destination and changed-total acknowledgment gate submit; brand changes requote; money is never added here.
 // OrderDetails hosts <OrderPayment> (BFF orders/{id}/payment[/prepare|handoff|refresh|cancel]);
 // its Refresh order button also fires the Stripe payment/refresh signal via paymentSignalRef.
 // The shipment block renders Go GET /v1/buyer/orders/{id} `shipment` (BFF orders/{id}); no route of its own.
@@ -29,6 +25,10 @@ import { purchaseCopy } from "../lib/purchase-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { codCopy } from "../lib/cod-copy";
+import { checkoutCopy } from "../lib/checkout-copy";
+import CheckoutReview from "./checkout/CheckoutReview";
+import CheckoutPaymentChoices from "./checkout/CheckoutPaymentChoices";
+import { checkoutOption } from "../lib/checkout-review";
 import { countryName } from "../lib/country-name";
 import {
   emptyOrderFields as empty,
@@ -59,11 +59,9 @@ import {
   offeredPaymentModes,
   currentDestination,
   pendingPurchase,
-  purchasePage,
   readPurchase,
   validCart,
-  validOptionRow,
-  isUnavailable,
+  validQuote,
   validDestinationWrite,
   writeDestination,
   writeCheckout,
@@ -96,7 +94,10 @@ export default function OrderFlow({
   onOrder,
   money,
   onCodFee,
-  onQuote,
+  reconfirmRequired = false,
+  onFeeChanged,
+  onQuoteRefresh,
+  onReviewState,
   cvsResume,
   onCvsBrand,
   cvsKinds,
@@ -116,7 +117,10 @@ export default function OrderFlow({
   // OC-09b: reports the selected cash-on-delivery option's server surcharge (null = another mode or COD not offered) so the
   // checkout bottom bar can show the quote's cod_due_minor; never an amount of its own.
   onCodFee?: (fee: number | null) => void;
-  onQuote: (quote: Quote) => void;
+  reconfirmRequired?: boolean;
+  onFeeChanged?: () => void;
+  onQuoteRefresh?: (quote: Quote) => void;
+  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean }) => void;
   cvsResume?: CvsDraft;
   onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
   cvsKinds?: CvsKind[];
@@ -155,10 +159,25 @@ export default function OrderFlow({
   const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
   const paymentChoices = option && quote ? offeredPaymentModes(option, quote.amount.total_minor) : [];
   const codFee = paymentMode === "cash_on_delivery" && option && paymentChoices.includes("cash_on_delivery") ? option.cod_surcharge_minor ?? 0 : null;
+  const checkout = checkoutCopy[locale];
+  const timing = paymentMode === "cash_on_delivery" ? checkout.cod : paymentMode === "pay_at_pickup" ? checkout.pickup : checkout.online;
+  const canSubmit = !busy && !blocked && !expired && !!confirmed && !!option && paymentChoices.includes(paymentMode) && !reconfirmRequired && (codFee === null || quote?.cod_due_minor !== undefined);
+  const quoteReady = !!option && paymentChoices.includes(paymentMode) && (codFee === null || quote?.cod_due_minor !== undefined);
+  useEffect(() => {
+    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady });
+    return () => { if (quote) onReviewState?.({ quoteID: quote.id, ready: false, timing }); };
+  }, [quote?.id, canSubmit, timing, quoteReady, onReviewState]);
   useEffect(() => {
     onCodFee?.(codFee);
     return () => onCodFee?.(null);
   }, [codFee, onCodFee]);
+
+  useEffect(() => {
+    if (!quote || !option || !offeredPaymentModes(option, quote.amount.total_minor).includes(paymentMode)) return;
+    // Remember automatic choices too: reload must compare the payable the buyer actually reviewed.
+    try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, paymentMode); }
+    catch { setOption(null); setNotice("failed"); }
+  }, [context, quote, option, paymentMode]);
 
   useEffect(() => {
     const version = ++live.current;
@@ -183,41 +202,29 @@ export default function OrderFlow({
         // A quote-bound CVS draft wins over older home fields; the CAS head still loads above.
         if (!cvsResume && current?.kind === "home" && current.country === country) {
           setFields(fieldsOf(current));
-          setNotice("recovered");
-        } else setNotice(null);
+          setNotice((notice) => notice === "failed" ? notice : "recovered");
+        } else setNotice((notice) => notice === "failed" ? notice : null);
+      } catch {
+        if (version === live.current) setNotice("failed");
+      }
+    })();
+    // Options must not wait for the destination head: their controls affect page height.
+    void (async () => {
+      try {
         if (!quote) return;
-        let found: Option | undefined,
-          cursor = "";
-        const seen = new Set<string>();
-        do {
-          const page = await purchasePage(
-            `checkout-options?market_id=${quote.market_id}&country=${quote.country}&limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
-            context,
-            validOptionRow,
-          );
-          // A row the store lists but cannot sell yet ("coming soon") is never checkout-able here.
-          found = page.items.find(
-            (o): o is Option =>
-              !isUnavailable(o) &&
-              o.market_id === quote.market_id &&
-              o.country === quote.country &&
-              o.method === quote.method &&
-              o.currency === quote.currency &&
-              (o.delivery_kind !== "home" || o.mode === "MANUAL"),
-          );
-          cursor = page.next_cursor;
-          if (cursor && (seen.has(cursor) || seen.size >= 100))
-            throw new BuyerClientError("invalid_response");
-          seen.add(cursor);
-        } while (!found && cursor);
-        if (!found) throw new BuyerClientError("request_failed");
-        const latest = await refreshCodQuote(context, quote, found);
+        // A fee refusal invalidates both reads. Publish neither until both are ready.
+        const [currentQuote, found] = await Promise.all([
+          optionRefresh ? readPurchase(`quotes/${quote.id}`, context, validQuote) : Promise.resolve(quote),
+          checkoutOption(context, quote),
+        ]);
+        const latest = await refreshCodQuote(context, currentQuote, found);
         if (version !== live.current) return;
-        onQuote(latest);
-        setOption(found);
+        if (optionRefresh || latest !== quote) onQuoteRefresh?.(latest);
         // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
         const offered = offeredPaymentModes(found, latest.amount.total_minor);
-        if (offered?.length) setPaymentMode((current) => (offered.includes(current) ? current : offered[0]));
+        const savedMode = sessionStorage.getItem(`commerce-checkout-mode-v2:${context}:${quote.id}`);
+        if (offered?.length) setPaymentMode((current) => offered.includes(savedMode as PaymentMode) ? savedMode as PaymentMode : offered.includes(current) ? current : offered[0]);
+        setOption(found);
         // Options can arrive after the buyer edits or confirms a recovered
         // address. Never hydrate fields/head again from that older snapshot.
       } catch {
@@ -349,6 +356,7 @@ export default function OrderFlow({
   return (
     <section
       className="address-section"
+      hidden={!!quote && !option && !recoveringDestination && notice !== "failed"}
       data-testid="address-section"
       aria-labelledby="address-title"
     >
@@ -436,47 +444,6 @@ export default function OrderFlow({
             />
           )}
           {cvsOption && <label className="sku-row cod-home-only"><input type="radio" disabled aria-label={cod.homeOnly} />{cod.homeOnly}</label>}
-          {!cvsOption && option?.payment_modes && (
-            <fieldset className="sku-options wide" data-testid="home-payment-mode">
-              <legend>{bank.paymentLegend}</legend>
-              {paymentChoices.map((mode) => (
-                // .address-fields label (grid) would win over .sku-row, so the row layout is stated inline (as in CvsPickup).
-                <label
-                  key={mode}
-                  className={mode === paymentMode ? "sku-row selected" : "sku-row"}
-                  style={{ display: "flex", gap: 16, minHeight: 44 }}
-                >
-                  <input
-                    type="radio"
-                    name="home_payment_mode"
-                    style={{ width: 20, height: 20, padding: 0, flex: "none" }}
-                    value={mode}
-                    checked={mode === paymentMode}
-                    onChange={() => {
-                      setPaymentMode(mode);
-                      setConfirmed(null);
-                      setTransferError(null);
-                      setCodError(null);
-                    }}
-                  />
-                  <span>
-                    {mode === "bank_transfer"
-                      ? bank.payBank
-                      : mode === "cash_on_delivery"
-                        ? cod.codLabel(
-                            quote
-                              ? money(quote.amount.total_minor, quote.currency)
-                              : "",
-                            option && option.cod_surcharge_minor
-                              ? money(option.cod_surcharge_minor, option.currency)
-                              : null,
-                          )
-                        : bank.payCard}
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-          )}
           {!cvsOption && inputs.map(([name, autoComplete, maxLength, required]) => (
             <label
               key={name}
@@ -566,19 +533,28 @@ export default function OrderFlow({
         </div>
       )}
       {codError && <p role="alert" data-testid="cod-checkout-error">{codError}</p>}
+      {quote && <CheckoutReview locale={locale} quote={quote} destination={confirmed} fee={codFee} timing={timing}
+        method={paymentMode === "bank_transfer" ? bank.payBank : paymentMode === "cash_on_delivery" ? cod.orderTitle : paymentMode === "pay_at_pickup" ? cvsCopy[locale].createPickup : bank.payCard}>
+          {!cvsOption && option && <CheckoutPaymentChoices locale={locale} quote={quote} option={option} modes={paymentChoices}
+            selected={paymentMode} disabled={busy || blocked || expired || !headLoaded} money={money} onChange={(mode) => {
+              try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, mode); }
+              catch { setOption(null); setNotice("failed"); return; }
+              setPaymentMode(mode);
+              setConfirmed(null);
+              setTransferError(null);
+              setCodError(null);
+            }} />}
+      </CheckoutReview>}
       {/* Why the button below is disabled, in words (never colour alone): the address must be confirmed first. */}
       {needsConfirm && (
         <p id="create-order-hint" className="order-note" data-testid="create-order-hint">
           {copy.createNeedsConfirm}
         </p>
       )}
-      <button
-        data-testid="create-order"
-        className="primary create-order"
-        aria-describedby={needsConfirm ? "create-order-hint" : undefined}
-        disabled={busy || blocked || expired || !confirmed || !option || !paymentChoices.includes(paymentMode)}
-        onClick={() =>
-          void run(async (isCurrent) => {
+      <form id="checkout-order-form" onSubmit={(event) => {
+        event.preventDefault();
+        if (!canSubmit) return;
+        void run(async (isCurrent) => {
             if (!quote || !confirmed || !option) return;
             const version = live.current;
             // The email is optional; a non-empty invalid one stops here, before any request (Go and SQL re-validate).
@@ -610,6 +586,7 @@ export default function OrderFlow({
               if (reason instanceof BuyerClientError && ["cash_on_delivery_unavailable", "cash_on_delivery_amount_exceeds", "cash_on_delivery_limit", "cod_surcharge_changed"].includes(reason.detail ?? "")) {
                 if (version === live.current) {
                   setCodError(reason.detail === "cod_surcharge_changed" ? cod.changed : reason.detail === "cash_on_delivery_amount_exceeds" ? cod.capReached : reason.detail === "cash_on_delivery_limit" ? cod.limit : cod.unavailable);
+                  if (reason.detail === "cod_surcharge_changed") onFeeChanged?.();
                   setOption(null);
                   setOptionRefresh((value) => value + 1);
                 }
@@ -637,8 +614,14 @@ export default function OrderFlow({
               }
               throw reason;
             }
-          })
-        }
+          });
+      }}>
+      <button
+        type="submit"
+        data-testid="create-order"
+        className="primary create-order"
+        aria-describedby={needsConfirm ? "create-order-hint" : undefined}
+        disabled={!canSubmit}
       >
         {paymentMode === "bank_transfer" && option?.payment_modes?.includes("bank_transfer")
           ? bank.createBank
@@ -648,6 +631,7 @@ export default function OrderFlow({
               ? cvsCopy[locale].createPickup
               : copy.create}
       </button>
+      </form>
       <p className="order-note">
         {paymentMode === "bank_transfer" && option?.payment_modes?.includes("bank_transfer")
           ? bank.bankNote(option.transfer_window_hours ?? 0)

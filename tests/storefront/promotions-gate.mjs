@@ -250,6 +250,7 @@ async function scenario(index, run) {
   }
   await buyer.getByTestId("home-payment-mode").getByRole("radio", { name: words.bank }).check();
   await buyer.locator('input[name="buyer_email"]').fill(`promo-${index}@example.com`);
+  await buyer.getByTestId("quote-reconfirm").getByRole("button").click();
   await buyer.getByTestId("confirm-address").click();
   await expect(buyer.getByTestId("create-order")).toBeEnabled();
   await buyer.getByTestId("create-order").click();

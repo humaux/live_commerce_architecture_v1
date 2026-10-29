@@ -1,0 +1,499 @@
+Artifact member: buyer/playwright/buyer-real-836779105/browser.log
+browser engine: chromium
+(node:6238) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS multi-tab initialization reuses one context; HttpOnly cookie absent from JS
+PASS actual catalog/options/cart/quote/home/checkout/order; cross-instance replay
+PASS Next process restart preserves cookie and real-PG order
+PASS reset denies stale-tab write; logout leaves inert cookie
+PASS definite local422 clears pending journal and permits explicit retry
+PASS lost prepare before headers stays fail-closed without remint
+PASS abort after Set-Cookie headers recovers same prepared context
+PASS tab death releases Web Lock; another tab reconciles persisted journal
+PASS lost activation response reads committed session without duplicate issue
+PASS logout retires token before delayed activation from closed tab
+PASS cross-origin, private authority injection, malformed/forged inputs rejected
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(locator).toBeVisible() failed
+
+Locator: getByText('Not paid', { exact: true })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" getByText('Not paid', { exact: true }) with timeout 5000ms
+  - waiting for getByText('Not paid', { exact: true })
+
+    at captureRawStack (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toBeVisible (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/browser-gate.mjs:237:55 {
+  matcherResult: {
+    message: 'expect(locator).toBeVisible() failed\n' +
+      '\n' +
+      "Locator: getByText('Not paid', { exact: true })\n" +
+      'Expected: visible\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeVisible" getByText('Not paid', { exact: true }) with timeout 5000ms\n` +
+      "  - waiting for getByText('Not paid', { exact: true })\n",
+    pass: false,
+    actual: undefined,
+    name: 'toBeVisible',
+    expected: 'visible',
+    log: [
+      `  - Expect "toBeVisible" getByText('Not paid', { exact: true }) with timeout 5000ms`,
+      "  - waiting for getByText('Not paid', { exact: true })"
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- link "Skip to content":\n' +
+      '  - /url: "#main"\n' +
+      '- banner:\n' +
+      '  - button "Menu"\n' +
+      '  - link "fixture-store-a1":\n' +
+      '    - /url: /en\n' +
+      '  - link "Search":\n' +
+      '    - /url: /en/search\n' +
+      '  - button "Cart, 2 items"\n' +
+      '- paragraph: Synthetic data · test environment\n' +
+      '- main:\n' +
+      '  - navigation "Your orders":\n' +
+      '    - button "Your orders"\n' +
+      '  - region "Checkout":\n' +
+      '    - heading "Checkout" [level=1]\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - img "No image"\n' +
+      '        - link "帆布收納袋（兩入組）":\n' +
+      '          - /url: /en/products/t04-43bc588cac50\n' +
+      '        - text: $780\n' +
+      '        - paragraph: NAVY-01\n' +
+      '        - paragraph: $390 × 2\n' +
+      '    - link "Back to cart":\n' +
+      '      - /url: /en/cart\n' +
+      '  - region "Delivery and quotation":\n' +
+      '    - heading "Delivery and quotation" [level=2]\n' +
+      '    - text: Delivery method\n' +
+      '    - combobox "Delivery method":\n' +
+      '      - option "Standard delivery · TW" [selected]\n' +
+      '  - region "Items in this quotation":\n' +
+      '    - heading "Items in this quotation" [level=2]\n' +
+      '    - list:\n' +
+      '      - listitem: 帆布收納袋（兩入組） · NAVY-01 × 2 $780\n' +
+      '    - term: Delivery\n' +
+      '    - definition: $0.50\n' +
+      '    - term: Tax\n' +
+      '    - definition: $39.03\n' +
+      '    - term: Discount\n' +
+      '    - definition: $0\n' +
+      '    - term: Order total\n' +
+      '    - definition: $819.53\n' +
+      '    - paragraph: Quote valid until 10/29/2026, 07:24 · Taipei time (UTC+8)\n' +
+      '    - paragraph: No payment has been taken. Confirm your address below before creating an unpaid order.\n' +
+      '    - text: Discount code\n' +
+      '    - textbox "Discount code":\n' +
+      '      - /placeholder: Enter a code\n' +
+      '    - button "Apply" [disabled]\n' +
+      '    - text: A code takes money off the goods, not shipping. One code per order.\n' +
+      '    - button "View quotation"\n' +
+      '    - button "Change delivery"\n' +
+      '  - region "Delivery address":\n' +
+      '    - heading "Delivery address" [level=2]\n' +
+      '    - paragraph: Check your delivery address and the quoted total before creating your order.\n' +
+      '    - paragraph:\n' +
+      '      - text: "Order total:"\n' +
+      '      - strong: $819.53\n' +
+      '      - text: "· Country: TW"\n' +
+      '    - group "Delivery address":\n' +
+      '      - text: Delivery address Recipient name\n' +
+      '      - textbox "Recipient name"\n' +
+      '      - text: Phone\n' +
+      '      - textbox "Phone"\n' +
+      '      - text: Region (optional)\n' +
+      '      - textbox "Region (optional)"\n' +
+      '      - text: City\n' +
+      '      - textbox "City"\n' +
+      '      - text: Postal code (optional)\n' +
+      '      - textbox "Postal code (optional)"\n' +
+      '      - text: Address line 1\n' +
+      '      - textbox "Address line 1"\n' +
+      '      - text: Address line 2 (optional)\n' +
+      '      - textbox "Address line 2 (optional)"\n' +
+      '      - button "Confirm address"\n' +
+      '    - text: Email (optional)\n' +
+      '    - textbox "Email (optional) Used only for updates about this order."\n' +
+      '    - text: Used only for updates about this order.\n' +
+      '    - group "Optional messages and ads":\n' +
+      '      - text: Optional messages and ads\n' +
+      '      - paragraph: These are optional. Your order does not depend on them, and you can change them any time on the privacy page.\n' +
+      '      - checkbox "The store may send me marketing messages on Messenger or Instagram DM."\n' +
+      '      - text: The store may send me marketing messages on Messenger or Instagram DM.\n' +
+      '      - checkbox "Use my purchase to personalize Meta ads for me."\n' +
+      '      - text: Use my purchase to personalize Meta ads for me.\n' +
+      "      - paragraph: If you tick this, this order's purchase event (order value and currency, linked to your browser signals) is sent to Meta to measure and personalize ads. Events already sent cannot be recalled.\n" +
+      '      - paragraph:\n' +
+      '        - link "Privacy notice":\n' +
+      '          - /url: /en/privacy?notice=lc-2026-10\n' +
+      '        - text: (version lc-2026-10)\n' +
+      '    - region "Review your order":\n' +
+      '      - heading "Review your order" [level=2]\n' +
+      '      - term: Product subtotal\n' +
+      '      - definition: $780\n' +
+      '      - term: Delivery\n' +
+      '      - definition: $0.50\n' +
+      '      - term: Final total\n' +
+      '      - definition: $819.53\n' +
+      '      - group "Payment":\n' +
+      '        - text: Payment\n' +
+      '        - radio "Credit card" [checked]\n' +
+      '        - text: Credit card\n' +
+      '      - paragraph: Payment method · Credit card\n' +
+      '      - paragraph: Pay after placing your order\n' +
+      '      - button "Expand payment help"\n' +
+      '    - paragraph: Confirm your delivery address above to create the order.\n' +
+      '    - button "Create unpaid order" [disabled]\n' +
+      '    - paragraph: Payment is not open on this page yet. No payment is taken by creating an order.\n' +
+      '- contentinfo:\n' +
+      '  - text: Order total\n' +
+      '  - strong: $819.53\n' +
+      '  - text: Pay after placing your order\n' +
+      '  - button "Place order" [disabled]\n' +
+      '- contentinfo:\n' +
+      '  - region "fixture-store-a1":\n' +
+      '    - paragraph: fixture-store-a1\n' +
+      '  - navigation "Legal":\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - link "Shop safely":\n' +
+      '          - /url: /en/legal/anti-fraud\n' +
+      '      - listitem:\n' +
+      '        - link "Data deletion":\n' +
+      '          - /url: /en/data-deletion\n' +
+      '  - navigation "Language":\n' +
+      '    - link "简体中文":\n' +
+      '      - /url: /zh-CN/checkout\n' +
+      '    - link "繁體中文":\n' +
+      '      - /url: /zh-TW/checkout\n' +
+      '    - link "English":\n' +
+      '      - /url: /en/checkout\n' +
+      '  - paragraph: © 2026 fixture-store-a1\n' +
+      '- alert'
+  }
+}
+
+Node.js v24.22.1
+
+
+Artifact member: order/playwright/buyer-order-3414549022/browser.log
+browser engine: chromium
+PASS BC01 en drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC02 native focus failure preserves held real cart on retained drawer and fresh mount
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: loading completion must not move the footer language target
++ actual - expected
+
++ 3099.953125
+- 2973.15625
+
+    at stableLocaleTarget (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:232:10)
+    at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:506:3 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 3099.953125,
+  expected: 2973.15625,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.1
+
+
+Artifact member: claim-checkout/playwright/run.lYDPHm1g/claim-checkout/20261028T233951.315860800/browser.log
+browser engine: chromium
+PASS CDC chosen SKU/quantity/live price -> order -> reload; Taipei expiry in zh-TW/America/Los_Angeles
+PASS CDC chosen SKU/quantity/live price -> order -> reload; Taipei expiry in zh-CN/UTC
+PASS CDC chosen SKU/quantity/live price -> order -> reload; Taipei expiry in en/America/Los_Angeles
+PASS CDC continueShopping prevents repeat purchase of old cart
+PASS CDC unpaid merge survives reload and other item removal preserves chosen SKU/quantity
+PASS CDC claim-page removal with live price survives revisit and checkout
+PASS CDC partial sold-out skip
+PASS CDC partial claim revisit checks out applied A despite pending sold-out B
+PASS CDC all sold out is disabled
+PASS CDC replenishment keeps pending and permits a fresh checkout click
+PASS CDC expired uniform 404
+PASS CDC expired origin uses catalog quote
+PASS CDC B1/B2 stock race settles sold-out without cart write/navigation
+PASS CDC double click sends one redeem
+PASS CDC back navigation forgets token and asks to reopen the message link
+PASS CDC double-click journey yields exactly one persisted order
+PASS CDC stock disappearing after quote is refused at Begin
+CDC visible alerts ["確認訂單狀態中\n\n查詢訂單狀態",""]
+FAIL CDC locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: '確認上一次的結果', exact: true })
+
+
+
+Artifact member: webkit/playwright/buyer-real-1175276051/browser.log
+browser engine: webkit
+(node:9912) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS multi-tab initialization reuses one context; HttpOnly cookie absent from JS
+PASS actual catalog/options/cart/quote/home/checkout/order; cross-instance replay
+PASS Next process restart preserves cookie and real-PG order
+PASS reset denies stale-tab write; logout leaves inert cookie
+PASS definite local422 clears pending journal and permits explicit retry
+PASS lost prepare before headers stays fail-closed without remint
+PASS abort after Set-Cookie headers recovers same prepared context
+PASS tab death releases Web Lock; another tab reconciles persisted journal
+PASS lost activation response reads committed session without duplicate issue
+PASS logout retires token before delayed activation from closed tab
+PASS cross-origin, private authority injection, malformed/forged inputs rejected
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(locator).toBeVisible() failed
+
+Locator: getByText('Not paid', { exact: true })
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" getByText('Not paid', { exact: true }) with timeout 5000ms
+  - waiting for getByText('Not paid', { exact: true })
+
+    at captureRawStack (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toBeVisible (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/browser-gate.mjs:237:55 {
+  matcherResult: {
+    message: 'expect(locator).toBeVisible() failed\n' +
+      '\n' +
+      "Locator: getByText('Not paid', { exact: true })\n" +
+      'Expected: visible\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeVisible" getByText('Not paid', { exact: true }) with timeout 5000ms\n` +
+      "  - waiting for getByText('Not paid', { exact: true })\n",
+    pass: false,
+    actual: undefined,
+    name: 'toBeVisible',
+    expected: 'visible',
+    log: [
+      `  - Expect "toBeVisible" getByText('Not paid', { exact: true }) with timeout 5000ms`,
+      "  - waiting for getByText('Not paid', { exact: true })"
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- link "Skip to content":\n' +
+      '  - /url: "#main"\n' +
+      '- banner:\n' +
+      '  - button "Menu"\n' +
+      '  - link "fixture-store-a1":\n' +
+      '    - /url: /en\n' +
+      '  - link "Search":\n' +
+      '    - /url: /en/search\n' +
+      '  - button "Cart, 2 items"\n' +
+      '- paragraph: Synthetic data · test environment\n' +
+      '- main:\n' +
+      '  - navigation "Your orders":\n' +
+      '    - button "Your orders"\n' +
+      '  - region "Checkout":\n' +
+      '    - heading "Checkout" [level=1]\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - img "No image"\n' +
+      '        - link "帆布收納袋（兩入組）":\n' +
+      '          - /url: /en/products/t04-070b1ee7c472\n' +
+      '        - text: $780\n' +
+      '        - paragraph: NAVY-01\n' +
+      '        - paragraph: $390 × 2\n' +
+      '    - link "Back to cart":\n' +
+      '      - /url: /en/cart\n' +
+      '  - region "Delivery and quotation":\n' +
+      '    - heading "Delivery and quotation" [level=2]\n' +
+      '    - text: Delivery method\n' +
+      '    - combobox "Delivery method":\n' +
+      '      - option "Standard delivery · TW" [selected]\n' +
+      '  - region "Items in this quotation":\n' +
+      '    - heading "Items in this quotation" [level=2]\n' +
+      '    - list:\n' +
+      '      - listitem: 帆布收納袋（兩入組） · NAVY-01 × 2 $780\n' +
+      '    - term: Delivery\n' +
+      '    - definition: $0.50\n' +
+      '    - term: Tax\n' +
+      '    - definition: $39.03\n' +
+      '    - term: Discount\n' +
+      '    - definition: $0\n' +
+      '    - term: Order total\n' +
+      '    - definition: $819.53\n' +
+      '    - paragraph: Quote valid until 10/29/2026, 07:39 · Taipei time (UTC+8)\n' +
+      '    - paragraph: No payment has been taken. Confirm your address below before creating an unpaid order.\n' +
+      '    - text: Discount code\n' +
+      '    - textbox "Discount code":\n' +
+      '      - /placeholder: Enter a code\n' +
+      '    - button "Apply" [disabled]\n' +
+      '    - text: A code takes money off the goods, not shipping. One code per order.\n' +
+      '    - button "View quotation"\n' +
+      '    - button "Change delivery"\n' +
+      '  - region "Delivery address":\n' +
+      '    - heading "Delivery address" [level=2]\n' +
+      '    - paragraph: Check your delivery address and the quoted total before creating your order.\n' +
+      '    - paragraph:\n' +
+      '      - text: "Order total:"\n' +
+      '      - strong: $819.53\n' +
+      '      - text: "· Country: TW"\n' +
+      '    - group "Delivery address":\n' +
+      '      - text: Delivery address Recipient name\n' +
+      '      - textbox "Recipient name"\n' +
+      '      - text: Phone\n' +
+      '      - textbox "Phone"\n' +
+      '      - text: Region (optional)\n' +
+      '      - textbox "Region (optional)"\n' +
+      '      - text: City\n' +
+      '      - textbox "City"\n' +
+      '      - text: Postal code (optional)\n' +
+      '      - textbox "Postal code (optional)"\n' +
+      '      - text: Address line 1\n' +
+      '      - textbox "Address line 1"\n' +
+      '      - text: Address line 2 (optional)\n' +
+      '      - textbox "Address line 2 (optional)"\n' +
+      '      - button "Confirm address"\n' +
+      '    - text: Email (optional)\n' +
+      '    - textbox "Email (optional) Used only for updates about this order."\n' +
+      '    - text: Used only for updates about this order.\n' +
+      '    - group "Optional messages and ads":\n' +
+      '      - text: Optional messages and ads\n' +
+      '      - paragraph: These are optional. Your order does not depend on them, and you can change them any time on the privacy page.\n' +
+      '      - checkbox "The store may send me marketing messages on Messenger or Instagram DM."\n' +
+      '      - text: The store may send me marketing messages on Messenger or Instagram DM.\n' +
+      '      - checkbox "Use my purchase to personalize Meta ads for me."\n' +
+      '      - text: Use my purchase to personalize Meta ads for me.\n' +
+      "      - paragraph: If you tick this, this order's purchase event (order value and currency, linked to your browser signals) is sent to Meta to measure and personalize ads. Events already sent cannot be recalled.\n" +
+      '      - paragraph:\n' +
+      '        - link "Privacy notice":\n' +
+      '          - /url: /en/privacy?notice=lc-2026-10\n' +
+      '        - text: (version lc-2026-10)\n' +
+      '    - region "Review your order":\n' +
+      '      - heading "Review your order" [level=2]\n' +
+      '      - term: Product subtotal\n' +
+      '      - definition: $780\n' +
+      '      - term: Delivery\n' +
+      '      - definition: $0.50\n' +
+      '      - term: Final total\n' +
+      '      - definition: $819.53\n' +
+      '      - group "Payment":\n' +
+      '        - text: Payment\n' +
+      '        - radio "Credit card" [checked]\n' +
+      '        - text: Credit card\n' +
+      '      - paragraph: Payment method · Credit card\n' +
+      '      - paragraph: Pay after placing your order\n' +
+      '      - button "Expand payment help"\n' +
+      '    - paragraph: Confirm your delivery address above to create the order.\n' +
+      '    - button "Create unpaid order" [disabled]\n' +
+      '    - paragraph: Payment is not open on this page yet. No payment is taken by creating an order.\n' +
+      '- contentinfo:\n' +
+      '  - text: Order total\n' +
+      '  - strong: $819.53\n' +
+      '  - text: Pay after placing your order\n' +
+      '  - button "Place order" [disabled]\n' +
+      '- contentinfo:\n' +
+      '  - region "fixture-store-a1":\n' +
+      '    - paragraph: fixture-store-a1\n' +
+      '  - navigation "Legal":\n' +
+      '    - list:\n' +
+      '      - listitem:\n' +
+      '        - link "Shop safely":\n' +
+      '          - /url: /en/legal/anti-fraud\n' +
+      '      - listitem:\n' +
+      '        - link "Data deletion":\n' +
+      '          - /url: /en/data-deletion\n' +
+      '  - navigation "Language":\n' +
+      '    - link "简体中文":\n' +
+      '      - /url: /zh-CN/checkout\n' +
+      '    - link "繁體中文":\n' +
+      '      - /url: /zh-TW/checkout\n' +
+      '    - link "English":\n' +
+      '      - /url: /en/checkout\n' +
+      '  - paragraph: © 2026 fixture-store-a1\n' +
+      '- alert'
+  }
+}
+
+Node.js v24.22.1
+
+
+Artifact member: webkit/playwright/buyer-order-3461659412/browser.log
+browser engine: webkit
+PASS BC01 en drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload
+PASS BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload
+PASS BC02 native focus failure preserves held real cart on retained drawer and fresh mount
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: loading completion must not move the footer language target
++ actual - expected
+
++ 3099.953125
+- 2973.15625
+
+    at stableLocaleTarget (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:232:10)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at process.processImmediate (node:internal/timers:541:9)
+    at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:506:3 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 3099.953125,
+  expected: 2973.15625,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.22.1
+
+
+Artifact member: webkit/playwright/run.c8RmHUyt/claim-checkout/20261028T234306.248417188/browser.log
+browser engine: webkit
+PASS CDC chosen SKU/quantity/live price -> order -> reload; Taipei expiry in zh-TW/America/Los_Angeles
+PASS CDC chosen SKU/quantity/live price -> order -> reload; Taipei expiry in zh-CN/UTC
+PASS CDC chosen SKU/quantity/live price -> order -> reload; Taipei expiry in en/America/Los_Angeles
+PASS CDC continueShopping prevents repeat purchase of old cart
+PASS CDC unpaid merge survives reload and other item removal preserves chosen SKU/quantity
+PASS CDC claim-page removal with live price survives revisit and checkout
+PASS CDC partial sold-out skip
+PASS CDC partial claim revisit checks out applied A despite pending sold-out B
+PASS CDC all sold out is disabled
+PASS CDC replenishment keeps pending and permits a fresh checkout click
+PASS CDC expired uniform 404
+PASS CDC expired origin uses catalog quote
+PASS CDC B1/B2 stock race settles sold-out without cart write/navigation
+PASS CDC double click sends one redeem
+PASS CDC back navigation forgets token and asks to reopen the message link
+PASS CDC double-click journey yields exactly one persisted order
+PASS CDC stock disappearing after quote is refused at Begin
+CDC visible alerts ["確認訂單狀態中\n\n查詢訂單狀態",""]
+FAIL CDC locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: '確認上一次的結果', exact: true })
