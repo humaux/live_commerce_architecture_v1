@@ -186,3 +186,7 @@ WAIT_RUN: NONE (no new push; 40785921695 completed failure). Resume requires the
 
 Fresh `gh run download 40785921695 -n gate-browser-design` and `-n gate-browser-password-auth` both exit0; actual playwright.log files read under output/oc-11/relay8-artifacts. Artifacts12861212245 and12860142604 corroborate A9/A10/A11/P1 and missing-store collection failure. Downloads finished; no background process remains.
 
+
+CONTINUATION IMPLEMENTATION PREPARATION 2026-10-29
+Starting head f78a3977cc00f9e081efc1b625bfbdcca3b40736; integration merge already present. Existing Go RED eec62d477 / Gates40785921695 / shard:g09 job123162345931 covers R1/R2; no duplicate RED push. Browser-design RED123162345030, password-auth collection123162344940.
+R1-R5 implementation and authorized count-oracle replacement prepared. Non-count legacy GET/key-metadata/empty-list assertions remain unchanged pending explicit clarification. Current f78 head had no failed test job/artifact at readback (Foundation40811863742/job123243793356 and Gates40811863847/build123244033318 pending). No historical result is candidate acceptance. New-head CI/GREEN pending; local tests/servers/PG/browser NOT_RUN.

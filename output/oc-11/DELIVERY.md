@@ -1,3 +1,94 @@
+# OC-11 continuation — 2026-10-29 current implementation candidate
+
+This section supersedes the historical delivery/status sections below. Authority: dispatched CARD 221-cont and frozen `contracts/storefront-v2.md:396-405` at starting head f78a3977cc00f9e081efc1b625bfbdcca3b40736. `cards/cxf-221-cont.md` is absent. Role: dispatched implementation worker, Codex; actual model/effort not exposed by runtime. Worktree: oc11; branch: unit/oc11-publish-pending-offline. No recursive delegation.
+
+## R1–R5 changes and remaining acceptance conflict
+
+- R1/R2: HTTP validates exactly one well-formed key with storefrontDomainKeyed. command.Run wraps design.Publish in the existing scoped transaction, operation design.publish. The receipt conflict is mapped to 409 idempotency_conflict separately from the callback's 409 draft CAS conflict. Existing five Go receipt subcases remain verbatim.
+- R3/R4: the editor persists before the initial POST, sends at most three automatic identical-key/body recovery requests with exponential backoff, then one request per merchant confirmation click. It never infers success from a versions list. 200 resolves and shows the returned version; conflict resolves to the localized draft-changed message; idempotency_conflict retains pending and shows an integrity message. Ambiguous answers retain pending. Publish/local rollback are disabled while pending; editing remains available. A later version is shown as superseding only AFTER a successful receipt, using a bounded display-only versions read.
+- R5: sessionStorage retains key, original draft version, session fence, and automatic retry count. Reload restores pending and resumes the same request without resetting the automatic budget. A session fence mismatch cannot replay another session's attempt. Pending storage is cleared only on a terminal R4 outcome. Storage-unavailable browsers fall back to memory; reload durability in that environment remains a limitation.
+- Suite: OC reauth selects oc/reauth.spec.ts; the design spec stays in store-design under its actual fixture. Existing publish callers in Go fixtures receive fresh synthetic keys; no existing expected result, fixture data, threshold, timeout or exemption is relaxed.
+- AUTHORIZED old → new oracle: the eight publish transmission-count assertions now check the number of distinct attempt keys, a valid key on EVERY transmission, and identical bytes for EVERY retry under that key. Added first-journey assertion: exactly one publish version row for the original draft. Existing reload/old-row/other-tab/supersession/bounded-read assertions remain.
+- BLOCKED acceptance compatibility: the ruling says only the transmission-count oracle may be rewritten. The unchanged browser spec also requires GET recovery, a key in versions.items, and a failed-GET-versus-empty-list distinction. R1–R5 define keyed POST recovery and no versions-key DTO. These remaining non-count assertions were NOT changed. An asynchronous clarification asks authorization for equally strong receipt-based replacements. No approval received at preparation time; no GREEN claim.
+
+## Evidence and commands
+
+- Existing causal RED: tests-only eec62d477; head 75a31f92255281c232bc84a8276b03e9d0f09d78; Gates40785921695, jobs123162345931 (Go replay/atomicity, different body, missing/duplicate key, concurrency),123162345030 (six design browser failures),123162344940 (suite collection failure, NOT assertion RED). Historical RED receipts remain in red.log; not current acceptance.
+- Starting-current-head readback: gh pr checks221 returned pending (exit8), Foundation40811863742/job123243793356 and Gates40811863847/build123244033318; no failed current-head job/artifact existed to inspect. Old-head artifacts were not treated as current status.
+- git fetch origin && git merge origin/r3/integration: exit0, Already up to date.
+- gofmt on changed Go sources/fixtures: exit0. go build ./internal/httpapi ./internal/design: exit0. go vet ./internal/httpapi ./internal/design: exit0. These are E1 static evidence only.
+- pnpm --filter @live-commerce/admin typecheck: exit1 before checking, tsc not found (worktree has no node_modules). No dependency installation or server launch.
+- python3 scripts/check_packet.py: exit0, PASS_PACKET_STRUCTURE_ONLY; incidental generated timestamp restored (no output outside scope retained). node --check tests/admin/timezone-ui.test.mjs and bash -n scripts/dev/depmap.sh: exit0. git diff --check: exit0.
+- node scripts/dev/derive-browser-ownership.mjs: exit0, generated browser-ownership.json (53 modes). bash scripts/dev/depmap.sh: exit0, no dependency-map content diff.
+- Component import audit: rg -l 'Design\.tsx' tests/ finds tests/admin/timezone-ui.test.mjs; existing design-client mock already covers the removed named import; no new import/global needed.
+- Local tests/PG/browser/servers: NOT_RUN (prohibited). New-head CI, independent review, production: NOT_RUN/PENDING. Author assessment E0; no completion/E3 claim. Final run/job ids go in the PR comment, never an evidence-only push.
+- Humaux/coord/code-index tools unavailable. No shared memory/canvas/lock write claimed. No spawned process remains.
+
+## Scope accounting
+
+Implementation: internal/httpapi/design.go, apps/admin/components/Design.tsx, apps/admin/lib/design-client.ts, apps/admin/lib/design-copy.ts. Tests: internal/httpapi/design_test.go; tests/admin/oc/design-publish-pending.spec.ts; tests/foundation/store_design_test.go, store_design_gate_test.go, browser_storefront_test.go, browser_click_sweep_test.go (publish-call fixture compatibility only). Coordination/generated: playwright.config.ts (explicitly authorized suite correction), output/ci-select-backend-browser/browser-ownership.json. Evidence: output/oc-11/**. List the broad browser fixture paths for integrator scope review. No migration, R2 pin, contract, baseline, lockfile, dependency or other backend package edit.
+
+## BOURDIEU
+
+Q1–Q5: UNKNOWN; no owner/source verdict was available through Humaux. This continuation fixes receipt behavior and keeps the existing page structure. Q6 aesthetics: UNKNOWN until owner. No class/device expertise assumptions or new design verdicts.
+
+## PROJECT UNDERSTANDING
+
+Read 架构.md sections0,1,2,26,27: distinguish evidence tiers; Go/PostgreSQL single transaction authority; server tenant scope; isolated worktree/card ownership; independent CI acceptance. Read storefront-v2 section B and Continuation R1–R5: draft CAS, atomic receipt replay, bounded recovery, reload durability. Owner/integrator ruling: preserve reload oracle and replace transmission-count oracle only. No invented settings or business facts.
+
+## MOBBIN → EAGLE
+
+NOT_RUN: no new visual design/reference import in this behavior continuation. No reference image/brand/fact copied. Humaux/audit candidate authority and module Eagle folder unavailable; no invented candidate IDs or reference claims. A needed query for a future design card: pending publication outcome / resumable idempotent confirmation. Integrator owns imports.
+
+## FIGMA OFFICIAL GUIDANCE
+
+NOT_RUN: no Figma canvas authored or handed in in this continuation; no bridge writes, prototype/copy-lint/parity completion claimed. Existing design screenshots are historical and not current acceptance. No new layout/components/variables/prototype pattern introduced. Current work requires CI real-click acceptance, not visual certification.
+
+## Required field parity
+
+| Publication fact/control | Existing desktop/mobile shared component | Review/pending state |
+|---|---|---|
+| Original draft version | Design toolbar and localized pending body | retained with key; never replaced with newer draft |
+| Pending result | same responsive pending component | Publish disabled, confirmation available after bounded resolution |
+| Published version | receipt result note, live indicator | later supersession shown separately |
+| Changed draft / integrity | localized result text | changed draft clears pending; integrity retains it |
+
+This is a source inventory, E0; exported-frame/browser parity and density probe are NOT_RUN. No Figma design hand-in claimed.
+
+## Copy (current continuation)
+
+| Key | zh-TW | zh-CN | en |
+|---|---|---|---|
+| publishPending | 發布結果待確認 | 发布结果待确认 | Publish result pending confirmation |
+| publishPendingBody | 正在確認草稿 v{n} 是否已發布。你可以繼續編輯；確認結果後才能再次發布。 | 正在确认草稿 v{n} 是否已发布。你可以继续编辑；确认结果后才能再次发布。 | We are checking whether draft v{n} was published. You can keep editing; confirm this result before publishing again. |
+| publishRecheck | 確認發布結果 | 确认发布结果 | Confirm publish result |
+| publishRechecking | 確認中… | 确认中… | Rechecking… |
+| publishUnconfirmed | 暫時無法確認結果，請稍後再次確認。 | 暂时无法确认结果，请稍后再次确认。 | The result could not be confirmed. Try confirming it again. |
+| publishChanged | 草稿已變更，請載入最新草稿後再發布。 | 草稿已变更，请加载最新草稿后再发布。 | The draft changed. Reload the latest draft before publishing. |
+| publishIntegrity | 本次結果與原請求不一致。請保留此頁面並聯絡支援人員。 | 本次结果与原请求不一致。请保留此页面并联系支持人员。 | This result does not match the original request. Keep this page and contact support. |
+| publishSuperseded | 本次發布已成功，目前已由更新版本取代。 | 本次发布已成功，目前已由更新版本替换。 | This publication succeeded. A later version is now live. |
+
+## Click ledger (CI pending)
+
+| Page/control | User action | Expected | Actual |
+|---|---|---|---|
+| Design / Publish | click after fill | durable original identity, bounded same-key recovery | NOT_RUN on candidate |
+| Design / Confirm publish result | click after automatic budget | one identical request, no replacement key | NOT_RUN on candidate |
+| Design / refresh | browser reload | pending retained; same identity/version/budget | NOT_RUN on candidate |
+| Design / edit while pending | fill + save | edits allowed, unresolved attempt unchanged | NOT_RUN on candidate |
+| Design / rollback while pending | inspect disabled control after tab click | cannot race unresolved publish | NOT_RUN on candidate |
+| Design / locale zh-TW, zh-CN, en | navigate and click | localized pending/recovery state | NOT_RUN on candidate |
+
+## Candidate file hashes
+
+- apps/admin/components/Design.tsx: 5d122757d9851e4366b7672c9e60069d18782f3b5b44973ac9234368f4c9dfd7
+- apps/admin/lib/design-client.ts: 30a1b159da8895ca4674f60f9dd20392df6d15228726ba1c0ad6e17f79f73b5d
+- apps/admin/lib/design-copy.ts: 9e46c4d65d19bc292e89d36e0d72c9b232aff061a05395299bffb29b75246128
+- internal/httpapi/design.go: dba595ca7a504968173cc8c1a9da4ab0bab68370c85bd485fd664c4321694bcc
+- tests/admin/oc/design-publish-pending.spec.ts: 1b770e06cfed4fdf583437f9631eea20cbafc8216181b489afdcc7fdbcf674a8
+
+---
+
 # OC-11 delivery (ui_worker, base r3/integration 33a03bbb8)
 
 Figma (read-only): SF-04 940:6524/6525 (the "publish status" page; the pending state itself is built from the owner text OC-Q10), SF-06 1253:17180 (desktop) / 1253:17204 (mobile). Screenshots: output/oc-11/figma/.

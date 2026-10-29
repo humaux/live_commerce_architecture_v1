@@ -266,6 +266,9 @@ func TestBrowserStorefront(t *testing.T) {
 		r := httptest.NewRequest(method, "/v1/admin/stores/"+f.storeA1+"/design"+path, bytes.NewReader(data))
 		r.Header.Set("Authorization", "Bearer "+f.tokens["a"])
 		r.Header.Set("Content-Type", "application/json")
+		if method == "POST" && path == "/publish" {
+			r.Header.Set("Idempotency-Key", t04Key("sfr-design-publish"))
+		}
 		w := httptest.NewRecorder()
 		httpapi.NewHandler(f.runtime).ServeHTTP(w, r)
 		if w.Code != want {

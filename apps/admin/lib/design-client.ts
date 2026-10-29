@@ -1,7 +1,7 @@
 // Storefront-design requests of the admin Design page. Browser -> BFF `/api/stores/{store}/design/*` (allowlist in
 // lib/design-request.ts) -> Go internal/httpapi/design.go (integration:read / integration:manage). Reads parse the closed Go
 // shapes (design-model.ts); every write carries the cookie CSRF + the session fence of useGuardedRead (a changed session
-// sends nothing), a fresh Idempotency-Key (the BFF requires one; the Go writes are compare-and-set on versions) and never
+// sends nothing), an Idempotency-Key (publish recovery reuses its original identity; other writes use fresh keys) and never
 // trusts its own answer for state: the caller applies the parsed response or re-reads. A 422 carries the server's field
 // `path` so the editor can say which field to fix. The upload is a single multipart `file` part; Go sniffs the type.
 import { get } from "./customers-client";
@@ -38,11 +38,13 @@ async function send<T>(
   if (json) headers["Content-Type"] = "application/json"; // multipart: the browser sets the boundary itself
   let response: Response;
   try {
-    response = await fetch(`${base(store)}/${resource}`, { method, credentials: "same-origin", cache: "no-store", headers, body, signal: AbortSignal.timeout(20000) });
+    response = await fetch(`${base(store)}/${resource}`, { method, credentials: "same-origin", cache: "no-store", headers, body, signal: AbortSignal.timeout(resource === "publish" ? 5000 : 20000) });
   } catch {
     return fail("retry_later", true);
   }
-  const value: unknown = await response.json().catch(() => null);
+  let value: unknown;
+  try { value = await response.json(); }
+  catch { return fail("retry_later", true); }
   if (!response.ok) {
     const details = value && typeof value === "object" ? (value as { details?: Record<string, unknown> }).details : undefined;
     const path = typeof details?.path === "string" ? details.path : "";
@@ -52,7 +54,7 @@ async function send<T>(
   try {
     return { ok: true, value: parse(value) };
   } catch {
-    return fail("retry_later", true); // committed but unreadable: the caller re-reads before retrying
+    return fail("retry_later", true); // publish recovery keeps the original receipt key/body
   }
 }
 
@@ -62,18 +64,9 @@ const jsonBody = (value: unknown) => JSON.stringify(value);
 export const saveDraft = (store: string, expectedVersion: number, document: unknown, boundary: string) =>
   send(store, "PUT", "draft", jsonBody({ expected_version: expectedVersion, document }), true, boundary, parseDraft);
 // Go POST design/publish {expected_draft_version}: 409 when the draft moved or is already live.
-// `key` is the request identity the caller keeps: an uncertain answer is rechecked by reading (publishLanded), never by a new publish.
+// Invariants: recovery retains the original key and expected draft version; Go replays its atomic command receipt.
 export const publish = (store: string, expectedDraftVersion: number, boundary: string, key: string = crypto.randomUUID()): Promise<Outcome<VersionInfo>> =>
   send(store, "POST", "publish", jsonBody({ expected_draft_version: expectedDraftVersion }), true, boundary, parseVersionInfo, key);
-// OC-Q10 recheck of the ORIGINAL publish, read-only (GET design/versions). Go's publish has no receipt table and the versions DTO does not carry
-// the Idempotency-Key, so the request identity cannot be matched by key. Closest provable match: the NEWEST row is a `publish` of the draft version
-// that was sent AND is newer than `watermark` (the newest version known when the request left). An older publish of the same draft version
-// (publish v5, rollback, publish v5 again) therefore never confirms a lost request. Known gap: a different session publishing the same draft
-// version inside that window would confirm it; closing it needs the key in the versions DTO (backend).
-export const publishLanded = (list: VersionList, draftVersion: number, watermark: number): VersionInfo | null => {
-  const top = list.items[0];
-  return top && top.kind === "publish" && top.source_version === draftVersion && top.version > watermark ? top : null;
-};
 // Go POST design/rollback {version}: publishes a copy of an older version; 409 when it is already live.
 export const rollback = (store: string, version: number, boundary: string): Promise<Outcome<VersionInfo>> =>
   send(store, "POST", "rollback", jsonBody({ version }), true, boundary, parseVersionInfo);

@@ -10,6 +10,8 @@ package httpapi
 //	POST .../design/preview-token {}                            integration:manage  -> design.IssuePreviewToken
 //	GET/POST .../design/media, GET .../design/media/{image_id}, POST .../design/media/{image_id}/delete
 //
+// Invariants: the publish receipt and version commit atomically; identical keyed retries replay before draft CAS.
+// Depends on: command, design, platform scoped transactions; Used by: admin design BFF.
 // Permissions: the narrowest ones the Settings storefront card already uses (integration:read / integration:manage), so
 // publishing the design needs the same authority as publishing the storefront. BFF: apps/admin/app/api/stores/[store]/
 // [...resource]/route.ts (lib/design-request.ts allowlist) -> here; UI apps/admin/components/Design.tsx. Scope comes from
@@ -28,10 +30,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"livecommerce/internal/command"
 	"livecommerce/internal/design"
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/platform"
 )
+
+// Receipt conflicts are distinct from the draft CAS conflict returned inside the command.
+var errDesignReceiptConflict = errors.New("design publish receipt conflict")
 
 // maxDesignBody is the document cap plus the PUT envelope; design.Normalize re-checks the document itself.
 const maxDesignBody = design.MaxDocumentBytes + 4<<10
@@ -44,9 +50,20 @@ func registerDesignRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	mux.HandleFunc("PUT "+base+"/draft", designBody(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, in design.SaveInput) (any, error) {
 		return design.SaveDraft(ctx, tx, s, in)
 	}))
-	mux.HandleFunc("POST "+base+"/publish", designBody(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, in design.PublishInput) (any, error) {
-		return design.Publish(ctx, tx, s, in)
-	}))
+	mux.HandleFunc("POST "+base+"/publish", storefrontDomainKeyed(designBodyWith(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in design.PublishInput) (any, error) {
+		var out design.VersionInfo
+		called := false
+		err := command.Run(ctx, tx, s, "design.publish", r.Header.Get("Idempotency-Key"), in, &out, func() error {
+			called = true
+			var err error
+			out, err = design.Publish(ctx, tx, s, in)
+			return err
+		})
+		if !called && errors.Is(err, command.ErrConflict) {
+			return nil, errDesignReceiptConflict
+		}
+		return out, err
+	})))
 	mux.HandleFunc("POST "+base+"/rollback", designBody(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, in design.RollbackInput) (any, error) {
 		return design.Rollback(ctx, tx, s, in)
 	}))
@@ -90,6 +107,10 @@ func designScoped(pool *pgxpool.Pool, permission string, fn action) http.Handler
 			return inner
 		})
 		if err != nil {
+			if errors.Is(err, errDesignReceiptConflict) {
+				respondError(w, http.StatusConflict, "idempotency_conflict")
+				return
+			}
 			var invalid *design.ValidationError
 			if errors.As(err, &invalid) {
 				writeValidation(w, invalid)

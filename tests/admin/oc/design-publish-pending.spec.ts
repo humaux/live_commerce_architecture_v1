@@ -1,4 +1,4 @@
-// Purpose: OC-11 / OC-Q10 admin gate: an uncertain publish shows 「發布結果待確認」, blocks re-publish, survives a reload and rechecks by READ only.
+// Purpose: OC-11 / OC-Q10 admin gate: an uncertain publish shows 「發布結果待確認」, blocks re-publish, survives a reload and resolves only with the original request identity (R1-R5).
 // Depends on: @playwright/test, design-copy; the same harness env as tests/admin/design.spec.ts (LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_BFF_STORE).
 // Used by: tests/foundation/browser_store_design_test.go (same playwright invocation as design.spec.ts; playwright.config.ts store-design testMatch).
 // Publish answers are cut by interception only (route.fetch then abort = committed but unheard; plain abort = never reached Go); every user step is a
@@ -17,6 +17,18 @@ const store = required("LC_BROWSER_BFF_STORE");
 const c = designCopy.en;
 const okPublished = new RegExp(c.okPublished.replace("{n}", "\\d+"));
 test.use({ baseURL: origin });
+
+// Integrator ruling: count attempts, not HTTP transmissions. Every replay retains the exact key AND bytes.
+function expectAttempts(publishes: { key: string | undefined; body: string | null }[], count: number) {
+  const attempts = new Map<string, string | null>();
+  for (const request of publishes) {
+    expect(request.key, "each publish transmission carries its request identity").toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
+    const key = request.key!;
+    if (attempts.has(key)) expect(request.body, "a replay must preserve the exact original body").toBe(attempts.get(key));
+    else attempts.set(key, request.body);
+  }
+  expect(attempts.size, "one key per attempt; retries must never create a replacement attempt").toBe(count);
+}
 
 type Cut = "none" | "after-commit" | "before-commit" | "held-before-commit";
 async function open(page: Page) {
@@ -70,16 +82,19 @@ test("OC11 publish lost after commit: pending, no second publish, recheck finds 
   await expect(pending).toContainText(c.publishPending);
   await expect(page.getByTestId("design-note")).toHaveCount(0); // never a success note
   await expect(page.getByTestId("design-publish")).toBeDisabled(); // no second publish possible
-  expect(publishes, "OC11-A1 exactly one publish before recheck").toHaveLength(1);
+  expectAttempts(publishes, 1);
   writes.length = 0; // the save before publish is legitimate; from here on nothing may be written
 
   const recheckRead = page.waitForResponse((r) => r.url().endsWith("/design/versions") && r.request().method() === "GET");
   await page.getByTestId("design-publish-recheck").click();
   await expect(page.getByTestId("design-note")).toContainText(okPublished);
   await expect(pending).toHaveCount(0);
-  expect(publishes, "OC11-A2 recheck is a read: still exactly one publish request, one key").toHaveLength(1);
+  expectAttempts(publishes, 1);
   expect(writes, "OC11-A3 no other write was sent").toEqual([]);
   const history = await (await recheckRead).json();
+  const sentVersion = JSON.parse(publishes[0].body!).expected_draft_version;
+  expect(history.items.filter((v: { kind: string; source_version: number }) => v.kind === "publish" && v.source_version === sentVersion),
+    "R2 one committed published row for the single attempt").toHaveLength(1);
   expect(history.items.find((v: { idempotency_key?: string }) => v.idempotency_key === publishes[0].key),
     "OC11-P1a versions expose the committed original request key, not just a draft version").toBeTruthy();
 });
@@ -90,7 +105,7 @@ test("OC11 publish never reached Go: survives reload, failed read is unconfirmed
   await edit(page, "b");
   await page.getByTestId("design-publish").click();
   await expect(page.getByTestId("design-publish-pending")).toContainText(c.publishPending);
-  expect(publishes).toHaveLength(1);
+  expectAttempts(publishes, 1);
 
   await page.reload(); // OC11-A5: UNKNOWN is still UNKNOWN after a refresh
   await expect(page.getByTestId("design-publish-pending"), "OC11-A5 pending survives a reload").toContainText(c.publishPending);
@@ -108,7 +123,7 @@ test("OC11 publish never reached Go: survives reload, failed read is unconfirmed
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
   await expect(page.getByTestId("design-publish")).toBeDisabled();
   await expect(page.getByTestId("design-note")).toHaveCount(0);
-  expect(publishes, "OC11-A8 still one publish request").toHaveLength(1);
+  expectAttempts(publishes, 1);
 });
 
 test("OC11 old publish row of the same draft version never confirms a new lost publish (publish, rollback, publish again)", async ({ page }) => {
@@ -170,7 +185,7 @@ test("OC11 reload while the publish request is in flight: pending is armed befor
       await page.getByTestId("design-publish").click();
       await retryFailed; // event boundary: the accidental POST has actually passed the route interceptor
     }
-    expect(publishes, "OC11-A10 the publish POST count stays 1 after reload and an available Publish click").toHaveLength(1);
+    expectAttempts(publishes, 1);
   } finally {
     state.release();
   }
@@ -209,7 +224,7 @@ test("OC11 P1a another tab publishes the same draft: only its own key can confir
   await recheckSettled(page);
   await expect(page.getByTestId("design-note"), "OC11-P1a another request must never be reported as our success").toHaveCount(0);
   await expect(page.getByTestId("design-publish-pending")).toBeVisible();
-  expect(publishes).toHaveLength(1);
+  expectAttempts(publishes, 1);
 });
 
 test("OC11 P1b pending blocks local rollback, external rollback resolves the committed request as superseded", async ({ page, context }) => {
@@ -240,7 +255,7 @@ test("OC11 P1b pending blocks local rollback, external rollback resolves the com
   await expect(page.getByTestId("design-name")).toBeVisible();
   expect.soft(await page.getByTestId("design-publish-pending").count(), "OC11-P1b terminal resolution survives refresh").toBe(0);
   await expect(page.getByTestId("design-publish")).toBeEnabled();
-  expect(publishes, "resolution never sends a replacement publish").toHaveLength(2);
+  expectAttempts(publishes, 2);
 });
 
 test("OC11 P1b a hung recheck has a bounded read and releases its busy control", async ({ page }) => {
@@ -278,6 +293,6 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
     await page.getByTestId("design-publish-recheck").click();
     await expect(page.getByTestId("design-publish-notyet")).toBeVisible();
     await expect(page.getByTestId("design-note")).toHaveCount(0);
-    expect(publishes, "locale recovery never resends the original publish").toHaveLength(1);
+    expectAttempts(publishes, 1);
   });
 }

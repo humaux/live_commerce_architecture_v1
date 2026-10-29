@@ -19,7 +19,8 @@ const suites: Record<string, string[]> = {
   // staff-team (R4 independent gate): started by tests/foundation/browser_staff_team_test.go in the same mode.
   "staff-team": ["staff-team.spec.ts"],
   // OC-04 re-auth dialog and reauth_required handling: started by tests/foundation/browser_oc_test.go in the same mode.
-  oc: ["oc/*.spec.ts"],
+  // Design receipt recovery belongs to store-design and its dedicated PG store fixture.
+  oc: ["oc/reauth.spec.ts"],
   "settings-real": ["settings-real.spec.ts"],
   "merchant-orders-bff": ["orders-bff.spec.ts"],
   "merchant-orders-ui": ["orders-ui.spec.ts"],

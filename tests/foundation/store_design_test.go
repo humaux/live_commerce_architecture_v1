@@ -7,6 +7,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	crand "crypto/rand"
 	"encoding/json"
 	"image"
 	"image/png"
@@ -58,6 +59,10 @@ func TestStoreDesignRealPG(t *testing.T) {
 	call := func(token, method, path, ctype string, body []byte) *httptest.ResponseRecorder {
 		t.Helper()
 		r := httptest.NewRequest(method, path, bytes.NewReader(body))
+		if method == "POST" && strings.HasSuffix(path, "/design/publish") {
+			// Fixture identity for a distinct publish; all existing CAS/race/isolation assertions stay unchanged.
+			r.Header.Set("Idempotency-Key", crand.Text())
+		}
 		r.Header.Set("Authorization", "Bearer "+token)
 		if ctype != "" {
 			r.Header.Set("Content-Type", ctype)
