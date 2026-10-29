@@ -544,6 +544,7 @@
     "tests/foundation/order_attempt_model_test.go": "ad36558b275ef8c9ed0f8800a165fb38da402b35add503c2c13c6739bffcd586",
     "tests/foundation/order_attempt_native_cancel_test.go": "14b2fbbf6d808ecd82aa1d55ccb55af1494b104ba59c1ceed80f0bee69bb7bd9",
     "tests/foundation/order_attempt_native_disposition_test.go": "34e978b447ee89899b5d5076b6d7804d5d6a3d499953c14242bed2c0fd42fa88",
+    "tests/foundation/order_attempt_notification_dispatch_test.go": "d14c2d45d803d3c704d246c85cc94231bb01f247e4f18688ed3a685cd6e87d4a",
     "tests/foundation/order_attempt_notification_executor_test.go": "4c52ce9f1b121adbfb4a0f3e11fef3e4e3a1dd1c23257401905424e05c45c64f",
     "tests/foundation/order_attempt_notification_format_refusal_test.go": "ed8176ede071aae911b293f54b99c9f516695924155fe0ebf6fbdc55a367bbff",
     "tests/foundation/order_attempt_notification_origin_test.go": "e1b0e91901cda9e4fc21141c51ddda916453c08c5a6187826a3d999e2be22a36",
