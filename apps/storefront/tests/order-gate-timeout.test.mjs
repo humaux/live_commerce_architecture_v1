@@ -1,6 +1,7 @@
 // Purpose: execute the actual order-gate locale probe's pending-head path with a deterministic clock.
 // Depends on: Node vm and the real stableLocaleTarget source; only browser/network observations are controlled.
 // Used by: test-node.sh storefront wildcard; the real UI success path runs in --browser-order.
+// Invariants: injected timing models exercise real gate statements; only CI browsers prove engine behaviour.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -83,4 +84,58 @@ test("EARLY_HEAD route continues a missing-Referer request without resolving the
   await assert.rejects(run({},false,p,true),/route registered/);assert.equal(callbacks.length,1);
   await callbacks[0]({request:()=>({method:()=>"GET",headers:()=>({})}),continue:async()=>continued++});
   assert.equal(continued,1);assert.equal(resolved,0,"unrelated read must leave the warmup barrier unclaimed");
+});
+
+// MODEL_ONLY: reproduce a focus-induced compositor scroll between pointer targeting
+// and delivery. The failed BO03 artifact left Choose delivery focused while the old
+// journal survived. A settled focus before the pointer action removes that window.
+// These probes execute the actual two gate call sites, not copies of their logic;
+// the required three WebKit CI executions remain the engine acceptance gate.
+function orderControlRace(testID) {
+  let focused = null;
+  const clicks = [], events = [];
+  const target = {
+    async focus() { focused = testID; events.push("focus-settled"); },
+    async click() {
+      // Inject the observed wrong-target delivery when focus scroll is outstanding.
+      const delivered = focused === testID ? testID : "sticky-purchase-action";
+      focused = delivered;
+      clicks.push(delivered);
+      events.push("click");
+    },
+  };
+  const page = { getByTestId(id) { assert.equal(id,testID); return target; } };
+  const check = value => {
+    assert.equal(value,target);
+    return {
+      async toBeEnabled() {},
+      async toBeFocused() { assert.equal(focused,testID); },
+    };
+  };
+  return { page, check, clicks, events };
+}
+
+test("BO03 quote-less address reconfirmation reaches its control during a focus-scroll race",async()=>{
+  const begin=source.indexOf('await expect(noQuoteTab.getByTestId("confirm-address")).toBeEnabled();');
+  const end=source.indexOf("await expect.poll(()=>stored(noQuoteTab)).toBeNull();",begin);
+  assert.ok(begin>=0&&end>begin,"actual quote-less reconfirmation must remain covered");
+  const p=orderControlRace("confirm-address");
+  const run=runInNewContext(`(async()=>{${source.slice(begin,end)}})`,{noQuoteTab:p.page,expect:p.check});
+  await run();
+  assert.deepEqual(p.clicks,["confirm-address"],"one real pointer action must reach address confirmation, not the sticky bar");
+});
+
+test("BH locale history activation settles focus and arms the real read before its single click",async()=>{
+  const begin=source.indexOf("await switchLocale(a,locale);const localeHistory=historyRead(a);");
+  const end=source.indexOf('await expect(a.getByTestId("order-history").getByRole("heading"',begin);
+  assert.ok(begin>=0&&end>begin,"actual locale-history activation must remain covered");
+  const p=orderControlRace("toggle-order-history");
+  const run=runInNewContext(`(async()=>{${source.slice(begin,end)}})`,{
+    a:p.page,locale:"zh-CN",expect:p.check,
+    switchLocale:async()=>{p.events.push("navigation");},
+    historyRead:()=>{p.events.push("read-armed");return Promise.resolve();},
+  });
+  await run();
+  assert.deepEqual(p.clicks,["toggle-order-history"],"one real pointer action must open history after locale navigation");
+  assert.ok(p.events.indexOf("read-armed")<p.events.indexOf("click"),"the history response observer precedes the triggering action");
 });

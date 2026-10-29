@@ -1,12 +1,14 @@
-// Purpose: closed W3-U2 resource grammar and safe projections for settings, reminders and restricted buyers.
-// Depends on: frozen live-console/W3-03B/W3-05B DTOs; no storage, transport or inferred buyer identity.
-// Used by: live-settings proxy/client and LiveSettings/BuyerPanel.
+// Purpose: closed W3-U2/profile resource grammar and safe projections for settings, reminders and restricted buyers.
+// Depends on: frozen live-console/W3-03B/W3-05B and STORE-PROFILE-API DTOs; no storage, transport or inferred buyer identity.
+// Used by: live-settings proxy/client, profile route, middleware and LiveSettings/BuyerPanel.
+// Invariants: closed resources and projections; profile authority always comes from the signed session.
 export const settingsUUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
 const session = `live-sessions/${uuid}`;
 export type SettingsKind =
-  "settings" | "templates" | "reminders" | "blocklist" | "check" | "remove";
+  "profile" | "settings" | "templates" | "reminders" | "blocklist" | "check" | "remove";
 const resources: [SettingsKind, RegExp, string[]][] = [
+  ["profile", /^profile$/, ["GET", "PUT"]],
   ["settings", /^live-settings\/sold-out-reply$/, ["GET", "PUT"]],
   ["templates", /^message-templates$/, ["GET", "POST"]],
   ["reminders", new RegExp(`^${session}/reminders$`), ["GET", "POST"]],
@@ -83,6 +85,7 @@ export function settingsResource(path: string) {
 }
 /** Permissions remain independently enforced by Go, using the authenticated principal. */
 export function settingsPermissions(kind: SettingsKind, method: string) {
+  if (kind === "profile") return [method === "GET" ? "store:read" : "integration:manage"];
   if (kind === "reminders")
     return method === "GET" ? ["inbox:read"] : ["live:manage", "inbox:reply"];
   if (kind === "templates")
@@ -152,6 +155,15 @@ const exact = (
 export function settingsBody(kind: SettingsKind, raw: string): boolean {
   try {
     const v = obj(JSON.parse(raw));
+    if (kind === "profile")
+      return (
+        exact(v, ["name", "contact_email", "expected_version"], ["contact_phone"]) &&
+        !!str(v.name, 120).trim() && !/[^\p{L}\p{M}\p{N}\p{P}\p{S} ]/u.test(str(v.name, 120)) &&
+        /^[^\s<>"\\@]+@[^\s<>"\\@]+$/.test(str(v.contact_email, 254)) &&
+        !/\p{C}/u.test(str(v.contact_email, 254)) &&
+        integer(v.expected_version) < Number.MAX_SAFE_INTEGER &&
+        (v.contact_phone === undefined || !/[^\p{L}\p{M}\p{N}\p{P}\p{S} ]/u.test(str(v.contact_phone, 32)))
+      );
     if (kind === "settings")
       return (
         exact(v, [
@@ -214,6 +226,12 @@ export function settingsData(
   value: unknown,
 ): unknown {
   const v = obj(value);
+  if (kind === "profile") return {
+    name: str(v.name, 120),
+    contact_email: str(v.contact_email, 254),
+    contact_phone: str(v.contact_phone, 32),
+    version: integer(v.version),
+  };
   if (kind === "settings")
     return {
       enabled: bool(v.enabled),

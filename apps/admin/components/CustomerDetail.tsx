@@ -1,15 +1,16 @@
 // Purpose: Owns customer detail and merchant privacy-action controls.
 // Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./CustomerTags, ./CustomerHistoricalOrders, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
+// Invariants: existing synchronous privacy contracts; uncertain commands are never automatically replayed.
 // Used by: apps/admin/app/[locale]/customers/[customer]/page.tsx
 "use client";
 
 // Merchant customer detail (/{locale}/customers/{customer}): facts, orders, claims, consent with "Record withdrawal",
-// privacy section ("Download data", typed-ERASE dialog). U1: inline sections reusing the orders table/dialog shapes.
+// privacy review with name-and-scope confirmation; unknown outcomes remain read-only across reload.
 // BFF GET /api/stores/{store}/customers/{id} (customers:read); POST .../customers/{id}/consent-withdrawals | exports |
 // erasure (customers:privacy, Idempotency-Key) -> Go /v1/admin/stores/{id}/customers/{id}[/...]
 // (internal/httpapi/customers.go; internal/customers.{Get,WithdrawConsent,Export,Erase}).
 // No consent, erasure or money authority here: every write is re-authorized by Go and the page re-GETs afterwards.
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import { Badge, TableFrame } from "@live-commerce/ui";
@@ -46,6 +47,8 @@ export function CustomerDetail({
   stores,
   store,
   customerID,
+  q = "",
+  tag = "",
   initialError,
   renderKey,
 }: {
@@ -53,6 +56,8 @@ export function CustomerDetail({
   stores: Store[];
   store: Store | null;
   customerID: string;
+  q?: string;
+  tag?: string;
   initialError: ReadCode | null;
   renderKey: string;
 }) {
@@ -72,11 +77,11 @@ export function CustomerDetail({
     : read.status === "not-found" ? (store ? c.notFound : c.noStore)
     : read.status === "unavailable" ? c.unavailable
     : "";
-  const back = `/${locale}/customers${store ? `?store=${store.id}` : ""}`;
+  const back = `/${locale}/customers${store ? `?store=${store.id}${q ? `&q=${encodeURIComponent(q)}` : ""}${tag ? `&tag=${encodeURIComponent(tag)}` : ""}` : ""}`;
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="customers">
-      <div className="orders-page customers-page" data-testid="customer-detail">
-        <AdminPageHeader locale={locale} title={read.data ? (read.data.display_name ?? c.noName) : c.title} description={c.subtitle} actions={<Link className="customers-back" href={back}>{c.back}</Link>} />
+      <div className="orders-page customers-page people-v2" data-testid="customer-detail">
+        <AdminPageHeader locale={locale} title={c.people.title} actions={<Link className="customers-back" href={back}>{c.people.back}</Link>} />
         {(read.status === "loading" || read.status === "hidden") && (
           <p className="orders-message" role="status">{c.detailLoading}</p>
         )}
@@ -87,7 +92,7 @@ export function CustomerDetail({
           </div>
         )}
         {read.status === "ready" && read.data && store && (
-          <Body detail={read.data} storeInfo={store} store={store.id} boundary={read.boundary} refresh={read.refresh} onScopeLost={onScopeLost} locale={locale} c={c} />
+          <Body key={`${store.id}|${customerID}|${read.boundary}`} detail={read.data} storeInfo={store} store={store.id} boundary={read.boundary} refresh={read.refresh} onScopeLost={onScopeLost} locale={locale} c={c} />
         )}
       </div>
     </WorkspaceFrame>
@@ -122,150 +127,102 @@ function Body({
 }) {
   const oc = ordersCopy[locale];
   const m = (value: number) => (detail.currency ? money(locale, detail.currency, value) : String(value));
+  const date = (value: string) => displayTime("sv-SE", value).slice(0, 10);
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
-  const [retryKind, setRetryKind] = useState("");
-  // One key per attempt; only "Retry same request" after an unknown result reuses it (server replays the stored answer).
-  const pending = useRef<Pending | null>(null);
-
+  const p = c.people;
+  const [exportOpen, setExportOpen] = useState(false);
+  const [pendingKind, setPendingKind] = useState("");
+  const [storageReady, setStorageReady] = useState(false);
+  const [screen, setScreen] = useState<"profile" | "submitted" | "pending">("profile");
+  const markerKey = useRef("");
+  const writing = useRef(false);
+  // Store only a command kind under an opaque session/store/customer digest. No PII, payload or key is cached.
+  // A new authenticated boundary cannot inherit another merchant's marker. Reads still come from Go.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${boundary}|${store}|${detail.customer_id}`));
+        const key = `people-v2:${Array.from(new Uint8Array(digest), (v) => v.toString(16).padStart(2, "0")).join("")}`;
+        const saved = sessionStorage.getItem(key);
+        if (cancelled) return;
+        markerKey.current = key;
+        if (saved) setPendingKind(saved === "export" || saved === "erase" ? saved : "unknown");
+        setStorageReady(true);
+      } catch {
+        // Fail closed when a reload-safe fence cannot be kept; never send an untrackable command.
+        if (!cancelled) { setPendingKind("unknown"); setStorageReady(true); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [boundary, store, detail.customer_id]);
+  const locked = !storageReady || pendingKind !== "";
+  function mark(kind: string) {
+    if (!markerKey.current) return false;
+    try { sessionStorage.setItem(markerKey.current, kind); setPendingKind(kind); return true; }
+    catch { setPendingKind("unknown"); return false; }
+  }
+  function clearMarker() {
+    try { sessionStorage.removeItem(markerKey.current); setPendingKind(""); }
+    catch { setPendingKind("unknown"); }
+  }
   async function attempt(next: Pending) {
-    if (busy) return;
-    pending.current = next;
+    if (writing.current || locked) return;
+    const privacy = next.kind === "export";
+    if (privacy && !mark(next.kind)) return;
+    writing.current = true;
     setBusy(next.kind);
     setNotice(null);
     const result = await next.run(next.key);
+    writing.current = false;
     setBusy("");
     if (result.ok) {
-      pending.current = null;
-      setRetryKind("");
+      if (privacy) { clearMarker(); setExportOpen(false); }
       setNotice({ tone: "ok", text: next.done });
       void refresh();
     } else if (result.uncertain) {
-      setRetryKind(next.kind);
-      setNotice({ tone: "bad", text: c.uncertain });
+      if (!privacy) mark("unknown");
+      setExportOpen(false);
+      setScreen("submitted");
     } else {
-      pending.current = null;
-      setRetryKind("");
+      if (privacy) clearMarker();
       setNotice({ tone: "bad", text: errorText(c, result.code) });
     }
   }
   const withdraw = (purpose: string, channel: string) =>
-    attempt({
-      kind: `withdraw:${purpose}`,
-      key: newKey("withdraw"),
-      done: c.withdrawDone,
-      run: (key) => postWithdrawal(store, detail.customer_id, key, JSON.stringify({ purpose, channel }), boundary),
-    });
-  const download = () =>
-    attempt({
-      kind: "export",
-      key: newKey("export"),
-      done: c.downloadDone,
-      run: (key) => postExport(store, detail.customer_id, key, boundary),
-    });
+    attempt({ kind: `withdraw:${purpose}`, key: newKey("withdraw"), done: c.withdrawDone,
+      run: (key) => postWithdrawal(store, detail.customer_id, key, JSON.stringify({ purpose, channel }), boundary) });
+  const download = () => attempt({ kind: "export", key: newKey("export"), done: c.downloadDone,
+    run: (key) => postExport(store, detail.customer_id, key, boundary) });
+  const identity = <p className="people-identity">{storeInfo.name} · {detail.display_name ?? c.noName}<br />
+    {p.customerID} {detail.customer_id.slice(0, 8)}{detail.phone_last3 && <> · {p.phone} {detail.phone_last3}</>}</p>;
+  if (screen !== "profile") return <section className="customers-section people-result" role="status">
+    <h2>{pendingKind === "unknown" ? p.unconfirmed : screen === "submitted" ? (pendingKind === "erase" ? p.eraseSubmitted : p.exportSubmitted) : (pendingKind === "erase" ? p.erasePending : p.exportPending)}</h2>
+    {identity}
+    <p>{screen === "submitted" ? p.unconfirmed : p.paused}</p>
+    <button type="button" onClick={() => setScreen(screen === "submitted" ? "pending" : "profile")}>
+      {screen === "submitted" ? p.pending : p.viewData}
+    </button>
+  </section>;
 
-  const label = (purpose: string) => (purpose === "marketing_messages" ? c.marketing : c.ads);
+  const label = (purpose: string) => (purpose === "marketing_messages" ? p.marketing : p.ads);
+  const source = (value: string) => value === "buyer_settings" ? p.settings : c.sources[value] ?? (value === "merchant_recorded" ? c.sources.merchant : "—");
   return (
     <>
-      {detail.active && <CustomerTags key={`${store}|${detail.customer_id}|${boundary}`} locale={locale} store={storeInfo}
+      <nav className="people-tabs" aria-label={p.title}>
+        <a href="#people-orders">{p.orders}</a><a href="#people-consent">{p.consent}</a><a href="#people-privacy">{p.privacy}</a>
+      </nav>
+      {pendingKind && <section className="customers-section people-pending"><p>{p.paused}</p>{identity}
+        <button type="button" onClick={() => setScreen("pending")}>{p.pendingBack}</button></section>}
+      <div className="people-profile">
+      <aside className="people-side">
+      {detail.active && !!detail.tags?.length && <p className="customers-section">{detail.tags.map((tag) => tag.name).join(" · ")}</p>}
+      {detail.active && !!detail.notes?.length && <p className="customers-section">{detail.notes[0].body}</p>}
+      <details className="people-advanced" data-testid="people-customer-tools"><summary>{p.advanced}</summary>{detail.active && <CustomerTags key={`${store}|${detail.customer_id}|${boundary}`} locale={locale} store={storeInfo}
         detail={detail} boundary={boundary} onChanged={refresh} onScopeLost={onScopeLost} />}
-      {detail.active && detail.imported && <>
-        <Badge tone="neutral">{c.imported}</Badge>
-        <CustomerHistoricalOrders key={`history|${store}|${detail.customer_id}|${boundary}`} locale={locale}
-          store={store} customer={detail.customer_id} boundary={boundary} />
-      </>}
-      {!detail.active && <p className="customers-erased" role="status" data-testid="customer-erased">{c.erasedState}</p>}
-      <section className="customers-section" aria-label={c.facts}>
-        <h2>{c.facts}</h2>
-        <dl className="orders-facts">
-          <div><dt>{c.firstSeen}</dt><dd>{displayTime(locale, detail.first_seen_at)}</dd></div>
-          <div><dt>{c.lastActivity}</dt><dd>{displayTime(locale, detail.last_activity_at)}</dd></div>
-          {detail.phone_last3 && <div><dt>{c.phoneEnding}</dt><dd>{detail.phone_last3}</dd></div>}
-          <div><dt>{c.orders}</dt><dd>{c.ordersPaid(detail.orders_count, detail.paid_orders_count)}</dd></div>
-          {detail.currency && (
-            <div><dt>{c.spent}</dt><dd>{m(detail.captured_minor)} / {m(detail.refunded_minor)}</dd></div>
-          )}
-          <div><dt>{c.claims}</dt><dd>{detail.claims_count}</dd></div>
-        </dl>
-      </section>
-
-      <section className="customers-section" aria-label={c.ordersSection}>
-        <h2>{c.ordersSection}</h2>
-        {detail.orders.length === 0 ? (
-          <p className="orders-empty">{c.ordersNone}</p>
-        ) : (
-          <TableFrame label={c.ordersSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
-            <table className="orders-actions-table" data-testid="customer-orders">
-              <thead>
-                <tr><th>{c.orderId}</th><th>{c.created}</th><th>{c.total}</th><th>{c.payment}</th><th>{c.status}</th></tr>
-              </thead>
-              <tbody>
-                {detail.orders.map((order) => (
-                  <tr key={order.order_id} data-testid={`customer-order-${order.order_id}`}>
-                    <td>
-                      <Link href={`/${locale}/orders?store=${store}&order=${order.order_id}`}
-                        aria-label={`${c.orderOpen}: ${order.order_id}`}>
-                        <span className="orders-mono">{order.order_id.slice(0, 4)}…{order.order_id.slice(-4)}</span>
-                      </Link>
-                    </td>
-                    <td>{displayTime(locale, order.created_at)}</td>
-                    <td>{money(locale, order.currency, order.total_minor)}</td>
-                    <td><span className={`orders-badge orders-badge-${order.payment_state.toLowerCase()}`}>{oc.statuses[order.payment_state]}</span></td>
-                    <td><span className={`orders-badge orders-badge-${order.commercial_state.toLowerCase()}`}>{oc.statuses[order.commercial_state]}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
-        )}
-        <p className="orders-hint">{c.ordersNewest}</p>
-      </section>
-
-      <section className="customers-section" aria-label={c.claimsSection}>
-        <h2>{c.claimsSection}</h2>
-        {detail.claims.length === 0 ? (
-          <p className="orders-empty">{c.claimsNone}</p>
-        ) : (
-          <TableFrame label={c.claimsSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
-            <table className="orders-actions-table" data-testid="customer-claims">
-              <thead><tr><th>{c.platform}</th><th>{c.boundAt}</th><th>{c.lines}</th></tr></thead>
-              <tbody>
-                {detail.claims.map((claim) => (
-                  <tr key={`${claim.session_id}-${claim.bound_at}`}>
-                    <td>{c.platforms[claim.platform] ?? claim.platform}</td>
-                    <td>{displayTime(locale, claim.bound_at)}</td>
-                    <td>{claim.line_count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
-        )}
-      </section>
-
-      <section className="customers-section" aria-label={c.consentSection} data-testid="customer-consent">
-        <h2>{c.consentSection}</h2>
-        <ul className="customers-consent">
-          {consentPairs.map(({ purpose, channel }) => {
-            const on = detail.consents[purpose];
-            return (
-              <li key={purpose} data-testid={`consent-${purpose}`}>
-                <span>{label(purpose)}</span>
-                <Badge tone={on ? "success" : "neutral"}>
-                  {on ? c.consentGranted : c.consentNone}
-                </Badge>
-                {on && detail.active && (
-                  <button type="button" data-testid={`withdraw-${purpose}`} disabled={busy !== ""}
-                    onClick={() => void withdraw(purpose, channel)}>
-                    {busy === `withdraw:${purpose}` ? c.withdrawing : c.withdraw}
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        <p className="orders-hint">{c.withdrawHint}</p>
         <h3>{c.consentHistory}</h3>
+        <p className="orders-hint">{c.withdrawHint}</p>
         {detail.consent_history.length === 0 ? (
           <p className="orders-empty">{c.consentHistoryNone}</p>
         ) : (
@@ -281,10 +238,10 @@ function Body({
                     <td>
                       {label(event.purpose)}:{" "}
                       <Badge tone={event.granted ? "success" : "neutral"}>
-                        {event.granted ? c.consentGranted : c.consentNone}
+                        {event.granted ? p.granted : p.withdrawn}
                       </Badge>
                     </td>
-                    <td>{c.sources[event.source] ?? event.source}</td>
+                    <td>{source(event.source)}</td>
                     <td>{event.policy_version}</td>
                   </tr>
                 ))}
@@ -292,30 +249,7 @@ function Body({
             </table>
           </TableFrame>
         )}
-      </section>
 
-      <section className="customers-section" aria-label={c.privacySection} data-testid="customer-privacy">
-        <h2>{c.privacySection}</h2>
-        <p>{c.privacyIntro}</p>
-        <div className="customers-actions">
-          <button type="button" data-testid="customer-download" disabled={busy !== ""} onClick={() => void download()}>
-            {busy === "export" ? c.downloading : c.download}
-          </button>
-          {detail.active && <EraseDialog detail={detail} store={store} boundary={boundary} c={c} busy={busy !== ""}
-            onDone={(text) => { setNotice({ tone: "ok", text }); void refresh(); }} />}
-        </div>
-        {notice && (
-          <p className={notice.tone === "ok" ? "orders-notice" : "orders-bad"} role={notice.tone === "ok" ? "status" : "alert"}
-            data-testid="customer-notice">
-            {notice.text}
-          </p>
-        )}
-        {retryKind && pending.current && (
-          <button type="button" data-testid="customer-retry" disabled={busy !== ""}
-            onClick={() => pending.current && void attempt({ ...pending.current })}>
-            {c.eraseRetry}
-          </button>
-        )}
         <h3>{c.actionsSection}</h3>
         {detail.privacy_actions.length === 0 ? (
           <p className="orders-empty">{c.actionsNone}</p>
@@ -335,37 +269,142 @@ function Body({
             </table>
           </TableFrame>
         )}
+
+      </details>
+      {detail.active && detail.imported && <>
+        <Badge tone="neutral">{c.imported}</Badge>
+        <CustomerHistoricalOrders key={`history|${store}|${detail.customer_id}|${boundary}`} locale={locale}
+          store={store} customer={detail.customer_id} boundary={boundary} />
+      </>}
+      <section id="people-privacy" className="customers-section people-privacy" aria-label={p.privacy} data-testid="customer-privacy">
+        <h2>{c.privacySection}</h2>
+
+        <div className="customers-actions">
+          <button type="button" data-testid="customer-download" disabled={busy !== "" || locked} onClick={() => setExportOpen(true)}>
+            {busy === "export" ? c.downloading : p.download}
+          </button>
+          {detail.active && <EraseDialog detail={detail} store={store} boundary={boundary} c={c} busy={busy !== "" || locked} identity={identity} beforeSend={() => mark("erase")} clearMarker={clearMarker}
+            onUncertain={() => setScreen("submitted")} onDone={(text) => { setNotice({ tone: "ok", text }); void refresh(); }} />}
+        </div>
+        {notice && (
+          <p className={notice.tone === "ok" ? "orders-notice" : "orders-bad"} role={notice.tone === "ok" ? "status" : "alert"}
+            data-testid="customer-notice">
+            {notice.text}
+          </p>
+        )}
+
+        {exportOpen && <ExportDialog c={c} identity={identity} orders={detail.orders_count} busy={busy !== "" || locked}
+          onCancel={() => { if (!writing.current) setExportOpen(false); }} onConfirm={() => void download()} />}
       </section>
+      </aside>
+      <div className="people-primary">
+      {!detail.active && <p className="customers-erased" role="status" data-testid="customer-erased">{c.erasedState}</p>}
+      <section className="customers-section people-facts" aria-label={c.facts}>
+        <h2>{detail.display_name ?? c.noName}</h2>
+        <p className="people-identity">{storeInfo.name} · {p.customerID} {detail.customer_id.slice(0, 8)}{detail.phone_last3 && <> · {p.phone} {detail.phone_last3}</>}</p>
+        <p>{detail.orders_count} {p.orders} · {p.net} {detail.currency ? m(detail.captured_minor - detail.refunded_minor) : "—"}<br />
+          {p.first} {detail.first_seen_at ? date(detail.first_seen_at) : "—"}</p>
+      </section>
+
+      <section id="people-orders" className="customers-section" aria-label={c.ordersSection}>
+        <h2 className="people-sr-only">{p.orders}</h2>
+        {detail.orders.length === 0 ? (
+          <p className="orders-empty">{c.ordersNone}</p>
+        ) : (
+          <TableFrame label={c.ordersSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
+            <table className="orders-actions-table" data-testid="customer-orders">
+              <thead>
+                <tr><th>{c.orderId} · {c.total}</th></tr>
+              </thead>
+              <tbody>
+                {detail.orders.map((order) => (
+                  <tr key={order.order_id} data-testid={`customer-order-${order.order_id}`}>
+                    <td>
+                      <Link href={`/${locale}/orders?store=${store}&order=${order.order_id}`}
+                        aria-label={`${c.orderOpen}: ${order.order_id}`}>
+                        <span className="orders-mono">{order.order_id.slice(0, 4)}…{order.order_id.slice(-4)}</span>
+                      </Link> · {money(locale, order.currency, order.total_minor)}<br />
+                      {oc.statuses[order.payment_state]} · {oc.statuses[order.commercial_state]} · {date(order.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableFrame>
+        )}
+
+      </section>
+
+      {detail.claims.length > 0 && <section className="customers-section" aria-label={c.claimsSection}>
+        <h2>{c.claimsSection}</h2>
+        {detail.claims.length === 0 ? (
+          <p className="orders-empty">{c.claimsNone}</p>
+        ) : (
+          <TableFrame label={c.claimsSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
+            <table className="orders-actions-table" data-testid="customer-claims">
+              <thead><tr><th>{c.platform}</th><th>{c.boundAt}</th><th>{c.lines}</th></tr></thead>
+              <tbody>
+                {detail.claims.map((claim) => (
+                  <tr key={`${claim.session_id}-${claim.bound_at}`}>
+                    <td>{c.platforms[claim.platform] ?? claim.platform}</td>
+                    <td>{displayTime(locale, claim.bound_at)}</td>
+                    <td>{claim.line_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableFrame>
+        )}
+      </section>}
+
+      <section id="people-consent" className="customers-section" aria-label={p.consent} data-testid="customer-consent">
+        <h2 className="people-sr-only">{p.consent}</h2>
+        <ul className="customers-consent">
+          {consentPairs.map(({ purpose, channel }) => {
+            const on = detail.consents[purpose];
+            return (
+              <li key={purpose} data-testid={`consent-${purpose}`}>
+                <span>{label(purpose)}{detail.consent_history.find((event) => event.purpose === purpose) && <small className="people-event">
+                  {(() => { const event = detail.consent_history.find((item) => item.purpose === purpose)!; return `${source(event.source)} · ${date(event.occurred_at)}`; })()}
+                </small>}</span>
+                <Badge tone={on ? "success" : "neutral"}>
+                  {on ? p.granted : detail.consent_history.some((event) => event.purpose === purpose && !event.granted) ? p.withdrawn : c.consentNone}
+                </Badge>
+                {on && detail.active && (
+                  <button type="button" data-testid={`withdraw-${purpose}`} disabled={busy !== "" || locked}
+                    onClick={() => void withdraw(purpose, channel)}>
+                    {busy === `withdraw:${purpose}` ? c.withdrawing : c.withdraw}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+
+      </section>
+
+      </div>
+
+      </div>
     </>
   );
 }
 
-// U2: native <dialog>; the typed word enables the button; one Idempotency-Key per dialog open, reused on retry after an
-// unknown result (same key = the stored answer, never a second erasure). Text states what is kept.
-function EraseDialog({
-  detail,
-  store,
-  boundary,
-  c,
-  busy: otherBusy,
-  onDone,
-}: {
-  detail: Detail;
-  store: string;
-  boundary: string;
-  c: CustomersCopy;
-  busy: boolean;
-  onDone: (text: string) => void;
+// Native dialogs preserve keyboard dismissal and focus; only the signed name + scope checkbox enables erasure.
+function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, beforeSend, clearMarker, onUncertain, onDone }: {
+  detail: Detail; store: string; boundary: string; c: CustomersCopy; busy: boolean; identity: ReactNode;
+  beforeSend: () => boolean; clearMarker: () => void; onUncertain: () => void; onDone: (text: string) => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const typedInput = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
+  const [checked, setChecked] = useState(false);
   const [problem, setProblem] = useState("");
   const [busy, setBusy] = useState(false);
-  const [uncertain, setUncertain] = useState(false);
+  const writing = useRef(false);
   const key = useRef("");
-
+  const p = c.people;
+  const name = detail.display_name ?? c.noName;
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
@@ -373,61 +412,64 @@ function EraseDialog({
     if (!open && element.open) element.close();
     if (open) typedInput.current?.focus();
   }, [open]);
-
   function begin() {
     key.current = newKey("erase");
-    setTyped("");
-    setProblem("");
-    setUncertain(false);
-    setOpen(true);
+    setTyped(""); setChecked(false); setProblem(""); setOpen(true);
   }
   async function submit() {
-    if (typed !== "ERASE" || busy) return;
-    setBusy(true);
-    setProblem("");
+    if (typed !== name || !checked || writing.current || otherBusy || !beforeSend()) return;
+    writing.current = true; setBusy(true); setProblem("");
     const result = await postErasure(store, detail.customer_id, key.current, boundary);
-    setBusy(false);
+    writing.current = false; setBusy(false);
     if (result.ok) {
-      setOpen(false);
+      clearMarker(); setOpen(false);
       const s = result.value;
       onDone(c.erasedDone({ consents: s.consents_withdrawn, sessions: s.sessions_revoked, snapshots: s.snapshots_redacted, bundles: s.bundles_relabelled }));
     } else if (result.uncertain) {
-      setUncertain(true);
-      setProblem(c.uncertain);
+      setOpen(false); onUncertain();
     } else {
-      // A definite refusal (e.g. erasure_blocked) ends this key; the next attempt is a new request.
-      key.current = newKey("erase");
-      setUncertain(false);
-      setProblem(errorText(c, result.code));
+      clearMarker(); key.current = newKey("erase"); setProblem(errorText(c, result.code));
     }
   }
-  return (
-    <>
-      <button type="button" className="danger" data-testid="customer-erase" disabled={otherBusy} onClick={begin}>
-        {c.erase}
-      </button>
-      <dialog ref={dialog} className="orders-dialog" aria-labelledby="erase-title" data-testid="erase-dialog"
-        onClose={() => setOpen(false)}>
-        {open && (
-          <form onSubmit={(event) => { event.preventDefault(); void submit(); }}>
-            <h2 id="erase-title">{c.eraseTitle}</h2>
-            <p>{c.eraseBody}</p>
-            <p data-testid="erase-kept">{c.eraseKept}</p>
-            <label>
-              {c.eraseType}
-              <input ref={typedInput} data-testid="erase-typed" autoComplete="off" autoCapitalize="off" spellCheck={false}
-                value={typed} onChange={(event) => setTyped(event.target.value)} />
-            </label>
-            {problem && <p className="orders-bad" role="alert" data-testid="erase-problem">{problem}</p>}
-            <div className="orders-dialog-actions">
-              <button type="button" onClick={() => setOpen(false)}>{c.cancel}</button>
-              <button type="submit" className="primary danger" data-testid="erase-submit" disabled={typed !== "ERASE" || busy}>
-                {busy ? c.erasing : uncertain ? c.eraseRetry : c.eraseConfirm}
-              </button>
-            </div>
-          </form>
-        )}
-      </dialog>
-    </>
-  );
+  return <>
+    <button type="button" className="danger" data-testid="customer-erase" disabled={otherBusy} onClick={begin}>{p.erase}</button>
+    <dialog ref={dialog} className="orders-dialog people-dialog" aria-labelledby="erase-title" data-testid="erase-dialog"
+      onCancel={(event) => { if (writing.current) event.preventDefault(); }} onClose={() => setOpen(false)}>
+      {open && <form onSubmit={(event) => { event.preventDefault(); void submit(); }}>
+        <h2 id="erase-title">{p.erase}</h2>
+        {identity}
+        <p>{p.eraseBody}</p>
+        <p data-testid="erase-kept">{p.eraseKept(detail.orders_count)}</p>
+        <p className="orders-bad">{p.eraseSafety}</p>
+        <label>{p.typeName(name)}<input ref={typedInput} data-testid="erase-typed" autoComplete="off" autoCapitalize="off"
+          spellCheck={false} value={typed} disabled={busy} onChange={(event) => setTyped(event.target.value)} /></label>
+        <label className="people-check"><input type="checkbox" checked={checked} disabled={busy} onChange={(event) => setChecked(event.target.checked)} />{p.checked}</label>
+        {problem && <p className="orders-bad" role="alert" data-testid="erase-problem">{problem}</p>}
+        <div className="orders-dialog-actions">
+          <button type="button" disabled={busy} onClick={() => setOpen(false)}>{p.backCustomer}</button>
+          <button type="submit" className="primary danger" data-testid="erase-submit" disabled={typed !== name || !checked || busy || otherBusy}>
+            {busy ? c.erasing : p.confirmErase}
+          </button>
+        </div>
+      </form>}
+    </dialog>
+  </>;
+}
+
+function ExportDialog({ c, identity, orders, busy, onCancel, onConfirm }: {
+  c: CustomersCopy; identity: ReactNode; orders: number; busy: boolean; onCancel: () => void; onConfirm: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { dialog.current?.showModal(); }, []);
+  const p = c.people;
+  return <dialog ref={dialog} className="orders-dialog people-dialog" aria-labelledby="export-title"
+    onCancel={(event) => { if (busy) event.preventDefault(); }} onClose={onCancel}>
+    <h2 id="export-title">{p.download}</h2>
+    {identity}
+    <p>{p.verify}</p><p>{p.scope(orders)}</p><p>{p.protected}</p><p>{p.permissions}</p>
+    <div className="orders-dialog-actions">
+      <button type="button" disabled={busy} onClick={onCancel}>{p.backCustomer}</button>
+      <button type="button" className="primary" disabled={busy} onClick={onConfirm}>{busy ? c.downloading : p.confirmDownload}</button>
+    </div>
+  </dialog>;
 }
