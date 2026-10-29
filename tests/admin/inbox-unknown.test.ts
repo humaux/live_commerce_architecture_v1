@@ -173,6 +173,73 @@ for (const locale of Object.keys(warning)) {
   }
 }
 
+for (const locale of Object.keys(warning)) {
+  for (const state of ["queued", "blocked"]) {
+    for (const scenario of ["handoff", "older-pending-on-entry", "two-observed-then-omitted"]) {
+      test(`projected ${state} obligations survive ${scenario} and omission (${locale})`, async (t) => {
+        const env = environment(t);
+        let reads = 0, phase = 0;
+        const a = { direction: "out", at: "2030-01-01T00:00:01Z", text: "MOCK_PROJECTED_A",
+          attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071", send_state: state };
+        const b = { ...a, at: "2030-01-01T00:00:03Z", text: "MOCK_PROJECTED_B",
+          principal_id: "70000000-0000-4000-8000-000000000072" };
+        const buyer = { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER" };
+        const calls = transport(() => {
+          reads++;
+          let items;
+          if (scenario === "handoff") items = phase === 0 ? [a]
+            : phase === 1 ? [{ ...a, send_state: "sent" }, b]
+            : phase === 2 ? [{ ...a, send_state: "sent" }]
+            : [{ ...a, send_state: "sent" }, { ...b, send_state: phase === 4 ? "sent" : state }];
+          else items = phase === 0 ? [a, { ...b, send_state: scenario === "older-pending-on-entry" ? "sent" : state }]
+            : phase === 1 ? [{ ...b, send_state: "sent" }]
+            : phase === 2 ? []
+            : [{ ...a, send_state: phase === 4 ? "sent" : state }, { ...b, send_state: "sent" }];
+          return response({ ...thread, has_unknown_outbound: false, items: [...thread.items, ...items, buyer] });
+        });
+        const host = mount(env, locale);
+        await host.waitFor(() => reads === 1 && idle(host), "initial projected obligations committed without a local ACK");
+        // Hook-host counterexample deliberately supplies a draft even to the folded form.
+        // Native browser coverage below uses only visible controls and real clicks.
+        change(host, "reply-text", "MOCK_FRESH_DRAFT_MUST_NOT_SEND");
+        const captured = node(host, n => n.type === "form").props.onSubmit;
+        const assertLocked = () => {
+          assert.equal(node(host, n => n.type === "form").props.hidden, true,
+            "every observed unresolved outbound keeps the composer folded, including below a newer sent row");
+          assert.equal(sendControl(host).props.disabled, true,
+            "settling one projection cannot admit a fresh send while another obligation remains");
+          assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), state === "queued"
+            ? locale === "en" ? "Sending; delivery unconfirmed. Do not resend."
+              : locale === "zh-CN" ? "发送中；尚未确认送达，不要重发。" : "傳送中；尚未確認送達，勿重送。"
+            : locale === "en" ? "Sending locked" : locale === "zh-CN" ? "发送已锁定" : "已鎖定");
+          captured({ preventDefault() {} });
+          node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+          assert.equal(host.ref(ReplyReceipt).pending(), null);
+          assert.equal(sends(calls).length, 0, "captured and current submit handlers cannot POST over an unresolved projection");
+        };
+        assertLocked();
+        for (phase = 1; phase <= 4; phase++) {
+          const expectedReads = reads + 1;
+          const refresh = node(host, n => n.type === "button" && !!n.props["aria-label"]);
+          assert.equal(refresh.props.disabled, false);
+          refresh.props.onClick();
+          await host.waitFor(() => reads === expectedReads && idle(host), "settlement, omission or exact recovery committed");
+          if (phase < 4) assertLocked();
+          else {
+            assert.equal(node(host, n => n.type === "form").props.hidden, false,
+              "only explicit settlement of every observed obligation opens the next reply");
+            change(host, "reply-text", "MOCK_NEXT_DRAFT_AFTER_ALL_SETTLED");
+            assert.equal(sendControl(host).props.disabled, false);
+          }
+        }
+        assert.equal(sends(calls).length, 0, "all reconciliation is read-only");
+        assert.equal(calls.filter(call => call.path.includes("/operations/")).length, 0,
+          "projected staff sends without an ACK cannot acquire an invented operation identity");
+      });
+    }
+  }
+}
+
 for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "different-operation", "different-conversation", "different-action", "different-provider", "different-purpose", "missing-ack-id", "no-read-permission", "acknowledged", "unknown"]) {
   test(`acknowledged send stays locked on ${refusal} operation evidence`, async (t) => {
     const env = environment(t);

@@ -1,0 +1,8 @@
+RVFIX4 #294 causal RED: PENDING
+Pre-RED head: ada3500f51adf8ee924ba02c1ad93258b6ed758d
+Tests-only: 18 new component counterexamples and additive native-click coverage.
+Required witness: folded/disabled safety assertion after A-to-B handoff,
+older pending beneath newer sent on entry, or previously observed pending omission.
+Import/lookup/collection failure does not count as causal RED.
+Workflow run IDs, job IDs and raw filtered assertion receipt follow after push/CI.
+Implementation has not been written. GREEN PENDING; author assessment E0.

@@ -364,6 +364,71 @@ for (const copy of copies) {
       expect(state.posts).toBe(1);
       record(`completed ACK ${copy.locale}/${later}`, "fill, Send, status, thread refresh with later row visible/omitted; reload and status",
         "own success never resolves later pending/policy-blocked send; composer locked; one POST; reload retains visible server result");
+
+      // Transport setup only: start a new component epoch with projected A and no local ACK.
+      // A settles on the same refresh that exposes unresolved B; a newer buyer row is already present.
+      state.delivery = "queued";
+      state.laterDelivery = null;
+      state.omitOutbound = false;
+      state.omitLater = false;
+      state.concurrentSent = false;
+      await page.reload();
+      await open(page, ids.instagram);
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      state.delivery = "sent";
+      state.laterDelivery = later;
+      for (const omitted of [false, true, false]) {
+        state.omitLater = omitted;
+        await query(page, copy.refresh);
+        await expect(page.getByTestId("inbox-delivery-state")).toHaveText(later === "queued" ? copy.pending
+          : copy.locale === "en" ? "Sending locked" : copy.locale === "zh-CN" ? "发送已锁定" : "已鎖定");
+        await expect(page.getByTestId("reply-text")).toBeHidden();
+        await expect(page.getByTestId("reply-send")).toBeDisabled();
+        await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
+        expect(state.posts).toBe(1);
+      }
+      await page.reload();
+      await open(page, ids.instagram);
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      state.laterDelivery = "sent";
+      await query(page, copy.refresh);
+      await expect(page.getByTestId("reply-text")).toBeVisible();
+      await page.getByTestId("reply-text").fill(copy.draft);
+      await expect(page.getByTestId("reply-send")).toBeEnabled();
+      expect(state.posts).toBe(1);
+      record(`projected handoff ${copy.locale}/${later}`, "thread refresh A sent + B pending, omit B, reload, refresh B sent, fill",
+        "B remains locked through omission and reload; only all-settled server facts permit a next draft; no extra POST");
+
+      // Both rows are observed before newer B settles and older A leaves the display page.
+      state.delivery = later;
+      state.laterDelivery = later;
+      await page.reload();
+      await open(page, ids.instagram);
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      state.laterDelivery = "sent";
+      state.omitOutbound = true;
+      await query(page, copy.refresh);
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      expect(state.posts).toBe(1);
+      record(`multiple projected obligations ${copy.locale}/${later}`, "reload two pending rows; refresh newer B sent while older A is omitted",
+        "all observed obligations remain tracked independently; no extra POST");
+
+      // Transport setup: older A remains unresolved underneath newer sent B on initial entry.
+      state.delivery = later;
+      state.omitOutbound = false;
+      await page.reload();
+      await open(page, ids.instagram);
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      state.omitOutbound = true;
+      await query(page, copy.refresh);
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      expect(state.posts).toBe(1);
+      record(`older projected obligation ${copy.locale}/${later}`, "reload then thread refresh omitting older unresolved A beneath sent B",
+        "initial entry and omission keep the composer folded and Send disabled; no fresh POST");
     });
   }
 
