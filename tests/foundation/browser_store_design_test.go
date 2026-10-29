@@ -2,6 +2,10 @@
 
 package foundation_test
 
+// Purpose: run the store-design browser acceptance suites and verify persisted journey facts.
+// Depends on: isolated PostgreSQL, private Go API, signed MOCK IdP, production admin and Playwright.
+// Used by: scripts/dev/test-local.sh --browser-design in GitHub CI.
+// Invariants: keep existing suites and PG checks; editor-v2 uses server-shaped MOCK replies only.
 // SDB (unit store-design, contracts/storefront-v2.md section B; independent gate, evidence label BROWSER, IdP = MOCK).
 //
 // Stack: isolated PG 18 (the foundation fixture), the real private Go API (httpapi: identity + admin routes incl. design/*),
@@ -160,7 +164,7 @@ func TestBrowserStoreDesign(t *testing.T) {
 
 	stores, _ := json.Marshal(journeys)
 	playwrightLog := browserLog(t, filepath.Join(evidence, "playwright.log"))
-	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/design.spec.ts", "tests/admin/oc/design-publish-pending.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/design.spec.ts", "tests/admin/oc/design-publish-pending.spec.ts", "tests/admin/editor-v2.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	browser.Dir = root
 	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "store-design", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence,
 		"LC_BROWSER_DESIGN_STORES": string(stores), "LC_BROWSER_READONLY_STORE": roStore, "LC_BROWSER_BFF_STORE": bffStore, "LC_BROWSER_FOREIGN_STORES": f.storeB + "," + f.storeA2})

@@ -1,3 +1,7 @@
+// Purpose: Edit five home section types with one disclosure and secondary actions.
+// Depends on: react, markdown-lite, design-copy, design-model, DesignMedia, DesignField.
+// Used by: Design.tsx.
+// Invariants: Preserve section order, limits and every type field; no requests.
 "use client";
 
 // Home-page tab of the Design editor: add, remove, reorder and edit the five section types (hero, featured collection,
@@ -117,6 +121,8 @@ export function DesignSections({
   issue: (path: string) => string; onChange: (next: Section[]) => void;
 }) {
   const [type, setType] = useState<SectionType>("hero");
+  const [open, setOpen] = useState<number | null>(null);
+  const [more, setMore] = useState<number | null>(null);
   const full = sections.length >= MAX.sections;
   return (
     <div className="design-panel" data-testid="design-home">
@@ -124,15 +130,18 @@ export function DesignSections({
       {sections.map((section, i) => (
         <section className="design-block" key={i} data-testid="design-section">
           <div className="design-block-head">
-            <h3>{c.home.types[section.type]}</h3>
-            <div className="design-row-actions">
+            <button type="button" data-testid="design-section-edit" aria-expanded={open === i} aria-controls={`design-section-fields-${i}`} onClick={() => { setOpen(open === i ? null : i); setMore(null); }}>{section.heading || c.home.types[section.type]}</button>
+            <button type="button" data-testid="design-section-more" aria-label={c.editor.more} aria-expanded={more === i} onClick={() => { setMore(more === i ? null : i); setOpen(null); }}>⋯</button>
+            <div className="design-row-actions" hidden={more !== i}>
               <button type="button" aria-label={c.nav.up} title={c.nav.up} disabled={i === 0} onClick={() => onChange(moved(sections, i, -1))}>↑</button>
               <button type="button" aria-label={c.nav.down} title={c.nav.down} disabled={i === sections.length - 1} onClick={() => onChange(moved(sections, i, 1))}>↓</button>
               <button type="button" aria-label={c.nav.remove} title={c.nav.remove} onClick={() => onChange(sections.filter((_, j) => j !== i))}>×</button>
             </div>
           </div>
+          <div id={`design-section-fields-${i}`} hidden={open !== i}>
           <SectionEditor store={store} index={i} section={section} pages={pages} media={media} ops={ops} c={c} issue={issue}
             onChange={(next) => onChange(sections.map((s, j) => (j === i ? next : s)))} />
+          </div>
         </section>
       ))}
       <div className="design-add">
@@ -140,7 +149,7 @@ export function DesignSections({
           {SECTION_TYPES.map((t) => <option key={t} value={t}>{c.home.types[t]}</option>)}
         </select>
         <button type="button" disabled={full} data-testid="design-section-add"
-          onClick={() => onChange([...sections, blankSection(type, media[0]?.id ?? null)])}>
+          onClick={() => { onChange([...sections, blankSection(type, media[0]?.id ?? null)]); setOpen(sections.length); setMore(null); }}>
           {full ? c.home.limit_reached : c.home.add}
         </button>
       </div>

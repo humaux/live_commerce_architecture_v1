@@ -1,13 +1,15 @@
 // Purpose: Owns storefront design labels and template interpolation.
 // Depends on: @live-commerce/i18n
+// Invariants: all three locales retain matching keys; merchant content and server errors remain distinct.
 // Used by: apps/admin/components/Design.tsx, apps/admin/components/DesignMedia.tsx, apps/admin/components/DesignNav.tsx, apps/admin/components/DesignPages.tsx, apps/admin/components/DesignProfile.tsx, apps/admin/components/DesignSections.tsx, tests/admin/design.spec.ts
 // Copy for the admin Design page (components/Design*.tsx; BFF design/* -> Go internal/httpapi/design.go), locales zh-CN /
 // zh-TW / en. Owns every UI string of the page and the error-code map; the merchant's own content (store name, headings,
 // page text) is single-language and never goes through here. `{n}` / `{path}` / `{reason}` are filled by `fill`.
 // Non-goals: no validation rule (the server decides), no formatting of dates (components use Intl).
-import type { Locale } from "@live-commerce/i18n";
+import { editorCopy, type Locale } from "@live-commerce/i18n";
 
 const en = {
+  editor: editorCopy.en,
   title: "Store design",
   subtitle: "Edit your storefront draft, preview it, then publish. Buyers only see published versions.",
   store: "Store",
@@ -30,7 +32,7 @@ const en = {
   preview: "Preview",
   publish: "Publish",
   publishing: "Publishing…",
-  publishPending: "Publish result pending confirmation",
+  publishPending: editorCopy.en.pending,
   publishPendingBody: "We are checking whether draft v{n} was published. You can keep editing; confirm this result before publishing again.",
   publishRecheck: "Confirm publish result",
   publishRecoveryConfirm: "Confirm the earlier publish request for draft v{n}? If it has not completed, this will publish that draft for buyers.",
@@ -94,6 +96,7 @@ const en = {
 export type DesignCopy = typeof en;
 
 const zhCN: DesignCopy = {
+  editor: editorCopy['zh-CN'],
   title: "店铺装修",
   subtitle: "编辑店铺草稿，预览后再发布。买家只会看到已发布的版本。",
   store: "店铺",
@@ -116,7 +119,7 @@ const zhCN: DesignCopy = {
   preview: "预览",
   publish: "发布",
   publishing: "发布中…",
-  publishPending: "发布结果待确认",
+  publishPending: editorCopy['zh-CN'].pending,
   publishPendingBody: "正在确认草稿 v{n} 是否已发布。你可以继续编辑；确认结果后才能再次发布。",
   publishRecheck: "确认发布结果",
   publishRecoveryConfirm: "确认之前草稿 v{n} 的发布请求？如果尚未完成，这会将该草稿发布给买家。",
@@ -179,6 +182,7 @@ const zhCN: DesignCopy = {
 };
 
 const zhTW: DesignCopy = {
+  editor: editorCopy['zh-TW'],
   title: "店鋪裝修",
   subtitle: "編輯店鋪草稿，預覽後再發佈。買家只會看到已發佈的版本。",
   store: "店鋪",
@@ -201,7 +205,7 @@ const zhTW: DesignCopy = {
   preview: "預覽",
   publish: "發佈",
   publishing: "發佈中…",
-  publishPending: "發布結果待確認",
+  publishPending: editorCopy['zh-TW'].pending,
   publishPendingBody: "正在確認草稿 v{n} 是否已發布。你可以繼續編輯；確認結果後才能再次發布。",
   publishRecheck: "確認發布結果",
   publishRecoveryConfirm: "確認先前草稿 v{n} 的發布請求？如果尚未完成，這會將該草稿發布給買家。",

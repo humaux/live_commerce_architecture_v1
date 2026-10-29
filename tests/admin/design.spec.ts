@@ -16,6 +16,23 @@ import { designCopy, fill } from "../../apps/admin/lib/design-copy";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { displayTime } from "../../packages/format/src/index.ts";
 
+// Signed navigation is exercised with real clicks; no API/storage/DOM shortcuts.
+async function editorTask(page: Page, task: 'profile' | 'home' | 'pages' | 'nav' | 'versions') {
+  // Loaded editor exists; its duplicate toolbar is collapsed in review/results. Task clicks below assert the visible destination.
+  await expect(page.getByTestId('design-status')).toHaveCount(1);
+  if (await page.getByTestId(`design-${task}`).isVisible()) return;
+  if (await page.getByTestId('design-back').isVisible()) await page.getByTestId('design-back').click();
+  await page.getByTestId(task === 'versions' ? 'design-tab-versions' : `design-task-${task}`).click();
+  await expect(page.getByTestId(`design-${task}`)).toBeVisible();
+}
+async function editorPublish(page: Page) {
+  if (await page.getByTestId('design-back').isVisible()) await page.getByTestId('design-back').click();
+  await page.getByTestId('design-publish').click();
+  await expect(page.getByTestId('design-publish-review')).toBeVisible();
+  test.info().annotations.push({ type: 'publication-confirmation', description: await page.getByTestId('design-publish-review').getByRole('heading').innerText() });
+  await page.getByTestId('design-publish-confirm').click();
+}
+
 const required = (name: string) => {
   const value = process.env[name];
   if (!value) throw new Error(`${name} is required`);
@@ -106,7 +123,7 @@ for (const j of journeys) {
 
     // ---- empty state: nothing saved, never published, the toolbar fits the viewport ----
     await expect(page.getByTestId("design-page")).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[j.locale].design);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(c.editor.title);
     await expect(status).toContainText(c.noDraft);
     await expect(status).toContainText(c.neverPublished);
     for (const id of ["design-save", "design-preview", "design-publish"]) {
@@ -115,12 +132,16 @@ for (const j of journeys) {
       expect(box!.x).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width, `${id} inside the viewport`).toBeLessThanOrEqual((mobile ? 390 : 1586) + 1);
     }
-    await expect(page.getByRole("tab")).toHaveCount(5);
+    await expect(page.getByRole("tab")).toHaveCount(0);
+    for (const task of ['profile','home','pages','nav']) await expect(page.getByTestId(`design-task-${task}`)).toBeVisible();
+    await expect(page.getByTestId('design-tab-versions')).toBeVisible();
 
     // ---- profile: name, accent colour, logo upload (+ refused uploads), contact ----
+    await editorTask(page, "profile");
     await page.getByTestId("design-name").fill(name);
     await expect(status).toContainText(c.unsaved);
     await page.getByTestId("design-accent").fill(ACCENT);
+    await page.getByTestId("design-profile-intro-toggle").click();
     await page.getByTestId("design-logo-choose").click();
     // client-side refusals: wrong type, svg, over 2 MB; server-side refusal: image/png label on non-image bytes
     const file = page.getByTestId("design-logo-file");
@@ -137,16 +158,18 @@ for (const j of journeys) {
     await expect(logo).toBeVisible();
     await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     await expect(page.getByTestId("design-logo-clear")).toBeVisible();
+    await page.getByTestId("design-profile-contact-toggle").click();
     await page.getByLabel(c.profile.email, { exact: true }).fill("shop@example.com");
     await page.getByLabel(c.profile.phone, { exact: true }).fill("+886 2 1234 5678");
     await shot(page, "profile", j);
 
     // ---- home sections: hero, product grid, text block ----
-    await page.getByTestId("design-tab-home").click();
+    await editorTask(page, "home");
     // contract: a store without a saved draft starts from the derived default (store name + one product_grid); drop it, build our own
     const sections = page.getByTestId("design-section");
     await expect(sections).toHaveCount(1);
-    await expect(sections.first().locator("h3")).toHaveText(c.home.types.product_grid);
+    await expect(sections.first().getByTestId("design-section-edit")).toHaveText(c.home.types.product_grid);
+    await sections.first().getByTestId("design-section-more").click();
     await sections.first().getByRole("button", { name: c.nav.remove, exact: true }).click();
     await expect(sections).toHaveCount(0);
     for (const type of ["hero", "product_grid", "rich_text"]) {
@@ -154,12 +177,15 @@ for (const j of journeys) {
       await page.getByTestId("design-section-add").click();
     }
     await expect(sections).toHaveCount(3);
-    await expect(sections.nth(0).locator("h3")).toHaveText(c.home.types.hero);
-    await expect(sections.nth(1).locator("h3")).toHaveText(c.home.types.product_grid);
-    await expect(sections.nth(2).locator("h3")).toHaveText(c.home.types.rich_text);
+    await expect(sections.nth(0).getByTestId("design-section-edit")).toHaveText(c.home.types.hero);
+    await expect(sections.nth(1).getByTestId("design-section-edit")).toHaveText(c.home.types.product_grid);
+    await expect(sections.nth(2).getByTestId("design-section-edit")).toHaveText(c.home.types.rich_text);
+    await sections.nth(0).getByTestId("design-section-edit").click();
     await expect(sections.nth(0).locator("img").first()).toBeVisible(); // the hero took the uploaded image
     await sections.nth(0).getByLabel(c.home.heading, { exact: true }).fill("Welcome");
+    await sections.nth(1).getByTestId("design-section-edit").click();
     await sections.nth(1).getByLabel(c.home.heading, { exact: true }).fill("Bestsellers");
+    await sections.nth(2).getByTestId("design-section-edit").click();
     // hostile markdown: refused on the field at once, and the server refuses the save (the field path reaching the UI is SDB05)
     const body = sections.nth(2).locator("textarea");
     await body.fill("<script>alert(1)</script> **bold**");
@@ -171,14 +197,16 @@ for (const j of journeys) {
     await body.fill("Hello **bold** and [a link](https://example.com/story)");
     await expect(sections.nth(2).getByRole("alert")).toHaveCount(0);
     // reorder and back: the order is the document order
+    await sections.nth(2).getByTestId("design-section-more").click();
     await sections.nth(2).getByRole("button", { name: c.nav.up, exact: true }).click();
-    await expect(sections.nth(1).locator("h3")).toHaveText(c.home.types.rich_text);
+    await expect(sections.nth(1).getByTestId("design-section-edit")).toHaveText("Our story");
+    await sections.nth(1).getByTestId("design-section-more").click();
     await sections.nth(1).getByRole("button", { name: c.nav.down, exact: true }).click();
-    await expect(sections.nth(2).locator("h3")).toHaveText(c.home.types.rich_text);
+    await expect(sections.nth(2).getByTestId("design-section-edit")).toHaveText("Our story");
     await shot(page, "home", j);
 
     // ---- a page: hostile markdown is escaped in the live preview, a bad slug blocks the save locally ----
-    await page.getByTestId("design-tab-pages").click();
+    await editorTask(page, "pages");
     await page.getByTestId("design-page-add").click();
     const pageBlock = page.getByTestId("design-pages").getByTestId("design-page-block").first(); // D4 fixed: page blocks are design-page-block
     await pageBlock.getByLabel(c.pages.title).fill("About us");
@@ -229,7 +257,8 @@ for (const j of journeys) {
     // G-UI8 audit [READ/MEASURE]: reads whether the page registered a blocking beforeunload guard (synthetic event only measures defaultPrevented); the real navigation click follows in goSettings()
     const beforeUnloadPrevented = () => page.evaluate(() => { const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented; });
     expect(await beforeUnloadPrevented(), "clean draft must not warn").toBe(false);
-    await page.getByTestId("design-tab-profile").click();
+    await editorTask(page, "profile");
+    if (!(await page.getByTestId("design-profile-intro").isVisible())) await page.getByTestId("design-profile-intro-toggle").click();
     await page.getByLabel(c.profile.tagline, { exact: true }).fill("a tagline nobody saved");
     await expect(status).toContainText(c.unsaved);
     expect(await beforeUnloadPrevented(), "dirty draft must warn on unload").toBe(true);
@@ -237,6 +266,8 @@ for (const j of journeys) {
     await goSettings();
     await expect.poll(() => dlg.seen.filter((d) => d.message === c.guard).length).toBe(1);
     await expect(page).toHaveURL(new RegExp(`/${j.locale}/design`));
+    await editorTask(page, "profile");
+    if (!(await page.getByTestId("design-profile-intro").isVisible())) await page.getByTestId("design-profile-intro-toggle").click();
     await expect(page.getByLabel(c.profile.tagline, { exact: true })).toHaveValue("a tagline nobody saved");
     // Canceling navigation leaves the modal drawer open. Return focus to the
     // editor before editing; its inert content must not receive input behind it.
@@ -245,6 +276,8 @@ for (const j of journeys) {
       await expect(page.locator('button[aria-controls="workspace-navigation"]')).toHaveAttribute("aria-expanded", "false");
     }
     // undoing the edit makes the page clean again: no warning, navigation goes through without a dialog
+    await editorTask(page, "profile");
+    if (!(await page.getByTestId("design-profile-intro").isVisible())) await page.getByTestId("design-profile-intro-toggle").click();
     await page.getByLabel(c.profile.tagline, { exact: true }).fill("");
     await expect(status).toContainText(c.saved);
     expect(await beforeUnloadPrevented()).toBe(false);
@@ -254,6 +287,8 @@ for (const j of journeys) {
     expect(dlg.seen.length).toBe(before);
     // dirty again and leave on purpose: the edit is gone and the saved draft is what comes back
     await page.goto(`/${j.locale}/design?store=${j.id}`);
+    await editorTask(page, "profile");
+    if (!(await page.getByTestId("design-profile-intro").isVisible())) await page.getByTestId("design-profile-intro-toggle").click();
     await page.getByLabel(c.profile.tagline, { exact: true }).fill("discard me");
     dlg.answer("accept");
     await goSettings();
@@ -261,7 +296,10 @@ for (const j of journeys) {
     expect(dlg.seen.filter((d) => d.message === c.guard).length).toBe(2);
     await page.goto(`/${j.locale}/design?store=${j.id}`);
     await expect(status).toContainText(fill(c.draftVersion, { n: 1 }));
+    await editorTask(page, "profile");
+    if (!(await page.getByTestId("design-profile-intro").isVisible())) await page.getByTestId("design-profile-intro-toggle").click();
     await expect(page.getByLabel(c.profile.tagline, { exact: true })).toHaveValue("");
+    await editorTask(page, "profile");
     await expect(page.getByTestId("design-name")).toHaveValue(name);
 
     // ---- publish v1 ----
@@ -270,7 +308,7 @@ for (const j of journeys) {
     const [pub1, versionsReply] = await Promise.all([
       page.waitForRequest((r) => r.method() === "POST" && /\/design\/publish$/.test(r.url())),
       page.waitForResponse((r) => r.request().method() === "GET" && /\/design\/versions$/.test(new URL(r.url()).pathname)),
-      publish.click(),
+      editorPublish(page),
     ]);
     expect(versionsReply.status()).toBe(200);
     const publishedVersions = await versionsReply.json() as { items: { version: number; published_at: string }[] };
@@ -278,10 +316,10 @@ for (const j of journeys) {
     expect(publishedAt).toBeTruthy();
     expect(pub1.postDataJSON()).toEqual({ expected_draft_version: 1 });
     await expect(note).toHaveText(fill(c.okPublished, { n: 1 }));
-    expect(dlg.seen.at(-1)?.message).toBe(fill(c.publishConfirm, { n: 1 }));
+    expect(test.info().annotations.filter(a => a.type === 'publication-confirmation').at(-1)?.description).toBe(fill(c.publishConfirm, { n: 1 }));
     await expect(status).toContainText(fill(c.liveVersion, { n: 1 }));
     await expect(publish).toBeDisabled(); // nothing new to publish
-    await page.getByTestId("design-tab-versions").click();
+    await editorTask(page, "versions");
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText("v1");
     await expect(rows.first()).toContainText(c.versions.live);
@@ -296,10 +334,10 @@ for (const j of journeys) {
         const utcPage = await utcContext.newPage();
         expect(await utcPage.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)).toBe("UTC");
         await utcPage.goto(`/${j.locale}/design?store=${j.id}`);
-        await utcPage.getByTestId("design-tab-versions").click();
+        await editorTask(utcPage, "versions");
         await expect(utcPage.getByTestId("design-version-row").first().locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
         await utcPage.reload();
-        await utcPage.getByTestId("design-tab-versions").click();
+        await editorTask(utcPage, "versions");
         await expect(utcPage.getByTestId("design-version-row").first().locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
       } finally {
         await utcContext.close();
@@ -309,15 +347,15 @@ for (const j of journeys) {
     await shot(page, "versions-v1", j);
 
     // ---- edit again and publish v2 (a dirty page is saved first, as draft v2, then published) ----
-    await page.getByTestId("design-tab-profile").click();
+    await editorTask(page, "profile");
     await page.getByTestId("design-name").fill(`${name} two`);
     await expect(publish).toBeEnabled();
-    await publish.click();
+    await editorPublish(page);
     await expect(note).toHaveText(fill(c.okPublished, { n: 2 }));
-    expect(dlg.seen.at(-1)?.message).toBe(fill(c.publishConfirm, { n: 2 }));
+    expect(test.info().annotations.filter(a => a.type === 'publication-confirmation').at(-1)?.description).toBe(fill(c.publishConfirm, { n: 2 }));
     await expect(status).toContainText(fill(c.draftVersion, { n: 2 }));
     await expect(status).toContainText(fill(c.liveVersion, { n: 2 }));
-    await page.getByTestId("design-tab-versions").click();
+    await editorTask(page, "versions");
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(0)).toContainText("v2");
     await expect(rows.nth(0)).toContainText(c.versions.live);
@@ -354,8 +392,9 @@ for (const j of journeys) {
     expect(reloadedList.items.find((v) => v.version === 1)?.published_at).toBe(publishedAt);
     await expect(status).toContainText(fill(c.draftVersion, { n: 2 }));
     await expect(status).toContainText(fill(c.liveVersion, { n: 3 }));
+    await editorTask(page, "profile");
     await expect(page.getByTestId("design-name")).toHaveValue(`${name} two`);
-    await page.getByTestId("design-tab-versions").click();
+    await editorTask(page, "versions");
     await expect(rows).toHaveCount(3);
     await expect(rows.nth(2).locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
     expect(dlg.seen.filter((d) => d.type === "beforeunload").length).toBe(0);
@@ -498,6 +537,7 @@ test("SDB03 read-only member: the page opens, every write is refused by the serv
   await page.goto(`/en/design?store=${readonlyStore}`);
   await expect(page.getByTestId("design-page")).toBeVisible();
   await expect(page.getByTestId("design-status")).toContainText(c.noDraft);
+  await editorTask(page, "profile");
   await page.getByTestId("design-name").fill("Not allowed");
   await page.getByTestId("design-save").click();
   await expect(page.getByTestId("design-note")).toHaveText(c.errors.forbidden);
@@ -524,19 +564,23 @@ test("SDB04 stale write: a second tab that saved first makes this tab's save a c
   const baseline = await probe(a, { method: "PUT", path: `/api/stores/${bffStore}/design/draft`, body: JSON.stringify({ expected_version: draftNow, document: { profile: { name: "Baseline name", accent_color: "#247965" } } }) });
   expect(baseline.status, baseline.text.slice(0, 200)).toBe(200);
   await a.goto(`/en/design?store=${bffStore}`);
+  await editorTask(a, "profile");
   await expect(a.getByTestId("design-name")).toHaveValue("Baseline name");
   const b = await ctx.newPage();
   b.on("dialog", (d) => void d.accept());
   await b.goto(`/en/design?store=${bffStore}`);
+  await editorTask(b, "profile");
   await b.getByTestId("design-name").fill("Saved first in tab B");
   await b.getByTestId("design-save").click();
   await expect(b.getByTestId("design-note")).toHaveText(c.okSaved);
+  await editorTask(a, "profile");
   await a.getByTestId("design-name").fill("Saved second in tab A");
   await a.getByTestId("design-save").click();
   await expect(a.getByTestId("design-note")).toHaveText(c.errors.conflict);
   await expect(a.getByTestId("design-reload")).toBeVisible();
   await expect(a.getByTestId("design-status")).toContainText(c.unsaved); // the local edit is kept, not silently overwritten
   await a.getByTestId("design-reload").click();
+  await editorTask(a, "profile");
   await expect(a.getByTestId("design-name")).toHaveValue("Saved first in tab B");
   await ctx.close();
 });
@@ -554,7 +598,7 @@ test("SDB05 a 422 reaches the editor with the offending field path (contract B-a
   expect(envelope.details?.path, `the BFF must pass details.path through: ${bad.text}`).toBe("profile.css");
   // in the editor: the save of a document the server refuses names the field
   await page.goto(`/en/design?store=${bffStore}`);
-  await page.getByTestId("design-tab-home").click();
+  await editorTask(page, "home");
   await page.getByTestId("design-section-type").selectOption("rich_text");
   await page.getByTestId("design-section-add").click();
   const section = page.getByTestId("design-section").last();

@@ -1,0 +1,323 @@
+EDITOR-V2-IMPL
+RVFIX323 push receipt 2026-10-29T15:07:47Z
+head=f45c77aa9808f7b64095654d6a5613a49cae9c8f; base=d0e7331525fec046fbe9361906fa66367ae583c6; PR323 OPEN/BLOCKED
+push=exit0; PR body update=exit0; no implementation/evidence-only follow-up push
+WAIT_RUN: 40898396353 (Gates, attempt1, queued; test job not assigned)
+WAIT_RUN: 40898396326 (Foundation, attempt1, queued; job123533694016 queued)
+gh_pr_checks=exit8 (pending); no new assertion failed yet; causal_RED=PENDING; GREEN=NOT_RUN
+checkout_sha=UNKNOWN (queued; PR synthetic merge must be recorded from actual test receipt)
+wakeup=integrator relays completion in fresh session per card; no local background process
+failure_match=conclusion failure/cancelled/timed_out; next=read browser-design log before any implementation
+post_push_receipt=uncommitted by design; actual CI assertion excerpt must be appended on relay
+
+2026-10-29 RVFIX323 tests-only selector repair
+pre_edit_head=145e8a44cc9214915e383ac4be7ae225c8ff549d
+integration=d0e7331525fec046fbe9361906fa66367ae583c6; fetch+merge=Already up to date
+authority=final REQUEST_CHANGES cxf-rv-323.log; P1 actual Go harness omits editor-v2.spec.ts
+repair=ADD editor-v2.spec.ts to existing positional filters; existing2specs/assertions/PGfacts unchanged
+outside_original_PLAN=tests/foundation/browser_store_design_test.go; explicit RVFIX target, integrator review required
+phase=tests-only; implementation=NOT_RUN; causal_RED=PENDING; GREEN=NOT_RUN
+old_green=40880540678 attempt2 / 40880540347; excluded suite, NOT causal evidence
+monitor=10min maximum; wakeup=integrator completion relay; failures=failure/cancelled/timed_out
+local_tests/server/LIVE=NOT_RUN; Humaux store/canvas=NOT_RUN (tools unavailable)
+static_checks=gofmt -d tests/foundation/browser_store_design_test.go (empty diff), node --check tests/admin/editor-v2.spec.ts, git diff --check; all exit=0
+generator=node scripts/dev/derive-browser-ownership.mjs; exit=0; generated hash+direct spec ownership evidence only
+
+2026-10-29 RELAY 5 — FIX #323 current-head investigation:
+head=145e8a44cc9214915e383ac4be7ae225c8ff549d; integration fetch+merge=Already up to date
+Gates.run=40880540678 attempt=1; failed jobs=123475733454,123509362170,123509362328,123509626358
+root=hosted runner lost communication; original job log unavailable; downstream evidence missing
+targeted infrastructure rerun authorized by FIX #323; retry budget=1; dispatch follows this entry
+monitor=integrator completion relay; timeout=10 minutes this session; failure=job conclusion failure/cancelled/timed_out
+dispatch=gh run rerun 40880540678 --job 123475733454; exit=0; infrastructure reruns=1
+rerun=Gates40880540678 attempt2; replacement job123521163566 in_progress at handoff
+WAIT_RUN: 40880540678 (attempt 2, integrator completion relay)
+artifact=12901574277 freshly downloaded relay5-browser-design; Playwright Running26tests/26passed; new17 NOT_RUN
+selector=tests/foundation/browser_store_design_test.go:163 excludes editor-v2.spec.ts; unowned path NOT_EDITED
+RED=NOT_OBTAINED; implementation/GREEN NOT_RUN; source changes=0
+
+2026-10-29 RELAY 4 — current-head receipts independently rechecked:
+PR323 OPEN -> r3/integration; head=145e8a44cc9214915e383ac4be7ae225c8ff549d (tests-only)
+Gates.run=40880540678 completed/failure; required.job=123509626358 downstream failure
+root.job=123475733454 browser-visual-lint1/4; annotation=hosted runner lost communication
+root.log=log not found on fresh gh run view --log-failed --job; not assertion RED
+Foundation.run=40880540347 job=123470549113 success; not product acceptance
+current_source=tests/foundation/browser_store_design_test.go:163 explicitly selects old2specs only
+retained CI playwright.log=26 old tests passed; new17 editor-v2 cases excluded
+RED=NOT_OBTAINED; implementation/GREEN/independent review=NOT_RUN
+STOP=out-of-card runner gate blocker; integrator to resolve runner issue and harness selector
+fix_attempts=0; source_edits=0; commits=0; pushes=0; reruns=0 this relay
+outside_card_edits=NONE; proposed unedited harness path=tests/foundation/browser_store_design_test.go
+WAIT_RUN: NONE (all current-head runs completed; no new push)
+local_tests/server/LIVE/Figma_writes=NOT_RUN; diagnostics/source E1; author E0
+raw_receipts=relay4-required.log, relay4-runner-annotation.json, relay4-run.json
+
+2026-10-29 RELAY 3 — current-head original receipts rechecked:
+head=145e8a44cc9214915e383ac4be7ae225c8ff549d; PR323 OPEN -> r3/integration
+Gates.run=40880540678 completed/failure; required.job=123509626358 downstream failure
+root.job=123475733454 browser-visual-lint1/4; original annotation=hosted runner lost communication
+root.log=log not found (rechecked); this is NOT new editor assertion RED
+Foundation.run=40880540347 job=123470549113 success; product acceptance NOT_RUN
+current_source=tests/foundation/browser_store_design_test.go:163 selects only old2specs
+artifact.playwright.log=26 existing tests passed; new17cases excluded
+RED=NOT_OBTAINED; GREEN=NOT_RUN; implementation=NOT_RUN
+STOP=out-of-card runner failure; foundation selector needs integrator repair/explicit authorization
+fix_attempts=0; source_edits=0; commits=0; pushes=0; reruns=0 in relay3
+evidence=relay3-required.log,relay3-runner-annotation.json,relay3-run.json
+WAIT_RUN: NONE (both workflows complete; integrator owns next relay)
+local_tests/server/LIVE/Figma_writes=NOT_RUN; diagnostics only, author E0, source inspection E1
+
+2026-10-29 RELAY 2 current-head recheck:
+head=145e8a44cc9214915e383ac4be7ae225c8ff549d (unchanged tests-only)
+Gates.run=40880540678 status=completed conclusion=failure
+required.job=123509626358 failure is downstream: gate=failure aggregate=failure receipts=failure
+root.failed_job=123475733454 (--browser-visual-lint@1/4)
+root.annotation=The hosted runner lost communication with the server.
+root.log=gh run view --log-failed --job reports log not found
+receipts.job=123509362328 FAIL: --browser-visual-lint@1/4: no receipt (job wrote none)
+aggregate.job=123509362170 missing visual-lint shard1/4, 265/348 shots captured
+browser_design.receipt_test_count=65 (gate-wide count, NOT new browser test execution)
+browser_design.playwright_test_count=26 existing tests; 17 editor-v2 cases excluded by explicit CLI filters
+Foundation.run=40880540347 job=123470549113 success; NOT product acceptance
+RED=NOT_OBTAINED; GREEN=NOT_RUN; implementation=NOT_RUN
+STOP=out-of-card runner failure and unowned foundation harness selector; integrator action required
+fix_attempts=0; code_changes=0; commits=0; pushes=0; reruns=0 in relay2
+WAIT_RUN: NONE (all current-head runs completed; no new push)
+evidence=relay2-required.log, relay2-receipts.log, relay2-runner-annotation.json
+
+phase=tests-only RED preparation
+base=d0e7331525fec046fbe9361906fa66367ae583c6
+environment=MOCK
+local_tests=NOT_RUN (owner prohibition)
+RED=NOT_RUN (awaiting PR CI dispatch)
+GREEN=NOT_RUN (implementation not started)
+Expected causal failure: new editor-v2.spec.ts asserts signed four-task hub after existing design page loads.
+Existing imports/components stay present; no implementation source change in RED.
+Run and job IDs will be recorded after dispatch; queued or unrelated failure is not causal RED.
+static.node_check_editor_spec=exit 0
+static.node_check_playwright_config=exit 0
+static.check_packet=exit 0, PASS_PACKET_STRUCTURE_ONLY
+static.browser_ownership_generation=exit 0, 53 modes (explicitly required generator)
+new_browser_cases=17
+
+2026-10-29 CI dispatch receipt (uncommitted until implementation push; no second RED push):
+PR=https://github.com/humaux/live_commerce_architecture_v1/pull/323
+head=145e8a44cc9214915e383ac4be7ae225c8ff549d
+Gates.workflow_run=40880540678
+Gates.url=https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40880540678
+Gates.status=PENDING (only plan queued; browser-design job not yet assigned)
+Foundation.workflow_run=40880540347
+Foundation.job=123470549113
+Foundation.url=https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40880540347/job/123470549113
+Foundation.status=PENDING
+RED=PENDING, no causal assertion failure observed yet
+GREEN=NOT_RUN, no implementation commit
+WAIT_RUN: 40880540678
+WAIT_RUN: 40880540347
+Wakeup owner=integrator; current card explicitly provides fresh-session relay when CI completes.
+Resume: read this file and CI failed-job logs; accept RED only if editor-v2 assertions execute and fail.
+No local server/test/background process was started. No merge, auto-merge or production operation.
+
+2026-10-29 RELAY 1 — BLOCKED, not causal RED:
+Verified PR head=145e8a44cc9214915e383ac4be7ae225c8ff549d (tests-only).
+Gates.workflow_run=40880540678 conclusion=failure
+Gates.failed_job=123475733454 name=gate (--browser-visual-lint@1/4)
+check_run.annotation=The hosted runner lost communication with the server.
+Gate step remains in_progress in completed job API response; no assertion failure available.
+gh run view 40880540678 --log-failed --job 123475733454: log not found.
+GET /actions/jobs/123475733454/logs: HTTP404 BlobNotFound.
+Foundation.workflow_run=40880540347 job=123470549113 conclusion=success
+browser_design.artifact=12901574277 receipt_artifact=12901204992
+browser_design.receipt_sha=26bc71e2dd686c1711defc6ecf59b58210a8e857 (CI checkout; not PR head)
+browser_design.receipt_spec_count=26; playwright.log confirms only26 pre-existing tests passed.
+ROOT_CAUSE: tests/foundation/browser_store_design_test.go:163 explicitly passes only
+tests/admin/design.spec.ts and tests/admin/oc/design-publish-pending.spec.ts to Playwright.
+New editor-v2.spec.ts never executes despite playwright.config.ts inclusion.
+RED=NOT_OBTAINED; new assertion failures=0, new test cases executed=0
+GREEN=NOT_RUN; implementation=NOT_RUN
+STOP=card requires stopping for out-of-card gate failure (hosted runner communication).
+fix_attempts=0; new commits=0; pushes=0; no rerun dispatched.
+Proposed next in-module harness path (not edited): tests/foundation/browser_store_design_test.go
+WAIT_RUN: NONE (prior workflow runs completed; integrator decision/relay required)
+Local tests/servers=NOT_RUN; CI artifact downloaded under ci-red-browser-design/.
+Humaux memory search/get/store now available; previous unavailable statements apply only to prior session.
+
+2026-10-30 FIX #323 — targeted fixture repair attempt 1
+PR current tested head: f45c77aa9808f7b64095654d6a5613a49cae9c8f
+Merged origin/r3/integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2 before edits.
+Read all failed jobs: Gates 40898396353/123536914327 (bundle:04),
+40898396353/123551605533 (receipts), 40898396353/123553296386 (required).
+Foundation 40898396326/123533694016 passed at the tested head, not product GREEN.
+CI checkout/receipt SHA: b07966fec4d178e41aff3878f81459473eb9ed8c (synthetic merge).
+Artifact 12909617694 gate-browser-design; receipt artifact 12909691702.
+Downloaded: fix323-current-browser/playwright/store-design/20261029T152126.986550789/.
+playwright.log: Running 43 tests using 1 worker; 17 failed; 26 passed.
+All new cases stop in open() line 117: design-status missing, expected substring 42.
+error-context.md: existing design-page renders unavailable/retry, not the editor.
+trace.zip network: draft/media/versions intercepted GET 200 application/json;
+fixture route.fulfill omitted Cache-Control: no-store.
+Root authority: apps/admin/lib/customers-client.ts:33-44 readJSON rejects JSON
+reads without no-store; design-client.ts routes all three snapshot reads through get().
+Not causal behavior RED: new hub assertions never reached. No runner infra rerun.
+Repair: add no-store only to intercepted editor and storefront read responses;
+production checks, assertions, fixture values, retries/timeouts/thresholds unchanged.
+Targeted attempt count: 1/2. Application implementation stays NOT_RUN pending causal RED.
+Static only: node --check tests/admin/editor-v2.spec.ts exit 0; git diff --check exit 0.
+Humaux/coord/store/canvas unavailable; no database persistence claimed.
+
+2026-10-30 push receipt — current head 7d19e61394cb8450416e12e036439b9be52bff46
+WAIT_RUN: 40914495431 (Gates (GitHub runners), in_progress; gate jobs pending plan)
+WAIT_RUN: 40914495459 (Foundation checks), job 123590985293 in_progress
+Both workflow metadata headSha match the pushed head; no plan job ID used as WAIT_RUN.
+Fresh causal RED=PENDING; implementation/GREEN/independent acceptance=NOT_RUN.
+Integrator owns completion relay/fresh session; stop monitoring within ten minutes.
+Terminal failure matcher: failure/cancelled/timed_out. No evidence-only push.
+
+FIX323 RELAY 1 — 2026-10-30, current head 7d19e61394cb8450416e12e036439b9be52bff46
+Integration merge: origin/r3/integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2, Already up to date (exit 0).
+RED Gates run 40914495431, bundle:04 job 123593141674, attempt 1, failure.
+Synthetic merge checked by CI: 77da99167540cc5e4c722f049582d705c159e334; workflow headSha 7d19e61394cb8450416e12e036439b9be52bff46.
+Artifact gate-browser-design downloaded into fix323-relay1-browser/ with gh run download.
+43 browser cases: 17 NEW editor-v2 failures AFTER v42 snapshot assertion, all on
+"signed four-task hub replaces the expanded five-tab form", locator design-hub missing.
+Causal behavior RED established (E3 negative evidence), application implementation now authorized.
+Also 1 existing OC11 zh-TW failure at recheckSettled: count/isEnabled non-atomic check races
+with successful receipt removing the button. Trace POST 200 at 16:57:44.090Z, versions 200 at 16:57:44.106Z.
+Fix read atomically; preserve busy-settled assertion and timeout. 25 existing cases passed.
+No apt/dpkg/mirror failure. Foundation run 40914495459 job 123590985293 success at same workflow head.
+Whole Gates run still in progress; neither overall GREEN nor independent acceptance claimed.
+Current RED run completed: failure. Read all failing jobs for this head:
+123593141674 browser-design behavioral RED + OC11 read race;
+123604023027 receipts: only --browser-design status FAIL;
+123604294796 required: gate=failure / receipts=failure downstream.
+Static node --check (three browser specs + timezone harness) and git diff --check: exit 0.
+Implementation tsc: exit 1, unresolved local dependency/workspace modules; NOT_PASS.
+Temporary dependency link/config removed. Existing external caches untouched.
+Implementation root fix: authoritative receipts update live + versions immediately; saved document only on cancel;
+initial definite refusal distinct from uncertain recovery; atomic test read fixes the observed OC11 race.
+Implementation CI/GREEN pending next push. No implementation tests run locally.
+PR #323 implementation pushed: f3e4130071b2296d498377c2aba4dd4ca9ad0cd4.
+
+RED E3 negative evidence: Gates 40914495431/job 123593141674 at 7d19e61394cb8450416e12e036439b9be52bff46 (synthetic merge 77da99167540cc5e4c722f049582d705c159e334). 17 new cases load draft v42, then fail their missing-hub assertion; 1 old OC11 count/isEnabled race, 25 old passes. Receipts 123604023027 / required 123604294796 are downstream only. No infra rerun. Raw browser artifact downloaded and inspected; causal RED recorded in output/editor-v2-impl/red.log.
+
+Implementation CI headSha verified exact:
+WAIT_RUN: 40920310953 — Gates (GitHub runners), in_progress; gate test jobs not assigned yet.
+WAIT_RUN: 40920310991 — Foundation checks, job 123611432672 in_progress.
+These are workflow run IDs, not the plan job. No implementation GREEN yet.
+
+Static syntax/diff checks exit 0 (E1); tsc exit 1 due unavailable local dependency/workspace resolution, not acceptance. Own PASS=E0. Runtime density, locale/field parity, click ledger, persistence and independent review=PENDING. Local tests/builds/servers/containers/PG, Figma writes/lint and production NOT_RUN. Humaux coord/store/canvas/index/link unavailable.
+
+Outside original PLAN: apps/admin/components/DesignVersions.tsx, same-app extraction under scope pre-approval; existing explicitly assigned tests/foundation/browser_store_design_test.go remains for integrator approval and was not edited this relay. No other scope expansion.
+
+Post-push receipts remain uncommitted; no evidence-only push. Integrator owns completion notification/fresh-session relay for both WAIT_RUN IDs; terminal matchers failure/cancelled/timed_out. Worker ends monitoring well within ten minutes. No local background processes remain. No merge or auto-merge.
+
+FIX323 RELAY 2 — 2026-10-30, implementation head f3e4130071b2296d498377c2aba4dd4ca9ad0cd4
+Gates run 40920310953 attempt 1, failed bundle:04 job 123613924536.
+Raw original log: implementation-relay2-job.log (GitHub jobs/logs endpoint;
+gh run view --log-failed reports workflow still in progress).
+All exposed failed jobs inspected: only 123613924536 at inspection; no infrastructure failure.
+Foundation run 40920310991 job 123611432672 success at this head; not product acceptance.
+Browser artifact 12919092181 gate-browser-design downloaded via gh run download.
+Synthetic merge checkout b75a300da827563981aefa3e3260732208015784.
+43 Playwright cases: 26 existing pass / 17 new fail.
+New assertion failures: domain address unavailable (5 hub cases + 6 review cases),
+English mobile hub characters 114 > 100, desktop/mobile nav text blocks 22 > 20,
+and 3 preview popups closed after storefront read refusal.
+Root: storefront fixture Cache-Control no-store != private, no-store required by orders-client.read.
+Fix only those two fixture response headers, never the production check/body/assertions.
+Density root: clipped accessible explanations retain text ranges; use native hidden + existing aria-describedby.
+Menu counter root: adjacent JSX expressions split one count across 3 text nodes; emit one complete count string.
+Keep thresholds, exemptions, fixture data, retries, timeouts and every assertion unchanged.
+Original causal tests-only RED remains Gates 40914495431/job 123593141674 at 7d19e61394cb8450416e12e036439b9be52bff46.
+Integration 17328372dea91220050e9583259312e2db2e5d97 merged first; merge 2f8b2df69.
+Targeted implementation blocker fix attempt 1/2; fresh CI only will establish outcome.
+Static node --check editor-v2.spec.ts and git diff --check exit 0 (E1).
+Browser ownership regenerated, no Go dependency graph change. No local tests/servers/builds.
+Current product GREEN PENDING; own acceptance E0; Humaux persistence NOT_RUN (tools unavailable).
+FIX323 RELAY 2 — root repair pushed; CI PENDING
+
+PR #323, head 01976522ec64388debd0414cd0dff980d14e98f3.
+Merged origin/r3/integration@17328372dea91220050e9583259312e2db2e5d97 first.
+Original tests-only causal RED: Gates 40914495431/job 123593141674 at 7d19e61394cb8450416e12e036439b9be52bff46 — 17 new missing-hub assertions after loading draft v42.
+Current implementation negative evidence: Gates 40920310953/job 123613924536 at f3e4130071b2296d498377c2aba4dd4ca9ad0cd4 — 26 old cases passed, 17 new cases failed (storefront fixture read envelope, English hub 114 characters, menu 22 text nodes). Artifact 12919092181 downloaded; completed-job raw log read through GitHub API because the full workflow was still running. No runner infrastructure failure or rerun.
+
+Repair attempt 1/2 for these blockers: match private, no-store on both storefront fixture reads; native hidden descriptions retain aria-describedby targets; render menu counts as complete text values. Assertions, fixture data, thresholds, timeouts, retries, production parsers and exemptions unchanged. Ownership regenerated. No new outside-PLAN edits; existing exceptions remain DesignVersions.tsx (same module) and tests/foundation/browser_store_design_test.go (explicit RVFIX), listed for integrator approval. Integration's inherited CVS popup fix is not a new card edit.
+
+WAIT_RUN: 40923838267 — Gates (GitHub runners), pending, no test job assigned yet.
+WAIT_RUN: 40923838194 — Foundation checks, foundation job 123623938542 in_progress.
+Both workflow headSha values independently match 01976522ec64388debd0414cd0dff980d14e98f3.
+GREEN PENDING. Static node --check editor-v2.spec.ts and git diff --check exit 0 (E1); author acceptance E0. No new-head E3/E4 completion claim.
+NOT_RUN: local tests/builds/servers/containers/PG/browser execution, Figma writes/copy-lint, Humaux coord/store/canvas/index/link, independent review, LIVE/production.
+Integrator owns completion notification and fresh-session relay; terminal failure matchers failure/cancelled/timed_out. Worker ends CI monitoring under ten minutes. No background process remains. Post-push receipts uncommitted; no evidence-only push, merge or auto-merge.
+
+FIX323 RELAY 3 — 2026-10-30, current head 01976522ec64388debd0414cd0dff980d14e98f3
+Gates run 40923838267 attempt 1 / failed bundle:04 job 123626905255.
+Foundation 40923838194/job 123623938542 success at that head only.
+Synthetic merge f96a530817c47cd2a332ec7e456243fedb491ea4; browser artifact 12920532928 downloaded.
+All exposed current-head failed jobs read (only bundle:04); raw job API used while workflow still runs.
+Playwright: 37 passed / 6 failed; three locales x summary-role locator and recovery sequencing.
+Native summary was wrongly selected as role=button; real-click the exact labelled summary, add open assertion.
+EN network trace: aborted POST at 17:58:56.196Z, same-key receipt 200 at 17:58:56.651Z.
+Test restored transport during automatic recovery, which correctly completed before manual query.
+Wait for query label and enabled state before restoring transport; retain every identity/receipt/refresh assertion.
+No product behaviour, fixture fact, threshold, timeout, retry budget, exemption or production parser changed.
+Targeted attempt=1/2 for these newly exposed test blockers; overall implementation repair push=2.
+Integration 17328372dea91220050e9583259312e2db2e5d97 merged first: Already up to date.
+Original causal tests-only RED remains 40914495431/job 123593141674 at 7d19e61394cb8450416e12e036439b9be52bff46.
+Browser ownership regenerated; only spec hash differs. No imports/Go graph changes or outside-PLAN edits.
+Static node --check editor-v2.spec.ts and git diff --check exit 0, E1; no local tests/servers.
+Evidence=old-head negative E3; new-head GREEN PENDING; author acceptance E0.
+Raw receipt: relay3-current-job.log + relay3-browser-design/; filtered relay3-failure-summary.log.
+Humaux coord/store/canvas/index/link NOT_RUN (tools unavailable); no shared persistence claim.
+
+RVFIX323 independent review P1 / 2026-10-30 / tests-only RED preparation
+Base head 39abc45b10d800e432010b1202897400c4b267c2; integration 17328372dea91220050e9583259312e2db2e5d97 merged first (Already up to date).
+Six added real-click cases: zh-TW/zh-CN/en x after-commit response loss, save B, original-key recovery with/without reload.
+RED assertions: pending/result/view must not describe unpublished B as published A; missing original document after reload is explicit, never current-draft fallback.
+Fixture commits before aborting replies; receipt lookup precedes new-operation CAS; replay body must equal original receipt source_version.
+Retains original key/body, one receipt, CAS for new commands, three-retry budget and all existing cases.
+node --check tests/admin/editor-v2.spec.ts and git diff --check exit 0 (E1).
+No product code changed before causal CI RED. RED run/job PENDING; GREEN NOT_RUN; author PASS E0.
+P2 findings deferred via PR comment per assignment. Humaux store/canvas NOT_RUN: tools unavailable.
+
+FIX323 RELAY 3 push receipt: 39abc45b10d800e432010b1202897400c4b267c2, PR #323.
+WAIT_RUN: 40927737920 Gates pending; no test job assigned yet.
+WAIT_RUN: 40927737550 Foundation / job 123637637188 in_progress.
+Both run headSha values match this push. GREEN PENDING; static E1, author acceptance E0.
+PR body + handoff comment updated. Integrator receives completion and relays a fresh session.
+Monitoring stopped under ten minutes; failure/cancelled/timed_out terminal, job timeouts unchanged.
+No local process to stop, no merge/auto-merge/evidence-only push. Post-push evidence uncommitted.
+RVFIX #323 tests-only RED handoff, 2026-10-30.
+
+Head: 8709197df65b1190ca1eb2f8627994d02cc325cd
+WAIT_RUN: 40933762355 — Gates (GitHub runners), in_progress; test job not assigned at readback.
+WAIT_RUN: 40933762352 — Foundation checks, in_progress; foundation job 123658758020.
+Both workflow headSha values equal this head. No assertion-level RED observed yet; GREEN PENDING.
+
+Six new real-click regressions cover publication A committed with response loss, newer saved B, and original-key recovery with/without reload in all three locales. Fixture receipt lookup now precedes new-operation CAS and every replay body must match the original receipt source. Product code intentionally unchanged until causal CI RED.
+
+Next session: read the exact Gates test job and raw browser artifact. Required RED is each new case failing its no-B/original-document assertion, not a setup/import/runner failure. Record failing run/job IDs and excerpts in red.log before product edits. Keep at most two targeted attempts per blocker. Implement the P1 at the root, preserving original key/body, durable retry budget and session fences. Bind pending/result/view summaries to the original publication document; explicitly say when a reload loses that document. Add the three-locale copy already specified in DELIVERY.md; preserve existing UI process/parity tables. Push one implementation batch, await the PR's own GREEN, and obtain independent review through the integrator. Never merge or enable auto-merge.
+
+P2 for issue:
+- Review-entry race, Design.tsx openReview: delayed storefront GET can open review after navigation/edits; confirmation then silently returns. Future regression should hold the GET while using real navigation/edit clicks.
+- Reorder action selection, DesignSections.tsx / DesignNav.tsx: index-based open menu moves to another item after reorder/removal, enabling wrong-item actions. Future regression should perform consecutive actions and verify the persisted selected item/order.
+These are deferred per the RVFIX assignment; no P2 code edits or issue creation claimed.
+
+Evidence: node --check tests/admin/editor-v2.spec.ts and git diff --check exit 0 (E1). Author PASS E0. CI results PENDING.
+Current relay files outside PLAN paths: none. Earlier PR exceptions remain DesignVersions.tsx and tests/foundation/browser_store_design_test.go for integrator approval.
+NOT_RUN: local tests/builds/servers/containers/PG/browser; Figma/copy-lint; Humaux coord/store/canvas/index/link unavailable; independent acceptance; LIVE/production.
+No local processes to stop, no temporary fixture/server resources created. Integrator owns completion notification/fresh-session relay; failure/cancelled/timed_out are terminal handoff outcomes. Monitoring stopped under ten minutes. Receipts stay uncommitted; no evidence-only push.
+
+RVFIX323 RELAY 1 — causal RED verified before product edits, 2026-10-30
+Head: 8709197df65b1190ca1eb2f8627994d02cc325cd; PR #323.
+Gates run 40933762355, completed failure, bundle:04 test job 123660587541.
+required 123672670761 and receipts 123672470036 fail downstream; not assertion evidence themselves.
+Foundation run 40933762352 / job 123658758020 success at the RED head only.
+Read gh pr checks 323 and gh run view 40933762355 --log-failed --job 123672670761 / 123660587541.
+Downloaded raw artifact gate-browser-design id 12924102742 into rvfix323-red-browser/.
+Browser log: rvfix323-red-browser/playwright/store-design/20261029T185340.286020705/playwright.log.
+All six new cases fail their own assertions; 43 existing cases pass (3.7m).
+No reload, all three locales: editor-v2.spec.ts:179, Expected not "Unpublished B"; Received pending summary includes Unpublished B, draft-b@example.test, Unpublished policy B.
+With reload, all three locales: editor-v2.spec.ts:191, missing original content must not fall back to the newer draft; Expected summary count 0, Received 1.
+This is E3 negative behavior evidence (MOCK), not import/setup/runner failure. No CI rerun.
+Implementation attempt 1/2 for this P1 follows: freeze original saved document in existing publishedDoc state before arming the attempt; never replace it from current saved/base. Render original content or explicit unavailable message across pending/result/published. No storage document, request/retry/session/CAS changes.
