@@ -22,9 +22,9 @@ const localeScreen = {
 
 // RVFIX #273: the isolated merchant API changes the real saved fee after BOTH buyers quote.
 // Response interception only holds reads to inspect loading; it never changes money or creates orders.
-export async function checkoutV2CodFeeChange({ newContext, origin, product, recipient, evidence, changeFee }) {
+export async function checkoutV2CodFeeChange({ newContext, origin, product, recipient, evidence, changeFee, pendingRecovered }) {
   const ledger = [], failures = [], orders = [], buyers = [];
-  const automaticOrders = [];
+  const automaticOrders = [], pendingBuyers = [], pendingOrders = [];
   // MOCK option configuration only: COD-only is a supported shop configuration.
   // Preserve all server money, caps, versions and delivery facts; every order still goes to the real backend.
   const onlyCod = (body) => ({ ...body, items: body.items.map((row) =>
@@ -83,7 +83,89 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
           await expect(page.locator(".purchase-footer strong")).toHaveText(formatMoney("en", quote.cod_due_minor, quote.currency));
         });
     }
+    // REAL backend, transport fault only: each order commits at fee50, but its receipt is lost.
+    // Prepare all locales/viewports before the single real merchant fee change.
+    for (const locale of ["zh-TW", "zh-CN", "en"]) for (const mobile of [false, true]) {
+      const context = await newContext(mobile), page = await context.newPage();
+      const buyer = { context, page, locale, mobile, calls: [], receipts: [] };
+      pendingBuyers.push(buyer);
+      await reachCheckout(page, origin, locale, product, { quantity: 2 });
+      await page.getByRole("button", { name: localeScreen[locale].delivery, exact: true }).click();
+      const [response] = await Promise.all([
+        page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST"),
+        page.getByRole("button", { name: localeScreen[locale].quote, exact: true }).click(),
+      ]);
+      buyer.quote = await response.json();
+      assert.equal(buyer.quote.cod_due_minor, buyer.quote.amount.total_minor + 5000);
+      for (const [key, value] of Object.entries(recipient)) await page.locator(`input[name="${key}"]`).fill(value);
+      await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
+      await page.getByTestId("confirm-address").click();
+      await expect(page.getByTestId("create-order")).toBeEnabled();
+      await page.route("**/api/buyer/checkout", async (route) => {
+        const request = route.request(), response = await route.fetch();
+        assert.equal(response.status(), 200, "lost COD receipt must follow a real successful checkout");
+        buyer.calls.push({ key: request.headers()["idempotency-key"], body: request.postDataJSON() });
+        buyer.receipts.push(await response.json());
+        await route.abort("failed");
+      });
+      await page.getByTestId("create-order").click();
+      await expect(page.getByTestId("recover-purchase")).toBeVisible();
+      // READ only: verify the PII-free original operation journal, never inject purchase state.
+      buyer.pending = await page.evaluate(() => {
+        const key = Object.keys(localStorage).find((key) => key.startsWith("commerce-purchase-pending-v1:"));
+        return key ? JSON.parse(localStorage.getItem(key)) : null;
+      });
+      assert.equal(buyer.pending.kind, "checkout");
+      assert.equal(buyer.pending.body.expected_cod_surcharge_minor, 5000);
+      assert(buyer.calls.length > 0);
+      for (const call of buyer.calls) {
+        assert.equal(call.key, buyer.pending.key);
+        assert.deepEqual(call.body, buyer.pending.body);
+      }
+      for (const receipt of buyer.receipts) assert.equal(receipt.order_id, buyer.receipts[0].order_id);
+      await page.unrouteAll({ behavior: "wait" });
+    }
     await changeFee();
+    for (const { page, locale, mobile, quote, pending, receipts } of pendingBuyers) {
+      const label = `unresolved COD ${locale}/${mobile ? "mobile" : "desktop"}`;
+      let currentQuote;
+      await page.route(`**/api/buyer/quotes/${quote.id}`, async (route) => {
+        const response = await route.fetch();
+        assert.equal(response.status(), 200);
+        currentQuote = await response.json();
+        await route.fulfill({ response });
+      });
+      await page.reload();
+      await expect(page.getByTestId("recover-purchase")).toBeVisible();
+      await expect.poll(() => currentQuote?.cod_due_minor).toBe(quote.amount.total_minor + 6000);
+      await step(page, `${label} pending review`, "original fee remains visible; payable is withheld until original order recovery", async () => {
+        await expect(page.getByTestId("review-cod-fee")).toHaveText(formatMoney(locale, 5000, quote.currency));
+        await expect(page.getByTestId("review-total")).toHaveText("—");
+      });
+      await step(page, `${label} pending footer`, "fixed footer withholds current-offer payable while original checkout is unresolved", async () => {
+        await expect(page.locator(".purchase-footer strong")).toHaveText("—");
+        await expect(page.getByTestId("checkout-submit")).toBeDisabled();
+      });
+      await step(page, `${label} original recovery`, "status click replays unchanged intent/key and recovers the original order and collection amount", async () => {
+        const [request] = await Promise.all([
+          page.waitForRequest((r) => new URL(r.url()).pathname === "/api/buyer/checkout" && r.method() === "POST"),
+          page.getByTestId("recover-purchase").click(),
+        ]);
+        assert.equal(request.headers()["idempotency-key"], pending.key);
+        assert.deepEqual(request.postDataJSON(), pending.body);
+        await expect(page.getByTestId("order-id")).toHaveText(receipts[0].order_id);
+        await expect(page.getByTestId("order-cod-amount")).toContainText(formatMoney(locale, quote.cod_due_minor, quote.currency));
+        await page.reload();
+        await expect(page.getByTestId("order-id")).toHaveText(receipts[0].order_id);
+        await expect(page.getByTestId("order-cod-amount")).toContainText(formatMoney(locale, quote.cod_due_minor, quote.currency));
+        pendingOrders.push({ id: receipts[0].order_id, total: quote.amount.total_minor, due: quote.cod_due_minor, locale, mobile });
+      });
+      await page.unrouteAll({ behavior: "wait" });
+    }
+    await writeFile(path.join(evidence, "rvfix-273-pending-orders.json"), JSON.stringify(pendingOrders, null, 2));
+    assert.equal(pendingOrders.length, 6, "all locales/viewports recover their original COD order");
+    assert.equal(new Set(pendingOrders.map((order) => order.id)).size, 6, "six isolated buyers recover six distinct original orders");
+    await pendingRecovered();
     for (const { page, quote, recovery, automatic } of buyers) {
       let freshQuote, optionReads = 0, releaseReads;
       const readsReady = new Promise((resolve) => { releaseReads = resolve; });
@@ -170,7 +252,7 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
     assert.deepEqual(failures, [], "RVFIX #273 changed COD payable assertions");
     assert.equal(orders.length, 2, "both recovery paths create a real order");
     assert.equal(automaticOrders.length, 2, "automatic COD on desktop and mobile creates real orders only after separate acknowledgment");
-  } finally { for (const { context } of buyers) await context.close(); }
+  } finally { for (const { context } of [...buyers, ...pendingBuyers]) await context.close(); }
 }
 
 async function ledgerStep(ledger, file, page, control, action, expected, perform) {

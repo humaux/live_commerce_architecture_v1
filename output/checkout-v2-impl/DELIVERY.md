@@ -1,3 +1,32 @@
+# RVFIX273 unresolved COD payable — tests-only RED pending (2026-10-29)
+
+Current authority: independent REVIEW-273.md at PR273 head2883eaa840a2a75d093704bc1dc4abfb7755503f; current source CheckoutPendingReview/CheckoutReview/CheckoutFlow; contracts/buyer-http-v1 quote projection and buyer-checkout-v1 identical-replay invariant. New P1: pending original fee with fresh current-offer payable. Earlier GREEN accepts only the previous regression. No implementation claim for this finding.
+
+Tests-only batch adds lost real COD response -> real merchant fee50->60 -> reload -> pending review/footer -> explicit original intent/key recovery. Six combinations: zh-TW/zh-CN/en at desktop/390px. Money comes from server quotes/orders; no forged money, browser arithmetic or fixture order. UI expectation chooses the review-approved alternative: withhold pending payable until authoritative recovery. Existing assertions retain their order and contents. PG checks original fee50 and original total/collection.
+
+## UI PROCESS · Bourdieu
+Q1 task is buyer recovery after lost receipt; Q2 novice/expert refers only to recent checkout experience; Q3 preserve original operation without asking for a new purchase; Q4 hide an unconfirmed payable; Q5 same recovery affordance on desktop/mobile and three locales; Q6 aesthetics UNKNOWN until owner. Existing design decisions below retained; no redesign.
+
+## UI PROCESS · Project understanding
+Architecture §§0/1/2/26/27 impose explicit evidence labels, server monetary authority, bounded buyer flow and isolated implementation/review. buyer-http-v1 reports CURRENT offer COD due on GET. buyer-checkout-v1 §5 replays ORIGINAL order IDs for identical input/key. Latest human RVFIX card and reviewer P1 permit withholding the unresolved payable until original order recovery. No contract/backend edits.
+
+## UI PROCESS · Mobbin → Eagle
+No new visual pattern/reference/asset or design work in this regression batch. Existing module reference provenance below retained; no new Mobbin query required.
+
+## UI PROCESS · Figma official guidance
+No Figma canvas/prototype/component changes. Prior applied items from output/ux-audit-ref/FIGMA-GUIDE.md remain below; live Figma readback/copy-lint/density NOT_RUN this tests-only batch.
+
+| Required field/fact | Desktop pending | Mobile pending | Recovered/reloaded order |
+|---|---|---|---|
+| Recipient and destination | Existing original-destination review retained | Same component retained | Server order snapshot retained |
+| Original fee | New real-response regression | New real-response regression | Original PG fee checked |
+| Payable | Withheld until recovery (CI pending) | Withheld until recovery (CI pending) | Original server order due checked |
+| Payment timing | Existing locale copy retained | Same component retained | Existing COD state retained |
+
+No visible strings added/changed; existing complete zh-TW/zh-CN/en table below applies. New assertions exercise main pending/recovered money in every locale and both sizes. Click ledger: rvfix-273-click-ledger.json; pending orders: rvfix-273-pending-orders.json in native home-COD CI artifact.
+
+Delegated ui_worker, base2883eaa840a2, branch unit/checkout-v2-ui, assigned worktree only. Runtime GPT-6 based Codex; exact variant/effort UNKNOWN. No recursive delegation or separate claim. Humaux own canvas recorded. Source paths: tests/storefront/checkout-v2.mjs, home-cod-buyer.mjs, tests/foundation/browser_home_cod_test.go; generated browser ownership; existing red.log and DELIVERY. Foundation harness and generated/evidence paths listed for integrator scope review. No Go import changes/depmap change. Static E1 only; author assessment E0. New causal RED/GREEN/independent verification PENDING. No local test/server/PG/browser, provider SANDBOX/LIVE or production. Existing untracked evidence preserved.
+
 # CHECKOUT-V2-IMPL — implementation handoff, 2026-10-28
 
 ## Latest RVFIX review — automatic COD-only regression, 2026-10-29 (RED CONFIRMED; implementation CI PENDING)

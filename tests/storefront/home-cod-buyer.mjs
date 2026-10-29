@@ -514,6 +514,7 @@ try {
   }
   await checkoutV2CodFeeChange({ newContext, origin, product, recipient: pii, evidence,
     changeFee: async () => { await signal("fee-change"); await waitGo("fee-change"); },
+    pendingRecovered: async () => { await signal("pending-recovered"); await waitGo("pending-recovered"); },
   });
   for (const scenario of cod255Cases) await surchargeRefresh(scenario);
   await writeFile(path.join(evidence, "cod255-results.json"), JSON.stringify(cod255Results, null, 2));

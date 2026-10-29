@@ -227,6 +227,24 @@ func TestBrowserHomeCod(t *testing.T) {
 		t.Fatalf("changed-fee fixture: %d %v", st, out)
 	}
 	release("fee-change")
+	// RVFIX273: lost receipts must recover the original fee50 collection, despite the current fee60 offer.
+	wait("pending-recovered")
+	pendingRaw, pendingErr := os.ReadFile(filepath.Join(evidence, "rvfix-273-pending-orders.json"))
+	var pendingOrders []struct {
+		ID    string `json:"id"`
+		Total int64  `json:"total"`
+		Due   int64  `json:"due"`
+	}
+	if pendingErr != nil || json.Unmarshal(pendingRaw, &pendingOrders) != nil || len(pendingOrders) != 6 {
+		t.Fatalf("unresolved COD recovered orders: %v %s", pendingErr, pendingRaw)
+	}
+	for _, order := range pendingOrders {
+		_, _, mode, collection, amount, fee := e.hcodRow(order.ID)
+		if mode != "cash_on_delivery" || collection == nil || *collection != "PENDING" || fee != surchargeMinor || amount != total || amount != order.Total || amount+fee != order.Due {
+			t.Errorf("recovered COD order %s must retain original collection %d: total=%d fee=%d", order.ID, order.Due, amount, fee)
+		}
+	}
+	release("pending-recovered")
 	// COD-255 fixture preparation: mutate the REAL merchant settings API between the browser's quote and options/checkout requests.
 	// No forged cod_surcharge_changed response; the buyer must hit begin_hold's actual amount guard.
 	cod255Cases := []struct {

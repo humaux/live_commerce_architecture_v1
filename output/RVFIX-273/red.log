@@ -109,3 +109,12 @@ automatic COD mobile persisted acknowledgment: expect(locator).toContainText(exp
 Both automatic initial reviews PASS without a radio operation. Existing refusal/reload/collection assertions PASS. New assertion aggregation fails at checkout-v2.mjs:170, before COD-255 scenarios start; this is causal RED, not setup failure.
 Foundation40880274518/job123469615777 success at the tests-only head, not implementation GREEN.
 Implementation attempt1: persist every currently offered effective mode, including automatic COD, before later reload comparisons; storage failure clears the eligible option and blocks submit. Existing selection logic and all assertions unchanged. Local tests/servers NOT_RUN; own implementation assessment E0 until CI.
+
+RVFIX273 unresolved COD review — new tests-only batch 2026-10-29
+Authority: REVIEW-273.md in assigned rv-273 review worktree, reviewed head2883eaa840a2a75d093704bc1dc4abfb7755503f.
+P1: saved original COD fee mixed with fresh GET quote/current payable in pending review and fixed footer.
+Regression: six real COD checkouts zh-TW/zh-CN/en x desktop/mobile, successful backend receipts dropped at browser transport; mutate real merchant fee50->60, reload and assert original fee plus withheld pending payable in review/footer; explicit recovery replays identical original intent/key and retains original order id/collection amount after reload; PG checks original fee50 and due7500.
+Current RED: PENDING; no new assertion failure observed yet. Historical automatic-mode RED/GREEN above does not cover this defect. Implementation NOT_RUN pending causal RED.
+Integration fetch+merge already current at d0e7331525fec046fbe9361906fa66367ae583c6.
+Static node --check checkout-v2/home-cod-buyer and gofmt browser_home_cod_test.go exit0. No local tests/server/browser/PG.
+Native workflow completion/failure/timeout plus integrator fresh-session relay is wake-up mechanism; no detached process.
