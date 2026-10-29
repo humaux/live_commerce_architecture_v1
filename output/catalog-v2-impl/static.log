@@ -1,0 +1,6 @@
+node --check tests/admin/catalog-v2-simplified.acceptance.ts: exit 0
+node --check tests/admin/catalog-core.spec.ts: exit 0
+git diff --check: exit 0
+node scripts/dev/derive-browser-ownership.mjs: exit 0 (53 modes)
+pnpm exec tsc --noEmit --strict --target ES2023 --module NodeNext --moduleResolution NodeNext --skipLibCheck tests/admin/catalog-v2-simplified.acceptance.ts: exit 254 (tsc not found; dependencies absent)
+No local tests or servers executed.

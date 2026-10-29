@@ -1,0 +1,5 @@
+CATALOG-V2-IMPL RED batch
+Status: PENDING_CI; no causal RED claimed.
+Expected own-assertion failure: signed product rows remove quick-price/quick-stock editors; existing rendered quick-price count is expected to differ from 0.
+Additional assertions: archive confirmation/partial results, simplified edit/stock/media/review/save, three locales,15-state density.
+RUN/JOB ids will be appended after the tests-only push. GREEN NOT_RUN.
