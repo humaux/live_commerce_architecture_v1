@@ -56,7 +56,7 @@ const fixtureAgent = "10000000-0000-4000-8000-000000000072";
 async function mockInbox(page: Page, copy: Copy) {
   const future = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
   const incoming = copy.locale === "en" ? "What material is it?" : copy.locale === "zh-CN" ? "想了解材质。" : "想了解材質。";
-  const state = { mode: "eligible", delivery: null as Delivery | null, omitOutbound: false, original: "", posts: 0, queries: 0,
+  const state = { mode: "eligible", delivery: null as Delivery | null, omitOutbound: false, concurrentSent: false, original: "", posts: 0, queries: 0,
     methods: [] as string[], read: new Set<string>() };
   const rows = [ids.open, ids.instagram, ids.closed, ids.retry].map((id, i) => ({
     conversation_id: id, platform: i === 1 || i === 2 ? "instagram" : "messenger",
@@ -104,13 +104,20 @@ async function mockInbox(page: Page, copy: Copy) {
     }
     if (path.endsWith("/messages")) {
       state.queries++;
-      return route.fulfill(answer({ items: state.omitOutbound ? Array.from({ length: 50 }, (_, index) => ({
+      const items = state.omitOutbound ? Array.from({ length: 50 }, (_, index) => ({
         direction: "in", seq: index + 2, at: "2026-10-29T06:36:00Z", text: incoming, attachments: null,
       })) : [
         { direction: "in", seq: 1, at: row.last_at, text: incoming, attachments: null },
         ...(state.delivery ? [{ direction: "out", at: "2026-10-29T06:35:00Z", text: state.original,
           attachments: null, send_state: state.delivery, principal_id: fixtureAgent }] : []),
-      ], has_unknown_outbound: state.delivery === "unknown", mode: "human", takeover_generation: 2,
+      ];
+      // MOCK fixture: a different staff member completes B before the first A9 read of our ACKed A.
+      if (state.concurrentSent && state.delivery) items.push(
+        { direction: "out", at: "2026-10-29T06:35:30Z", text: "MOCK_OTHER_STAFF_SENT", attachments: null,
+          send_state: "sent", principal_id: "10000000-0000-4000-8000-000000000074" } as typeof items[number],
+        { direction: "in", seq: 100, at: "2026-10-29T06:36:00Z", text: incoming, attachments: null },
+      );
+      return route.fulfill(answer({ items, has_unknown_outbound: state.delivery === "unknown", mode: "human", takeover_generation: 2,
       human_until: future, window_open_until: state.mode === "closed" ? "2020-01-01T00:00:00Z" : future,
       binding_id: fixtureBindings[row.platform === "instagram" ? "instagram" : "facebook"], link_version: 1 }));
     }
@@ -250,6 +257,36 @@ for (const copy of copies) {
       await page.reload();
     }
   });
+
+  for (const omitted of [false, true]) {
+    test(`INV2 ${copy.locale} ACK before first projection ${omitted ? "omitted" : "visible"}`, async ({ page }) => {
+      const state = await enter(page, copy);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await open(page, ids.instagram);
+      // Prepare transport facts before the native send; no direct API or DOM write performs the action.
+      state.concurrentSent = true;
+      state.omitOutbound = omitted;
+      await page.getByTestId("reply-text").fill(copy.draft);
+      await expect(page.getByTestId("reply-send")).toBeEnabled();
+      const ack = page.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname.endsWith("/messages"));
+      const firstRead = page.waitForResponse(r => r.request().method() === "GET" && new URL(r.url()).pathname.endsWith("/messages"));
+      await page.getByTestId("reply-send").click();
+      expect((await ack).status()).toBe(200);
+      expect((await firstRead).status()).toBe(200);
+      await expect(page.getByTestId("inbox-thread")).toHaveAttribute("aria-busy", "false");
+      for (let queryCount = 0; queryCount < 3; queryCount++) {
+        if (queryCount) await query(page);
+        await expect(page.getByTestId("inbox-thread")).toContainText("MOCK_OTHER_STAFF_SENT");
+        await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.pending);
+        await expect(page.getByTestId("reply-send")).toBeDisabled();
+        await expect(page.getByTestId("reply-text")).toBeHidden();
+        await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
+        expect(state.posts).toBe(1);
+      }
+      record(`ACK concurrency ${copy.locale}/${omitted ? "omitted" : "visible"}`, "fill, click Send, click status twice",
+        "own pending result retained despite unrelated sent + newer inbound; composer hidden/disabled and only one POST");
+    });
+  }
 
   test(`INV2 ${copy.locale} states`, async ({ page }) => {
     const state = await enter(page, copy);

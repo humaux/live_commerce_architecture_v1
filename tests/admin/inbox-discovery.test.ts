@@ -69,10 +69,13 @@ test("real Playwright --list collects each original INU case and isolated INU09 
   assert.deepEqual(report.errors ?? [], [], "actual collector reports no worker-fixture scope errors");
   const allDiscovered = rows(report.suites ?? []);
   const simplified = allDiscovered.filter((row) => row.file === "inbox-v2-ui.spec.ts");
-  assert.equal(simplified.length, 6, "all three simplified main screens and all three state scenarios collect");
+  assert.equal(simplified.length, 12, "all three main screens, state scenarios and six ACK concurrency scenarios collect");
   for (const locale of ["zh-TW", "zh-CN", "en"])
     for (const scenario of ["main", "states"])
       assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} ${scenario}`).length, 1);
+  for (const locale of ["zh-TW", "zh-CN", "en"])
+    for (const visibility of ["visible", "omitted"])
+      assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} ACK before first projection ${visibility}`).length, 1);
   assert.equal(new Set(allDiscovered.map((row) => `${row.project}:${row.file}:${row.title}`)).size,
     allDiscovered.length, "new suite and legacy cases are each collected exactly once");
   const discovered = allDiscovered.filter((row) => row.file !== "inbox-v2-ui.spec.ts");

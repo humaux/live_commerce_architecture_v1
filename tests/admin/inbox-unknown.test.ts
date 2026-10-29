@@ -36,6 +36,50 @@ async function loaded(host: Host, state: string) {
 }
 
 for (const locale of Object.keys(warning)) {
+  for (const omitted of [false, true]) {
+    test(`A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (${omitted ? "omitted" : "visible"}, ${locale})`, async (t) => {
+      const env = environment(t);
+      let reads = 0;
+      const own = { direction: "out", at: "2030-01-01T00:00:01Z", text: "MOCK_ACK_DRAFT",
+        attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071", send_state: "queued" };
+      const concurrent = { ...own, at: "2030-01-01T00:00:03Z", text: "MOCK_OTHER_STAFF_SENT",
+        principal_id: "70000000-0000-4000-8000-000000000072", send_state: "sent" };
+      const page = { ...thread, has_unknown_outbound: false, items: [
+        ...thread.items, ...(omitted ? [] : [own]), concurrent,
+        { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER_AFTER_ACK" },
+      ] };
+      const calls = transport(() => response(++reads === 1 ? thread : page), () => response({
+        operation_id: "70000000-0000-4000-8000-000000000073",
+        outbound_id: "70000000-0000-4000-8000-000000000074", send_state: "queued", takeover_generation: 8,
+      }));
+      const host = mount(env, locale);
+      await host.waitFor(() => reads === 1 && idle(host), "initial A9/A10 authority committed before A12");
+      change(host, "reply-text", own.text);
+      assert.equal(sendControl(host).props.disabled, false);
+      const captured = node(host, n => n.type === "form").props.onSubmit;
+      submit(host);
+      await host.waitFor(() => reads === 2 && idle(host) && textOf(host.output).includes(concurrent.text),
+        "actual queued ACK followed by the first concurrent-staff A9 read committed");
+      const pendingCopy = locale === "en" ? "Sending; delivery unconfirmed. Do not resend."
+        : locale === "zh-CN" ? "发送中；尚未确认送达，不要重发。" : "傳送中；尚未確認送達，勿重送。";
+      const assertLocked = () => {
+        assert.equal(sendControl(host).props.disabled, true,
+          "an unrelated sent row must not unlock an acknowledged queued operation before its first projection");
+        assert.equal(node(host, n => n.type === "form").props.hidden, true,
+          "a newer buyer message cannot reopen an unresolved acknowledged send");
+        assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), pendingCopy);
+        captured({ preventDefault() {} });
+        node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+        assert.equal(host.ref(ReplyReceipt).pending(), null);
+        assert.equal(sends(calls).length, 1, "current and captured callbacks cannot issue a second A12");
+      };
+      assertLocked();
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await host.waitFor(() => reads === 3 && idle(host), "repeat A9 query committed without resending");
+      assertLocked();
+    });
+  }
+
   test(`persisted A9 UNKNOWN after page entry warns and blocks the real composer in ${locale}`, async (t) => {
     const env = environment(t), calls = transport(() => response(projection("unknown")));
     const host = mount(env, locale);

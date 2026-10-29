@@ -1,0 +1,4 @@
+0a05b2c8441dfd21ab15e135c6792e074f57c947f7fa8d7bf92e923d3a9adb4c  tests/admin/inbox-unknown.test.ts
+6391baee8660c0263deed3890a52a8597e544ba7d3ea24a005591edc20c1331f  tests/admin/inbox-v2-ui.spec.ts
+8f9d929173bbb80b8d65c6d3a736a74425c1b84f185e14fb75c6305d7ba43f71  tests/admin/inbox-discovery.test.ts
+db6a33502e0d02061f5d7dffc4d9084346959855c1e1136ff9ca22475a27d343  apps/admin/components/InboxThread.tsx

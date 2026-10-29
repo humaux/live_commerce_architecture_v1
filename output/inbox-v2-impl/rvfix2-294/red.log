@@ -1,0 +1,8 @@
+RVFIX2 #294 tests-only regression; execution PENDING.
+Baseline reviewed: 3e8fa84460b9f6824b6c11c5db365b44e9856efe
+Integration merged: d8093bc43f16f8eb4e209eeb6c7b698efcd27b0e
+Cases: actual A12 queued ACK -> first A9 with unrelated sent + newer inbound,
+       own queued row visible/omitted x zh-TW/zh-CN/en, Node + native browser.
+Expected causal assertion: unrelated sent must not unlock an acknowledged queued operation before its first projection.
+RED run/job IDs: PENDING after push; WAIT-RUN.md holds native run registration.
+No local tests or server executed; no RED/GREEN PASS claimed.
