@@ -1,0 +1,6 @@
+RVFIX5 PR294 tests-only RED stage
+Baseline b9cc7e0c350f7353b1cfcbe211e28cd7987114e9
+New causal RED PENDING: do not treat prior RVFIX4 RED as proof of these counterexamples.
+Expected new failures: local ACK SUCCEEDED/FAILED_FINAL cannot mask older queued/blocked B beneath newer sent C; B observed while A pending remains locked when omitted after A completes.
+Foundation/Gates native run/job IDs will be appended after push / integrator completion relay.
+Implementation NOT_YET_WRITTEN; GREEN PENDING; author E0.

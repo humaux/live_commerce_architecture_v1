@@ -240,6 +240,74 @@ for (const locale of Object.keys(warning)) {
   }
 }
 
+for (const locale of Object.keys(warning)) {
+  for (const state of ["queued", "blocked"]) {
+    for (const timing of ["with-completion", "observed-before-completion"]) {
+      for (const terminal of ["SUCCEEDED", "FAILED_FINAL"]) {
+        test(`local ACK ${terminal} retains older ${state} ${timing} (${locale})`, async (t) => {
+          const env = environment(t);
+          let reads = 0, phase = 0, operationState = "READY";
+          const own = { direction: "out", at: "2030-01-01T00:00:01Z", text: "MOCK_EXACT_ACK_ORIGINAL",
+            attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071" };
+          const other = { ...own, at: "2030-01-01T00:00:02Z", text: "MOCK_OLDER_UNRESOLVED_B",
+            principal_id: "70000000-0000-4000-8000-000000000072" };
+          const calls = transport(() => {
+            reads++;
+            return response(reads === 1 ? thread : { ...thread, has_unknown_outbound: false, items: [
+              ...thread.items, { ...own, send_state: operationState === "READY" ? "queued"
+                : terminal === "SUCCEEDED" ? "sent" : "failed" },
+              ...(phase === 1 || phase >= 3 ? [{ ...other, send_state: phase === 4 ? "sent" : state }] : []),
+              { ...other, at: "2030-01-01T00:00:03Z", text: "MOCK_NEWER_SENT_C", send_state: "sent" },
+              { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_BUYER_AFTER_C" },
+            ] });
+          }, () => response({ operation_id: ackOperation, send_state: "queued", takeover_generation: 8 }),
+          () => operationResponse(operationState));
+          const host = mount(env, locale);
+          await host.waitFor(() => reads === 1 && idle(host), "initial A9 authority committed");
+          change(host, "reply-text", own.text);
+          const captured = node(host, n => n.type === "form").props.onSubmit;
+          submit(host);
+          await host.waitFor(() => reads === 2 && idle(host), "actual local ACK A committed");
+          const assertLocked = () => {
+            assert.equal(node(host, n => n.type === "form").props.hidden, true,
+              "local ACK completion must not mask older unresolved B beneath newer sent C");
+            assert.equal(sendControl(host).props.disabled, true);
+            const expected = state === "queued" || operationState === "READY"
+              ? locale === "en" ? "Sending; delivery unconfirmed. Do not resend."
+                : locale === "zh-CN" ? "发送中；尚未确认送达，不要重发。" : "傳送中；尚未確認送達，勿重送。"
+              : locale === "en" ? "Sending locked" : locale === "zh-CN" ? "发送已锁定" : "已鎖定";
+            assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), expected);
+            captured({ preventDefault() {} });
+            node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+            assert.equal(host.ref(ReplyReceipt).pending(), null);
+            assert.equal(sends(calls).length, 1, "neither callback can send while B is unresolved");
+          };
+          for (phase = 1; phase <= 4; phase++) {
+            if (phase === 1 && timing === "with-completion" || phase === 2) operationState = terminal;
+            const expectedReads = reads + 1;
+            node(host, n => n.type === "button" && !!n.props["aria-label"]).props.onClick();
+            await host.waitFor(() => reads === expectedReads && idle(host), "ACK and projection read committed");
+            if (phase < 4) assertLocked();
+            else {
+              if (terminal === "FAILED_FINAL") {
+                node(host, n => n.props["data-testid"] === "inbox-edit-original").props.onClick();
+                assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, own.text,
+                  "settling B preserves the rejected exact ACK's original text");
+              }
+              assert.equal(node(host, n => n.type === "form").props.hidden, false);
+              change(host, "reply-text", "MOCK_NEXT_DRAFT_AFTER_B_SETTLED");
+              assert.equal(sendControl(host).props.disabled, false, "only explicit B settlement releases its obligation");
+            }
+          }
+          assert.equal(sends(calls).length, 1, "reconciliation never resends");
+          assert.ok(calls.filter(call => call.path.endsWith(`/operations/${ackOperation}`)).length >= 2,
+            "local A reconciliation keeps its exact operation identity");
+        });
+      }
+    }
+  }
+}
+
 for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "different-operation", "different-conversation", "different-action", "different-provider", "different-purpose", "missing-ack-id", "no-read-permission", "acknowledged", "unknown"]) {
   test(`acknowledged send stays locked on ${refusal} operation evidence`, async (t) => {
     const env = environment(t);

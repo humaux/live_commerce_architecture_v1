@@ -1,0 +1,8 @@
+RVFIX5 tests-only static checks
+node --check tests/admin/inbox-unknown.test.ts: exit 0
+node --check tests/admin/inbox-v2-ui.spec.ts: exit 0
+node --check tests/admin/inbox-discovery.test.ts: exit 0
+git diff --check: exit 0
+node scripts/dev/derive-browser-ownership.mjs: exit 0 (mandated deterministic generation; ownership.log)
+E1 only; no local tests, servers, build, browser, PG, container or LIVE.
+Source hashes: source-hashes.txt. New CI RED/GREEN pending; author E0.

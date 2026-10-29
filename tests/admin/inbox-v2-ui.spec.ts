@@ -59,7 +59,7 @@ async function mockInbox(page: Page, copy: Copy) {
   const future = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
   const incoming = copy.locale === "en" ? "What material is it?" : copy.locale === "zh-CN" ? "想了解材质。" : "想了解材質。";
   const state = { mode: "eligible", delivery: null as Delivery | null, omitOutbound: false, concurrentSent: false, original: "", posts: 0, queries: 0,
-    laterDelivery: null as Delivery | null, omitLater: false,
+    laterDelivery: null as Delivery | null, omitLater: false, concurrentAfterLater: false,
     methods: [] as string[], read: new Set<string>(), operationConversation: "", operationReads: 0 };
   const rows = [ids.open, ids.instagram, ids.closed, ids.retry].map((id, i) => ({
     conversation_id: id, platform: i === 1 || i === 2 ? "instagram" : "messenger",
@@ -130,7 +130,7 @@ async function mockInbox(page: Page, copy: Copy) {
       ];
       // MOCK fixture: a different staff member completes B before the first A9 read of our ACKed A.
       if (state.concurrentSent && state.delivery) items.push(
-        { direction: "out", at: "2026-10-29T06:35:30Z", text: "MOCK_OTHER_STAFF_SENT", attachments: null,
+        { direction: "out", at: state.concurrentAfterLater ? "2026-10-29T06:36:30Z" : "2026-10-29T06:35:30Z", text: "MOCK_OTHER_STAFF_SENT", attachments: null,
           send_state: "sent", principal_id: "10000000-0000-4000-8000-000000000074" } as typeof items[number],
         { direction: "in", seq: 100, at: "2026-10-29T06:36:00Z", text: incoming, attachments: null },
       );
@@ -330,6 +330,56 @@ for (const copy of copies) {
   }
 
   for (const later of ["queued", "blocked"] as const) {
+    for (const timing of ["with-completion", "observed-before-completion"] as const) {
+      test(`INV2 ${copy.locale} local ACK older ${later} ${timing}`, async ({ page }) => {
+        const state = await enter(page, copy, "qualified");
+        await page.setViewportSize({ width: 390, height: 844 });
+        await open(page, ids.instagram);
+        // Transport setup: actual local A ACK, then older B below sent C and a newer inbound.
+        state.concurrentSent = true;
+        state.concurrentAfterLater = true;
+        await send(page, copy);
+        state.laterDelivery = later;
+        if (timing === "with-completion") state.delivery = "sent";
+        await query(page, copy.refresh);
+        const assertLocked = async (pendingAck = false) => {
+          await expect(page.getByTestId("reply-text")).toBeHidden();
+          await expect(page.getByTestId("reply-send")).toBeDisabled();
+          await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
+          await expect(page.getByTestId("inbox-delivery-state")).toHaveText(pendingAck || later === "queued" ? copy.pending
+            : copy.locale === "en" ? "Sending locked" : copy.locale === "zh-CN" ? "发送已锁定" : "已鎖定");
+          expect(state.posts).toBe(1);
+        };
+        await assertLocked(timing === "observed-before-completion");
+        // A completes as B disappears from A9; omission cannot settle B observed during pending A.
+        state.delivery = "sent";
+        state.omitLater = true;
+        await query(page, copy.refresh);
+        await assertLocked();
+        state.omitLater = false;
+        await query(page, copy.refresh);
+        await assertLocked();
+        expect(state.operationReads).toBeGreaterThanOrEqual(2);
+        // Persisted server projection B must retain the same lock in a fresh component epoch.
+        await page.reload();
+        await open(page, ids.instagram);
+        await assertLocked();
+        state.omitLater = true;
+        await query(page, copy.refresh);
+        await assertLocked();
+        state.omitLater = false;
+        state.laterDelivery = "sent";
+        await query(page, copy.refresh);
+        await expect(page.getByTestId("reply-text")).toBeVisible();
+        await page.getByTestId("reply-text").fill(copy.draft);
+        await expect(page.getByTestId("reply-send")).toBeEnabled();
+        expect(state.posts).toBe(1);
+        record(`local ACK older obligation ${copy.locale}/${later}/${timing}`,
+          "fill, Send, refresh own ACK + older B under sent C; omit/reappear B; reload/reopen; refresh explicit B settlement",
+          "one POST; composer folded and Send disabled until exact B settlement, including after reload");
+      });
+    }
+
     test(`INV2 ${copy.locale} completed ACK before later ${later}`, async ({ page }) => {
       const state = await enter(page, copy, "qualified");
       await page.setViewportSize({ width: 390, height: 844 });
