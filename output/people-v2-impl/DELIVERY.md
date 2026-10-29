@@ -1,6 +1,32 @@
 # PEOPLE-V2-IMPL · safeguards restored; own-head CI pending
 
-## Current CONT289 restoration · relay 7
+## Current CONT289 continuation · relay 9
+
+2026-10-29: starting head 94529539fbdf6c4d00e6b6effea7e4bb6b62cd3d.
+Required fetch/merge exited 0, already up to date. Read all current failing jobs
+of Gates 40831270188: bundle08 123309080140, receipts 123321900203 and required
+123322050579. Fresh failed browser artifact 12880886605 shows onboarding loaded
+but OC signup setup times out before initial-store POST. The new exact trailing
+slash URL wait conflicts with the canonical locale root; this is a source-based
+inference supported by the snapshot/log, not a trace (trace is off).
+
+OC fix attempt 2 changes only the wait to the exact canonical URL, preserving
+load completion and every behavioral assertion/timeout/retry/fixture. Same cause
+still failing on the new head requires STOP, not a third patch. W6's separate
+destination-tools repair passed at starting-head bundle07 123309079779. Foundation
+40831270133/123305794405 passed at that head; neither is new-head GREEN.
+
+E1 syntax/generation only; author E0, new-head E3 and independent acceptance PENDING.
+Full evidence/provenance and limits: evidence/relay9-root-cause.md. Outside-PLAN
+path remains tests/admin/oc/reauth.spec.ts, explicitly same-admin preapproved.
+Browser ownership regenerated (53 modes); depmap regenerated, no diff. No product,
+locale, UI-design or API changes. Original UI-process/copy/parity sections below
+continue to apply. P2s remain for integrator issue batching in the PR comment.
+NOT_RUN: local tests/builds/servers/browser, tsc, independent runtime, LIVE/production.
+Humaux/coord/canvas/code-index unavailable; no store or canvas update claimed.
+Final SHA and WAIT_RUN IDs go to the PR comment after one push; no merge/auto-merge.
+
+## Historical restoration · relay 7
 
 2026-10-29. CURRENT card SCOPE PRE-APPROVAL authorizes the narrow same-admin OC helper
 repair; prior relay STOP interpretations below are historical. All four failed jobs at

@@ -263,3 +263,21 @@ ASSERTIONS_TIMEOUTS_RETRIES_FIXTURES=UNCHANGED
 GREEN=PENDING own repaired-head CI and independent acceptance
 LOCAL_TESTS_BUILDS_SERVERS_BROWSER=NOT_RUN
 HUMAUX_COORD_CANVAS=NOT_RUN unavailable
+
+CONT289_RELAY9_DATE=2026-10-29
+START_HEAD=94529539fbdf6c4d00e6b6effea7e4bb6b62cd3d
+FETCH_MERGE=exit0; already up to date
+CURRENT_GATES=40831270188; attempt1; completed_failure; tested_merge=62a4fcadbd0b4122fd070d329ca3040172a3f15e
+FAILED_JOBS_READ=123309080140 bundle08;123321900203 receipts;123322050579 required
+CURRENT_RED=OC signup complete200; storesGET200; onboarding visible; no initial-storePOST; five240s timeouts; harness1200s deadline
+FAILED_BROWSER_DOWNLOAD=gh run download 40831270188 -n gate-browser-password-auth; artifact12880886605; exit0
+ROOT_INFERENCE=slash-suffixed exact navigation wait added in OC attempt1 never matches canonical locale root; snapshot and source evidence, not trace proof
+OC_TARGETED_FIX_ATTEMPT=2; await exact same-origin canonical locale URL and default load; all behavior assertions/fixtures/timeouts/retries retained
+SAME_CAUSE_NEXT_FAILURE=STOP; no third patch
+PRIVACY_CAUSAL_RED=40803107511/123216904686; head=d409e4094b797aa86987f49923f3e64ce6bf2f99; export review, erasure scope, independent uncertainty return/reload assertions
+STARTING_HEAD_PARTIAL_GREEN=Foundation40831270133/123305794405; bundle07 123309079779; not final-head acceptance
+STATIC=node --check tests/admin/oc/reauth.spec.ts exit0; browser ownership53modes; depmap regenerated no diff
+EVIDENCE=evidence/relay9-root-cause.md
+GREEN=PENDING own new head Gates/Foundation and independent review; authorE0
+NOT_RUN=local tests/builds/servers/browser;tsc;independent runtime;LIVE/production
+HUMAUX_COORD_CANVAS_CODE_INDEX=UNAVAILABLE; no shared-state write claimed
