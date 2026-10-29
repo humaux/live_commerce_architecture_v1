@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { posix } from "node:path";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
@@ -20,7 +21,9 @@ function load(path, resolve) {
   const compiled = ts.transpileModule(source(path), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  runInNewContext(compiled, { exports, require: resolve, process });
+  // A relative .ts import (e.g. customers-copy -> packages/i18n/src/people.ts) resolves against the loaded file, not apps/admin.
+  const req = (name) => /^\.\.?\/.*\.tsx?$/.test(name) ? load(posix.join(posix.dirname(path), name), resolve) : resolve(name);
+  runInNewContext(compiled, { exports, require: req, process });
   return exports;
 }
 
