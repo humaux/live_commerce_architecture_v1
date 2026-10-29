@@ -1,0 +1,22 @@
+{
+  "_purpose": "Owner-supplied real buyer pickup messages (2026-10-29), reduced to PUBLIC store facts only. Recipient names and phone numbers were removed and must never be added. Snapshot = internal/fulfillment/cvsdata/stores-20261028.json (ECPay).",
+  "cases": [
+    {"id": "R1", "brand": "UNIMART", "input": "7-11门市代号 231196\n收件门市名称 久旺門市\n门市地址 高雄市大樹區九曲里新鎮路1號1樓",
+     "expect": {"exact_code": "231196", "name": "久旺", "result": "single exact hit, not auto-selected"}},
+    {"id": "R2", "brand": "UNIMART", "input": "275934",
+     "expect": {"exact_code": "275934", "name": "多田", "result": "single exact hit"}},
+    {"id": "R3", "brand": "UNIMART", "input": "台中市大里區立新街350號，立新二街5號",
+     "expect": {"first": "275934", "result": "多田 ranked first (two-address store)"}},
+    {"id": "R4", "brand": "UNIMART", "input": "橋鈺門市",
+     "expect": {"first": "216843", "result": "name match after stripping 門市 suffix"}},
+    {"id": "R5", "brand": "FAMI", "input": "F024793",
+     "expect": {"exact_code": "024793", "name": "沙鹿森美店", "result": "全家 F-prefix stripped → exact hit"}},
+    {"id": "R6", "brand": "FAMI", "input": "台中市沙鹿區保成路161號",
+     "expect": {"first": "024793", "result": "half-width input matches full-width snapshot address 保成路１６１號"}},
+    {"id": "R7", "brand": "FAMI", "input": "全家门市代号 F022305\n门市名称 全家泰山新輔醫店\n门市地址 新北市泰山區貴子路69號B1",
+     "expect": {"exact_code": null, "code_miss": "022305", "candidates_first": "024967", "name": "泰山新輔醫店",
+                "result": "code not in snapshot → show 「此編號不在門市清單」 AND the name/address candidate 泰山新輔醫店 024967; never auto-replace the code"}},
+    {"id": "R8", "brand": "UNIMART", "input": "F024793",
+     "expect": {"result": "brand mismatch: 7-ELEVEN selected, 全家-format code → no cross-brand result; hint to switch brand"}}
+  ]
+}
