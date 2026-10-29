@@ -1,0 +1,9 @@
+{"type":"before","callId":"call@6","startTime":1420.668,"class":"BrowserContext","method":"newPage","params":{},"stepId":"pw:api@42"}
+{"type":"after","callId":"call@6","endTime":1460.839,"result":{"page":"<Page>"}}
+{"type":"before","callId":"call@12","startTime":1469.068,"title":"Route requests","class":"Page","method":"setNetworkInterceptionPatterns","params":{"patterns":[{"glob":"/zh-CN/?recovery=1"}]},"stepId":"pw:api@43"}
+{"type":"after","callId":"call@12","endTime":1470.654}
+{"type":"before","callId":"call@14","startTime":1474.428,"title":"Wait for event \"requestfailed\"","class":"Page","method":"__waitInfo__","params":{"waitId":"5f87f64b29f4f34d17cb0d21f5040338","phase":"before","event":"requestfailed"},"stepId":"pw:api@44"}
+{"type":"log","callId":"call@14","time":1474.664,"message":"waiting for event \"requestfailed\""}
+{"type":"before","callId":"call@17","startTime":1474.883,"class":"Frame","method":"goto","params":{"url":"/zh-CN/?recovery=1","waitUntil":"domcontentloaded"},"stepId":"pw:api@45"}
+{"type":"log","callId":"call@17","time":1478.81,"message":"navigating to \"http://127.0.0.1:41887/zh-CN/?recovery=1\", waiting until \"domcontentloaded\""}
+{"type":"before","callId":"call@22","startTime":1622.329,"class":"BrowserContext","method":"setOffline","params":{"offline":true},"stepId":"pw:api@47"}

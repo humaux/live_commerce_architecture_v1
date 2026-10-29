@@ -1,0 +1,46 @@
+CA-AUTH-COPY part A — assertion-failing RED (E3 negative evidence)
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/251
+Tests-only source: 781887326d96ae0e291e3ce3ab2a87a2e28636f9
+Gates run: 40612180005
+Job: 122576061200 — gate (--browser-password-auth), completed FAILURE at 2026-10-28T02:11:01Z.
+Job metadata/log: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/122576061200[/logs]
+The run was still active, so gh run view --job 122576061200 --log-failed returned:
+  run 40612180005 is still in progress; logs will be available when it is complete
+The same completed job's logs were read with the official jobs API; no network workaround.
+Artifact: 12786856353 (gate-browser-password-auth), downloaded through gh api.
+Extracted assertion evidence: output/ca-auth-copy/red-playwright.log.
+Failed new test: #245 zh-CN: no JavaScript explains the inert form and reload stays native.
+Assertion: tests/admin/password-auth.spec.ts:189, expect(page.locator("noscript")).toContainText(...).
+Actual: element(s) not found; timeout 10000ms. New test failed on its own assertion against unchanged implementation.
+Serial result: 1 failed, 20 did not run. Harness downstream principal/mail counts were consequently zero.
+Plan job 122566123441, prebuild job 122567483178 and Foundation run/job 40612179953/122566123061 succeeded.
+These are RED-head receipts, not GREEN implementation acceptance.
+The earlier queued observation is retained in checks-at-handoff.json and red-watch.log (historical).
+Implementation GREEN, independent review and LIVE: pending/NOT_RUN.
+
+FIX 1/2 continuation RED: Gates 40619949465 / job 122622312675, head 7cf853a1b874b920346705c47bb9d9c6f14366a1, tested merge ac3addbe7d09a6003325e1859bdced827c74ab93. The noscript root matcher returned an empty string although the artifact screenshot shows the complete explanation. See fix1-red.log and fix1-webkit-no-js.png.
+
+FIX 2 investigation: Gates 40635584904 / job 122683191221, head afe85b80ce03c5d182881f06506e677ddef56289. WebKit no-JS zh-CN passes; aborted-chunks/native-link recovery fails at password-auth.spec.ts:143 (called at230): data-hydrated=true absent after10000ms. Native click/load and unchanged URL assertions completed.19 tests did not run. See fix2-playwright.log, fix2-next.log, fix2-webkit.png and fix2-RCA.md. Original artifact contains no trace/client-console/network evidence. Root cause UNKNOWN; no speculative code/test patch, commit or push.
+
+FIX-RED #251 current-head RED (2026-10-29): head e0c9f10723f5b0108cd34c7544e990b5a334e054; Gates run 40660830574 attempt 1; tested synthetic merge 253d9ef77e5c8901d6d4623898d853d7884c5ec0.
+Read gh pr checks 251 and gh run view 40660830574 --log-failed --job <id> for ALL three failed jobs: WebKit 122779975258, receipts 122873118983, required 122909226199.
+WebKit: password-auth: pass=0 fail=1 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=1 verdict=1 duration=39s; FAIL: password-auth (go test exit=1, parse verdict=1).
+receipts: --browser-webkit: status FAIL; required: gate=failure receipts=failure. Other checked jobs passed (deploy skipped). Foundation run/job 40660830515/122723156559 passed for the OLD head only.
+Original tests-only assertion RED remains 40612180005/122576061200 at tests-only head 781887326d96ae0e291e3ce3ab2a87a2e28636f9. No GREEN claimed for FIX-RED.
+
+RELAY1 FIX-RED #251 (2026-10-29): current remote PR head de45bd5024e22e2227161d88453ff732e85ede89, Gates40759769178 attempt1, WebKit123070568293 FAILURE; tested synthetic merge d4730cb0cbc5d6b9cb32a31f1e4bf7fb31642b15.
+gh pr checks251 and gh run view40759769178 --log-failed --job123070568293 read; workflow in progress so official jobs API supplied completed-job logs. Current failed-job inventory contains ONLY WebKit at observation; other jobs remain pending.
+Official artifact12848804413 gate-browser-webkit (17211120 bytes): downloaded only password next.log, playwright.log and error-context.md by central-directory byte ranges; each uncompressed file CRC checked against original ZIP directory.
+playwright.log SHA256028faf063adbecd89da76ee1a39746c60403cbe7d1e5efd64b148a984e42b0f3; next.log SHA2561705767e1dbaae780b61aca183a7968b09ffa639e0e85f8f775bc3c8039355b8; error-context.md SHA256cc8e79f99633e754cb4dd7f48ff54eb65adaec678940ec16213338267d50c79a.
+No-JS zh-CN PASS11.3s; aborted-chunks zh-CN FAIL21.1s at143, called242: data-hydrated=true absent after10000ms. Native click/load and unchanged-URL assertions completed.1passed1failed19did-not-run.
+Two previous chunk-route fixes e0c9f107 and de45bd50 did not resolve this same hydration blocker. Current fixture has trace=off, no request-outcome/client-error evidence. Root cause UNKNOWN; STOP under two-attempt rule, no speculative third fix or new push.
+
+RELAY2 (2026-10-29): independently re-read PR251 checks and completed-job logs via official jobs API after gh run view refused the still-active workflow. Job123070568293/run40759769178 remains FAILURE at remote head de45bd5024e22e2227161d88453ff732e85ede89; password-auth exit1 duration38s, other six WebKit suites pass. Official artifact12848804413 metadata revalidated against the same run/head; retained raw playwright.log again confirms hydration assertion143/call242 failed after10000ms,1passed1failed19notrun. git fetch origin && git merge origin/r3/integration exit0/already up to date. Two repair commits confirmed directly in Git; no third patch/push. Root cause UNKNOWN, E3 negative evidence, GREEN absent. See relay2-handoff.md. Existing WAIT_RUN40759769178 remains with integrator completion relay; no new run.
+
+RELAY3 (2026-10-29): gh pr checks251 independently read; only WebKit failed at observation, several jobs pending. Official job metadata confirms123070568293/run40759769178/head de45bd502 FAILURE, Gate ended2026-10-28T20:46:46Z. gh run view --log-failed again unavailable while workflow active. Git directly confirms two failed repair commits e0c9f107/de45bd50; stop under unchanged two-attempt limit. Fetch/merge exit0 already up to date; local638eae2cc remains unpushed. No third repair or new workflow. See relay3-handoff.md. GREEN absent; WAIT_RUN40759769178 existing Gates, integrator relay.
+
+RELAY4 (2026-10-29): independently read gh pr checks251 and requested failed-job log; gh run view again refuses while workflow active. Official job logs API succeeds: password-auth exit1/verdict1/38s, six other WebKit suites exit0. Current failed-job inventory lists only123070568293; job metadata binds FAILURE to run40759769178/head de45bd50; matrix FAIL receipt tests merge d4730cb0cbc5d6b9cb32a31f1e4bf7fb31642b15. Foundation40759769181/job123068213798 SUCCESS at remote head; Gates still in_progress. Fetch/merge exit0 already up to date. Two repair commits verified in Git; no third repair/push under unchanged stop condition. Root cause UNKNOWN, GREEN absent. See relay4-handoff.md. WAIT_RUN40759769178 existing Gates; integrator owns completion relay.
+
+CONT251 (2026-10-29): current PR251 head de45bd5024e22e2227161d88453ff732e85ede89 re-read with gh pr checks and gh run view --log-failed for ALL three failing jobs: WebKit123070568293, receipts123104095153, required123110823558, run40759769178. Receipts/required propagate WebKit only. Both original artifacts downloaded via gh run download:12848804413 WebKit and12848707419 Chromium. Password Go JSONL FAIL; WebKit test143 called242 toBeVisible form[data-hydrated=true] times out10000ms after native click/load/same URL;1pass1fail19notrun. Chromium same-source password21pass including all9 card cases. No trace archive exists in either artifact because spec trace=off. Exact root UNKNOWN; new continuation only adds no-credentials recovery trace/request observations, no fixture/assertion/timeout repair. See CONT251.md. New-head acceptance PENDING CI.
+
+CONT251 RELAY1 (2026-10-29): current PR251 head2791d1047b7ad00dd72dbc4fb55866273cb8b048, Gates40791315248 WebKit123179228091 FAILURE, tested merge329dd3d234e2. Independently read gh pr checks251, requested gh run view --log-failed (workflow active), used official completed-job logs API; downloaded original artifact12861954499 via gh run download exit0. Exact password playwright.log error: Cannot use({ trace }) in a describe group, because it forces a new worker. At password-auth.spec.ts212, repeated3locales. TestBrowserPasswordAuth fails4.14s before browser cases; no trace/recovery-events/current hydration assertion. Current Chromium bundle01 job123179228208 pending, no current engine behavior comparison. Foundation40791310598/job123176921293 PASS only2791d104. This is E3 negative collection evidence, NOT a new assertion-failing RED and NOT product-root evidence. One targeted diagnostic repair switches describe test.use(trace) to credential-free beforeEach/afterEach context.tracing; global credential trace off and every existing assertion/timeout/route/click preserved. Old product root UNKNOWN. See CONT251.md relay section; new-head CI PENDING; no local tests/servers.

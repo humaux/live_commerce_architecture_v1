@@ -1,0 +1,58 @@
+
+Running 21 tests using 1 worker
+
+  ✘   1 tests/admin/password-auth.spec.ts:183:3 › #245 zh-CN: no JavaScript explains the inert form and reload stays native (10.3s)
+  -   2 tests/admin/password-auth.spec.ts:207:3 › #245 zh-CN: aborted page chunks show loading then a native reload that recovers
+  -   3 tests/admin/password-auth.spec.ts:234:3 › #245 zh-CN: hydrated forms have no loading or reload, including after ten seconds
+  -   4 tests/admin/password-auth.spec.ts:183:3 › #245 zh-TW: no JavaScript explains the inert form and reload stays native
+  -   5 tests/admin/password-auth.spec.ts:207:3 › #245 zh-TW: aborted page chunks show loading then a native reload that recovers
+  -   6 tests/admin/password-auth.spec.ts:234:3 › #245 zh-TW: hydrated forms have no loading or reload, including after ten seconds
+  -   7 tests/admin/password-auth.spec.ts:183:3 › #245 en: no JavaScript explains the inert form and reload stays native
+  -   8 tests/admin/password-auth.spec.ts:207:3 › #245 en: aborted page chunks show loading then a native reload that recovers
+  -   9 tests/admin/password-auth.spec.ts:234:3 › #245 en: hydrated forms have no loading or reload, including after ten seconds
+  -  10 tests/admin/password-auth.spec.ts:249:1 › full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> workspace; forgot -> reset -> signed in, old session revoked (zh-TW, desktop)
+  -  11 tests/admin/password-auth.spec.ts:377:1 › BFF contract: Origin, query, client IP, strict keys, cookie clearing on 200/409 only, sessions survive a failed verify, no secret in any body
+  -  12 tests/admin/password-auth.spec.ts:504:1 › SSR: no form with a password field lacks method=post (/, /signup, /reset)
+  -  13 tests/admin/password-auth.spec.ts:524:1 › slow hydration: an early typist on the invite sign-up never loses the address (#236)
+  -  14 tests/admin/password-auth.spec.ts:557:1 › throttled UI state and the 60 s resend cooldown
+  -  15 tests/admin/password-auth.spec.ts:612:5 › matrix zh-CN desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -  16 tests/admin/password-auth.spec.ts:612:5 › matrix zh-TW desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -  17 tests/admin/password-auth.spec.ts:612:5 › matrix en desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -  18 tests/admin/password-auth.spec.ts:612:5 › matrix zh-CN mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  19 tests/admin/password-auth.spec.ts:612:5 › matrix zh-TW mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  20 tests/admin/password-auth.spec.ts:612:5 › matrix en mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  21 tests/admin/password-auth.spec.ts:668:1 › matrix: locale copy differs per locale and the reset wording is the same for known and unknown addresses
+
+
+  1) tests/admin/password-auth.spec.ts:183:3 › #245 zh-CN: no JavaScript explains the inert form and reload stays native 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('noscript')
+    Expected substring: "登录需要启用 JavaScript。请在浏览器中启用 JavaScript，然后重新加载此页面。"
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" locator('noscript') with timeout 10000ms
+      - waiting for locator('noscript')
+
+
+      187 |       for (const path of [`/${locale}/`, `/${locale}/signup`, `/${locale}/reset`]) {
+      188 |         await page.goto(`${publicOrigin}${path}?recovery=1`);
+    > 189 |         await expect(page.locator("noscript")).toContainText(hydrationCopy[locale].noScript);
+          |                                                ^
+      190 |         await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toBeVisible();
+      191 |         await expect(emailInput(page)).toBeDisabled();
+      192 |         if (!path.endsWith("/reset")) await expect(passwordInput(page)).toBeDisabled();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/password-auth.spec.ts:189:48
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.FEXDP04d/password-auth-20261028T021022.069121499/results/password-auth--245-zh-CN-n-278de-orm-and-reload-stays-native/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.FEXDP04d/password-auth-20261028T021022.069121499/results/password-auth--245-zh-CN-n-278de-orm-and-reload-stays-native/error-context.md
+
+  1 failed
+    tests/admin/password-auth.spec.ts:183:3 › #245 zh-CN: no JavaScript explains the inert form and reload stays native 
+  20 did not run

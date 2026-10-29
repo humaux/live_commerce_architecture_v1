@@ -1,0 +1,70 @@
+
+Running 24 tests using 1 worker
+
+  ✘   1 tests/admin/password-auth.spec.ts:226:5 › #245 zh-CN: offline recovery diagnostics without credentials › #245 zh-CN: offline page chunks show loading then a native reload that recovers (2.7m)
+  -   2 tests/admin/password-auth.spec.ts:226:5 › #245 zh-TW: offline recovery diagnostics without credentials › #245 zh-TW: offline page chunks show loading then a native reload that recovers
+  -   3 tests/admin/password-auth.spec.ts:226:5 › #245 en: offline recovery diagnostics without credentials › #245 en: offline page chunks show loading then a native reload that recovers
+  -   4 tests/admin/password-auth.spec.ts:188:30 › #245 zh-CN: no JavaScript explains the inert form and reload stays native
+  -   5 tests/admin/password-auth.spec.ts:226:5 › #245 zh-CN: inspector recovery diagnostics without credentials › #245 zh-CN: inspector page chunks show loading then a native reload that recovers
+  -   6 tests/admin/password-auth.spec.ts:325:30 › #245 zh-CN: hydrated forms have no loading or reload, including after ten seconds
+  -   7 tests/admin/password-auth.spec.ts:188:30 › #245 zh-TW: no JavaScript explains the inert form and reload stays native
+  -   8 tests/admin/password-auth.spec.ts:226:5 › #245 zh-TW: inspector recovery diagnostics without credentials › #245 zh-TW: inspector page chunks show loading then a native reload that recovers
+  -   9 tests/admin/password-auth.spec.ts:325:30 › #245 zh-TW: hydrated forms have no loading or reload, including after ten seconds
+  -  10 tests/admin/password-auth.spec.ts:188:30 › #245 en: no JavaScript explains the inert form and reload stays native
+  -  11 tests/admin/password-auth.spec.ts:226:5 › #245 en: inspector recovery diagnostics without credentials › #245 en: inspector page chunks show loading then a native reload that recovers
+  -  12 tests/admin/password-auth.spec.ts:325:30 › #245 en: hydrated forms have no loading or reload, including after ten seconds
+  -  13 tests/admin/password-auth.spec.ts:343:1 › full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> workspace; forgot -> reset -> signed in, old session revoked (zh-TW, desktop)
+  -  14 tests/admin/password-auth.spec.ts:471:1 › BFF contract: Origin, query, client IP, strict keys, cookie clearing on 200/409 only, sessions survive a failed verify, no secret in any body
+  -  15 tests/admin/password-auth.spec.ts:598:1 › SSR: no form with a password field lacks method=post (/, /signup, /reset)
+  -  16 tests/admin/password-auth.spec.ts:618:1 › slow hydration: an early typist on the invite sign-up never loses the address (#236)
+  -  17 tests/admin/password-auth.spec.ts:651:1 › throttled UI state and the 60 s resend cooldown
+  -  18 tests/admin/password-auth.spec.ts:706:5 › matrix zh-CN desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -  19 tests/admin/password-auth.spec.ts:706:5 › matrix zh-TW desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -  20 tests/admin/password-auth.spec.ts:706:5 › matrix en desktop: forms, autocomplete attributes, code step, screenshots, mail language
+  -  21 tests/admin/password-auth.spec.ts:706:5 › matrix zh-CN mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  22 tests/admin/password-auth.spec.ts:706:5 › matrix zh-TW mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  23 tests/admin/password-auth.spec.ts:706:5 › matrix en mobile: forms, autocomplete attributes, code step, screenshots, mail language
+  -  24 tests/admin/password-auth.spec.ts:762:1 › matrix: locale copy differs per locale and the reset wording is the same for known and unknown addresses
+
+
+  1) tests/admin/password-auth.spec.ts:226:5 › #245 zh-CN: offline recovery diagnostics without credentials › #245 zh-CN: offline page chunks show loading then a native reload that recovers
+
+    Test timeout of 150000ms exceeded.
+
+    Error: page.goto: net::ERR_ABORTED; maybe frame was detached?
+    Call log:
+      - navigating to "http://127.0.0.1:41887/zh-CN/?recovery=1", waiting until "domcontentloaded"
+
+
+      291 |       const offlineChunkFailure = fault === "offline"
+      292 |         ? page.waitForEvent("requestfailed", (request) => isChunk(request.url())) : undefined;
+    > 293 |       await page.goto(`/${locale}/?recovery=1`, { waitUntil: "domcontentloaded" });
+          |                  ^
+      294 |       await offlineChunkFailure;
+      295 |       expect(aborted, "page JavaScript chunks were actually aborted").toBeGreaterThan(0);
+      296 |       const status = page.getByRole("status").filter({ hasText: hydrationCopy[locale].loading });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/password-auth.spec.ts:293:18
+
+    Error: page.waitForEvent: Test timeout of 150000ms exceeded.
+    =========================== logs ===========================
+    waiting for event "requestfailed"
+    ============================================================
+
+      290 |       });
+      291 |       const offlineChunkFailure = fault === "offline"
+    > 292 |         ? page.waitForEvent("requestfailed", (request) => isChunk(request.url())) : undefined;
+          |                ^
+      293 |       await page.goto(`/${locale}/?recovery=1`, { waitUntil: "domcontentloaded" });
+      294 |       await offlineChunkFailure;
+      295 |       expect(aborted, "page JavaScript chunks were actually aborted").toBeGreaterThan(0);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/password-auth.spec.ts:292:16
+
+    attachment #1: recovery-trace (application/zip) ────────────────────────────────────────────────
+    output/playwright/run.fJVM8ojL/password-auth-20261029T092645.874312802/results/password-auth--245-zh-CN-o-5d48c-native-reload-that-recovers/attachments/recovery-trace-1d6472f70580fb426204257885d5628f196d3da8.zip
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.fJVM8ojL/password-auth-20261029T092645.874312802/results/password-auth--245-zh-CN-o-5d48c-native-reload-that-recovers/error-context.md
+
+  1 failed
+    tests/admin/password-auth.spec.ts:226:5 › #245 zh-CN: offline recovery diagnostics without credentials › #245 zh-CN: offline page chunks show loading then a native reload that recovers
+  23 did not run

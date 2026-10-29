@@ -1,0 +1,6 @@
+e2529a25b02da97bfed4ef8262027a357d9530ab6fca09cfa11acad6f92755cb  output/ca-auth-copy/fix5/DELIVERY.md
+76d9ea702cdae627d3d941dfb4b8187811168a0fe20c0ee4e8d4201adc8486a2  output/ca-auth-copy/fix5/inspector-playwright-red.log
+3b25ac2df9223ee3807b9449559e6b2ea037a8567b0f43cce8640e7e5345588f  output/ca-auth-copy/fix5/inspector-recovery-events.jsonl
+57bac1db452b029c2084619824a6f15d9bb8dd78dd9263b08bbfd155e59bcb8b  output/ca-auth-copy/fix5/red.log
+062693bf2188197d78682cc15bf420e9bad6c43d248d5eee3c61607a93e5d875  output/ci-select-backend-browser/browser-ownership.json
+05726443a7a2ba36784d6878709e7f5737a7b3efd4d75930d4e9ce010c63d80a  tests/admin/password-auth.spec.ts

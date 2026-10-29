@@ -202,6 +202,9 @@ export const entryCopy: Record<Locale, EntryCopy> = {
 };
 
 const passwordEn = {
+  hydrationLoading: "Loading sign-in…",
+  hydrationNoScript: "Sign-in needs JavaScript. Enable JavaScript in your browser, then reload this page.",
+  hydrationReload: "Reload",
   signinTitle: "Sign in to your merchant workspace",
   signinBody: "Use your email and password. We then email you a 6-digit code to finish signing in.",
   signupTitle: "Create your merchant account",
@@ -259,6 +262,9 @@ export type PasswordCopy = typeof passwordEn;
 export const passwordCopy: Record<Locale, PasswordCopy> = {
   en: passwordEn,
   "zh-CN": {
+    hydrationLoading: "正在加载登录表单…",
+    hydrationNoScript: "登录需要启用 JavaScript。请在浏览器中启用 JavaScript，然后重新加载此页面。",
+    hydrationReload: "重新加载",
     signinTitle: "登录商家工作区",
     signinBody: "使用邮箱和密码登录，随后我们会发送 6 位验证码到该邮箱以完成登录。",
     signupTitle: "创建商家账号",
@@ -311,6 +317,9 @@ export const passwordCopy: Record<Locale, PasswordCopy> = {
     },
   },
   "zh-TW": {
+    hydrationLoading: "正在載入登入表單…",
+    hydrationNoScript: "登入需要啟用 JavaScript。請在瀏覽器中啟用 JavaScript，然後重新載入此頁面。",
+    hydrationReload: "重新載入",
     signinTitle: "登入商家工作區",
     signinBody: "使用電子郵件和密碼登入，接著我們會寄送 6 位數驗證碼到該信箱以完成登入。",
     signupTitle: "建立商家帳號",

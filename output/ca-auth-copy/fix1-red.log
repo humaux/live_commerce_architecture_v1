@@ -1,0 +1,44 @@
+FIX 1/2 existing RED — observed 2026-10-28
+PR: #251; head: 7cf853a1b874b920346705c47bb9d9c6f14366a1
+Gates run: 40619949465; attempt: 1; job: 122622312675
+Job: gate (--browser-webkit); conclusion: failure
+Tested synthetic merge: ac3addbe7d09a6003325e1859bdced827c74ab93
+Base in merge: 5365b5701a0e99ef9fd8fbb4e64a3a9f87aaf248
+Artifact: 12793052251 (gate-browser-webkit)
+Artifact source: playwright/run.VzcWw9wR/password-auth-20261028T045405.315035643/playwright.log
+Screenshot source: results/password-auth--245-zh-CN-n-278de-orm-and-reload-stays-native/test-failed-1.png
+Preserved screenshot: fix1-webkit-no-js.png
+Screenshot observation: localized JavaScript explanation is already visibly rendered above the inert form.
+This is a matcher-root failure, not evidence that the user cannot see the explanation.
+Pinned dependency: @playwright/test 1.63.0 (package.json and pnpm-lock.yaml).
+Primary source: https://github.com/microsoft/playwright/blob/v1.63.0/packages/injected/src/selectorUtils.ts#L57-L60
+shouldSkipForTextMatching explicitly excludes nodeName NOSCRIPT. Descendant DS Alert is ordinary markup.
+Fix: target noscript's visible status child, keeping the identical full localized text and visibility assertions.
+Existing user-visible text, disabled controls, native reload, timing budgets and engine coverage remain required.
+Current-head GREEN: PENDING; no local test/browser execution.
+
+  1) tests/admin/password-auth.spec.ts:183:3 › #245 zh-CN: no JavaScript explains the inert form and reload stays native 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('noscript')
+    Expected substring: "登录需要启用 JavaScript。请在浏览器中启用 JavaScript，然后重新加载此页面。"
+    Received string:    ""
+    Timeout: 10000ms
+
+    Call log:
+      - Expect "toContainText" locator('noscript') with timeout 10000ms
+      - waiting for locator('noscript')
+        24 × locator resolved to <noscript>…</noscript>
+           - unexpected value ""
+
+
+      187 |       for (const path of [`/${locale}/`, `/${locale}/signup`, `/${locale}/reset`]) {
+      188 |         await page.goto(`${publicOrigin}${path}?recovery=1`);
+    > 189 |         await expect(page.locator("noscript")).toContainText(hydrationCopy[locale].noScript);
+          |                                                ^
+      190 |         await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toBeVisible();
+      191 |         await expect(emailInput(page)).toBeDisabled();
+      192 |         if (!path.endsWith("/reset")) await expect(passwordInput(page)).toBeDisabled();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/password-auth.spec.ts:189:48
+

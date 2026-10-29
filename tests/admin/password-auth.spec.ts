@@ -9,6 +9,8 @@
 // tests/admin/auth-real.spec.ts already relies on.
 // Evidence written to LC_BROWSER_EVIDENCE_DIR: screens/*.png, screenshots.jsonl (name, locale, viewport, sha256),
 // canaries.txt (every password, emailed code and address used; the Go side scans server logs for them).
+// Recovery-only diagnostics retain a failed trace and request outcomes before any credentials exist;
+// all password/code flows keep tracing off so their secrets never enter trace artifacts.
 import { createHash, randomBytes } from "node:crypto";
 import { responseBodyForSecretScan } from "./password-response-canaries.ts";
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
@@ -172,6 +174,173 @@ async function startSignup(page: Page, locale: string, email: string, password: 
 }
 
 // ---------------------------------------------------------------------------------------------------
+// #245: exercise the SSR recovery UI without using component state or importing its copy.
+const hydrationCopy = {
+  "zh-CN": { loading: "正在加载登录表单…", noScript: "登录需要启用 JavaScript。请在浏览器中启用 JavaScript，然后重新加载此页面。", reload: "重新加载" },
+  "zh-TW": { loading: "正在載入登入表單…", noScript: "登入需要啟用 JavaScript。請在瀏覽器中啟用 JavaScript，然後重新載入此頁面。", reload: "重新載入" },
+  en: { loading: "Loading sign-in…", noScript: "Sign-in needs JavaScript. Enable JavaScript in your browser, then reload this page.", reload: "Reload" },
+} as const;
+
+// FIX5 comparison: register all three real-transport cases before the known inspector-abort RED.
+// Keep one assertion body for both faults; CI decides whether the product or the injector needs fixing.
+for (const fault of ["offline", "inspector"] as const) {
+for (const locale of locales) {
+  if (fault === "inspector") test(`#245 ${locale}: no JavaScript explains the inert form and reload stays native`, async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      const page = await context.newPage();
+      for (const path of [`/${locale}/`, `/${locale}/signup`, `/${locale}/reset`]) {
+        await page.goto(`${publicOrigin}${path}?recovery=1`);
+        // Playwright excludes NOSCRIPT itself from text matching; assert its rendered DS alert instead.
+        await expect(page.locator("noscript").getByRole("status")).toContainText(hydrationCopy[locale].noScript);
+        await expect(page.locator("noscript").getByRole("status")).toBeVisible();
+        await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toBeVisible();
+        await expect(emailInput(page)).toBeDisabled();
+        if (!path.endsWith("/reset")) await expect(passwordInput(page)).toBeDisabled();
+        await expect(submitButton(page)).toBeDisabled();
+      }
+      const reload = page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true });
+      await expect(reload).toBeVisible({ timeout: 15_000 });
+      const currentURL = page.url();
+      await Promise.all([page.waitForEvent("load"), reload.click()]);
+      expect(page.url()).toBe(currentURL);
+      await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toBeVisible();
+      await expect(emailInput(page)).toBeDisabled();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test.describe(`#245 ${locale}: ${fault} recovery diagnostics without credentials`, () => {
+    // Trace is a worker option, so describe-level test.use would prevent all tests from loading.
+    // Manual tracing stays inside this credential-free group; password/code flows keep trace off.
+    test.beforeEach(async ({ context }) => {
+      await context.tracing.start({ screenshots: true, snapshots: true, sources: false });
+    });
+    test.afterEach(async ({ context }, testInfo) => {
+      const failed = testInfo.status !== testInfo.expectedStatus;
+      const path = testInfo.outputPath("trace.zip");
+      await context.tracing.stop(failed ? { path } : {});
+      if (failed) await testInfo.attach("recovery-trace", { path, contentType: "application/zip" });
+    });
+    test(`#245 ${locale}: ${fault} page chunks show loading then a native reload that recovers`, async ({ page, context }, testInfo) => {
+      let aborted = 0;
+      let continued = 0;
+      let networkRecovered = false;
+      const abortedChunkURLs = new Set<string>();
+      // Fault injection differs; the real link click and every recovery assertion stay shared.
+      // This test never fills a field or calls an auth API; omit URL queries, headers and bodies.
+      mkdirSync(testInfo.outputDir, { recursive: true });
+      const record = (event: string, detail: Record<string, unknown>) => appendFileSync(
+        testInfo.outputPath("recovery-events.jsonl"),
+        JSON.stringify({ event, fault, locale, phase: networkRecovered ? "recovered" : "outage", ...detail }) + "\n",
+      );
+      const isChunk = (url: string) => /\/_next\/static\/chunks\/.*\.js(?:\?|$)/.test(url);
+      page.on("requestfailed", (request) => {
+        if (fault === "offline" && !networkRecovered && isChunk(request.url())) {
+          abortedChunkURLs.add(request.url().split("?")[0]);
+          aborted++;
+        }
+        record("requestfailed", {
+          path: new URL(request.url()).pathname, type: request.resourceType(), error: request.failure()?.errorText, aborted,
+        });
+      });
+      page.on("request", (request) => {
+        if (fault === "offline" && networkRecovered && abortedChunkURLs.has(request.url().split("?")[0])) {
+          continued++;
+          record("continue", { path: new URL(request.url()).pathname, continued });
+        }
+      });
+      page.on("response", (response) => {
+        if (["document", "script"].includes(response.request().resourceType())) record("response", {
+          path: new URL(response.url()).pathname, status: response.status(), type: response.request().resourceType(),
+        });
+      });
+      page.on("pageerror", (error) => record("pageerror", { name: error.name, message: error.message }));
+      page.on("console", (message) => {
+        if (message.type() === "error") record("console-error", { message: message.text() });
+      });
+      if (fault === "offline") {
+        // FIXTURE/SETUP: buffer actual server HTML before disconnecting the idle browser context.
+        // Awaiting setOffline inside a paused document route stalls Chromium's navigation (FIX5 RED).
+        // No script request is intercepted or aborted: setOffline drives the browser transport failure.
+        // Keep this document-only route on reload too, matching the existing disabled-cache policy.
+        const response = await context.request.get(`${publicOrigin}/${locale}/?recovery=1`);
+        const body = await response.body();
+        await page.route(`/${locale}/?recovery=1`, async (route) => {
+          if (networkRecovered) {
+            await route.continue();
+            return;
+          }
+          await route.fulfill({ response, body });
+        });
+        await context.setOffline(true);
+        record("offline", { documentStatus: response.status() });
+      } else await page.route(/\/_next\/static\/chunks\/.*\.js(?:\?|$)/, async (route) => {
+        const chunkURL = route.request().url().split("?")[0];
+        if (!networkRecovered) {
+          abortedChunkURLs.add(chunkURL);
+          aborted++;
+          record("abort", { path: new URL(chunkURL).pathname, aborted });
+          await route.abort("failed");
+        } else {
+          await route.continue();
+          if (abortedChunkURLs.has(chunkURL)) continued++;
+          record("continue", { path: new URL(chunkURL).pathname, continued });
+        }
+      });
+      const offlineChunkFailure = fault === "offline"
+        ? page.waitForEvent("requestfailed", (request) => isChunk(request.url())) : undefined;
+      await page.goto(`/${locale}/?recovery=1`, { waitUntil: "domcontentloaded" });
+      await offlineChunkFailure;
+      expect(aborted, "page JavaScript chunks were actually aborted").toBeGreaterThan(0);
+      const status = page.getByRole("status").filter({ hasText: hydrationCopy[locale].loading });
+      await expect(status).toBeVisible();
+      await expect(status).toHaveAttribute("aria-live", "polite");
+      await expect(emailInput(page)).toBeDisabled();
+      await expect(passwordInput(page)).toBeDisabled();
+      await expect(submitButton(page)).toBeDisabled();
+      const reload = page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true });
+      await expect(reload).toBeHidden();
+      await expect(reload).toBeVisible({ timeout: 15_000 });
+      const currentURL = page.url();
+      // Restore the network for the whole reload, including chunks first discovered by the recovered runtime.
+      // Keep routing installed so both navigations use the same HTTP-cache policy.
+      if (fault === "offline") {
+        await context.setOffline(false);
+        record("online", {});
+      }
+      networkRecovered = true;
+      record("native-reload-click", { path: new URL(currentURL).pathname });
+      await Promise.all([page.waitForEvent("load"), reload.click()]);
+      expect(page.url()).toBe(currentURL);
+      record("native-reload-loaded", { path: new URL(page.url()).pathname, aborted, continued });
+      await hydrated(page);
+      expect(continued, "previously aborted page JavaScript chunks were requested again and continued").toBeGreaterThan(0);
+      await expect(emailInput(page)).toBeEnabled();
+      await expect(status).toHaveCount(0);
+      await expect(reload).toHaveCount(0);
+    });
+  });
+
+  if (fault === "inspector") test(`#245 ${locale}: hydrated forms have no loading or reload, including after ten seconds`, async ({ page }) => {
+    for (const path of [`/${locale}/`, `/${locale}/signup`, `/${locale}/reset`]) {
+      await page.goto(path);
+      await hydrated(page);
+      await expect(emailInput(page)).toBeEnabled();
+      await expect(page.getByText(hydrationCopy[locale].loading, { exact: true })).toHaveCount(0);
+      await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true })).toHaveCount(0);
+    }
+    // Real time: CSS recovery must not reappear after its deadline on an interactive page.
+    await page.waitForTimeout(11_000);
+    await expect(page.getByText(hydrationCopy[locale].loading, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(hydrationCopy[locale].noScript, { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: hydrationCopy[locale].reload, exact: true })).toHaveCount(0);
+  });
+}
+}
+
 test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> workspace; forgot -> reset -> signed in, old session revoked (zh-TW, desktop)", async ({ browser, page, context }) => {
   test.setTimeout(150_000);
   const locale: Locale = "zh-TW";
