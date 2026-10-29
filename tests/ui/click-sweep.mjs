@@ -411,6 +411,10 @@ async function journeyProduct(state, journeys) {
       await expect(page.getByTestId("product-save-result")).toBeVisible();
       await page.getByTestId("product-save-result").locator('a[href*="/products/"]').click();
       await page.waitForURL(/\/products\/[0-9a-f-]{36}/);
+      // Continue the full document journey via the explicit Advanced control, then retain the reload/stock oracle.
+      await expect(page.getByTestId("product-form").or(page.getByTestId("catalog-task-editor"))).toBeVisible();
+      if (await page.getByTestId("catalog-task-editor").isVisible()) await page.getByTestId("catalog-advanced-toggle").click();
+      await expect(page.getByTestId("product-form")).toBeVisible();
       await page.reload();
       const editURL=page.url(), codes=await Promise.all([0,1].map(i=>page.getByTestId(`matrix-code-${i}`).inputValue()));
       for(const [index,qty] of [[0,9],[1,7]]){

@@ -1060,7 +1060,7 @@
 .cat-products-table .pe-price-cell { font-variant-numeric: tabular-nums; text-align: right; }
 .cat-products-table .pe-product-identity { min-width: 0; overflow-wrap: anywhere; }
 .cat-task-list .cat-list-tools details { position: relative; }
-.cat-task-list .cat-actions > a { min-height: 44px; }
+.cat-task-list .cat-actions > a { min-width: 44px; min-height: 44px; }
 .cat-task-list .cat-list-tools details[open] > .cat-actions { padding: 12px; border: 1px solid var(--ui-border); background: var(--ui-surface); }
 @media (max-width: 680px) {
   .cat-task-editor, .cat-task-panel { padding: 16px; }

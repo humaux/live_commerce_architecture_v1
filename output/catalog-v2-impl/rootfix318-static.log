@@ -1,0 +1,12 @@
+2026-10-30 FIX318 shared-cause repair: permitted static checks only.
+tsc --noEmit -p output/catalog-v2-impl/tsconfig.static.json: exit0.
+Compiler/dependencies: existing main checkout read only. Temporary apps/admin/node_modules and packages/ui/node_modules links created in this worktree, both removed after tsc.
+node --check tests/storefront/merchant-product.mjs: exit0.
+node --check tests/storefront/catalog-media-gate.mjs: exit0.
+node --check tests/ui/click-sweep.mjs: exit0.
+node --check tests/ui/visual-audit.mjs: exit0.
+git diff --check: exit0.
+No component import added/renamed; no harness import allowlist change required.
+No local tests, build, server, browser, package install, PG or container run.
+Gate parity, native clicks, visual/density/refresh evidence and independent review: PENDING CI/integrator.
+Source hashes: rootfix318-source-sha256.log. Empty original tsc stdout/stderr: rootfix318-tsc.log.

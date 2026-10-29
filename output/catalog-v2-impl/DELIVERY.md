@@ -1,4 +1,50 @@
-# RELAY 4 repair · 2026-10-30 · current status
+# FIX318 shared-cause repair · 2026-10-30 · current status
+
+claim_type: fix · project: live_commerce_architecture_v1 · module: catalog UI · date: 2026-10-30
+
+This section supersedes earlier status below. Author assessment E0; static structure E1; implementation GREEN and independent E4 PENDING. This is the second targeted repair of the post-implementation catalog regression. If the same blocker remains red, STOP for integrator adjudication; do not start a third repair.
+
+Authority: current human FIX318 dispatch; integrator ruling `output/integrator/tools/cards/cxf-fix10-318.md`; owner-signed catalog simplify delivery, current section at `.worktrees/ux-catalog/output/ux-catalog/DELIVERY.md` (both read from the main checkout without writing it); repository code and current-head raw GitHub receipts. Read AGENTS.md, 架构.md §§0/1/2/8/26/27 and catalog-inventory-v1 §g/Boundary. Existing lane ownership: `unit/catalog-v2-ui`, UI worker, no delegation. Exact runtime model/effort UNKNOWN. Humaux tools unavailable: search/rejected/coord/store/canvas/code-index NOT_RUN; this file does not claim shared-memory persistence. Skills: impeccable harden/craft-floor and ponytail; extra skill scripts not run under static-only dispatch.
+
+Rollback parent: `a041dfc01ef6edf34702cca78ca7d3da7ed85a63`. Fetched and merged origin/r3/integration `17328372dea91220050e9583259312e2db2e5d97`: Already up to date. Existing untracked handoff files retained.
+
+## Shared-cause diagnosis and RED receipts
+
+All 13 failed jobs (10 browser jobs plus aggregate/receipts/required) of Gates `40932484157` were read via the job-log API after parallel `gh run view --log-failed --job` calls encountered a shared-cache ZIP error. That was log transport, not runner failure. Every browser artifact was downloaded with `gh run download`; original files remain in `fix318-current-download/`. Run head is `a041dfc01ef6edf34702cca78ca7d3da7ed85a63`, tested synthetic merge `4930dd87a2e2fa1dece2e12cc703766011f7cfae`. No apt/dpkg/mirror failure was found; no infrastructure rerun was appropriate.
+
+|Failing job(s)|Original failure and root cause|Root repair; acceptance strength retained|
+|---|---|---|
+|visual-lint 1–4: `123657044465`, `123657044302`, `123657045031`, `123657044308`|All six locale/viewport product-detail states fail inner-scroll coverage `pane-count:0`. The collector hard-coded Advanced's `.pe-fields`; default signed editing mounts `.cat-task-editor`. Each report has zero blocking layout violations.|Add the mutually exclusive signed container to the same native-wheel collector. Preserve pane-count=1, contiguous full-content coverage, visibility/progress requirements, frame/move limits, screenshots, supplemental viewports and failure propagation. No capture/exemption removed.|
+|bundle04 `123657044859`, bundle05 `123657045002`, WebKit `123657045125`|Merchant creation succeeds; after reopening/reloading, the shared merchant-product helper looks for Advanced's `product-status` in the signed default. Both engines fail the unchanged active-state assertion.|Real click Advanced before the existing reload and active-value assertion. Preserve creation, image upload, SKU identity, response status and buyer-chain assertions.|
+|bundle06 `123657044899`|Catalog-media opens default editing and immediately expects Advanced's `photo-manager`.|Real click Advanced before the original photo assertions. All old gate-adapter assertions remain verbatim and in order, with additive readiness assertions only.|
+|click-sweep4 `123657044333`|J1 creates two SKUs, then reopens signed editing and times out reading `matrix-code-0`.|Real click Advanced before existing reload; preserve both codes, exact quantities 9/7 in the ledger, publishing, media and storefront assertions.|
+|bundle03 `123657044267`, PE artifact `12923169951`|CATV2 zh-CN description exact-label fill times out, even though the ARIA snapshot shows the textbox. Implicit wrapping-label text includes textarea content in Playwright's label lookup. Installed Playwright1.63 `getElementLabels` uses `elementText(label)` unless explicit aria-label is set.|Give the textarea its existing localized visible label explicitly as aria-label in all three locales. Preserve every fill, review, invalid-stock/no-write and persisted-reload assertion. This diagnosis is static inference plus CI trace, pending new CI confirmation.|
+|bundle03, CC artifact `12925110606`|Mobile ledger link width42 fails unchanged width>=44 assertion at catalog-core.spec.ts137.|Set min-width44px on the existing scoped catalog action links; retain min-height44px and all geometry thresholds.|
+|aggregate `123666874765`, receipts `123666874775`, required `123667145274`|Downstream failure propagation from the above browser jobs.|No aggregator, receipt, gate or workflow change.|
+
+Original tests-only causal RED remains head `c36ab5b434f02e103fdd60e802d82ff37b39d8a3`, Gates `40872483030` / job `123445416316`: CATV2:148 expected zero quick-price controls, received three. Run metadata was read again this turn: completed/failure. The existing tests also supply the exact-head regression RED above; no new behavior or new test suite is introduced, and no duplicate RED push is made.
+
+## Click ledger additions and UI process
+
+|Page/control|Real operation|Expected visible/persisted result|Actual new-head result|
+|---|---|---|---|
+|Created product → Advanced|click, reload|Full editor and saved active state; stock codes and ledger quantities survive reload|PENDING CI|
+|Existing product → Advanced in catalog-media|click|Existing upload/reorder/rename/price/archive workflow and buyer projection pass unchanged|PENDING CI|
+|Signed editor description, zh-TW/zh-CN/en|existing exact-label fill, review/save/reload|Label remains identifiable and description persists|PENDING CI|
+|Products → Advanced → inventory ledger, mobile zh-TW|existing click and bounding-box measurement|Target at least44×44px; scoped destination survives reload|PENDING CI|
+|Signed product editor, all three locales and both primary viewports plus supplemental desktop|same native-wheel capture/read-only geometry|Exactly one real field container; contiguous complete coverage and original lint thresholds|PENDING CI|
+
+BOURDIEU: Q1 task novices keep the signed default; Q2 experienced users explicitly enter Advanced; Q3 currency remains server-owned; Q4 no class/device/locale inference; Q5 same facts and accessible controls; Q6 no new aesthetic claim, owner authority unchanged. PROJECT UNDERSTANDING: §§0/1 distinguish CI/MOCK from production; §2 merchant scope; §8 server inventory/history and immutable order prices; §§26/27 ownership and independent acceptance. MOBBIN→EAGLE: no new layout or reference; existing module folder/candidate structural principles documented below retained. FIGMA OFFICIAL GUIDANCE: existing auto-layout/components/variables/prototype guidance index read; no Figma change. Desktop/mobile required-field parity table and full three-column seller-copy inventory below remain unchanged; the explicit label uses the existing zh-TW `商品說明`, zh-CN `商品说明`, en `Description`. No new visible copy, setting, image, frame, import or product fact.
+
+## Static evidence, scope and handoff
+
+E1: strict admin/i18n `tsc --noEmit -p output/catalog-v2-impl/tsconfig.static.json` exit0; four changed MJS files `node --check` exit0; whitespace diff check exit0. Existing dependencies read only from main; temporary links existed only in this worktree and were removed. No package install, local test, build, server, browser, PG, container or production call. Browser ownership is regenerated last for the changed browser inputs. No Go change requiring depmap regeneration.
+
+Additional paths outside original PLAN, under same catalog-module scope pre-approval (integrator review): `tests/storefront/merchant-product.mjs`, `tests/storefront/catalog-media-gate.mjs`, `tests/ui/click-sweep.mjs`, `tests/ui/visual-audit.mjs`. These change only the catalog UI entry/capture blocks; no storefront app, backend, shared contract, migration, lockfile, exemption/baseline or existing gate assertion changed. Generated `output/ci-select-backend-browser/browser-ownership.json` is authorized. Inherited extra paths remain listed below.
+
+NOT_RUN/PENDING: new-head CI, real-click/density/persistence acceptance, gate-adapter assertion parity execution (CI only), independent E4, provider SANDBOX/LIVE and deployment. Postgres historical-order snapshot verification for the new signed path remains NOT_RUN. Integrator relays a fresh session after registered Gates/Foundation runs complete; run/job IDs go in the PR comment and local handoff, with no evidence-only push. No process remains running.
+
+# RELAY 4 repair · 2026-10-30 · historical status
 
 claim_type: fix · project: live_commerce_architecture_v1 · module: catalog UI · date: 2026-10-30
 

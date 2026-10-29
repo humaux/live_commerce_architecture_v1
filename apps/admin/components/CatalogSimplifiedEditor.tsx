@@ -95,7 +95,7 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
     {screen === 'edit' ? <form onSubmit={e => { e.preventDefault(); review(); }}>
       <fieldset disabled={locked} className="cat-task-fields">
         <label>{c.name}<input data-testid="product-name" value={draft.name} maxLength={120} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
-        <label>{c.desc}<textarea data-testid="product-description" value={draft.description} maxLength={8000} rows={3} onChange={e => setDraft({ ...draft, description: e.target.value })} /></label>
+        <label>{c.desc}<textarea aria-label={c.desc} data-testid="product-description" value={draft.description} maxLength={8000} rows={3} onChange={e => setDraft({ ...draft, description: e.target.value })} /></label>
         <label>{text(draft.rows.length === 2 ? c.price : draft.rows.length > 2 ? c.multiPrice : c.onePrice, { currency: store.currency, n: draft.rows.length })}<input data-testid="catalog-common-price" inputMode="decimal" value={commonPrice}
           onChange={e => setDraft({ ...draft, rows: draft.rows.map(row => ({ ...row, price: e.target.value })) })} /></label>
         {!commonPrice && draft.rows.length > 1 && <p>{c.noPriceChange}</p>}
