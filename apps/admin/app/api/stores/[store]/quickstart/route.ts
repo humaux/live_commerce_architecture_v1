@@ -5,7 +5,7 @@
 import { liveSettingsProxy } from "@/lib/live-settings-proxy";
 
 async function handle(request: Request, context: { params: Promise<{ store: string }> }) {
-  const { store } = await context.params;
-  return liveSettingsProxy(request, store, "quickstart", fetch);
+  const p = await context.params;
+  return liveSettingsProxy(request, p.store, "quickstart", fetch);
 }
 export { handle as GET, handle as POST, handle as PUT, handle as PATCH, handle as DELETE, handle as HEAD, handle as OPTIONS };

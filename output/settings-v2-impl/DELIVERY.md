@@ -1,4 +1,27 @@
-# FIX #303 — implementation queue handoff (2026-10-29)
+# FIX #303 — contract-drift repair, attempt 1 (2026-10-29)
+
+Current relay authority: dispatched FIX #303 and GitHub job 123352982732 on
+head 63e10c47a4a5c952b04d0381b6dbb4f5d3e4a046, Gates run 40845839979.
+`git fetch origin r3/integration` then `git merge --no-edit origin/r3/integration`
+reported already up to date at d8093bc43f16f8eb4e209eeb6c7b698efcd27b0e.
+
+The plan failed before browser execution: the quickstart leaf destructured
+`context.params`, outside the scanner's proven `const p = await context.params`
+and `p.store` forwarding seam. Three TOUCHED UNRESOLVED findings are retained in
+fix303-plan-red.log. This is an implementation gate failure, not a new tests-only
+RED. The original causal UI RED below remains tied to its original SHA.
+
+Root-cause repair: use the same parameter-forwarding form as the existing profile
+leaf. The shared signed-session, store, CSRF, method and command guards are unchanged.
+No scanner, baseline, dispatcher, fixture, assertion or exemption was modified.
+This is targeted fix attempt 1 for this blocker, within the original write paths.
+The existing real-leaf scanner test and CI plan validate the repaired source;
+no local test, server, gate runner or build is authorized. Static syntax and diff
+checks are recorded in fix303-plan-static.log; E1 only. Current-head CI GREEN and
+independent acceptance remain PENDING/NOT_RUN. Humaux store/canvas/coord unavailable.
+Integrator owns workflow-completion relay; no local background process is needed.
+
+## Prior implementation queue handoff (2026-10-29)
 
 This section supersedes the historical relay statuses below. Task: make PR #303
 green at root cause, one implementation push after merging current integration.

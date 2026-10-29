@@ -1,4 +1,14 @@
-FIX303 current readback: causal RED confirmed; implementation GREEN pending.
+FIX303 contract-drift relay, 2026-10-29:
+Implementation head 63e10c47a4a5c952b04d0381b6dbb4f5d3e4a046.
+Gates run 40845839979 / plan job 123352982732 failed with three TOUCHED
+UNRESOLVED findings on quickstart/route.ts: unsupported leaf transport arguments
+and unaccounted forwarding sink values. Original API log: fix303-plan-red.log.
+Root cause: destructured store is outside the scanner's proven p.store seam.
+Targeted fix attempt 1 uses the incumbent profile leaf's exact parameter form.
+No gate/assertion/baseline change. New-head GREEN PENDING; this failure is not
+a new tests-only RED, and the original causal UI RED retains its original SHA.
+
+FIX303 prior readback: causal RED confirmed; implementation GREEN pending.
 Original tests-only head: 696629d92e786e70bc70545089bc114d1b7cb7e4.
 RED run40828407097/job123300694776, artifact12878213371 freshly downloaded:
 settings-v2.spec.ts:22, zh-TW signed three-row overview, expected visible,
