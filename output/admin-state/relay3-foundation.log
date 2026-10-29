@@ -1,0 +1,19 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0358014Z test at tests/admin/code-alignment-admin-state.test.mjs:148:1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0359043Z ✖ AD-10: shared forbidden state retains each caller's localized denial and neutral guidance (37.151234ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0359915Z   AssertionError [ERR_ASSERTION]: Customers en neutral guidance
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0361721Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/code-alignment-admin-state.test.mjs:159:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0362830Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0363394Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0364089Z       at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0364797Z       at Test.postRun (node:internal/test_runner/test:1542:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0365367Z       at Test.run (node:internal/test_runner/test:1467:12)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0366078Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0366620Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0367274Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0367544Z     actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0367795Z     expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0368359Z     operator: '==',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0368584Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0368793Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0420784Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-28T23:54:37.0433758Z ##[error]Process completed with exit code 1.

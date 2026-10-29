@@ -1,3 +1,6 @@
+// Purpose: purchase protocol and money guards, including COD-255 stale quote/option rejection.
+// Depends on: node:test, storefront purchase and demo-label helpers. Used by: Foundation Node unit suites.
+// Invariants: client requests never supply a final amount; mismatched server quote/option facts fail closed.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buyerDemoLabel } from "../lib/demo-label.ts";
@@ -361,14 +364,23 @@ test("COD confirmation includes expected fee, enforces collect cap and validates
   assert.deepEqual(offeredPaymentModes(opt, 1995000), ["card", "cash_on_delivery"]);
   assert.deepEqual(offeredPaymentModes(opt, 1995100), ["card"]);
   assert.deepEqual(offeredPaymentModes(opt, 100.5), ["card"]);
-  const quote = { ...cq, method: homeOption.method };
+  const quote = { ...cq, method: homeOption.method, cod_due_minor: cq.amount.total_minor + 5000 };
   const head = {
     ...(({ pickup_id, expected_version, ...d }) => d)(cvsWrite), kind: "home", id: cu(61), version: 1, cart_id: cu(1),
     home_address: { region: "", city: "C", postal_code: "", line1: "L", line2: "" }, selected_at: new Date().toISOString(), expires_at: soon,
   };
   const body = checkoutInput(quote, opt, ccart, head, Date.now(), "cash_on_delivery");
   assert.equal(body.expected_cod_surcharge_minor, 5000);
-  assert.equal(checkoutInput(quote, { ...opt, cod_surcharge_minor: undefined }, ccart, head, Date.now(), "cash_on_delivery").expected_cod_surcharge_minor, 0);
+  assert.equal(checkoutInput({ ...quote, cod_due_minor: quote.amount.total_minor }, { ...opt, cod_surcharge_minor: undefined }, ccart, head, Date.now(), "cash_on_delivery").expected_cod_surcharge_minor, 0);
+  // COD-255: an option refresh must never authorize the stale amount still shown from the old quote.
+  for (const fee of [0, 4000, 6000]) {
+    assert.throws(() => checkoutInput(quote, { ...opt, cod_surcharge_minor: fee }, ccart, head, Date.now(), "cash_on_delivery"),
+      `COD-255: reject old due with refreshed surcharge ${fee}`);
+    const refreshed = { ...quote, cod_due_minor: quote.amount.total_minor + fee };
+    assert.equal(checkoutInput(refreshed, { ...opt, cod_surcharge_minor: fee }, ccart, head, Date.now(), "cash_on_delivery").expected_cod_surcharge_minor, fee);
+  }
+  assert.throws(() => checkoutInput({ ...quote, cod_due_minor: undefined }, opt, ccart, head, Date.now(), "cash_on_delivery"),
+    "COD-255: missing server due cannot be confirmed");
   assert.throws(() => checkoutInput(quote, { ...opt, cod_max_minor: 100 }, ccart, head, Date.now(), "cash_on_delivery"));
   const order = cvsOrder({ payment_mode: "cash_on_delivery", collection_state: "PENDING", cod_carrier: "black_cat", cod_surcharge_minor: 5000, cod_collect_minor: cq.amount.total_minor + 5000 }, { kind: "home", pickup: undefined });
   assert.equal(validOrder(order), true);

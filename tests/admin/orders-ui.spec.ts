@@ -907,6 +907,7 @@ for (const privateCursor of [false, true]) test(`MOU08 authoritative poll denial
   await expect(page.getByTestId("orders-table")).toHaveCount(0,{timeout:25_000});
   await expect(page.getByTestId("order-detail")).toHaveCount(0);
   await expect(page.getByTestId("merchant-orders")).toContainText("This account does not have permission to read orders.");
+  await expect(page.getByTestId("merchant-orders")).toContainText("Your current role can’t use this feature. Contact the store owner.");
   await noPII(page);
 });
 

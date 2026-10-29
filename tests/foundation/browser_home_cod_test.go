@@ -14,6 +14,8 @@ package foundation_test
 //   4. order A's buyer sees COLLECTED (still AWAITING_COLLECTION); B, C, D stay PENDING
 // Evidence labels: BROWSER, MOCK (no PSP, no carrier API on this path — the carrier collects the cash and the merchant records it).
 // PG facts are asserted around every phase. Owner-pool writes (disclosed fixtures): none beyond the harness stores.
+// Purpose: home COD click gate, including COD-255 real surcharge changes and quote/collection consistency.
+// Invariants: settings writes are isolated fixture preparation; buyer confirmation uses real controls and server money only.
 // Depends-on: tcvEnv/tcvBuyer harness (taiwan_cvs_env_test.go), the shared browser helpers (browser_refund_fulfilment_test.go,
 // browser_identity_chain_test.go), bcoShots (browser_checkout_offline_test.go). Used-by: nothing yet.
 
@@ -211,7 +213,72 @@ func TestBrowserHomeCod(t *testing.T) {
 
 	// ---- phase 5: order A's buyer sees COLLECTED (still AWAITING_COLLECTION); B, C, D stay PENDING -------------------------------
 	release("1")
+	// COD-255 fixture preparation: mutate the REAL merchant settings API between the browser's quote and options/checkout requests.
+	// No forged cod_surcharge_changed response; the buyer must hit begin_hold's actual amount guard.
+	cod255Cases := []struct {
+		key     string
+		feeTWD  int
+		blocked bool
+	}{
+		{"retry-tw-desktop-up", 60, false}, {"retry-tw-mobile-down", 40, false},
+		{"retry-cn-desktop-down", 40, false}, {"retry-cn-mobile-up", 60, false},
+		{"retry-en-desktop-up", 60, false}, {"retry-en-mobile-down", 40, false},
+		{"gap-up", 60, false}, {"gap-down", 40, false}, {"gap-zero", 0, false},
+		{"refresh-failed", 60, true}, {"disabled", 50, true}, {"over-cap", 50, true},
+	}
+	setCod255 := func(enabled bool, capTWD, feeTWD int) {
+		t.Helper()
+		status, settings, body := e.mcall(e.token(), "GET", "/v1/admin/stores/"+e.store()+"/cash-on-delivery-settings", "", "")
+		if status != 200 {
+			t.Fatalf("COD-255 read settings: %d %s", status, body)
+		}
+		status, settings = e.hcodSettings(int64(settings["version"].(float64)), enabled, capTWD, feeTWD, "black_cat")
+		if status != 200 || settings["surcharge_twd"] != float64(feeTWD) || settings["enabled"] != enabled {
+			t.Fatalf("COD-255 real settings mutation: %d %v", status, settings)
+		}
+	}
+	wantFees := map[string]int64{}
+	for _, scenario := range cod255Cases {
+		step := "cod255-" + scenario.key
+		wait(step + "-start")
+		setCod255(true, 20000, 50)
+		release(step + "-start")
+		wait(step + "-change")
+		capTWD := 20000
+		if scenario.key == "over-cap" {
+			capTWD = 74 // original NT$75 due now exceeds the real merchant cap; fee stays 50
+		}
+		setCod255(scenario.key != "disabled", capTWD, scenario.feeTWD)
+		release(step + "-change")
+		wait(step + "-verified")
+		if !scenario.blocked {
+			wantFees[scenario.key] = int64(scenario.feeTWD) * 100
+		}
+	}
 	wait("done")
+	resultsRaw, err := os.ReadFile(filepath.Join(evidence, "cod255-results.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var results []struct {
+		Key string `json:"key"`
+		ID  string `json:"id"`
+		Due int64  `json:"due"`
+		Fee int64  `json:"fee"`
+	}
+	if err := json.Unmarshal(resultsRaw, &results); err != nil || len(results) != len(wantFees) {
+		t.Fatalf("COD-255 result count/shape: %v %s", err, resultsRaw)
+	}
+	for _, result := range results {
+		fee, ok := wantFees[result.Key]
+		if !ok || result.Fee != fee || result.Due != total+fee {
+			t.Fatalf("COD-255 unexpected browser result: %+v", result)
+		}
+		delete(wantFees, result.Key)
+		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND store_id=$2 AND payment_mode='cash_on_delivery' AND commercial_state='AWAITING_COLLECTION' AND cod_surcharge_minor=$3 AND total_minor+cod_surcharge_minor=$4`, result.ID, e.store(), fee, total+fee); n != 1 {
+			t.Errorf("COD-255 %s: persisted collection must equal both refreshed UI amounts (%d)", result.Key, total+fee)
+		}
+	}
 	if err := <-exited; err != nil {
 		t.Fatalf("buyer browser gate failed: %v; evidence=%s", err, evidence)
 	}

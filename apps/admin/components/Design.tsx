@@ -1,5 +1,5 @@
 // Purpose: Owns storefront design draft editing, publication and rollback controls.
-// Depends on: @live-commerce/format (Taipei store timestamps), react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/customers-client, @/lib/settings-client, @/lib/storefront-client, @/lib/design-client, @/lib/design-copy, @/lib/design-model, ./WorkspaceFrame, ./AdminPageHeader, ./DesignProfile, ./DesignNav, ./DesignSections, ./DesignPages, ./DesignMedia, ./orders.css, ./design.css
+// Depends on: @live-commerce/format (Taipei store timestamps), react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/customers-client, @/lib/settings-client, @/lib/storefront-client, @/lib/design-client, @/lib/design-copy, @/lib/design-model, @/lib/use-design-load, ./WorkspaceFrame, ./AdminPageHeader, ./DesignProfile, ./DesignNav, ./DesignSections, ./DesignPages, ./DesignMedia, ./orders.css, ./design.css
 // Used by: apps/admin/app/[locale]/design/page.tsx
 "use client";
 
@@ -10,6 +10,7 @@
 // .../preview-token, GET .../design/versions, GET|POST .../design/media, GET .../design/media/{id}, POST
 // .../design/media/{id}/delete, plus GET .../storefront (the active address, to open the preview) -> Go
 // /v1/admin/stores/{id}/design/* (internal/httpapi/design.go; integration:read / integration:manage).
+// Invariants: pending publication is armed durably before send and resolved only by its original key/body.
 // Owns: the editable copy of the document, the dirty/unsaved guard, the local "what is still missing" hints and the
 // request choreography (save before publish/preview, compare-and-set versions). It never validates what the server
 // owns (the server's 422 path is shown on the field) and never keeps the preview token (it only opens the link).
@@ -21,7 +22,8 @@ import { displayTime } from "@live-commerce/format";
 import { Badge, TabStrip, TableFrame } from "@live-commerce/ui";
 import { catalogPresentationCopy } from "@/lib/catalog-v2-copy";
 import type { Store } from "@/lib/model";
-import { ReadError, type ReadCode } from "@/lib/customers-client";
+import type { ReadCode } from "@/lib/customers-client";
+import { useDesignLoad, type Loaded } from "@/lib/use-design-load";
 import { sessionBoundary } from "@/lib/settings-client";
 import { readStorefront } from "@/lib/storefront-client";
 import {
@@ -29,8 +31,6 @@ import {
   issuePreview,
   mediaFileProblem,
   publish,
-  readDraft,
-  readMedia,
   readVersions,
   rollback,
   saveDraft,
@@ -42,8 +42,6 @@ import {
   cleanForSave,
   localIssues,
   type DesignDocument,
-  type Draft,
-  type MediaItem,
   type VersionList,
 } from "@/lib/design-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -56,74 +54,27 @@ import type { MediaOps } from "./DesignMedia";
 import "./orders.css";
 import "./design.css";
 
-type Loaded = { draft: Draft; media: MediaItem[]; versions: VersionList };
 type Tab = "profile" | "nav" | "home" | "pages" | "versions";
 const TABS: Tab[] = ["profile", "nav", "home", "pages", "versions"];
 type Note = { kind: "ok" | "error"; text: string } | null;
 
-async function loadAll(store: string, signal: AbortSignal): Promise<Loaded> {
-  const [draft, media, versions] = await Promise.all([
-    readDraft(store, signal),
-    readMedia(store, signal),
-    readVersions(store, signal),
-  ]);
-  return { draft, media, versions };
+type Pending = { version: number; key: string; boundary: string; retries: number };
+const pendingKey = (store: string) => `lc.design.publishPending.${store}`;
+function loadPending(store: string): Pending | null {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(pendingKey(store)) ?? "null") as Partial<Pending> | null;
+    return v && Number.isSafeInteger(v.version) && Number(v.version) > 0 && typeof v.key === "string" && /^[A-Za-z0-9_.:-]{8,128}$/.test(v.key) && typeof v.boundary === "string" && Number.isInteger(v.retries) && Number(v.retries) >= 0 && Number(v.retries) <= 3 ? (v as Pending) : null;
+  } catch {
+    return null; // storage can be blocked: the page then simply behaves as before (in-memory only)
+  }
 }
-
-// One read per (store, reload). The boundary is the session fence write requests must still match.
-function useLoad(
-  storeID: string | null,
-  initialError: ReadCode | null,
-  renderKey: string,
-) {
-  const [tick, setTick] = useState(0);
-  const key = `${renderKey}|${storeID ?? ""}|${tick}`;
-  const [view, setView] = useState<{
-    key: string;
-    status: "loading" | "ready" | ReadCode;
-    data: Loaded | null;
-    boundary: string;
-  }>({ key: "", status: "loading", data: null, boundary: "" });
-  useEffect(() => {
-    if (initialError || !storeID) {
-      setView({
-        key,
-        status: initialError ?? "not-found",
-        data: null,
-        boundary: "",
-      });
-      return;
-    }
-    let live = true;
-    const controller = new AbortController();
-    void (async () => {
-      try {
-        const boundary = await sessionBoundary();
-        const data = await loadAll(storeID, controller.signal);
-        if (!live) return;
-        if ((await sessionBoundary()) !== boundary)
-          throw new ReadError("signed-out");
-        setView({ key, status: "ready", data, boundary });
-      } catch (error) {
-        if (live)
-          setView({
-            key,
-            status: error instanceof ReadError ? error.code : "unavailable",
-            data: null,
-            boundary: "",
-          });
-      }
-    })();
-    return () => {
-      live = false;
-      controller.abort();
-    };
-  }, [key, storeID, initialError]);
-  const current =
-    view.key === key
-      ? view
-      : { key, status: "loading" as const, data: null, boundary: "" };
-  return { ...current, reload: () => setTick((value) => value + 1) };
+function storePending(store: string, next: Pending | null) {
+  try {
+    if (next) sessionStorage.setItem(pendingKey(store), JSON.stringify(next));
+    else sessionStorage.removeItem(pendingKey(store));
+  } catch {
+    /* in-memory state still holds */
+  }
 }
 
 /** Owns storefront design draft editing, publication and rollback controls. User actions submit draft, publication, rollback and media commands through design-client. */
@@ -141,7 +92,7 @@ export function Design({
   renderKey: string;
 }) {
   const c = designCopy[locale];
-  const read = useLoad(store?.id ?? null, initialError, renderKey);
+  const read = useDesignLoad(store?.id ?? null, initialError, renderKey);
   const dirtyRef = useRef(false);
   const guard = () => !dirtyRef.current || window.confirm(c.guard);
   const failure =
@@ -257,6 +208,30 @@ function Editor({
     "" | "save" | "publish" | "preview" | "rollback"
   >("");
   const [note, setNote] = useState<Note>(null);
+  // R3-R5: persist before sending; only an identical keyed POST can resolve this attempt.
+  const [pending, setPendingState] = useState<Pending | null>(null);
+  const pendingRef = useRef<Pending | null>(null);
+  const resolving = useRef(false);
+  const mounted = useRef(true);
+  const [rechecking, setRechecking] = useState(false);
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [integrity, setIntegrity] = useState(false);
+  const [superseded, setSuperseded] = useState(false);
+  const setPending = (next: Pending | null) => {
+    pendingRef.current = next;
+    setPendingState(next);
+    storePending(store, next);
+  };
+  useEffect(() => {
+    mounted.current = true;
+    const restored = loadPending(store);
+    if (restored) {
+      setPending(restored);
+      // A session fence mismatch must never replay a previous merchant's request.
+      if (restored.boundary === boundary) void recheckPublish(true);
+    }
+    return () => { mounted.current = false; };
+  }, [store, boundary]);
   const [stale, setStale] = useState(false);
   const [server, setServer] = useState<{ path: string; reason: string } | null>(
     null,
@@ -278,11 +253,11 @@ function Editor({
 
   useEffect(() => {
     dirtyRef.current = dirty;
-    if (!dirty) return;
+    if (!dirty && !pending) return; // an unknown publish outcome also warns on leave (the browser's own generic prompt)
     const warn = (event: BeforeUnloadEvent) => event.preventDefault(); // the browser shows its own generic prompt
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty, dirtyRef]);
+  }, [dirty, pending, dirtyRef]);
   useEffect(
     () => () => {
       dirtyRef.current = false;
@@ -326,14 +301,15 @@ function Editor({
 
   async function refreshVersions() {
     try {
-      setVersions(await readVersions(store, new AbortController().signal));
+      const list = await readVersions(store, new AbortController().signal);
+      setVersions(list);
     } catch {
       /* the next page load shows it; the publish itself already succeeded */
     }
   }
 
   async function doPublish() {
-    if (busy) return;
+    if (busy || pendingRef.current) return;
     let version = base;
     if (dirty || base === 0) {
       const saved = await save();
@@ -342,12 +318,79 @@ function Editor({
     }
     if (!window.confirm(fill(c.publishConfirm, { n: version }))) return;
     setBusy("publish");
-    const r = await publish(store, version, boundary);
+    const attempt: Pending = { version, key: crypto.randomUUID(), boundary, retries: 0 };
+    setPending(attempt); // synchronous sessionStorage write BEFORE the first POST
+    setUnconfirmed(false);
+    setIntegrity(false);
+    setSuperseded(false);
+    setNote(null);
+    const r = await publish(store, version, boundary, attempt.key);
+    if (!mounted.current) return;
     setBusy("");
-    if (!r.ok) return fail(r);
+    if (await applyPublish(r, attempt)) return;
+    void recheckPublish(true);
+  }
+
+  async function applyPublish(r: Outcome<VersionList["items"][number]>, attempt: Pending): Promise<boolean> {
+    if (!mounted.current || pendingRef.current?.key !== attempt.key) return true;
+    if (!r.ok) {
+      if (r.code === "idempotency_conflict") {
+        setIntegrity(true);
+        return true; // report integrity failure, retain the original attempt; never mint a replacement key
+      }
+      if (r.uncertain || r.code !== "conflict") {
+        setUnconfirmed(true);
+        return !r.uncertain; // definite auth/validation refusals keep the unresolved identity without automatic replay
+      }
+      setPending(null);
+      setNote({ kind: "error", text: c.publishChanged });
+      setStale(true);
+      return true;
+    }
+    setPending(null);
+    setUnconfirmed(false);
+    setIntegrity(false);
     setLive(r.value.version);
     setNote({ kind: "ok", text: fill(c.okPublished, { n: r.value.version }) });
-    await refreshVersions();
+    // The receipt establishes success. The list only supplies current display/supersession, never confirmation.
+    try {
+      const list = await readVersions(store, AbortSignal.timeout(5000));
+      if (mounted.current) {
+        setVersions(list);
+        setLive(list.live_version ?? r.value.version);
+        setSuperseded((list.live_version ?? r.value.version) > r.value.version);
+      }
+    } catch { /* the authoritative receipt remains successful even if this display refresh fails */ }
+    return true;
+  }
+
+  async function recheckPublish(automatic = false) {
+    let attempt = pendingRef.current;
+    if (!attempt || resolving.current) return;
+    if (attempt.boundary !== boundary) {
+      // A new authenticated session must explicitly authorize the original intent.
+      // Keep its old fence: an ambiguous answer/reload still cannot auto-replay it.
+      if (automatic || !window.confirm(fill(c.publishRecoveryConfirm, { n: attempt.version }))) return;
+    }
+    resolving.current = true;
+    setRechecking(true);
+    try {
+      // The automatic budget is durable too: reload cannot reset the three-resend limit. A click sends once.
+      for (let i = 0; i < (automatic ? 3 : 1); i++) {
+        if (automatic && attempt.retries >= 3) return;
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 250 * 2 ** i));
+        if (!mounted.current || pendingRef.current?.key !== attempt.key) return;
+        if (automatic) {
+          attempt = { ...attempt, retries: attempt.retries + 1 };
+          setPending(attempt);
+        }
+        const r = await publish(store, attempt.version, boundary, attempt.key);
+        if (await applyPublish(r, attempt)) return;
+      }
+    } finally {
+      resolving.current = false;
+      if (mounted.current) setRechecking(false);
+    }
   }
 
   async function doPreview() {
@@ -386,7 +429,7 @@ function Editor({
 
   async function doRollback(version: number) {
     if (
-      busy ||
+      busy || pendingRef.current ||
       !window.confirm(fill(c.versions.rollbackConfirm, { n: version }))
     )
       return;
@@ -453,7 +496,7 @@ function Editor({
   const status = dirty ? c.unsaved : base === 0 ? c.noDraft : c.saved;
   const p = catalogPresentationCopy[locale];
   const saveReason = busy ? p.busy : !dirty && base !== 0 ? p.noChanges : "";
-  const publishReason = busy ? p.busy : liveIsDraft ? p.alreadyPublished : "";
+  const publishReason = busy ? p.busy : pending ? c.publishPending : liveIsDraft ? p.alreadyPublished : "";
   return (
     <div className="design-editor">
       <div className="design-toolbar" data-testid="design-toolbar">
@@ -497,7 +540,7 @@ function Editor({
             type="button"
             className="design-primary"
             onClick={() => void doPublish()}
-            disabled={!!busy || liveIsDraft}
+            disabled={!!busy || liveIsDraft || !!pending}
             aria-describedby={
               publishReason
                 ? publishReason === saveReason
@@ -519,6 +562,20 @@ function Editor({
           )}
         </div>
       )}
+      {pending && busy !== "publish" && (
+        <div className="design-note warning" role="alert" data-testid="design-publish-pending">
+          <p>
+            <strong>{c.publishPending}</strong>
+          </p>
+          <p>{fill(c.publishPendingBody, { n: pending.version })}</p>
+          {unconfirmed && <p data-testid="design-publish-unconfirmed">{c.publishUnconfirmed}</p>}
+          {integrity && <p data-testid="design-publish-integrity">{c.publishIntegrity}</p>}
+          <button type="button" onClick={() => void recheckPublish()} disabled={rechecking} data-testid="design-publish-recheck">
+            {rechecking ? c.publishRechecking : c.publishRecheck}
+          </button>
+        </div>
+      )}
+      {superseded && <p className="design-note" data-testid="design-publish-superseded">{c.publishSuperseded}</p>}
       {note && (
         <p
           className={`design-note ${note.kind}`}
@@ -624,7 +681,7 @@ function Editor({
           <Versions
             list={versions}
             live={live}
-            busy={busy === "rollback"}
+            busy={busy === "rollback" || !!pending}
             c={c}
             locale={locale}
             onRollback={(v) => void doRollback(v)}

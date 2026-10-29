@@ -1,3 +1,9 @@
+// Purpose: Validate the scoped order query and render merchant order content.
+// Depends on: auth store lookup, order models, React Suspense, AdminLoading and MerchantOrders.
+// Used by: Next.js /[locale]/orders.
+// Invariants: every locale, query and store notFound guard finishes before content may stream.
+import { Suspense } from "react";
+import AdminLoading from "@/components/AdminLoading";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
@@ -63,7 +69,11 @@ export default async function OrdersPage({
       }
     }
   }
-  return <MerchantOrders locale={locale} store={store}
-    state={state as OrderFilter} filters={filters} order={order} cursor={cursor} initialError={error}
-    renderKey={crypto.randomUUID()} />;
+  return (
+    <Suspense fallback={<AdminLoading />}>
+      <MerchantOrders locale={locale} store={store}
+        state={state as OrderFilter} filters={filters} order={order} cursor={cursor} initialError={error}
+        renderKey={crypto.randomUUID()} />
+    </Suspense>
+  );
 }

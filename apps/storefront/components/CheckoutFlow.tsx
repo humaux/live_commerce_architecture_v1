@@ -3,7 +3,7 @@
 // Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
 // Depends on: buyer BFF cart/options/quotes/destination/checkout/orders and purchase recovery; lib/cod-copy codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
-// Invariants: the server quotes each selected chain; contact stays ephemeral during brand changes.
+// Invariants: checkout renders server money; OrderFlow publishes only a quote matched to its current option; each CVS chain gets a fresh server quote; contact stays ephemeral during brand changes.
 
 // Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
 // address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page
@@ -673,6 +673,7 @@ export default function CheckoutFlow({
                   run={act}
                   money={money}
                   onCodFee={setCodFee}
+                  onQuote={setQuote}
                   cvsResume={cvsResume?.context === context && cvsResume.quoteID === quote?.id ? cvsResume.draft : undefined}
                   cvsKinds={options.filter((row) => !isUnavailable(row) && row.pickup_selection === "buyer_entered" && row.market_id === quote?.market_id && row.country === quote?.country && row.currency === quote?.currency && isCvsKind(row.delivery_kind)).map((row) => row.delivery_kind as CvsKind)}
                   onCvsBrand={(kind, draft) => {

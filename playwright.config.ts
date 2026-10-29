@@ -20,7 +20,8 @@ const suites: Record<string, string[]> = {
   // staff-team (R4 independent gate): started by tests/foundation/browser_staff_team_test.go in the same mode.
   "staff-team": ["staff-team.spec.ts"],
   // OC-04 re-auth dialog and reauth_required handling: started by tests/foundation/browser_oc_test.go in the same mode.
-  oc: ["oc/*.spec.ts"],
+  // Design receipt recovery belongs to store-design and its dedicated PG store fixture.
+  oc: ["oc/reauth.spec.ts"],
   // The v2 helper runs inside settings-real's single-session test; keep both
   // files in the selected suite so the gate registry can verify reachability.
   "settings-real": ["settings-real.spec.ts", "settings-v2.spec.ts"],
@@ -35,7 +36,7 @@ const suites: Record<string, string[]> = {
   "live-console": ["live-console.spec.ts", "comment-label-print.spec.ts"],
   "live-settings": ["live-settings.spec.ts"],
   // SDB (unit store-design): started by tests/foundation/browser_store_design_test.go.
-  "store-design": ["design.spec.ts"],
+  "store-design": ["design.spec.ts", "oc/design-publish-pending.spec.ts"],
   "product-media-v2": ["product-media-v2.spec.ts"],
 };
 if (!Object.hasOwn(suites, suite)) throw new Error("Invalid LC_BROWSER_SUITE");
