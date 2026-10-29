@@ -1,6 +1,6 @@
 // settlement_unit_test.go: MOCK-tier tests of the settlement registrar steps (contracts/stripe-platform-account-v1.md §6, PF10 CLI half)
 // against the recording DB fake and a fake provider behind the package seam. Purpose: a failed or oversized Stripe read writes nothing,
-// the 500-line chunking carries the window on the LAST chunk only, bad windows never reach Stripe or SQL, and a refusal keeps only our
+// the 500-line chunking carries the full window/manifest on EVERY chunk, bad windows never reach Stripe or SQL, and a refusal keeps only our
 // own coded token (never a driver message). Non-goals: the SQL definers (tests/foundation/platform_settlement_test.go), real Stripe.
 // Depends on: live_test.go fakes (liveDB, fakeProvider, liveRegistrar, storedReply). Callers: go test ./internal/payments/stripeadmin.
 
@@ -89,7 +89,7 @@ func reconReply(inserted, dup, unattr, mismatch int, run string, rows ...string)
 		inserted, dup, unattr, mismatch, run, strings.Join(rows, ","))
 }
 
-func TestSettlementSyncChunksAndCarriesTheWindowAndManifestOnTheLastChunk(t *testing.T) {
+func TestSettlementSyncChunksAndCarriesTheWindowAndManifestOnEveryChunk(t *testing.T) {
 	db := &liveDB{}
 	txns := txnN(1203)
 	p := &balanceFake{txns: txns}
@@ -112,10 +112,12 @@ func TestSettlementSyncChunksAndCarriesTheWindowAndManifestOnTheLastChunk(t *tes
 		if err := json.Unmarshal([]byte(c.args[4].(string)), &got); err != nil || len(got) != want {
 			t.Fatalf("chunk %d: %d lines (%v), want %d", i, len(got), err, want)
 		}
-		last := i == len(sizes)-1
-		// §6.8: ten arguments; only the LAST chunk carries the window pair AND the manifest (intermediate calls have all three NULL)
-		if len(c.args) != 10 || (c.args[5] != nil) != last || (c.args[6] != nil) != last || (c.args[9] != nil) != last {
-			t.Fatalf("chunk %d: args %v; only the last chunk carries the window and the manifest", i, c.args)
+		// #197: every independently committed chunk must invalidate old coverage with the WHOLE run's manifest.
+		if len(c.args) != 10 || c.args[5] == nil || c.args[6] == nil || c.args[9] == nil {
+			t.Fatalf("RED #197 chunk %d: every chunk must carry the window and full manifest, got %v", i, c.args)
+		}
+		if !c.args[5].(time.Time).Equal(winFrom) || !c.args[6].(time.Time).Equal(winTo) || c.args[9] != db.calls[3].args[9] {
+			t.Fatalf("chunk %d: window/full manifest differs from the final chunk", i)
 		}
 		if c.args[3] != "LIVE" || c.args[7] != conn || c.args[8] != tick {
 			t.Fatalf("environment/connection/ticket args = %v %v %v", c.args[3], c.args[7], c.args[8])
