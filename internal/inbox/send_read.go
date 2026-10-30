@@ -74,8 +74,8 @@ func (s *Service) outboundItems(ctx context.Context, tx pgx.Tx, conversationID s
 			continue
 		}
 		when := at
-		k, p := kind, principal
-		item := MessageItem{Direction: "out", At: &when, Attachments: []attachmentView{}, Kind: &k, PrincipalID: &p}
+		k, p, o := kind, principal, id
+		item := MessageItem{Direction: "out", At: &when, Attachments: []attachmentView{}, Kind: &k, PrincipalID: &p, OutboundID: &o}
 		if known {
 			item.SendState = &st
 			if (st == "failed" || st == "blocked") && code != nil && *code != "" {
