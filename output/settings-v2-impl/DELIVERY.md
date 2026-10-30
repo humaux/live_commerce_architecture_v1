@@ -1724,3 +1724,50 @@ fix commit. No local process/fixture started. Pre-existing evidence retained;
 downloaded failure evidence retained for review. Integrator owns CI completion
 relay with existing Foundation 90m / bundle 360m / member 150m workflow limits;
 fresh WAIT_RUN IDs go in the PR comment without an evidence-only push.
+
+## FIX13 relay 3 — native competitor retirement (2026-10-30)
+
+Authority: current relay and raw GitHub job 123859622644, run 40992679036,
+head e059436a41. Artifact 12950004252 reaches obsolete cleanup Archive at
+settings-v2.spec.ts:514 after the P1 recovery assertions pass. ProductList.tsx
+and packages/i18n/src/catalog.ts require Archive products → Confirm archive.
+Both CI-owned competitor cleanup paths now follow that native review flow.
+Behavioural assertions, response predicates, fixtures and product code unchanged.
+Integration fetched and merged: already up to date; no shared checkout writes.
+
+|Page/control|Operation|Expected|Actual|
+|---|---|---|---|
+|Catalog, each competitor row|select → Archive products → Confirm archive → refresh|POST bulk-status; same row Archived after refresh|old Archive locator failed at e059436a41; corrected head CI pending|
+|Settings recovery|existing Reload/refresh/Save clicks|A identity/price/stock retained; B unchanged|preceding assertions passed at e059436a41; full suite remains failed|
+
+### UI PROCESS — BOURDIEU
+
+Q1 resume setup safely; Q2 experience means recent task use; Q3 preserve intent
+across operators; Q4 explicit confirmation writes; Q5 no class/device inference;
+Q6 aesthetics separate, UNKNOWN. No visual change in this relay.
+
+### UI PROCESS — PROJECT UNDERSTANDING
+
+Read architecture §§0/1/2/26/27, AGENTS.md, merchant-settings-wizard-v1,
+ProductList and its locale copy: scoped PG facts, native clicks, no automatic
+replay and independent CI acceptance apply. Humaux available this session:
+targeted lookup, development detail 7bdb220b, rejected sample 3/9 (33% coverage),
+focused code map; existing parent ownership retained, no separate claim/delegation.
+
+### UI PROCESS — MOBBIN → EAGLE
+
+No design or new pattern; existing references apply. No additional query/import.
+
+### UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No Figma write or new visible strings; existing guidance/parity/locale tables apply.
+
+E1 syntax/diff checks exit 0. Browser ownership regenerated last with --check;
+no import/dependency changes, so depmap and component harnesses unchanged.
+E3 current CI is failure evidence, not completion; author assessment E0.
+NOT_RUN: local tests/servers/browser/PG (prohibited), current-head GREEN, E4,
+provider SANDBOX/LIVE/production/deploy. Only tests, delivery/red receipt and
+generated ownership metadata touched. Revert this isolated test commit to undo.
+No local processes/fixtures started; preserve failure evidence. Integrator relays
+completion/failure/timeout; Foundation 90m / bundle 360m / member 150m apply.
+Fresh head/WAIT_RUN IDs go in PR comment, with no evidence-only push.

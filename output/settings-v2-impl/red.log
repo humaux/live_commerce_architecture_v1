@@ -522,3 +522,18 @@ before the fallible product-detail GET. Existing load pins its product ID,
 validates the paired fields, and never writes; only explicit Save sends commands.
 No behavioural assertion, precondition, fixture, timeout or gate changed.
 Current implementation GREEN and independent E4 PENDING; local runtime NOT_RUN.
+
+FIX13 relay 3 — native competitor cleanup regression (2026-10-30)
+Implementation head e059436a41d2ba22844827b34d224eb1cf62b229:
+Gates 40992679036 / bundle:07 job 123859622644 FAILURE; synthetic merge
+f71ec2c8190752c2fb26b648d439d899b0a65ba3. Job API binds head; direct completed
+job logs and fresh gate-browser-identity artifact 12950004252 read because
+gh run view --log-failed refuses while the parent workflow remains in progress.
+Playwright log SHA256 70057cb9627c90ae7cbaa755bfb17dbda4512f48e44b38e75a6bb529744dbacd.
+settings-v2.spec.ts:512/514 times out at obsolete Archive cleanup control;
+preceding post-create/SKU/stock recovery and unchanged-competitor assertions pass.
+Foundation 40992679044 / job 123858541855 SUCCESS only for e059436a41.
+Attempt 1 for cleanup: both native row selections now open Archive products
+review, then Confirm archive. Preserve predicates, all behavioural assertions,
+refresh persistence checks, fixtures, thresholds and production implementation.
+This is a cleanup failure, not new causal RED. New head GREEN/E4 pending CI.

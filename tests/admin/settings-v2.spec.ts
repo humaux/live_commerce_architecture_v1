@@ -509,9 +509,10 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   expect(competingRecovered.skus).toEqual(competingBaseline.skus);
   await createObserver.goto(`/en/products?store=${store}`);
   await createObserver.getByTestId(`product-row-${competingProduct}`).getByRole("checkbox").click();
+  await createObserver.getByTestId("product-batch").getByRole("button", { name: "Archive products", exact: true }).click();
   const competingArchived = createObserver.waitForResponse(r => r.request().method() === "POST" &&
     new URL(r.url()).pathname === `/api/stores/${store}/products/bulk-status`);
-  await createObserver.getByTestId("product-batch").getByRole("button", { name: "Archive", exact: true }).click();
+  await createObserver.getByRole("button", { name: "Confirm archive", exact: true }).click();
   expect((await competingArchived).ok()).toBe(true);
   await createObserver.reload();
   await expect(createObserver.getByTestId(`product-row-${competingProduct}`)).toContainText("Archived");
@@ -520,9 +521,10 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   // after both recovery scenarios, preserving the original single-draft checks.
   await catalog.goto(`/en/products?store=${store}`);
   await catalog.getByTestId(`product-row-${productB}`).getByRole("checkbox").click();
+  await catalog.getByTestId("product-batch").getByRole("button", { name: "Archive products", exact: true }).click();
   const archivedB = catalog.waitForResponse(r => r.request().method() === "POST" &&
     new URL(r.url()).pathname === `/api/stores/${store}/products/bulk-status`);
-  await catalog.getByTestId("product-batch").getByRole("button", { name: "Archive", exact: true }).click();
+  await catalog.getByRole("button", { name: "Confirm archive", exact: true }).click();
   expect((await archivedB).ok()).toBe(true);
   await catalog.reload();
   await expect(catalog.getByTestId(`product-row-${productB}`)).toContainText("Archived");
