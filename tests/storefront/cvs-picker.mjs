@@ -22,7 +22,7 @@ const signedCopy = {
 
 // PARITY-CVS: the real checkout route, never /ui-gallery. Network interception below
 // prepares only an outage fixture; every state transition uses real user controls.
-async function exerciseSignedCvsParity({ page, locale, ledger }) {
+async function exerciseSignedCvsParity({ page, locale, ledger, densities }) {
   const c = localeCopy[locale], s = signedCopy[locale];
   const originalViewport = page.viewportSize();
   const picker = page.getByTestId("cvs-picker");
@@ -37,6 +37,7 @@ async function exerciseSignedCvsParity({ page, locale, ledger }) {
   };
   const capture = async (viewport, state) => {
     if (locale !== "zh-TW") return;
+    if (viewport === "mobile") await density(picker, densities, `signed-${state}`);
     const directory = path.join(process.env.LC_CVS_EVIDENCE, "parity");
     await mkdir(directory, { recursive: true });
     await page.screenshot({ path: path.join(directory, `${frames[viewport][state]}.png`) });
@@ -67,8 +68,8 @@ async function exerciseSignedCvsParity({ page, locale, ledger }) {
       await expect(picker.getByTestId("cvs-picker-region-tab")).toHaveCount(0);
       await expect(picker.getByTestId("cvs-picker-search-tab")).toHaveCount(0);
       await expect(picker.getByRole("button", { name: s.close, exact: true })).toHaveText(s.close);
-      await expect(picker.getByText(s.helper, { exact: true })).toBeVisible();
       await query.fill("");
+      await expect(picker.getByText(s.helper, { exact: true })).toBeVisible();
       await capture(viewport, 0);
       await query.fill("敦化南路");
       const best = picker.getByTestId("cvs-candidate-121275");
@@ -120,7 +121,6 @@ export async function exerciseCvsPaste({ page, locale, openCheckout, ledger }) {
   const row = fixtures.cases.find((item) => item.id === "R7");
   await openCheckout();
   await page.getByTestId("cvs-open-picker").click();
-  await page.getByTestId("cvs-picker-search-tab").click();
   await page.getByTestId("cvs-brand-FAMI").click();
   const query = page.getByTestId("cvs-picker-query");
   await query.fill(row.input);
@@ -131,12 +131,13 @@ export async function exerciseCvsPaste({ page, locale, openCheckout, ledger }) {
   await expect(candidate).toContainText("024967");
   await expect(candidate).toContainText("新北市泰山區貴子路６９號Ｂ１");
   await expect(query).toHaveValue(row.input);
-  await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+  await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
   await candidate.click();
   await expect(page.getByTestId("cvs-picker-confirm")).toBeEnabled();
+  await page.getByTestId("cvs-picker-change").click();
   // Query changes must clear the selected replacement, and a code-only miss has no fuzzy candidates.
   await query.fill("F022305");
-  await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+  await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
   await expect(page.getByTestId("cvs-picker").locator('[data-testid^="cvs-candidate-"]')).toHaveCount(0);
   await expect(query).toHaveValue("F022305");
   ledger.push({ locale, control: "paste / missing code / candidate / change query", operation: "real fill and click", expected: "022305 notice + unselected 024967; query change clears choice; code-only no fallback", actual: "all visible assertions satisfied", result: "PASS" });
@@ -194,15 +195,22 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     await expect(picker).toBeVisible();
     await expect(picker.getByRole("heading", { name: c.title, exact: true })).toBeVisible();
     await expect(page.getByTestId("cvs-picker-source")).toHaveText(c.source);
-    await page.getByTestId("cvs-picker-search-tab").click();
     await expect(query).toHaveAccessibleName(c.query);
+    await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
+  };
+  const reviewChoice = async () => {
+    const before = posts.length;
+    const code = await page.getByTestId("cvs-picker-chosen-code").innerText();
     await expect(page.getByTestId("cvs-picker-confirm")).toHaveText(c.confirm);
-    await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+    await page.getByTestId("cvs-picker-confirm").click();
+    await expect(picker.getByRole("heading", { name: signedCopy[locale].review, exact: true })).toBeVisible();
+    await expect(page.getByTestId("cvs-picker-chosen-code")).toHaveText(code);
+    assert.equal(posts.length, before, "entering review never posts a store");
   };
   const measure = async (state) => { if (mobile && locale === "zh-TW") await density(picker, densities, state); };
   try {
     await openCheckout();
-    await exerciseSignedCvsParity({ page, locale, ledger });
+    await exerciseSignedCvsParity({ page, locale, ledger, densities });
     await page.getByTestId("cvs-recipient-name").fill("王小明"); // existing synthetic recipient, never a real buyer
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     // CheckoutFlow's optionKey is market:country:method, while CVS accepts only the service suffix.
@@ -212,26 +220,28 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     const service = selectedDelivery[1];
     await open();
     await page.getByTestId("cvs-brand-UNIMART").click();
+    await query.fill("");
     await measure("search-empty");
     await query.fill("不存在的火星門市XYZ");
     await expect(page.getByTestId("cvs-picker-empty")).toContainText(c.empty);
     await expect(query).toHaveValue("不存在的火星門市XYZ");
-    await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+    await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
     await measure("no-result");
     record("no-result", "query retained, no choice and confirm disabled");
 
     await query.fill("231196");
     await expect(picker.locator('[data-testid^="cvs-candidate-"]')).toHaveCount(1);
     await expect(choose("231196")).toContainText("久旺");
-    await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+    await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
     await measure("exact-unselected");
     assert.equal(posts.length, 0, "typing exact code never posts or chooses");
     const fixture = JSON.parse(await readFile(new URL("../../packages/format/tests/fixtures/cvs-match-real-cases.json", import.meta.url), "utf8"));
     await query.fill(fixture.cases.find((row) => row.id === "R1").input);
     await expect(picker.locator('[data-testid^="cvs-candidate-"]')).toHaveCount(1);
     await expect(choose("231196")).toContainText("久旺");
-    await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+    await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
     await choose("231196").click();
+    await reviewChoice();
     const resolved = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
     const [response] = await Promise.all([resolved, page.getByTestId("cvs-picker-confirm").click()]);
     assert.equal(response.status(), 200);
@@ -265,6 +275,7 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     await open();
     await query.fill("231196");
     await choose("231196").click();
+    await reviewChoice();
     const again = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
     const [restored] = await Promise.all([again, page.getByTestId("cvs-picker-confirm").click()]);
     assert.equal(restored.status(), 200);
@@ -279,13 +290,15 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     await query.fill("敦化南路");
     await expect(choose("121275")).toBeVisible();
     await expect(choose("127620")).toBeVisible();
-    await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+    await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
     await measure("fuzzy-list");
     const beforeSearch = posts.length;
     await choose("121275").click();
+    await page.getByTestId("cvs-picker-change").click();
     await choose("127620").click(); // explicitly choose B, never silently retain best-match A
     await expect(page.getByTestId("cvs-picker-confirm")).toBeEnabled();
     assert.equal(posts.length, beforeSearch);
+    await reviewChoice();
     const fuzzy = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
     const [chosenB] = await Promise.all([fuzzy, page.getByTestId("cvs-picker-confirm").click()]);
     assert.equal((await chosenB.json()).code, "127620");
@@ -294,7 +307,7 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     record("fuzzy list / choose A then B / confirm", "B=127620 persisted, not A=121275");
 
     await page.getByTestId("cvs-change-store").click();
-    await page.getByTestId("cvs-picker-region-tab").click();
+    await page.getByRole("button", { name: signedCopy[locale].browse, exact: true }).click();
     await measure("region-initial");
     await page.getByTestId("cvs-picker-county").selectOption("臺北市");
     await page.getByTestId("cvs-picker-district").selectOption("大安區");
@@ -312,10 +325,11 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     await measure("region-list");
     await visibleRows.first().click();
     await expect(page.getByTestId("cvs-picker-confirm")).toBeEnabled();
-    // Search/tab changes invalidate selection before another confirmation.
-    await page.getByTestId("cvs-picker-search-tab").click();
+    // Change then Back returns to search without retaining the area choice.
+    await page.getByTestId("cvs-picker-change").click();
+    await page.getByRole("button", { name: signedCopy[locale].back, exact: true }).click();
     await query.fill("000000");
-    await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+    await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
     await expect(query).toHaveValue("000000");
     assert.equal(posts.length, beforeSearch + 1, "area navigation never posts");
     record("brand / county / district / row / switch path", "only selected region, no POST, changed input clears selection");
@@ -367,11 +381,10 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
         await picker.getByRole("button", { name: locale === "en" ? "Retry" : locale === "zh-CN" ? "重试" : "重試", exact: true }).click();
         await expect.poll(() => directoryAttempts, { message: "directory only retried by an explicit click" }).toBe(2);
       }
-      await page.getByTestId("cvs-picker-search-tab").click();
       await query.fill(code);
       await expect(choose(code)).toBeVisible();
       await expect(picker.locator('[data-testid^="cvs-candidate-"]')).toHaveCount(1);
-      await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+      await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
       await expect(page.getByTestId("cvs-recipient-name")).toHaveValue("王小明");
       await expect(page.getByTestId("cvs-recipient-phone")).toHaveValue("0912345678");
       record(`brand ${brand}`, "fresh server quote, exact selected-brand code, retained contact and no preselection");
@@ -379,6 +392,7 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     await page.unroute("**/cvs/okmart-20261028.json");
 
     await choose("231196").click();
+    await reviewChoice();
     await page.getByTestId("cvs-picker-confirm").click();
     const destinationSaved = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/destination" && r.request().method() === "PUT");
     const [destinationResponse] = await Promise.all([destinationSaved, page.getByTestId("confirm-address").click()]);
@@ -399,15 +413,18 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
       await route.fulfill({ status: confirmations === 1 ? 422 : 429, headers: { "Content-Type": "application/json", "Retry-After": "1" }, body: JSON.stringify({ code: confirmations === 1 ? "store_not_found" : "too_many_stores_entered" }) });
     });
     await choose("231196").click();
+    await reviewChoice();
     await page.getByTestId("cvs-picker-confirm").click();
     await expect(choose("231196")).toHaveCount(0);
     await expect(query).toHaveValue("231196");
-    await expect(page.getByTestId("cvs-picker-confirm")).toBeDisabled();
+    await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
     await query.fill("131386");
     await choose("131386").click();
+    await reviewChoice();
     await page.getByTestId("cvs-picker-confirm").click();
     await expect(picker.getByRole("alert")).toContainText(locale === "en" ? "Please wait" : locale === "zh-CN" ? "请稍后" : "請稍後");
-    await expect(choose("131386")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("cvs-picker-chosen-code")).toHaveText("131386");
+    await expect(picker.getByRole("heading", { name: signedCopy[locale].review, exact: true })).toBeVisible();
     await expect(page.getByTestId("cvs-picker-confirm")).toBeEnabled();
     assert.equal(confirmations, 2, "cooldown expiration cannot auto-replay a POST");
     await page.unroute("**/api/buyer/cvs-stores");
