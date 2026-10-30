@@ -308,6 +308,49 @@ for (const locale of Object.keys(warning)) {
   }
 }
 
+for (const locale of Object.keys(warning)) {
+  for (const pendingState of ["queued", "blocked"]) {
+    test(`successful local ACK cannot mask later ${pendingState} rejection (${locale})`, async (t) => {
+      const env = environment(t);
+      let reads = 0, otherState: string | null = null;
+      const own = { ...projection("sent").items[1], text: "MOCK_SUCCESSFUL_A_ORIGINAL" };
+      const other = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075",
+        at: "2030-01-01T00:00:02Z", text: "MOCK_REJECTED_B_ORIGINAL" };
+      const calls = transport(() => response(++reads === 1 ? thread : {
+        ...thread, has_unknown_outbound: false,
+        // No inbound after B: another buyer message must not be needed to show its rejection.
+        items: [...thread.items, own, ...(otherState ? [{ ...other, send_state: otherState }] : [])],
+      }), () => response({ operation_id: ackOperation, outbound_id: own.outbound_id,
+        send_state: "queued", takeover_generation: 8 }), () => operationResponse("SUCCEEDED"));
+      const host = mount(env, locale);
+      await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
+      change(host, "reply-text", own.text);
+      submit(host);
+      await host.waitFor(() => reads === 2 && idle(host), "successful local A reconciled");
+      for (const state of [pendingState, "failed", "failed"]) {
+        otherState = state;
+        const expectedReads = reads + 1;
+        node(host, n => n.type === "button" && !!n.props["aria-label"]).props.onClick();
+        await host.waitFor(() => reads === expectedReads && idle(host), "independent B read committed");
+        assert.equal(node(host, n => n.type === "form").props.hidden, true);
+        if (state === "failed") {
+          const rejected = locale === "en" ? "Send rejected; original text saved for editing."
+            : locale === "zh-CN" ? "发送被拒；原文已保留，可以编辑。" : "傳送遭拒；原文保留，可編輯。";
+          assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), rejected,
+            "successful A must not hide the distinct B rejection, even on repeated refresh");
+        } else {
+          assert.equal(sendControl(host).props.disabled, true);
+        }
+      }
+      node(host, n => n.props["data-testid"] === "inbox-edit-original").props.onClick();
+      assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, other.text,
+        "recover failed B's text, never successful A's retained draft");
+      assert.equal(node(host, n => n.type === "form").props.hidden, false);
+      assert.equal(sends(calls).length, 1, "status and recovery never resend");
+    });
+  }
+}
+
 for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "different-operation", "different-conversation", "different-action", "different-provider", "different-purpose", "missing-ack-id", "no-read-permission", "acknowledged", "unknown"]) {
   test(`acknowledged send stays locked on ${refusal} operation evidence`, async (t) => {
     const env = environment(t);

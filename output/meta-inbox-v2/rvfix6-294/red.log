@@ -1,0 +1,6 @@
+RVFIX6 P1 tests-only batch. CI assertion RED PENDING.
+Baseline 1772b71a1b84b5188e6eeb0fcb69241b305dd712; integration a09262050d750895347e7333b8228194fec00cb2 merged as18eed2963.
+New unit: successful local ACK cannot mask later queued/blocked rejection (en/zh-TW/zh-CN).
+New browser: successful ACK then distinct queued/blocked rejection (all three locales).
+Expected causal failure: inbox-delivery-state retains successful A instead of rejected B; recovery missing or targets A.
+No local tests or servers. Native run/job IDs will be added from GitHub receipts, never inferred.

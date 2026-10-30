@@ -1,0 +1,10 @@
+$ node --check tests/admin/inbox-unknown.test.ts
+exit=0
+$ node --check tests/admin/inbox-v2-ui.spec.ts
+exit=0
+$ git diff --check
+exit=0
+node scripts/dev/derive-browser-ownership.mjs: exit=0, 53 modes
+node scripts/dev/derive-browser-ownership.mjs --check: exit=0
+git diff --check after generation: exit=0
+No Go dependency change; depmap not regenerated.

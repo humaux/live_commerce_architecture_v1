@@ -59,7 +59,7 @@ async function mockInbox(page: Page, copy: Copy) {
   const future = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
   const incoming = copy.locale === "en" ? "What material is it?" : copy.locale === "zh-CN" ? "想了解材质。" : "想了解材質。";
   const state = { mode: "eligible", delivery: null as Delivery | null, omitOutbound: false, concurrentSent: false, original: "", posts: 0, queries: 0,
-    laterDelivery: null as Delivery | null, omitLater: false, concurrentAfterLater: false,
+    laterDelivery: null as Delivery | null, omitLater: false, concurrentAfterLater: false, laterInbound: true,
     methods: [] as string[], read: new Set<string>(), operationConversation: "", operationReads: 0 };
   const rows = [ids.open, ids.instagram, ids.closed, ids.retry].map((id, i) => ({
     conversation_id: id, platform: i === 1 || i === 2 ? "instagram" : "messenger",
@@ -139,7 +139,7 @@ async function mockInbox(page: Page, copy: Copy) {
         if (!state.omitLater) items.push({ direction: "out", outbound_id: "10000000-0000-4000-8000-000000000078", at: "2026-10-29T06:36:00Z",
           text: "MOCK_LATER_UNRESOLVED_STAFF", attachments: null, send_state: state.laterDelivery,
           principal_id: "10000000-0000-4000-8000-000000000074" } as typeof items[number]);
-        items.push({ direction: "in", seq: 101, at: "2026-10-29T06:37:00Z", text: incoming, attachments: null });
+        if (state.laterInbound) items.push({ direction: "in", seq: 101, at: "2026-10-29T06:37:00Z", text: incoming, attachments: null });
       }
       return route.fulfill(answer({ items, has_unknown_outbound: state.delivery === "unknown", mode: "human", takeover_generation: 2,
       human_until: future, window_open_until: state.mode === "closed" ? "2020-01-01T00:00:00Z" : future,
@@ -330,6 +330,41 @@ for (const copy of copies) {
   }
 
   for (const later of ["queued", "blocked"] as const) {
+    test(`INV2 ${copy.locale} successful ACK then distinct ${later} rejection`, async ({ page }) => {
+      const state = await enter(page, copy, "qualified");
+      await page.setViewportSize({ width: 390, height: 844 });
+      await open(page, ids.instagram);
+      await send(page, copy);
+      // Fixture-server facts only. Native refresh observes A's completion and B's later rejection.
+      state.delivery = "sent";
+      state.laterInbound = false;
+      await query(page);
+      await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.sent);
+      state.laterDelivery = later;
+      await query(page);
+      await expect(page.getByTestId("reply-text")).toBeHidden();
+      await expect(page.getByTestId("reply-send")).toBeDisabled();
+      state.laterDelivery = "failed";
+      for (let refresh = 0; refresh < 2; refresh++) {
+        await query(page);
+        await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.failed);
+        await expect(page.getByTestId("inbox-edit-original")).toBeVisible();
+        expect(state.posts).toBe(1);
+      }
+      await page.getByTestId("inbox-edit-original").click();
+      await expect(page.getByTestId("reply-text")).toHaveValue("MOCK_LATER_UNRESOLVED_STAFF");
+      // A fresh component epoch must show the same server-backed failure and recovery target.
+      await page.reload();
+      await open(page, ids.instagram);
+      await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.failed);
+      await page.getByTestId("inbox-edit-original").click();
+      await expect(page.getByTestId("reply-text")).toHaveValue("MOCK_LATER_UNRESOLVED_STAFF");
+      expect(state.posts).toBe(1);
+      record(`independent rejection ${copy.locale}/${later}`,
+        "fill, Send, status A success, status B pending then failed twice, Edit original, reload/reopen, Edit original",
+        "B rejection visible without later inbound; B text restored before/after reload; exactly one POST");
+    });
+
     for (const timing of ["with-completion", "observed-before-completion"] as const) {
       test(`INV2 ${copy.locale} local ACK older ${later} ${timing}`, async ({ page }) => {
         const state = await enter(page, copy, "qualified");
