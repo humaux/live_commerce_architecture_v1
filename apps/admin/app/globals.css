@@ -12,10 +12,10 @@ html:root {
   --ui-primary: #247965;
   --ui-primary-hover: #1c6554;
   --ui-primary-soft: #eaf6f2;
-  --ui-rail: #fff;
+  --ui-rail: var(--ds-nav-bg);
   --ui-rail-selected: var(--ui-primary-soft);
   --ui-rail-active: var(--ink);
-  --ui-rail-text: #596579;
+  --ui-rail-text: var(--ds-crumb-text);
   --ui-rail-width: 240px;
   --ui-shell-row-gap: var(--ui-space-1);
   --ui-shell-inset: var(--ui-space-4);
@@ -29,7 +29,7 @@ html:root {
   --ds-nav-active: var(--ui-rail-selected);
   --ds-nav-text-active: var(--ui-rail-active);
   --navy: #193c61;
-  --ink: #142942;
+  --ink: var(--ds-ink);
   --muted: #64758a;
   --line: #dde5ee;
   --canvas: #f5f7fa;
@@ -149,7 +149,7 @@ html:root {
 }
 input,
 textarea {
-  caret-color: #247965;
+  caret-color: var(--ui-primary);
 }
 .table-scroll {
   scrollbar-color: #71869e #edf2f7;

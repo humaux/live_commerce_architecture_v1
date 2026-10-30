@@ -141,6 +141,16 @@ No new copy key. From apps/admin/src/shell-copy.ts; all nav/breadcrumb/expanded/
 ## Static evidence file hashes
 
 - `apps/admin/components/WorkspaceFrame.tsx` SHA256 `e0b872238b7523f2a64b4a771b9423de828b01925fc17bdb73ecb4aab0d1268d`.
-- `apps/admin/app/globals.css` SHA256 `d202b1ef501ed401259890648157c9163e25048feff4b4a6117019db10e5475a`.
+- `apps/admin/app/globals.css` SHA256 `efb9daff22bd2c22d9c1d0415e57aa341f9b182a0adea4939453dc962f22a948`.
 - `tests/admin/parity-shell-browser.mjs` SHA256 `bdc209514b4b16093c653a8478653f1a206dfd864ac25f865f542ea6ce8a2986`.
 - `output/ci-select-backend-browser/browser-ownership.json` SHA256 `de62c85dc28508c6664e4d2588463f709d257d28624b7337299e65503082a776`.
+
+## RELAY 3 — hex-ratchet root-cause repair (attempt 1 of 2)
+
+Current implementation head `956cca62fb5692da529a46cb7ae22186c4109942` failed Foundation run `41053216976`, job `124054163359`, in `Node unit suites (storefront, i18n)`. Its sole failing test was `tests/ui/ds-hex-ratchet.test.mjs:87`: admin hex occurrences 390 > 386; globals.css 81 > 77. This is an implementation regression, not the tests-only causal RED recorded above. Raw failed-job log: `relay3-foundation.log` (local failure evidence); relevant original excerpt is appended to red.log. No browser-ownership drift reported.
+
+Root cause: shell A added duplicated color literals rather than reusing existing same-value semantic tokens. Replaced rail white with `--ds-nav-bg` (#fff), rail secondary text with `--ds-crumb-text` (#596579), ink with `--ds-ink` (#142942), and input caret with the existing admin `--ui-primary` (#247965). All four values are identical to the literals they replace; signed colors and root specificity remain. Four literal occurrences removed, no new literals. No scanner, baseline, test, fixture, assertion, threshold, exemption, component import, route, registration or ownership file changed in this repair. Source authority: current globals.css and imported packages/ui/src/tokens.css; owner option A/current UX-orders DELIVERY remains visual authority. No new design or Figma write.
+
+Local validation for this repair: `git diff --check` exit 0; read the imported token definitions to confirm equal values and no alias cycles. No local test, gate, build, server or browser run. No new generator required because no spec/page/route/dependency changed. Evidence is E1 static only; author assessment E0. New-head Foundation and parity GREEN, screenshot/click ledger review and independent acceptance remain PENDING. Exact new workflow IDs will be posted to PR #350 after the single repair push; integrator owns completion relay, no local polling process.
+
+Humaux tools remain unavailable: store/canvas/coord/code-index NOT_RUN; no shared-state write or claim is represented. Only this worktree and assigned branch touched. Repair adds no out-of-card path; docs/delivery/GATES.md remains the previously disclosed additional path requiring integrator approval. Existing untracked design/PR evidence was preserved. Local raw failed-job log retained as failure evidence. No temporary process started.

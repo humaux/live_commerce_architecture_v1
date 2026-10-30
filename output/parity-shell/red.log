@@ -62,3 +62,20 @@ Raw current-head CI excerpt:
 2026-10-30T11:59:47.3649746Z     actual: 'rgb(31, 41, 55)',
 2026-10-30T11:59:47.3650050Z     expected: 'rgb(255, 255, 255)',
 2026-10-30T11:59:47.4410120Z matrix-receipts: {"mode":"--browser-admin-parity","run_id":"41049926127","run_attempt":"1","sha":"660bfe7edc41a6e193a3f535292205a0afa8e089","status":"FAIL","test_count":54,"spec_count":0}
+
+RELAY 3 — implementation regression (NOT the tests-only causal RED)
+Head: 956cca62fb5692da529a46cb7ae22186c4109942
+Foundation run: 41053216976; job: 124054163359; conclusion: failure
+Command: gh run view 41053216976 --log-failed --job 124054163359
+Failed step: Node unit suites (storefront, i18n); exit 1
+Original relevant failure excerpt:
+test at tests/ui/ds-hex-ratchet.test.mjs:87:1
+the live tree holds the baseline (apps/admin hex colours did not increase)
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ [
++   'total hex colours 390 > baseline 386',
++   'apps/admin/app/globals.css: 81 hex colours > baseline 77 (use a --ds-* token from packages/ui/src/tokens.css)'
++ ]
+- []
+Repair attempt 1: reuse four existing same-value semantic tokens in globals.css.
+No baseline/scanner/test weakening. New-head GREEN PENDING; not run locally.
