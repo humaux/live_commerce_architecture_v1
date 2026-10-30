@@ -1,0 +1,9 @@
+node --check tests/admin/inbox-unknown.test.ts: exit 0
+node --check tests/admin/inbox-v2-ui.spec.ts: exit 0
+node --check apps/admin/lib/inbox-types.ts: exit 0
+git diff --check: exit 0
+browser ownership: wrote /Volumes/data/live_commerce_architecture_v1/.worktrees/inbox-v2-ui/output/ci-select-backend-browser/browser-ownership.json (53 modes)
+derive-browser-ownership.mjs: exit 0
+derive-browser-ownership.mjs --check: exit 0
+tsc: NOT_RUN (local compiler/dependencies unavailable)
+No local tests, servers, browsers, builds or runtime verification. E1 static only; author acceptance E0.

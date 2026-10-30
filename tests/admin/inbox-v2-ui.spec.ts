@@ -125,18 +125,18 @@ async function mockInbox(page: Page, copy: Copy) {
         direction: "in", seq: index + 2, at: "2026-10-29T06:36:00Z", text: incoming, attachments: null,
       })) : [
         { direction: "in", seq: 1, at: row.last_at, text: incoming, attachments: null },
-        ...(state.delivery ? [{ direction: "out", at: "2026-10-29T06:35:00Z", text: state.original,
+        ...(state.delivery ? [{ direction: "out", outbound_id: "10000000-0000-4000-8000-000000000076", at: "2026-10-29T06:35:00Z", text: state.original,
           attachments: null, send_state: state.delivery, principal_id: fixtureAgent }] : []),
       ];
       // MOCK fixture: a different staff member completes B before the first A9 read of our ACKed A.
       if (state.concurrentSent && state.delivery) items.push(
-        { direction: "out", at: state.concurrentAfterLater ? "2026-10-29T06:36:30Z" : "2026-10-29T06:35:30Z", text: "MOCK_OTHER_STAFF_SENT", attachments: null,
+        { direction: "out", outbound_id: "10000000-0000-4000-8000-000000000077", at: state.concurrentAfterLater ? "2026-10-29T06:36:30Z" : "2026-10-29T06:35:30Z", text: "MOCK_OTHER_STAFF_SENT", attachments: null,
           send_state: "sent", principal_id: "10000000-0000-4000-8000-000000000074" } as typeof items[number],
         { direction: "in", seq: 100, at: "2026-10-29T06:36:00Z", text: incoming, attachments: null },
       );
       // MOCK transport: after our operation succeeds, another staff send can remain unresolved.
       if (state.laterDelivery) {
-        if (!state.omitLater) items.push({ direction: "out", at: "2026-10-29T06:36:00Z",
+        if (!state.omitLater) items.push({ direction: "out", outbound_id: "10000000-0000-4000-8000-000000000078", at: "2026-10-29T06:36:00Z",
           text: "MOCK_LATER_UNRESOLVED_STAFF", attachments: null, send_state: state.laterDelivery,
           principal_id: "10000000-0000-4000-8000-000000000074" } as typeof items[number]);
         items.push({ direction: "in", seq: 101, at: "2026-10-29T06:37:00Z", text: incoming, attachments: null });

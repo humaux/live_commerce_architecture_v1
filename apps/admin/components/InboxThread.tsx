@@ -67,8 +67,8 @@ export function InboxThread({
   const [queriedUnknown, setQueriedUnknown] = useState(false);
   const [help, setHelp] = useState(false);
   const deliveryLock = useRef(false);
-  const lockedOutbounds = useRef<Pick<Thread["items"][number], "at" | "kind" | "principal_id" | "send_state">[]>([]);
-  const acknowledged = useRef<{ id: string | null; text: string | null } | null>(null);
+  const lockedOutbounds = useRef<Pick<Thread["items"][number], "at" | "outbound_id" | "send_state">[]>([]);
+  const acknowledged = useRef<{ id: string | null; outbound_id: string | null; text: string | null } | null>(null);
   const [delivery, setDelivery] = useState<string | null>(null);
   const persistedUnknown = useRef(false);
   const historyClear = useRef(false);
@@ -151,8 +151,8 @@ export function InboxThread({
           const ack = acknowledged.current;
           let ackComplete = false;
           if (ack) {
-            // A9 omits operation identity. Never adopt a display row as this ACK's result,
-            // even on its first read. No permission, missing ID, failed or mismatched read stays locked.
+            // A9 outbound identity correlates projections, never proves an operation result.
+            // No permission, missing ID, failed or mismatched operation read stays locked.
             if (ack.id && permitted(store, "integration:read")) {
               try {
                 const operation = await readOperation(store.id, ack.id,
@@ -177,33 +177,35 @@ export function InboxThread({
               }
             }
           }
+          // Collect all obligations even while our ACK is pending: a later page may omit them.
+          // Only an exact completed ACK supersedes its own stale projection. Missing identities
+          // and conflicting rows fail closed; text, time and principal never establish identity.
+          const settledByAck = (item: Pick<Thread["items"][number], "outbound_id">) =>
+            ackComplete && !!ack?.outbound_id && item.outbound_id === ack.outbound_id;
+          const unresolved = lockedOutbounds.current.filter(observed => {
+            if (settledByAck(observed)) return false;
+            const matches = data.items.filter(item => item.direction === "out" &&
+              !!observed.outbound_id && item.outbound_id === observed.outbound_id);
+            return matches.length === 0 || matches.some(item => item.send_state !== "sent" && item.send_state !== "failed");
+          });
+          for (const item of data.items) {
+            if (item.direction !== "out" || (item.send_state !== "queued" && item.send_state !== "blocked") || settledByAck(item)) continue;
+            // Identity-free rows share a conservative latch that no other row can settle.
+            const observed = unresolved.find(row => item.outbound_id ? row.outbound_id === item.outbound_id
+              : !row.outbound_id && row.send_state === item.send_state);
+            if (observed) observed.send_state = item.send_state;
+            else unresolved.push({ at: item.at, outbound_id: item.outbound_id, send_state: item.send_state });
+          }
+          lockedOutbounds.current = unresolved;
           if (!ack || ackComplete) {
             const latest = [...data.items].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
               .find(item => item.direction === "out");
-            // An exact completed ACK settles only that operation. Hand a newly observed
-            // pending/policy-blocked result to the projection lock, including its omission guard.
-            // Other display results cannot overwrite the ACK or its original-text recovery.
-            if (!ack || latest?.send_state === "queued" || latest?.send_state === "blocked") {
-              acknowledged.current = null;
-              // Track every observed obligation, including older rows below a newer sent result.
-              // Absence and another row's completion settle nothing. A null timestamp cannot
-              // identify a matching settlement; conflicting matches also keep the lock closed.
-              const unresolved = lockedOutbounds.current.filter(observed => {
-                const matches = data.items.filter(item => item.direction === "out" && observed.at !== null &&
-                  item.at === observed.at && item.kind === observed.kind && item.principal_id === observed.principal_id);
-                return matches.length === 0 || matches.some(item => item.send_state !== "sent" && item.send_state !== "failed");
-              });
-              for (const item of data.items) {
-                if (item.direction !== "out" || (item.send_state !== "queued" && item.send_state !== "blocked")) continue;
-                const observed = unresolved.find(row => row.at === item.at && row.kind === item.kind && row.principal_id === item.principal_id);
-                if (observed) observed.send_state = item.send_state;
-                else unresolved.push({ at: item.at, kind: item.kind, principal_id: item.principal_id, send_state: item.send_state });
-              }
-              lockedOutbounds.current = unresolved;
-              const pendingProjection = [...unresolved].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))[0];
-              setDelivery(pendingProjection?.send_state ?? latest?.send_state ?? null);
-              deliveryLock.current = unresolved.length > 0;
-            }
+            const pendingProjection = [...unresolved].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))[0];
+            // Keep the exact rejected ACK and its original text until all other obligations settle.
+            if (pendingProjection || !ack) setDelivery(pendingProjection?.send_state ?? latest?.send_state ?? null);
+            deliveryLock.current = unresolved.length > 0;
+          } else {
+            deliveryLock.current ||= unresolved.length > 0;
           }
         }
         setThread((old) =>
@@ -362,6 +364,7 @@ export function InboxThread({
       const result = await inboxWrite<{
         send_state: string;
         operation_id?: string;
+        outbound_id?: string;
         takeover_generation?: number;
       }>(
         store.id,
@@ -379,6 +382,7 @@ export function InboxThread({
       lockedOutbounds.current = [];
       acknowledged.current = deliveryLock.current ? {
         id: typeof result.operation_id === "string" && operationID.test(result.operation_id) ? result.operation_id : null,
+        outbound_id: typeof result.outbound_id === "string" && operationID.test(result.outbound_id) ? result.outbound_id : null,
         text: typeof submission.body.text === "string" ? submission.body.text : null,
       } : null;
       setEditing(false); setQueriedUnknown(false);

@@ -17,7 +17,7 @@ const warning: Record<string, string> = {
 const projection = (state: string) => ({
   ...thread,
   items: [...thread.items, {
-    direction: "out", at: "2030-01-01T00:00:01Z", text: `MOCK_OUTBOUND_${state}`,
+    direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: `MOCK_OUTBOUND_${state}`,
     attachments: null, send_state: state, send_code: state === "unknown" ? "timeout" : null,
   }],
 });
@@ -50,9 +50,9 @@ for (const locale of Object.keys(warning)) {
       const env = environment(t);
       let reads = 0;
       let operationState = "READY";
-      const own = { direction: "out", at: "2030-01-01T00:00:01Z", text: "MOCK_ACK_DRAFT",
+      const own = { direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: "MOCK_ACK_DRAFT",
         attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071", send_state: "queued" };
-      const concurrent = { ...own, at: "2030-01-01T00:00:03Z", text: "MOCK_OTHER_STAFF_SENT",
+      const concurrent = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:03Z", text: "MOCK_OTHER_STAFF_SENT",
         principal_id: "70000000-0000-4000-8000-000000000072", send_state: "sent" };
       const page = { ...thread, has_unknown_outbound: false, items: [
         ...thread.items, ...(omitted ? [] : [own]), concurrent,
@@ -123,9 +123,9 @@ for (const locale of Object.keys(warning)) {
     test(`completed ACK cannot mask later ${state} evidence or its omission (${locale})`, async (t) => {
       const env = environment(t);
       let reads = 0, operationState = "READY", showLater = false, omitLater = false;
-      const own = { direction: "out", at: "2030-01-01T00:00:01Z", text: "MOCK_COMPLETED_OWN_ACK",
+      const own = { direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: "MOCK_COMPLETED_OWN_ACK",
         attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071", send_state: "sent" };
-      const later = { ...own, at: "2030-01-01T00:00:03Z", text: "MOCK_LATER_UNRESOLVED_STAFF",
+      const later = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:03Z", text: "MOCK_LATER_UNRESOLVED_STAFF",
         principal_id: "70000000-0000-4000-8000-000000000072", send_state: state };
       const calls = transport(() => {
         reads++;
@@ -133,7 +133,7 @@ for (const locale of Object.keys(warning)) {
           ...thread.items, own, ...(showLater && !omitLater ? [later] : []),
           { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER" },
         ] });
-      }, () => response({ operation_id: ackOperation, send_state: "queued", takeover_generation: 8 }),
+      }, () => response({ operation_id: ackOperation, outbound_id: "70000000-0000-4000-8000-000000000074", send_state: "queued", takeover_generation: 8 }),
       () => operationResponse(operationState));
       const host = mount(env, locale);
       await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
@@ -179,9 +179,9 @@ for (const locale of Object.keys(warning)) {
       test(`projected ${state} obligations survive ${scenario} and omission (${locale})`, async (t) => {
         const env = environment(t);
         let reads = 0, phase = 0;
-        const a = { direction: "out", at: "2030-01-01T00:00:01Z", text: "MOCK_PROJECTED_A",
+        const a = { direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: "MOCK_PROJECTED_A",
           attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071", send_state: state };
-        const b = { ...a, at: "2030-01-01T00:00:03Z", text: "MOCK_PROJECTED_B",
+        const b = { ...a, outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:03Z", text: "MOCK_PROJECTED_B",
           principal_id: "70000000-0000-4000-8000-000000000072" };
         const buyer = { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER" };
         const calls = transport(() => {
@@ -247,9 +247,9 @@ for (const locale of Object.keys(warning)) {
         test(`local ACK ${terminal} retains older ${state} ${timing} (${locale})`, async (t) => {
           const env = environment(t);
           let reads = 0, phase = 0, operationState = "READY";
-          const own = { direction: "out", at: "2030-01-01T00:00:01Z", text: "MOCK_EXACT_ACK_ORIGINAL",
+          const own = { direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: "MOCK_EXACT_ACK_ORIGINAL",
             attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071" };
-          const other = { ...own, at: "2030-01-01T00:00:02Z", text: "MOCK_OLDER_UNRESOLVED_B",
+          const other = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:02Z", text: "MOCK_OLDER_UNRESOLVED_B",
             principal_id: "70000000-0000-4000-8000-000000000072" };
           const calls = transport(() => {
             reads++;
@@ -257,10 +257,10 @@ for (const locale of Object.keys(warning)) {
               ...thread.items, { ...own, send_state: operationState === "READY" ? "queued"
                 : terminal === "SUCCEEDED" ? "sent" : "failed" },
               ...(phase === 1 || phase >= 3 ? [{ ...other, send_state: phase === 4 ? "sent" : state }] : []),
-              { ...other, at: "2030-01-01T00:00:03Z", text: "MOCK_NEWER_SENT_C", send_state: "sent" },
+              { ...other, outbound_id: "70000000-0000-4000-8000-000000000076", at: "2030-01-01T00:00:03Z", text: "MOCK_NEWER_SENT_C", send_state: "sent" },
               { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_BUYER_AFTER_C" },
             ] });
-          }, () => response({ operation_id: ackOperation, send_state: "queued", takeover_generation: 8 }),
+          }, () => response({ operation_id: ackOperation, outbound_id: "70000000-0000-4000-8000-000000000074", send_state: "queued", takeover_generation: 8 }),
           () => operationResponse(operationState));
           const host = mount(env, locale);
           await host.waitFor(() => reads === 1 && idle(host), "initial A9 authority committed");
@@ -315,7 +315,7 @@ for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "dif
     const page = { ...projection("sent"), items: [...projection("sent").items,
       { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:06Z", text: "MOCK_LATER_BUYER" }] };
     const calls = transport(() => response(++reads === 1 ? thread : page),
-      () => response({ send_state: "queued", ...(refusal === "missing-ack-id" ? {} : { operation_id: ackOperation }) }),
+      () => response({ send_state: "queued", outbound_id: "70000000-0000-4000-8000-000000000074", ...(refusal === "missing-ack-id" ? {} : { operation_id: ackOperation }) }),
       () => {
         operationReads++;
         return operationResponse(refusal === "acknowledged" ? "ACKNOWLEDGED" : refusal === "unknown" ? "UNKNOWN" : "SUCCEEDED", refusal === "different-operation" ? { operation_id: store.id }
@@ -352,7 +352,7 @@ test("exact rejected ACK restores its own text rather than a later staff member'
   const env = environment(t);
   let reads = 0;
   const calls = transport(() => response(++reads === 1 ? thread : projection("sent")),
-    () => response({ send_state: "queued", operation_id: ackOperation }),
+    () => response({ send_state: "queued", outbound_id: "70000000-0000-4000-8000-000000000074", operation_id: ackOperation }),
     () => operationResponse("FAILED_FINAL"));
   const host = mount(env);
   await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
