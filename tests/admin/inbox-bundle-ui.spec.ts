@@ -1,6 +1,7 @@
 // Purpose: INU09 real claim-link issuance, native clipboard and persisted receipt without credential-bearing traces.
 // Depends on: real Go/PG/M6/M7 fixture and shared inbox navigation; credential remains in browser memory/clipboard.
 // Used by: --browser-inbox; worker-scoped artifact settings are isolated from ordinary inbox diagnostics.
+// Invariants: one keyed link issuance, no credential-bearing evidence and no new DM side effect.
 import { expect, type Page } from "@playwright/test";
 import { test } from "./inbox-private-evidence";
 import { mkdir } from "node:fs/promises";
@@ -145,9 +146,12 @@ test("INU09 flagged bundle copies actual M7 link through native clipboard and pe
   expect(recopied.receipt_valid).toBe(true);
   expect(recopied.dm_operations).toBe(before.dm_operations);
   expect(linkPosts).toBe(1);
+  // Signed chips re-read A8; the obsolete standalone list Refresh control is absent.
+  await page.getByTestId("inbox-filter-instagram").click();
+  await expect(page.getByTestId("inbox-list")).toHaveAttribute("aria-busy", "false");
   const refreshed = page.waitForResponse((r) => r.request().method() === "GET" &&
     new URL(r.url()).pathname === `/api/stores/${store}/inbox/conversations`);
-  await page.getByTestId("inbox-page").getByRole("button", { name: "Refresh", exact: true }).click();
+  await page.getByTestId("inbox-filter-all").click();
   expect((await refreshed).status()).toBe(200);
   await expect(page.getByTestId(`conversation-${ids.bundle}`)).toHaveCount(0);
   await privateBoundary(page, []);

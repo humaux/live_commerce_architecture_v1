@@ -247,6 +247,7 @@ async function save(page: Page, state: Awaited<ReturnType<typeof open>>, locale:
   });
 }
 async function review(page: Page, locale: Locale) {
+  if (await page.getByTestId("design-preview-view").isVisible()) await back(page, locale);
   await click(page, page.getByTestId("design-publish"), "Publish", "whole-document review", async () => {
     await expect(page.getByTestId("design-publish-review")).toBeVisible();
     await expect(page.getByText(ui[locale].scope, { exact: true })).toBeVisible();

@@ -67,3 +67,68 @@ node scripts/dev/derive-browser-ownership.mjs: exit0
 node scripts/dev/derive-browser-ownership.mjs --check: exit0
 git diff --check: exit0
 E1 only; no runtime local commands.
+
+Post-push relay2 receipt (no evidence-only push):
+PR361 head deffd208590b89b7b1b794e06bc43f90b6f67ecb
+WAIT_RUN Foundation41057051140 / job124067121303 QUEUED
+WAIT_RUN Gates41057051192 PENDING (test jobs not yet registered)
+Native gh run list and PR head verified exact SHA.
+Wakeup: integrator fresh-session completion/failure/cancellation relay; queue>3h escalate.
+RED assertion evidence PENDING; implementation NOT_STARTED; GREEN NOT_RUN.
+
+RELAY 3 verified 2026-10-30 — supersedes earlier RED-PENDING observations:
+Exact PR head: deffd208590b89b7b1b794e06bc43f90b6f67ecb
+Gates run 41057051192 / job 124085433146 (bundle:06): FAILURE, completed 2026-10-30T13:39:05Z.
+Foundation run 41057051140 / job 124067121303: PASS (not browser GREEN).
+Native browser artifact: 12980848918 gate-browser-inbox
+Artifact source: playwright/inbox-ui/20261030T132749.229668188/playwright.log
+Extracted raw receipt: relay3-assertions.log
+Causal RED: inbox-v2-ui.spec.ts:723 unsigned list refresh expected count 0 / actual 1, all 3 locales.
+Causal RED: inbox-v2-ui.spec.ts:737 confirmed DM follow-up composer expected visible / actual hidden, all 3 locales.
+Causal RED: inbox-v2-ui.spec.ts:784 desktop sent composer expected visible / actual hidden.
+11 mobile send-state failures at inbox-browser-support.ts:78 (hidden desktop navigation) are setup failures, NOT product RED.
+Overall inbox 18 failed / 70 passed. No compiler failure.
+BLOCKED static gate conflict: editor-v2.spec.ts:540 demands design-tab-versions count 0; mandatory design.spec.ts:137 demands visible and :25/:322/:363-384 use it for history/rollback acceptance.
+Both specs are run by browser_store_design_test.go:167. No assertions weakened/removed/skipped.
+Need integrator ruling on retained rollback access and reconciliation of obsolete navigation assertion before implementation.
+No source/spec changes, no implementation or new push in this relay; GREEN NOT_RUN.
+git fetch origin r3/integration: exit 0; merge --no-edit: already up to date, exit 0.
+Humaux memory/store/canvas/coord unavailable this relay. Task-local evidence only; no shared-state update claimed.
+WAIT_RUN: 41057051192 (remaining Gates; integrator fresh-session relay is wake-up).
+
+RELAY 4 verified 2026-10-30:
+Exact head unchanged: deffd208590b89b7b1b794e06bc43f90b6f67ecb.
+Live job API confirms 124085433146 FAILURE; native job log confirms 18 inbox failures / 70 passes.
+Artifact 12980848918 metadata binds gate-browser-inbox to this exact head/run; prior extracted relay3-assertions.log retained.
+Fresh artifact archive re-download interrupted (exit 130) after no output; not claimed independently re-extracted.
+gh run view --log-failed --job reports parent run incomplete; native job-log API used instead.
+Foundation41057051140 SUCCESS; Gates41057051192 still queued, conclusion null.
+Fetched origin/r3/integration: 3ea359f796d36153bb4b8aa7259e4e0c27676b86.
+Current integration design.spec.ts:137 still requires design-tab-versions visible.
+Current branch editor-v2.spec.ts:540 still requires the same testid absent; both mandatory at browser_store_design_test.go:167.
+BLOCKED unchanged: integrator must rule on history/rollback access and obsolete navigation assertion migration; no test weakening authorized.
+No source changes, no new commit/push/run, no local tests or servers, no fix attempt spent.
+Only task-local handoff documents updated; PR body/comment report current blocker. Humaux store/canvas/coord unavailable.
+WAIT_RUN: 41057051192; wake-up is integrator fresh-session relay plus gate-conflict ruling.
+
+
+FIX1 2026-10-31 — assertion RED confirmed before implementation
+RED Gates run 41057051192; PR head deffd208590b89b7b1b794e06bc43f90b6f67ecb.
+Job 124085434705 bundle:04 TestBrowserStoreDesign: 14 failed / 49 passed.
+Artifact gate-browser-design 12983057038; playwright/store-design/20261030T135431.637053328/playwright.log.
+6 hub subtitle assertions at editor-v2.spec.ts:533; 2 preview click timeouts at :594; 6 review heading assertions at :616.
+Job 124085433146 bundle:06 TestBrowserInboxUIRealChain: 18 failed / 70 passed.
+Artifact gate-browser-inbox 12980848918; playwright/inbox-ui/20261030T132749.229668188/playwright.log.
+3 toolbar removal assertions inbox-v2-ui.spec.ts:723; 3 DM follow-up visibility :737; 1 desktop sent :784; 11 mobile setup assertions inbox-browser-support.ts:78.
+Every case is enumerated in FIX1.md. No class(c) base-failure claim.
+Tests-only original commit 6f212733a and assertion/artifact head deffd2085 precede this implementation.
+Merged origin/r3/integration 2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f at cc8db9319 before implementation.
+E1 node --check 9 changed .ts files: exit0. tsc absent; no local TSX compilation claimed.
+Ownership generation + --check exit0. depmap generation exit0 (unchanged). git diff --check exit0.
+Local tests/servers/browser/PG/build: NOT_RUN (prohibited). No dependency install.
+Implementation push is one batch; GREEN PENDING on its exact SHA; receipts go in PR comment, never an evidence-only commit.
+Humaux store/canvas/coord/code tools unavailable; local records are not claimed as Humaux completion.
+python3 scripts/check_packet.py: exit0 (static architecture structure; packet-static.log).
+RED tested synthetic merge: 6754bd337cb9f6943104367e7ef8040593bb4b7c (native receipts).
+Receipts124111665162 fails ONLY inbox/design status FAIL; required124112234499 reports gate=failure receipts=failure aggregate=success.
+Same test RED after this FIX1 push => BLOCKED with exact assertion; no third approach.

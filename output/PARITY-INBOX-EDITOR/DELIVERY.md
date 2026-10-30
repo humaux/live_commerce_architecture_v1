@@ -1,6 +1,6 @@
-# PARITY-INBOX-EDITOR — RED candidate, implementation pending
+# PARITY-INBOX-EDITOR — FIX1 implementation prepared; CI GREEN pending
 
-This is a tests-only handoff, not completed UI. Author conclusions E0. Node syntax and deterministic ownership generation are E1. RED on assertions, GREEN, real clicks, browser screenshots and independent comparison are PENDING/NOT_RUN until GitHub runs the suites.
+Current phase supersedes the older relay statuses below: FIX1 authorizes migrating obsolete navigation assertions while retaining coverage. Implementation now exists; complete 32-case RED classification and changed-path inventory are in [FIX1.md](FIX1.md). Evidence: E3 failing RED at deffd2085; E1 static syntax/generation only for the candidate. Final-head GREEN, browser parity and independent acceptance PENDING. Author verdict E0.
 
 Branch `unit/parity-inbox-editor`; base `3ea359f796d36153bb4b8aa7259e4e0c27676b86`; assigned worktree only. Role: dispatched UI implementer. Runtime model/effort exact IDs are not exposed, UNKNOWN. Main checkout read-only. No recursive delegation. No production action, local tests/server or dependency installation.
 
@@ -275,3 +275,81 @@ At PR head `17744c0affce3f096b25dc8cfde2554e5f78b5ff`, Foundation `41053520136` 
 Artifact blocker targeted fix 1 changes only the physical path in the two existing parity screenshot helpers to `parity/<frame-id-with-hyphen>.png`; original frame IDs remain in attachment labels and the PR map. The exact colon filename requested in the card cannot be uploaded by GitHub; this filesystem-only encoding is necessary to deliver reviewable evidence. All assertions, fixtures, thresholds, tests and frame coverage remain intact. No UI implementation yet.
 
 Humaux is available in this relay; the earlier unavailability statements describe earlier sessions. A dispatched implementer does not claim a separate coord task or change the integrator's task ownership. Own child canvas only: `integrator-sub-parity-inbox-editor`. No recursive delegation. Fresh CI must expose the failing assertions before implementation. Integrator completion/failure/cancellation relay is the wake-up; escalate queue waits beyond 3 hours. No local tests/servers started.
+
+Post-push relay2 receipt (no evidence-only push):
+PR361 head deffd208590b89b7b1b794e06bc43f90b6f67ecb
+WAIT_RUN Foundation41057051140 / job124067121303 QUEUED
+WAIT_RUN Gates41057051192 PENDING (test jobs not yet registered)
+Native gh run list and PR head verified exact SHA.
+Wakeup: integrator fresh-session completion/failure/cancellation relay; queue>3h escalate.
+RED assertion evidence PENDING; implementation NOT_STARTED; GREEN NOT_RUN.
+
+## RELAY 3 — current-head assertion RED and mandatory gate conflict
+
+PR #361 head `deffd208590b89b7b1b794e06bc43f90b6f67ecb` verified with native GitHub API. Gates run `41057051192`, job `124085433146` (`bundle:06`) concluded failure at `2026-10-30T13:39:05Z`. Foundation run `41057051140`, job `124067121303` passed at this same head; this does not establish browser GREEN.
+
+Downloaded native artifact `12980848918` (`gate-browser-inbox`); its `playwright/inbox-ui/20261030T132749.229668188/playwright.log` establishes causal new-assertion RED: three locale cases fail at `inbox-v2-ui.spec.ts:723` (unsigned refresh, expected count 0 / actual 1), three locale cases fail at `:737` (confirmed DM follow-up composer expected visible / actual hidden), and the desktop sent case fails the composer-visible assertion. The other 11 mobile send-state failures occur in `inbox-browser-support.ts:78`, before signed assertions, because the desktop navigation is hidden at 390px. These 11 are setup failures, not product RED. Overall 18 failed / 70 passed. Raw browser receipt: `relay3-assertions.log`.
+
+**BLOCKED — static incompatibility between required editor suites, not an observed GREEN failure:** `tests/admin/editor-v2.spec.ts:540` requires `design-tab-versions` to have count zero, matching the card's removal of the publication-history row. Existing `tests/admin/design.spec.ts:137` requires that exact control to be visible; its `editorTask` helper at `:25` clicks it to reach the version/history/rollback assertions at `:322` and `:363–384`. Both files are mandatory in `tests/foundation/browser_store_design_test.go:167`. Removing the row makes the existing real-click rollback acceptance unreachable. Keeping it violates signed parity. No synthetic-response, role, draft-version or test-ID special case is acceptable. No assertion removed, relaxed or skipped.
+
+Integrator ruling needed: specify the authorized user-visible access to retained version/rollback controls after removing the hub row, and reconcile the obsolete navigation assertion while retaining all history, rollback, persistence and Taipei-time behavior checks. This is separate from the already resolved INBOX-PREVIEW deferral. Per the card's stop rule, application implementation and a new push are NOT_STARTED in this relay; no speculative replacement UI or hidden test-only navigation was added.
+
+`git fetch origin r3/integration` succeeded; `git merge --no-edit origin/r3/integration` reported already up to date. No source/spec/page changes, ownership regeneration or dependency-map regeneration needed in this relay. Fleet Bridge reports one connected document (Untitled, fileKey null, defaultFile set); fresh read-only hub context/screenshot obtained, no Figma write. Skills read: ci-only-evidence, ponytail, figma-implement-design and Impeccable adapt/craft-floor. Impeccable context script not executed because the card restricts local commands; signed module authorities and incumbent source were read directly.
+
+Evidence: E3 **failing** CI assertions only; no completion/acceptance claim. GREEN, independent comparison, remaining editor execution, LIVE and deployment remain NOT_RUN/PENDING. Humaux MCP tools unavailable in this relay; no memory_store, canvas update or coord claim asserted. Existing relay2 uncommitted handoff records preserved. No local tests/server/build/dependency install, no subagents, no merge into integration, no auto-merge/status/deployment. Integrator's explicit fresh-session relay is the wake-up for remaining Gates run `41057051192` and the gate ruling; no extended polling.
+
+## RELAY 4 — current-source conflict reconfirmed
+
+Head remains `deffd208590b89b7b1b794e06bc43f90b6f67ecb`. Fresh `git fetch origin r3/integration` resolves to `3ea359f796d36153bb4b8aa7259e4e0c27676b86`; its `design.spec.ts:137` still requires the history entry visible. This branch's `editor-v2.spec.ts:540` requires the same entry absent; both suites remain mandatory. No new integrator ruling in the supplied relay resolves access to retained history/rollback after row removal. Stop rule therefore still applies. No application/spec changes, commit or push; no targeted fix attempt consumed.
+
+Live native job API confirms bundle:06 job `124085433146` failed; its log confirms 18 failed / 70 passed. Artifact metadata binds `12980848918` to this exact head; the prior extracted assertion log remains the detailed receipt. Fresh archive re-download was interrupted before extraction (exit 130), not represented as newly verified assertion text. Foundation `41057051140` succeeded. Gates `41057051192` remains queued with no overall conclusion. E3 failing evidence only; GREEN/independent acceptance NOT_RUN, author verdict E0. PR body/comment updated without an evidence-only CI push. Humaux store/canvas/coord unavailable. No local tests/server or surviving task process. Integrator relay plus gate ruling is the wake-up; `WAIT_RUN: 41057051192`.
+
+
+## FIX1 · BOURDIEU
+
+Q1 task experience, not class/device, distinguishes novice/expert. Q2 four direct editing rows and stable inbox chip order. Q3 actual server draft/live versions and concrete delivery state remain visible. Q4 mobile gets the same recipient/body/status/permission boundaries. Q5 history uses existing version text rather than another task row; privacy/UNKNOWN locks remain. Q6 aesthetic approval UNKNOWN; implementation follows the signed simplify frames.
+
+## FIX1 · PROJECT UNDERSTANDING
+
+Read AGENTS.md, 架构.md §§0/1/2/10/26/27; TypeScript strict UI consumes Go authority, no backend policy duplication. Read contracts/storefront-v2.md §B: versioned whole documents, append-only publication/rollback, 15-minute preview. Read meta-inbox-v1 ingress scope; current InboxThread send/load and original issue #344 item 5 + integrator comment: standard-window DM follow-ups need no inbound, private-reply quota unchanged. Current FIX1 card resolves the earlier gate-migration block. Existing all-locale browser suites, old design real-Go journeys and inbox adversarial suites remain required.
+
+## FIX1 · MOBBIN → EAGLE
+
+Retain the recorded Quo MVNUXG8K4FQ39 list/thread separation, Chime MVOVLMVQ5ZSCB status recovery and Shopify MVS1D603YAUS5 direct object rows. Existing Eagle reads are historical; no fresh Eagle service/server was started. No images/brands/product facts copied. Needed domain-verification reference remains the integrator's existing Mobbin import, with no new query for this directed fix.
+
+## FIX1 · FIGMA OFFICIAL GUIDANCE
+
+Read the dated project FIGMA-GUIDE.md from ux-editor's output/ux-audit-ref (main/current-worktree copy absent). G1 nested responsive layouts → compact hub/four rows; G2 semantic tokens + all three locale dictionaries; G3 existing components reused with no import changes; G4 real preview/result/back/history navigation; G5 original UNKNOWN/queued locks. Live Fleet Bridge status returned one document, fileKey null/defaultFile configured, busy=false/needsInspection=false. Read-only hub 1429:63114 and review 1429:65762 context/screenshots fetched to figma-read; no Figma writes. Copy-lint of changed Figma frames: NOT_APPLICABLE (no changed frames). Impeccable context script NOT_RUN because this card limits local commands; incumbent source/CSS and signed references read directly.
+
+## FIX1 · REQUIRED facts: desktop → mobile → review/result
+
+|REQUIRED fact|Desktop + mobile implementation / unchanged gate|
+|---|---|
+|Conversation recipient, channel, original body, read/deadline|Existing InboxThread and inbox click/locale suites; all source data stays scoped to the server conversation.|
+|Send result; exact outstanding obligation; no blind resend|Sent composer opens on both sizes; queued/blocked/UNKNOWN remain folded/locked. Original adversarial tests retained; no field/timing/text-based reconciliation introduced.|
+|Draft/live versions; dirty state|Same status on both sizes, server versions interpolated; clean status exact, dirty badge retained. History/rollback reached from visible live-version text.|
+|Save-before-preview; 15-minute validity; unchanged buyer version|Existing popup path retained; new real-route preview view shows response draft version and last published version. No token stored or rendered.|
+|Whole-document scope, immediate buyer effect, unchanged price/stock/domain, address availability|Review heading/actions and success/refused/uncertain states on both layouts retain scope/address summaries, source version and query behavior.|
+|Original publication content and uncertain request identity|Receipt-bound existing tests unchanged; query/reload retains key/body and never substitutes a newer draft.|
+|All required profile/home/navigation/page fields|Existing native edit/save/reload tests remain. Summaries still use DesignSummary; optional and empty-page facts retained.|
+
+## FIX1 · Three-language copy delta
+
+The complete existing table above remains the reference; these templates replace literal example versions with server data.
+
+|zh-TW|zh-CN|en|
+|---|---|---|
+|預覽與發布前會先儲存|预览和发布前会先保存|Saves first|
+|草稿 {n} · 線上 {live}|草稿 {n} · 线上 {live}|Draft {n} · Live {live}|
+|預覽草稿|预览草稿|Preview|
+|發布|发布|Publish|
+|發布草稿 {n}？|发布草稿 {n}？|Publish draft {n}?|
+|發布後，買家立即看到新內容|发布后，买家立即看到新内容|Buyers see the new content immediately|
+|確認發布草稿 {n}|确认发布草稿 {n}|Publish draft {n}|
+|已發布為版本 {n}|已发布为版本 {n}|Published as version {n}|
+|先查詢結果，請勿再次發布|请先查询结果，勿重复发布|Check the result before publishing again|
+|草稿 {n} 預覽 · 15 分鐘有效|草稿 {n} 预览 · 15 分钟有效|Draft {n} preview · Valid for 15 minutes|
+|尚未發布 · 買家看到版本 {n}|尚未发布 · 买家看到版本 {n}|Unpublished · Buyers see version {n}|
+|目前網址可使用|当前网址可用|Current address is active|
+
+Click ledger: existing CI attachments continue to record actual actions and visible results. Static review does not populate PASS rows. Final-head runtime density, complete frame screenshots, all locales and every interactive control remain CI PENDING. No local runtime verification, tests or servers. New UI settings: none.

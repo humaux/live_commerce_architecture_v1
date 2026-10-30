@@ -1,20 +1,37 @@
-Tests-only RED candidate for PARITY-INBOX-EDITOR. No application changes yet; do not merge.
+The signed inbox/editor assertions are RED because the application still exposes the previous controls and copy. FIX1 implements the signed hub/preview/publication states and permits another DM after confirmed delivery within the existing server-authorized window. The shared inbox login helper opens the real mobile navigation menu.
 
-RELAY 2: Current-head Foundation `41053520136` / job `124055190539` passed. Gates `41053520134` / job `124057814067` (`bundle:06`, synthetic merge `bda615b1264c376d512599abb545b1f99060c6e9`) reported 18 inbox failures / 70 passes but could not upload the full assertion evidence: GitHub rejects `:` in screenshot paths. Counts alone are NOT causal UI RED. Targeted artifact fix 1 normalizes only physical screenshot paths in both parity helpers; original signed frame IDs remain in attachment labels and this table. No assertions changed. Fresh assertion-level RED remains PENDING; implementation NOT_STARTED.
+## Evidence
 
-RELAY 1: Foundation `41052476505` / job `124051679004` at `6f212733ab43` failed in the inbox discovery harness (69 collected versus the original 39). This is not UI assertion RED. Targeted fix 1 preserves all original 39-case checks and separately asserts the exact 30 added parity cases; browser assertions stay unchanged. New-head CI and implementation remain PENDING.
+- RED on this PR's tests-only head `deffd208590b89b7b1b794e06bc43f90b6f67ecb`: Gates **41057051192**, design job **124085434705** (14 failed/49 passed), inbox job **124085433146** (18 failed/70 passed). Native browser artifacts **12983057038** / **12980848918**. Every failing test/assertion is classified in `output/PARITY-INBOX-EDITOR/FIX1.md`; raw browser logs are retained there under `ci-red/`.
+- Merged `origin/r3/integration` **2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f** before editing. No class(c) assertion is claimed as identical on base. Owner-provided base Gates 41078151280 success is context only.
+- E1 only: node syntax checks on 9 changed .ts files; browser ownership generation + --check; depmap generation (no diff); check_packet; git diff --check all exit 0. No local tests/servers/browser/PG/build. Local tsc unavailable; TSX compilation belongs to CI.
+- Final-head Foundation/Gates, all runtime click ledgers, density and independent screenshot comparison are **PENDING**. Exact new run IDs will be posted in a PR comment. Author verdict E0; observed RED is E3 failing evidence, never completion. One batched implementation push; integrator relays the CI conclusion. No merge or auto-merge.
 
-Pins signed copy/control checks to real `/[locale]/messages` and `/[locale]/design` routes, adds the open-window DM follow-up regression and frame-named screenshots. Existing gate-adapter and adversarial inbox assertions stay intact. Both existing browser specs retain their registered CI owners.
+## Behavior and retained coverage
 
-Validation: node --check on both specs exit 0; deterministic ownership generation/check exit 0. Local tsc unavailable (command exit 254); no dependencies installed. No local tests, builds, servers, PG or browsers. RED on own assertions, GREEN and independent visual review PENDING. See output/PARITY-INBOX-EDITOR/red.log and DELIVERY.md.
+- Inbox keeps the four signed chips and thread refresh; removes unsigned list refresh/overflow. Confirmed sent DM reopens a clean composer, retaining its receipt. No change to permission, capability, deadline, UNKNOWN, unresolved outbound, original key/body or private-reply quota checks.
+- Editor has four direct task rows, separate Domains, compact signed copy with actual server versions, and a response-bound draft preview status alongside the existing token popup. No token is rendered or stored. The existing live-version text opens the retained history/rollback view, replacing the extra hub history row without adding a setting.
+- Old navigation assertions migrate to signed controls: all SDB history/rollback/source/timezone/reload checks remain; exact clean version status replaces the removed saved badge; native chip clicks retain list re-reads, channel inclusion/exclusion, unread and bundle checks. The old sent-folding expectation now explicitly requires the follow-up composer. Queued/failed/blocked expectations and every adversarial obligation/UNKNOWN assertion remain. No tests deleted/skipped, fixtures rewritten or thresholds/timeouts/budgets/exemptions changed.
+- Preview's existing browser tests now return via Back before publishing. Status-query helper uses the existing thread Refresh after confirmed sending reopens the composer. Component imports unchanged, so no injected harness allowlist changes.
+- zh-TW/zh-CN/en entries are present for every new template, with literal three-locale hub assertions retained. UI process, required desktop/mobile facts and copy delta are in DELIVERY.md. No Figma write; fresh read-only hub/review context retained locally. Independent parity remains pending.
 
-DEFERRED → INBOX-PREVIEW: list-row last-message preview on all list-containing frames, per integrator ruling (privacy review of decrypted A8 bodies). Implement list rows without that line or an empty slot. No API/contract change; all other parity remains in this card. Frame fixtures use server-shaped MOCK versions 42/27→43/28 and synthetic buyer/channel/content facts, not hard-coded Figma example facts. Screenshots must be reviewed for layout and fixed copy; sample values differ by design.
+## Scope inventory for integrator review
 
-Preview-line DEFERRED frames: desktop `1429:37361`, `1429:37452`, `1429:37543`, `1429:37634`, `1429:37725`, `1429:37816`, `1429:37907`, `1429:37998`, `1429:38090`, `1429:38182`, `1429:38274`, `1429:38366`, `1429:38458`, `1429:38550`, `1429:38642`, `1429:40688`, `1429:40780`, `1429:40872`, `1429:61092`, `1429:61183`; mobile lists `1429:38826`, `1429:38876`, `1429:38926`, `1429:38976`, `1429:39026`. Only the list-row preview line is deferred; all other content/states remain in scope.
+FIX1 expressly authorizes root product fixes and migration of obsolete signed-frame assertions. Extensions beyond the original two-spec tests-only PR (same inbox/editor modules):
 
-Outside card write paths: `tests/admin/inbox-discovery.test.ts` (same inbox module harness required for the added cases; integrator review requested); generated output/ci-select-backend-browser/browser-ownership.json (explicitly pre-approved); task-local output/PARITY-INBOX-EDITOR/ receipts/documentation. No other app, backend, contract, migration, dispatcher baseline or lockfile changed.
+- `apps/admin/components/Design.tsx`, `Inbox.tsx`, `InboxThread.tsx`, `design.css`.
+- `apps/admin/lib/design-copy.ts`; required module dictionary `packages/i18n/src/editor.ts`.
+- `tests/admin/design.spec.ts`, `inbox-browser-support.ts`, `inbox-bundle-ui.spec.ts`, `inbox-ui.spec.ts`, `inbox-unknown.test.ts`.
+- Original `tests/admin/editor-v2.spec.ts` / `inbox-v2-ui.spec.ts` helpers migrate real navigation. Existing tests-only exception `tests/admin/inbox-discovery.test.ts` remains from the earlier relay.
+- Generated `output/ci-select-backend-browser/browser-ownership.json` is pre-approved. `scripts/dev/depmap.sh` produced no diff. Task receipts use the existing case-preserved `output/PARITY-INBOX-EDITOR/` directory (the requested lowercase path resolves there on this volume).
 
-Parity sheet (screenshots PENDING, never claimed produced until browser CI). Desktop 1440×900; mobile 390×844. Artifact filenames map `:` in frame IDs to `-` because GitHub rejects colons in upload paths; attachment labels retain the exact frame IDs. Paths are under each suite's browser artifact test-results. 43 inbox current frames and 32 merchant-editor current frames; buyer-only editor frames excluded from this admin card. Current inbox polish PNGs supersede simplify exports for seven roots. Every mapped screenshot is requested by tests; a prior assertion failure can prevent its creation.
+No migrations, contracts/OpenAPI, Go modules, lockfiles, dispatcher/baseline lists or gate-adapter assertions changed. Humaux tools unavailable: no store/canvas/coord/code-index update claimed; integrator must attach this handoff to the existing task.
+
+DEFERRED → **INBOX-PREVIEW**: list-row decrypted last-message preview only, per prior integrator ruling; no API field or fake preview is introduced. All other signed coverage remains required.
+
+## Signed frame artifact map
+
+The existing 75-frame map is retained. Physical artifact names encode `:` as `-` for GitHub upload compatibility; attachment labels retain signed node IDs. Browser screenshots and comparison are pending the new exact-head CI.
 
 |Frame|Real-route browser artifact|Current DELIVERY PNG|
 |---|---|---|

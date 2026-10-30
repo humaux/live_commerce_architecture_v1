@@ -192,8 +192,11 @@ async function open(page: Page, id: string) {
 async function query(page: Page, refreshLabel?: string) {
   const read = page.waitForResponse(response => response.request().method() === "GET" &&
     new URL(response.url()).pathname.includes("/inbox/conversations/") && new URL(response.url()).pathname.endsWith("/messages"));
-  await (refreshLabel ? page.getByTestId("inbox-thread").getByRole("button", { name: refreshLabel, exact: true })
-    : page.getByTestId("inbox-send-status")).click();
+  // Confirmed DM results reopen the composer. Subsequent observations use the signed thread Refresh action.
+  const status = page.getByTestId("inbox-send-status");
+  const label = refreshLabel ?? copies.find(copy => new URL(page.url()).pathname.startsWith(`/${copy.locale}/`))!.refresh;
+  await (!refreshLabel && await status.isVisible() ? status
+    : page.getByTestId("inbox-thread").getByRole("button", { name: label, exact: true })).click();
   expect((await read).status()).toBe(200);
   await expect(page.getByTestId("inbox-thread")).toHaveAttribute("aria-busy", "false");
 }
