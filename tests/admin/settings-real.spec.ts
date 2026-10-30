@@ -1,6 +1,7 @@
 // Purpose: Exercises settings controls and client-storage disclosures against the supplied real harness origin.
 // Depends on: @playwright/test; harness env: LC_BROWSER_PUBLIC_ORIGIN
 // Used by: tests/foundation/browser_identity_chain_test.go
+// Invariants: real clicks preserve session, CAS and identical-command replay assertions; no provider or production calls.
 // PAYUNi was removed from the wizard (owner decision 2026-10-14, pay-rm2): the only card path is platform Stripe, reached from the
 // wizard through the card-payments link; this spec proves no PAYUNi control or text remains and keeps the safe-uncertainty,
 // policy/service and changed-session checks on the merchant-arranged delivery flow.
@@ -63,10 +64,10 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.getByTestId("nav-settings").click();
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
   await settingsV2Acceptance(page, receipt.store_id, testInfo);
-  // Signed simplified settings is the default. Existing rare configuration and
-  // every legacy safety assertion remain reachable through one explicit entry.
+  // Signed overview is the default; Edit settings opens the full editor.
+  // Every existing configuration and safety assertion remains reachable.
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
-  await page.getByRole("button", { name: "Advanced", exact: true }).click();
+  await page.getByRole("button", { name: "Edit settings", exact: true }).click();
   await expect(
     page.getByText("Loading saved configuration…", { exact: true }),
   ).toBeHidden();
@@ -78,6 +79,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.getByTestId("settings-card-payments-link").click();
   await expect(page).toHaveURL(/\/settings\/payments\/card/);
   await page.goBack();
+  await page.getByRole("button", { name: "Edit settings", exact: true }).click();
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   // Step 2: merchant-arranged delivery cards. The old PAYUNi account form must not appear.
@@ -187,6 +189,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
     .click();
   await committedMarket;
   await page.reload();
+  await page.getByRole("button", { name: "Edit settings", exact: true }).click();
   releaseLostResponse();
   const pendingControls = page.getByTestId("settings-pending");
   await expect(pendingControls).toBeVisible();
@@ -202,12 +205,13 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await noPayuni(page);
 
   // Locale routes preserve nonsecret setup and the store's TWD currency.
-  for (const [locale, label, heading] of [
-    ["zh-CN", "Language", "店铺设置"],
-    ["zh-TW", "语言", "商店設定"],
-    ["en", "語言", "Store settings"],
+  for (const [locale, label, heading, edit] of [
+    ["zh-CN", "Language", "店铺设置", "编辑设置"],
+    ["zh-TW", "语言", "商店設定", "編輯設定"],
+    ["en", "語言", "Store settings", "Edit settings"],
   ]) {
     await page.getByLabel(label, { exact: true }).selectOption(locale);
+    await page.getByRole("button", { name: edit, exact: true }).click();
     await expect(
       page.getByRole("heading", { name: heading, exact: true }),
     ).toBeVisible();
@@ -308,6 +312,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.unroute(policyURL);
   await page.unroute(serviceURL);
   await page.reload();
+  await page.getByRole("button", { name: "Edit settings", exact: true }).click();
   await expect(page.getByTestId("settings-status")).toContainText("home");
 
   await page
@@ -325,8 +330,10 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   // An unsaved field survives a locale switch.
   await svcName.fill("Local unsaved name");
   await page.getByLabel("Language", { exact: true }).selectOption("zh-CN");
+  await page.getByRole("button", { name: "编辑设置", exact: true }).click();
   await expect(page.getByRole("heading", { name: "店铺设置", exact: true })).toBeVisible();
   await page.getByLabel("语言", { exact: true }).selectOption("en");
+  await page.getByRole("button", { name: "Edit settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Store settings", exact: true })).toBeVisible();
   await expect(svcName).toHaveValue("Local unsaved name");
   // Stale-version conflict: another operator saves first; our save is refused and only an explicit reload rebases.
@@ -376,6 +383,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.getByTestId("settings-reload-current").click();
   await expect(svcName).toHaveValue("Remote saved name");
   await page.reload();
+  await page.getByRole("button", { name: "Edit settings", exact: true }).click();
   await page.getByRole("button", { name: "Market and delivery", exact: false }).click();
   await expect(svcName).toHaveValue("Remote saved name"); // persisted
   // Lost response WITHOUT a page reload: the write commits, the reply is lost, the pending banner offers an exact-replay retry.
@@ -411,6 +419,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await expect(page.getByTestId("settings-pending")).toBeHidden();
   await page.unroute(svcPath);
   await page.reload();
+  await page.getByRole("button", { name: "Edit settings", exact: true }).click();
   await page.getByRole("button", { name: "Market and delivery", exact: false }).click();
   await expect(svcName).toHaveValue("Lost reply name"); // persisted after the replay
   const originalCSRF = (await context.cookies()).find(
