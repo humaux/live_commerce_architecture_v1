@@ -181,20 +181,6 @@ export function Inbox({
               ))}
               <button className={styles.chip} data-testid="inbox-filter-instagram" aria-pressed={filter === "instagram"}
                 disabled={filter === "instagram" || !privacy.visible || privacy.blocked.current} onClick={() => changeFilter("instagram")}>{c.instagram}</button>
-              <button className={styles.iconButton} aria-label={c.refresh}
-                disabled={busy || !privacy.visible || privacy.blocked.current} onClick={() => setReload(value => value + 1)}>
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1"/></svg>
-              </button>
-              <details className={styles.extraFilters}>
-                <summary data-testid="inbox-more-filters" aria-label={c.more}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></summary>
-                <label>{c.title}
-                  <select data-testid="inbox-filter" value={filter === "assigned" ? "all" : filter}
-                    disabled={!privacy.visible || privacy.blocked.current} onChange={event => changeFilter(event.target.value)}>
-                    {["all", "unread", "unreplied", "messenger", "instagram", "live_comment"].map(value =>
-                      <option key={value} value={value}>{c[value as "all"]}</option>)}
-                  </select>
-                </label>
-              </details>
             </div>
             {status && (
               <p role="alert" className={`${styles.notice} ${styles.error}`}>

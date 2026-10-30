@@ -1,0 +1,163 @@
+PARITY-SETTINGS — historical RED/relay log; current FIX1 classification in FIX1.md
+
+FIX1 RELAY 2 — 2026-10-31; second/final navigation fix
+Exact failed head: 09e193f5e6ca329950015c16c008861b94a391bd
+Gates run/job: 41080465634 / 124153282588 (bundle:03), FAILURE
+Artifact: 12992510790, gate-browser-store-domains
+Raw browser.log:10-25: storefront-domain-unconfirmed expected visible, absent
+after merchant.reload(), store-domains-gate.mjs:287. ariaSnapshot shows overview.
+Initial onboarding/publish/buyer checks passed; this is a later reload assertion.
+Foundation run/job: 41080465533 / 124147875090, SUCCESS on failed head only.
+Fix: share real-click editor entry across initial visit and all 3 reload sites.
+Original assertion/key/body/response/PG/no-retry/disabled checks unchanged.
+Attempt 2 of 2; another failure => BLOCKED, no third approach.
+E1 static syntax/ownership/depmap/diff exit 0; E3 historical failure only.
+New-head GREEN and independent acceptance PENDING. No local tests/servers.
+Humaux unavailable; no store/canvas receipt. New run IDs in PR comment/final.
+
+FIX1 batch (2026-10-30): latest integration 2f61bf866 merged before changes.
+Failure run 41062911958 / e9c1fe9ca; synthetic merge 4b5021d8da38a92f9a1835720c54a8df800e4859.
+Jobs 124100558313,124100559012,124100560368,124100560297,124100559375,124100559711:
+superseded settings entry/reload assumptions, plus same-tab MOCK draft contamination.
+Read-only settings entry regression also fixed; original managed-action oracles retained.
+Ledger 124100559012 remains UNKNOWN: inventory navigation 32833.597ms > unchanged
+30000ms test budget; no settings setup on path. No ledger/timeout/gate edits.
+One directed batch; next run IDs in PR comment/final, GREEN PENDING.
+Local tests/servers NOT_RUN; static tsc/syntax/ownership/depmap/packet/diff checks exit 0.
+Author E0; static E1; historical CI failures E3. Humaux unavailable.
+
+date: 2026-10-30 Asia/Shanghai
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/354
+branch: unit/parity-settings
+base: df35b338b5cfde5de34bb590e2ba118efc17e4a4
+head: 0cb0b29f0aa219170ba1755c64d38476fb9738f6
+tests commit: test(settings): cover signed overview and AD-04 zero-market delivery
+
+Foundation checks run: 41049964792
+foundation job: 124043291284 (pending at readback)
+Gates run: 41049964850
+plan job: 124043290855 (pending at readback; NOT an acceptance job)
+Browser --browser-identity job: not yet emitted at readback
+WAIT_RUN: 41049964850
+WAIT_RUN: 41049964792
+
+Readback commands (exit 0):
+gh run list --branch unit/parity-settings --limit 8 --json databaseId,workflowName,status,conclusion,headSha,url
+gh pr checks 354
+
+Local static generation: node scripts/dev/derive-browser-ownership.mjs, exit 0
+Local static check: node scripts/dev/derive-browser-ownership.mjs --check, exit 0
+Local diff check: git diff --check, exit 0
+No local tests, servers, builds or browser execution.
+Evidence: E1 static artifact check only; author self-assessment E0.
+RED assertion result / GREEN / independent review / production: NOT_RUN or PENDING.
+
+Resume only after integrator supplies the completed CI conclusion:
+1. Read this PR's exact-head failed browser job using gh run view --log-failed, filtered to relevant lines.
+2. Record actual RED run/job and assertion failure here; compile/setup/transport failure is not RED acceptance.
+3. Only after assertion-level RED: paste AD-04 verbatim; implement all card items in one implementation push.
+4. Existing settings-v2 acceptance uses Edit settings for its simple profile editor and expects completed setup prompt absent.
+   Update those caller actions to the signed profile/delivery navigation rows, preserve their safety assertions,
+   and assert setup remains available. Full editor callers must reopen via Edit settings after reload/goBack/locale change.
+5. Regenerate ownership and depmap as required; inspect every SettingsV2/SettingsWizard compilation harness.
+6. Update PR body and DELIVERY with final evidence; after GREEN use a PR comment, never an evidence-only push.
+
+Worktree evidence not in tests-only commit: this log, PR.md, Fleet read-only PNGs under figma/.
+Humaux search/store/coord/canvas: unavailable tool surface; no shared-state write claimed.
+No locally started background process. Integrator relays a fresh session after WAIT_RUN completion per the dispatch contract.
+
+RELAY 1 readback — 2026-10-30
+PR head: 0cb0b29f0aa219170ba1755c64d38476fb9738f6
+Gates run: 41049964850, pull_request head confirmed by GitHub run API
+Browser identity job: 124044946555, FAILURE
+Synthetic merge SHA in job receipt: ea3f8509265ac6778df62a75df9ef1d773c28510
+Foundation run/job: 41049964792 / 124043291284, SUCCESS (tests-only head, not implementation GREEN)
+RED evidence: E3 for the new assertion failure only; product completion is not claimed.
+Raw browser log: red-artifact/playwright.log (retrieved from artifact 12975855089)
+Failure: settings-v2.spec.ts:659 — setup remains available after completion.
+Locator: settings-v2-overview button name 開始三步設定; expected visible; element not found.
+The remaining new assertions are NOT_RUN after this first assertion stops the journey.
+
+Job-log retrieval: gh run view --log-failed --job 124044946555 returned
+'run 41049964850 is still in progress; logs will be available when it is complete'.
+Fallback: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124044946555/logs, exit 0.
+Downloaded only the relevant artifact log entries with bounded HTTP range reads, exit 0.
+Cancelled redundant slow full-artifact downloads; removed this turn's temporary binary response.
+
+STOP condition: initial figma_status had one connected document; fresh screenshots
+for 1429:32319 and 1429:33467 succeeded. Subsequent get_screenshot for 1429:33243
+returned 'Figma disconnected. Operation was not replayed; inspect the canvas after reconnecting.'
+The following two sequential screenshot requests returned 'No Figma document connected.
+Owner must run Plugins > Development > Fleet Bridge · Local in the target file.'
+No Figma writes, restarts, reconnect attempts or further Figma calls were made.
+Per the card's explicit disconnected-document STOP rule, implementation was not started.
+
+Static finding for resume: internal/pricing/pricing.go validPolicyInput/validTax accepts
+shipping_minor=0, tax_mode=inclusive, tax_rate_bps=0 (source inspection only, E1).
+No backend validation blocker identified; this is not runtime policy acceptance.
+Resume after integrator restores Fleet connection: remaining frame readbacks, then
+AD-04 verbatim paste and one implementation push for all card items. Preserve safety
+assertions while replacing old Edit-settings callers with signed navigation rows;
+full editor callers must reopen after reload/goBack/locale change.
+No source/contract/test changes this turn. No local tests, server, build or new CI run.
+GREEN / independent visual review / production: NOT_RUN.
+WAIT_RUN: 41049964850 (other jobs still pending at readback; no new push this turn).
+Humaux search/store/coord/canvas: unavailable; no shared-state write claimed.
+
+RELAY 2 readback — 2026-10-30
+PR head verified via gh pr view 354: 0cb0b29f0aa219170ba1755c64d38476fb9738f6
+PR base: r3/integration; branch: unit/parity-settings.
+gh pr checks 354: browser-identity FAILURE, run/job 41049964850 / 124044946555.
+Foundation SUCCESS: 41049964792 / 124043291284, tests-only head (not implementation GREEN).
+gh run view 41049964850 --log-failed --job 124044946555:
+  run still in progress; logs unavailable through this command.
+Fallback gh api actions/jobs/124044946555/logs: exit 0, confirms
+  TestBrowserSettingsWizardRealChain failed; synthetic receipt SHA ea3f8509265ac6778df62a75df9ef1d773c28510.
+Existing downloaded raw artifact red-artifact/playwright.log independently read:
+  settings-v2.spec.ts:659, setup remains available after completion,
+  expected visible 開始三步設定 button, element not found.
+E3 RED is confined to that assertion; remaining new assertions NOT_RUN after it.
+
+Fleet read-only command (exit 0):
+node /Volumes/data/live_commerce_architecture_v1/output/integrator/tools/figma-local/call.mjs figma_status '{}'
+Raw result: {"documents":[],"bridgePort":3057,"defaultFile":"iJ9lDdFIXgTlKkt5Tvrc0X"}
+STOP per card and Fleet README: no connected document. No further Figma calls,
+restart, reconnect, source/contract/test edits, implementation commit or push.
+Resume requires integrator-restored document connection; no new CI run created.
+WAIT_RUN: 41049964850 (existing RED run; not an implementation run).
+Humaux tools unavailable: search/get/store/coord/canvas NOT_RUN; no local memory substitute.
+Only this evidence log and PR body updated. All invoked shell sessions finished;
+no local tests/servers or background processes started. GREEN / E4 / LIVE NOT_RUN.
+
+RELAY 3 — 2026-10-30
+Fleet status: one connected document; required overview/step/review reads succeeded. Prior disconnect cleared.
+RED run/job 41049964850/124044946555 re-read via job logs; raw assertion independently read from red-artifact/playwright.log.
+Implementation prepared for all four card items; AD-04 pasted verbatim. No local tests or server.
+Merged origin/r3/integration (3ea359f79); regenerated browser ownership and dependency map (map unchanged).
+Static: browser-ownership generation/--check exit 0; check_packet.py exit 0 (structure only); git diff --check exit 0.
+Static tsc admin exit 0 using temporary worktree dependency links and current source aliases; final spec-inclusive result recorded after process exit.
+Implementation GREEN/E4/independent review/provider/SANDBOX/LIVE/production NOT_RUN or PENDING.
+Humaux search/store/canvas/coord/code-index/link unavailable; no shared-state write claimed.
+Final static tsc: admin plus settings-real.spec.ts and settings-v2.spec.ts, exit 0; tsc.log empty.
+Dependency map generation exit 0; git diff --check exit 0.
+
+RELAY 4 — 2026-10-30
+Implementation head: 6db6e486d20b660ca2ff88f645593ec8fe14252b (native PR/run readback).
+Gates 41054881458 / job 124070751799 (--browser-click-sweep@10/10) FAILURE.
+Synthetic merge: 44dae94e3d3d915fd75f5e123e57d81756f776b2.
+Foundation 41054881503 / job 124059758089 SUCCESS, partial only, not overall GREEN.
+gh run view --log-failed --job refused while workflow remains in progress.
+Fallback native job logs succeeded; artifact 12980896041 supplies raw click-sweep log:
+J4 custom domain, open Settings: locator.click timed out after 30000 ms waiting for
+getByRole('button', { name: '進階', exact: true }). 101 surface clicks: 98 pass, 3 skip;
+J4 first step failed; subsequent DNS and persistence steps skipped. E3 failure only.
+Root: settings journey retained removed Advanced entry and assumed reload retained editor.
+Targeted fix attempt 1: click signed 編輯設定 at entry and after reload. All DNS,
+domain row REQUESTED and persistence assertions remain unchanged. No product edits.
+Fetched origin/r3/integration and merged before spec edit: already up to date.
+Static: node --check; ownership generation and --check; depmap regeneration;
+git diff --check, all exit 0. Depmap unchanged. No local tests or servers.
+Additional outside-literal-card path: tests/ui/click-sweep.mjs (settings J4 caller only).
+Humaux now available; prior tool-unavailable notes apply only to earlier relays.
+Integrator relays completion/failure/cancellation for the new push; queue >3h escalates
+to integrator. Current implementation GREEN / independent review / production pending.

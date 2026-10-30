@@ -535,8 +535,8 @@ async function journeyDomain(state, journeys) {
     let card;
     await step(unit, "open Settings and find the custom domain card", "the storefront domains card is shown", async () => {
       await page.goto(`${adminOrigin}/zh-TW/settings?store=${store}`);
-      // The signed settings overview groups rare configuration under Advanced; enter it through the merchant control.
-      await page.getByRole("button", { name: "進階", exact: true }).click();
+      // AD-04 signed overview opens the full editor through Edit settings on every visit.
+      await page.getByTestId("settings-v2-overview").getByRole("button", { name: "編輯設定", exact: true }).click();
       card = page.getByTestId("storefront-domains-card");
       await expect(card).toBeVisible();
     }, page);
@@ -552,6 +552,8 @@ async function journeyDomain(state, journeys) {
     }, page);
     await step(unit, "reload Settings: the requested domain is listed", "the domain row persists in state REQUESTED", async () => {
       await page.reload();
+      // View choice is intentionally not persisted; reopen the full editor by a real merchant click.
+      await page.getByTestId("settings-v2-overview").getByRole("button", { name: "編輯設定", exact: true }).click();
       const row = page.getByTestId("storefront-domains-card").getByTestId("storefront-domain-row").filter({ hasText: host });
       await expect(row).toBeVisible(); await expect(row).toHaveAttribute("data-state", "REQUESTED");
     }, page);

@@ -16,8 +16,8 @@ async function login(page:Page,base=origin){
  await page.goto(`${base}/en/`);await page.getByRole("button",{name:"Sign in with identity service"}).click();
  await expect(page.getByRole("combobox",{name:"Switch store",exact:true})).toBeVisible();
 }
-async function enterAdvanced(page:Page){
- const advanced=page.getByRole("button",{name:/^(Advanced|進階|进阶)$/,exact:true});
+async function enterSettings(page:Page){
+ const advanced=page.getByRole("button",{name:/^(Edit settings|編輯設定|编辑设置|View settings|檢視設定|查看设置)$/,exact:true});
  await expect(advanced.or(page.getByTestId("metaconnect-card"))).toBeVisible();
  if(await advanced.isVisible())await advanced.click();
 }
@@ -59,7 +59,7 @@ for(const locale of locales){
  });
  test(`${locale} 390: named FB/IG capabilities keep review-required restricted`,async({page})=>{
   await page.setViewportSize({width:390,height:844});await scenario("review");await login(page);await page.goto(`${origin}/${locale}/settings?store=${store}`);
-  await enterAdvanced(page);
+  await enterSettings(page);
   await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);
   await expect(page.getByRole("button",{name:recheck[locale],exact:true})).toBeEnabled();
   await click(page,`recheck-${locale}`,()=>page.getByRole("button",{name:recheck[locale],exact:true}).click(),()=>expect(page.getByTestId("meta-health-recheck-result")).toBeVisible(),"localized recheck acknowledges scheduling");
@@ -69,22 +69,22 @@ for(const locale of locales){
    await expect(page.getByTestId(`meta-health-capability-${provider}-${capability}`)).toContainText(review[locale]);
   }
   await fits(page);await shot(page,`capabilities-${locale}-390`,'.meta-health-details');
-  await page.reload();await expect(rows).toHaveCount(8);
+  await page.reload();await enterSettings(page);await expect(rows).toHaveCount(8);
  });
 }
 test("desktop: warning is neutral, none and failed reads hide advice without blocking the workspace",async({page})=>{
  await scenario("warning");await login(page);await page.goto(`${origin}/en/settings?store=${store}`);
- await enterAdvanced(page);
+ await enterSettings(page);
  await expect(page.getByTestId("meta-health-banner")).toHaveAttribute("data-severity","warning");await shot(page,"warning-en-desktop",'[data-testid="meta-health-banner"]');
- await scenario("none");await page.reload();await expect(page.getByTestId("metaconnect-card")).toBeVisible();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);
+ await scenario("none");await page.reload();await enterSettings(page);await expect(page.getByTestId("metaconnect-card")).toBeVisible();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);
  // FAULT injection: B1 read failure only, not a merchant write.
  await page.route("**/meta/health",route=>route.fulfill({status:503,json:{code:"retry_later"}}));
- await scenario("blocking");await page.reload();await expect(page.getByTestId("meta-health-unavailable")).toBeVisible();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);
+ await scenario("blocking");await page.reload();await enterSettings(page);await expect(page.getByTestId("meta-health-unavailable")).toBeVisible();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);
  await expect(page.getByTestId("metaconnect-reconnect")).toBeEnabled();
 });
 test("explicit recheck schedules, then reports the real 429 without another schedule",async({page})=>{
  await scenario("none");await login(page);await page.goto(`${origin}/en/settings?store=${store}`);
- await enterAdvanced(page);
+ await enterSettings(page);
  const button=page.getByRole("button",{name:recheck.en,exact:true});await expect(button).toBeEnabled();
  const before=await(await control("facts")).json();
  await click(page,"recheck",()=>button.click(),()=>expect(page.getByTestId("meta-health-recheck-result")).toContainText("scheduled"),"B2 scheduling receipt displayed");
@@ -93,17 +93,26 @@ test("explicit recheck schedules, then reports the real 429 without another sche
  const checked=await(await control("facts")).json();
  await click(page,"recheck-too-soon",()=>button.click(),()=>expect(page.getByTestId("meta-health-recheck-result")).toContainText("one minute"),"real 429 is actionable and no success is invented");
  expect((await(await control("facts")).json()).next_due_at).toBe(checked.next_due_at);
- await page.reload();await expect(button).toBeVisible();
+ await page.reload();await enterSettings(page);await expect(button).toBeVisible();
 });
 test("viewer sees owner advice and capability state but no managed actions",async({browser})=>{
  await scenario("blocking");const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();
  const base=process.env.LC_HEALTH_VIEWER!;await login(page,base);await page.goto(`${base}/en/orders?store=${store}`);
  await expect(page.getByTestId("meta-health-owner")).toContainText("store owner");await expect(page.getByTestId("meta-health-settings")).toHaveCount(0);
- const before=await(await control("facts")).json();await page.goto(`${base}/en/settings?store=${store}`);
- await enterAdvanced(page);
- await expect(page.getByTestId(`meta-health-page-${pageID}`)).toBeVisible();
- await expect(page.getByTestId("meta-health-recheck")).toHaveCount(0);await expect(page.getByTestId("metaconnect-reconnect")).toBeDisabled();
- expect((await(await control("facts")).json()).next_due_at).toBe(before.next_due_at);await context.close();
+ const before=await(await control("facts")).json();
+ for(const locale of locales){
+  await page.goto(`${base}/${locale}/settings?store=${store}`);
+  const view=page.getByRole("button",{name:{"zh-TW":"檢視設定","zh-CN":"查看设置",en:"View settings"}[locale],exact:true});
+  await expect(view).toBeVisible();
+  await expect(page.getByRole("button",{name:/^(Edit settings|編輯設定|编辑设置|Start quick setup|開始三步設定|开始三步设置)$/,exact:true})).toHaveCount(0);
+  await click(page,`view-settings-${locale}`,()=>view.click(),()=>expect(page.getByTestId(`meta-health-page-${pageID}`)).toBeVisible(),"read-only member can inspect the connection");
+  await expect(page.getByTestId("meta-health-recheck")).toHaveCount(0);await expect(page.getByTestId("metaconnect-reconnect")).toBeDisabled();
+  await page.reload();await expect(view).toBeVisible();await view.click();
+  await expect(page.getByTestId(`meta-health-page-${pageID}`)).toBeVisible();
+  await expect(page.getByTestId("meta-health-recheck")).toHaveCount(0);await expect(page.getByTestId("metaconnect-reconnect")).toBeDisabled();
+  expect((await(await control("facts")).json()).next_due_at).toBe(before.next_due_at);
+ }
+ await context.close();
 });
 test("store switch discards a delayed old-store response",async({page})=>{
  await scenario("blocking");await login(page);
@@ -128,5 +137,5 @@ test("reconnect uses the existing OAuth picker and restores the same Page",async
  await page.getByTestId("meta-health-settings").click();
  await click(page,"existing-reconnect",()=>page.getByTestId("metaconnect-reconnect").click(),()=>expect(page.getByTestId("metaconnect-pick-submit")).toBeVisible(),"real OAuth callback opens the existing Page picker");
  await click(page,"confirm-same-page",()=>page.getByTestId("metaconnect-pick-submit").click(),()=>expect(page.getByTestId(`metaconnect-row-${pageID}`)).toBeVisible(),"same Page is connected again");
- await control("probe");await page.reload();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);await expect(page.getByTestId("metaconnect-token")).toHaveAttribute("data-state","active");
+ await control("probe");await page.reload();await enterSettings(page);await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);await expect(page.getByTestId("metaconnect-token")).toHaveAttribute("data-state","active");
 });
