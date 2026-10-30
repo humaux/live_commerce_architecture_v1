@@ -40,7 +40,9 @@ async function exerciseSignedCvsParity({ page, locale, ledger, densities }) {
     if (viewport === "mobile") await density(picker, densities, `signed-${state}`);
     const directory = path.join(process.env.LC_CVS_EVIDENCE, "parity");
     await mkdir(directory, { recursive: true });
-    await page.screenshot({ path: path.join(directory, `${frames[viewport][state]}.png`) });
+    // GitHub artifacts reject colons; retain the signed frame ID in frames above.
+    const filename = `${frames[viewport][state].replace(":", "-")}.png`;
+    await page.screenshot({ path: path.join(directory, filename) });
   };
   const facts = async () => {
     const card = picker.getByTestId("cvs-picker-chosen");
