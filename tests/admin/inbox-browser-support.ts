@@ -1,6 +1,7 @@
 // Purpose: shared real-store navigation, privacy checks and serial ledger output for inbox browser specs.
 // Depends on: Playwright, Node fs/path and Go-owned LC_BROWSER_* fixture environment.
 // Used by: ordinary inbox and credential-only bundle specs; never installs a test or mocks an API.
+// Invariants: navigation uses visible native controls on desktop and mobile; no forced or synthetic clicks.
 import { expect, type Page } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -67,7 +68,16 @@ async function selectFixtureStore(page: Page, next: string) {
   }
   await expect(page.getByTestId("inbox-thread")).toHaveCount(0);
   await expect(page.getByTestId("shell-store-selector")).toHaveValue(next);
-  await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+}
+
+/** The mobile rail is intentionally collapsed; open it through the shell's native menu button. */
+async function enterMessages(page: Page) {
+  const nav = page.getByTestId("nav-group-messages");
+  await expect(nav).toBeAttached();
+  if (!await nav.isVisible()) await page.getByRole("button", { name: "Open navigation", exact: true }).click();
+  await expect(nav).toBeVisible();
+  await nav.click();
+  await expect(page.getByTestId("inbox-page")).toBeVisible();
 }
 
 /** Sign into the MOCK IdP and enter Messages using the exact fixture store. */
@@ -75,12 +85,11 @@ async function login(page: Page) {
   await page.goto(new URL("/en/", origin).href);
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
   // Default-store permissions decide the role home; enter Messages through its real navigation first.
-  await expect(page.getByTestId("nav-group-messages")).toBeVisible();
-  await page.getByTestId("nav-group-messages").click();
+  await enterMessages(page);
   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
   await expect(page.getByTestId("inbox-page")).toBeVisible();
   await selectFixtureStore(page, store);
-  await page.getByTestId("nav-group-messages").click();
+  await enterMessages(page);
   await expect(page).toHaveURL(new URL(`/en/messages?store=${store}`, origin).href);
   await expect(page.getByTestId("inbox-page")).toBeVisible();
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();

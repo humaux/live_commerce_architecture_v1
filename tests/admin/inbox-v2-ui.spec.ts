@@ -54,13 +54,22 @@ const fixtureBindings = {
 const fixtureAgent = "10000000-0000-4000-8000-000000000072";
 const fixtureOperation = "10000000-0000-4000-8000-000000000075";
 
+// Signed frames are comparison targets, never fixtures injected into the product DOM.
+async function inboxParity(page: Page, frame: string) {
+  await expect(page).toHaveURL(/\/(zh-TW|zh-CN|en)\/messages/);
+  // GitHub artifacts reject colons in paths; retain the signed frame ID in the attachment label.
+  const path = test.info().outputPath("parity", `${frame.replaceAll(":", "-")}.png`);
+  await page.screenshot({ path });
+  await test.info().attach(`parity/${frame}.png`, { path, contentType: "image/png" });
+}
+
 /** Prepare isolated transport fixtures, never product state via DOM/evaluate or an actual Meta write. */
 async function mockInbox(page: Page, copy: Copy) {
   const future = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
   const incoming = copy.locale === "en" ? "What material is it?" : copy.locale === "zh-CN" ? "想了解材质。" : "想了解材質。";
   const state = { mode: "eligible", delivery: null as Delivery | null, omitOutbound: false, concurrentSent: false, original: "", posts: 0, queries: 0,
     laterDelivery: null as Delivery | null, omitLater: false, concurrentAfterLater: false, laterInbound: true,
-    methods: [] as string[], read: new Set<string>(), operationConversation: "", operationReads: 0 };
+    methods: [] as string[], read: new Set<string>(), operationConversation: "", operationReads: 0, sendKeys: [] as string[] };
   const rows = [ids.open, ids.instagram, ids.closed, ids.retry].map((id, i) => ({
     conversation_id: id, platform: i === 1 || i === 2 ? "instagram" : "messenger",
     display_name: `${copy.locale === "en" ? "Buyer" : copy.locale === "zh-CN" ? "买家" : "買家"} ${String.fromCharCode(65 + i)}`,
@@ -113,6 +122,7 @@ async function mockInbox(page: Page, copy: Copy) {
       const body = request.postDataJSON();
       expect(body.text).toBe(copy.draft);
       expect(request.headers()["idempotency-key"]).toMatch(/^[A-Za-z0-9_-]{8,128}$/);
+      state.sendKeys.push(request.headers()["idempotency-key"]);
       state.original = body.text;
       state.delivery = "queued";
       state.operationConversation = id;
@@ -182,8 +192,11 @@ async function open(page: Page, id: string) {
 async function query(page: Page, refreshLabel?: string) {
   const read = page.waitForResponse(response => response.request().method() === "GET" &&
     new URL(response.url()).pathname.includes("/inbox/conversations/") && new URL(response.url()).pathname.endsWith("/messages"));
-  await (refreshLabel ? page.getByTestId("inbox-thread").getByRole("button", { name: refreshLabel, exact: true })
-    : page.getByTestId("inbox-send-status")).click();
+  // Confirmed DM results reopen the composer. Subsequent observations use the signed thread Refresh action.
+  const status = page.getByTestId("inbox-send-status");
+  const label = refreshLabel ?? copies.find(copy => new URL(page.url()).pathname.startsWith(`/${copy.locale}/`))!.refresh;
+  await (!refreshLabel && await status.isVisible() ? status
+    : page.getByTestId("inbox-thread").getByRole("button", { name: label, exact: true })).click();
   expect((await read).status()).toBe(200);
   await expect(page.getByTestId("inbox-thread")).toHaveAttribute("aria-busy", "false");
 }
@@ -695,5 +708,147 @@ for (const copy of copies) {
       expect(median("chars"), "signed mobile UTF-16 character median").toBeLessThanOrEqual(100);
       expect(Math.max(...densities.map(row => row.blocks)), "no mobile state over 20 blocks").toBeLessThanOrEqual(20);
     }
+  });
+}
+
+// PARITY-INBOX-EDITOR: literal signed copy/controls on the real route. Existing
+// ACK/UNKNOWN/adversarial assertions above stay intact; preview is INBOX-PREVIEW.
+for (const copy of copies) {
+  test(`PARITY inbox ${copy.locale}: signed list controls and no legacy toolbar`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await enter(page, copy);
+    const list = page.getByTestId("inbox-list");
+    const toolbar = page.getByTestId("inbox-filter-all").locator("..");
+    await expect(list).toBeVisible();
+    await expect(toolbar.getByRole("button", { name: `${copy.all} 4`, exact: true })).toBeVisible();
+    await expect(toolbar.getByRole("button", { name: `${copy.unread} 2`, exact: true })).toBeVisible();
+    await expect(toolbar.getByRole("button", { name: `${copy.assigned} 3`, exact: true })).toBeVisible();
+    await expect(toolbar.getByRole("button", { name: copy.refresh, exact: true }), "unsigned list refresh is removed").toHaveCount(0);
+    await expect(page.getByTestId("inbox-more-filters"), "unsigned ellipsis is removed").toHaveCount(0);
+    await open(page, ids.open);
+    if (copy.locale === "zh-TW") await inboxParity(page, "1429:37361");
+    record(`PARITY list ${copy.locale}`, "open real Messages and click row", "signed filters; no extra refresh or ellipsis");
+  });
+
+  test(`PARITY inbox ${copy.locale}: own sent DM reopens follow-ups without another inbound`, async ({ page }) => {
+    const state = await enter(page, copy);
+    await open(page, ids.instagram);
+    await send(page, copy);
+    state.delivery = "sent"; // MOCK worker completion only; merchant observes it through the status control.
+    await query(page);
+    await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.sent);
+    await expect(page.getByTestId("reply-text"), "24h DM follow-up needs no new buyer message").toBeVisible();
+    await expect(page.getByTestId("reply-text")).toHaveValue("");
+    expect(state.concurrentSent).toBe(false);
+    expect(state.laterDelivery).toBeNull();
+    await page.reload();
+    await open(page, ids.instagram);
+    await expect(page.getByTestId("reply-text"), "confirmed DM follow-up persists after refresh").toBeVisible();
+    await page.getByTestId("reply-text").fill(copy.draft);
+    await expect(page.getByRole("button", { name: copy.send, exact: true })).toBeEnabled();
+    await page.getByRole("button", { name: copy.send, exact: true }).click();
+    await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.pending);
+    await expect(page.getByTestId("reply-text")).toBeHidden();
+    expect(state.posts).toBe(2);
+    expect(new Set(state.sendKeys).size, "follow-up is a new intent, never a replay of the first ACK").toBe(2);
+    record(`PARITY follow-up ${copy.locale}`, "Send, status, reload, fill, Send", "two distinct DM intents; no new inbound; pending still locks");
+  });
+}
+
+for (const mobile of [false, true]) {
+  const copy = copies[0];
+  for (const scenario of ["connection", "closed", "permission", "failed", "queued", "unknown", "still", "sent"] as const) {
+    for (const buyer of ["A", "B"] as const) {
+      if (buyer === "B" && !["queued", "unknown", "still"].includes(scenario)) continue;
+    test(`PARITY inbox ${mobile ? "mobile" : "desktop"} ${scenario} ${buyer}: signed send state`, async ({ page }) => {
+      await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 });
+      const state = await enter(page, copy);
+      if (["connection", "closed", "permission"].includes(scenario)) state.mode = scenario;
+      await open(page, buyer === "A" ? ids.open : ids.instagram);
+      const frames = {
+        connection: ["1429:37998", "1429:39190"], closed: ["1429:38090", "1429:39229"],
+        permission: ["1429:38182", "1429:39268"], failed: ["1429:38274", "1429:39307"],
+        queued: ["1429:38366", "1429:39346"], unknown: ["1429:38458", "1429:39385"],
+        still: ["1429:38550", "1429:39424"], sent: ["1429:38642", "1429:39463"],
+      };
+      if (scenario === "connection" || scenario === "closed" || scenario === "permission") {
+        await expect(page.getByTestId("inbox-eligibility")).toContainText(copy[scenario]);
+        await expect(page.getByRole("button", { name: copy.send, exact: true })).toBeDisabled();
+      } else {
+        await send(page, copy);
+        if (scenario !== "queued") {
+          state.delivery = scenario === "still" ? "unknown" : scenario;
+          await query(page);
+        }
+        if (scenario === "still") await query(page);
+        const expected = { queued: copy.pending, failed: copy.failed, unknown: copy.unknown,
+          still: buyer === "A" ? copy.still.replace("Instagram", "Messenger") : copy.still, sent: copy.sent };
+        await expect(page.getByTestId("inbox-delivery-state")).toHaveText(expected[scenario]);
+        if (scenario === "sent") await expect(page.getByTestId("reply-text")).toBeVisible();
+        else await expect(page.getByTestId("reply-text")).toBeHidden();
+      }
+      if (buyer === "B" && (scenario === "queued" || scenario === "unknown" || scenario === "still")) {
+        const b = { queued: ["1429:40688", "1429:41042"], unknown: ["1429:40780", "1429:41081"], still: ["1429:40872", "1429:41120"] };
+        await inboxParity(page, b[scenario][mobile ? 1 : 0]);
+      } else await inboxParity(page, frames[scenario][mobile ? 1 : 0]);
+      if (scenario === "failed") {
+        await page.getByRole("button", { name: copy.edit, exact: true }).click();
+        await expect(page.getByTestId("reply-text")).toHaveValue(copy.draft);
+        expect(state.posts).toBe(1);
+      }
+      record(`PARITY ${mobile ? "mobile" : "desktop"}/${scenario}`, "open, fill/Send and status or restriction", "signed state copy and safe action observed");
+    });
+    }
+  }
+}
+
+for (const mobile of [false, true]) {
+  test(`PARITY inbox ${mobile ? "mobile" : "desktop"}: fixed filter slots, list/thread and help frames`, async ({ page }) => {
+    const copy = copies[0];
+    const state = await enter(page, copy);
+    await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 });
+    const shot = (desktop: string, phone: string) => inboxParity(page, mobile ? phone : desktop);
+    if (mobile) await inboxParity(page, "1429:38826");
+    await page.getByRole("button", { name: `${copy.unread} 2`, exact: true }).click();
+    await expect(page.getByTestId(`conversation-${ids.open}`)).toBeHidden();
+    await shot("1429:37452", "1429:38876");
+    await open(page, ids.instagram);
+    await expect(page.getByTestId("inbox-thread")).toContainText(copy.read);
+    await shot("1429:37543", "1429:39114");
+    await page.getByTestId("inbox-back").click();
+    await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeHidden();
+    await shot("1429:37634", "1429:38926");
+    await page.getByTestId("inbox-filter-assigned").click();
+    await expect(page.getByTestId(`conversation-${ids.retry}`)).toBeHidden();
+    if (mobile) await inboxParity(page, "1429:38976");
+    await open(page, ids.open);
+    await shot("1429:37725", "1429:58696");
+    await page.getByTestId("inbox-back").click();
+    await page.getByTestId("inbox-filter-instagram").click();
+    await expect(page.getByTestId(`conversation-${ids.open}`)).toBeHidden();
+    if (mobile) await inboxParity(page, "1429:39026");
+    await open(page, ids.instagram);
+    await shot("1429:37816", "1429:58822");
+    await page.getByTestId("inbox-back").click();
+    await page.getByTestId("inbox-filter-all").click();
+    await open(page, ids.instagram);
+    await shot("1429:37907", "1429:39152");
+    await page.getByTestId("inbox-back").click();
+    await open(page, ids.open);
+    await page.getByTestId("reply-text").fill(copy.draft);
+    if (mobile) await inboxParity(page, "1429:39076");
+    await page.getByRole("button", { name: copy.clear, exact: true }).click();
+    await expect(page.getByTestId("reply-text")).toHaveValue("");
+    for (const mode of ["connection", "closed"] as const) {
+      state.mode = mode; // Transport restriction only; native reopening reads the server-shaped response.
+      await page.reload();
+      await open(page, ids.open);
+      await expect(page.getByTestId("inbox-eligibility")).toContainText(copy[mode]);
+      const name = mode === "closed" ? "查看窗口說明" : "檢查連接權限";
+      await page.getByRole("button", { name, exact: true }).click();
+      await expect(page.getByRole("button", { name, exact: true })).toHaveAttribute("aria-expanded", "true");
+      await shot(mode === "closed" ? "1429:61183" : "1429:61092", mode === "closed" ? "1429:61350" : "1429:61312");
+    }
+    record(`PARITY filters/help ${mobile}`, "click filters, rows, Back, clear, help", "stable filters; store unread facts; restriction help; no send");
   });
 }

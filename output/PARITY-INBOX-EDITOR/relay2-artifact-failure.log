@@ -1,0 +1,7 @@
+2026-10-30T12:30:51.4512579Z     browser_inbox_ui_test.go:358: Playwright 18 failed
+2026-10-30T12:30:51.4514213Z     browser_inbox_ui_test.go:358: Playwright 70 passed
+2026-10-30T12:30:56.0718039Z     browser_inbox_ui_test.go:402: inbox browser failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/inbox-ui/20261030T122415.733918922
+2026-10-30T12:31:03.0994258Z --- FAIL: TestBrowserInboxUIRealChain (414.43s)
+2026-10-30T12:31:03.4102257Z matrix-receipts: {"mode":"--browser-inbox","run_id":"41053520134","run_attempt":"1","sha":"bda615b1264c376d512599abb545b1f99060c6e9","status":"FAIL","test_count":90,"spec_count":89}
+2026-10-30T12:35:18.5921383Z --- FAIL: TestBrowserInboxUIRealChain (414.43s)
+2026-10-30T12:35:24.1450627Z ##[error]The path for one of the files in artifact is not valid: /playwright/inbox-ui/20261030T122415.733918922/results/inbox-v2-ui-PARITY-inbox-d-296a2-list-thread-and-help-frames/parity/1429:37452.png. Contains the following character:  Colon :
