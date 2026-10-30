@@ -1,7 +1,7 @@
 // Purpose: Read the signed settings surface from existing profile, delivery, catalog and quick-start responses.
 // Depends on: settings-client, settings-model, catalog-v2-model and storefront-model; existing authenticated BFF only.
 // Used by: components/SettingsV2.tsx.
-// Invariants: no guessed service codes, prices, markets, eligibility or timestamps; all mutations remain keyed/CAS fenced.
+// Invariants: AD-04 defaults apply only to explicit delivery selections; existing policies remain intact; keyed/CAS commands.
 import { readSettings, writeSettings, type Pending } from "./settings-client";
 import type { Market, Policy, Service } from "./settings-model";
 import type { Page } from "./model";
@@ -12,9 +12,10 @@ export type Profile = { name: string; contact_email: string; contact_phone: stri
 export type Quickstart = { completed: boolean; completed_at: string | null; steps: { store_name: boolean; shipping: boolean; first_product: boolean } };
 export const deliveryKinds = ["home", "cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"] as const;
 export type DeliveryKind = typeof deliveryKinds[number];
-export type Delivery = { kind: DeliveryKind; service: Service | null };
+export type Delivery = { kind: DeliveryKind; service: Service | null; createCode: string | null; policy: Policy | null };
 export type Snapshot = {
   profile: Profile; marker: Quickstart; delivery: Delivery[]; product: ProductDetail | null;
+  market: Market | null; createMarket: boolean;
   warehouses: { id: string; name: string }[]; publicURL: string | null;
 };
 export type SimpleDraft = {
@@ -59,16 +60,38 @@ export async function readSnapshot(store: string, currency: string, recoveryProd
   // No arbitrary first-market choice: multiple markets require the existing advanced editor.
   const candidates = markets?.items.filter(m => m.active && m.currency === currency) ?? [];
   const market = markets && !markets.next_cursor && candidates.length === 1 ? candidates[0] : null;
+  const createMarket = !!markets && !markets.next_cursor && candidates.length === 0 && !markets.items.some(m => m.code === "tw");
   let services: Service[] = [];
+  let completeServices = createMarket;
   if (market) {
     const page = await readSettings<Page<Service>>(store, `markets/${market.id}/countries/TW/delivery-services`);
-    if (!page.next_cursor) services = page.items;
+    if (!page.next_cursor) { services = page.items; completeServices = true; }
   }
   const delivery = await Promise.all(deliveryKinds.map(async kind => {
     const matches = services.filter(s => s.delivery_kind === kind && s.mode === "MANUAL");
-    if (!market || matches.length !== 1) return { kind, service: null };
+    const unavailable = { kind, service: null, createCode: null, policy: null };
+    if (!completeServices || matches.length > 1) return unavailable;
+    if (!matches.length) {
+      const code = `quickstart_${kind}`;
+      if (services.some(s => s.code === code)) return unavailable;
+      if (!market) return { ...unavailable, createCode: createMarket ? code : null };
+      // An orphan policy may be the acknowledged first half of a previous save.
+      // Never mistake a failed read for absence or overwrite an existing policy.
+      try {
+        const policy = await readSettings<Policy>(store, `markets/${market.id}/countries/TW/delivery-services/${code}/policy`);
+        if (policy.market_id !== market.id || policy.country !== "TW" || policy.method !== `delivery:${code}` ||
+            policy.currency !== currency || !Number.isSafeInteger(policy.version) || policy.version < 1 ||
+            !policy.enabled || policy.shipping_mode !== "country_flat" || policy.shipping_minor !== 0 ||
+            policy.tax_mode !== "inclusive" || policy.tax_basis !== "goods" || policy.tax_rate_bps !== 0) return unavailable;
+        return { ...unavailable, createCode: code, policy };
+      } catch (error) {
+        return error && typeof error === "object" && "code" in error && error.code === "not_found"
+          ? { ...unavailable, createCode: code } : unavailable;
+      }
+    }
+    if (!market) return unavailable;
     const code = matches[0].code;
-    if (!/^[a-z][a-z0-9_-]{0,39}$/.test(code)) return { kind, service: null };
+    if (!/^[a-z][a-z0-9_-]{0,39}$/.test(code)) return unavailable;
     try {
       const path = `markets/${market.id}/countries/TW/delivery-services/${code}`;
       const [service, policy] = await Promise.all([
@@ -78,12 +101,12 @@ export async function readSnapshot(store: string, currency: string, recoveryProd
           service.delivery_kind !== kind || service.mode !== "MANUAL" || service.currency !== currency ||
           !Number.isSafeInteger(service.version) || service.version < 1 || !policy.enabled ||
           policy.market_id !== service.market_id || policy.country !== service.country || policy.method !== service.policy_method ||
-          policy.version !== service.policy_version || policy.currency !== currency) return { kind, service: null };
-      return { kind, service };
-    } catch { return { kind, service: null }; }
+          policy.version !== service.policy_version || policy.currency !== currency) return unavailable;
+      return { kind, service, createCode: null, policy };
+    } catch { return unavailable; }
   }));
   const domains = storefront?.published ? storefront.domains.filter(d => d.serving && Date.parse(d.valid_until) > Date.now()) : [];
-  return { profile: parseProfile(profileRaw), marker, delivery, product, warehouses,
+  return { profile: parseProfile(profileRaw), marker, delivery, product, warehouses, market, createMarket,
     publicURL: domains.length === 1 ? domains[0].origin : null };
 }
 
@@ -134,10 +157,12 @@ function validReceipt(resource: string, sent: Record<string, unknown>, value: un
       !!steps && [steps.store_name, steps.shipping, steps.first_product].every(v => typeof v === "boolean");
   }
   if (resource === "products") return uuid(saved.id) && saved.name === sent.name && saved.status === "draft";
+  if (resource === "markets") return uuid(saved.id) && saved.active === true && saved.version === 1 &&
+    ["code", "name", "currency"].every(k => saved[k] === sent[k]);
   if (resource === "skus") return uuid(saved.id) && ["product_id", "code", "price_minor"].every(k => saved[k] === sent[k]);
   if (resource === "inventory/adjustments") return saved.sku_id === sent.sku_id && saved.warehouse_id === sent.warehouse_id && saved.version === Number(sent.expected_version) + 1;
   return saved.version === Number(sent.expected_version) + 1 &&
-    Object.entries(sent).every(([k, v]) => k === "expected_version" || saved[k] === v);
+    Object.entries(sent).every(([k, v]) => k === "expected_version" || (resource.endsWith("/policy") && k === "configuration_ref") || saved[k] === v);
 }
 
 /** Reads reconcile committed receipts and the append-only completion marker, never infer an absent write. */
