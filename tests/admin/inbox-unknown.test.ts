@@ -477,7 +477,7 @@ for (const locale of Object.keys(warning)) {
         })) };
       const calls = transport(() => response(++reads === 1 ? projection("sent") :
         reads === 2 ? projection(state) : recovered ? projection("sent") : unrelated
-          ? { ...page, items: [...page.items, { ...projection("sent").items.at(-1), at: "2030-01-01T00:00:03Z" }] }
+          ? { ...page, items: [...page.items, { ...projection("sent").items.at(-1), outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:03Z" }] }
           : page));
       const host = mount(env, locale);
       await loaded(host, "sent");
