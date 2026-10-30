@@ -1,0 +1,6 @@
+PARITY-GROWTH tests-only RED stage
+BASE_SHA=3ea359f796d36153bb4b8aa7259e4e0c27676b86
+RUN=PENDING_PUSH
+EXPECTED_RED=real-route signed heading/control assertions; not compile
+LOCAL_TESTS=NOT_RUN (owner CI-only rule)
+GREEN=NOT_RUN

@@ -1,0 +1,569 @@
+[
+  {
+    "frame": "5:17304",
+    "name": "Admin · 广告详情 · SHOPLINE",
+    "viewport": "1440x900",
+    "figma_png": "figma/5-17304/get_screenshot-5-17304-1793361325193-0.png",
+    "sha256": "3f825a10a94107428bcbb664e9061e947e2dca20d50fc1ce67012b85a2c04ddd",
+    "context_logs": [
+      "figma/5-17304/get_design_context.log",
+      "figma/5-17304/detail-1136-7330.log"
+    ],
+    "ci_screenshot": "parity/5:17304.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "5:17438",
+    "name": "Admin Mobile · 广告详情 · SHOPLINE",
+    "viewport": "390x844",
+    "figma_png": "figma/5-17438/get_screenshot-5-17438-1793361326127-0.png",
+    "sha256": "a0bae7480dfe7cefc01b8906de690c61c5c59cd3808194c68c3a822eaf21b839",
+    "context_logs": [
+      "figma/5-17438/detail-1136-7422.log",
+      "figma/5-17438/get_design_context.log"
+    ],
+    "ci_screenshot": "parity/5:17438.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "5:17516",
+    "name": "Admin · 资产授权 · SHOPLINE",
+    "viewport": "1440x900",
+    "figma_png": "figma/5-17516/get_screenshot-5-17516-1793361328107-0.png",
+    "sha256": "b0737210e46cfadc43f073a2382b95e7c248b8a6af8a98b255fd15e1882e3b43",
+    "context_logs": [
+      "figma/5-17516/get_design_context.log"
+    ],
+    "ci_screenshot": "parity/5:17516.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "5:17633",
+    "name": "Admin Mobile · 资产授权 · SHOPLINE",
+    "viewport": "390x844",
+    "figma_png": "figma/5-17633/get_screenshot-5-17633-1793361329143-0.png",
+    "sha256": "be88b5da64844f1e761738afa0ba7a464d99a9cb23cd22c728f86b227ab3a887",
+    "context_logs": [
+      "figma/5-17633/get_design_context.log"
+    ],
+    "ci_screenshot": "parity/5:17633.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "6:20130",
+    "name": "Admin · 广告草稿 · SHOPLINE",
+    "viewport": "1440x900",
+    "figma_png": "figma/6-20130/get_screenshot-6-20130-1793361330220-0.png",
+    "sha256": "4b88cdfa95ebddf82546eb2bb27b6fb34522e4239e750f6ad6875c0bf3dea760",
+    "context_logs": [
+      "figma/6-20130/get_design_context.log",
+      "figma/6-20130/detail-1051-6803.log",
+      "figma/6-20130/detail-1051-6809.log"
+    ],
+    "ci_screenshot": "parity/6:20130.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "6:20255",
+    "name": "Admin Mobile · 广告草稿 · SHOPLINE",
+    "viewport": "390x844",
+    "figma_png": "figma/6-20255/get_screenshot-6-20255-1793361331165-0.png",
+    "sha256": "f3ea7e0ab4abc775626100a8b60a9ae0455277b1250670c90a678db76a1129b2",
+    "context_logs": [
+      "figma/6-20255/detail-1051-7004.log",
+      "figma/6-20255/detail-1051-7012.log",
+      "figma/6-20255/get_design_context.log",
+      "figma/6-20255/detail-1051-6998.log",
+      "figma/6-20255/detail-1051-7034.log",
+      "figma/6-20255/detail-1051-7031.log",
+      "figma/6-20255/detail-1051-7024.log"
+    ],
+    "ci_screenshot": "parity/6:20255.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "6:23064",
+    "name": "Admin Desktop · 歸因報表 · DaWan Live",
+    "viewport": "1440x900",
+    "figma_png": "figma/6-23064/get_screenshot-6-23064-1793361332168-0.png",
+    "sha256": "c0373c1370126e118f0ac903a5bda11bf693fddf3f2638256ab7f542f089a81d",
+    "context_logs": [
+      "figma/6-23064/get_design_context.log",
+      "figma/6-23064/detail-1152-7274.log",
+      "figma/6-23064/detail-1152-7255.log",
+      "figma/6-23064/detail-1194-10468.log"
+    ],
+    "ci_screenshot": "parity/6:23064.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "6:23199",
+    "name": "Admin Mobile · 歸因報表 · DaWan Live",
+    "viewport": "390x844",
+    "figma_png": "figma/6-23199/get_screenshot-6-23199-1793361333035-0.png",
+    "sha256": "7ae7e1e8f8d931f1f985f5000be69175fa764c1dbb0c6143898bbebed2737573",
+    "context_logs": [
+      "figma/6-23199/detail-1152-7389.log",
+      "figma/6-23199/detail-1152-7400.log",
+      "figma/6-23199/get_design_context.log",
+      "figma/6-23199/detail-1152-7419.log",
+      "figma/6-23199/detail-1152-7392.log"
+    ],
+    "ci_screenshot": "parity/6:23199.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:6945",
+    "name": "Admin Desktop · 廣告草稿 · source",
+    "viewport": "1440x900",
+    "figma_png": "figma/1049-6945/get_screenshot-1049-6945-1793361334045-0.png",
+    "sha256": "997aa85c1987c7437259ccca443302c61aa179289aa52bbc6170e94ebd3ea33e",
+    "context_logs": [
+      "figma/1049-6945/detail-1051-6889.log",
+      "figma/1049-6945/get_design_context.log",
+      "figma/1049-6945/source-candidates.log",
+      "figma/1049-6945/detail-1051-6908.log"
+    ],
+    "ci_screenshot": "parity/1049:6945.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7058",
+    "name": "Admin Mobile · 廣告草稿 · source",
+    "viewport": "390x844",
+    "figma_png": "figma/1049-7058/get_screenshot-1049-7058-1793361334851-0.png",
+    "sha256": "91e114b08bac4dfc4a0a52e37acb9b10d9acf2a96a6968e581684bcd77f5736a",
+    "context_logs": [
+      "figma/1049-7058/get_design_context.log",
+      "figma/1049-7058/detail-1051-7077.log",
+      "figma/1049-7058/detail-1051-7058.log"
+    ],
+    "ci_screenshot": "parity/1049:7058.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7120",
+    "name": "Admin Desktop · 廣告草稿 · settings",
+    "viewport": "1440x900",
+    "figma_png": "figma/1049-7120/get_screenshot-1049-7120-1793361336145-0.png",
+    "sha256": "2ff924069e4058bd9557d818cd126c98eaecc5b22fe1d5551114f77ca97ef4fb",
+    "context_logs": [
+      "figma/1049-7120/detail-1056-6949.log",
+      "figma/1049-7120/get_design_context.log"
+    ],
+    "ci_screenshot": "parity/1049:7120.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7233",
+    "name": "Admin Mobile · 廣告草稿 · settings",
+    "viewport": "390x844",
+    "figma_png": "figma/1049-7233/get_screenshot-1049-7233-1793361337052-0.png",
+    "sha256": "130fb330e941dd629fd614945659a45628b91171276e5a012f88e764fe00e3c2",
+    "context_logs": [
+      "figma/1049-7233/detail-1056-7074.log",
+      "figma/1049-7233/get_design_context.log",
+      "figma/1049-7233/detail-1056-7037.log",
+      "figma/1049-7233/detail-1056-7023.log",
+      "figma/1049-7233/detail-1056-7050.log"
+    ],
+    "ci_screenshot": "parity/1049:7233.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7295",
+    "name": "Admin Desktop · 廣告草稿 · review",
+    "viewport": "1440x900",
+    "figma_png": "figma/1049-7295/get_screenshot-1049-7295-1793361338469-0.png",
+    "sha256": "04d85b72645bd530a366f22a52d722a9a9f314ce28e06d4c477bcd607c8c1065",
+    "context_logs": [
+      "figma/1049-7295/get_design_context.log",
+      "figma/1049-7295/detail-1052-6874.log"
+    ],
+    "ci_screenshot": "parity/1049:7295.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7408",
+    "name": "Admin Mobile · 廣告草稿 · review",
+    "viewport": "390x844",
+    "figma_png": "figma/1049-7408/get_screenshot-1049-7408-1793361339565-0.png",
+    "sha256": "e322788bce9fc1c04fd779985a63bb7a751d4bb1f8d7eeaf260c698008d73457",
+    "context_logs": [
+      "figma/1049-7408/detail-1052-7132.log",
+      "figma/1049-7408/get_design_context.log",
+      "figma/1049-7408/detail-1052-7116.log",
+      "figma/1049-7408/detail-1052-7129.log"
+    ],
+    "ci_screenshot": "parity/1049:7408.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7470",
+    "name": "Admin Desktop · 廣告草稿 · saved",
+    "viewport": "1440x900",
+    "figma_png": "figma/1049-7470/get_screenshot-1049-7470-1793361341105-0.png",
+    "sha256": "1ffab850de4bdff713d648856d3c1a823460ee405f6856036271b1c51aeb0de5",
+    "context_logs": [
+      "figma/1049-7470/detail-1052-6943.log",
+      "figma/1049-7470/get_design_context.log",
+      "figma/1049-7470/detail-1052-6937.log"
+    ],
+    "ci_screenshot": "parity/1049:7470.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7583",
+    "name": "Admin Mobile · 廣告草稿 · saved",
+    "viewport": "390x844",
+    "figma_png": "figma/1049-7583/get_screenshot-1049-7583-1793361342801-0.png",
+    "sha256": "610aafa13714764e8e43a81624ad1da24232f5be6b0d4f0c43f63dc5793bc64d",
+    "context_logs": [
+      "figma/1049-7583/get_design_context.log",
+      "figma/1049-7583/detail-1052-7153.log",
+      "figma/1049-7583/detail-1052-7159.log"
+    ],
+    "ci_screenshot": "parity/1049:7583.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7645",
+    "name": "Admin Desktop · 廣告草稿 · status",
+    "viewport": "1440x900",
+    "figma_png": "figma/1049-7645/get_screenshot-1049-7645-1793361344573-0.png",
+    "sha256": "93b9c2146a4096735f852da674be067c0338f0ea016b801c7751cea06ea97c57",
+    "context_logs": [
+      "figma/1049-7645/detail-1052-6986.log",
+      "figma/1049-7645/get_design_context.log"
+    ],
+    "ci_screenshot": "parity/1049:7645.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7758",
+    "name": "Admin Mobile · 廣告草稿 · status",
+    "viewport": "390x844",
+    "figma_png": "figma/1049-7758/get_screenshot-1049-7758-1793361345566-0.png",
+    "sha256": "bad45f8f669957d6d54b08b07e2d56a54dc081d3157c6f7b86b4fdb6a7d60d72",
+    "context_logs": [
+      "figma/1049-7758/get_design_context.log",
+      "figma/1049-7758/detail-1052-7179.log"
+    ],
+    "ci_screenshot": "parity/1049:7758.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7820",
+    "name": "Admin Desktop · 廣告草稿 · leave",
+    "viewport": "1440x900",
+    "figma_png": "figma/1049-7820/get_screenshot-1049-7820-1793361346963-0.png",
+    "sha256": "afe196d4dbb3b47124788c3cc5d7108bbe233da0d98f21e62344de67c18104c7",
+    "context_logs": [
+      "figma/1049-7820/detail-1052-7045.log",
+      "figma/1049-7820/get_design_context.log"
+    ],
+    "ci_screenshot": "parity/1049:7820.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7933",
+    "name": "Admin Mobile · 廣告草稿 · leave",
+    "viewport": "390x844",
+    "figma_png": "figma/1049-7933/get_screenshot-1049-7933-1793361348136-0.png",
+    "sha256": "3a5a634c23a9c318e0f1e2d4c856de64325ba75ea990d50dc436628d7b99901c",
+    "context_logs": [
+      "figma/1049-7933/get_design_context.log",
+      "figma/1049-7933/detail-1052-7215.log"
+    ],
+    "ci_screenshot": "parity/1049:7933.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:7995",
+    "name": "Admin Desktop · 廣告草稿 · conflict",
+    "viewport": "1440x900",
+    "figma_png": "figma/1049-7995/get_screenshot-1049-7995-1793361349622-0.png",
+    "sha256": "ced54f7e0b4cdc52158c7b934d15f4970334211a6639fa94c4b4f95eb5315913",
+    "context_logs": [
+      "figma/1049-7995/detail-1052-7093.log",
+      "figma/1049-7995/detail-1052-7090.log",
+      "figma/1049-7995/get_design_context.log"
+    ],
+    "ci_screenshot": "parity/1049:7995.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1049:8108",
+    "name": "Admin Mobile · 廣告草稿 · conflict",
+    "viewport": "390x844",
+    "figma_png": "figma/1049-8108/get_screenshot-1049-8108-1793361350258-0.png",
+    "sha256": "5a29aec36a4955e8da1262203c5fec33789f64a21edcf3a8f95332adaee28de8",
+    "context_logs": [
+      "figma/1049-8108/detail-1052-7240.log",
+      "figma/1049-8108/get_design_context.log",
+      "figma/1049-8108/detail-1052-7237.log"
+    ],
+    "ci_screenshot": "parity/1049:8108.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1134:9548",
+    "name": "Admin Desktop · 廣告列表 · 狀態說明",
+    "viewport": "1440x900",
+    "figma_png": "figma/1134-9548/get_screenshot-1134-9548-1793361351393-0.png",
+    "sha256": "3deee0c99950eb80e85c94b6d297077cd7c7621792ce8d46b0e9e0b18b10eda1",
+    "context_logs": [
+      "figma/1134-9548/detail-1136-7220.log",
+      "figma/1134-9548/get_design_context.log",
+      "figma/1134-9548/detail-1136-7247.log",
+      "figma/1134-9548/detail-1136-7238.log",
+      "figma/1134-9548/detail-1136-7211.log",
+      "figma/1134-9548/detail-1136-7229.log",
+      "figma/1134-9548/detail-1136-7202.log"
+    ],
+    "ci_screenshot": "parity/1134:9548.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1134:9549",
+    "name": "Admin Mobile · 廣告列表 · 狀態說明",
+    "viewport": "390x844",
+    "figma_png": "figma/1134-9549/get_screenshot-1134-9549-1793361352015-0.png",
+    "sha256": "e36ad3497e46f06cd4caa745f6e53f7269025cf33297bd732d24126a7be8e551",
+    "context_logs": [
+      "figma/1134-9549/detail-1136-7352.log",
+      "figma/1134-9549/detail-1136-7384.log",
+      "figma/1134-9549/detail-1136-7368.log",
+      "figma/1134-9549/detail-1136-7380.log",
+      "figma/1134-9549/detail-1136-7356.log",
+      "figma/1134-9549/get_design_context.log",
+      "figma/1134-9549/detail-1136-7372.log",
+      "figma/1134-9549/detail-1136-7364.log",
+      "figma/1134-9549/detail-1136-7348.log",
+      "figma/1134-9549/detail-1136-7360.log",
+      "figma/1134-9549/detail-1136-7376.log",
+      "figma/1134-9549/detail-1136-7388.log"
+    ],
+    "ci_screenshot": "parity/1134:9549.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1134:9550",
+    "name": "Admin Desktop · 廣告列表 · 讀取回饋",
+    "viewport": "1440x900",
+    "figma_png": "figma/1134-9550/get_screenshot-1134-9550-1793361353077-0.png",
+    "sha256": "c0a6b0465573316278b4a63d586c9eef85e0a76444011fdad91d1f90bc3bdf68",
+    "context_logs": [
+      "figma/1134-9550/get_design_context.log",
+      "figma/1134-9550/detail-1136-7285.log"
+    ],
+    "ci_screenshot": "parity/1134:9550.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1134:9551",
+    "name": "Admin Mobile · 廣告列表 · 讀取回饋",
+    "viewport": "390x844",
+    "figma_png": "figma/1134-9551/get_screenshot-1134-9551-1793361353601-0.png",
+    "sha256": "00d56af85294e5677c1ae287d3c698db296097442f5e85869c4c8d578d15c2e6",
+    "context_logs": [
+      "figma/1134-9551/get_design_context.log",
+      "figma/1134-9551/detail-1136-7400.log"
+    ],
+    "ci_screenshot": "parity/1134:9551.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1151:9420",
+    "name": "Admin Desktop · 成效總覽 · DaWan Live",
+    "viewport": "1440x900",
+    "figma_png": "figma/1151-9420/get_screenshot-1151-9420-1793361354607-0.png",
+    "sha256": "0904554b5bd5777dcafa569c4c72c4f5ebffb548832c3e66f2765ecbac4d5288",
+    "context_logs": [
+      "figma/1151-9420/detail-1152-7362.log",
+      "figma/1151-9420/get_design_context.log",
+      "figma/1151-9420/detail-1152-7321.log",
+      "figma/1151-9420/detail-1194-10469.log"
+    ],
+    "ci_screenshot": "parity/1151:9420.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1151:9421",
+    "name": "Admin Mobile · 成效總覽 · DaWan Live",
+    "viewport": "390x844",
+    "figma_png": "figma/1151-9421/get_screenshot-1151-9421-1793361355231-0.png",
+    "sha256": "46988d03ff57b6e52c79e85bd6b6473915f546e7c0f4353e0dedae2121c1bc3d",
+    "context_logs": [
+      "figma/1151-9421/get_design_context.log",
+      "figma/1151-9421/detail-1152-7486.log",
+      "figma/1151-9421/detail-1152-7445.log",
+      "figma/1151-9421/detail-1152-7440.log",
+      "figma/1151-9421/detail-1152-7437.log"
+    ],
+    "ci_screenshot": "parity/1151:9421.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1151:9422",
+    "name": "Admin Desktop · 廣告歸因明細 · DaWan Live",
+    "viewport": "1440x900",
+    "figma_png": "figma/1151-9422/get_screenshot-1151-9422-1793361356209-0.png",
+    "sha256": "06306feabceb7cee49634a488cba431c7247ca6b4a042076d993625a92556b4e",
+    "context_logs": [
+      "figma/1151-9422/get_design_context.log",
+      "figma/1151-9422/detail-1153-7302.log",
+      "figma/1151-9422/detail-1153-7297.log",
+      "figma/1151-9422/detail-1153-7294.log",
+      "figma/1151-9422/detail-1153-7347.log"
+    ],
+    "ci_screenshot": "parity/1151:9422.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1151:9423",
+    "name": "Admin Mobile · 廣告歸因明細 · DaWan Live",
+    "viewport": "390x844",
+    "figma_png": "figma/1151-9423/get_screenshot-1151-9423-1793361357321-0.png",
+    "sha256": "e6c0b21455abd7d784f234d521290819e526f95d2c6683ce4e297e2cd5a2d8a7",
+    "context_logs": [
+      "figma/1151-9423/get_design_context.log",
+      "figma/1151-9423/detail-1153-7472.log",
+      "figma/1151-9423/detail-1153-7477.log",
+      "figma/1151-9423/detail-1153-7469.log",
+      "figma/1151-9423/detail-1153-7522.log"
+    ],
+    "ci_screenshot": "parity/1151:9423.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1151:9428",
+    "name": "Admin Desktop · Meta 分組明細 · DaWan Live",
+    "viewport": "1440x900",
+    "figma_png": "figma/1151-9428/get_screenshot-1151-9428-1793361358350-0.png",
+    "sha256": "2d95d3877b1f3ba870e227c2d3b1d543954ec8dbaf4b6b4ff8268699afa1696d",
+    "context_logs": [
+      "figma/1151-9428/detail-1154-7338.log",
+      "figma/1151-9428/get_design_context.log",
+      "figma/1151-9428/detail-1154-7333.log",
+      "figma/1151-9428/detail-1154-7330.log"
+    ],
+    "ci_screenshot": "parity/1151:9428.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1151:9429",
+    "name": "Admin Mobile · Meta 分組明細 · DaWan Live",
+    "viewport": "390x844",
+    "figma_png": "figma/1151-9429/get_screenshot-1151-9429-1793361358989-0.png",
+    "sha256": "7aae748e6dc21c30a7fc665322762fd65aa36442036f548279b949c39f15add3",
+    "context_logs": [
+      "figma/1151-9429/get_design_context.log",
+      "figma/1151-9429/detail-1154-7544.log",
+      "figma/1151-9429/detail-1154-7547.log",
+      "figma/1151-9429/detail-1154-7552.log"
+    ],
+    "ci_screenshot": "parity/1151:9429.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "4:11612",
+    "name": "Admin · 营销 · SHOPLINE",
+    "viewport": "1440x900",
+    "figma_png": "figma/4-11612/get_screenshot-4-11612-1793361359948-0.png",
+    "sha256": "e156e7c360e656e65d18be8a76b8f177bec334a2c755f00e3c80640982ef864c",
+    "context_logs": [
+      "figma/4-11612/detail-1135-7300.log",
+      "figma/4-11612/detail-1135-7303.log",
+      "figma/4-11612/detail-1135-7273.log",
+      "figma/4-11612/detail-1135-7264.log",
+      "figma/4-11612/get_design_context.log",
+      "figma/4-11612/detail-1194-7728.log",
+      "figma/4-11612/detail-1194-7731.log",
+      "figma/4-11612/detail-1204-11191.log"
+    ],
+    "ci_screenshot": "parity/4:11612.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "4:11750",
+    "name": "Admin Mobile · 营销 · SHOPLINE",
+    "viewport": "390x844",
+    "figma_png": "figma/4-11750/get_screenshot-4-11750-1793361360696-0.png",
+    "sha256": "07809dd37adca5f6ad5256cb53dcbf30187108b891a0278c553310b72f2805f4",
+    "context_logs": [
+      "figma/4-11750/get_design_context.log",
+      "figma/4-11750/detail-1135-7358.log",
+      "figma/4-11750/detail-1194-7734.log",
+      "figma/4-11750/detail-1194-7737.log",
+      "figma/4-11750/detail-1135-7355.log",
+      "figma/4-11750/detail-1135-7321.log",
+      "figma/4-11750/detail-1204-11197.log",
+      "figma/4-11750/detail-1135-7330.log"
+    ],
+    "ci_screenshot": "parity/4:11750.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "6:18113",
+    "name": "Admin · 客户分群 · SHOPLINE",
+    "viewport": "1440x900",
+    "figma_png": "figma/6-18113/get_screenshot-6-18113-1793361361726-0.png",
+    "sha256": "63027494800f402ddb5e5aedef0c14c28ccf847fdf1d2268d62912977f4e14fc",
+    "context_logs": [
+      "figma/6-18113/get_design_context.log"
+    ],
+    "ci_screenshot": "parity/6:18113.png",
+    "status": "DEFERRED: segment DTO absent"
+  },
+  {
+    "frame": "6:18232",
+    "name": "Admin Mobile · 客户分群 · SHOPLINE",
+    "viewport": "390x844",
+    "figma_png": "figma/6-18232/get_screenshot-6-18232-1793361362834-0.png",
+    "sha256": "54798b3bcfebf43c4512f417ef5b217f9ae1ca9060e3a8e7a8ee931731de6163",
+    "context_logs": [
+      "figma/6-18232/get_design_context.log"
+    ],
+    "ci_screenshot": "parity/6:18232.png",
+    "status": "DEFERRED: segment DTO absent"
+  },
+  {
+    "frame": "1194:7740",
+    "name": "Admin · 营销 · SHOPLINE · 功能關閉",
+    "viewport": "1440x900",
+    "figma_png": "figma/1194-7740/get_screenshot-1194-7740-1793361364024-0.png",
+    "sha256": "5fd97f4bccadd7b2b441dcd70c3d8c71939b754b8f233f136d8963356e4eb644",
+    "context_logs": [
+      "figma/1194-7740/detail-1194-7789.log",
+      "figma/1194-7740/detail-1194-7762.log",
+      "figma/1194-7740/detail-1194-7767.log",
+      "figma/1194-7740/get_design_context.log",
+      "figma/1194-7740/detail-1194-7853.log",
+      "figma/1194-7740/detail-1194-7850.log",
+      "figma/1194-7740/detail-1194-7792.log",
+      "figma/1194-7740/detail-1204-11194.log"
+    ],
+    "ci_screenshot": "parity/1194:7740.png",
+    "status": "NOT_RUN"
+  },
+  {
+    "frame": "1194:7796",
+    "name": "Admin Mobile · 营销 · SHOPLINE · 功能關閉",
+    "viewport": "390x844",
+    "figma_png": "figma/1194-7796/get_screenshot-1194-7796-1793361364571-0.png",
+    "sha256": "c6864772196143aec1710c543783be1806a2c5003951a2b516ced36fcca0d09f",
+    "context_logs": [
+      "figma/1194-7796/detail-1194-7830.log",
+      "figma/1194-7796/detail-1194-7833.log",
+      "figma/1194-7796/detail-1204-11200.log",
+      "figma/1194-7796/get_design_context.log",
+      "figma/1194-7796/detail-1194-7860.log",
+      "figma/1194-7796/detail-1194-7863.log",
+      "figma/1194-7796/detail-1194-7810.log",
+      "figma/1194-7796/detail-1194-7805.log"
+    ],
+    "ci_screenshot": "parity/1194:7796.png",
+    "status": "NOT_RUN"
+  }
+]

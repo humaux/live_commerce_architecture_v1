@@ -29,6 +29,7 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts } from "./browser-engine.mjs";
 import { money, amt } from "./amount-match.mjs";
+import { growthMarketingParity } from "../admin/parity-growth-marketing.spec.mjs";
 
 const root = process.cwd(), evidence = process.env.LC_PM_EVIDENCE;
 const adminOrigin = process.env.LC_PM_ADMIN_ORIGIN, buyerOrigin = "https://buyer.example";
@@ -133,6 +134,7 @@ async function scenario(index, run) {
   const merchant = await context.newPage();
   merchant.on("pageerror", error => uiErrors.push(`${label} merchant ${error.name}: ${error.message}`));
   await signIn(merchant);
+  if (index === 0) await growthMarketingParity(merchant, { origin: adminOrigin, evidence });
   await merchant.goto(`${adminOrigin}/${run.locale}/promotions`);
   await expect(merchant.getByTestId("promotions-page")).toBeVisible();
   await expect(merchant.getByTestId("promotion-form")).toBeVisible();

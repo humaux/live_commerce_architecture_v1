@@ -4,6 +4,7 @@
 // No response interception or completed-order synthesis. The runner supplies authoritative fixture totals.
 // Actual buyer ad URL -> checkout (AT5) is added by the root's storefront/checkout acceptance path.
 import { expect, test, type Page } from "@playwright/test";
+import { registerGrowthAttributionParity } from "./parity-growth.spec";
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
@@ -1027,3 +1028,9 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
       }
     });
   }
+
+// Independent group: a signed-frame assertion failure must not hide the existing AT gates.
+test.describe("PARITY-GROWTH attribution", () => {
+  test.describe.configure({ mode: "default" });
+  registerGrowthAttributionParity({ origin, store, evidence, draftID: fixture.draft_id, from: fixture.from, to: fixture.to, login: page => login(page, 1586) });
+});

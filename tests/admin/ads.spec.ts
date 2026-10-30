@@ -15,6 +15,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { adsCopy } from "../../apps/admin/lib/ads-copy";
 import { displayTime, instantToTaipei, taipeiToInstant } from "../../packages/format/src/index.ts";
+import { registerGrowthAdsParity } from "./parity-growth.spec";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -603,3 +604,6 @@ test("MA09a Meta refusal original text survives refresh in three locales and per
   await noSecrets(page);
 });
 }
+
+// C3 parity runs after the existing connection fixture has been established.
+if (!refusalPhase) registerGrowthAdsParity({ origin, store, evidence, pageAsset, login: signedLogin });
