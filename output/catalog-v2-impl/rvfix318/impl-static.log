@@ -1,0 +1,12 @@
+2026-10-30 RVFIX318 implementation attempt1
+TypeScript7.0.2: tsc --noEmit -p output/catalog-v2-impl/tsconfig.static.json exit0 (impl-tsc.log empty).
+Read-only shared dependency cache linked only inside this worktree for static resolution; own temporary symlink removed.
+ProductList.tsx SHA256 d45725ff010bd076ecbebe2959a4a67556a21c4d0920328f79dd01e2faf8cbdc
+No import added or renamed; component harness changes unnecessary. No dependency-edge/Go change; depmap not required.
+Runtime acceptance PENDING; authorE0, staticE1 only.
+node --check scripts/dev/derive-browser-ownership.mjs exit0.
+git diff --check exit0.
+node scripts/dev/derive-browser-ownership.mjs exit0 (53 modes), generated artifact unchanged.
+node scripts/dev/derive-browser-ownership.mjs --check exit0.
+All test files, fixtures, gate-adapter and protected baselines unchanged from tests-only1ce84e568.
+Humaux fix store accepted, own child canvas update succeeded under acquired lock.

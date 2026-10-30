@@ -1,0 +1,4 @@
+node --check tests/admin/catalog-v2-simplified.acceptance.ts: exit0
+git diff --check: exit0
+SHA256 tests/admin/catalog-v2-simplified.acceptance.ts: ee8db93fcd0785c22d0f7d117a4a4a6347a3107a844bd5e2627325a80424bd12
+No local tests/server/browser/build/install/PG/container.

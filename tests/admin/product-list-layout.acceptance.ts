@@ -1,61 +1,36 @@
-// Purpose: Reads populated product-table geometry and asserts layout without replacing merchant interactions.
-// Depends on: @playwright/test
-// Used by: tests/admin/product-editor.acceptance.ts
-// ADM23 additive geometry checks for the real catalog browser fixture.
-// Call after navigating/clicking to a populated product list at desktop/mobile widths;
-// evaluate only reads layout and never replaces merchant clicks or persisted readback.
-import { expect, type Page } from "@playwright/test";
-
-/** Reads browser geometry and asserts table layout without mutating products or styles. */
+// Purpose: Check signed product rows' real geometry without replacing merchant interactions.
+// Depends on: @playwright/test.
+// Used by: product-editor.acceptance.ts.
+// Invariants: read-only measurement; nonvacuous rows; 44px actual targets and no clipped facts.
+import { expect, type Page } from '@playwright/test';
+/** Quick-pencil geometry is superseded by the sole Edit target and read-only amount/stock containment. */
 export async function assertProductListLayout(page: Page) {
-  const table = page.getByTestId("products-table");
+  const table = page.getByTestId('products-table');
   await expect(table).toBeVisible();
-  const rows = await table.locator("tbody > tr").evaluateAll((nodes) => {
-    const rect = (element: Element) => {
-      const r = element.getBoundingClientRect();
-      return {
-        x: r.x,
-        y: r.y,
-        right: r.right,
-        bottom: r.bottom,
-        width: r.width,
-        height: r.height,
-      };
-    };
-    return nodes.map((row) => {
+  const rows = await table.locator('tbody > tr').evaluateAll(nodes => {
+    const rect = (element: Element) => { const r = element.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
+    return nodes.map(row => {
       const get = (selector: string) => rect(row.querySelector(selector)!);
-      return {
-        selectionCell: get(".pe-selection-cell"),
-        selection: get(".pe-select"),
-        product: get(".product-cell"),
-        identity: get(".pe-product-identity"),
-        status: get(".product-status"),
-        statusCell: get(".pe-status-cell"),
-        price: get("[data-testid=quick-price]"),
-        stock: get("[data-testid=quick-stock]"),
-        priceValue: get(".pe-price-cell .pe-number-edit > span"),
-        stockValue: get(".pe-stock-cell .pe-number-edit > span"),
-      };
+      return { selectionCell: get('.pe-selection-cell'), selection: get('.pe-select'), product: get('.product-cell'),
+        identity: get('.pe-product-identity'), status: get('.product-status'), statusCell: get('.pe-status-cell'),
+        amount: get('.pe-price-cell > span'), amountCell: get('.pe-price-cell'), edit: get('.pe-row-actions a'), editCell: get('.pe-actions-cell') };
     });
   });
-  expect(
-    rows.length,
-    "populated fixture, never a vacuous layout pass",
-  ).toBeGreaterThan(0);
+  expect(rows.length, 'populated fixture, never vacuous').toBeGreaterThan(0);
   const mobile = (page.viewportSize()?.width ?? 0) <= 680;
   for (const row of rows) {
-    for (const target of [row.selection, row.price, row.stock]) {
-      expect(target.width, "44px click target").toBeGreaterThanOrEqual(44);
-      expect(target.height, "44px click target").toBeGreaterThanOrEqual(44);
+    for (const target of [row.selection, row.edit]) {
+      expect(target.width, '44px actual click target').toBeGreaterThanOrEqual(44);
+      expect(target.height, '44px actual click target').toBeGreaterThanOrEqual(44);
     }
     expect(row.selection.x).toBeGreaterThanOrEqual(row.selectionCell.x - 1);
-    expect(row.selection.right).toBeLessThanOrEqual(
-      row.selectionCell.right + 1,
-    );
+    expect(row.selection.right).toBeLessThanOrEqual(row.selectionCell.right + 1);
     expect(row.status.x).toBeGreaterThanOrEqual(row.statusCell.x - 1);
     expect(row.status.right).toBeLessThanOrEqual(row.statusCell.right + 1);
-    expect(row.priceValue.right).toBeLessThanOrEqual(row.price.x);
-    expect(row.stockValue.right).toBeLessThanOrEqual(row.stock.x);
+    expect(row.amount.x).toBeGreaterThanOrEqual(row.amountCell.x - 1);
+    expect(row.amount.right).toBeLessThanOrEqual(row.amountCell.right + 1);
+    expect(row.edit.x).toBeGreaterThanOrEqual(row.editCell.x - 1);
+    expect(row.edit.right).toBeLessThanOrEqual(row.editCell.right + 1);
     if (mobile) {
       expect(row.selection.bottom).toBeGreaterThan(row.product.y);
       expect(row.selection.y).toBeLessThan(row.product.bottom);
@@ -63,16 +38,9 @@ export async function assertProductListLayout(page: Page) {
       expect(row.status.y).toBeGreaterThanOrEqual(row.product.bottom - 1);
     } else {
       expect(row.identity.right).toBeLessThanOrEqual(row.status.x);
-      expect(Math.abs(row.price.x - rows[0].price.x)).toBeLessThanOrEqual(1);
-      expect(Math.abs(row.stock.x - rows[0].stock.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(row.edit.x - rows[0].edit.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(row.amountCell.x - rows[0].amountCell.x)).toBeLessThanOrEqual(1);
     }
   }
-  if (mobile) {
-    // READ/MEASURE: page containment, not DOM mutation or a write substitute.
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth - innerWidth,
-      ),
-    ).toBeLessThanOrEqual(1);
-  }
+  if (mobile) expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
 }

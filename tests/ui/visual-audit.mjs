@@ -282,7 +282,9 @@ export async function main() {
       if (unit.app === "admin" && ["/products/new", "/products/[product]"].includes(unit.route)) {
         // The editor deliberately scrolls .pe-fields inside the viewport. A fullPage document shot cannot show its remaining content.
         // Keep the primary shot/matrix untouched and label these real-wheel viewport frames honestly in index.json.
-        const inner = await captureInnerScrollFrames(page, { selector: ".pe-fields", out, filePrefix: `${unit.app}/${unit.id}/${unit.locale}-${sizeOf(unit.v)}` });
+        // Signed task editing and Advanced editing have mutually exclusive field containers.
+        // Apply the same native-wheel coverage, bounds and failure rules to the mounted container.
+        const inner = await captureInnerScrollFrames(page, { selector: ".pe-fields, .cat-task-editor", out, filePrefix: `${unit.app}/${unit.id}/${unit.locale}-${sizeOf(unit.v)}` });
         rec.supplemental = [inner];
         if (!inner.complete) { rec.stateFailed = true; rec.issues.push(`inner-scroll coverage failed: ${inner.reason}`); }
       }

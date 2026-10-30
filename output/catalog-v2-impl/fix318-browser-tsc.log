@@ -1,0 +1,1 @@
+tests/admin/product-editor.acceptance.ts(11,17): error TS2307: Cannot find module 'axe-core' or its corresponding type declarations.
