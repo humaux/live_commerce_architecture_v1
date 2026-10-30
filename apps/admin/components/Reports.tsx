@@ -93,6 +93,8 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
 
   const navigate = (storeID: string) => {
     if (!valid || !storeID) return;
+    // Applying even the current range must leave the editor; App Router can reuse this workspace.
+    setDateOpen(false);
     router.push(`/${locale}/finance/reports?store=${storeID}&from=${draftFrom}&to=${draftTo}&report=${tab}&sort=${sort}&dir=${ascending ? "asc" : "desc"}`);
   };
   const submit = (event: FormEvent) => { event.preventDefault(); if (store) navigate(store.id); };
@@ -139,10 +141,10 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
         <label>{c.store}<select aria-label={c.store} value={store?.id ?? ""} disabled={stores.length < 2 || !valid}
           onChange={(event) => navigate(event.target.value)}>{!stores.length && <option value="">{c.noStore}</option>}
           {stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-        <label>{p.from}<DateControl emptyLabel={p.from} lang={locale} type="date" value={draftFrom} required data-testid="reports-from"
+        <label>{p.from}<DateControl aria-label={p.from} emptyLabel={p.from} lang={locale} type="date" value={draftFrom} required data-testid="reports-from"
           aria-describedby={rangePending ? "reports-range-pending" : undefined}
           onChange={(event) => setDraftFrom(event.target.value)} /></label>
-        <label>{p.to}<DateControl emptyLabel={p.to} lang={locale} type="date" value={draftTo} required data-testid="reports-to"
+        <label>{p.to}<DateControl aria-label={p.to} emptyLabel={p.to} lang={locale} type="date" value={draftTo} required data-testid="reports-to"
           aria-describedby={rangePending ? "reports-range-pending" : undefined}
           onChange={(event) => setDraftTo(event.target.value)} /></label>
         <div className="money-actions"><button type="button" onClick={() => {setDraftFrom(from);setDraftTo(to);setDateOpen(false);}}>{p.cancel}</button><button type="submit" disabled={!store || !valid} data-testid="reports-show" className="primary">{p.apply}</button></div>

@@ -100,11 +100,26 @@ for (const locale of moneyLocales) for (const width of moneyWidths) {
         await page.getByLabel(c.to, { exact: true }).fill("2026-09-30");
         await page.getByRole("button", { name: c.apply, exact: true }).click();
         await expect(page).toHaveURL(/from=2026-09-02/);
+        await expect(page.getByTestId("reports-products-table")).toBeVisible();
+        await expect(page.getByTestId("reports-from")).toHaveCount(0);
         await page.reload();
         await expect(page).toHaveURL(/from=2026-09-02/);
         // Pre-Figma always-open dates/submit have moved into the explicit date editor.
         await expect(page.getByTestId("reports-from")).toHaveCount(0);
         await expect(page.getByTestId("reports-show")).toHaveCount(0);
+      });
+      await moneyClick(page, evidence, c.apply, "applying unchanged dates also closes the editor and persists", async () => {
+        const applied = page.url();
+        await page.getByRole("button", { name: c.chooseDates, exact: true }).click();
+        await expect(page.getByLabel(c.from, { exact: true })).toHaveValue("2026-09-02");
+        await expect(page.getByLabel(c.to, { exact: true })).toHaveValue("2026-09-30");
+        await page.getByRole("button", { name: c.apply, exact: true }).click();
+        await expect(page.getByTestId("reports-from")).toHaveCount(0);
+        await expect(page.getByTestId("reports-products-table")).toBeVisible();
+        await expect(page).toHaveURL(applied);
+        await page.reload();
+        await expect(page.getByTestId("reports-products-table")).toBeVisible();
+        await expect(page).toHaveURL(applied);
       });
       // Fixture-only failed GET. The visible failure and subsequent recovery must come from the real page.
       await page.route(`**/api/stores/${store}/reports/products?*`, route => route.fulfill({ status: 503, body: "unavailable" }));

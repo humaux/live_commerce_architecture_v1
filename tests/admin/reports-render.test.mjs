@@ -1,5 +1,5 @@
 // Purpose: execute actual report view rendering and report BFF leaf with independent synthetic boundaries.
-// Depends on: existing TypeScript transpiler, React SSR, Node test/assert and report pure modules.
+// Depends on: existing TypeScript transpiler, React SSR, Node test/assert, report modules and finance/settlement server pages.
 // Used by: focused Node gate; MOCK transport only, not a substitute for browser/Go/PG gates.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -463,4 +463,48 @@ test("Finance landing links to reports under the same canSeeReports rule", () =>
   assert.match(html(["orders:read"]), new RegExp(`data-testid="finance-reports"`)); assert.match(html(["orders:read"]), new RegExp(`/en/finance/reports\\?store=${id}`));
   assert.match(html(undefined), /finance-reports/);
   assert.doesNotMatch(html(["customers:read"]), /finance-reports/);
+});
+
+test("actual finance and settlement server pages accept only their persisted read selectors", async () => {
+  const missing = new Error("404");
+  const navigation = { notFound() { throw missing; } };
+  // Isolate transport only: the real shared loader still validates all keys, scalar values,
+  // locales and store UUIDs. Browser/Go gates retain session and tenant authorization checks.
+  const loader = load("../../apps/admin/app/[locale]/customers/page-data.ts", {
+    "next/headers": { headers: async () => { throw Error("unexpected transport"); } },
+    "next/navigation": navigation,
+    "@live-commerce/i18n": adminRequire("../../packages/i18n/src/index.ts"),
+    "@/lib/auth": { authConfig: null },
+    "@/lib/orders-model": adminRequire("./lib/orders-model.ts"),
+  });
+  const FinancePage = load("../../apps/admin/app/[locale]/finance/page.tsx", {
+    "next/navigation": navigation,
+    "@/lib/customers-model": adminRequire("./lib/customers-model.ts"),
+    "@/components/Finance": { Finance() {} },
+    "../customers/page-data": loader,
+  }).default;
+  const SettlementsPage = load("../../apps/admin/app/[locale]/settings/settlements/page.tsx", {
+    "next/navigation": navigation,
+    "@/lib/orders-model": adminRequire("./lib/orders-model.ts"),
+    "@/components/Settlements": { Settlements() {} },
+    "../../customers/page-data": loader,
+  }).default;
+  const visit = (Page, query, locale = "en") => Page({ params: Promise.resolve({ locale }), searchParams: Promise.resolve(query) });
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    for (const view of [undefined, "daily", "basis", "csv"]) {
+      const page = await visit(FinancePage, { store: id, from, to, ...(view ? { view } : {}) }, locale);
+      assert.equal(page.props.locale, locale); assert.equal(page.props.from, from); assert.equal(page.props.to, to);
+    }
+    await visit(SettlementsPage, { store: id }, locale);
+    await visit(SettlementsPage, { store: id, statement: id }, locale);
+  }
+  for (const query of [
+    { view: "overview" }, { view: "dates" }, { view: "CSV" }, { view: " csv" },
+    { view: "" }, { view: ["daily", "csv"] }, { tenant_id: id }, { amount: "1" }, { store: "bad" },
+  ]) await assert.rejects(visit(FinancePage, query), error => error === missing);
+  for (const query of [
+    { statement: "" }, { statement: "x".repeat(36) }, { statement: "-".repeat(36) },
+    { statement: [id, id] }, { statement: id.toUpperCase().replace("1111", "ABCD") },
+    { tenant_id: id }, { amount: "1" }, { store: "bad" },
+  ]) await assert.rejects(visit(SettlementsPage, query), error => error === missing);
 });

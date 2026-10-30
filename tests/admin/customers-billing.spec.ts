@@ -117,6 +117,8 @@ for (const locale of moneyLocales) for (const width of moneyWidths) {
       await expect(page.getByRole("heading", { level: 1, name: c.basisTitle, exact: true })).toBeVisible();
     });
     await moneyShot(page, evidence, "basis", locale, width);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: c.basisTitle, exact: true })).toBeVisible();
     await page.getByRole("button", { name: c.backFinance, exact: true }).click();
     const before = page.url();
     await moneyClick(page, evidence, c.financeDates, "draft dates, cancel leaves original range", async () => {

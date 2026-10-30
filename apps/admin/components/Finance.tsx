@@ -71,8 +71,8 @@ export function Finance({ locale, stores: _stores, store, from, to, today, initi
       {failure && <section className="money-card" role="status"><h2>{p.failure}</h2><p>{read.status === "unavailable" ? p.financeFailureHint : failure}</p><button onClick={read.reload}>{p.retry}</button></section>}
       {!failure && view === "dates" && <form className="money-card money-editor" onSubmit={submit}>
         <p>{p.rangeHint}</p><p>{from} – {to}</p>
-        <label>{p.from}<DateControl emptyLabel={p.from} lang={locale} type="date" data-testid="finance-from" value={draftFrom} max={today} required onChange={e => setDraftFrom(e.target.value)} /></label>
-        <label>{p.to}<DateControl emptyLabel={p.to} lang={locale} type="date" data-testid="finance-to" value={draftTo} max={today} required onChange={e => setDraftTo(e.target.value)} /></label>
+        <label>{p.from}<DateControl aria-label={p.from} emptyLabel={p.from} lang={locale} type="date" data-testid="finance-from" value={draftFrom} max={today} required onChange={e => setDraftFrom(e.target.value)} /></label>
+        <label>{p.to}<DateControl aria-label={p.to} emptyLabel={p.to} lang={locale} type="date" data-testid="finance-to" value={draftTo} max={today} required onChange={e => setDraftTo(e.target.value)} /></label>
         {!valid && <p role="alert" data-testid="finance-range-invalid">{c.rangeInvalid}</p>}
         <div className="money-actions"><button type="button" onClick={() => open("overview")}>{p.cancel}</button><button className="primary" data-testid="finance-show" disabled={!store || !valid} type="submit">{p.apply}</button></div>
       </form>}
