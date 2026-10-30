@@ -105,7 +105,7 @@
     "tests/admin/inbox-shell-navigation.test.ts": "8711fd9cc66fe8bd5ca8a44ea71de7fc5e39bef69e02aca3697c9325ff31bef0",
     "tests/admin/inbox-ui.spec.ts": "3800b14707d0741e6757eb4ba1e549d8ea358352b4eddd92987107a8f0be2474",
     "tests/admin/inbox-unknown.test.ts": "dd775c5c7b33a62615bb2dbcca32650f33a8123b2f0f7a6c321b40bca63d8ce3",
-    "tests/admin/inbox-v2-ui.spec.ts": "318030d6ce5a2eeb2bfe58e9849771ee2d27189e1b488540bac38f05a6ba1567",
+    "tests/admin/inbox-v2-ui.spec.ts": "8af9ec4058aa3811d6c7b58c078011d943a2544eb325d4213fc0bb476806aa81",
     "tests/admin/inbox-window.test.ts": "c99a6a0abf01263434288211c040763fc37f0f5e3d4167bdcd05f85705f26156",
     "tests/admin/input-delivery.spec.ts": "7e27d34fe5736e3d1ee9dcf56ec32df36f387cac4914d4eaa7f593d667a11f39",
     "tests/admin/invite-next.test.ts": "641a704b4833fa8c85cc257061cb37ea4417853ffaf5e9f068de9001ee359a57",

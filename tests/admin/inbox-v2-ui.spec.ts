@@ -520,6 +520,9 @@ for (const copy of copies) {
   test(`INV2 ${copy.locale} ACK without operation read permission`, async ({ page }) => {
     for (const terminal of ["sent", "failed"] as const) {
       for (const refresh of [false, true]) {
+        // Fixture preparation: each variant must sign in afresh before installing its own transport.
+        await page.unrouteAll({ behavior: "wait" });
+        await page.context().clearCookies();
         const state = await enter(page, copy);
         await page.setViewportSize({ width: 390, height: 844 });
         await open(page, ids.instagram);
