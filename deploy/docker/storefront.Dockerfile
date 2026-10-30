@@ -1,7 +1,7 @@
 # File: deploy/docker/storefront.Dockerfile
 # Purpose: build "lc-storefront", the buyer site (apps/storefront). It is NOT a Next standalone
 #   build (no `output` in apps/storefront/next.config.ts), so the image carries the pruned pnpm
-#   workspace (prod node_modules + .next) and runs the exact tested `next start` command.
+#   workspace (prod node_modules + .next + public/) and runs the exact tested `next start` command.
 #   Moving to standalone is REQUIRES_INTEGRATOR (I3; apps/** is outside deploy write paths).
 # Build: docker build -f deploy/docker/storefront.Dockerfile -t lc-storefront:<sha12> .
 # Runs as/in: build host; runtime user 1000, read-only rootfs (+ tmpfs .next/cache).
@@ -66,6 +66,8 @@ COPY --from=prod-deps /app/apps/storefront/node_modules ./apps/storefront/node_m
 COPY --from=build /app/packages/i18n ./packages/i18n
 COPY --from=build /app/apps/storefront/package.json /app/apps/storefront/next.config.ts ./apps/storefront/
 COPY --from=build /app/apps/storefront/.next ./apps/storefront/.next
+# next start serves static files from <cwd>/public (CVS store lists /cvs/*.json, favicon); smoke S08 checks the full list.
+COPY --from=build /app/apps/storefront/public ./apps/storefront/public
 COPY --from=lcentry /out/lcentry /usr/local/bin/lcentry
 USER 1000:1000
 WORKDIR /app/apps/storefront
