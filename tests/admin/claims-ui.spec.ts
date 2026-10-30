@@ -9,7 +9,7 @@
 // disposable buyer.example TLS edge + CONNECT proxy and the runner-only control listener.
 // Evidence: screenshots (links always masked) and result.json (token SHA-256 only).
 import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -39,6 +39,12 @@ test.use({
   launchOptions: { proxy: { server: required("LC_CLAIMS_PROXY"), bypass: "127.0.0.1" } },
 });
 test.setTimeout(300_000);
+// FIXTURE/SETUP: C4 reuses KC16's one real signed login; no extra IdP exchanges.
+let merchantCookies: Awaited<ReturnType<BrowserContext["cookies"]>> | undefined;
+async function useSignedMerchant(page: Page) {
+  expect(merchantCookies, "KC16 signed merchant fixture must exist").toBeDefined();
+  await page.context().addCookies(merchantCookies!);
+}
 
 const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 async function controlCall(resource: string, init: RequestInit = {}) {
@@ -544,6 +550,7 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   expect(pageErrors).toEqual([]);
   pass("merchant claims page fits a 390px viewport without page errors");
 
+  merchantCookies = await merchantContext.cookies();
   await writeFile(path.join(evidence, "result.json"), JSON.stringify({
     cases, locales: ["en", "zh-CN", "zh-TW"], link_sha256: sha256(secondToken), generation: 2,
     boundary: "production Next builds; signed MOCK IdP; MOCK manual ingress; synthetic buyer.example TLS edge; no provider or deployment acceptance",
@@ -553,9 +560,7 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
 for (const viewport of parityViewports) test(`C4 preflight products and keyword ${viewport.width}`, async ({ page }) => {
   const c = parityWords["zh-TW"];
   await page.setViewportSize(viewport);
-  await page.goto(`${origin}/en/`);
-  await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  await page.getByTestId("shell-store-selector").waitFor({state:"attached"});
+  await useSignedMerchant(page);
   await page.goto(`${origin}/zh-TW/studio/claims?store=${store}&scene=${session}#preflight`);
   await expect(page.getByTestId("merchant-claims")).toBeVisible();
   await expect(page.getByRole("heading", { name:c.preflight, exact:true })).toBeVisible();
@@ -581,8 +586,7 @@ for (const viewport of parityViewports) test(`C4 preflight products and keyword 
 });
 
 for(const locale of ["zh-CN","en"] as const)test(`C4 claims preflight locale ${locale}`,async({page})=>{
-  await page.goto(`${origin}/en/`);await page.getByRole("button",{name:"Sign in with identity service"}).click();
-  await page.getByTestId("shell-store-selector").waitFor({state:"attached"});
+  await useSignedMerchant(page);
   await page.goto(`${origin}/${locale}/studio/claims?store=${store}&scene=${session}#preflight`);
   await expect(page.getByRole("heading",{name:parityWords[locale].preflight,exact:true})).toBeVisible();
 });

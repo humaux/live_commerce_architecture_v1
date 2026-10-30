@@ -11,7 +11,7 @@
 // Labels: BROWSER; Meta is MOCK: https://www.facebook.com/... is answered by page.route with a 302 to the app's own callback and the
 // code exchange / permissions / Pages / subscribe happen in the API process against the fake Graph.
 // Locators use the card's data-testid vocabulary and its copy file (apps/admin/lib/meta-connect-copy.ts).
-import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
+import { parityWords, parityViewports, parityShot } from "./parity-live-sessions";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
@@ -308,51 +308,5 @@ test.describe("C4 signed Meta frames",()=>{
       await parityShot(page,evidence,locale,viewport.width===1440?"5:17908":"6:18045");
     }
   });
-  for(const viewport of parityViewports) test(`C4 Meta official pick review result detail disconnect and uncertain ${viewport.width}`,async({page})=>{
-    const c=parityWords["zh-TW"];await page.setViewportSize(viewport);await signedLogin(page);await openSettings(page,"zh-TW");
-    await parityClick(page,c.add,()=>expect(page.getByRole("heading",{name:c.intro,exact:true})).toBeVisible());
-    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7302":"50:1359");
-    await parityClick(page,c.official,()=>expect(page.getByRole("heading",{name:c.bridge,exact:true})).toBeVisible());
-    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7303":"1108:7304");
-    await answerDialog(page);answer={profile:"full"};
-    await parityClick(page,c.official,()=>expect(page.getByRole("heading",{name:c.pick,exact:true})).toBeVisible());
-    await page.getByTestId(`metaconnect-pick-${pageA.id}`).check();
-    await expect(page.getByTestId("metaconnect-pick-ig")).toBeChecked();
-    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7305":"1108:7306");
-    await parityClick(page,c.pickReview,()=>expect(page.getByRole("heading",{name:c.confirm,exact:true})).toBeVisible());
-    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
-    await expect(page.getByText(new RegExp(pageA.igUser))).toBeVisible();
-    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7307":"1108:7308");
-    await parityClick(page,c.edit,()=>expect(page.getByTestId(`metaconnect-pick-${pageA.id}`)).toBeChecked());
-    await parityClick(page,c.pickReview,()=>expect(page.getByRole("heading",{name:c.confirm,exact:true})).toBeVisible());
-    await parityClick(page,c.confirmConnect,()=>expect(page.getByRole("heading",{name:c.result,exact:true})).toBeVisible());
-    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
-    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7309":"1108:7310");
-    await parityClick(page,c.returnList,()=>expect(page.getByTestId(`metaconnect-page-${pageA.id}`)).toBeVisible());
-    await page.reload();await openSettings(page,"zh-TW");
-    const pageCard=page.getByTestId(`metaconnect-page-${pageA.id}`);
-    await expect(pageCard.getByRole("button",{name:c.detail,exact:true})).toBeVisible();
-    await pageCard.getByRole("button",{name:c.detail,exact:true}).click();
-    await expect(page.getByRole("heading",{name:c.detailTitle,exact:true})).toBeVisible();
-    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
-    await expect(page.getByText(new RegExp(pageA.igUser))).toBeVisible();
-    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7301":"50:1356");
-    await parityClick(page,c.disconnect,()=>expect(page.getByRole("heading",{name:c.disconnectTitle,exact:true})).toBeVisible());
-    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
-    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"948:6716":"50:1358");
-    await parityClick(page,c.keep,()=>expect(page.getByRole("heading",{name:c.detailTitle,exact:true})).toBeVisible());
-    await parityClick(page,c.disconnect,()=>expect(page.getByRole("heading",{name:c.disconnectTitle,exact:true})).toBeVisible());
-    let writes=0;
-    // FAULT/TRANSPORT: execute the real isolated MOCK command, then lose its ACK. No product response values are invented.
-    await page.route("**/meta-connect/disconnect",async(route)=>{writes++;await route.fetch();await route.fulfill({status:503,contentType:"application/json",body:'{"code":"unavailable"}'});});
-    await parityClick(page,c.confirmDisconnect,()=>expect(page.getByRole("heading",{name:c.uncertain,exact:true})).toBeVisible());
-    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
-    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"948:6717":"948:6718");
-    await parityClick(page,c.readResult,()=>expect(page.getByTestId(`metaconnect-page-${pageA.id}`)).toHaveCount(0));
-    expect(writes).toBe(1);
-    await page.reload();await openSettings(page,"zh-TW");
-    await expect(page.getByTestId(`metaconnect-page-${pageB.id}`)).toBeVisible();
-    await expect(page.getByTestId(`metaconnect-page-${pageA.id}`)).toHaveCount(0);
-    await noSecrets(page);
-  });
+
 });

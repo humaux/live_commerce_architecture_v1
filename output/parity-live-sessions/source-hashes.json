@@ -1,8 +1,8 @@
 {
-  "basis_head": "395209e39d97c7a5a84373e114879e86f549416c",
+  "basis_head": "765b71d970efa1172f9ec0f670801f8189fe8855",
   "scope": "Current implementation files bound by content hash; exact commit SHA is in the PR after commit",
   "sha256": {
-    "apps/admin/components/MetaConnect.tsx": "7b966bb54e947be58f6a6a15d4186b2edacb642d237fd12e0772c9923ca8f6f9",
+    "apps/admin/components/MetaConnect.tsx": "fd94c71db462843c26c9f3e8d1d9dc91fd07de59a41009f0a781f183b5f85b42",
     "apps/admin/components/MetaHealthCapabilities.tsx": "4c6adedda45c9a786e2ecd5e2a2650418487e30dc0b155bb6b6126edfbff09e5",
     "apps/admin/components/Studio.tsx": "5c4b85db8b5f77933fe0e06bcca198c5ecbb61797cfa7ac89dc63eafd0397792",
     "apps/admin/components/StudioClaims.tsx": "85727a434b7782cea08ef4cc0d8bffb31092410851b667936ea0963d0d4556b5",
@@ -11,16 +11,17 @@
     "apps/admin/components/live-sessions/SessionTasks.tsx": "22d360f503b4a7dc65f135d68b4361e18f27af2b439d8a2523ea75e2b43b9f17",
     "apps/admin/components/live-sessions/claim-fields.tsx": "324544afc719b537f6df28ddc8f689e055ed2ed1eeadf4bdc338161159347d42",
     "apps/admin/components/live-sessions/session-tasks.module.css": "801b0bc4d4180b8e421ae182665c64f3523f67f72fba815fd6c09cba00555618",
-    "output/ci-select-backend-browser/browser-ownership.json": "49bc2e5d0ddafd9017232e38efa6599542d5fe2d120030c679cd38dd9f696086",
+    "output/ci-select-backend-browser/browser-ownership.json": "ab68e3921568295ed954b06d180d37f5da9e7dea66ff19b26b01f2a830774326",
     "packages/i18n/src/index.ts": "54249641e14a197fbfba3076a53746038edec74a528f59835c32a2d4bad145ac",
     "packages/i18n/src/live-sessions.ts": "1d12e868f9ec8d0697ad4b56b9861c7d7ca8db42614dd2b384df853ca9bc89f7",
     "tests/admin/attribution.spec.ts": "fdbc77bc8b9862ddfcdd8a99a54e260b2f90113ecaa03745eb0dc5a4c0ad9aec",
-    "tests/admin/claims-ui.spec.ts": "2a510a3a194f5067974b62e532fe1dd345728f3f434b6358b63c5085d5b7bad0",
+    "tests/admin/claims-ui.spec.ts": "a339df4ac42a012bdbfeb82f6d31c177101c6f91fbac1065879a67e13eb37e80",
     "tests/admin/live-console.spec.ts": "3fe842b67898846659532fd381c1bb58f4d8ea0904f0e9ab052eced8cdbf08c8",
-    "tests/admin/meta-connect.spec.ts": "2915b179fcb88474f7205fffc578ccb9f4b7cc38aeac73b3a877fe076b2520c4",
+    "tests/admin/meta-connect.spec.ts": "bb040b04c32fc55281ee26072ac7ee54cfed75f6ca474012be30511223e9625b",
     "tests/admin/meta-health-model.test.ts": "2683c8510a81335a4696eb8c169c8c338903c88278db728223d4bef6d39f7887",
     "tests/admin/meta-health-ui.spec.ts": "2c87d61722ecd22be7c748a555f14c395abe020f9fc9e609812b1a34eb6e6572",
-    "tests/admin/parity-live-sessions.ts": "2fc93d64c3d8273f431ce1cd2b0bf4c1da1930289ef0deae547d9112430f0e0a",
-    "tests/admin/studio-ui.spec.ts": "048bbc3f10f143fc6299fd0d012dbc5c6ad0b2977f5bd8c7d969ccfcfdec0d14"
+    "tests/admin/parity-live-sessions.ts": "5a9b6da8836669a8a5ccdebca717f458425c669576464e81c32417787c455cb0",
+    "tests/admin/studio-ui.spec.ts": "048bbc3f10f143fc6299fd0d012dbc5c6ad0b2977f5bd8c7d969ccfcfdec0d14",
+    "tests/admin/meta-connect-gate.spec.ts": "daca84b561d86cabe28610263a012948ce488002198fda6a08ec76938571bc2e"
   }
 }

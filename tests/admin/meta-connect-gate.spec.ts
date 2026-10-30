@@ -1,3 +1,7 @@
+// Purpose: Independent Meta protocol and C4 signed-task browser acceptance.
+// Depends on: ./parity-live-sessions, production Next/Go, disposable PG and signed MOCK identity.
+// Used by: tests/foundation/browser_meta_connect_gate_test.go.
+// Invariants: original scope, redirect, one-write, provider and tenant assertions remain; real task clicks only.
 // meta-connect browser gate MCG10, INDEPENDENT test-author half (contract meta-claims-intake-v1 "Merchant connect (R4)"; unit brief
 // "Done when" + the owner's walk-through: merchant Settings -> connect (fake Meta dialog) -> pick a 渠道倉-香港-style Page with Instagram ->
 // the card shows Page / Instagram / permissions / status -> the Studio claim-source picker offers it -> disconnect).
@@ -8,6 +12,7 @@
 // Labels: BROWSER, Meta = MOCK (https://www.facebook.com/** is answered by page.route with a 302 to the app's own callback; the code
 // exchange / permissions / Pages / subscribe happen in the API process against tests/metaconnect/fakegraph).
 // Matrix: Chromium desktop 1586x992 and 390x844; zh-TW and en. Locators use the cards' data-testid vocabulary and their copy files.
+import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
@@ -55,6 +60,10 @@ async function ctl(resource: string) {
 }
 async function facts() {
   return (await (await ctl("facts")).json()) as { subscribed: Record<string, boolean>; bindings: number; routes: number; heads: number; connections: number };
+}
+// READ/ORACLE: independently format server connection facts in the contracted store timezone.
+function taipeiTime(locale: Loc, stamp: string) {
+  return new Intl.DateTimeFormat(locale, { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(stamp));
 }
 async function fitsWidth(page: Page) {
   // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
@@ -107,8 +116,30 @@ async function openSettings(page: Page, locale: Loc) {
 }
 async function openStudio(page: Page, locale: Loc) {
   await page.goto(`/${locale}/studio/claims?store=${store}&scene=${scene}`);
+  await page.getByText(/^(Advanced|進階|进阶)$/, { exact: true }).click();
   await expect(page.getByTestId("claims-source")).toBeVisible({ timeout: 30_000 });
 }
+
+// Signed tasks add navigation, not provider writes. Each helper clicks the real controls.
+async function officialStart(page: Page, control: string, locale: Loc) {
+  await page.getByTestId(control).click();
+  await page.getByRole("button", { name: parityWords[locale].official, exact: true }).click();
+  await page.getByRole("button", { name: parityWords[locale].official, exact: true }).click();
+}
+async function openDetail(page: Page, locale: Loc, id: string) {
+  await page.getByTestId(`metaconnect-row-${id}`).getByRole("button", { name: parityWords[locale].detail, exact: true }).click();
+  await expect(page.getByRole("heading", { name: parityWords[locale].detailTitle, exact: true })).toBeVisible();
+}
+async function confirmPick(page: Page, locale: Loc) {
+  await page.getByTestId("metaconnect-confirm-connect").click();
+  await expect(page.getByRole("heading", { name: parityWords[locale].result, exact: true })).toBeVisible();
+  await page.getByRole("button", { name: parityWords[locale].returnList, exact: true }).click();
+}
+const disconnectImpact = {
+  "zh-TW": "中斷後停止此主頁的本地留言收單；遠端取消訂閱結果另行確認，其他主頁保留連接。",
+  "zh-CN": "断开后停止此主页的本地评论收单；远端取消订阅结果另行确认，其他主页保持连接。",
+  en: "This stops local comment intake for this Page. Remote unsubscription is a separate result; other Pages remain connected.",
+} as const;
 
 test.describe("meta-connect independent browser gate", () => {
   test.describe.configure({ mode: "serial" });
@@ -139,11 +170,11 @@ test.describe("meta-connect independent browser gate", () => {
       await page.setViewportSize(sizes[view]);
       await signedLogin(page);
       await openSettings(page, locale);
-      await expect(page.getByRole("heading", { name: c.title, exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: parityWords[locale].meta, exact: true })).toBeVisible();
       await expect(page.getByTestId("metaconnect-none")).toHaveText(c.notConnected);
       await answerDialog(page);
       answer = { profile: "full" };
-      await page.getByTestId("metaconnect-connect").click();
+      await officialStart(page, "metaconnect-connect", locale);
       await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
       // The pick list is this login's Pages only: A (with Instagram) and B (without).
       await expect(page.locator('[data-testid^="metaconnect-pick-"][type="radio"]')).toHaveCount(2);
@@ -155,6 +186,8 @@ test.describe("meta-connect independent browser gate", () => {
       await expect(page.getByTestId("metaconnect-pick-ig")).toBeChecked(); // IG present: offered, on by default
       if (view === "mobile") await shot(page, "pick", locale, view);
       await page.getByTestId("metaconnect-pick-submit").click();
+      await confirmPick(page, locale);
+      await openDetail(page, locale, pageA.id);
       await expect(page.getByTestId("metaconnect-status")).toBeVisible({ timeout: 30_000 });
 
       // The card: Page name + id, Instagram username, every granted permission, token status, last webhook time.
@@ -163,7 +196,7 @@ test.describe("meta-connect independent browser gate", () => {
       await expect(page.getByTestId("metaconnect-page")).toContainText(pageA.id);
       await expect(page.getByTestId("metaconnect-ig")).toHaveText(`@${pageA.igUser}`);
       for (const permission of ["pages_show_list", "pages_manage_metadata", "pages_read_engagement", "pages_messaging", "instagram_basic", "instagram_manage_comments", "instagram_manage_messages"])
-        await expect(page.getByTestId("metaconnect-permissions")).toContainText(permission);
+        await expect(page.getByTestId(`metaconnect-permission-${permission}`)).toBeVisible(); // same exact granted scope, seller label
       await expect(page.getByTestId("metaconnect-token")).toHaveText(c.tokenActive);
       await expect(page.getByTestId("metaconnect-token")).toHaveAttribute("data-state", "active");
       await expect(page.getByTestId("metaconnect-last-event")).toHaveText(c.never);
@@ -180,6 +213,8 @@ test.describe("meta-connect independent browser gate", () => {
 
       // Reload: the same card from the server, not from page state.
       await page.reload();
+      await openSettings(page, locale);
+      await openDetail(page, locale, pageA.id);
       await expect(page.getByTestId("metaconnect-page")).toContainText(pageA.name);
       await expect(page.getByTestId("metaconnect-ig")).toHaveText(`@${pageA.igUser}`);
 
@@ -193,9 +228,10 @@ test.describe("meta-connect independent browser gate", () => {
 
       // Disconnect: cancel changes nothing; confirm destroys the connection, routes and intake; Studio points back at Settings.
       await openSettings(page, locale);
+      await openDetail(page, locale, pageA.id);
       await page.getByTestId("metaconnect-disconnect").click();
-      await expect(page.getByTestId("metaconnect-confirm")).toContainText(c.confirmDisconnect);
-      await page.getByRole("button", { name: c.cancel }).click();
+      await expect(page.getByTestId("metaconnect-confirm")).toContainText(disconnectImpact[locale]);
+      await page.getByRole("button", { name: parityWords[locale].keep }).click();
       await expect(page.getByTestId("metaconnect-status")).toBeVisible();
       await page.getByTestId("metaconnect-disconnect").click();
       await page.getByTestId("metaconnect-confirm-yes").click();
@@ -218,10 +254,12 @@ test.describe("meta-connect independent browser gate", () => {
     await openSettings(page, "en");
     await answerDialog(page);
     answer = { profile: "full" };
-    await page.getByTestId("metaconnect-connect").click();
+    await officialStart(page, "metaconnect-connect", "en");
     await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
     await page.getByTestId(`metaconnect-pick-${pageA.id}`).check();
     await page.getByTestId("metaconnect-pick-submit").click();
+    await confirmPick(page, "en");
+    await openDetail(page, "en", pageA.id);
     await expect(page.getByTestId("metaconnect-status")).toBeVisible({ timeout: 30_000 });
     await openStudio(page, "en");
     const section = page.getByTestId("claims-source");
@@ -233,6 +271,7 @@ test.describe("meta-connect independent browser gate", () => {
     await expect(section.getByRole("alert")).toHaveCount(0);
     // leave the store clean for the next test
     await openSettings(page, "en");
+    await openDetail(page, "en", pageA.id);
     await page.getByTestId("metaconnect-disconnect").click();
     await page.getByTestId("metaconnect-confirm-yes").click();
     await expect(page.getByTestId("metaconnect-none")).toBeVisible({ timeout: 30_000 });
@@ -247,23 +286,23 @@ test.describe("meta-connect independent browser gate", () => {
     await answerDialog(page);
 
     answer = { wrongState: true };
-    await page.getByTestId("metaconnect-connect").click();
+    await officialStart(page, "metaconnect-connect", "zh-TW");
     await expect(page.getByTestId("metaconnect-error")).toHaveText(c.errors.state_mismatch, { timeout: 30_000 });
     await expect(page.getByTestId("metaconnect-none")).toBeVisible();
     expect(new URL(page.url()).search).not.toMatch(/meta_error|code=|state=/);
     await shot(page, "refused-state", "zh-TW", "mobile");
 
     answer = { profile: "nomsg" }; // pages_messaging not granted
-    await page.getByTestId("metaconnect-connect").click();
+    await officialStart(page, "metaconnect-connect", "zh-TW");
     await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByTestId("metaconnect-missing")).toContainText("pages_messaging");
+    await expect(page.getByTestId("metaconnect-missing")).toContainText(c.task_messaging);
     await expect(page.getByTestId("metaconnect-pick-submit")).toBeDisabled();
     await shot(page, "refused-permission", "zh-TW", "mobile");
     await page.getByRole("button", { name: c.pickCancel }).click();
     await expect(page.getByTestId("metaconnect-none")).toBeVisible();
 
     answer = { profile: "notask" }; // Page without the MODERATE task
-    await page.getByTestId("metaconnect-connect").click();
+    await officialStart(page, "metaconnect-connect", "zh-TW");
     await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId(`metaconnect-pick-${pageD.id}`)).toBeChecked();
     await expect(page.getByTestId("metaconnect-missing")).toContainText(c.task_moderate);
@@ -301,16 +340,18 @@ test.describe("meta-connect independent browser gate", () => {
       await expect(page.getByTestId("metaconnect-add")).toBeDisabled();
       await expect(page.locator("#metaconnect-cap")).toHaveText(c.capReached);
       await expect(page.getByTestId("metaconnect-reconnect")).toBeEnabled();
-      await expect(page.getByTestId("metaconnect-last-event").first()).toContainText("16:30");
+      await openDetail(page, locale, "900000");
+      await expect(page.getByTestId("metaconnect-last-event")).toContainText("16:30");
       await page.getByTestId("metaconnect-card").evaluate((el) => el.scrollIntoView({ block: "start" }));
       await shot(page, "MOCK-cap-ten", locale, "mobile");
-      const first = page.getByTestId("metaconnect-row-900000");
-      await first.getByTestId("metaconnect-disconnect").click();
-      await first.getByTestId("metaconnect-confirm-yes").click();
+      await page.getByTestId("metaconnect-disconnect").click();
+      await page.getByTestId("metaconnect-confirm-yes").click();
       await expect(page.getByTestId("metaconnect-error")).toHaveText(c.errors.not_found);
-      await page.getByTestId("metaconnect-reconnect").click();
+      await page.getByRole("button", { name: parityWords[locale].keep, exact: true }).click();
+      await officialStart(page, "metaconnect-reconnect", locale);
       await page.getByTestId(`metaconnect-pick-${pageA.id}`).check();
       await page.getByTestId("metaconnect-pick-submit").click();
+      await page.getByTestId("metaconnect-confirm-connect").click();
       await expect(page.getByTestId("metaconnect-error")).toHaveText(c.errors.cap_exceeded);
     }
     await page.unroute(`**/meta-connect/status`);
@@ -323,9 +364,9 @@ test.describe("meta-connect independent browser gate", () => {
       if (starts.length === 1) await route.fulfill({ status: 200, contentType: "application/json", body: "{" });
       else await route.continue();
     });
-    await page.getByTestId("metaconnect-connect").click();
+    await officialStart(page, "metaconnect-connect", "en");
     await expect(page.getByTestId("metaconnect-error")).toBeVisible();
-    await page.getByTestId("metaconnect-connect").click();
+    await page.getByRole("button", { name: parityWords.en.official, exact: true }).click();
     await expect(page.getByTestId("metaconnect-pick")).toBeVisible();
     expect(starts).toHaveLength(2);
     expect(starts[0]).toBeTruthy();
@@ -351,15 +392,21 @@ test.describe("meta-connect independent browser gate", () => {
     let attempts = 0;
     await page.route("**/meta-connect/pick", async (route) => { attempts++; await route.abort("failed"); });
     await page.goto(`/en/settings?store=${store}&meta_connect=${stateID}`);
+    const advanced = page.getByRole("button", { name: "Advanced", exact: true });
+    await expect(advanced.or(page.getByTestId("metaconnect-card"))).toBeVisible();
+    if (await advanced.isVisible()) await advanced.click();
     await expect(page.getByTestId("metaconnect-pick")).toBeVisible();
     await expect(page.getByTestId("metaconnect-pick-submit")).toBeDisabled();
     expect(attempts).toBe(0);
     release();
     await expect(page.getByTestId("metaconnect-pick-submit")).toBeEnabled();
     await page.getByTestId("metaconnect-pick-submit").click();
+    await page.getByTestId("metaconnect-confirm-connect").click();
     await expect(page.getByTestId("metaconnect-error")).toHaveText(metaConnectCopy.en.uncertain);
     await page.getByTestId("metaconnect-readback").click();
-    await expect(page.getByTestId("metaconnect-pick-submit")).toBeDisabled();
+    await expect(page.getByRole("heading", { name: parityWords.en.uncertain, exact: true })).toBeVisible();
+    await expect(page.getByTestId("metaconnect-pick-submit")).toHaveCount(0);
+    await expect(page.getByTestId("metaconnect-confirm-connect")).toHaveCount(0);
     await expect(page.getByTestId("metaconnect-notice")).toHaveCount(0);
     expect(attempts).toBe(1);
   });
@@ -370,7 +417,7 @@ test.describe("meta-connect independent browser gate", () => {
     await openSettings(page, "en");
     await answerDialog(page);
     answer = { profile: "fbonly" };
-    await page.getByTestId("metaconnect-connect").click();
+    await officialStart(page, "metaconnect-connect", "en");
     await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
     const replay = lastCallback!;
     expect(replay).toContain("/api/meta/callback?code=");
@@ -456,11 +503,12 @@ test.describe("meta-connect independent browser gate", () => {
         writes.push({ path: pathname, key: request.headers()["idempotency-key"] ?? "", body: request.postData() ?? "" });
       }
     });
-    await page.getByTestId("metaconnect-connect").click();
+    await officialStart(page, "metaconnect-connect", "en");
     await page.getByTestId(`metaconnect-pick-${pageA.id}`).check();
     await page.getByTestId("metaconnect-pick-submit").click();
+    await confirmPick(page, "en");
     await expect(page.getByTestId(`metaconnect-row-${pageA.id}`)).toBeVisible();
-    await page.getByTestId("metaconnect-add").click();
+    await officialStart(page, "metaconnect-add", "en");
     await page.getByTestId(`metaconnect-pick-${pageB.id}`).check();
     // The write lands, but the browser loses its response. No duplicate POST is permitted.
     let picks = 0;
@@ -471,6 +519,11 @@ test.describe("meta-connect independent browser gate", () => {
       await route.abort("failed");
     });
     await page.getByTestId("metaconnect-pick-submit").click();
+    await page.getByTestId("metaconnect-confirm-connect").click();
+    await expect(page.getByRole("heading", { name: parityWords.en.uncertain, exact: true })).toBeVisible();
+    await page.getByTestId("metaconnect-readback").click();
+    await expect(page.getByRole("heading", { name: parityWords.en.result, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: parityWords.en.returnList, exact: true }).click();
     await expect(page.getByTestId(`metaconnect-row-${pageB.id}`)).toBeVisible();
     await expect(page.getByTestId("metaconnect-pick")).toHaveCount(0);
     expect(picks).toBe(1);
@@ -489,11 +542,20 @@ test.describe("meta-connect independent browser gate", () => {
       const c = metaConnectCopy[locale];
       await page.setViewportSize(sizes[view]);
       await openSettings(page, locale);
-      await expect(page.getByTestId("metaconnect-status")).toHaveCount(2);
+      await expect(page.getByTestId(`metaconnect-row-${pageA.id}`)).toBeVisible();
+      await expect(page.getByTestId(`metaconnect-row-${pageB.id}`)).toBeVisible();
       await expect(page.getByTestId("metaconnect-count")).toHaveText(c.count.replace("{count}", "2").replace("{cap}", "10"));
-      await expect(page.getByTestId("metaconnect-card")).toContainText(c.timezone);
+      await openDetail(page, locale, pageA.id);
+      await expect(page.getByTestId("metaconnect-status")).toBeVisible();
+      await expect(page.getByTestId("metaconnect-page")).toContainText(pageA.id);
+      await expect(page.getByTestId("metaconnect-status")).toContainText(taipeiTime(locale, dto.pages.find((item: { id: string; connected_at: string }) => item.id === pageA.id).connected_at));
+      await page.getByRole("button", { name: parityWords[locale].returnList, exact: true }).click();
       await page.getByTestId("metaconnect-card").evaluate((el) => el.scrollIntoView({ block: "start" }));
       await shot(page, "multi-pages", locale, view);
+      await openDetail(page, locale, pageB.id);
+      await expect(page.getByTestId("metaconnect-status")).toBeVisible();
+      await expect(page.getByTestId("metaconnect-page")).toContainText(pageB.id);
+      await expect(page.getByTestId("metaconnect-status")).toContainText(taipeiTime(locale, dto.pages.find((item: { id: string; connected_at: string }) => item.id === pageB.id).connected_at));
       await page.getByTestId(`metaconnect-row-${pageB.id}`).evaluate((el) => el.scrollIntoView({ block: "start" }));
       await shot(page, "multi-page-b", locale, view);
       const touch = await page.getByTestId("metaconnect-card").locator("button").evaluateAll((buttons) => buttons.every((b) => b.getBoundingClientRect().height >= 44));
@@ -518,9 +580,10 @@ test.describe("meta-connect independent browser gate", () => {
     await section.getByRole("button", { name: claimsCopy.en.sourceSave }).click();
     await expect(page.getByTestId("claims-source-object")).toHaveText(`${pageB.id}_223456789012345`);
     await openSettings(page, "en");
+    await openDetail(page, "en", pageB.id);
     const rowB = page.getByTestId(`metaconnect-row-${pageB.id}`);
-    await rowB.getByTestId("metaconnect-disconnect").click();
-    await expect(rowB.getByTestId("metaconnect-confirm")).toContainText(metaConnectCopy.en.confirmDisconnect);
+    await page.getByTestId("metaconnect-disconnect").click();
+    await expect(page.getByTestId("metaconnect-confirm")).toContainText(disconnectImpact.en);
     let disconnects = 0;
     await page.route(`**/meta-connect/disconnect`, async (route) => {
       disconnects++;
@@ -529,7 +592,9 @@ test.describe("meta-connect independent browser gate", () => {
       expect(response.status()).toBe(200);
       await route.abort("failed");
     });
-    await rowB.getByTestId("metaconnect-confirm-yes").click();
+    await page.getByTestId("metaconnect-confirm-yes").click();
+    await expect(page.getByRole("heading", { name: parityWords.en.uncertain, exact: true })).toBeVisible();
+    await page.getByTestId("metaconnect-readback").click();
     await expect(rowB).toHaveCount(0);
     await expect(page.getByTestId(`metaconnect-row-${pageA.id}`)).toBeVisible();
     await expect(page.getByTestId("metaconnect-error")).toHaveCount(0);
@@ -543,6 +608,7 @@ test.describe("meta-connect independent browser gate", () => {
     await page.getByTestId("claims-source").getByRole("button", { name: claimsCopy.en.sourceSave }).click();
     await expect(page.getByTestId("claims-source-object")).toHaveText(`${pageA.id}_323456789012345`);
     await openSettings(page, "en");
+    await openDetail(page, "en", pageA.id);
     await page.getByTestId("metaconnect-disconnect").click();
     await page.getByTestId("metaconnect-confirm-yes").click();
     await expect(page.getByTestId("metaconnect-none")).toBeVisible();
@@ -550,5 +616,64 @@ test.describe("meta-connect independent browser gate", () => {
     expect(writes.every((w) => w.key.length >= 8)).toBe(true);
     expect(new Set(writes.map((w) => w.key)).size).toBe(writes.length);
     await noSecrets(page);
+  });
+  for(const viewport of parityViewports) test(`C4 Meta official pick review result detail disconnect and uncertain ${viewport.width}`,async({page})=>{
+    const c=parityWords["zh-TW"];await page.setViewportSize(viewport);await signedLogin(page);await openSettings(page,"zh-TW");
+    await answerDialog(page); answer={profile:"fbonly"};
+    await officialStart(page,"metaconnect-connect","zh-TW");
+    await page.getByTestId(`metaconnect-pick-${pageB.id}`).check();
+    await page.getByTestId("metaconnect-pick-submit").click();
+    await confirmPick(page,"zh-TW");
+    await expect(page.getByTestId(`metaconnect-page-${pageB.id}`)).toBeVisible();
+    await parityClick(page,c.add,()=>expect(page.getByRole("heading",{name:c.intro,exact:true})).toBeVisible());
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7302":"50:1359");
+    await parityClick(page,c.official,()=>expect(page.getByRole("heading",{name:c.bridge,exact:true})).toBeVisible());
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7303":"1108:7304");
+    await answerDialog(page);answer={profile:"full"};
+    await parityClick(page,c.official,()=>expect(page.getByRole("heading",{name:c.pick,exact:true})).toBeVisible());
+    await page.getByTestId(`metaconnect-pick-${pageA.id}`).check();
+    await expect(page.getByTestId("metaconnect-pick-ig")).toBeChecked();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7305":"1108:7306");
+    await parityClick(page,c.pickReview,()=>expect(page.getByRole("heading",{name:c.confirm,exact:true})).toBeVisible());
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await expect(page.getByText(new RegExp(pageA.igUser))).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7307":"1108:7308");
+    await parityClick(page,c.edit,()=>expect(page.getByTestId(`metaconnect-pick-${pageA.id}`)).toBeChecked());
+    await parityClick(page,c.pickReview,()=>expect(page.getByRole("heading",{name:c.confirm,exact:true})).toBeVisible());
+    await parityClick(page,c.confirmConnect,()=>expect(page.getByRole("heading",{name:c.result,exact:true})).toBeVisible());
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7309":"1108:7310");
+    await parityClick(page,c.returnList,()=>expect(page.getByTestId(`metaconnect-page-${pageA.id}`)).toBeVisible());
+    await page.reload();await openSettings(page,"zh-TW");
+    const pageCard=page.getByTestId(`metaconnect-page-${pageA.id}`);
+    await expect(pageCard.getByRole("button",{name:c.detail,exact:true})).toBeVisible();
+    await pageCard.getByRole("button",{name:c.detail,exact:true}).click();
+    await expect(page.getByRole("heading",{name:c.detailTitle,exact:true})).toBeVisible();
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await expect(page.getByText(new RegExp(pageA.igUser))).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7301":"50:1356");
+    await parityClick(page,c.disconnect,()=>expect(page.getByRole("heading",{name:c.disconnectTitle,exact:true})).toBeVisible());
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"948:6716":"50:1358");
+    await parityClick(page,c.keep,()=>expect(page.getByRole("heading",{name:c.detailTitle,exact:true})).toBeVisible());
+    await parityClick(page,c.disconnect,()=>expect(page.getByRole("heading",{name:c.disconnectTitle,exact:true})).toBeVisible());
+    let writes=0;
+    // FAULT/TRANSPORT: execute the real isolated MOCK command, then lose its ACK. No product response values are invented.
+    await page.route("**/meta-connect/disconnect",async(route)=>{writes++;await route.fetch();await route.fulfill({status:503,contentType:"application/json",body:'{"code":"unavailable"}'});});
+    await parityClick(page,c.confirmDisconnect,()=>expect(page.getByRole("heading",{name:c.uncertain,exact:true})).toBeVisible());
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"948:6717":"948:6718");
+    await parityClick(page,c.readResult,()=>expect(page.getByTestId(`metaconnect-page-${pageA.id}`)).toHaveCount(0));
+    expect(writes).toBe(1);
+    await page.unroute("**/meta-connect/disconnect");
+    await page.reload();await openSettings(page,"zh-TW");
+    await expect(page.getByTestId(`metaconnect-page-${pageB.id}`)).toBeVisible();
+    await expect(page.getByTestId(`metaconnect-page-${pageA.id}`)).toHaveCount(0);
+    await noSecrets(page);
+    await openDetail(page,"zh-TW",pageB.id);
+    await page.getByTestId("metaconnect-disconnect").click();
+    await page.getByTestId("metaconnect-confirm-yes").click();
+    await expect(page.getByTestId("metaconnect-none")).toBeVisible();
+    expect((await facts()).connections).toBe(0);
   });
 });

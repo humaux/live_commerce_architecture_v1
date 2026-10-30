@@ -1,6 +1,6 @@
 // Purpose: Independent signed-frame copy, real-click ledger and screenshot oracle for C4.
 // Depends on: Playwright, node:fs/promises and the owning spec's isolated evidence directory.
-// Used by: studio-ui, claims-ui, live-console, attribution, meta-connect and meta-health-ui specs.
+// Used by: studio-ui, claims-ui, live-console, attribution, meta-connect, meta-connect-gate and meta-health-ui specs.
 // Invariants: real routes only; screenshots supplement clicks; no product state or DOM mutation.
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -80,7 +80,9 @@ export async function parityShot(page: Page, evidence: string, locale: ParityLoc
   if (locale !== "zh-TW") return;
   await mkdir(`${evidence}/parity`, { recursive: true });
   for (const frame of frames) {
-    await page.screenshot({ path: `${evidence}/parity/${frame}.png`, fullPage: false, animations: "disabled" });
-    await writeFile(`${evidence}/parity/${frame}.json`, JSON.stringify({ frame, route: new URL(page.url()).pathname, viewport: page.viewportSize(), density, evidence: "MOCK browser; screenshot supplements real clicks" }));
+    // GitHub upload-artifact rejects colons; the JSON retains the exact signed frame ID.
+    const artifactId = frame.replaceAll(":", "-");
+    await page.screenshot({ path: `${evidence}/parity/${artifactId}.png`, fullPage: false, animations: "disabled" });
+    await writeFile(`${evidence}/parity/${artifactId}.json`, JSON.stringify({ frame, route: new URL(page.url()).pathname, viewport: page.viewportSize(), density, evidence: "MOCK browser; screenshot supplements real clicks" }));
   }
 }

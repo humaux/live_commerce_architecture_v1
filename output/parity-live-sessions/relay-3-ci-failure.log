@@ -1,0 +1,17 @@
+PR #365 head 765b71d970efa1172f9ec0f670801f8189fe8855
+Gates run 41065979228 attempt 1 job 124113913014
+Tested merge a621b985471d9250058560857c5d907b8b63350a
+Source: GitHub job logs API (run-wide --log-failed was unavailable while other jobs were pending)
+2026-10-30T14:31:42.5905732Z     browser_meta_connect_gate_test.go:150: admin browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.WhfEWYTL/meta-connect-gate/20261030T143108.681549038
+2026-10-30T14:31:42.6157878Z --- FAIL: TestBrowserMetaConnectGate (36.30s)
+2026-10-30T14:32:08.7483202Z     browser_meta_connect_test.go:165: 3 Graph unsubscribe calls, want exactly one (Page A)
+2026-10-30T14:32:08.8156161Z --- FAIL: TestBrowserMetaConnect (26.20s)
+2026-10-30T14:32:09.1212453Z matrix-receipts: {"mode":"--browser-meta-connect","run_id":"41065979228","run_attempt":"1","sha":"a621b985471d9250058560857c5d907b8b63350a","status":"FAIL","test_count":26,"spec_count":13}
+2026-10-30T14:33:31.7388810Z     browser_live_claims_test.go:340: expected one signed MOCK IdP exchange, got 5
+2026-10-30T14:33:31.7748922Z --- FAIL: TestBrowserLiveClaimsRealChain (25.12s)
+2026-10-30T14:33:32.0888815Z matrix-receipts: {"mode":"--browser-live-claims","run_id":"41065979228","run_attempt":"1","sha":"a621b985471d9250058560857c5d907b8b63350a","status":"FAIL","test_count":33,"spec_count":6}
+2026-10-30T14:33:47.0744046Z --- FAIL: TestBrowserLiveClaimsRealChain (25.12s)
+2026-10-30T14:33:47.0746063Z --- FAIL: TestBrowserMetaConnectGate (36.30s)
+2026-10-30T14:33:47.0746506Z --- FAIL: TestBrowserMetaConnect (26.20s)
+2026-10-30T14:33:53.9982071Z ##[error]The path for one of the files in artifact is not valid: /playwright/run.WhfEWYTL/meta-connect/20261030T143142.666174459/parity/1108:7301.json. Contains the following character:  Colon :
+2026-10-30T14:33:58.6173027Z ##[error]The path for one of the files in artifact is not valid: /playwright/live-claims-1486171031/parity/1336:17334.json. Contains the following character:  Colon :

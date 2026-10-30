@@ -78,7 +78,7 @@ No checkout recipient, address, delivery total or payment timing exists in these
 
 ## RED gate and legacy mapping
 
-The RED commit retained existing tests; this implementation changes their real navigation/labels as mapped above. No case or security assertion is deleted. Existing gate-adapter assertions, drift baseline and dispatcher exemptions are untouched. Six existing browser specs import the new C4 oracle and retain their original runner registration. The console fixture gets two isolated live scenes, separate from the six existing lanes; the attribution runner enables its existing Studio handler for the real /studio route.
+The RED commit retained existing tests; this implementation changes their real navigation/labels as mapped above. No case or security assertion is deleted. Existing gate-adapter assertions, drift baseline and dispatcher exemptions are untouched. Seven existing browser specs import the new C4 oracle and retain their original runner registration. The console fixture gets two isolated live scenes, separate from the six existing lanes; the attribution runner enables its existing Studio handler for the real /studio route.
 
 |Legacy element asserted absent|Replacement / preserved intent|
 |---|---|
@@ -96,51 +96,51 @@ Click ledger: C4 helpers attach a per-control JSON row, including failures, to t
 
 |Frame|Test family|Browser artifact|Signed PNG readback|
 |---|---|---|---|
-|1108:7301|meta-connect.spec.ts|`parity/1108:7301.png`|[Admin Desktop · Meta連接 · detailD](figma/get_screenshot-1108-7301-1793361337474-0.png)|
-|1108:7302|meta-connect.spec.ts|`parity/1108:7302.png`|[Admin Desktop · Meta連接 · introD](figma/get_screenshot-1108-7302-1793361338236-0.png)|
-|1108:7303|meta-connect.spec.ts|`parity/1108:7303.png`|[Admin Desktop · Meta連接 · bridgeD](figma/get_screenshot-1108-7303-1793361338937-0.png)|
-|1108:7304|meta-connect.spec.ts|`parity/1108:7304.png`|[Admin Mobile · Meta連接 · bridgeM](figma/get_screenshot-1108-7304-1793361339480-0.png)|
-|1108:7305|meta-connect.spec.ts|`parity/1108:7305.png`|[Admin Desktop · Meta連接 · pickD](figma/get_screenshot-1108-7305-1793361340125-0.png)|
-|1108:7306|meta-connect.spec.ts|`parity/1108:7306.png`|[Admin Mobile · Meta連接 · pickM](figma/get_screenshot-1108-7306-1793361340863-0.png)|
-|1108:7307|meta-connect.spec.ts|`parity/1108:7307.png`|[Admin Desktop · Meta連接 · confirmD](figma/get_screenshot-1108-7307-1793361341567-0.png)|
-|1108:7308|meta-connect.spec.ts|`parity/1108:7308.png`|[Admin Mobile · Meta連接 · confirmM](figma/get_screenshot-1108-7308-1793361342455-0.png)|
-|1108:7309|meta-connect.spec.ts|`parity/1108:7309.png`|[Admin Desktop · Meta連接 · resultD](figma/get_screenshot-1108-7309-1793361343397-0.png)|
-|1108:7310|meta-connect.spec.ts|`parity/1108:7310.png`|[Admin Mobile · Meta連接 · resultM](figma/get_screenshot-1108-7310-1793361344372-0.png)|
-|1108:7311|meta-health-ui.spec.ts|`parity/1108:7311.png`|[Admin Desktop · Meta連接 · healthD](figma/get_screenshot-1108-7311-1793361344950-0.png)|
-|1108:7312|meta-health-ui.spec.ts|`parity/1108:7312.png`|[Admin Mobile · Meta連接 · healthM](figma/get_screenshot-1108-7312-1793361345457-0.png)|
-|1151:9424|attribution.spec.ts|`parity/1151:9424.png`|[Admin Desktop · 直播復盤 · DaWan Live](figma/get_screenshot-1151-9424-1793361346034-0.png)|
-|1151:9425|attribution.spec.ts|`parity/1151:9425.png`|[Admin Mobile · 直播復盤 · DaWan Live](figma/get_screenshot-1151-9425-1793361346740-0.png)|
-|1151:9426|attribution.spec.ts|`parity/1151:9426.png`|[Admin Desktop · 直播同一時間軸 · DaWan Live](figma/get_screenshot-1151-9426-1793361347389-0.png)|
-|1151:9427|attribution.spec.ts|`parity/1151:9427.png`|[Admin Mobile · 直播同一時間軸 · DaWan Live](figma/get_screenshot-1151-9427-1793361347770-0.png)|
-|1151:9430|attribution.spec.ts|`parity/1151:9430.png`|[Admin Desktop · 直播觀眾彙總 · DaWan Live](figma/get_screenshot-1151-9430-1793361348519-0.png)|
-|1151:9431|attribution.spec.ts|`parity/1151:9431.png`|[Admin Mobile · 直播觀眾彙總 · DaWan Live](figma/get_screenshot-1151-9431-1793361349365-0.png)|
-|1336:17329|live-console.spec.ts|`parity/1336:17329.png`|[Admin Desktop · 調整直播庫存 · LC26](figma/get_screenshot-1336-17329-1793361349760-0.png)|
-|1336:17332|live-console.spec.ts|`parity/1336:17332.png`|[Admin Desktop · 結束直播 · LC26](figma/get_screenshot-1336-17332-1793361350170-0.png)|
-|1336:17333|live-console.spec.ts|`parity/1336:17333.png`|[Admin Mobile · 結束直播 · LC26](figma/get_screenshot-1336-17333-1793361350340-0.png)|
-|1336:17334|claims-ui.spec.ts|`parity/1336:17334.png`|[Admin Desktop · 編輯預設留言口令 · LC26](figma/get_screenshot-1336-17334-1793361351123-0.png)|
-|1336:17335|claims-ui.spec.ts|`parity/1336:17335.png`|[Admin Mobile · 編輯預設留言口令 · LC26](figma/get_screenshot-1336-17335-1793361351463-0.png)|
-|1336:17336|live-console.spec.ts|`parity/1336:17336.png`|[Admin Desktop · 下一場草稿 · LC26](figma/get_screenshot-1336-17336-1793361351912-0.png)|
-|1336:17337|live-console.spec.ts|`parity/1336:17337.png`|[Admin Mobile · 下一場草稿 · LC26](figma/get_screenshot-1336-17337-1793361352084-0.png)|
-|19:373|claims-ui.spec.ts|`parity/19:373.png`|[Admin Desktop · 開播前準備 · LC26](figma/get_screenshot-19-373-1793361352843-0.png)|
-|19:374|live-console.spec.ts|`parity/19:374.png`|[Admin Desktop · 直播後 · LC26](figma/get_screenshot-19-374-1793361353238-0.png)|
-|19:375|claims-ui.spec.ts|`parity/19:375.png`|[Admin Mobile · 開播前準備 · LC26](figma/get_screenshot-19-375-1793361353479-0.png)|
-|19:376|live-console.spec.ts|`parity/19:376.png`|[Admin Mobile · 直播後 · LC26](figma/get_screenshot-19-376-1793361353667-0.png)|
-|30:1977|live-console.spec.ts|`parity/30:1977.png`|[Admin Desktop · 複製成下一場 · LC26](figma/get_screenshot-30-1977-1793361354350-0.png)|
-|30:2030|live-console.spec.ts|`parity/30:2030.png`|[Admin Mobile · 複製成下一場 · LC26](figma/get_screenshot-30-2030-1793361354670-0.png)|
-|5:14545|studio-ui.spec.ts|`parity/5:14545.png`|[Admin Desktop · 直播場次 · LC26](figma/get_screenshot-5-14545-1793361355141-0.png)|
-|5:14691|studio-ui.spec.ts|`parity/5:14691.png`|[Admin Mobile · 直播場次 · LC26](figma/get_screenshot-5-14691-1793361355295-0.png)|
-|5:17701|live-console.spec.ts|`parity/5:17701.png`|[Admin Desktop · 直播準備 · SHOPLINE](figma/get_screenshot-5-17701-1793361355963-0.png)|
-|5:17826|live-console.spec.ts|`parity/5:17826.png`|[Admin Mobile · 直播準備 · SHOPLINE](figma/get_screenshot-5-17826-1793361356274-0.png)|
-|5:17908|meta-connect.spec.ts|`parity/5:17908.png`|[Admin Desktop · Facebook 與 Instagram · SHOPLINE](figma/get_screenshot-5-17908-1793361356939-0.png)|
-|50:1356|meta-connect.spec.ts|`parity/50:1356.png`|[Admin Mobile · 連接詳情 · task layout](figma/get_screenshot-50-1356-1793361357392-0.png)|
-|50:1358|meta-connect.spec.ts|`parity/50:1358.png`|[Admin Mobile · 中斷連接 · task layout](figma/get_screenshot-50-1358-1793361358135-0.png)|
-|50:1359|meta-connect.spec.ts|`parity/50:1359.png`|[Admin Mobile · 連接主頁 · task layout](figma/get_screenshot-50-1359-1793361358420-0.png)|
-|52:1385|live-console.spec.ts|`parity/52:1385.png`|[Admin Mobile · 本場商品 · LC26](figma/get_screenshot-52-1385-1793361358650-0.png)|
-|52:1388|live-console.spec.ts|`parity/52:1388.png`|[Admin Mobile · 調整直播庫存 · LC26](figma/get_screenshot-52-1388-1793361359071-0.png)|
-|6:18045|meta-connect.spec.ts|`parity/6:18045.png`|[Admin Mobile · Facebook 與 Instagram · task layout](figma/get_screenshot-6-18045-1793361359731-0.png)|
-|948:6716|meta-connect.spec.ts|`parity/948:6716.png`|[Admin Desktop · 中斷主頁連接確認](figma/get_screenshot-948-6716-1793361360194-0.png)|
-|948:6717|meta-connect.spec.ts|`parity/948:6717.png`|[Admin Desktop · 中斷結果待確認](figma/get_screenshot-948-6717-1793361360612-0.png)|
-|948:6718|meta-connect.spec.ts|`parity/948:6718.png`|[Admin Mobile · 中斷結果待確認](figma/get_screenshot-948-6718-1793361360744-0.png)|
+|1108:7301|meta-connect-gate.spec.ts|`parity/1108-7301.png`|[Admin Desktop · Meta連接 · detailD](figma/get_screenshot-1108-7301-1793361337474-0.png)|
+|1108:7302|meta-connect-gate.spec.ts|`parity/1108-7302.png`|[Admin Desktop · Meta連接 · introD](figma/get_screenshot-1108-7302-1793361338236-0.png)|
+|1108:7303|meta-connect-gate.spec.ts|`parity/1108-7303.png`|[Admin Desktop · Meta連接 · bridgeD](figma/get_screenshot-1108-7303-1793361338937-0.png)|
+|1108:7304|meta-connect-gate.spec.ts|`parity/1108-7304.png`|[Admin Mobile · Meta連接 · bridgeM](figma/get_screenshot-1108-7304-1793361339480-0.png)|
+|1108:7305|meta-connect-gate.spec.ts|`parity/1108-7305.png`|[Admin Desktop · Meta連接 · pickD](figma/get_screenshot-1108-7305-1793361340125-0.png)|
+|1108:7306|meta-connect-gate.spec.ts|`parity/1108-7306.png`|[Admin Mobile · Meta連接 · pickM](figma/get_screenshot-1108-7306-1793361340863-0.png)|
+|1108:7307|meta-connect-gate.spec.ts|`parity/1108-7307.png`|[Admin Desktop · Meta連接 · confirmD](figma/get_screenshot-1108-7307-1793361341567-0.png)|
+|1108:7308|meta-connect-gate.spec.ts|`parity/1108-7308.png`|[Admin Mobile · Meta連接 · confirmM](figma/get_screenshot-1108-7308-1793361342455-0.png)|
+|1108:7309|meta-connect-gate.spec.ts|`parity/1108-7309.png`|[Admin Desktop · Meta連接 · resultD](figma/get_screenshot-1108-7309-1793361343397-0.png)|
+|1108:7310|meta-connect-gate.spec.ts|`parity/1108-7310.png`|[Admin Mobile · Meta連接 · resultM](figma/get_screenshot-1108-7310-1793361344372-0.png)|
+|1108:7311|meta-health-ui.spec.ts|`parity/1108-7311.png`|[Admin Desktop · Meta連接 · healthD](figma/get_screenshot-1108-7311-1793361344950-0.png)|
+|1108:7312|meta-health-ui.spec.ts|`parity/1108-7312.png`|[Admin Mobile · Meta連接 · healthM](figma/get_screenshot-1108-7312-1793361345457-0.png)|
+|1151:9424|attribution.spec.ts|`parity/1151-9424.png`|[Admin Desktop · 直播復盤 · DaWan Live](figma/get_screenshot-1151-9424-1793361346034-0.png)|
+|1151:9425|attribution.spec.ts|`parity/1151-9425.png`|[Admin Mobile · 直播復盤 · DaWan Live](figma/get_screenshot-1151-9425-1793361346740-0.png)|
+|1151:9426|attribution.spec.ts|`parity/1151-9426.png`|[Admin Desktop · 直播同一時間軸 · DaWan Live](figma/get_screenshot-1151-9426-1793361347389-0.png)|
+|1151:9427|attribution.spec.ts|`parity/1151-9427.png`|[Admin Mobile · 直播同一時間軸 · DaWan Live](figma/get_screenshot-1151-9427-1793361347770-0.png)|
+|1151:9430|attribution.spec.ts|`parity/1151-9430.png`|[Admin Desktop · 直播觀眾彙總 · DaWan Live](figma/get_screenshot-1151-9430-1793361348519-0.png)|
+|1151:9431|attribution.spec.ts|`parity/1151-9431.png`|[Admin Mobile · 直播觀眾彙總 · DaWan Live](figma/get_screenshot-1151-9431-1793361349365-0.png)|
+|1336:17329|live-console.spec.ts|`parity/1336-17329.png`|[Admin Desktop · 調整直播庫存 · LC26](figma/get_screenshot-1336-17329-1793361349760-0.png)|
+|1336:17332|live-console.spec.ts|`parity/1336-17332.png`|[Admin Desktop · 結束直播 · LC26](figma/get_screenshot-1336-17332-1793361350170-0.png)|
+|1336:17333|live-console.spec.ts|`parity/1336-17333.png`|[Admin Mobile · 結束直播 · LC26](figma/get_screenshot-1336-17333-1793361350340-0.png)|
+|1336:17334|claims-ui.spec.ts|`parity/1336-17334.png`|[Admin Desktop · 編輯預設留言口令 · LC26](figma/get_screenshot-1336-17334-1793361351123-0.png)|
+|1336:17335|claims-ui.spec.ts|`parity/1336-17335.png`|[Admin Mobile · 編輯預設留言口令 · LC26](figma/get_screenshot-1336-17335-1793361351463-0.png)|
+|1336:17336|live-console.spec.ts|`parity/1336-17336.png`|[Admin Desktop · 下一場草稿 · LC26](figma/get_screenshot-1336-17336-1793361351912-0.png)|
+|1336:17337|live-console.spec.ts|`parity/1336-17337.png`|[Admin Mobile · 下一場草稿 · LC26](figma/get_screenshot-1336-17337-1793361352084-0.png)|
+|19:373|claims-ui.spec.ts|`parity/19-373.png`|[Admin Desktop · 開播前準備 · LC26](figma/get_screenshot-19-373-1793361352843-0.png)|
+|19:374|live-console.spec.ts|`parity/19-374.png`|[Admin Desktop · 直播後 · LC26](figma/get_screenshot-19-374-1793361353238-0.png)|
+|19:375|claims-ui.spec.ts|`parity/19-375.png`|[Admin Mobile · 開播前準備 · LC26](figma/get_screenshot-19-375-1793361353479-0.png)|
+|19:376|live-console.spec.ts|`parity/19-376.png`|[Admin Mobile · 直播後 · LC26](figma/get_screenshot-19-376-1793361353667-0.png)|
+|30:1977|live-console.spec.ts|`parity/30-1977.png`|[Admin Desktop · 複製成下一場 · LC26](figma/get_screenshot-30-1977-1793361354350-0.png)|
+|30:2030|live-console.spec.ts|`parity/30-2030.png`|[Admin Mobile · 複製成下一場 · LC26](figma/get_screenshot-30-2030-1793361354670-0.png)|
+|5:14545|studio-ui.spec.ts|`parity/5-14545.png`|[Admin Desktop · 直播場次 · LC26](figma/get_screenshot-5-14545-1793361355141-0.png)|
+|5:14691|studio-ui.spec.ts|`parity/5-14691.png`|[Admin Mobile · 直播場次 · LC26](figma/get_screenshot-5-14691-1793361355295-0.png)|
+|5:17701|live-console.spec.ts|`parity/5-17701.png`|[Admin Desktop · 直播準備 · SHOPLINE](figma/get_screenshot-5-17701-1793361355963-0.png)|
+|5:17826|live-console.spec.ts|`parity/5-17826.png`|[Admin Mobile · 直播準備 · SHOPLINE](figma/get_screenshot-5-17826-1793361356274-0.png)|
+|5:17908|meta-connect.spec.ts|`parity/5-17908.png`|[Admin Desktop · Facebook 與 Instagram · SHOPLINE](figma/get_screenshot-5-17908-1793361356939-0.png)|
+|50:1356|meta-connect-gate.spec.ts|`parity/50-1356.png`|[Admin Mobile · 連接詳情 · task layout](figma/get_screenshot-50-1356-1793361357392-0.png)|
+|50:1358|meta-connect-gate.spec.ts|`parity/50-1358.png`|[Admin Mobile · 中斷連接 · task layout](figma/get_screenshot-50-1358-1793361358135-0.png)|
+|50:1359|meta-connect-gate.spec.ts|`parity/50-1359.png`|[Admin Mobile · 連接主頁 · task layout](figma/get_screenshot-50-1359-1793361358420-0.png)|
+|52:1385|live-console.spec.ts|`parity/52-1385.png`|[Admin Mobile · 本場商品 · LC26](figma/get_screenshot-52-1385-1793361358650-0.png)|
+|52:1388|live-console.spec.ts|`parity/52-1388.png`|[Admin Mobile · 調整直播庫存 · LC26](figma/get_screenshot-52-1388-1793361359071-0.png)|
+|6:18045|meta-connect.spec.ts|`parity/6-18045.png`|[Admin Mobile · Facebook 與 Instagram · task layout](figma/get_screenshot-6-18045-1793361359731-0.png)|
+|948:6716|meta-connect-gate.spec.ts|`parity/948-6716.png`|[Admin Desktop · 中斷主頁連接確認](figma/get_screenshot-948-6716-1793361360194-0.png)|
+|948:6717|meta-connect-gate.spec.ts|`parity/948-6717.png`|[Admin Desktop · 中斷結果待確認](figma/get_screenshot-948-6717-1793361360612-0.png)|
+|948:6718|meta-connect-gate.spec.ts|`parity/948-6718.png`|[Admin Mobile · 中斷結果待確認](figma/get_screenshot-948-6718-1793361360744-0.png)|
 
 ## Out-of-path disclosure and NOT_RUN
 
@@ -153,3 +153,31 @@ NOT_RUN/PENDING: current implementation GREEN; actual browser clicks/screenshots
 Current implementation head `fb3a444cafe72d822f1729edcd4595ff440c8415` failed foundation run `41064306103`, job `124091597538`: `check-gates.sh` inventories every tracked `*.spec.*` / `*.test.*` path, including the seven empty syntax-check log filenames. Raw relevant lines are preserved in [relay-2-foundation.log](relay-2-foundation.log). This is an evidence-artifact naming failure, not the tests-only causal RED.
 
 Targeted fix attempt 1: rename those seven logs to `-spec-ts.log` / `-test-ts.log` and update their pointers in `static-checks.json`; retain their contents and original check results. No product code, actual test, runner, registration, gate, assertion or exemption changes. This relay adds only files under `output/parity-live-sessions/**`; prior out-of-path disclosures above still apply. Local static `python3 scripts/check_packet.py` exited 0 (E1; `relay-2-packet.log`); its generated timestamp-only report was restored to the clean starting version. No local test or server was run. Current-head GREEN and independent E4 remain PENDING; the integrator relays the new Gates/Foundation result after push. Humaux/coord/canvas tools are unavailable, so no shared-state write is claimed.
+
+## Relay 3 · preserve one-write fixtures and reach signed Meta tasks
+
+Incoming head `765b71d970efa1172f9ec0f670801f8189fe8855` is an implementation head, not the tests-only RED. Gates `41065979228`, job `124113913014` failed on merge checkout `a621b985471d9250058560857c5d907b8b63350a`. [Raw filtered failure receipt](relay-3-ci-failure.log): the protocol runner saw 3 Graph unsubscribes instead of exactly 1; KC16 saw 5 signed IdP exchanges instead of exactly 1; the independent Meta browser runner failed. The artifact uploader also refused `parity/1108:7301.json` and `parity/1336:17334.json` because of the colon. Detailed independent-runner browser artifacts were unavailable after that upload failure; its stale navigation is identified from current source, not asserted as an independently observed locator failure. Incoming Foundation `41065979187 / 124097366766` passed; it is not GREEN for the new head.
+
+Targeted browser-blocker fix attempt 1 (the earlier relay fixed a different Foundation filename blocker):
+
+- Keep both original Go exact-one assertions and all fixture values untouched. Move the two C4 official pick/review/result/detail/disconnect/uncertain cases, with all assertions and frame shots, from the protocol spec to the existing independent multi-flow spec. A real UI prelude connects Page B, then the original C4 flow connects and disconnects A while proving B remains; a real UI epilogue disconnects B. End-of-run zero-bindings, destroyed credentials and no-secret checks remain. Neither test case is deleted and no registration or timeout changes.
+- Restore the two Meta pick-review/confirm disabled predicates for a pending/failed status baseline. This two-line product regression was found while preserving the original `MOCK UNKNOWN` disabled-before-baseline assertion; the submission handler already refuses that state. No new test or fixture replaces that original check.
+- KC16 still performs exactly one real signed login. Its four C4 cases reuse only those synthetic session cookies in memory as fixture setup; no cookies are logged or written. Every product control, keyword save and post-refresh assertion still uses the real route and real clicks.
+- Update every original MCG10 path to the production tasks. The mapping below preserves protocol intent without retaining superseded merchant copy. Original server-side ownership, binding/credential/route counts, scope checks, redirects, key reuse/uniqueness and provider checks remain unchanged.
+- Use `parity/<frame-id-with-colon-replaced-by-hyphen>.png` and matching `.json` for GitHub artifact compatibility. The JSON `frame` field retains the exact signed Figma ID. This is a filename encoding only; no screenshot, density or click requirement is removed.
+
+| Existing MCG10 assertion / intent | Current signed task path / equivalent check |
+|---|---|
+| Studio source and no-connection link | Preflight → real Advanced disclosure → original source/link assertions |
+| Direct connect / reauthorize control | List/detail → intro → bridge → official OAuth; original mocked Graph exchange and callback checks |
+| Pick immediately writes | Pick → review → explicit confirm → result → list → selected Page detail; original exact Page/IG, status and permission checks |
+| Inline permission-code text | Same seven exact granted scope IDs on visible seller-label elements; missing messaging still checks its localized task label |
+| Reload preserves card facts | Reload → open full Settings editor → selected Page detail → original Page/IG facts |
+| Old disconnect prose / cancel | Selected Page detail → signed impact statement → Keep connection → original unchanged connection facts, then confirm disconnect |
+| Two inline status dumps / timezone banner | Both exact Page rows and server count 2; click both details; verify each server `connected_at` formatted in Asia/Taipei. Fixed `08:30Z → 16:30` check stays in all three locales |
+| Lost pick/disconnect ACK inferred automatically | Observe uncertain heading → explicitly query result → original receipt/Page checks; exact one POST remains. An unchanged baseline stays uncertain with both write controls absent |
+| Malformed start retry | Retry the same bridge action; exact two attempts and same idempotency key remain |
+
+Static evidence only (E1): four `node --check` commands, targeted spec/helper/component `tsc`, official ownership generation plus `--check`, official depmap generation (no diff), and `python3 scripts/check_packet.py` exit 0. See [relay-3-static.json](relay-3-static.json), [typecheck config](tsconfig.relay-3.json), [packet output](relay-3-packet.log). The worktree had no installed Node dependencies: the original relative compiler command did not start (exit 1); the read-only main-checkout compiler initially reported missing Node ambient types (exit 1); explicitly selecting the installed Node types completed the spec/helper check (exit 0). Extending the scope to the two-line component change then required the already installed official Next CSS ambient declarations (that missing-CSS attempt exited 1); the final spec/helper/component check with those declarations exited 0. All earlier failure logs are retained. No install, local test, browser, server, PG or container was run. Impeccable harden/craft-floor guidance was read for the two disabled-state predicates; its context/detector scripts were NOT_RUN under the card's explicit static-command whitelist. The packet check's timestamp-only generated report was restored to its clean incoming content.
+
+Fresh source hashes bind the changed files, helper and generated ownership map. The only product delta in this relay restores `load === ready` plus a non-null status baseline on both Meta pick-review/confirm buttons; the pre-parity UI and current `submitPick` already require this, and the original pending-baseline assertion stays in place. No layout, visible copy, import, gate, baseline, exemption, contract, migration, R2 pin, lockfile or SettingsWizard change. New module-test disclosure: `tests/admin/meta-connect-gate.spec.ts`; all four test/helper paths and `output/ci-select-backend-browser/browser-ownership.json` are within the card's spec/helper/generated allowances. Evidence paths remain under `output/parity-live-sessions/**`. Humaux store/canvas/coord/code-index remain NOT_RUN because the runtime exposes none of those tools. GREEN, screenshots/density, independent E4 comparison and the persisted copy-conflict projection remain PENDING/DEFERRED. The integrator remains the CI completion wake-up owner; final run IDs are posted in the PR comment after push.
