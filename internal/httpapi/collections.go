@@ -1,3 +1,8 @@
+// Purpose: mount merchant catalog and collection HTTP transport with bounded request grammar.
+// Depends on: internal/catalog commands, scoped authentication and existing body/list/upload adapters.
+// Used by: the admin BFF and authenticated merchant clients through registerCatalogV2Routes.
+// Invariants: server authentication selects scope; collection rules never accept body scope authority.
+
 package httpapi
 
 // collections.go mounts the catalog-v2 merchant routes of unit catalog-core (contracts/storefront-v2.md section A):
