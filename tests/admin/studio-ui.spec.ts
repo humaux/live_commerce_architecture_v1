@@ -1,6 +1,7 @@
 // Purpose: Exercises studio controls and access behavior through the isolated browser/API harness.
-// Depends on: @playwright/test, node:fs/promises, node:crypto, ../../apps/admin/lib/studio-model, ../../apps/admin/src/shell-copy, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STUDIO_STORE, LC_BROWSER_STUDIO_FOREIGN_STORE, LC_BROWSER_STUDIO_UNLISTED_STORE, LC_BROWSER_STUDIO_SESSION, LC_BROWSER_STUDIO_READONLY_TOKEN, LC_BROWSER_STUDIO_EXPIRED_TOKEN
+// Depends on: @playwright/test, node:fs/promises, node:crypto, ../../apps/admin/lib/studio-model, ../../apps/admin/src/shell-copy, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STUDIO_STORE, LC_BROWSER_STUDIO_FOREIGN_STORE, LC_BROWSER_STUDIO_UNLISTED_STORE, LC_BROWSER_STUDIO_SESSION, LC_BROWSER_STUDIO_READONLY_TOKEN, LC_BROWSER_STUDIO_EXPIRED_TOKEN; ./parity-live-sessions (C4 independent oracle)
 // Used by: apps/admin/src/features/live/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_studio_ui_test.go
+import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -523,3 +524,30 @@ test("STU04 native conceal retains an uncertain committed request", async () => 
     await close();
   }
 });
+
+// C4 independent oracle: the permanent split editor is replaced by the signed session cards.
+for (const locale of ["zh-TW", "zh-CN", "en"] as const) test(`C4 session cards and creation ${locale}`, async ({ page }) => {
+  const c = parityWords[locale];
+  await signedLogin(page);
+  for (const viewport of parityViewports) {
+    await page.setViewportSize(viewport);
+    await page.goto(`/${locale}/studio?store=${store}`);
+    await expect(page.getByTestId("merchant-studio")).toBeVisible();
+    await expect(page.getByRole("heading", { name: c.sessions, exact: true })).toBeVisible();
+    for (const name of [c.create, c.copyLast, c.all, c.preparing, c.live, c.ended])
+      await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^(Scene settings|場次設定|场次设置)$/ })).toHaveCount(0);
+    await expect(page.getByRole("complementary", { name: /MOCK rehearsal|模擬演練|模拟演练/ })).toHaveCount(0);
+    await parityClick(page, c.preparing, () => expect(page.getByRole("button", { name: c.preparing, exact: true })).toHaveAttribute("aria-pressed", "true"));
+    await parityClick(page, c.all, () => expect(page.getByRole("button", { name: c.all, exact: true })).toHaveAttribute("aria-pressed", "true"));
+    await parityShot(page, evidence, locale, viewport.width === 1440 ? "5:14545" : "5:14691");
+  }
+  await parityClick(page, c.create, () => expect(page.getByLabel(studioParityName[locale], { exact: true })).toBeVisible());
+  const title = `C4 ${locale} durable draft`;
+  await page.getByLabel(studioParityName[locale], { exact: true }).fill(title);
+  await parityClick(page, studioParitySave[locale], () => expect(page.getByText(title, { exact: true }).first()).toBeVisible());
+  await page.reload();
+  await expect(page.getByText(title, { exact: true }).first()).toBeVisible();
+});
+const studioParityName = {"zh-TW":"場次名稱", "zh-CN":"场次名称", en:"Scene name"};
+const studioParitySave = {"zh-TW":"建立草稿", "zh-CN":"建立草稿", en:"Create draft"};

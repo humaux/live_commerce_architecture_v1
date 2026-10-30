@@ -427,6 +427,13 @@ func runBrowserLiveConsole(t *testing.T, labels bool) {
 		}
 		mock.scenes[id] = &consoleMockScene{ID: id, Store: h.f.storeA1, Title: fmt.Sprintf("LC-U1 MOCK lane %d", i), Platform: platformName, Phase: "draft", Version: 1, Offer: randomUUID(), SKU: randomUUID(), Warehouse: randomUUID(), OfferVersion: 1, Stock: 12, StockVersion: 1, Active: true}
 	}
+	// C4 owns independent synthetic live scenes; never reuses or resets LC-U1's six lanes.
+	parityScenes := []string{}
+	for i := 0; i < 2; i++ {
+		id := h.draft(t, h.f.storeA1)
+		parityScenes = append(parityScenes, id)
+		mock.scenes[id] = &consoleMockScene{ID: id, Store: h.f.storeA1, Title: fmt.Sprintf("C4 parity live %d", i), Platform: "facebook", Phase: "live", Version: 1, Offer: randomUUID(), SKU: randomUUID(), Warehouse: randomUUID(), OfferVersion: 1, Stock: 12, StockVersion: 1, Active: true}
+	}
 	other := h.draft(t, h.f.storeA2)
 	mock.scenes[other] = &consoleMockScene{ID: other, Store: h.f.storeA2, Title: "LC-U1 MOCK other store", Platform: "facebook", Phase: "draft", Version: 1, Offer: randomUUID(), SKU: randomUUID(), Warehouse: randomUUID(), OfferVersion: 1, Stock: 9, StockVersion: 1, Active: true}
 	controlKey := randomToken()
@@ -618,7 +625,7 @@ func runBrowserLiveConsole(t *testing.T, labels bool) {
 		t.Logf("FOCUSED_SPEC_ONLY: live-console grep=%q; full-mode acceptance remains NOT_RUN", grep)
 	}
 	cmd.Dir = root
-	cmd.Env = browserEnvironment(map[string]string{"LC_CONSOLE_CALIBRATION": calibration, "FORCE_COLOR": "0", "NO_COLOR": "1", "LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken, "LC_BROWSER_CONSOLE_READ_TOKEN": readToken, "LC_BROWSER_CONSOLE_COMMENTS": string(commentsJSON)})
+	cmd.Env = browserEnvironment(map[string]string{"LC_CONSOLE_CALIBRATION": calibration, "FORCE_COLOR": "0", "NO_COLOR": "1", "LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_PARITY_SCENES": mustJSON(t, parityScenes), "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken, "LC_BROWSER_CONSOLE_READ_TOKEN": readToken, "LC_BROWSER_CONSOLE_COMMENTS": string(commentsJSON)})
 	var diagnostics consoleDiagnosticBuffer
 	cmd.Stdout, cmd.Stderr = &diagnostics, &diagnostics
 	runErr := cmd.Run()

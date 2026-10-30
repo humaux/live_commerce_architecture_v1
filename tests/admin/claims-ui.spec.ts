@@ -1,5 +1,5 @@
 // Purpose: KC16 real-click merchant claim lifecycle and buyer direct-checkout regression.
-// Depends on: production admin/storefront Next, signed MOCK IdP, buyer/merchant BFF and real PG; @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/studio-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_CLAIMS_BUYER_ORIGIN, LC_CLAIMS_STORE, LC_CLAIMS_SESSION, LC_CLAIMS_SCENE, LC_CLAIMS_PRODUCT, LC_CLAIMS_SKU_A, LC_CLAIMS_SKU_B, LC_CLAIMS_SKU_A_ID, LC_CLAIMS_SKU_B_ID, LC_CLAIMS_CONTROL, LC_CLAIMS_CONTROL_KEY, LC_CLAIMS_PROXY, LC_CLAIMS_FB_ASSET, LC_CLAIMS_IG_ASSET
+// Depends on: production admin/storefront Next, signed MOCK IdP, buyer/merchant BFF and real PG; @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/studio-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_CLAIMS_BUYER_ORIGIN, LC_CLAIMS_STORE, LC_CLAIMS_SESSION, LC_CLAIMS_SCENE, LC_CLAIMS_PRODUCT, LC_CLAIMS_SKU_A, LC_CLAIMS_SKU_B, LC_CLAIMS_SKU_A_ID, LC_CLAIMS_SKU_B_ID, LC_CLAIMS_CONTROL, LC_CLAIMS_CONTROL_KEY, LC_CLAIMS_PROXY, LC_CLAIMS_FB_ASSET, LC_CLAIMS_IG_ASSET; ./parity-live-sessions (C4 independent oracle)
 // Used by: apps/admin/src/features/live/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_live_claims_test.go; --browser-live-claims (no provider sends or payment placement)
 // KC16 browser gate (contracts/live-keyword-claims-v1.md §11.1): Studio › Claims in the
 // packaged admin, then the buyer claim link in the storefront production server, through
@@ -7,6 +7,7 @@
 // (LC_BROWSER_SUITE=live-claims), which owns every process, the signed MOCK IdP, the
 // disposable buyer.example TLS edge + CONNECT proxy and the runner-only control listener.
 // Evidence: screenshots (links always masked) and result.json (token SHA-256 only).
+import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
@@ -542,4 +543,37 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
     cases, locales: ["en", "zh-CN", "zh-TW"], link_sha256: sha256(secondToken), generation: 2,
     boundary: "production Next builds; signed MOCK IdP; MOCK manual ingress; synthetic buyer.example TLS edge; no provider or deployment acceptance",
   }, null, 2), { mode: 0o600 });
+});
+
+for (const viewport of parityViewports) test(`C4 preflight products and keyword ${viewport.width}`, async ({ page }) => {
+  const c = parityWords["zh-TW"];
+  await page.setViewportSize(viewport);
+  await page.goto(`${origin}/en/`);
+  await page.getByRole("button", { name: "Sign in with identity service" }).click();
+  await page.getByTestId("shell-store-selector").waitFor({state:"attached"});
+  await page.goto(`${origin}/zh-TW/studio/claims?store=${store}&scene=${session}#preflight`);
+  await expect(page.getByTestId("merchant-claims")).toBeVisible();
+  await expect(page.getByRole("heading", { name:c.preflight, exact:true })).toBeVisible();
+  await expect(page.getByText("留言怎樣才算認領？", {exact:true})).toBeVisible();
+  await expect(page.getByRole("button", {name:"查看預設留言口令",exact:true})).toBeVisible();
+  await expect(page.getByRole("heading", {name:"MOCK manual comment",exact:true})).toHaveCount(0);
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"19:373":"19:375");
+  await parityClick(page,"查看預設留言口令",()=>expect(page.getByRole("heading",{name:/預設留言口令/,exact:true})).toBeVisible());
+  await expect(page.getByRole("button",{name:c.keyword,exact:true}).first()).toBeVisible();
+  await page.getByRole("button",{name:c.keyword,exact:true}).first().click();
+  await expect(page.getByRole("heading",{name:c.keyword,exact:true})).toBeVisible();
+  await expect(page.getByText("目前的預設口令",{exact:true})).toBeVisible();
+  await page.getByLabel(c.keywordInput,{exact:true}).fill("C4TEST");
+  await parityClick(page,c.preview,()=>expect(page.getByText("C4TEST",{exact:true})).toBeVisible());
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1336:17334":"1336:17335");
+  await parityClick(page,"返回口令庫",()=>expect(page.getByRole("button",{name:c.keyword,exact:true}).first()).toBeVisible());
+  await page.getByRole("button",{name:c.keyword,exact:true}).first().click();
+  await expect(page.getByRole("button",{name:c.remove,exact:true})).toBeVisible();
+});
+
+for(const locale of ["zh-CN","en"] as const)test(`C4 claims preflight locale ${locale}`,async({page})=>{
+  await page.goto(`${origin}/en/`);await page.getByRole("button",{name:"Sign in with identity service"}).click();
+  await page.getByTestId("shell-store-selector").waitFor({state:"attached"});
+  await page.goto(`${origin}/${locale}/studio/claims?store=${store}&scene=${session}#preflight`);
+  await expect(page.getByRole("heading",{name:parityWords[locale].preflight,exact:true})).toBeVisible();
 });

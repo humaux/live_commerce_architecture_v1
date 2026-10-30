@@ -1,6 +1,7 @@
 // Purpose: MCH11 real clicks, three locales/390px, scoped reads, recheck/reconnect and explicit backend identity contract.
-// Depends on: signed MOCK IdP, real BFF/Go/PG, fixture-only control and Playwright; no real Meta traffic.
+// Depends on: signed MOCK IdP, real BFF/Go/PG, fixture-only control and Playwright; no real Meta traffic.; ./parity-live-sessions (C4 independent oracle)
 // Used by: --browser-meta-health-ui; every new control has a persisted click ledger entry.
+import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
 import { test, expect, type Page } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -129,4 +130,20 @@ test("reconnect uses the existing OAuth picker and restores the same Page",async
  await click(page,"existing-reconnect",()=>page.getByTestId("metaconnect-reconnect").click(),()=>expect(page.getByTestId("metaconnect-pick-submit")).toBeVisible(),"real OAuth callback opens the existing Page picker");
  await click(page,"confirm-same-page",()=>page.getByTestId("metaconnect-pick-submit").click(),()=>expect(page.getByTestId(`metaconnect-row-${pageID}`)).toBeVisible(),"same Page is connected again");
  await control("probe");await page.reload();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);await expect(page.getByTestId("metaconnect-token")).toHaveAttribute("data-state","active");
+});
+
+for(const viewport of parityViewports)test(`C4 feature checks frame ${viewport.width}`,async({page})=>{
+  const c=parityWords["zh-TW"];await scenario("review");await page.setViewportSize(viewport);await login(page);
+  await page.goto(`${origin}/zh-TW/settings?store=${store}`);await enterAdvanced(page);
+  await parityClick(page,c.detail,()=>expect(page.getByRole("heading",{name:c.detailTitle,exact:true})).toBeVisible());
+  await parityClick(page,c.health,()=>expect(page.getByRole("heading",{name:c.healthTitle,exact:true})).toBeVisible());
+  await expect(page.getByText("連接主頁不代表每項功能均可使用。",{exact:true})).toBeVisible();
+  for(const provider of ["facebook","instagram"])for(const capability of ["read_comment","private_reply","dm_session","reply_public"])
+    await expect(page.getByTestId(`meta-health-capability-${provider}-${capability}`)).toContainText(review["zh-TW"]);
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7311":"1108:7312");
+  await parityClick(page,c.recheck,()=>expect(page.getByTestId("meta-health-recheck-result")).toBeVisible());
+  // Scheduling is not a new permission or a successful provider probe.
+  await expect(page.getByTestId("meta-health-capability-facebook-private_reply")).toContainText(review["zh-TW"]);
+  await page.reload();await enterAdvanced(page);
+  await expect(page.getByTestId("metaconnect-card")).toBeVisible();
 });

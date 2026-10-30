@@ -9,7 +9,7 @@
     "tests/admin/attribution-checkout.spec.ts": "69d383b5a699ca7755cb115fe756fc489670c84fdc99025dbd54b8b6995ccfc7",
     "tests/admin/attribution-format.test.ts": "662fc1de39ba699c1e3ded9f7bd1c91d00caf1abedb24efaabfe14277fab8e36",
     "tests/admin/attribution.fixture.ts": "853a63334321e6f0719b8817ae48cf8e7260e9b14b30143e93faf303a131ab0c",
-    "tests/admin/attribution.spec.ts": "085fb98dba8a301353fcf9c9423bcc94c03f26d9ce7267883f20e9f847a5fbe8",
+    "tests/admin/attribution.spec.ts": "88ad31b2d59a63ab8d11686a5191051b6974b0e258707a34b943a335b71edbb3",
     "tests/admin/attribution.test.ts": "8a119444263d79a942cfc3583cad51f4fad65475d3983982462493d994f6e132",
     "tests/admin/auth-real.spec.ts": "30290845ee1a5b4733cf13c664ac6ce919031d11fc0199d4996f01490ca6c2c0",
     "tests/admin/auth.spec.ts": "c439fcf73df35f36d05be70cb5909126bc8bad1fec3cd1a049318a1bf27a138e",
@@ -31,7 +31,7 @@
     "tests/admin/claims-backend-parity.test.ts": "93784882a486c2be5a1cf945437dd818c5a93d290aac7d2140e5ee55dffb0335",
     "tests/admin/claims-model.test.ts": "2472e57eec9d86f4f9ae4ff32acd274b998c35d5a10c2bfd8251e34bc21e3a19",
     "tests/admin/claims-request.test.ts": "0812f41b5df04ce7eaa8d0d7885d887a5a024469e824a865ddcb7d0aafd6f391",
-    "tests/admin/claims-ui.spec.ts": "67c620807e50fbc29fe696fc21fc9d7ada17d16f7a6a8e374dc71dcc2ad7baf5",
+    "tests/admin/claims-ui.spec.ts": "de2a45411afe676f6ffb81834b38e912d863aaa6910b04493509001dfb208d2e",
     "tests/admin/code-alignment-admin-state.test.mjs": "facc95785e9dee3ab950dca17f0e899e2b4633ef422d54ffab55e0e195d1167d",
     "tests/admin/comment-label-print.spec.ts": "daf089ec93a495f25697230778add4d299f66efb90babf4e483004e390cb9e24",
     "tests/admin/comment-label-print.test.ts": "1156d8f68891fe3ac8186a154dda09ecf3b17f370f43a60567187e7a402aa126",
@@ -113,7 +113,7 @@
     "tests/admin/live-console-bff.test.ts": "5f9c72f8ec665d0a33b199a192fb1cba1d10a0b77d6fe2e177bf902078d56263",
     "tests/admin/live-console-model.test.ts": "9c070a0bf6db86d83fe6e2c7473b30b902aead66c31ad7ce24ce7edb1369d998",
     "tests/admin/live-console-render.test.ts": "a7cf30db2debc99d4187e54e690f880d46a149c4091a95bd90aef7b266a352f1",
-    "tests/admin/live-console.spec.ts": "893a040874ed3fef88b7524f49634f2530f84ed26d3aafcaf35bda36c851bdc7",
+    "tests/admin/live-console.spec.ts": "8c0b1eeebeaa14c8c6cc1c911b52e530c76c3db2a4cb9332672242d3722f728e",
     "tests/admin/live-settings-bff.test.ts": "1386b69cdd713cb8ad1c4ed20db139a3db4e7383257e7d575013695978515a98",
     "tests/admin/live-settings-hooks.test.ts": "46cc13b98bdca7ee3e59bc1d3feea6abfba26512f05fdacafbfdbc0b4433cbfe",
     "tests/admin/live-settings-model.test.ts": "34ed269a867bd76bd746b8d7515c8c8f2bb45dfafc3a757417a825f85ac3591d",
@@ -127,9 +127,9 @@
     "tests/admin/meta-connect-gate.spec.ts": "d8cb098e3db5b13b9213ac3f6fe6dac3fe2d622aac77fc0c7ae3077ecc51bc55",
     "tests/admin/meta-connect-gate.test.ts": "62de61dd8a92551cbc7a8478a3f7e0476f41bca03bfb23088b1388660fde9deb",
     "tests/admin/meta-connect-model.test.ts": "a8a880eb75887b271084bb1aa2336202bdc3414234a76bc2a5724df90cf394c8",
-    "tests/admin/meta-connect.spec.ts": "64ef4c202566f038446c062a12b16cd5a9a66c52f3d78588a3a41c20f2e67b8b",
+    "tests/admin/meta-connect.spec.ts": "51d6cde5356995c0db9f490a743f6d137082242ab4a363e4968395dbab6dca12",
     "tests/admin/meta-health-model.test.ts": "214f5bc2bcd50a0ed4f1894d104fb893c20151ea43a5c8c6fa5e56d63a7f010c",
-    "tests/admin/meta-health-ui.spec.ts": "1efc2b887775ffc0191063eba6187ee73a20db265ad5a34d7ab577ce5eab7763",
+    "tests/admin/meta-health-ui.spec.ts": "80774a29da3cb557862b77da628985d1664bd024c7c4f9ff70f3aef0706f3d79",
     "tests/admin/money-time-model.test.ts": "e74353a55056e559e07607dc584fbe91b46ad5e16b65f6258241282c17a908d4",
     "tests/admin/notify-model.test.ts": "5421dd95172a3941e06c330509b0a94e330f686c7d4abcea4461eea7dfe3c8d8",
     "tests/admin/oc/design-publish-pending.spec.ts": "f34aa8b60d358ce391f901db02df8a22f8ef8629078dfa1ae8917b022d5bd9d0",
@@ -149,6 +149,7 @@
     "tests/admin/parcels-model.test.ts": "4af0a4b7881802004e29343b7361076ae333fcc50a89b2b8fd527254685148ff",
     "tests/admin/parcels-request.test.ts": "2e6b5ce176f30a273a9eeb9aee7fef931676c8bcee2569842b361ed1bcf8957f",
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
+    "tests/admin/parity-live-sessions.ts": "94073e87f01aa30cd582346b401aba0ddb94bc28712af30b4737c42e6f3a8724",
     "tests/admin/password-auth.spec.ts": "b4d4930eafa9f83409191b0d54cc07941c4f3e6f2694b3bf821c2a6fad9a296c",
     "tests/admin/password-bff.test.ts": "a0aef82247f79280f4f950dee28cff5116c98be35e1d09898ddfee6d623922a4",
     "tests/admin/password-response-canaries.ts": "19567bd49311a0b0ba1f13923b29c48a4a90fbbc0a224772aacdd7bc3452c9fb",
@@ -201,7 +202,7 @@
     "tests/admin/studio-input-client.test.ts": "1ee8cdc63dd5e75edab220d878112bc5b6fb9fcc817ca560376a940ca72f074f",
     "tests/admin/studio-input.test.ts": "6fbfa353cfe6be733fcf44de842246af8af464ad7f532e72478e3ac11123d27e",
     "tests/admin/studio-request.test.ts": "5fa7349f872b332e92816bc0bf9f9c5e7523e57c9a18107f0ae9f21c77a0a045",
-    "tests/admin/studio-ui.spec.ts": "c6e8d2aac1f40eda620f9fdc4d072f8f60a7152d9508fc56477f6b0881c4c0a9",
+    "tests/admin/studio-ui.spec.ts": "7274756ea0002b0650db437cc6b7f029714b22ed78fda5a01b7f2d5362ad5631",
     "tests/admin/taiwan-cvs.spec.ts": "36a853564b69f27198d4e237e8e51618379136ced4b40a7be7b33f8f03b2bc08",
     "tests/admin/team-bff.test.ts": "85ae24dc3ff4c27fac4cc5418acfdf584f08a4ab5cf7afd8c30d09f2d9e36533",
     "tests/admin/team-model.test.ts": "d11c2e907da6ed6079e83394dbe28c88d5552d353650b290d488ce1eff51a5d0",
@@ -240,7 +241,7 @@
     "tests/foundation/browser_admin_legacy_test.go": "b8cf053044f00e7e1c0c6a8594dc5f05ad46480d6f1ba453e715ba0016290a60",
     "tests/foundation/browser_admin_relay_test.go": "91396089f26ced835186ef839212e9d906d5d52a0731aadd23554ae24879aa4b",
     "tests/foundation/browser_admin_relay_waitid_linux_test.go": "dfae35bb186f5746ba774c343bd77115d8a4cfbd5b71202e8af6c9b17e97d6a5",
-    "tests/foundation/browser_ads_attribution_test.go": "4dc9f0c67a491f057e7fd337bd43c71a04c9ec3a862d5fafd4d5383359fc14b8",
+    "tests/foundation/browser_ads_attribution_test.go": "a7510c5a4d24646d98edcf2ce8db7f85b92e0bc6f1b28dbf4d9c2e926aeeeed4",
     "tests/foundation/browser_buyer_chain_test.go": "a7bdee104acee6ed6fc32594e6a33abae0f2a6a5b1b724054620c787c44aa8ed",
     "tests/foundation/browser_buyer_comms_test.go": "4e7ab136ef2e5ac637e487e853fd6285301c190a57d3036c6ca26430b2908e61",
     "tests/foundation/browser_card_payments_test.go": "6904038cf08495111a962d1a22b60db5c4cfc06085ba4b808930548264d67b68",
@@ -261,7 +262,7 @@
     "tests/foundation/browser_live_claims_test.go": "cb4a217ced49ab1dc30c2597a62ef5ceb11713528c74f0296941ec9c377db513",
     "tests/foundation/browser_live_console_comments_fixture_test.go": "30afeb5745b665957624fd2dbe0ce04eb20c636ac231846f42ddc0ff23d7ac39",
     "tests/foundation/browser_live_console_diagnostics_test.go": "aff7fb01466f32317503a57f58ac976d88bb6483eaafa3614181d08eb403bc29",
-    "tests/foundation/browser_live_console_test.go": "5897250fdfbf207fff597e805da780df7286912e4ee3fdd2d2794194ba8f2320",
+    "tests/foundation/browser_live_console_test.go": "54dce23920649275bf1ec63145ffec811cd1734c4b2a0a01ecefe11d66cd95c0",
     "tests/foundation/browser_live_settings_fixture_test.go": "898d27f641f35dfacf6e64ec7c12784329be629d17293c800c7fb2158b9177ab",
     "tests/foundation/browser_live_settings_test.go": "82940e2343aea47e6fd2dab88aaf0cc8f52c20e5107481270a7009151c1fe176",
     "tests/foundation/browser_live_tools_test.go": "a2338a21eac70e1738c5786e87b23dfb2e32371e91c00f81635d2ba42284145b",
@@ -824,7 +825,8 @@
         "tests/admin/meta-health-ui.spec.ts"
       ],
       "inputs": [
-        "tests/admin/meta-health-ui.spec.ts"
+        "tests/admin/meta-health-ui.spec.ts",
+        "tests/admin/parity-live-sessions.ts"
       ],
       "apps": [
         "admin"
@@ -1654,6 +1656,7 @@
       ],
       "inputs": [
         "tests/admin/fixtures/native-device.ts",
+        "tests/admin/parity-live-sessions.ts",
         "tests/admin/studio-ui.spec.ts"
       ],
       "apps": [
@@ -1684,7 +1687,8 @@
         "tests/admin/comment-label-strict-fixture.ts",
         "tests/admin/fixtures/native-device.ts",
         "tests/admin/inbox-private-evidence.ts",
-        "tests/admin/live-console.spec.ts"
+        "tests/admin/live-console.spec.ts",
+        "tests/admin/parity-live-sessions.ts"
       ],
       "apps": [
         "admin"
@@ -1749,7 +1753,8 @@
         "tests/admin/claim-source.test.ts",
         "tests/admin/claims-model.test.ts",
         "tests/admin/claims-request.test.ts",
-        "tests/admin/claims-ui.spec.ts"
+        "tests/admin/claims-ui.spec.ts",
+        "tests/admin/parity-live-sessions.ts"
       ],
       "apps": [
         "admin",
@@ -2172,6 +2177,7 @@
         "tests/admin/attribution.fixture.ts",
         "tests/admin/attribution.spec.ts",
         "tests/admin/attribution.test.ts",
+        "tests/admin/parity-live-sessions.ts",
         "tests/helpers/next-startup.mjs",
         "tests/storefront/ads-attribution.mjs",
         "tests/storefront/browser-engine.mjs"
@@ -2699,7 +2705,8 @@
         "tests/admin/meta-connect-gate.spec.ts",
         "tests/admin/meta-connect-gate.test.ts",
         "tests/admin/meta-connect-model.test.ts",
-        "tests/admin/meta-connect.spec.ts"
+        "tests/admin/meta-connect.spec.ts",
+        "tests/admin/parity-live-sessions.ts"
       ],
       "apps": [
         "admin"

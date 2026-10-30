@@ -1,8 +1,9 @@
 // Purpose: AT7/AT9 real-click report, evidence separation and responsive table interaction gates.
-// Depends on: production Next/Go/PG, synthetic Meta fixtures, Playwright and native scrollend readiness.
+// Depends on: production Next/Go/PG, synthetic Meta fixtures, Playwright and native scrollend readiness.; ./parity-live-sessions (C4 independent oracle)
 // Used by: --browser-ads-attribution; no response interception or LIVE provider acceptance.
 // No response interception or completed-order synthesis. The runner supplies authoritative fixture totals.
 // Actual buyer ad URL -> checkout (AT5) is added by the root's storefront/checkout acceptance path.
+import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
 import { expect, test, type Page } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -1027,3 +1028,33 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
       }
     });
   }
+
+for(const viewport of parityViewports)test(`C4 real Studio review timeline and audience ${viewport.width}`,async({page})=>{
+  const c=parityWords["zh-TW"];await page.setViewportSize(viewport);await login(page,viewport.width);
+  const url=`/zh-TW/studio?store=${store}&scene=${fixture.session_id}`;
+  await page.goto(`${url}#review`);
+  await expect(page.getByRole("heading",{name:c.review,exact:true})).toBeVisible();
+  await page.getByTestId("session-review-from").fill(fixture.from);
+  await page.getByTestId("session-review-to").fill(fixture.to);
+  await parityClick(page,"重新讀取",()=>expect(page.getByText(c.funnel,{exact:true})).toBeVisible());
+  const funnel=page.getByTestId("session-review-funnel");
+  for(const n of [fixture.expected.comments,fixture.expected.claims,fixture.expected.checkout_links,fixture.expected.paid_orders])
+    await expect(funnel.getByText(String(n),{exact:true}).first()).toBeVisible();
+  await expect(page.getByTestId("session-review-net")).toHaveText(money("zh-TW","TWD",fixture.expected.net_minor));
+  await expect(page.getByRole("heading",{name:"Attribution & review",exact:true})).toHaveCount(0);
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1151:9424":"1151:9425");
+  await parityClick(page,c.timeline,()=>expect(page.getByRole("heading",{name:c.timelineTitle,exact:true})).toBeVisible());
+  await expect(page.getByText(c.causal,{exact:true})).toBeVisible();
+  await expect(page.getByTestId("session-review-timeline")).toContainText("—");
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1151:9426":"1151:9427");
+  await parityClick(page,"返回直播復盤",()=>expect(page.getByRole("heading",{name:c.review,exact:true})).toBeVisible());
+  await parityClick(page,c.audience,()=>expect(page.getByRole("heading",{name:c.audienceTitle,exact:true})).toBeVisible());
+  await expect(page.getByText("觀看次數（非人數）",{exact:true})).toBeVisible();
+  // The not_read fixture is a real isolated PG state, selected via the route, not a made-up count.
+  await page.goto(`/zh-TW/studio?store=${store}&scene=${fixture.state_sessions.not_read}#audience`);
+  await expect(page.getByText("尚未讀取觀眾彙總",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:c.audienceRead,exact:true})).toBeVisible();
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1151:9430":"1151:9431");
+  await parityClick(page,c.audienceRead,()=>expect(page.getByTestId("session-audience-result")).toBeVisible());
+  await page.reload();await expect(page.getByRole("heading",{name:c.audienceTitle,exact:true})).toBeVisible();
+});

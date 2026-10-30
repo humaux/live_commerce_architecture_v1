@@ -1,0 +1,7 @@
+PARITY-LIVE-SESSIONS
+phase=TESTS_ONLY_RED
+base=3ea359f796d36153bb4b8aa7259e4e0c27676b86
+branch=unit/parity-live-sessions
+status=PENDING_PUSH
+RED_NOT_YET_OBSERVED
+No local tests/servers/browser/PG were run.

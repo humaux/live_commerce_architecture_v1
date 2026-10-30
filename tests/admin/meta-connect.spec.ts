@@ -1,3 +1,8 @@
+// Purpose: C4 real-route parity assertions extend the existing isolated protocol gate.
+// Depends on: signed MOCK identity, disposable PG, packaged Next/Go and the existing harness helpers.
+// Used by: the registered Meta connect browser gate.
+// Invariants: permissions, OAuth, tenant fencing and original protocol assertions remain intact.
+// Depends on: ./parity-live-sessions (C4 independent oracle) and the existing isolated browser harness.
 // meta-connect browser gate, Playwright half (contract meta-claims-intake-v1 "Merchant connect (R4)"; unit meta-connect "Done when").
 // BFF routes exercised through the UI: POST /api/meta/connect, GET /api/meta/callback (the Login for Business redirect URI),
 // GET|POST /api/stores/{store}/meta-connect/{status,states/*,pick,disconnect} -> Go /v1/admin/stores/{store_id}/meta-connect/*.
@@ -6,6 +11,7 @@
 // Labels: BROWSER; Meta is MOCK: https://www.facebook.com/... is answered by page.route with a 302 to the app's own callback and the
 // code exchange / permissions / Pages / subscribe happen in the API process against the fake Graph.
 // Locators use the card's data-testid vocabulary and its copy file (apps/admin/lib/meta-connect-copy.ts).
+import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
@@ -263,4 +269,69 @@ test("reconnect with a Facebook-only Page: Instagram absent, card says none link
   expect(facts.subscribed).toEqual({ A: false, B: true, C: false }); // A was unsubscribed by the disconnect job, B is the connected Page
   await noSecrets(page);
 });
+});
+
+// C4 runs after the original protocol/security sequence; Page B must remain connected at handoff.
+test.describe("C4 signed Meta frames",()=>{
+  test.describe.configure({mode:"serial"});
+  for(const locale of ["zh-TW","zh-CN","en"] as const) test(`C4 Meta connection list ${locale}`,async({page})=>{
+    const c=parityWords[locale];await signedLogin(page);
+    for(const viewport of parityViewports){
+      await page.setViewportSize(viewport);await openSettings(page,locale);
+      const card=page.getByTestId("metaconnect-card");
+      await expect(card.getByRole("heading",{name:c.meta,exact:true})).toBeVisible();
+      await expect(card.getByRole("button",{name:c.detail,exact:true})).toBeVisible();
+      await expect(card.getByRole("button",{name:c.add,exact:true})).toBeVisible();
+      // The old inline token/expiry dump is replaced by an explicit detail task.
+      await expect(card.getByText(/^(Token status|權杖狀態|令牌状态)$/)).toHaveCount(0);
+      await parityShot(page,evidence,locale,viewport.width===1440?"5:17908":"6:18045");
+    }
+  });
+  for(const viewport of parityViewports) test(`C4 Meta official pick review result detail disconnect and uncertain ${viewport.width}`,async({page})=>{
+    const c=parityWords["zh-TW"];await page.setViewportSize(viewport);await signedLogin(page);await openSettings(page,"zh-TW");
+    await parityClick(page,c.add,()=>expect(page.getByRole("heading",{name:c.intro,exact:true})).toBeVisible());
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7302":"50:1359");
+    await parityClick(page,c.official,()=>expect(page.getByRole("heading",{name:c.bridge,exact:true})).toBeVisible());
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7303":"1108:7304");
+    await answerDialog(page);answer={profile:"full"};
+    await parityClick(page,c.official,()=>expect(page.getByRole("heading",{name:c.pick,exact:true})).toBeVisible());
+    await page.getByTestId(`metaconnect-pick-${pageA.id}`).check();
+    await expect(page.getByTestId("metaconnect-pick-ig")).toBeChecked();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7305":"1108:7306");
+    await parityClick(page,c.pickReview,()=>expect(page.getByRole("heading",{name:c.confirm,exact:true})).toBeVisible());
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await expect(page.getByText(new RegExp(pageA.igUser))).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7307":"1108:7308");
+    await parityClick(page,c.edit,()=>expect(page.getByTestId(`metaconnect-pick-${pageA.id}`)).toBeChecked());
+    await parityClick(page,c.pickReview,()=>expect(page.getByRole("heading",{name:c.confirm,exact:true})).toBeVisible());
+    await parityClick(page,c.confirmConnect,()=>expect(page.getByRole("heading",{name:c.result,exact:true})).toBeVisible());
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7309":"1108:7310");
+    await parityClick(page,c.returnList,()=>expect(page.getByTestId(`metaconnect-page-${pageA.id}`)).toBeVisible());
+    await page.reload();await openSettings(page,"zh-TW");
+    const pageCard=page.getByTestId(`metaconnect-page-${pageA.id}`);
+    await expect(pageCard.getByRole("button",{name:c.detail,exact:true})).toBeVisible();
+    await pageCard.getByRole("button",{name:c.detail,exact:true}).click();
+    await expect(page.getByRole("heading",{name:c.detailTitle,exact:true})).toBeVisible();
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await expect(page.getByText(new RegExp(pageA.igUser))).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1108:7301":"50:1356");
+    await parityClick(page,c.disconnect,()=>expect(page.getByRole("heading",{name:c.disconnectTitle,exact:true})).toBeVisible());
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"948:6716":"50:1358");
+    await parityClick(page,c.keep,()=>expect(page.getByRole("heading",{name:c.detailTitle,exact:true})).toBeVisible());
+    await parityClick(page,c.disconnect,()=>expect(page.getByRole("heading",{name:c.disconnectTitle,exact:true})).toBeVisible());
+    let writes=0;
+    // FAULT/TRANSPORT: execute the real isolated MOCK command, then lose its ACK. No product response values are invented.
+    await page.route("**/meta-connect/disconnect",async(route)=>{writes++;await route.fetch();await route.fulfill({status:503,contentType:"application/json",body:'{"code":"unavailable"}'});});
+    await parityClick(page,c.confirmDisconnect,()=>expect(page.getByRole("heading",{name:c.uncertain,exact:true})).toBeVisible());
+    await expect(page.getByText(pageA.name,{exact:true})).toBeVisible();
+    await parityShot(page,evidence,"zh-TW",viewport.width===1440?"948:6717":"948:6718");
+    await parityClick(page,c.readResult,()=>expect(page.getByTestId(`metaconnect-page-${pageA.id}`)).toHaveCount(0));
+    expect(writes).toBe(1);
+    await page.reload();await openSettings(page,"zh-TW");
+    await expect(page.getByTestId(`metaconnect-page-${pageB.id}`)).toBeVisible();
+    await expect(page.getByTestId(`metaconnect-page-${pageA.id}`)).toHaveCount(0);
+    await noSecrets(page);
+  });
 });
