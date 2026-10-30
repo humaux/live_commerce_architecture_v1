@@ -51,7 +51,7 @@ async function ctl(resource: string) {
 }
 async function openSettings(page: Page, locale = "en") {
   await page.goto(`/${locale}/settings?store=${store}`);
-  const advanced = page.getByRole("button", { name: /^(Advanced|進階|进阶)$/, exact: true });
+  const advanced = page.getByRole("button", { name: /^(Edit settings|編輯設定|编辑设置|View settings|檢視設定|查看设置)$/, exact: true });
   await expect(advanced.or(page.getByTestId("metaconnect-card"))).toBeVisible();
   if (await advanced.isVisible()) await advanced.click();
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
