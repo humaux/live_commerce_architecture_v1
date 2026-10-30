@@ -1,0 +1,24 @@
+1905-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6012412Z ℹ todo 0
+1906-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6012562Z ℹ duration_ms 42870.676258
+1907-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6012651Z 
+1908:foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6012724Z ✖ failing tests:
+1909-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6012803Z 
+1910-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6012922Z test at tests/ci/next-startup.test.mjs:284:1
+1911-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6013405Z ✖ all eleven gate adapters preserve original assertions, readiness loops and predicates, spawn and environment statements (58.603822ms)
+1912:foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6014207Z   AssertionError [ERR_ASSERTION]: tests/storefront/browser-gate.mjs: original gate assertions changed (missing: expect(ui.getByRole("heading", { name: "Items in this quotation", exact: true })).toBeVisible())
+1913-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6014668Z   
+1914-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6014783Z   71 !== 106
+1915-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6014895Z   
+1916-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6015356Z       at assertGateParity (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ci/next-startup.test.mjs:269:10)
+1917-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6016082Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ci/next-startup.test.mjs:289:9)
+1918-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6016536Z       at async Test.run (node:internal/test_runner/test:1409:7)
+1919-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6016890Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+1920-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6017145Z     generatedMessage: false,
+1921-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6017314Z     code: 'ERR_ASSERTION',
+1922-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6017464Z     actual: 71,
+1923-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6017602Z     expected: 106,
+1924-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6017751Z     operator: 'strictEqual',
+1925-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6017901Z     diff: 'simple'
+1926-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6018024Z   }
+1927-foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6025214Z ## matrix-receipts node-test end
+1928:foundation	Node unit suites (storefront, i18n)	2026-10-30T13:23:06.6034752Z ##[error]Process completed with exit code 1.

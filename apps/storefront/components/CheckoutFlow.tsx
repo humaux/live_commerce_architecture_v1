@@ -591,7 +591,7 @@ export default function CheckoutFlow({
                 ref={quoteRef}
                 aria-labelledby="quote-title"
               >
-                <h2 id="quote-title">{v2.details}</h2>
+                <h2 id="quote-title">{copy.lines}</h2>
                 <CheckoutQuoteAmounts quote={quote} locale={locale} money={money} />
                 <p>{copy.unpaid}</p>
                 {/* storefront-v2 §F: discount code; re-quotes this cart + delivery through writePurchase and replaces the quote. */}

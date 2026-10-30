@@ -48,3 +48,8 @@ Native filtered receipt: relay3-foundation-failure.log (gh run view --log-failed
 This is an implementation harness regression, not a new parity assertion RED.
 Targeted fix attempt 1/2: execute real shop-helpers confirmation/disclosure source in the VM; preserve pointer assertion, add idle/disclosure order assertion. No product source, safety assertion, timing or exemption changed.
 Static node --check, ownership generation/--check and diff --check exit0; ownership output unchanged. No local test/server. New implementation CI pending push; integrator will relay the new exact-head conclusion.
+
+RELAY 4 (2026-10-30): exact implementation head a10d46667152c994d76a557430699f6ae5947c31.
+Foundation41058432128 / job124071740737 FAILED next-startup.test.mjs:284: browser-gate original Items in this quotation assertion replaced; subsequence 71/106. Native filtered log: relay4-foundation-failure.log.
+Repair attempt1/2: restore two frozen assertions and existing localized quotation heading inside expanded details; add zh-CN disclosure real click. Default signed heading/legacy-absence assertions unchanged. No guard/baseline/threshold/exemption weakened.
+Static node--check, ownership generation/check, diff--check exit0 E1. No local tests/server. Existing causalRED2318e7c9b Gates41051681920/job124052345726 retained; new implementation GREEN pending. Final new head/runs registered in PR comment; integrator completion relay is wake-up.
