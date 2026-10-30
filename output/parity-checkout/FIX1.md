@@ -59,3 +59,13 @@ Outside the original explicit checkout-source paths (integrator review): `apps/s
 NOT_RUN: exact FIX1-head Foundation/Gates GREEN (pending push), independent acceptance/E4, local runtime tests/servers (prohibited), provider/production execution, remaining 32 signed CVS/pickup visual comparisons, Humaux store/canvas/coord/code-index. No PASS/completion claimed. CI wake-up owner: integrator, using the exact WAIT_RUN IDs in the final PR comment. No additional fixes if the same assertion remains RED.
 
 Evidence retrieval note: a repeated multi-artifact download stopped on an already-existing WebKit bo01-head-reads.json; no overwrite/retry was used. All listed failure logs, screenshot and four lint summaries were present and read; their native hashes are retained in fix1-failure-evidence.log. The ownership check detected drift after the final assertion addition; regeneration and final --check then exited 0.
+
+## FIX1 RELAY 1 — integration conflict repair (2026-10-30)
+
+Native `gh pr checks 351` confirmed no checks on `de70834327901121f9f778ef5605c18b19f87cb9`; the PR reported CONFLICTING. This is a merge blocker, not assertion RED. The integrator explicitly dispatched this relay to merge the base first. Rollback point: that pre-merge head.
+
+Merged integration `2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f`. Two actual conflicts: `tests/storefront/cvs-picker.mjs` and generated `output/ci-select-backend-browser/browser-ownership.json`. The source resolution keeps both the checkout-returned `deliveryKey` (read before the selector unmounts) and integration's `exerciseSignedCvsParity` real-click checks. All CVS review/selection assertions from integration survive. Ownership was regenerated, never hand-merged. Other files in the merge are inherited integration changes, not lane edits. No additional product fix or assertion-repair attempt in this relay.
+
+E1 receipts: `node scripts/dev/derive-browser-ownership.mjs`, the same command with `--check`, `node --check tests/storefront/cvs-picker.mjs`, `node --check tests/storefront/cvs-buyer.mjs`, and `git diff --check`: exit 0. No local tests or servers. Final SHA/run IDs go in the PR handoff comment; no evidence-only push after GREEN.
+
+Humaux tools are available in this relay: fix stored under title `[fix] PARITY-CHECKOUT FIX1 relay1 resolve integration CVS helper conflict`, changed helper submitted to code-index, and own relay canvas updated under an acquired lock. Earlier tool-unavailability statements describe their historical sessions. CI acceptance and independent review remain NOT_RUN/PENDING. Integrator relays the exact-head Gates/Foundation conclusions; same-test RED after FIX1 means BLOCKED, no third approach.
