@@ -1,0 +1,21 @@
+Card: PARITY-INBOX-EDITOR
+Phase: tests-only RED candidate; no application implementation in this commit
+Base: 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+Branch: unit/parity-inbox-editor
+Target: r3/integration
+Environment: MOCK / GitHub CI only
+RED verdict: PENDING (not yet observed on its own assertions)
+Gates run/jobs: PENDING until PR opened
+Foundation run/jobs: PENDING until PR opened
+GREEN: NOT_RUN
+Local tests/servers/builds/PG/browser: NOT_RUN (prohibited)
+node --check tests/admin/inbox-v2-ui.spec.ts: exit 0
+node --check tests/admin/editor-v2.spec.ts: exit 0
+pnpm exec tsc --noEmit --strict --target ES2023 --module ESNext --moduleResolution bundler --esModuleInterop --skipLibCheck tests/admin/editor-v2.spec.ts tests/admin/inbox-v2-ui.spec.ts: exit 254 (tsc not installed; no dependencies installed locally)
+Browser ownership generator: exit 0; --check recorded at handoff
+Expected causal failures: unsigned list refresh/ellipsis remain; sent DM without new inbound folds composer; hub subtitle/status/preview copy/history row differ; signed review/result/preview states differ.
+Preview line only: DEFERRED -> INBOX-PREVIEW by integrator ruling; no backend/API change.
+Humaux MCP memory/store/canvas/coord: unavailable; no shared-state update claimed.
+node scripts/dev/derive-browser-ownership.mjs --check: exit 0
+Authority SHA256 inbox DELIVERY: a74b140f8abc0d7a50be3a55b9ee5bd180c84c4459c1ad8d2bbda4387def0d88
+Authority SHA256 editor DELIVERY: b5a6e8da0df5befe676c516424b8c6ab7bf4015fef55b5998330e00b93be2a14
