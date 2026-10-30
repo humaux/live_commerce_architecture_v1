@@ -131,3 +131,29 @@ artifact 12990484924 / playwright.log
   ✓  45 tests/admin/orders-ui.spec.ts:1426:7 › PARITY-STATES admin shell removes raw diagnostic en 390 (3.3s)
 
   45 passed (3.1m)
+
+FIX1 relay 1: head cd6935deeb91b171d4777dcdf37c832500a6b2a1; Foundation 41106548606 / 124237773182; tested merge 64811bc3648a3676d933451847e2a9c8d3069088.
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6472632Z test at tests/ci/gate-waits.test.mjs:18:1
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6472983Z ✖ browser gate scripts await every started wait before the next await (55.975063ms)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6473733Z   AssertionError [ERR_ASSERTION]: a waitForResponse/waitForRequest promise is awaited only after another await; use `const [reply] = await Promise.all([pending, trigger()])` so the real first failure surfaces (#179)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6474227Z   + actual - expected
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6474359Z
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6474461Z   + [
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6474889Z   +   'tests/storefront/shop-real-gate.mjs:451 cartRequested is awaited only after another await: await expect(panel.getByRole("alert")).toContainText(c.failed)'
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6475252Z   + ]
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6475360Z   - []
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6475476Z
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6475948Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ci/gate-waits.test.mjs:20:10)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6476653Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6477092Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6477627Z       at Test.start (node:internal/test_runner/test:1262:17)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6478175Z       at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6478606Z     generatedMessage: false,
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6478880Z     code: 'ERR_ASSERTION',
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6479677Z     actual: [ 'tests/storefront/shop-real-gate.mjs:451 cartRequested is awaited only after another await: await expect(panel.getByRole("alert")).toContainText(c.failed)' ],
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6480300Z     expected: [],
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6480539Z     operator: 'deepStrictEqual',
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6480774Z     diff: 'simple'
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6480947Z   }
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6512312Z ## matrix-receipts node-test end
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6521733Z ##[error]Process completed with exit code 1.

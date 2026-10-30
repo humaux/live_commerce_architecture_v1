@@ -2,6 +2,18 @@
 
 Date: 2026-10-31 (Asia/Shanghai). Status: implementation prepared; PR CI PENDING. Author assessment E0; permitted static checks E1. No completion or E4 claim.
 
+## FIX1 relay 1 — current-head Foundation blocker
+
+Re-fetched and merged `origin/r3/integration` before editing: already up to date at `a3dc78e4d5ec72831aaf6a376793f0f6a7a56425`. Inspected PR head `cd6935deeb91b171d4777dcdf37c832500a6b2a1`; Foundation run **41106548606**, job **124237773182**, tested synthetic merge **64811bc3648a3676d933451847e2a9c8d3069088**. Its Node suite reports 336 tests, 335 passed, one failed. The earlier browser rows below describe the previous head, not current acceptance. Gates **41106548811** was still queued when read; no new-head browser outcome is claimed.
+
+|Failing job|Failing test / assertion|Original evidence|Class and directed change|
+|---|---|---|---|
+|124237773182 — Foundation, run 41106548606|`tests/ci/gate-waits.test.mjs:18`: browser gate scripts await every started wait before the next await; `shop-real-gate.mjs:451 cartRequested is awaited only after another await`|Original failed job log: 2026-10-30T18:29:31.6472983Z–18:29:31.6480774Z; exact assertion excerpt appended to `FIX1-ci.log` and `red.log`|**(b) regression in this PR's browser helper.** Sequential click/wait leaves the request wait unobserved if the click fails; declaring it outside `try` also makes the lexical gate see the later alert assertion as its next await. Register the same request inside `try`, before the click, then await both in one `Promise.all`. Preserve the held read, its finally release, every alert/recovery/reload/no-write assertion, fixtures and deadlines.|
+
+This is directed attempt **1 for this wait-order blocker**, following its first observed CI assertion RED; the prior cart timing and parcel-copy fixes are separate blockers whose current browser result remains PENDING. Acceptance is the unchanged wait gate plus this PR's own Foundation/Gates and browser receipts at the next head. If the same wait assertion survives two directed fixes, STOP/BLOCKED; if either original FIX1 browser assertion remains red, follow the card's STOP rule.
+
+Local static commands: `node --check tests/storefront/shop-real-gate.mjs` exit 0; browser ownership regeneration and `--check` exit 0 (54 modes), E1 only. No imports, product source, locale strings, gate code, thresholds or fixture payloads changed in this relay. The generator is expressly required by the card; no local tests or servers ran. Only this existing browser spec, generated ownership and this card's evidence documents are touched. No newly out-of-scope file; the prior parcel-spec/header list below still requires integrator review. Humaux unavailable: no store/canvas/coord claim. Rollback is a revert of this relay commit; integrator owns CI-completion wakeup.
+
 ## Authority and checkout
 
 - Authority: integrator's FIX1 instruction in this session; current repository code/contracts; original GitHub run/job logs and downloaded browser evidence. Signed denial copy is implemented in `packages/i18n` and `AdminForbidden.tsx`, with frame mapping `1429:34986` / `1429:35006` in the existing DELIVERY. No redesign or Figma writes.

@@ -448,10 +448,9 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
               const retry = page.getByRole("button", { name: c.retry, exact: true });
               const heldRead = Promise.withResolvers();
               cartReadBarrier = heldRead.promise;
-              const cartRequested = page.waitForRequest(request => new URL(request.url()).pathname === "/api/buyer/cart" && request.method() === "GET");
               try {
-                await retry.click();
-                await cartRequested;
+                const cartRequested = page.waitForRequest(request => new URL(request.url()).pathname === "/api/buyer/cart" && request.method() === "GET");
+                await Promise.all([cartRequested, retry.click()]);
                 // No failure result exists while the clicked read is still held at the BFF.
                 await expect(panel.getByRole("alert")).toHaveCount(0);
               } finally { heldRead.resolve(); }

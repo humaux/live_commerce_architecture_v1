@@ -53,3 +53,9 @@ Job 124153748986: TestBrowserMerchantOrdersUIRealChain / parcel-merge suggestion
 Receipts job 124180894791: precisely two failing receipts above. Required job 124181437431 failed; aggregate job 124180894904 succeeded.
 Classification and directed changes: FIX1.md. Compact original excerpts: FIX1-ci.log. Current base run 41105181453 was queued at inspection; no base-green or identical-base failure claim.
 Local static E1 only; new-head GREEN PENDING; integrator owns CI-completion relay. No local runtime verification.
+
+2026-10-31 FIX1 relay 1: head cd6935deeb91b171d4777dcdf37c832500a6b2a1; tested merge 64811bc3648a3676d933451847e2a9c8d3069088.
+Foundation run 41106548606 / job 124237773182: FAILURE; 336 Node tests, 335 pass, 1 fail.
+Unchanged tests/ci/gate-waits.test.mjs:18 assertion RED: shop-real-gate.mjs:451 cartRequested is awaited only after another await.
+Wait-order blocker directed fix attempt 1: pre-register request inside try, await Promise.all([cartRequested, retry.click()]); preserve all held-read/recovery assertions and fixture payloads.
+Static node --check and ownership generate/--check: exit 0 / E1. New-head GREEN PENDING; no local runtime verification; integrator owns completion relay.
