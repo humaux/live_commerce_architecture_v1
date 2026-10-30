@@ -20,7 +20,7 @@ func routeSample(pattern string) string {
 }
 
 func TestRouteTableEntriesAreDispatched(t *testing.T) {
-	if len(routeRows) != 46 {
+	if len(routeRows) != 50 {
 		t.Fatalf("inventory changed: %d entries", len(routeRows))
 	}
 	seen := map[string]bool{}
@@ -77,11 +77,15 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 	methods := []string{"", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT", "get"}
 	for path := range paths {
 		got, want := matchRoute(path), legacyMatchRoute(path)
+		// Extend expected behavior only for the new contract; keep the frozen legacy oracle and all its cases unchanged.
+		if want.kind == unknownRoute {
+			want = returnRequestOracle(path)
+		}
 		if got != want {
 			t.Errorf("path %q: got %+v want %+v", path, got, want)
 		}
 		for _, method := range methods {
-			if allowed(got.kind, method) != legacyAllowed(want.kind, method) {
+			if allowed(got.kind, method) != (legacyAllowed(want.kind, method) || returnRequestOracleAllowed(want.kind, method)) {
 				t.Errorf("method drift: %s %s", method, path)
 			}
 		}

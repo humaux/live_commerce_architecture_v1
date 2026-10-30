@@ -1,3 +1,8 @@
+// Purpose: private buyer HTTP admission and scoped command dispatch.
+// Depends on: buyer capability, domain resolver, checkout/storefront services and bounded transport helpers.
+// Used by: cmd/api buyer mount and GitHub CI transport/integration tests.
+// Invariants: BFF credential + trusted origin + full capability before after-sales requests; COMMIT before success.
+
 // Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout,
 // payment and claim routes). It borrows its database pools; publication and buyer authority are
 // resolved per request. It never serves the public internet directly, never trusts Host or a tenant
@@ -327,6 +332,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	selected := matchRoute(r.URL.Path)
+	if isReturnRequestRoute(selected.kind) {
+		w.Header().Set("Cache-Control", "private, no-store")
+	}
 	if selected.kind == unknownRoute {
 		fail(http.StatusNotFound, "not_found")
 		return
@@ -522,6 +530,8 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		out, err = h.claimRequest(ctx, r, selected.kind, storeID, token, key)
 	case routeCVSSelectionOpen, routeCVSSelectionGet, routeCVSSelectionVerify, routeCVSStoreEnter:
 		out, err = h.cvsRequest(ctx, r, selected, storeID, token, key)
+	case routeReturnRequestCreate, routeReturnRequestList, routeReturnRequestDetail, routeReturnRequestWithdraw:
+		out, err = h.returnRequest(ctx, r, selected, storeID, token, key)
 	case routeTransferGet, routeTransferProof:
 		out, err = h.transferRequest(ctx, r, selected, storeID, token, key)
 	case ordersRoute:

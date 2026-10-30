@@ -1,0 +1,18 @@
+FEAT-BUYER-RMA causal assertion RED — verified 2026-10-31
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/395
+Tests-only head: be932cbb748c3c88a1044ffcf242c6e04333a8b4
+Foundation run: 41093678360
+Foundation job: 124193777832
+https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41093678360/job/124193777832
+Read command: gh run view 41093678360 --log-failed --job 124193777832 | tail -65
+Job step: Node unit suites (storefront, i18n), exit 1.
+apps/storefront/tests/buyer-return-server.test.mjs:67
+  BR-BFF exact buyer request routes, cookie authority, keyed create/withdraw and safe persisted projections
+  AssertionError [ERR_ASSERTION]: buyer request BFF create must be reachable; actual 404, expected 201.
+apps/storefront/tests/buyer-return-server.test.mjs:141
+  BR-BFF rejects unsafe upstream projection and preserves closed refusal codes without body leakage or retry
+  AssertionError [ERR_ASSERTION]: invalid request projection must fail closed; actual 404, expected 503.
+Node totals: tests 504; pass 502; fail 2; skipped 0; cancelled 0; todo 0.
+Causal new-assertion RED (not compilation/setup failure). No Go/REAL_PG assertion RED inferred.
+Other tests-only Gates workflow: 41093678473; queued at relay inspection; never a GREEN claim.
+Raw filtered tail retained locally: red-foundation.log. No tests ran locally.

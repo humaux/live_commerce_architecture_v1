@@ -7,6 +7,7 @@ package buyerhttp
 import (
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -45,5 +46,32 @@ func TestBuyerReturnRequestTransport(t *testing.T) {
 				t.Fatalf("missing private credential: got %d want 401", w.Code)
 			}
 		})
+	}
+}
+
+// Independent 0210 oracle adds the declared routes to the legacy equivalence gate without changing its frozen matcher.
+func returnRequestOracle(path string) route {
+	if path == "/v1/buyer/return-requests" {
+		return route{kind: routeReturnRequestList}
+	}
+	if parts := regexp.MustCompile(`^/v1/buyer/orders/([^/]+)/return-requests$`).FindStringSubmatch(path); parts != nil {
+		return route{kind: routeReturnRequestCreate, id: parts[1]}
+	}
+	if parts := regexp.MustCompile(`^/v1/buyer/return-requests/([^/]+)(/withdraw)?$`).FindStringSubmatch(path); parts != nil {
+		if parts[2] != "" {
+			return route{kind: routeReturnRequestWithdraw, id: parts[1]}
+		}
+		return route{kind: routeReturnRequestDetail, id: parts[1]}
+	}
+	return route{}
+}
+func returnRequestOracleAllowed(kind routeKind, method string) bool {
+	switch kind {
+	case routeReturnRequestList, routeReturnRequestDetail:
+		return method == http.MethodGet
+	case routeReturnRequestCreate, routeReturnRequestWithdraw:
+		return method == http.MethodPost
+	default:
+		return false
 	}
 }
