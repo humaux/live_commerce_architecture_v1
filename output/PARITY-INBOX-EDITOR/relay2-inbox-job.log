@@ -1,0 +1,19 @@
+2026-10-30T17:33:18.7271803Z === RUN   TestBrowserInboxUIRealChain
+2026-10-30T17:33:18.7274629Z === RUN   TestBrowserInboxUIRealChain/failure_diagnostics
+2026-10-30T17:36:18.6485024Z 2026/10/30 17:36:18 http: proxy error: context canceled
+2026-10-30T17:37:05.5745308Z === NAME  TestBrowserInboxUIRealChain
+2026-10-30T17:37:05.5747938Z     browser_inbox_ui_test.go:358: Playwright 1 failed
+2026-10-30T17:37:05.5749198Z     browser_inbox_ui_test.go:358: Playwright 87 passed
+2026-10-30T17:37:05.5750562Z     browser_inbox_ui_test.go:358: Playwright failed INU01 (inbox-ui.spec.ts:110:1)
+2026-10-30T17:37:10.3345375Z     browser_inbox_ui_test.go:399: I11 bundle credential evidence verified
+2026-10-30T17:37:10.3350438Z     browser_inbox_ui_test.go:402: inbox browser failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/inbox-ui/20261030T173325.951265296
+2026-10-30T17:37:17.5684141Z --- FAIL: TestBrowserInboxUIRealChain (238.84s)
+2026-10-30T17:37:17.5685726Z     --- PASS: TestBrowserInboxUIRealChain/failure_diagnostics (0.00s)
+2026-10-30T17:37:17.5708053Z FAIL
+2026-10-30T17:37:17.5960665Z FAIL	livecommerce/tests/foundation	238.983s
+2026-10-30T17:37:17.6055428Z FAIL
+2026-10-30T17:37:17.8428857Z ##[endgroup]
+2026-10-30T17:37:17.8429712Z bundle member --browser-inbox: failure
+2026-10-30T17:37:17.8965850Z matrix-receipts: {"mode":"--browser-inbox","run_id":"41095531553","run_attempt":"1","sha":"4f1ef10d6aa51d1a1dd7dccc3f6c4f2951c04901","status":"FAIL","test_count":90,"spec_count":89}
+2026-10-30T17:37:17.9049905Z bundle member --browser-inbox: receipt receipt-browser-inbox.json is not PASS
+2026-10-30T17:37:17.9106338Z ##[group]bundle member --browser-card-payments

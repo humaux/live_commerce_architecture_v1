@@ -15,7 +15,7 @@ async function editorTask(page: Page, task: 'profile' | 'home' | 'pages' | 'nav'
   await expect(page.getByTestId('design-status')).toHaveCount(1);
   if (await page.getByTestId(`design-${task}`).isVisible()) return;
   if (await page.getByTestId('design-back').isVisible()) await page.getByTestId('design-back').click();
-  await page.getByTestId(task === 'versions' ? 'design-tab-versions' : `design-task-${task}`).click();
+  await page.getByTestId(task === 'versions' ? 'design-live-versions' : `design-task-${task}`).click();
   await expect(page.getByTestId(`design-${task}`)).toBeVisible();
 }
 async function editorPublish(page: Page) {

@@ -1,0 +1,807 @@
+
+Running 88 tests using 1 worker
+
+(node:5446) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/inbox-bundle-ui.spec.ts:61:1 › INU09 flagged bundle copies actual M7 link through native clipboard and persists one token-free receipt (2.9s)
+(node:5593) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 zh-TW/1440 full A13 and real two-page customer-link CAS (5.1s)
+  ✓   3 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 zh-TW/390 full A13 and real two-page customer-link CAS (4.7s)
+  ✓   4 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 zh-CN/1440 full A13 and real two-page customer-link CAS (4.7s)
+  ✓   5 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 zh-CN/390 full A13 and real two-page customer-link CAS (4.5s)
+  ✓   6 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 en/1440 full A13 and real two-page customer-link CAS (4.2s)
+  ✓   7 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 en/390 full A13 and real two-page customer-link CAS (4.2s)
+(node:5833) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 tests/admin/inbox-ui.spec.ts:110:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG (4.3s)
+  ✓   9 tests/admin/inbox-ui.spec.ts:262:1 › INU02 inbox reader never POSTs; viewer cannot enter; cross-store thread is 404 (2.1s)
+  ✓  10 tests/admin/inbox-ui.spec.ts:298:1 › INU08 committed send with lost acknowledgment retries exact body/key once (2.2s)
+  ✓  11 tests/admin/inbox-ui.spec.ts:360:1 › INU03 closed message window and missing capability disable sends with visible reason (1.9s)
+  ✓  12 tests/admin/inbox-ui.spec.ts:388:1 › INU04 stale decrypted responses cannot repaint another conversation or store (2.2s)
+  ✓  13 tests/admin/inbox-ui.spec.ts:470:1 › INU05 native hide clears private thread; visible return reauthorizes before repaint (3.4s)
+  ✓  14 tests/admin/inbox-ui.spec.ts:588:3 › INU06 zh-TW desktop1440/mobile390 real controls and no overflow (2.4s)
+  ✓  15 tests/admin/inbox-ui.spec.ts:622:3 › INU07 zh-TW localized controls at1440/mobile390 (2.2s)
+  ✓  16 tests/admin/inbox-ui.spec.ts:588:3 › INU06 zh-CN desktop1440/mobile390 real controls and no overflow (2.4s)
+  ✓  17 tests/admin/inbox-ui.spec.ts:622:3 › INU07 zh-CN localized controls at1440/mobile390 (2.2s)
+  ✓  18 tests/admin/inbox-ui.spec.ts:588:3 › INU06 en desktop1440/mobile390 real controls and no overflow (2.5s)
+  ✓  19 tests/admin/inbox-ui.spec.ts:622:3 › INU07 en localized controls at1440/mobile390 (2.4s)
+(node:6531) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  20 tests/admin/inbox-v2-ui.spec.ts:239:3 › INV2 zh-TW main (3.1s)
+  ✓  21 tests/admin/inbox-v2-ui.spec.ts:306:5 › INV2 zh-TW ACK before first projection visible (1.4s)
+  ✓  22 tests/admin/inbox-v2-ui.spec.ts:306:5 › INV2 zh-TW ACK before first projection omitted (1.5s)
+  ✓  23 tests/admin/inbox-v2-ui.spec.ts:343:5 › INV2 zh-TW successful ACK then distinct queued rejection (1.8s)
+  ✓  24 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 zh-TW local ACK older queued with-completion (1.8s)
+  ✓  25 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 zh-TW local ACK older queued observed-before-completion (1.8s)
+  ✓  26 tests/admin/inbox-v2-ui.spec.ts:428:5 › INV2 zh-TW completed ACK before later queued (3.3s)
+  ✓  27 tests/admin/inbox-v2-ui.spec.ts:343:5 › INV2 zh-TW successful ACK then distinct blocked rejection (1.8s)
+  ✓  28 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 zh-TW local ACK older blocked with-completion (1.8s)
+  ✓  29 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 zh-TW local ACK older blocked observed-before-completion (1.8s)
+  ✓  30 tests/admin/inbox-v2-ui.spec.ts:428:5 › INV2 zh-TW completed ACK before later blocked (3.2s)
+  ✓  31 tests/admin/inbox-v2-ui.spec.ts:530:3 › INV2 zh-TW ACK without operation read permission (5.8s)
+  ✓  32 tests/admin/inbox-v2-ui.spec.ts:585:3 › INV2 zh-TW states (4.4s)
+  ✓  33 tests/admin/inbox-v2-ui.spec.ts:239:3 › INV2 zh-CN main (2.9s)
+  ✓  34 tests/admin/inbox-v2-ui.spec.ts:306:5 › INV2 zh-CN ACK before first projection visible (1.5s)
+  ✓  35 tests/admin/inbox-v2-ui.spec.ts:306:5 › INV2 zh-CN ACK before first projection omitted (1.5s)
+  ✓  36 tests/admin/inbox-v2-ui.spec.ts:343:5 › INV2 zh-CN successful ACK then distinct queued rejection (1.8s)
+  ✓  37 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 zh-CN local ACK older queued with-completion (1.8s)
+  ✓  38 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 zh-CN local ACK older queued observed-before-completion (1.8s)
+  ✓  39 tests/admin/inbox-v2-ui.spec.ts:428:5 › INV2 zh-CN completed ACK before later queued (3.2s)
+  ✓  40 tests/admin/inbox-v2-ui.spec.ts:343:5 › INV2 zh-CN successful ACK then distinct blocked rejection (1.8s)
+  ✓  41 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 zh-CN local ACK older blocked with-completion (1.8s)
+  ✓  42 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 zh-CN local ACK older blocked observed-before-completion (1.8s)
+  ✓  43 tests/admin/inbox-v2-ui.spec.ts:428:5 › INV2 zh-CN completed ACK before later blocked (3.2s)
+  ✓  44 tests/admin/inbox-v2-ui.spec.ts:530:3 › INV2 zh-CN ACK without operation read permission (5.8s)
+  ✓  45 tests/admin/inbox-v2-ui.spec.ts:585:3 › INV2 zh-CN states (4.4s)
+  ✓  46 tests/admin/inbox-v2-ui.spec.ts:239:3 › INV2 en main (2.8s)
+  ✓  47 tests/admin/inbox-v2-ui.spec.ts:306:5 › INV2 en ACK before first projection visible (1.4s)
+  ✓  48 tests/admin/inbox-v2-ui.spec.ts:306:5 › INV2 en ACK before first projection omitted (1.4s)
+  ✓  49 tests/admin/inbox-v2-ui.spec.ts:343:5 › INV2 en successful ACK then distinct queued rejection (1.8s)
+  ✓  50 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 en local ACK older queued with-completion (1.8s)
+  ✓  51 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 en local ACK older queued observed-before-completion (1.7s)
+  ✓  52 tests/admin/inbox-v2-ui.spec.ts:428:5 › INV2 en completed ACK before later queued (3.2s)
+  ✓  53 tests/admin/inbox-v2-ui.spec.ts:343:5 › INV2 en successful ACK then distinct blocked rejection (1.7s)
+  ✓  54 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 en local ACK older blocked with-completion (1.7s)
+  ✓  55 tests/admin/inbox-v2-ui.spec.ts:379:7 › INV2 en local ACK older blocked observed-before-completion (1.8s)
+  ✓  56 tests/admin/inbox-v2-ui.spec.ts:428:5 › INV2 en completed ACK before later blocked (3.2s)
+  ✓  57 tests/admin/inbox-v2-ui.spec.ts:530:3 › INV2 en ACK without operation read permission (5.5s)
+  ✓  58 tests/admin/inbox-v2-ui.spec.ts:585:3 › INV2 en states (4.3s)
+  ✘  59 tests/admin/inbox-v2-ui.spec.ts:714:3 › PARITY inbox zh-TW: signed list controls and no legacy toolbar (11.1s)
+(node:7135) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  60 tests/admin/inbox-v2-ui.spec.ts:730:3 › PARITY inbox zh-TW: own sent DM reopens follow-ups without another inbound (11.5s)
+(node:7211) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  61 tests/admin/inbox-v2-ui.spec.ts:714:3 › PARITY inbox zh-CN: signed list controls and no legacy toolbar (11.2s)
+(node:7290) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  62 tests/admin/inbox-v2-ui.spec.ts:730:3 › PARITY inbox zh-CN: own sent DM reopens follow-ups without another inbound (11.5s)
+(node:7364) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  63 tests/admin/inbox-v2-ui.spec.ts:714:3 › PARITY inbox en: signed list controls and no legacy toolbar (11.2s)
+(node:7444) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  64 tests/admin/inbox-v2-ui.spec.ts:730:3 › PARITY inbox en: own sent DM reopens follow-ups without another inbound (11.4s)
+(node:7520) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  65 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop connection A: signed send state (1.4s)
+  ✓  66 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop closed A: signed send state (1.2s)
+  ✓  67 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop permission A: signed send state (1.2s)
+  ✓  68 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop failed A: signed send state (1.5s)
+  ✓  69 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop queued A: signed send state (1.3s)
+  ✓  70 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop queued B: signed send state (1.3s)
+  ✓  71 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop unknown A: signed send state (1.3s)
+  ✓  72 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop unknown B: signed send state (1.4s)
+  ✓  73 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop still A: signed send state (1.4s)
+  ✓  74 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop still B: signed send state (1.4s)
+  ✘  75 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop sent A: signed send state (11.3s)
+(node:7725) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  76 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile connection A: signed send state (10.4s)
+(node:7798) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  77 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile closed A: signed send state (10.4s)
+(node:7875) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  78 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile permission A: signed send state (10.4s)
+(node:7954) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  79 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile failed A: signed send state (10.4s)
+(node:8035) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  80 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile queued A: signed send state (10.5s)
+(node:8114) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  81 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile queued B: signed send state (10.4s)
+(node:8193) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  82 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile unknown A: signed send state (10.4s)
+(node:8270) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  83 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile unknown B: signed send state (10.5s)
+(node:8354) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  84 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile still A: signed send state (10.4s)
+(node:8432) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  85 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile still B: signed send state (10.4s)
+(node:8508) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  86 tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile sent A: signed send state (10.4s)
+(node:8591) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  87 tests/admin/inbox-v2-ui.spec.ts:803:3 › PARITY inbox desktop: fixed filter slots, list/thread and help frames (3.0s)
+  ✓  88 tests/admin/inbox-v2-ui.spec.ts:803:3 › PARITY inbox mobile: fixed filter slots, list/thread and help frames (2.8s)
+
+
+  1) tests/admin/inbox-v2-ui.spec.ts:714:3 › PARITY inbox zh-TW: signed list controls and no legacy toolbar
+
+    Error: unsigned list refresh is removed
+
+    expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByTestId('inbox-filter-all').locator('..').getByRole('button', { name: '重新整理', exact: true })
+    Expected: 0
+    Received: 1
+    Timeout:  10000ms
+
+    Call log:
+      - unsigned list refresh is removed getByTestId('inbox-filter-all').locator('..').getByRole('button', { name: '重新整理', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('inbox-filter-all').locator('..').getByRole('button', { name: '重新整理', exact: true })
+        24 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      721 |     await expect(toolbar.getByRole("button", { name: `${copy.unread} 2`, exact: true })).toBeVisible();
+      722 |     await expect(toolbar.getByRole("button", { name: `${copy.assigned} 3`, exact: true })).toBeVisible();
+    > 723 |     await expect(toolbar.getByRole("button", { name: copy.refresh, exact: true }), "unsigned list refresh is removed").toHaveCount(0);
+          |                                                                                                                        ^
+      724 |     await expect(page.getByTestId("inbox-more-filters"), "unsigned ellipsis is removed").toHaveCount(0);
+      725 |     await open(page, ids.open);
+      726 |     if (copy.locale === "zh-TW") await inboxParity(page, "1429:37361");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:723:120
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-76532-trols-and-no-legacy-toolbar/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-76532-trols-and-no-legacy-toolbar/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-76532-trols-and-no-legacy-toolbar/error-context.md
+
+  2) tests/admin/inbox-v2-ui.spec.ts:730:3 › PARITY inbox zh-TW: own sent DM reopens follow-ups without another inbound
+
+    Error: 24h DM follow-up needs no new buyer message
+
+    expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('reply-text')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - 24h DM follow-up needs no new buyer message getByTestId('reply-text') with timeout 10000ms
+      - waiting for getByTestId('reply-text')
+        24 × locator resolved to <textarea aria-label="回覆" data-testid="reply-text"></textarea>
+           - unexpected value "hidden"
+
+
+      735 |     await query(page);
+      736 |     await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.sent);
+    > 737 |     await expect(page.getByTestId("reply-text"), "24h DM follow-up needs no new buyer message").toBeVisible();
+          |                                                                                                 ^
+      738 |     await expect(page.getByTestId("reply-text")).toHaveValue("");
+      739 |     expect(state.concurrentSent).toBe(false);
+      740 |     expect(state.laterDelivery).toBeNull();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:737:97
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-e0162-ups-without-another-inbound/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-e0162-ups-without-another-inbound/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-e0162-ups-without-another-inbound/error-context.md
+
+  3) tests/admin/inbox-v2-ui.spec.ts:714:3 › PARITY inbox zh-CN: signed list controls and no legacy toolbar
+
+    Error: unsigned list refresh is removed
+
+    expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByTestId('inbox-filter-all').locator('..').getByRole('button', { name: '刷新', exact: true })
+    Expected: 0
+    Received: 1
+    Timeout:  10000ms
+
+    Call log:
+      - unsigned list refresh is removed getByTestId('inbox-filter-all').locator('..').getByRole('button', { name: '刷新', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('inbox-filter-all').locator('..').getByRole('button', { name: '刷新', exact: true })
+        24 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      721 |     await expect(toolbar.getByRole("button", { name: `${copy.unread} 2`, exact: true })).toBeVisible();
+      722 |     await expect(toolbar.getByRole("button", { name: `${copy.assigned} 3`, exact: true })).toBeVisible();
+    > 723 |     await expect(toolbar.getByRole("button", { name: copy.refresh, exact: true }), "unsigned list refresh is removed").toHaveCount(0);
+          |                                                                                                                        ^
+      724 |     await expect(page.getByTestId("inbox-more-filters"), "unsigned ellipsis is removed").toHaveCount(0);
+      725 |     await open(page, ids.open);
+      726 |     if (copy.locale === "zh-TW") await inboxParity(page, "1429:37361");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:723:120
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-101dc-trols-and-no-legacy-toolbar/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-101dc-trols-and-no-legacy-toolbar/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-101dc-trols-and-no-legacy-toolbar/error-context.md
+
+  4) tests/admin/inbox-v2-ui.spec.ts:730:3 › PARITY inbox zh-CN: own sent DM reopens follow-ups without another inbound
+
+    Error: 24h DM follow-up needs no new buyer message
+
+    expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('reply-text')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - 24h DM follow-up needs no new buyer message getByTestId('reply-text') with timeout 10000ms
+      - waiting for getByTestId('reply-text')
+        24 × locator resolved to <textarea aria-label="回复" data-testid="reply-text"></textarea>
+           - unexpected value "hidden"
+
+
+      735 |     await query(page);
+      736 |     await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.sent);
+    > 737 |     await expect(page.getByTestId("reply-text"), "24h DM follow-up needs no new buyer message").toBeVisible();
+          |                                                                                                 ^
+      738 |     await expect(page.getByTestId("reply-text")).toHaveValue("");
+      739 |     expect(state.concurrentSent).toBe(false);
+      740 |     expect(state.laterDelivery).toBeNull();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:737:97
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-be29d-ups-without-another-inbound/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-be29d-ups-without-another-inbound/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-z-be29d-ups-without-another-inbound/error-context.md
+
+  5) tests/admin/inbox-v2-ui.spec.ts:714:3 › PARITY inbox en: signed list controls and no legacy toolbar
+
+    Error: unsigned list refresh is removed
+
+    expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByTestId('inbox-filter-all').locator('..').getByRole('button', { name: 'Refresh', exact: true })
+    Expected: 0
+    Received: 1
+    Timeout:  10000ms
+
+    Call log:
+      - unsigned list refresh is removed getByTestId('inbox-filter-all').locator('..').getByRole('button', { name: 'Refresh', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('inbox-filter-all').locator('..').getByRole('button', { name: 'Refresh', exact: true })
+        24 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      721 |     await expect(toolbar.getByRole("button", { name: `${copy.unread} 2`, exact: true })).toBeVisible();
+      722 |     await expect(toolbar.getByRole("button", { name: `${copy.assigned} 3`, exact: true })).toBeVisible();
+    > 723 |     await expect(toolbar.getByRole("button", { name: copy.refresh, exact: true }), "unsigned list refresh is removed").toHaveCount(0);
+          |                                                                                                                        ^
+      724 |     await expect(page.getByTestId("inbox-more-filters"), "unsigned ellipsis is removed").toHaveCount(0);
+      725 |     await open(page, ids.open);
+      726 |     if (copy.locale === "zh-TW") await inboxParity(page, "1429:37361");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:723:120
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-e-a4502-trols-and-no-legacy-toolbar/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-e-a4502-trols-and-no-legacy-toolbar/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-e-a4502-trols-and-no-legacy-toolbar/error-context.md
+
+  6) tests/admin/inbox-v2-ui.spec.ts:730:3 › PARITY inbox en: own sent DM reopens follow-ups without another inbound
+
+    Error: 24h DM follow-up needs no new buyer message
+
+    expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('reply-text')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - 24h DM follow-up needs no new buyer message getByTestId('reply-text') with timeout 10000ms
+      - waiting for getByTestId('reply-text')
+        24 × locator resolved to <textarea aria-label="Reply" data-testid="reply-text"></textarea>
+           - unexpected value "hidden"
+
+
+      735 |     await query(page);
+      736 |     await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.sent);
+    > 737 |     await expect(page.getByTestId("reply-text"), "24h DM follow-up needs no new buyer message").toBeVisible();
+          |                                                                                                 ^
+      738 |     await expect(page.getByTestId("reply-text")).toHaveValue("");
+      739 |     expect(state.concurrentSent).toBe(false);
+      740 |     expect(state.laterDelivery).toBeNull();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:737:97
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-e-5680d-ups-without-another-inbound/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-e-5680d-ups-without-another-inbound/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-e-5680d-ups-without-another-inbound/error-context.md
+
+  7) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop sent A: signed send state ────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('reply-text')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('reply-text') with timeout 10000ms
+      - waiting for getByTestId('reply-text')
+        24 × locator resolved to <textarea aria-label="回覆" data-testid="reply-text"></textarea>
+           - unexpected value "hidden"
+
+
+      782 |           still: buyer === "A" ? copy.still.replace("Instagram", "Messenger") : copy.still, sent: copy.sent };
+      783 |         await expect(page.getByTestId("inbox-delivery-state")).toHaveText(expected[scenario]);
+    > 784 |         if (scenario === "sent") await expect(page.getByTestId("reply-text")).toBeVisible();
+          |                                                                               ^
+      785 |         else await expect(page.getByTestId("reply-text")).toBeHidden();
+      786 |       }
+      787 |       if (buyer === "B" && (scenario === "queued" || scenario === "unknown" || scenario === "still")) {
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:784:79
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-desktop-sent-A-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-desktop-sent-A-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-desktop-sent-A-signed-send-state/error-context.md
+
+  8) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile connection A: signed send state ───
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        22 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-m-bbe49-nection-A-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-m-bbe49-nection-A-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-m-bbe49-nection-A-signed-send-state/error-context.md
+
+  9) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile closed A: signed send state ───────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        22 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-closed-A-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-closed-A-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-closed-A-signed-send-state/error-context.md
+
+  10) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile permission A: signed send state ──
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        22 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-m-4afd8-mission-A-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-m-4afd8-mission-A-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-m-4afd8-mission-A-signed-send-state/error-context.md
+
+  11) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile failed A: signed send state ──────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        22 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-failed-A-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-failed-A-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-failed-A-signed-send-state/error-context.md
+
+  12) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile queued A: signed send state ──────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        22 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-queued-A-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-queued-A-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-queued-A-signed-send-state/error-context.md
+
+  13) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile queued B: signed send state ──────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        22 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-queued-B-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-queued-B-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-queued-B-signed-send-state/error-context.md
+
+  14) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile unknown A: signed send state ─────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        23 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-unknown-A-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-unknown-A-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-unknown-A-signed-send-state/error-context.md
+
+  15) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile unknown B: signed send state ─────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        22 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-unknown-B-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-unknown-B-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-unknown-B-signed-send-state/error-context.md
+
+  16) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile still A: signed send state ───────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        23 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-still-A-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-still-A-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-still-A-signed-send-state/error-context.md
+
+  17) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile still B: signed send state ───────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        22 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-still-B-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-still-B-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-still-B-signed-send-state/error-context.md
+
+  18) tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile sent A: signed send state ────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        22 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:176:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:762:21
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-sent-A-signed-send-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-sent-A-signed-send-state/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T132749.229668188/results/inbox-v2-ui-PARITY-inbox-mobile-sent-A-signed-send-state/error-context.md
+
+  18 failed
+    tests/admin/inbox-v2-ui.spec.ts:714:3 › PARITY inbox zh-TW: signed list controls and no legacy toolbar
+    tests/admin/inbox-v2-ui.spec.ts:730:3 › PARITY inbox zh-TW: own sent DM reopens follow-ups without another inbound
+    tests/admin/inbox-v2-ui.spec.ts:714:3 › PARITY inbox zh-CN: signed list controls and no legacy toolbar
+    tests/admin/inbox-v2-ui.spec.ts:730:3 › PARITY inbox zh-CN: own sent DM reopens follow-ups without another inbound
+    tests/admin/inbox-v2-ui.spec.ts:714:3 › PARITY inbox en: signed list controls and no legacy toolbar
+    tests/admin/inbox-v2-ui.spec.ts:730:3 › PARITY inbox en: own sent DM reopens follow-ups without another inbound
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox desktop sent A: signed send state ─────────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile connection A: signed send state ────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile closed A: signed send state ────────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile permission A: signed send state ────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile failed A: signed send state ────────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile queued A: signed send state ────────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile queued B: signed send state ────────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile unknown A: signed send state ───────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile unknown B: signed send state ───────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile still A: signed send state ─────────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile still B: signed send state ─────────
+    tests/admin/inbox-v2-ui.spec.ts:760:5 › PARITY inbox mobile sent A: signed send state ──────────
+  70 passed (6.5m)
