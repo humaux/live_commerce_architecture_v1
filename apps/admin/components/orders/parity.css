@@ -51,8 +51,10 @@
  .signed-queue-control:not([data-open=true]) .signed-queue-options{display:none}
  .signed-queue-control[data-open=true] .signed-queue-options{display:flex;flex-direction:column;overflow:visible;gap:4px;margin-top:4px}
  .signed-queue-control .signed-queue-options button{width:100%;text-align:left}
- .signed-order-card{grid-template-columns:18px minmax(0,1fr) 24px;grid-template-rows:auto auto auto;row-gap:4px;min-height:106px}
- .signed-order-card>button{font-size:0;min-width:24px;width:24px;padding:0;border:0;align-self:start;grid-row:1}
+ .signed-order-card{grid-template-columns:18px minmax(0,1fr) 44px;grid-template-rows:auto auto auto;row-gap:4px;min-height:106px}
+ .signed-order-card>button{position:relative;min-width:44px;width:44px;padding:0;border:0;align-self:start;grid-row:1}
+ /* The signed mobile chevron keeps its translated accessible name and a 44px target. */
+ .signed-order-view-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
  .signed-order-card>button::after{content:"";display:inline-block;width:8px;height:8px;border-top:1px solid currentColor;border-right:1px solid currentColor;transform:rotate(45deg)}
  .signed-order-amount{grid-column:2;grid-row:2;display:inline}
  .signed-order-identity{grid-column:2;grid-row:1}.signed-order-identity p{font-size:12px}

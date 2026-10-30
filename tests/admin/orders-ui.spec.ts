@@ -127,6 +127,13 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
             if (item.variant_label) await expect(card).toContainText(item.variant_label);
           }
           await expect(card.getByRole("button", {name: c.view, exact: true})).toBeVisible();
+          if (width === 390 && row === data.items[0]) {
+            // READ/MEASURE only: the icon button remains a full native touch target in every locale.
+            const target = await card.getByRole("button", {name: c.view, exact: true}).boundingBox();
+            expect(target).not.toBeNull();
+            expect(target!.width).toBeGreaterThanOrEqual(44);
+            expect(target!.height).toBeGreaterThanOrEqual(44);
+          }
         }
         await noPII(page); await noPersistentOrderBody(page);
         expect(await detailCalls(page)).toBe(before);

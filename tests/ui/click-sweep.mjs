@@ -220,6 +220,7 @@ function adminURL(route, locale) {
   const q = (extra = "") => `?store=${store}${extra}`;
   const p = route.path;
   const sub = {
+    "/orders/[order]": `/orders/${orderIDs.cash_on_delivery}`,
     "/products/[product]": `/products/${facts.products[0].id}`, "/customers/[customer]": `/customers/${facts.customer}`, "/invite/[token]": `/invite/${"A".repeat(43)}`,
     "/studio/claims": "/studio/claims", "/orders/cvs-print": "/orders/cvs-print",
   }[p] ?? p;

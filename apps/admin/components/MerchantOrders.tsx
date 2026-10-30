@@ -754,6 +754,6 @@ function OrderRow({row,checked,checkDisabled,onCheck,c,locale,onSelect,isNew,par
     </div>
     <strong className="signed-order-amount">{amount(locale,row.currency,row.total_minor)}</strong>
     <div className="signed-order-badges"><span data-testid="order-payment-cell">{badge(row.payment_state,signedCopy)}</span>{badge(row.fulfillment_state,signedCopy)}{parcelBadge&&<span data-testid={`parcel-badge-${row.order_id}`}>{parcelBadge}</span>}</div>
-    <button type="button" data-testid={`order-expand-${row.order_id}`} onClick={onSelect}>{p.view}</button>
+    <button type="button" data-testid={`order-expand-${row.order_id}`} onClick={onSelect}><span className="signed-order-view-label">{p.view}</span></button>
   </article>;
 }
