@@ -16,3 +16,10 @@ Node totals: tests 504; pass 502; fail 2; skipped 0; cancelled 0; todo 0.
 Causal new-assertion RED (not compilation/setup failure). No Go/REAL_PG assertion RED inferred.
 Other tests-only Gates workflow: 41093678473; queued at relay inspection; never a GREEN claim.
 Raw filtered tail retained locally: red-foundation.log. No tests ran locally.
+
+Supplemental RELAY1 RED (implementation head, not a new tests-only receipt):
+head 04dd888780f01f14462b6aea166576327ff6225a
+Gates41109119625 plan124246578308: BFF_NO_GO GET return-requests/{}/withdraw and POST return-requests/{}; METHOD_MISMATCH for both paths; errors=4.
+Foundation41109119831 job124246577086: contract-drift repeats those same four errors; exit1.
+Gates41109119625 required124248826936: propagates plan failure; dependent gates/receipts skipped.
+Raw filtered original logs: FIX2-relay1-plan-red.log, FIX2-relay1-foundation-red.log.

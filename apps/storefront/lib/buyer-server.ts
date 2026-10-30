@@ -438,15 +438,25 @@ function route(
     };
   }
   const returnCreate = /^orders\/([^/]+)\/return-requests$/.exec(suffix);
+  if (returnCreate) {
+    if (!UUID.test(returnCreate[1])) return { known: true, invalidID: true };
+    return {
+      known: true,
+      route: method === "POST" ? {
+        method, privatePath: suffix, returnRequest: "create",
+        body: "returnRequest", orderID: returnCreate[1],
+      } : undefined,
+    };
+  }
   const returnItem = /^return-requests\/([^/]+)(?:\/(withdraw))?$/.exec(suffix);
-  if (returnCreate || returnItem) {
-    const id = (returnCreate ?? returnItem)![1];
-    if (!UUID.test(id)) return { known: true, invalidID: true };
-    const kind = returnCreate ? "create" : returnItem![2] ? "withdraw" : "detail";
-    return { known: true, route: method === (kind === "detail" ? "GET" : "POST") ? {
-      method, privatePath: suffix, returnRequest: kind,
-      body: kind === "create" ? "returnRequest" : kind === "withdraw" ? "returnWithdraw" : undefined,
-      orderID: returnCreate ? id : undefined, requestID: returnItem ? id : undefined,
+  if (returnItem) {
+    if (!UUID.test(returnItem[1])) return { known: true, invalidID: true };
+    const kind = returnItem[2] ?? "detail";
+    const allowed = kind === "detail" ? "GET" : "POST";
+    return { known: true, route: method === allowed ? {
+      method, privatePath: suffix, returnRequest: kind as Route["returnRequest"],
+      body: kind === "withdraw" ? "returnWithdraw" : undefined,
+      requestID: returnItem[1],
     } : undefined };
   }
   const payment =

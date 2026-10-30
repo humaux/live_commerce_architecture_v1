@@ -1,5 +1,57 @@
 # FEAT-BUYER-RMA-FIX2 — integrator-granted repair
 
+## Current RELAY 1 — second directed implementation attempt, 2026-10-31
+
+This section supersedes earlier current-state statements below. Current CI RED
+head is `04dd888780f01f14462b6aea166576327ff6225a`. Mandatory fetch and merge of
+`origin/r3/integration` exited 0, already up to date at `629f42152f864621a99ac2247c3baf5d751a422f`.
+Existing untracked evidence was preserved. This uses the established card evidence
+directory `output/FEAT-BUYER-RMA`, rather than creating a second case-only directory.
+Authority: dispatched FIX2 grant; AGENTS.md; architecture §§0/1/2/26/27;
+returns-v1 Amendment 0210; actual routing source and the original GitHub logs.
+Role: dispatched implementer; no recursive delegation. Runtime model/effort labels
+are not exposed. The only product edit is the card-owned storefront buyer BFF.
+
+| Every current failing job | Failing assertion | Evidence | Class / root repair |
+| --- | --- | --- | --- |
+| Gates 41109119625 / plan 124246578308 | Two `BFF_NO_GO`: GET `return-requests/{}/withdraw`, POST `return-requests/{}`; two `METHOD_MISMATCH` for the same paths, `errors=4` | `FIX2-relay1-plan-red.log`, raw `gh run view --job 124246578308 --log-failed` | (b) Combined create/item branch uses nested conditions the finite BFF reader cannot pair correctly. Separate literal POST create branch; item branch uses neighboring payment route's `capture ?? "detail"` plus `allowed` GET/POST shape. |
+| Foundation 41109119831 / 124246577086 | Contract-drift step repeats exactly the same four errors, `errors=4`; exit 1 | `FIX2-relay1-foundation-red.log`, raw `gh run view --job 124246577086 --log-failed` | (b) Same product declaration root; no separate test or inventory failure appears in this failed step. |
+| Gates 41109119625 / required 124248826936 | `plan=failure build=skipped ... gate=skipped ... receipts=skipped`; exit 1 | Raw required job log | (b) Dependency propagation; no independent assertion changed. |
+
+The prior dispatcher freeze failure is absent from both current logs: its earlier
+repair is retained. Go route inventory remains exactly 46 + four RMA routes = 50;
+R2 remains base139 + assigned0210 = 140. No further pin, contract, extractor,
+allow-list, baseline, fixture, threshold, exemption or test edit. No class (a)
+UI rewrite or class (c) base exemption. Browser jobs/receipts/aggregate skipped;
+no standalone receipts failure or browser artifact requires a separate repair.
+The new declaration preserves exact path/method admission, UUID checks, body types,
+request/order binding, signed authority, response validation and no mutation retry.
+Existing BFF tests exercise create/list/detail/withdraw and hostile inputs;
+CI contract drift supplies the directly observed RED assertions for this repair.
+
+Causal tests-only RED was re-read: Foundation41093678360/job124193777832, head
+be932cbb748c3c88a1044ffcf242c6e04333a8b4, new BFF assertions 404≠201 and 404≠503.
+See red.log; current failed CI receipts are appended there as supplemental evidence.
+
+Local static checks: `node --check apps/storefront/lib/buyer-server.ts`, ownership
+derive + `--check`, depmap generator + `--check`, and `git diff --check`: exit 0.
+Generated ownership/depmap files have no delta. No local tests, server, scanner,
+DB, container or browser. tsc is unavailable on PATH; full
+TypeScript/build and behavioral verification remain CI-only. No UI design change.
+
+This is attempt 2 after the pin repair, in one combined implementation push.
+If the same assertion stays red, STOP with its exact receipt; no third approach.
+Gates/Foundation new run IDs will be recorded in a PR comment and final WAIT_RUN;
+integrator owns the completion relay, not a local unattended polling process.
+No merge, auto-merge, shared-branch push, force-push, status write or deployment.
+Outside-card edits in this relay: none beyond required card evidence. Previously
+granted table entry/count and candidate are unchanged; independent reviewer must
+still approve the entire buyerhttp.Routes closure at the new PR head.
+E1 static readiness only; current CI failure is E3 for 04dd8887; author judgement E0.
+GREEN PENDING. NOT_RUN: local tests/servers (prohibited), new-head CI GREEN,
+Go/REAL_PG/browser acceptance, independent review E4, external SANDBOX/LIVE,
+production rollout. No completion claim.
+
 ## Current disposition — 2026-10-31, supersedes historical STOP below
 
 PR #395, `unit/feat-buyer-rma` → `r3/integration`. The latest explicit integrator
