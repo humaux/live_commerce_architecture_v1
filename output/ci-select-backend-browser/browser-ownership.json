@@ -84,7 +84,7 @@
     "tests/admin/import-wizard.spec.ts": "4564d819c1879949573839dca3bcab193a14f2d178cadca4a043be98559c3435",
     "tests/admin/inbox-bff.test.ts": "6d8738aa7a6ea5d74643a3758e970dc889c31d82e29ab0f4fe5426cfa525fb1c",
     "tests/admin/inbox-browser-session.test.ts": "92fec02bd1a39d326d31acd93b21235e1a9d8b5da10d847500c3e47db5a1d2d0",
-    "tests/admin/inbox-browser-source.test.ts": "deb5b993bda15e40dda87b2407c481de7c624fe4d14905b6f34c237aa5273979",
+    "tests/admin/inbox-browser-source.test.ts": "0d719b7b1f9234cfe77c9a8faa503cbe86fec20360ae5d71882224b6afc67fac",
     "tests/admin/inbox-browser-support.ts": "cc171abe77404dd18e7b59afd5b68ad9600e98f73a98f8de4880149d1c8dbdbf",
     "tests/admin/inbox-bundle-browser.test.ts": "8f326f6de6b33e829229348047a783357eb9dc1900a7591f895a5e2d68111fb9",
     "tests/admin/inbox-bundle-ui.spec.ts": "92186e34d6a702768af1c9877846429ad34e2b346e438bd57ac292f20411e4c0",

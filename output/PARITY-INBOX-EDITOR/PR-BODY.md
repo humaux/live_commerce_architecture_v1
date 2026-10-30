@@ -1,4 +1,4 @@
-The signed inbox/editor assertions are RED because the application still exposes the previous controls and copy. FIX1 implements the signed hub/preview/publication states and permits another DM after confirmed delivery within the existing server-authorized window. The shared inbox login helper opens the real mobile navigation menu.
+FIX1 replaces the previous controls and copy with the signed inbox/editor behavior. It implements the signed hub/preview/publication states and permits another DM after confirmed delivery within the existing server-authorized window. The shared inbox login helper opens the real mobile navigation menu.
 
 ## Evidence
 
@@ -6,6 +6,12 @@ The signed inbox/editor assertions are RED because the application still exposes
 - Merged `origin/r3/integration` **2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f** before editing. No class(c) assertion is claimed as identical on base. Owner-provided base Gates 41078151280 success is context only.
 - E1 only: node syntax checks on 9 changed .ts files; browser ownership generation + --check; depmap generation (no diff); check_packet; git diff --check all exit 0. No local tests/servers/browser/PG/build. Local tsc unavailable; TSX compilation belongs to CI.
 - Final-head Foundation/Gates, all runtime click ledgers, density and independent screenshot comparison are **PENDING**. Exact new run IDs will be posted in a PR comment. Author verdict E0; observed RED is E3 failing evidence, never completion. One batched implementation push; integrator relays the CI conclusion. No merge or auto-merge.
+
+## Current implementation relay
+
+Foundation **41091867692** / job **124187532727** at implementation head `f18027d3e6debc949ed818e80d2636a1f96f1412` failed 12 login-harness cases with `ReferenceError: enterMessages is not defined`. The AST harness omitted the new shared-helper dependency. This relay extracts the real helper and models its native menu/visibility methods; all existing auth/store assertions stay, expanded to desktop and collapsed-mobile rails. No product code or fixtures change in this relay. Full per-case class(b) table: `output/PARITY-INBOX-EDITOR/FIX1.md`; filtered native receipt: `foundation-helper-failure.log`.
+
+Same-module scope extension needing integrator review: `tests/admin/inbox-browser-source.test.ts`. Regenerated browser ownership is pre-approved. Syntax and ownership checks exit 0 (E1); new-head Foundation/Gates, browser parity and independent review remain PENDING. New run IDs will be posted in a PR comment. No local tests or servers; no merge or auto-merge.
 
 ## Behavior and retained coverage
 

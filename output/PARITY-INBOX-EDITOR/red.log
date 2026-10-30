@@ -132,3 +132,14 @@ python3 scripts/check_packet.py: exit0 (static architecture structure; packet-st
 RED tested synthetic merge: 6754bd337cb9f6943104367e7ef8040593bb4b7c (native receipts).
 Receipts124111665162 fails ONLY inbox/design status FAIL; required124112234499 reports gate=failure receipts=failure aggregate=success.
 Same test RED after this FIX1 push => BLOCKED with exact assertion; no third approach.
+
+RELAY on implementation head f18027d3e6debc949ed818e80d2636a1f96f1412 (2026-10-31):
+Foundation 41091867692 / job 124187532727 FAILURE: 12 actual-login cases, ReferenceError enterMessages is not defined, tests/admin/inbox-browser-source.test.ts:18.
+Receipt: foundation-helper-failure.log; full 12-case class(b) table and root fix in FIX1.md.
+This is an implementation regression, not tests-only assertion RED; earlier causal browser RED receipts remain unchanged.
+Fix attempt 1 on this new blocker: extract real enterMessages and model native rail methods; preserve all original assertions, add mobile/desktop coverage.
+Merge origin/r3/integration: Already up to date at 2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f.
+node --check tests/admin/inbox-browser-source.test.ts: exit 0.
+Browser ownership generator and --check: exit 0; 53 modes.
+git diff --check: exit 0.
+Local tests/servers/browser/PG/build/install: NOT_RUN; CI GREEN and independent review PENDING.

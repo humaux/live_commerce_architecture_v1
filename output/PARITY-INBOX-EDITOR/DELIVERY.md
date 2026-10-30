@@ -353,3 +353,7 @@ The complete existing table above remains the reference; these templates replace
 |目前網址可使用|当前网址可用|Current address is active|
 
 Click ledger: existing CI attachments continue to record actual actions and visible results. Static review does not populate PASS rows. Final-head runtime density, complete frame screenshots, all locales and every interactive control remain CI PENDING. No local runtime verification, tests or servers. New UI settings: none.
+
+## Implementation relay — Foundation dependency harness
+
+At implementation head `f18027d3e6debc949ed818e80d2636a1f96f1412`, Foundation `41091867692` / `124187532727` failed 12 extracted-login cases with `enterMessages is not defined`. `FIX1.md` contains the complete class(b) table and `foundation-helper-failure.log` the filtered native receipt. This relay includes the real helper in that harness, preserves the original 12 auth/store combinations and expands them to both rail states (24 cases). All original assertions remain, with added native-menu and navigation-count assertions. Product/UI/copy/fixtures are unchanged in this relay. Static syntax and ownership checks exit 0 (E1); runtime GREEN, real clicks, screenshot review and independent acceptance remain PENDING/NOT_RUN. New same-module scope extension: `tests/admin/inbox-browser-source.test.ts`. No Humaux write or completion claimed. Integrator relays new exact-head run results; no prolonged polling.
