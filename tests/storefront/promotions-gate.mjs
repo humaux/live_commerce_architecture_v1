@@ -383,7 +383,12 @@ async function growthMarketingParity(page, { origin, evidence }) {
       await expect(page.getByText(disabled, { exact: true })).toBeVisible();
       await page.reload();
       await expect(page.getByText(disabled, { exact: true })).toBeVisible();
-      if (locale === "zh-TW") await page.screenshot({ path: path.join(directory, `${viewport.frame}.png`), animations: "disabled" });
+      if (locale === "zh-TW") {
+        const filename = `${viewport.frame.replace(":", "-")}.png`;
+        expect(filename).toMatch(/^\d+-\d+\.png$/);
+        await page.screenshot({ path: path.join(directory, filename), animations: "disabled" });
+        await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame: viewport.frame, route: page.url(), screenshot: `parity/${filename}` }) + "\n");
+      }
       await appendFile(path.join(evidence, "growth-click-ledger.jsonl"), JSON.stringify({ route: page.url(), control: retry, operation: "click + reload", expected: disabled, actual: "visible", result: "PASS" }) + "\n");
     }
   }

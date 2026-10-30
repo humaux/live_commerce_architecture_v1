@@ -5,6 +5,8 @@
 import type { Locale } from './index.ts';
 
 const en = {
+  opKinds: { campaign: 'Create campaign', adset: 'Create ad set', creative: 'Prepare creative', ad: 'Create ad', preflight: 'Check ad account', activate: 'Activate ad', pause: 'Pause ad' },
+  opFallback: 'Advertising step', metaRefusal: 'Meta could not complete this step. Review its response before trying again.',
   quickAmounts: 'Quick amounts', taiwan: 'Taiwan TW', hongKong: 'Hong Kong HK', agesDefault: '18–65 years', agesFocused: '25–44 years', threeDays: '3 days', sevenDays: '7 days',
   stateTitles: { DRAFT: 'Draft', APPROVED: 'Internally approved', SUBMITTING: 'Being created on Meta', REMOTE_PAUSED: 'Created · not activated', ACTIVE: 'Delivering', PAUSED: 'Confirmed paused', UNKNOWN: 'External result awaiting confirmation', FAILED: 'Creation failed', ENDED: 'Ended', REJECTED: 'Rejected by Meta' },
   stateDescriptions: { DRAFT: 'Not internally approved or published. Edit and save, then check the version.', APPROVED: 'The owner approved this version. This does not mean Meta approved it or delivery began.', SUBMITTING: 'Publication is being processed. A work receipt does not prove delivery.', REMOTE_PAUSED: 'Meta objects were created paused. They are not delivering yet.', ACTIVE: 'Activation was confirmed with no later successful pause. Check Meta for actual delivery and spend.', PAUSED: 'Pause was confirmed. Check the latest external state; there is no direct resume shortcut.', UNKNOWN: 'The result and spend are unconfirmed. Read again or check Ads Manager; do not recreate the ad.', FAILED: 'Read the Meta reason for this attempt. The server decides whether it can be retried.', ENDED: 'Locally marked ended; an external pause may still be awaiting confirmation. Spend may not stop immediately.', REJECTED: 'Read the original Meta message. A newly configured draft requires fresh approval.' },
@@ -37,6 +39,8 @@ type GrowthCopy = typeof en;
 export const growthCopy: Record<Locale, GrowthCopy> = {
   en,
   'zh-TW': {
+    opKinds: { campaign: '建立廣告活動', adset: '建立廣告組合', creative: '準備廣告素材', ad: '建立廣告', preflight: '檢查廣告帳號', activate: '啟用廣告', pause: '暫停廣告' },
+    opFallback: '廣告處理步驟', metaRefusal: 'Meta 未能完成這個步驟，請先閱讀回應再重試。',
     quickAmounts: '快速金額', taiwan: '台灣 TW', hongKong: '香港 HK', agesDefault: '18–65 歲', agesFocused: '25–44 歲', threeDays: '3 天', sevenDays: '7 天',
     stateTitles: { DRAFT: '草稿', APPROVED: '內部已核准', SUBMITTING: '正在 Meta 建立', REMOTE_PAUSED: '已建立 · 尚未啟用', ACTIVE: '刊登中', PAUSED: '已確認暫停', UNKNOWN: '外部結果待確認', FAILED: '建立失敗', ENDED: '已結束', REJECTED: '遭 Meta 拒絕' },
     stateDescriptions: { DRAFT: '尚未內部核准，沒有發布。可編輯並儲存，再核對版本。', APPROVED: '只表示負責人核准這個版本。尚未等同 Meta 審核通過或刊登。', SUBMITTING: '發布工作正在處理。收到工作回執也不能判定已投放。', REMOTE_PAUSED: 'Meta 物件已建立，狀態為暫停。不能顯示為刊登中。', ACTIVE: '啟用操作已確認成功，且無後續成功暫停。不保證實際曝光或花費，仍須核對外部狀態。', PAUSED: '暫停操作已確認成功；以最新外部資料核對實際狀態。不提供直接恢復的捷徑。', UNKNOWN: '目前不能確認結果，也不能認定沒有花費。重新讀取；必要時到 Ads Manager 核對。不要重建廣告。', FAILED: '這次建立未成功，閱讀本次 Meta 原因。能否重送由伺服器核對，不直接重複發布。', ENDED: '本地已標記結束；外部暫停可能仍待確認。結束不保證花費立刻歸零。', REJECTED: '依最近一次外部狀態顯示。閱讀 Meta 原文；需要重新設定時另建草稿並核准。' },
@@ -65,6 +69,8 @@ export const growthCopy: Record<Locale, GrowthCopy> = {
     off: '平台啟用前，此商店的廣告功能為關閉狀態。', codes: '優惠碼', cancel: '取消', advanced: '進階',
   },
   'zh-CN': {
+    opKinds: { campaign: '创建广告系列', adset: '创建广告组', creative: '准备广告素材', ad: '创建广告', preflight: '检查广告账户', activate: '开启广告投放', pause: '暂停广告' },
+    opFallback: '广告处理步骤', metaRefusal: 'Meta 未能完成此步骤，请先查看反馈再重试。',
     quickAmounts: '快捷金额', taiwan: '台湾 TW', hongKong: '香港 HK', agesDefault: '18–65 岁', agesFocused: '25–44 岁', threeDays: '3 天', sevenDays: '7 天',
     stateTitles: { DRAFT: '草稿', APPROVED: '内部已审核', SUBMITTING: '正在 Meta 创建', REMOTE_PAUSED: '已创建 · 尚未启用', ACTIVE: '投放中', PAUSED: '已确认暂停', UNKNOWN: '外部结果待确认', FAILED: '创建失败', ENDED: '已结束', REJECTED: '被 Meta 拒绝' },
     stateDescriptions: { DRAFT: '尚未通过内部审核，也未发布。编辑并保存后，请重新核对版本。', APPROVED: '仅代表负责人审核通过当前版本，不代表 Meta 审核通过或正在投放。', SUBMITTING: '发布任务正在处理，收到任务回执并不能证明已经投放。', REMOTE_PAUSED: 'Meta 广告已创建，当前暂停，尚未开始投放。', ACTIVE: '已确认启用，之后没有成功暂停记录。实际曝光和花费仍需核对外部状态。', PAUSED: '暂停已确认，请以最新外部数据核对实际状态。不提供直接恢复投放的入口。', UNKNOWN: '尚不能确认结果或花费。请重新读取，必要时到 Ads Manager 核对，不要重新创建广告。', FAILED: '本次创建失败，请阅读 Meta 返回的原因。能否重试由服务器核对，不直接重复发布。', ENDED: '本地已标记结束，外部暂停可能仍待确认，花费不一定立即停止。', REJECTED: '按最近的外部状态展示。请阅读 Meta 原文，重新配置时需新建草稿并重新审核。' },

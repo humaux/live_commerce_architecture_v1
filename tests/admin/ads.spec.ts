@@ -420,8 +420,12 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
   expect(publish?.key).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
   expect(JSON.parse(publish?.body ?? "{}")).toEqual({ publish_attempt: 0 });
   await driveUntil(page, "ACTIVE");
-  await expect(page.getByTestId("ads-ops")).toContainText("activate");
-  for (const kind of ["campaign", "adset", "creative", "ad", "preflight", "activate"]) await expect(page.getByTestId("ads-ops")).toContainText(kind);
+  // Preserve exact server-step coverage while checking seller-facing labels instead of raw codes.
+  for (const kind of ["campaign", "adset", "creative", "ad", "preflight", "activate"] as const) {
+    const step = page.getByTestId("ads-ops").locator(`[data-op-kind="${kind}"]`);
+    await expect(step).toHaveText(growthCopy.en.opKinds[kind]);
+    await expect(page.getByTestId("ads-ops").getByText(kind, { exact: true })).toHaveCount(0);
+  }
   await expect(page.getByTestId("ads-ops").getByText(en.opStates.SUCCEEDED).first()).toBeVisible();
   const link = await page.getByTestId("ads-manager-link").getAttribute("href");
   expect(new URL(link!).protocol).toBe("https:");
@@ -635,7 +639,10 @@ test("MA09a Meta refusal original text survives refresh in three locales and per
       await auditDraft(page);
       const message=page.getByTestId("ads-meta-message");
       await expect(message).toHaveText(original);
-      await expect(page.getByTestId("ads-ops")).toContainText("graph_100");
+      const refusal = page.getByTestId("ads-ops").locator('[data-op-code="graph_100"]');
+      await expect(refusal).toHaveText(growthCopy[locale].metaRefusal);
+      await expect(page.getByTestId("ads-ops").getByText("graph_100", { exact: true })).toHaveCount(0);
+      await expect(page.getByTestId("ads-ops").locator('[data-op-kind="adset"]')).toHaveText(growthCopy[locale].opKinds.adset);
       const detailURL = page.url();
       await listTask(page);
       await page.getByRole("button", { name: growth(page).assets, exact: true }).click();
@@ -646,6 +653,7 @@ test("MA09a Meta refusal original text survives refresh in three locales and per
       await page.reload();
       await auditDraft(page);
       await expect(message).toHaveText(original);
+      await expect(refusal).toHaveText(growthCopy[locale].metaRefusal);
       await message.scrollIntoViewIfNeeded();
       await shot(page,"meta-original-refusal",locale,viewport);
     }
@@ -684,10 +692,14 @@ const frames = {
 
 async function shot(page: Page, env: Environment, frame: string) {
   const directory = path.join(env.evidence, "parity");
+  // GitHub artifacts reject colons in paths; retain the exact Figma id in frames.jsonl.
+  expect(frame).toMatch(/^\d+:\d+$/);
+  const filename = `${frame.replace(":", "-")}.png`;
+  expect(filename).toMatch(/^\d+-\d+\.png$/);
   await mkdir(directory, { recursive: true });
   // READ/MEASURE only. Screenshots document the real route, never /ui-gallery.
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
-  await page.screenshot({ path: path.join(directory, `${frame}.png`), animations: "disabled" });
+  await page.screenshot({ path: path.join(directory, filename), animations: "disabled" });
   // READ/MEASURE: visible text only; never change the DOM or use it to drive the journey.
   const density = await page.locator(".growth-task").evaluate(root => {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -701,7 +713,7 @@ async function shot(page: Page, env: Environment, frame: string) {
     return { blocks: texts.length, characters: texts.reduce((n, text) => n + text.length, 0) };
   });
   await appendFile(path.join(directory, "density.jsonl"), JSON.stringify({ frame, ...density }) + "\n");
-  await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame, route: page.url(), screenshot: `parity/${frame}.png` }) + "\n");
+  await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame, route: page.url(), screenshot: `parity/${filename}` }) + "\n");
 }
 async function click(page: Page, env: Environment, name: string, expected: string) {
   await page.getByRole("button", { name, exact: true }).click();

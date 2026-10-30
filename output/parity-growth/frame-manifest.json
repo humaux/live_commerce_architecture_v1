@@ -9,7 +9,7 @@
       "figma/5-17304/get_design_context.log",
       "figma/5-17304/detail-1136-7330.log"
     ],
-    "ci_screenshot": "parity/5:17304.png",
+    "ci_screenshot": "parity/5-17304.png",
     "status": "NOT_RUN"
   },
   {
@@ -22,7 +22,7 @@
       "figma/5-17438/detail-1136-7422.log",
       "figma/5-17438/get_design_context.log"
     ],
-    "ci_screenshot": "parity/5:17438.png",
+    "ci_screenshot": "parity/5-17438.png",
     "status": "NOT_RUN"
   },
   {
@@ -34,7 +34,7 @@
     "context_logs": [
       "figma/5-17516/get_design_context.log"
     ],
-    "ci_screenshot": "parity/5:17516.png",
+    "ci_screenshot": "parity/5-17516.png",
     "status": "NOT_RUN"
   },
   {
@@ -46,7 +46,7 @@
     "context_logs": [
       "figma/5-17633/get_design_context.log"
     ],
-    "ci_screenshot": "parity/5:17633.png",
+    "ci_screenshot": "parity/5-17633.png",
     "status": "NOT_RUN"
   },
   {
@@ -60,7 +60,7 @@
       "figma/6-20130/detail-1051-6803.log",
       "figma/6-20130/detail-1051-6809.log"
     ],
-    "ci_screenshot": "parity/6:20130.png",
+    "ci_screenshot": "parity/6-20130.png",
     "status": "NOT_RUN"
   },
   {
@@ -78,7 +78,7 @@
       "figma/6-20255/detail-1051-7031.log",
       "figma/6-20255/detail-1051-7024.log"
     ],
-    "ci_screenshot": "parity/6:20255.png",
+    "ci_screenshot": "parity/6-20255.png",
     "status": "NOT_RUN"
   },
   {
@@ -93,7 +93,7 @@
       "figma/6-23064/detail-1152-7255.log",
       "figma/6-23064/detail-1194-10468.log"
     ],
-    "ci_screenshot": "parity/6:23064.png",
+    "ci_screenshot": "parity/6-23064.png",
     "status": "NOT_RUN"
   },
   {
@@ -109,7 +109,7 @@
       "figma/6-23199/detail-1152-7419.log",
       "figma/6-23199/detail-1152-7392.log"
     ],
-    "ci_screenshot": "parity/6:23199.png",
+    "ci_screenshot": "parity/6-23199.png",
     "status": "NOT_RUN"
   },
   {
@@ -124,7 +124,7 @@
       "figma/1049-6945/source-candidates.log",
       "figma/1049-6945/detail-1051-6908.log"
     ],
-    "ci_screenshot": "parity/1049:6945.png",
+    "ci_screenshot": "parity/1049-6945.png",
     "status": "NOT_RUN"
   },
   {
@@ -138,7 +138,7 @@
       "figma/1049-7058/detail-1051-7077.log",
       "figma/1049-7058/detail-1051-7058.log"
     ],
-    "ci_screenshot": "parity/1049:7058.png",
+    "ci_screenshot": "parity/1049-7058.png",
     "status": "NOT_RUN"
   },
   {
@@ -151,7 +151,7 @@
       "figma/1049-7120/detail-1056-6949.log",
       "figma/1049-7120/get_design_context.log"
     ],
-    "ci_screenshot": "parity/1049:7120.png",
+    "ci_screenshot": "parity/1049-7120.png",
     "status": "NOT_RUN"
   },
   {
@@ -167,7 +167,7 @@
       "figma/1049-7233/detail-1056-7023.log",
       "figma/1049-7233/detail-1056-7050.log"
     ],
-    "ci_screenshot": "parity/1049:7233.png",
+    "ci_screenshot": "parity/1049-7233.png",
     "status": "NOT_RUN"
   },
   {
@@ -180,7 +180,7 @@
       "figma/1049-7295/get_design_context.log",
       "figma/1049-7295/detail-1052-6874.log"
     ],
-    "ci_screenshot": "parity/1049:7295.png",
+    "ci_screenshot": "parity/1049-7295.png",
     "status": "NOT_RUN"
   },
   {
@@ -195,7 +195,7 @@
       "figma/1049-7408/detail-1052-7116.log",
       "figma/1049-7408/detail-1052-7129.log"
     ],
-    "ci_screenshot": "parity/1049:7408.png",
+    "ci_screenshot": "parity/1049-7408.png",
     "status": "NOT_RUN"
   },
   {
@@ -209,7 +209,7 @@
       "figma/1049-7470/get_design_context.log",
       "figma/1049-7470/detail-1052-6937.log"
     ],
-    "ci_screenshot": "parity/1049:7470.png",
+    "ci_screenshot": "parity/1049-7470.png",
     "status": "NOT_RUN"
   },
   {
@@ -223,7 +223,7 @@
       "figma/1049-7583/detail-1052-7153.log",
       "figma/1049-7583/detail-1052-7159.log"
     ],
-    "ci_screenshot": "parity/1049:7583.png",
+    "ci_screenshot": "parity/1049-7583.png",
     "status": "NOT_RUN"
   },
   {
@@ -236,7 +236,7 @@
       "figma/1049-7645/detail-1052-6986.log",
       "figma/1049-7645/get_design_context.log"
     ],
-    "ci_screenshot": "parity/1049:7645.png",
+    "ci_screenshot": "parity/1049-7645.png",
     "status": "NOT_RUN"
   },
   {
@@ -249,7 +249,7 @@
       "figma/1049-7758/get_design_context.log",
       "figma/1049-7758/detail-1052-7179.log"
     ],
-    "ci_screenshot": "parity/1049:7758.png",
+    "ci_screenshot": "parity/1049-7758.png",
     "status": "NOT_RUN"
   },
   {
@@ -262,7 +262,7 @@
       "figma/1049-7820/detail-1052-7045.log",
       "figma/1049-7820/get_design_context.log"
     ],
-    "ci_screenshot": "parity/1049:7820.png",
+    "ci_screenshot": "parity/1049-7820.png",
     "status": "NOT_RUN"
   },
   {
@@ -275,7 +275,7 @@
       "figma/1049-7933/get_design_context.log",
       "figma/1049-7933/detail-1052-7215.log"
     ],
-    "ci_screenshot": "parity/1049:7933.png",
+    "ci_screenshot": "parity/1049-7933.png",
     "status": "NOT_RUN"
   },
   {
@@ -289,7 +289,7 @@
       "figma/1049-7995/detail-1052-7090.log",
       "figma/1049-7995/get_design_context.log"
     ],
-    "ci_screenshot": "parity/1049:7995.png",
+    "ci_screenshot": "parity/1049-7995.png",
     "status": "NOT_RUN"
   },
   {
@@ -303,7 +303,7 @@
       "figma/1049-8108/get_design_context.log",
       "figma/1049-8108/detail-1052-7237.log"
     ],
-    "ci_screenshot": "parity/1049:8108.png",
+    "ci_screenshot": "parity/1049-8108.png",
     "status": "NOT_RUN"
   },
   {
@@ -321,7 +321,7 @@
       "figma/1134-9548/detail-1136-7229.log",
       "figma/1134-9548/detail-1136-7202.log"
     ],
-    "ci_screenshot": "parity/1134:9548.png",
+    "ci_screenshot": "parity/1134-9548.png",
     "status": "NOT_RUN"
   },
   {
@@ -344,7 +344,7 @@
       "figma/1134-9549/detail-1136-7376.log",
       "figma/1134-9549/detail-1136-7388.log"
     ],
-    "ci_screenshot": "parity/1134:9549.png",
+    "ci_screenshot": "parity/1134-9549.png",
     "status": "NOT_RUN"
   },
   {
@@ -357,7 +357,7 @@
       "figma/1134-9550/get_design_context.log",
       "figma/1134-9550/detail-1136-7285.log"
     ],
-    "ci_screenshot": "parity/1134:9550.png",
+    "ci_screenshot": "parity/1134-9550.png",
     "status": "NOT_RUN"
   },
   {
@@ -370,7 +370,7 @@
       "figma/1134-9551/get_design_context.log",
       "figma/1134-9551/detail-1136-7400.log"
     ],
-    "ci_screenshot": "parity/1134:9551.png",
+    "ci_screenshot": "parity/1134-9551.png",
     "status": "NOT_RUN"
   },
   {
@@ -385,7 +385,7 @@
       "figma/1151-9420/detail-1152-7321.log",
       "figma/1151-9420/detail-1194-10469.log"
     ],
-    "ci_screenshot": "parity/1151:9420.png",
+    "ci_screenshot": "parity/1151-9420.png",
     "status": "NOT_RUN"
   },
   {
@@ -401,7 +401,7 @@
       "figma/1151-9421/detail-1152-7440.log",
       "figma/1151-9421/detail-1152-7437.log"
     ],
-    "ci_screenshot": "parity/1151:9421.png",
+    "ci_screenshot": "parity/1151-9421.png",
     "status": "NOT_RUN"
   },
   {
@@ -417,7 +417,7 @@
       "figma/1151-9422/detail-1153-7294.log",
       "figma/1151-9422/detail-1153-7347.log"
     ],
-    "ci_screenshot": "parity/1151:9422.png",
+    "ci_screenshot": "parity/1151-9422.png",
     "status": "NOT_RUN"
   },
   {
@@ -433,7 +433,7 @@
       "figma/1151-9423/detail-1153-7469.log",
       "figma/1151-9423/detail-1153-7522.log"
     ],
-    "ci_screenshot": "parity/1151:9423.png",
+    "ci_screenshot": "parity/1151-9423.png",
     "status": "NOT_RUN"
   },
   {
@@ -448,7 +448,7 @@
       "figma/1151-9428/detail-1154-7333.log",
       "figma/1151-9428/detail-1154-7330.log"
     ],
-    "ci_screenshot": "parity/1151:9428.png",
+    "ci_screenshot": "parity/1151-9428.png",
     "status": "NOT_RUN"
   },
   {
@@ -463,7 +463,7 @@
       "figma/1151-9429/detail-1154-7547.log",
       "figma/1151-9429/detail-1154-7552.log"
     ],
-    "ci_screenshot": "parity/1151:9429.png",
+    "ci_screenshot": "parity/1151-9429.png",
     "status": "NOT_RUN"
   },
   {
@@ -482,7 +482,7 @@
       "figma/4-11612/detail-1194-7731.log",
       "figma/4-11612/detail-1204-11191.log"
     ],
-    "ci_screenshot": "parity/4:11612.png",
+    "ci_screenshot": "parity/4-11612.png",
     "status": "NOT_RUN"
   },
   {
@@ -501,7 +501,7 @@
       "figma/4-11750/detail-1204-11197.log",
       "figma/4-11750/detail-1135-7330.log"
     ],
-    "ci_screenshot": "parity/4:11750.png",
+    "ci_screenshot": "parity/4-11750.png",
     "status": "NOT_RUN"
   },
   {
@@ -513,7 +513,7 @@
     "context_logs": [
       "figma/6-18113/get_design_context.log"
     ],
-    "ci_screenshot": "parity/6:18113.png",
+    "ci_screenshot": "parity/6-18113.png",
     "status": "DEFERRED: segment DTO absent"
   },
   {
@@ -525,7 +525,7 @@
     "context_logs": [
       "figma/6-18232/get_design_context.log"
     ],
-    "ci_screenshot": "parity/6:18232.png",
+    "ci_screenshot": "parity/6-18232.png",
     "status": "DEFERRED: segment DTO absent"
   },
   {
@@ -544,7 +544,7 @@
       "figma/1194-7740/detail-1194-7792.log",
       "figma/1194-7740/detail-1204-11194.log"
     ],
-    "ci_screenshot": "parity/1194:7740.png",
+    "ci_screenshot": "parity/1194-7740.png",
     "status": "NOT_RUN"
   },
   {
@@ -563,7 +563,7 @@
       "figma/1194-7796/detail-1194-7810.log",
       "figma/1194-7796/detail-1194-7805.log"
     ],
-    "ci_screenshot": "parity/1194:7796.png",
+    "ci_screenshot": "parity/1194-7796.png",
     "status": "NOT_RUN"
   }
 ]

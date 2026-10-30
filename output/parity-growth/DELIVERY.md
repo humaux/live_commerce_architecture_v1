@@ -1,7 +1,32 @@
 # PARITY-GROWTH — implementation candidate, GitHub CI pending
 
-Current section: **Relay 2 implementation** below. Historical RED-stage status is not current acceptance.
+Current section: **Relay 3 targeted repair** below. Historical RED-stage status is not current acceptance.
 Evidence: implementation author E0; local static E1; causal GitHub RED E3 (MOCK). GREEN / browser parity / independent review: PENDING.
+
+## Relay 3 targeted repair
+
+Current baseline: `f239dbc50b89df1a0c2c622a18f269bfc0d51552`. Exact-head Gates run `41065293413`, job `124113569764` (`bundle:04`), tested merge `b42b92a81ccee6ca56f3c586dd1a3123356f1914`.
+
+- **Root cause / attempt 1 of 2:** every bundle member returned success, but `Bundle member 1 evidence` failed: GitHub upload-artifact rejects `parity/1151:9420.png` because of the colon. This is an evidence-publication failure, not a new assertion RED and not GREEN. `relay3-upload-failure.log` preserves the filtered raw receipt. The original causal RED remains `41054278594 / 124066658713`.
+- All three owned screenshot emitters now use `parity/<node>-<node>.png`; Figma ids retain their original colon in `frames.jsonl`, density measurements, the parity sheet and manifest frame fields. Each emitter asserts the safe filename grammar. Marketing now records its frame mapping too. No screenshot, control or visibility assertion was removed.
+- Prior relay's open P1: operation rows now translate the seven server step kinds; unexpected kinds use a localized generic label. Error codes use the existing error copy or a localized Meta-refusal explanation. The original Meta response remains visible, escaped and unchanged. Exact server kind/code checks remain in browser assertions using `data-op-kind` / `data-op-code`; the same tests assert localized visible copy and absence of the raw-code text, including refusal persistence after reload in all three locales.
+- This is one batch of card-owned repairs. No backend, contract, workflow, baseline, exemption or gate-adapter edit. No import was added/renamed in the component, so existing component harness import allowlists are unchanged.
+- Static checks: node syntax, regenerated ownership (53 modes), strict admin tsc with read-only installed dependencies, packet structure and diff whitespace: exit 0, hashes in `relay3-static.json`. Temporary dependency links were removed. Initial missing-dependency attempts are recorded; no dependency install. Current candidate checks are E1 static only; CI on the next head, screenshot upload, complete own-PR GREEN, visual comparison/density review and independent acceptance remain PENDING/NOT_RUN. No local test/server/browser/PG or production action.
+- Humaux MCP is unavailable; no store/canvas/coord action is claimed. These versioned receipts and the PR relay comment carry the handoff; integrator completion relay is the wake mechanism.
+
+### Relay 3 copy additions
+
+| Key | zh-TW | zh-CN | en |
+|---|---|---|---|
+| opKinds.campaign | 建立廣告活動 | 创建广告系列 | Create campaign |
+| opKinds.adset | 建立廣告組合 | 创建广告组 | Create ad set |
+| opKinds.creative | 準備廣告素材 | 准备广告素材 | Prepare creative |
+| opKinds.ad | 建立廣告 | 创建广告 | Create ad |
+| opKinds.preflight | 檢查廣告帳號 | 检查广告账户 | Check ad account |
+| opKinds.activate | 啟用廣告 | 开启广告投放 | Activate ad |
+| opKinds.pause | 暫停廣告 | 暂停广告 | Pause ad |
+| opFallback | 廣告處理步驟 | 广告处理步骤 | Advertising step |
+| metaRefusal | Meta 未能完成這個步驟，請先閱讀回應再重試。 | Meta 未能完成此步骤，请先查看反馈再重试。 | Meta could not complete this step. Review its response before trying again. |
 
 ## Relay 2 implementation
 
@@ -148,44 +173,44 @@ Outside C3 application write paths: tests/admin/{ads,attribution}.spec.ts, tests
 
 | Frame | Real route / state | Browser artifact | Signed reference PNG | Status |
 |---|---|---|---|---|
-| 5:17304 | /ads · Admin · 广告详情 · SHOPLINE | parity/5:17304.png | [figma/5-17304/get_screenshot-5-17304-1793361325193-0.png](figma/5-17304/get_screenshot-5-17304-1793361325193-0.png) | NOT_RUN |
-| 5:17438 | /ads · Admin Mobile · 广告详情 · SHOPLINE | parity/5:17438.png | [figma/5-17438/get_screenshot-5-17438-1793361326127-0.png](figma/5-17438/get_screenshot-5-17438-1793361326127-0.png) | NOT_RUN |
-| 5:17516 | /ads · Admin · 资产授权 · SHOPLINE | parity/5:17516.png | [figma/5-17516/get_screenshot-5-17516-1793361328107-0.png](figma/5-17516/get_screenshot-5-17516-1793361328107-0.png) | NOT_RUN |
-| 5:17633 | /ads · Admin Mobile · 资产授权 · SHOPLINE | parity/5:17633.png | [figma/5-17633/get_screenshot-5-17633-1793361329143-0.png](figma/5-17633/get_screenshot-5-17633-1793361329143-0.png) | NOT_RUN |
-| 6:20130 | /ads · Admin · 广告草稿 · SHOPLINE | parity/6:20130.png | [figma/6-20130/get_screenshot-6-20130-1793361330220-0.png](figma/6-20130/get_screenshot-6-20130-1793361330220-0.png) | NOT_RUN |
-| 6:20255 | /ads · Admin Mobile · 广告草稿 · SHOPLINE | parity/6:20255.png | [figma/6-20255/get_screenshot-6-20255-1793361331165-0.png](figma/6-20255/get_screenshot-6-20255-1793361331165-0.png) | NOT_RUN |
-| 6:23064 | /ads/attribution · Admin Desktop · 歸因報表 · DaWan Live | parity/6:23064.png | [figma/6-23064/get_screenshot-6-23064-1793361332168-0.png](figma/6-23064/get_screenshot-6-23064-1793361332168-0.png) | NOT_RUN |
-| 6:23199 | /ads/attribution · Admin Mobile · 歸因報表 · DaWan Live | parity/6:23199.png | [figma/6-23199/get_screenshot-6-23199-1793361333035-0.png](figma/6-23199/get_screenshot-6-23199-1793361333035-0.png) | NOT_RUN |
-| 1049:6945 | /ads · Admin Desktop · 廣告草稿 · source | parity/1049:6945.png | [figma/1049-6945/get_screenshot-1049-6945-1793361334045-0.png](figma/1049-6945/get_screenshot-1049-6945-1793361334045-0.png) | NOT_RUN |
-| 1049:7058 | /ads · Admin Mobile · 廣告草稿 · source | parity/1049:7058.png | [figma/1049-7058/get_screenshot-1049-7058-1793361334851-0.png](figma/1049-7058/get_screenshot-1049-7058-1793361334851-0.png) | NOT_RUN |
-| 1049:7120 | /ads · Admin Desktop · 廣告草稿 · settings | parity/1049:7120.png | [figma/1049-7120/get_screenshot-1049-7120-1793361336145-0.png](figma/1049-7120/get_screenshot-1049-7120-1793361336145-0.png) | NOT_RUN |
-| 1049:7233 | /ads · Admin Mobile · 廣告草稿 · settings | parity/1049:7233.png | [figma/1049-7233/get_screenshot-1049-7233-1793361337052-0.png](figma/1049-7233/get_screenshot-1049-7233-1793361337052-0.png) | NOT_RUN |
-| 1049:7295 | /ads · Admin Desktop · 廣告草稿 · review | parity/1049:7295.png | [figma/1049-7295/get_screenshot-1049-7295-1793361338469-0.png](figma/1049-7295/get_screenshot-1049-7295-1793361338469-0.png) | NOT_RUN |
-| 1049:7408 | /ads · Admin Mobile · 廣告草稿 · review | parity/1049:7408.png | [figma/1049-7408/get_screenshot-1049-7408-1793361339565-0.png](figma/1049-7408/get_screenshot-1049-7408-1793361339565-0.png) | NOT_RUN |
-| 1049:7470 | /ads · Admin Desktop · 廣告草稿 · saved | parity/1049:7470.png | [figma/1049-7470/get_screenshot-1049-7470-1793361341105-0.png](figma/1049-7470/get_screenshot-1049-7470-1793361341105-0.png) | NOT_RUN |
-| 1049:7583 | /ads · Admin Mobile · 廣告草稿 · saved | parity/1049:7583.png | [figma/1049-7583/get_screenshot-1049-7583-1793361342801-0.png](figma/1049-7583/get_screenshot-1049-7583-1793361342801-0.png) | NOT_RUN |
-| 1049:7645 | /ads · Admin Desktop · 廣告草稿 · status | parity/1049:7645.png | [figma/1049-7645/get_screenshot-1049-7645-1793361344573-0.png](figma/1049-7645/get_screenshot-1049-7645-1793361344573-0.png) | NOT_RUN |
-| 1049:7758 | /ads · Admin Mobile · 廣告草稿 · status | parity/1049:7758.png | [figma/1049-7758/get_screenshot-1049-7758-1793361345566-0.png](figma/1049-7758/get_screenshot-1049-7758-1793361345566-0.png) | NOT_RUN |
-| 1049:7820 | /ads · Admin Desktop · 廣告草稿 · leave | parity/1049:7820.png | [figma/1049-7820/get_screenshot-1049-7820-1793361346963-0.png](figma/1049-7820/get_screenshot-1049-7820-1793361346963-0.png) | NOT_RUN |
-| 1049:7933 | /ads · Admin Mobile · 廣告草稿 · leave | parity/1049:7933.png | [figma/1049-7933/get_screenshot-1049-7933-1793361348136-0.png](figma/1049-7933/get_screenshot-1049-7933-1793361348136-0.png) | NOT_RUN |
-| 1049:7995 | /ads · Admin Desktop · 廣告草稿 · conflict | parity/1049:7995.png | [figma/1049-7995/get_screenshot-1049-7995-1793361349622-0.png](figma/1049-7995/get_screenshot-1049-7995-1793361349622-0.png) | NOT_RUN |
-| 1049:8108 | /ads · Admin Mobile · 廣告草稿 · conflict | parity/1049:8108.png | [figma/1049-8108/get_screenshot-1049-8108-1793361350258-0.png](figma/1049-8108/get_screenshot-1049-8108-1793361350258-0.png) | NOT_RUN |
-| 1134:9548 | /ads · Admin Desktop · 廣告列表 · 狀態說明 | parity/1134:9548.png | [figma/1134-9548/get_screenshot-1134-9548-1793361351393-0.png](figma/1134-9548/get_screenshot-1134-9548-1793361351393-0.png) | NOT_RUN |
-| 1134:9549 | /ads · Admin Mobile · 廣告列表 · 狀態說明 | parity/1134:9549.png | [figma/1134-9549/get_screenshot-1134-9549-1793361352015-0.png](figma/1134-9549/get_screenshot-1134-9549-1793361352015-0.png) | NOT_RUN |
-| 1134:9550 | /ads · Admin Desktop · 廣告列表 · 讀取回饋 | parity/1134:9550.png | [figma/1134-9550/get_screenshot-1134-9550-1793361353077-0.png](figma/1134-9550/get_screenshot-1134-9550-1793361353077-0.png) | NOT_RUN |
-| 1134:9551 | /ads · Admin Mobile · 廣告列表 · 讀取回饋 | parity/1134:9551.png | [figma/1134-9551/get_screenshot-1134-9551-1793361353601-0.png](figma/1134-9551/get_screenshot-1134-9551-1793361353601-0.png) | NOT_RUN |
-| 1151:9420 | /ads/attribution · Admin Desktop · 成效總覽 · DaWan Live | parity/1151:9420.png | [figma/1151-9420/get_screenshot-1151-9420-1793361354607-0.png](figma/1151-9420/get_screenshot-1151-9420-1793361354607-0.png) | NOT_RUN |
-| 1151:9421 | /ads/attribution · Admin Mobile · 成效總覽 · DaWan Live | parity/1151:9421.png | [figma/1151-9421/get_screenshot-1151-9421-1793361355231-0.png](figma/1151-9421/get_screenshot-1151-9421-1793361355231-0.png) | NOT_RUN |
-| 1151:9422 | /ads/attribution · Admin Desktop · 廣告歸因明細 · DaWan Live | parity/1151:9422.png | [figma/1151-9422/get_screenshot-1151-9422-1793361356209-0.png](figma/1151-9422/get_screenshot-1151-9422-1793361356209-0.png) | NOT_RUN |
-| 1151:9423 | /ads/attribution · Admin Mobile · 廣告歸因明細 · DaWan Live | parity/1151:9423.png | [figma/1151-9423/get_screenshot-1151-9423-1793361357321-0.png](figma/1151-9423/get_screenshot-1151-9423-1793361357321-0.png) | NOT_RUN |
-| 1151:9428 | /ads/attribution · Admin Desktop · Meta 分組明細 · DaWan Live | parity/1151:9428.png | [figma/1151-9428/get_screenshot-1151-9428-1793361358350-0.png](figma/1151-9428/get_screenshot-1151-9428-1793361358350-0.png) | NOT_RUN |
-| 1151:9429 | /ads/attribution · Admin Mobile · Meta 分組明細 · DaWan Live | parity/1151:9429.png | [figma/1151-9429/get_screenshot-1151-9429-1793361358989-0.png](figma/1151-9429/get_screenshot-1151-9429-1793361358989-0.png) | NOT_RUN |
-| 4:11612 | /ads · Admin · 营销 · SHOPLINE | parity/4:11612.png | [figma/4-11612/get_screenshot-4-11612-1793361359948-0.png](figma/4-11612/get_screenshot-4-11612-1793361359948-0.png) | NOT_RUN |
-| 4:11750 | /ads · Admin Mobile · 营销 · SHOPLINE | parity/4:11750.png | [figma/4-11750/get_screenshot-4-11750-1793361360696-0.png](figma/4-11750/get_screenshot-4-11750-1793361360696-0.png) | NOT_RUN |
-| 6:18113 | /promotions · Admin · 客户分群 · SHOPLINE | parity/6:18113.png | [figma/6-18113/get_screenshot-6-18113-1793361361726-0.png](figma/6-18113/get_screenshot-6-18113-1793361361726-0.png) | DEFERRED: segment DTO absent |
-| 6:18232 | /promotions · Admin Mobile · 客户分群 · SHOPLINE | parity/6:18232.png | [figma/6-18232/get_screenshot-6-18232-1793361362834-0.png](figma/6-18232/get_screenshot-6-18232-1793361362834-0.png) | DEFERRED: segment DTO absent |
-| 1194:7740 | /promotions · Admin · 营销 · SHOPLINE · 功能關閉 | parity/1194:7740.png | [figma/1194-7740/get_screenshot-1194-7740-1793361364024-0.png](figma/1194-7740/get_screenshot-1194-7740-1793361364024-0.png) | NOT_RUN |
-| 1194:7796 | /promotions · Admin Mobile · 营销 · SHOPLINE · 功能關閉 | parity/1194:7796.png | [figma/1194-7796/get_screenshot-1194-7796-1793361364571-0.png](figma/1194-7796/get_screenshot-1194-7796-1793361364571-0.png) | NOT_RUN |
+| 5:17304 | /ads · Admin · 广告详情 · SHOPLINE | parity/5-17304.png | [figma/5-17304/get_screenshot-5-17304-1793361325193-0.png](figma/5-17304/get_screenshot-5-17304-1793361325193-0.png) | NOT_RUN |
+| 5:17438 | /ads · Admin Mobile · 广告详情 · SHOPLINE | parity/5-17438.png | [figma/5-17438/get_screenshot-5-17438-1793361326127-0.png](figma/5-17438/get_screenshot-5-17438-1793361326127-0.png) | NOT_RUN |
+| 5:17516 | /ads · Admin · 资产授权 · SHOPLINE | parity/5-17516.png | [figma/5-17516/get_screenshot-5-17516-1793361328107-0.png](figma/5-17516/get_screenshot-5-17516-1793361328107-0.png) | NOT_RUN |
+| 5:17633 | /ads · Admin Mobile · 资产授权 · SHOPLINE | parity/5-17633.png | [figma/5-17633/get_screenshot-5-17633-1793361329143-0.png](figma/5-17633/get_screenshot-5-17633-1793361329143-0.png) | NOT_RUN |
+| 6:20130 | /ads · Admin · 广告草稿 · SHOPLINE | parity/6-20130.png | [figma/6-20130/get_screenshot-6-20130-1793361330220-0.png](figma/6-20130/get_screenshot-6-20130-1793361330220-0.png) | NOT_RUN |
+| 6:20255 | /ads · Admin Mobile · 广告草稿 · SHOPLINE | parity/6-20255.png | [figma/6-20255/get_screenshot-6-20255-1793361331165-0.png](figma/6-20255/get_screenshot-6-20255-1793361331165-0.png) | NOT_RUN |
+| 6:23064 | /ads/attribution · Admin Desktop · 歸因報表 · DaWan Live | parity/6-23064.png | [figma/6-23064/get_screenshot-6-23064-1793361332168-0.png](figma/6-23064/get_screenshot-6-23064-1793361332168-0.png) | NOT_RUN |
+| 6:23199 | /ads/attribution · Admin Mobile · 歸因報表 · DaWan Live | parity/6-23199.png | [figma/6-23199/get_screenshot-6-23199-1793361333035-0.png](figma/6-23199/get_screenshot-6-23199-1793361333035-0.png) | NOT_RUN |
+| 1049:6945 | /ads · Admin Desktop · 廣告草稿 · source | parity/1049-6945.png | [figma/1049-6945/get_screenshot-1049-6945-1793361334045-0.png](figma/1049-6945/get_screenshot-1049-6945-1793361334045-0.png) | NOT_RUN |
+| 1049:7058 | /ads · Admin Mobile · 廣告草稿 · source | parity/1049-7058.png | [figma/1049-7058/get_screenshot-1049-7058-1793361334851-0.png](figma/1049-7058/get_screenshot-1049-7058-1793361334851-0.png) | NOT_RUN |
+| 1049:7120 | /ads · Admin Desktop · 廣告草稿 · settings | parity/1049-7120.png | [figma/1049-7120/get_screenshot-1049-7120-1793361336145-0.png](figma/1049-7120/get_screenshot-1049-7120-1793361336145-0.png) | NOT_RUN |
+| 1049:7233 | /ads · Admin Mobile · 廣告草稿 · settings | parity/1049-7233.png | [figma/1049-7233/get_screenshot-1049-7233-1793361337052-0.png](figma/1049-7233/get_screenshot-1049-7233-1793361337052-0.png) | NOT_RUN |
+| 1049:7295 | /ads · Admin Desktop · 廣告草稿 · review | parity/1049-7295.png | [figma/1049-7295/get_screenshot-1049-7295-1793361338469-0.png](figma/1049-7295/get_screenshot-1049-7295-1793361338469-0.png) | NOT_RUN |
+| 1049:7408 | /ads · Admin Mobile · 廣告草稿 · review | parity/1049-7408.png | [figma/1049-7408/get_screenshot-1049-7408-1793361339565-0.png](figma/1049-7408/get_screenshot-1049-7408-1793361339565-0.png) | NOT_RUN |
+| 1049:7470 | /ads · Admin Desktop · 廣告草稿 · saved | parity/1049-7470.png | [figma/1049-7470/get_screenshot-1049-7470-1793361341105-0.png](figma/1049-7470/get_screenshot-1049-7470-1793361341105-0.png) | NOT_RUN |
+| 1049:7583 | /ads · Admin Mobile · 廣告草稿 · saved | parity/1049-7583.png | [figma/1049-7583/get_screenshot-1049-7583-1793361342801-0.png](figma/1049-7583/get_screenshot-1049-7583-1793361342801-0.png) | NOT_RUN |
+| 1049:7645 | /ads · Admin Desktop · 廣告草稿 · status | parity/1049-7645.png | [figma/1049-7645/get_screenshot-1049-7645-1793361344573-0.png](figma/1049-7645/get_screenshot-1049-7645-1793361344573-0.png) | NOT_RUN |
+| 1049:7758 | /ads · Admin Mobile · 廣告草稿 · status | parity/1049-7758.png | [figma/1049-7758/get_screenshot-1049-7758-1793361345566-0.png](figma/1049-7758/get_screenshot-1049-7758-1793361345566-0.png) | NOT_RUN |
+| 1049:7820 | /ads · Admin Desktop · 廣告草稿 · leave | parity/1049-7820.png | [figma/1049-7820/get_screenshot-1049-7820-1793361346963-0.png](figma/1049-7820/get_screenshot-1049-7820-1793361346963-0.png) | NOT_RUN |
+| 1049:7933 | /ads · Admin Mobile · 廣告草稿 · leave | parity/1049-7933.png | [figma/1049-7933/get_screenshot-1049-7933-1793361348136-0.png](figma/1049-7933/get_screenshot-1049-7933-1793361348136-0.png) | NOT_RUN |
+| 1049:7995 | /ads · Admin Desktop · 廣告草稿 · conflict | parity/1049-7995.png | [figma/1049-7995/get_screenshot-1049-7995-1793361349622-0.png](figma/1049-7995/get_screenshot-1049-7995-1793361349622-0.png) | NOT_RUN |
+| 1049:8108 | /ads · Admin Mobile · 廣告草稿 · conflict | parity/1049-8108.png | [figma/1049-8108/get_screenshot-1049-8108-1793361350258-0.png](figma/1049-8108/get_screenshot-1049-8108-1793361350258-0.png) | NOT_RUN |
+| 1134:9548 | /ads · Admin Desktop · 廣告列表 · 狀態說明 | parity/1134-9548.png | [figma/1134-9548/get_screenshot-1134-9548-1793361351393-0.png](figma/1134-9548/get_screenshot-1134-9548-1793361351393-0.png) | NOT_RUN |
+| 1134:9549 | /ads · Admin Mobile · 廣告列表 · 狀態說明 | parity/1134-9549.png | [figma/1134-9549/get_screenshot-1134-9549-1793361352015-0.png](figma/1134-9549/get_screenshot-1134-9549-1793361352015-0.png) | NOT_RUN |
+| 1134:9550 | /ads · Admin Desktop · 廣告列表 · 讀取回饋 | parity/1134-9550.png | [figma/1134-9550/get_screenshot-1134-9550-1793361353077-0.png](figma/1134-9550/get_screenshot-1134-9550-1793361353077-0.png) | NOT_RUN |
+| 1134:9551 | /ads · Admin Mobile · 廣告列表 · 讀取回饋 | parity/1134-9551.png | [figma/1134-9551/get_screenshot-1134-9551-1793361353601-0.png](figma/1134-9551/get_screenshot-1134-9551-1793361353601-0.png) | NOT_RUN |
+| 1151:9420 | /ads/attribution · Admin Desktop · 成效總覽 · DaWan Live | parity/1151-9420.png | [figma/1151-9420/get_screenshot-1151-9420-1793361354607-0.png](figma/1151-9420/get_screenshot-1151-9420-1793361354607-0.png) | NOT_RUN |
+| 1151:9421 | /ads/attribution · Admin Mobile · 成效總覽 · DaWan Live | parity/1151-9421.png | [figma/1151-9421/get_screenshot-1151-9421-1793361355231-0.png](figma/1151-9421/get_screenshot-1151-9421-1793361355231-0.png) | NOT_RUN |
+| 1151:9422 | /ads/attribution · Admin Desktop · 廣告歸因明細 · DaWan Live | parity/1151-9422.png | [figma/1151-9422/get_screenshot-1151-9422-1793361356209-0.png](figma/1151-9422/get_screenshot-1151-9422-1793361356209-0.png) | NOT_RUN |
+| 1151:9423 | /ads/attribution · Admin Mobile · 廣告歸因明細 · DaWan Live | parity/1151-9423.png | [figma/1151-9423/get_screenshot-1151-9423-1793361357321-0.png](figma/1151-9423/get_screenshot-1151-9423-1793361357321-0.png) | NOT_RUN |
+| 1151:9428 | /ads/attribution · Admin Desktop · Meta 分組明細 · DaWan Live | parity/1151-9428.png | [figma/1151-9428/get_screenshot-1151-9428-1793361358350-0.png](figma/1151-9428/get_screenshot-1151-9428-1793361358350-0.png) | NOT_RUN |
+| 1151:9429 | /ads/attribution · Admin Mobile · Meta 分組明細 · DaWan Live | parity/1151-9429.png | [figma/1151-9429/get_screenshot-1151-9429-1793361358989-0.png](figma/1151-9429/get_screenshot-1151-9429-1793361358989-0.png) | NOT_RUN |
+| 4:11612 | /ads · Admin · 营销 · SHOPLINE | parity/4-11612.png | [figma/4-11612/get_screenshot-4-11612-1793361359948-0.png](figma/4-11612/get_screenshot-4-11612-1793361359948-0.png) | NOT_RUN |
+| 4:11750 | /ads · Admin Mobile · 营销 · SHOPLINE | parity/4-11750.png | [figma/4-11750/get_screenshot-4-11750-1793361360696-0.png](figma/4-11750/get_screenshot-4-11750-1793361360696-0.png) | NOT_RUN |
+| 6:18113 | /promotions · Admin · 客户分群 · SHOPLINE | parity/6-18113.png | [figma/6-18113/get_screenshot-6-18113-1793361361726-0.png](figma/6-18113/get_screenshot-6-18113-1793361361726-0.png) | DEFERRED: segment DTO absent |
+| 6:18232 | /promotions · Admin Mobile · 客户分群 · SHOPLINE | parity/6-18232.png | [figma/6-18232/get_screenshot-6-18232-1793361362834-0.png](figma/6-18232/get_screenshot-6-18232-1793361362834-0.png) | DEFERRED: segment DTO absent |
+| 1194:7740 | /promotions · Admin · 营销 · SHOPLINE · 功能關閉 | parity/1194-7740.png | [figma/1194-7740/get_screenshot-1194-7740-1793361364024-0.png](figma/1194-7740/get_screenshot-1194-7740-1793361364024-0.png) | NOT_RUN |
+| 1194:7796 | /promotions · Admin Mobile · 营销 · SHOPLINE · 功能關閉 | parity/1194-7796.png | [figma/1194-7796/get_screenshot-1194-7796-1793361364571-0.png](figma/1194-7796/get_screenshot-1194-7796-1793361364571-0.png) | NOT_RUN |
 
 ## Copy table (RED targets; existing dictionaries retained)
 

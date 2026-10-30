@@ -1063,10 +1063,14 @@ const frames = {
 
 async function shot(page: Page, env: Environment, frame: string) {
   const directory = path.join(env.evidence, "parity");
+  // GitHub artifacts reject colons in paths; retain the exact Figma id in frames.jsonl.
+  expect(frame).toMatch(/^\d+:\d+$/);
+  const filename = `${frame.replace(":", "-")}.png`;
+  expect(filename).toMatch(/^\d+-\d+\.png$/);
   await mkdir(directory, { recursive: true });
   // READ/MEASURE only. Screenshots document the real route, never /ui-gallery.
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
-  await page.screenshot({ path: path.join(directory, `${frame}.png`), animations: "disabled" });
+  await page.screenshot({ path: path.join(directory, filename), animations: "disabled" });
   // READ/MEASURE: visible text only; never change the DOM or use it to drive the journey.
   const density = await page.locator(".growth-task").evaluate(root => {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -1080,7 +1084,7 @@ async function shot(page: Page, env: Environment, frame: string) {
     return { blocks: texts.length, characters: texts.reduce((n, text) => n + text.length, 0) };
   });
   await appendFile(path.join(directory, "density.jsonl"), JSON.stringify({ frame, ...density }) + "\n");
-  await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame, route: page.url(), screenshot: `parity/${frame}.png` }) + "\n");
+  await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame, route: page.url(), screenshot: `parity/${filename}` }) + "\n");
 }
 async function click(page: Page, env: Environment, name: string, expected: string) {
   await page.getByRole("button", { name, exact: true }).click();

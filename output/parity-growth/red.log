@@ -92,3 +92,14 @@ LOCAL_STATIC=E1 (tsc, node --check, packet structure, diff whitespace); see rela
 GREEN=PENDING implementation-head GitHub CI
 INDEPENDENT_REVIEW=NOT_RUN
 WAKE_OWNER=integrator completion relay after WAIT_RUN concludes
+
+RELAY3_IMPLEMENTATION_BASELINE=f239dbc50b89df1a0c2c622a18f269bfc0d51552
+RELAY3_RUN=41065293413
+RELAY3_JOB=124113569764 (bundle:04, failure)
+RELAY3_TESTED_MERGE_SHA=b42b92a81ccee6ca56f3c586dd1a3123356f1914
+RELAY3_FAILURE=Bundle member 1 evidence; GitHub upload-artifact rejects colon in parity/1151:9420.png
+RELAY3_GATE_STEP=success; all six bundle members success; job failure is evidence upload
+RELAY3_ASSERTION_RED=not a new assertion RED; preserve tests-only RED 41054278594 / 124066658713
+RELAY3_FIX_ATTEMPT=1/2 for artifact filename blocker
+RELAY3_FIX=all owned parity emitters use hyphen filenames and exact Figma ids in mapping; prior raw-operation-copy P1 corrected in same batch
+RELAY3_GREEN=PENDING next-head CI; no evidence-only push after GREEN

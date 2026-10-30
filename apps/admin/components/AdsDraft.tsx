@@ -170,6 +170,7 @@ export function DraftDetail({
   onCopy: () => void;
   act: (d: Draft, a: "approve" | "publish" | "pause" | "end") => void;
 }) {
+  const g = growthCopy[locale];
   const link = d.ads_manager_url ? adsManagerHref(d.ads_manager_url) : null;
   const working = busy !== "";
   const remote: [string, string | null][] = [
@@ -383,7 +384,7 @@ export function DraftDetail({
               {d.ops.map((o) => (
                 <tr key={`${o.kind}:${o.attempt}:${o.seq}`}>
                   <td data-label={c.opKind}>
-                    <span className="ads-mono">{o.kind}</span>
+                    <span data-op-kind={o.kind}>{Object.hasOwn(g.opKinds, o.kind) ? g.opKinds[o.kind as keyof typeof g.opKinds] : g.opFallback}</span>
                     {o.seq > 1 ? ` #${o.seq}` : ""}
                   </td>
                   <td className="ads-number" data-label={c.opAttempt}>
@@ -392,7 +393,7 @@ export function DraftDetail({
                   <td data-label={c.opState}>
                     {c.opStates[o.state]}
                     {o.code ? (
-                      <small className="ads-mono"> {o.code}</small>
+                      <small data-op-code={o.code}> {o.code.startsWith("graph_") ? g.metaRefusal : errorText(c, o.code)}</small>
                     ) : null}
                     {o.error_user_msg && (
                       <p
