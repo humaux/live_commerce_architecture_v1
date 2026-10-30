@@ -76,7 +76,7 @@ const codeOf = (mail: Mail) => {
 };
 
 const emailInput = (page: Page) => page.locator('input[type="email"]');
-const passwordInput = (page: Page) => page.locator('input[type="password"]');
+const passwordInput = (page: Page) => page.locator('input[name="password"]');
 const codeInput = (page: Page) => page.locator('input[autocomplete="one-time-code"]');
 const submitButton = (page: Page) => page.locator('form button[type="submit"]');
 
@@ -143,6 +143,7 @@ async function signUp(page: Page, locale: string, email: string, password: strin
   await expect(page.locator('form[data-hydrated="true"]'), "sign-up form hydrated before typing").toBeVisible();
   await emailInput(page).fill(email);
   await passwordInput(page).fill(password);
+  await page.locator('input[name="confirm_password"]').fill(password);
   await expect(emailInput(page)).toHaveValue(email);
   await expect(passwordInput(page)).toHaveValue(password);
   await submitButton(page).click();

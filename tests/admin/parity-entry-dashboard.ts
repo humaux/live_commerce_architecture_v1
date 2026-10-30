@@ -22,6 +22,16 @@ export async function dashboardParity(page: Page, evidence: string) {
       home: { sections: [] }, pages: [],
     },
   };
+  const dashboardURL = "**/api/stores/*/tools/dashboard";
+  // FIXTURE only: an existing closed dashboard response, including a historical offline order; never a real order write.
+  const order = { order_id: "33333333-3333-4333-8333-333333333333", created_at: "2026-10-30T01:00:00Z", updated_at: "2026-10-30T01:00:00Z",
+    currency: "TWD", total_minor: 2500, commercial_state: "AWAITING_TRANSFER", fulfillment_state: "MANUAL_UNASSIGNED", payment_state: "NOT_STARTED",
+    test_mode: false, work_state: "NONE", refunded_minor: 0, refund_pending_minor: 0, pickup_source: null, payment_mode: "bank_transfer",
+    collection_state: null, cod_surcharge_minor: null, cod_collect_minor: null, source: "merchant_manual" };
+  await page.route(dashboardURL, route => route.fulfill({ json: { generated_at: "2026-10-30T02:00:00Z", timezone: "Asia/Taipei",
+    orders: { today: 2, last_7_days: 5 }, gmv: [],
+    todos: { awaiting_transfer_confirmation: 1, to_ship: 2, cvs_awaiting_label: 1, low_stock_skus: 0, open_refunds: 0 }, latest_orders: [order],
+  } }));
   const designURL = "**/api/stores/*/design/draft";
   await page.route(designURL, async route => {
     if (route.request().method() === "PUT") {
@@ -81,6 +91,14 @@ export async function dashboardParity(page: Page, evidence: string) {
   const receipt = (frame: string, control: string, result: string) => appendFileSync(join(evidence, "parity-clicks.jsonl"), JSON.stringify({ frame, route: page.url(), control, operation: "click", expected: result, actual: "assertion passed", environment: "MOCK" }) + "\n");
   const screenshot = async (id: string) => {
     await page.screenshot({ path: join(evidence, "parity", `${id}.png`) });
+    // READ/MEASURE only: capture current viewport text density without changing DOM.
+    const density = await page.getByTestId("dashboard-page").evaluate(element => {
+      const blocks = [...element.querySelectorAll("h1, h2, h3, p, dt, dd, label, button, a")]
+        .filter(node => { const r = node.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.top < innerHeight && r.bottom > 0; })
+        .map(node => node.textContent?.trim() ?? "").filter(Boolean);
+      return { blocks: blocks.length, characters: blocks.reduce((n, text) => n + text.length, 0) };
+    });
+    appendFileSync(join(evidence, "parity-density.jsonl"), JSON.stringify({ frame: id, ...density }) + "\n");
     // READ/MEASURE only: layout measurement, never a DOM write.
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
   };
@@ -90,12 +108,15 @@ export async function dashboardParity(page: Page, evidence: string) {
     await page.goto(location());
     const content = page.getByTestId("dashboard-page");
     await expect(content.getByRole("heading", { name: "工作台", exact: true })).toBeVisible();
+    await expect(content.getByRole("heading", { name: "總覽", exact: true })).toHaveCount(0);
     await expect(content.getByText("今日訂單", { exact: true })).toBeVisible();
     await expect(content.getByRole("heading", { name: "最近訂單", exact: true })).toBeVisible();
     await expect(content.getByRole("heading", { name: "待辦", exact: true })).toBeVisible();
     await expect(content.getByRole("heading", { name: "各付款方式的銷售額", exact: true })).toHaveCount(0);
     await expect(content.getByRole("link", { name: "匯入或匯出商品", exact: true })).toHaveCount(0);
     await expect(content.getByText("近 7 天", { exact: true })).toHaveCount(0);
+    await expect(content.getByTestId("orders-today")).toHaveText("2");
+    await expect(content.getByRole("link", { name: "33333333", exact: true })).toBeVisible();
     await screenshot(id);
     await content.getByRole("link", { name: /全部訂單|^全部$/ }).click();
     await expect(page).toHaveURL(/\/zh-TW\/orders(?:\?|$)/);
@@ -156,13 +177,23 @@ export async function dashboardParity(page: Page, evidence: string) {
     await expect(page.getByRole("heading", { name: "選擇要開放的配送方式", exact: true })).toBeVisible();
     await expect(page.getByRole("checkbox", { name: /宅配/ })).toBeVisible();
     await expect(page.getByRole("checkbox", { name: /超商取貨/ })).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: /宅配/ })).toBeEnabled();
+    await expect(page.getByRole("checkbox", { name: /超商取貨/ })).toBeEnabled();
     await screenshot(delivery);
     const home = page.getByRole("checkbox", { name: /宅配/ });
     const selected = await home.isChecked();
     await home.click();
     await expect(home).toBeChecked({ checked: !selected });
-    await home.click();
-    await expect(home).toBeChecked({ checked: selected });
+    await page.getByRole("button", { name: "下一步：上架第一個商品", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "上架第一個商品", exact: true })).toBeVisible();
+    await page.goto(location("delivery"));
+    await expect(page.getByRole("checkbox", { name: /宅配/ })).toBeEnabled();
+    await expect(page.getByRole("checkbox", { name: /宅配/ })).toBeChecked({ checked: !selected });
+    await page.reload();
+    await expect(page.getByRole("checkbox", { name: /宅配/ })).toBeEnabled();
+    await expect(page.getByRole("checkbox", { name: /宅配/ })).toBeChecked({ checked: !selected });
+    await page.getByRole("checkbox", { name: /宅配/ }).click();
+    await expect(page.getByRole("checkbox", { name: /宅配/ })).toBeChecked({ checked: selected });
     await page.getByRole("button", { name: "下一步：上架第一個商品", exact: true }).click();
     await expect(page.getByRole("heading", { name: "上架第一個商品", exact: true })).toBeVisible();
     await screenshot(mobile ? "1222:25446" : "1222:25444");
@@ -187,5 +218,5 @@ export async function dashboardParity(page: Page, evidence: string) {
   }
   await page.goto(location());
   // Only our fixture interceptions are removed; the caller retains its session and other routes.
-  for (const route of [designURL, marketsURL, servicesURL, healthURL, recheckURL]) await page.unroute(route);
+  for (const route of [dashboardURL, designURL, marketsURL, servicesURL, healthURL, recheckURL]) await page.unroute(route);
 }

@@ -1,149 +1,77 @@
-// Purpose: Renders the merchant operational summary and attention links.
-// Depends on: next/link, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/merchant-tools-client, @/lib/merchant-tools-copy, @/lib/orders-model, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./customers.css, ./merchant-tools.css
-// Used by: apps/admin/app/[locale]/page.tsx
+// Purpose: Signed U:dashboard content on the authenticated merchant root; task states use existing APIs.
+// Depends on: WorkspaceFrame, guarded dashboard/finance reads, dashboard tasks, server-response formatting and locale copy.
+// Used by: apps/admin/app/[locale]/page.tsx.
+// Invariants: the shell belongs to PARITY-SHELL; no fabricated counters, client money arithmetic or provider live status.
 "use client";
-
-// Admin landing (/{locale}): what needs the merchant today. One guarded read of BFF GET /api/stores/{store}/tools/dashboard -> Go
-// GET /v1/admin/stores/{id}/dashboard (internal/httpapi/merchanttools.go -> internal/merchanttools.Dashboard; contract storefront-v2 G1).
-// Shows placed-order counts, GMV by payment method (the finance definer's numbers, never recomputed here, one block per currency and
-// environment), the five to-do counters as links into the Orders / Inventory pages, the ten latest orders, and the quick actions
-// (create order, import/export products). Read-only: it writes nothing and never decides a rule; the session fence is useGuardedRead.
 import Link from "next/link";
-import type { Locale } from "@live-commerce/i18n";
+import { instantToTaipei } from "@live-commerce/format";
+import { entryParityCopy, type Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
-import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
+import { readFinance, useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { readDashboard } from "@/lib/merchant-tools-client";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { displayTime } from "@/lib/orders-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
-import { Badge, TableFrame } from "@live-commerce/ui";
-import { presentationCopy } from "@/lib/presentation-copy";
-import "./orders.css";
-import "./customers.css";
-import "./merchant-tools.css";
-
+import { DashboardTasks, type DashboardView } from "./dashboard/DashboardTasks";
+import "./dashboard/dashboard.css";
 const storeQuery = (store: Store | null, extra: Record<string, string> = {}) => {
   const params = new URLSearchParams(extra);
   if (store) params.set("store", store.id);
   return params.size ? `?${params}` : "";
 };
-
-/** Renders the merchant operational summary and attention links. Loads dashboard results through merchant-tools-client. */
-export function Dashboard({
-  locale, stores, store, initialError, renderKey,
-}: {
-  locale: Locale; stores: Store[]; store: Store | null; initialError: ReadCode | null; renderKey: string;
+/** Render real order facts. Missing signed aggregates are visibly unavailable, never inferred from latest-ten orders. */
+export function Dashboard({ locale, stores: _stores, store, initialError, renderKey, view = "overview" }: {
+  locale: Locale; stores: Store[]; store: Store | null; initialError: ReadCode | null; renderKey: string; view?: DashboardView;
 }) {
-  const c = toolsCopy[locale].dashboard;
-  const read = useGuardedRead(`${renderKey}|${locale}|${store?.id ?? ""}`, store ? (signal) => readDashboard(store.id, signal) : null, initialError);
-  const failure =
-    read.status === "signed-out" ? c.signedOut
-    : read.status === "forbidden" ? c.forbidden
-    : read.status === "not-found" ? (store ? c.notFound : c.noStore)
-    : read.status === "unavailable" ? c.unavailable
-    : "";
+  const c = entryParityCopy[locale].dashboard, old = toolsCopy[locale].dashboard;
+  const scope = `${renderKey}|${locale}|${store?.id ?? ""}|${view}`;
+  const read = useGuardedRead(scope, store ? signal => readDashboard(store.id, signal) : null, initialError);
   const d = read.data;
+  // Read the finance day from the dashboard's server timestamp; never use the browser timezone for this contract.
+  const day = d ? instantToTaipei(d.generated_at).slice(0, 10) : "";
+  const finance = useGuardedRead(`${scope}|${day}`, store && day && view === "overview" ? signal => readFinance(store.id, day, day, signal) : null, initialError);
+  const failure = read.status === "signed-out" ? old.signedOut : read.status === "forbidden" ? old.forbidden : read.status === "not-found" ? (store ? old.notFound : old.noStore) : read.status === "unavailable" ? old.unavailable : "";
   const link = (path: string, extra?: Record<string, string>) => `/${locale}/${path}${storeQuery(store, extra)}`;
-  const todos = d
-    ? ([
-        [c.transfer, d.todos.awaiting_transfer_confirmation, link("orders", { state: "AWAITING_TRANSFER" }), "todo-transfer"],
-        [c.ship, d.todos.to_ship, link("orders", { state: "unshipped" }), "todo-ship"],
-        [c.label, d.todos.cvs_awaiting_label, link("orders", { state: "unshipped" }), "todo-label"],
-        [c.lowStock, d.todos.low_stock_skus, link("inventory"), "todo-stock"],
-        [c.refunds, d.todos.open_refunds, link("orders"), "todo-refunds"],
-      ] as const)
-    : [];
-  return (
-    <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="dashboard">
-      <div className="orders-page customers-page dashboard-page" data-testid="dashboard-page">
-        <AdminPageHeader locale={locale} description={c.subtitle} actions={<div className="mt-actions" data-testid="dashboard-actions" aria-label={c.actionsTitle}>
-          <Link className="primary" href={link("orders/new")} data-testid="action-create-order">{c.createOrder}</Link>
-          <Link href={link("products/import")} data-testid="action-import">{c.importProducts}</Link>
-          <Link href={link("inventory")} data-testid="action-inventory">{c.inventory}</Link>
-        </div>} />
-        {(read.status === "loading" || read.status === "hidden") && <p className="orders-message" role="status">{c.loading}</p>}
-        {failure && (
-          <div className="orders-message" role="status">
-            <p>{failure}</p>
-            <button type="button" onClick={read.reload}>{c.retry}</button>
+  const todos = d ? [[c.ship, d.todos.to_ship, "orders", { state: "unshipped" }, "todo-ship"],
+    [old.transfer, d.todos.awaiting_transfer_confirmation, "orders", { state: "AWAITING_TRANSFER" }, "todo-transfer"],
+    [old.label, d.todos.cvs_awaiting_label, "orders", { state: "unshipped" }, "todo-label"],
+    [old.lowStock, d.todos.low_stock_skus, "inventory", {}, "todo-stock"],
+    [old.refunds, d.todos.open_refunds, "orders", {}, "todo-refunds"]] as const : [];
+  return <WorkspaceFrame locale={locale} storeName={store?.name ?? old.noStore} active="dashboard">
+    <div className={`entry-dashboard${view !== "overview" ? " entry-dashboard-task" : ""}`} data-testid="dashboard-page">
+      {view !== "overview" && store ? <DashboardTasks key={scope} locale={locale} store={store.id} currency={store.currency} view={view} scope={scope} link={link} /> : <>
+        <header className="entry-dashboard-heading"><div><h1>{c.title}</h1>{d && <p>{day} · {c.ship} {d.todos.to_ship}</p>}</div>
+          <div className="entry-dashboard-actions" data-testid="dashboard-actions"><Link href={link("products/new")}>{c.createProduct}</Link><Link className="entry-task-primary" href={link("studio")}>{c.startLive}</Link></div>
+        </header>
+        {(read.status === "loading" || read.status === "hidden") && <p role="status">{c.loading}</p>}
+        {failure && <div role="status"><p>{failure}</p><button onClick={read.reload}>{old.retry}</button></div>}
+        {read.status === "ready" && d && <>
+          <dl className="entry-dashboard-metrics">
+            <div><dt>{c.today}</dt><dd data-testid="orders-today">{d.orders.today}</dd></div>
+            <div><dt>{c.ship}</dt><dd>{d.todos.to_ship}</dd></div>
+            <div><dt>{c.net}</dt><dd>{finance.status === "ready" && finance.data?.totals.length ? finance.data.totals.map(row => <span key={`${row.currency}:${row.environment}`}>{money(locale, row.currency, row.net_minor)}{row.environment !== "LIVE" && <small>{old.sandbox}</small>}</span>) : c.unavailable}</dd></div>
+            <div><dt>{c.pending}</dt><dd className="entry-missing-value">{c.unavailable}</dd></div>
+          </dl>
+          <div className="entry-dashboard-grid">
+            <section className="entry-dashboard-todos entry-dashboard-surface" data-testid="dashboard-todos"><h2>{c.todos}</h2>
+              <ul>{todos.filter(([, n]) => n > 0).map(([label, count, path, query, id]) => <li key={id}><span>{label} {count}</span><Link data-testid={id} href={link(path, query)}>{c.process}</Link></li>)}</ul>
+              {todos.every(([, n]) => n === 0) && <p>{old.nothing}</p>}
+            </section>
+            <section className="entry-dashboard-latest entry-dashboard-surface" data-testid="dashboard-latest"><header><h2>{c.latest}</h2><Link href={link("orders")}>{c.allOrders}</Link></header>
+              {d.latest_orders.length ? <div className="entry-orders-scroll"><table><thead><tr><th>{c.order}</th><th>{c.amount}</th><th>{c.status}</th><th className="entry-desktop-only">{c.time}</th></tr></thead><tbody>{d.latest_orders.map(o => <tr key={o.order_id}>
+                <td><Link href={link("orders", { order: o.order_id })}>{o.order_id.slice(0, 8)}</Link></td><td>{money(locale, o.currency, o.total_minor)}</td><td>{old.states[o.commercial_state] ?? c.unavailable}</td><td className="entry-desktop-only">{displayTime(locale, o.created_at)}</td>
+              </tr>)}</tbody></table></div> : <p>{c.noOrders}</p>}
+              <p className="entry-task-muted entry-orders-note">{c.amountsNote}</p>
+            </section>
+            <section className="entry-dashboard-live entry-dashboard-surface"><h2>{c.liveStatus}</h2><p>{c.liveUnknown}</p><Link href={link("studio")}>{c.openConsole}</Link></section>
           </div>
-        )}
-        {read.status === "ready" && d && (
-          <>
-            <section className="mt-card" aria-label={c.todosTitle} data-testid="dashboard-todos">
-              <h2>{c.todosTitle}</h2>
-              <ul className="mt-todos">
-                {todos.map(([label, n, href, id]) => (
-                  <li key={id} className={n > 0 ? "mt-hot" : undefined}>
-                    <Link href={href} data-testid={id}>
-                      <span>{label}</span>
-                      <Badge tone={n > 0 ? "warning" : "neutral"}>{n}</Badge>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              {todos.every(([, n]) => n === 0) && <p className="mt-note">{c.nothing}</p>}
-            </section>
-            <div className="mt-grid">
-              <section className="mt-card" data-testid="dashboard-orders">
-                <h2>{c.ordersTitle}</h2>
-                <dl className="mt-pair">
-                  <div><dt>{c.today}</dt><dd data-testid="orders-today">{d.orders.today}</dd></div>
-                  <div><dt>{c.week}</dt><dd data-testid="orders-week">{d.orders.last_7_days}</dd></div>
-                </dl>
-                <p className="mt-note">{c.ordersNote}</p>
-              </section>
-              <section className="mt-card" data-testid="dashboard-gmv">
-                <h2>{c.gmvTitle}</h2>
-                {d.gmv.length === 0 && <p className="mt-note">{c.noSales}</p>}
-                {d.gmv.map((g) => (
-                  <TableFrame key={`${g.currency}|${g.environment}`} label={c.gmvTitle} scrollHint={presentationCopy[locale].scroll}>
-                    <table className="mt-table">
-                      <caption className="mt-note" style={{ textAlign: "left", padding: "8px 14px 0" }}>
-                        {g.currency} · {g.environment === "LIVE" ? c.live : c.sandbox}
-                      </caption>
-                      <thead><tr><th scope="col" /><th scope="col" className="num">{c.today}</th><th scope="col" className="num">{c.week}</th></tr></thead>
-                      <tbody>
-                        {([["card", c.card, "card_minor"], ["bank", c.bank, "bank_transfer_minor"], ["pickup", c.pickup, "pay_at_pickup_minor"], ["cod", c.cod, "cod_minor"]] as const).map(([id, label, key]) => (
-                          <tr key={id}>
-                            <th scope="row">{label}</th>
-                            <td className="num">{money(locale, g.currency, g.today[key])}</td>
-                            <td className="num">{money(locale, g.currency, g.last_7_days[key])}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </TableFrame>
-                ))}
-              </section>
-            </div>
-            <section className="mt-card" data-testid="dashboard-latest">
-              <h2>{c.latestTitle}</h2>
-              {d.latest_orders.length === 0 ? <p className="mt-note">{c.noOrders}</p> : (
-                <TableFrame label={c.latestTitle} scrollHint={presentationCopy[locale].scroll}>
-                  <table className="mt-table">
-                    <thead><tr><th scope="col">{c.order}</th><th scope="col">{c.created}</th><th scope="col">{c.status}</th><th scope="col">{c.mode}</th><th scope="col" className="num">{c.total}</th></tr></thead>
-                    <tbody>
-                      {d.latest_orders.map((o) => (
-                        <tr key={o.order_id}>
-                          <td><Link href={link("orders", { order: o.order_id })}>{o.order_id.slice(0, 8)}</Link></td>
-                          <td>{displayTime(locale, o.created_at)}</td>
-                          <td>{c.states[o.commercial_state] ?? o.commercial_state}</td>
-                          <td>{c.modes[o.payment_mode] ?? o.payment_mode}</td>
-                          <td className="num">{money(locale, o.currency, o.total_minor)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </TableFrame>
-              )}
-              <p className="mt-note"><Link href={link("orders")}>{c.allOrders}</Link></p>
-            </section>
-          </>
-        )}
-      </div>
-    </WorkspaceFrame>
-  );
+        </>}
+        <nav className="entry-dashboard-task-links" aria-label={c.help}>
+          <Link href={link("", { view: "help" })}>{c.help}</Link><Link href={link("", { view: "attention" })}>{c.attention}</Link>
+          <Link href={link("", { view: "navigation" })}>{c.navigation}</Link><Link href={link("", { view: "delivery" })}>{c.quickstart}</Link><Link href={link("", { view: "capabilities" })}>{c.capabilities}</Link>
+        </nav>
+      </>}
+    </div>
+  </WorkspaceFrame>;
 }

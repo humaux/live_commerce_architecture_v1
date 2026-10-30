@@ -1,6 +1,7 @@
 // Purpose: Owns password sign-in, signup, reset and code-verification views.
-// Depends on: react, @live-commerce/i18n, @/lib/entry-copy, @/lib/invite-next, @/lib/entry-state
+// Depends on: react, @live-commerce/i18n, @/lib/company, @/lib/entry-copy, @/lib/invite-next, @/lib/entry-state
 // Used by: apps/admin/components/Entry.tsx
+// Invariants: password/code stay ephemeral; server owns auth policy; confirmation never leaves the browser.
 "use client";
 // Email + password + emailed-code forms for the admin host (merchant-password-auth-v1 §7.3).
 // Mounted by Entry.tsx at /[locale]/ (signin), /[locale]/signup and /[locale]/reset.
@@ -15,7 +16,8 @@
 // never reaches state and the first re-render (the #next effect) resets the controlled inputs to "". The form
 // carries data-hydrated once interactive; tests wait on it.
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { entryParityCopy, type Locale } from "@live-commerce/i18n";
+import { company } from "@/lib/company";
 import { entryCopy, passwordCopy } from "@/lib/entry-copy";
 import { inviteNextFromHash, inviteNextHash } from "@/lib/invite-next";
 import {
@@ -82,11 +84,16 @@ export function PasswordAuth({
   oidc: boolean;
   notice: string;
 }) {
-  const c = passwordCopy[locale];
+  const a = entryParityCopy[locale].auth;
+  const legacy = passwordCopy[locale];
+  const c = { ...legacy, ...a, errors: { ...legacy.errors,
+    invalid_code: a.invalidCode, challenge_lost: a.challengeLost, mail_unavailable_login: a.mailLogin,
+  } };
   const entry = entryCopy[locale];
-  const [step, setStep] = useState<"form" | "code">("form");
+  const [step, setStep] = useState<"form" | "sent" | "code">("form");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -107,8 +114,8 @@ export function PasswordAuth({
   const secondsLeft = Math.max(0, Math.ceil((resendAt - now) / 1000));
 
   useEffect(() => {
-    if (step !== "code") return;
-    codeInput.current?.focus();
+    if (step === "form") return;
+    if (step === "code") codeInput.current?.focus();
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [step]);
@@ -171,7 +178,7 @@ export function PasswordAuth({
     const sent = Date.now();
     setNow(sent);
     setResendAt(sent + RESEND_COOLDOWN_SECONDS * 1000);
-    setStep("code");
+    setStep(mode === "reset" && !resend ? "sent" : step === "sent" ? "sent" : "code");
     if (resend) codeInput.current?.focus();
   }
 
@@ -211,6 +218,10 @@ export function PasswordAuth({
 
   function onForm(event: FormEvent) {
     event.preventDefault();
+    if (mode === "signup" && password !== confirmation) {
+      setError(a.mismatch);
+      return;
+    }
     void sendStep1(false);
   }
 
@@ -244,11 +255,9 @@ export function PasswordAuth({
 
   return (
     <section className="entry-auth-panel" aria-labelledby="password-auth-title">
-      <h1 id="password-auth-title">{step === "code" ? c.codeTitle : title}</h1>
-      {step === "form" ? (
-        <p>{body}</p>
-      ) : (
-        <p>{fillCopy(c.codeSent, { email: maskEmail(email.trim()) })}</p>
+      <h1 id="password-auth-title">{step === "sent" ? a.sentTitle : step === "code" ? mode === "reset" ? a.resetCodeTitle : c.codeTitle : title}</h1>
+      {step === "form" ? mode !== "signup" && <p>{body}</p> : (step === "sent" || mode !== "reset") && (
+        <p>{fillCopy(c.codeSent, { email: maskEmail(email.trim()) })} {c.codeExpiry} {c.spamHint}</p>
       )}
       {notice && step === "form" && (
         <p className="entry-message error" role="alert">
@@ -291,20 +300,33 @@ export function PasswordAuth({
                 autoComplete={
                   mode === "signin" ? "current-password" : "new-password"
                 }
+                placeholder={mode === "signup" ? a.passwordPlaceholder : undefined}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 disabled={busy || !mounted}
                 required
               />
-              {mode === "signup" && <small>{c.policyHint}</small>}
+
             </label>
           )}
+          {mode === "signup" && <>
+            <label><span>{a.confirm}</span><input name="confirm_password" type="password" autoComplete="new-password"
+              placeholder={a.confirmPlaceholder} value={confirmation} onChange={event => setConfirmation(event.target.value)} disabled={busy || !mounted} required /></label>
+            <small>{a.signupHint}</small>
+          </>}
           <div className="entry-actions end">
             <button className="entry-primary" type="submit" disabled={busy || !mounted}>
               {busy ? c.busy : submit}
             </button>
           </div>
         </form>
+      ) : step === "sent" ? (
+        <div className="entry-sent-actions">
+          <button type="button" className="entry-primary" onClick={() => setStep("code")}>{a.enterCode}</button>
+          <button type="button" disabled={busy || secondsLeft > 0} onClick={() => void sendStep1(true)}>{secondsLeft > 0 ? fillCopy(c.resendIn, { seconds: secondsLeft }) : c.resend}</button>
+          <button type="button" disabled={busy} onClick={() => { setStep("form"); setError(""); }}>{c.changeEmail}</button>
+          <a href={`/${locale}/`}>{c.toSignin}</a>
+        </div>
       ) : (
         <form className="entry-form" method="post" style={left} onSubmit={onCode}>
           <label>
@@ -324,9 +346,7 @@ export function PasswordAuth({
               disabled={busy}
               required
             />
-            <small>
-              {c.codeExpiry} {c.spamHint}
-            </small>
+
           </label>
           {mode === "reset" && (
             <label>
@@ -343,23 +363,11 @@ export function PasswordAuth({
               <small>{c.policyHint}</small>
             </label>
           )}
-          <div className="entry-actions">
-            <button
-              type="button"
-              onClick={() => void sendStep1(true)}
-              disabled={busy || secondsLeft > 0}
-            >
-              {secondsLeft > 0
-                ? fillCopy(c.resendIn, { seconds: secondsLeft })
-                : c.resend}
+          <div className={`entry-actions entry-code-actions${mode === "reset" ? " entry-reset-code" : ""}`}>
+            <button type="button" onClick={() => void sendStep1(true)} disabled={busy || secondsLeft > 0}>
+              {secondsLeft > 0 ? fillCopy(c.resendIn, { seconds: secondsLeft }) : c.resend}
             </button>
-            <button
-              className="entry-primary"
-              type="submit"
-              disabled={busy || code.length !== 6}
-            >
-              {busy ? c.busy : verify}
-            </button>
+            <button className="entry-primary" type="submit" disabled={busy || code.length !== 6}>{busy ? c.busy : verify}</button>
           </div>
           <button
             type="button"
@@ -410,6 +418,7 @@ export function PasswordAuth({
           </button>
         </form>
       )}
+      <p className="entry-parity-operator" data-testid="operator-footer">{fillCopy(a.operator, { product: company.productName, operator: company.legalEnglish })}</p>
     </section>
   );
 }

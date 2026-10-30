@@ -1,0 +1,15 @@
+card: PARITY-ENTRY
+pr: 369
+base: 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+red_head: 21598d28905ebb1e8790372679bdaf56688a81ca
+RED: CONFIRMED E3 (CI MOCK browser against Next + Go + REAL_PG fixture)
+Gates run: 41054860463
+Failed job: 124068683339 (gate bundle:08)
+Artifact: gate-browser-password-auth (12979441000)
+Assertion: tests/admin/password-auth.spec.ts:233 expect(getByRole('heading', { name: '工作台', level: 1 })).toBeVisible()
+Result: element(s) not found; timeout 10000ms. Browser reached the authenticated root after genuine signup/onboarding clicks.
+Raw receipt: relay1-browser/playwright/run.CfWljm39/password-auth-20261030T131005.062833840/playwright.log:18-39
+Compilation: build job 124067085543 passed. Foundation run 41054860351 / job 124059688320 passed at this head.
+Coverage limit: old Go launcher CLI filters password-auth.spec.ts; new parity-entry.spec.ts was not selected. Implementation commit must add it to the existing launcher (registration only); new assertions remain unchanged.
+GREEN: NOT_RUN
+No local tests/servers executed.

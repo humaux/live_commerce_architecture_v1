@@ -112,6 +112,14 @@ for (const view of views) for (const frame of frames) {
     await expect(page.locator("main")).not.toContainText("原型：");
     await geometry(page, view.index === 1);
     await page.screenshot({ path: join(evidence!, "parity", `${id}.png`) });
+    // READ/MEASURE only: no DOM mutation; visible text density belongs to this captured frame.
+    const density = await panel(page).evaluate(element => {
+      const blocks = [...element.querySelectorAll("h1, p, label > span, small, button, a")]
+        .filter(node => { const r = node.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.top < innerHeight && r.bottom > 0; })
+        .map(node => node.textContent?.trim() ?? "").filter(Boolean);
+      return { blocks: blocks.length, characters: blocks.reduce((n, text) => n + text.length, 0) };
+    });
+    appendFileSync(join(evidence!, "parity-density.jsonl"), JSON.stringify({ frame: id, viewport: view, ...density }) + "\n");
     if (frame.state === "code" && !frame.error) {
       const start = page.getByRole("button", { name: "重新開始", exact: true });
       await start.click();
