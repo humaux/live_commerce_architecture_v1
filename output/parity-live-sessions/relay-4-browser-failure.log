@@ -1,0 +1,171 @@
+
+Running 9 tests using 1 worker
+
+  ✘  1 tests/admin/studio-ui.spec.ts:153:1 › STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker (16.9s)
+  ✘  2 tests/admin/studio-ui.spec.ts:428:1 › STU05 the Studio route without a scene settles: live-sessions reads stay bounded across reloads and the first scene opens (11.4s)
+  ✓  3 tests/admin/studio-ui.spec.ts:448:1 › STU04 exact draft timestamp parser accepts offsets without admitting malformed dates (14ms)
+  ✘  4 tests/admin/studio-ui.spec.ts:461:1 › STU04 read-only and expired sessions cannot mutate (10.8s)
+  ✓  5 tests/admin/studio-ui.spec.ts:493:1 › STU04 native visibility conceal and revalidation remains required (2.2s)
+  ✓  6 tests/admin/studio-ui.spec.ts:512:1 › STU04 native conceal retains an uncertain committed request (2.7s)
+  ✓  7 tests/admin/studio-ui.spec.ts:531:57 › C4 session cards and creation zh-TW (2.7s)
+  ✓  8 tests/admin/studio-ui.spec.ts:531:57 › C4 session cards and creation zh-CN (2.6s)
+  ✘  9 tests/admin/studio-ui.spec.ts:531:57 › C4 session cards and creation en (1.4s)
+
+
+  1) tests/admin/studio-ui.spec.ts:153:1 › STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '直播场次', exact: true, level: 1 })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: '直播场次', exact: true, level: 1 }) with timeout 10000ms
+      - waiting for getByRole('heading', { name: '直播场次', exact: true, level: 1 })
+
+
+      275 |   await page.getByTestId("locale-switch").selectOption("zh-CN");
+      276 |   await expect(page).toHaveURL(/\/zh-CN\/studio/);
+    > 277 |   await expect(page.getByRole("heading", { level: 1, name: "直播场次", exact: true })).toBeVisible();
+          |                                                                                    ^
+      278 |   await page.goto(`/zh-CN/studio?store=${store}&scene=${preparedSession}#edit`);
+      279 |   await expect(page.getByText("已准备模拟授权")).toBeVisible();
+      280 |   await screenshot(page, "zh-CN-desktop-first-1586x992", 1586, 992);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/studio-ui.spec.ts:277:84
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU04-signed-Stu-46f44-Go-PG-and-local-MOCK-worker/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU04-signed-Stu-46f44-Go-PG-and-local-MOCK-worker/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU04-signed-Stu-46f44-Go-PG-and-local-MOCK-worker/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU04-signed-Stu-46f44-Go-PG-and-local-MOCK-worker/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/admin/studio-ui.spec.ts:428:1 › STU05 the Studio route without a scene settles: live-sessions reads stay bounded across reloads and the first scene opens
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByLabel('Scene name')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByLabel('Scene name') with timeout 10000ms
+      - waiting for getByLabel('Scene name')
+
+
+      439 |     await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
+      440 |     await page.locator(".studio-scene-list .studio-scene").first().click();
+    > 441 |     await expect(page.getByLabel("Scene name")).toBeVisible(); // signed cards open the same first scene through a real click
+          |                                                 ^
+      442 |     // G-UI8 settle window: a looping page keeps issuing reads here; a settled one issues none (the scene list read plus a handful of detail reads at most).
+      443 |     await page.waitForTimeout(2500);
+      444 |     expect(reads.length, `round ${round}: live-sessions GETs while the bare Studio route settled`).toBeLessThanOrEqual(6);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/studio-ui.spec.ts:441:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU05-the-Studio-3c3dd-s-and-the-first-scene-opens/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU05-the-Studio-3c3dd-s-and-the-first-scene-opens/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU05-the-Studio-3c3dd-s-and-the-first-scene-opens/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU05-the-Studio-3c3dd-s-and-the-first-scene-opens/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/admin/studio-ui.spec.ts:461:1 › STU04 read-only and expired sessions cannot mutate ──────
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByRole('button', { name: 'Check local connection' })
+    Expected: 0
+    Received: 1
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" getByRole('button', { name: 'Check local connection' }) with timeout 10000ms
+      - waiting for getByRole('button', { name: 'Check local connection' })
+        24 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      468 |   // The shared prepared scene is READY after the real-chain Start, so Start is
+      469 |   // absent; the remaining Stop control must still deny a read-only principal.
+    > 470 |   await expect(page.getByRole("button", { name: "Check local connection" })).toHaveCount(0);
+          |                                                                              ^
+      471 |   await expect(page.getByRole("button", { name: "Request stop" })).toBeDisabled();
+      472 |   await expect(page.getByLabel("Scene name")).toBeDisabled();
+      473 |   await expect(page.getByLabel("Choose scheduled date and time (Taipei time)")).toBeDisabled();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/studio-ui.spec.ts:470:78
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU04-read-only-and-expired-sessions-cannot-mutate/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU04-read-only-and-expired-sessions-cannot-mutate/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU04-read-only-and-expired-sessions-cannot-mutate/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-STU04-read-only-and-expired-sessions-cannot-mutate/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/admin/studio-ui.spec.ts:531:57 › C4 session cards and creation en ───────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: 'Live', exact: true })
+    Expected: visible
+    Error: strict mode violation: getByRole('button', { name: 'Live', exact: true }) resolved to 2 elements:
+        1) <button type="button" data-active="true" aria-expanded="true" data-testid="nav-group-live" class="AppShell-module__lomeIa__navButton">…</button> aka getByTestId('nav-group-live')
+        2) <button type="button" aria-pressed="false">Live</button> aka getByTestId('merchant-studio').getByRole('button', { name: 'Live', exact: true })
+
+    Call log:
+      - Expect "toBeVisible" getByRole('button', { name: 'Live', exact: true }) with timeout 10000ms
+      - waiting for getByRole('button', { name: 'Live', exact: true })
+
+
+      538 |     await expect(page.getByRole("heading", { name: c.sessions, exact: true })).toBeVisible();
+      539 |     for (const name of [c.create, c.copyLast, c.all, c.preparing, c.live, c.ended])
+    > 540 |       await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+          |                                                                     ^
+      541 |     await expect(page.getByRole("heading", { name: /^(Scene settings|場次設定|场次设置)$/ })).toHaveCount(0);
+      542 |     await expect(page.getByRole("complementary", { name: /MOCK rehearsal|模擬演練|模拟演练/ })).toHaveCount(0);
+      543 |     await parityClick(page, c.preparing, () => expect(page.getByRole("button", { name: c.preparing, exact: true })).toHaveAttribute("aria-pressed", "true"));
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/studio-ui.spec.ts:540:69
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-C4-session-cards-and-creation-en/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-C4-session-cards-and-creation-en/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-C4-session-cards-and-creation-en/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/studio-ui-20261030T152146.982180967/results/studio-ui-C4-session-cards-and-creation-en/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    tests/admin/studio-ui.spec.ts:153:1 › STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
+    tests/admin/studio-ui.spec.ts:428:1 › STU05 the Studio route without a scene settles: live-sessions reads stay bounded across reloads and the first scene opens
+    tests/admin/studio-ui.spec.ts:461:1 › STU04 read-only and expired sessions cannot mutate ───────
+    tests/admin/studio-ui.spec.ts:531:57 › C4 session cards and creation en ────────────────────────
+  5 passed (58.6s)

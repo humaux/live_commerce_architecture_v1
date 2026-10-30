@@ -1,0 +1,49 @@
+{
+  "extends": "../../apps/admin/tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/apps/admin/*"
+      ],
+      "@live-commerce/i18n": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/i18n/src/index.ts"
+      ],
+      "@live-commerce/ui": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/ui/src/AppShell.tsx"
+      ],
+      "@live-commerce/format": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/format/src/index.ts"
+      ],
+      "@live-commerce/markdown-lite": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/markdown-lite/src/index.ts"
+      ],
+      "react": [
+        "/Volumes/data/live_commerce_architecture_v1/apps/admin/node_modules/@types/react/index.d.ts"
+      ],
+      "react/*": [
+        "/Volumes/data/live_commerce_architecture_v1/apps/admin/node_modules/@types/react/*"
+      ],
+      "react-dom": [
+        "/Volumes/data/live_commerce_architecture_v1/apps/admin/node_modules/@types/react-dom/index.d.ts"
+      ],
+      "react-dom/*": [
+        "/Volumes/data/live_commerce_architecture_v1/apps/admin/node_modules/@types/react-dom/*"
+      ],
+      "@live-commerce/ui/ds": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/ui/src/ds/index.ts"
+      ]
+    },
+    "typeRoots": [
+      "/Volumes/data/live_commerce_architecture_v1/apps/admin/node_modules/@types"
+    ],
+    "incremental": false
+  },
+  "include": [
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/apps/admin/**/*.ts",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/apps/admin/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/apps/admin/node_modules"
+  ]
+}

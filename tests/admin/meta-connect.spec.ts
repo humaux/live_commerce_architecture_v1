@@ -1,3 +1,8 @@
+// Purpose: C4 real-route parity assertions extend the existing isolated protocol gate.
+// Depends on: signed MOCK identity, disposable PG, packaged Next/Go and the existing harness helpers.
+// Used by: the registered Meta connect browser gate.
+// Invariants: permissions, OAuth, tenant fencing and original protocol assertions remain intact.
+// Depends on: ./parity-live-sessions (C4 independent oracle) and the existing isolated browser harness.
 // meta-connect browser gate, Playwright half (contract meta-claims-intake-v1 "Merchant connect (R4)"; unit meta-connect "Done when").
 // BFF routes exercised through the UI: POST /api/meta/connect, GET /api/meta/callback (the Login for Business redirect URI),
 // GET|POST /api/stores/{store}/meta-connect/{status,states/*,pick,disconnect} -> Go /v1/admin/stores/{store_id}/meta-connect/*.
@@ -6,6 +11,7 @@
 // Labels: BROWSER; Meta is MOCK: https://www.facebook.com/... is answered by page.route with a 302 to the app's own callback and the
 // code exchange / permissions / Pages / subscribe happen in the API process against the fake Graph.
 // Locators use the card's data-testid vocabulary and its copy file (apps/admin/lib/meta-connect-copy.ts).
+import { parityWords, parityViewports, parityShot } from "./parity-live-sessions";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
@@ -100,6 +106,23 @@ async function answerDialog(page: Page) {
   });
 }
 
+// C4 keeps the original protocol/security assertions after real navigation through the signed tasks.
+async function officialStart(page: Page, control: string) {
+  await page.getByTestId(control).click();
+  await page.getByRole("button", { name: parityWords.en.official, exact: true }).click();
+  await page.getByRole("button", { name: parityWords.en.official, exact: true }).click();
+}
+async function connectionDetail(page: Page, locale: "en" | "zh-TW" | "zh-CN" = "en") {
+  await page.getByRole("button", { name: parityWords[locale].detail, exact: true }).first().click();
+  await expect(page.getByTestId("metaconnect-status")).toBeVisible();
+}
+async function confirmPage(page: Page) {
+  await page.getByRole("button", { name: parityWords.en.confirmConnect, exact: true }).click();
+  await expect(page.getByRole("heading", { name: parityWords.en.result, exact: true })).toBeVisible();
+  await page.getByRole("button", { name: parityWords.en.returnList, exact: true }).click();
+  await connectionDetail(page);
+}
+
 test.describe("meta-connect browser gate", () => {
 test.describe.configure({ mode: "serial" });
 
@@ -109,7 +132,7 @@ test("not connected: the card offers Connect; a forged return state is refused a
   await expect(page.getByTestId("metaconnect-none")).toHaveText(en.notConnected);
   await answerDialog(page);
   answer = { wrongState: true };
-  await page.getByTestId("metaconnect-connect").click();
+  await officialStart(page, "metaconnect-connect");
   await expect(page.getByTestId("metaconnect-error")).toHaveText(en.errors.state_mismatch, { timeout: 30_000 });
   await expect(page.getByTestId("metaconnect-none")).toBeVisible();
   expect(new URL(page.url()).search).not.toMatch(/meta_error|code=|state=/); // the return params are stripped once read
@@ -121,10 +144,10 @@ test("a missing permission is listed, the pick is disabled and nothing is connec
   await openSettings(page);
   await answerDialog(page);
   answer = { profile: "nomsg" };
-  await page.getByTestId("metaconnect-connect").click();
+  await officialStart(page, "metaconnect-connect");
   await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId(`metaconnect-pick-${pageC.id}`)).toBeChecked();
-  await expect(page.getByTestId("metaconnect-missing")).toContainText("pages_messaging");
+  await expect(page.getByTestId("metaconnect-missing")).toContainText(en.task_messaging);
   await expect(page.getByTestId("metaconnect-pick-submit")).toBeDisabled();
   await page.getByRole("button", { name: en.pickCancel }).click();
   await expect(page.getByTestId("metaconnect-none")).toBeVisible();
@@ -143,7 +166,7 @@ test("connect Page A with Instagram: dialog params, state cookie, 303 without co
   await openSettings(page);
   await answerDialog(page);
   answer = { profile: "full" };
-  await page.getByTestId("metaconnect-connect").click();
+  await officialStart(page, "metaconnect-connect");
   await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
 
   const d = dialog as unknown as URL;
@@ -186,6 +209,7 @@ test("connect Page A with Instagram: dialog params, state cookie, 303 without co
       picks.push({ key: r.request().headers()["idempotency-key"] ?? null, body: r.request().postData(), status: r.status() });
   });
   await page.getByTestId("metaconnect-pick-submit").click();
+  await confirmPage(page);
   await expect(page.getByTestId("metaconnect-status")).toBeVisible({ timeout: 30_000 });
   expect(picks.length).toBe(1);
   expect(picks[0].status).toBe(201);
@@ -197,7 +221,7 @@ test("connect Page A with Instagram: dialog params, state cookie, 303 without co
   await expect(page.getByTestId("metaconnect-page")).toContainText(pageA.id);
   await expect(page.getByTestId("metaconnect-ig")).toHaveText(`@${pageA.igUser}`);
   for (const permission of ["pages_messaging", "pages_manage_metadata", "pages_read_engagement", "pages_show_list", "instagram_manage_comments", "instagram_manage_messages"])
-    await expect(page.getByTestId("metaconnect-permissions")).toContainText(permission);
+    await expect(page.getByTestId(`metaconnect-permission-${permission}`)).toBeVisible(); // same six granted scopes, rendered as seller labels
   await expect(page.getByTestId("metaconnect-token")).toHaveText(en.tokenActive);
   await expect(page.getByTestId("metaconnect-token")).toHaveAttribute("data-state", "active");
   await expect(page.getByTestId("metaconnect-last-event")).toHaveText(en.never);
@@ -210,7 +234,8 @@ test("connect Page A with Instagram: dialog params, state cookie, 303 without co
     for (const viewport of [{ name: "desktop" as const, width: 1586, height: 992 }, { name: "mobile" as const, width: 390, height: 844 }]) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await openSettings(page, locale);
-      await expect(page.getByRole("heading", { name: copy.title, exact: true })).toBeVisible();
+      await connectionDetail(page, locale);
+      await expect(page.getByRole("heading", { name: parityWords[locale].detailTitle, exact: true })).toBeVisible();
       await expect(page.getByTestId("metaconnect-page")).toContainText(pageA.name);
       await shot(page, "metaconnect", locale, viewport.name);
     }
@@ -231,9 +256,10 @@ test("while connected the store keeps its Page: add and reauthorize are availabl
 test("disconnect asks for confirmation, destroys the connection and the claims-worker unsubscribes the Page at Meta", async ({ page }) => {
   await signedLogin(page);
   await openSettings(page);
+  await connectionDetail(page);
   await page.getByTestId("metaconnect-disconnect").click();
-  await expect(page.getByTestId("metaconnect-confirm")).toContainText(en.confirmDisconnect);
-  await page.getByRole("button", { name: en.cancel }).click();
+  await expect(page.getByTestId("metaconnect-confirm")).toContainText("This stops local comment intake for this Page.");
+  await page.getByRole("button", { name: parityWords.en.keep }).click();
   await expect(page.getByTestId("metaconnect-status")).toBeVisible(); // cancel changes nothing
   await page.getByTestId("metaconnect-disconnect").click();
   await page.getByTestId("metaconnect-confirm-yes").click();
@@ -251,11 +277,12 @@ test("reconnect with a Facebook-only Page: Instagram absent, card says none link
   await openSettings(page);
   await answerDialog(page);
   answer = { profile: "fbonly" };
-  await page.getByTestId("metaconnect-connect").click();
+  await officialStart(page, "metaconnect-connect");
   await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('[data-testid^="metaconnect-pick-"][type="radio"]')).toHaveCount(1);
   await expect(page.getByTestId("metaconnect-pick-ig")).toHaveCount(0);
   await page.getByTestId("metaconnect-pick-submit").click();
+  await confirmPage(page);
   await expect(page.getByTestId("metaconnect-status")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("metaconnect-page")).toContainText(pageB.name);
   await expect(page.getByTestId("metaconnect-ig")).toHaveText(en.noInstagram);
@@ -263,4 +290,23 @@ test("reconnect with a Facebook-only Page: Instagram absent, card says none link
   expect(facts.subscribed).toEqual({ A: false, B: true, C: false }); // A was unsubscribed by the disconnect job, B is the connected Page
   await noSecrets(page);
 });
+});
+
+// C4 runs after the original protocol/security sequence; Page B must remain connected at handoff.
+test.describe("C4 signed Meta frames",()=>{
+  test.describe.configure({mode:"serial"});
+  for(const locale of ["zh-TW","zh-CN","en"] as const) test(`C4 Meta connection list ${locale}`,async({page})=>{
+    const c=parityWords[locale];await signedLogin(page);
+    for(const viewport of parityViewports){
+      await page.setViewportSize(viewport);await openSettings(page,locale);
+      const card=page.getByTestId("metaconnect-card");
+      await expect(card.getByRole("heading",{name:c.meta,exact:true})).toBeVisible();
+      await expect(card.getByRole("button",{name:c.detail,exact:true})).toBeVisible();
+      await expect(card.getByRole("button",{name:c.add,exact:true})).toBeVisible();
+      // The old inline token/expiry dump is replaced by an explicit detail task.
+      await expect(card.getByText(/^(Token status|權杖狀態|令牌状态)$/)).toHaveCount(0);
+      await parityShot(page,evidence,locale,viewport.width===1440?"5:17908":"6:18045");
+    }
+  });
+
 });

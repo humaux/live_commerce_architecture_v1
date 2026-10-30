@@ -6,6 +6,7 @@ export const locales = ['zh-CN', 'zh-TW', 'en'] as const;
 export { stateRecoveryCopy } from './state-recovery.ts';
 export { cvsPickerCopy } from './cvs-picker.ts';
 export { editorCopy } from './editor.ts';
+export { liveSessionsCopy } from './live-sessions.ts';
 export type Locale = (typeof locales)[number];
 export { inboxMessages, type InboxMessages } from './inbox.ts';
 

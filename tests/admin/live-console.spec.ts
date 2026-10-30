@@ -1,7 +1,8 @@
 // Purpose: LC-U1 real-click workspace contract gate in three locales and two viewport sizes.
-// Depends on: @playwright/test, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.
+// Depends on: @playwright/test, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.; ./parity-live-sessions (C4 independent oracle)
 // Used by: browser_live_console_test.go and test-local.sh --browser-live-console.
 // Invariants: I01/I02/I06/I10/I11/I14/I18; Console upstream/receipts are explicitly MOCK, never SQL/provider acceptance.
+import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
 import { expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
 import { test } from "./inbox-private-evidence";
 import { writeFile } from "node:fs/promises";
@@ -649,3 +650,61 @@ for (const [index, locale] of locales.entries()) {
     } finally { await context.close(); }
   });
 }
+
+const parityScenes: string[] = JSON.parse(required("LC_BROWSER_CONSOLE_PARITY_SCENES"));
+// C4 uses this existing isolated session/stock/copy/lifecycle fixture. Console source remains owned by PARITY-LIVE.
+for (const viewport of parityViewports) test(`C4 preparation copy next-draft and post-live ${viewport.width}`, async ({page}) => {
+  const c=parityWords["zh-TW"], scene=scenes[0]!;
+  await page.setViewportSize(viewport); await login(page);
+  await page.goto(`${origin}/zh-TW/studio?store=${store}&scene=${scene}#preparation`);
+  await expect(page.getByRole("heading",{name:c.prepare,exact:true})).toBeVisible();
+  for(const title of [c.source,c.device,c.productsCheck]) await expect(page.getByText(title,{exact:true})).toBeVisible();
+  for(const name of [c.console,c.connections,c.settings,c.templates]) await expect(page.getByRole("button",{name,exact:true}).or(page.getByRole("link",{name,exact:true}))).toBeVisible();
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"5:17701":"5:17826");
+  await page.goto(`${origin}/zh-TW/studio?store=${store}&scene=${scene}#post-live`);
+  await expect(page.getByRole("heading",{name:c.after,exact:true})).toBeVisible();
+  await expect(page.getByText("認領與付款分開計算。結束抓單不會把未付款訂單變成已付款，也不代表平台已結算。",{exact:true})).toBeVisible();
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"19:374":"19:376");
+  await parityClick(page,c.copy,()=>expect(page.getByRole("heading",{name:c.copy,exact:true})).toBeVisible());
+  await page.getByLabel(c.copyName,{exact:true}).fill(`C4 copy ${viewport.width}`);
+  await expect(page.getByText("活動商品與直播價。",{exact:true})).toBeVisible();
+  await expect(page.getByText("貼文來源、已發生的認領、付款連結。新場次的認領窗口為關閉。",{exact:true})).toBeVisible();
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"30:1977":"30:2030");
+  await parityClick(page,c.copyReview,()=>expect(page.getByRole("heading",{name:c.copied,exact:true})).toBeVisible());
+  await expect(page.getByText(`C4 copy ${viewport.width}`,{exact:true})).toBeVisible();
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1336:17336":"1336:17337");
+  await page.reload();
+  await expect(page.getByText(`C4 copy ${viewport.width}`,{exact:true})).toBeVisible();
+  await parityClick(page,c.openPrep,()=>expect(page.getByRole("heading",{name:c.preflight,exact:true})).toBeVisible());
+});
+for (const viewport of parityViewports) test(`C4 session products stock and end confirmation ${viewport.width}`,async({page,request})=>{
+  const c=parityWords["zh-TW"], scene=parityScenes[viewport.width===1440?0:1]!, fixture=(await facts(request)).scenes[scene]!;
+  await page.setViewportSize(viewport);await login(page);
+  await page.goto(`${origin}/zh-TW/studio/claims?store=${store}&scene=${scene}#products`);
+  await expect(page.getByRole("heading",{name:c.products,exact:true})).toBeVisible();
+  if(viewport.width===390) await parityShot(page,evidence,"zh-TW","52:1385");
+  await expect(page.getByRole("button",{name:c.stock,exact:true}).first()).toBeVisible();
+  await page.getByRole("button",{name:c.stock,exact:true}).first().click();
+  await expect(page.getByRole("heading",{name:c.stock,exact:true})).toBeVisible();
+  await expect(page.getByText(c.available,{exact:true})).toBeVisible();
+  await expect(page.getByText(c.adjusted,{exact:true})).toBeVisible();
+  const before=(await facts(request)).scenes[scene]!.Stock;
+  await parityClick(page,c.plus,()=>expect(page.getByTestId("session-stock-available")).toHaveText(String(before+1)));
+  await parityClick(page,c.minus,()=>expect(page.getByTestId("session-stock-available")).toHaveText(String(before)));
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1336:17329":"52:1388");
+  await page.reload();await expect(page.getByTestId("session-stock-available")).toHaveText(String(before));
+  expect((await facts(request)).scenes[scene]!.SKU).toBe(fixture.SKU);
+  await parityClick(page,c.products,()=>expect(page.getByRole("heading",{name:c.products,exact:true})).toBeVisible());
+  await page.goto(`${origin}/zh-TW/studio?store=${store}&scene=${scene}#end`);
+  await expect(page.getByRole("heading",{name:c.end,exact:true})).toBeVisible();
+  await expect(page.getByText("結束本場留言收單？平台上的直播不會因此停止。",{exact:true})).toBeVisible();
+  await expect(page.getByText("既有認領、訂單及付款狀態不會被當作已完成。",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:c.confirmEnd,exact:true})).toBeVisible();
+  await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1336:17332":"1336:17333");
+  await parityClick(page,c.continue,()=>expect(page.getByRole("heading",{name:c.end,exact:true})).toHaveCount(0));
+  await page.goto(`${origin}/zh-TW/studio?store=${store}&scene=${scene}#end`);
+  await expect(page.getByRole("button",{name:c.confirmEnd,exact:true})).toBeVisible();
+  await parityClick(page,c.confirmEnd,()=>expect(page.getByRole("heading",{name:c.after,exact:true})).toBeVisible());
+  expect((await facts(request)).scenes[scene]!.Phase).toBe("ended");
+  await page.reload();await expect(page.getByRole("heading",{name:c.after,exact:true})).toBeVisible();
+});
