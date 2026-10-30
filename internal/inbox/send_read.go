@@ -23,13 +23,15 @@ func sendState(state *string) (string, bool) {
 	switch *state {
 	case "READY", "DISPATCHING":
 		return "queued", true
-	case "SUCCEEDED", "ACKNOWLEDGED":
+	case "SUCCEEDED":
 		return "sent", true
 	case "FAILED_FINAL":
 		return "failed", true
 	case "BLOCKED_POLICY", "STALE_BINDING", "CANCELLED":
 		return "blocked", true
-	case "UNKNOWN":
+	case "UNKNOWN", "ACKNOWLEDGED":
+		// ACKNOWLEDGED is provider-accepted but unconfirmed (external-operation-v1 reconciles it like UNKNOWN); §4.4 `sent`
+		// is SUCCEEDED only, so a reply-only client may treat an own `sent` row as terminal (RC c2173f5fc review, #345).
 		return "unknown", true
 	}
 	return "", false

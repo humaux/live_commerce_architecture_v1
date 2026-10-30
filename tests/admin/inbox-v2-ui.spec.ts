@@ -518,26 +518,58 @@ for (const copy of copies) {
   }
 
   test(`INV2 ${copy.locale} ACK without operation read permission`, async ({ page }) => {
-    const state = await enter(page, copy);
-    await page.setViewportSize({ width: 390, height: 844 });
-    await open(page, ids.instagram);
-    state.concurrentSent = true; // Transport preparation: an unrelated send must never reconcile our ACK.
-    await send(page, copy);
-    await expect(page.getByTestId("inbox-thread")).toHaveAttribute("aria-busy", "false");
-    state.delivery = "sent"; // Even a newer A9 sent projection is not exact-operation evidence.
-    for (const omitted of [false, true]) {
-      state.omitOutbound = omitted;
-      await query(page);
-      await expect(page.getByTestId("inbox-thread")).toContainText("MOCK_OTHER_STAFF_SENT");
-      await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.pending);
-      await expect(page.getByTestId("reply-text")).toBeHidden();
-      await expect(page.getByTestId("reply-send")).toBeDisabled();
-      await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
-      expect(state.operationReads).toBe(0);
-      expect(state.posts).toBe(1);
+    for (const terminal of ["sent", "failed"] as const) {
+      for (const refresh of [false, true]) {
+        // Fixture preparation: each variant must sign in afresh before installing its own transport.
+        await page.unrouteAll({ behavior: "wait" });
+        await page.context().clearCookies();
+        // The shared signed-login helper uses desktop navigation; mobile coverage resumes after entry.
+        await page.setViewportSize({ width: 1280, height: 900 });
+        const state = await enter(page, copy);
+        await page.setViewportSize({ width: 390, height: 844 });
+        await open(page, ids.instagram);
+        state.concurrentSent = true; // Transport preparation: unrelated sent B never settles our ACK A.
+        await send(page, copy);
+        await expect(page.getByTestId("inbox-thread")).toHaveAttribute("aria-busy", "false");
+        for (const pending of ["omitted", "queued", "blocked"] as const) {
+          state.delivery = pending === "omitted" ? "sent" : pending;
+          state.omitOutbound = pending === "omitted";
+          await query(page, refresh ? copy.refresh : undefined);
+          await expect(page.getByTestId("inbox-thread")).toContainText("MOCK_OTHER_STAFF_SENT");
+          await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.pending);
+          await expect(page.getByTestId("reply-text")).toBeHidden();
+          await expect(page.getByTestId("reply-send")).toBeDisabled();
+          await expect(page.getByTestId("inbox-send-locked")).toBeDisabled();
+          expect(state.operationReads).toBe(0);
+          expect(state.posts).toBe(1);
+        }
+        state.omitOutbound = false;
+        state.delivery = terminal;
+        await query(page, refresh ? copy.refresh : undefined);
+        await expect(page.getByTestId("inbox-delivery-state")).toHaveText(terminal === "sent" ? copy.sent : copy.failed);
+        if (terminal === "failed") {
+          await page.getByTestId("inbox-edit-original").click();
+          await expect(page.getByTestId("reply-text")).toHaveValue(copy.draft);
+        } else {
+          await expect(page.getByTestId("reply-text"), "own A9 sent row unlocks without integration:read").toBeVisible();
+          await expect(page.getByTestId("reply-text")).toHaveValue("");
+          await page.getByTestId("reply-text").fill(copy.draft);
+        }
+        await expect(page.getByTestId("reply-send")).toBeEnabled();
+        expect(state.operationReads).toBe(0);
+        expect(state.posts).toBe(1);
+        if (terminal === "sent") {
+          await page.reload();
+          await open(page, ids.instagram);
+          await page.getByTestId("reply-text").fill(copy.draft);
+          await expect(page.getByTestId("reply-send")).toBeEnabled();
+          expect(state.posts).toBe(1);
+        }
+        record(`ACK permission ${copy.locale}/${terminal}/${refresh ? "refresh" : "status"}`,
+          "fill, Send, query omitted/queued/blocked own row, query terminal own row; edit rejection or reload sent",
+          "only own terminal A9 ledger row settles ACK without operation read; next draft usable; exactly one POST");
+      }
     }
-    record(`ACK permission ${copy.locale}`, "fill, click Send, click status with visible/omitted own projection",
-      "live_operator has no operation read; unrelated/newer sent rows leave queued ACK locked; one POST");
   });
 
   test(`INV2 ${copy.locale} states`, async ({ page }) => {

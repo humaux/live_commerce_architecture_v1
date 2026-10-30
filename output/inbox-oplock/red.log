@@ -1,0 +1,440 @@
+INBOX-OPLOCK causal RED — GitHub CI
+base_sha=c2173f5fcc6b4031ccbba7727c0ae088ff3996a0
+branch=unit/inbox-oplock
+stage=tests-only; InboxThread.tsx unchanged at RED head
+pr=https://github.com/humaux/live_commerce_architecture_v1/pull/345
+head_sha=dac568eb556b3c7d0d0f71fcd2960b2978c784c1
+gates_run=41017289334
+foundation_run=41017289344
+foundation_job=123936404324
+foundation_conclusion=FAILURE
+failed_step=Node unit suites (storefront, i18n)
+failed_assertion=tests/admin/inbox-unknown.test.ts:385 own A9 sent row unlocks without integration:read; expected form hidden false, actual true
+additional_failures=tests/admin/inbox-unknown.test.ts:440 own A9 sent/failed on status/refresh, all three locales; actual pending, expected terminal result
+conclusion=causal RED observed on the new assertions; not an import/setup or browser ownership failure
+relay=integrator RELAY 1 authorizes implementation after inspection of this exact foundation job
+retrieval=gh run view 41017289344 --log-failed --job 123936404324
+local_tests=NOT_RUN by owner instruction
+GREEN=PENDING implementation-head GitHub CI
+
+Filtered GitHub failure receipt follows (trailing whitespace trimmed; line numbers refer to --log-failed output):
+2203-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7126570Z ✔ acknowledged send stays locked on not-found operation evidence (4.298001ms)
+2204-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7127442Z ✔ acknowledged send stays locked on malformed operation evidence (12.964358ms)
+2205-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7128324Z ✔ acknowledged send stays locked on different-operation operation evidence (4.873637ms)
+2206-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7129288Z ✔ acknowledged send stays locked on different-conversation operation evidence (4.839618ms)
+2207-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7130195Z ✔ acknowledged send stays locked on different-action operation evidence (19.584173ms)
+2208-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7131076Z ✔ acknowledged send stays locked on different-provider operation evidence (6.121633ms)
+2209-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7131958Z ✔ acknowledged send stays locked on different-purpose operation evidence (4.915454ms)
+2210-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7132819Z ✔ acknowledged send stays locked on missing-ack-id operation evidence (4.003919ms)
+2211:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7133661Z ✖ own A9 sent row unlocks without operation read permission (7.151884ms)
+2212-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7134625Z ✔ acknowledged send stays locked on acknowledged operation evidence (4.338346ms)
+2213-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7135426Z ✔ acknowledged send stays locked on unknown operation evidence (3.904592ms)
+2214:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7136190Z ✖ unpermitted ACK adopts only its own A9 sent on status (en) (8.283337ms)
+2215:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7136922Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (en) (7.8057ms)
+2216:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7137670Z ✖ unpermitted ACK adopts only its own A9 failed on status (en) (9.377893ms)
+2217:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7138422Z ✖ unpermitted ACK adopts only its own A9 failed on refresh (en) (7.588831ms)
+2218-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7139141Z ✔ unpermitted ACK stays locked for A9 omitted (en) (13.378972ms)
+2219-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7139805Z ✔ unpermitted ACK stays locked for A9 queued (en) (13.223443ms)
+2220-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7140446Z ✔ unpermitted ACK stays locked for A9 blocked (en) (8.498519ms)
+2221-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7141086Z ✔ unpermitted ACK stays locked for A9 unknown (en) (6.889854ms)
+2222-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7141760Z ✔ unpermitted ACK stays locked for A9 history-true (en) (8.06443ms)
+2223-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7142468Z ✔ unpermitted ACK stays locked for A9 history-absent (en) (7.601079ms)
+2224-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7143196Z ✔ unpermitted ACK stays locked for A9 history-null (en) (8.401296ms)
+2225-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7143956Z ✔ unpermitted ACK stays locked for A9 history-malformed (en) (11.235574ms)
+2226:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7144925Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-TW) (7.366113ms)
+2227:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7145704Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-TW) (9.076209ms)
+2228:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7146504Z ✖ unpermitted ACK adopts only its own A9 failed on status (zh-TW) (10.003843ms)
+2229:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7147547Z ✖ unpermitted ACK adopts only its own A9 failed on refresh (zh-TW) (7.291554ms)
+2230-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7148260Z ✔ unpermitted ACK stays locked for A9 omitted (zh-TW) (8.244506ms)
+2231-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7148956Z ✔ unpermitted ACK stays locked for A9 queued (zh-TW) (5.203463ms)
+2232-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7149626Z ✔ unpermitted ACK stays locked for A9 blocked (zh-TW) (19.395105ms)
+2233-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7150302Z ✔ unpermitted ACK stays locked for A9 unknown (zh-TW) (5.133179ms)
+2234-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7151007Z ✔ unpermitted ACK stays locked for A9 history-true (zh-TW) (5.659513ms)
+2235-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7151738Z ✔ unpermitted ACK stays locked for A9 history-absent (zh-TW) (4.951692ms)
+2236-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7152462Z ✔ unpermitted ACK stays locked for A9 history-null (zh-TW) (4.975828ms)
+2237-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7153221Z ✔ unpermitted ACK stays locked for A9 history-malformed (zh-TW) (8.923564ms)
+2238:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7153986Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-CN) (5.754012ms)
+2239:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7154900Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-CN) (5.483915ms)
+2240:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7155688Z ✖ unpermitted ACK adopts only its own A9 failed on status (zh-CN) (4.980295ms)
+2241:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7156693Z ✖ unpermitted ACK adopts only its own A9 failed on refresh (zh-CN) (5.805017ms)
+2242-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7157407Z ✔ unpermitted ACK stays locked for A9 omitted (zh-CN) (6.05135ms)
+2243-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7158131Z ✔ unpermitted ACK stays locked for A9 queued (zh-CN) (4.696368ms)
+2244-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7158785Z ✔ unpermitted ACK stays locked for A9 blocked (zh-CN) (4.836603ms)
+2245-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7159445Z ✔ unpermitted ACK stays locked for A9 unknown (zh-CN) (7.694647ms)
+2246-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7160160Z ✔ unpermitted ACK stays locked for A9 history-true (zh-CN) (5.652093ms)
+2247-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7160889Z ✔ unpermitted ACK stays locked for A9 history-absent (zh-CN) (4.561839ms)
+2248-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7161614Z ✔ unpermitted ACK stays locked for A9 history-null (zh-CN) (6.599637ms)
+2249-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7162372Z ✔ unpermitted ACK stays locked for A9 history-malformed (zh-CN) (5.838958ms)
+--
+2293-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7647339Z ℹ cancelled 0
+2294-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7647622Z ℹ skipped 0
+2295-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7647929Z ℹ todo 0
+2296-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7648244Z ℹ duration_ms 7858.334861
+2297-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7677632Z
+2298-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7678148Z ✖ failing tests:
+2299-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7678356Z
+2300-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7678656Z test at tests/admin/inbox-unknown.test.ts:355:3
+2301:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7679472Z ✖ own A9 sent row unlocks without operation read permission (7.151884ms)
+2302:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7680312Z   AssertionError [ERR_ASSERTION]: own A9 sent row unlocks without integration:read
+2303-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7680865Z
+2304-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7681129Z   true !== false
+2305-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7681395Z
+2306-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7682206Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:385:14)
+2307-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7682949Z       at async Test.run (node:internal/test_runner/test:1409:7)
+2308-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7683519Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+2309-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7684343Z     generatedMessage: false,
+2310-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7684786Z     code: 'ERR_ASSERTION',
+2311-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7685022Z     actual: true,
+2312-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7685237Z     expected: false,
+2313-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7685477Z     operator: 'strictEqual',
+2314-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7685721Z     diff: 'simple'
+2315-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7685911Z   }
+2316-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7686013Z
+2317-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7686200Z test at tests/admin/inbox-unknown.test.ts:410:7
+2318:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7686721Z ✖ unpermitted ACK adopts only its own A9 sent on status (en) (8.283337ms)
+2319-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7687225Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2320-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7687576Z   + actual - expected
+2321-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7687770Z
+2322-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7688025Z   + 'Sending; delivery unconfirmed. Do not resend.'
+2323-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7688332Z   - 'Sent does not mean read.'
+2324-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7688589Z         ^
+2325-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7688766Z
+2326-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7689523Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+--
+2330-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7691622Z     code: 'ERR_ASSERTION',
+2331-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7691966Z     actual: 'Sending; delivery unconfirmed. Do not resend.',
+2332-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7692331Z     expected: 'Sent does not mean read.',
+2333-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7692614Z     operator: 'strictEqual',
+2334-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7692848Z     diff: 'simple'
+2335-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7693055Z   }
+2336-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7693155Z
+2337-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7693368Z test at tests/admin/inbox-unknown.test.ts:410:7
+2338:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7693869Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (en) (7.8057ms)
+2339-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7694354Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2340-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7694932Z   + actual - expected
+2341-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7695133Z
+2342-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7695386Z   + 'Sending; delivery unconfirmed. Do not resend.'
+2343-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7695688Z   - 'Sent does not mean read.'
+2344-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7695916Z         ^
+2345-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7696100Z
+2346-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7696850Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+--
+2350-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7712854Z     code: 'ERR_ASSERTION',
+2351-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7713264Z     actual: 'Sending; delivery unconfirmed. Do not resend.',
+2352-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7713684Z     expected: 'Sent does not mean read.',
+2353-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7713995Z     operator: 'strictEqual',
+2354-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7714280Z     diff: 'simple'
+2355-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7714665Z   }
+2356-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7714774Z
+2357-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7715003Z test at tests/admin/inbox-unknown.test.ts:410:7
+2358:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7715666Z ✖ unpermitted ACK adopts only its own A9 failed on status (en) (9.377893ms)
+2359-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7716212Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2360-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7716571Z   + actual - expected
+2361-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7716778Z
+2362-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7717065Z   + 'Sending; delivery unconfirmed. Do not resend.'
+2363-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7717437Z   - 'Send rejected; original text saved for editing.'
+2364-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7717730Z
+2365-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7718631Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+2366-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7719866Z       at async Test.run (node:internal/test_runner/test:1409:7)
+--
+2369-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7721736Z     code: 'ERR_ASSERTION',
+2370-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7722094Z     actual: 'Sending; delivery unconfirmed. Do not resend.',
+2371-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7722553Z     expected: 'Send rejected; original text saved for editing.',
+2372-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7722893Z     operator: 'strictEqual',
+2373-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7723150Z     diff: 'simple'
+2374-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7723345Z   }
+2375-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7723445Z
+2376-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7723629Z test at tests/admin/inbox-unknown.test.ts:410:7
+2377:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7724187Z ✖ unpermitted ACK adopts only its own A9 failed on refresh (en) (7.588831ms)
+2378-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7726022Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2379-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7726442Z   + actual - expected
+2380-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7726645Z
+2381-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7726916Z   + 'Sending; delivery unconfirmed. Do not resend.'
+2382-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7727281Z   - 'Send rejected; original text saved for editing.'
+2383-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7727566Z
+2384-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7728343Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+2385-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7729294Z       at async Test.run (node:internal/test_runner/test:1409:7)
+--
+2388-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7730505Z     code: 'ERR_ASSERTION',
+2389-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7730867Z     actual: 'Sending; delivery unconfirmed. Do not resend.',
+2390-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7731312Z     expected: 'Send rejected; original text saved for editing.',
+2391-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7731645Z     operator: 'strictEqual',
+2392-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7731889Z     diff: 'simple'
+2393-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7732077Z   }
+2394-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7732175Z
+2395-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7732357Z test at tests/admin/inbox-unknown.test.ts:410:7
+2396:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7732915Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-TW) (7.366113ms)
+2397-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7733433Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2398-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7733769Z   + actual - expected
+2399-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7733975Z
+2400-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7734240Z   + '傳送中；尚未確認送達，勿重送。'
+2401-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7734695Z   - '已送出，未代表已讀。'
+2402-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7734881Z
+2403-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7735658Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+2404-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7736371Z       at async Test.run (node:internal/test_runner/test:1409:7)
+--
+2407-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7737544Z     code: 'ERR_ASSERTION',
+2408-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7737870Z     actual: '傳送中；尚未確認送達，勿重送。',
+2409-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7738150Z     expected: '已送出，未代表已讀。',
+2410-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7738417Z     operator: 'strictEqual',
+2411-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7738643Z     diff: 'simple'
+2412-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7738832Z   }
+2413-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7738923Z
+2414-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7739102Z test at tests/admin/inbox-unknown.test.ts:410:7
+2415:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7739611Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-TW) (9.076209ms)
+2416-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7740115Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2417-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7740453Z   + actual - expected
+2418-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7740642Z
+2419-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7740863Z   + '傳送中；尚未確認送達，勿重送。'
+2420-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7741086Z   - '已送出，未代表已讀。'
+2421-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7741261Z
+2422-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7742018Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+2423-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7742731Z       at async Test.run (node:internal/test_runner/test:1409:7)
+--
+2426-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7744083Z     code: 'ERR_ASSERTION',
+2427-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7744378Z     actual: '傳送中；尚未確認送達，勿重送。',
+2428-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7744833Z     expected: '已送出，未代表已讀。',
+2429-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7745085Z     operator: 'strictEqual',
+2430-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7745317Z     diff: 'simple'
+2431-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7745499Z   }
+2432-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7745595Z
+2433-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7745772Z test at tests/admin/inbox-unknown.test.ts:410:7
+2434:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7746276Z ✖ unpermitted ACK adopts only its own A9 failed on status (zh-TW) (10.003843ms)
+2435-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7746775Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2436-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7747126Z   + actual - expected
+2437-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7747318Z
+2438-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7747528Z   + '傳送中；尚未確認送達，勿重送。'
+2439-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7747791Z   - '傳送遭拒；原文保留，可編輯。'
+2440-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7747993Z        ^
+2441-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7748160Z
+2442-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7748913Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+--
+2446-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7751007Z     code: 'ERR_ASSERTION',
+2447-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7751316Z     actual: '傳送中；尚未確認送達，勿重送。',
+2448-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7751626Z     expected: '傳送遭拒；原文保留，可編輯。',
+2449-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7751876Z     operator: 'strictEqual',
+2450-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7752108Z     diff: 'simple'
+2451-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7752287Z   }
+2452-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7752384Z
+2453-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7752554Z test at tests/admin/inbox-unknown.test.ts:410:7
+2454:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7753061Z ✖ unpermitted ACK adopts only its own A9 failed on refresh (zh-TW) (7.291554ms)
+2455-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7753564Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2456-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7753915Z   + actual - expected
+2457-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7754102Z
+2458-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7754309Z   + '傳送中；尚未確認送達，勿重送。'
+2459-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7754698Z   - '傳送遭拒；原文保留，可編輯。'
+2460-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7754897Z        ^
+2461-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7755061Z
+2462-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7755818Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+--
+2466-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7757766Z     code: 'ERR_ASSERTION',
+2467-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7758068Z     actual: '傳送中；尚未確認送達，勿重送。',
+2468-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7758371Z     expected: '傳送遭拒；原文保留，可編輯。',
+2469-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7758619Z     operator: 'strictEqual',
+2470-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7758849Z     diff: 'simple'
+2471-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7759043Z   }
+2472-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7759140Z
+2473-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7759313Z test at tests/admin/inbox-unknown.test.ts:410:7
+2474:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7759808Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-CN) (5.754012ms)
+2475-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7760315Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2476-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7760673Z   + actual - expected
+2477-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7760863Z
+2478-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7761109Z   + '发送中；尚未确认送达，不要重发。'
+2479-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7761363Z   - '已发送，不代表已读。'
+2480-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7761540Z
+2481-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7762433Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+2482-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7763171Z       at async Test.run (node:internal/test_runner/test:1409:7)
+--
+2485-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7765094Z     code: 'ERR_ASSERTION',
+2486-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7765790Z     actual: '发送中；尚未确认送达，不要重发。',
+2487-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7766216Z     expected: '已发送，不代表已读。',
+2488-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7766609Z     operator: 'strictEqual',
+2489-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7766970Z     diff: 'simple'
+2490-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7767258Z   }
+2491-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7767407Z
+2492-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7767621Z test at tests/admin/inbox-unknown.test.ts:410:7
+2493:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7768129Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-CN) (5.483915ms)
+2494-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7768663Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2495-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7769213Z   + actual - expected
+2496-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7769506Z
+2497-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7769836Z   + '发送中；尚未确认送达，不要重发。'
+2498-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7770185Z   - '已发送，不代表已读。'
+2499-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7770446Z
+2500-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7771681Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+2501-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7772421Z       at async Test.run (node:internal/test_runner/test:1409:7)
+--
+2504-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7773793Z     code: 'ERR_ASSERTION',
+2505-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7774109Z     actual: '发送中；尚未确认送达，不要重发。',
+2506-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7774390Z     expected: '已发送，不代表已读。',
+2507-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7774906Z     operator: 'strictEqual',
+2508-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7775203Z     diff: 'simple'
+2509-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7775390Z   }
+2510-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7775491Z
+2511-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7775669Z test at tests/admin/inbox-unknown.test.ts:410:7
+2512:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7776194Z ✖ unpermitted ACK adopts only its own A9 failed on status (zh-CN) (4.980295ms)
+2513-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7776714Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2514-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7777053Z   + actual - expected
+2515-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7777255Z
+2516-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7777477Z   + '发送中；尚未确认送达，不要重发。'
+2517-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7777747Z   - '发送被拒；原文已保留，可以编辑。'
+2518-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7777953Z        ^
+2519-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7778122Z
+2520-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7778879Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+--
+2524-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7780769Z     code: 'ERR_ASSERTION',
+2525-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7781065Z     actual: '发送中；尚未确认送达，不要重发。',
+2526-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7781366Z     expected: '发送被拒；原文已保留，可以编辑。',
+2527-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7781640Z     operator: 'strictEqual',
+2528-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7781874Z     diff: 'simple'
+2529-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7782056Z   }
+2530-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7782157Z
+2531-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7782330Z test at tests/admin/inbox-unknown.test.ts:410:7
+2532:foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7782827Z ✖ unpermitted ACK adopts only its own A9 failed on refresh (zh-CN) (5.805017ms)
+2533-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7783489Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2534-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7783831Z   + actual - expected
+2535-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7784025Z
+2536-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7784248Z   + '发送中；尚未确认送达，不要重发。'
+2537-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7784652Z   - '发送被拒；原文已保留，可以编辑。'
+2538-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7784849Z        ^
+2539-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7785025Z
+2540-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7785773Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+
+RELAY 2 implementation failure (not the tests-only RED)
+head_sha=b0ad9de375743a068779f9a0367906b6f8717f3e
+foundation_run=41018599404
+foundation_job=123940483680
+retrieval=gh run view 41018599404 --log-failed --job 123940483680
+failed_assertion=inbox-unknown.test.ts:440 sent receipt VNode absent after nextReply opens composer
+targeted_correction_attempt=1; preserve the already-visible sent message label as an accessible receipt
+Filtered raw receipt follows; suite summaries are scoped to their individual Node processes:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:36.3983986Z ℹ tests 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:36.3984848Z ℹ pass 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:36.3985203Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:37.0571269Z ℹ tests 12
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:37.0572098Z ℹ pass 12
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:37.0572366Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.2309754Z ℹ tests 500
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.2310195Z ℹ pass 500
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.2310398Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.4072289Z ℹ tests 13
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.4086395Z ℹ pass 13
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.4087080Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.5743469Z ℹ tests 13
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.5744370Z ℹ pass 13
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.5744779Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.8018910Z ℹ tests 9
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.8020342Z ℹ pass 9
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.8020713Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.2901860Z ℹ tests 55
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.2903499Z ℹ pass 55
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.2903950Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.7725833Z ℹ tests 55
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.7726925Z ℹ pass 55
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.7727308Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.9627184Z ℹ tests 5
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.9627850Z ℹ pass 5
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.9629519Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.1208029Z ℹ tests 1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.1217430Z ℹ pass 1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.1217712Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.3160808Z ℹ tests 19
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.3170799Z ℹ pass 19
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.3171177Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.4401846Z ℹ tests 37
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.4402702Z ℹ pass 37
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.4403055Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.9021491Z ℹ tests 51
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.9022417Z ℹ pass 51
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.9022853Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.6704573Z ℹ tests 29
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.6705045Z ℹ pass 29
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.6705268Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.9601753Z ℹ tests 4
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.9607274Z ℹ pass 4
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.9627447Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:02.6346093Z ℹ tests 27
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:02.6346896Z ℹ pass 27
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:02.6347273Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:04.5309897Z ℹ tests 105
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:04.5310764Z ℹ pass 105
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:04.5311414Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:05.6319133Z ℹ tests 25
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:05.6320058Z ℹ pass 25
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:05.6320417Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.3332448Z ℹ tests 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.3333348Z ℹ pass 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.3333647Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.6774057Z ℹ tests 11
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.6774834Z ℹ pass 11
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.6775169Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.3062547Z ℹ tests 17
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.3063504Z ℹ pass 17
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.3063941Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.5265560Z ℹ tests 4
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.5267009Z ℹ pass 4
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.5267391Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:09.5168469Z ℹ tests 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:09.5169475Z ℹ pass 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:09.5169880Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:10.9457635Z ℹ tests 30
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:10.9458627Z ℹ pass 30
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:10.9459025Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:15.7625249Z ℹ tests 118
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:15.7625690Z ℹ pass 118
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:15.7625896Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:18.5933492Z ℹ tests 58
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:18.5934278Z ℹ pass 58
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:18.5934692Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4130030Z ##[error]ℹ tests/foundation/catalog_matrix_ledger_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4144177Z ##[error]ℹ tests/foundation/catalog_matrix_evidence_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4147900Z ##[error]ℹ tests/foundation/browser_catalog_core_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4150772Z ℹ tests/admin/product-editor.acceptance.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4152832Z ℹ tests/admin/product-editor-matrix-ledger.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4155035Z ℹ tests/foundation/testdata/product_editor_matrix_cases.json: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4158104Z ℹ tests/ci/product-editor-matrix-ledger.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4160158Z ℹ tests/ci/product-editor-matrix-claims.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4162189Z ℹ tests/ci/product-editor-matrix-source.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4163947Z ℹ tests/ci/product-editor-matrix-execution.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4166165Z ℹ tests/ci/product-editor-matrix-execution.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4168581Z ℹ tests/ci/product-editor-matrix-controls.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4170747Z ℹ tests/ci/product-editor-matrix-controls.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4889955Z ℹ tests 336
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4890390Z ℹ pass 336
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4890594Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.7050017Z ℹ tests 11
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.7050632Z ℹ pass 11
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.7050871Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.9330182Z ℹ tests 10
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.9330964Z ℹ pass 10
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.9331192Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:33.7298696Z ℹ tests 28
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:33.7299146Z ℹ pass 28
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:33.7299362Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2721224Z ✖ unpermitted ACK adopts only its own A9 sent on status (en) (18.818256ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2721875Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (en) (10.794933ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2728892Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-TW) (7.219243ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2729558Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-TW) (8.585592ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2736968Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-CN) (7.195077ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2737656Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-CN) (10.08317ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3267292Z ℹ tests 301
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3267781Z ℹ pass 295
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3268002Z ℹ fail 6
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3286311Z ✖ unpermitted ACK adopts only its own A9 sent on status (en) (18.818256ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3287208Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3289560Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3294012Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (en) (10.794933ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3294582Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3297138Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3301761Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-TW) (7.219243ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3302325Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3304677Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3309439Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-TW) (8.585592ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3310045Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3312785Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3317610Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-CN) (7.195077ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3318202Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3320685Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3326244Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-CN) (10.08317ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3327698Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3330357Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3375123Z ##[error]Process completed with exit code 1.

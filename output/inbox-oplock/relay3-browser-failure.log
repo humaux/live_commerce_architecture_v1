@@ -1,0 +1,99 @@
+Head: a68c01171c8fde78cde096cec82d1df9c4dda506
+Gates run: 41019899239; bundle:06 job: 123946344555; artifact: 12962420154 gate-browser-inbox
+Raw artifact playwright.log failure excerpt (all three locales); 55 passed / 3 failed.
+
+  1) tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 zh-TW ACK without operation read permission ──────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Sign in with identity service' })
+
+
+       at inbox-browser-support.ts:76
+
+      74 | async function login(page: Page) {
+      75 |   await page.goto(new URL("/en/", origin).href);
+    > 76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+         |                                                                             ^
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+      78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+      79 |   await page.getByTestId("nav-group-messages").click();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:76:77)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:166:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:523:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T073359.866045277/results/inbox-v2-ui-INV2-zh-TW-ACK-without-operation-read-permission/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T073359.866045277/results/inbox-v2-ui-INV2-zh-TW-ACK-without-operation-read-permission/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T073359.866045277/results/inbox-v2-ui-INV2-zh-TW-ACK-without-operation-read-permission/error-context.md
+
+  2) tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 zh-CN ACK without operation read permission ──────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Sign in with identity service' })
+
+
+       at inbox-browser-support.ts:76
+
+      74 | async function login(page: Page) {
+      75 |   await page.goto(new URL("/en/", origin).href);
+    > 76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+         |                                                                             ^
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+      78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+      79 |   await page.getByTestId("nav-group-messages").click();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:76:77)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:166:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:523:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T073359.866045277/results/inbox-v2-ui-INV2-zh-CN-ACK-without-operation-read-permission/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T073359.866045277/results/inbox-v2-ui-INV2-zh-CN-ACK-without-operation-read-permission/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T073359.866045277/results/inbox-v2-ui-INV2-zh-CN-ACK-without-operation-read-permission/error-context.md
+
+  3) tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 en ACK without operation read permission ─────────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Sign in with identity service' })
+
+
+       at inbox-browser-support.ts:76
+
+      74 | async function login(page: Page) {
+      75 |   await page.goto(new URL("/en/", origin).href);
+    > 76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+         |                                                                             ^
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+      78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+      79 |   await page.getByTestId("nav-group-messages").click();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:76:77)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:166:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:523:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T073359.866045277/results/inbox-v2-ui-INV2-en-ACK-without-operation-read-permission/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T073359.866045277/results/inbox-v2-ui-INV2-en-ACK-without-operation-read-permission/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T073359.866045277/results/inbox-v2-ui-INV2-en-ACK-without-operation-read-permission/error-context.md
+
+  3 failed
+    tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 zh-TW ACK without operation read permission ───────
+    tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 zh-CN ACK without operation read permission ───────
+    tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 en ACK without operation read permission ──────────
+  55 passed (4.0m)

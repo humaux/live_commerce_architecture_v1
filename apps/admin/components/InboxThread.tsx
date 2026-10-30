@@ -155,8 +155,8 @@ export function InboxThread({
           let ackComplete = false;
           let ackState: string | null = null;
           if (ack) {
-            // A9 outbound identity correlates projections, never proves an operation result.
-            // No permission, missing ID, failed or mismatched operation read stays locked.
+            // With integration:read, only the exact operation read can settle the ACK.
+            // Missing ID, failed or mismatched operation evidence stays locked for that role.
             if (ack.id && permitted(store, "integration:read")) {
               try {
                 const operation = await readOperation(store.id, ack.id,
@@ -180,6 +180,18 @@ export function InboxThread({
                   callbacks.current.onUnauthorized();
                   return;
                 }
+              }
+            } else if (!permitted(store, "integration:read") && ack.outbound_id && data.has_unknown_outbound === false) {
+              // Reply-only staff can settle their exact ACK from A9's terminal outbound ledger row.
+              // Missing, conflicting or nonterminal rows never authorize another send.
+              const own = data.items.filter(item => item.direction === "out" && item.outbound_id === ack.outbound_id);
+              const state = own.length === 1 ? own[0].send_state : null;
+              if (state === "sent" || state === "failed") {
+                ackState = state;
+                ackComplete = true;
+                setDelivery(state);
+                recoveryText.current = state === "failed" ? ack.text : null;
+                deliveryLock.current = false;
               }
             }
           }
@@ -430,6 +442,8 @@ export function InboxThread({
   const nextReply = delivery === "sent" && latestOutbound?.at && thread?.items.some(item =>
     item.direction === "in" && item.at && item.at > latestOutbound.at!);
   const folded = !!(delivery || uncertainDelivery) && !editing && !retry && !nextReply;
+  // Reply-only staff retain the sent receipt on the message while the next composer is open.
+  const inlineReceipt = nextReply && !uncertainDelivery && !permitted(store, "integration:read");
   const deliveryLabels = { queued: c.deliveryPending, sent: c.deliverySent, failed: c.deliveryRejected,
     blocked: c.locked, unknown: c.deliveryUnknown };
   const resultCopy = uncertainDelivery
@@ -486,7 +500,10 @@ export function InboxThread({
               key={`${item.direction}:${item.seq ?? item.at ?? index}:${index}`}>
               {item.at && <time className={styles.meta} dateTime={item.at} title={displayTime(locale, item.at)}>{instantToTaipei(item.at).slice(-5)}</time>}
               <p>{item.unreadable ? c.unreadable : item.text}</p>
-              {item.send_state && (item !== latestOutbound || !folded) && <span className={styles.meta}>{deliveryLabels[item.send_state]}</span>}
+              {item.send_state && (item !== latestOutbound || !folded) && <span className={styles.meta}
+                role={inlineReceipt && item === latestOutbound ? "status" : undefined}
+                data-testid={inlineReceipt && item === latestOutbound ? "inbox-delivery-state" : undefined}
+              >{deliveryLabels[item.send_state]}</span>}
               {(item.attachments ?? []).map((attachment, i) => <span className={styles.badge} key={i}>{c.attachment}: {attachment.type}</span>)}
             </li>)}
         </ol>

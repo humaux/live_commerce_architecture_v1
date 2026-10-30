@@ -1,0 +1,191 @@
+RELAY 4 raw CI artifact excerpt
+Head: ae43f5924c5d2504571385bd79dde761e3a9c8cf
+Gates run: 41022274820; bundle:06 job: 123953414679
+Artifact: 12961943679 (gate-browser-inbox)
+Foundation: 41022274830 / 123952099090 PASS (partial evidence only)
+
+  1) tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 zh-TW ACK without operation read permission ──────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        23 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:166:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:526:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T075508.707059272/results/inbox-v2-ui-INV2-zh-TW-ACK-without-operation-read-permission/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T075508.707059272/results/inbox-v2-ui-INV2-zh-TW-ACK-without-operation-read-permission/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T075508.707059272/results/inbox-v2-ui-INV2-zh-TW-ACK-without-operation-read-permission/error-context.md
+
+  2) tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 zh-CN ACK without operation read permission ──────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        24 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:166:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:526:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T075508.707059272/results/inbox-v2-ui-INV2-zh-CN-ACK-without-operation-read-permission/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T075508.707059272/results/inbox-v2-ui-INV2-zh-CN-ACK-without-operation-read-permission/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T075508.707059272/results/inbox-v2-ui-INV2-zh-CN-ACK-without-operation-read-permission/error-context.md
+
+  3) tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 en ACK without operation read permission ─────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  getByTestId('nav-group-messages')
+    Expected: visible
+    Received: hidden
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+      - waiting for getByTestId('nav-group-messages')
+        24 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+           - unexpected value "hidden"
+
+
+       at inbox-browser-support.ts:78
+
+      76 |   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      77 |   // Default-store permissions decide the role home; enter Messages through its real navigation first.
+    > 78 |   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+         |                                                        ^
+      79 |   await page.getByTestId("nav-group-messages").click();
+      80 |   await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+      81 |   await expect(page.getByTestId("inbox-page")).toBeVisible();
+        at login (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-browser-support.ts:78:56)
+        at enter (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:166:3)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:526:23
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T075508.707059272/results/inbox-v2-ui-INV2-en-ACK-without-operation-read-permission/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T075508.707059272/results/inbox-v2-ui-INV2-en-ACK-without-operation-read-permission/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T075508.707059272/results/inbox-v2-ui-INV2-en-ACK-without-operation-read-permission/error-context.md
+
+  3 failed
+    tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 zh-TW ACK without operation read permission ───────
+    tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 zh-CN ACK without operation read permission ───────
+    tests/admin/inbox-v2-ui.spec.ts:520:3 › INV2 en ACK without operation read permission ──────────
+  55 passed (2.4m)
+
+Error context header and visible shell:
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: inbox-v2-ui.spec.ts >> INV2 en ACK without operation read permission
+- Location: tests/admin/inbox-v2-ui.spec.ts:520:3
+
+# Error details
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  getByTestId('nav-group-messages')
+Expected: visible
+Received: hidden
+Timeout:  10000ms
+
+Call log:
+  - Expect "toBeVisible" getByTestId('nav-group-messages') with timeout 10000ms
+  - waiting for getByTestId('nav-group-messages')
+    24 × locator resolved to <button type="button" data-active="false" data-testid="nav-group-messages" class="AppShell-module__lomeIa__navButton">…</button>
+       - unexpected value "hidden"
+
+```
+
+```yaml
+- link "Skip to content":
+  - /url: "#main"
+- banner:
+  - button "Open navigation"
+  - text: Switch store
+  - combobox "Switch store":
+    - option "fixture-store-a1" [selected]
+    - option "fixture-store-a2"
+  - text: Language
+  - combobox "Language":
+    - option "简体中文"
+    - option "繁體中文"
+    - option "English" [selected]
+  - group: Help
+  - group: Account
+- main:
+  - navigation "Workspace navigation"
+  - heading "Overview" [level=1]
+  - paragraph: What needs you today. Days are Taipei calendar days (UTC+8).
+  - link "Create an order":
+    - /url: /en/orders/new?store=a35e8d65-3501-4f99-b39a-bc5eb245b29a
+  - link "Import or export products":
+    - /url: /en/products/import?store=a35e8d65-3501-4f99-b39a-bc5eb245b29a
+  - link "Inventory":
+    - /url: /en/inventory?store=a35e8d65-3501-4f99-b39a-bc5eb245b29a
+  - region "To do":
+    - heading "To do" [level=2]
+    - list:
+      - listitem:
+        - link "Transfers to confirm 0":
+          - /url: /en/orders?state=AWAITING_TRANSFER&store=a35e8d65-3501-4f99-b39a-bc5eb245b29a
+      - listitem:
+        - link "Orders to ship 1":
+          - /url: /en/orders?state=unshipped&store=a35e8d65-3501-4f99-b39a-bc5eb245b29a
+      - listitem:
+        - link "Convenience-store labels to create 0":
+          - /url: /en/ord
