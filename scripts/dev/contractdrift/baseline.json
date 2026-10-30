@@ -2251,33 +2251,6 @@
     {
       "kind": "GO_ONLY",
       "method": "GET",
-      "path": "/v1/admin/stores/{}/products/export.csv",
-      "locations": [
-        {
-          "file": "internal/httpapi/handler.go",
-          "line": 233,
-          "end": 233
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 42,
-          "end": 42
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 48,
-          "end": 48
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 48,
-          "end": 61
-        }
-      ]
-    },
-    {
-      "kind": "GO_ONLY",
-      "method": "GET",
       "path": "/v1/admin/stores/{}/provider-accounts",
       "locations": [
         {
@@ -2701,33 +2674,6 @@
           "file": "internal/httpapi/settlements.go",
           "line": 45,
           "end": 53
-        }
-      ]
-    },
-    {
-      "kind": "GO_ONLY",
-      "method": "GET",
-      "path": "/v1/admin/stores/{}/shipments/tracking-import/{}/result.csv",
-      "locations": [
-        {
-          "file": "internal/httpapi/handler.go",
-          "line": 233,
-          "end": 233
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 42,
-          "end": 42
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 173,
-          "end": 173
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 173,
-          "end": 188
         }
       ]
     },
