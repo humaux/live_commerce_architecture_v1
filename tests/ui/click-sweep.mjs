@@ -538,6 +538,8 @@ async function journeyDomain(state, journeys) {
     let card;
     await step(unit, "open Settings and find the custom domain card", "the storefront domains card is shown", async () => {
       await page.goto(`${adminOrigin}/zh-TW/settings?store=${store}`);
+      // The signed settings overview groups rare configuration under Advanced; enter it through the merchant control.
+      await page.getByRole("button", { name: "進階", exact: true }).click();
       card = page.getByTestId("storefront-domains-card");
       await expect(card).toBeVisible();
     }, page);

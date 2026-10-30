@@ -16,6 +16,11 @@ async function login(page:Page,base=origin){
  await page.goto(`${base}/en/`);await page.getByRole("button",{name:"Sign in with identity service"}).click();
  await expect(page.getByRole("combobox",{name:"Switch store",exact:true})).toBeVisible();
 }
+async function enterAdvanced(page:Page){
+ const advanced=page.getByRole("button",{name:/^(Advanced|進階|进阶)$/,exact:true});
+ await expect(advanced.or(page.getByTestId("metaconnect-card"))).toBeVisible();
+ if(await advanced.isVisible())await advanced.click();
+}
 async function click(page:Page,name:string,act:()=>Promise<unknown>,verify:()=>Promise<unknown>,expected:string){
  const item={page:new URL(page.url()).pathname,control:name,action:"real click/select/navigation",expected,actual:"",pass:false};ledger.push(item);
  try{await act();await verify();item.pass=true;item.actual=expected;}catch(e){item.actual=String(e).split("\n")[0];throw e;}
@@ -54,6 +59,7 @@ for(const locale of locales){
  });
  test(`${locale} 390: named FB/IG capabilities keep review-required restricted`,async({page})=>{
   await page.setViewportSize({width:390,height:844});await scenario("review");await login(page);await page.goto(`${origin}/${locale}/settings?store=${store}`);
+  await enterAdvanced(page);
   await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);
   await expect(page.getByRole("button",{name:recheck[locale],exact:true})).toBeEnabled();
   await click(page,`recheck-${locale}`,()=>page.getByRole("button",{name:recheck[locale],exact:true}).click(),()=>expect(page.getByTestId("meta-health-recheck-result")).toBeVisible(),"localized recheck acknowledges scheduling");
@@ -68,6 +74,7 @@ for(const locale of locales){
 }
 test("desktop: warning is neutral, none and failed reads hide advice without blocking the workspace",async({page})=>{
  await scenario("warning");await login(page);await page.goto(`${origin}/en/settings?store=${store}`);
+ await enterAdvanced(page);
  await expect(page.getByTestId("meta-health-banner")).toHaveAttribute("data-severity","warning");await shot(page,"warning-en-desktop",'[data-testid="meta-health-banner"]');
  await scenario("none");await page.reload();await expect(page.getByTestId("metaconnect-card")).toBeVisible();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);
  // FAULT injection: B1 read failure only, not a merchant write.
@@ -77,6 +84,7 @@ test("desktop: warning is neutral, none and failed reads hide advice without blo
 });
 test("explicit recheck schedules, then reports the real 429 without another schedule",async({page})=>{
  await scenario("none");await login(page);await page.goto(`${origin}/en/settings?store=${store}`);
+ await enterAdvanced(page);
  const button=page.getByRole("button",{name:recheck.en,exact:true});await expect(button).toBeEnabled();
  const before=await(await control("facts")).json();
  await click(page,"recheck",()=>button.click(),()=>expect(page.getByTestId("meta-health-recheck-result")).toContainText("scheduled"),"B2 scheduling receipt displayed");
@@ -91,7 +99,9 @@ test("viewer sees owner advice and capability state but no managed actions",asyn
  await scenario("blocking");const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();
  const base=process.env.LC_HEALTH_VIEWER!;await login(page,base);await page.goto(`${base}/en/orders?store=${store}`);
  await expect(page.getByTestId("meta-health-owner")).toContainText("store owner");await expect(page.getByTestId("meta-health-settings")).toHaveCount(0);
- const before=await(await control("facts")).json();await page.goto(`${base}/en/settings?store=${store}`);await expect(page.getByTestId(`meta-health-page-${pageID}`)).toBeVisible();
+ const before=await(await control("facts")).json();await page.goto(`${base}/en/settings?store=${store}`);
+ await enterAdvanced(page);
+ await expect(page.getByTestId(`meta-health-page-${pageID}`)).toBeVisible();
  await expect(page.getByTestId("meta-health-recheck")).toHaveCount(0);await expect(page.getByTestId("metaconnect-reconnect")).toBeDisabled();
  expect((await(await control("facts")).json()).next_due_at).toBe(before.next_due_at);await context.close();
 });

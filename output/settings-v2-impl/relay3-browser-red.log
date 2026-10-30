@@ -1,0 +1,25 @@
+PR303 head7ab9c4ceb376b9de394c6023d61478df2d6328e8
+Gates40849341786/job123370917883; artifact12888112351
+Synthetic merge61e2f2a2f66dde4a99fb1dc5ef5aec50797144db
+browser engine: chromium
+[   2s] stack up; admin http://127.0.0.1:42655, storefront https://buyer.example (Next :42657); 33 registry routes; workers=1 sample=3
+[  10s] /studio desktop/zh-TW [main] 8 controls, 8 classes sampled
+[  80s] admin /studio desktop/zh-TW done
+[  88s] /studio/console mobile/zh-TW [main] 12 controls, 12 classes sampled
+[ 194s] admin /studio/console mobile/zh-TW done
+[ 202s] /studio/claims mobile/zh-TW [main] 16 controls, 16 classes sampled
+[ 352s] admin /studio/claims mobile/zh-TW done
+[ 360s] /orders mobile/zh-TW [main] 26 controls, 24 classes sampled
+[ 623s] admin /orders mobile/zh-TW done
+[ 631s] /products desktop/zh-TW [main] 27 controls, 27 classes sampled
+[ 873s] admin /products desktop/zh-TW done
+[ 881s] /collections mobile/zh-TW [main] 4 controls, 4 classes sampled
+[ 915s] admin /collections mobile/zh-TW done
+[ 924s] /products/import desktop/en [main] 2 controls, 2 classes sampled
+[ 939s] admin /products/import desktop/en done
+[ 948s] /finance/reports desktop/en [main] 7 controls, 7 classes sampled
+[1009s] admin /finance/reports desktop/en done
+[1017s] /settings/operations desktop/zh-TW [main] 5 controls, 5 classes sampled
+[1060s] admin /settings/operations desktop/zh-TW done
+[1065s] shard 10/10: 9 page/viewport/locale units opened (0 with a page-load failure), 111 control clicks (108 pass, 0 fail, 3 skip), 3 journey steps (0 pass, 1 fail); failures: known 0, new 1; stale known-defect entries 0.
+NEW FAIL journey J4 custom domain desktop/zh-TW [journey] "open Settings and find the custom domain card" journey-step: expect(locator).toBeVisible() failed Locator: getByTestId('storefront-domains-card') Expected: visible Timeout: 5000ms Error: element(s) not found Call log: - Expect "toBeVisible" getByTestId('storefront-domains-card') with timeout 5000ms - waiting for getByTestId('storefront-domains-card') (output/playwright/run.8NyEZV1b/ui-click-sweep/screenshots/r00121.png)

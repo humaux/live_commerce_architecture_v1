@@ -1,0 +1,9 @@
+# Original failure artifacts and read-only local design/API receipts stay local.
+relay2-identity.zip
+relay2-bundle07.log
+relay2-bundle08.log
+relay2-eagle.json
+figma/
+tsconfig.static.json
+fix303-artifacts/
+fix303-oc-artifacts/

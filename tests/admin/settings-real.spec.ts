@@ -5,6 +5,7 @@
 // wizard through the card-payments link; this spec proves no PAYUNi control or text remains and keeps the safe-uncertainty,
 // policy/service and changed-session checks on the merchant-arranged delivery flow.
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { settingsV2Acceptance } from "./settings-v2.spec";
 
 const origin = process.env.LC_BROWSER_PUBLIC_ORIGIN;
 if (!origin || new URL(origin).origin !== origin)
@@ -61,6 +62,11 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.getByTestId("nav-group-settings").click();
   await page.getByTestId("nav-settings").click();
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
+  await settingsV2Acceptance(page, receipt.store_id);
+  // Signed simplified settings is the default. Existing rare configuration and
+  // every legacy safety assertion remain reachable through one explicit entry.
+  await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
+  await page.getByRole("button", { name: "Advanced", exact: true }).click();
   await expect(
     page.getByText("Loading saved configuration…", { exact: true }),
   ).toBeHidden();

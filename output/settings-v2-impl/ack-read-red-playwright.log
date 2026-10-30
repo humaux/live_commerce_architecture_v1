@@ -1,0 +1,44 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty (19.0s)
+
+
+  1) tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty 
+
+    Error: an acknowledged SKU followed by a failed product read must retain the unsent initial stock across Reload and refresh
+
+    expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel('Stock (units)', { exact: true })
+    Expected: "10"
+    Received: "0"
+    Timeout:  10000ms
+
+    Call log:
+      - an acknowledged SKU followed by a failed product read must retain the unsent initial stock across Reload and refresh getByLabel('Stock (units)', { exact: true }) with timeout 10000ms
+      - waiting for getByLabel('Stock (units)', { exact: true })
+        24 × locator resolved to <input min="0" step="1" disabled value="0" required="" type="number"/>
+           - unexpected value "0"
+
+
+       at settings-v2.spec.ts:288
+
+      286 |   await expect(page.getByLabel("Product name", { exact: true })).toHaveValue("Acceptance draft bag");
+      287 |   await expect(page.getByLabel("Price (TWD)", { exact: true })).toHaveValue("1280");
+    > 288 |   await expect(page.getByLabel("Stock (units)", { exact: true }), "an acknowledged SKU followed by a failed product read must retain the unsent initial stock across Reload and refresh").toHaveValue("10");
+          |                                                                                                                                                                                           ^
+      289 |   expect(skuCommands, "refresh and setup navigation must not repeat an acknowledged SKU").toEqual([originalSku, originalSku]);
+      290 |   expect(inventoryCommands, "reads must not initialize the retained stock").toHaveLength(0);
+      291 |   await page.unroute(productURL);
+        at settingsV2Acceptance (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settings-v2.spec.ts:288:187)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settings-real.spec.ts:65:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/settings-real-20261029T181958.786653446/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/settings-real-20261029T181958.786653446/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/error-context.md
+
+  1 failed
+    tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty 

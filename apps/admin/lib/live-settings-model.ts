@@ -6,8 +6,9 @@ export const settingsUUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
 const session = `live-sessions/${uuid}`;
 export type SettingsKind =
-  "profile" | "settings" | "templates" | "reminders" | "blocklist" | "check" | "remove";
+  "quickstart" | "profile" | "settings" | "templates" | "reminders" | "blocklist" | "check" | "remove";
 const resources: [SettingsKind, RegExp, string[]][] = [
+  ["quickstart", /^quickstart$/, ["GET", "POST"]],
   ["profile", /^profile$/, ["GET", "PUT"]],
   ["settings", /^live-settings\/sold-out-reply$/, ["GET", "PUT"]],
   ["templates", /^message-templates$/, ["GET", "POST"]],
@@ -85,6 +86,7 @@ export function settingsResource(path: string) {
 }
 /** Permissions remain independently enforced by Go, using the authenticated principal. */
 export function settingsPermissions(kind: SettingsKind, method: string) {
+  if (kind === "quickstart") return [method === "GET" ? "store:read" : "integration:manage"];
   if (kind === "profile") return [method === "GET" ? "store:read" : "integration:manage"];
   if (kind === "reminders")
     return method === "GET" ? ["inbox:read"] : ["live:manage", "inbox:reply"];
@@ -155,6 +157,7 @@ const exact = (
 export function settingsBody(kind: SettingsKind, raw: string): boolean {
   try {
     const v = obj(JSON.parse(raw));
+    if (kind === "quickstart") return exact(v, []);
     if (kind === "profile")
       return (
         exact(v, ["name", "contact_email", "expected_version"], ["contact_phone"]) &&
@@ -226,6 +229,15 @@ export function settingsData(
   value: unknown,
 ): unknown {
   const v = obj(value);
+  if (kind === "quickstart") {
+    const steps = obj(v.steps);
+    const completed = bool(v.completed);
+    const completedAt = v.completed_at === null ? null : time(v.completed_at);
+    if (completed !== (completedAt !== null)) throw new Error("quickstart_shape");
+    return { completed, completed_at: completedAt, steps: {
+      store_name: bool(steps.store_name), shipping: bool(steps.shipping), first_product: bool(steps.first_product),
+    } };
+  }
   if (kind === "profile") return {
     name: str(v.name, 120),
     contact_email: str(v.contact_email, 254),

@@ -1,0 +1,3 @@
+node --check tests/admin/settings-v2.spec.ts
+exit: 0
+Scope: syntax only (E1); no runtime tests or servers.

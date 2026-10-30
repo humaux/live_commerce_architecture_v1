@@ -1,0 +1,5 @@
+gate (bundle:08)	Gate	2026-10-29T06:48:47.7052989Z     browser_oc_test.go:247: browser spec failed; local evidence: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.4j0uGC76/oc-20261029T064831.158935330
+gate (bundle:08)	Gate	2026-10-29T06:48:47.7063397Z     browser_oc_test.go:259: invitations replayed after re-auth: 2, want >= 3 (one per chain)
+gate (bundle:08)	Gate	2026-10-29T06:48:47.7086261Z     browser_oc_test.go:279: POST /v1/identity/login/reauth/start was not exercised through the BFF
+gate (bundle:08)	Gate	2026-10-29T06:48:47.7087557Z     browser_oc_test.go:279: POST /v1/identity/login/complete was not exercised through the BFF
+gate (bundle:08)	Gate	2026-10-29T06:48:47.7226353Z --- FAIL: TestBrowserOC (19.04s)

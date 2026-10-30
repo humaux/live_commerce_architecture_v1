@@ -1,0 +1,6 @@
+Original GitHub job API123357007118, Gates40846464956, head5aab07763ac6657c402bd06f5ff6f00ea752b2e9, artifact12886400573
+2026-10-29T09:15:05.9944637Z === RUN   TestBrowserSettingsWizardRealChain
+2026-10-29T09:15:20.6547746Z     browser_identity_chain_test.go:51: browser chain failed; local evidence: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/settings-real-20261029T091506.063369025
+2026-10-29T09:15:20.6672494Z --- FAIL: TestBrowserSettingsWizardRealChain (14.67s)
+2026-10-29T09:15:25.2708850Z matrix-receipts: {"mode":"--browser-identity","run_id":"40846464956","run_attempt":"1","sha":"701eebb5b11866cb172e61f7dcb2de676a2c6ca9","status":"FAIL","test_count":7,"spec_count":3}
+2026-10-29T09:16:37.2352456Z --- FAIL: TestBrowserSettingsWizardRealChain (14.67s)
