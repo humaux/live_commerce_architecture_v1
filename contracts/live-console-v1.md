@@ -447,7 +447,7 @@ by the planning transaction of a human DM, §3.6.)
 ### 4.4 Visible send states
 
 Thread items and comment marks expose `send_state` ∈ `queued` (READY/DISPATCHING), `sent` (SUCCEEDED), `failed`
-(FAILED_FINAL + code), `blocked` (BLOCKED_POLICY/STALE_BINDING + code), `unknown` (UNKNOWN: 「不確定是否送達，請到
+(FAILED_FINAL + code), `blocked` (BLOCKED_POLICY/STALE_BINDING + code), `unknown` (UNKNOWN or ACKNOWLEDGED, which is provider-accepted but unconfirmed: 「不確定是否送達，請到
 Messenger 確認，系統不會重送」). The auto first-reply state (M08 #4/#6) is exposed the same way.
 
 ## 5. Order for a buyer (幫他建立訂單)
