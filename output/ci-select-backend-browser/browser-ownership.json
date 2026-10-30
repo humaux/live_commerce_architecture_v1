@@ -638,6 +638,7 @@
     "tests/foundation/sold_out_reply_test.go": "e94ca13c234f2d7fc1210bab1eb76808df2343ac19bb771ba25bee5579ceb077",
     "tests/foundation/staff_team_gate_test.go": "ba70fce98efa7007ada3bdc8e5abe1d62a3b344917a5252ff62e6e51f1002842",
     "tests/foundation/staff_team_smoke_test.go": "3fa9da8960bc400d130c808624ff273242d667185a4977146e7c4b333a9d0f21",
+    "tests/foundation/store_contact_messages_test.go": "31f4895debfe004ef6fe39436aa26f24fb702e29df7e6fb99fdb179adde8cb45",
     "tests/foundation/store_design_gate_test.go": "f6e01980123fcf6f65e2c568d80e4e1bfaae9a994ed9bfce3bd071616a97bb16",
     "tests/foundation/store_design_test.go": "ee025201337d32a672d09ca3ea8300780e51d908ca110fa1659b444d1436e4cf",
     "tests/foundation/store_domains_adversarial_test.go": "64c6b655e462f8e894fb0f2dae58dfb31d4fef558512db4d08cef10ac38f9ff8",

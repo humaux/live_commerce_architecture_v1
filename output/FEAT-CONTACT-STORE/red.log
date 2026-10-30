@@ -1,0 +1,12 @@
+card=FEAT-CONTACT-STORE
+phase=tests-only RED preparation
+base_sha=3ea359f796d36153bb4b8aa7259e4e0c27676b86
+branch=unit/feat-contact-store
+evidence=E1 static only; author verdict is E0
+local_tests=NOT_RUN (owner CI-only requirement)
+local_servers=NOT_RUN
+red_workflow_run=PENDING_PUSH
+red_job=PENDING
+red_assertion_result=NOT_RUN
+green_workflow_run=NOT_RUN
+next=Push tests-only commit; record PR and Gates/Foundation run IDs here, then WAIT_RUN handoff if queued.
