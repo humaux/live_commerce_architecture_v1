@@ -1,5 +1,30 @@
 # PARITY-SHIPCENTER · implementation handoff · 2026-10-30
 
+## RV3 — independent review repairs, implementation awaiting CI (2026-10-31)
+
+Authority: owner RV3 card and final REQUEST_CHANGES in `output/integrator/tools/logs/cxf-rv-353.log`; repository source at tests-only head `d459a87ff7a30edbeae666af07f9c41330e3ef8c`. Dispatched UI worker, same branch/worktree/PR #353; no recursive delegation or new claim. Humaux is unavailable in this runtime: search, rejected enumeration, store, code links and own canvas update could not be performed. Integrator must transfer this handoff to Humaux; no successful store/update is claimed.
+
+**Causal RED (E3):** Gates `41095507220`, bundle:09 job `124202710457`, synthetic merge `f47078365de0aa8596327fd645507c6214577d74`, artifact `12998191786` (`gate-browser-merchant-orders-ui`). All six RV3 cases failed on their new assertions: footer heights 86px / 86px / 104px exceed 76px; print destination is `000 Synthetic city Synthetic address` without HK. Three locales each exercise both defects; 36 other cases passed. Completed-job API and downloaded raw Playwright artifact were read because `gh run view --log-failed --job` refuses logs while the workflow is still running. Artifact log (trailing whitespace normalized only): `rv3-red-playwright.log`; exact receipts in `red.log`. Foundation `41095506799` / job `124200095267` passed only on the RED head. No new GREEN claimed.
+
+Root-cause fixes: the selection summary's unlimited wrapping enlarged an absolutely positioned footer over a viewport reserving fixed space. The footer is now exactly 76px, with a two-line summary (36px maximum) and a bounded grid row. The existing order viewport still reserves 124px, leaving the entire footer plus clearance outside its scrolling content. Full order/item summaries remain on the review page; View/Cancel keep their existing controls. Mobile retains the signed single-order task with the desktop footer hidden. Printed home-delivery addresses now retain authenticated `destination.country`. Store has no country field, so the country is included on every home-delivery slip rather than guessed from locale/currency; this covers cross-border destinations without changing any DTO/API. ISO country is server data, not new UI copy; existing zh-TW/zh-CN/en labels are reused.
+
+Merged current `origin/r3/integration` `f59e5c540` as `4aafe4fa8`. Only the generated browser-ownership file conflicted; regenerated it from merged source and checked it with the mandated generator. No hand editing, imports, routes or pages added. No Go dependency edges changed; depmap regeneration is unnecessary. Impeccable layout/craft and ponytail guidance applied to existing geometry; skill runtime scripts omitted because this card permits only listed static commands. No new visual pattern/reference, Figma write, seller setting or business mutation.
+
+### RV3 parity sheet and click acceptance
+
+| Signed family / state | Required facts and real-click CI gate | Current evidence |
+|---|---|---|
+| 1429:28034 desktop 1440×900 | Twenty multi-item orders across two pages; each selection keeps footer ≤76px inside viewport; last-row deselect/reselect, next/first paging, View and Cancel clickable; reload persistence | RED: footer assertion fails in all 3 locales; implementation GREEN PENDING |
+| 1429:28313 mobile 390×844 | Restored twenty-order selection; hidden desktop footer; last order detail link plus next/first-page controls reachable and clickable after reload | Downstream assertions retained; execution PENDING GREEN (RED stops at desktop defect) |
+| Review summary | All 20 selected order identities and complete item summaries retained; real View/Back controls | Existing and new assertions retained; PENDING GREEN |
+| Print-media address | Real select→View→Confirm, refresh; recipient/delivery facts unchanged; postal code, city, street and HK destination present | RED: missing HK in all 3 locales; implementation GREEN PENDING |
+
+The existing required-fact desktop/mobile/summary table and UI PROCESS sections below remain applicable. This relay does not claim fresh signed-image parity, native dialog or physical printing. Rollback: revert the RV3 implementation commit; keep tests-only `d459a87ff` and its RED evidence. No data writes, local servers, test processes, containers or ports were started. Own duplicate artifact downloads are removed after retaining the raw failed-test log; pre-existing untracked outputs remain untouched.
+
+Static evidence: `node --check tests/admin/shipping-center.spec.ts`, `node scripts/dev/derive-browser-ownership.mjs` and `--check`, `git diff --check`: exit 0. Local TypeScript build/typecheck is NOT_RUN (this worktree has no installed node_modules); no installs were performed. Existing E1 source-hash table below is historical; current changed-source hashes: ShippingCenter.tsx `e096a849233a003463611129b7fa5f7382ee6d9f6c3c05dd5003d2ded9049a7a`, shipping.module.css `291b6848d5bfc64851bb2d64795345b35787e29e26f4eabb2988501f735e7ace`.
+
+Handoff: push once for both fixes; record Gates/Foundation run IDs in a PR comment and `RV3-WAIT.json`, with integrator fresh-session relay as wakeup (queue escalation after 3h). No polling beyond ~10 minutes. No merge/auto-merge/deploy; no evidence-only push after GREEN. Author implementation judgement E0, static E1, causal CI RED E3; current implementation acceptance PENDING.
+
 Status: E1 static structure/typecheck only. Browser GREEN, physical print, independent parity and production acceptance are PENDING/NOT_RUN. PR #353 targets `r3/integration`; branch `unit/parity-shipcenter`; worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-shipcenter`. Dispatched child role: UI implementer; precise runtime model/effort UNKNOWN. No recursive delegation. Initial head `e23c1167780288321bb9d9775c2be93a5441bf4a`; merged integration `3ea359f79` before adding the route per ownership rule.
 
 Historical implementation/relay2 sessions reported Humaux tools unavailable. In RELAY 3 Humaux is available: targeted search/get, locked fix store and own subtask canvas are used. This dispatched worker does not claim another queue task or write the parent element.
@@ -227,7 +252,7 @@ Source: `apps/admin/src/shell-copy.ts`; authenticated role decides which existin
 
 GREEN PENDING. After the implementation push, record current Gates/Foundation run IDs in the PR and final relay; integrator wakes a fresh session when the job concludes. Do not poll longer than ~10 minutes. Do not merge, enable auto-merge, deploy or push evidence-only after GREEN.
 
-## E1 checked source hashes
+## Historical E1 checked source hashes (pre-RV3)
 
 TypeScript strict and ownership static checks refer to these unchanged source bytes (product tests remain CI-only).
 

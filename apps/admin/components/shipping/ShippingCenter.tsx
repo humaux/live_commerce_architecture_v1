@@ -235,7 +235,8 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
                   <div className={s.printOnly}><dt>{c.address}</dt><dd>{order.destination.pickup ?
                     `${order.destination.pickup.name} · ${order.destination.pickup.code} · ${order.destination.pickup.address}` :
                     [order.destination.home_address.postal_code, order.destination.home_address.region, order.destination.home_address.city,
-                      order.destination.home_address.line1, order.destination.home_address.line2].filter(Boolean).join(' ')}</dd></div>
+                      order.destination.home_address.line1, order.destination.home_address.line2,
+                      order.destination.country].filter(Boolean).join(' ')}</dd></div>
                   <div className={s.printOnly}><dt>{c.phone}</dt><dd>{order.destination.phone}</dd></div>
                 </dl>
                 <p className={s.printOnly}>{itemsText(order)}</p><small className={s.screenOnly}>{c.source}</small>

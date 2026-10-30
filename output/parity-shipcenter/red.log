@@ -13,3 +13,39 @@ Foundation_result=success
 raw_log=red-evidence/playwright.log
 GREEN=NOT_RUN
 local_tests_servers=NOT_RUN (owner prohibition)
+
+PARITY-SHIPCENTER-RV3 RED candidate — 2026-10-31 (GitHub queued_at 2026-10-30T17:03Z)
+PR=353
+head_sha=d459a87ff7a30edbeae666af07f9c41330e3ef8c
+base_sha=e362adb21cf158a8e66eb3a79ee0a38e75313e29
+Gates_run=41095507220
+Gates_test_job=PENDING (only plan scheduled; not a test receipt)
+Foundation_run=41095506799
+Foundation_job=124200095267 (queued)
+RED_assertion_result=PENDING; no causal RED claimed
+new_cases=6 (3 locales x batch-reachability and printed-country)
+expected_failure_P1=RV3 selection footer stays within the signed 76px height
+expected_failure_P2=RV3 printed home address includes server destination fact HK
+static=node --check shipping-center.spec.ts, derive-browser-ownership generation and --check, git diff --check; exit 0
+GREEN=NOT_RUN; implementation intentionally not started pending causal RED
+local_tests_servers=NOT_RUN (owner prohibition)
+wakeup=integrator relays Gates/Foundation conclusion in fresh session; escalate queue beyond 3h
+
+PARITY-SHIPCENTER-RV3 causal RED confirmed — 2026-10-31
+PR=353
+head_sha=d459a87ff7a30edbeae666af07f9c41330e3ef8c
+base_sha=e362adb21cf158a8e66eb3a79ee0a38e75313e29
+synthetic_merge_sha=f47078365de0aa8596327fd645507c6214577d74
+Gates_run=41095507220
+Gates_job=124202710457 (gate bundle:09; failure)
+artifact=12998191786 gate-browser-merchant-orders-ui
+raw_log=rv3-red-playwright.log (trailing whitespace normalized only; assertions unchanged)
+result=6 RV3 assertion failures; 36 other cases passed
+P1=zh-TW/zh-CN/en footer heights exceed 76px (86/86/104px)
+P2=zh-TW/zh-CN/en printed destination missing HK; received 000 Synthetic city Synthetic address
+Foundation_run=41095506799
+Foundation_job=124200095267
+Foundation_result=success (RED head only)
+implementation_attempt=1 for these RV3 defects
+GREEN=PENDING next implementation push
+local_tests_servers=NOT_RUN (owner prohibition)
