@@ -421,7 +421,8 @@ async function checkoutParitySuite({ newContext, origin, product, recipient, evi
       // Only TW home-online/COD frames match this fixture's delivery method. Other locales
       // validate translated home checkout; never mislabel them as signed pickup frames.
       const frame = locale === "zh-TW" ? parityFrames[mode][state][Number(mobile)] : null;
-      const relative = `parity/${frame ?? `${locale}-${mode}-${state}-${mobile ? 390 : 1440}`}.png`;
+      // GitHub artifact paths reject colons; keep the exact Figma ID in the manifest.
+      const relative = `parity/${frame?.replaceAll(":", "-") ?? `${locale}-${mode}-${state}-${mobile ? 390 : 1440}`}.png`;
       await target.screenshot({ path: path.join(evidence, relative), fullPage: false, animations: "disabled", scale: "css" });
       manifest.push({ frame, locale, mode, state, viewport: target.viewportSize(), route: new URL(target.url()).pathname, screenshot: relative });
       await writeFile(path.join(evidence, "parity-checkout-screenshots.json"), JSON.stringify(manifest, null, 2));
