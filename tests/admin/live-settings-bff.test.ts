@@ -124,6 +124,9 @@ const roots = `live-sessions/${sid}`;
 const leaves: Record<string, string> = {
   "quickstart": "quickstart",
   "profile": "profile",
+  "contact-messages": "contact-messages",
+  [`contact-messages/${cid}`]: "contact-messages/[message]",
+  [`contact-messages/${cid}/handled`]: "contact-messages/[message]/handled",
   "live-settings/sold-out-reply": "live-settings/sold-out-reply",
   "message-templates": "message-templates",
   [`${roots}/reminders`]: "live-sessions/[session]/reminders",
@@ -166,6 +169,7 @@ async function call(
   const response: Response = await (handlers[method] ?? handlers.GET)(req, {
     params: Promise.resolve({
       store: storeId,
+      message: cid,
       session: sid,
       entry,
       resource: routePath.split("/"),
@@ -183,6 +187,42 @@ const setting = {
   template_version: 2,
   version: 4,
 };
+test("contact BFF uses signed inbox scope, strict receipts and one handled request", async () => {
+  const saved = permissions;
+  const detail = {id:cid,name:"Synthetic buyer",email:"buyer@example.test",order_number:"",message:"<b>literal</b>",status:"open",version:0};
+  try {
+    permissions = ["inbox:read", "inbox:reply"];
+    reply({items:[detail],next_cursor:null});
+    const listed = await call("contact-messages?limit=50");
+    assert.equal(listed.status, 200);
+    assert.deepEqual(listed.body, {items:[detail],next_cursor:null});
+    assert.match(listed.headers.get("cache-control")!, /private.*no-store/);
+    reply(detail);
+    assert.deepEqual((await call(`contact-messages/${cid}`)).body, detail);
+    const handled = {...detail,status:"handled",version:1};
+    reply(handled);
+    const before = seen.length;
+    const result = await call(`contact-messages/${cid}/handled`, "POST", {expected_version:0});
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body, handled);
+    assert.equal(seen.length, before+1);
+    assert.equal(seen.at(-1)!.body, '{"expected_version":0}');
+    reply(detail);
+    assert.equal((await call(`contact-messages/${cid}/handled`, "POST", {expected_version:0})).status,503);
+    reply({...detail,id:customer});
+    assert.equal((await call(`contact-messages/${cid}`)).status,503);
+    reply({...detail,ciphertext:"internal"});
+    assert.equal((await call(`contact-messages/${cid}`)).status, 503);
+    reply({code:"conflict"},409);
+    assert.equal((await call(`contact-messages/${cid}/handled`, "POST", {expected_version:0})).status,409);
+    permissions = ["inbox:read"];
+    const deniedBefore = seen.length;
+    assert.equal((await call(`contact-messages/${cid}/handled`, "POST", {expected_version:0})).status,403);
+    assert.equal(seen.length,deniedBefore);
+    permissions = [];
+    assert.equal((await call("contact-messages")).status,403);
+  } finally { permissions = saved; }
+});
 const input = {
   enabled: false,
   template_id: "merchant-soldout",

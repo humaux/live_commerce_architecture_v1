@@ -1,0 +1,3 @@
+receipts	UNKNOWN STEP	2026-10-30T13:50:27.6964875Z   receipt --browser-click-sweep@7/10: FAIL test_count=18 run=41056798358/1 sha=174d8ee7748579c4dc303451e59a5aedf6dfc32c
+receipts	UNKNOWN STEP	2026-10-30T13:50:27.7022727Z   receipt shard:g10: FAIL test_count=246 run=41056798358/1 sha=174d8ee7748579c4dc303451e59a5aedf6dfc32c
+receipts	UNKNOWN STEP	2026-10-30T13:50:27.7024682Z matrix-receipts: RED (2 problem(s))

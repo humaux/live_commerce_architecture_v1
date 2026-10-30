@@ -1,0 +1,24 @@
+FEAT-CONTACT-STORE-FIX1 2026-10-31
+base=629f42152f864621a99ac2247c3baf5d751a422f
+rollback_merge=69f1762277c2061ace7f23694356485d10e58276
+E1 static checks, not behavioral acceptance:
+gofmt changed Go source/tests: exit 0, final gofmt -l output empty
+go vet ./internal/storefront ./internal/buyerhttp ./internal/httpapi ./internal/notify ./tests/foundation: exit 0
+go build ./internal/storefront ./internal/buyerhttp ./internal/httpapi ./internal/notify: exit 0
+node --check changed buyer-server/live-settings-model/live-settings-proxy, admin BFF leaves and admin model/BFF test files: exit 0
+python3 scripts/check_packet.py: exit 0 PASS_PACKET_STRUCTURE_ONLY (incidental output restored)
+node scripts/dev/derive-browser-ownership.mjs: exit 0, 54 modes; final --check: exit 0
+bash scripts/dev/depmap.sh: exit 0; --check: exit 0
+git diff --check: exit 0 after trimming trailing whitespace in red.log excerpts (original assertions retained)
+local tsc: NOT_RUN, compiler unavailable
+local tests/servers: NOT_RUN (prohibited)
+current-head CI: PENDING push; IDs to PR comment/relay
+Source hashes follow:
+56685fc22a27f011ce202f9c54caea87946505e293a08595b9a29048f203abf7  internal/storefront/contact.go
+a778e3d31739b8c7b234a6f2c3ae787d39b0f0bf050ec500b9e2fce5724f85e2  internal/buyerhttp/contact.go
+f0981f2f91f554bd8e8ed544cdb86d088e21afcdfff0f3a149bcb231b944d500  internal/httpapi/contact.go
+e3c61a54a96d1850df607dee1f1edbe03cbf54e0fb874a2e2cd960ddb05b6a2a  internal/notify/render.go
+b006db97d097dc512caf9f9f5004014d57a0eb6de4b5ba1f3cda0dc4abf9caad  migrations/0211_store_contact_messages.sql
+a397809cd960fb7c807e89e5a3b5fbc4f77335ce7e3c2ff0d3e213e2627efe51  apps/storefront/lib/buyer-server.ts
+47d57e826a997a1c258a557f993efc8990b39a617b25d83aaef1a028f16a97ae  apps/admin/lib/live-settings-model.ts
+91955d8b605455bbe57dbfd783a9aaae4125e9f54dac10560e22701394d52e65  apps/admin/lib/live-settings-proxy.ts

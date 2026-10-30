@@ -129,8 +129,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0207 (IDENT-P2: OIDC re-auth infinity cap; #215/#228) adds one: 136 -> 137.
 	// 0208 (#196/#197 settlement item completeness) adds one: 137 -> 138.
 	// 0209 (STORE-PROFILE-API authenticated profile CAS) adds one to base 0b831887a: 138 -> 139.
-	if len(r2) != 139 {
-		t.Fatalf("R2 migration set = %d files %v, want 139", len(r2), r2)
+	// 0211 (FEAT-CONTACT-STORE: encrypted contacts and transactional notification) adds one to a3dc78e4d: 139 -> 140.
+	if len(r2) != 140 {
+		t.Fatalf("R2 migration set = %d files %v, want 140", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

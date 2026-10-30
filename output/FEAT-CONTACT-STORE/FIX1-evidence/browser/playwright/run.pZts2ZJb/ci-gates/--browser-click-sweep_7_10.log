@@ -1,0 +1,74 @@
+## matrix-receipts node-test begin
+✔ readiness: briefly quiet but still loading (busy) waits before assertions (18.950214ms)
+✔ readiness: briefly quiet but still loading (status) waits before assertions (17.377143ms)
+✔ readiness: briefly quiet but still loading (skeleton) waits before assertions (16.820021ms)
+✔ readiness: a page that stays busy fails explicitly within the bound (8.62024ms)
+✔ readiness: recovery reload waits for the page, not just DOM/network quiet (18.606427ms)
+✔ readiness: initial and fresh-context navigations opt in before unchanged page assertions (6.583665ms)
+✔ storefront cart-line removal is reversible: clicked for real, not guarded (0.333122ms)
+✔ destructive / irreversible / sign-out classification (owner list, en + zh) (0.759521ms)
+✔ alike controls (rows with ids / numbers) share one class key (0.292432ms)
+✔ known defects classify, never silence: stale entries are reported (0.890143ms)
+✔ the markdown ledger has one row per interaction and names the verdict (0.308595ms)
+✔ protocolHrefOK accepts well-formed tel:/mailto: and rejects malformed ones (0.233395ms)
+✔ J1 waits for enabled media and clicks a real chooser; the uploaded cover is bound to the main section (257.010276ms)
+✔ J1 cannot credit a detail-image receipt as the main cover (0.872517ms)
+✔ J1 refuses a failed cover upload rather than continuing to activate (0.369725ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 412.48119
+## matrix-receipts node-test end
+prebuilt: storefront restored from 174d8ee7748579c4dc303451e59a5aedf6dfc32c
+prebuilt: admin restored from 174d8ee7748579c4dc303451e59a5aedf6dfc32c
+check-gallery-bundle: OK expect=absent files=73 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+## matrix-receipts browser-run begin
+=== RUN   TestBrowserClickSweep
+2026/10/30 13:14:23 http: proxy error: context canceled
+2026/10/30 13:14:23 http: proxy error: context canceled
+2026/10/30 13:14:23 http: proxy error: context canceled
+2026/10/30 13:14:23 http: proxy error: context canceled
+2026/10/30 13:14:23 http: proxy error: context canceled
+2026/10/30 13:14:23 http: proxy error: context canceled
+2026/10/30 13:16:18 http: proxy error: context canceled
+2026/10/30 13:16:18 http: proxy error: context canceled
+2026/10/30 13:16:45 http: proxy error: context canceled
+2026/10/30 13:16:45 http: proxy error: context canceled
+2026/10/30 13:17:36 http: proxy error: context canceled
+2026/10/30 13:18:03 http: proxy error: context canceled
+2026/10/30 13:18:03 http: proxy error: context canceled
+2026/10/30 13:18:47 http: proxy error: context canceled
+2026/10/30 13:18:56 http: proxy error: context canceled
+2026/10/30 13:19:32 http: proxy error: context canceled
+2026/10/30 13:19:41 http: proxy error: context canceled
+2026/10/30 13:19:50 http: proxy error: context canceled
+2026/10/30 13:20:14 http: proxy error: context canceled
+2026/10/30 13:20:40 http: proxy error: context canceled
+2026/10/30 13:22:49 http: proxy error: context canceled
+2026/10/30 13:22:58 http: proxy error: context canceled
+2026/10/30 13:22:58 http: proxy error: context canceled
+2026/10/30 13:23:07 http: proxy error: context canceled
+2026/10/30 13:23:33 http: proxy error: context canceled
+2026/10/30 13:24:00 http: proxy error: context canceled
+2026/10/30 13:24:15 http: proxy error: context canceled
+2026/10/30 13:24:15 http: proxy error: context canceled
+2026/10/30 13:24:15 http: proxy error: context canceled
+2026/10/30 13:24:24 http: proxy error: context canceled
+2026/10/30 13:25:08 http: proxy error: context canceled
+2026/10/30 13:25:58 http: proxy error: context canceled
+2026/10/30 13:26:31 http: proxy error: context canceled
+2026/10/30 13:26:46 http: proxy error: context canceled
+2026/10/30 13:26:46 http: proxy error: context canceled
+2026/10/30 13:26:56 http: proxy error: context canceled
+2026/10/30 13:26:59 http: proxy error: context canceled
+    browser_click_sweep_test.go:558: click sweep FAILED (exit: exit status 1); the ledger and the failing controls are in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.pZts2ZJb/ui-click-sweep (ledger.md, DEFECTS in the runner log /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.pZts2ZJb/click-sweep/20261030T131417.290145074/click-sweep.mjs.log)
+--- FAIL: TestBrowserClickSweep (973.24s)
+=== RUN   TestBrowserClickSweepFixtureLeaseBudget
+--- PASS: TestBrowserClickSweepFixtureLeaseBudget (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	973.359s
+FAIL
