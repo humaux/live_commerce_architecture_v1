@@ -1,4 +1,11 @@
-# FEAT-LIVE-REPLAY handoff blocker (2026-10-31)
+# FEAT-LIVE-REPLAY handoff — FIX2 resolves prior pin blocker (2026-10-31)
+
+Current FIX2 card explicitly assigns the exact rule: base count + this card's migrations.
+After merging base a3dc78e4d, base inventory is 139 and this card adds only 0213: pin 140.
+The previously prepared implementation can now be pushed in the single FIX2 batch.
+Behavioral acceptance is still PENDING; see FIX2.md for fresh failure classification and static evidence.
+
+The following text records the superseded pre-FIX2 blocker; it is not the current status.
 
 Current blocker: migration 0213 is allocated, but the replacement R2 migration-set pin is not.
 `tests/foundation/r2_integration_upgrade_test.go` still asserts 139. The card explicitly forbids
