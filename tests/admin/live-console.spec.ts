@@ -1,5 +1,5 @@
 // Purpose: LC-U1 real-click workspace contract gate in three locales and two viewport sizes.
-// Depends on: @playwright/test, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.
+// Depends on: @playwright/test, shared real-click console controls, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.
 // Used by: browser_live_console_test.go and test-local.sh --browser-live-console.
 // Invariants: I01/I02/I06/I10/I11/I14/I18; Console upstream/receipts are explicitly MOCK, never SQL/provider acceptance.
 import { expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
@@ -10,6 +10,7 @@ import { workspaceCopy } from "../../apps/admin/src/features/live/workspace-copy
 import { money } from "../../packages/format/src/index";
 import { commentCopy } from "../../apps/admin/src/features/live/comment-copy";
 import { nativePage } from "./fixtures/native-device";
+import { showLivePanel as livePanel, showLiveBuyerDetails as buyerDetails, showLiveTools } from "./fixtures/live-console-controls";
 import type { ConsoleSnapshot } from "../../apps/admin/src/features/live/console-model";
 import type { StreamComment } from "../../apps/admin/src/features/live/comment-model";
 import type { BuyerData } from "../../apps/admin/lib/inbox-types";
@@ -87,19 +88,9 @@ async function authorityCookie(context: BrowserContext): Promise<string> {
     .map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
 }
 const route = (locale: string, scene: string, selectedStore = store) => `${origin}/${locale}/studio/console?store=${selectedStore}&scene=${scene}`;
-async function livePanel(page: Page, panel: "live" | "comments" | "buyer") {
-  const tabs = page.getByRole("tab");
-  if (await tabs.first().isVisible()) await tabs.nth(panel === "live" ? 0 : panel === "comments" ? 1 : 2).click();
-}
-async function buyerDetails(page: Page) {
-  await livePanel(page, "buyer");
-  const summary = page.locator("[data-live-buyer-details]:not([open]) > summary");
-  if (await summary.isVisible()) await summary.click();
-}
 async function phase(page: Page, value: string) {
   await expect(page.getByTestId("live-console")).toHaveAttribute("data-phase", value);
-  await livePanel(page, "live");
-  for (const summary of await page.locator("[data-live-tools]:not([open]) > summary").all()) await summary.click();
+  await showLiveTools(page);
 }
 
 test.describe("LC-U2a REAL_PG comment stream",()=>{
@@ -370,6 +361,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     const stockReceipt = (await facts(request)).receipts.at(-1)!;
     expect(stockReceipt.input).toMatchObject({ delta: 5, expected_version: 1, reason: "live_console_edit" });
     await page.reload();
+    await phase(page, "live");
     await expect(page.getByTestId(`live-stock-${offer}`)).toHaveValue("17");
 
     // FIXTURE/STIMULUS: another operator changes this MOCK inventory through the
@@ -411,6 +403,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(23);
     expect((await facts(request)).receipts.at(-1)!.input).toMatchObject({ delta: 3, expected_version: 4, reason: "live_console_edit" });
     await page.reload();
+    await phase(page, "live");
     await expect(stockInput).toHaveValue("23");
     const beforeCancel = (await facts(request)).receipts.length;
     await stockInput.fill("24");
@@ -507,6 +500,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     expect(reloadUnknown.scene).toBe(copied);
     expect(reloadUnknown.status).toBe(503);
     await page.reload();
+    await phase(page, "draft");
     await expect(page.getByTestId("live-primary-action")).toBeDisabled();
     await expect(page.getByTestId(`live-offer-toggle-${copiedOffer}`)).toBeDisabled();
     await expect(page.getByTestId(`live-stock-save-${copiedOffer}`)).toBeDisabled();
@@ -624,6 +618,7 @@ for (const [index, locale] of locales.entries()) {
       await page.getByTestId(`live-stock-save-${body.Offer}`).click();
       await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(body.Stock + 2);
       await page.reload();
+      await phase(page, "draft");
       await expect(page.getByTestId(`live-stock-${body.Offer}`)).toHaveValue(String(body.Stock + 2));
       const receipt = (await facts(request)).receipts.at(-1)!;
       expect(receipt).toMatchObject({ action: "adjustments", status: 200, effect: true });
@@ -637,6 +632,7 @@ for (const [index, locale] of locales.entries()) {
       // Setup a distinct signed principal with no inventory grant; assertions use the real page.
       await context.addCookies([{ name: "__Host-commerce_session", value: readToken, url, secure: true, httpOnly: true, sameSite: "Lax" }]);
       await page.reload();
+      await phase(page, "draft");
       await expect(page.getByTestId(`live-stock-${body.Offer}`)).toBeDisabled();
       await expect(page.getByText(workspaceCopy[locale].stockPermission, { exact: true })).toBeVisible();
       await expect(page.getByTestId(`live-stock-save-${body.Offer}`)).toBeDisabled();

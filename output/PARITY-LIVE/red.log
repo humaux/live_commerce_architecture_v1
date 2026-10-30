@@ -75,3 +75,20 @@ fix_attempt=1 for missing-capabilities fixture blocker
 raw_filtered_receipt=output/PARITY-LIVE/relay4-foundation.log
 static_ownership_generate=exit0; static_ownership_check=exit0; static_diff_check=exit0
 local_tests_servers=NOT_RUN; GREEN=PENDING own new-head CI
+
+RELAY4_PUSH head=8296581fb4e84058b9c0f35d52af4b0cb4e496a0 pr=355
+WAIT_RUN Foundation=41065893297 job=124097075104 status=queued
+WAIT_RUN Gates=41065893191 status=pending gate_jobs=NOT_CREATED
+GREEN=PENDING own_PR_CI; author=E0; no E3/E4 acceptance claimed
+wakeup=integrator fresh-session relay on run conclusion; no local watcher/process
+Post-push receipts remain local and in PR comment; no evidence-only push.
+
+FIX1: 2026-10-31 directed attempt 1, no new RED-only push per FIX1 card
+input_head=8296581fb4e84058b9c0f35d52af4b0cb4e496a0
+merged_base=a3dc78e4d5ec72831aaf6a376793f0f6a7a56425 merge=a3f0514d6
+RED_Gates=41065893191 job124101780679 (live-settings12fail and ui-gallery hex ratchet), job124101780824 (closed-disclosure locator timeout)
+RED_Foundation=41065893297 job124097075104 (same hex ratchet)
+RED_tested_merge=4ab11bbbb9a1149f1861be4256ce03952dcee10d
+evidence=fix1-evidence/assertions.log + artifact-manifest.json; classification=FIX1.md
+static=node --check (helper/live-console/live-settings), ownership generate/--check, git diff --check all exit0; runtime/independent acceptance NOT_RUN
+GREEN=PENDING; integrate relay must stop if same assertion remains RED
