@@ -6,7 +6,7 @@
   "apps/storefront/components/checkout/CheckoutPaymentChoices.tsx": "37ca5e641bab3d3a813d64ddbf9f64b84d8ca78ab84538ac5335e6f021f9d4af",
   "apps/storefront/components/checkout/CheckoutReview.tsx": "229bcf11c632201b55e7abc858e83da8e929dac0ebcefc9229d0ced01c231590",
   "apps/storefront/tests/order-gate-timeout.test.mjs": "1e636c4869ba9ac1947f6027e9b0205859eaba9bf0e589bb999c839af23e1215",
-  "output/ci-select-backend-browser/browser-ownership.json": "ea09ed7cadc6eaa50652f3a6a43877e001a3dd7b72ae7211c9d1f4c3d10ed144",
+  "output/ci-select-backend-browser/browser-ownership.json": "94c8727be97a5437b280cd8112f1be84c51d074e6c8c2333d432f7be3379b282",
   "packages/i18n/src/checkout.ts": "4556f296c3792d5e1733b88c64748b08a7273b8d76ed0b2ff7bc0781554dab6c",
   "tests/storefront/ads-attribution.mjs": "1d6095e58c42743c452b343ecfd83a845fbe73d060321025cbd52b44c9c1efb0",
   "tests/storefront/browser-gate.mjs": "a90c0697ce659eb77a572f2517617f447930903f9274e808a9e33be21a744ddb",
@@ -27,6 +27,6 @@
   "tests/e2e/deal-loop.spec.ts": "cc4ca2e1af685a6b33ec98f61dd2cbf0a8ef957ee40719e8dccf6b4554a79a78",
   "tests/e2e/live-tools.spec.ts": "00c2f0a08b15580bac542f964b250577c14f68fe8473126d0d8f327bfc0ac37f",
   "tests/storefront/shop-real-gate.mjs": "3a4b3848053cbea7aa98ddf73df8e00d65474c3203c229f213dbae10a37c8535",
-  "tests/ui/click-sweep.mjs": "3a16aaeef46d9b1be2892255bf931d042a80e78875f9bd52c9966d15a72b1fd3",
+  "tests/ui/click-sweep.mjs": "cb05536fa0336d0cba377ae77c9b568777598a615feb77a16b55d5750c685f98",
   "tests/ui/visual-audit.mjs": "37c16ae0c7882f7aa226758b5704415c0dcf0144d79f7344ff9c84f9a2d09bd6"
 }

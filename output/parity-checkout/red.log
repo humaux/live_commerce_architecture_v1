@@ -71,3 +71,5 @@ Historical causal tests-only RED remains Gates41051681920/job124052345726 on2318
 Product fix resolves chosen mode before COD read; selected/automatic COD and fee-refusal recovery stay strict; mismatched COD cannot be selected. Fixture unchanged; add card-enabled/stale-COD-absent assertions.
 History adds existing View details real-click helper; all original business/gate assertions retained.
 E1 syntax, current-source strict tsc, ownership generation/check and whitespace exit0. No local tests/server. Own-head GREEN pending; same assertion RED means BLOCKED, no third approach. Humaux unavailable; final head/runs in PR comment, integrator owns completion relay.
+
+FIX2 integration synchronization: implementation f35a8b363 triggered no CI (native run-list []); PR API CONFLICTING after concurrent #354 integration a3dc78e4d. Sole merge conflict generated browser-ownership.json regenerated and checked. Sync-only second push needed to start this fix's CI; no new assertion-fix attempt and no duplicate CI.
