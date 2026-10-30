@@ -1,0 +1,43 @@
+/* Purpose: signed search-first CVS frames, chosen facts and review at desktop/mobile sizes.
+ * Depends on: native dialog top layer and the storefront focus/control defaults.
+ * Used by: CvsStorePicker.
+ * Invariants: full canonical facts wrap; controls are at least 44px; results scroll within the viewport. */
+.picker { --picker-ink: #142942; --picker-muted: #596579; --picker-line: #dbe3ef; --picker-accent: #0f766e; width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 0; border: 0; background: #fff; color: var(--picker-ink); }
+.picker::backdrop { background: #fff; }
+.layout { display: grid; gap: 16px; width: min(640px, calc(100% - 32px)); margin: 80px auto 24px; }
+.header { display: grid; gap: 16px; }
+.title { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.title h2 { margin: 0; font-size: 24px; line-height: 36px; }
+.title button { min-width: 64px; border: 0; color: var(--picker-muted); font-size: 14px; }
+.brands, .region { display: flex; gap: 8px; }
+.brands button { flex: 1; min-width: 0; white-space: nowrap; padding: 8px 6px; font-size: 14px; }
+.picker button, .picker select { min-height: 44px; border-radius: 6px; }
+.picker button { border-color: var(--picker-line); color: var(--picker-ink); }
+.picker button[aria-pressed=true], .picker .primary, .picker .secondary { border-color: var(--picker-accent); background: #eaf6f3; color: var(--picker-accent); }
+.picker .primary:hover:not(:disabled), .picker .secondary:hover:not(:disabled) { background: #d9eee8; }
+.header textarea { box-sizing: border-box; width: 100%; min-height: 52px; max-height: 180px; padding: 14px; border: 1px solid var(--picker-line); border-radius: 6px; resize: vertical; font: inherit; line-height: 22px; color: inherit; caret-color: var(--picker-accent); }
+.header textarea::placeholder { color: var(--picker-muted); opacity: 1; }
+.region select { min-width: 0; width: 50%; font: inherit; }
+.results { overflow-y: auto; max-height: min(384px, 42dvh); overscroll-behavior: contain; }
+.results p, .hint { margin: 0; font-size: 14px; line-height: 22px; color: var(--picker-muted); }
+.results > p[data-testid="cvs-picker-empty"] { color: var(--picker-ink); font-size: 18px; font-weight: 600; }
+.row { display: flex; width: 100%; text-align: start; padding: 16px 12px; min-height: 96px; border: 1px solid var(--picker-line); background: #fff; color: inherit; }
+.picker .row { border-radius: 0; }
+.row + .row { border-top: 0; }
+.facts { display: grid; gap: 8px; min-width: 0; overflow-wrap: anywhere; line-height: 24px; }
+.facts strong { font-size: 16px; font-weight: 600; }
+.facts > span { font-size: 14px; color: var(--picker-muted); }
+.match { background: transparent; color: var(--picker-accent); text-decoration: underline; text-underline-offset: 2px; }
+.selection { display: grid; gap: 16px; }
+.card { display: grid; gap: 12px; padding: 20px 16px; border: 1px solid var(--picker-line); border-radius: 8px; overflow-wrap: anywhere; }
+.card > strong { font-size: 16px; line-height: 24px; }
+.card > .code { font-size: 36px; line-height: 48px; font-variant-numeric: tabular-nums; }
+.card > span { color: var(--picker-muted); font-size: 14px; line-height: 22px; }
+.footer { display: grid; gap: 16px; padding-bottom: env(safe-area-inset-bottom); }
+.footer small { font-size: 12px; line-height: 18px; color: var(--picker-muted); }
+.footer p { margin: 0; }
+.footer button { width: 100%; }
+@media (max-width: 600px) {
+  .layout { margin-top: 24px; }
+  .results { max-height: 192px; }
+}
