@@ -110,7 +110,9 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
     "@/lib/client": { money: () => "NT$100" },
     "./OperationalForms.module.css": { page: "page" },
     "next/link": { default: passthrough }, "@/lib/catalog-v2-client": {}, "@/lib/merchant-tools-client": {}, "@/lib/cod-copy": {},
-    "./customers.css": {}, "./merchant-tools.css": {},
+    "./customers.css": {}, "./merchant-tools.css": {}, "./order-ops.css": {},
+    "./CvsLookup": { CvsLookup: passthrough },
+    "@live-commerce/i18n": { orderOpsCopy: compile("packages/i18n/src/order-ops.ts", {}).orderOpsCopy },
   });
   // Compile uses the actual component; only hook state and surrounding presentation are fixtures.
   const tree = ManualOrder({ locale: "zh-TW", stores: [], store: { id: "store", name: "store" },

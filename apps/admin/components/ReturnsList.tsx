@@ -2,14 +2,14 @@
 //   and the "failed refunds to redo" (cancel-refund-gaps) section (contracts/returns-v1.md §2/§3; unit W3-U5).
 // Depends on: react, @live-commerce/i18n, @live-commerce/ui, @live-commerce/format, @/lib/model,
 //   @/lib/customers-client (useGuardedRead session fence), @/lib/returns-client, @/lib/returns-model,
-//   @/lib/returns-copy, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css
+//   @/lib/returns-copy, ./WorkspaceFrame, ./AdminPageHeader, ./order-ops.css, ./orders.css, ./order-actions.css
 // Used by: apps/admin/app/[locale]/returns/page.tsx
-// Invariants: read-only page — every mutating step happens inside the order detail panel (OrderReturns). Rows link
-//   to /{locale}/orders?store=…&state=all&order=… which expands that order. The list re-reads after refresh; a
+// Invariants: read-only page — every mutating step happens inside the order detail panel (OrderReturns). Rows open a read-only RMA record; its original-order link
+//   opens /{locale}/orders?store=…&state=all&order=…. The list re-reads after refresh; a
 //   drifted payload fails closed as "unavailable" (strict parsers in returns-model).
 "use client";
 
-import type { Locale } from "@live-commerce/i18n";
+import { orderOpsCopy, type Locale } from "@live-commerce/i18n";
 import { Badge, TableFrame } from "@live-commerce/ui";
 import { displayTime, money } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
@@ -21,6 +21,7 @@ import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./order-actions.css";
+import "./order-ops.css";
 
 /** Maps a guarded-read failure to merchant copy. */
 function failureText(status: string, c: ReturnsCopy): string {
@@ -65,9 +66,8 @@ function ReturnsTable({
   c: ReturnsCopy;
 }) {
   const href = (next: RmaState | "") =>
-    `/${locale}/returns?store=${store.id}${next ? `&state=${next}` : ""}`;
-  const orderHref = (orderId: string) =>
-    `/${locale}/orders?store=${store.id}&state=all&order=${orderId}`;
+    `/${locale}/returns?store=${store.id}&view=requests${next ? `&state=${next}` : ""}`;
+  const recordHref = (id: string) => `${href(state)}&rma=${id}`;
   return (
     <section className="orders-section" data-testid="returns-list" aria-label={c.pageTitle}>
       <nav className="returns-filter" aria-label={c.stateFilter} data-testid="returns-filter">
@@ -125,7 +125,7 @@ function ReturnsTable({
                     <td>{displayTime(locale, rma.created_at)}</td>
                     <td>{displayTime(locale, rma.updated_at)}</td>
                     <td>
-                      <a href={orderHref(rma.order_id)} data-testid={`returns-open-${rma.id}`}>
+                      <a href={recordHref(rma.id)} data-testid={`returns-open-${rma.id}`}>
                         {c.viewOrder}
                       </a>
                     </td>
@@ -215,6 +215,8 @@ export function ReturnsList({
   state,
   initialError,
   renderKey,
+  view = "",
+  rma = "",
 }: {
   locale: Locale;
   stores: Store[];
@@ -222,8 +224,11 @@ export function ReturnsList({
   state: RmaState | "";
   initialError: ReadCode | null;
   renderKey: string;
+  view?: "" | "requests";
+  rma?: string;
 }) {
   const c = returnsCopy[locale];
+  const signed = orderOpsCopy[locale];
   const list = useGuardedRead(
     `${renderKey}|${locale}|${store?.id ?? ""}|${state}`,
     store ? (signal) => readReturns(store.id, state, signal) : null,
@@ -235,13 +240,29 @@ export function ReturnsList({
     initialError,
   );
   const failure = failureText(list.status, c) || failureText(gaps.status, c);
+  const requests = view === "requests" || !!state || !!rma;
+  const record: Rma | undefined = list.status === "ready" ? list.data?.find((item) => item.id === rma) : undefined;
+  const requestsHref = `/${locale}/returns?store=${store?.id ?? ""}&view=requests${state ? `&state=${state}` : ""}`;
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="returns">
       <div className="orders-page returns-page" data-testid="returns-page">
         <AdminPageHeader
           locale={locale}
-          description={c.pageIntro + (stores.length > 1 && store ? ` — ${store.name}` : "")}
+          title={record ? record.state === "CLOSED" ? signed.completed : signed.requests : requests ? signed.requests : signed.returns}
+          description={signed.aftersales + (stores.length > 1 && store ? ` — ${store.name}` : "")}
         />
+        {!requests && store && <button type="button" className="ops-wide" onClick={() => window.location.assign(requestsHref)}>{signed.view}</button>}
+        {record && store && <section className="ops-review" data-testid="returns-record">
+          <Badge tone={record.state === "CLOSED" ? "success" : "warning"}>{c.states[record.state]}</Badge>
+          <dl><div><dt>{c.colReason}</dt><dd>{record.reason}</dd></div>
+            <div><dt>{c.colLines}</dt><dd>{c.lineSummary(lineTotals(record).registered, lineTotals(record).received)}</dd></div>
+            <div><dt>{c.colCreated}</dt><dd>{displayTime(locale, record.created_at)}</dd></div>
+            <div><dt>{c.colUpdated}</dt><dd>{displayTime(locale, record.updated_at)}</dd></div>
+          </dl>
+          <div className="ops-actions"><a href={requestsHref}>{signed.back}</a>
+            <a href={`/${locale}/orders?store=${store.id}&state=all&order=${record.order_id}`}>{c.viewOrder}</a></div>
+        </section>}
+        {rma && list.status === "ready" && !record && <p role="status">{c.unavailable}</p>}
         {(list.status === "loading" || list.status === "hidden") && (
           <p className="orders-message" role="status" data-testid="returns-loading">
             {c.loading}
@@ -255,7 +276,7 @@ export function ReturnsList({
             </button>
           </div>
         )}
-        {list.status === "ready" && list.data && store && (
+        {requests && !rma && list.status === "ready" && list.data && store && (
           <ReturnsTable locale={locale} store={store} state={state} list={list.data} c={c} />
         )}
         {gaps.status === "ready" && gaps.data && store && (

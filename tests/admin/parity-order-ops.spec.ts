@@ -42,12 +42,18 @@ async function screenshot(page: Page, frame: string) {
 async function login(page: Page) {
   await page.goto(`${origin}/en`);
   await page.getByRole("button", { name: "Sign in with identity service", exact: true }).click();
-  await expect(page.getByTestId("nav-orders")).toBeVisible();
+  await expect(page.getByTestId("dashboard-page")).toBeVisible();
+  if ((page.viewportSize()?.width ?? 1440) <= 900) {
+    // Signed shell navigation is a drawer on phones: open it through its real control.
+    await page.locator('button[aria-controls="workspace-navigation"]').click();
+    await expect(page.getByTestId("nav-orders")).toBeVisible();
+    await page.keyboard.press("Escape");
+  } else await expect(page.getByTestId("nav-orders")).toBeVisible();
 }
 async function fixtures(page: Page) {
   // MOCK GET preparation only: existing strict DTOs, synthetic product facts and public store facts.
   // Identity/store authorization stays on the real Go BFF. No POST is intercepted or synthesized.
-  const json = (body: unknown) => ({ status: 200, contentType: "application/json", headers: { "cache-control": "no-store" }, body: JSON.stringify(body) });
+  const json = (body: unknown) => ({ status: 200, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify(body) });
   const products = [
     { id: tote, sku: toteSku, name: "焦糖托特包", title: "焦糖", code: "A12", price: 128000 },
     { id: small, sku: smallSku, name: "日常斜背小包", title: "標準款", code: "B12", price: 98000 },
@@ -137,6 +143,24 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
       await page.getByRole("spinbutton", { name: new RegExp(c.quantity) }).first().fill("1");
       if (locale === "zh-TW") await screenshot(page, mobile ? "750:3549" : "750:3385");
       await expect(page.getByRole("button", { name: c.review, exact: true })).toBeVisible();
+      await action(page, c.review, "fill + select + review", "all recipient, product and pickup facts remain in review; no order is placed", async () => {
+        // Synthetic buyer values; all product/delivery choices still use the real controls.
+        await page.getByRole("textbox", { name: c.name, exact: true }).fill("Parity Buyer");
+        await page.getByRole("textbox", { name: c.phone, exact: true }).fill("0912345678");
+        await page.getByRole("combobox", { name: c.delivery, exact: true }).selectOption(`${market}|TW|cvs_711`);
+        await page.getByRole("button", { name: c.choose, exact: true }).click();
+        await page.getByRole("textbox", { name: c.query, exact: true }).fill("121275");
+        await page.getByRole("button", { name: /121275/ }).click();
+        await page.getByRole("button", { name: c.returnOrder, exact: true }).click();
+        await page.getByRole("button", { name: c.review, exact: true }).click();
+        const review = page.getByRole("region", { name: c.review, exact: true });
+        for (const fact of ["Parity Buyer", "0912345678", "焦糖托特包", "日常斜背小包", "121275", "臺北市大安區敦化南路二段331巷14號"])
+          await expect(review).toContainText(fact);
+        const back = { "zh-TW": "返回修改", "zh-CN": "返回修改", en: "Back to editing" }[locale];
+        await page.getByRole("button", { name: back, exact: true }).click();
+        await expect(page.getByRole("spinbutton", { name: new RegExp(c.quantity) })).toHaveCount(2);
+        await expect(page.getByRole("textbox", { name: c.name, exact: true })).toHaveValue("Parity Buyer");
+      });
       // None of the draft/picker controls may place an order or reserve stock.
       expect(posts).toEqual([]);
     });

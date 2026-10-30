@@ -1,6 +1,6 @@
-# PARITY-ORDER-OPS — tests-only RED handoff
+# PARITY-ORDER-OPS — FIX1 implementation, PR CI pending
 
-2026-10-30. **E1 syntax only; direct registration repair awaits CI. Causal RED pending. Implementation, GREEN and independent review NOT_RUN.**
+Own judgment E0; original assertion failure evidence E3 FAILURE only. No completion or visual-parity acceptance claim.
 
 ## Assignment and authority
 
@@ -10,29 +10,24 @@
 - Scope: integrator's current human card, `output/ui-parity/FIGMA-INVENTORY.md` §3 C5 and Appendix A buckets U:manual-order/U:returns/U:merchant-cvs-tool. CVS route ruling: `/[locale]/orders/cvs-match`.
 - UI: file `iJ9lDdFIXgTlKkt5Tvrc0X`, page `4:8829`. All 40 exact roots read through Fleet Bridge `get_design_context` AND `get_screenshot`, no Figma writes. Root exports and context SHA256s: [frames.json](frames.json). Bridge reported a connected Untitled document/fileKey:null; configured default file and exact known node identities are the available identity evidence.
 - Current design handoffs read: `ux-cvs-match/output/ux-cvs-match/DELIVERY.md` fix2 (retained signed baseline plus current real-message additions); `ux-orders/output/ux-orders/DELIVERY.md` marks polish-short-number current and excludes older screenshots. Its 60-frame orders set is outside C5. No separate current manual-order/returns DELIVERY was found; the exact live C5 Figma roots remain their UI authority.
-- Humaux MCP/code-index/coord tools are not available. Search/get/rejected enumeration/store/canvas/claim/lock were **not performed**. This artifact is a handoff, not a replacement memory authority. Integrator must retain the assignment/run receipt in Humaux.
 
-## RED gate and static evidence
+- FIX1 authority is the current human directed card, including both named failing jobs. Old relay scope judgments are historical and superseded by FIX1.
+- Integration a3dc78e4d merged locally as8a193af79 before route/spec changes. Only generated ownership conflicted, regenerated rather than hand-edited.
+- Humaux search/rejected enumeration/development-detail/get/store/locked canvas were performed in FIX1. Code index/map tools unavailable: targeted source searches substituted. Dispatched lane; no recursive delegation or new claim.
+- Current live Fleet Bridge readback and four representative exports: `FIX1-figma/` (21:582, 750:3453, 6:20488, 1431:70774). No Figma writes. Existing other frame IDs/artifact requests retained below.
 
-- New `tests/admin/parity-order-ops.spec.ts` and existing `tests/admin/returns-ui.spec.ts` are directly registered in `TestBrowserReturnsUI` / `--browser-returns-ui` with a signed MOCK IdP, real Go/Next and isolated PG. No indirect spec import is needed.
-- Relay 1: head `7a8e296d140bbca04cc13006ccf04cac9af9aa1e`, Foundation run `41052644741` / job `124052242197` failed because `check-gates` does not recognize indirect spec registration. This is not causal assertion RED. Raw filtered receipt: [foundation-registration-failure.log](foundation-registration-failure.log). Targeted fix attempt 1/2 registers the new spec directly in the existing harness, preserves every assertion and regenerates ownership. Application implementation remains untouched until assertion RED.
-- 24 cases: four flows × zh-TW/zh-CN/en × 1440×900/390×844. TW produces one screenshot for each of the 40 listed frames. A failed early assertion intentionally prevents later screenshots; an absent screenshot is NOT_RUN, never parity acceptance.
-- Expected RED on original source: exact visible headings `1 · 商品`, `2 · 收件人與配送`, `退款與售後`, `查門市編號` (and translated counterparts); legacy flat headings are asserted absent. Missing CVS route must fail the visible heading assertion, not compilation.
-- MOCK GET fixtures use current ProductSummary/ProductDetail/ManualOption/Rma wire shapes. Product names/prices are synthetic; CVS stores are public directory facts. Identity and store authorization are not stubbed. No POST fixture, actual refund, money calculation or production action.
-- Click/fill/select operations drive draft/picker quantities, cancellation, RMA navigation/filter reload, CVS explicit selection/copy/change/paste and manual-order return. Clipboard/layout evaluates are reads only. Per-test `parity/clicks-*.json` records covered flow steps and actual results; exhaustive control accounting remains an implementation acceptance item.
-- `node --check tests/admin/parity-order-ops.spec.ts`: exit 0; `node --check tests/admin/returns-ui.spec.ts`: exit 0.
-- Relay 1 static commands repeated after registration repair: both syntax checks exit 0; `gofmt -l tests/foundation/browser_returns_ui_test.go` exit 0 with no formatting changes; no local tests/servers.
-- `node scripts/dev/derive-browser-ownership.mjs`: exit 0 / 53 modes. `node scripts/dev/derive-browser-ownership.mjs --check`: exit 0. Generated artifact committed with registration.
-- `git diff --check`: exit 0. TypeScript compiler/dependencies are absent locally; tsc NOT_RUN. No local tests, builds or servers started. Go/PG/browser/CI validation NOT_RUN until GitHub receipts.
-- No new application imports yet, so component-harness import allowlists and Go dependency map are unchanged. Existing next-startup gate assertions are untouched.
-- Red receipt: [red.log](red.log). Do not implement until the PR's CI demonstrates failures on the new assertions. Do not claim E3 from author expectation.
+## RED and static receipts
+
+See [FIX1.md](FIX1.md) for all failed jobs, every one of the 24 failed browser cases, original assertion lines, artifact ids, classes and repairs. Original Gates41053547208 head48ce430be, tested merge08728bb99450fb590b4702843ad776711332ff07: 12 desktop signed-heading failures, 12 mobile shared-helper failures, 8 existing returns cases pass. Catalog's global alert selector also matches Next's announcer; owner-scoped error plus text assertion repairs precision and retains every rollback assertion. Receipts/required cascade; aggregate succeeded.
+
+No local tests or servers. Eight `node --check` commands exit0. Full tsc exit1: missing Next/React/workspace dependency links (not type acceptance). Browser ownership generated + --check after final staging. Current native GREEN, browser screenshots/complete click ledger/persistence/parity and independent review are PENDING/NOT_RUN; no local browser substitute. No threshold, fixture payload, timeout, exemption, private-reader guard or next-startup assertion was weakened.
 
 ## Audit-first and legacy mapping
 
 |Existing layout/control|Signed replacement / assertion|Existing intent retained|
 |---|---|---|
 |ManualOrder flat headings 商品 / 顧客 / 配送 / 付款; inline search/results|1 · 商品 / 2 · 收件人與配送; 加入商品 → 加入商品至本單 → 套用至本單; old headings absent|Search/pick distinct SKU, edit quantities, validate customer/delivery, idempotent server placement and buyer-link flow retained in existing manual-order gate.|
-|ReturnsList 退貨管理 / Returns; direct RMA table as home|退款與售後 → 查看售後申請 → 售後申請; old title absent|RMA state filtering, persistent filter on refresh, record/order navigation and refund-gap handling retained. Existing pre-Figma tests will need view-entry mapping in implementation, never deletion.|
+|ReturnsList 退貨管理 / Returns; direct RMA table as home|退款與售後 → 查看售後申請 → 售後申請; old title absent|RMA state filtering, persistent filter on refresh, record/order navigation and refund-gap handling retained. Existing pre-Figma tests now click the signed entry; every filter/reload/refund-gap assertion is retained.|
 |ManualOrder free-text CVS code/name/address; no lookup route|Lookup at orders/cvs-match and shared explicit-choice picker in manual order|Leading-zero code, brand boundary, canonical public name/address; no automatic substitution or raw-paste persistence.|
 
 ## Data gaps / frame deferrals (do not invent DTO fields)
@@ -70,11 +65,11 @@ Fresh read-only Eagle lookup: orders folder MVQL9YR448VTK success/8; CVS folder 
 
 ## UI PROCESS — FIGMA OFFICIAL GUIDANCE
 
-Read project guide `/Volumes/data/live_commerce_architecture_v1/.worktrees/ux-audit/output/ux-audit/FIGMA-GUIDE.md` (official sources retrieved 2026-10-28). G1 auto layout informs draft/summary columns and mobile stacking; G2 semantic variables keeps language separate from money/store records; G3 components/variants informs shared lookup states; G4/G5 prototyping informs explicit choice/back/return paths; G6 exact-node/viewport/source annotations are preserved in frames.json; G7 reuse existing controls and matching function. This tests-only phase makes no Figma writes or new official-version claim. Figma copy-lint/density unchanged-design execution NOT_RUN; browser runtime layout/copy parity remains CI/reviewer work.
+Read project guide `/Volumes/data/live_commerce_architecture_v1/.worktrees/ux-audit/output/ux-audit/FIGMA-GUIDE.md` (official sources retrieved 2026-10-28). G1 auto layout informs draft/summary columns and mobile stacking; G2 semantic variables keeps language separate from money/store records; G3 components/variants informs shared lookup states; G4/G5 prototyping informs explicit choice/back/return paths; G6 exact-node/viewport/source annotations are preserved in frames.json; G7 reuse existing controls and matching function. FIX1 implements existing signed frames; no Figma writes or new official-version claim. Figma copy-lint/density unchanged-design execution NOT_RUN; browser runtime layout/copy parity remains CI/reviewer work.
 
 ## Three-language visible-control acceptance copy
 
-Frozen test expectations below use the signed TW wording and the current CVS DELIVERY translations where present; manual/returns translations preserve the same task meaning. Full product copy and server data rendering remain implementation work. Public store names/addresses and synthetic catalog records stay verbatim across locales.
+Frozen test expectations below use the signed TW wording and the current CVS DELIVERY translations where present; manual/returns translations preserve the same task meaning. New product copy is in packages/i18n/src/order-ops.ts; existing localized domain copy remains in its module. Public store names/addresses and synthetic catalog records stay verbatim across locales.
 
 |zh-TW|zh-CN|en|
 |---|---|---|
@@ -155,8 +150,74 @@ Exports listed below are local review artifacts, not committed binary fixtures. 
 |1431:71523|parity/1431-71523.png|output/parity-order-ops/figma/get_screenshot-1431-71523-1793361347697-0.png|
 |1431:71549|parity/1431-71549.png|output/parity-order-ops/figma/get_screenshot-1431-71549-1793361349261-0.png|
 
-## Scope and handoff
 
-This RED commit changes only new browser assertions, their existing suite registration, generated browser ownership and card evidence. No application source, API, contract, migration, dependency lockfile, R2 pin or Figma modification. Existing legacy browser assertions remain intact in RED; implementation must map their entry controls to the new views in the same GREEN push. No process remains running; no fixtures/containers/ports were started locally. Local Figma readbacks retained as task evidence.
+## FIX1 REQUIRED facts in implemented states
 
-Current NOT_RUN: CI RED/GREEN, application implementation, browser parity/click ledger outcomes, exhaustive controls, persisted writes, screenshot comparison, independent E4 review, typecheck, provider SANDBOX/LIVE and production deployment. E0 author expectations are not acceptance. No completion claim or automatic merge.
+The desktop and mobile routes share these exact components; no responsive CSS hides business facts. Runtime evidence is requested from CI and remains PENDING, not author-certified.
+
+|Required fact|Draft / chooser|Review / result / detail|CI evidence requested|
+|---|---|---|---|
+|Product, variant, quantity, displayed catalog unit price|ManualOrder ItemPicker, staged separately until Apply|Review retains each selected line; result retains item identity/quantity; server total remains authoritative|parity manual-order × 3 locales × 2 viewports; existing manual-order-link gate|
+|Recipient name + phone|Translated required controls|Review and placement result render both values|new real Review/Back steps assert synthetic recipient and phone in all 6 variants|
+|Destination brand, string code, full canonical name + address|Shared CvsLookup explicit choice; changing brand/query cannot silently choose a store|Manual review/result preserve chosen fields; chosen view supports copy/change|manual CVS + merchant CVS cases in all 6 variants; review checks code/address|
+|Payment method and timing; server total/expiry|Existing options decide eligibility; no price input|Bank/pickup/COD wording; COD fee/cap note in review; server receipt total/expiry after placement|existing bank/COD/replay/buyer-link gate retained; pre-placement money-summary parity DEFERRED|
+|RMA order relation, reason, state, quantities and timestamps|Requests table from strict existing RMA DTO|Read-only record retains facts and original-order link; CLOSED label separate from refund|requests/filter/reload/record cases; existing full RMA lifecycle and refund-gap tests retained|
+|Missing-code warning vs offered canonical candidate|Original code 022305 remains a warning before explicit selection of024967|Selected canonical code/address only after click|merchant CVS missing-code/leading-zero checks|
+|Directory source and date|Immutable public snapshot filenames20261028; credentials omitted|All chosen/copy views retain source date|browser source display pending; asset byte provenance recorded as same current snapshot|
+
+## FIX1 implementation and scope
+
+Manual-order picker/review, after-sales requests/record and public CVS tool are implemented without changing the frozen backend/API contracts. Exact pre-placement amount summaries and unsupported refund/human-reference/note facts stay deferred under the table above. No migration/R2 pin assigned or changed. No real refund, shipment purchase or production action.
+
+Scope pre-approval: same admin module/root work plus generated files. Additional paths for integrator visibility: tests/admin/catalog-v2-simplified.acceptance.ts (named FIX1 job), tests/admin/returns-ui.spec.ts (legacy entry), tests/admin/parity-order-ops.spec.ts (mobile helper/transport header/additive review assertions), tests/admin/timezone-ui.test.mjs (new import allowlist), tests/storefront/manual-order-link-gate.mjs (merchant-page setup only), packages/i18n/src/{index,order-ops}.ts, apps/admin/proxy.ts (exact immutable public asset routing), packages/format/src/cvs-match.ts (Used-by header only), generated browser-ownership.json, and admin public/cvs immutable snapshot copies. No storefront product source changed. PR body lists these individually.
+
+No local process/container/port/fixture was created. Downloaded failure artifacts, raw CI logs and live Figma exports are retained locally as evidence, not committed binary fixtures. Earlier relay receipts remain in red.log for provenance. The premature FIX1 out-of-card BLOCKED judgment was withdrawn before the single push because the directed card explicitly names catalog.
+
+## Complete new seller-copy table (packages/i18n)
+
+|zh-TW|zh-CN|en|
+|---|---|---|
+|建立訂單|创建订单|Create order|
+|1 · 商品|1 · 商品|1 · Items|
+|2 · 收件人與配送|2 · 收件人与配送|2 · Recipient and delivery|
+|加入商品|添加商品|Add products|
+|加入商品至本單|添加商品到本单|Add products to this order|
+|套用至本單|应用到本单|Apply to this order|
+|取消|取消|Cancel|
+|選取|选择|Select|
+|收件人|收件人|Recipient|
+|聯絡電話|联系电话|Phone|
+|檢查訂單|检查订单|Review order|
+|取消不會變更原訂單。|取消不会更改原订单。|Cancel keeps the original order unchanged.|
+|本單保留|本单保留|Kept in this order|
+|進階|高级选项|Advanced|
+|返回修改|返回修改|Back to editing|
+|金額以下單時的正式報價為準；目前尚未建立訂單或收款。|金额以下单时的正式报价为准；目前尚未创建订单或收款。|The final quote is confirmed when you place the order. No order or payment has been created yet.|
+|退款與售後|退款与售后|Refunds and after-sales|
+|售後申請|售后申请|After-sales requests|
+|查看售後申請|查看售后申请|View after-sales requests|
+|已完成的售後紀錄|已完成的售后记录|Completed after-sales record|
+|退款、退貨收件與庫存處置分開記錄。請到原訂單處理退款。|退款、退货签收与库存处理分别记录。请到原订单处理退款。|Refunds, returned goods and stock decisions are recorded separately. Process refunds from the original order.|
+|查門市編號|查门店编号|Find store code|
+|地址、門市名稱或編號|地址、门店名称或编号|Address, store name or code|
+|更換|更换|Change|
+|複製編號|复制编号|Copy code|
+|複製全部|复制全部信息|Copy all details|
+|已複製編號|编号已复制|Code copied|
+|已複製門市資料|门店信息已复制|Store details copied|
+|未能複製，請選取門市資料手動複製。|复制失败，请选中门店信息后手动复制。|Could not copy. Select the store details and copy them manually.|
+|返回|返回|Back|
+|取貨門市|自提门店|Pickup store|
+|選擇取貨門市|选择自提门店|Choose pickup store|
+|返回訂單|返回订单|Return to order|
+|全家|全家|FamilyMart|
+|此編號不在門市清單：|该编号未收录在门店清单中：|Code not in store list: |
+|請先選擇相符的超商品牌。|请先选择对应的便利店品牌。|Choose the matching convenience-store brand first.|
+|輸入地址、店名或編號查詢。|输入地址、店名或编号查询。|Enter an address, store name or code.|
+|找不到門市，請確認品牌及資料。|找不到门店，请核对品牌和信息。|No store found. Check the brand and details.|
+|正在讀取門市清單…|正在读取门店清单…|Loading store directory…|
+|門市清單暫時無法讀取。|暂时无法读取门店清单。|The store directory is unavailable.|
+|重試|重试|Retry|
+|資料：綠界門市清單 · 更新|数据：绿界门店清单 · 更新|Source: ECPay store directory · Updated|
+|超商品牌|便利店品牌|Store brand|
+|其他門市資料|其他门店信息|Other store details|

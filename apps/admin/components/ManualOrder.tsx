@@ -1,6 +1,7 @@
 // Purpose: Owns the merchant manual-order entry workflow.
-// Depends on: @live-commerce/format (Taipei store timestamps), react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, @/lib/cod-copy, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css, ./orders.css, ./customers.css, ./merchant-tools.css
+// Depends on: @live-commerce/format (Taipei store timestamps), react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, @/lib/cod-copy, ./WorkspaceFrame, ./AdminPageHeader, ./CvsLookup, ./order-ops.css, ./OperationalForms.module.css, ./orders.css, ./customers.css, ./merchant-tools.css
 // Used by: apps/admin/app/[locale]/orders/new/page.tsx
+// Invariants: catalog prices and server quotes remain authoritative; draft/picker actions never reserve or place orders.
 "use client";
 
 // Create an order from the admin (/{locale}/orders/new): the merchant picks SKUs and quantities, types the customer and the delivery,
@@ -12,14 +13,14 @@
 // soon as the form changes. The session fence is lib/merchant-tools-client.
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import type { Locale } from "@live-commerce/i18n";
+import { orderOpsCopy, localeNames, type Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
 import { Badge, Field, FormRow } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { readProduct, readProducts } from "@/lib/catalog-v2-client";
-import type { ProductDetail, ProductSummary } from "@/lib/catalog-v2-model";
+import type { ProductDetail } from "@/lib/catalog-v2-model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { placeManualOrder, readManualOptions, regenerateManualLink } from "@/lib/merchant-tools-client";
 import { draftProblem, manualBody, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
@@ -27,6 +28,8 @@ import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { CvsLookup } from "./CvsLookup";
+import "./order-ops.css";
 import s from "./OperationalForms.module.css";
 import "./orders.css";
 import "./customers.css";
@@ -43,6 +46,7 @@ export function ManualOrder({
   locale: Locale; stores: Store[]; store: Store | null; initialError: ReadCode | null; renderKey: string;
 }) {
   const c = toolsCopy[locale].manual;
+  const signed = orderOpsCopy[locale];
   const options = useGuardedRead(`${renderKey}|${locale}|${store?.id ?? ""}`, store ? (signal) => readManualOptions(store.id, signal) : null, initialError);
   const [boundary, setBoundary] = useState("");
   useEffect(() => {
@@ -71,6 +75,8 @@ export function ManualOrder({
   const attempt = useRef<{ body: string; key: string } | null>(null);
   const regen = useRef<{ body: string; key: string } | null>(null);
 
+  const [reviewing, setReviewing] = useState(false);
+  const [choosingCVS, setChoosingCVS] = useState(false);
   const available: ManualOption[] = options.data ?? [];
   const option = available.find((item) => item.option_key === optionKey) ?? null;
   const optionName = (o: ManualOption) =>
@@ -80,13 +86,14 @@ export function ManualOrder({
   const problem = draftProblem(draft);
 
   function selectOption(key: string) {
-    setOptionKey(key);
+    setOptionKey(key); setCVS(blankCVS); setReviewing(false);
     const next = available.find((item) => item.option_key === key);
     setMode(next && next.payment_modes.length === 1 ? next.payment_modes[0] : "");
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!store || problem || mapOnly || busy) return;
+    if (!reviewing) { setReviewing(true); return; }
     const body = manualBody(draft);
     const text = JSON.stringify(body);
     // A new key only when the request differs; the same body after an uncertain answer re-sends the same key (replay).
@@ -105,6 +112,7 @@ export function ManualOrder({
     if (!outcome.uncertain) attempt.current = null; // a definite refusal: the next send is a new attempt
   }
   function reset() {
+    setReviewing(false); setChoosingCVS(false);
     setPlaced(null); setCodDue(null); setLines([]); setName(""); setPhone(""); setEmail(""); setHome(blankHome); setCVS(blankCVS);
     setOptionKey(""); setMode(""); setFailure(""); setUncertain(false); setCopied(false); attempt.current = null;
     setRegenFailure(""); regen.current = null;
@@ -134,8 +142,8 @@ export function ManualOrder({
   const storeQuery = store ? `?store=${store.id}` : "";
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="orders">
-      <div className={`orders-page customers-page ${s.page}`} data-testid="manual-order-page">
-        <AdminPageHeader locale={locale} description={c.subtitle} />
+      <div className={`orders-page customers-page ops-task ${s.page}`} data-testid="manual-order-page">
+        <AdminPageHeader locale={locale} title={signed.manual} description={placed ? c.created : signed.quote} />
         {stores.length > 1 && (
           <div className="orders-controls">
             <label>
@@ -157,6 +165,14 @@ export function ManualOrder({
               <div><dt>{c.total}</dt><dd>{money(locale, placed.currency, placed.total_minor)}</dd></div>
               {codDue !== null && <div data-testid="manual-order-cod-due"><dt>{c.codDue}</dt><dd>{money(locale, placed.currency, codDue)}</dd></div>}
               {placed.payment_mode === "bank_transfer" && <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{displayTime(locale, placed.expires_at)}</dd></div>}
+            </dl>
+            <ul>{lines.map((line) => <li key={line.sku_id}>{line.label} · {line.quantity}</li>)}</ul>
+            <dl>
+              <div><dt>{signed.name}</dt><dd>{name}</dd></div><div><dt>{signed.phone}</dt><dd>{phone}</dd></div>
+              <div><dt>{c.delivery}</dt><dd>{option ? optionName(option) : c.choose}</dd></div>
+              <div><dt>{option?.delivery_kind === "home" ? c.line1 : signed.pickup}</dt><dd>{option?.delivery_kind === "home" ?
+                [home.region, home.city, home.postal_code, home.line1, home.line2].filter(Boolean).join(" ") : `${cvs.store_name} · ${cvs.store_code} · ${cvs.store_address}`}</dd></div>
+              <div><dt>{c.paymentTitle}</dt><dd>{placed.payment_mode === "bank_transfer" ? c.bank : placed.payment_mode === "cash_on_delivery" ? c.cod : c.pickup}</dd></div>
             </dl>
             <h3>{c.linkTitle}</h3>
             {placed.buyer_link ? (
@@ -183,17 +199,31 @@ export function ManualOrder({
         {/* The form stays mounted while the delivery choices (re)load: a guarded re-read must never wipe what the merchant typed. */}
         {!placed && store && !listFailure && (
           <form className="mt-form" onSubmit={(event) => void submit(event)} data-testid="manual-order-form" noValidate>
+            {reviewing ? <section className="ops-review" aria-label={signed.review}>
+              <h2>{signed.review}</h2>
+              <ul>{lines.map((line) => <li key={line.sku_id}>{line.label} · {line.quantity} · {line.price}</li>)}</ul>
+              <dl>
+                <div><dt>{signed.name}</dt><dd>{name}</dd></div><div><dt>{signed.phone}</dt><dd>{phone}</dd></div>
+                <div><dt>{c.delivery}</dt><dd>{option ? optionName(option) : c.choose}</dd></div>
+                {option?.delivery_kind === "home" ? <div><dt>{c.line1}</dt><dd>{[home.region, home.city, home.postal_code, home.line1, home.line2].filter(Boolean).join(" ")}</dd></div> :
+                  <div><dt>{signed.pickup}</dt><dd>{cvs.store_name} · {cvs.store_code}<br />{cvs.store_address}</dd></div>}
+                <div><dt>{c.paymentTitle}</dt><dd>{mode === "bank_transfer" ? c.bank : mode === "cash_on_delivery" ? c.cod : c.pickup}</dd></div>
+              </dl>
+              <p>{signed.quote}</p>
+              {mode === "cash_on_delivery" && option?.cod_max_minor !== undefined && option.cod_carrier && <p>{c.codNote(
+                money(locale, option.currency, option.cod_surcharge_minor ?? 0), money(locale, option.currency, option.cod_max_minor),
+                option.cod_carrier === "black_cat" ? codCopy[locale].carrierBlackCat : codCopy[locale].carrierHsinchu)}</p>}
+              <button type="button" onClick={() => setReviewing(false)}>{signed.backEdit}</button>
+            </section> : <>
             <ItemPicker locale={locale} store={store} lines={lines} setLines={setLines} />
             <section className="mt-card">
-              <h2>{c.customerTitle}</h2>
+              <h2>{signed.recipient}</h2>
               <FormRow>
-                <Field id="mo-name" label={c.name}><input id="mo-name" data-testid="mo-name" value={name} maxLength={120} autoComplete="off" onChange={(e) => setName(e.target.value)} /></Field>
-                <Field id="mo-phone" label={c.phone} width="short"><input id="mo-phone" data-testid="mo-phone" value={phone} inputMode="tel" maxLength={32} autoComplete="off" onChange={(e) => setPhone(e.target.value)} /></Field>
-                <Field id="mo-email" label={c.email}><input id="mo-email" data-testid="mo-email" value={email} type="email" maxLength={254} autoComplete="off" onChange={(e) => setEmail(e.target.value)} /></Field>
+                <Field id="mo-name" label={signed.name}><input id="mo-name" data-testid="mo-name" value={name} maxLength={120} autoComplete="off" onChange={(e) => setName(e.target.value)} /></Field>
+                <Field id="mo-phone" label={signed.phone} width="short"><input id="mo-phone" data-testid="mo-phone" value={phone} inputMode="tel" maxLength={32} autoComplete="off" onChange={(e) => setPhone(e.target.value)} /></Field>
+                <details><summary>{signed.advanced}</summary><Field id="mo-email" label={c.email}><input id="mo-email" data-testid="mo-email" value={email} type="email" maxLength={254} autoComplete="off" onChange={(e) => setEmail(e.target.value)} /></Field></details>
               </FormRow>
-            </section>
-            <section className="mt-card">
-              <h2>{c.deliveryTitle}</h2>
+
               <FormRow><Field id="mo-option" label={c.delivery} width="long">
                 <select id="mo-option" data-testid="mo-option" value={optionKey} disabled={options.status !== "ready"} onChange={(e) => selectOption(e.target.value)}>
                   <option value="">{c.choose}</option>
@@ -212,17 +242,21 @@ export function ManualOrder({
               )}
               {option && option.delivery_kind !== "home" && !mapOnly && (
                 <>
-                  <p className="mt-note">{c.cvsHint}</p>
+                  <button type="button" onClick={() => setChoosingCVS(true)}>{signed.choose}</button>
+                  {cvs.store_code && <div className="ops-store-card"><strong>{option.delivery_kind === "cvs_familymart" ? signed.family : option.delivery_kind === "cvs_711" ? "7-ELEVEN" : c.kinds[option.delivery_kind]} · {cvs.store_name} · {cvs.store_code}</strong><p>{cvs.store_address}</p></div>}
+                  {choosingCVS && <CvsDraftPicker locale={locale} kind={option.delivery_kind} onChoose={(item) => { setCVS({ store_code: item.code, store_name: item.name, store_address: item.address }); setChoosingCVS(false); }} onCancel={() => setChoosingCVS(false)} />}
+                  <details><summary>{signed.other}</summary><p className="mt-note">{c.cvsHint}</p>
                   <FormRow style={{ marginTop: 8 }}>
                     <Field id="mo-store-code" label={c.storeCode} width="short"><input id="mo-store-code" data-testid="mo-store-code" value={cvs.store_code} maxLength={32} onChange={(e) => setCVS({ ...cvs, store_code: e.target.value })} /></Field>
                     <Field id="mo-store-name" label={c.storeName}><input id="mo-store-name" data-testid="mo-store-name" value={cvs.store_name} maxLength={40} onChange={(e) => setCVS({ ...cvs, store_name: e.target.value })} /></Field>
                     <Field id="mo-store-address" label={c.storeAddress} width="long"><input id="mo-store-address" data-testid="mo-store-address" value={cvs.store_address} maxLength={120} onChange={(e) => setCVS({ ...cvs, store_address: e.target.value })} /></Field>
                   </FormRow>
+                  </details>
                 </>
               )}
             </section>
-            <section className="mt-card">
-              <h2>{c.paymentTitle}</h2>
+            <fieldset className="mt-card">
+              <legend>{c.paymentTitle}</legend>
               {option ? option.payment_modes.map((m) => (
                 <label key={m} className="mt-radio">
                   <input type="radio" name="mode" value={m} checked={mode === m} onChange={() => setMode(m)} data-testid={`mo-mode-${m}`} />
@@ -236,18 +270,19 @@ export function ManualOrder({
                 </p>
               )}
               <p className="mt-note">{c.noCard}</p>
-              <FormRow style={{ marginTop: 14 }}><Field id="mo-buyer-locale" label={c.linkTitle} width="short">
+              <details><summary>{signed.advanced}</summary><FormRow style={{ marginTop: 14 }}><Field id="mo-buyer-locale" label={c.linkTitle} width="short">
                 <select id="mo-buyer-locale" value={buyerLocale} onChange={(e) => setBuyerLocale(e.target.value as Locale)}>
-                  {(["zh-TW", "zh-CN", "en"] as const).map((l) => <option key={l} value={l}>{l}</option>)}
+                  {(["zh-TW", "zh-CN", "en"] as const).map((l) => <option key={l} value={l}>{localeNames[l]}</option>)}
                 </select>
-              </Field></FormRow>
-            </section>
+              </Field></FormRow></details>
+            </fieldset>
+            </>}
             {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}{uncertain ? ` ${c.retrySame}` : ""}</p>}
             {problem && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
             <div className="mt-actions">
-              <button type="submit" className="primary" data-testid="manual-order-submit" disabled={!!problem || mapOnly || busy || !boundary}>
+              {reviewing ? <button type="submit" className="primary" data-testid="manual-order-submit" disabled={!!problem || mapOnly || busy || !boundary}>
                 {busy ? c.submitting : uncertain ? c.retryButton : c.submit}
-              </button>
+              </button> : <button type="button" className="primary" disabled={!!problem || mapOnly || busy || !boundary} onClick={() => setReviewing(true)}>{signed.review}</button>}
               <Link href={`/${locale}/orders${storeQuery}`}>{c.back}</Link>
             </div>
           </form>
@@ -257,90 +292,74 @@ export function ManualOrder({
   );
 }
 
-// Product search (active products only: a draft cannot hold stock) and variant pick. Reads are the existing catalog BFF routes.
+// Read-only product selection is isolated from the order draft until Apply.
 function ItemPicker({ locale, store, lines, setLines }: { locale: Locale; store: Store; lines: Line[]; setLines: (next: Line[]) => void }) {
-  const c = toolsCopy[locale].manual;
+  const c = toolsCopy[locale].manual, signed = orderOpsCopy[locale];
   const [q, setQ] = useState("");
-  const [results, setResults] = useState<ProductSummary[] | null>(null);
-  const [open, setOpen] = useState<ProductDetail | null>(null);
+  const [results, setResults] = useState<ProductDetail[]>([]);
+  const [opened, setOpened] = useState(false);
+  const [pending, setPending] = useState<Line[]>([]);
   const [searching, setSearching] = useState(false);
+  const [failure, setFailure] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
+  useEffect(() => { if (opened) dialog.current?.showModal(); else dialog.current?.close(); }, [opened]);
   async function search() {
     controller.current?.abort();
-    const active = new AbortController();
-    controller.current = active;
-    setSearching(true);
-    setOpen(null);
+    const active = new AbortController(); controller.current = active;
+    setSearching(true); setFailure(false); setResults([]);
     try {
       const page = await readProducts(store.id, q.trim(), "active", "", active.signal);
-      if (!active.signal.aborted) setResults(page.items);
-    } catch {
-      if (!active.signal.aborted) setResults([]);
-    }
+      const details = await Promise.all(page.items.map((product) => readProduct(store.id, product.id, active.signal)));
+      if (!active.signal.aborted) setResults(details);
+    } catch { if (!active.signal.aborted) setFailure(true); }
     if (!active.signal.aborted) setSearching(false);
   }
-  async function expand(id: string) {
-    controller.current?.abort();
-    const active = new AbortController();
-    controller.current = active;
-    try {
-      const detail = await readProduct(store.id, id, active.signal);
-      if (!active.signal.aborted) setOpen(detail);
-    } catch {
-      /* the list stays; the merchant can retry */
-    }
-  }
-  const add = (v: ProductDetail["skus"][number], product: ProductDetail) => {
-    if (lines.some((l) => l.sku_id === v.id)) return;
-    setLines([...lines, { sku_id: v.id, quantity: 1, label: `${product.name} · ${v.title}`, code: v.code, price: money(locale, v.currency, v.price_minor) }]);
-  };
+  const close = () => { controller.current?.abort(); setOpened(false); setPending([]); };
   const ordered = useMemo(() => lines, [lines]);
-  return (
-    <section className="mt-card" data-testid="mo-items">
-      <h2>{c.itemsTitle}</h2>
-      {/* Not a <form>: this picker lives inside the order form, and HTML forbids nested forms (the parser would drop the inner one). */}
-      <FormRow className={s.searchRow}>
-        <Field id="mo-search" label={c.search} width="long">
-          <input id="mo-search" data-testid="mo-search" value={q} maxLength={120} onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void search(); } }} />
-        </Field>
-      </FormRow>
-      <div className={`mt-actions ${s.searchActions}`}><button type="button" data-testid="mo-search-button" disabled={searching} onClick={() => void search()}>{c.searchButton}</button></div>
-      {results && (results.length === 0 ? <p className="mt-note">{c.noResults}</p> : (
-        <ul className="mt-results">
-          {results.map((p) => (
-            <li key={p.id}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                <span>{p.name}<small>{p.sku_count} · {c.available} {p.available}</small></span>
-                <button type="button" className="mt-btn" onClick={() => void expand(p.id)}>{c.add}</button>
-              </div>
-              {open?.id === p.id && (
-                <ul className="mt-variants">
-                  {open.skus.filter((v) => v.price_minor >= 0).map((v) => (
-                    <li key={v.id}>
-                      <span>{v.title}<small>{v.code} · {money(locale, v.currency, v.price_minor)} · {c.available} {v.available}</small></span>
-                      <button type="button" className="mt-btn" disabled={lines.some((l) => l.sku_id === v.id)} onClick={() => add(v, open)}>{c.add}</button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      ))}
-      {ordered.length === 0 ? <p className="mt-note">{c.noLines}</p> : (
-        <ul className="mt-lines" data-testid="mo-lines">
-          {ordered.map((l) => (
-            <li key={l.sku_id}>
-              <span>{l.label}<small>{l.code} · {l.price}</small></span>
-              <input type="number" min={1} max={1000} step={1} aria-label={c.quantity} value={l.quantity}
-                onChange={(e) => setLines(lines.map((x) => (x.sku_id === l.sku_id ? { ...x, quantity: Math.max(1, Math.min(1000, Math.trunc(Number(e.target.value) || 1))) } : x)))} />
-              <button type="button" className="mt-btn" onClick={() => setLines(lines.filter((x) => x.sku_id !== l.sku_id))}>{c.remove}</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
+  return <section className="mt-card" data-testid="mo-items">
+    <h2>{signed.items}</h2>
+    {ordered.length === 0 ? <p className="mt-note">{c.noLines}</p> : <ul className="mt-lines" data-testid="mo-lines">
+      {ordered.map((line) => <li key={line.sku_id}>
+        <span>{line.label}<small>{line.code} · {line.price}</small></span>
+        <input type="number" min={1} max={1000} step={1} aria-label={c.quantity} value={line.quantity}
+          onChange={(e) => setLines(lines.map((item) => item.sku_id === line.sku_id ? { ...item, quantity: Math.max(1, Math.min(1000, Math.trunc(Number(e.target.value) || 1))) } : item))} />
+        <button type="button" onClick={() => setLines(lines.filter((item) => item.sku_id !== line.sku_id))}>{c.remove}</button>
+      </li>)}
+    </ul>}
+    <button type="button" className="ops-wide" data-testid="mo-open-picker" onClick={() => { setPending([]); setOpened(true); void search(); }}>{signed.add}</button>
+    <dialog className="ops-picker" ref={dialog} aria-labelledby="mo-picker-title" onCancel={close}>
+      <h2 id="mo-picker-title">{signed.picker}</h2><p>{signed.retained}</p>
+      <Field id="mo-search" label={c.search}><input id="mo-search" data-testid="mo-search" value={q} maxLength={120} onChange={(e) => setQ(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void search(); } }} /></Field>
+      <button type="button" data-testid="mo-search-button" disabled={searching} onClick={() => void search()}>{c.searchButton}</button>
+      {searching && <p role="status">{c.loading}</p>}
+      {failure && <p role="alert">{c.unavailable}</p>}
+      {!searching && !failure && results.length === 0 && <p>{c.noResults}</p>}
+      <ul className="mt-results">{results.map((product) => <li key={product.id}><strong>{product.name}</strong><ul className="mt-variants">
+        {product.skus.filter((variant) => variant.price_minor >= 0).map((variant) => {
+          const chosen = lines.some((line) => line.sku_id === variant.id), staged = pending.some((line) => line.sku_id === variant.id);
+          return <li key={variant.id}><span>{variant.title}<small>{variant.code} · {money(locale, variant.currency, variant.price_minor)} · {c.available} {variant.available}</small></span>
+            <button type="button" disabled={chosen} aria-pressed={staged} onClick={() => setPending(staged ? pending.filter((line) => line.sku_id !== variant.id) : [...pending, {
+              sku_id: variant.id, quantity: 1, label: `${product.name} · ${variant.title}`, code: variant.code, price: money(locale, variant.currency, variant.price_minor),
+            }])}>{chosen ? signed.selected : `${signed.select} ${product.name} · ${variant.title}`}</button>
+          </li>;
+        })}
+      </ul></li>)}</ul>
+      <div className="ops-actions"><button type="button" onClick={close}>{signed.cancel}</button>
+        <button type="button" className="primary" data-testid="mo-apply-picker" disabled={pending.length === 0} onClick={() => { setLines([...lines, ...pending.filter((item) => !lines.some((line) => line.sku_id === item.sku_id))]); close(); }}>{signed.apply}</button></div>
+    </dialog>
+  </section>;
+}
+
+function CvsDraftPicker({ locale, kind, onChoose, onCancel }: {
+  locale: Locale; kind: string; onChoose: (item: { code: string; name: string; address: string }) => void; onCancel: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { dialog.current?.showModal(); }, []);
+  const brands = { cvs_711: "UNIMART", cvs_familymart: "FAMI", cvs_hilife: "HILIFE", cvs_okmart: "OKMART" } as const;
+  const brand = Object.hasOwn(brands, kind) ? brands[kind as keyof typeof brands] : null;
+  return <dialog ref={dialog} className="ops-picker" onCancel={onCancel}>{brand ? <CvsLookup locale={locale} brand={brand} onChoose={onChoose} onCancel={onCancel} /> :
+    <><p role="status">{orderOpsCopy[locale].unavailable}</p><button type="button" onClick={onCancel}>{orderOpsCopy[locale].cancel}</button></>}</dialog>;
 }
