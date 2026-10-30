@@ -1,4 +1,4 @@
-# INBOX-OPLOCK — RED preparation
+# INBOX-OPLOCK — implementation awaiting CI
 
 Refs: integrator cross-vendor review of RC `c2173f5fc`, finding P1-2 (2026-10-30).
 
@@ -9,9 +9,9 @@ Refs: integrator cross-vendor review of RC `c2173f5fc`, finding P1-2 (2026-10-30
 - Branch: `unit/inbox-oplock`; worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/inbox-oplock`.
 - Model/effort: runtime did not expose a verified exact model/effort identifier.
 - Allowed module: inbox component and its named browser/Node assertions, card evidence, generated browser ownership.
-- Current stage: tests-only RED candidate; production component unchanged. Author review is E0.
+- Current stage: causal RED confirmed from RELAY 1 and raw CI log; one root fix implemented in InboxThread.tsx. Author assessment is E0; GREEN and independent acceptance remain pending.
 - Static syntax checks: `node --check tests/admin/inbox-v2-ui.spec.ts` and `node --check tests/admin/inbox-unknown.test.ts`, exit 0 (E1 only).
-- CI receipts: `red.log`. Causal RED and integrator relay are required before implementation.
+- CI receipts: `red.log`; RED head `dac568eb556b3c7d0d0f71fcd2960b2978c784c1`, Foundation run `41017289344`, job `123936404324`, Node unit step exit 1. Own-row sent form-unlock and sent/failed status assertions fail causally. Relay 1 supplied the completed job and the conditional authorization to implement.
 - Local tests, servers, browsers, Go/PG, LIVE effects, independent review, GREEN: NOT_RUN.
 - Humaux lookup/store/canvas/coord unavailable in this runtime; this file is a worktree handoff, not a substitute shared-state update.
 
@@ -63,4 +63,8 @@ No new desktop/mobile frame or summary/review state. Existing browser assertions
 
 ## Handoff
 
-Do not implement until the integrator confirms causal RED. Never merge, auto-merge or deploy from this lane. Generated ownership is the only changed file outside the named inbox tests/evidence at this stage; list it in the PR for integrator review. Preserve failed CI evidence.
+The root cause was requiring integration:read to settle every queued ACK, while the reply-capable default role lacks that permission. The fix adds only the unpermitted A9 branch: explicit clear history plus exactly one outbound row matching the ACK outbound_id and terminal sent/failed. Failed restores the original ACK draft through existing recovery; sent uses existing nextReply. Existing operation reads remain authoritative for permitted staff, and unresolved outbounds/UNKNOWN still block sends. No POST is added.
+
+Local implementation typecheck NOT_RUN: tsc/dependencies are unavailable in this worktree. No imports, browser titles/counts, routes, grants, migrations, contracts, server checks or other assertions changed in this implementation push. Browser ownership was regenerated last (53 modes), and `node scripts/dev/derive-browser-ownership.mjs --check` exited 0; generated content was unchanged. Both named test files passed `node --check` (exit 0). No Go dependency graph change; depmap regeneration not required.
+
+Await the implementation head's own Foundation/Gates run IDs via the final relay/PR comment; stop polling within ten minutes. Integrator relays completion into a fresh session. Never merge, auto-merge or deploy from this lane. Generated ownership (from RED) is the only file outside named inbox source/tests/evidence; integrator review required. Preserve failed CI evidence.

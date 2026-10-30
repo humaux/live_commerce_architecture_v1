@@ -155,8 +155,8 @@ export function InboxThread({
           let ackComplete = false;
           let ackState: string | null = null;
           if (ack) {
-            // A9 outbound identity correlates projections, never proves an operation result.
-            // No permission, missing ID, failed or mismatched operation read stays locked.
+            // With integration:read, only the exact operation read can settle the ACK.
+            // Missing ID, failed or mismatched operation evidence stays locked for that role.
             if (ack.id && permitted(store, "integration:read")) {
               try {
                 const operation = await readOperation(store.id, ack.id,
@@ -180,6 +180,18 @@ export function InboxThread({
                   callbacks.current.onUnauthorized();
                   return;
                 }
+              }
+            } else if (!permitted(store, "integration:read") && ack.outbound_id && data.has_unknown_outbound === false) {
+              // Reply-only staff can settle their exact ACK from A9's terminal outbound ledger row.
+              // Missing, conflicting or nonterminal rows never authorize another send.
+              const own = data.items.filter(item => item.direction === "out" && item.outbound_id === ack.outbound_id);
+              const state = own.length === 1 ? own[0].send_state : null;
+              if (state === "sent" || state === "failed") {
+                ackState = state;
+                ackComplete = true;
+                setDelivery(state);
+                recoveryText.current = state === "failed" ? ack.text : null;
+                deliveryLock.current = false;
               }
             }
           }
