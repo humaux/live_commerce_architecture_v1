@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -32,17 +33,18 @@ const liveVideosPageLimit = 25
 
 // liveVideosFields is the single-page, no-pagination field list (R5: status is unverified; when it is
 // absent every video is listed and sorted by creation_time descending).
-const liveVideosFields = "id,post_id,title,status,creation_time"
+const liveVideosFields = "id,post_id,title,status,creation_time,permalink_url"
 
 // liveVideoItem is the normalized snapshot item: post_id is <page_id>_<post>, title is stripped of
 // control characters and bounded to 255 runes, started_at is the raw creation_time (bounded, no
 // parsing — Meta's +0000 offset is not RFC 3339).
 type liveVideoItem struct {
-	VideoID   string `json:"video_id"`
-	PostID    string `json:"post_id"`
-	Title     string `json:"title"`
-	Status    string `json:"status"`
-	StartedAt string `json:"started_at"`
+	VideoID      string `json:"video_id"`
+	PostID       string `json:"post_id"`
+	Title        string `json:"title"`
+	Status       string `json:"status"`
+	StartedAt    string `json:"started_at"`
+	PermalinkURL string `json:"permalink_url,omitempty"`
 }
 
 // LiveVideoRoutes registers one read-only Page route with the claims worker's existing AES/HPKE
@@ -186,6 +188,7 @@ func normalizeLiveVideos(rows []json.RawMessage, assetID string) ([]liveVideoIte
 			Title        string `json:"title"`
 			Status       string `json:"status"`
 			CreationTime string `json:"creation_time"`
+			PermalinkURL string `json:"permalink_url"`
 		}
 		if json.Unmarshal(raw, &row) != nil || !assetPattern.MatchString(row.ID) || !audiencePostPattern.MatchString(row.PostID) {
 			return nil, false
@@ -199,11 +202,12 @@ func normalizeLiveVideos(rows []json.RawMessage, assetID string) ([]liveVideoIte
 			postID = assetID + "_" + postID
 		}
 		items = append(items, liveVideoItem{
-			VideoID:   row.ID,
-			PostID:    postID,
-			Title:     sanitizeLiveToken(row.Title, 255),
-			Status:    sanitizeLiveToken(row.Status, 40),
-			StartedAt: sanitizeLiveToken(row.CreationTime, 64),
+			VideoID:      row.ID,
+			PostID:       postID,
+			Title:        sanitizeLiveToken(row.Title, 255),
+			Status:       sanitizeLiveToken(row.Status, 40),
+			StartedAt:    sanitizeLiveToken(row.CreationTime, 64),
+			PermalinkURL: safeReplayPermalink(row.PermalinkURL),
 		})
 	}
 	sort.SliceStable(items, func(i, j int) bool {
@@ -276,4 +280,15 @@ func finishLiveVideos(ctx context.Context, tx pgx.Tx, claim core.SecretClaim, ou
 	_, err = tx.Exec(ctx, `SELECT integration.finish_meta_live_videos($1::uuid,$2::bigint,$3::bytea,$4::text,$5::jsonb)`,
 		claim.OperationID, claim.Generation, claim.LeaseToken, claim.Mode, raw)
 	return err
+}
+
+var replayPermalinkPattern = regexp.MustCompile(`^https://(www\.)?facebook\.com/([A-Za-z0-9._-]+/)?videos/[0-9]{1,40}/?$`)
+
+// safeReplayPermalink retains only official Graph-supplied Facebook video permalinks.
+// Never derive URLs from IDs or accept tokens, credentials or embedded-player inputs.
+func safeReplayPermalink(raw string) string {
+	if len(raw) > 2048 || !replayPermalinkPattern.MatchString(raw) {
+		return ""
+	}
+	return raw
 }

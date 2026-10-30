@@ -163,3 +163,9 @@ export async function allProducts(maxPages = 50): Promise<Fetched<ProductList["p
   return { state: "ok", value: out };
 }
 
+
+// Replay data is already closed by the Go transport; this server-only read forwards no caller authority.
+export async function getReplays(session?: string): Promise<Fetched<unknown>> {
+  if (session !== undefined && !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(session)) return { state: "missing" };
+  return getJSON(session === undefined ? "replays" : `replays/${session}`);
+}

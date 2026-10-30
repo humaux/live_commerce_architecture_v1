@@ -37,6 +37,8 @@ func (RouteTable) HasPrefix(path string) bool {
 //
 //contractdrift:routes /v1/buyer matchRoute allowed mount=Routes
 var routeRows = []routeEntry{
+	{Method: http.MethodGet, Path: "/v1/buyer/replays", kind: replayListRoute},
+	{Method: http.MethodGet, Path: "/v1/buyer/replays/{id}", kind: replayDetailRoute},
 	{Method: http.MethodGet, Path: "/v1/buyer/session", kind: sessionRoute},
 	{Method: http.MethodPost, Path: "/v1/buyer/session", kind: sessionRoute},
 	{Method: http.MethodDelete, Path: "/v1/buyer/session", kind: sessionRoute},

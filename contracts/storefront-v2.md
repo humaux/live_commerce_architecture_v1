@@ -404,3 +404,74 @@ Status: DESIGN frozen by integrator for OC-11 (#221); implementation/CI/independ
 - R5 (revised 2026-10-29, supersedes the in-memory wording) The pending `{idempotency_key, expected_draft_version}` is kept in the tab's sessionStorage; a reload restores 「發布結果待確認」 and continues R3 resolution with the same key and body. Reload itself performs no write until R3 resends. A resolved outcome (R4) clears it.
 - R6 Route table (absolute, unchanged behaviour; listed so the drift gate resolves the design routes this continuation touches): `GET /v1/admin/stores/{store_id}/design/draft` (integration:read), `PUT /v1/admin/stores/{store_id}/design/draft` (integration:manage, CAS), `GET /v1/admin/stores/{store_id}/design/versions` (integration:read), `GET /v1/admin/stores/{store_id}/design/media` (integration:read), `POST /v1/admin/stores/{store_id}/design/media` (integration:manage, upload), `GET /v1/admin/stores/{store_id}/design/media/{image_id}` (integration:read).
 - Acceptance (each red first): Go — same key twice = one version row + equal answers; other body 409; missing key 422; concurrent same key = one row. Browser (real clicks, three locales) — forced ambiguous publish → pending → same-key resend resolves to published; stale draft → 草稿已變更; no request ever carries a second key for one publish. Oracle wording: "exactly one publish request" is replaced by "every publish request of one attempt carries the same Idempotency-Key and body, and exactly one published version row results".
+
+
+## Amendment FEAT-LIVE-REPLAY — buyer replay read (2026-10-31)
+
+Authority: owner 2026-10-30 ruling 「补后端一起做」; integrator 2026-10-31 authorizes
+extending the existing official LiveVideo read only. **Supersedes OC-Q9** in
+`owner-choices-20261026-v1.md` (no live-replay storefront entry; stays planned) for
+this backend capability. The original OC-Q9 text remains historical and unchanged.
+UI: pending PARITY-NEWFEAT. This amendment adds API/BFF only; no production release.
+
+Official sources read on 2026-10-31, Graph API **v26.0**:
+- https://developers.facebook.com/docs/graph-api/reference/live-video/ — `permalink_url`
+  is the official Facebook video permalink; the field entry adds no separate permission.
+- https://developers.facebook.com/docs/graph-api/reference/page/live_videos/ — owned/
+  moderated Page read requires Page token, MODERATE task, `pages_read_engagement`,
+  `pages_show_list` and Live Video API feature. The existing connection requests both
+  scopes; this card adds no scope or credential path. App grants/feature access remain
+  subject to the existing dispatcher policy checks; documentation is not LIVE proof.
+- https://developers.facebook.com/docs/plugins/embedded-video-player/ — use Facebook's
+  official player only: `https://www.facebook.com/plugins/video.php?href=<encoded permalink>`.
+  No private API, scraping, stream URL, media download, re-hosting or old-session backfill.
+
+The existing future `GET /{page}/live_videos` now requests
+`id,post_id,title,status,creation_time,permalink_url`. A successful lease-fenced completion
+persists a per-binding/per-video row in `live.replay_videos` (migration **0213**), in the
+same transaction as its existing bounded snapshot. Latest requested_at wins. Invalid or
+missing optional links normalize to empty without breaking the existing picker. Accept
+only HTTPS facebook.com/www.facebook.com video permalinks with an optional single Page
+path segment, `videos/{numeric_video_id}`, optional trailing slash, no query, fragment,
+credentials, non-default port, encoded path or controls. Refuse plugin/player inputs.
+A missing/unsupported permalink, including old polls and Instagram, cannot be published:
+`409 no_official_video`. No URL is inferred from a post/video ID.
+
+| Endpoint | Authority | Request | Result |
+| --- | --- | --- | --- |
+| `GET /v1/buyer/replays` | BFF key + verified published origin; no buyer credentials | no query/body/key | `200 {"items":[{"session_id":"uuid","title":"測試回放","ended_at":"2026-10-30T12:00:00Z","permalink_url":"https://www.facebook.com/synthetic.page/videos/777/"}]}` |
+| `GET /v1/buyer/replays/{session_id}` | same | canonical UUID, no query/body/key | `200 {"session_id":"uuid","title":"測試回放","ended_at":"2026-10-30T12:00:00Z","permalink_url":"https://www.facebook.com/synthetic.page/videos/777/","embed_url":"https://www.facebook.com/plugins/video.php?href=...","offers":[{"offer_id":"uuid","sku_id":"uuid","product":<exact current catalog-v2 detail>}]}` |
+
+BFF: `GET /api/shop/replays` and `GET /api/shop/replays/{session_id}`. Host-derived
+origin uses the existing public upstream resolver; no client tenant/store header or body
+is forwarded. No buyer login or bearer is needed; the private Go boundary refuses buyer
+bearers/cookies. All replies are no-store. Wrong method is 405; malformed IDs/body/query/
+Idempotency-Key are 422 invalid_request; bad BFF credentials/buyer credentials are 403
+forbidden; invalid origin is 422 invalid_request; missing/unpublished origin or foreign,
+hidden, non-ENDED/no-video detail is 404 not_found; transient failure is 503 unavailable.
+Private transport auth/header errors retain the shared buyer transport contract. Public
+BFF upstream unavailability is 503 unavailable, malformed detail path is 404 not_found.
+
+Lists contain at most the 50 latest public ENDED sessions, ordered by persisted
+`lifecycle_at DESC, session_id`; this API has no pagination in this card. ended_at is
+that persisted end transition, never an inferred Graph creation time. Detail reads are
+available for any qualifying session, including those older than the latest 50.
+Products are the offers recorded in that session, ordered by offer creation/id (both
+currently active and inactive offers, because ending a session can deactivate offers).
+Each offer carries the existing catalog-v2 detail including current SKU price, stock hint,
+images and publication/currency rules. Omit unpublished/missing products and offers whose
+SKU is absent from current visible variants. Sold-out variants keep the shop's `out`
+state; no historical offer price or client amount can become a purchase price. Checkout
+continues to use the existing quote/stock authority. Empty offers/items are `[]`.
+
+Retention: publication state/version lives with its session; official video metadata with
+its binding. No new personal data is collected. No automatic purge, no deletion endpoint,
+no old-row backfill, no customer/channel messages and no new external side effect. Hiding
+a replay takes effect on subsequent reads; cached/old write receipts do not republish it.
+The existing session/binding deletion policy is unchanged; FK references fail closed.
+
+Acceptance: CI-only `TestLiveReplayOfficialPermalinkRead`,
+`TestLiveReplayPermalinkTrustBoundary`, `TestLiveReplayOfficialReadPersistsVideo`,
+`TestLiveReplayPublicationAndBuyerReads` bind to the PR head/tested merge SHA. MOCK Graph
+and REAL_PG cover persistence/RLS/publication/permissions/scope/idempotency/CAS/current
+catalog parity. SANDBOX/LIVE/browser UI/independent review remain NOT_RUN until evidenced.

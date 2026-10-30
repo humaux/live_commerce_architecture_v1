@@ -1,0 +1,27 @@
+FEAT-LIVE-REPLAY causal CI RED — verified from raw job log, 2026-10-31
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/396
+Tests-only PR head: b78ca35aaf41dfb978040edb1a148774f6f69049
+Base at RED: 2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f
+Gates run: 41093988979; attempt 1; job: 124202749403 (gate shard:unit)
+Job URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41093988979/job/124202749403
+Job conclusion: failure; compiled and executed new assertions (not compile failure).
+Tested synthetic merge SHA: b009564a4522eef75a1da8ff09256f44974cbd93
+Receipt artifact: 12998100490 (receipt-gate-shard_unit), mode shard:unit, status FAIL.
+
+Observed raw failure excerpts:
+2026-10-30T17:23:05.3497263Z live_replay_test.go:42: FEAT-LIVE-REPLAY: existing official live_videos read must request permalink_url
+2026-10-30T17:23:05.3499257Z --- FAIL: TestLiveReplayOfficialPermalinkRead (0.00s)
+2026-10-30T17:23:05.3503649Z live_replay_test.go:79: safe permalink="" want="https://www.facebook.com/synthetic.page/videos/777/"
+2026-10-30T17:23:05.3522872Z --- FAIL: TestLiveReplayPermalinkTrustBoundary (0.00s)
+2026-10-30T17:29:06.7854319Z Process completed with exit code 1.
+
+Foundation run 41093988555 / job 124194858726 passed; it is a different static job,
+not behavioral GREEN for this feature. Full Gates run still had pending shards on read.
+The REAL_PG HTTP/persistence tests are NOT claimed observed RED from the unit log.
+Raw job log preserved locally at red-unit-job.log. No local tests/servers executed.
+
+Implementation prepared locally after causal RED; no implementation push yet:
+BLOCKED — card assigned migration 0213 but did not assign the R2 replacement pin.
+Current tests/foundation/r2_integration_upgrade_test.go pin remains 139, unchanged.
+Owner forbids choosing the pin; integrator assignment requested; no replacement inferred.
+GREEN: NOT_RUN. WAIT_RUN for a new implementation push: NONE (not pushed).
