@@ -1,6 +1,19 @@
 PARITY-GROWTH tests-only RED stage
-BASE_SHA=3ea359f796d36153bb4b8aa7259e4e0c27676b86
-RUN=PENDING_PUSH
+HEAD_SHA=bddc4380602d63ddf0e06487f18e5ac2e3ec69b2
+PR=366 https://github.com/humaux/live_commerce_architecture_v1/pull/366
+GATES_RUN=41052985274 (queued; plan is not test evidence)
+FOUNDATION_RUN=41052985242
+FOUNDATION_JOB=124053376997 (FAIL at Package docs and gate map are current)
+RED_ASSERTION_RESULT=NOT_REACHED; registration failure is not assertion RED
+FAILED_LOG=output/parity-growth/relay1-foundation-failed.log
+ROOT_CAUSE=check-gates inventories directly registered spec files; imported registration-only fragments were not recognized
+REPAIR_ATTEMPT=1/2 for this registration blocker
+REPAIR=move every C3 assertion unchanged into ads.spec.ts, attribution.spec.ts and promotions-gate.mjs; remove import-only fragments; retain original fixture registration and call conditions
+REPAIR_BASE=origin/r3/integration fetched and merged before spec deletion; already up to date at 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+REPAIR_RUN=PENDING_PUSH; tests-only, implementation still gated on assertion RED
 EXPECTED_RED=real-route signed heading/control assertions; not compile
+LOCAL_STATIC=node --check (three registered browser entries), git diff --check, generated ownership --check; exit0
 LOCAL_TESTS=NOT_RUN (owner CI-only rule)
+IMPLEMENTATION=NOT_PUSHED; wait for CI assertion RED
 GREEN=NOT_RUN
+WAKE_OWNER=integrator relays a fresh session after the run concludes (card instruction)

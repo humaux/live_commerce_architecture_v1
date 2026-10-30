@@ -75,7 +75,15 @@ Every clickable flow remains NOT_RUN until the PR's own CI executes it. Existing
 Static checks: node --check on both new helpers and all changed parent entry points; git diff --check; derive-browser-ownership.mjs then --check (53 modes). Exit 0. tsc NOT_RUN (worktree dependencies absent); no install or local server.
 CI RED/GREEN, real browser clicks, persistence, screenshot parity, density and independent review: NOT_RUN/PENDING.
 No process, DB, port or container was started. Read-only Fleet Bridge calls completed. Rollback is git revert of this tests-only commit on this branch; untracked evidence is retained, not removed by git.
-Outside C3 application write paths: tests/admin/{ads,attribution,parity-growth}.spec.ts, tests/admin/parity-growth-marketing.spec.mjs, tests/storefront/promotions-gate.mjs (spec registration); generated output/ci-select-backend-browser/browser-ownership.json; output/parity-growth/** evidence. No application implementation changed.
+Outside C3 application write paths: tests/admin/{ads,attribution}.spec.ts, tests/storefront/promotions-gate.mjs (spec registration); generated output/ci-select-backend-browser/browser-ownership.json; output/parity-growth/** evidence. The initial import-only parity-growth.spec.ts and parity-growth-marketing.spec.mjs fragments were consolidated into these registered entry points in relay 1. No application implementation changed.
+
+## Relay 1 — repair test reachability before assertion RED
+
+- Original head `bddc4380602d63ddf0e06487f18e5ac2e3ec69b2`: Foundation run `41052985242`, job `124053376997`, failed at `Package docs and gate map are current`. Filtered original failed-step receipt: `relay1-foundation-failed.log`.
+- The gate reported both imported parity fragments as `is run by no gate`. No new visible-copy/control assertion was reached; this is **not** causal RED.
+- Targeted registration repair attempt **1/2**: move all added ads and attribution cases into their existing registered spec entry points and the marketing helper into its existing promotions runner. Assertion bodies, fixture data, invocation conditions and preexisting gate assertions stay unchanged. No registry/checker/exemption change.
+- Fetched and merged `origin/r3/integration` before deleting the fragments: already up to date at `3ea359f796d36153bb4b8aa7259e4e0c27676b86`. Regenerated browser ownership from the staged inventory, then `--check`: exit 0. `node --check` on the three entries and `git diff --check`: exit 0. These are E1 static evidence only.
+- The replacement push remains tests-only. Implementation, assertion RED, GREEN, actual clicks, persistence and parity screenshots remain pending CI. Integrator relays a new session after the exact-head Gates/Foundation run completes; no local test/server or production action is authorized.
 
 ## Frame parity sheet (all screenshots pending CI)
 
