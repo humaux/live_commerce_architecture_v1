@@ -193,7 +193,7 @@
     "tests/admin/shell-registry.test.ts": "7743ea45769bf2ed6aa86734f9100c9e3bf9928b064a5921bb23fcfce99533a4",
     "tests/admin/shell-render.test.ts": "bd26b696f3aeec218e83991e373dedcbdfefcc053d4798bdc9979d300d013e54",
     "tests/admin/shell-runner.mjs": "0f2bb2e12159f71dd343ac7f1cfbf35e633abf1429e146b02789887f26ae4e2a",
-    "tests/admin/shipping-center.spec.ts": "0e78d90fb3d80490435b81147c2cf257a1569c0c7710f7f3331b3a080e71f2b7",
+    "tests/admin/shipping-center.spec.ts": "28c5c0e3b16c6b666f72ee2d637f0e7956b5de169a2308489f212c1aaddbfe63",
     "tests/admin/staff-team.spec.ts": "06cfc46ec86f174d84ed21abf65fedbc149950bdb13b06110054f29f2fa550b9",
     "tests/admin/store-domains-ui.test.ts": "106267e4643d2d2af2f415c0561960cc9d14556ee7267d363d186a1ef7089291",
     "tests/admin/store-number.test.ts": "e225e1a16939a49179abaa8fee4bd4169c83c765b3113ca7615522d48fb39df8",

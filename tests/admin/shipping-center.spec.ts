@@ -57,7 +57,8 @@ function fixture(locale: Locale) {
   return orderIDs.map((id, i) => {
     const quantity = i === 1 ? 2 : 1;
     const summary = {
-      order_id: id, created_at: "2026-10-29T01:00:00Z", updated_at: "2026-10-29T01:00:00Z",
+      // Match merchantorders.timestampLayout: the production DTO parser requires six UTC fractional digits.
+      order_id: id, created_at: "2026-10-29T01:00:00.000000Z", updated_at: "2026-10-29T01:00:00.000000Z",
       currency: "TWD", total_minor: 128000, commercial_state: "CONFIRMED", fulfillment_state: "MANUAL_UNASSIGNED",
       payment_state: i === 1 ? "REVIEW_REQUIRED" : "CAPTURED", test_mode: true,
       work_state: i === 1 ? "REVIEW_REQUIRED" : "READY", refunded_minor: 0, refund_pending_minor: 0,

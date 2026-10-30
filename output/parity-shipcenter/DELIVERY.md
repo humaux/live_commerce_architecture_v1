@@ -2,7 +2,15 @@
 
 Status: E1 static structure/typecheck only. Browser GREEN, physical print, independent parity and production acceptance are PENDING/NOT_RUN. PR #353 targets `r3/integration`; branch `unit/parity-shipcenter`; worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-shipcenter`. Dispatched child role: UI implementer; precise runtime model/effort UNKNOWN. No recursive delegation. Initial head `e23c1167780288321bb9d9775c2be93a5441bf4a`; merged integration `3ea359f79` before adding the route per ownership rule.
 
-Humaux memory/coord/lock tools are unavailable. Claim/store/canvas: NOT_RUN; this local evidence is not a substitute. Integrator must relay it to the parent canvas. Platform memory guidance was read under the runtime's higher-priority instruction; no memory was written and no old result is used as current project evidence.
+Historical implementation/relay2 sessions reported Humaux tools unavailable. In RELAY 3 Humaux is available: targeted search/get, locked fix store and own subtask canvas are used. This dispatched worker does not claim another queue task or write the parent element.
+
+## RELAY 3 — malformed synthetic read timestamps, targeted fix 1/2
+
+Verified pre-fix PR head `49439913bfec8d851b134a96cffb8c178f77c2ee`: Gates `41062005270`, bundle:09 job `124092047081`, execution merge `347f858cf277f1993128e6e6a09ac5cac19f10a1`. Foundation `41062005320` / `124083805846` passed on that head only. `gh run view --log-failed --job` refused logs while the full workflow remained queued; completed-job API logs and artifact `12983272349` supplied the raw evidence (`relay3-bundle09.log`, `relay3-playwright.log`). Five shipping cases exceeded 90 seconds on the first checkbox lookup; their page snapshots show the unavailable-read alert. The parent browser chain was killed at its unchanged 540-second deadline; subsequent closed-browser/XServer errors follow that termination.
+
+Root cause: the card's shared mock fixture used second-only created_at/updated_at timestamps. Existing `apps/admin/lib/orders-model.ts` requires six fractional digits, matching server `internal/merchantorders/orders.go` timestampLayout. Fix ONLY the two synthetic fields to `.000000Z`; retain all assertions, states, amounts, recipient/item facts, timeouts and strict production parsing. The same fixture feeds list and detail. This restores the existing server DTO format rather than relaxing a gate. The original heading-assertion RED in red.log is retained separately.
+
+Static commands: `node --check tests/admin/shipping-center.spec.ts`, `node scripts/dev/derive-browser-ownership.mjs`, its `--check`, and `git diff --check`: exit 0. Generated ownership changes only the shipping spec hash. No new imports, Go dependency edges, pages or routes; no depmap/harness change needed. Existing CI shipping selection/reload/review/print assertions are the regression gate; post-fix CI GREEN remains PENDING. Local tests/servers, OS print dialog, physical print, independent E4 and LIVE/production remain NOT_RUN. Only this spec, generated ownership and this delivery record change in this relay. Parent/integrator wakes the next session on the new Gates/Foundation conclusion; do not poll longer than 10 minutes. Rollback is a normal revert of this relay commit; no business data changed.
 
 ## RELAY 2 — language selector clipping, targeted fix 1/2
 
