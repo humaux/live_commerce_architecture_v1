@@ -396,3 +396,67 @@ validation and exact response-id matching; reject conflicting SKU/stock targets.
 Ordinary-save refresh also reads the retained product while stock intent exists.
 Original assertions, fixtures, timing and all cached evidence validations unchanged.
 Implementation static checks/own-head CI recorded in DELIVERY and PR comment.
+
+FIX12 RELAY 1 current-head implementation gate readback (2026-10-30).
+Assigned branch pull --ff-only: already up to date at
+20093dcdffed6adb79c8d74e169f9a8a3e660830; fetched origin/r3/integration
+and merged: Already up to date (28 ahead / 0 behind).
+Original causal RED remains 6fdba18594dcd046f1dc8ad41890ac8a75343f98:
+Gates40967861632 / bundle:07 job123778347162 / artifact12940365670;
+pending SKU recovery must use intent-bound A when newest draft is B.
+Implementation head20093dcdf: Foundation40978806864 job123813377549 success.
+Gates40978806851 job123814651346 bundle:07 failure; original job logs and
+artifact12943429503 gate-browser-identity read directly through GitHub API.
+The implementation progressed through both A-bound recoveries, invalid draft/
+intent refusals, ordinary saves, and exact SKU/inventory replay assertions.
+Failure is at settings-v2.spec.ts:421: product-form absent after catalog.reload.
+The observer tab had navigated to /en/settings for native discovery and never
+returned to B's editor; error-context confirms Settings overview on that tab.
+Targeted correction: navigate observer back to B immediately after discovery.
+All assertions, fixtures, timeouts, retries and production implementation unchanged.
+Attempt 2 after initial FIX12 implementation; no local runtime execution.
+Raw failing Playwright log follows (downloaded artifact retained locally).
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty (21.5s)
+
+
+  1) tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('product-form')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('product-form') with timeout 10000ms
+      - waiting for getByTestId('product-form')
+
+
+       at settings-v2.spec.ts:421
+
+      419 |   const afterB = readB();
+      420 |   await catalog.reload();
+    > 421 |   await expect(catalog.getByTestId("product-form")).toBeVisible();
+          |                                                     ^
+      422 |   await expect(catalog.getByTestId("product-name")).toHaveValue(baselineB.name);
+      423 |   const recoveredB = await (await afterB).json();
+      424 |   expect(recoveredB.version).toBe(baselineB.version);
+        at settingsV2Acceptance (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settings-v2.spec.ts:421:53)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settings-real.spec.ts:65:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/settings-real-20261030T003111.784218747/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/settings-real-20261030T003111.784218747/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/settings-real-20261030T003111.784218747/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/error-context.md
+
+  1 failed
+    tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty

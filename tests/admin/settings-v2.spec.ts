@@ -216,6 +216,9 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   const latestDraft = await discovery;
   expect(latestDraft.ok()).toBe(true);
   expect((await latestDraft.json()).items[0].id, "B really precedes A in catalog discovery").toBe(productB);
+  // Return the observer tab to B after reading Settings discovery, so its
+  // later native refresh checks B's persisted editor rather than Settings.
+  await catalog.goto(`/en/products/${productB}?store=${store}`);
   await page.unroute(skuURL);
   await page.route(skuURL, async route => {
     skuCommands.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() ?? "" });

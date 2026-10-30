@@ -1425,3 +1425,60 @@ No delegation/separate claim; integrator retains ownership. Humaux fix stored
 and own child canvas updated; code map/search transport errors, rg used instead.
 Integrator completion/failure relay owns wakeup after exact-head WAIT_RUN handoff.
 No merge/auto-merge/status/deploy; no evidence-only commit after GREEN.
+
+## FIX12 RELAY 1 — restore the B observer page (2026-10-30)
+
+Base: 20093dcdffed6adb79c8d74e169f9a8a3e660830. Current-head original
+GitHub receipts: Foundation40978806864/job123813377549 success;
+Gates40978806851/bundle:07 job123814651346 failure. Artifact12943429503
+shows settings-v2.spec.ts:421 expected B's product-form after a reload of
+Settings. The native discovery observation changed that tab's URL to Settings.
+All preceding A-bound recovery, corruption rejection and exact-replay assertions
+were reached successfully in this failing run; whole-PR GREEN remains PENDING.
+
+Only add navigation back to B after observing native discovery. Keep the later
+native reload and every assertion, fixture, fault, wait, threshold and timeout
+verbatim. No product implementation, import, route or locale change. This is the
+second targeted FIX12 push after the initial implementation; if still blocked,
+stop and relay rather than repeatedly retry. Original causal RED remains
+40967861632/job123778347162/artifact12940365670 at tests-only6fdba1859.
+
+|Page/control|Operation|Expected|Actual|
+|---|---|---|---|
+|Settings / pending SKU and stock Reload|native clicks|recover A despite latest B; refuse corrupt evidence|preceding assertions reached in current-head CI; whole run failed later|
+|Settings / explicit Save|native clicks|original SKU/inventory bytes and keys target A|preceding assertions reached in current-head CI; whole run failed later|
+|Catalog B / refresh|native navigation then reload|B name/version/SKU/inventory unchanged|observer navigation corrected; fresh CI pending|
+
+### UI PROCESS — BOURDIEU
+
+Q1 safely resume stock; Q2 novice/expert means recent task experience;
+Q3 competing catalog activity must not change intent ownership; Q4 explicit
+Save alone writes; Q5 no class/device inference; Q6 aesthetics UNKNOWN.
+
+### UI PROCESS — PROJECT UNDERSTANDING
+
+Architecture sections 0/1/2/26/27 and merchant-settings-wizard-v1 session/drafts/
+uncertainty require truthful evidence, PG authority, scoped exact replay and
+independent acceptance. Current source plus native GitHub failure is authority.
+This correction only restores the observer's URL before its persistence check.
+
+### UI PROCESS — MOBBIN → EAGLE
+
+No design change or new reference; existing signed module references unchanged.
+No new Mobbin query or Eagle import needed for a test navigation correction.
+
+### UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No canvas, layout, component, variable or prototype change. Existing official
+guide application, three-language copy and field-parity tables remain applicable.
+No visual/density/Figma acceptance claimed.
+
+No new outside-card path. Static syntax and generated ownership checks only;
+current-head GREEN and E4 remain pending. Author judgment E0. NOT_RUN: local
+tests/servers/browsers/PG (prohibited), provider SANDBOX/LIVE/production/deploy.
+No process or fixture started. Downloaded CI failure evidence retained locally.
+Rollback: revert this isolated test-navigation commit. Integrator owns CI relay.
+Static verification: node --check tests/admin/settings-v2.spec.ts exit 0;
+git diff --check exit 0; derive-browser-ownership.mjs and --check exit 0
+(53 modes). Only generated source hash changed. No import/harness/dependency
+edge change, so no depmap regeneration required. E1 only; CI PENDING.
