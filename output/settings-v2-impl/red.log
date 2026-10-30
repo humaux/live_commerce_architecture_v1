@@ -460,3 +460,15 @@ Running 1 test using 1 worker
 
   1 failed
     tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty
+
+RVFIX POST-CREATE-ACK (2026-10-30), tests-only phase
+Authority: latest REQUEST_CHANGES at aa1594c499772a8d146aa2a3bea494894f164be4.
+P1: product POST receipt clears journal before fallible detail GET; no recovery
+identity/unsent price/stock retained yet. New real-click regression requires A
+survive detail 503 + newer native Catalog Copy B + Reload/refresh, zero read-side
+writes, explicit Save original product only, and unchanged B after completion.
+Integration a09262050 merged first as 48fb74490; generated conflict regenerated.
+Local E1: node --check tests/admin/settings-v2.spec.ts; git diff --check exit0.
+No product implementation changed. Causal RED PENDING own-head Gates workflow;
+run/job IDs will be added to this log on the implementation push after CI relay.
+NOT_RUN: local runtime tests/servers/browser/PG, E4, SANDBOX/LIVE/production.

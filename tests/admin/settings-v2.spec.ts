@@ -175,12 +175,77 @@ export async function settingsV2Acceptance(page: Page, store: string) {
     expect(await committed.json()).toMatchObject(JSON.parse(skuCommands[0].body));
     await route.abort("failed");
   });
+  // RVFIX post-create boundary: the real product receipt succeeds, but its
+  // first detail read fails before a SKU or initial-stock command is sent.
+  const createdDetailURL = `**/api/stores/${store}/products/*`;
+  let createdDetailReads = 0;
+  await page.route(createdDetailURL, async route => {
+    if (route.request().method() === "GET" && ++createdDetailReads === 1) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ code: "unavailable", request_id: "settings-v2-post-create-read", retryable: false, details: {} }) });
+    } else await route.continue();
+  });
+  const postCreateCommands: string[] = [];
+  page.on("request", request => {
+    if (["POST", "PUT"].includes(request.method()) && new URL(request.url()).pathname.startsWith(`/api/stores/${store}/`)) postCreateCommands.push(new URL(request.url()).pathname);
+  });
   const productSaved = page.waitForResponse(r => r.request().method() === "POST" && /\/api\/stores\/[^/]+\/products$/.test(new URL(r.url()).pathname));
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
   expect((await productSaved).ok()).toBe(true);
+  const createdProduct = await (await productSaved).json();
+  expect(createdProduct).toMatchObject({ name: "Acceptance draft bag", status: "draft" });
+  await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
+  expect(createdDetailReads, "the failure follows the acknowledged product, before SKU dispatch").toBe(1);
+  expect(skuCommands).toHaveLength(0);
+  expect(inventoryCommands).toHaveLength(0);
+  expect(postCreateCommands).toEqual([`/api/stores/${store}/products`]);
+  await page.unroute(createdDetailURL);
+  // Another operator uses Catalog's real Copy control while the acknowledged
+  // product has no SKU. Discovery now leads with a different, newer draft.
+  const createObserver = await page.context().newPage();
+  await createObserver.goto(`/en/products?store=${store}`);
+  const createCopied = createObserver.waitForResponse(r => r.request().method() === "POST" &&
+    new URL(r.url()).pathname === `/api/stores/${store}/products/${createdProduct.id}/copy`);
+  await createObserver.getByTestId(`product-row-${createdProduct.id}`).getByRole("button", { name: "Copy", exact: true }).click();
+  const createCopyResponse = await createCopied;
+  expect(createCopyResponse.ok()).toBe(true);
+  const competingProduct = (await createCopyResponse.json()).id as string;
+  expect(competingProduct).not.toBe(createdProduct.id);
+  const readCompeting = () => createObserver.waitForResponse(r => r.request().method() === "GET" &&
+    new URL(r.url()).pathname === `/api/stores/${store}/products/${competingProduct}`);
+  const competingBefore = readCompeting();
+  await createObserver.goto(`/en/products/${competingProduct}?store=${store}`);
+  await expect(createObserver.getByTestId("product-form")).toBeVisible();
+  const competingBaseline = await (await competingBefore).json();
+  expect(competingBaseline.skus).toEqual([]);
+  const createDiscovery = createObserver.waitForResponse(r => {
+    const url = new URL(r.url());
+    return r.request().method() === "GET" && url.pathname === `/api/stores/${store}/catalog-products` &&
+      url.searchParams.get("status") === "draft" && url.searchParams.get("limit") === "1";
+  });
+  await createObserver.goto(path);
+  expect((await (await createDiscovery).json()).items[0].id).toBe(competingProduct);
+  await createObserver.goto(`/en/products/${competingProduct}?store=${store}`);
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(overview).toBeVisible();
+  await page.reload();
+  await expect(overview).toBeVisible();
+  await page.getByRole("button", { name: "Start quick setup", exact: true }).click();
+  await page.getByRole("button", { name: "Next: delivery", exact: true }).click();
+  await page.getByRole("button", { name: "Next: product", exact: true }).click();
+  await expect(page.getByLabel("Product name", { exact: true }), "post-create read recovery must retain acknowledged A despite newer draft discovery").toHaveValue("Acceptance draft bag");
+  await expect(page.getByLabel("Price (TWD)", { exact: true })).toHaveValue("1280");
+  await expect(page.getByLabel("Stock (units)", { exact: true })).toHaveValue("10");
+  expect(postCreateCommands, "Reload, refresh and setup navigation must remain read-only").toEqual([`/api/stores/${store}/products`]);
+  expect(skuCommands).toHaveLength(0);
+  expect(inventoryCommands).toHaveLength(0);
+  await page.getByRole("button", { name: "Review settings", exact: true }).click();
+  for (const fact of ["Acceptance draft bag", "1280", "10", "TWD"]) await expect(review).toContainText(fact);
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
   expect(skuCommands).toHaveLength(1);
   const originalSku = skuCommands[0];
+  expect(JSON.parse(originalSku.body).product_id, "explicit Save resumes the acknowledged product without creating another").toBe(createdProduct.id);
+  expect(postCreateCommands.filter(p => p === `/api/stores/${store}/products`)).toHaveLength(1);
   expect(originalSku.key).toBeTruthy();
   expect(inventoryCommands, "initial stock has not been submitted after the lost SKU response").toHaveLength(0);
   // RVFIX #303 multi-product recovery: another operator's normal Catalog Copy
@@ -426,6 +491,24 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   const recoveredB = await (await afterB).json();
   expect(recoveredB.version).toBe(baselineB.version);
   expect(recoveredB.skus, "A's recovery must not mutate B's SKU or inventory").toEqual(baselineB.skus);
+  // The competitor created at the earlier product-ACK boundary must also
+  // remain unchanged after A's explicit SKU and stock recovery completes.
+  const competingAfter = readCompeting();
+  await createObserver.reload();
+  await expect(createObserver.getByTestId("product-form")).toBeVisible();
+  await expect(createObserver.getByTestId("product-name")).toHaveValue(competingBaseline.name);
+  const competingRecovered = await (await competingAfter).json();
+  expect(competingRecovered.version).toBe(competingBaseline.version);
+  expect(competingRecovered.skus).toEqual(competingBaseline.skus);
+  await createObserver.goto(`/en/products?store=${store}`);
+  await createObserver.getByTestId(`product-row-${competingProduct}`).getByRole("checkbox").click();
+  const competingArchived = createObserver.waitForResponse(r => r.request().method() === "POST" &&
+    new URL(r.url()).pathname === `/api/stores/${store}/products/bulk-status`);
+  await createObserver.getByTestId("product-batch").getByRole("button", { name: "Archive", exact: true }).click();
+  expect((await competingArchived).ok()).toBe(true);
+  await createObserver.reload();
+  await expect(createObserver.getByTestId(`product-row-${competingProduct}`)).toContainText("Archived");
+  await createObserver.close();
   // Retire only this CI-owned competing draft through the real Catalog controls
   // after both recovery scenarios, preserving the original single-draft checks.
   await catalog.goto(`/en/products?store=${store}`);

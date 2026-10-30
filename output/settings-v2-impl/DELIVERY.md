@@ -1482,3 +1482,64 @@ Static verification: node --check tests/admin/settings-v2.spec.ts exit 0;
 git diff --check exit 0; derive-browser-ownership.mjs and --check exit 0
 (53 modes). Only generated source hash changed. No import/harness/dependency
 edge change, so no depmap regeneration required. E1 only; CI PENDING.
+
+## RVFIX product ACK / detail-read failure — tests-only RED (2026-10-30)
+
+Authority: final REQUEST_CHANGES in `output/integrator/tools/logs/cxf-rv-303.log`
+at aa1594c499772a8d146aa2a3bea494894f164be4. One P1: retain acknowledged product
+identity and unsent price/stock before its fallible detail read. No P0/additional
+P2. This push changes no product source. Integration a09262050 was merged first
+as 48fb74490; generated ownership conflict resolved with the repo generator.
+
+New native-click witness: actual product POST receipt, first detail GET MOCK 503,
+zero SKU/stock commands; another tab uses Catalog Copy on the SKU-less product,
+and observed Settings discovery proves that competitor is now newest. Reload
+and refresh must preserve the original product/1280/10 without writes. Explicit
+Save must resume its original ID with no duplicate product. Existing SKU/stock
+fault, exact-replay and corruption assertions remain in order. Final native
+refresh checks both competitors' persisted name/version/SKU facts unchanged;
+native archive retires only CI-created competitors. No budgets/gates weakened.
+
+|Page/control|Operation|Expected|Actual|
+|---|---|---|---|
+|Setup / Save|native click; product ACK then detail 503|unavailable, zero SKU/stock writes|PENDING CI RED|
+|Catalog / Copy; Settings discovery|native control and read observation|competitor is newest|PENDING CI RED|
+|Reload / refresh / setup Next|native clicks|original name/1280/10, no writes|PENDING CI RED|
+|Explicit Save / Catalog refresh|native controls and readback|only original completed; competitors unchanged|PENDING implementation CI|
+
+### UI PROCESS — BOURDIEU
+
+Q1 resume setup without losing unsent fields; Q2 novice/expert means recent task
+experience; Q3 concurrent catalog work cannot redirect intent; Q4 explicit Save
+alone writes; Q5 no class/device inference; Q6 aesthetics UNKNOWN.
+
+### UI PROCESS — PROJECT UNDERSTANDING
+
+Read architecture 0/1/2/26/27: truthful evidence, PG authority, isolated ownership,
+independent acceptance. Merchant-settings-wizard-v1 Session/drafts/uncertainty
+requires scoped durable nonsecret intent and no read-side writes; AD-03 keeps
+three steps. Merchant-settings-http-v1 preserves scope/CAS; catalog-inventory-v1
+preserves explicit commands and ledger stock. Current product-ACK/read boundary
+is the sole target. No new setting, visible string, locale or layout change.
+
+### UI PROCESS — MOBBIN → EAGLE
+
+No new visual reference/query/import needed for this recovery regression;
+existing module references unchanged.
+
+### UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No canvas/component/variable/prototype changes; existing guide application,
+three-language and desktop/mobile parity tables remain applicable. No new
+visual acceptance claimed.
+
+E1: node --check and git diff --check exit 0. Ownership regeneration last;
+no imports/dependency edges changed, so depmap regeneration unnecessary. RED
+and current-head GREEN PENDING; author E0. No new outside-card path. NOT_RUN:
+local tests/servers/browser/PG (prohibited), E4, provider SANDBOX/LIVE/production.
+No local process/fixture started; pre-existing evidence untouched. Rollback:
+revert isolated regression commit. Integrator owns CI completion/failure/timeout
+relay: Foundation 90m, Gates bundle 360m/member 150m. Assigned Codex UI author,
+exact runtime model/effort selector unavailable. No delegation/separate claim;
+parent untouched. Humaux problem stored; child canvas updated at
+integrator-sub-settings-v2-postcreate303. Implementation awaits causal CI RED.
