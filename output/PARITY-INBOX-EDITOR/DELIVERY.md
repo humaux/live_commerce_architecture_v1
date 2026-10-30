@@ -266,3 +266,12 @@ Snapshot for this card; upstream current DELIVERY sections above remain authorit
 ## Frame-to-artifact map
 
 The PR body contains the full 75-row map. Screenshots are NOT_RUN pending browser CI.
+
+
+## RELAY 2 — artifact evidence repair, assertion RED still pending
+
+At PR head `17744c0affce3f096b25dc8cfde2554e5f78b5ff`, Foundation `41053520136` / job `124055190539` passed. Gates `41053520134` / job `124057814067` (`bundle:06`) tested synthetic merge `bda615b1264c376d512599abb545b1f99060c6e9`; inbox reported 18 failures / 70 passes. Individual assertions are absent from the summary, and the full inbox artifact upload failed because `parity/1429:37452.png` contains a colon. This does not establish causal RED on the new signed assertions. Raw filtered evidence: `relay2-artifact-failure.log`.
+
+Artifact blocker targeted fix 1 changes only the physical path in the two existing parity screenshot helpers to `parity/<frame-id-with-hyphen>.png`; original frame IDs remain in attachment labels and the PR map. The exact colon filename requested in the card cannot be uploaded by GitHub; this filesystem-only encoding is necessary to deliver reviewable evidence. All assertions, fixtures, thresholds, tests and frame coverage remain intact. No UI implementation yet.
+
+Humaux is available in this relay; the earlier unavailability statements describe earlier sessions. A dispatched implementer does not claim a separate coord task or change the integrator's task ownership. Own child canvas only: `integrator-sub-parity-inbox-editor`. No recursive delegation. Fresh CI must expose the failing assertions before implementation. Integrator completion/failure/cancellation relay is the wake-up; escalate queue waits beyond 3 hours. No local tests/servers started.

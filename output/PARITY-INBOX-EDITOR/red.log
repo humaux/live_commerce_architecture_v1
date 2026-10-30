@@ -45,3 +45,25 @@ Targeted fix attempt 1: keep original 39-case assertions intact; independently e
 Scope exception: tests/admin/inbox-discovery.test.ts is the same inbox module discovery harness; listed in PR body for integrator review.
 Local static syntax: node --check tests/admin/inbox-discovery.test.ts exit 0.
 Next wake-up: integrator relays current-head Foundation/Gates conclusion; inspect browser parity assertions before implementation.
+
+RELAY 2 verified 2026-10-30:
+PR head: 17744c0affce3f096b25dc8cfde2554e5f78b5ff
+Gates run: 41053520134 / job: 124057814067 (bundle:06) FAILURE
+Synthetic merge tested: bda615b1264c376d512599abb545b1f99060c6e9 (native matrix receipt)
+Foundation run: 41053520136 / job: 124055190539 PASS
+Playwright summary: 18 failed / 70 passed (NOT causal assertion evidence).
+Artifact upload error: path parity/1429:37452.png contains forbidden Colon :
+Full inbox artifact absent in native run artifact inventory; individual failing assertions cannot be recovered from job summary.
+gh run view --log-failed --job 124057814067: logs unavailable while parent run in progress.
+Fallback: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124057814067/logs succeeded.
+Filtered raw receipt: relay2-artifact-failure.log
+Root cause artifact fix attempt 1: both existing parity helpers normalize physical filename colon to hyphen; signed frame IDs remain in attachment labels.
+All original assertions / fixtures / thresholds remain unchanged. This is a separate artifact blocker from relay1 discovery.
+RED on new assertions: PENDING; implementation NOT_STARTED; GREEN NOT_RUN.
+Local static after artifact repair:
+node --check tests/admin/inbox-v2-ui.spec.ts: exit0
+node --check tests/admin/editor-v2.spec.ts: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0
+node scripts/dev/derive-browser-ownership.mjs --check: exit0
+git diff --check: exit0
+E1 only; no runtime local commands.

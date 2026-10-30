@@ -57,7 +57,8 @@ const fixtureOperation = "10000000-0000-4000-8000-000000000075";
 // Signed frames are comparison targets, never fixtures injected into the product DOM.
 async function inboxParity(page: Page, frame: string) {
   await expect(page).toHaveURL(/\/(zh-TW|zh-CN|en)\/messages/);
-  const path = test.info().outputPath("parity", `${frame}.png`);
+  // GitHub artifacts reject colons in paths; retain the signed frame ID in the attachment label.
+  const path = test.info().outputPath("parity", `${frame.replaceAll(":", "-")}.png`);
   await page.screenshot({ path });
   await test.info().attach(`parity/${frame}.png`, { path, contentType: "image/png" });
 }

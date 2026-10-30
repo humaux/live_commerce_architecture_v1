@@ -518,7 +518,8 @@ const signedEditor = {
 
 async function editorParity(page: Page, frame: string) {
   await expect(page).toHaveURL(/\/(zh-TW|zh-CN|en)\/design/);
-  const path = test.info().outputPath("parity", `${frame}.png`);
+  // GitHub artifacts reject colons in paths; retain the signed frame ID in the attachment label.
+  const path = test.info().outputPath("parity", `${frame.replaceAll(":", "-")}.png`);
   await page.screenshot({ path });
   await test.info().attach(`parity/${frame}.png`, { path, contentType: "image/png" });
 }
