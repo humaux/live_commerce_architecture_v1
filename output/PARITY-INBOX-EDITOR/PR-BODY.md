@@ -1,12 +1,16 @@
 Tests-only RED candidate for PARITY-INBOX-EDITOR. No application changes yet; do not merge.
 
+RELAY 1: Foundation `41052476505` / job `124051679004` at `6f212733ab43` failed in the inbox discovery harness (69 collected versus the original 39). This is not UI assertion RED. Targeted fix 1 preserves all original 39-case checks and separately asserts the exact 30 added parity cases; browser assertions stay unchanged. New-head CI and implementation remain PENDING.
+
 Pins signed copy/control checks to real `/[locale]/messages` and `/[locale]/design` routes, adds the open-window DM follow-up regression and frame-named screenshots. Existing gate-adapter and adversarial inbox assertions stay intact. Both existing browser specs retain their registered CI owners.
 
 Validation: node --check on both specs exit 0; deterministic ownership generation/check exit 0. Local tsc unavailable (command exit 254); no dependencies installed. No local tests, builds, servers, PG or browsers. RED on own assertions, GREEN and independent visual review PENDING. See output/PARITY-INBOX-EDITOR/red.log and DELIVERY.md.
 
 DEFERRED → INBOX-PREVIEW: list-row last-message preview on all list-containing frames, per integrator ruling (privacy review of decrypted A8 bodies). Implement list rows without that line or an empty slot. No API/contract change; all other parity remains in this card. Frame fixtures use server-shaped MOCK versions 42/27→43/28 and synthetic buyer/channel/content facts, not hard-coded Figma example facts. Screenshots must be reviewed for layout and fixed copy; sample values differ by design.
 
-Outside card write paths: generated output/ci-select-backend-browser/browser-ownership.json (explicitly pre-approved); task-local output/PARITY-INBOX-EDITOR/ receipts/documentation. No other app, backend, contract, migration, dispatcher baseline or lockfile changed.
+Preview-line DEFERRED frames: desktop `1429:37361`, `1429:37452`, `1429:37543`, `1429:37634`, `1429:37725`, `1429:37816`, `1429:37907`, `1429:37998`, `1429:38090`, `1429:38182`, `1429:38274`, `1429:38366`, `1429:38458`, `1429:38550`, `1429:38642`, `1429:40688`, `1429:40780`, `1429:40872`, `1429:61092`, `1429:61183`; mobile lists `1429:38826`, `1429:38876`, `1429:38926`, `1429:38976`, `1429:39026`. Only the list-row preview line is deferred; all other content/states remain in scope.
+
+Outside card write paths: `tests/admin/inbox-discovery.test.ts` (same inbox module harness required for the added cases; integrator review requested); generated output/ci-select-backend-browser/browser-ownership.json (explicitly pre-approved); task-local output/PARITY-INBOX-EDITOR/ receipts/documentation. No other app, backend, contract, migration, dispatcher baseline or lockfile changed.
 
 Parity sheet (screenshots PENDING, never claimed produced until browser CI). Desktop 1440×900; mobile 390×844. Paths are under each suite's browser artifact test-results. 43 inbox current frames and 32 merchant-editor current frames; buyer-only editor frames excluded from this admin card. Current inbox polish PNGs supersede simplify exports for seven roots. Every mapped screenshot is requested by tests; a prior assertion failure can prevent its creation.
 

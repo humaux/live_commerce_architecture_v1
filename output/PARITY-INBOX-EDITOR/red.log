@@ -19,3 +19,29 @@ Humaux MCP memory/store/canvas/coord: unavailable; no shared-state update claime
 node scripts/dev/derive-browser-ownership.mjs --check: exit 0
 Authority SHA256 inbox DELIVERY: a74b140f8abc0d7a50be3a55b9ee5bd180c84c4459c1ad8d2bbda4387def0d88
 Authority SHA256 editor DELIVERY: b5a6e8da0df5befe676c516424b8c6ab7bf4015fef55b5998330e00b93be2a14
+
+Live handoff 2026-10-30 (after tests-only push; intentionally no evidence-only push):
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/361
+Head SHA: 6f212733ab43e074824e3a04f7c385fe5e784f11
+Foundation run: 41052476505, job: 124051679004, status: PENDING/queued
+Gates run: 41052477052, status: PENDING/queued (plan job is not RED test evidence)
+RED on own assertions: NOT_YET_OBSERVED; no failure claim
+GREEN: NOT_RUN; application implementation NOT_STARTED pending assertion-level RED
+WAIT_RUN: 41052476505
+WAIT_RUN: 41052477052
+Wake-up owner: integrator relays a fresh session when these runs complete, per card CI-WAITS.
+No more than 10 minutes CI polling; no local tests or servers.
+Next: inspect actual browser-inbox and browser-design failed logs, record assertion + job IDs; stop for any out-of-card gate failure; only then implement in one batched push on this same PR.
+Latest gh pr view receipt: Foundation job 124051679004 IN_PROGRESS; Gates plan IN_PROGRESS. Both workflows remain PENDING. No test result observed. Final run IDs remain 41052476505 / 41052477052.
+
+RELAY 1 verified 2026-10-30 — supersedes earlier PENDING observations above:
+Head: 6f212733ab43e074824e3a04f7c385fe5e784f11
+Foundation run 41052476505 / job 124051679004: FAILURE, exit 1.
+Failed step: Node unit suites (storefront, i18n).
+Root cause: inbox-discovery.test.ts:72 expected 39 scenarios but actual discovery includes 30 new PARITY cases (69 total).
+Raw filtered receipt: foundation-discovery-failure.log
+This is NOT assertion-level UI RED; browser parity execution remains PENDING.
+Targeted fix attempt 1: keep original 39-case assertions intact; independently enumerate and assert the exact 30 new titles. No application implementation yet.
+Scope exception: tests/admin/inbox-discovery.test.ts is the same inbox module discovery harness; listed in PR body for integrator review.
+Local static syntax: node --check tests/admin/inbox-discovery.test.ts exit 0.
+Next wake-up: integrator relays current-head Foundation/Gates conclusion; inspect browser parity assertions before implementation.

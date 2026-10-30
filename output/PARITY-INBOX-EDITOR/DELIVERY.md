@@ -48,6 +48,12 @@ Read `/Volumes/data/live_commerce_architecture_v1/.worktrees/ux-editor/output/ux
 
 All visible implementation copy must use the current inbox 62-string and editor 117-string tables in the authority DELIVERY files. They remain the single source; this handoff does not copy historical tables. New tests pin main hub copy and controls independently for zh-TW/zh-CN/en; existing all-locale inbox states and editor outcome tests remain. Three-language runtime execution is NOT_RUN pending CI. Implementation must reconcile dictionary entries with those current tables, not translate zh-TW through character conversion.
 
+## RELAY 1 — tests-only discovery repair
+
+Foundation run `41052476505`, job `124051679004`, head `6f212733ab43e074824e3a04f7c385fe5e784f11` failed before browser execution: the collection gate still expected 39 cases after this card added 30. The filtered original CI receipt is `foundation-discovery-failure.log`. This failure is not valid signed-UI RED.
+
+Targeted fix attempt 1 adds an exact 30-title parity inventory alongside the unchanged original 39-case checks. Global duplicate collection, all original INU assertions and browser assertions remain intact. The same-module `tests/admin/inbox-discovery.test.ts` harness is an outside-path exception listed in the PR body. Application implementation remains pending until CI demonstrates a new signed-frame assertion failure. E1 only: `node --check` exited 0; no local test/collection command ran. Humaux tools remain unavailable; no shared-state write claimed.
+
 ## Verification and click ledger
 
 - E1: `node --check` on both changed specs exited 0. `derive-browser-ownership.mjs` exited 0; generated artifact committed with tests.
