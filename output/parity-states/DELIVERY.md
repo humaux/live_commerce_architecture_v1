@@ -1,5 +1,9 @@
 # PARITY-STATES · implementation handoff · 2026-10-30
 
+## RELAY 4 · CI handler-lifecycle repair (2026-10-30)
+
+Current inspected PR head `7a45c5d6facd8c5f98bbd51c2a803a4b8fe6f5ae`: Gates `41070114352` / bundle:09 `124130717361` failed in merchant-orders UI. Artifact `12988537262` shows 41/45 PASS, four shell recovery tests failing at route.fetch response parsing during context teardown; all original 21 cases passed. The trace confirms URL/denial-absence assertions finished while the destination shell was loading. Add destination store-selector value plus visible merchant-studio assertions, and drain route handlers with `unrouteAll({ behavior: "wait" })` before teardown. Existing assertions, read fixture, limits and product source remain unchanged. This is lifecycle blocker repair attempt 1; the earlier buyer alert locator is a different blocker. Static E1: node --check and generated ownership + --check exit 0. New-head CI, visual parity, independent review and GREEN remain PENDING. No local runtime verification. Raw trace retained locally; concise receipt `RELAY4.log`. Integrator relay owns wakeup; Humaux remains unavailable.
+
 Status: causal assertion RED confirmed on b3c4736a; implementation prepared for one batch push. GREEN and independent review PENDING. Author assessment E0; local static checks E1 only. No local tests, builds, servers, browsers, database or containers ran.
 
 Task: integrator-dispatched PARITY-STATES; role ui implementation worker, runtime Codex GPT-6 (effort inherited, no override). Base `df35b338b5cfde5de34bb590e2ba118efc17e4a4`; branch `unit/parity-states`; worktree `parity-states`; PR target `r3/integration`. Main checkout is read-only. No recursive delegation.

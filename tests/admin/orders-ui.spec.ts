@@ -1439,7 +1439,12 @@ function registerParityStates(signedLogin: (page: Page) => Promise<void>) {
         await expect(page.getByText(/403\s*·/)).toHaveCount(0);
         await denied.getByRole("link", { name: c.home, exact: true }).click();
         await expect(page).toHaveURL(`${process.env.LC_BROWSER_PUBLIC_ORIGIN}/${locale}/studio?store=${process.env.LC_BROWSER_ORDER_STORE}`);
+        // URL/denial absence also match the shell's loading frame. Verify the destination actually loaded.
+        await expect(page.getByTestId("shell-store-selector")).toHaveValue(process.env.LC_BROWSER_ORDER_STORE!);
+        await expect(page.getByTestId("merchant-studio")).toBeVisible();
         await expect(denied).toHaveCount(0); // Home must be available to the narrowed grants, never the denied Overview.
+        // Drain real read projections before fixture teardown disposes route.fetch() responses; propagate handler errors.
+        await page.unrouteAll({ behavior: "wait" });
       });
     }
   }
