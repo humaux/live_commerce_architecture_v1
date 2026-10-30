@@ -22,12 +22,7 @@ html:root {
   --ui-shell-topbar: 64px;
   --ui-shell-brand-size: 23px;
   --ui-shell-control-radius: 5px;
-  --ds-primary: var(--ui-primary);
-  --ds-primary-hover: var(--ui-primary-hover);
-  --ds-primary-soft: var(--ui-primary-soft);
-  --ds-link: var(--ui-primary-hover);
-  --ds-nav-active: var(--ui-rail-selected);
-  --ds-nav-text-active: var(--ui-rail-active);
+  --ui-shell-store-max-width: 420px;
   --navy: #193c61;
   --ink: var(--ds-ink);
   --muted: #64758a;
@@ -1039,6 +1034,15 @@ code {
 }
 
 /* Shell A is scoped to the admin chrome; page layouts keep their own module rules. */
+[data-ui-shell] {
+  /* Real workspace pages inherit shell A; the standalone DS gallery owns its library palette. */
+  --ds-primary: var(--ui-primary);
+  --ds-primary-hover: var(--ui-primary-hover);
+  --ds-primary-soft: var(--ui-primary-soft);
+  --ds-link: var(--ui-primary-hover);
+  --ds-nav-active: var(--ui-rail-selected);
+  --ds-nav-text-active: var(--ui-rail-active);
+}
 [data-ui-shell] [data-shell-rail] {
   color: var(--ui-text);
   border-right: 1px solid var(--ui-border);
@@ -1105,6 +1109,10 @@ code {
   }
   /* The task heading in each module carries the mobile breadcrumb context. */
   [data-ui-shell] [data-shell-topbar] [data-shell-route] { display: none; }
+  /* Keep the existing store-control width cap when the switcher moves into the tablet/mobile bar. */
+  [data-ui-shell] [data-shell-topbar] > label:has([data-testid="shell-store-selector"]) {
+    max-width: var(--ui-shell-store-max-width);
+  }
   [data-ui-shell] [data-shell-topbar] [data-testid="shell-store-brand"] {
     border: 0;
     padding-inline: 0;

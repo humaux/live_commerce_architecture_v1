@@ -79,3 +79,16 @@ AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
 - []
 Repair attempt 1: reuse four existing same-value semantic tokens in globals.css.
 No baseline/scanner/test weakening. New-head GREEN PENDING; not run locally.
+
+RELAY 4 — implementation regressions, NOT tests-only causal RED
+Head: 74bfb17372d2d45e22ad5e076957b5e93aa23faa
+Gates: 41054487504; synthetic merge: e7eea6a88dc1615effa16cab37fc42353e48acd8
+bundle09 job124071482550: shell-browser.mjs:156 clipped actual=false expected=true at first tablet viewport; desktop sizes already captured.
+CI failure image artifact12982872450 confirms full small text fits, not horizontal overflow.
+Attempt1: retain original store-control 420px width cap in tablet/mobile bar; do not change assertions.
+bundle01 job124071481930: gallery11 DS-color findings due to html:root DS palette overrides.
+Attempt1: scope six DS aliases to existing workspace [data-ui-shell]; no library/gallery/baseline/test/exemption edit.
+Foundation41054487515 job124058457938: success (partial at pre-repair head).
+Parity mode job124071481694: success (partial at pre-repair head).
+Original logs retained: relay4-bundle09.log; relay4-bundle01.log. gh run view --log-failed refuses until workflow complete; gh api completed-job log fallback used.
+Static git diff --check exit0 only; current repair GREEN PENDING; no local tests or servers.

@@ -141,7 +141,7 @@ No new copy key. From apps/admin/src/shell-copy.ts; all nav/breadcrumb/expanded/
 ## Static evidence file hashes
 
 - `apps/admin/components/WorkspaceFrame.tsx` SHA256 `e0b872238b7523f2a64b4a771b9423de828b01925fc17bdb73ecb4aab0d1268d`.
-- `apps/admin/app/globals.css` SHA256 `efb9daff22bd2c22d9c1d0415e57aa341f9b182a0adea4939453dc962f22a948`.
+- `apps/admin/app/globals.css` SHA256 `d9196f87e50772ed69198b646e4d89ec180685d32d685850a4a7700d0e5469cb`.
 - `tests/admin/parity-shell-browser.mjs` SHA256 `bdc209514b4b16093c653a8478653f1a206dfd864ac25f865f542ea6ce8a2986`.
 - `output/ci-select-backend-browser/browser-ownership.json` SHA256 `de62c85dc28508c6664e4d2588463f709d257d28624b7337299e65503082a776`.
 
@@ -154,3 +154,20 @@ Root cause: shell A added duplicated color literals rather than reusing existing
 Local validation for this repair: `git diff --check` exit 0; read the imported token definitions to confirm equal values and no alias cycles. No local test, gate, build, server or browser run. No new generator required because no spec/page/route/dependency changed. Evidence is E1 static only; author assessment E0. New-head Foundation and parity GREEN, screenshot/click ledger review and independent acceptance remain PENDING. Exact new workflow IDs will be posted to PR #350 after the single repair push; integrator owns completion relay, no local polling process.
 
 Humaux tools remain unavailable: store/canvas/coord/code-index NOT_RUN; no shared-state write or claim is represented. Only this worktree and assigned branch touched. Repair adds no out-of-card path; docs/delivery/GATES.md remains the previously disclosed additional path requiring integrator approval. Existing untracked design/PR evidence was preserved. Local raw failed-job log retained as failure evidence. No temporary process started.
+
+
+## RELAY 4 — workspace token scope and tablet store cap (attempt 1 of 2 each)
+
+Current pre-repair head `74bfb17372d2d45e22ad5e076957b5e93aa23faa` is implementation, not tests-only RED. Gates run `41054487504` checks the synthetic merge `e7eea6a88dc1615effa16cab37fc42353e48acd8`:
+
+- bundle:09 / job `124071482550`: `--browser-admin-shell` failed at shell-browser.mjs:156. The 1366/1586/2000/1024 desktop screenshots were produced; the first tablet case (768×1024) failed `clipped: true` with actual false. CI artifact `12982872450` includes the screenshot: the smaller signed 12px store copy fits in the expanded tablet slot. This is **not horizontal overflow**. The original mobile rule removed the shared store control's 420px cap. Retain that existing cap when the control moves to the tablet/mobile topbar, through `--ui-shell-store-max-width`; full name remains in the native select and title. Existing test, fixture and clipping assertion unchanged.
+- bundle:01 / job `124071481930`: `--browser-ui-gallery` failed 11 exact DS-color checks. Root cause: six DS aliases were globally overridden at html:root, leaking the new workspace palette into the standalone AppShellV2 gallery. Move those six overrides to the existing `[data-ui-shell]` workspace boundary. Real workspace pages still inherit signed green/active fill, while the standalone library gallery continues to use its own existing token authority. No route exception, exemption, alternate test style or baseline change.
+- Foundation run `41054487515` / job `124058457938`: success at this head. New parity mode job `124071481694`: success. These are partial old-head results, not whole-PR GREEN and not acceptance of the repair.
+
+`gh pr checks 350` and `gh run view 41054487504 --log-failed --job 124071482550` were read; the latter refused until the whole workflow finishes. Raw completed-job logs were obtained via `gh api .../actions/jobs/<id>/logs` into `relay4-bundle{01,09}.log`. Failure screenshot/text extracted from the actual CI artifact; no local browser/test/server. Earlier tests-only causal RED remains `41049926127 / 124044902136`, preserved in red.log.
+
+Fresh visual authority read through Fleet Bridge: rail `1429:29492` remains white/240px/16px inset/4px gap; mobile `1429:28313` remains 390×844 with 64px appbar and 12px store text. Current UX-orders DELIVERY section read, not historical snapshots. Only globals.css plus card evidence change this relay; no import/spec/page/route/registration/dependency edits, so no ownership/depmap regeneration needed. Existing dependency-map and gate assertions unchanged. Static `git diff --check`: exit 0 (E1 only). CSS hash above updated; prior CSS evidence is historical. No local tests, builds or servers. New-head CI and independent visual/click review remain PENDING; author judgment E0.
+
+Humaux tools appeared after a directory refresh; prior unavailable notes describe prior relays only. This relay searched exact card name, read development/dispatch details, enumerated rejected representative 5/9 (coverage0.5556, truncated), read coord/canvas and wrote only `integrator-sub-parity-shell` under acquired lock. No separate claim or child agent (integrator-dispatched card). Root-cause store accepted; no platform/local memory used. Final run IDs and updated handoff are stored after the single repair push. Integrator completion relay is the wake-up mechanism; workflow/job timeouts remain in force, no local poller. Stop after two targeted attempts on the same blocker.
+
+NOT_RUN/PENDING: repaired-head CI GREEN, independent side-by-side review, tsc (prior missing compiler), all local product tests/servers (prohibited), production. No new out-of-card source path; prior docs/delivery/GATES.md registration row remains the one requiring integrator approval. Existing untracked files preserved; this relay's CI failure logs/screenshots are retained as evidence, not acceptance.
