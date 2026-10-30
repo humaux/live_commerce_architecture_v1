@@ -134,9 +134,20 @@ for (const locale of moneyLocales) for (const width of moneyWidths) {
       await page.getByLabel(c.to, { exact: true }).fill(financeDay());
       await page.getByRole("button", { name: c.apply, exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`from=${financeDay(-7)}`));
+      await moneyOverview(page, locale);
       await page.reload();
       await moneyOverview(page, locale);
       await expect(page).toHaveURL(new RegExp(`from=${financeDay(-7)}`));
+    });
+    await moneyClick(page, evidence, c.apply, "reapplying the same dates closes the editor and survives refresh", async () => {
+      const applied = page.url();
+      await page.getByRole("button", { name: c.financeDates, exact: true }).click();
+      await page.getByRole("button", { name: c.apply, exact: true }).click();
+      await moneyOverview(page, locale);
+      await expect(page).toHaveURL(applied);
+      await page.reload();
+      await moneyOverview(page, locale);
+      await expect(page).toHaveURL(applied);
     });
     await moneyClick(page, evidence, c.csv, "export preview then a real audited CSV download", async () => {
       await page.getByRole("button", { name: c.csv, exact: true }).click();

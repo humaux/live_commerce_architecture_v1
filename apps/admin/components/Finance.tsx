@@ -54,7 +54,11 @@ export function Finance({ locale, stores: _stores, store, from, to, today, initi
   }, [store, initialError]);
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (valid && store) router.push(`/${locale}/finance?${new URLSearchParams({ store: store.id, from: draftFrom, to: draftTo })}`);
+    if (valid && store) {
+      // App Router preserves this component, including when the applied range is unchanged.
+      open("overview");
+      router.push(`/${locale}/finance?${new URLSearchParams({ store: store.id, from: draftFrom, to: draftTo })}`);
+    }
   }
   const failure = read.status === "signed-out" ? c.financeSignedOut : read.status === "forbidden" ? c.financeForbidden : read.status === "not-found" ? (store ? c.notFound : c.noStore) : read.status === "unavailable" ? c.financeUnavailable : "";
   const summary = read.status === "ready" ? read.data : null;
