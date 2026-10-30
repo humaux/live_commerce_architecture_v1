@@ -1,5 +1,15 @@
-PARITY-CATALOG-PEOPLE — RED batch
-State: PENDING_PUSH; no CI failure claimed.
-Expected assertion failures: PARITY-CONSENT-STATE (unit + HTTP/PG projection), PARITY-CATALOG unsigned controls/status/sticky save bar, PARITY-PEOPLE unsigned disclosure/dedicated privacy outcomes/pending server read/denied commands.
-Run/job IDs: pending CI allocation.
-No local tests or servers.
+PARITY-CATALOG-PEOPLE — tests-only RED batch / relay 1
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/363
+Tests-only head: 54345049bc5c3e14d646b8984e14da8da1231091
+Gates run: 41052522915 (test jobs pending at relay; plan is not test evidence)
+Foundation run: 41052522916 / job 124051832403 — FAILURE
+Step: Node unit suites (storefront, i18n)
+Failed test: tests/ci/product-editor-matrix-ledger.test.mjs:38 real Playwright ESM consumer collects the product-editor cases
+Original receipt: AssertionError [ERR_ASSERTION]: Listing tests: Total: 0 tests in 0 files
+Original receipt: Error: duplicate test title CATV2 signed simplified catalog (MOCK responses) > CATV2 archive zh-TW: selection, cancel, per-item outcomes and persisted refresh
+Same duplicate-title error for archive/edit/images in zh-TW, zh-CN, en.
+Root cause: viewport loop [390, 1440] was added without including width in three test title templates.
+Repair attempt 1: add width to those titles only. All assertions/fixtures/thresholds and both viewport cases retained verbatim.
+This failure is NOT causal assertion RED; implementation remains NOT_RUN until new assertions fail in CI.
+Local verification: no tests/servers; browser ownership generation/check only. CI collection and browser execution remain pending.
+Wake-up: integrator relays Gates/Foundation completion/failure/cancellation in a fresh session. Escalate queue beyond 3 hours; do not poll beyond 10 minutes.

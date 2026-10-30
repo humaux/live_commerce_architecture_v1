@@ -8,7 +8,7 @@ Validation: Go vet customers/foundation, gofmt, diff check, packet structure che
 
 Outside initial write paths (integrator review): `internal/customers/types_test.go`, `tests/foundation/customers_billing_http_test.go`, `tests/foundation/customers_billing_list_test.go` under the explicit consent ruling; generated `output/ci-select-backend-browser/browser-ownership.json`; evidence `output/PARITY-CATALOG-PEOPLE/**`. No migration, lockfile, protected baseline, other module or production change.
 
-CI receipts: pending allocation; run/job IDs will be linked here/commented, not claimed from author checks. No merge or auto-merge.
+CI receipts at tests-only head `54345049bc5c3e14d646b8984e14da8da1231091`: [Gates run 41052522915](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41052522915), [Foundation run 41052522916 / job 124051832403](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41052522916/job/124051832403), Foundation FAILED on duplicate CATV2 archive/edit/images titles across desktop/mobile, before product assertions. Relay 1 repair attempt 1 adds viewport width to those three titles only; assertions and coverage stay unchanged. Gates pending at relay. Causal RED assertion result PENDING, GREEN NOT_RUN. The plan job is not test evidence. Integrator relays the completion in a fresh session. No merge or auto-merge.
 
 Parity sheet (artifact paths describe captures produced by CI, currently NOT_RUN; DELIVERY paths are relative to each designated design worktree):
 

@@ -226,7 +226,7 @@ export function registerCatalogSimplifiedAcceptance() {
       });
     }
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [390, 1440]) {
-      test(`CATV2 archive ${locale}: selection, cancel, per-item outcomes and persisted refresh`, async ({ page }, info) => {
+      test(`CATV2 archive ${locale} ${width}: selection, cancel, per-item outcomes and persisted refresh`, async ({ page }, info) => {
         const ledger: Ledger = [], c = signed[locale];
         await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
         try {
@@ -265,7 +265,7 @@ export function registerCatalogSimplifiedAcceptance() {
         } finally { await saveLedger(ledger, info); }
       });
 
-      test(`CATV2 edit ${locale}: invalid stock sends nothing, review retains facts, save survives refresh`, async ({ page }, info) => {
+      test(`CATV2 edit ${locale} ${width}: invalid stock sends nothing, review retains facts, save survives refresh`, async ({ page }, info) => {
         const ledger: Ledger = [], c = signed[locale];
         await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
         try {
@@ -327,7 +327,7 @@ export function registerCatalogSimplifiedAcceptance() {
         } finally { await saveLedger(ledger, info); }
       });
 
-      test(`CATV2 images ${locale}: separate roles and native pickers`, async ({ page }, info) => {
+      test(`CATV2 images ${locale} ${width}: separate roles and native pickers`, async ({ page }, info) => {
         const ledger: Ledger = [], c = signed[locale];
         await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
         try {

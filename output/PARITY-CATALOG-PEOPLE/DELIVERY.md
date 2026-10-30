@@ -2,8 +2,10 @@
 
 Evidence: E1 static checks only; author conclusions E0. Product implementation/GREEN/E4 NOT_RUN.
 
+Relay 1: PR #363 head `54345049bc5c3e14d646b8984e14da8da1231091`, Foundation `41052522916` / job `124051832403` FAILED collecting duplicate CATV2 archive/edit/images titles across viewports. This is NOT causal RED. Attempt 1 adds the width to those three title templates; all assertions and viewport coverage are retained. Gates `41052522915` still pending at relay. Implementation remains NOT_RUN until assertion RED. Integrator relay is the next-session wake-up; no local process or silent polling task.
+
 📋 Integrator-dispatched card; UI implementation worker; branch `unit/parity-catalog-people`; own assigned worktree only. Fetched and fast-forwarded from df35b338b to 3ea359f79 before browser edits. No delegation or shared branch writes. Runtime model/effort UNKNOWN.
-🧠 Humaux tools absent. Rejected/coord/store/canvas/code-index/semantic code links NOT_RUN. Repository `rg` and focused reads used instead. No Humaux completion claim.
+🧠 Relay 1 Humaux tools became available after discovery: semantic search plus exact grep (no exact card record), rejected enumeration 9/9 coverage 1, own canvas read and coord board read. Read development detail 7bdb220b and orchestration detail d31c5279. Dispatched subtask: no additional claim or delegation; only own canvas element is written. Prior RED phase had no Humaux tools.
 🧩 Read figma-implement-design, impeccable (polish/craft-floor) and ponytail; signed CURRENT design overrides historical local style briefs. No Figma writes.
 📜 Read AGENTS.md, architecture §§0/1/2/26/27, supplied catalog CURRENT simplify and people CURRENT simplify-followup deliveries, current audit catalog/people rows, catalog-inventory/customer-billing contracts. Current Fleet Bridge context/screenshots saved under figma/. File hashes: AUTHORITY-SHA256SUMS.
 
@@ -65,3 +67,7 @@ Outside initial UI write paths: internal/customers/types_test.go and tests/found
 After CI: inspect actual failed assertions, record RED run/job receipts in red.log, then one implementation push. Proposed minimal API mechanism is reuse of existing scope-fenced customer detail projection for list consent state without calling merchantorders.Get; must verify permissions/performance and avoid any unassigned migration. This is a candidate, not a new authority.
 
 NOT_RUN: all local tests/servers (forbidden), TypeScript compilation, CI RED/GREEN, browser click/persistence/density acceptance, independent parity review/E4, LIVE/production, Humaux/coord/canvas/store. No background process was started locally; GitHub CI and integrator relay own the wake-up.
+
+## Relay 1 — CI collection root cause
+
+Foundation receipt is a collection failure, not new product assertion evidence. Three locale-only titles collide across desktop/mobile. Repair changes only title identity to locale + width; no test/gate/assertion/fixture weakened. Existing CI collection gate remains the acceptance gate; no new gate or local execution added. Generated browser ownership must be regenerated and checked after this spec edit. GREEN, actual parity captures and independent review remain NOT_RUN. No product source, contract or Figma change in this relay. Static review is E1; author conclusions E0.
