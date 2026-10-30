@@ -22,7 +22,7 @@
         "tests/admin/studio-ui.spec.ts"
       ],
       "exit_code": 0,
-      "log": "syntax-studio-ui.spec.ts.log",
+      "log": "syntax-studio-ui-spec-ts.log",
       "evidence": "E1_STATIC_ONLY"
     },
     {
@@ -32,7 +32,7 @@
         "tests/admin/claims-ui.spec.ts"
       ],
       "exit_code": 0,
-      "log": "syntax-claims-ui.spec.ts.log",
+      "log": "syntax-claims-ui-spec-ts.log",
       "evidence": "E1_STATIC_ONLY"
     },
     {
@@ -42,7 +42,7 @@
         "tests/admin/live-console.spec.ts"
       ],
       "exit_code": 0,
-      "log": "syntax-live-console.spec.ts.log",
+      "log": "syntax-live-console-spec-ts.log",
       "evidence": "E1_STATIC_ONLY"
     },
     {
@@ -52,7 +52,7 @@
         "tests/admin/meta-connect.spec.ts"
       ],
       "exit_code": 0,
-      "log": "syntax-meta-connect.spec.ts.log",
+      "log": "syntax-meta-connect-spec-ts.log",
       "evidence": "E1_STATIC_ONLY"
     },
     {
@@ -62,7 +62,7 @@
         "tests/admin/meta-health-ui.spec.ts"
       ],
       "exit_code": 0,
-      "log": "syntax-meta-health-ui.spec.ts.log",
+      "log": "syntax-meta-health-ui-spec-ts.log",
       "evidence": "E1_STATIC_ONLY"
     },
     {
@@ -72,7 +72,7 @@
         "tests/admin/meta-health-model.test.ts"
       ],
       "exit_code": 0,
-      "log": "syntax-meta-health-model.test.ts.log",
+      "log": "syntax-meta-health-model-test-ts.log",
       "evidence": "E1_STATIC_ONLY"
     },
     {
@@ -82,7 +82,7 @@
         "tests/admin/attribution.spec.ts"
       ],
       "exit_code": 0,
-      "log": "syntax-attribution.spec.ts.log",
+      "log": "syntax-attribution-spec-ts.log",
       "evidence": "E1_STATIC_ONLY"
     },
     {
