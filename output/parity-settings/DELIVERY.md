@@ -1,6 +1,6 @@
 # PARITY-SETTINGS implementation hand-off · 2026-10-30
 
-Status: implementation pushed; relay 4 repairs the settings J4 caller after native CI failure. Current-head GREEN/E4 acceptance PENDING. Author PASS would be E0.
+Status: FIX1 relay 2 repairs remaining domain reload callers after native CI failure. New-head GREEN/E4 acceptance PENDING. Author PASS would be E0. See FIX1.md for current readback; older sections retain historical receipts.
 Role: dispatched UI implementer; model family GPT-6 (runtime model/effort not independently exposed); no delegation.
 Branch/worktree: unit/parity-settings / .worktrees/parity-settings. Initial base df35b338b5cf; integration refresh 3ea359f79 merged before ownership regeneration. Only this worktree is writable.
 

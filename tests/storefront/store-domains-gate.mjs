@@ -210,15 +210,19 @@ try {
   await notFound(platformOrigin, "en", "desktop", "platform subdomain ACTIVE but the merchant has not published");
 
   // ---- publish from the Settings card (zh-TW, 390px); the buyer is served at the platform origin ------------------
-  async function openCard(page, locale, view) {
-    await page.setViewportSize(VIEW[view]);
-    await page.goto(`${adminOrigin}/${locale}/settings?store=${store}`);
+  async function enterEditor(page, locale) {
     const card = page.getByTestId("storefront-card");
-    // Every settings visit starts at the signed overview; enter the full editor through its merchant control.
+    // Visits and reloads start at the signed overview; reopening must not discard the pending domain journal.
     const advanced = page.getByRole("button", { name: { en: "Edit settings", "zh-TW": "編輯設定", "zh-CN": "编辑设置" }[locale], exact: true });
     await expect(advanced.or(card)).toBeVisible();
     if (await advanced.isVisible()) await advanced.click();
     await expect(card).toBeVisible();
+    return card;
+  }
+  async function openCard(page, locale, view) {
+    await page.setViewportSize(VIEW[view]);
+    await page.goto(`${adminOrigin}/${locale}/settings?store=${store}`);
+    const card = await enterEditor(page, locale);
     await expect(card.getByRole("heading", { level: 2 })).toHaveText(CARD[locale].title);
     await expect(card.getByTestId("storefront-state")).toBeVisible();
     const fit = await card.evaluate(element => ({ scroll: element.scrollWidth, client: element.clientWidth, right: element.getBoundingClientRect().right, view: innerWidth }));
@@ -284,6 +288,7 @@ try {
       await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
       const committed = await dbFacts(store);
       await merchant.reload();
+      await enterEditor(merchant, "zh-CN");
       await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toBeVisible();
       await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
       // Reload and status refresh remain read-only. Only an explicit retry can resend.
@@ -446,6 +451,7 @@ try {
   await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toBeVisible();
   await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
   await merchant.reload();
+  await enterEditor(merchant, "en");
   await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toBeVisible();
   await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();
   await domainCard.getByRole("button", { name: "Refresh status", exact: true }).click();
@@ -458,6 +464,7 @@ try {
     for (const key of Object.keys(sessionStorage)) if (key.startsWith(`commerce-domain-pending:${store}:`)) sessionStorage.setItem(key, "pending");
   }, store);
   await merchant.reload();
+  await enterEditor(merchant, "en");
   await expect(domainCard.getByTestId("storefront-domain-unconfirmed")).toBeVisible();
   await expect(domainCard.getByTestId("storefront-domain-retry")).toHaveCount(0);
   await expect(domainCard.getByTestId("storefront-domain-submit")).toBeDisabled();

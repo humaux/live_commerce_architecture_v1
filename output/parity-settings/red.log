@@ -1,5 +1,20 @@
 PARITY-SETTINGS — historical RED/relay log; current FIX1 classification in FIX1.md
 
+FIX1 RELAY 2 — 2026-10-31; second/final navigation fix
+Exact failed head: 09e193f5e6ca329950015c16c008861b94a391bd
+Gates run/job: 41080465634 / 124153282588 (bundle:03), FAILURE
+Artifact: 12992510790, gate-browser-store-domains
+Raw browser.log:10-25: storefront-domain-unconfirmed expected visible, absent
+after merchant.reload(), store-domains-gate.mjs:287. ariaSnapshot shows overview.
+Initial onboarding/publish/buyer checks passed; this is a later reload assertion.
+Foundation run/job: 41080465533 / 124147875090, SUCCESS on failed head only.
+Fix: share real-click editor entry across initial visit and all 3 reload sites.
+Original assertion/key/body/response/PG/no-retry/disabled checks unchanged.
+Attempt 2 of 2; another failure => BLOCKED, no third approach.
+E1 static syntax/ownership/depmap/diff exit 0; E3 historical failure only.
+New-head GREEN and independent acceptance PENDING. No local tests/servers.
+Humaux unavailable; no store/canvas receipt. New run IDs in PR comment/final.
+
 FIX1 batch (2026-10-30): latest integration 2f61bf866 merged before changes.
 Failure run 41062911958 / e9c1fe9ca; synthetic merge 4b5021d8da38a92f9a1835720c54a8df800e4859.
 Jobs 124100558313,124100559012,124100560368,124100560297,124100559375,124100559711:

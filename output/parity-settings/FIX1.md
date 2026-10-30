@@ -1,4 +1,45 @@
-# PARITY-SETTINGS-FIX1 — directed batch awaiting CI
+# PARITY-SETTINGS-FIX1 — second directed fix awaiting CI
+
+## Relay 2 · current-head readback (2026-10-31)
+
+Authority: RELAY 2 + FIX1 card, current source, native job/artifact receipts.
+Readback head: `09e193f5e6ca329950015c16c008861b94a391bd`.
+Fetch and merge `origin/r3/integration` both exit 0: already up to date at
+`2f61bf866`. Existing untracked evidence kept. Humaux discovery found no tools;
+store/canvas/coord NOT_RUN; no shared-state write is claimed.
+
+|Failing job → test|Raw evidence → assertion|Class → action|
+|---|---|---|
+|`41080465634` / `124153282588` (bundle:03) → `TestBrowserStoreDomains`|Artifact `12992510790` (`gate-browser-store-domains`), `relay2-domains/playwright/store-domains-4101424791/browser.log:10-25`: `storefront-domain-unconfirmed` expected visible but absent after reload at `store-domains-gate.mjs:287`; same log's ariaSnapshot shows 开始三步设置 + 编辑设置 overview. Lines 2–5 show onboarding, closed buyer, publication and live buyer checks passed.|a: initial visits were corrected, native reloads were missed. Extract existing real-click editor entry into `enterEditor`; reuse at initial entry and all three reload sites. All original assertions remain.|
+
+`gh run view --log-failed --job` refuses logs while Gates remains in progress;
+fallback native job logs and artifact download succeeded (`relay2-failed.log`).
+This was the only completed failed job in the job API readback; other queued jobs
+remain PENDING. Foundation `41080465533` / `124147875090` passed on `09e193f5`
+only, not the new fix. Earlier ledger UNKNOWN and table below remain historical.
+No identical base failure is asserted.
+
+This is navigation fix attempt **2 of 2** (attempt 1 = `09e193f5`). Another
+failure requires BLOCKED with exact evidence; no third approach. The helper
+preserves page, locale and pending journal: no extra navigation/storage clearing.
+Exact key/body/response, unchanged PG facts, no blind retry, disabled writes and
+marker-only lock assertions remain unchanged. No product/import/copy/Figma edits.
+
+|Click ledger|Operation → expected|Actual|
+|---|---|---|
+|zh-CN lost request/suspend/detach result|native reload → click 编辑设置 → pending notice/disabled submit → refresh → explicit exact replay|PENDING new-head CI|
+|en 503 uncertainty|native reload → click Edit settings → pending notice/disabled writes; refresh sends no POST|PENDING new-head CI|
+|en legacy pending marker|native reload → click Edit settings → pending notice, no retry, disabled submit|PENDING new-head CI|
+
+E1: node syntax check, ownership generation + `--check`, depmap regeneration
+(no map diff), git diff whitespace check, all exit 0. No local tests/servers.
+Outside original settings paths: existing caller `tests/storefront/store-domains-gate.mjs`,
+generated ownership, FIX1/DELIVERY/red evidence; listed in PR for integrator review.
+New CI IDs go in PR comment/final; integrator relays completion/failure/cancellation.
+No local background process. NOT_RUN: local tests/servers, new-head runtime CI,
+independent review/E4, SANDBOX/LIVE/production. Author assessment E0.
+
+## Historical first FIX1 batch
 
 Evidence date: 2026-10-30. PR #354, branch `unit/parity-settings`.
 Failing head: `e9c1fe9ca90abe6b5b6d42ffde2a92853c1b6f44`.
