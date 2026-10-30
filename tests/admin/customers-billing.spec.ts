@@ -152,6 +152,12 @@ for (const locale of moneyLocales) for (const width of moneyWidths) {
     await moneyClick(page, evidence, c.csv, "export preview then a real audited CSV download", async () => {
       await page.getByRole("button", { name: c.csv, exact: true }).click();
       await expect(page.getByRole("heading", { name: c.csvReady, exact: true })).toBeVisible();
+      const preview = page.url();
+      await expect(page).toHaveURL(/view=csv/);
+      await page.reload();
+      await expect(page).toHaveURL(preview);
+      await expect(page.getByRole("heading", { name: c.csvReady, exact: true })).toBeVisible();
+      await expect(page.getByRole("link", { name: c.download, exact: true })).toBeVisible();
       await moneyShot(page, evidence, "financeCSV", locale, width);
       const downloading = page.waitForEvent("download");
       await page.getByRole("link", { name: c.download, exact: true }).click();

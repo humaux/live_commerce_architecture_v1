@@ -33,7 +33,7 @@ export function Finance({ locale, stores: _stores, store, from, to, today, initi
   const [draftFrom, setDraftFrom] = useState(from), [draftTo, setDraftTo] = useState(to);
   const [view, setView] = useState<View>("overview"), [canExport, setCanExport] = useState(false);
   useEffect(() => {
-    const restore = () => { const value = new URL(window.location.href).searchParams.get("view"); setView(value === "daily" || value === "basis" ? value : "overview"); };
+    const restore = () => { const value = new URL(window.location.href).searchParams.get("view"); setView(value === "daily" || value === "basis" || value === "csv" ? value : "overview"); };
     restore(); window.addEventListener("popstate", restore); return () => window.removeEventListener("popstate", restore);
   }, []);
   function open(next: View) {
@@ -41,7 +41,7 @@ export function Finance({ locale, stores: _stores, store, from, to, today, initi
     setView(next);
     // Local read-only screen navigation, containing no bearer information. Cancel leaves the applied range intact.
     const url = new URL(window.location.href);
-    if (next === "daily" || next === "basis") url.searchParams.set("view", next); else url.searchParams.delete("view");
+    if (next === "daily" || next === "basis" || next === "csv") url.searchParams.set("view", next); else url.searchParams.delete("view");
     window.history.replaceState(window.history.state, "", url);
   }
   const valid = rangeOK(draftFrom, draftTo), validQuery = rangeOK(from, to);
