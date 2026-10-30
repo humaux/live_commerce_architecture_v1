@@ -1,0 +1,159 @@
+Card: PARITY-INBOX-EDITOR
+Phase: tests-only RED candidate; no application implementation in this commit
+Base: 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+Branch: unit/parity-inbox-editor
+Target: r3/integration
+Environment: MOCK / GitHub CI only
+RED verdict: PENDING (not yet observed on its own assertions)
+Gates run/jobs: PENDING until PR opened
+Foundation run/jobs: PENDING until PR opened
+GREEN: NOT_RUN
+Local tests/servers/builds/PG/browser: NOT_RUN (prohibited)
+node --check tests/admin/inbox-v2-ui.spec.ts: exit 0
+node --check tests/admin/editor-v2.spec.ts: exit 0
+pnpm exec tsc --noEmit --strict --target ES2023 --module ESNext --moduleResolution bundler --esModuleInterop --skipLibCheck tests/admin/editor-v2.spec.ts tests/admin/inbox-v2-ui.spec.ts: exit 254 (tsc not installed; no dependencies installed locally)
+Browser ownership generator: exit 0; --check recorded at handoff
+Expected causal failures: unsigned list refresh/ellipsis remain; sent DM without new inbound folds composer; hub subtitle/status/preview copy/history row differ; signed review/result/preview states differ.
+Preview line only: DEFERRED -> INBOX-PREVIEW by integrator ruling; no backend/API change.
+Humaux MCP memory/store/canvas/coord: unavailable; no shared-state update claimed.
+node scripts/dev/derive-browser-ownership.mjs --check: exit 0
+Authority SHA256 inbox DELIVERY: a74b140f8abc0d7a50be3a55b9ee5bd180c84c4459c1ad8d2bbda4387def0d88
+Authority SHA256 editor DELIVERY: b5a6e8da0df5befe676c516424b8c6ab7bf4015fef55b5998330e00b93be2a14
+
+Live handoff 2026-10-30 (after tests-only push; intentionally no evidence-only push):
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/361
+Head SHA: 6f212733ab43e074824e3a04f7c385fe5e784f11
+Foundation run: 41052476505, job: 124051679004, status: PENDING/queued
+Gates run: 41052477052, status: PENDING/queued (plan job is not RED test evidence)
+RED on own assertions: NOT_YET_OBSERVED; no failure claim
+GREEN: NOT_RUN; application implementation NOT_STARTED pending assertion-level RED
+WAIT_RUN: 41052476505
+WAIT_RUN: 41052477052
+Wake-up owner: integrator relays a fresh session when these runs complete, per card CI-WAITS.
+No more than 10 minutes CI polling; no local tests or servers.
+Next: inspect actual browser-inbox and browser-design failed logs, record assertion + job IDs; stop for any out-of-card gate failure; only then implement in one batched push on this same PR.
+Latest gh pr view receipt: Foundation job 124051679004 IN_PROGRESS; Gates plan IN_PROGRESS. Both workflows remain PENDING. No test result observed. Final run IDs remain 41052476505 / 41052477052.
+
+RELAY 1 verified 2026-10-30 — supersedes earlier PENDING observations above:
+Head: 6f212733ab43e074824e3a04f7c385fe5e784f11
+Foundation run 41052476505 / job 124051679004: FAILURE, exit 1.
+Failed step: Node unit suites (storefront, i18n).
+Root cause: inbox-discovery.test.ts:72 expected 39 scenarios but actual discovery includes 30 new PARITY cases (69 total).
+Raw filtered receipt: foundation-discovery-failure.log
+This is NOT assertion-level UI RED; browser parity execution remains PENDING.
+Targeted fix attempt 1: keep original 39-case assertions intact; independently enumerate and assert the exact 30 new titles. No application implementation yet.
+Scope exception: tests/admin/inbox-discovery.test.ts is the same inbox module discovery harness; listed in PR body for integrator review.
+Local static syntax: node --check tests/admin/inbox-discovery.test.ts exit 0.
+Next wake-up: integrator relays current-head Foundation/Gates conclusion; inspect browser parity assertions before implementation.
+
+RELAY 2 verified 2026-10-30:
+PR head: 17744c0affce3f096b25dc8cfde2554e5f78b5ff
+Gates run: 41053520134 / job: 124057814067 (bundle:06) FAILURE
+Synthetic merge tested: bda615b1264c376d512599abb545b1f99060c6e9 (native matrix receipt)
+Foundation run: 41053520136 / job: 124055190539 PASS
+Playwright summary: 18 failed / 70 passed (NOT causal assertion evidence).
+Artifact upload error: path parity/1429:37452.png contains forbidden Colon :
+Full inbox artifact absent in native run artifact inventory; individual failing assertions cannot be recovered from job summary.
+gh run view --log-failed --job 124057814067: logs unavailable while parent run in progress.
+Fallback: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124057814067/logs succeeded.
+Filtered raw receipt: relay2-artifact-failure.log
+Root cause artifact fix attempt 1: both existing parity helpers normalize physical filename colon to hyphen; signed frame IDs remain in attachment labels.
+All original assertions / fixtures / thresholds remain unchanged. This is a separate artifact blocker from relay1 discovery.
+RED on new assertions: PENDING; implementation NOT_STARTED; GREEN NOT_RUN.
+Local static after artifact repair:
+node --check tests/admin/inbox-v2-ui.spec.ts: exit0
+node --check tests/admin/editor-v2.spec.ts: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0
+node scripts/dev/derive-browser-ownership.mjs --check: exit0
+git diff --check: exit0
+E1 only; no runtime local commands.
+
+Post-push relay2 receipt (no evidence-only push):
+PR361 head deffd208590b89b7b1b794e06bc43f90b6f67ecb
+WAIT_RUN Foundation41057051140 / job124067121303 QUEUED
+WAIT_RUN Gates41057051192 PENDING (test jobs not yet registered)
+Native gh run list and PR head verified exact SHA.
+Wakeup: integrator fresh-session completion/failure/cancellation relay; queue>3h escalate.
+RED assertion evidence PENDING; implementation NOT_STARTED; GREEN NOT_RUN.
+
+RELAY 3 verified 2026-10-30 — supersedes earlier RED-PENDING observations:
+Exact PR head: deffd208590b89b7b1b794e06bc43f90b6f67ecb
+Gates run 41057051192 / job 124085433146 (bundle:06): FAILURE, completed 2026-10-30T13:39:05Z.
+Foundation run 41057051140 / job 124067121303: PASS (not browser GREEN).
+Native browser artifact: 12980848918 gate-browser-inbox
+Artifact source: playwright/inbox-ui/20261030T132749.229668188/playwright.log
+Extracted raw receipt: relay3-assertions.log
+Causal RED: inbox-v2-ui.spec.ts:723 unsigned list refresh expected count 0 / actual 1, all 3 locales.
+Causal RED: inbox-v2-ui.spec.ts:737 confirmed DM follow-up composer expected visible / actual hidden, all 3 locales.
+Causal RED: inbox-v2-ui.spec.ts:784 desktop sent composer expected visible / actual hidden.
+11 mobile send-state failures at inbox-browser-support.ts:78 (hidden desktop navigation) are setup failures, NOT product RED.
+Overall inbox 18 failed / 70 passed. No compiler failure.
+BLOCKED static gate conflict: editor-v2.spec.ts:540 demands design-tab-versions count 0; mandatory design.spec.ts:137 demands visible and :25/:322/:363-384 use it for history/rollback acceptance.
+Both specs are run by browser_store_design_test.go:167. No assertions weakened/removed/skipped.
+Need integrator ruling on retained rollback access and reconciliation of obsolete navigation assertion before implementation.
+No source/spec changes, no implementation or new push in this relay; GREEN NOT_RUN.
+git fetch origin r3/integration: exit 0; merge --no-edit: already up to date, exit 0.
+Humaux memory/store/canvas/coord unavailable this relay. Task-local evidence only; no shared-state update claimed.
+WAIT_RUN: 41057051192 (remaining Gates; integrator fresh-session relay is wake-up).
+
+RELAY 4 verified 2026-10-30:
+Exact head unchanged: deffd208590b89b7b1b794e06bc43f90b6f67ecb.
+Live job API confirms 124085433146 FAILURE; native job log confirms 18 inbox failures / 70 passes.
+Artifact 12980848918 metadata binds gate-browser-inbox to this exact head/run; prior extracted relay3-assertions.log retained.
+Fresh artifact archive re-download interrupted (exit 130) after no output; not claimed independently re-extracted.
+gh run view --log-failed --job reports parent run incomplete; native job-log API used instead.
+Foundation41057051140 SUCCESS; Gates41057051192 still queued, conclusion null.
+Fetched origin/r3/integration: 3ea359f796d36153bb4b8aa7259e4e0c27676b86.
+Current integration design.spec.ts:137 still requires design-tab-versions visible.
+Current branch editor-v2.spec.ts:540 still requires the same testid absent; both mandatory at browser_store_design_test.go:167.
+BLOCKED unchanged: integrator must rule on history/rollback access and obsolete navigation assertion migration; no test weakening authorized.
+No source changes, no new commit/push/run, no local tests or servers, no fix attempt spent.
+Only task-local handoff documents updated; PR body/comment report current blocker. Humaux store/canvas/coord unavailable.
+WAIT_RUN: 41057051192; wake-up is integrator fresh-session relay plus gate-conflict ruling.
+
+
+FIX1 2026-10-31 — assertion RED confirmed before implementation
+RED Gates run 41057051192; PR head deffd208590b89b7b1b794e06bc43f90b6f67ecb.
+Job 124085434705 bundle:04 TestBrowserStoreDesign: 14 failed / 49 passed.
+Artifact gate-browser-design 12983057038; playwright/store-design/20261030T135431.637053328/playwright.log.
+6 hub subtitle assertions at editor-v2.spec.ts:533; 2 preview click timeouts at :594; 6 review heading assertions at :616.
+Job 124085433146 bundle:06 TestBrowserInboxUIRealChain: 18 failed / 70 passed.
+Artifact gate-browser-inbox 12980848918; playwright/inbox-ui/20261030T132749.229668188/playwright.log.
+3 toolbar removal assertions inbox-v2-ui.spec.ts:723; 3 DM follow-up visibility :737; 1 desktop sent :784; 11 mobile setup assertions inbox-browser-support.ts:78.
+Every case is enumerated in FIX1.md. No class(c) base-failure claim.
+Tests-only original commit 6f212733a and assertion/artifact head deffd2085 precede this implementation.
+Merged origin/r3/integration 2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f at cc8db9319 before implementation.
+E1 node --check 9 changed .ts files: exit0. tsc absent; no local TSX compilation claimed.
+Ownership generation + --check exit0. depmap generation exit0 (unchanged). git diff --check exit0.
+Local tests/servers/browser/PG/build: NOT_RUN (prohibited). No dependency install.
+Implementation push is one batch; GREEN PENDING on its exact SHA; receipts go in PR comment, never an evidence-only commit.
+Humaux store/canvas/coord/code tools unavailable; local records are not claimed as Humaux completion.
+python3 scripts/check_packet.py: exit0 (static architecture structure; packet-static.log).
+RED tested synthetic merge: 6754bd337cb9f6943104367e7ef8040593bb4b7c (native receipts).
+Receipts124111665162 fails ONLY inbox/design status FAIL; required124112234499 reports gate=failure receipts=failure aggregate=success.
+Same test RED after this FIX1 push => BLOCKED with exact assertion; no third approach.
+
+RELAY on implementation head f18027d3e6debc949ed818e80d2636a1f96f1412 (2026-10-31):
+Foundation 41091867692 / job 124187532727 FAILURE: 12 actual-login cases, ReferenceError enterMessages is not defined, tests/admin/inbox-browser-source.test.ts:18.
+Receipt: foundation-helper-failure.log; full 12-case class(b) table and root fix in FIX1.md.
+This is an implementation regression, not tests-only assertion RED; earlier causal browser RED receipts remain unchanged.
+Fix attempt 1 on this new blocker: extract real enterMessages and model native rail methods; preserve all original assertions, add mobile/desktop coverage.
+Merge origin/r3/integration: Already up to date at 2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f.
+node --check tests/admin/inbox-browser-source.test.ts: exit 0.
+Browser ownership generator and --check: exit 0; 53 modes.
+git diff --check: exit 0.
+Local tests/servers/browser/PG/build/install: NOT_RUN; CI GREEN and independent review PENDING.
+
+RELAY 2 directed correction (2026-10-31):
+Inspected head 693baa81fbf5718b21426d1df78055dfc6f28f64; synthetic merge 4f1ef10d6aa51d1a1dd7dccc3f6c4f2951c04901.
+Gates41095531553 job124208670350: INU01 inbox-ui.spec.ts:134 bundle expected visible / absent; 1 failed / 87 passed.
+Native artifact12997922498: INU09 ran first and cleared pending_manual before INU01. Newly added bundle oracles relocated before copy, identical visibility/count checks; fixture untouched.
+Gates41095531553 job124208671792: design 6 failed / 57 passed; native artifact12999403038.
+Four zh-TW/zh-CN after/before-commit confirmation equality failures at oc/design-publish-pending.spec.ts:159: expected v{n}, actual {n}.
+Two OC11 history helper timeouts at :18 waiting for removed design-tab-versions; migrate helper to signed design-live-versions.
+Foundation41095537364 job124200203236 SUCCESS; prior enterMessages extraction blocker cleared.
+Seven-case table with classes(a)/(b) in FIX1.md; no class(c) base claim; original tests-only RED above retained.
+Merged origin/r3/integration f59e5c5402a26021ca498d8323bc0e7ee8693c36 as efca07a8e before edits.
+First directed correction for each of these distinct blockers; same assertions still RED => BLOCKED, no third approach.
+GREEN at next head PENDING; E1 static only; author verdict E0. No local tests/server/PG/browser/build/install.
+Humaux unavailable; no shared-state store/canvas/coord claim. Integrator relays new workflow conclusions; new run IDs in PR comment and WAIT_RUN.

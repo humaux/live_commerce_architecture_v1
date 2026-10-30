@@ -580,8 +580,8 @@ for (const state of ["queued", "sent", "failed", "blocked"]) {
     change(host, "reply-text", "MOCK_ELIGIBLE_DRAFT");
     assert.equal(sendControl(host).props.disabled, state === "queued" || state === "blocked",
       "pending or policy-blocked results cannot start another send");
-    assert.equal(node(host, n => n.type === "form").props.hidden, true,
-      "signed result view folds the duplicate composer on page entry");
+    assert.equal(node(host, n => n.type === "form").props.hidden, state !== "sent",
+      "confirmed DM permits a follow-up without another inbound; unresolved and rejected results stay folded");
     if (state === "queued" || state === "blocked") {
       node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
       assert.equal(host.ref(ReplyReceipt).pending(), null, "captured or hidden form cannot bypass the result lock");
