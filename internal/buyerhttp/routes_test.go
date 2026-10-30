@@ -20,7 +20,7 @@ func routeSample(pattern string) string {
 }
 
 func TestRouteTableEntriesAreDispatched(t *testing.T) {
-	if len(routeRows) != 46 {
+	if len(routeRows) != 47 { // original 46 plus exactly one contact POST (storefront-v2 contact amendment)
 		t.Fatalf("inventory changed: %d entries", len(routeRows))
 	}
 	seen := map[string]bool{}
@@ -77,11 +77,20 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 	methods := []string{"", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT", "get"}
 	for path := range paths {
 		got, want := matchRoute(path), legacyMatchRoute(path)
+		// The frozen matcher remains unchanged. This exact new path has its own contract;
+		// every historical path and cleaning alias retains the old oracle.
+		if path == "/v1/buyer/contact-messages" {
+			want = route{kind: contactRoute}
+		}
 		if got != want {
 			t.Errorf("path %q: got %+v want %+v", path, got, want)
 		}
 		for _, method := range methods {
-			if allowed(got.kind, method) != legacyAllowed(want.kind, method) {
+			wantAllowed := legacyAllowed(want.kind, method)
+			if path == "/v1/buyer/contact-messages" {
+				wantAllowed = method == http.MethodPost
+			}
+			if allowed(got.kind, method) != wantAllowed {
 				t.Errorf("method drift: %s %s", method, path)
 			}
 		}

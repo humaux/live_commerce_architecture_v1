@@ -6,8 +6,12 @@ export const settingsUUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
 const session = `live-sessions/${uuid}`;
 export type SettingsKind =
-  "quickstart" | "profile" | "settings" | "templates" | "reminders" | "blocklist" | "check" | "remove";
+  "quickstart" | "profile" | "settings" | "templates" | "reminders" | "blocklist" | "check" | "remove" |
+  "contactList" | "contactDetail" | "contactHandled";
 const resources: [SettingsKind, RegExp, string[]][] = [
+  ["contactList", /^contact-messages$/, ["GET"]],
+  ["contactDetail", new RegExp(`^contact-messages/${uuid}$`), ["GET"]],
+  ["contactHandled", new RegExp(`^contact-messages/${uuid}/handled$`), ["POST"]],
   ["quickstart", /^quickstart$/, ["GET", "POST"]],
   ["profile", /^profile$/, ["GET", "PUT"]],
   ["settings", /^live-settings\/sold-out-reply$/, ["GET", "PUT"]],
@@ -86,6 +90,8 @@ export function settingsResource(path: string) {
 }
 /** Permissions remain independently enforced by Go, using the authenticated principal. */
 export function settingsPermissions(kind: SettingsKind, method: string) {
+  if (kind === "contactList" || kind === "contactDetail" || kind === "contactHandled")
+    return [method === "GET" ? "inbox:read" : "inbox:reply"];
   if (kind === "quickstart") return [method === "GET" ? "store:read" : "integration:manage"];
   if (kind === "profile") return [method === "GET" ? "store:read" : "integration:manage"];
   if (kind === "reminders")
@@ -107,6 +113,12 @@ export function settingsQuery(kind: SettingsKind, method: string, url: URL) {
       settingsUUID.test(q.get("bundle_id") ?? "")
     );
   for (const [k, v] of q) {
+    if (kind === "contactList") {
+      if (q.getAll(k).length !== 1) return false;
+      if (k === "limit" && /^(?:[1-9]|[1-9][0-9]|100)$/.test(v)) continue;
+      if (k === "cursor" && /^[A-Za-z0-9_-]{48}$/.test(v)) continue;
+      return false;
+    }
     if (kind !== "blocklist" || q.getAll(k).length !== 1) return false;
     if (k === "limit" && /^(?:[1-9]|[1-4][0-9]|50)$/.test(v)) continue;
     if (k === "cursor" && /^[A-Za-z0-9_-]{1,2048}$/.test(v)) continue;
@@ -157,6 +169,8 @@ const exact = (
 export function settingsBody(kind: SettingsKind, raw: string): boolean {
   try {
     const v = obj(JSON.parse(raw));
+    if (kind === "contactHandled")
+      return exact(v, ["expected_version"]) && integer(v.expected_version) === 0;
     if (kind === "quickstart") return exact(v, []);
     if (kind === "profile")
       return (
@@ -229,6 +243,19 @@ export function settingsData(
   value: unknown,
 ): unknown {
   const v = obj(value);
+  if (kind === "contactList" || kind === "contactDetail" || kind === "contactHandled") {
+    const detail = (value: unknown) => {
+      const m = obj(value);
+      if (!exact(m, ["id", "name", "email", "order_number", "message", "status", "version"]) ||
+          !(m.status === "open" && m.version === 0 || m.status === "handled" && m.version === 1)) throw Error("invalid");
+      return { id: id(m.id), name: str(m.name, 120), email: str(m.email, 254), order_number: str(m.order_number, 64),
+        message: str(m.message, 5000), status: m.status, version: integer(m.version) };
+    };
+    if (kind !== "contactList") return detail(v);
+    if (!exact(v, ["items", "next_cursor"]) ||
+        v.next_cursor !== null && (typeof v.next_cursor !== "string" || !/^[A-Za-z0-9_-]{48}$/.test(v.next_cursor))) throw Error("invalid");
+    return { items: list(v.items, 100).map(detail), next_cursor: v.next_cursor };
+  }
   if (kind === "quickstart") {
     const steps = obj(v.steps);
     const completed = bool(v.completed);

@@ -9,6 +9,10 @@
 // cookie: the BFF mints a fresh token like session/prepare, sends it as the bearer and sets the cookie ONLY on a 200 (lookup() below).
 // Bank transfer (storefront-v2 §C): exactly GET orders/{id}/bank-transfer and PUT orders/{id}/bank-transfer/proof (keyed) ->
 // Go internal/buyerhttp/transfer.go; body and answer re-validated with lib/bank-transfer-contract.ts.
+// Purpose: closed buyer BFF admission, including cookie-free keyed store-contact submissions.
+// Depends on: signed-session helpers, strict JSON, frozen DTO validators and the private Go buyer transport.
+// Used by: app/api/buyer/[...path]/route.ts.
+// Invariants: server-resolved published origin; no client scope, raw diagnostics, PII logs or implicit contact retries.
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { readAdSignals, readAdTouch } from "./ad-touch.ts";
@@ -77,6 +81,7 @@ type Session = {
   expires_at: string | null;
 };
 type Route = {
+  contact?: boolean;
   method: string;
   privatePath: string;
   body?:
@@ -93,7 +98,8 @@ type Route = {
     | "cvsStore"
     | "transferProof"
     | "lookup"
-    | "link";
+    | "link"
+    | "contact";
   query?: "catalog" | "options" | "orders";
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
@@ -378,6 +384,7 @@ function route(
     };
   }
   const exact: Record<string, Record<string, Omit<Route, "method">>> = {
+    "contact-messages": { POST: { privatePath: "contact-messages", body: "contact", contact: true } },
     catalog: { GET: { privatePath: "catalog", query: "catalog" } },
     "checkout-options": {
       GET: { privatePath: "checkout-options", query: "options" },
@@ -638,6 +645,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     paid_at: "string",
   },
   lookup: { order_ref: "string", contact: "string" },
+  contact: { name: "string", email: "string", order_number: "string", message: "string", website: "string" },
   link: { order_id: "string", token: "string", proof: "string" },
   cvsSelection: {
     cart_version: "integer",
@@ -687,6 +695,16 @@ const UUID_TEXT =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function extraShapeOK(shape: Shape, parsed: unknown): boolean {
   const v = parsed as Record<string, unknown>;
+  if (shape === shapes.contact) {
+    const text = (value: unknown, max: number, required = false, multiline = false) =>
+      typeof value === "string" && [...value].length <= max && (!required || value.trim().length > 0) &&
+      !(multiline ? /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u : /\p{Cc}/u).test(value);
+    return text(v.name, 120, true) && text(v.message, 5000, true, true) &&
+      text(v.email, 254, true) && new TextEncoder().encode(v.email as string).length <= 254 &&
+      /^[^\s<>"\\@]+@[^\s<>"\\@]+$/.test(v.email as string) &&
+      (v.order_number === undefined || text(v.order_number, 64)) &&
+      (v.website === undefined || v.website === "");
+  }
   if (shape === shapes.quote)
     return (
       v.promo_code === undefined ||
@@ -728,14 +746,14 @@ async function bodyJSON(
     return { error: failure(415, "json_required", nonretryable) };
   const length = request.headers.get("content-length");
   if (length !== null && (!/^[0-9]+$/.test(length) || +length > MAX_JSON))
-    return { error: failure(422, "invalid_request", nonretryable) };
+    return { error: failure(shape === shapes.contact && length !== null && /^[0-9]+$/.test(length) && +length > MAX_JSON ? 413 : 422, "invalid_request", nonretryable) };
   let bytes: Uint8Array | null;
   try {
     bytes = await readBounded(request.body, MAX_JSON, INBOUND_DEADLINE);
   } catch {
     return { error: failure(503, "unavailable", nonretryable) };
   }
-  if (!bytes) return { error: failure(422, "invalid_request", nonretryable) };
+  if (!bytes) return { error: failure(shape === shapes.contact ? 413 : 422, "invalid_request", nonretryable) };
   let text: string;
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -801,8 +819,8 @@ async function upstream(
     Accept: "application/json",
     "X-Commerce-Buyer-BFF-Key": config.bff,
     "X-Commerce-Storefront-Origin": origin,
-    Authorization: `Bearer ${token}`,
   });
+  if (token) outbound.set("Authorization", `Bearer ${token}`);
   if (body !== undefined) outbound.set("Content-Type", "application/json");
   if (key) outbound.set("Idempotency-Key", key);
   if (claimToken) outbound.set("X-Commerce-Claim-Token", claimToken);
@@ -1059,6 +1077,29 @@ function forbiddenHeaders(request: Request): boolean {
   ].some((name) => request.headers.has(name));
 }
 
+// Guest contact never bootstraps or mutates a buyer session. One keyed request; an uncertain response
+// retains the caller's key for explicit replay, with no automatic retry or diagnostic forwarding.
+async function contactMessage(request: Request, cfg: Config, origin: string): Promise<Response> {
+  const key = request.headers.get("idempotency-key");
+  if (!key || !/^[A-Za-z0-9_.:-]{8,128}$/.test(key)) return failure(422, "invalid_request", true);
+  const parsed = await bodyJSON(request, shapes.contact, true);
+  if (parsed.error) return parsed.error;
+  const response = await upstream(request, cfg, origin, "", "contact-messages", "POST", parsed.body, key, undefined, forwardedIP(request));
+  if (response.status !== 201) {
+    const error = await upstreamError(response, true);
+    const retry = response.headers.get("retry-after");
+    if (error.status === 429 && retry && /^\d{1,3}$/.test(retry) && +retry >= 1 && +retry <= 600)
+      error.headers.set("Retry-After", retry);
+    return error;
+  }
+  const value = await upstreamJSON(response, true);
+  if (!value || typeof value !== "object" || Array.isArray(value)) return failure(503, "unavailable", true);
+  const receipt = value as Record<string, unknown>;
+  if (Object.keys(receipt).length !== 2 || typeof receipt.message_id !== "string" ||
+      !UUID_TEXT.test(receipt.message_id) || receipt.status !== "received") return failure(503, "unavailable", true);
+  return Response.json({ message_id: receipt.message_id, status: "received" }, { status: 201, headers: headers() });
+}
+
 export async function handleBuyerRequest(request: Request): Promise<Response> {
   const pathname = new URL(request.url).pathname;
   // Classify before config/auth: even an early failure must not invite a second
@@ -1099,6 +1140,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   const isMutation = request.method !== "GET";
   if (isMutation && request.headers.get("origin") !== origin)
     return fail(403, "forbidden");
+  if (target.contact) return contactMessage(request, cfg, origin);
   if (target.lookup) return lookup(request, cfg, origin);
   if (target.link) return orderLink(request, cfg, origin);
   const found = identify(request, cfg, origin);

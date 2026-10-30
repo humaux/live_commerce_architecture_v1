@@ -1,0 +1,30 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:13.5663362Z ✖ contact BFF admits a guest once without a buyer cookie or context and returns only the committed receipt (54.587055ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:13.5664845Z ✖ contact BFF refuses invalid bodies and honeypots before private transport (2.831507ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:13.5666268Z ✖ contact BFF enforces method, key, content type and origin independently of a guest session (2.600436ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:13.5667482Z ✖ contact BFF accepts Unicode bounds and omitted optional fields (0.999504ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:13.5668781Z ✖ contact BFF validates successful upstream receipts without leaking PII or creating sessions (0.940077ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:13.5670218Z ✖ contact BFF relays bounded throttling, conflicts and uncertain outcomes without retrying (0.860189ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1979124Z test at apps/storefront/tests/contact-messages.test.mjs:43:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1980209Z ✖ contact BFF admits a guest once without a buyer cookie or context and returns only the committed receipt (54.587055ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1981231Z   AssertionError [ERR_ASSERTION]: public contact endpoint must exist before buyer login
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1982062Z   404 !== 201
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1989391Z test at apps/storefront/tests/contact-messages.test.mjs:64:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1990041Z ✖ contact BFF refuses invalid bodies and honeypots before private transport (2.831507ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1990556Z   AssertionError [ERR_ASSERTION]: name must be refused locally
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1991039Z   404 !== 400
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1997745Z test at apps/storefront/tests/contact-messages.test.mjs:88:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1998388Z ✖ contact BFF enforces method, key, content type and origin independently of a guest session (2.600436ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1998837Z   AssertionError [ERR_ASSERTION]: GET
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1999355Z   404 !== 405
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2006022Z test at apps/storefront/tests/contact-messages.test.mjs:105:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2006573Z ✖ contact BFF accepts Unicode bounds and omitted optional fields (0.999504ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2007080Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2007569Z   404 !== 201
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2014825Z test at apps/storefront/tests/contact-messages.test.mjs:114:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2015595Z ✖ contact BFF validates successful upstream receipts without leaking PII or creating sessions (0.940077ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2016336Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2017096Z   404 !== 503
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2027200Z test at apps/storefront/tests/contact-messages.test.mjs:125:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2028220Z ✖ contact BFF relays bounded throttling, conflicts and uncertain outcomes without retrying (0.860189ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2029046Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.2029728Z   404 !== 429
