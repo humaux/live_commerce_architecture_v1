@@ -1,0 +1,42 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty (11.3s)
+
+
+  1) tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty
+
+    Error: zh-TW: signed three-row overview
+
+    expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('settings-v2-overview')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - zh-TW: signed three-row overview getByTestId('settings-v2-overview') with timeout 10000ms
+      - waiting for getByTestId('settings-v2-overview')
+
+
+       at settings-v2.spec.ts:22
+
+      20 |     await page.goto(`/${locale}/settings?store=${store}`);
+      21 |     const overview = page.getByTestId("settings-v2-overview");
+    > 22 |     await expect(overview, `${locale}: signed three-row overview`).toBeVisible();
+         |                                                                    ^
+      23 |     await expect(overview.getByRole("button", { name: c.profile, exact: true })).toBeVisible();
+      24 |     await expect(overview.getByRole("button", { name: c.delivery, exact: true })).toBeVisible();
+      25 |     await expect(overview.getByRole("button", { name: c.payment, exact: true })).toBeVisible();
+        at settingsV2Acceptance (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settings-v2.spec.ts:22:68)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settings-real.spec.ts:65:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/settings-real-20261029T064523.052382536/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/settings-real-20261029T064523.052382536/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/error-context.md
+
+  1 failed
+    tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty

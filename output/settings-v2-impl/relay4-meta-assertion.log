@@ -1,0 +1,113 @@
+playwright/run.p1rx77Y4/meta-connect/20261029T103001.832221298/playwright.log
+
+Running 6 tests using 1 worker
+
+  ✘  1 tests/admin/meta-connect.spec.ts:103:1 › meta-connect browser gate › not connected: the card offers Connect; a forged return state is refused and nothing is connected (10.9s)
+  -  2 tests/admin/meta-connect.spec.ts:116:1 › meta-connect browser gate › a missing permission is listed, the pick is disabled and nothing is connected
+  -  3 tests/admin/meta-connect.spec.ts:131:1 › meta-connect browser gate › connect Page A with Instagram: dialog params, state cookie, 303 without code/state, pick, card facts, no secret in the browser
+  -  4 tests/admin/meta-connect.spec.ts:218:1 › meta-connect browser gate › while connected the store keeps its Page: add and reauthorize are available, reload shows the same card
+  -  5 tests/admin/meta-connect.spec.ts:228:1 › meta-connect browser gate › disconnect asks for confirmation, destroys the connection and the claims-worker unsubscribes the Page at Meta
+  -  6 tests/admin/meta-connect.spec.ts:246:1 › meta-connect browser gate › reconnect with a Facebook-only Page: Instagram absent, card says none linked
+
+
+  1) tests/admin/meta-connect.spec.ts:103:1 › meta-connect browser gate › not connected: the card offers Connect; a forged return state is refused and nothing is connected 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('metaconnect-card')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('metaconnect-card') with timeout 10000ms
+      - waiting for getByTestId('metaconnect-card')
+
+
+      52 | async function openSettings(page: Page, locale = "en") {
+      53 |   await page.goto(`/${locale}/settings?store=${store}`);
+    > 54 |   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
+         |                                                      ^
+      55 | }
+      56 | async function fitsWidth(page: Page) {
+      57 |   // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
+        at openSettings (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/meta-connect.spec.ts:54:54)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/meta-connect.spec.ts:105:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.p1rx77Y4/meta-connect/20261029T103001.832221298/results/meta-connect-meta-connect--8fe83-ed-and-nothing-is-connected/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.p1rx77Y4/meta-connect/20261029T103001.832221298/results/meta-connect-meta-connect--8fe83-ed-and-nothing-is-connected/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.p1rx77Y4/meta-connect/20261029T103001.832221298/results/meta-connect-meta-connect--8fe83-ed-and-nothing-is-connected/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.p1rx77Y4/meta-connect/20261029T103001.832221298/results/meta-connect-meta-connect--8fe83-ed-and-nothing-is-connected/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/meta-connect.spec.ts:103:1 › meta-connect browser gate › not connected: the card offers Connect; a forged return state is refused and nothing is connected 
+  5 did not run
+
+playwright/run.p1rx77Y4/meta-connect-gate/20261029T102948.461951418/playwright.log
+
+Running 13 tests using 1 worker
+
+  ✘   1 tests/admin/meta-connect-gate.spec.ts:113:3 › meta-connect independent browser gate › zh-TW desktop: before any connection the Studio claim source points at the Settings card, and the link works (11.3s)
+  -   2 tests/admin/meta-connect-gate.spec.ts:132:5 › meta-connect independent browser gate › zh-TW desktop: Settings -> connect (fake Meta) -> pick Page with Instagram -> card facts -> Studio picker offers it -> disconnect
+  -   3 tests/admin/meta-connect-gate.spec.ts:132:5 › meta-connect independent browser gate › en mobile: Settings -> connect (fake Meta) -> pick Page with Instagram -> card facts -> Studio picker offers it -> disconnect
+  -   4 tests/admin/meta-connect-gate.spec.ts:132:5 › meta-connect independent browser gate › en desktop: Settings -> connect (fake Meta) -> pick Page with Instagram -> card facts -> Studio picker offers it -> disconnect
+  -   5 tests/admin/meta-connect-gate.spec.ts:132:5 › meta-connect independent browser gate › zh-TW mobile: Settings -> connect (fake Meta) -> pick Page with Instagram -> card facts -> Studio picker offers it -> disconnect
+  -   6 tests/admin/meta-connect-gate.spec.ts:210:3 › meta-connect independent browser gate › the Studio comment source can be bound to the connected Page with a private reply (the sealed v2 token counts as the Page token)
+  -   7 tests/admin/meta-connect-gate.spec.ts:238:3 › meta-connect independent browser gate › zh-TW mobile refusals: forged state, missing permission and missing Page task are explained in the card and nothing is connected
+  -   8 tests/admin/meta-connect-gate.spec.ts:281:3 › meta-connect independent browser gate › MOCK UI boundaries: ten slots, cap/not-found in three languages, malformed start preserves its key
+  -   9 tests/admin/meta-connect-gate.spec.ts:333:3 › meta-connect independent browser gate › MOCK UNKNOWN: wait for the baseline, then an unchanged old Page cannot prove a lost write succeeded
+  -  10 tests/admin/meta-connect-gate.spec.ts:363:3 › meta-connect independent browser gate › state replay: the same OAuth return opened again connects nothing, even with the binding cookie present
+  -  11 tests/admin/meta-connect-gate.spec.ts:391:3 › meta-connect independent browser gate › a Next <Link> prefetch never rewrites the locale preference; a real navigation does
+  -  12 tests/admin/meta-connect-gate.spec.ts:404:3 › meta-connect independent browser gate › no open redirect: whatever the cookies or query say, /api/meta/callback only ever redirects to /<locale>/settings
+  -  13 tests/admin/meta-connect-gate.spec.ts:443:3 › meta-connect independent browser gate › multi-page: A + B are listed and selectable; lost pick/disconnect answers only read back; B disconnect leaves A usable
+
+
+  1) tests/admin/meta-connect-gate.spec.ts:113:3 › meta-connect independent browser gate › zh-TW desktop: before any connection the Studio claim source points at the Settings card, and the link works 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('metaconnect-card')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('metaconnect-card') with timeout 10000ms
+      - waiting for getByTestId('metaconnect-card')
+
+
+      122 |     await shot(page, "studio-no-page", "zh-TW", "desktop");
+      123 |     await link.click();
+    > 124 |     await expect(page.getByTestId("metaconnect-card")).toBeVisible();
+          |                                                        ^
+      125 |     await expect(page.getByTestId("metaconnect-none")).toHaveText(c.notConnected);
+      126 |     await expect(page.getByTestId("metaconnect-connect")).toBeVisible();
+      127 |   });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/meta-connect-gate.spec.ts:124:56
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.p1rx77Y4/meta-connect-gate/20261029T102948.461951418/results/meta-connect-gate-meta-con-187cb-ngs-card-and-the-link-works/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.p1rx77Y4/meta-connect-gate/20261029T102948.461951418/results/meta-connect-gate-meta-con-187cb-ngs-card-and-the-link-works/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.p1rx77Y4/meta-connect-gate/20261029T102948.461951418/results/meta-connect-gate-meta-con-187cb-ngs-card-and-the-link-works/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.p1rx77Y4/meta-connect-gate/20261029T102948.461951418/results/meta-connect-gate-meta-con-187cb-ngs-card-and-the-link-works/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/meta-connect-gate.spec.ts:113:3 › meta-connect independent browser gate › zh-TW desktop: before any connection the Studio claim source points at the Settings card, and the link works 
+  12 did not run

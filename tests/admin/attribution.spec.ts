@@ -518,6 +518,8 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
   await expect(page).toHaveURL(
     new RegExp(`/${locale}/settings\\?store=${store}$`),
   );
+  // Rare configuration lives behind the signed Settings overview's Advanced entry.
+  await page.getByRole("button", { name: { en: "Advanced", "zh-TW": "進階", "zh-CN": "进阶" }[locale], exact: true }).click();
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
   await page.reload();
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();

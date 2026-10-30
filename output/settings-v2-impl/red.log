@@ -1,0 +1,539 @@
+CURRENT RVFIX303 ACK/read causal RED confirmed, 2026-10-30:
+Tests-only HEAD69651530ee66337af1b6b83dce17cbd791bbbbd4.
+Gates40927153608 / gate(bundle:07) job123637810804 FAILED --browser-identity.
+Synthetic merge e673bf0aa234be9c50ba41dac12eebca412fa682.
+Fresh artifact12922147689 gate-browser-identity downloaded with gh run download.
+settings-v2.spec.ts288 expected stock10 received0 after normal SKU200 then
+one MOCK productGET503, absent command journal, Reload+refresh+setup clicks.
+Old spec202 lost-SKU-response assertion passes; this is the new causal assertion.
+Raw ack-read-red-playwright.log SHA256b50ec8134a173a2c32e3205f490a6373adf58fd6b416c322f89bd95ed0f8aa34.
+Foundation40927153538/job123635591001 SUCCESS on tests-only head only.
+receipts123648300682 and required123648788897 propagate failed identity receipt.
+No install/mirror infrastructure failure; no job rerun. Integration17328372d
+fresh fetch+merge Already up to date. Implementation attempt1 independently
+persists scoped initial-stock intent before SKU dispatch, validates it on Reload,
+retires it after stock acceptance, and preserves exact command identity/no reads
+writing. Eight corrupt-intent negatives added; existing assertions untouched.
+GREEN/E4 PENDING new head. No local tests/servers. Author judgmentE0.
+Historical pre-push pending receipts below are superseded by this actual RED.
+
+RVFIX303 acknowledged SKU / failed follow-up product GET, 2026-10-30:
+Authority: final REQUEST_CHANGES in cxf-rv-303.log, reviewing3eb560907;
+review log SHA2560979b993169872ca2af373c00da9ad3f7ba6e6f466df7f6e11bb30a28cfaa810.
+Integration17328372d merged first via3e9713df86dd5eeca1d9e1a51a10385a223b0c9e.
+Tests-only regression sourceSHA25678950de160b6d14ce4afb6aad3696b0fad41d93728c7326764e7584a20e6df85.
+SKU exact replay must receive its real200 receipt; only next productGET gets one
+MOCK503. No command journal or inventory write exists at this failure boundary.
+Reload+refresh+setup must retain unsent stock10; explicitSave must not repeat SKU;
+unchanged inventory replay and final refreshed stock10 assertions still apply.
+All original assertions remain verbatim/in order. No implementation in this phase.
+Local node --check spec and git diff --check exit0 E1. Ownership generated53modes.
+Current tests-only head69651530ee66337af1b6b83dce17cbd791bbbbd4 pushed.
+WAIT_RUN Gates40927153608; status in_progress; browser test job not yet assigned.
+WAIT_RUN Foundation40927153538 / foundation job123635591001 in_progress.
+Original gh run view confirms both headSha values match this tests-only head.
+Current causal RED is PENDING; no assertion failure claimed before execution.
+Integrator relays completion; stop local CI watch; no implementation until RED.
+GREEN/independent E4/provider/SANDBOX/LIVE/production NOT_RUN. Author judgmentE0.
+
+Historical FIX303 contract-drift relay, 2026-10-29:
+Implementation head 63e10c47a4a5c952b04d0381b6dbb4f5d3e4a046.
+Gates run 40845839979 / plan job 123352982732 failed with three TOUCHED
+UNRESOLVED findings on quickstart/route.ts: unsupported leaf transport arguments
+and unaccounted forwarding sink values. Original API log: fix303-plan-red.log.
+Root cause: destructured store is outside the scanner's proven p.store seam.
+Targeted fix attempt 1 uses the incumbent profile leaf's exact parameter form.
+No gate/assertion/baseline change. New-head GREEN PENDING; this failure is not
+a new tests-only RED, and the original causal UI RED retains its original SHA.
+
+FIX303 prior readback: causal RED confirmed; implementation GREEN pending.
+Original tests-only head: 696629d92e786e70bc70545089bc114d1b7cb7e4.
+RED run40828407097/job123300694776, artifact12878213371 freshly downloaded:
+settings-v2.spec.ts:22, zh-TW signed three-row overview, expected visible,
+settings-v2-overview not found. Raw fix303-red-playwright.log.
+Same run/job123300694974, artifact12879157189 freshly downloaded:
+OC signup -> createStore page.goto ERR_ABORTED. Raw fix303-oc-playwright.log.
+Merged origin/r3/integration d8093bc43 first; its canonical signup URL wait
+addresses this exact OC navigation race. No new OC edit in this implementation.
+Old Foundation40828407094/job123296691356 SUCCESS applies to RED only.
+GREEN/independent E4 NOT_RUN. Integrator relays new workflow completion.
+
+Historical RED queue records follow:
+SETTINGS-V2-IMPL RED: pending push/CI; no assertion failure claimed yet.
+Environment: GitHub CI only, MOCK IdP / isolated PG; delivery faults MOCK.
+
+2026-10-29 RED push/queue handoff (not an assertion failure receipt):
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/303
+HEAD: 4d4fdc657186337df39ec337b7d80c84975bcd32
+Gates workflow WAIT_RUN: 40827493126 (in_progress at readback)
+Foundation workflow WAIT_RUN: 40827493014 (in_progress at readback)
+RED assertion/job failure: NOT_RUN/PENDING. GREEN: NOT_RUN.
+Next session: read PR checks and filtered failed logs; record causal failure here before implementation.
+Integrator is the relay/wakeup owner per the dispatched card. No local background process.
+Foundation job: 123293774850, IN_PROGRESS; no failure assertion yet.
+
+2026-10-29 RELAY 1 readback (head 4d4fdc657186337df39ec337b7d80c84975bcd32):
+Foundation run 40827493014 / job 123293774850: FAILURE, exit 1.
+2026-10-29T06:14:19.1029608Z check-gates: tests/admin/settings-v2.spec.ts is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+This is gate-registration failure, NOT causal RED. New UI assertions NOT_RUN.
+Targeted fix attempt 1: register both imported helper and calling spec in the
+existing settings-real Playwright suite. No test/assertion or gate changes.
+Implementation remains NOT_RUN until CI reaches and fails the new assertions.
+
+RELAY 1 replacement RED queue handoff:
+HEAD: 696629d92e786e70bc70545089bc114d1b7cb7e4
+Foundation WAIT_RUN: 40828407094 / job 123296691356, IN_PROGRESS at readback.
+Gates WAIT_RUN: 40828407097, PENDING at readback.
+Causal RED: PENDING; GREEN: NOT_RUN; implementation: NOT_RUN.
+Integrator relay owns wakeup. No local background process was started.
+
+RELAY 2 causal RED confirmed from original artifact12878213371:
+Head696629d92e786e70bc70545089bc114d1b7cb7e4; synthetic merge d6954bf22d0f8536de0c2b7ddb1380e17974debd.
+Gates40828407097/job123300694776: settings-v2.spec.ts22 zh-TW signed three-row overview; expected visible, element settings-v2-overview not found.
+Raw relay2-playwright.log. Compile/registration succeeded; Foundation40828407094/job123296691356 success.
+Outside-card STOP: same run/job123300694974 bundle08 TestBrowserOC; browser_oc_test.go259 reauth invitation replay2 want>=3; line279 two auth BFF routes not exercised.
+Deeper root cause UNKNOWN; no outside-scope fixes. Implementation is only local WIP, no implementation push/commit.
+GREEN implementation/independent E4 NOT_RUN. WAIT_RUN none; integrator owns continuation after OC disposition.
+
+RELAY 3 original CI readback, 2026-10-29:
+PR303 remote/local head696629d92e786e70bc70545089bc114d1b7cb7e4 confirmed by gh pr view.
+Gates40828407097 completed/failure; required job123312817883 is aggregate failure only.
+Foundation40828407094 completed/success on the same tests-only head.
+Artifact API12878213371: gate-browser-identity, expired=false, workflow40828407097,
+head696629d92e786e70bc70545089bc114d1b7cb7e4. Original ZIP playwright log:
+Error: zh-TW: signed three-row overview; getByTestId('settings-v2-overview');
+expect(locator).toBeVisible() failed; element(s) not found; settings-v2.spec.ts:22.
+Original job123300694974 log API, outside-card failure:
+2026-10-29T06:48:47.7063411Z browser_oc_test.go:259: invitations replayed after re-auth: 2, want >= 3 (one per chain)
+2026-10-29T06:48:47.7086295Z browser_oc_test.go:279: POST /v1/identity/login/reauth/start was not exercised through the BFF
+2026-10-29T06:48:47.7087561Z browser_oc_test.go:279: POST /v1/identity/login/complete was not exercised through the BFF
+2026-10-29T06:48:47.7226370Z --- FAIL: TestBrowserOC (19.04s)
+STOP retained under explicit card rule; root cause beyond observations UNKNOWN.
+No source edits/commit/push/rerun this relay. Existing implementation WIP preserved.
+GREEN/E4 NOT_RUN. WAIT_RUN: none; integrator resolves/reassigns OC and relays continuation.
+
+RELAY4 fresh original CI readback, 2026-10-29:
+Head696629d92e786e70bc70545089bc114d1b7cb7e4 unchanged local/remote.
+Gates40828407097 failure; required123312817883 aggregate only.
+Foundation40828407094/job123296691356 success, same tests-only head.
+CausalRED E3 retained: job123300694776 artifact12878213371,
+settings-v2.spec.ts22 zh-TW signed three-row overview missing.
+Fresh job123300694974 original log confirms TestBrowserOC outside-card STOP:
+replay2 want>=3; two login BFF routes unexercised; deeper cause UNKNOWN.
+No implementation push or source edits; existing WIP preserved.
+GREEN/E4 NOT_RUN. WAIT_RUN none; integrator disposition/relay required.
+
+RELAY4 artifact refresh: download12878213371 did not finish after74s; terminated own gh process. ZIP parse then failed on incomplete stream. No fresh artifact verification claimed; causal assertion receipt remains the previously retained relay2-playwright.log. Fresh workflow/job-log readbacks above succeeded. No background process remains from that download.
+
+RELAY3: head7ab9c4ceb, Gates40849341786/job123370917883, artifact12888112351.
+J4 custom domain fails unchanged storefront-domains-card visible assertion;
+journey omitted the signed Advanced entry. 111 controls:108pass,0fail,3skip.
+Raw filtered runner receipt: relay3-browser-red.log. This is a regression
+failure, not original tests-only RED. New-head GREEN pending.
+
+RELAY4 current-head implementation regressions (not tests-only RED):
+head54277a01cd8cc825026e4911d7aafc8ce23e82af; Gates40854772776.
+Job123388493726/artifact12889124423: attribution metaconnect-card absent after Settings link.
+Job123388493413/artifact12890221828: publication storefront-card absent.
+Job123388493445/artifact12889414651: domain storefront-card absent.
+Job123388493579/artifact12889973751: both Meta connection Settings callers fail card visibility.
+Job123388493579/artifact12890756112: offline Settings Continue control absent.
+Shared cause: signed overview hides rare cards behind Advanced. First batched targeted fix.
+Original assertions preserved; real Advanced clicks added; OAuth/hash targets restored.
+Foundation40854772560/job123382888753 passes old head only. New-head GREEN pending.
+
+
+RVFIX #303 RED PHASE — 2026-10-29 (CI PENDING; not a RED witness yet)
+head: bc38a7bfa67eb73cd0b99cd36bd7a5a4f7de4c6e
+Gates WAIT_RUN: 40895321677; plan 123522718447 running; actual test job not assigned yet
+Foundation WAIT_RUN: 40895321668; foundation job 123522717118 running
+New assertions: pending inventory stock must remain 10 after Reload; original
+inventory key/body replay exactly once; committed quickstart lost response must
+allow later profile save/refresh without storage clearing.
+Evidence: gh run view <run> --json databaseId,headSha,status,conclusion,jobs and
+ gh pr checks 303. No new failing assertion observed; implementation NOT_STARTED.
+Do not substitute historical green or plan success for these assertions.
+Next relay: inspect original failed test job/artifact, retain actual run/job/assertion
+here, then implement both P1 roots together and regenerate ownership before push.
+No local tests/servers. No polling/background process remains in this session.
+
+RVFIX #303 causal RED observed — 2026-10-29
+PR head bc38a7bfa67eb73cd0b99cd36bd7a5a4f7de4c6e
+Gates run 40895321677 / bundle:07 job 123525211139; test synthetic merge
+3097e3bc1599e5d807150c32eae7dae95a35f27f. Artifact gate-browser-identity
+12908705432. TestBrowserSettingsWizardRealChain failed; original Playwright log:
+rvfix303-red-artifact/playwright/settings-real-20261029T150625.645459603/playwright.log
+SHA256 5b8258250defaa67058aea82b211be0cc7d1f19638f4a9d383003c1dedb4ca17
+settings-v2.spec.ts:185: Reload must retain the original pending stock, not
+replace it with the current zero balance. Expected: "10"; Received: "0".
+Real clicked product/SKU writes succeeded; inventory POST aborted before commit;
+Reload performed reads, then the disabled stock control showed 0. This is an
+own-assertion RED, not fixture/compile/timeout-only failure. Serial test stopped
+there, so marker lost-response assertion was NOT_REACHED, not separately RED.
+Foundation 40895321668 / job 123522717118 passed only this tests-only head.
+Targeted implementation attempt 1 for both review P1 roots; GREEN pending.
+
+RVFIX #303 SKU-response-loss RED PHASE — 2026-10-30 (PENDING CI)
+Source under test: d6982f50450006656d564bed16c218bb587c9858, then freshly merged
+origin/r3/integration a250dec75961364de166cdd50190f21d07ddccd0 via 8583df4d2.
+New real-click regression forwards SKU creation to PG, verifies its successful
+matching receipt, then loses only the browser response. No inventory write has
+yet been sent. Reload + refresh + setup navigation must retain initial stock 10,
+explicit Save must replay the original SKU key/body, and existing inventory
+recovery must persist stock 10. Original assertions preserved in their order.
+No implementation change or actual new RED witness yet. This entry is a phase
+registration, not a fabricated failing result. Tests-only head and actual workflow
+run/job ids will be recorded in the PR comment and local handoff after push.
+Integrator relay must inspect the original failed job/artifact and append actual
+assertion evidence here before implementing the SKU-stage recovery fix.
+NOT_RUN: local tests/servers; new RED, GREEN, independent E4; SANDBOX/LIVE/production.
+
+SKU-loss tests-only push receipt — 2026-10-30
+HEAD 5d85294c1a7eda43ec70bbf11f0c9186c7f034c7; PR #303, base r3/integration.
+WAIT_RUN 40908912713 Gates: in_progress; build job 123571535145 in_progress;
+actual browser test job not assigned yet. Plan 123571192586 success is NOT RED.
+WAIT_RUN 40908912520 Foundation: in_progress; job 123571192419 in_progress.
+gh run view and gh pr checks read these receipts for the exact head.
+New own-assertion RED PENDING; no failing result invented. Implementation NOT_STARTED.
+Static syntax/diff checks exit 0; generated ownership exit 0, 53 modes.
+Integrator completion relay required; no long poll or remaining background process.
+Post-push receipt is deliberately local plus PR comment, without another CI push.
+
+FIX #303 SKU-loss causal RED confirmed — 2026-10-30
+Tests-only head 5d85294c1a7eda43ec70bbf11f0c9186c7f034c7.
+Gates 40908912713 / gate (bundle:07) job 123573702372 FAILED;
+synthetic merge under test 55be18bc3ead3d165b7a1bd33fa4ff80753c61fc.
+Original GitHub artifact gate-browser-identity 12913317531 freshly downloaded.
+settings-v2.spec.ts:202: Stock expected "10", received "0" after a committed
+SKU with its response lost, explicit Reload, refresh and real setup clicks.
+Raw retained log: fix303-sku-red-playwright.log
+SHA256 17e5f22abade53e9dd36a6dd28e8b459165e34a8f772b6832c43ef360d9d1a51.
+This is the new test's own assertion RED (E3), not setup/selector failure.
+Foundation 40908912520 / job 123571192419 SUCCESS for this tests-only head only.
+Fresh integration a050a17e9aecfe5b3322bfdffd14de297c3e73c2 merged before repair.
+SKU-recovery implementation attempt 1: validate the original scoped cached
+product/price/quantity against the SKU command and fresh product. Preserve that
+quantity through Reload; invalid/missing cache visibly blocks without overwriting.
+Supplemental negative browser assertions added for missing, version/product/price
+mismatch and blank/negative/fractional stock; NOT_RUN until this push's CI.
+Existing exact SKU/inventory replay and persisted-stock assertions unchanged.
+No local tests/servers. GREEN and independent E4 remain PENDING/NOT_RUN.
+
+FIX #303 relay current-head failure review — 2026-10-30
+Implementation head e977991eb89f823cd56e5756e318cdce864faeee.
+Gates 40915958297 / bundle:07 job 123598450349 FAILED;
+synthetic merge 6e3b24e25360afde48014d06ddd8f5b036441af2.
+Artifact 12916383922 gate-browser-identity: settings-v2.spec.ts:244 Reload
+locator timeout after restoring valid cache. Snapshot is overview, not stock 0.
+Original log SHA256 fa94fedbd0094c26506c48647a2b5663d18c47de5044bf03fd8493dac28c318f.
+Not a new causal tests-only RED; original stock-loss RED above stays unchanged.
+Synchronization repair attempt 1 adds an enabled-Reload assertion after every
+negative Reload, before fixture readback/replacement. h1 survives in-flight reads;
+controls return only after loading ends. No existing assertion/fixture weakened.
+Foundation 40915957832/job 123596111488 passed e977991e only.
+Static node --check and git diff --check exit 0. New GREEN/E4 PENDING.
+RVFIX303 ordinary-save regression, 2026-10-30
+Reviewed source 06d234d1aa341dd44de66170cac36e25bcf1e63e; integration 17328372d already merged.
+Tests-only batch: ordinary Edit settings -> Review -> Save -> refresh, no edit and actual profile edit, before explicit stock recovery.
+Causal RED run/job: PENDING GitHub CI. Expected original defect: refreshed overview absent because ordinary Save deletes the required draft but leaves initial-stock intent.
+GREEN: NOT_RUN; no implementation edits before causal assertion RED.
+Local node --check tests/admin/settings-v2.spec.ts and git diff --check: exit 0 (E1 only).
+
+PR303 RVFIX ordinary-save tests-only RED handoff
+head: 64b26a3a9196fca6788c9008355c05101c9869c0
+WAIT_RUN: 40945100061 (Foundation), job 123698301383 pending
+WAIT_RUN: 40945100133 (Gates), test jobs await allocation; plan job is not acceptance evidence
+Causal assertion RED: PENDING; GREEN: NOT_RUN; author acceptance E0; node syntax/whitespace E1 exit0.
+Single batched tests-only push. No implementation before causal assertion RED.
+Integrator relays completion/failure in a fresh session; queued >3h/cancelled/timeout is an escalation, not acceptance.
+No local test/server or background process. No merge, auto-merge, force-push, commit status or deployment.
+Next: inspect own-head failed job/artifact for ordinary-save refresh assertion, then repair shared save completion to retain intent + required draft through ordinary saves, including current profile version. No new test weakening.
+
+RVFIX303 ordinary-save causal RED confirmed — 2026-10-30
+Tests-only head 64b26a3a9196fca6788c9008355c05101c9869c0.
+Gates 40945100133 / bundle:07 job 123702895883 FAILED; synthetic merge
+3cd9d04290a3fd50d2386a37fb2d5883a96d9a72.
+Fresh artifact gate-browser-identity 12929443731: settings-v2.spec.ts:323,
+"ordinary save (profile edit: false) must retain usable stock recovery after refresh"
+expected visible settings-v2-overview; element absent after ordinary Save + reload.
+Raw witness: ordinary-save-red-playwright.log;
+SHA256 4b53826a840a6b5b5bab2e4684f7c7cd095da9fac54059244d7cee9e7ba92601.
+New assertion causal RED is E3;
+profile-edit branch and subsequent stock assertions were not reached in RED.
+Foundation 40945100061/job 123698301383 succeeded for the tests-only head only.
+Required 123713188224 and receipts 123712959440 propagate bundle:07 failure.
+Root cause: shared successful-save cleanup removes quantity-bearing draft while
+leaving :initial-stock intent. Reload requires both, so cannot recover.
+Implementation attempt 1 will retain product draft fields with fresh profile
+version when initial-stock intent remains; ordinary saves send no stock command.
+No tests/assertions/thresholds/fixtures changed. GREEN/E4 PENDING; local tests
+and servers prohibited. Humaux tools unavailable; parent retains coord ownership.
+
+RVFIX #303 competing newest draft — tests-only RED batch 2026-10-30
+Baseline: cf410e08f6ee83a7a825b713c4e2fb5bb2214843
+Integration merge: Already up to date at 17328372d (fetched this session).
+New assertion: pending SKU recovery must use intent-bound A when the newest draft is B.
+Additional branch: acknowledged SKU recovery uses initial-stock intent A while B remains newer.
+Native Catalog Copy creates B; read-only catalog list proves B is newest; later native refresh proves B SKU/inventory unchanged.
+All existing exact-replay, stock 10, invalid evidence, ordinary-save and three-locale assertions preserved.
+No implementation change; causal RED run/job PENDING until CI executes.
+Local syntax E1 only; runtime/servers prohibited; author judgment E0.
+
+Pushed tests-only head: 4c316fdef4931099f3cf2579ec4f251d5eb700e9
+WAIT_RUN: 40962897623 (Gates; assertion RED PENDING; test job not yet allocated).
+WAIT_RUN: 40962897667 (Foundation); foundation job 123759972008 pending.
+Receipt appended locally after push; no second/evidence-only push. Integrator relays CI result.
+
+FIX12 #303 setup-only RED retry — 2026-10-30
+Authority: integrator FIX12 ruling supplied in the dispatch.
+Prior tests-only head 4c316fdef4931099f3cf2579ec4f251d5eb700e9 is NOT causal RED.
+Gates run 40962897623 / gate (bundle:07) job 123761788576 conclusion failure
+(job id/conclusion independently read from GitHub API).
+Per integrator artifact gate-browser-identity: settings-real.spec.ts:28 failed at
+settings-v2.spec.ts:211 latestDraft.ok(), before the new behavioural assertion.
+Root cause of invalid witness: APIRequestContext BFF probe returned non-OK.
+Fix: observe settings page's own signed GET catalog-products with status=draft
+and limit=1 via waitForResponse, registered before native page navigation.
+Keep ok + items[0].id === productB preconditions and all behavioural assertions
+unchanged. No settings implementation changes in this retry.
+Pulled unit/settings-v2-ui --ff-only: already up to date.
+Merged origin/r3/integration 21eaceb5c72ce6b55955607529daef31fe3163b7 via
+b17414db10eac0098f1438fb006db9de6f56d779; only conflict was generated browser
+ownership, resolved by its generator (never hand-edited).
+Static syntax: node --check --experimental-strip-types tests/admin/settings-v2.spec.ts
+exit 0 (E1 only). tsc attempt exit 127: worktree has no node_modules/.bin/tsc;
+full TypeScript checking NOT_RUN; no dependency install or local runtime attempted.
+Final browser ownership regeneration + --check exit 0; git diff --check exit 0.
+Causal RED and GREEN PENDING; next Gates/Foundation run ids will be recorded in
+PR comment and this local log after the single tests-only push, without another
+push. Local tests, servers, browsers NOT_RUN by instruction. Author verdict E0.
+Humaux unavailable; memory_store/canvas/coord NOT_RUN, parent retains task ownership.
+
+FIX12 pushed tests-only head: 6fdba18594dcd046f1dc8ad41890ac8a75343f98
+WAIT_RUN: 40967861632 (Gates, in_progress; behavioural RED PENDING).
+WAIT_RUN: 40967861611 (Foundation, in_progress); foundation job 123776825940 pending.
+Run IDs verified against exact pushed head via gh run list and gh pr checks 303.
+Post-push receipt is local-only; no further push. Integrator relay owns resumption.
+
+FIX12 relay readback 2026-10-30 — CAUSAL RED CONFIRMED (E3, CI only).
+git pull --ff-only origin unit/settings-v2-ui: Already up to date.
+Head: 6fdba18594dcd046f1dc8ad41890ac8a75343f98; integration ancestor
+21eaceb5c72ce6b55955607529daef31fe3163b7 (HEAD...integration = 27 ahead / 0 behind).
+Gates run 40967861632 / job 123778347162 gate (bundle:07): failure.
+Raw checkout: refs/remotes/pull/303/merge,
+tested merge SHA 4e58231dbecb5f3206509ae2dac3322c58244002.
+Artifact 12940365670 gate-browser-identity downloaded under
+output/settings-v2-impl/fix12-relay-current-artifact/.
+Its settings-real-20261029T225729.814521514/playwright.log fails at
+settings-v2.spec.ts:225: pending SKU recovery must use intent-bound A when
+the newest draft is B; settings-v2-overview expected visible, absent.
+The native settings discovery ok + items[0].id === productB preconditions
+at lines 217-218 passed before that unchanged behavioural assertion.
+This is causal RED, unlike previous run 40962897623 setup failure.
+Foundation 40967861611 / job 123776825940: success at the same head.
+No whole-PR GREEN: Gates 40967861632 still in progress at readback.
+Local static checks only: node --check tests/admin/settings-v2.spec.ts,
+node scripts/dev/derive-browser-ownership.mjs --check, git diff --check: exit 0.
+No new source changes, commit or push: FIX12 setup-only correction already
+exists in 6fdba1859; awaiting integrator's implementation relay as instructed.
+NOT_RUN: implementation, current-head GREEN, independent E4, local runtime
+tests/servers/browsers, SANDBOX/LIVE/deploy. Author assessment E0.
+Humaux discovery/search/canvas-read succeeded earlier; later transport failed,
+including coord_lock acquire. No acquired lock => store/canvas writes NOT_RUN.
+WAIT_RUN: 40967861632 (remaining Gates checks); integrator relay owns wakeup.
+
+FIX12 current-session recheck 2026-10-30 (no source change or duplicate push).
+Authoritative pull is already up to date at 6fdba18594dcd046f1dc8ad41890ac8a75343f98.
+Fresh origin/r3/integration fetch: HEAD...integration = 27 ahead / 0 behind.
+Current GitHub job API binds failed bundle:07 job 123778347162 to this head,
+run 40967861632. Artifact API binds gate-browser-identity 12940365670 to
+the same head/run. Fresh download confirms settings-v2.spec.ts:225 fails on
+"pending SKU recovery must use intent-bound A when the newest draft is B".
+Both preserved catalog discovery preconditions precede this assertion and passed.
+The exact requested native waitForResponse correction is already committed in
+6fdba185; all following behavioural assertions are unchanged in that commit.
+Static node --check, git diff --check, browser ownership regeneration and final
+derive-browser-ownership.mjs --check exit 0; generated file unchanged (53 modes).
+Foundation 40967861611/job123776825940 success is not whole-PR GREEN.
+WAIT_RUN: 40967861632; integrator relay owns completion/resumption.
+Latest FIX12 explicitly requires stop before the implementation relay; no
+implementation, duplicate tests-only push, or evidence-only push this session.
+NOT_RUN: local tests/servers/browsers, implementation GREEN, independent E4,
+SANDBOX/LIVE/deploy. Causal CI RED E3; author verdict E0.
+
+FIX12 terminal CI status readback 2026-10-30 (no duplicate source push).
+Current remote/local head: 6fdba18594dcd046f1dc8ad41890ac8a75343f98.
+Pull --ff-only: already up to date; fetched integration: 27 ahead / 0 behind.
+Gates 40967861632 is now completed/failure, not pending.
+bundle:07 job 123778347162 completed/failure at this exact head.
+Fresh GitHub artifact 12940365670, settings-real-20261029T225729.814521514/
+playwright.log, confirms unchanged behavioural failure at settings-v2.spec.ts:225:
+pending SKU recovery must use intent-bound A when the newest draft is B.
+settings-v2-overview absent after native Reload; the preserved native discovery
+ok/B-first setup checks at lines 217-218 were reached and passed beforehand.
+Foundation 40967861611/job123776825940 completed/success at this head;
+receipts and required fail downstream. No whole-PR GREEN.
+Static node --check spec, git diff --check, browser ownership regeneration and
+final --check: exit 0; ownership remains unchanged (53 modes).
+No implementation/source edit, commit, push or new outside-card path this session.
+WAIT_RUN: 40967861632 (completed/failure; integrator implementation relay needed).
+NOT_RUN: implementation GREEN, E4, local tests/servers/browsers, SANDBOX/LIVE/deploy.
+
+FIX12 implementation authorization / causal RED receipts (2026-10-30).
+Human integrator IMPL AFTER CAUSAL RED authorizes the ONE A-bound recovery fix.
+Pulled origin unit/settings-v2-ui --ff-only: already up to date at
+6fdba18594dcd046f1dc8ad41890ac8a75343f98. Fetched r3/integration;
+merge origin/r3/integration: Already up to date (27 ahead / 0 behind).
+GitHub original job API independently re-read in this implementation session:
+Gates run40967861632 / bundle:07 job123778347162 failure, exact head6fdba1859.
+Artifact12940365670 gate-browser-identity; settings-real.spec.ts:28 invokes
+settings-v2.spec.ts:225: pending SKU recovery must use intent-bound A when the
+newest draft is B. Native discovery ok/B-first preconditions passed first.
+Foundation run40967861611 / job123776825940 success at the same full head.
+These receipts establish E3 causal RED only, not implementation GREEN.
+Root fix: load scoped command/stock target before snapshot selection; UUID
+validation and exact response-id matching; reject conflicting SKU/stock targets.
+Ordinary-save refresh also reads the retained product while stock intent exists.
+Original assertions, fixtures, timing and all cached evidence validations unchanged.
+Implementation static checks/own-head CI recorded in DELIVERY and PR comment.
+
+FIX12 RELAY 1 current-head implementation gate readback (2026-10-30).
+Assigned branch pull --ff-only: already up to date at
+20093dcdffed6adb79c8d74e169f9a8a3e660830; fetched origin/r3/integration
+and merged: Already up to date (28 ahead / 0 behind).
+Original causal RED remains 6fdba18594dcd046f1dc8ad41890ac8a75343f98:
+Gates40967861632 / bundle:07 job123778347162 / artifact12940365670;
+pending SKU recovery must use intent-bound A when newest draft is B.
+Implementation head20093dcdf: Foundation40978806864 job123813377549 success.
+Gates40978806851 job123814651346 bundle:07 failure; original job logs and
+artifact12943429503 gate-browser-identity read directly through GitHub API.
+The implementation progressed through both A-bound recoveries, invalid draft/
+intent refusals, ordinary saves, and exact SKU/inventory replay assertions.
+Failure is at settings-v2.spec.ts:421: product-form absent after catalog.reload.
+The observer tab had navigated to /en/settings for native discovery and never
+returned to B's editor; error-context confirms Settings overview on that tab.
+Targeted correction: navigate observer back to B immediately after discovery.
+All assertions, fixtures, timeouts, retries and production implementation unchanged.
+Attempt 2 after initial FIX12 implementation; no local runtime execution.
+Raw failing Playwright log follows (downloaded artifact retained locally).
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty (21.5s)
+
+
+  1) tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('product-form')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('product-form') with timeout 10000ms
+      - waiting for getByTestId('product-form')
+
+
+       at settings-v2.spec.ts:421
+
+      419 |   const afterB = readB();
+      420 |   await catalog.reload();
+    > 421 |   await expect(catalog.getByTestId("product-form")).toBeVisible();
+          |                                                     ^
+      422 |   await expect(catalog.getByTestId("product-name")).toHaveValue(baselineB.name);
+      423 |   const recoveredB = await (await afterB).json();
+      424 |   expect(recoveredB.version).toBe(baselineB.version);
+        at settingsV2Acceptance (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settings-v2.spec.ts:421:53)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settings-real.spec.ts:65:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/settings-real-20261030T003111.784218747/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/settings-real-20261030T003111.784218747/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/settings-real-20261030T003111.784218747/results/settings-real-REAL-PG-A-wi-73245--preserves-safe-uncertainty/error-context.md
+
+  1 failed
+    tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty
+
+RVFIX POST-CREATE-ACK (2026-10-30), tests-only phase
+Authority: latest REQUEST_CHANGES at aa1594c499772a8d146aa2a3bea494894f164be4.
+P1: product POST receipt clears journal before fallible detail GET; no recovery
+identity/unsent price/stock retained yet. New real-click regression requires A
+survive detail 503 + newer native Catalog Copy B + Reload/refresh, zero read-side
+writes, explicit Save original product only, and unchanged B after completion.
+Integration a09262050 merged first as 48fb74490; generated conflict regenerated.
+Local E1: node --check tests/admin/settings-v2.spec.ts; git diff --check exit0.
+No product implementation changed. Causal RED PENDING own-head Gates workflow;
+run/job IDs will be added to this log on the implementation push after CI relay.
+NOT_RUN: local runtime tests/servers/browser/PG, E4, SANDBOX/LIVE/production.
+
+FIX13 setup repair (2026-10-30), tests-only phase
+Previous head: fee5d8ff0fd3901a5fdf7772b101c60b446a151e.
+Gates run 40984910325 / job 123834779971 (gate (bundle:07)): FAILURE.
+GitHub run/job status independently read with gh run view; integrator's FIX13
+relay identifies settings-real.spec.ts:28 -> settings-v2.spec.ts:206-208:
+removed row-level Copy timed out. This is SETUP FAILURE, NOT causal RED.
+Both Copy setups now select exactly their target row, expand native Advanced,
+then click products-copy-selected. POST predicates, discovery preconditions,
+behavioural assertions, fixtures and product implementation remain unchanged.
+Current-head causal RED and GREEN PENDING CI; no runtime verification locally.
+FIX13 relay of current tests-only head eb9d94fd43eb4dab975f7f94218b8c98ab554741, 2026-10-30:
+Gates run 40988280532 / gate (bundle:07) job 123845389234 FAILED.
+Foundation run 40988280632 / foundation job 123844307626 SUCCESS applies to that head only.
+Raw job API confirms head_sha; gh run view --log-failed is unavailable while the
+parent workflow remains in progress. Completed job logs and fresh artifact
+12949125368 (gate-browser-identity) were read through the GitHub API/download.
+Original settings-real Playwright log SHA256:
+8cdcbf97d0db49eae887bad68973232d4324c0d86323100efae76c10a64926c0.
+settings-v2.spec.ts:219 times out waiting for product-form after Catalog Copy
+succeeds. Catalog's default editor is simplified; product-form exists only in
+the native Advanced editor. This remains SETUP FAILURE, not causal RED.
+Both observer tabs now click catalog-advanced-toggle once during B setup;
+its per-tab preference survives subsequent visits/refresh. Every discovery
+precondition and behavioural assertion remains verbatim/in order.
+Implementation unchanged. Fresh causal RED/GREEN/E4 pending CI; author E0.
+
+FIX13 relay 2 — causal post-create RED confirmed (2026-10-30)
+Head: a91ae866715ed75a848fb2212dc66277f4b7db07.
+Gates run 40990412840 / job 123852623131 (gate (bundle:07)): FAILURE.
+Tested synthetic merge: 7eb54c9e6a33ee48c2eb08749eb9c551b29a828e.
+gh pr checks 303 and completed-job API/logs bind the result to this head.
+gh run view --log-failed cannot return logs while the parent workflow is in
+progress; completed-job logs and artifact 12949522944 (gate-browser-identity)
+were read directly instead. Fresh artifact saved under fix13-relay2-current/.
+playwright/settings-real-20261030T022849.904476920/playwright.log SHA256:
+7901353911e107eb9cef1e9e238efd1f8f9e158d23ed906fb3395060affbdea6.
+settings-real.spec.ts:28 -> settings-v2.spec.ts:239 fails its NEW assertion:
+  post-create read recovery must retain acknowledged A despite newer draft discovery
+  Expected: "Acceptance draft bag"
+  Received: "Acceptance draft bag（复制）"
+Both native Copy/editor setups and the newer-draft discovery precondition
+precede this assertion and passed. This is causal RED, unlike the setup failures.
+Foundation 40990412835 / job 123851173483 SUCCESS applies only to a91ae866.
+Root fix: reuse scoped initial-stock intent plus the quantity-bearing draft at
+the current profile version immediately after the validated product receipt,
+before the fallible product-detail GET. Existing load pins its product ID,
+validates the paired fields, and never writes; only explicit Save sends commands.
+No behavioural assertion, precondition, fixture, timeout or gate changed.
+Current implementation GREEN and independent E4 PENDING; local runtime NOT_RUN.
+
+FIX13 relay 3 — native competitor cleanup regression (2026-10-30)
+Implementation head e059436a41d2ba22844827b34d224eb1cf62b229:
+Gates 40992679036 / bundle:07 job 123859622644 FAILURE; synthetic merge
+f71ec2c8190752c2fb26b648d439d899b0a65ba3. Job API binds head; direct completed
+job logs and fresh gate-browser-identity artifact 12950004252 read because
+gh run view --log-failed refuses while the parent workflow remains in progress.
+Playwright log SHA256 70057cb9627c90ae7cbaa755bfb17dbda4512f48e44b38e75a6bb529744dbacd.
+settings-v2.spec.ts:512/514 times out at obsolete Archive cleanup control;
+preceding post-create/SKU/stock recovery and unchanged-competitor assertions pass.
+Foundation 40992679044 / job 123858541855 SUCCESS only for e059436a41.
+Attempt 1 for cleanup: both native row selections now open Archive products
+review, then Confirm archive. Preserve predicates, all behavioural assertions,
+refresh persistence checks, fixtures, thresholds and production implementation.
+This is a cleanup failure, not new causal RED. New head GREEN/E4 pending CI.

@@ -122,6 +122,7 @@ const sid = crypto.randomUUID(),
   entry = crypto.randomUUID();
 const roots = `live-sessions/${sid}`;
 const leaves: Record<string, string> = {
+  "quickstart": "quickstart",
   "profile": "profile",
   "live-settings/sold-out-reply": "live-settings/sold-out-reply",
   "message-templates": "message-templates",
@@ -597,6 +598,36 @@ test("W3-U2 Next proxy admits settings routes without weakening Studio raw-path 
 
 // STORE-PROFILE-API: actual BFF Request -> signed-session/store resolution -> synthetic Go boundary.
 const profile = {name: "Synthetic merchant", contact_email: "merchant@example.test", contact_phone: "", version: 2};
+test("signed quick-start BFF reuses OC-05 exact empty marker command and derives no steps", async () => {
+  const savedPermissions = permissions;
+  permissions = ["store:read", "integration:manage"];
+  const marker = { completed: true, completed_at: "2026-10-29T06:00:00Z", steps: { store_name: true, shipping: false, first_product: false } };
+  try {
+    reply(marker);
+    for (const method of ["GET", "POST"]) {
+      const result = await call("quickstart", method, method === "POST" ? {} : undefined);
+      assert.equal(result.status, 200);
+      assert.deepEqual(result.body, marker);
+      assert.equal(seen.at(-1)!.url, `/v1/admin/stores/${store}/quickstart`);
+      assert.equal(seen.at(-1)!.method, method);
+      assert.match(result.headers.get("cache-control")!, /no-store/);
+      if (method === "POST") assert.equal(seen.at(-1)!.body, "{}");
+    }
+    const before = seen.length;
+    assert.equal((await call("quickstart", "POST", { completed: true })).status, 422);
+    assert.equal((await call("quickstart", "POST", { tenant_id: crypto.randomUUID() })).status, 422);
+    assert.equal((await call("quickstart?completed=true")).status, 422);
+    assert.equal((await call("quickstart", "PUT", {})).status, 405);
+    assert.equal((await call("quickstart", "POST", {}, { "x-csrf-token": "" })).status, 403);
+    assert.equal(seen.length, before);
+    permissions = ["store:read"];
+    assert.equal((await call("quickstart", "POST", {})).status, 403);
+    assert.equal(seen.length, before);
+    permissions = ["store:read", "integration:manage"];
+    reply({ ...marker, completed_at: null });
+    assert.equal((await call("quickstart")).status, 503);
+  } finally { permissions = savedPermissions; }
+});
 const profileCommand = {name: profile.name, contact_email: profile.contact_email, expected_version: 1};
 test("store profile BFF GET and idempotent PUT use only authenticated authority", async () => {
   const savedPermissions = permissions;

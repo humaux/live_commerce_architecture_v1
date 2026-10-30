@@ -93,6 +93,7 @@ test("settings: the merchant sets bank details, the window and the free-shipping
   const { context, page } = await merchant(browser, false);
   await page.goto(new URL(`/${locale}/settings?store=${store}`, origin).toString());
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
+  await page.getByRole("button", { name: "進階", exact: true }).click();
   await page.getByRole("button", { name: c.next, exact: true }).click();
   // step 2: the bank-transfer card sits in the merchant-arranged branch
   const card = page.getByTestId("transfer-settings-card");
@@ -236,6 +237,7 @@ test("final: finance shows the four confirmations in its own column, the expired
   await shot(page, "finance", "en", "mobile");
   const c = settingsCopy.en;
   await page.goto(new URL(`/en/settings?store=${store}`, origin).toString());
+  await page.getByRole("button", { name: "Advanced", exact: true }).click();
   await page.getByRole("button", { name: c.next, exact: true }).click();
   const card = page.getByTestId("transfer-settings-card");
   await expect(card.getByTestId("transfer-bank-name")).toHaveValue(bank.name);

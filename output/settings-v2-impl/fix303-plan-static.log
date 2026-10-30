@@ -1,0 +1,3 @@
+b6531b0e0473f93d6c9105139d9113dff24f31a6bb20afd66101a474ef3b7fcc  apps/admin/app/api/stores/[store]/quickstart/route.ts
+node --check exit 0
+git diff --check exit 0

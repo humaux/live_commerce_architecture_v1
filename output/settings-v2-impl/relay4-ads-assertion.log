@@ -1,0 +1,52 @@
+
+Running 6 tests using 1 worker
+
+  ✘  1 tests/admin/attribution.spec.ts:656:5 › AT7/AT9 actual report clicks en 390 (13.6s)
+  -  2 tests/admin/attribution.spec.ts:656:5 › AT7/AT9 actual report clicks en 1586
+  -  3 tests/admin/attribution.spec.ts:656:5 › AT7/AT9 actual report clicks zh-TW 390
+  -  4 tests/admin/attribution.spec.ts:656:5 › AT7/AT9 actual report clicks zh-TW 1586
+  -  5 tests/admin/attribution.spec.ts:656:5 › AT7/AT9 actual report clicks zh-CN 390
+  -  6 tests/admin/attribution.spec.ts:656:5 › AT7/AT9 actual report clicks zh-CN 1586
+
+
+  1) tests/admin/attribution.spec.ts:656:5 › AT7/AT9 actual report clicks en 390 ───────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('metaconnect-card')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('metaconnect-card') with timeout 10000ms
+      - waiting for getByTestId('metaconnect-card')
+
+
+      519 |     new RegExp(`/${locale}/settings\\?store=${store}$`),
+      520 |   );
+    > 521 |   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
+          |                                                      ^
+      522 |   await page.reload();
+      523 |   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
+      524 |   await page.goto(reportURL); // Return to the report after the reconnect entry's actual click + reload.
+        at audienceStateClicks (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/attribution.spec.ts:521:54)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/attribution.spec.ts:753:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.PERqdU7d/ads-attribution-report/20261029T102440.275166774/results/attribution-AT7-AT9-actual-report-clicks-en-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.PERqdU7d/ads-attribution-report/20261029T102440.275166774/results/attribution-AT7-AT9-actual-report-clicks-en-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.PERqdU7d/ads-attribution-report/20261029T102440.275166774/results/attribution-AT7-AT9-actual-report-clicks-en-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.PERqdU7d/ads-attribution-report/20261029T102440.275166774/results/attribution-AT7-AT9-actual-report-clicks-en-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/attribution.spec.ts:656:5 › AT7/AT9 actual report clicks en 390 ────────────────────
+  5 did not run

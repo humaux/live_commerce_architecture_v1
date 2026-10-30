@@ -1,6 +1,7 @@
 // Purpose: select isolated browser acceptance suites and engine profiles.
 // Depends on: Playwright, LC_BROWSER_SUITE/LC_BROWSER_ENGINE and each test-owned Go fixture.
 // Used by: registered browser gates; signed identities never share ledger authority.
+// Invariants: suite selection preserves fixture isolation and a single session for settings acceptance.
 import { browserEvidenceDirectory } from "./tests/browser-evidence.mjs";
 import { defineConfig, devices } from "@playwright/test";
 
@@ -21,7 +22,9 @@ const suites: Record<string, string[]> = {
   // OC-04 re-auth dialog and reauth_required handling: started by tests/foundation/browser_oc_test.go in the same mode.
   // Design receipt recovery belongs to store-design and its dedicated PG store fixture.
   oc: ["oc/reauth.spec.ts"],
-  "settings-real": ["settings-real.spec.ts"],
+  // The v2 helper runs inside settings-real's single-session test; keep both
+  // files in the selected suite so the gate registry can verify reachability.
+  "settings-real": ["settings-real.spec.ts", "settings-v2.spec.ts"],
   "merchant-orders-bff": ["orders-bff.spec.ts"],
   "merchant-orders-ui": ["orders-ui.spec.ts"],
   "parcel-merge-ui": ["parcel-merge.spec.ts"],

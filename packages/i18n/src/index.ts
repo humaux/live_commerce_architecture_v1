@@ -8,6 +8,62 @@ export { cvsPickerCopy } from './cvs-picker.ts';
 export { editorCopy } from './editor.ts';
 export type Locale = (typeof locales)[number];
 
+// Signed ux-settings polish/simplify copy. Values and currency are supplied by the server.
+export const settingsV2Copy = {
+  'zh-TW': {
+    title: '店鋪設定', edit: '編輯設定', complete: '店舖資料 · 已填寫', incomplete: '店舖資料 · 未填寫',
+    delivery: '配送方式 · 已開啟 {n} 種', payment: '收款 · Stripe（平台代收）', start: '開始三步設定',
+    step1: '1 / 3 · 店名', step2: '2 / 3 · 配送', step3: '3 / 3 · 第一個商品', name: '店名', email: '信箱', phone: '電話（選填）',
+    home: '宅配', seven: '7-ELEVEN', family: '全家', hilife: '萊爾富', ok: 'OK', on: '開放', off: '關閉',
+    shipping: '自行出貨；寄出後登記承運商與單號。', shippingReview: '自行出貨；登記承運商與單號，不自動建單或購買面單。',
+    paymentReview: 'Stripe 收款待確認；付款時間依買家方式，不含貨到付款。',
+    checkout: '配送以下單確認為準。', publicURL: '商店網址', unavailable: '未填寫',
+    prerequisite: '請先在進階設定建立市場與配送費用。', review: '核對設定', save: '儲存設定',
+    back: '返回總覽，保留草稿', backEdit: '返回修改', nextDelivery: '下一步：配送', nextProduct: '下一步：商品',
+    backName: '上一步：店名', backDelivery: '上一步：配送', skip: '略過', product: '商品名稱',
+    price: '售價（{currency}）', stock: '庫存（件）', draft: '商品儲存為草稿，尚未上架。', productDraft: '商品草稿',
+    saved: '設定已儲存', eligibility: '收款資格仍待確認。', failed: '設定未儲存', retained: '原設定不變，草稿已保留。',
+    partial: '部分設定已儲存；請重新讀取後核對。', uncertain: '尚未取得最新狀態', reloadHelp: '請重新讀取；原設定保留。',
+    reload: '重新讀取', advanced: '進階', loading: '正在讀取設定…', session: '登入狀態已變更，請重新登入。',
+    pending: '上次儲存尚待確認；請核對並儲存原草稿，或重新讀取最新狀態。',
+  },
+  'zh-CN': {
+    title: '店铺设置', edit: '编辑设置', complete: '店铺资料 · 已填写', incomplete: '店铺资料 · 未填写',
+    delivery: '配送方式 · 已启用 {n} 种', payment: '收款 · Stripe（平台代收）', start: '开始三步设置',
+    step1: '1 / 3 · 店名', step2: '2 / 3 · 配送', step3: '3 / 3 · 首件商品', name: '店名', email: '邮箱', phone: '电话（选填）',
+    home: '送货上门', seven: '7-ELEVEN', family: '全家', hilife: '莱尔富', ok: 'OK', on: '已开启', off: '已关闭',
+    shipping: '自行发货；寄出后登记承运商和运单号。', shippingReview: '自行发货；登记承运商和运单号，系统不自动建单或购买面单。',
+    paymentReview: 'Stripe 收款资格待确认；付款时间取决于买家选择的方式，不含货到付款。',
+    checkout: '能否配送以下单时确认为准。', publicURL: '店铺网址', unavailable: '未填写',
+    prerequisite: '请先在进阶设置创建市场并设置配送费用。', review: '核对设置', save: '保存设置',
+    back: '返回概览，保留草稿', backEdit: '返回修改', nextDelivery: '下一步：配送', nextProduct: '下一步：商品',
+    backName: '上一步：店名', backDelivery: '上一步：配送', skip: '跳过', product: '商品名称',
+    price: '售价（{currency}）', stock: '库存（件）', draft: '商品将保存为草稿，尚未上架。', productDraft: '商品草稿',
+    saved: '设置已保存', eligibility: '收款资格仍待确认。', failed: '设置未保存', retained: '原设置未变，草稿已保留。',
+    partial: '部分设置已保存；请重新加载并核对。', uncertain: '暂时无法获取最新状态', reloadHelp: '请重新加载；原设置保留。',
+    reload: '重新加载', advanced: '进阶', loading: '正在加载设置…', session: '登录状态已更改，请重新登录。',
+    pending: '上次保存仍待确认；请核对并保存原草稿，或重新加载最新状态。',
+  },
+  en: {
+    title: 'Store settings', edit: 'Edit settings', complete: 'Store details · Complete', incomplete: 'Store details · Incomplete',
+    delivery: 'Delivery methods · {n} enabled', payment: 'Payments · Stripe (collected by platform)', start: 'Start quick setup',
+    step1: '1 / 3 · Store name', step2: '2 / 3 · Delivery', step3: '3 / 3 · First product', name: 'Store name', email: 'Email', phone: 'Phone (optional)',
+    home: 'Home delivery', seven: '7-ELEVEN', family: 'FamilyMart', hilife: 'Hi-Life', ok: 'OK', on: 'on', off: 'off',
+    shipping: 'Arrange shipping; record the carrier and tracking number after dispatch.',
+    shippingReview: 'Arrange shipping and record the carrier and tracking number. No automatic shipment creation or label purchase.',
+    paymentReview: 'Stripe payment eligibility pending; payment timing depends on the buyer’s method. No cash on delivery.',
+    checkout: 'Delivery availability is confirmed at checkout.', publicURL: 'Store URL', unavailable: 'Not provided',
+    prerequisite: 'Set up a market and delivery pricing in Advanced first.', review: 'Review settings', save: 'Save settings',
+    back: 'Back to overview, keep draft', backEdit: 'Back to edit', nextDelivery: 'Next: delivery', nextProduct: 'Next: product',
+    backName: 'Back: store name', backDelivery: 'Back: delivery', skip: 'Skip', product: 'Product name',
+    price: 'Price ({currency})', stock: 'Stock (units)', draft: 'Product is saved as a draft, not published.', productDraft: 'Product draft',
+    saved: 'Settings saved', eligibility: 'Payment eligibility is still pending.', failed: 'Settings not saved', retained: 'Saved settings are unchanged; your draft is retained.',
+    partial: 'Some settings were saved. Reload and review them.', uncertain: 'Latest status unavailable', reloadHelp: 'Reload; your saved settings are retained.',
+    reload: 'Reload', advanced: 'Advanced', loading: 'Loading settings…', session: 'Your session changed. Sign in again.',
+    pending: 'Your last save still needs confirmation. Review and save the original draft, or reload the latest status.',
+  },
+} satisfies Record<Locale, Record<string, string>>;
+
 export const localeNames: Record<Locale, string> = {
   'zh-CN': '简体中文',
   'zh-TW': '繁體中文',

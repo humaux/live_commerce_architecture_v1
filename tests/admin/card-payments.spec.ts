@@ -127,6 +127,7 @@ test("CPU1 enabled store: badges, limits from the server, no credential input, e
   await signedLogin(page);
   // entry only: the Settings wizard's payment step links to the page (the page itself is a nav:false route)
   await page.goto(`/en/settings?store=${store}`);
+  await page.getByRole("button", { name: "Advanced", exact: true }).click();
   const link = page.getByTestId("settings-card-payments-link");
   await expect(link).toBeVisible();
   await link.click();
