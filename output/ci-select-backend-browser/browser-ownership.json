@@ -179,7 +179,7 @@
     "tests/admin/refund-bff.test.ts": "d153c85c3d2a1bade8b0a7266e26c513b51595c81e371716a8eec704a432c68f",
     "tests/admin/refund.spec.ts": "62b75e330944c43fa74e0bb8deb4595dd6523fe99247ed46c8e74df4dfcd2fd3",
     "tests/admin/reports-bff.test.ts": "502017abef843fb5e75289002d50669b9099a7cbcc417c27e9b4a13dc5012a71",
-    "tests/admin/reports-render.test.mjs": "74cfd240c88e3a92eb2807f9c3d894349015e450e43d85dd5676c02b168e0cd5",
+    "tests/admin/reports-render.test.mjs": "0d996462531925fe9584e2c1555d8b6f47fb225c0814995dd7f08359033063d4",
     "tests/admin/reports.spec.ts": "43212cbf3f7a1f9a68c1b0d8dd10421b82df7c61731cc09a6d96d191d6fce713",
     "tests/admin/returns-model.test.ts": "0252872342060b71f556ac0bd1ab432fa59027f30cf99ed6035181e0e8cf5529",
     "tests/admin/returns-request.test.ts": "7716794c6a76666e182797bec5c7c8b38816101ac36de445cd3f4c8127613c80",

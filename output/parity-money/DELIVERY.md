@@ -270,3 +270,12 @@ All real routes use 1440×900 desktop / 390×844 mobile. en/zh-CN images use mat
 | `94:2223` · Admin Mobile · 貨到付款設定 · task layout | `parity/94-2223.png` | [94:2223](reference/94-2223.png) |
 | `339:2831` · Admin Desktop · 貨到付款儲存檢查 · 原型示意 | `parity/339-2831.png` | [339:2831](reference/339-2831.png) |
 | `339:2845` · Admin Mobile · 貨到付款儲存檢查 · 原型示意 | `parity/339-2845.png` | [339:2845](reference/339-2845.png) |
+
+## Relay 2 · formatter architecture repair (2026-10-30)
+
+- Exact implementation head `98769c0566e25d32915f79121d1772a7f5c9ff69`: Foundation run `41063976394`, job `124090413086`, failed G-UI3/G-UI5 on component-local formatters (COD two, Finance one). Raw filtered receipt: `relay2-foundation-failed.log`. This is an implementation failure, not the card's causal tests-only RED.
+- Targeted attempt 1: reuse the existing shared `decimal` for server-read integer COD values and `displayTime` for the server `generated_at`. The server finance timezone and shared presentation timezone are both `Asia/Taipei` (`internal/reporting/finance.go:33`, `packages/format/src/index.ts`). Finance now uses the canonical full-year, 24-hour timestamp presentation already used by billing and settlements; the `datetime` attribute still contains the exact server instant. No client clock, amount calculation, shared formatter edits or new dependency.
+- Import-harness inventory: `rg -rlE '(Finance|CodSettings)\.tsx' tests/` finds only `tests/admin/reports-render.test.mjs`. Its Finance loader now compiles the real shared formatter; no assertions removed or relaxed. All existing browser tests remain unchanged.
+- E1 only: admin `tsc --noEmit` exit 0 using temporary worktree dependency symlinks to the existing read-only dependencies (removed afterwards); initial unresolved-dependency invocation was corrected without source changes. `node --check tests/admin/reports-render.test.mjs`, browser ownership generation and `--check`, depmap regeneration, packet structure and whitespace checks all exit 0. Packet's incidental timestamp output restored; depmap has no diff.
+- Own acceptance remains E0. GREEN/E3 and independent E4 parity/click acceptance pending the repair head's CI. No local tests, servers, browser, PG, provider or production execution. Integrator relays the new Gates/Foundation results; no merge or auto-merge.
+- Additional literal-scope paths in this repair: `tests/admin/reports-render.test.mjs` (direct import harness), generated browser ownership JSON and this card's delivery/evidence. No product path outside the card.

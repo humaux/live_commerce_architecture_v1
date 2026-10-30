@@ -1,5 +1,5 @@
 // Purpose: Signed finance overview, daily records, date editor, basis and audited CSV preview.
-// Depends on: react, next/navigation, next/link, @live-commerce/i18n, @live-commerce/ui, existing finance/order reads and ./finance/money.css.
+// Depends on: react, next/navigation, next/link, @live-commerce/i18n, @live-commerce/ui, shared format, existing finance/order reads and ./finance/money.css.
 // Used by: apps/admin/app/[locale]/finance/page.tsx.
 // Invariants: server totals only; currencies/environments never combined; session-fenced reads and native audited CSV preserved.
 "use client";
@@ -10,6 +10,7 @@ import { moneyCopy, type Locale } from "@live-commerce/i18n";
 import { DateControl, TableFrame } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
+import { displayTime } from "../../../packages/format/src/index.ts";
 import { financeCSVHref, readFinance, useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { canSeeReports, isSandbox, type FinanceRow } from "@/lib/customers-model";
 import { readOrderActions } from "@/lib/orders-client";
@@ -79,7 +80,7 @@ export function Finance({ locale, stores: _stores, store, from, to, today, initi
         <div className="money-range"><button aria-label={p.financeDates} onClick={() => open("dates")}>{from} – {to}</button><button onClick={read.reload}>{p.retry}</button></div>
         {!validQuery && <p role="alert">{c.rangeInvalid}</p>}
         {summary && <>
-          {summary.generated_at && <p className="money-muted">{p.updated} <time data-testid="finance-generated-at" dateTime={summary.generated_at}>{new Intl.DateTimeFormat(locale, { timeZone: summary.timezone, dateStyle: "short", timeStyle: "short" }).format(new Date(summary.generated_at))}</time></p>}
+          {summary.generated_at && <p className="money-muted">{p.updated} <time data-testid="finance-generated-at" dateTime={summary.generated_at}>{displayTime(locale, summary.generated_at)}</time></p>}
           {view === "overview" ? <>
             {summary.totals.length === 0 && <section className="money-card"><h2>{p.empty}</h2><p>{p.emptyHint}</p></section>}
             {summary.totals.map((row, groupIndex) => groupIndex > 0 && isSandbox(row) ? <section className="money-card money-group" key={`${row.currency}|${row.environment}`}><h2 data-testid="finance-test-badge">{row.currency} · {p.test}</h2><p>{money(locale,row.currency,row.captured_minor)} / − {money(locale,row.currency,row.refunded_minor)} / {money(locale,row.currency,row.net_minor)}</p><p className="money-note">{p.grouping}</p></section> : <div className="money-grid money-group" key={`${row.currency}|${row.environment}`}>

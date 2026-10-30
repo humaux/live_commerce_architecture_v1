@@ -1,6 +1,7 @@
 // Purpose: Owns the merchant cash-on-delivery settings card.
-// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/logistics-client, @/lib/cod-model, @/lib/cod-copy, ./settings.css, ./finance/money.css
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, shared format, @/lib/settings-client, @/lib/orders-client, @/lib/logistics-client, @/lib/cod-model, @/lib/cod-copy, ./settings.css, ./finance/money.css
 // Used by: apps/admin/components/SettingsWizard.tsx
+// Invariants: review displays server-read integer TWD settings; saves retain version CAS and unknown-outcome retry identity.
 "use client";
 
 // Settings -> cash on delivery card (mounted by SettingsWizard.tsx next to <BankTransferSettings>; home-cod R5, migration 0107): the
@@ -13,6 +14,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { moneyCopy, type Locale } from "@live-commerce/i18n";
 import { Field, FormRow } from "@live-commerce/ui";
+import { decimal } from "../../../packages/format/src/index.ts";
 import { sessionBoundary } from "@/lib/settings-client";
 import { OrderReadError } from "@/lib/orders-client";
 import { putCodSettings, readCodSettings } from "@/lib/logistics-client";
@@ -205,7 +207,7 @@ export function CodSettings({
           </div>
         </form>
       )}
-      {load === "ready" && saved && review && <section data-testid="cod-settings-review" className="money-card"><dl>{[[p.codEnabled,saved.enabled ? p.enabled : p.disabled],[p.cap,new Intl.NumberFormat(locale).format(saved.max_twd)],[p.surcharge,new Intl.NumberFormat(locale).format(saved.surcharge_twd)],[p.carrier,saved.carrier === "hsinchu" ? p.hsinchu : p.blackCat]].map(([label,value]) => <div key={label} className="money-kv"><dt>{label}</dt><dd>{value}</dd></div>)}</dl><button onClick={() => setReview(false)}>{p.backCod}</button></section>}
+      {load === "ready" && saved && review && <section data-testid="cod-settings-review" className="money-card"><dl>{[[p.codEnabled,saved.enabled ? p.enabled : p.disabled],[p.cap,decimal(locale,saved.max_twd,0)],[p.surcharge,decimal(locale,saved.surcharge_twd,0)],[p.carrier,saved.carrier === "hsinchu" ? p.hsinchu : p.blackCat]].map(([label,value]) => <div key={label} className="money-kv"><dt>{label}</dt><dd>{value}</dd></div>)}</dl><button onClick={() => setReview(false)}>{p.backCod}</button></section>}
       {problem && (
         <p className="settings-warning" role="alert" data-testid="cod-settings-problem">{problem}</p>
       )}

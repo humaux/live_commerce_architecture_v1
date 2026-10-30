@@ -450,6 +450,7 @@ test("an uncertain export lock is bound to the session boundary, so a different 
 test("Finance landing links to reports under the same canSeeReports rule", () => {
   const read = {status:"ready",boundary:"b",data:{rows:[],totals:[],from,to},reload(){},refresh:async()=>true};
   const Finance = load("../../apps/admin/components/Finance.tsx", {
+    "../../../packages/format/src/index.ts":load("../../packages/format/src/index.ts"),
     "next/navigation":{useRouter:()=>({push(){}})}, "next/link":{__esModule:true,default:({href,children,...p})=>createElement("a",{href,...p},children)},
     "@live-commerce/i18n":adminRequire("../../packages/i18n/src/index.ts"), "@live-commerce/ui":{DateControl:()=>null,TableFrame:shellOf}, "@/lib/model":{}, "@/lib/client":{money:()=>""},
     "@/lib/customers-client":{financeCSVHref:()=>"/x.csv",readFinance:async()=>({}),useGuardedRead:()=>read},
