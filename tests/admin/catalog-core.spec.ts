@@ -1,5 +1,5 @@
 // Purpose: Exercises merchant catalog, inventory, collections and shopper visibility in the browser harness.
-// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ./catalog-document-driver, ../../apps/admin/lib/catalog-v2-copy, ../../apps/admin/lib/copy, ./product-editor.acceptance, ./product-review.acceptance, ./product-visual.acceptance, ./product-feedback.acceptance; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_TAG, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_DIAGNOSTIC, PRODUCT_EDITOR_ACCEPTANCE, PRODUCT_VISUAL_PHASE
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ./catalog-v2-simplified.acceptance, ./catalog-document-driver, ../../apps/admin/lib/catalog-v2-copy, ../../apps/admin/lib/copy, ./product-editor.acceptance, ./product-review.acceptance, ./product-visual.acceptance, ./product-feedback.acceptance; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_TAG, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_DIAGNOSTIC, PRODUCT_EDITOR_ACCEPTANCE, PRODUCT_VISUAL_PHASE
 // Used by: apps/admin/src/features/catalog/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_catalog_core_test.go, tests/foundation/catalog_core_gate_test.go
 // CC12 (contracts/storefront-v2.md section A acceptance CC12): the catalog v2 admin pages, merchant side, in real Chromium.
 // BFF routes exercised through the UI: GET catalog-products, GET|POST|PATCH products*, POST skus, PATCH skus/{id}, POST skus/{id}/price,
@@ -17,6 +17,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { catalogTaskCopy } from "../../packages/i18n/src/catalog";
 import { driveDocument } from "./catalog-document-driver";
 import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy";
 import { copy } from "../../apps/admin/lib/copy";
@@ -24,6 +25,7 @@ import { registerProductEditorAcceptance } from "./product-editor.acceptance";
 import { registerProductReviewAcceptance } from "./product-review.acceptance";
 import { registerProductVisualAcceptance } from "./product-visual.acceptance";
 import { registerProductFeedbackAcceptance } from "./product-feedback.acceptance";
+import { registerCatalogSimplifiedAcceptance } from "./catalog-v2-simplified.acceptance";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -126,6 +128,21 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       await expect(page.getByTestId("products-ledger-link")).toBeAttached();
       // stop-bleed D03: the "stock ledger" link opens the inventory page, not the dashboard at /{locale}/
       await expect(page.getByTestId("products-ledger-link")).toHaveAttribute("href", new RegExp(`^/${L}/inventory(\\?store=[0-9a-f-]{36})?$`));
+      // The ledger remains a real merchant route under the single shared Advanced entry.
+      await page.getByTestId("products-advanced").click();
+      await expect(page.getByTestId("products-ledger-link")).toBeVisible();
+      // Read-only geometry measurement; the navigation itself uses the real click below.
+      const ledgerTarget = await page.getByTestId("products-ledger-link").boundingBox();
+      expect(ledgerTarget).not.toBeNull();
+      expect(ledgerTarget!.width).toBeGreaterThanOrEqual(44);
+      expect(ledgerTarget!.height).toBeGreaterThanOrEqual(44);
+      await page.getByTestId("products-ledger-link").click();
+      await expect(page).toHaveURL(new RegExp(`/${L}/inventory/?(\\?.*)?$`));
+      await page.reload();
+      await expect(page).toHaveURL(new RegExp(`/${L}/inventory/?(\\?.*)?$`));
+      await expect(page.getByTestId("nav-orders")).toBeAttached();
+      await page.goto(url("/products"));
+      await expect(page.getByTestId("products-page")).toBeVisible();
       if (v.vp === "mobile") await page.locator('button[aria-controls="workspace-navigation"]').click();
       const rail = page.locator("[data-shell-rail]");
       for (const id of ["products", "collections", "inventory"])
@@ -231,7 +248,7 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       await page.getByTestId("products-search-submit").click();
       const row = page.getByTestId(`product-row-${productId}`);
       await expect(row).toBeVisible();
-      await expect(row).toContainText(cc.status.active);
+      await expect(row).toContainText(catalogTaskCopy[L as "en" | "zh-TW"].active);
       await expect(row).toContainText("10");
       await expect(row).toContainText("20");
       await expect(row).toContainText("24"); // 10+3+0+6+5+0 units
@@ -305,3 +322,6 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
     });
   });
 }
+
+// CATALOG-V2-IMPL: additive signed-design cases; frozen CC12/PE cases above remain unchanged.
+if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") registerCatalogSimplifiedAcceptance();

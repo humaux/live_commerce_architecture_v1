@@ -110,6 +110,10 @@ async function scenario(index, run) {
   await expect(row(fx.sku2.code)).toBeVisible();
   await expect(merchant.getByTestId("photo-manager"), "the Ledger tray no longer edits photos").toHaveCount(0);
   await merchant.goto(`${adminOrigin}/${run.locale}/products/${fx.product_id}?store=${store}`);
+  // The signed default keeps images in their task; this legacy document flow explicitly chooses Advanced.
+  await expect(merchant.getByTestId("product-form").or(merchant.getByTestId("catalog-task-editor"))).toBeVisible();
+  if (await merchant.getByTestId("catalog-task-editor").isVisible()) await merchant.getByTestId("catalog-advanced-toggle").click();
+  await expect(merchant.getByTestId("product-form")).toBeVisible();
   await expect(merchant.getByTestId("photo-manager")).toBeVisible();
   await expect(merchant.getByTestId("photo-row")).toHaveCount(0);
   // 1. upload two photos through the real file input (PNG first, JPEG second)

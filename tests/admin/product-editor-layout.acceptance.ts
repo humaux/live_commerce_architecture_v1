@@ -1,6 +1,7 @@
 // Purpose: Verify real editor navigation, visible field focus and reserved savebar geometry without synthetic DOM changes.
 // Depends on: Playwright Page/Route/expect/test.info, production ProductDocumentForm/ProductList markup and localized copy; caller-owned browser/PG fixture and ledger callback.
 // Used by: product-editor.acceptance.ts under --browser-product-editor; reads geometry and performs real nav clicks.
+import { catalogTaskCopy } from "../../packages/i18n/src/catalog";
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { presentationCopy } from "../../apps/admin/lib/presentation-copy";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
@@ -74,7 +75,7 @@ export async function assertProductListAsyncTabGrowth(page: Page, record?: Harde
       await archived.click();
       await expect.poll(() => received, { message: "UXH07 unchanged real response is held", timeout: 10000 }).toBe(true);
       await expect(archived).toHaveAttribute("aria-pressed", "true");
-      await expect(archived).toHaveText(catalogCopy[locale].status.archived);
+      await expect(archived).toHaveText(catalogTaskCopy[locale].archived);
       await expect.poll(async () => (await measure()).fullyVisible).toBe(true);
       const selectedNode = await archived.elementHandle();
       expect(selectedNode, "UXH07 selected production button exists").toBeTruthy();
@@ -83,7 +84,7 @@ export async function assertProductListAsyncTabGrowth(page: Page, record?: Harde
         beforeScrollLeft: before.scrollLeft, beforeFullyVisible: before.fullyVisible });
       expect(before.overflow, "UXH07 strip already overflows before status counts arrive").toBeGreaterThan(1);
       release();
-      await expect(archived).toHaveText(new RegExp(`^${catalogCopy[locale].status.archived} \\d+$`));
+      await expect(archived).toHaveText(new RegExp(`^${catalogTaskCopy[locale].archived} \\d+$`));
       await expect.poll(async () => (await measure()).tabWidth,
         { message: "UXH07 real count arrival grows the selected label" }).toBeGreaterThan(before.tabWidth);
       const after = await measure();

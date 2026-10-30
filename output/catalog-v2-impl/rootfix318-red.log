@@ -1,0 +1,186 @@
+Gates 40932484157: head=a041dfc01ef6edf34702cca78ca7d3da7ed85a63, status=completed, conclusion=failure
+Tested synthetic merge: 4930dd87a2e2fa1dece2e12cc703766011f7cfae
+Original logs obtained with gh api actions/jobs/<id>/logs; original browser artifacts with gh run download.
+
+required job=123667145274 FAILURE
+2026-10-29T19:00:57.9015311Z   GATE: failure
+
+receipts job=123666874775 FAILURE
+
+aggregate job=123666874765 FAILURE
+2026-10-29T19:00:50.0137838Z - FAIL (shard 4) journey J1 product editor -> storefront desktop/zh-TW "set opening quantities 9 and 7, then save the document" journey-step: locator.inputValue: Timeout 30000ms exceeded. Call log: - waiting for getByTestId('matrix-code-0')
+
+gate (bundle:04) job=123657044859 FAILURE
+2026-10-29T18:50:15.1229866Z --- FAIL: TestBrowserMerchantBuyerRealChain (9.43s)
+2026-10-29T18:50:15.4481755Z --- FAIL: TestBrowserMerchantBuyerRealChain (9.43s)
+
+gate (bundle:06) job=123657044899 FAILURE
+2026-10-29T18:51:21.7791129Z     browser_catalog_media_test.go:180: catalog-media browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.S4dI2KKr/catalog-media/20261029T185114.303498924
+2026-10-29T18:51:21.7887860Z --- FAIL: TestBrowserCatalogMedia (10.23s)
+2026-10-29T18:51:22.1198289Z --- FAIL: TestBrowserCatalogMedia (10.23s)
+
+gate (--browser-click-sweep@4/10) job=123657044333 FAILURE
+2026-10-29T18:55:56.1196046Z --- FAIL: TestBrowserClickSweep (752.05s)
+2026-10-29T18:55:57.6323020Z --- FAIL: TestBrowserClickSweep (752.05s)
+
+gate (bundle:05) job=123657045002 FAILURE
+2026-10-29T18:48:05.2980502Z --- FAIL: TestBrowserStorefrontPublish (21.71s)
+2026-10-29T18:48:48.6521971Z --- FAIL: TestBrowserStorefrontPublish (21.71s)
+
+gate (--browser-visual-lint@3/4) job=123657045031 FAILURE
+2026-10-29T18:57:23.5161443Z --- FAIL: TestBrowserClickSweep (833.28s)
+2026-10-29T18:57:25.1912204Z --- FAIL: TestBrowserClickSweep (833.28s)
+
+gate (--browser-visual-lint@1/4) job=123657044465 FAILURE
+2026-10-29T18:52:22.3575800Z --- FAIL: TestBrowserClickSweep (536.68s)
+2026-10-29T18:52:24.3549529Z --- FAIL: TestBrowserClickSweep (536.68s)
+
+gate (bundle:03) job=123657044267 FAILURE
+2026-10-29T18:49:35.2645060Z     browser_catalog_core_test.go:206: admin browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.1kDGiyfv/catalog-core/20261029T184326.558617775
+2026-10-29T18:49:52.9624351Z     browser_catalog_core_test.go:206: admin browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.1kDGiyfv/catalog-core/20261029T184935.712760086
+2026-10-29T18:49:52.9997814Z --- FAIL: TestBrowserCatalogCore (389.37s)
+2026-10-29T18:49:52.9999231Z     --- FAIL: TestBrowserCatalogCore/PE12-17-TWD (371.67s)
+2026-10-29T18:49:53.0013090Z     --- FAIL: TestBrowserCatalogCore/CC12-frozen (17.70s)
+2026-10-29T18:52:36.4569860Z     browser_catalog_core_test.go:206: admin browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.DtfrWf9S/catalog-core/20261029T185219.072611978
+2026-10-29T18:52:36.4910738Z --- FAIL: TestBrowserCatalogCore (20.33s)
+2026-10-29T18:52:36.4912488Z     --- FAIL: TestBrowserCatalogCore/CC12-frozen (20.33s)
+2026-10-29T18:53:02.1351134Z --- FAIL: TestBrowserCatalogCore (20.33s)
+2026-10-29T18:53:02.1354270Z --- FAIL: TestBrowserCatalogCore (389.37s)
+
+gate (--browser-visual-lint@4/4) job=123657044308 FAILURE
+2026-10-29T18:55:40.3065738Z --- FAIL: TestBrowserClickSweep (740.58s)
+2026-10-29T18:55:41.8987949Z --- FAIL: TestBrowserClickSweep (740.58s)
+
+gate (--browser-webkit) job=123657045125 FAILURE
+
+gate (--browser-visual-lint@2/4) job=123657044302 FAILURE
+2026-10-29T18:51:44.4797713Z --- FAIL: TestBrowserClickSweep (508.72s)
+2026-10-29T18:51:45.7962026Z --- FAIL: TestBrowserClickSweep (508.72s)
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-catalog-core/playwright/run.DtfrWf9S/catalog-core/20261029T185219.072611978/playwright.log
+    Error: expect(received).toBeGreaterThanOrEqual(expected)
+    Expected: >= 44
+    Received:    42
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/catalog-core.spec.ts:137:35
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-catalog-media/playwright/run.S4dI2KKr/catalog-media/20261029T185114.303498924/browser.log
+ExpectError: expect(locator).toBeVisible() failed
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+  - waiting for getByTestId('photo-manager')
+    at scenario (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/catalog-media-gate.mjs:113:55)
+      'Expected: visible\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      "  - waiting for getByTestId('photo-manager')\n",
+      "  - waiting for getByTestId('photo-manager')"
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-click-sweep_4_10/playwright/run.bZ1l0Kih/click-sweep/20261029T184324.064170886/click-sweep.mjs.log
+NEW FAIL journey J1 product editor -> storefront desktop/zh-TW [journey] "set opening quantities 9 and 7, then save the document" journey-step: locator.inputValue: Timeout 30000ms exceeded. Call log: - waiting for getByTestId('matrix-code-0') (output/playwright/run.bZ1l0Kih/ui-click-sweep/screenshots/r00171.png)
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-merchant-buyer/playwright/merchant-buyer-real-3882816081/browser.log
+ExpectError: expect(locator).toHaveValue(expected) failed
+Expected: "active"
+Timeout: 5000ms
+Error: element(s) not found
+  - waiting for getByTestId('product-status')
+    at createProductInEditor (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/merchant-product.mjs:29:56)
+      'Expected: "active"\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      "  - waiting for getByTestId('product-status')\n",
+      "  - waiting for getByTestId('product-status')"
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-product-editor/playwright/run.1kDGiyfv/catalog-core/20261029T184326.558617775/playwright.log
+    Error: locator.fill: Test timeout of 180000ms exceeded.
+      - waiting for getByLabel('商品说明', { exact: true })
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/catalog-v2-simplified.acceptance.ts:223:58
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-product-editor/playwright/run.1kDGiyfv/catalog-core/20261029T184935.712760086/playwright.log
+    Error: expect(received).toBeGreaterThanOrEqual(expected)
+    Expected: >= 44
+    Received:    42
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/catalog-core.spec.ts:137:35
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-storefront-publish/playwright/storefront-publish-2005212307/browser.log
+ExpectError: expect(locator).toHaveValue(expected) failed
+Expected: "active"
+Timeout: 5000ms
+Error: element(s) not found
+  - waiting for getByTestId('product-status')
+    at createProductInEditor (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/merchant-product.mjs:29:56)
+      'Expected: "active"\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      "  - waiting for getByTestId('product-status')\n",
+      "  - waiting for getByTestId('product-status')"
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-visual-lint_1_4/run.QqLH7b7r/ui-visual-audit/20261029T184329Z/lint.md
+# G-UI9 visual lint — 4930dd87a2 — 2026-10-29T18:52:22.241Z
+
+Verdict: **FAIL** — 1 page states, required inner-scroll coverage or supplemental captures were not reached
+
+Shots: 83 captured of 83 enumerated (36 admin + 17 storefront + 5 platform pages x 3 locales x 2 viewports 1586x992, 390x844). NOT_RUN: 0. Missing: 0. HTTP >= 400: 0. States not reached: 1.
+
+States not reached:
+- admin|products-product|zh-CN|1586x992
+
+Blocking (exit 1): R1, R2, R3, R6, R9 and R7:clipped-control, R7:text-overflows-control, R7:select-value-clipped; every other finding is WARN for now. Thresholds: `tests/ui/visual-lint-lib.mjs` (T). Instances = every measured occurrence; groups = distinct (rule, kind, selector shape).
+
+## Counts per rule
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-visual-lint_2_4/run.5V5nAEPF/ui-visual-audit/20261029T184321Z/lint.md
+# G-UI9 visual lint — 4930dd87a2 — 2026-10-29T18:51:44.370Z
+
+Verdict: **FAIL** — 1 page states, required inner-scroll coverage or supplemental captures were not reached
+
+Shots: 83 captured of 83 enumerated (36 admin + 17 storefront + 5 platform pages x 3 locales x 2 viewports 1586x992, 390x844). NOT_RUN: 0. Missing: 0. HTTP >= 400: 0. States not reached: 1.
+
+States not reached:
+- admin|products-product|zh-CN|390x844
+
+Blocking (exit 1): R1, R2, R3, R6, R9 and R7:clipped-control, R7:text-overflows-control, R7:select-value-clipped; every other finding is WARN for now. Thresholds: `tests/ui/visual-lint-lib.mjs` (T). Instances = every measured occurrence; groups = distinct (rule, kind, selector shape).
+
+## Counts per rule
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-visual-lint_3_4/run.8msWi0R8/ui-visual-audit/20261029T184335Z/lint.md
+# G-UI9 visual lint — 4930dd87a2 — 2026-10-29T18:57:23.401Z
+
+Verdict: **FAIL** — 2 page states, required inner-scroll coverage or supplemental captures were not reached
+
+Shots: 91 captured of 91 enumerated (36 admin + 17 storefront + 5 platform pages x 3 locales x 2 viewports 1586x992, 390x844). NOT_RUN: 0. Missing: 0. HTTP >= 400: 0. States not reached: 2.
+
+States not reached:
+- admin|products-product|zh-TW|1586x992
+- admin|products-product|en|1586x992
+
+Blocking (exit 1): R1, R2, R3, R6, R9 and R7:clipped-control, R7:text-overflows-control, R7:select-value-clipped; every other finding is WARN for now. Thresholds: `tests/ui/visual-lint-lib.mjs` (T). Instances = every measured occurrence; groups = distinct (rule, kind, selector shape).
+
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-visual-lint_4_4/run.opbCffMy/ui-visual-audit/20261029T184324Z/lint.md
+# G-UI9 visual lint — 4930dd87a2 — 2026-10-29T18:55:40.212Z
+
+Verdict: **FAIL** — 2 page states, required inner-scroll coverage or supplemental captures were not reached
+
+Shots: 91 captured of 91 enumerated (36 admin + 17 storefront + 5 platform pages x 3 locales x 2 viewports 1586x992, 390x844). NOT_RUN: 0. Missing: 0. HTTP >= 400: 0. States not reached: 2.
+
+States not reached:
+- admin|products-product|zh-TW|390x844
+- admin|products-product|en|390x844
+
+Blocking (exit 1): R1, R2, R3, R6, R9 and R7:clipped-control, R7:text-overflows-control, R7:select-value-clipped; every other finding is WARN for now. Thresholds: `tests/ui/visual-lint-lib.mjs` (T). Instances = every measured occurrence; groups = distinct (rule, kind, selector shape).
+
+
+output/catalog-v2-impl/fix318-current-download/gate-browser-webkit/playwright/merchant-buyer-real-985346207/browser.log
+ExpectError: expect(locator).toHaveValue(expected) failed
+Expected: "active"
+Timeout: 5000ms
+Error: element(s) not found
+  - waiting for getByTestId('product-status')
+    at createProductInEditor (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/merchant-product.mjs:29:56)
+      'Expected: "active"\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      "  - waiting for getByTestId('product-status')\n",
+      "  - waiting for getByTestId('product-status')"

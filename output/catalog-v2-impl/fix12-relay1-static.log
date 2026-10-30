@@ -1,0 +1,6 @@
+browser ownership: wrote /Volumes/data/live_commerce_architecture_v1/.worktrees/catalog-v2-ui/output/ci-select-backend-browser/browser-ownership.json (53 modes)
+node --check scripts/dev/derive-browser-ownership.mjs exit0
+git diff --check exit0
+node scripts/dev/derive-browser-ownership.mjs --check exit0
+tsc --noEmit -p output/catalog-v2-impl/tsconfig.static.json exit0; see fix12-relay1-tsc.log
+apps/admin/components/CatalogSimplifiedEditor.tsx sha256 ff92ba6f4477b025eadf6dd9c19379e6b608178ec6c83b31b5bdc69e296c0dd9

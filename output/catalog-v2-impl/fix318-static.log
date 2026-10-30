@@ -1,0 +1,11 @@
+FIX318 / 2026-10-30 / structural evidence E1 only; author E0
+Application + current i18n: node /Volumes/data/live_commerce_architecture_v1/node_modules/typescript/lib/tsc.js -p output/catalog-v2-impl/tsconfig.static.json : exit0
+Uses existing main-checkout dependencies read-only via own temporary worktree symlinks; no package install.
+Browser-source tsc: exit1; missing locally installed axe-core, sole diagnostic preserved in fix318-browser-tsc.log. No environment stub added.
+Architecture packet: python3 scripts/check_packet.py : exit0; output in fix318-packet.log; generated experiments/results/packet-check.json restored to original bytes.
+node --check affected browser sources : exit0 (see final syntax receipt appended before commit).
+No local tests, browser, server, container, PG, build, provider or production operation. No Figma write.
+Humaux store/coord/canvas NOT_RUN: tools absent. Integrator retains card ownership; no recursion/delegation.
+Final node --check: all 9 changed browser/driver sources exit0.
+git diff --check: exit0. Protected next-startup assertions, contractdrift baseline and route-table dispatchers: unchanged (git diff --quiet exit0).
+Browser ownership: node scripts/dev/derive-browser-ownership.mjs : exit0, 53 modes; generated after staging all changed inputs.

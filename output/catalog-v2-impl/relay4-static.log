@@ -1,0 +1,9 @@
+Allowed local static checks only; no tests, servers, browsers, PG, containers or package install.
+git diff --check: exit0
+node --check tests/admin/catalog-core.spec.ts: exit0
+tsc --noEmit -p output/catalog-v2-impl/tsconfig.static.json: exit0 after resolving React types through temporary worktree dependency links.
+First attempt: exit1, missing React types from shared UI resolution; original log relay4-tsc.log retained locally; no source/type stub or dependency change.
+Only existing main-checkout dependencies read; no main-checkout writes. All temporary worktree symlinks removed.
+b464f9d690bd8eb995d77291d349acd37745a3e06c7305711a499df2f346ffbc  apps/admin/components/ProductList.tsx
+00790c4d333436dd2f9306cea8bf57670e34da383ff32220a8edb29144e3d118  apps/admin/components/ProductDocument.css
+261cc448395ee2e71c3ffbba76732fc642643d54ad5dc64882cc1966fb5b49c7  tests/admin/catalog-core.spec.ts

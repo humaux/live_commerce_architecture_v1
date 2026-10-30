@@ -1,3 +1,7 @@
+// Purpose: Drive full catalog document controls through the merchant's explicit Advanced entry.
+// Depends on: @playwright/test, product-editor-copy.
+// Used by: catalog-core, product-editor/review/visual/media browser acceptance.
+// Invariants: view selection uses real clicks; existing assertions and writes remain unchanged.
 // CC12's assertions translated to the one-document UI; all mutations remain real clicks.
 import { expect, type Page } from "@playwright/test";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
@@ -65,6 +69,7 @@ export async function driveDocument(
     .getByTestId("product-save-result")
     .getByRole("link", { name: c.save, exact: true })
     .click();
+  await openAdvancedProductEditor(page);
   await expect(page.getByTestId("product-form")).toBeVisible();
   const productId = /\/products\/([0-9a-f-]{36})/.exec(page.url())![1];
   await expect(page.getByTestId("product-status")).toHaveValue("draft");
@@ -176,4 +181,19 @@ export async function driveDocument(
     stock,
     rowFor,
   };
+}
+
+/** Opt into the incumbent full document editor with a real merchant click, if not already selected. */
+export async function openAdvancedProductEditor(page: Page) {
+  await expect(page.getByTestId('product-form').or(page.getByTestId('catalog-task-editor'))).toBeVisible();
+  if (await page.getByTestId('catalog-task-editor').isVisible()) {
+    await page.getByTestId('catalog-advanced-toggle').click();
+    await expect(page.getByTestId('product-form')).toBeVisible();
+  }
+}
+/** Select the product before using the relocated batch Copy action; never create a row shortcut. */
+export async function selectProductForCopy(page: Page, id: string) {
+  await page.getByTestId(`product-row-${id}`).getByRole('checkbox').check();
+  await page.getByTestId('product-batch').locator('summary').click();
+  await expect(page.getByTestId('products-copy-selected')).toBeEnabled();
 }

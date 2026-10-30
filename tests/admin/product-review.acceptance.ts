@@ -3,6 +3,7 @@
 // Used by: tests/admin/catalog-core.spec.ts, scripts/dev/test-local.sh
 // R5 review regressions: all merchant writes use real clicks on Next + Go + PG.
 // Routes/cookies below inject lost receipts/auth failures, never fake a success.
+import { openAdvancedProductEditor, selectProductForCopy } from "./catalog-document-driver";
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -30,6 +31,7 @@ async function openSaved(page: Page) {
     .getByTestId("product-save-result")
     .locator('a[href*="/products/"]')
     .click();
+  await openAdvancedProductEditor(page);
   await expect(page.getByTestId("product-save")).toBeEnabled();
   return /products\/([0-9a-f-]{36})/.exec(page.url())![1];
 }
@@ -175,11 +177,10 @@ export function registerProductReviewAcceptance() {
           });
         }
       });
+      if (action === "copy") await selectProductForCopy(page, id);
       const trigger = () =>
         action === "copy"
-          ? page
-              .getByTestId(`product-row-${id}`)
-              .getByRole("button", { name: "Copy", exact: true })
+          ? page.getByTestId("products-copy-selected")
           : page.getByTestId(
               action === "publish" ? "product-publish" : "product-create",
             );

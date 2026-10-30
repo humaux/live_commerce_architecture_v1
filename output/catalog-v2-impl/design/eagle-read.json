@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "folder": "MVS1D5NC7KI5T",
+  "total_returned": 2,
+  "candidates": [
+    {
+      "id": "MVS1D603YAUS5",
+      "name": "Shopify · Products list (iOS)",
+      "url": "https://mobbin.com/screens/a49bce9c-6f95-4c9b-a877-d2c79a8e77c0"
+    },
+    {
+      "id": "MVS1D5ZMW22YA",
+      "name": "Square · Add variations (web)",
+      "url": "https://mobbin.com/screens/6f579061-c709-4579-b3c2-b936a90b14f2"
+    }
+  ]
+}

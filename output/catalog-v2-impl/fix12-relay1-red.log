@@ -1,0 +1,31 @@
+HEAD d26d8f1f7d16baa21ed67fab8058d641a74dc616
+Gates 40968158604 / job 123779435845 / artifact 12939926702
+  1) tests/admin/catalog-v2-simplified.acceptance.ts:364:5 › CATV2 signed simplified catalog (MOCK responses) › CATV2 mobile density: all signed states, median 12 blocks / 100 characters, no state over 20 blocks 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 12
+    Received:    13
+
+      370 |       const median = (key: "blocks" | "chars") => values.map((value) => value[key]).sort((a, b) => a - b)[7];
+      371 |       expect(Math.max(...values.map((value) => value.blocks))).toBeLessThanOrEqual(20);
+    > 372 |       expect(median("blocks")).toBeLessThanOrEqual(12);
+          |                                ^
+      373 |       expect(median("chars")).toBeLessThanOrEqual(100);
+      374 |     });
+      375 |   });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/catalog-v2-simplified.acceptance.ts:372:32
+
+    Error Context: output/playwright/run.ziWBubUu/catalog-core/20261029T224944.375368120/results/catalog-core-CATV2-signed--94c5d-ers-no-state-over-20-blocks/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.ziWBubUu/catalog-core/20261029T224944.375368120/results/catalog-core-CATV2-signed--94c5d-ers-no-state-over-20-blocks/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.ziWBubUu/catalog-core/20261029T224944.375368120/results/catalog-core-CATV2-signed--94c5d-ers-no-state-over-20-blocks/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/catalog-v2-simplified.acceptance.ts:364:5 › CATV2 signed simplified catalog (MOCK responses) › CATV2 mobile density: all signed states, median 12 blocks / 100 characters, no state over 20 blocks 
+  26 passed (2.9m)

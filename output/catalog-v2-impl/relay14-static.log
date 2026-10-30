@@ -1,0 +1,4 @@
+tsc --noEmit -p output/catalog-v2-impl/tsconfig.static.json: exit0
+git diff --check: exit0
+ProductMediaManager.tsx SHA256 15b83db3a8d46e3bbd8e67bd01c5a9671c8558fbbe59d758718a0632e4c14b28
+No imports/tests/routes/CI/gates changed. Temporary dependency links removed. No local tests or servers.

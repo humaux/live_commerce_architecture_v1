@@ -3,6 +3,7 @@
 // Used by: catalog-core browser mode PE12–PE17 and --browser-product-editor; provider writes remain MOCK.
 // PE12–PE17: real merchant clicks through the production BFF/Go/isolated PG fixture.
 // evaluate is read-only geometry; control HTTP is buyer readback, never a substitute for UI writes.
+import { openAdvancedProductEditor, selectProductForCopy } from "./catalog-document-driver";
 import { expect, test, type Page, type Dialog } from "@playwright/test";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -128,7 +129,7 @@ export function registerProductEditorAcceptance() {
           await fit();
           const targets = await page
             .locator(
-              ".pe-select,.pe-row-actions a,[data-testid=quick-price],[data-testid=quick-stock]",
+              ".pe-select,.pe-row-actions a",
             )
             .evaluateAll((nodes) =>
               nodes
@@ -329,6 +330,7 @@ export function registerProductEditorAcceptance() {
       const href = await productLink.getAttribute("href");
       const id = /products\/([0-9a-f-]{36})/.exec(href!)![1];
       await productLink.click();
+      await openAdvancedProductEditor(page);
       await expect(page).toHaveURL(url("en", "products/" + id));
       await page.reload();
       await expect(page.getByTestId("product-price")).toHaveValue("60");
@@ -451,10 +453,8 @@ export function registerProductEditorAcceptance() {
       await expect(page.locator('[data-testid^="product-row-"]')).toHaveCount(
         2,
       );
-      await page
-        .getByTestId(`product-row-${id}`)
-        .getByRole("button", { name: "Copy", exact: true })
-        .click();
+      await selectProductForCopy(page, id);
+      await page.getByTestId("products-copy-selected").click();
       await expect(page.getByTestId("product-batch-results")).toBeVisible();
       await page.reload();
       await expect(page.locator('[data-testid^="product-row-"]')).toHaveCount(
@@ -476,7 +476,8 @@ export function registerProductEditorAcceptance() {
         }
       }
       await page.setViewportSize({ width: 1586, height: 992 });
-      await page.getByRole("checkbox", { name: "All", exact: true }).check();
+      await page.getByTestId("products-select-all").check();
+      await page.getByTestId("product-batch").locator("summary").click();
       await page
         .getByTestId("product-batch")
         .getByRole("button", { name: "Unpublish to draft", exact: true })
@@ -549,6 +550,7 @@ export function registerProductEditorAcceptance() {
         .getByTestId(`product-row-${id}`)
         .getByRole("link", { name: "Edit", exact: true })
         .click();
+      await openAdvancedProductEditor(page);
       await expect(
         page.getByTestId("product-save"),
         "PE14 requires safe editable document",
@@ -592,79 +594,90 @@ export function registerProductEditorAcceptance() {
       await page.goto(url("en", "products?q=" + tag));
       const single = page.getByTestId(`product-row-${id}`);
       const quickStart = writes.length;
-      await single.getByTestId("quick-price").click();
-      await expect(page.getByTestId("shell-store-selector")).toBeDisabled();
-      const quickURL = page.url();
-      await page.getByTestId("quick-price-0").fill("90");
-      page.removeAllListeners("dialog");
-      page.on("dialog", (dialog) => void dialog.dismiss());
-      await page.getByTestId("products-ledger-link").click();
-      await expect(page).toHaveURL(quickURL);
-      await expect(page.getByTestId("quick-price-0")).toBeVisible();
-      page.removeAllListeners("dialog");
-      page.on("dialog", (dialog) => {
-        if (matrixNativeDialog) void matrixNativeDialog(dialog);
-        else void dialog.accept();
-      });
-      await page.getByTestId("quick-price-0").press("Enter");
-      await expect(page.getByTestId("product-quick-edit")).toHaveCount(0);
-      await expect(page.getByTestId("shell-store-selector")).toBeEnabled();
+      await single.getByRole('link', { name: 'Edit', exact: true }).click();
+      // Return from the previously chosen advanced view to the signed default path.
+      await openAdvancedProductEditor(page);
+      await page.getByTestId('catalog-advanced-toggle').click();
+      await page.getByTestId('catalog-common-price').fill('90');
+      await expect(page.getByTestId('shell-store-selector')).toBeDisabled();
+      page.removeAllListeners('dialog');
+      page.on('dialog', dialog => void dialog.dismiss());
+      const editURL = page.url();
+      await page.getByTestId('product-back').click();
+      await expect(page).toHaveURL(editURL);
+      await expect(page.getByTestId('catalog-common-price')).toHaveValue('90');
+      page.removeAllListeners('dialog');
+      page.on('dialog', dialog => matrixNativeDialog ? void matrixNativeDialog(dialog) : void dialog.accept());
+      const saveSigned = async (enter = false) => {
+        if (enter) await page.getByTestId('catalog-common-price').press('Enter');
+        else await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+        await expect(page.getByRole('heading', { name: 'Review changes', exact: true })).toBeVisible();
+        await page.getByRole('button', { name: 'Confirm save', exact: true }).click();
+        await expect(page.getByRole('heading', { name: 'Product saved', exact: true })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Product saved', exact: true })).toBeFocused();
+        await expect(page.getByTestId('shell-store-selector')).toBeEnabled();
+      };
+      await saveSigned(true);
       await page.reload();
-      await expect(single).toContainText("90");
-      expect(
-        writes.slice(quickStart).filter((w) => w.path.endsWith("/document")),
-      ).toHaveLength(1);
+      await expect(page.getByTestId('catalog-common-price')).toHaveValue('90');
+      expect(writes.slice(quickStart).filter(w => w.path.endsWith('/document'))).toHaveLength(1);
+      await page.getByTestId('product-back').click();
+      await expect(single).toContainText('90');
       const quick80Start = writes.length;
-      await single.getByTestId("quick-price").click();
-      await page.getByTestId("quick-price-0").fill("80");
-      await page.getByTestId("quick-price-0").press("Enter");
-      await expect(page.getByTestId("product-quick-edit")).toHaveCount(0);
-      await expect(single).toContainText("NT$80");
-      expect(
-        writes.slice(quick80Start).filter((w) => w.path.endsWith("/document")),
-      ).toHaveLength(1);
-      await single.getByTestId("quick-stock").click();
-      await page.getByTestId("quick-untracked-0").uncheck();
-      await expect(page.getByTestId("quick-delta-0")).toBeDisabled();
-      await page.getByTestId("quick-target-0").fill("5");
-      await page.getByTestId("quick-save").click();
-      await expect(page.getByTestId("product-quick-edit")).toHaveCount(0);
-      await single.getByTestId("quick-stock").click();
-      await expect(page.getByTestId("quick-target-0")).toHaveValue("5");
-      await expect(page.getByTestId("quick-delta-0")).toHaveValue("0");
-      await page.getByTestId("quick-delta-0").fill("2");
-      await expect(page.getByTestId("quick-target-0")).toHaveValue("7");
-      await page.getByTestId("quick-save").click();
-      await expect(page.getByTestId("product-quick-edit")).toHaveCount(0);
-      await single.getByTestId("quick-stock").click();
-      await page.getByTestId("quick-target-0").fill("0");
-      await expect(page.getByTestId("quick-delta-0")).toHaveValue("-7");
-      await page.getByTestId("quick-save").click();
-      await expect(page.getByTestId("product-quick-edit")).toHaveCount(0);
+      await single.getByRole('link', { name: 'Edit', exact: true }).click();
+      await page.getByTestId('catalog-common-price').fill('80');
+      await saveSigned();
       await page.reload();
-      await single.getByTestId("quick-stock").click();
-      await expect(page.getByTestId("quick-target-0")).toHaveValue("0");
-      await page.keyboard.press("Escape");
-      await expect(single.getByTestId("quick-stock")).toBeFocused();
+      await expect(page.getByTestId('catalog-common-price')).toHaveValue('80');
+      expect(writes.slice(quick80Start).filter(w => w.path.endsWith('/document'))).toHaveLength(1);
+      await page.getByTestId('product-back').click();
+      await expect(single).toContainText('NT$80');
+      await single.getByRole('link', { name: 'Edit', exact: true }).click();
+      await page.getByRole('button', { name: 'Variants and stock', exact: true }).click();
+      await page.getByTestId('catalog-stock-0').click();
+      await expect(page.getByTestId('catalog-stock-tracked')).not.toBeChecked();
+      await expect(page.getByTestId('catalog-stock-total')).toHaveCount(0);
+      await page.getByTestId('catalog-stock-tracked').check();
+      await page.getByTestId('catalog-stock-total').fill('5');
+      await expect(page.getByText('Reason: Admin edit', { exact: true })).toBeVisible();
+      const stageStock = async () => {
+        await page.getByRole('button', { name: 'Check stock', exact: true }).click();
+        await page.getByRole('button', { name: 'Back to product editor', exact: true }).click();
+        await saveSigned(); await page.reload();
+        await page.getByRole('button', { name: 'Variants and stock', exact: true }).click();
+        await page.getByTestId('catalog-stock-0').click();
+      };
+      await stageStock();
+      await expect(page.getByTestId('catalog-stock-total')).toHaveValue('5');
+      await expect(page.getByTestId('catalog-stock-delta')).toHaveValue('0');
+      await page.getByTestId('catalog-stock-delta').fill('2');
+      await expect(page.getByTestId('catalog-stock-total')).toHaveValue('7');
+      await stageStock();
+      await expect(page.getByTestId('catalog-stock-total')).toHaveValue('7');
+      await page.getByTestId('catalog-stock-total').fill('0');
+      await expect(page.getByTestId('catalog-stock-delta')).toHaveValue('-7');
+      await stageStock();
+      await expect(page.getByTestId('catalog-stock-total')).toHaveValue('0');
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId('catalog-stock-0')).toBeFocused();
       const matrixId = /products\/([0-9a-f-]{36})/.exec(matrixHref!)![1];
+      await page.getByTestId('product-back').click();
       const matrix = page.getByTestId(`product-row-${matrixId}`);
-      await matrix.getByTestId("quick-price").click();
-      await expect(page.locator('[data-testid^="quick-sku-"]')).toHaveCount(12);
-      await page.getByTestId("quick-price-1").fill("81");
-      await page.getByTestId("quick-save").click();
-      await expect(page.getByTestId("product-quick-edit")).toHaveCount(0);
-      await page.reload();
-      await matrix.getByTestId("quick-price").click();
-      await expect(page.getByTestId("quick-price-1")).toHaveValue("81");
-      await page.keyboard.press("Escape");
-      ledger.push({
-        page: "list",
-        control: "single/multi SKU pencils, inventory delta and zero",
-        action: "click fill Enter Escape reload",
-        expected:
-          "one patch per save, stock0 persists, twelve-SKU popover and focus return",
-        actual: "PASS",
-      });
+      await matrix.getByRole('link', { name: 'Edit', exact: true }).click();
+      await page.getByRole('button', { name: 'Variants and stock', exact: true }).click();
+      await expect(page.locator('[data-testid^="catalog-variant-"]')).toHaveCount(12);
+      await page.getByTestId('catalog-variant-1').locator('summary').click();
+      await page.getByTestId('catalog-price-1').fill('81');
+      await page.getByRole('button', { name: 'Back to product editor', exact: true }).click();
+      await saveSigned(); await page.reload();
+      await page.getByRole('button', { name: 'Variants and stock', exact: true }).click();
+      await page.getByTestId('catalog-variant-1').locator('summary').click();
+      await expect(page.getByTestId('catalog-price-1')).toHaveValue('81');
+      await page.getByRole('button', { name: 'Back to product editor', exact: true }).click();
+      // Opt back into the full matrix controls for the unchanged legacy matrix gates below.
+      await openAdvancedProductEditor(page);
+      ledger.push({ page: 'list → edit → review', control: 'signed single/multi SKU price, reasoned stock adjustment and zero',
+        action: 'click fill review save reload Escape', expected: 'one patch per price save; stock5→7→0 persists; twelve SKU identities and focus return', actual: 'PASS' });
       // Same saved document: verify edit navigation/status at the requested six locale/viewports,
       // with only a local unsaved draft and no new transaction or count-changing fixture.
       for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const [width, height] of [[1440, 900], [390, 844]]) {
@@ -1987,10 +2000,8 @@ export function registerProductEditorAcceptance() {
         await route.abort("failed");
       });
       const beforeUnknown = writes.length;
-      await page
-        .getByTestId(`product-row-${id}`)
-        .getByRole("button", { name: "Copy", exact: true })
-        .click();
+      await selectProductForCopy(page, id);
+      await page.getByTestId("products-copy-selected").click();
       await expect(
         page.getByRole("button", {
           name: productEditorCopy.en.retry,
@@ -2008,9 +2019,7 @@ export function registerProductEditorAcceptance() {
       await page.getByTestId("product-new").click();
       await expect(page).toHaveURL(recoveryURL);
       await expect(
-        page
-          .getByTestId(`product-row-${id}`)
-          .getByRole("button", { name: "Copy", exact: true }),
+        page.getByTestId("products-copy-selected"),
       ).toBeDisabled();
       expect(
         writes

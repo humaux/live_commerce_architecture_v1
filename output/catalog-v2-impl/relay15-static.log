@@ -1,0 +1,3 @@
+node --check tests/admin/catalog-v2-simplified.acceptance.ts: exit0
+git diff --check: exit0
+1c74a615cd3fa0bc833ec01c23c842ff88f8aa1c82f5bf518a914420c732172a  tests/admin/catalog-v2-simplified.acceptance.ts
