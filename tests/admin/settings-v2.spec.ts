@@ -14,6 +14,7 @@ const copy = {
 // This is a helper, deliberately called by the existing test rather than registering
 // another test: the Go fixture independently requires exactly one session/store.
 export async function settingsV2Acceptance(page: Page, store: string, testInfo: TestInfo) {
+  await noMarketAcceptance(page, store, testInfo);
   const path = `/en/settings?store=${store}`;
   await page.setViewportSize({ width: 390, height: 844 });
   for (const [locale, c] of Object.entries(copy)) {
@@ -578,6 +579,176 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await deliverySwitches(page, store, path);
   await paritySettingsAcceptance(page, store, testInfo);
   await page.setViewportSize({ width: 1586, height: 992 });
+}
+
+/** AD-05: MOCK discovery/receipts; every merchant mutation starts with a real click. */
+async function noMarketAcceptance(source: Page, store: string, testInfo: TestInfo) {
+  const forbidden = /市場|市场|market|銷售地區/i;
+  const ledger: Array<{ scenario: string; locale: string; control: string; expected: string; actual: string }> = [];
+  const locales = [
+    { locale: "en", edit: "Edit settings", next: "Continue", delivery: "Delivery", overview: "Back to overview, keep draft" },
+    { locale: "zh-TW", edit: "編輯設定", next: "繼續", delivery: "配送", overview: "返回總覽，保留草稿" },
+    { locale: "zh-CN", edit: "编辑设置", next: "继续", delivery: "配送", overview: "返回概览，保留草稿" },
+  ] as const;
+  try {
+    for (const scenario of ["zero", "three"] as const) {
+      for (const c of locales) {
+        // MOCK-only fixture state, independent of the REAL_PG harness store.
+        // New tabs isolate per-tab drafts without editing browser storage.
+        const page = await source.context().newPage();
+        const ids = ["80000000-0000-4000-8000-000000000031", "80000000-0000-4000-8000-000000000032", "80000000-0000-4000-8000-000000000033"];
+        const target = ids[2];
+        const markets: Record<string, unknown>[] = scenario === "zero" ? [] : ids.map((id, i) => ({
+          id, code: ["legacy_oldest", "legacy_other", "tw"][i], name: ["Legacy oldest", "Legacy other", "台灣"][i],
+          currency: "TWD", active: true, version: 1, created_at: `2026-10-0${i + 1}T00:00:00Z`,
+        }));
+        const services = new Map<string, Record<string, unknown>>();
+        const policies = new Map<string, Record<string, unknown>>();
+        const writes: Array<{ path: string; body: Record<string, unknown> }> = [];
+        const receipts = new Map<string, { bytes: string; value: Record<string, unknown> }>();
+        const base = `markets/${target}/countries/TW/delivery-services/home`;
+        if (scenario === "three") {
+          policies.set(`${base}/policy`, { market_id: target, country: "TW", method: "delivery:home", currency: "TWD", version: 3,
+            enabled: true, shipping_mode: "country_flat", shipping_minor: 0, tax_mode: "none", tax_basis: "goods", tax_rate_bps: 0, quote_ttl_seconds: 300 });
+          services.set(base, { market_id: target, country: "TW", code: "home", name_hans: "送货上门", name_hant: "宅配", name_en: "Home delivery",
+            delivery_kind: "home", mode: "MANUAL", currency: "TWD", version: 2, policy_version: 3, policy_method: "delivery:home", enabled: false, visible: true, sort_order: 10 });
+        }
+        const pattern = `**/api/stores/${store}/markets**`;
+        await page.route(pattern, async route => {
+          const request = route.request(), url = new URL(request.url());
+          const path = url.pathname.split(`/api/stores/${store}/`)[1];
+          const reply = (value: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(value) });
+          if (request.method() === "GET") {
+            // The preferred tw row is deliberately on page two. Choosing the
+            // first row/page must not edit either legacy market.
+            if (path === "markets") return reply(scenario === "three" && !url.searchParams.get("cursor")
+              ? { items: markets.slice(0, 2), next_cursor: "ad05-next" }
+              : { items: scenario === "three" ? markets.slice(2) : markets, next_cursor: "" });
+            if (path.endsWith("/delivery-services")) return reply({ items: [...services.values()].filter(s => path.startsWith(`markets/${s.market_id}/`)), next_cursor: "" });
+            if (path.endsWith("/payment-methods")) return reply({ items: [], next_cursor: "" });
+            if (policies.has(path)) return reply(policies.get(path));
+            if (services.has(path)) return reply(services.get(path));
+            return reply({ code: "not_found", request_id: "ad05-mock-absent", retryable: false, details: {} }, 404);
+          }
+          const input = request.postDataJSON() as Record<string, unknown>;
+          const key = request.headers()["idempotency-key"], bytes = request.postData() ?? "";
+          expect(key, "UI writes retain command identity").toBeTruthy();
+          writes.push({ path, body: input });
+          const prior = receipts.get(key);
+          if (prior) {
+            expect(bytes, "same-key retry retains the original bytes").toBe(prior.bytes);
+            return reply(prior.value);
+          }
+          let value: Record<string, unknown>;
+          if (path === "markets") {
+            expect(request.method()).toBe("POST");
+            expect(markets, "legacy stores never create an extra default").toHaveLength(0);
+            expect(input).toEqual({ code: "tw", name: "台灣", currency: "TWD" });
+            value = { ...input, id: target, active: true, version: 1 };
+            markets.push(value);
+          } else {
+            expect(request.method()).toBe("PUT");
+            expect(path, "every write targets the hidden tw row").toMatch(new RegExp(`^markets/${target}/countries/TW/delivery-services/`));
+            expect(input.market_id).toBe(target);
+            const collection = path.endsWith("/policy") ? policies : services;
+            const old = collection.get(path);
+            expect(input.expected_version).toBe(old?.version ?? 0);
+            if (!path.endsWith("/policy")) expect(policies.has(`${path}/policy`), "policy precedes delivery enable").toBe(true);
+            const { expected_version: _expected, configuration_ref: _reason, ...safe } = input;
+            value = { ...safe, version: Number(old?.version ?? 0) + 1,
+              ...(path.endsWith("/policy") ? {} : { currency: "TWD", policy_method: `delivery:${input.code}` }) };
+            collection.set(path, value);
+          }
+          receipts.set(key, { bytes, value });
+          return reply(value);
+        });
+        const wizard = page.getByTestId("settings-wizard");
+        const check = async (step: string) => {
+          await expect(wizard, `${scenario}/${c.locale}/${step}: no merchant-visible market wording`).not.toContainText(forbidden);
+          await expect(wizard.getByRole("combobox", { name: forbidden }), "no market selector, including its accessible name").toHaveCount(0);
+          await expect(page.getByTestId("settings-market-form")).toHaveCount(0);
+          for (const name of ["Market code", "Market name", "市場代碼", "市場名稱", "市场代码", "市场名称"]) await expect(wizard.getByLabel(name, { exact: true })).toHaveCount(0);
+          ledger.push({ scenario, locale: c.locale, control: step, expected: "No market copy, selector or create fields", actual: "PASS" });
+        };
+        try {
+          await page.goto(`/${c.locale}/settings?store=${store}`);
+          await expect(page.getByTestId("settings-v2-overview")).toBeVisible();
+          expect(writes, "opening settings is read-only").toHaveLength(0);
+          if (c.locale === "zh-TW") {
+            const shots = async (desktop: string, mobile: string) => {
+              for (const [id, width, height] of [[desktop, 1440, 900], [mobile, 390, 844]] as const) {
+                await page.setViewportSize({ width, height });
+                await page.screenshot({ path: testInfo.outputPath("parity", `${id}.png`), animations: "disabled" });
+              }
+            };
+            await shots("1429-32319", "1429-32392");
+            await page.getByRole("button", { name: copy[c.locale].profile, exact: true }).click();
+            await expect(page.getByTestId("settings-v2-editor")).toBeVisible();
+            await expect(page.getByRole("checkbox", { name: "宅配", exact: true })).toBeVisible();
+            await shots("1429-32465", "1429-32623");
+            await page.getByRole("button", { name: c.overview, exact: true }).click();
+          }
+          await page.getByRole("button", { name: c.edit, exact: true }).click();
+          await expect(page.getByTestId("metaconnect-card")).toBeVisible();
+          await check("1: overview");
+          await page.getByRole("button", { name: c.next, exact: true }).click();
+          await check("2: delivery options");
+          await page.getByRole("button", { name: c.next, exact: true }).click();
+          await expect(page.locator(".settings-steps [aria-current=step]")).toHaveText(`3${c.delivery}`);
+          await check("3: delivery");
+          expect(writes, "step navigation must never create a market").toHaveLength(0);
+          // The policy/service forms already exist; use their real controls.
+          // A zero-market save must invoke AD-04 creation internally.
+          const enPage = c.locale === "en";
+          const labels = enPage
+            ? { code: "Stable service code", reference: "Configuration reference / reason", policy: "Enable pricing policy", savePolicy: "Save pricing policy", hans: "Simplified Chinese name", hant: "Traditional Chinese name", english: "English name", enable: "Enable delivery service", visible: "Visible to buyers", save: "Save delivery service" }
+            : c.locale === "zh-TW"
+              ? { code: "固定服務代碼", reference: "設定依據／原因", policy: "啟用價格政策", savePolicy: "儲存價格政策", hans: "簡體中文名稱", hant: "繁體中文名稱", english: "英文名稱", enable: "啟用配送服務", visible: "向買家顯示", save: "儲存配送服務" }
+              : { code: "固定服务代码", reference: "配置依据／原因", policy: "启用价格政策", savePolicy: "保存价格政策", hans: "简体中文名称", hant: "繁体中文名称", english: "英文名称", enable: "启用配送服务", visible: "向买家展示", save: "保存配送服务" };
+          if (scenario === "zero") {
+            await wizard.getByLabel(labels.code, { exact: true }).fill("home");
+            const policyForm = page.getByTestId("settings-policy-form");
+            await policyForm.getByLabel(labels.reference, { exact: true }).fill("AD-05 MOCK acceptance");
+            await policyForm.getByLabel(labels.policy, { exact: true }).check();
+            await policyForm.getByRole("button", { name: labels.savePolicy, exact: true }).click();
+          } else {
+            // Selection is a delivery-service choice; it never selects a market.
+            await wizard.getByLabel(enPage ? "Delivery service" : c.locale === "zh-TW" ? "配送服務" : "配送服务", { exact: true }).selectOption("home");
+          }
+          const form = page.getByTestId("settings-service-form");
+          await expect(form).toBeVisible();
+          await form.getByLabel(labels.hans, { exact: true }).fill("送货上门");
+          await form.getByLabel(labels.hant, { exact: true }).fill("宅配");
+          await form.getByLabel(labels.english, { exact: true }).fill("Home delivery");
+          await form.getByLabel(labels.enable, { exact: true }).check();
+          await form.getByLabel(labels.visible, { exact: true }).check();
+          await form.getByRole("button", { name: labels.save, exact: true }).click();
+          await expect.poll(() => services.get(base)?.enabled, "the click persists delivery in the MOCK server").toBe(true);
+          await check("3: saved delivery");
+          await form.getByRole("button", { name: c.next, exact: true }).click();
+          await check("4: status");
+          expect(markets).toHaveLength(scenario === "zero" ? 1 : 3);
+          expect(writes.filter(w => w.path === "markets")).toHaveLength(scenario === "zero" ? 1 : 0);
+          expect(writes.filter(w => w.path !== "markets").every(w => w.body.market_id === target)).toBe(true);
+          await page.reload();
+          await expect(page.getByTestId("settings-v2-overview")).toBeVisible();
+          await page.getByRole("button", { name: c.edit, exact: true }).click();
+          await expect(wizard.locator(".settings-steps [aria-current=step]")).toContainText("4");
+          await check("4: refreshed status");
+          await wizard.locator(".settings-steps button").nth(2).click();
+          await wizard.getByLabel(enPage ? "Delivery service" : c.locale === "zh-TW" ? "配送服務" : "配送服务", { exact: true }).selectOption("home");
+          await expect(form.getByLabel(labels.enable, { exact: true })).toBeChecked();
+          await check("3: refreshed delivery");
+          ledger.push({ scenario, locale: c.locale, control: labels.save, expected: "Delivery remains enabled after refresh; only tw changed", actual: "PASS" });
+        } finally {
+          await page.unroute(pattern);
+          await page.close();
+        }
+      }
+    }
+  } finally {
+    await testInfo.attach("ad05-click-ledger.json", { body: JSON.stringify(ledger), contentType: "application/json" });
+  }
 }
 
 /** AD-04: MOCK zero-market delivery on the real route; no production/provider calls. */
