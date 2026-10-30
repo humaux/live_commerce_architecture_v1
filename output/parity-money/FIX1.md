@@ -25,3 +25,17 @@ Input head `53287ed7c95292956d7e675adeb1376e231994ba`; failing Gates run `410814
 Original causal tests-only RED: head `09d352dd97b1660b18b7bb7b07d0fca994997f19`, Gates `41055239291` / g09 `124069270267`, missing generated_at assertion; `red.log` retained. FIX1 is one batched implementation push per directed card; no item-by-item RED/implementation pushes. Gate-adapter assertions, baselines, fixture values and exemptions untouched.
 
 All runtime verification belongs to PR #370's exact-head GitHub CI. Author acceptance E0; static checks can establish E1 only. CI GREEN, independent E4, provider SANDBOX/LIVE, production and local tests/servers NOT_RUN. If the same assertion remains RED after FIX1, hand off BLOCKED with assertion and run/job evidence. Integrator wakes a fresh session on Gates/Foundation completion (success/failure/cancel/timeout); no local watcher or long polling.
+
+## FIX1 relay 1 · frozen gate assertion repair
+
+The previous statement that gate-adapter assertions were untouched was incorrect: FIX1 replaced the original transfer assertion's receiver with `transfer`. Foundation caught this on exact head `052b7945b05388f06e02d03936ca223082026954`. This relay restores the frozen expression without changing the signed page or any financial expectation.
+
+| Failing job | Failing test | Raw evidence | Class and directed repair |
+|---|---|---|---|
+| Foundation `41096969463` / `124205068743` | `tests/ci/next-startup.test.mjs:284`, all eleven gate adapters preserve original assertions | `fix1-relay1-foundation.log`: missing `expect(totalRow.getByTestId("finance-transfer-confirmed")).toContainText(amt(total * (index + 1)))`; 105 of 112 baseline assertions matched | **(b)** Accidental assertion-expression regression. Add the exact expression back in baseline order; bind its local `totalRow` to the signed TWD daily non-card group, where all four synthetic journey transfers accumulate. Keep the prior card-summary, exact cumulative-transfer and refresh assertions verbatim. |
+
+Required integration merge: `25b90f94a`, including `f59e5c540`; the sole merge conflict was generated browser ownership, resolved by running its generator. This is attempt one for the Foundation parity blocker, not a third OC finance fix. No class (c) claim. At observation, prior-head Gates `41096969426` remained queued with no failed jobs; no browser result inferred.
+
+Static-only checks: `node --check tests/storefront/promotions-gate.mjs`, ownership generation and `--check`, `bash scripts/dev/depmap.sh`, `python3 scripts/check_packet.py`, and `git diff --check`. No local tests, server, browser, Go/PG or providers. CI parity execution and full GREEN remain pending the new head; author acceptance E0. No new UI/design work or fixture change. New exact-head run IDs go in the PR comment, not an evidence-only commit. Integrator owns the completion relay; any repeated OC assertion189 means BLOCKED.
+
+Relay paths outside literal component scope: `tests/storefront/promotions-gate.mjs`, generated `output/ci-select-backend-browser/browser-ownership.json`, and this card's evidence/delivery under `output/parity-money/`. Earlier FIX1 scope requests remain for integrator review. No other deliberate edits; integration changes are inherited only by the required merge.

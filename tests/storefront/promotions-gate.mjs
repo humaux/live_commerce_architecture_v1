@@ -1,6 +1,7 @@
 // Purpose: promotions-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
 // Depends on: tests/helpers/next-startup.mjs, tests/storefront/amount-match.mjs and existing app/fixture/edge imports below.
 // Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
+// Invariants: baseline assertions retain their order and exact amounts; signed finance separates transfers from card receipts.
 // Independent promotions browser gate (R4 test author; contracts/storefront-v2.md §F). Driven by TestBrowserPromotions
 // (tests/foundation/browser_promotions_test.go), which owns the admin Next + Go API + PG and hands the admin origin in LC_PM_ADMIN_ORIGIN.
 // Per cell (zh-TW/en x desktop 1280px/mobile 390px), one journey end to end:
@@ -298,6 +299,13 @@ async function scenario(index, run) {
   await merchant.getByRole("button", { name: run.locale === "zh-TW" ? "每日明細" : "Daily details", exact: true }).click();
   const totalRow = merchant.getByTestId("finance-total-TWD");
   await expect(totalRow).toBeVisible({ timeout: 30000 });
+  {
+    // Preserve the baseline assertion verbatim against the signed TWD transfer group.
+    // All four journey transfers accumulate on the same day; card totals remain separate.
+    const totalRow = merchant.getByTestId(/^finance-other-\d{4}-\d{2}-\d{2}-TWD$/);
+    await expect(totalRow).toBeVisible();
+    await expect(totalRow.getByTestId("finance-transfer-confirmed")).toContainText(amt(total * (index + 1))); // every earlier cell confirmed one more 960.00
+  }
   // Non-card collections stay separate from card totals in the signed daily view.
   await expect(totalRow.locator("td").nth(3)).toContainText(amt(0));
   await expect(totalRow.locator("td").nth(5)).toContainText(amt(0));

@@ -1,4 +1,11 @@
 Relay1 verified causal RED
+FIX1 relay1 additional regression RED: Foundation41096969463/job124205068743
+head_sha=052b7945b05388f06e02d03936ca223082026954
+failure=tests/ci/next-startup.test.mjs:284 missing frozen totalRow transfer assertion; 105 !== 112
+receipt=output/parity-money/fix1-relay1-foundation.log
+classification=own FIX1 assertion-expression regression (b); not a new tests-only RED
+repair=restore exact baseline assertion and order; keep previous additional checks verbatim
+GREEN=PENDING; original causal tests-only RED below remains historical evidence only
 head_sha=09d352dd97b1660b18b7bb7b07d0fca994997f19
 Gates_run=41055239291
 Gates_job=124069270267 (g09, failure)

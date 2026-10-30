@@ -739,7 +739,7 @@
     "tests/storefront/offline-error.spec.ts": "bf531d759ba26fbb7731aa556a7de6c40a8e1686585e40a8250d62f1abe1969b",
     "tests/storefront/order-gate.mjs": "e5ebd56569c9e267751104355446cace55933ceb933d532620944bba77732093",
     "tests/storefront/privacy-buyer.mjs": "bd6d26ec72354141bcdf319ef4c137e6ca5d9d7709a4b42ddef0891a3204cedc",
-    "tests/storefront/promotions-gate.mjs": "4a3dbd3c31df07666bdcef64cca4e1586dd30ff19ba3b04e7723c429508ef59f",
+    "tests/storefront/promotions-gate.mjs": "38ac08ea1e7e18586a12c627aa763e426500c94cc7f16fdd6e29cb3c4b790276",
     "tests/storefront/refund-buyer.mjs": "e89297f2997f0153b811175d7c00718dec9657de3e606b759512248ca53acaca",
     "tests/storefront/shipment-buyer.mjs": "bedeb90babda691f1db89879711ffbdc0a29da2b476772eb367f00d5e1faf1db",
     "tests/storefront/shop-fake-api.mjs": "6889624193e209e269d43dd8b84122b7301239c10f512ed2bd88d0ea90b5d39a",

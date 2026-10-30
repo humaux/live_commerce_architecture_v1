@@ -1,0 +1,13 @@
+PARITY-MONEY-FIX1 relay1 static receipts (E1 only)
+source=tests/storefront/promotions-gate.mjs
+sha256=38ac08ea1e7e18586a12c627aa763e426500c94cc7f16fdd6e29cb3c4b790276
+node --check tests/storefront/promotions-gate.mjs: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0
+node scripts/dev/derive-browser-ownership.mjs --check: exit0
+bash scripts/dev/depmap.sh: exit0, no diff
+python3 scripts/check_packet.py: exit0 PASS_PACKET_STRUCTURE_ONLY
+git diff --check: exit0
+Packet generated timestamp restored; no unrelated generated output retained.
+Local tests/servers/browser/PG/provider/production: NOT_RUN
+CI GREEN/E3 and independent E4: PENDING
+Integrator relays exact-head Gates/Foundation completion; no local watcher.
