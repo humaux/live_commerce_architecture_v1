@@ -305,8 +305,8 @@ test("MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists
   });
   // A refresh re-reads the order: the shipped head and the snapshot pickup store both survive.
   await page.reload(); await revealSavedFacts(page);
-  await expect(page.getByTestId("orders-list")).toBeVisible();
-  const after = await expand(page, cvsOrder);
+  await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label", new RegExp(cvsOrder));
+  const after = page.getByTestId("order-facts");
   await expect(after.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
   await expect(after).toContainText(cvsTracking);
   await expect(after).toContainText(cvsPickupName);

@@ -59,7 +59,7 @@ type ParityPage = Omit<OrdersDesignPage, "items"> & { items: Array<OrdersDesignP
 }> };
 
 async function parityShot(page: Page, info: TestInfo, frame: string) {
-  const file = info.outputPath("parity", `${frame}.png`);
+  const file = info.outputPath("parity", `${frame.replaceAll(":", "-")}.png`);
   await mkdir(resolve(file, ".."), { recursive: true });
   await screenshot(page, file);
   await info.attach(`parity/${frame}.png`, { path: file, contentType: "image/png" });

@@ -153,6 +153,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
         page.on("response", (response) => { if (new URL(response.url()).pathname === endpoint) statuses.push(response.status()); });
         page.on("download", (download) => downloads.push(download.suggestedFilename()));
         await page.goto(`/${locale}/${route}`);
+        if (kind === "orders") await page.getByTestId("orders-more-filters").click();
         const control = page.getByTestId(kind === "orders" ? "orders-export" : "finance-csv");
         await expect(control).toBeVisible();
         await age(owner); // Fixture preparation only; the export itself is a real user click.
