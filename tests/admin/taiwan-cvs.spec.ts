@@ -69,6 +69,10 @@ async function openOrders(page: Page, locale: string) {
   if(await more.getAttribute("aria-expanded")==="false") await more.click();
 }
 async function expand(page: Page, id: string): Promise<Locator> {
+  // Standalone details replace the list; return through the seller's control before choosing another order.
+  const back = page.getByTestId("order-detail-back");
+  if (await back.count()) await back.click();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   for (let pageNo = 0; pageNo < 5; pageNo++) {
     const button = page.getByTestId(`order-expand-${id}`);
     if (await button.count()) {

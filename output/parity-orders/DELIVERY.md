@@ -256,3 +256,20 @@ Root causes and changes: generic signed-control font inheritance defeated the mo
 Outside original paths this relay: tests/ui/{click-sweep,visual-audit}.mjs (orders-only dynamic path substitution), generated output/ci-select-backend-browser/browser-ownership.json and output/parity-orders/{DELIVERY.md,relay3-ci.log,relay3-static.log}. Integrator approval/review requested in PR; no other app/backend/shared contract changes. depmap regenerated unchanged. No new/renamed/deleted spec or route, so no integration merge was needed.
 
 E1 static checks exit0: node syntax, strict tsc, ownership derive/check, depmap, packet structure and diff; relay3-static.log. Temporary dependency symlinks removed. UI runtime, refreshed screenshots/density, independent frame comparison and GREEN await new own-head CI; author assessmentE0. No local tests/servers/browser/PG/containers, merge, auto-merge, production. Existing causal tests-only RED in red.log remains unchanged. Final run ids will be posted in a PR comment without an evidence-only commit. Integrator owns completion/failure/cancellation wakeup.
+
+
+## RELAY4 — standalone-detail navigation in TCV08, 2026-10-30
+
+Authority: current implementation card RELAY4 and the MOU presentation-migration ruling; repository AGENTS.md and 架构.md §§0,1,2,26,27; existing signed standalone detail and its native Back control. Humaux tools unavailable; no store/canvas claim.
+
+Current failed CI is native head `3ec3cae92aff9a73785f1a6550e8867cd810e676`, Gates `41070105635` / WebKit job `124115129799`, tested synthetic merge `cb9f4843ca401de2f22b647553f7dab2a84efe79`. Artifact `12987382687` proves TCV08 at taiwan-cvs.spec.ts:244 calls expand from the UNKNOWN standalone detail. The helper still expects old inline-table pagination, so `orders-next` is absent and its existing enabled assertion fails at line82. Create and all six locale/viewport print flows already ran before this failure. This is implementation regression evidence, separate from the original tests-only causal RED in red.log.
+
+Targeted attempt1 for this blocker adds a real native Back click and an explicit visible-list assertion before the existing order selection loop. All existing assertions, cases, pagination bounds, provider calls, financial checks and timeouts remain unchanged. No application code or shipping route changes. Existing expand callers were inspected; the offline-checkout helper always follows openOrders and needs no change.
+
+| Click path | Operation | Expected | Actual |
+|---|---|---|---|
+| TCV08 UNKNOWN → collection → cancellation → buyer-entered | Click native detail Back, assert list visible, then click next order | Every original CVS/collection/cancel assertion still runs through standalone detail | PENDING own-head CI; no local execution |
+
+Files outside original card write paths for integrator approval: `tests/admin/taiwan-cvs.spec.ts` (affected orders harness), generated `output/ci-select-backend-browser/browser-ownership.json`, task receipts `output/parity-orders/{DELIVERY.md,relay4-ci.log,relay4-static.log}`. Existing earlier scope exceptions remain listed in the PR body.
+
+E1 static: strict tsc, ownership regeneration/check and diff check exit0 (relay4-static.log, source SHA256 recorded). Prior-head Foundation success is not this fix's acceptance. Own assessment E0. GREEN, browser persistence, fresh screenshots and independent visual comparison are PENDING. Local tests/servers/browser/PG/containers and production are NOT_RUN. No task server/process remains; dependency symlinks removed. Integrator owns wakeup on the new Gates/Foundation workflow IDs, recorded after this push. No merge/auto-merge/status posting or evidence-only push.
