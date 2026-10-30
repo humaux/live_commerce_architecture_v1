@@ -1,4 +1,7 @@
-// W0 route metadata only; data/authorization remain in the existing BFF and Go.
+// Purpose: Register order, after-sales and CVS-tool pages for shell navigation and access visibility.
+// Depends on: ../../route-types.ts; localized shell labels and executable browser specs.
+// Used by: apps/admin/src/routes.ts.
+// Invariants: only the order list appears in the rail; data/authorization remain in the existing BFF and Go.
 import type { RouteEntry } from "../../route-types.ts";
 export const ordersRoutes = [
   {
@@ -35,6 +38,17 @@ export const ordersRoutes = [
     // browser spec clicks (WorkspaceFrame). Reached from the orders list ("退貨與取消" link in OrderListFilters).
     nav: false,
     spec: "tests/admin/returns-ui.spec.ts",
+  },
+  {
+    id: "cvs-match",
+    path: "/orders/cvs-match",
+    group: "orders",
+    labelKey: "cvsMatch",
+    icon: "orders",
+    permission: "orders:read",
+    template: "workspace",
+    nav: false,
+    spec: "tests/admin/parity-order-ops.spec.ts",
   },
   {
     id: "cvs-print",

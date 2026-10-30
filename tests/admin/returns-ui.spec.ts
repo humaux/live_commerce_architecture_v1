@@ -255,6 +255,8 @@ test("W3-U5 returns page: RMA list, state filter links and the refund-gap row su
   await signedLogin(page);
   await page.goto(new URL(`/zh-TW/returns?store=${store}`, origin).toString());
   await expect(page.getByTestId("returns-page")).toBeVisible();
+  // Signed after-sales home opens requests explicitly; retain the same list/filter/gap persistence assertions.
+  await page.getByRole("button", { name: "查看售後申請", exact: true }).click();
   await expect(page.getByTestId("returns-list")).toBeVisible();
   // the RMAs from the flows above are listed, newest first
   await expect(page.locator('[data-testid^="returns-row-"]').first()).toBeVisible();
