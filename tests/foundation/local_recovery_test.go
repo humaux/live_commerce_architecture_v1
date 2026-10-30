@@ -1,9 +1,9 @@
 package foundation_test
 
-// Purpose: local logical restore and cold start of a populated database.
-// Depends on: lr fixtures, pq fixtures, rm2SeedReport, meta inbox fixtures, migrations.Apply.
+// Purpose: local logical restore and cold start of a populated database, with bounded native failure categories.
+// Depends on: Docker cp/exec, sha256sum, lr fixtures, pq fixtures, rm2SeedReport, meta inbox fixtures, migrations.Apply.
 // Used by: go test ./tests/foundation (gated by LC_TEST_DATABASE_ALLOWED).
-// Invariants: restore is row-identical and Apply on the target is idempotent. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
+// Invariants: copied restore inputs match host hashes; stderr stays restricted; restore is row-identical and Apply on the target is idempotent. PAY-RM2 phase 2b (0197, post_river/0026): see output/pay-rm2-p2b/test-contract-map.md.
 
 import (
 	"bytes"
@@ -64,12 +64,49 @@ func lrCommand(t *testing.T, timeout time.Duration, env []string, input io.Reade
 	return nil
 }
 
+func lrNativeFailureCategory(stderr []byte) string {
+	message := strings.ToLower(string(stderr))
+	for _, token := range []string{"unexpected EOF", "could not read input file", "not a valid archive", "already exists", "permission denied", "connection"} {
+		if strings.Contains(message, strings.ToLower(token)) {
+			return token
+		}
+	}
+	// PostgreSQL also inserts "from" in its archive read error.
+	if strings.Contains(message, "could not read from input file") {
+		return "could not read input file"
+	}
+	if strings.Contains(message, "does not appear to be a valid archive") {
+		return "not a valid archive"
+	}
+	return "other"
+}
+
+func TestLocalRecoveryNativeFailureCategory(t *testing.T) {
+	for _, tc := range []struct{ stderr, want string }{
+		{"pg_restore: unexpected EOF; synthetic-private-detail", "unexpected EOF"},
+		{"pg_restore: could not read input file: synthetic-private-detail", "could not read input file"},
+		{"pg_restore: could not read from input file: end of file", "could not read input file"},
+		{"pg_restore: not a valid archive: synthetic-private-detail", "not a valid archive"},
+		{"pg_restore: input file does not appear to be a valid archive", "not a valid archive"},
+		{"psql: role synthetic-role already exists", "already exists"},
+		{"pg_dump: PERMISSION DENIED for synthetic-table", "permission denied"},
+		{"pg_dumpall: connection to synthetic-host failed", "connection"},
+		{"synthetic-private-detail\n\x1b[31munknown error", "other"},
+		{"", "other"},
+	} {
+		if got := lrNativeFailureCategory([]byte(tc.stderr)); got != tc.want {
+			t.Errorf("category = %q, want %q", got, tc.want)
+		}
+	}
+}
+
 func lrCommandFailure(t *testing.T, name string, args []string, err error, stderr []byte) {
 	t.Helper()
-	if name == "docker" && len(args) > 2 && args[0] == "exec" && (args[2] == "pg_dumpall" || args[2] == "pg_dump") {
-		t.Fatalf("native %s failed: %v: %s", args[2], err, strings.TrimSpace(string(stderr)))
+	toolIndex := 2 // docker exec <container> <tool>; also recognize the old stdin form.
+	if len(args) > 1 && args[1] == "-i" {
+		toolIndex++
 	}
-	if name == "docker" && len(args) > 3 && args[0] == "exec" && args[1] == "-i" && (args[3] == "psql" || args[3] == "pg_restore") {
+	if name == "docker" && len(args) > toolIndex && args[0] == "exec" && (args[toolIndex] == "psql" || args[toolIndex] == "pg_restore" || args[toolIndex] == "pg_dump" || args[toolIndex] == "pg_dumpall") {
 		f, saveErr := os.CreateTemp("", "lc-recovery-native-stderr-*.log") // 0600; retained for root's bounded diagnosis.
 		if saveErr == nil {
 			_, saveErr = f.Write(stderr)
@@ -78,9 +115,9 @@ func lrCommandFailure(t *testing.T, name string, args []string, err error, stder
 			}
 		}
 		if saveErr != nil {
-			t.Fatalf("native %s failed: %v (stderr bytes=%d; evidence write failed: %v)", args[3], err, len(stderr), saveErr)
+			t.Fatalf("native %s failed: %v (CATEGORY=%q sha256=%s stderr bytes=%d; evidence write failed: %v)", args[toolIndex], err, lrNativeFailureCategory(stderr), lrDigest(string(stderr)), len(stderr), saveErr)
 		}
-		t.Fatalf("native %s failed: %v (restricted stderr=%s sha256=%s bytes=%d)", args[3], err, f.Name(), lrDigest(string(stderr)), len(stderr))
+		t.Fatalf("native %s failed: %v (CATEGORY=%q restricted stderr=%s sha256=%s bytes=%d)", args[toolIndex], err, lrNativeFailureCategory(stderr), f.Name(), lrDigest(string(stderr)), len(stderr))
 	}
 	t.Fatalf("%s failed: %v (stderr bytes=%d)", name, err, len(stderr))
 }
@@ -311,15 +348,36 @@ func lrDump(t *testing.T, c lrCluster, path string, args ...string) (string, int
 	return hash, size, time.Since(start)
 }
 
-func lrRestoreInput(t *testing.T, c lrCluster, path string, args ...string) time.Duration {
+func lrCopyRestoreInput(t *testing.T, c lrCluster, path, wantHash string) string {
 	t.Helper()
-	f, err := os.Open(path)
-	if err != nil {
-		t.Fatal(err)
+	if lrFileHashMust(t, path) != wantHash {
+		t.Fatal("native restore input changed before container copy")
 	}
-	defer f.Close()
+	dir := lrDocker(t, "exec", c.id, "mktemp", "-d", "/tmp/lc-recovery-XXXXXX")
+	containerPath := dir + "/" + filepath.Base(path)
+	t.Cleanup(func() {
+		lrDocker(t, "exec", c.id, "rm", "-f", "--", containerPath)
+		lrDocker(t, "exec", c.id, "rmdir", "--", dir)
+	})
+	lrDocker(t, "cp", path, c.id+":"+containerPath)
+	lrDocker(t, "exec", c.id, "chmod", "0600", containerPath)
+	sum := strings.Fields(lrDocker(t, "exec", c.id, "sha256sum", "--", containerPath))
+	if len(sum) != 2 || sum[0] != wantHash {
+		t.Fatal("copied native restore input hash differs from host artifact")
+	}
+	return containerPath
+}
+
+func lrRestoreInput(t *testing.T, c lrCluster, path, wantHash string, args ...string) time.Duration {
+	t.Helper()
+	containerPath := lrCopyRestoreInput(t, c, path, wantHash)
+	if args[0] == "psql" {
+		args = append(args, "--file", containerPath)
+	} else {
+		args = append(args, containerPath)
+	}
 	start := time.Now()
-	lrCommand(t, 90*time.Second, nil, f, io.Discard, "docker", append([]string{"exec", "-i", c.id}, args...)...)
+	lrCommand(t, 90*time.Second, nil, nil, io.Discard, "docker", append([]string{"exec", c.id}, args...)...)
 	return time.Since(start)
 }
 
@@ -716,12 +774,8 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	if passwordClauseSeen {
 		t.Fatal("native passwordless roles dump unexpectedly contains a PASSWORD clause")
 	}
-	archiveFile, err := os.Open(archivePath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	toc := lrCommand(t, 20*time.Second, nil, archiveFile, nil, "docker", "exec", "-i", source.id, "pg_restore", "--list")
-	_ = archiveFile.Close()
+	archiveInSource := lrCopyRestoreInput(t, source, archivePath, archiveHash)
+	toc := lrCommand(t, 20*time.Second, nil, nil, nil, "docker", "exec", source.id, "pg_restore", "--list", archiveInSource)
 	if !bytes.Contains(toc, []byte("TABLE DATA")) || !bytes.Contains(toc, []byte("SEQUENCE SET")) {
 		t.Fatal("native archive TOC incomplete")
 	}
@@ -769,11 +823,11 @@ func TestLocalRecoveryLogicalRestoreAndColdStart(t *testing.T) {
 	if err != nil || !bytes.Equal(rederived, derivedRoles) {
 		t.Fatal("derived roles provenance changed before restore", err)
 	}
-	rolesRestore := lrRestoreInput(t, target, derivedPath, "psql", "-X", "--set", "ON_ERROR_STOP=1", "-U", target.role, "-d", "lc_foundation_test")
+	rolesRestore := lrRestoreInput(t, target, derivedPath, derivedHash, "psql", "-X", "--set", "ON_ERROR_STOP=1", "-U", target.role, "-d", "lc_foundation_test")
 	if !lrCanConnect(target.dsn) || lrCanConnect(roleURL(t, target.dsn, target.role, source.password)) {
 		t.Fatal("native roles restore drifted independent target password or accepted source password")
 	}
-	archiveRestore := lrRestoreInput(t, target, archivePath, "pg_restore", "--single-transaction", "--exit-on-error", "-U", target.role, "-d", "lc_foundation_test")
+	archiveRestore := lrRestoreInput(t, target, archivePath, archiveHash, "pg_restore", "--single-transaction", "--exit-on-error", "-U", target.role, "-d", "lc_foundation_test")
 	t.Logf("native restore roles=%s archive=%s", rolesRestore, archiveRestore)
 	if lrEmpty(t, target) {
 		t.Fatal("strict restore returned success but target remained empty")

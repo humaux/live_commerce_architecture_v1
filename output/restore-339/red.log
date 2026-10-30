@@ -1,0 +1,14 @@
+RESTORE-339 historical failure evidence (not a new classifier RED)
+Source: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40983874479/job/123831384533
+Verified with: gh run view 40983874479 --job 123831384533 --log-failed
+Workflow: Gates (GitHub runners), pull_request
+Head: 0f13bd50fe9928c1c52e6862eff44c16e2b44a6c
+Job: 123831384533, gate (shard:g10)
+2026-10-30T01:17:36.1665931Z local_recovery_test.go:723: native pg_restore failed: exit status 1
+Restricted stderr SHA256: 02f1b8969244b437ce88bf28835efa8da6be32c004621d561c2df02edfce1ba4
+Restricted stderr bytes: 62 (raw content not retrieved)
+2026-10-30T01:17:36.4306699Z FAIL TestLocalRecoveryLogicalRestoreAndColdStart (6.30s)
+Failure occurs at pg_restore --list over docker exec -i stdin, before the target restores.
+Cause: UNKNOWN; short stdin stream is the integrator's hypothesis, not an observed stderr category.
+New tests-only RED: NOT_RUN. Card-specific step 5 requires one implementation push then stop.
+GREEN: PENDING PR CI on implementation head; historical neighbouring green is not current acceptance.
