@@ -184,7 +184,7 @@
     "tests/admin/returns-ui.spec.ts": "d54c3ac061abbf0b0e71864e2b8f3388e368e2f143579bcbc56865493ea9555c",
     "tests/admin/safe-json-cancel.test.ts": "ab24bd8a7156d66a0f738ec12cc24c6a742c947fd8bbe08f534a07f42c60e8ee",
     "tests/admin/settings-real.spec.ts": "eb3d8818387f05918077a48c6cc0f932ac04dc5d4ce2039a91122ba261a48a34",
-    "tests/admin/settings-v2.spec.ts": "12d23a6acf58df3bbffb49444b16b0cbc95c8bf1bc435d01508443d2b6049e23",
+    "tests/admin/settings-v2.spec.ts": "dc4b4f3db49cc5bcfdd3563606f0d4aa9e31f824a33eabf3e781908e86067859",
     "tests/admin/settlements.spec.ts": "fbf66fcae09219c01f5fa3e123755dfe2b0d94e9b488667fa9951317106a9bbb",
     "tests/admin/shell-architecture.test.mjs": "f324d97d97de3c8883a35523519c1f9b7ecc6a6a90c936e8e93114b3f2ce592b",
     "tests/admin/shell-browser.mjs": "ce5ebc5fa693f9f6ec56e5e85c9644a412f81192d7a27b2c3a19141e2444a056",

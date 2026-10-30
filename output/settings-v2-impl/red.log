@@ -472,3 +472,14 @@ Local E1: node --check tests/admin/settings-v2.spec.ts; git diff --check exit0.
 No product implementation changed. Causal RED PENDING own-head Gates workflow;
 run/job IDs will be added to this log on the implementation push after CI relay.
 NOT_RUN: local runtime tests/servers/browser/PG, E4, SANDBOX/LIVE/production.
+
+FIX13 setup repair (2026-10-30), tests-only phase
+Previous head: fee5d8ff0fd3901a5fdf7772b101c60b446a151e.
+Gates run 40984910325 / job 123834779971 (gate (bundle:07)): FAILURE.
+GitHub run/job status independently read with gh run view; integrator's FIX13
+relay identifies settings-real.spec.ts:28 -> settings-v2.spec.ts:206-208:
+removed row-level Copy timed out. This is SETUP FAILURE, NOT causal RED.
+Both Copy setups now select exactly their target row, expand native Advanced,
+then click products-copy-selected. POST predicates, discovery preconditions,
+behavioural assertions, fixtures and product implementation remain unchanged.
+Current-head causal RED and GREEN PENDING CI; no runtime verification locally.

@@ -205,7 +205,9 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await createObserver.goto(`/en/products?store=${store}`);
   const createCopied = createObserver.waitForResponse(r => r.request().method() === "POST" &&
     new URL(r.url()).pathname === `/api/stores/${store}/products/${createdProduct.id}/copy`);
-  await createObserver.getByTestId(`product-row-${createdProduct.id}`).getByRole("button", { name: "Copy", exact: true }).click();
+  await createObserver.getByTestId(`product-row-${createdProduct.id}`).getByRole("checkbox").click();
+  await createObserver.getByTestId("products-advanced").click();
+  await createObserver.getByTestId("products-copy-selected").click();
   const createCopyResponse = await createCopied;
   expect(createCopyResponse.ok()).toBe(true);
   const competingProduct = (await createCopyResponse.json()).id as string;
@@ -256,7 +258,9 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await catalog.goto(`/en/products?store=${store}`);
   const copied = catalog.waitForResponse(r => r.request().method() === "POST" &&
     new URL(r.url()).pathname === `/api/stores/${store}/products/${productA}/copy`);
-  await catalog.getByTestId(`product-row-${productA}`).getByRole("button", { name: "Copy", exact: true }).click();
+  await catalog.getByTestId(`product-row-${productA}`).getByRole("checkbox").click();
+  await catalog.getByTestId("products-advanced").click();
+  await catalog.getByTestId("products-copy-selected").click();
   const copiedResponse = await copied;
   expect(copiedResponse.ok(), "Catalog creates a real newer draft B").toBe(true);
   const productB = (await copiedResponse.json()).id as string;

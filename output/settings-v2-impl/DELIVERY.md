@@ -1543,3 +1543,55 @@ relay: Foundation 90m, Gates bundle 360m/member 150m. Assigned Codex UI author,
 exact runtime model/effort selector unavailable. No delegation/separate claim;
 parent untouched. Humaux problem stored; child canvas updated at
 integrator-sub-settings-v2-postcreate303. Implementation awaits causal CI RED.
+
+## FIX13 — repair Catalog Copy setup only (2026-10-30)
+
+Authority: integrator's FIX13 ruling in the current dispatch; current
+ProductList.tsx selection/Advanced/Copy controls. Prior head fee5d8ff0; pull
+--ff-only was already current. Fetched origin/r3/integration is already an
+ancestor (HEAD...origin/r3/integration = 31/0), so no merge was needed.
+Rollback: revert this isolated tests-only setup commit.
+
+Gates 40984910325 / gate (bundle:07) job 123834779971 failed at the removed
+row-level Copy control, per FIX13 relay; GitHub confirms failure at fee5d8ff0.
+That run is a setup failure, not causal RED. Both the new post-create scenario
+and earlier SKU recovery scenario now click only the target row's checkbox,
+open native Advanced and click products-copy-selected. Their existing POST
+predicates, both discovery preconditions and every behavioural assertion stay
+verbatim and in order. No fixture, implementation, import or dependency edge
+changed; depmap regeneration is unnecessary. Browser ownership is regenerated
+last. Outside-card paths: none; generated ownership is expressly authorized.
+
+|Page/control|Operation|Expected|Actual|
+|---|---|---|---|
+|Catalog / acknowledged product row|checkbox click|only that row selected|PENDING CI|
+|Catalog / Advanced then Copy|native clicks|same product copy POST receipt|PENDING CI|
+|Catalog / earlier SKU recovery row|same native selection/Copy path|real newer draft B|PENDING CI|
+
+### UI PROCESS — BOURDIEU
+
+Existing Q1-Q6 verdicts remain applicable; task experience only, aesthetics
+UNKNOWN. This change restores the real merchant action used by the test.
+
+### UI PROCESS — PROJECT UNDERSTANDING
+
+Read AGENTS.md and architecture 0/1/2/26/27: PG remains authoritative, UI writes
+use real clicks, acceptance stays CI-only and independent. FIX13 limits this
+phase to setup repair; product recovery implementation awaits causal CI RED.
+
+### UI PROCESS — MOBBIN → EAGLE
+
+No visual change or new pattern; no reference import/query needed.
+
+### UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No design/component/prototype write. Existing guide, required-field parity and
+three-language copy tables remain applicable; no new visible product string.
+
+Current evidence: E0 authored repair; E1 syntax/ownership results recorded in
+PR handoff after static checks. CI RED/GREEN and E4 remain PENDING. NOT_RUN:
+local tests/servers/browser/PG (prohibited), provider SANDBOX/LIVE/deploy.
+No process/fixture started; pre-existing untracked evidence retained. Humaux
+tools are unavailable in this session: no store/canvas write claimed. Assigned
+worktree/branch only, no delegation. Integrator relays CI conclusion; existing
+Foundation 90m / Gates bundle 360m / member 150m limits remain unchanged.
