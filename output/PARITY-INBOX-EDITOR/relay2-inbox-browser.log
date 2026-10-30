@@ -1,0 +1,145 @@
+
+Running 88 tests using 1 worker
+
+(node:5415) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/inbox-bundle-ui.spec.ts:62:1 › INU09 flagged bundle copies actual M7 link through native clipboard and persists one token-free receipt (2.2s)
+(node:5558) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 zh-TW/1440 full A13 and real two-page customer-link CAS (5.0s)
+  ✓   3 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 zh-TW/390 full A13 and real two-page customer-link CAS (4.7s)
+  ✓   4 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 zh-CN/1440 full A13 and real two-page customer-link CAS (4.7s)
+  ✓   5 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 zh-CN/390 full A13 and real two-page customer-link CAS (4.6s)
+  ✓   6 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 en/1440 full A13 and real two-page customer-link CAS (4.2s)
+  ✓   7 tests/admin/inbox-customer-ui.spec.ts:81:3 › INU10 en/390 full A13 and real two-page customer-link CAS (4.3s)
+(node:5775) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   8 tests/admin/inbox-ui.spec.ts:110:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG (12.0s)
+(node:5921) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   9 tests/admin/inbox-ui.spec.ts:266:1 › INU02 inbox reader never POSTs; viewer cannot enter; cross-store thread is 404 (2.4s)
+  ✓  10 tests/admin/inbox-ui.spec.ts:302:1 › INU08 committed send with lost acknowledgment retries exact body/key once (2.3s)
+  ✓  11 tests/admin/inbox-ui.spec.ts:364:1 › INU03 closed message window and missing capability disable sends with visible reason (2.1s)
+  ✓  12 tests/admin/inbox-ui.spec.ts:392:1 › INU04 stale decrypted responses cannot repaint another conversation or store (2.2s)
+  ✓  13 tests/admin/inbox-ui.spec.ts:474:1 › INU05 native hide clears private thread; visible return reauthorizes before repaint (3.3s)
+  ✓  14 tests/admin/inbox-ui.spec.ts:592:3 › INU06 zh-TW desktop1440/mobile390 real controls and no overflow (2.3s)
+  ✓  15 tests/admin/inbox-ui.spec.ts:626:3 › INU07 zh-TW localized controls at1440/mobile390 (2.0s)
+  ✓  16 tests/admin/inbox-ui.spec.ts:592:3 › INU06 zh-CN desktop1440/mobile390 real controls and no overflow (2.3s)
+  ✓  17 tests/admin/inbox-ui.spec.ts:626:3 › INU07 zh-CN localized controls at1440/mobile390 (2.1s)
+  ✓  18 tests/admin/inbox-ui.spec.ts:592:3 › INU06 en desktop1440/mobile390 real controls and no overflow (2.4s)
+  ✓  19 tests/admin/inbox-ui.spec.ts:626:3 › INU07 en localized controls at1440/mobile390 (2.1s)
+(node:6614) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  20 tests/admin/inbox-v2-ui.spec.ts:242:3 › INV2 zh-TW main (3.1s)
+  ✓  21 tests/admin/inbox-v2-ui.spec.ts:309:5 › INV2 zh-TW ACK before first projection visible (1.5s)
+  ✓  22 tests/admin/inbox-v2-ui.spec.ts:309:5 › INV2 zh-TW ACK before first projection omitted (1.5s)
+  ✓  23 tests/admin/inbox-v2-ui.spec.ts:346:5 › INV2 zh-TW successful ACK then distinct queued rejection (1.8s)
+  ✓  24 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 zh-TW local ACK older queued with-completion (1.8s)
+  ✓  25 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 zh-TW local ACK older queued observed-before-completion (1.8s)
+  ✓  26 tests/admin/inbox-v2-ui.spec.ts:431:5 › INV2 zh-TW completed ACK before later queued (3.2s)
+  ✓  27 tests/admin/inbox-v2-ui.spec.ts:346:5 › INV2 zh-TW successful ACK then distinct blocked rejection (1.8s)
+  ✓  28 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 zh-TW local ACK older blocked with-completion (1.9s)
+  ✓  29 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 zh-TW local ACK older blocked observed-before-completion (1.8s)
+  ✓  30 tests/admin/inbox-v2-ui.spec.ts:431:5 › INV2 zh-TW completed ACK before later blocked (3.2s)
+  ✓  31 tests/admin/inbox-v2-ui.spec.ts:533:3 › INV2 zh-TW ACK without operation read permission (5.6s)
+  ✓  32 tests/admin/inbox-v2-ui.spec.ts:588:3 › INV2 zh-TW states (4.2s)
+  ✓  33 tests/admin/inbox-v2-ui.spec.ts:242:3 › INV2 zh-CN main (2.7s)
+  ✓  34 tests/admin/inbox-v2-ui.spec.ts:309:5 › INV2 zh-CN ACK before first projection visible (1.4s)
+  ✓  35 tests/admin/inbox-v2-ui.spec.ts:309:5 › INV2 zh-CN ACK before first projection omitted (1.5s)
+  ✓  36 tests/admin/inbox-v2-ui.spec.ts:346:5 › INV2 zh-CN successful ACK then distinct queued rejection (1.8s)
+  ✓  37 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 zh-CN local ACK older queued with-completion (1.9s)
+  ✓  38 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 zh-CN local ACK older queued observed-before-completion (1.8s)
+  ✓  39 tests/admin/inbox-v2-ui.spec.ts:431:5 › INV2 zh-CN completed ACK before later queued (3.2s)
+  ✓  40 tests/admin/inbox-v2-ui.spec.ts:346:5 › INV2 zh-CN successful ACK then distinct blocked rejection (1.8s)
+  ✓  41 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 zh-CN local ACK older blocked with-completion (1.8s)
+  ✓  42 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 zh-CN local ACK older blocked observed-before-completion (1.8s)
+  ✓  43 tests/admin/inbox-v2-ui.spec.ts:431:5 › INV2 zh-CN completed ACK before later blocked (3.1s)
+  ✓  44 tests/admin/inbox-v2-ui.spec.ts:533:3 › INV2 zh-CN ACK without operation read permission (5.7s)
+  ✓  45 tests/admin/inbox-v2-ui.spec.ts:588:3 › INV2 zh-CN states (4.3s)
+  ✓  46 tests/admin/inbox-v2-ui.spec.ts:242:3 › INV2 en main (2.7s)
+  ✓  47 tests/admin/inbox-v2-ui.spec.ts:309:5 › INV2 en ACK before first projection visible (1.4s)
+  ✓  48 tests/admin/inbox-v2-ui.spec.ts:309:5 › INV2 en ACK before first projection omitted (1.4s)
+  ✓  49 tests/admin/inbox-v2-ui.spec.ts:346:5 › INV2 en successful ACK then distinct queued rejection (1.7s)
+  ✓  50 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 en local ACK older queued with-completion (1.8s)
+  ✓  51 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 en local ACK older queued observed-before-completion (1.7s)
+  ✓  52 tests/admin/inbox-v2-ui.spec.ts:431:5 › INV2 en completed ACK before later queued (3.1s)
+  ✓  53 tests/admin/inbox-v2-ui.spec.ts:346:5 › INV2 en successful ACK then distinct blocked rejection (1.7s)
+  ✓  54 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 en local ACK older blocked with-completion (1.8s)
+  ✓  55 tests/admin/inbox-v2-ui.spec.ts:382:7 › INV2 en local ACK older blocked observed-before-completion (1.8s)
+  ✓  56 tests/admin/inbox-v2-ui.spec.ts:431:5 › INV2 en completed ACK before later blocked (3.1s)
+  ✓  57 tests/admin/inbox-v2-ui.spec.ts:533:3 › INV2 en ACK without operation read permission (5.4s)
+  ✓  58 tests/admin/inbox-v2-ui.spec.ts:588:3 › INV2 en states (4.3s)
+  ✓  59 tests/admin/inbox-v2-ui.spec.ts:717:3 › PARITY inbox zh-TW: signed list controls and no legacy toolbar (1.2s)
+  ✓  60 tests/admin/inbox-v2-ui.spec.ts:733:3 › PARITY inbox zh-TW: own sent DM reopens follow-ups without another inbound (1.6s)
+  ✓  61 tests/admin/inbox-v2-ui.spec.ts:717:3 › PARITY inbox zh-CN: signed list controls and no legacy toolbar (1.1s)
+  ✓  62 tests/admin/inbox-v2-ui.spec.ts:733:3 › PARITY inbox zh-CN: own sent DM reopens follow-ups without another inbound (1.7s)
+  ✓  63 tests/admin/inbox-v2-ui.spec.ts:717:3 › PARITY inbox en: signed list controls and no legacy toolbar (1.1s)
+  ✓  64 tests/admin/inbox-v2-ui.spec.ts:733:3 › PARITY inbox en: own sent DM reopens follow-ups without another inbound (1.5s)
+  ✓  65 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop connection A: signed send state (1.3s)
+  ✓  66 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop closed A: signed send state (1.2s)
+  ✓  67 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop permission A: signed send state (1.2s)
+  ✓  68 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop failed A: signed send state (1.4s)
+  ✓  69 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop queued A: signed send state (1.2s)
+  ✓  70 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop queued B: signed send state (1.3s)
+  ✓  71 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop unknown A: signed send state (1.3s)
+  ✓  72 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop unknown B: signed send state (1.3s)
+  ✓  73 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop still A: signed send state (1.4s)
+  ✓  74 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop still B: signed send state (1.4s)
+  ✓  75 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox desktop sent A: signed send state (1.3s)
+  ✓  76 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile connection A: signed send state (1.7s)
+  ✓  77 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile closed A: signed send state (1.7s)
+  ✓  78 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile permission A: signed send state (1.7s)
+  ✓  79 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile failed A: signed send state (1.9s)
+  ✓  80 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile queued A: signed send state (1.7s)
+  ✓  81 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile queued B: signed send state (1.7s)
+  ✓  82 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile unknown A: signed send state (1.8s)
+  ✓  83 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile unknown B: signed send state (1.8s)
+  ✓  84 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile still A: signed send state (1.9s)
+  ✓  85 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile still B: signed send state (1.9s)
+  ✓  86 tests/admin/inbox-v2-ui.spec.ts:763:5 › PARITY inbox mobile sent A: signed send state (1.8s)
+  ✓  87 tests/admin/inbox-v2-ui.spec.ts:806:3 › PARITY inbox desktop: fixed filter slots, list/thread and help frames (2.7s)
+  ✓  88 tests/admin/inbox-v2-ui.spec.ts:806:3 › PARITY inbox mobile: fixed filter slots, list/thread and help frames (2.6s)
+
+
+  1) tests/admin/inbox-ui.spec.ts:110:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('conversation-e83c5170-1e1f-4823-b8d0-6c908492fd26')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('conversation-e83c5170-1e1f-4823-b8d0-6c908492fd26') with timeout 10000ms
+      - waiting for getByTestId('conversation-e83c5170-1e1f-4823-b8d0-6c908492fd26')
+
+
+      132 |   await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
+      133 |   // All preserves Messenger and Instagram together; Awaiting-reply picker was replaced by signed task chips.
+    > 134 |   await expect(page.getByTestId(`conversation-${ids.bundle}`)).toBeVisible();
+          |                                                                ^
+      135 |   // #242 item 2: prepare a distinct read conversation through the real A9/A10 UI path.
+      136 |   await filter(page, "all");
+      137 |   await expect(page.getByTestId(`conversation-${ids.closed}`)).toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-ui.spec.ts:134:64
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T173325.951265296/results/inbox-ui-INU01-live-operat-7d6c2-send-release-persists-in-PG/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/inbox-ui/20261030T173325.951265296/results/inbox-ui-INU01-live-operat-7d6c2-send-release-persists-in-PG/error-context.md
+
+    Error Context: output/playwright/inbox-ui/20261030T173325.951265296/results/inbox-ui-INU01-live-operat-7d6c2-send-release-persists-in-PG/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/inbox-ui/20261030T173325.951265296/results/inbox-ui-INU01-live-operat-7d6c2-send-release-persists-in-PG/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/inbox-ui/20261030T173325.951265296/results/inbox-ui-INU01-live-operat-7d6c2-send-release-persists-in-PG/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/inbox-ui.spec.ts:110:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG 
+  87 passed (3.6m)

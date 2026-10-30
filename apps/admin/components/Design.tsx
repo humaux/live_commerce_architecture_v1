@@ -57,7 +57,7 @@ import type { MediaOps } from "./DesignMedia";
 import "./orders.css";
 import "./design.css";
 
-type Tab = "hub" | "profile" | "nav" | "home" | "pages" | "versions" | "domains" | "review" | "result" | "published";
+type Tab = "hub" | "profile" | "nav" | "home" | "pages" | "versions" | "domains" | "review" | "result" | "published" | "preview";
 type Note = { kind: "ok" | "error"; text: string } | null;
 
 type Pending = { version: number; key: string; boundary: string; retries: number };
@@ -210,6 +210,7 @@ function Editor({
   const [receipt, setReceipt] = useState<VersionList['items'][number] | null>(null);
   const [publishedDoc, setPublishedDoc] = useState<DesignDocument | null>(null);
   const [resultError, setResultError] = useState('');
+  const [previewVersion, setPreviewVersion] = useState<number | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     let current = true;
@@ -457,6 +458,8 @@ function Editor({
       }
       tabWindow.opener = null;
       tabWindow.location.href = `${origin}/?preview=${encodeURIComponent(token.value.token)}`;
+      setPreviewVersion(token.value.draft_version);
+      setTab('preview');
       setNote({ kind: "ok", text: c.previewOpened });
     } catch {
       abandon(c.errors.retry_later);
@@ -531,30 +534,29 @@ function Editor({
     base !== 0 &&
     versions.items[0]?.kind === "publish" &&
     versions.items[0].source_version === base;
-  const status = dirty ? c.unsaved : base === 0 ? c.noDraft : c.saved;
   const p = catalogPresentationCopy[locale];
   const saveReason = busy ? p.busy : !dirty && base !== 0 ? p.noChanges : "";
   const publishReason = busy ? p.busy : pending ? c.publishPending : liveIsDraft ? p.alreadyPublished : "";
   return (
     <div className="design-editor" data-testid="design-screen">
       {tab !== 'hub' && <button type="button" data-testid="design-back" disabled={!!busy} onClick={() => setTab('hub')}>{c.editor.back}</button>}
-      <div className="design-toolbar" data-testid="design-toolbar" hidden={['review','result','published'].includes(tab)}>
+      {tab === 'hub' && <p className="design-subtitle">{c.editor.subtitle}</p>}
+      <div className="design-toolbar" data-testid="design-toolbar" hidden={['review','result','published','preview'].includes(tab)}>
         <div
           className="design-status"
           role="status"
           data-testid="design-status"
         >
-          <Badge className={!dirty && base !== 0 ? 'design-saved-badge' : undefined} tone={dirty ? "warning" : base === 0 ? "neutral" : "success"}>
-            {status}
-          </Badge>
+          {dirty && <><Badge tone="warning">{c.unsaved}</Badge>{' · '}</>}
           <span>
             {base === 0 ? c.noDraft : fill(c.draftVersion, { n: base })}
-          </span>
-          <span>
+          </span>{' · '}
+          <button type="button" className="design-version-link" data-testid="design-live-versions"
+            aria-label={c.editor.versions} disabled={!!busy} onClick={() => setTab('versions')}>
             {live === null
               ? c.neverPublished
               : fill(c.liveVersion, { n: live })}
-          </span>
+          </button>
         </div>
         <div className="design-actions">
           <button
@@ -611,6 +613,7 @@ function Editor({
             <strong>{c.editor.pending}</strong>
           </p>
           <p>{fill(c.publishPendingBody, { n: pending.version })}</p>
+          <p>{c.editor.pendingHelp}</p>
           <p>{live === null ? c.neverPublished : fill(c.liveVersion, { n: live })}</p>
           <p>{c.editor.scope}</p><p>{c.editor.unchanged}</p>
           <p>{address || c.editor.noAddress}{address && ` · ${c.editor.available}`}</p>
@@ -641,23 +644,29 @@ function Editor({
       )}
       {tab === 'hub' && <nav className="design-task-list" data-testid="design-hub" aria-label={c.editor.title}>
         {(['pages','home','nav','profile'] as const).map(id => <button key={id} type="button" data-testid={`design-task-${id}`} onClick={() => setTab(id)}>{c.editor[id]}</button>)}
-        <button type="button" data-testid="design-domains-open" onClick={() => setTab('domains')}>{c.editor.domains}</button>
-        <button type="button" data-testid="design-tab-versions" onClick={() => setTab('versions')}>{c.editor.versions}</button>
       </nav>}
+      {tab === 'hub' && <button type="button" data-testid="design-domains-open" onClick={() => setTab('domains')}>{c.editor.domains}</button>}
+      {tab === 'preview' && previewVersion !== null && <section className="design-panel" data-testid="design-preview-view">
+        <h2>{fill(c.editor.previewLabel, { n: previewVersion })}</h2>
+        <p>{live === null ? c.neverPublished : fill(c.editor.previewLive, { n: live })}</p>
+        <p>{address || c.editor.noAddress}</p>
+        <details><summary>{c.editor.details}</summary><DesignSummary store={store} doc={JSON.parse(saved) as DesignDocument} c={c} /></details>
+      </section>}
       {tab === 'domains' && <DesignDomains store={store} boundary={boundary} locale={locale} c={c} />}
       {tab === 'review' && <section className="design-panel" data-testid="design-publish-review">
         <h2>{fill(c.publishConfirm, { n: base })}</h2>
+        <p>{c.editor.immediate}</p>
         <p>{live === null ? c.neverPublished : fill(c.liveVersion, { n: live })}</p>
         <p>{c.editor.scope}</p><p>{c.editor.unchanged}</p>
         <p>{address || c.editor.noAddress}{address && ` · ${c.editor.available}`}</p>
         <details><summary>{c.editor.details}</summary><DesignSummary store={store} doc={JSON.parse(saved) as DesignDocument} c={c} /></details>
         <div className="design-actions">
           <button type="button" data-testid="design-publish-continue" disabled={!!busy} onClick={() => setTab('hub')}>{c.editor.continue}</button>
-          <button type="button" className="design-primary" data-testid="design-publish-confirm" disabled={!!busy || !!pending} onClick={() => void doPublish()}>{c.editor.confirm}</button>
+          <button type="button" className="design-primary" data-testid="design-publish-confirm" disabled={!!busy || !!pending} onClick={() => void doPublish()}>{fill(c.editor.confirm, { n: base })}</button>
         </div>
       </section>}
       {tab === 'result' && !pending && <section className="design-panel" data-testid="design-publish-result">
-        <h2>{resultError ? c.editor.failed : c.editor.published}</h2>
+        <h2>{resultError ? c.editor.failed : receipt ? fill(c.editor.published, { n: receipt.version }) : c.neverPublished}</h2>
         <p>{fill(c.draftVersion, { n: receipt?.source_version ?? base })} · {live === null ? c.neverPublished : fill(c.liveVersion, { n: live })}</p>
         {resultError ? <p role="alert">{resultError}</p> : receipt && <p>{displayTime(locale, receipt.published_at)}</p>}
         <p>{c.editor.scope}</p><p>{c.editor.unchanged}</p>
