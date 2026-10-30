@@ -192,7 +192,7 @@
     "tests/admin/shell-architecture.test.mjs": "f324d97d97de3c8883a35523519c1f9b7ecc6a6a90c936e8e93114b3f2ce592b",
     "tests/admin/shell-browser.mjs": "ce5ebc5fa693f9f6ec56e5e85c9644a412f81192d7a27b2c3a19141e2444a056",
     "tests/admin/shell-fixture.mjs": "e039df237b3c9d131a6b291ecc0cd5170082be223ebe83f9411092d02d3bcb43",
-    "tests/admin/shell-registry.test.ts": "7743ea45769bf2ed6aa86734f9100c9e3bf9928b064a5921bb23fcfce99533a4",
+    "tests/admin/shell-registry.test.ts": "fec3278cd03012e9d128da287a624ea136c7f42c7eb153bc64c08aab37f13438",
     "tests/admin/shell-render.test.ts": "bd26b696f3aeec218e83991e373dedcbdfefcc053d4798bdc9979d300d013e54",
     "tests/admin/shell-runner.mjs": "0f2bb2e12159f71dd343ac7f1cfbf35e633abf1429e146b02789887f26ae4e2a",
     "tests/admin/staff-team.spec.ts": "06cfc46ec86f174d84ed21abf65fedbc149950bdb13b06110054f29f2fa550b9",

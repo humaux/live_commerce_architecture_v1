@@ -1,0 +1,18 @@
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8991066Z test at tests/admin/shell-registry.test.ts:80:1
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8992342Z ✖ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (6.310118ms)
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8993585Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8994341Z   + actual - expected
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8995179Z   ... Skipped lines
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8995552Z   
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8995847Z     [
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8996188Z       '/',
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8996538Z       '/ads',
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8997025Z       '/ads/attribution',
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8997472Z       '/billing',
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8997810Z   ...
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8998156Z       '/orders',
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8998561Z   -   '/orders/cvs-match',
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8999053Z       '/orders/cvs-print',
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.8999810Z       '/orders/new',
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.9000227Z       '/products',
+foundation	UNKNOWN STEP	2026-10-30T18:53:44.9000692Z       '/products/[product]',

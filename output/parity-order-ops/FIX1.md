@@ -72,3 +72,19 @@ Local static receipts: eight `node --check` commands exit0 (three TS browser spe
 Data gaps remain exactly as DELIVERY.md: pre-placement quote/amount fields and refund-record/human-reference/note facts are not in the assigned frozen DTOs. Partial data-gap screenshots cannot establish complete frame parity. No migration, R2 pin, API contract, OpenAPI, lockfile, route-dispatcher baseline or next-startup gate assertion changed.
 
 Native original failure evidence = E3 FAILURE only. Local syntax/ownership consistency = E1. Author judgment = E0. New PR CI/GREEN, runtime click/persistence/parity, independent review, SANDBOX/LIVE/production = PENDING/NOT_RUN. Final Gates/Foundation run ids are posted in the PR/handoff after the push, without an evidence-only follow-up commit.
+
+## Relay 1 — Foundation route-registration repair (2026-10-31)
+
+Current receipt: Foundation [41109967073/job/124249537274](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41109967073/job/124249537274), attempt 1, **FAILURE** on PR head `31780604c69b157dfe27e67474497e4a6aff103c`. Checkout log identifies synthetic merge `b5ad5342` into integration `629f42152f864621a99ac2247c3baf5d751a422f`. Read with `gh pr checks 364` and `gh run view 41109967073 --log-failed --job 124249537274`; filtered raw excerpt retained in `relay1-foundation-red.log`.
+
+| Failing job | Failing test | Native evidence | Class / repair |
+|---|---|---|---|
+| `124249537274`, Foundation | `G-UI1 Next pages and route registry are bidirectional, unique, typed, documented`, `tests/admin/shell-registry.test.ts:98` at failed head | `AssertionError [ERR_ASSERTION]`, `deepStrictEqual`; page list contains `/orders/cvs-match`, registry omits it; raw log lines 1303–1320 | **(b) real product regression**: the new page was not registered. `WorkspaceFrame` uses `matchRoute`/`canOpen`, so omission also denies page access. Register the route with `orders:read`, `nav:false`, executable parity spec and three localized titles. Preserve every existing assertion; add permission/title/rail regression assertions. |
+
+- Required integration merge performed first: `629f42152f864621a99ac2247c3baf5d751a422f` → `c5544b14b7dae44d43bc1d7f12341709ec284326`. No conflicts. Main checkout untouched.
+- This is the first directed fix for the newly exposed G-UI1 blocker. No additional attempt against an already twice-failed assertion. Original catalog/returns assertion RED and classifications remain above; their latest Gates run `41109966848` was queued with no failed jobs when read, so their GREEN is unverified.
+- Implementation touches `apps/admin/src/features/orders/routes.ts` and `apps/admin/src/shell-copy.ts`; the existing shell registry test gains additive assertions. No new import or component harness dependency. These are same-admin-module paths under scope pre-approval and are listed in the PR for integrator visibility.
+- Allowed local static checks: `node --check` on those three files and `git diff --check` exit 0. Browser ownership regeneration/check results are recorded in `relay1-static.log`. No local tests/server/browser/build/container started. No Go dependency change; Go dep-map unchanged.
+- No test assertion, timeout, fixture, exemption, next-startup gate adapter, migration, R2 pin, contract, OpenAPI, lockfile, route-dispatcher registry or drift baseline changed. No new design or Figma write.
+- Rollback: revert the relay implementation commit; integration merge is separate. Existing uncommitted evidence was preserved. No database changes or background local processes.
+- Humaux memory/coord/canvas/code-index tools are absent in this runtime; no shared state was written or duplicate ownership claimed. Evidence is retained here and in the PR. E3 **failure** only; syntax E1; implementation judgment E0; new CI, browser click/persistence and independent review PENDING/NOT_RUN. On recurrence, retain exact assertion and escalate within the two-attempt limit.

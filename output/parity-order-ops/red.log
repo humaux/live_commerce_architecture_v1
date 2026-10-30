@@ -124,3 +124,23 @@ fix1_asset_routing=admin proxy admits GET/HEAD of exact immutable CVS snapshot n
 fix1_static_final=node--check8files EXIT0; tsc EXIT1 missing Next/React/workspace links, not successful typecheck
 fix1_status_final=PREPARED one batch push; native PR GREEN/independent acceptance pending
 fix1_attempt_limit=if same test red after this push STOP with exact assertion; no third approach
+
+# FIX1 pushed-head handoff (no evidence-only follow-up commit)
+fix1_head=31780604c69b157dfe27e67474497e4a6aff103c
+WAIT_RUN=41109966848 Gates IN_PROGRESS
+WAIT_RUN=41109967073 Foundation IN_PROGRESS
+fix1_GREEN=PENDING NOT_RUN
+fix1_wakeup=integrator relays native conclusion in fresh session
+
+# Relay 1: latest-head Foundation RED, before route-registration repair
+relay1_failed_head=31780604c69b157dfe27e67474497e4a6aff103c
+relay1_RED_run=41109967073
+relay1_RED_job=124249537274
+relay1_RED_assertion=G-UI1 Next pages and route registry are bidirectional, unique, typed, documented
+relay1_RED_diff=page /orders/cvs-match exists but route registry omits it
+relay1_class=b product regression; WorkspaceFrame denies unregistered route
+relay1_base=629f42152f864621a99ac2247c3baf5d751a422f
+relay1_merge=c5544b14b7dae44d43bc1d7f12341709ec284326
+relay1_fix=register orders:read nav:false route, localized titles, additive permission/title assertions
+relay1_local=static only; tests servers browsers builds containers NOT_RUN
+relay1_GREEN=PENDING; exact new run ids will be posted in PR comment
