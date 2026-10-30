@@ -113,3 +113,24 @@ Implementation GREEN/E4/independent review/provider/SANDBOX/LIVE/production NOT_
 Humaux search/store/canvas/coord/code-index/link unavailable; no shared-state write claimed.
 Final static tsc: admin plus settings-real.spec.ts and settings-v2.spec.ts, exit 0; tsc.log empty.
 Dependency map generation exit 0; git diff --check exit 0.
+
+RELAY 4 — 2026-10-30
+Implementation head: 6db6e486d20b660ca2ff88f645593ec8fe14252b (native PR/run readback).
+Gates 41054881458 / job 124070751799 (--browser-click-sweep@10/10) FAILURE.
+Synthetic merge: 44dae94e3d3d915fd75f5e123e57d81756f776b2.
+Foundation 41054881503 / job 124059758089 SUCCESS, partial only, not overall GREEN.
+gh run view --log-failed --job refused while workflow remains in progress.
+Fallback native job logs succeeded; artifact 12980896041 supplies raw click-sweep log:
+J4 custom domain, open Settings: locator.click timed out after 30000 ms waiting for
+getByRole('button', { name: '進階', exact: true }). 101 surface clicks: 98 pass, 3 skip;
+J4 first step failed; subsequent DNS and persistence steps skipped. E3 failure only.
+Root: settings journey retained removed Advanced entry and assumed reload retained editor.
+Targeted fix attempt 1: click signed 編輯設定 at entry and after reload. All DNS,
+domain row REQUESTED and persistence assertions remain unchanged. No product edits.
+Fetched origin/r3/integration and merged before spec edit: already up to date.
+Static: node --check; ownership generation and --check; depmap regeneration;
+git diff --check, all exit 0. Depmap unchanged. No local tests or servers.
+Additional outside-literal-card path: tests/ui/click-sweep.mjs (settings J4 caller only).
+Humaux now available; prior tool-unavailable notes apply only to earlier relays.
+Integrator relays completion/failure/cancellation for the new push; queue >3h escalates
+to integrator. Current implementation GREEN / independent review / production pending.

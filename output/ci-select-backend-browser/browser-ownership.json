@@ -752,7 +752,7 @@
     "tests/ui/click-sweep-lib.mjs": "5cd36a9104e3589076a62f067f62105a932c3f0b9088a2e214a337807bc914e6",
     "tests/ui/click-sweep-lib.test.mjs": "1141c0b49fd0975dd6a8b27a1208829f1c368c67cce23df2e03634a50489f914",
     "tests/ui/click-sweep-weights.json": "1ce9453d358225ba0b69268cc19b431d18b0da701834301a04079c22e6f1aaa3",
-    "tests/ui/click-sweep.mjs": "184b242e547a232a39fa9de6917010121abdca64a34ea863b8bc48c9e5e1274b",
+    "tests/ui/click-sweep.mjs": "fe00ae3fc45e3ecc5e6539c2722923bb6320be25d5456beb40374894521a4e3b",
     "tests/ui/ds-figma-parity.mjs": "f79a93f632c98c20c56b2167fbfa6898d54930ec8da6654e25c465355a89c6ed",
     "tests/ui/ds-hex-ratchet.test.mjs": "2c28f6fa575cad74475d40f2cd44518f8b393903badd7d3f749593a8a1bc6b8d",
     "tests/ui/ds-logic.test.ts": "cf897067751b3cc56b3531e143e9544e396b0ef9c99ad69886f3f618603ed3f0",

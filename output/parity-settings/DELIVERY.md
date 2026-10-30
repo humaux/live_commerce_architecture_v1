@@ -1,6 +1,6 @@
 # PARITY-SETTINGS implementation hand-off · 2026-10-30
 
-Status: implementation prepared; E1 static only. Current implementation GREEN/E4 acceptance PENDING. Author PASS would be E0.
+Status: implementation pushed; relay 4 repairs the settings J4 caller after native CI failure. Current-head GREEN/E4 acceptance PENDING. Author PASS would be E0.
 Role: dispatched UI implementer; model family GPT-6 (runtime model/effort not independently exposed); no delegation.
 Branch/worktree: unit/parity-settings / .worktrees/parity-settings. Initial base df35b338b5cf; integration refresh 3ea359f79 merged before ownership regeneration. Only this worktree is writable.
 
@@ -155,3 +155,31 @@ Source SHA256 before implementation push (static source binding only):
 - `packages/i18n/src/index.ts`: `af8f249198cb9b8301df0d738beca143e5288f1ffb596a9f0465af1d21a91004`
 - `tests/admin/settings-v2.spec.ts`: `04ea788915169cff4ff34dafc2e4ba05476fd9c784e5bf109df719e1cc3ed7ef`
 - `tests/admin/settings-real.spec.ts`: `be0b148436b818f720fbb0a53f0d13b42c6eb23fc4c9330022fdcdd5b0b9f8f8`
+
+## Relay 4 — settings journey entry and refresh
+
+Native CI at implementation head `6db6e486d20b660ca2ff88f645593ec8fe14252b`:
+Gates `41054881458` / job `124070751799`, artifact `12980896041`, synthetic merge
+`44dae94e3d3d915fd75f5e123e57d81756f776b2`. J4 timed out clicking removed「進階」;
+raw failure retained in `relay4-browser.log` (E3 failure only). Foundation
+`41054881503` / `124059758089` succeeded; this is partial evidence, not GREEN.
+
+Targeted fix attempt 1 updates the settings caller in `tests/ui/click-sweep.mjs`
+to click「編輯設定」at entry and after refresh. This follows the card's full editor
+entry and nonpersistent view choice. DNS instructions, TXT format, CNAME and
+persisted domain `REQUESTED` assertions are unchanged. No visual/product changes.
+
+|Page/control|Real operation|Expected|Actual|
+|---|---|---|---|
+|zh-TW settings / 編輯設定|click after navigation|full editor and domains card visible|PENDING new-head CI|
+|domains / Request|fill hostname and click|TXT and CNAME instructions|PENDING new-head CI|
+|settings after refresh / 編輯設定|click|domain remains REQUESTED|PENDING new-head CI|
+
+Fetched and merged `origin/r3/integration` before spec change: already up to date.
+Static node syntax, ownership generation/--check and diff check exit 0; depmap
+regenerated with no diff. No local runtime test/server. Extra literal path:
+`tests/ui/click-sweep.mjs` (settings J4 only; integrator review required).
+Humaux is available this relay; earlier unavailable statements are historical.
+Store/canvas receipts and the final WAIT_RUN IDs are reported in the handoff/PR.
+Integrator supplies a fresh session on completion/failure/cancellation; queue >3h
+is escalated to integrator. GREEN, independent parity review, E4 and LIVE remain pending.
