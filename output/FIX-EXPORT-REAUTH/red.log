@@ -1,0 +1,146 @@
+FIX-EXPORT-REAUTH RED phase
+Recorded UTC: 2026-10-30T16:26:36.919718+00:00
+Base SHA: 2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f
+Tests-only head SHA: f4ebf148ef2fde20f3f98bbde8b91e4ffbf889a7
+Branch: unit/fix-export-reauth
+PR base: r3/integration
+Status: PENDING (not a RED receipt until assertions actually fail in GitHub CI)
+Expected failures: TestMerchantToolsCSVBoundaries/FIX-EXPORT-REAUTH_product_CSV; TestCarrierExport/FIX-EXPORT-REAUTH_carrier_CSV; TestTrackingImportSmoke/.../FIX-EXPORT-REAUTH_tracking_result_CSV; TestCustomerImport/.../FIX-EXPORT-REAUTH_import_result_CSV; tests/identity TestGuardOG01/OG04/OG07 import_results_export guard assertions.
+Assertions: 403 reauth_required at 11 minutes and 2 hours; future/infinite timestamps fail closed; no CSV response or attachment on refusal; direct CarrierExport refuses and commits no audit; nine-minute and actual OIDC re-auth exports succeed with identical bytes; same-tenant and cross-tenant stores refused; same session remains live.
+Local allowed static commands: gofmt -w <six changed Go test files> (exit 0); go vet ./tests/foundation ./tests/identity (exit 0); node scripts/dev/derive-browser-ownership.mjs (exit 0); node scripts/dev/derive-browser-ownership.mjs --check (exit 0); git diff --cached --check (exit 0).
+No local tests, servers, PG, browser execution, or CI dispatch.
+Gates run id: PENDING
+Job ids: PENDING
+Green: NOT_RUN
+Independent review: NOT_RUN
+Humaux memory/coord/canvas: UNAVAILABLE (no callable tools).
+
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/392 (draft, tests only)
+Run: 41089975208 | head: f4ebf148ef2fde20f3f98bbde8b91e4ffbf889a7 | status: queued | conclusion: PENDING | https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41089975208
+  Job: 124181004431 | plan | queued | PENDING
+Run: 41089975024 | head: f4ebf148ef2fde20f3f98bbde8b91e4ffbf889a7 | status: queued | conclusion: PENDING | https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41089975024
+  Job: 124181001229 | foundation | queued | PENDING
+WAIT_RUN: 41089975208 (Gates workflow run, not a plan job id)
+WAIT_RUN: 41089975024 (Foundation workflow run)
+Resume: integrator relays a fresh session when queued CI completes. Inspect failed assertions and capture their raw job-log lines here before implementation. No independent acceptance yet.
+
+RELAY 1: causal assertion RED confirmed 2026-10-31.
+Head f4ebf148ef2fde20f3f98bbde8b91e4ffbf889a7; tested merge 5cce09035bda76bad7c687d6db2bef83000f3521.
+Gates run 41089975208 attempt 1; job 124184791432 gate (shard:g04): completed failure.
+Raw job log fetched through gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124184791432/logs (gh run view --log-failed unavailable while workflow remains active).
+Foundation run 41089975024 job 124181001229: success; this is static/foundation selection, not a GREEN export test receipt.
+2026-10-30T16:45:55.3713933Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:45:55.3714832Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:45:55.3746217Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:45:55.3748095Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:45:55.3775579Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:45:55.3776965Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:45:55.3804655Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:45:55.3805918Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:45:55.3833386Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:45:55.3834320Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:46:05.1348980Z         --- FAIL: TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv/FIX-EXPORT-REAUTH_import_result_CSV (0.03s)
+2026-10-30T16:46:05.1351807Z             --- FAIL: TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv/FIX-EXPORT-REAUTH_import_result_CSV/refuse_11_minutes (0.00s)
+2026-10-30T16:46:05.1354080Z             --- FAIL: TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv/FIX-EXPORT-REAUTH_import_result_CSV/refuse_2_hours (0.00s)
+2026-10-30T16:46:05.1355904Z             --- FAIL: TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv/FIX-EXPORT-REAUTH_import_result_CSV/refuse_-2_minutes (0.00s)
+2026-10-30T16:46:05.1357726Z             --- FAIL: TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv/FIX-EXPORT-REAUTH_import_result_CSV/refuse_infinity (0.00s)
+2026-10-30T16:46:05.1359804Z             --- FAIL: TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv/FIX-EXPORT-REAUTH_import_result_CSV/refuse_-infinity (0.00s)
+2026-10-30T16:56:04.8049886Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:56:04.8050977Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:56:04.8096781Z     export_reauth_test.go:100: refused direct carrier export committed an audit row
+2026-10-30T16:56:04.8098544Z     export_reauth_test.go:69: direct Go export: error=<nil>, want ErrReauthRequired
+2026-10-30T16:56:04.8144532Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:56:04.8145529Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:56:04.8193388Z     export_reauth_test.go:100: refused direct carrier export committed an audit row
+2026-10-30T16:56:04.8195898Z     export_reauth_test.go:69: direct Go export: error=<nil>, want ErrReauthRequired
+2026-10-30T16:56:04.8245256Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:56:04.8246830Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:56:04.8291185Z     export_reauth_test.go:100: refused direct carrier export committed an audit row
+2026-10-30T16:56:04.8293499Z     export_reauth_test.go:69: direct Go export: error=<nil>, want ErrReauthRequired
+2026-10-30T16:56:04.8340021Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:56:04.8341626Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:56:04.8385280Z     export_reauth_test.go:100: refused direct carrier export committed an audit row
+2026-10-30T16:56:04.8388349Z     export_reauth_test.go:69: direct Go export: error=<nil>, want ErrReauthRequired
+2026-10-30T16:56:04.8432370Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T16:56:04.8433937Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T16:56:04.8478747Z     export_reauth_test.go:100: refused direct carrier export committed an audit row
+2026-10-30T16:56:04.8481454Z     export_reauth_test.go:69: direct Go export: error=<nil>, want ErrReauthRequired
+2026-10-30T16:56:05.0672815Z --- FAIL: TestCarrierExport (5.49s)
+2026-10-30T16:56:05.0675861Z     --- FAIL: TestCarrierExport/FIX-EXPORT-REAUTH_carrier_CSV (0.07s)
+2026-10-30T16:56:05.0676862Z         --- FAIL: TestCarrierExport/FIX-EXPORT-REAUTH_carrier_CSV/refuse_11_minutes (0.01s)
+2026-10-30T16:56:05.0678317Z         --- FAIL: TestCarrierExport/FIX-EXPORT-REAUTH_carrier_CSV/refuse_2_hours (0.01s)
+2026-10-30T16:56:05.0680056Z         --- FAIL: TestCarrierExport/FIX-EXPORT-REAUTH_carrier_CSV/refuse_-2_minutes (0.01s)
+2026-10-30T16:56:05.0681286Z         --- FAIL: TestCarrierExport/FIX-EXPORT-REAUTH_carrier_CSV/refuse_infinity (0.01s)
+2026-10-30T16:56:05.0682140Z         --- FAIL: TestCarrierExport/FIX-EXPORT-REAUTH_carrier_CSV/refuse_-infinity (0.01s)
+2026-10-30T16:59:45.1152982Z --- FAIL: TestCarrierExport (5.49s)
+
+RELAY 1 implementation preparation: E1 only, UNCOMMITTED / NOT_PUSHED.
+go vet ./internal/merchanttools ./internal/merchantorders ./internal/httpapi ./tests/foundation ./tests/identity: exit 0.
+gofmt changed Go files; browser ownership generator and --check; depmap generator; git diff --check: exit 0. No local tests or servers. Generated depmap/browser files unchanged from head.
+STOP: explicit card boundary requires integrator authorization for internal/migrationimport/batch.go PT403 mapping and assigned R2 pin for migration0214. Async clarification submitted. Neither file modified. No implementation push, hence no new WAIT_RUN.
+6dfa3d9e433d18bfeb5c56e12aad8cdcb1d93936d729fab732db2babae78288a  internal/httpapi/merchanttools.go
+6324a3c5eb7f9e7a76956c486ee8ec29982f571d612a9134aeac150ddddc3092  internal/merchantorders/carrier_export.go
+2e1d3dade6310d1beced3c4039f2b879eda743bb7b4fd3bdf7f52948adb6c9db  internal/merchantorders/picklist.go
+a4a97be49ce6c7f4b4ccdfaac4c5818d2c5a3bd45698824174e64b6960387c25  internal/merchanttools/csvexport.go
+924ef1c8bf45dcdb963231b4c8d16e3647fe19d2ad22d125ee42d58f6c1ed630  internal/merchanttools/dashboard.go
+0de3eec7c1529556d5f2a23d7f348d86ec2c7d0c7cef362815efaadfd8a69a58  internal/merchanttools/tracking_import.go
+a71a5e3aa5ac11dba9461182669b718d1d2efc4cb9ad15fdb8f0bb835e15830b  tests/identity/reauth_guard_sql_test.go
+a74e262053bad015be073ba2be8fee2d797f786b32ea840d061192c6cd981745  migrations/0214_export_recent_auth.sql
+
+RELAY 2: current-head causal RED reverified; implementation remains blocked, not complete.
+GitHub job API confirms job124184791432 run41089975208 completed/failure at head f4ebf148ef2fde20f3f98bbde8b91e4ffbf889a7.
+Raw logs re-read: carrier/import-result freshness assertions return200 rather than403 reauth_required; refused direct carrier export commits an audit row.
+Remote PR392 head and local HEAD remain the tests-only SHA above. All eight implementation file hashes match the RELAY1 manifest above. git diff --check exit0; no tests, servers or new implementation checks run locally.
+Authority: card forbids choosing an unassigned R2 pin and editing another unowned backend package. RELAY2 supplies neither a pin nor a scope ruling; internal/migrationimport/batch.go and tests/foundation/r2_integration_upgrade_test.go remain untouched.
+Requested integrator input: assign exact R2 count pin for reserved0214 and authorize migrationimport PT403 mapping. Existing PR body already lists both STOP conditions and every export endpoint.
+No source edits, commit or push this relay. GREEN/REAL_PG/independent review NOT_RUN. WAIT_RUN: NONE (no new push); old RED run41089975208 is not an implementation run.
+
+RELAY 3: current tests-only head causal RED confirmed for tracking result CSV.
+Gates run41089975208 job124184791712 gate(shard:g05), tested merge5cce09035bda76bad7c687d6db2bef83000f3521. PR392 head f4ebf148ef2fde20f3f98bbde8b91e4ffbf889a7.
+gh run view --log-failed --job124184791712 reports logs unavailable while workflow active; obtained completed-job raw logs through gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124184791712/logs. Filtered raw assertion lines: red-g05.log.
+2026-10-30T17:08:51.7944758Z === RUN   TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_11_minutes
+2026-10-30T17:08:51.7966285Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T17:08:51.7967182Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T17:08:51.7970022Z === RUN   TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_2_hours
+2026-10-30T17:08:51.7990339Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T17:08:51.7991354Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T17:08:51.7994002Z === RUN   TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_-2_minutes
+2026-10-30T17:08:51.8015454Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T17:08:51.8017053Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T17:08:51.8020250Z === RUN   TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_infinity
+2026-10-30T17:08:51.8038281Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T17:08:51.8039851Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T17:08:51.8042467Z === RUN   TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_-infinity
+2026-10-30T17:08:51.8063473Z     export_reauth_test.go:62: export freshness refusal: status=200 code="", want 403 reauth_required
+2026-10-30T17:08:51.8064756Z     export_reauth_test.go:65: a refused export released CSV content or attachment headers
+2026-10-30T17:08:52.0650117Z --- FAIL: TestTrackingImportSmoke (12.98s)
+2026-10-30T17:08:52.0651175Z     --- FAIL: TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv (0.09s)
+2026-10-30T17:08:52.0653611Z         --- FAIL: TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV (0.02s)
+2026-10-30T17:08:52.0656936Z             --- FAIL: TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_11_minutes (0.00s)
+2026-10-30T17:08:52.0660365Z             --- FAIL: TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_2_hours (0.00s)
+2026-10-30T17:08:52.0663740Z             --- FAIL: TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_-2_minutes (0.00s)
+2026-10-30T17:08:52.0667248Z             --- FAIL: TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_infinity (0.00s)
+2026-10-30T17:08:52.0670056Z             --- FAIL: TestTrackingImportSmoke/preview_rolls_back,_commit_ships,_replay/conflict_and_result.csv/FIX-EXPORT-REAUTH_tracking_result_CSV/refuse_-infinity (0.00s)
+2026-10-30T17:08:53.4324132Z --- FAIL: TestTrackingImportSmoke (12.98s)
+E3 RED only. Same existing STOP: integrator has not assigned the exact R2 pin for reserved0214 or authorized internal/migrationimport/batch.go PT403 mapping. Both boundary files remain untouched. Combined async question submitted again; no answer received.
+No source changes, local tests, servers, commit, or push in RELAY3. Existing implementation retained. GREEN and independent review NOT_RUN. WAIT_RUN: NONE (no new push).
+
+RELAY 4: verified current PR392 head f4ebf148ef2fde20f3f98bbde8b91e4ffbf889a7 through gh pr view and job API.
+Gates run41089975208 job124184791712 is completed/failure on that head. gh run view --log-failed --job remains unavailable while workflow is incomplete; completed-job logs fetched using gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124184791712/logs.
+New TestTrackingImportSmoke/FIX-EXPORT-REAUTH_tracking_result_CSV assertions fail on their own expected 403 reauth_required versus actual200, with CSV/attachment released. This is causal E3 RED, not implementation acceptance.
+PR comments API returned no comments supplying authorization or a pin. Current R2 source pins139; card reserves0214 but does not assign the replacement count. internal/migrationimport/batch.go still collapses PT403 to ErrForbidden. Neither boundary file was modified.
+STOP unchanged: integrator must supply exact R2 pin and authorize migrationimport PT403 mapper. Combined clarification requested; no new implementation push may proceed under the current explicit boundaries.
+git diff --check exited0. No local tests/servers, source changes, commit or push this relay. Existing uncommitted implementation retained. GREEN/runtime acceptance/independent review NOT_RUN. WAIT_RUN: NONE.
+Humaux memory/coord/canvas tools unavailable in this session; no shared-state writes claimed. Only this local RED evidence log was appended. Temporary API log copies were task-owned and removed after filtering; retained red-g05.log contains the assertion evidence.
+
+RELAY 5: integrator ruling 2026-10-31 supplied in the task authorizes migrationimport/batch.go plus a focused mapper test and fixes the pin rule to merged-base count + own migration files. Prior STOP is resolved.
+Fetched and merged origin/r3/integration f59e5c5402a26021ca498d8323bc0e7ee8693c36 into the assigned branch. Its R2 count is 139; reserved 0214 adds one, so this implementation pins 140.
+RED run 41089975208 is completed/failure at tests-only head f4ebf148ef2fde20f3f98bbde8b91e4ffbf889a7. Raw gh run view --job <id> --log-failed readbacks confirm:
+- job 124184791146 g10: product CSV returned 200 where 403 reauth_required is required.
+- job 124184791432 g04: carrier/import-result assertions received 200; direct carrier export committed an audit row despite stale authentication.
+- job 124184791712 g05: tracking-result assertions received 200 where 403 reauth_required is required.
+- job 124184792480 unit: import-result SQL lacked identity.require_recent_auth; stale calls returned PT404 instead of PT403 reauth_required.
+Implementation: three scoped fixed-window SECURITY DEFINER authorizers; no widened low-level guard EXECUTE; import result reader patched after authority check; Go mappers retain reauth refusal; unchanged CSV renderers. dashboard.go is retained because its shared mapper is called by product and tracking-result exports.
+Static checks exited 0: gofmt; go vet ./internal/httpapi ./internal/merchantorders ./internal/merchanttools ./internal/migrationimport ./tests/foundation ./tests/identity; node scripts/dev/derive-browser-ownership.mjs then --check; bash scripts/dev/depmap.sh (no diff); git diff --check.
+Evidence E1 implementation structure only, E3 causal RED only. GREEN and independent review pending GitHub CI; no local tests, servers, containers, PG or browser execution. No production action, merge, auto-merge, force-push or status posting.
+Humaux tools unavailable now; no memory/coord/canvas update claimed. Assigned integrator card serves as ownership; local evidence is the fallback trail. Integrator relays implementation CI conclusion in a fresh session.
