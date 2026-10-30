@@ -1657,3 +1657,70 @@ Rollback: revert this isolated tests-only commit. No local process or fixture
 started. Existing untracked evidence retained. Integrator relays CI completion;
 Foundation 90m / Gates bundle 360m / member 150m remain workflow timeouts.
 WAIT_RUN IDs will be posted in the PR comment without an evidence-only push.
+
+## FIX13 relay 2 — persist recovery before the first product read (2026-10-30)
+
+Authority: integrator FIX13 ruling in the current task and raw GitHub run
+40990412840/job 123852623131 at head a91ae866715ed75a848fb2212dc66277f4b7db07.
+Fresh browser artifact 12949522944 proves settings-v2.spec.ts:239 fails the new
+identity assertion: expected Acceptance draft bag, received its newer Copy.
+Both discovery/setup preconditions passed. This is causal RED (E3 failure
+evidence), not completion. Full receipt/hash and provenance are in red.log.
+
+The existing execute() validates the product receipt and clears its command
+journal. Previously the first detail GET could fail before initial-stock was
+persisted. SettingsV2.save now persists the same scoped initial-stock record
+and unsent draft at the current profile version immediately after the receipt,
+before that GET. Existing load validation then pins the original product and
+retains price/stock through Reload/refresh; explicit Save alone resumes writes.
+The SKU path reuses this persistence function. No new storage format, import,
+dependency, setting, visible copy or behavioural assertion. Tests remain exactly
+at the causal-RED version; no fixture/wait/threshold/gate changes.
+
+|Page/control|Operation|Expected|Actual|
+|---|---|---|---|
+|Catalog competitor creation|native row checkbox, Advanced, Copy; native editor choice|newer draft leads discovery|passed before CI assertion at a91ae866|
+|Settings Reload + refresh + quick setup|existing real clicks and navigation|original product, price 1280, stock 10; no writes|RED at a91ae866; implementation CI PENDING|
+|Settings Review + Save|existing real clicks|resume original product, no duplicate create; exact SKU/stock replay|PENDING implementation CI|
+|Both competitor editors|native refresh and archive|unchanged baseline before fixture retirement|PENDING implementation CI|
+
+### UI PROCESS — BOURDIEU
+
+Q1 safely resume unsent setup; Q2 novice/expert means recent task experience;
+Q3 another operator's newer draft cannot redirect intent; Q4 explicit Save alone
+writes; Q5 no class/device inference; Q6 aesthetics separate and UNKNOWN.
+
+### UI PROCESS — PROJECT UNDERSTANDING
+
+Read AGENTS.md, architecture 0/1/2/26/27 and merchant-settings-wizard-v1
+Session/drafts/uncertainty plus Quick start/acceptance. They require scoped
+nonsecret journals, PG authority, no automatic writes/retries, native clicks,
+and independent CI acceptance. SettingsV2 load/save and settings-v2
+execute/readSnapshot are the direct implementation authority. Humaux tools
+are unavailable: no rejected/lesson lookup, store, code index/link or child
+canvas update is claimed. No separate claim or delegation from this lane.
+
+### UI PROCESS — MOBBIN → EAGLE
+
+No visual redesign or new interaction pattern; existing module references
+remain applicable. No reference import or additional Mobbin query required.
+
+### UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No Figma/layout/components/variables/prototype write. Existing guide, desktop/
+mobile required-field parity and three-locale tables remain applicable; no
+new visible strings. No new visual acceptance is claimed.
+
+Static checks: node --check tests/admin/settings-v2.spec.ts and git diff
+--check exit 0. Local tsc NOT_RUN: this worktree has no installed node_modules;
+no dependency install performed. Browser ownership is regenerated/checked last
+before commit. No dependency/import edges changed, so depmap is unchanged and
+no component harness allowlist update is needed. Author assessment E0;
+implementation GREEN/E4 PENDING. NOT_RUN: all local runtime tests/servers/
+browsers/PG, independent final review, provider SANDBOX/LIVE/production/deploy.
+Outside-card paths in this relay: none. Earlier PR-wide exceptions remain in
+the PR body for integrator approval. Rollback: revert the isolated recovery
+fix commit. No local process/fixture started. Pre-existing evidence retained;
+downloaded failure evidence retained for review. Integrator owns CI completion
+relay with existing Foundation 90m / bundle 360m / member 150m workflow limits;
+fresh WAIT_RUN IDs go in the PR comment without an evidence-only push.

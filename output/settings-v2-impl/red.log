@@ -498,3 +498,27 @@ Both observer tabs now click catalog-advanced-toggle once during B setup;
 its per-tab preference survives subsequent visits/refresh. Every discovery
 precondition and behavioural assertion remains verbatim/in order.
 Implementation unchanged. Fresh causal RED/GREEN/E4 pending CI; author E0.
+
+FIX13 relay 2 — causal post-create RED confirmed (2026-10-30)
+Head: a91ae866715ed75a848fb2212dc66277f4b7db07.
+Gates run 40990412840 / job 123852623131 (gate (bundle:07)): FAILURE.
+Tested synthetic merge: 7eb54c9e6a33ee48c2eb08749eb9c551b29a828e.
+gh pr checks 303 and completed-job API/logs bind the result to this head.
+gh run view --log-failed cannot return logs while the parent workflow is in
+progress; completed-job logs and artifact 12949522944 (gate-browser-identity)
+were read directly instead. Fresh artifact saved under fix13-relay2-current/.
+playwright/settings-real-20261030T022849.904476920/playwright.log SHA256:
+7901353911e107eb9cef1e9e238efd1f8f9e158d23ed906fb3395060affbdea6.
+settings-real.spec.ts:28 -> settings-v2.spec.ts:239 fails its NEW assertion:
+  post-create read recovery must retain acknowledged A despite newer draft discovery
+  Expected: "Acceptance draft bag"
+  Received: "Acceptance draft bag（复制）"
+Both native Copy/editor setups and the newer-draft discovery precondition
+precede this assertion and passed. This is causal RED, unlike the setup failures.
+Foundation 40990412835 / job 123851173483 SUCCESS applies only to a91ae866.
+Root fix: reuse scoped initial-stock intent plus the quantity-bearing draft at
+the current profile version immediately after the validated product receipt,
+before the fallible product-detail GET. Existing load pins its product ID,
+validates the paired fields, and never writes; only explicit Save sends commands.
+No behavioural assertion, precondition, fixture, timeout or gate changed.
+Current implementation GREEN and independent E4 PENDING; local runtime NOT_RUN.

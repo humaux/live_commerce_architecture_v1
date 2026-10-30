@@ -157,9 +157,17 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           if (!canCatalog || data.warehouses.length !== 1) throw new SaveFailure(false, changed);
           const price = toMinor(draft.price, currency), stock = Number(draft.stock);
           if (price === null || !Number.isSafeInteger(stock) || stock < 0) throw new SaveFailure(false, changed);
+          const retainInitialStock = (productID: string) => {
+            sessionStorage.setItem(key.current, JSON.stringify({ version: data.profile.version, draft }));
+            sessionStorage.setItem(`${key.current}:initial-stock`, JSON.stringify({ product_id: productID, code: `setup-${productID}`,
+              price_minor: price, currency, warehouse_id: data.warehouses[0].id, quantity: stock }));
+          };
           let product = data.product;
           if (!product || pending.current?.resource === "products") {
             const saved = await send<{ id: string }>("products", "POST", { name: draft.productName, description: "", status: "draft" });
+            // The acknowledged product and unsent fields must survive even if
+            // its first detail read fails before any SKU command is dispatched.
+            retainInitialStock(saved.id);
             product = parseProduct(await readSettings(store.id, `products/${saved.id}`));
           }
           if (product.name !== draft.productName || product.status !== "draft" || product.skus.length > 1) throw new SaveFailure(false, changed);
@@ -167,8 +175,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           if (!product.skus.length || pending.current?.resource === "skus") {
             // Persist before dispatch: the SKU acknowledgement clears its own
             // journal, but cannot discard the next, still-unsent stock operation.
-            sessionStorage.setItem(`${key.current}:initial-stock`, JSON.stringify({ product_id: product.id, code: `setup-${product.id}`,
-              price_minor: price, currency, warehouse_id: data.warehouses[0].id, quantity: stock }));
+            retainInitialStock(product.id);
             await send("skus", "POST", { product_id: product.id, code: `setup-${product.id}`, price_minor: price });
             product = parseProduct(await readSettings(store.id, `products/${product.id}`));
             data.product = product;
