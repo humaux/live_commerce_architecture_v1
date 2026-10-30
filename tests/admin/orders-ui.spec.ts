@@ -3,7 +3,7 @@
 // Used by: apps/admin/src/features/orders/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_merchant_orders_ui_test.go
 // Invariants: ORDERS-V2-IMPL uses real clicks and response-derived identities/counts; shipment writes are explicitly MOCK,
 //   never reach PG, and preserve this harness's read-only fingerprints. Existing MOU assertions remain unchanged.
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import * as http from "node:http";
@@ -35,6 +35,218 @@ const revokedToken = required("LC_BROWSER_REVOKED_TOKEN");
 const cookieName = "__Host-commerce_session";
 const pii = ["Synthetic Buyer", "+886900000001", "Synthetic home address"];
 const v2Evidence = resolve(evidence, "../../../orders-v2-fix");
+
+// PARITY-ORDERS authority: UX-orders DELIVERY, current polish 2026-10-29,
+// file iJ9lDdFIXgTlKkt5Tvrc0X / page 4:8829, frames listed below.
+// These are REAL /[locale]/orders routes with signed MOCK identities. Product
+// facts/counts come from the real scoped BFF; only shipment writes are MOCK.
+const parityCopy = {
+  "zh-TW": { title: "訂單", detail: "訂單詳情", search: "搜尋", query: "搜尋訂單", view: "查看", ship: "出貨中心", back: "返回", carrier: "選擇物流", carrierName: "黑貓宅急便", tracking: "單號", trackingHint: "輸入單號", record: "登記出貨", review: "出貨確認", confirm: "確認", edit: "修改", saved: "出貨已登記", blocked: "付款待確認，暫不可出貨", note: "不買面單，不代表交寄", queues: ["全部", "待付款", "待核對轉帳", "待出貨", "待交寄", "已出貨", "已完成", "已取消"] },
+  "zh-CN": { title: "订单", detail: "订单详情", search: "搜索", query: "搜索订单", view: "查看", ship: "发货中心", back: "返回", carrier: "选择物流公司", carrierName: "黑猫宅急便", tracking: "物流单号", trackingHint: "输入物流单号", record: "登记发货", review: "确认发货记录", confirm: "确认", edit: "修改", saved: "已记录发货", blocked: "付款待核实，暂不能发货", note: "不购买面单，也不代表物流已揽收", queues: ["全部", "待付款", "待核实转账", "待发货", "待交物流", "已发货", "已完成", "已取消"] },
+  en: { title: "Orders", detail: "Order details", search: "Search", query: "Search orders", view: "View", ship: "Shipping center", back: "Back", carrier: "Choose carrier", carrierName: "T-Cat", tracking: "Tracking number", trackingHint: "Enter tracking number", record: "Record shipment", review: "Confirm shipment record", confirm: "Confirm", edit: "Edit", saved: "Shipment recorded", blocked: "Payment needs review; shipping is blocked", note: "No label purchase or proof of carrier handover", queues: ["All", "Unpaid", "Review transfer", "Ready to ship", "Awaiting handover", "Shipped", "Completed", "Cancelled"] },
+} as const;
+const parityQueueFrames = {
+  desktop: ["1429:25977", "1429:26091", "1429:26192", "1429:26293", "1429:26394", "1429:26495", "1429:26596", "1429:26697"],
+  mobile: ["1429:27276", "1429:27347", "1429:27409", "1429:27471", "1429:27533", "1429:27595", "1429:27657", "1429:27719"],
+} as const;
+const parityDetailFrames = {
+  desktop: ["1429:26899", "1429:26965", "1429:27038", "1429:27106", "1429:27167", "1429:27224"],
+  mobile: ["1429:27843", "1429:27878", "1429:27920", "1429:27957", "1429:27987", "1429:28013"],
+} as const;
+const parityNumber = (id: string) => `#${id.replaceAll("-", "").slice(-5).toUpperCase()}`;
+type ParityPage = Omit<OrdersDesignPage, "items"> & { items: Array<OrdersDesignPage["items"][number] & {
+  recipient_masked: string; item_summary: { items: Array<{product_name: string; variant_label: string | null; quantity: number}>; total_item_count: number };
+}> };
+
+async function parityShot(page: Page, info: TestInfo, frame: string) {
+  const file = info.outputPath("parity", `${frame}.png`);
+  await mkdir(resolve(file, ".."), { recursive: true });
+  await screenshot(page, file);
+  await info.attach(`parity/${frame}.png`, { path: file, contentType: "image/png" });
+}
+
+async function parityAction(control: string, expected: string, action: () => Promise<void>) {
+  const directory = resolve(evidence, "parity-orders", "click-ledger", test.info().testId);
+  await mkdir(directory, { recursive: true });
+  const record = { page: "real orders route", control, operation: control, expected, actual: "", status: "FAIL" };
+  try { await action(); record.actual = expected; record.status = "PASS"; }
+  catch (error) { record.actual = error instanceof Error ? error.message : String(error); throw error; }
+  finally { await writeFile(resolve(directory, `${control.replaceAll(/[^a-zA-Z0-9-]/g, "-")}.json`), JSON.stringify(record, null, 2)); }
+}
+
+// Listen to the real response; never synthesize counts/rows to make parity pass.
+async function parityRead(page: Page, action: () => Promise<unknown>, bucket = "all"): Promise<ParityPage> {
+  const pending = page.waitForResponse(r => {
+    const u = new URL(r.url());
+    return [`/api/stores/${store}/orders`, `/api/stores/${store}/orders/search`].includes(u.pathname)
+      && u.searchParams.get("view") === "v2" && (u.searchParams.get("bucket") ?? "all") === bucket;
+  });
+  await action();
+  const response = await pending;
+  expect(response.status()).toBe(200);
+  expect(response.headers()["cache-control"]).toBe("private, no-store");
+  return response.json() as Promise<ParityPage>;
+}
+
+for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [1440, 390] as const) {
+  test(`PARITY-ORDERS signed list, eight queues, search/page two and shipping entry (${locale}/${width})`, async ({page}, info) => {
+    test.setTimeout(120_000);
+    await signedLogin(page);
+    await page.setViewportSize({width, height: width === 390 ? 844 : 900});
+    await page.getByTestId("locale-switch").selectOption(locale);
+    const c = parityCopy[locale], device = width === 390 ? "mobile" : "desktop";
+    await parityAction("legacy-removed", "Signed card list replaces the seven-column table, long IDs and inline details", async () => {
+      await expect(page.getByRole("heading", {name: c.title, exact: true})).toBeVisible();
+      await expect(page.getByTestId("orders-table")).toHaveCount(0);
+      await expect(page.locator(".orders-table thead")).toHaveCount(0);
+      await expect(page.getByTestId("orders-list")).toBeVisible();
+      await expect(page.getByTestId("order-detail")).toHaveCount(0);
+      await expect(page.getByTestId("orders-list")).not.toContainText(/LC-[A-F0-9]{10,}/);
+    });
+    const query = page.getByRole("textbox", {name: c.query, exact: true});
+    const search = page.getByRole("button", {name: c.search, exact: true});
+    await expect(query).toBeVisible(); await expect(search).toBeVisible();
+    const before = await detailCalls(page);
+    for (const [index, bucket] of designQueues.entries()) {
+      await parityAction(`queue-${bucket}`, "Native queue click and refresh retain selection, exact server rows and counts without detail/PII reads", async () => {
+        const chip = page.getByRole("button", {name: new RegExp(`^${c.queues[index]}\\s+\\d+$`)});
+        let data = await parityRead(page, () => chip.click(), bucket);
+        data = await parityRead(page, () => page.reload(), bucket);
+        await expect(page.getByTestId(`orders-bucket-${bucket}`)).toHaveAttribute("aria-pressed", "true");
+        await expect(page.locator('[data-testid^="order-row-"]')).toHaveCount(data.items.length);
+        for (const row of data.items) {
+          const card = page.getByTestId(`order-row-${row.order_id}`);
+          await expect(card).toContainText(parityNumber(row.order_id));
+          await expect(card).toContainText(row.recipient_masked);
+          expect(row.item_summary.items.length).toBeGreaterThan(0);
+          expect(row.item_summary.items.length).toBeLessThanOrEqual(3);
+          for (const item of row.item_summary.items) {
+            await expect(card).toContainText(item.product_name);
+            await expect(card).toContainText(String(item.quantity));
+            if (item.variant_label) await expect(card).toContainText(item.variant_label);
+          }
+          await expect(card.getByRole("button", {name: c.view, exact: true})).toBeVisible();
+        }
+        await noPII(page); await noPersistentOrderBody(page);
+        expect(await detailCalls(page)).toBe(before);
+        await parityShot(page, info, parityQueueFrames[device][index]);
+      });
+    }
+    await parityAction("private-search-page-two", "Search is private, page two retains query, detail has a separate route, Back restores it and reload clears query", async () => {
+      await parityRead(page, () => page.getByTestId("orders-bucket-all").click());
+      await query.fill("0001");
+      let data = await parityRead(page, () => search.click());
+      expect(data.next_cursor).not.toBe("");
+      data = await parityRead(page, () => page.getByTestId("orders-next").click());
+      await expect(query).toHaveValue("0001");
+      expect(new URL(page.url()).searchParams.has("q")).toBe(false);
+      expect(new URL(page.url()).searchParams.has("cursor")).toBe(false);
+      await parityShot(page, info, device === "desktop" ? "1429:26798" : "1429:27781");
+      const first = data.items[0], listURL = page.url();
+      await page.getByTestId(`order-row-${first.order_id}`).getByRole("button", {name: c.view, exact: true}).click();
+      await expect(page).toHaveURL(new RegExp(`/${locale}/orders/${first.order_id}(?:\\?|$)`));
+      await expect(page.getByRole("heading", {name: c.detail, exact: true})).toBeVisible();
+      await expect(page.getByTestId("orders-list")).toHaveCount(0);
+      await page.getByRole("button", {name: c.back, exact: true}).click();
+      await expect(page).toHaveURL(listURL); await expect(query).toHaveValue("0001");
+      await expect(page.locator('[data-testid^="order-row-"]')).toHaveCount(data.items.length);
+      await page.reload(); await expect(query).toHaveValue(""); await noPersistentOrderBody(page);
+    });
+    await parityAction("multi-selection-shipping-entry", "Two selected orders expose the owned Shipping center destination, without implementing that route", async () => {
+      const cards = page.locator('[data-testid^="order-row-"]');
+      await expect(cards.nth(1)).toBeVisible();
+      await cards.nth(0).getByRole("checkbox").check(); await cards.nth(1).getByRole("checkbox").check();
+      const bar = page.getByTestId("orders-selection-bar");
+      await expect(bar).toBeVisible();
+      const link = bar.getByRole("link", {name: c.ship, exact: true});
+      expect(new URL((await link.getAttribute("href"))!, origin).pathname).toBe(`/${locale}/orders/shipping`);
+      // PARITY-SHIPCENTER owns destination acceptance. This card proves the real entry click/path only.
+      await link.click(); await expect(page).toHaveURL(new RegExp(`/${locale}/orders/shipping(?:\\?|$)`));
+      info.annotations.push({type: "pending", description: "PARITY-SHIPCENTER owns shipping route content and selection consumption"});
+    });
+  });
+
+  test(`PARITY-ORDERS signed single-order carrier/review/result and payment block (${locale}/${width})`, async ({page}, info) => {
+    test.setTimeout(120_000);
+    await signedLogin(page);
+    await page.setViewportSize({width, height: width === 390 ? 844 : 900});
+    await page.getByTestId("locale-switch").selectOption(locale);
+    const c = parityCopy[locale], device = width === 390 ? "mobile" : "desktop";
+    const frames = parityDetailFrames[device], id = ids.captured, path = `/api/stores/${store}/orders/${id}`;
+    let saved = false;
+    const writes: Array<Record<string, unknown>> = [];
+    const head = {version: 1, status: "SHIPPED", carrier_code: "black_cat", carrier_name: null, tracking_number: "001234567890", tracking_url: null, recorded_at: "2026-10-28T00:00:00.000000Z"};
+    parseShipmentVersion(head, false);
+    // MOCK boundary: preserve real immutable detail, intercept only shipment command/readback. No PG write.
+    await page.route(u => u.pathname === `${path}/shipment`, async route => {
+      expect(route.request().method()).toBe("PUT"); expect(route.request().headers()["idempotency-key"]).toBeTruthy();
+      writes.push(route.request().postDataJSON()); saved = true;
+      await route.fulfill({status: 200, contentType: "application/json", headers: {"cache-control": "private, no-store"}, body: JSON.stringify(head)});
+    });
+    await page.route(u => u.pathname === path, async route => {
+      const response = await route.fetch(), detail = await response.json();
+      await route.fulfill({response, json: saved ? {...detail, fulfillment_state: "MERCHANT_SHIPPED", shipment: head} : detail});
+    });
+    await page.route(u => u.pathname === `${path}/shipment/history`, async route => {
+      if (!saved) { await route.continue(); return; }
+      await route.fulfill({status: 200, contentType: "application/json", headers: {"cache-control": "private, no-store"}, body: JSON.stringify({items: [{...head, note: null, void_reason: null, principal_id: "10000000-0000-4000-8000-000000000001"}]})});
+    });
+    await expand(page, id);
+    await parityAction("single-route", "View opens a standalone order detail with the short server identity and no inline list", async () => {
+      await expect(page).toHaveURL(new RegExp(`/${locale}/orders/${id}(?:\\?|$)`));
+      await expect(page.getByRole("heading", {name: c.detail, exact: true})).toBeVisible();
+      await expect(page.getByTestId("orders-list")).toHaveCount(0);
+      await expect(page.getByTestId("order-detail")).toContainText(parityNumber(id));
+      await expect(page.getByTestId("order-detail")).not.toContainText(/LC-[A-F0-9]{10,}/);
+      await expect(page.getByRole("button", {name: c.record, exact: true})).toBeDisabled();
+      await parityShot(page, info, frames[0]);
+    });
+    await parityAction("choose-carrier-and-leading-zero", "Native carrier choice returns to detail and keeps all 12 tracking digits", async () => {
+      await page.getByRole("button", {name: c.carrierName, exact: true}).click();
+      await expect(page.getByRole("heading", {name: c.carrier, exact: true})).toBeVisible();
+      await parityShot(page, info, frames[1]);
+      await page.getByRole("button", {name: c.carrierName, exact: true}).click();
+      await expect(page.getByRole("heading", {name: c.detail, exact: true})).toBeVisible();
+      await page.getByRole("textbox", {name: c.tracking, exact: true}).fill(head.tracking_number);
+      await expect(page.getByRole("textbox", {name: c.tracking, exact: true})).toHaveValue(head.tracking_number);
+      await expect(page.getByRole("button", {name: c.record, exact: true})).toBeEnabled();
+      expect(writes).toHaveLength(0); await parityShot(page, info, frames[2]);
+    });
+    await parityAction("review-edit-confirm", "Review retains short identity/carrier/whole tracking, Edit makes no write, Confirm sends one existing command", async () => {
+      await page.getByRole("button", {name: c.record, exact: true}).click();
+      await expect(page.getByRole("heading", {name: c.review, exact: true})).toBeVisible();
+      await expect(page.getByTestId("order-detail")).toContainText(parityNumber(id));
+      await expect(page.getByTestId("order-detail")).toContainText(head.tracking_number);
+      await expect(page.getByTestId("order-detail")).toContainText(c.carrierName);
+      await expect(page.getByTestId("order-detail")).toContainText(c.note);
+      expect(writes).toHaveLength(0); await parityShot(page, info, frames[3]);
+      await page.getByRole("button", {name: c.edit, exact: true}).click();
+      await expect(page.getByRole("textbox", {name: c.tracking, exact: true})).toHaveValue(head.tracking_number);
+      expect(writes).toHaveLength(0);
+      await page.getByRole("button", {name: c.record, exact: true}).click();
+      await page.getByRole("button", {name: c.confirm, exact: true}).click();
+      await expect(page.getByRole("heading", {name: c.saved, exact: true})).toBeVisible();
+      await expect(page.getByTestId("order-detail")).toContainText(head.tracking_number);
+      expect(writes).toHaveLength(1);
+      expect(writes[0]).toEqual({expected_version: 0, status: "SHIPPED", carrier_code: "black_cat", carrier_name: null, tracking_number: head.tracking_number, tracking_url: null, note: null, void_reason: null});
+      await parityShot(page, info, frames[4]);
+      await page.reload();
+      await expect(page.getByTestId("order-detail")).toContainText(head.tracking_number);
+      expect(writes).toHaveLength(1); await noPersistentOrderBody(page);
+    });
+    await parityAction("review-blocks-shipment", "Payment review stays blocked after refresh, with no shipment command", async () => {
+      await page.getByRole("button", {name: c.back, exact: true}).click();
+      await expand(page, ids.review);
+      await expect(page.getByRole("heading", {name: c.detail, exact: true})).toBeVisible();
+      await expect(page.getByTestId("order-detail")).toContainText(c.blocked);
+      await expect(page.getByRole("button", {name: c.record, exact: true})).toHaveCount(0);
+      await parityShot(page, info, frames[5]);
+      await page.reload(); await expect(page.getByTestId("order-detail")).toContainText(c.blocked);
+      await expect(page.getByRole("button", {name: c.record, exact: true})).toHaveCount(0);
+      expect(writes).toHaveLength(1);
+    });
+  });
+}
 
 test.use({
   baseURL: origin,
