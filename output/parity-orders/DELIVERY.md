@@ -230,3 +230,17 @@ WAIT_RUN ids are added to the PR/body/comment after the one implementation push 
 |共 {n} 件|共 {n} 件|{n} items|
 
 Existing advanced action/status/filter strings continue using their three-locale source tables in orders-copy, orders-v2-copy, returns-copy, cod-copy, parcels-copy, tracking-import-copy and picklist-copy. No new hard-coded seller string or fabricated product fact.
+
+## Native push receipt (local appendix, no evidence-only commit)
+
+PR362 native head4ecb4558472f43c6771b7d8a1a7785c57e31091b into r3/integration; draft. WAIT_RUN Gates41058276835 and Foundation41058276947 both queued; native run head SHA matches. GREEN jobs PENDING. Integrator owns completion/failure/cancellation relay and3h queue escalation. Temporary dependency symlinks removed. Implementation remains E1/ownE0, not accepted.
+
+## RELAY2 — color-token root cause, targeted fix 1 (2026-10-30)
+
+Authority: current implementation head `4ecb4558472f43c6771b7d8a1a7785c57e31091b`; Foundation run `41058276947`, job `124071219917`. The raw job receipt confirms that head; Node unit suites failed only `tests/ui/ds-hex-ratchet.test.mjs:87`: 410 total hex colors exceeded baseline 386, with 24 new literals in `apps/admin/components/orders/parity.css`. The tests-only RED remains the earlier assertion RED in red.log, not this implementation failure.
+
+Root cause: literal CSS fallback colors were added to an existing-token stylesheet, and three requested token names (text/canvas/active-bg) do not exist in the shared palette. Fix: remove every literal color fallback and reference the existing ink/page/surface/border/focus/on-primary tokens; use the existing green `--ui-primary`/`--ui-primary-soft` pair for owner option A. These tokens are imported by admin globals.css. No shared token file, gate, assertion, baseline, exemption, dependency, locale, route, fixture or API changed. The shared source header remains.
+
+This relay changes only the in-scope stylesheet and task receipts. Prior untracked artifacts and the existing native-push appendix were preserved. Static syntax/packet verification is recorded in relay2-static.log. Local unit/browser/PG tests and servers NOT_RUN (prohibited); the Impeccable runtime detector is deferred under the card's explicit local-command allowlist. Own assessment E0; replacement CI and independent visual comparison remain pending. Humaux search/store/canvas/coord tools are unavailable in this session; this local receipt is not a Humaux write.
+
+Wakeup owner remains the integrator: relay the exact new-head Foundation/Gates run conclusion to a fresh session. No merge, auto-merge, deployment or evidence-only push.
