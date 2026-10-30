@@ -1,0 +1,68 @@
+prebuilt: admin restored from 073f5a477f1137ab3ee55bf0da0971fb6e5aa4b4
+check-gallery-bundle: OK expect=absent files=73 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+## matrix-receipts browser-run begin
+=== RUN   TestBrowserLiveConsoleRealChain
+=== RUN   TestBrowserLiveConsoleRealChain/workspace
+2026/10/30 12:23:17 http: proxy error: context canceled
+2026/10/30 12:23:17 http: proxy error: context canceled
+2026/10/30 12:23:17 http: proxy error: context canceled
+2026/10/30 12:23:21 http: proxy error: context canceled
+2026/10/30 12:23:21 http: proxy error: context canceled
+2026/10/30 12:23:27 http: proxy error: context canceled
+2026/10/30 12:23:27 http: proxy error: context canceled
+2026/10/30 12:23:33 http: proxy error: context canceled
+2026/10/30 12:23:33 http: proxy error: context canceled
+2026/10/30 12:23:39 http: proxy error: context canceled
+2026/10/30 12:23:39 http: proxy error: context canceled
+2026/10/30 12:23:45 http: proxy error: context canceled
+2026/10/30 12:23:45 http: proxy error: context canceled
+2026/10/30 12:23:54 http: proxy error: context canceled
+2026/10/30 12:23:54 http: proxy error: context canceled
+2026/10/30 12:24:27 http: proxy error: context canceled
+2026/10/30 12:24:27 http: proxy error: context canceled
+2026/10/30 12:24:27 http: proxy error: context canceled
+2026/10/30 12:24:27 http: proxy error: context canceled
+2026/10/30 12:24:28 http: proxy error: context canceled
+2026/10/30 12:24:28 http: proxy error: context canceled
+2026/10/30 12:24:35 http: proxy error: context canceled
+2026/10/30 12:24:42 http: proxy error: context canceled
+2026/10/30 12:24:42 http: proxy error: context canceled
+2026/10/30 12:24:42 http: proxy error: context canceled
+2026/10/30 12:25:16 http: proxy error: context canceled
+2026/10/30 12:25:16 http: proxy error: context canceled
+2026/10/30 12:25:16 http: proxy error: context canceled
+2026/10/30 12:25:16 http: proxy error: context canceled
+2026/10/30 12:25:23 http: proxy error: context canceled
+2026/10/30 12:25:52 http: proxy error: context canceled
+2026/10/30 12:25:58 http: proxy error: context canceled
+2026/10/30 12:25:59 http: proxy error: context canceled
+2026/10/30 12:25:59 http: proxy error: context canceled
+2026/10/30 12:26:34 http: proxy error: context canceled
+2026/10/30 12:27:10 http: proxy error: context canceled
+2026/10/30 12:27:39 http: proxy error: context canceled
+2026/10/30 12:28:22 http: proxy error: context canceled
+2026/10/30 12:28:51 http: proxy error: context canceled
+2026/10/30 12:28:51 http: proxy error: context canceled
+    browser_live_console_test.go:650: LC-U1/U2a browser failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.wYiZ0wc9/live-console-3037060884
+=== RUN   TestBrowserLiveConsoleRealChain/labels
+2026/10/30 12:29:22 http: proxy error: context canceled
+2026/10/30 12:29:24 http: proxy error: context canceled
+2026/10/30 12:29:24 http: proxy error: context canceled
+2026/10/30 12:29:25 http: proxy error: context canceled
+2026/10/30 12:29:25 http: proxy error: context canceled
+2026/10/30 12:29:26 http: proxy error: context canceled
+2026/10/30 12:29:26 http: proxy error: context canceled
+2026/10/30 12:29:30 http: proxy error: context canceled
+2026/10/30 12:29:31 http: proxy error: context canceled
+2026/10/30 12:29:31 http: proxy error: context canceled
+2026/10/30 12:29:31 http: proxy error: context canceled
+2026/10/30 12:29:32 http: proxy error: context canceled
+2026/10/30 12:29:32 http: proxy error: context canceled
+2026/10/30 12:29:32 http: proxy error: context canceled
+    browser_live_console_test.go:652: LC-U1 MOCK Console; LC-U2a REAL_PG + MOCK Graph browser evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.wYiZ0wc9/live-console-716718436
+--- FAIL: TestBrowserLiveConsoleRealChain (397.33s)
+    --- FAIL: TestBrowserLiveConsoleRealChain/workspace (373.09s)
+    --- PASS: TestBrowserLiveConsoleRealChain/labels (24.24s)
+FAIL
+FAIL	livecommerce/tests/foundation	397.427s
+FAIL

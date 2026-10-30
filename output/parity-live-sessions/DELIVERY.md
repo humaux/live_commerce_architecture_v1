@@ -1,14 +1,42 @@
-# PARITY-LIVE-SESSIONS · tests-only RED handoff · 2026-10-30
+# PARITY-LIVE-SESSIONS · implementation CI handoff · 2026-10-30
 
-Status: PENDING CI RED. No application implementation has been pushed. Author assessment E0; Node syntax checks and the independent test oracle's standalone typecheck are E1 only. No local tests, servers, browser, PG or containers were run. No deployment, merge, auto-merge, status posting or Figma write.
+Status: implementation source authored; PR #365 GREEN is PENDING. Author assessment E0. Product TypeScript, spec syntax and packet structure are E1 only. Causal tests-only RED is independently inspectable E3 failure evidence at head `395209e39d97c7a5a84373e114879e86f549416c`, run `41052979614`, job `124055728603`: four new C4 assertions failed (missing 直播準備 / 本場商品 at both widths); 23 existing workspace cases passed. The original Foundation pass belongs to that RED head, not this implementation. No local tests, servers, browser, PG or containers were run. No deployment, merge, auto-merge, status posting or Figma write.
+
+## Current implementation and acceptance boundary
+
+- Bare Studio is a filterable session-card list. A selected scene opens preparation; the title action opens the explicit draft-edit task. Existing draft CAS, recovery, timestamp validation and local media permission fences remain; the MOCK rehearsal labels/panel and permanent split-editor landing are removed from the production landing.
+- Preparation, post-live review, next-draft copy, end confirmation and product stock tasks use the existing server projections and original scoped/durable command journal. Inventory uses server warehouse/SKU/version and fixed ±1 commands; no client money calculation. Copy exclusions, payment separation and the Meta video boundary remain explicit. A successful copy preserves current receipt conflicts in memory.
+- Claims defaults to preflight; existing source/offer/bundle tools are under a real Advanced disclosure. Keyword edit has preview, save, removal preview, server version CAS and reload checks. The advanced tools keep the frozen prompts and original security assertions.
+- Meta list → intro → official authorization → Page/IG choice → confirmation → result → detail → capability checks/disconnect. Official OAuth and all existing permission rules remain. Lost pick/disconnect acknowledgements stop writes until an explicit read-only status query. Task navigation focuses the new heading and returns the section to view. SettingsWizard and console product source are untouched.
+- New and reused visible copy is enumerated in [COPY.md](COPY.md), including three-locale templates from all six catalogs. Current source syntax/type/packet receipts and file hashes are recorded in `static-checks.json` and `source-hashes.json`; these are E1, never browser acceptance.
+
+**DEFERRED state:** frames `1336:17336/1336:17337`, copy-conflict summary after a document reload only. The POST copy receipt returns `{conflicts:[{keyword,sku_id,reason}]}`, but existing GET Studio/A1 responses do not return a persisted copy-conflict projection. Exact missing field: a server-owned `copy_conflicts: [{keyword, sku_id, reason}]` read projection for the copied session. The happy path, saved draft, offers and closed-window semantics continue; no conflict list is reconstructed or fabricated in the client. Backend/contract expansion and its separate Go RED are for the integrator, not silently added here.
+
+Current Figma readback: all 45 complete `get_design_context(depth=10)` node objects match the signed RED source exactly, and all 45 screenshots were re-read at native frame resolution. See `current-figma/comparison.json`. Earlier PNGs were 0.75-scale exports; current native PNGs sit in `current-figma/`. No Figma canvas was changed.
+
+Density: the supplied probe's visible-ancestor counting applied to the 23 signed mobile source frames gives median **16 nodes / 243 characters**, max **45 nodes** (`figma-density.json`, includes shell and visible-flag text beyond the viewport). Those source counts exceed the default 12/100/20 guidance. The card's exact signed frames remain the UI authority; this is not a density waiver or a product pass. The CI screenshot helper now records actual viewport text-block/character observations with every parity JSON. Browser density and independent visual disposition remain PENDING. Figma copy lint: N/A to canvas writes (none); no banned list was edited. The optional Impeccable detector was NOT_RUN under the owner's explicit local-check whitelist.
+
+### Existing-case mapping (no cases deleted, no budgets relaxed)
+
+| Existing intent | Signed production path / update | Preserved evidence |
+|---|---|---|
+| STU04 create/edit/CAS, dirty recovery and authorized local connection | Cards → explicit `#edit`; Create session / Connection authorization / Check local connection seller labels | Original idempotency, stale-version, CSRF, revocation, conceal/reveal, native visibility and media-effect assertions |
+| STU05 bare-route fetch loop | Visit/reload the bare route, then click its first card | Four rounds and ≤6 read budget unchanged |
+| KC16 source, offers, host prompts, bundles and one-time links | Preflight → real Advanced click; metadata uses explicit edit task | Every original source refusal, parser, permission, frozen-prompt and link assertion |
+| Meta connect protocol, six granted scopes, IG and disconnect | Intro/bridge/pick/review/result/detail real clicks; granted scope identifiers remain test IDs with seller labels | Cookie/state/redirect, one POST, exact six scope flags, real provider-boundary and unsubscribe assertions |
+| MCH11 health/cooldown/role/store fences | Page detail → feature checks; localized schedule action | All eight provider/capability rows, review-required restrictions, 429 and no extra schedule/store leakage assertions |
+| New C4 keyword and inventory actions | Preview/save/reload and removal-preview return; ±1/reload/return to products | Stronger real-click checks; no response values replaced |
+
+Click ledger and real-route screenshot matrix below are authored acceptance requirements, not claims of executed clicks. The existing shared helper attaches actual click outcomes (including failed expectations) in CI; no local browser result exists.
+
 
 ## Assignment and authority
 
-Integrator-dispatched implementation worker; branch `unit/parity-live-sessions`; worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions`; base `3ea359f796d36153bb4b8aa7259e4e0c27676b86`. Role: implementation worker, tests-only phase. Runtime model/effort was not independently exposed by a tool: UNKNOWN, not inferred from a role name.
+Integrator-dispatched implementation worker; branch `unit/parity-live-sessions`; worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions`; base `3ea359f796d36153bb4b8aa7259e4e0c27676b86`. Role: implementation worker; one-card implementation phase. No recursive delegation. Runtime model/effort was not independently exposed by a tool: UNKNOWN, not inferred from a role name.
 
 Scope: owner/integrator card in this conversation, FIGMA-INVENTORY §3 C4 and Appendix A U:live-sessions/U:meta-connect. UI authority: Fleet Bridge read-only get_design_context + get_screenshot on all 45 listed frames, file `iJ9lDdFIXgTlKkt5Tvrc0X`, page `4:8829`; current readback fingerprints and exact visible text are in [frames.json](frames.json). The bridge returned one connected document, name Untitled, fileKey null, defaultFile matching the assigned file; document identity was not strengthened into an independent file-key verification.
 
-The card's literal `ux-live-sessions` and `ux-meta-connect` worktrees do not exist. Read the available ux-live DELIVERY current v3 section and ux-settings current simple/polish sections as contextual handoffs; neither supplies a current C4 three-language table for these 45 older roots. No old DELIVERY section was promoted over live frames. Test translations are an independent oracle; implementation copy is still pending.
+The card's literal `ux-live-sessions` and `ux-meta-connect` worktrees do not exist. Read the available ux-live DELIVERY current v3 section and ux-settings current simple/polish sections as contextual handoffs; neither supplies a current C4 three-language table for these 45 older roots. No old DELIVERY section was promoted over live frames. The test translations remain an independent oracle; the current implementation/reused copy is in COPY.md.
 
 Humaux MCP tools are unavailable in this runtime: search, rejected enumeration, coord state, store, code_index/link and canvas update NOT_RUN. No shared-state write/lock was attempted. This local evidence package does not masquerade as a Humaux store or task claim.
 
@@ -32,25 +60,25 @@ Read `ux-live/output/ux-audit-ref/FIGMA-GUIDE.md` (guide source date 2026-10-28;
 
 |Required desktop fact|Mobile frame/state|Review/summary gate|Current evidence|
 |---|---|---|---|
-|Session identity, preparation/live/end state, schedule, paid count and amount|5:14691; 19:375/376|Server facts, no synthetic Figma numbers|Tests authored; NOT_RUN|
-|Actual source and permission; target quantity/match mode; products/keywords/prices/availability|19:375; 52:1385|Preflight names the selected session; no IG missing count becomes zero|Tests authored; NOT_RUN|
-|Camera/microphone/network checked in the streaming tool, not this app|5:17826|Preparation source, device and product steps|Tests authored; NOT_RUN|
-|Copy title; products/prices copied; source/claims/links excluded; closed claim window|30:2030; 1336:17337|Copy preview → server-created next draft → reload|Tests authored; NOT_RUN|
-|Selected product/keyword, current and adjusted sellable stock, version/permission fence|52:1388|+1 then −1 through real UI; reread after reload|Tests authored; NOT_RUN|
-|Selected session and end effect; Meta video and existing payment facts unchanged|1336:17333; 19:376|Cancel, confirm, persisted ended phase|Tests authored; NOT_RUN|
-|Current/new default keyword; propagation to existing sessions is separate|1336:17335|Preview and removal controls; server save coverage still to extend in implementation|Tests authored; NOT_RUN|
-|Recap funnel; collected vs pending orders/net; unattributed count; promoted-period spend; aggregate buyers|1151:9425|Values from existing attribution PG fixture; no client money calculation|Tests authored; NOT_RUN|
-|Timeline timestamp, comments/claims, orders/net; missing Meta spend/viewers remain —|1151:9427|Causation warning and nullable values|Tests authored; NOT_RUN|
-|Audience status, views vs people, peak concurrency, total time; no buyer demographic join|1151:9431|Real not_read state and audience command receipt|Tests authored; NOT_RUN|
-|Selected Page identity, IG attachment, existing Pages retained|50:1356/1359; 1108:7306/7308/7310|Pick → confirmation → command → result → reload|Tests authored; NOT_RUN|
-|Disconnect target, local impact, remote unsubscribe distinction, unrelated Pages retained|50:1358; 948:6718|Lost ACK → read-only query; exactly one POST|Tests authored; NOT_RUN|
-|Per-provider feature status, limited/review-required state, recheck only schedules|1108:7312|Eight existing permission assertions remain; no invented probe success|Tests authored; NOT_RUN|
+|Session identity, preparation/live/end state, schedule, paid count and amount|5:14691; 19:375/376|Server facts, no synthetic Figma numbers|Source/assertions authored; CI PENDING|
+|Actual source and permission; target quantity/match mode; products/keywords/prices/availability|19:375; 52:1385|Preflight names the selected session; no IG missing count becomes zero|Source/assertions authored; CI PENDING|
+|Camera/microphone/network checked in the streaming tool, not this app|5:17826|Preparation source, device and product steps|Source/assertions authored; CI PENDING|
+|Copy title; products/prices copied; source/claims/links excluded; closed claim window|30:2030; 1336:17337|Copy preview → server-created next draft → reload|Source/assertions authored; CI PENDING|
+|Selected product/keyword, current and adjusted sellable stock, version/permission fence|52:1388|+1 then −1 through real UI; reread after reload|Source/assertions authored; CI PENDING|
+|Selected session and end effect; Meta video and existing payment facts unchanged|1336:17333; 19:376|Cancel, confirm, persisted ended phase|Source/assertions authored; CI PENDING|
+|Current/new default keyword; propagation to existing sessions is separate|1336:17335|Preview and removal controls; server save coverage still to extend in implementation|Source/assertions authored; CI PENDING|
+|Recap funnel; collected vs pending orders/net; unattributed count; promoted-period spend; aggregate buyers|1151:9425|Values from existing attribution PG fixture; no client money calculation|Source/assertions authored; CI PENDING|
+|Timeline timestamp, comments/claims, orders/net; missing Meta spend/viewers remain —|1151:9427|Causation warning and nullable values|Source/assertions authored; CI PENDING|
+|Audience status, views vs people, peak concurrency, total time; no buyer demographic join|1151:9431|Real not_read state and audience command receipt|Source/assertions authored; CI PENDING|
+|Selected Page identity, IG attachment, existing Pages retained|50:1356/1359; 1108:7306/7308/7310|Pick → confirmation → command → result → reload|Source/assertions authored; CI PENDING|
+|Disconnect target, local impact, remote unsubscribe distinction, unrelated Pages retained|50:1358; 948:6718|Lost ACK → read-only query; exactly one POST|Source/assertions authored; CI PENDING|
+|Per-provider feature status, limited/review-required state, recheck only schedules|1108:7312|Eight existing permission assertions remain; no invented probe success|Source/assertions authored; CI PENDING|
 
 No checkout recipient, address, delivery total or payment timing exists in these C4 frames; those fields are N/A, not silently omitted from a checkout state.
 
 ## RED gate and legacy mapping
 
-All existing tests are retained verbatim; only new independent assertions and test-only fixture registration are added. Existing gate-adapter assertions, drift baseline and dispatcher exemptions are untouched. Six existing browser specs import the new C4 oracle and retain their original runner registration. The console fixture gets two isolated live scenes, separate from the six existing lanes; the attribution runner enables its existing Studio handler for the real /studio route.
+The RED commit retained existing tests; this implementation changes their real navigation/labels as mapped above. No case or security assertion is deleted. Existing gate-adapter assertions, drift baseline and dispatcher exemptions are untouched. Six existing browser specs import the new C4 oracle and retain their original runner registration. The console fixture gets two isolated live scenes, separate from the six existing lanes; the attribution runner enables its existing Studio handler for the real /studio route.
 
 |Legacy element asserted absent|Replacement / preserved intent|
 |---|---|
@@ -62,7 +90,7 @@ All existing tests are retained verbatim; only new independent assertions and te
 
 Evidence-only local setup: `node --check` on all seven added/changed TS files exit 0; `gofmt -w` on the two fixture harnesses exit 0. Standalone C4 oracle typecheck exit 0 after explicitly selecting the installed Node type root. Optional broad spec typecheck is NOT_ACCEPTED: missing workspace `@live-commerce/i18n` resolution and pre-existing `Facts.comments.public_unknown` type omission at live-console.spec.ts:204. No assertion/test or fixture was changed to silence that unrelated pre-existing issue; CI remains the test authority.
 
-Click ledger: C4 helpers attach a per-control JSON row, including failures, to the browser artifact. No click is claimed executed locally. CI screenshots live under `parity/<frame-id>.png` at 1440×900 or 390×844; Figma viewports are recorded separately. Prototype-only banners, seeded names/numbers and demo-only navigation wording are excluded under the owner card's product-copy rule. Shell follows owner option A. Implementation, UI density measurement, product copy table, Figma-copy-lint applicability and independent visual comparison remain PENDING; no Figma was changed.
+Click ledger: C4 helpers attach a per-control JSON row, including failures, to the browser artifact. No click is claimed executed locally. CI screenshots live under `parity/<frame-id>.png` at 1440×900 or 390×844; Figma viewports are recorded separately. Prototype-only banners, seeded names/numbers and demo-only navigation wording are excluded under the owner card's product-copy rule. Shell follows owner option A. Source/copy tables and reference density observations are present; browser density and independent visual comparison remain PENDING. No Figma was changed.
 
 ## Frame → CI artifact → signed PNG
 
@@ -116,6 +144,6 @@ Click ledger: C4 helpers attach a per-control JSON row, including failures, to t
 
 ## Out-of-path disclosure and NOT_RUN
 
-Test registration/fixture files: tests/foundation/browser_ads_attribution_test.go, tests/foundation/browser_live_console_test.go. Imported test helper: tests/admin/parity-live-sessions.ts. Generated: output/ci-select-backend-browser/browser-ownership.json. Card evidence: output/parity-live-sessions/**. Product write paths untouched in RED phase. Main checkout read-only.
+Test registration/fixture files: tests/foundation/browser_ads_attribution_test.go, tests/foundation/browser_live_console_test.go. Imported test helper: tests/admin/parity-live-sessions.ts. Generated: output/ci-select-backend-browser/browser-ownership.json. Card evidence: output/parity-live-sessions/**. Product write paths were untouched in RED; the implementation now changes only the C4 components and its new live-sessions module/i18n namespace. Main checkout read-only.
 
-NOT_RUN/PENDING: causal CI RED; implementation; GREEN; actual clicks/screenshots/persistence; all-browser acceptance; independent E4 comparison; source-header/packet/dependency-map CI gates; Humaux/coord/canvas/code indexing. No production or LIVE activity authorized or attempted. Integrator is the wake-up owner for the recorded WAIT_RUN jobs; bounded polling only.
+NOT_RUN/PENDING: current implementation GREEN; actual browser clicks/screenshots/persistence and viewport density; all-browser acceptance; independent E4 comparison; current-SHA CI source-header/dependency gates; Humaux/coord/canvas/code indexing. Packet structure and generated depmap are E1 only. Deferred copy-conflict reload projection is described above. No production or LIVE activity authorized or attempted. Integrator is the wake-up owner for the recorded WAIT_RUN jobs; bounded polling only.

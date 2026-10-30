@@ -1,6 +1,7 @@
 // Purpose: Exercises studio controls and access behavior through the isolated browser/API harness.
 // Depends on: @playwright/test, node:fs/promises, node:crypto, ../../apps/admin/lib/studio-model, ../../apps/admin/src/shell-copy, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STUDIO_STORE, LC_BROWSER_STUDIO_FOREIGN_STORE, LC_BROWSER_STUDIO_UNLISTED_STORE, LC_BROWSER_STUDIO_SESSION, LC_BROWSER_STUDIO_READONLY_TOKEN, LC_BROWSER_STUDIO_EXPIRED_TOKEN; ./parity-live-sessions (C4 independent oracle)
 // Used by: apps/admin/src/features/live/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_studio_ui_test.go
+// Invariants: scoped server facts and original security assertions remain authoritative; no LIVE effect or test-budget relaxation.
 import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
@@ -52,7 +53,7 @@ async function signedLogin(page: Page) {
   await expect(page.getByTestId("nav-group-live")).toBeVisible();
   await clickStudioNav(page);
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, name: shellCopy.en.studio })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Live sessions" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
 }
 
@@ -159,9 +160,9 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
       createRequests.push(request.headers()["idempotency-key"] ?? "");
   });
   await signedLogin(page);
-  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
-  await expect(page.getByText("Prepared rehearsal authority")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toBeEnabled();
+  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}#edit`);
+  await expect(page.getByText("Connection authorization")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check local connection" })).toBeEnabled();
   const schedule = page.getByLabel("Scheduled time (Taipei time, optional)");
   await expect(schedule).toHaveAttribute("type", "text");
   await expect(schedule).toHaveAttribute("placeholder", "YYYY-MM-DDTHH:mm");
@@ -176,7 +177,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await storageIsSafe(page);
 
   // A new draft is genuinely created by the UI, then edited and reopened.
-  await page.getByRole("button", { name: /New scene/ }).click();
+  await page.getByRole("button", { name: /Create session/ }).click();
   await page.getByLabel("Scene name").fill("STU04 browser-created scene");
   await schedule.fill("2030-02-30T00:00");
   const beforeInvalid = createRequests.length;
@@ -192,8 +193,8 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue("2030-01-01T08:00");
   const createdURL = page.url();
   expect(createdURL).toMatch(/scene=[0-9a-f-]{36}/);
-  await expect(page.getByText("No current prepared authority", { exact: false })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toBeDisabled();
+  await expect(page.getByText("Connection authorization is unavailable", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check local connection" })).toBeDisabled();
   const firstVersion = await displayedVersion(page);
   await page.getByLabel("Scene name").fill("STU04 browser-edited scene");
   await page.getByRole("button", { name: "Save draft" }).click();
@@ -273,16 +274,16 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   page.once("dialog", async (dialog) => { await dialog.accept(); });
   await page.getByTestId("locale-switch").selectOption("zh-CN");
   await expect(page).toHaveURL(/\/zh-CN\/studio/);
-  await expect(page.getByRole("heading", { level: 1, name: shellCopy["zh-CN"].studio, exact: true })).toBeVisible();
-  await page.goto(`/zh-CN/studio?store=${store}&scene=${preparedSession}`);
+  await expect(page.getByRole("heading", { level: 1, name: "直播场次", exact: true })).toBeVisible();
+  await page.goto(`/zh-CN/studio?store=${store}&scene=${preparedSession}#edit`);
   await expect(page.getByText("已准备模拟授权")).toBeVisible();
   await screenshot(page, "zh-CN-desktop-first-1586x992", 1586, 992);
   await screenshot(page, "zh-CN-phone-first-390x844", 390, 844);
-  await page.goto(`/zh-TW/studio?store=${store}&scene=${preparedSession}`);
-  await expect(page.getByRole("heading", { level: 1, name: shellCopy["zh-TW"].studio, exact: true })).toBeVisible();
+  await page.goto(`/zh-TW/studio?store=${store}&scene=${preparedSession}#edit`);
+  await expect(page.getByRole("heading", { level: 1, name: "直播場次", exact: true })).toBeVisible();
   await screenshot(page, "zh-TW-desktop-first-1586x992", 1586, 992);
   await screenshot(page, "zh-TW-phone-first-390x844", 390, 844);
-  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}#edit`);
   await screenshot(page, "en-phone-first-390x844", 390, 844);
   await page.goto(createdURL);
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 competing edit");
@@ -307,7 +308,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   // reuse the exact command key and PG must still contain one draft.
   const armed = await fetch(`${api}/__test/studio-ui-arm-fault`, { method: "POST" });
   expect(armed.status).toBe(204);
-  await page.getByRole("button", { name: /New scene/ }).click();
+  await page.getByRole("button", { name: /Create session/ }).click();
   await page.getByLabel("Scene name").fill("STU04 lost ACK scene");
   await page.getByRole("button", { name: "Create draft" }).click();
   await expect(page.getByText("The result is unknown", { exact: false })).toBeVisible();
@@ -322,9 +323,9 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
 
   // Prepared session has the only rehearsable authority. The actual worker
   // must consume it; the UI must show persisted observation, then terminal.
-  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
-  await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toBeEnabled();
-  await page.getByRole("button", { name: "Start MOCK rehearsal" }).click();
+  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}#edit`);
+  await expect(page.getByRole("button", { name: "Check local connection" })).toBeEnabled();
+  await page.getByRole("button", { name: "Check local connection" }).click();
   await expect(page.getByText("Observed locally")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("button", { name: "Request stop" })).toBeEnabled();
   await page.getByRole("button", { name: "Request stop" }).click();
@@ -341,7 +342,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   }, `/api/stores/${store}/live-sessions`);
   expect(csrfDenied.status).toBe(403);
   expect(csrfDenied.cache).toBe("private, no-store");
-  await page.goto(`/en/studio?store=${foreignStore}&scene=${preparedSession}`);
+  await page.goto(`/en/studio?store=${foreignStore}&scene=${preparedSession}#edit`);
   await expect(page.getByText("This scene is unavailable", { exact: false })).toBeVisible();
   await page.goto(`/en/studio?store=${unlistedStore}`);
   await expect(page.getByTestId("merchant-studio")).toHaveCount(0);
@@ -361,11 +362,11 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   const createsBeforeLoading = createRequests.length;
   await page.route(listPath, holdList);
   try {
-    await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+    await page.goto(`/en/studio?store=${store}&scene=${preparedSession}#edit`);
     await expect.poll(() => listHeld).toBe(true);
     await expect(page.getByRole("region", { name: "Scenes", exact: true }).getByText("Loading scenes…", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
-    await expect(page.getByRole("button", { name: /New scene/ })).toHaveAttribute("aria-describedby", "studio-list-status");
+    await expect(page.getByRole("button", { name: /Create session/ })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /Create session/ })).toHaveAttribute("aria-describedby", "studio-list-status");
     expect(createRequests).toHaveLength(createsBeforeLoading);
   } finally {
     releaseList();
@@ -373,13 +374,13 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
     await page.unroute(listPath, holdList);
   }
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
-  await expect(page.getByRole("button", { name: /New scene/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /Create session/ })).toBeEnabled();
   // A second, independently signed OIDC login for the same merchant is not
   // the initiating login. An unresolved write must not carry its key/form
   // into that different session even though principal and store are equal.
   const armSwap = await fetch(`${api}/__test/studio-ui-arm-fault`, { method: "POST" });
   expect(armSwap.status).toBe(204);
-  await page.getByRole("button", { name: /New scene/ }).click();
+  await page.getByRole("button", { name: /Create session/ }).click();
   await page.getByLabel("Scene name").fill("STU04 swapped login scene");
   await page.getByRole("button", { name: "Create draft" }).click();
   await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
@@ -401,7 +402,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   expect(createRequests).toHaveLength(beforeSwapRetry);
   await expect(page.getByRole("button", { name: "Retry same request" })).toHaveCount(0);
   // Fresh read under the new signed login must not resurrect the old key/form.
-  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}#edit`);
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByRole("button", { name: "Retry same request" })).toHaveCount(0);
   const retained = page.getByLabel("Scene name");
@@ -432,11 +433,12 @@ test("STU05 the Studio route without a scene settles: live-sessions reads stay b
   await signedLogin(page); // expands Live and clicks its session-list route
   for (let round = 0; round < 4; round++) {
     reads.length = 0;
-    if (round === 0) await page.goto(`/en/studio?store=${store}`);
-    else await page.reload();
+    await page.goto(`/en/studio?store=${store}`);
+    if (round > 0) await page.reload(); // each round still exercises the bare route before opening its first card
     await expect(page.getByText("Loading scenes…")).toHaveCount(0);
     await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
-    await expect(page.getByLabel("Scene name")).toBeVisible(); // the first scene is opened without a ?scene= in the URL
+    await page.locator(".studio-scene-list .studio-scene").first().click();
+    await expect(page.getByLabel("Scene name")).toBeVisible(); // signed cards open the same first scene through a real click
     // G-UI8 settle window: a looping page keeps issuing reads here; a settled one issues none (the scene list read plus a handful of detail reads at most).
     await page.waitForTimeout(2500);
     expect(reads.length, `round ${round}: live-sessions GETs while the bare Studio route settled`).toBeLessThanOrEqual(6);
@@ -460,24 +462,24 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
   const context = await browser.newContext({ baseURL: origin });
   await setSession(context, readOnlyToken);
   const page = await context.newPage();
-  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}#edit`);
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByText("Read-only access", { exact: false }).first()).toBeVisible();
   // The shared prepared scene is READY after the real-chain Start, so Start is
   // absent; the remaining Stop control must still deny a read-only principal.
-  await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Check local connection" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Request stop" })).toBeDisabled();
   await expect(page.getByLabel("Scene name")).toBeDisabled();
   await expect(page.getByLabel("Choose scheduled date and time (Taipei time)")).toBeDisabled();
-  await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /Create session/ })).toBeDisabled();
   await context.close();
   const expired = await browser.newContext({ baseURL: origin });
   await setSession(expired, expiredToken);
   const expiredPage = await expired.newPage();
-  await expiredPage.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  await expiredPage.goto(`/en/studio?store=${store}&scene=${preparedSession}#edit`);
   await expect(expiredPage.getByTestId("shell-session-expired")).toContainText(shellCopy.en.sessionExpired);
   await expect(expiredPage.getByTestId("merchant-studio")).toHaveCount(0);
-  await expect(expiredPage.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
+  await expect(expiredPage.getByRole("button", { name: "Check local connection" })).toHaveCount(0);
   const recovery = expiredPage.getByTestId("shell-sign-in");
   await expect(recovery).toHaveText(shellCopy.en.signIn);
   await expect(recovery).toHaveAttribute("href", "/en");
@@ -492,10 +494,10 @@ test("STU04 native visibility conceal and revalidation remains required", async 
   const { page, close } = await nativePage(evidence, "studio-native-profile-");
   try {
     await signedLogin(page);
-    await page.goto(new URL(`/en/studio?store=${store}&scene=${preparedSession}`, origin).toString());
+    await page.goto(new URL(`/en/studio?store=${store}&scene=${preparedSession}#edit`, origin).toString());
     // This case must own an editable DRAFT form: the shared prepared scene may
     // already be READY after the preceding real worker Start.
-    await page.getByRole("button", { name: /New scene/ }).click();
+    await page.getByRole("button", { name: /Create session/ }).click();
     await expect(page.getByLabel("Scene name")).toBeEnabled();
     await page.getByLabel("Scene name").fill("STU04 native dirty draft");
     await expect(page.getByText("Unsaved changes")).toBeVisible();
@@ -511,10 +513,10 @@ test("STU04 native conceal retains an uncertain committed request", async () => 
   const { page, close } = await nativePage(evidence, "studio-native-profile-");
   try {
     await signedLogin(page);
-    await page.goto(new URL(`/en/studio?store=${store}&scene=${preparedSession}`, origin).toString());
+    await page.goto(new URL(`/en/studio?store=${store}&scene=${preparedSession}#edit`, origin).toString());
     const armed = await fetch(`${api}/__test/studio-ui-arm-fault`, { method: "POST" });
     expect(armed.status).toBe(204);
-    await page.getByRole("button", { name: /New scene/ }).click();
+    await page.getByRole("button", { name: /Create session/ }).click();
     await page.getByLabel("Scene name").fill("STU04 native uncertain scene");
     await page.getByRole("button", { name: "Create draft" }).click();
     await expect(page.getByRole("button", { name: "Retry same request" })).toBeVisible();
@@ -539,6 +541,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) test(`C4 session cards a
     await expect(page.getByRole("heading", { name: /^(Scene settings|場次設定|场次设置)$/ })).toHaveCount(0);
     await expect(page.getByRole("complementary", { name: /MOCK rehearsal|模擬演練|模拟演练/ })).toHaveCount(0);
     await parityClick(page, c.preparing, () => expect(page.getByRole("button", { name: c.preparing, exact: true })).toHaveAttribute("aria-pressed", "true"));
+    for (const filter of [c.live, c.ended]) await parityClick(page, filter, () => expect(page.getByRole("button", { name: filter, exact: true })).toHaveAttribute("aria-pressed", "true"));
     await parityClick(page, c.all, () => expect(page.getByRole("button", { name: c.all, exact: true })).toHaveAttribute("aria-pressed", "true"));
     await parityShot(page, evidence, locale, viewport.width === 1440 ? "5:14545" : "5:14691");
   }

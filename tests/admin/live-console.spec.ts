@@ -694,6 +694,7 @@ for (const viewport of parityViewports) test(`C4 session products stock and end 
   await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1336:17329":"52:1388");
   await page.reload();await expect(page.getByTestId("session-stock-available")).toHaveText(String(before));
   expect((await facts(request)).scenes[scene]!.SKU).toBe(fixture.SKU);
+  await parityClick(page,c.products,()=>expect(page.getByRole("heading",{name:c.products,exact:true})).toBeVisible());
   await page.goto(`${origin}/zh-TW/studio?store=${store}&scene=${scene}#end`);
   await expect(page.getByRole("heading",{name:c.end,exact:true})).toBeVisible();
   await expect(page.getByText("結束本場留言收單？平台上的直播不會因此停止。",{exact:true})).toBeVisible();

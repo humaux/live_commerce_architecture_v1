@@ -106,6 +106,23 @@ async function answerDialog(page: Page) {
   });
 }
 
+// C4 keeps the original protocol/security assertions after real navigation through the signed tasks.
+async function officialStart(page: Page, control: string) {
+  await page.getByTestId(control).click();
+  await page.getByRole("button", { name: parityWords.en.official, exact: true }).click();
+  await page.getByRole("button", { name: parityWords.en.official, exact: true }).click();
+}
+async function connectionDetail(page: Page, locale: "en" | "zh-TW" | "zh-CN" = "en") {
+  await page.getByRole("button", { name: parityWords[locale].detail, exact: true }).first().click();
+  await expect(page.getByTestId("metaconnect-status")).toBeVisible();
+}
+async function confirmPage(page: Page) {
+  await page.getByRole("button", { name: parityWords.en.confirmConnect, exact: true }).click();
+  await expect(page.getByRole("heading", { name: parityWords.en.result, exact: true })).toBeVisible();
+  await page.getByRole("button", { name: parityWords.en.returnList, exact: true }).click();
+  await connectionDetail(page);
+}
+
 test.describe("meta-connect browser gate", () => {
 test.describe.configure({ mode: "serial" });
 
@@ -115,7 +132,7 @@ test("not connected: the card offers Connect; a forged return state is refused a
   await expect(page.getByTestId("metaconnect-none")).toHaveText(en.notConnected);
   await answerDialog(page);
   answer = { wrongState: true };
-  await page.getByTestId("metaconnect-connect").click();
+  await officialStart(page, "metaconnect-connect");
   await expect(page.getByTestId("metaconnect-error")).toHaveText(en.errors.state_mismatch, { timeout: 30_000 });
   await expect(page.getByTestId("metaconnect-none")).toBeVisible();
   expect(new URL(page.url()).search).not.toMatch(/meta_error|code=|state=/); // the return params are stripped once read
@@ -127,10 +144,10 @@ test("a missing permission is listed, the pick is disabled and nothing is connec
   await openSettings(page);
   await answerDialog(page);
   answer = { profile: "nomsg" };
-  await page.getByTestId("metaconnect-connect").click();
+  await officialStart(page, "metaconnect-connect");
   await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId(`metaconnect-pick-${pageC.id}`)).toBeChecked();
-  await expect(page.getByTestId("metaconnect-missing")).toContainText("pages_messaging");
+  await expect(page.getByTestId("metaconnect-missing")).toContainText(en.task_messaging);
   await expect(page.getByTestId("metaconnect-pick-submit")).toBeDisabled();
   await page.getByRole("button", { name: en.pickCancel }).click();
   await expect(page.getByTestId("metaconnect-none")).toBeVisible();
@@ -149,7 +166,7 @@ test("connect Page A with Instagram: dialog params, state cookie, 303 without co
   await openSettings(page);
   await answerDialog(page);
   answer = { profile: "full" };
-  await page.getByTestId("metaconnect-connect").click();
+  await officialStart(page, "metaconnect-connect");
   await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
 
   const d = dialog as unknown as URL;
@@ -192,6 +209,7 @@ test("connect Page A with Instagram: dialog params, state cookie, 303 without co
       picks.push({ key: r.request().headers()["idempotency-key"] ?? null, body: r.request().postData(), status: r.status() });
   });
   await page.getByTestId("metaconnect-pick-submit").click();
+  await confirmPage(page);
   await expect(page.getByTestId("metaconnect-status")).toBeVisible({ timeout: 30_000 });
   expect(picks.length).toBe(1);
   expect(picks[0].status).toBe(201);
@@ -203,7 +221,7 @@ test("connect Page A with Instagram: dialog params, state cookie, 303 without co
   await expect(page.getByTestId("metaconnect-page")).toContainText(pageA.id);
   await expect(page.getByTestId("metaconnect-ig")).toHaveText(`@${pageA.igUser}`);
   for (const permission of ["pages_messaging", "pages_manage_metadata", "pages_read_engagement", "pages_show_list", "instagram_manage_comments", "instagram_manage_messages"])
-    await expect(page.getByTestId("metaconnect-permissions")).toContainText(permission);
+    await expect(page.getByTestId(`metaconnect-permission-${permission}`)).toBeVisible(); // same six granted scopes, rendered as seller labels
   await expect(page.getByTestId("metaconnect-token")).toHaveText(en.tokenActive);
   await expect(page.getByTestId("metaconnect-token")).toHaveAttribute("data-state", "active");
   await expect(page.getByTestId("metaconnect-last-event")).toHaveText(en.never);
@@ -216,7 +234,8 @@ test("connect Page A with Instagram: dialog params, state cookie, 303 without co
     for (const viewport of [{ name: "desktop" as const, width: 1586, height: 992 }, { name: "mobile" as const, width: 390, height: 844 }]) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await openSettings(page, locale);
-      await expect(page.getByRole("heading", { name: copy.title, exact: true })).toBeVisible();
+      await connectionDetail(page, locale);
+      await expect(page.getByRole("heading", { name: parityWords[locale].detailTitle, exact: true })).toBeVisible();
       await expect(page.getByTestId("metaconnect-page")).toContainText(pageA.name);
       await shot(page, "metaconnect", locale, viewport.name);
     }
@@ -237,9 +256,10 @@ test("while connected the store keeps its Page: add and reauthorize are availabl
 test("disconnect asks for confirmation, destroys the connection and the claims-worker unsubscribes the Page at Meta", async ({ page }) => {
   await signedLogin(page);
   await openSettings(page);
+  await connectionDetail(page);
   await page.getByTestId("metaconnect-disconnect").click();
-  await expect(page.getByTestId("metaconnect-confirm")).toContainText(en.confirmDisconnect);
-  await page.getByRole("button", { name: en.cancel }).click();
+  await expect(page.getByTestId("metaconnect-confirm")).toContainText("This stops local comment intake for this Page.");
+  await page.getByRole("button", { name: parityWords.en.keep }).click();
   await expect(page.getByTestId("metaconnect-status")).toBeVisible(); // cancel changes nothing
   await page.getByTestId("metaconnect-disconnect").click();
   await page.getByTestId("metaconnect-confirm-yes").click();
@@ -257,11 +277,12 @@ test("reconnect with a Facebook-only Page: Instagram absent, card says none link
   await openSettings(page);
   await answerDialog(page);
   answer = { profile: "fbonly" };
-  await page.getByTestId("metaconnect-connect").click();
+  await officialStart(page, "metaconnect-connect");
   await expect(page.getByTestId("metaconnect-pick")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('[data-testid^="metaconnect-pick-"][type="radio"]')).toHaveCount(1);
   await expect(page.getByTestId("metaconnect-pick-ig")).toHaveCount(0);
   await page.getByTestId("metaconnect-pick-submit").click();
+  await confirmPage(page);
   await expect(page.getByTestId("metaconnect-status")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("metaconnect-page")).toContainText(pageB.name);
   await expect(page.getByTestId("metaconnect-ig")).toHaveText(en.noInstagram);

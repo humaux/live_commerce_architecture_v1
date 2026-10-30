@@ -1,6 +1,7 @@
 // Purpose: AT7/AT9 real-click report, evidence separation and responsive table interaction gates.
 // Depends on: production Next/Go/PG, synthetic Meta fixtures, Playwright and native scrollend readiness.; ./parity-live-sessions (C4 independent oracle)
 // Used by: --browser-ads-attribution; no response interception or LIVE provider acceptance.
+// Invariants: scoped server facts and original security assertions remain authoritative; no LIVE effect or test-budget relaxation.
 // No response interception or completed-order synthesis. The runner supplies authoritative fixture totals.
 // Actual buyer ad URL -> checkout (AT5) is added by the root's storefront/checkout acceptance path.
 import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
@@ -1055,6 +1056,6 @@ for(const viewport of parityViewports)test(`C4 real Studio review timeline and a
   await expect(page.getByText("尚未讀取觀眾彙總",{exact:true})).toBeVisible();
   await expect(page.getByRole("button",{name:c.audienceRead,exact:true})).toBeVisible();
   await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1151:9430":"1151:9431");
-  await parityClick(page,c.audienceRead,()=>expect(page.getByTestId("session-audience-result")).toBeVisible());
+  await parityClick(page,c.audienceRead,()=>expect(page.getByTestId("session-audience-result").getByRole("status")).toBeVisible());
   await page.reload();await expect(page.getByRole("heading",{name:c.audienceTitle,exact:true})).toBeVisible();
 });

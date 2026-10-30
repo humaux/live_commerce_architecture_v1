@@ -1,0 +1,123 @@
+{
+  "scope": "Signed C4 mobile frame source; same visible-ancestor/text-node counting as the supplied density-probe.json. Includes the shell and all unclipped/visible-flag text, not browser viewport measurements.",
+  "median_nodes": 16,
+  "median_characters": 243,
+  "max_nodes": 45,
+  "frames": [
+    {
+      "frame": "1108:7304",
+      "visible_text_nodes": 14,
+      "characters": 257
+    },
+    {
+      "frame": "1108:7306",
+      "visible_text_nodes": 20,
+      "characters": 271
+    },
+    {
+      "frame": "1108:7308",
+      "visible_text_nodes": 17,
+      "characters": 261
+    },
+    {
+      "frame": "1108:7310",
+      "visible_text_nodes": 9,
+      "characters": 94
+    },
+    {
+      "frame": "1108:7312",
+      "visible_text_nodes": 25,
+      "characters": 313
+    },
+    {
+      "frame": "1151:9425",
+      "visible_text_nodes": 45,
+      "characters": 466
+    },
+    {
+      "frame": "1151:9427",
+      "visible_text_nodes": 39,
+      "characters": 345
+    },
+    {
+      "frame": "1151:9431",
+      "visible_text_nodes": 21,
+      "characters": 249
+    },
+    {
+      "frame": "1336:17333",
+      "visible_text_nodes": 11,
+      "characters": 165
+    },
+    {
+      "frame": "1336:17335",
+      "visible_text_nodes": 16,
+      "characters": 135
+    },
+    {
+      "frame": "1336:17337",
+      "visible_text_nodes": 10,
+      "characters": 101
+    },
+    {
+      "frame": "19:375",
+      "visible_text_nodes": 23,
+      "characters": 299
+    },
+    {
+      "frame": "19:376",
+      "visible_text_nodes": 14,
+      "characters": 172
+    },
+    {
+      "frame": "30:2030",
+      "visible_text_nodes": 13,
+      "characters": 137
+    },
+    {
+      "frame": "5:14691",
+      "visible_text_nodes": 22,
+      "characters": 243
+    },
+    {
+      "frame": "5:17826",
+      "visible_text_nodes": 16,
+      "characters": 243
+    },
+    {
+      "frame": "50:1356",
+      "visible_text_nodes": 18,
+      "characters": 302
+    },
+    {
+      "frame": "50:1358",
+      "visible_text_nodes": 13,
+      "characters": 209
+    },
+    {
+      "frame": "50:1359",
+      "visible_text_nodes": 15,
+      "characters": 311
+    },
+    {
+      "frame": "52:1385",
+      "visible_text_nodes": 25,
+      "characters": 217
+    },
+    {
+      "frame": "52:1388",
+      "visible_text_nodes": 20,
+      "characters": 192
+    },
+    {
+      "frame": "6:18045",
+      "visible_text_nodes": 15,
+      "characters": 194
+    },
+    {
+      "frame": "948:6718",
+      "visible_text_nodes": 13,
+      "characters": 153
+    }
+  ]
+}

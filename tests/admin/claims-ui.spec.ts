@@ -1,6 +1,7 @@
 // Purpose: KC16 real-click merchant claim lifecycle and buyer direct-checkout regression.
 // Depends on: production admin/storefront Next, signed MOCK IdP, buyer/merchant BFF and real PG; @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/studio-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_CLAIMS_BUYER_ORIGIN, LC_CLAIMS_STORE, LC_CLAIMS_SESSION, LC_CLAIMS_SCENE, LC_CLAIMS_PRODUCT, LC_CLAIMS_SKU_A, LC_CLAIMS_SKU_B, LC_CLAIMS_SKU_A_ID, LC_CLAIMS_SKU_B_ID, LC_CLAIMS_CONTROL, LC_CLAIMS_CONTROL_KEY, LC_CLAIMS_PROXY, LC_CLAIMS_FB_ASSET, LC_CLAIMS_IG_ASSET; ./parity-live-sessions (C4 independent oracle)
 // Used by: apps/admin/src/features/live/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_live_claims_test.go; --browser-live-claims (no provider sends or payment placement)
+// Invariants: scoped server facts and original security assertions remain authoritative; no LIVE effect or test-budget relaxation.
 // KC16 browser gate (contracts/live-keyword-claims-v1.md §11.1): Studio › Claims in the
 // packaged admin, then the buyer claim link in the storefront production server, through
 // real BFFs, Go transports and PostgreSQL. Started only by browser_live_claims_test.go
@@ -218,6 +219,7 @@ async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
   // Wording sweep (MOCK answers): every refusal code, forbidden and an unknown 409 in all three locales.
   for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
     if (locale !== "en") await merchant.goto(`${origin}/${locale}/studio/claims?store=${store}&scene=${session}`);
+    if (locale !== "en") await merchant.getByText(/^(Advanced|進階|进阶)$/, { exact: true }).click(); // C4: locale navigation remounts the disclosure
     const words = claimsCopy[locale];
     const box = merchant.getByTestId("claims-source");
     await expect(box.getByTestId("claims-source-status")).toBeVisible();
@@ -249,6 +251,7 @@ async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
   // Unknown result: Go committed but the answer was lost. Fields lock, retry reuses the identical
   // key and body, and Go's receipt replays the same answer: exactly one new version.
   await merchant.goto(`${origin}/en/studio/claims?store=${store}&scene=${session}`);
+    await merchant.getByText(/^(Advanced|進階|进阶)$/, { exact: true }).click(); // C4: real disclosure click before the existing claim/source gate
   await expect(section.getByTestId("claims-source-status")).toBeVisible();
   await active.check();
   failAfterApply = true;
@@ -308,18 +311,19 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await merchant.getByRole("button", { name: "Sign in with identity service" }).click();
   // W0 shell: signed in = the registry-driven "live" navigation group is present (the old flat "Live workspace" entry is gone).
   await expect(merchant.getByTestId(/^nav(-group)?-live/).first()).toBeVisible();
-  await merchant.goto(`${origin}/en/studio?store=${store}&scene=${session}`);
+  await merchant.goto(`${origin}/en/studio?store=${store}&scene=${session}#edit`);
   await expect(merchant.getByTestId("merchant-studio")).toBeVisible();
   // R1 ruling G2: the harness runs planning-only Studio (media off), so the API reports
   // media_enabled=false and the rehearsal column and its controls are absent.
   await expect(merchant.getByLabel("Scene name")).toHaveValue(scene);
   await expect(merchant.locator(".studio-surface.studio-planning-only")).toBeVisible();
-  await expect(merchant.getByRole("complementary", { name: "MOCK rehearsal" })).toHaveCount(0);
-  await expect(merchant.getByRole("button", { name: /MOCK rehearsal|Request stop/ })).toHaveCount(0);
+  await expect(merchant.getByRole("complementary", { name: "Device connection check" })).toHaveCount(0);
+  await expect(merchant.getByRole("button", { name: /Check local connection|Request stop/ })).toHaveCount(0);
   pass("planning-only Studio: scene detail loads, rehearsal panel and controls hidden (media_enabled=false)");
   await merchant.getByTestId("studio-open-claims").click();
+  await merchant.getByText("Advanced", { exact: true }).click(); // C4: existing management controls remain under Advanced
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
-  await expect(merchant.getByRole("heading", { level: 1, name: shellCopy.en.claims })).toBeVisible();
+  await expect(merchant.getByRole("heading", { level: 1, name: "Before going live" })).toBeVisible();
   await expect(merchant.getByRole("heading", { level: 1 })).toHaveCount(1);
   await expect(merchant.locator(".claims-breadcrumb")).toHaveCount(0);
   // W3-U2 split the IA: /studio/claims is "Comment claims"; the separate /studio/settings is "Live settings". The claims route still lets a merchant choose a scene rather than require a hidden query parameter.
@@ -328,9 +332,10 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await expect(merchant.getByTestId("merchant-claims")).toHaveCount(0);
   await merchant.locator("#live-settings-picker").selectOption(session);
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
-  await expect(merchant.getByRole("heading", { level: 1, name: shellCopy.en.claims })).toBeVisible();
+  await expect(merchant.getByRole("heading", { level: 1, name: "Before going live" })).toBeVisible();
   await merchant.reload();
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
+  await merchant.getByText("Advanced", { exact: true }).click(); // reopen the existing tools after the persisted deep-link read
   pass("global Live settings selects the server-listed scene through real clicks and keeps the deep link on reload");
   const stats = merchant.locator(".claims-stats");
   await expect(stats).not.toHaveAttribute("open", "");
@@ -563,12 +568,16 @@ for (const viewport of parityViewports) test(`C4 preflight products and keyword 
   await page.getByRole("button",{name:c.keyword,exact:true}).first().click();
   await expect(page.getByRole("heading",{name:c.keyword,exact:true})).toBeVisible();
   await expect(page.getByText("目前的預設口令",{exact:true})).toBeVisible();
-  await page.getByLabel(c.keywordInput,{exact:true}).fill("C4TEST");
-  await parityClick(page,c.preview,()=>expect(page.getByText("C4TEST",{exact:true})).toBeVisible());
+  await page.getByLabel(c.keywordInput,{exact:true}).fill(`C4T${viewport.width}`);
+  await parityClick(page,c.preview,()=>expect(page.getByText(`C4T${viewport.width}`,{exact:true})).toBeVisible());
   await parityShot(page,evidence,"zh-TW",viewport.width===1440?"1336:17334":"1336:17335");
-  await parityClick(page,"返回口令庫",()=>expect(page.getByRole("button",{name:c.keyword,exact:true}).first()).toBeVisible());
+  await parityClick(page,"儲存變更",()=>expect(page.getByRole("heading",{name:"預設留言口令",exact:true})).toBeVisible());
+  await page.reload();
+  await expect(page.getByText(`C4T${viewport.width}`,{exact:true})).toBeVisible();
   await page.getByRole("button",{name:c.keyword,exact:true}).first().click();
-  await expect(page.getByRole("button",{name:c.remove,exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:c.remove,exact:true})).toBeEnabled();
+  await parityClick(page,c.remove,()=>expect(page.getByText("將移除此預設；既有場次口令保留。",{exact:true})).toBeVisible());
+  await parityClick(page,"返回口令庫",()=>expect(page.getByRole("button",{name:c.keyword,exact:true}).first()).toBeVisible());
 });
 
 for(const locale of ["zh-CN","en"] as const)test(`C4 claims preflight locale ${locale}`,async({page})=>{

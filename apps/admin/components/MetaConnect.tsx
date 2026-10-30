@@ -1,6 +1,7 @@
 // Purpose: Owns the merchant Facebook and Instagram connection controls.
-// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/meta-connect-client, @/lib/meta-connect-model, @/lib/meta-connect-copy, ./settings.css
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/meta-connect-client, @/lib/meta-connect-model, @/lib/meta-connect-copy, ./settings.css, ./MetaHealthCapabilities, @/lib/meta-health-hook, @/lib/meta-health-client, ./live-sessions/session-tasks.module.css
 // Used by: apps/admin/components/SettingsWizard.tsx
+// Invariants: official OAuth only; a connected Page does not grant capabilities; uncertain writes require explicit readback.
 "use client";
 
 // Purpose: merchant Facebook/Instagram connection controls and per-Page health capabilities.
@@ -14,7 +15,8 @@
 // POST .../meta-connect/{pick,disconnect} -> Go internal/httpapi/meta_connect.go (contract meta-claims-intake-v1 "Merchant connect (R4)").
 // A GET 403 hides the card (no integration:read). Nothing is optimistic: every write re-GETs. No token ever reaches the browser.
 import { useEffect, useRef, useState } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { liveSessionsCopy, type Locale } from "@live-commerce/i18n";
+import taskStyle from "./live-sessions/session-tasks.module.css";
 import { Badge } from "@live-commerce/ui";
 import { sessionBoundary } from "@/lib/settings-client";
 import { OrderReadError } from "@/lib/orders-client";
@@ -44,7 +46,7 @@ const label = (c: MetaConnectCopy, code: string) =>
 
 /** Reads Page connections and health; authorized actions use the existing reauthorization flow. */
 export function MetaConnect({ store, locale, canManage = false }: { store: string; locale: Locale; canManage?: boolean }) {
-  const c = metaConnectCopy[locale];
+  const c = metaConnectCopy[locale], p = liveSessionsCopy[locale];
   const [load, setLoad] = useState<Load>("loading");
   const [status, setStatus] = useState<ConnectStatus | null>(null);
   const [tick, setTick] = useState(0);
@@ -62,6 +64,10 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
   const health = useMetaHealth(store);
   const pickIntent = useRef<{ id: string; ig: boolean; before: string | null } | null>(null);
 
+  const [step, setStep] = useState<"list" | "intro" | "bridge" | "pick" | "confirm" | "result" | "detail" | "health" | "disconnect">("list");
+  const [selected, setSelected] = useState("");
+  const [resultPage, setResultPage] = useState<{ name: string; instagram: string } | null>(null);
+
   useEffect(() => {
     let live = true;
     sessionBoundary().then(
@@ -72,8 +78,8 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
   }, [store]);
 
   useEffect(() => {
-    if (load === "ready" && window.location.hash === "#facebook-instagram") document.getElementById("facebook-instagram")?.scrollIntoView({ block: "start" });
-  }, [store, load]);
+    if (load === "ready" && (window.location.hash === "#facebook-instagram" || step !== "list")) { document.getElementById("facebook-instagram")?.scrollIntoView({ block: "start" }); if (step !== "list") document.getElementById("metaconnect-title")?.focus({ preventScroll: true }); }
+  }, [store, load, step]);
 
   // The return from Facebook: ?meta_connect=<state_id> (open the pick list) or ?meta_error=<fixed code>; stripped once read. The
   // ref keeps the parsed values across a dev double-mount, which would otherwise find the URL already stripped.
@@ -94,7 +100,7 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
     if (!id) return;
     const active = new AbortController();
     readPickState(store, id, active.signal).then(
-      (state) => { setPick(state); const first = state.pages.find((p) => p.missing.length === 0) ?? state.pages[0]; setChosen(first?.page_id ?? ""); setWithIG(!!first?.ig_id && first.ig_missing.length === 0); },
+      (state) => { setStep("pick"); setPick(state); const first = state.pages.find((p) => p.missing.length === 0) ?? state.pages[0]; setChosen(first?.page_id ?? ""); setWithIG(!!first?.ig_id && first.ig_missing.length === 0); },
       () => !active.signal.aborted && setProblem(c.errors.state_expired),
     );
     return () => active.abort();
@@ -110,12 +116,12 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
         if (tick > 0) refreshMetaHealth(store);
         const pendingPage = key.current?.kind.startsWith("disconnect-") ? key.current.kind.slice(11) : null;
         if (pendingPage && !value.pages.some((p) => p.id === pendingPage)) {
-          key.current = null; setUncertain(false); setConfirming(""); setProblem(""); setNotice(c.disconnectedNotice);
+          key.current = null; setUncertain(false); setConfirming(""); setProblem(""); setNotice(c.disconnectedNotice); setStep("list"); setSelected("");
         }
         const intent = pickIntent.current;
         const observed = intent && value.pages.find((p) => p.id === intent.id);
         if (intent && observed?.status === "active" && (!intent.ig || observed.instagram) && observed.connected_at !== intent.before) {
-          pickIntent.current = null; key.current = null; setUncertain(false); setPick(null); setProblem(""); setNotice(c.connectedNotice);
+          pickIntent.current = null; key.current = null; setUncertain(false); setPick(null); setProblem(""); setNotice(c.connectedNotice); setStep("result");
         }
       },
       (error) => {
@@ -163,6 +169,7 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
     setBusy(true);
     setProblem("");
     setNotice("");
+    setSelected(chosen); setResultPage({ name: page.name || page.page_id, instagram: withIG && page.ig_username ? `@${page.ig_username}` : "" });
     pickIntent.current = {
       id: chosen,
       ig: withIG && pickable(page, true),
@@ -178,9 +185,9 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
     );
     inFlight.current = false;
     setBusy(false);
-    if (result.ok) { pickIntent.current = null; key.current = null; setUncertain(false); setPick(null); setNotice(c.connectedNotice); }
+    if (result.ok) { setResultPage({ name: page.name || page.page_id, instagram: withIG && page.ig_username ? `@${page.ig_username}` : "" }); setStep("result"); pickIntent.current = null; key.current = null; setUncertain(false); setPick(null); setNotice(c.connectedNotice); }
     else { if (!result.uncertain) pickIntent.current = null; fail(result.code, result.uncertain); }
-    setTick((v) => v + 1);
+    if (result.ok || !result.uncertain) setTick((v) => v + 1);
   }
   async function disconnect() {
     if (!canManage) return;
@@ -197,181 +204,55 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
     );
     inFlight.current = false;
     setBusy(false);
-    if (result.ok) { key.current = null; setUncertain(false); setConfirming(""); setNotice(c.disconnectedNotice); }
+    if (result.ok) { setStep("list"); setSelected(""); key.current = null; setUncertain(false); setConfirming(""); setNotice(c.disconnectedNotice); }
     else { if (!result.uncertain) setConfirming(""); fail(result.code, result.uncertain); }
-    setTick((v) => v + 1);
+    if (result.ok || !result.uncertain) setTick((v) => v + 1);
   }
 
   const chosenPage: PickPage | undefined = pick?.pages.find((p) => p.page_id === chosen);
   const locked = !canManage || busy || uncertain || !boundary;
 
-  return (
-    <section className="settings-fields metaconnect-card" id="facebook-instagram" data-testid="metaconnect-card" aria-labelledby="metaconnect-title">
-      <h2 id="metaconnect-title" className="settings-section-title settings-subtitle">{c.title}</h2>
-      <p className="settings-note">{c.intro}</p>
-      {load === "loading" && <p role="status">{c.loading}</p>}
-      {load === "error" && (
-        <div role="status"><p>{c.unavailable}</p><button type="button" onClick={() => setTick((v) => v + 1)}>{c.retry}</button></div>
-      )}
-      {problem && (
-        <p className="settings-warning" role="alert" data-testid="metaconnect-error">{problem}</p>
-      )}
-      {uncertain && key.current?.kind !== "connect" && (
-        <button type="button" data-testid="metaconnect-readback" disabled={busy} onClick={() => setTick((v) => v + 1)}>{c.checkStatus}</button>
-      )}
-      {notice && (
-        <p className="settings-note" role="status" data-testid="metaconnect-notice">{notice}</p>
-      )}
-
-      {pick && (
-        <div data-testid="metaconnect-pick">
-          <h3>{c.pickTitle}</h3>
-          <p className="settings-note">{c.pickIntro}</p>
-          {pick.pages.length === 0 ? (
-            <p className="settings-warning" data-testid="metaconnect-nopages">{c.noPages}</p>
-          ) : (
-            <fieldset className="metaconnect-pages" data-testid="metaconnect-pick-list">
-              {pick.pages.map((p) => (
-                <label key={p.page_id} className="settings-check">
-                  <input
-                    type="radio"
-                    name="metaconnect-page"
-                    value={p.page_id}
-                    checked={chosen === p.page_id}
-                    disabled={locked}
-                    data-testid={`metaconnect-pick-${p.page_id}`}
-                    onChange={() => { setChosen(p.page_id); setWithIG(!!p.ig_id && p.ig_missing.length === 0); }}
-                  />
-                  <span>
-                    {p.name || p.page_id}{" "}
-                    <small>
-                      {p.page_id}
-                      {p.ig_username ? ` · @${p.ig_username}` : ""}
-                    </small>
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-          )}
-          {chosenPage && chosenPage.missing.length > 0 && (
-            <p className="settings-warning" data-testid="metaconnect-missing">
-              {c.pickMissing}{" "}
-              {chosenPage.missing.map((m) => label(c, m)).join(", ")}
-            </p>
-          )}
-          {chosenPage?.ig_id && chosenPage.missing.length === 0 && (chosenPage.ig_missing.length === 0 ? (
-            <label className="settings-check">
-              <input type="checkbox" checked={withIG} disabled={locked} data-testid="metaconnect-pick-ig" onChange={(e) => setWithIG(e.target.checked)} />
-              <span>{c.withInstagram} <small>@{chosenPage.ig_username}</small></span>
-            </label>
-          ) : (
-            <p className="settings-note" data-testid="metaconnect-ig-missing">{c.instagramMissing} {chosenPage.ig_missing.join(", ")}</p>
-          ))}
-          <div className="settings-actions">
-            <button type="button" disabled={locked} onClick={() => { key.current = null; setPick(null); setProblem(""); }}>{c.pickCancel}</button>
-            <button className="primary" type="button" data-testid="metaconnect-pick-submit" disabled={locked || load !== "ready" || !status || !chosenPage || chosenPage.missing.length > 0} onClick={() => void submitPick()}>
-              {busy ? c.saving : c.pickSubmit}
-            </button>
-          </div>
+  const permissionLabel = (code: string) => code === "pages_messaging" ? c.task_messaging : code === "pages_read_engagement" ? c.task_moderate : code === "pages_manage_metadata" ? p.permissionSubscriptions : code === "pages_show_list" ? p.permissionPages : code === "instagram_manage_comments" ? p.permissionIGComments : code === "instagram_manage_messages" ? p.permissionIGMessages : code === "read_insights" ? p.permissionInsights : code === "task_messaging" || code === "task_moderate" ? label(c, code) : c.permissions;
+  const currentPage = status?.pages.find(page => page.id === selected);
+  const heading = uncertain && key.current?.kind !== "connect" ? p.uncertain : step === "intro" ? p.intro : step === "bridge" ? p.bridge : step === "pick" ? p.pick : step === "confirm" ? p.confirm : step === "result" ? p.result : step === "detail" ? p.detailTitle : step === "health" ? p.healthTitle : step === "disconnect" ? p.disconnectTitle : p.meta;
+  const back = () => { setStep("list"); setSelected(""); };
+  const openDetail = (id: string) => { setSelected(id); setStep("detail"); };
+  return <section className={`settings-fields metaconnect-card ${taskStyle.page}`} id="facebook-instagram" data-testid="metaconnect-card" aria-labelledby="metaconnect-title">
+    <h2 id="metaconnect-title" tabIndex={-1}>{heading}</h2>
+    {load === "loading" && <p role="status">{c.loading}</p>}
+    {load === "error" && <div role="status"><p>{c.unavailable}</p><button type="button" onClick={() => setTick(value => value + 1)}>{c.retry}</button></div>}
+    {problem && <p className="settings-warning" role="alert" data-testid="metaconnect-error">{problem}</p>}
+    {notice && <p role="status" data-testid="metaconnect-notice">{notice}</p>}
+    {uncertain && key.current?.kind !== "connect" ? <div className={taskStyle.card}>
+      <p>{currentPage?.name || resultPage?.name}</p><p>{key.current?.kind.startsWith("disconnect-") ? p.disconnectHelp : p.oauthHelp}</p><button type="button" data-testid="metaconnect-readback" disabled={busy} onClick={() => setTick(value => value + 1)}>{p.readResult}</button>
+    </div> : <>
+      {(step === "intro" || step === "bridge") && <div className={taskStyle.card}><p>{p.oauthHelp}</p><button className="primary" type="button" disabled={locked && !(uncertain && key.current?.kind === "connect")} onClick={() => step === "intro" ? setStep("bridge") : void connect()}>{p.official}</button><button type="button" disabled={busy} onClick={back}>{p.returnList}</button></div>}
+      {pick && (step === "pick" || step === "confirm") && <div data-testid="metaconnect-pick" className={taskStyle.card}>
+        {step === "pick" ? <><p>{c.pickIntro}</p>
+          {pick.pages.length === 0 ? <p data-testid="metaconnect-nopages">{c.noPages}</p> : <fieldset data-testid="metaconnect-pick-list">{pick.pages.map(page => <label key={page.page_id} className="settings-check"><input type="radio" name="metaconnect-page" checked={chosen === page.page_id} disabled={locked} data-testid={`metaconnect-pick-${page.page_id}`} onChange={() => { setChosen(page.page_id); setWithIG(!!page.ig_id && page.ig_missing.length === 0); }} /><span>{page.name || page.page_id}{page.ig_username && <small> · @{page.ig_username}</small>}</span></label>)}</fieldset>}
+          {!!chosenPage?.missing.length && <p className="settings-warning" data-testid="metaconnect-missing">{c.pickMissing} {chosenPage.missing.map(item => permissionLabel(item)).join(", ")}</p>}
+          {chosenPage?.ig_id && !chosenPage.missing.length && (!chosenPage.ig_missing.length ? <label className="settings-check"><input type="checkbox" checked={withIG} disabled={locked} data-testid="metaconnect-pick-ig" onChange={event => setWithIG(event.target.checked)} /><span>{c.withInstagram} · @{chosenPage.ig_username}</span></label> : <p data-testid="metaconnect-ig-missing">{c.instagramMissing}</p>)}
+          <p className={`${taskStyle.note} ${taskStyle.muted}`}>{p.igHelp}</p>
+          <div className={taskStyle.footer}><button type="button" onClick={() => { setPick(null); setStep("list"); setProblem(""); key.current = null; }} disabled={locked}>{c.pickCancel}</button><button className="primary" type="button" data-testid="metaconnect-pick-submit" disabled={locked || !chosenPage || !!chosenPage.missing.length} onClick={() => setStep("confirm")}>{p.pickReview}</button></div>
+        </> : <><p>{chosenPage?.name || chosenPage?.page_id}</p><p>{withIG && chosenPage?.ig_username ? `@${chosenPage.ig_username}` : p.noInstagram}</p><p>{p.oauthHelp}</p><div className={taskStyle.footer}><button type="button" disabled={busy} onClick={() => setStep("pick")}>{p.edit}</button><button className="primary" type="button" data-testid="metaconnect-confirm-connect" disabled={locked || !chosenPage || !!chosenPage.missing.length} onClick={() => void submitPick()}>{p.confirmConnect}</button></div></>}
+      </div>}
+      {step === "result" && <div className={taskStyle.card}><p>{resultPage?.name}</p><p>{resultPage?.instagram || p.noInstagram}</p><button type="button" onClick={back}>{p.returnList}</button></div>}
+      {load === "ready" && status && step === "list" && <>
+        <p className={taskStyle.muted}>{p.metaHelp}</p><div className={taskStyle.row}><p data-testid="metaconnect-count">{c.count.replace("{count}", String(status.count)).replace("{cap}", String(status.cap))}</p><button className="primary" type="button" data-testid={status.connected ? "metaconnect-add" : "metaconnect-connect"} disabled={locked || status.count >= status.cap} onClick={() => setStep("intro")}>{p.add}</button>{status.connected && <button type="button" data-testid="metaconnect-reconnect" disabled={locked} onClick={() => setStep("intro")}>{c.reconnect}</button>}</div>
+        {status.count >= status.cap && <p id="metaconnect-cap">{c.capReached}</p>}
+        {!status.connected && <p data-testid="metaconnect-none">{c.notConnected}</p>}
+        {health.failed && <p data-testid="meta-health-unavailable">{p.unavailable}</p>}
+        {status.pages.map(page => <article key={page.id} data-testid={`metaconnect-row-${page.id}`} className={taskStyle.card}><div data-testid={`metaconnect-page-${page.id}`}><h3 data-testid="metaconnect-page">{page.name || page.id}</h3><p data-testid="metaconnect-ig">{page.instagram ? `@${page.instagram.username}` : c.noInstagram}</p><dl><dd data-testid="metaconnect-token" data-state={page.status}><Badge style={{ whiteSpace: "normal" }} tone={page.status === "active" ? "success" : "warning"}>{page.status === "active" ? c.tokenActive : c.tokenReauth}</Badge></dd></dl><button type="button" onClick={() => openDetail(page.id)}>{p.detail}</button></div></article>)}
+      </>}
+      {currentPage && (step === "detail" || step === "health" || step === "disconnect") && <>
+        <div className={taskStyle.card} data-testid={`metaconnect-row-${currentPage.id}`}><h3 data-testid="metaconnect-page"><span>{currentPage.name || currentPage.id}</span> <small>{currentPage.id}</small></h3><p data-testid="metaconnect-ig">{currentPage.instagram ? `@${currentPage.instagram.username}` : c.noInstagram}</p>
+          {step === "detail" && <><p>{currentPage.status === "active" ? p.connected : c.tokenReauth}</p><dl className={taskStyle.facts} data-testid="metaconnect-status"><div><dt>{c.permissions}</dt><dd data-testid="metaconnect-permissions">{currentPage.permissions.map(permission => <span key={permission} data-testid={`metaconnect-permission-${permission}`}>{permissionLabel(permission)} </span>)}</dd></div><div><dt>{c.token}</dt><dd data-testid="metaconnect-token" data-state={currentPage.status}>{currentPage.status === "active" ? c.tokenActive : c.tokenReauth}</dd></div><div><dt>{c.lastEvent}</dt><dd data-testid="metaconnect-last-event">{currentPage.last_event_at ? displayTime(locale, currentPage.last_event_at) : c.never}</dd></div><div><dt>{c.connectedAt}</dt><dd>{displayTime(locale, currentPage.connected_at)}</dd></div><div><dt>{c.routeUntil}</dt><dd>{displayTime(locale, currentPage.route_expires_at)}</dd></div></dl>{Date.parse(currentPage.route_expires_at) - Date.now() < 30 * day && currentPage.status === "active" && <p>{c.renewSoon}</p>}</>}
         </div>
-      )}
-
-      {load === "ready" && !pick && status && (
-        <>
-          <div className="metaconnect-toolbar">
-            <p data-testid="metaconnect-count">{c.count.replace("{count}", String(status.count)).replace("{cap}", String(status.cap))}</p>
-            <button className="primary" type="button" data-testid={status.connected ? "metaconnect-add" : "metaconnect-connect"}
-              aria-describedby={status.count >= status.cap ? "metaconnect-cap" : undefined}
-              disabled={!canManage || busy || !boundary || status.count >= status.cap || (uncertain && key.current?.kind !== "connect")}
-              onClick={() => void connect()}>{busy ? c.connecting : status.connected ? c.add : c.connect}</button>
-            {status.connected && (
-              <button type="button" data-testid="metaconnect-reconnect" disabled={!canManage || busy || !boundary || !!confirming || (uncertain && key.current?.kind !== "connect")} onClick={() => void connect()}>{c.reconnect}</button>
-            )}
-          </div>
-          {status.count >= status.cap && (
-            <p id="metaconnect-cap" className="settings-note">{c.capReached}</p>
-          )}
-          {!status.connected && (
-            <p data-testid="metaconnect-none">{c.notConnected}</p>
-          )}
-          {status.connected && <p className="settings-note">{c.timezone}</p>}
-          {status.pages.map((connected) => (
-            <article
-              className="metaconnect-row"
-              data-testid={`metaconnect-row-${connected.id}`}
-              key={connected.id}
-            >
-              <h3 data-testid="metaconnect-page">{connected.name || connected.id} <small>{connected.id}</small></h3>
-              <dl className="settings-status-list" data-testid="metaconnect-status">
-                <div>
-                  <dt>{c.instagram}</dt>
-                  <dd data-testid="metaconnect-ig">
-                    {connected.instagram
-                      ? `@${connected.instagram.username}`
-                      : c.noInstagram}
-                  </dd>
-                </div>
-                <div><dt>{c.permissions}</dt><dd data-testid="metaconnect-permissions">{connected.permissions.join(", ")}</dd></div>
-                <div>
-                  <dt>{c.token}</dt>
-                  <dd data-testid="metaconnect-token" data-state={connected.status}>
-                    <Badge
-                      // This is a full refusal sentence; the shared one-line badge would overflow the 390px card.
-                      style={{ whiteSpace: "normal" }}
-                      tone={
-                        connected.status === "active" ? "success" : "warning"
-                      }
-                    >
-                      {connected.status === "active" ? c.tokenActive : c.tokenReauth}
-                    </Badge>
-                  </dd>
-                </div>
-                <div><dt>{c.lastEvent}</dt><dd data-testid="metaconnect-last-event">{connected.last_event_at ? displayTime(locale, connected.last_event_at) : c.never}</dd></div>
-                <div><dt>{c.connectedAt}</dt><dd>{displayTime(locale, connected.connected_at)}</dd></div>
-                <div><dt>{c.routeUntil}</dt><dd>{displayTime(locale, connected.route_expires_at)}</dd></div>
-              </dl>
-              <MetaHealthCapabilities key={`${store}:${connected.id}`} store={store} page={health.data?.pages.find(page => page.page_id === connected.id)} locale={locale} canManage={canManage} boundary={boundary} failed={health.failed} />
-              {Date.parse(connected.route_expires_at) - Date.now() < 30 * day && connected.status === "active" && (
-                  <p className="settings-warning">{c.renewSoon}</p>
-                )}
-              {confirming === connected.id ? (
-                <div
-                  className="settings-pending"
-                  role="alertdialog"
-                  aria-label={`${c.disconnect}: ${connected.name || connected.id}`}
-                  data-testid="metaconnect-confirm"
-                >
-                  <p>{c.confirmDisconnect}</p>
-                  <div className="settings-actions">
-                    <button type="button" disabled={locked} onClick={() => setConfirming("")}>{c.cancel}</button>
-                    <button
-                      className="settings-danger"
-                      type="button"
-                      data-testid="metaconnect-confirm-yes"
-                      disabled={locked}
-                      onClick={() => void disconnect()}
-                    >
-                      {busy ? c.saving : c.confirm}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="settings-actions">
-                  <button
-                    className="settings-danger"
-                    type="button"
-                    data-testid="metaconnect-disconnect"
-                    disabled={locked || !!confirming}
-                    onClick={() => setConfirming(connected.id)}
-                  >
-                    {c.disconnect}
-                  </button>
-                </div>
-              )}
-            </article>
-          ))}
-        </>
-      )}
-    </section>
-  );
+        {step === "detail" && <><p className={taskStyle.note}>{currentPage.permissions.includes("read_insights") ? p.permissionInsights : p.insightsHelp}</p><p className={`${taskStyle.note} ${taskStyle.muted}`}>{p.igHelp}</p><div className={taskStyle.footer}><button type="button" onClick={() => setStep("health")}>{p.health}</button><button type="button" data-testid="metaconnect-disconnect" disabled={locked} onClick={() => { setConfirming(currentPage.id); setStep("disconnect"); }}>{p.disconnect}</button></div></>}
+        {step === "health" && <><p className={taskStyle.note}>{p.healthHelp}</p><MetaHealthCapabilities key={`${store}:${currentPage.id}`} store={store} page={health.data?.pages.find(page => page.page_id === currentPage.id)} locale={locale} canManage={canManage} boundary={boundary} failed={health.failed} /></>}
+        {step === "disconnect" && <div role="alertdialog" aria-label={p.disconnectTitle} data-testid="metaconnect-confirm" className={taskStyle.card}><p>{p.disconnectHelp}</p><div className={taskStyle.footer}><button type="button" disabled={locked} onClick={() => { setConfirming(""); setStep("detail"); }}>{p.keep}</button><button className="settings-danger" type="button" data-testid="metaconnect-confirm-yes" disabled={locked} onClick={() => void disconnect()}>{p.confirmDisconnect}</button></div></div>}
+        <div className={taskStyle.footer}>{step !== "disconnect" && <button type="button" data-testid="metaconnect-reconnect" disabled={locked} onClick={() => setStep("intro")}>{c.reconnect}</button>}<button type="button" disabled={busy} onClick={back}>{p.returnList}</button></div>
+      </>}
+    </>}
+  </section>;
 }

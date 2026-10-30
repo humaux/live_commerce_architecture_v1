@@ -1,6 +1,7 @@
 // Purpose: MCH11 real clicks, three locales/390px, scoped reads, recheck/reconnect and explicit backend identity contract.
 // Depends on: signed MOCK IdP, real BFF/Go/PG, fixture-only control and Playwright; no real Meta traffic.; ./parity-live-sessions (C4 independent oracle)
 // Used by: --browser-meta-health-ui; every new control has a persisted click ledger entry.
+// Invariants: scoped server facts and original security assertions remain authoritative; no LIVE effect or test-budget relaxation.
 import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
 import { test, expect, type Page } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
@@ -22,6 +23,11 @@ async function enterAdvanced(page:Page){
  await expect(advanced.or(page.getByTestId("metaconnect-card"))).toBeVisible();
  if(await advanced.isVisible())await advanced.click();
 }
+async function openFeatureChecks(page:Page){
+ const locale=(new URL(page.url()).pathname.split("/")[1] || "en") as "en"|"zh-TW"|"zh-CN";
+ await page.getByRole("button",{name:parityWords[locale].detail,exact:true}).first().click();
+ await page.getByRole("button",{name:parityWords[locale].health,exact:true}).click();
+}
 async function click(page:Page,name:string,act:()=>Promise<unknown>,verify:()=>Promise<unknown>,expected:string){
  const item={page:new URL(page.url()).pathname,control:name,action:"real click/select/navigation",expected,actual:"",pass:false};ledger.push(item);
  try{await act();await verify();item.pass=true;item.actual=expected;}catch(e){item.actual=String(e).split("\n")[0];throw e;}
@@ -33,7 +39,7 @@ async function fits(page:Page){
 async function shot(page:Page,name:string,selector:string){await page.locator(selector).screenshot({path:path.join(evidence,name+".png")});}
 const locales=["zh-TW","zh-CN","en"] as const;
 const review={"zh-TW":"僅測試帳號","zh-CN":"仅测试账号",en:"Test accounts only"};
-const recheck={"zh-TW":"重新檢查","zh-CN":"重新检查",en:"Check again"};
+const recheck={"zh-TW":"安排重新檢查","zh-CN":"安排重新检查",en:"Schedule another check"};
 test.use({actionTimeout:15000,navigationTimeout:30000});
 // Only the separate focused Go test supplies this flag. The full CI gate supplies an empty value and runs every assertion.
 test.beforeEach(({},info)=>{test.skip(process.env.LC_HEALTH_FOCUS==='mobile-ci'&&!/named FB\/IG capabilities|blocking connection advice/.test(info.title),'local focused subset; full MCH11 NOT_RUN');});
@@ -60,7 +66,7 @@ for(const locale of locales){
  });
  test(`${locale} 390: named FB/IG capabilities keep review-required restricted`,async({page})=>{
   await page.setViewportSize({width:390,height:844});await scenario("review");await login(page);await page.goto(`${origin}/${locale}/settings?store=${store}`);
-  await enterAdvanced(page);
+  await enterAdvanced(page);await openFeatureChecks(page);
   await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);
   await expect(page.getByRole("button",{name:recheck[locale],exact:true})).toBeEnabled();
   await click(page,`recheck-${locale}`,()=>page.getByRole("button",{name:recheck[locale],exact:true}).click(),()=>expect(page.getByTestId("meta-health-recheck-result")).toBeVisible(),"localized recheck acknowledges scheduling");
@@ -70,12 +76,12 @@ for(const locale of locales){
    await expect(page.getByTestId(`meta-health-capability-${provider}-${capability}`)).toContainText(review[locale]);
   }
   await fits(page);await shot(page,`capabilities-${locale}-390`,'.meta-health-details');
-  await page.reload();await expect(rows).toHaveCount(8);
+  await page.reload();await openFeatureChecks(page);await expect(rows).toHaveCount(8);
  });
 }
 test("desktop: warning is neutral, none and failed reads hide advice without blocking the workspace",async({page})=>{
  await scenario("warning");await login(page);await page.goto(`${origin}/en/settings?store=${store}`);
- await enterAdvanced(page);
+ await enterAdvanced(page);await openFeatureChecks(page);
  await expect(page.getByTestId("meta-health-banner")).toHaveAttribute("data-severity","warning");await shot(page,"warning-en-desktop",'[data-testid="meta-health-banner"]');
  await scenario("none");await page.reload();await expect(page.getByTestId("metaconnect-card")).toBeVisible();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);
  // FAULT injection: B1 read failure only, not a merchant write.
@@ -85,7 +91,7 @@ test("desktop: warning is neutral, none and failed reads hide advice without blo
 });
 test("explicit recheck schedules, then reports the real 429 without another schedule",async({page})=>{
  await scenario("none");await login(page);await page.goto(`${origin}/en/settings?store=${store}`);
- await enterAdvanced(page);
+ await enterAdvanced(page);await openFeatureChecks(page);
  const button=page.getByRole("button",{name:recheck.en,exact:true});await expect(button).toBeEnabled();
  const before=await(await control("facts")).json();
  await click(page,"recheck",()=>button.click(),()=>expect(page.getByTestId("meta-health-recheck-result")).toContainText("scheduled"),"B2 scheduling receipt displayed");
@@ -94,14 +100,14 @@ test("explicit recheck schedules, then reports the real 429 without another sche
  const checked=await(await control("facts")).json();
  await click(page,"recheck-too-soon",()=>button.click(),()=>expect(page.getByTestId("meta-health-recheck-result")).toContainText("one minute"),"real 429 is actionable and no success is invented");
  expect((await(await control("facts")).json()).next_due_at).toBe(checked.next_due_at);
- await page.reload();await expect(button).toBeVisible();
+ await page.reload();await openFeatureChecks(page);await expect(button).toBeVisible();
 });
 test("viewer sees owner advice and capability state but no managed actions",async({browser})=>{
  await scenario("blocking");const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();
  const base=process.env.LC_HEALTH_VIEWER!;await login(page,base);await page.goto(`${base}/en/orders?store=${store}`);
  await expect(page.getByTestId("meta-health-owner")).toContainText("store owner");await expect(page.getByTestId("meta-health-settings")).toHaveCount(0);
  const before=await(await control("facts")).json();await page.goto(`${base}/en/settings?store=${store}`);
- await enterAdvanced(page);
+ await enterAdvanced(page);await openFeatureChecks(page);
  await expect(page.getByTestId(`meta-health-page-${pageID}`)).toBeVisible();
  await expect(page.getByTestId("meta-health-recheck")).toHaveCount(0);await expect(page.getByTestId("metaconnect-reconnect")).toBeDisabled();
  expect((await(await control("facts")).json()).next_due_at).toBe(before.next_due_at);await context.close();
@@ -127,14 +133,14 @@ test("reconnect uses the existing OAuth picker and restores the same Page",async
   await route.fulfill({status:302,headers:{Location:`${origin}/api/meta/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`}});
  });
  await page.getByTestId("meta-health-settings").click();
- await click(page,"existing-reconnect",()=>page.getByTestId("metaconnect-reconnect").click(),()=>expect(page.getByTestId("metaconnect-pick-submit")).toBeVisible(),"real OAuth callback opens the existing Page picker");
- await click(page,"confirm-same-page",()=>page.getByTestId("metaconnect-pick-submit").click(),()=>expect(page.getByTestId(`metaconnect-row-${pageID}`)).toBeVisible(),"same Page is connected again");
+ await click(page,"existing-reconnect",async()=>{await page.getByTestId("metaconnect-reconnect").click();await page.getByRole("button",{name:parityWords.en.official,exact:true}).click();await page.getByRole("button",{name:parityWords.en.official,exact:true}).click();},()=>expect(page.getByTestId("metaconnect-pick-submit")).toBeVisible(),"real OAuth callback opens the existing Page picker");
+ await click(page,"confirm-same-page",async()=>{await page.getByTestId("metaconnect-pick-submit").click();await page.getByRole("button",{name:parityWords.en.confirmConnect,exact:true}).click();await page.getByRole("button",{name:parityWords.en.returnList,exact:true}).click();},()=>expect(page.getByTestId(`metaconnect-row-${pageID}`)).toBeVisible(),"same Page is connected again");
  await control("probe");await page.reload();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);await expect(page.getByTestId("metaconnect-token")).toHaveAttribute("data-state","active");
 });
 
 for(const viewport of parityViewports)test(`C4 feature checks frame ${viewport.width}`,async({page})=>{
   const c=parityWords["zh-TW"];await scenario("review");await page.setViewportSize(viewport);await login(page);
-  await page.goto(`${origin}/zh-TW/settings?store=${store}`);await enterAdvanced(page);
+  await page.goto(`${origin}/zh-TW/settings?store=${store}#facebook-instagram`);await enterAdvanced(page);
   await parityClick(page,c.detail,()=>expect(page.getByRole("heading",{name:c.detailTitle,exact:true})).toBeVisible());
   await parityClick(page,c.health,()=>expect(page.getByRole("heading",{name:c.healthTitle,exact:true})).toBeVisible());
   await expect(page.getByText("連接主頁不代表每項功能均可使用。",{exact:true})).toBeVisible();

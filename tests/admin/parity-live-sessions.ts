@@ -59,10 +59,28 @@ export async function parityShot(page: Page, evidence: string, locale: ParityLoc
   expect(new URL(page.url()).pathname).not.toContain("ui-gallery");
   // READ/MEASURE: geometry only; no DOM or business-state mutation.
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  // READ/MEASURE: visible text blocks and character totals only; no content, DOM or application state is changed.
+  const density = await page.evaluate(() => {
+    const root = document.querySelector('[data-testid="metaconnect-card"], [data-testid="merchant-studio"], [data-testid="merchant-claims"]');
+    const blocks = new Map<Element, number>();
+    if (root) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) {
+        const node = walker.currentNode, text = node.textContent?.trim() ?? "", parent = node.parentElement;
+        if (!text || !parent || getComputedStyle(parent).visibility === "hidden") continue;
+        const range = document.createRange(); range.selectNodeContents(node);
+        const rect = range.getBoundingClientRect();
+        if (!rect.width || !rect.height || rect.bottom <= 0 || rect.top >= innerHeight || rect.right <= 0 || rect.left >= innerWidth) continue;
+        const block = parent.closest("h1,h2,h3,h4,p,dt,dd,label,button,a,summary,td,th,output,strong,small") ?? parent;
+        blocks.set(block, (blocks.get(block) ?? 0) + Array.from(text).length);
+      }
+    }
+    return { visible_text_blocks: blocks.size, characters: [...blocks.values()].reduce((sum, count) => sum + count, 0) };
+  });
   if (locale !== "zh-TW") return;
   await mkdir(`${evidence}/parity`, { recursive: true });
   for (const frame of frames) {
     await page.screenshot({ path: `${evidence}/parity/${frame}.png`, fullPage: false, animations: "disabled" });
-    await writeFile(`${evidence}/parity/${frame}.json`, JSON.stringify({ frame, route: new URL(page.url()).pathname, viewport: page.viewportSize(), evidence: "MOCK browser; screenshot supplements real clicks" }));
+    await writeFile(`${evidence}/parity/${frame}.json`, JSON.stringify({ frame, route: new URL(page.url()).pathname, viewport: page.viewportSize(), density, evidence: "MOCK browser; screenshot supplements real clicks" }));
   }
 }
