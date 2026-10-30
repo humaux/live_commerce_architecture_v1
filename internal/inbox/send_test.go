@@ -1,6 +1,7 @@
 // Purpose: DB-free checks of the manual-send text rules and sealing (live-console-v1 §3.3-3.5, §3.4): per-platform limits, the §3.5
-// public-reply patterns (LCN08), the display-copy link scrub (LCN13), display-copy seal/open and the keyed body_hmac.
-// Depends on: internal/inbox (send_text.go, keyring.go), internal/msgtemplates (via checkText).
+// public-reply patterns (LCN08), the display-copy link scrub (LCN13), display-copy seal/open, the keyed body_hmac and the §4.4
+// send_state projection (sendState: ACKNOWLEDGED is `unknown`, `sent` is SUCCEEDED only).
+// Depends on: internal/inbox (send_text.go, keyring.go, send_read.go), internal/msgtemplates (via checkText).
 // Used by: go test ./internal/inbox.
 
 package inbox
@@ -168,4 +169,21 @@ func TestBodyHMACIsKeyedAndTenantSeparated(t *testing.T) {
 func sha256Sum(s string) []byte {
 	h := sha256.Sum256([]byte(s))
 	return h[:]
+}
+
+// TestSendStateTerminalOnlyForConfirmedOutcomes pins §4.4: `sent` is SUCCEEDED only; the provider-accepted but unconfirmed
+// ACKNOWLEDGED projects as `unknown` (never authority to clear a reply lock or send again).
+func TestSendStateTerminalOnlyForConfirmedOutcomes(t *testing.T) {
+	for in, want := range map[string]string{
+		"READY": "queued", "DISPATCHING": "queued", "SUCCEEDED": "sent", "ACKNOWLEDGED": "unknown", "UNKNOWN": "unknown",
+		"FAILED_FINAL": "failed", "BLOCKED_POLICY": "blocked", "STALE_BINDING": "blocked", "CANCELLED": "blocked",
+	} {
+		s := in
+		if got, ok := sendState(&s); !ok || got != want {
+			t.Errorf("sendState(%s) = %q,%v; want %q", in, got, ok, want)
+		}
+	}
+	if _, ok := sendState(nil); ok {
+		t.Error("a missing operation row must not project a state")
+	}
 }
