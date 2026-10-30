@@ -79,6 +79,19 @@ test("INU09 flagged bundle copies actual M7 link through native clipboard and pe
   expect(before.generation).toBe(0);
   expect(before.receipt_count).toBe(0);
   expect(before.pending_manual).toBe(true);
+  // Check pending-bundle filtering before M7 clears its flag; later specs share this real PG state.
+  await expect(page.getByTestId(`conversation-${ids.bundle}`)).toBeVisible();
+  await page.getByTestId("inbox-filter-instagram").click();
+  await expect(page.getByTestId("inbox-list")).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
+  await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
+  await expect(page.getByTestId(`conversation-${ids.bundle}`)).toHaveCount(0);
+  await page.getByTestId("inbox-filter-all").click();
+  await expect(page.getByTestId("inbox-list")).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
+  await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
+  await expect(page.getByTestId(`conversation-${ids.bundle}`)).toBeVisible();
+  record("pending bundle filters", "click Instagram then All before copying", "Instagram excludes Messenger and the pending bundle; All restores both channels and the bundle");
   await page.getByTestId(`conversation-${ids.bundle}`).click();
   await expect(page.getByTestId("bundle-recovery")).toBeVisible();
   await expect(page.getByTestId("buyer-panel")).toBeVisible();

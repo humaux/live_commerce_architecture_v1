@@ -143,3 +143,17 @@ node --check tests/admin/inbox-browser-source.test.ts: exit 0.
 Browser ownership generator and --check: exit 0; 53 modes.
 git diff --check: exit 0.
 Local tests/servers/browser/PG/build/install: NOT_RUN; CI GREEN and independent review PENDING.
+
+RELAY 2 directed correction (2026-10-31):
+Inspected head 693baa81fbf5718b21426d1df78055dfc6f28f64; synthetic merge 4f1ef10d6aa51d1a1dd7dccc3f6c4f2951c04901.
+Gates41095531553 job124208670350: INU01 inbox-ui.spec.ts:134 bundle expected visible / absent; 1 failed / 87 passed.
+Native artifact12997922498: INU09 ran first and cleared pending_manual before INU01. Newly added bundle oracles relocated before copy, identical visibility/count checks; fixture untouched.
+Gates41095531553 job124208671792: design 6 failed / 57 passed; native artifact12999403038.
+Four zh-TW/zh-CN after/before-commit confirmation equality failures at oc/design-publish-pending.spec.ts:159: expected v{n}, actual {n}.
+Two OC11 history helper timeouts at :18 waiting for removed design-tab-versions; migrate helper to signed design-live-versions.
+Foundation41095537364 job124200203236 SUCCESS; prior enterMessages extraction blocker cleared.
+Seven-case table with classes(a)/(b) in FIX1.md; no class(c) base claim; original tests-only RED above retained.
+Merged origin/r3/integration f59e5c5402a26021ca498d8323bc0e7ee8693c36 as efca07a8e before edits.
+First directed correction for each of these distinct blockers; same assertions still RED => BLOCKED, no third approach.
+GREEN at next head PENDING; E1 static only; author verdict E0. No local tests/server/PG/browser/build/install.
+Humaux unavailable; no shared-state store/canvas/coord claim. Integrator relays new workflow conclusions; new run IDs in PR comment and WAIT_RUN.

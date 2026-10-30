@@ -7,7 +7,17 @@ FIX1 replaces the previous controls and copy with the signed inbox/editor behavi
 - E1 only: node syntax checks on 9 changed .ts files; browser ownership generation + --check; depmap generation (no diff); check_packet; git diff --check all exit 0. No local tests/servers/browser/PG/build. Local tsc unavailable; TSX compilation belongs to CI.
 - Final-head Foundation/Gates, all runtime click ledgers, density and independent screenshot comparison are **PENDING**. Exact new run IDs will be posted in a PR comment. Author verdict E0; observed RED is E3 failing evidence, never completion. One batched implementation push; integrator relays the CI conclusion. No merge or auto-merge.
 
-## Current implementation relay
+## RELAY 2 — current correction awaiting CI
+
+Merged latest integration `f59e5c5402a26021ca498d8323bc0e7ee8693c36` first. At head `693baa81`, Foundation **41095537364 / 124200203236** passed. Gates **41095531553** failed inbox **124208670350** (INU01 only, 1 failed / 87 passed) and design **124208671792** (6 failed / 57 passed). Native artifacts **12997922498 / 12999403038** and full seven-row classification are in `output/PARITY-INBOX-EDITOR/FIX1.md` and `relay2-*-browser.log`.
+
+- Class(b): move all newly added pending-bundle inclusion/exclusion assertions into INU09 before its real copy clears the shared PG flag. Preserve visible/count oracles and add channel assertions there; no fixture reset, no product workaround, no skipped test. INU01 retains read/unread, takeover/send/release and refresh persistence.
+- Class(b): restore the two original zh-TW/zh-CN recovery-confirmation strings at the product dictionary; all six locale/cut safety confirmation tests remain strict, with no oracle edits.
+- Class(a): OC11's shared history helper clicks signed `design-live-versions`, matching the already migrated design suite. Keep every rollback, original identity, cancellation and superseded-result assertion.
+
+New same-module scope extension for integrator review: **`tests/admin/oc/design-publish-pending.spec.ts`**. Existing inbox specs and `apps/admin/lib/design-copy.ts` were already listed below. Generated browser ownership is pre-approved; depmap regeneration has no diff. No migrations/contracts/OpenAPI/dependencies or unrelated source changes. Static syntax/ownership/packet checks are E1; next-head CI and independent review PENDING, author verdict E0. Exact workflow IDs go in a PR comment. Integrator relays completion; no local tests/server, merge or auto-merge.
+
+## Previous implementation relay (historical)
 
 Foundation **41091867692** / job **124187532727** at implementation head `f18027d3e6debc949ed818e80d2636a1f96f1412` failed 12 login-harness cases with `ReferenceError: enterMessages is not defined`. The AST harness omitted the new shared-helper dependency. This relay extracts the real helper and models its native menu/visibility methods; all existing auth/store assertions stay, expanded to desktop and collapsed-mobile rails. No product code or fixtures change in this relay. Full per-case class(b) table: `output/PARITY-INBOX-EDITOR/FIX1.md`; filtered native receipt: `foundation-helper-failure.log`.
 

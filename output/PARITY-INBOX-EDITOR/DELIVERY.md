@@ -1,5 +1,35 @@
 # PARITY-INBOX-EDITOR — FIX1 implementation prepared; CI GREEN pending
 
+## RELAY 2 — seven current CI failures classified, correction awaiting CI
+
+Current failure table and root evidence: [FIX1.md](FIX1.md), RELAY 2 section. Inspected head `693baa81`; inbox run/job `41095531553/124208670350` has 1 failed / 87 passed; design `41095531553/124208671792` has 6 failed / 57 passed. Foundation `41095537364/124200203236` passed. Merged latest integration `f59e5c54` first. Next-head GREEN and independent review PENDING; E1 syntax/ownership/packet only, author assessment E0. No local tests or servers.
+
+### BOURDIEU
+
+Q1 recent task experience remains the novice/expert criterion. Q2 direct signed history entry retained. Q3 recovery confirmation still identifies the original version and buyer consequence. Q4 no device/class inference. Q5 same original request and cancellation safety on every locale. Q6 aesthetic approval UNKNOWN. No new visual layout.
+
+### PROJECT UNDERSTANDING
+
+Read AGENTS.md, 架构.md §§0/1/2/10/26/27, storefront-v2 §B and meta-inbox-v1 shared-read amendment. They require native clicks, evidence/environment separation, immutable publication history, server authority and bounded attempts. Current `internal/inbox/read.go` and native CI logs establish pending bundles disappear after INU09 completes the link. Reuse that lifecycle; no fixture reset or backend change. Restore pre-parity recovery confirmation in product; strict tests unchanged.
+
+### MOBBIN → EAGLE
+
+Reuse the structural principles and recorded IDs below: Quo for list/context separation, Chime for status recovery, Shopify for direct object actions. No new pattern, query, import or reference claimed in this relay. No local service started.
+
+### FIGMA OFFICIAL GUIDANCE
+
+Existing G3 components/variants and G4 clear result/return paths remain applicable: click existing signed `design-live-versions` rather than recreate an obsolete tab. No Figma write, new frames or changed prototype. Existing guide references below retained. Skill context script not run under the card's local-command restrictions; direct source/guide reads used instead.
+
+### Required fact and copy delta
+
+Desktop/mobile facts and result-state table below remain unchanged. No added screen, setting or layout. Only restore the original recovery dialog's version marker in both Chinese locales; all six existing locale/cut cases retain their exact confirmation oracle, cancel/no-send, original journal and request-identity checks.
+
+|zh-TW|zh-CN|en|
+|---|---|---|
+|確認先前草稿 v{n} 的發布請求？如果尚未完成，這會將該草稿發布給買家。|确认之前草稿 v{n} 的发布请求？如果尚未完成，这会将该草稿发布给买家。|Confirm the earlier publish request for draft v{n}? If it has not completed, this will publish that draft for buyers.|
+
+Click ledger: INU09 now records pending bundle/Instagram/All inclusion/exclusion before copying consumes it; existing clipboard and persistence ledger stays. INU01 still covers both message channels and read/takeover/send/release persistence; OC11 keeps native history navigation and rollback safety. New-head actual ledger results are PENDING. Humaux unavailable; no store/coord/canvas claim. Integrator will relay new workflow conclusions.
+
 Current phase supersedes the older relay statuses below: FIX1 authorizes migrating obsolete navigation assertions while retaining coverage. Implementation now exists; complete 32-case RED classification and changed-path inventory are in [FIX1.md](FIX1.md). Evidence: E3 failing RED at deffd2085; E1 static syntax/generation only for the candidate. Final-head GREEN, browser parity and independent acceptance PENDING. Author verdict E0.
 
 Branch `unit/parity-inbox-editor`; base `3ea359f796d36153bb4b8aa7259e4e0c27676b86`; assigned worktree only. Role: dispatched UI implementer. Runtime model/effort exact IDs are not exposed, UNKNOWN. Main checkout read-only. No recursive delegation. No production action, local tests/server or dependency installation.

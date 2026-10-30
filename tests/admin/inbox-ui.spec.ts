@@ -130,8 +130,7 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
     "same filter must not clear the loaded page",
   ).toBeVisible();
   await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
-  // All preserves Messenger and Instagram together; Awaiting-reply picker was replaced by signed task chips.
-  await expect(page.getByTestId(`conversation-${ids.bundle}`)).toBeVisible();
+  // INU09 checks pending-bundle filtering before its copy action clears that shared row.
   // #242 item 2: prepare a distinct read conversation through the real A9/A10 UI path.
   await filter(page, "all");
   await expect(page.getByTestId(`conversation-${ids.closed}`)).toBeVisible();
@@ -183,14 +182,13 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   record("unread row persistence", "reload then select unread", "marked-read thread remains absent after authoritative reload");
   await filter(page, "instagram");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
-  await expect(page.getByTestId(`conversation-${ids.bundle}`)).toHaveCount(0);
   await filter(page, "all");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
-  await expect(page.getByTestId(`conversation-${ids.bundle}`)).toBeVisible();
+  await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
   record(
     "filter",
     "click Instagram and All",
-    "Instagram excludes Messenger and live bundles; All restores both; unread excludes read rows",
+    "Instagram excludes Messenger; All restores both channels; unread excludes read rows",
   );
   const read = page.waitForResponse(
     (r) => r.request().method() === "POST" && r.url().includes(`/conversations/${ids.open}/read`),
