@@ -20,7 +20,7 @@
 .sidebar a:hover, .sidebar summary:hover { background: var(--ui-primary-soft); }
 .topbar { height: 64px; margin-left: 240px; padding: 10px 24px; background: var(--ui-surface); display: flex; align-items: center; justify-content: space-between; }
 .breadcrumb { display: flex; gap: 5px; color: var(--muted); font-size: 14px; line-height: 21px; }
-.language { width: 64px; min-height: 44px; border: 1px solid var(--line); border-radius: 5px; background: var(--ui-surface); color: var(--ink); padding: 8px; }
+.language { width: 96px; flex-shrink: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 5px; background: var(--ui-surface); color: var(--ink); padding: 8px; }
 .mobileStore, .mobile, .mobileOrder { display: none; }
 .task { position: relative; margin-left: 240px; min-height: calc(100dvh - 64px); padding: 24px 32px 20px; }
 .heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 44px; }

@@ -4,6 +4,12 @@ Status: E1 static structure/typecheck only. Browser GREEN, physical print, indep
 
 Humaux memory/coord/lock tools are unavailable. Claim/store/canvas: NOT_RUN; this local evidence is not a substitute. Integrator must relay it to the parent canvas. Platform memory guidance was read under the runtime's higher-priority instruction; no memory was written and no old result is used as current project evidence.
 
+## RELAY 2 — language selector clipping, targeted fix 1/2
+
+Current PR head `755232406e2e3a9789a9234018ec37a09e391a51` failed Gates run `41054087713`, job `124059044047` (`--browser-visual-lint@1/4`), on tested synthetic merge `0f71326d0880a5f0852d35a1f96291a621925fc5`. Artifact `12978519153`, `run.REibB4Nq/ui-visual-audit/20261030T130336Z/lint.md`, identifies the shipping shell's language select on `/orders/shipping`, zh-CN 1586×992: R7 `select-value-clipped`, value `简中` width 28px, available 26px, control 64px. All 85/85 enumerated shots loaded; one blocking instance, plus one R11 narrow-control warning. Foundation run `41054087554` / job `124057097040` passed on this old head; it does not accept the repair.
+
+Root cause: fixed 64px select width leaves insufficient space after native-arrow and padding allowances. Fix: use 96px (the existing G-UI9 desktop usable minimum) and prevent flex shrinking. Content, locales, test assertions, thresholds and exemptions are unchanged. Existing G-UI9 is the causal regression gate; no local browser/tests/server ran. Repair acceptance remains PENDING the next push's own CI; independent parity/physical print/production remain NOT_RUN. No new source import, route, page or spec change, so no harness/ownership regeneration is required for this CSS-only repair.
+
 ## Requirement and development authority
 
 Owner dispatch card 2026-10-30 is the requirements/authorization source. `AGENTS.md` and `架构.md` §0/1/2/26/27 impose evidence separation, existing Go/PG transaction authority, scoped worktrees and independent acceptance. `contracts/merchant-orders-v2.md`, current `orders-client.ts`, `orders-model.ts`, `orders-v2.ts`, `auth.ts` and shell route contracts control DTOs, server store membership, read failures, pagination and permissions. No new API, contract, lockfile, migration, backend or order-list/detail edits. Local checks were limited to allowed static checks and the mandated ownership generator.
