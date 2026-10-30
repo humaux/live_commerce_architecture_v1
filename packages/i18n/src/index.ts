@@ -12,7 +12,7 @@ export { inboxMessages, type InboxMessages } from './inbox.ts';
 // Signed ux-settings polish/simplify copy. Values and currency are supplied by the server.
 export const settingsV2Copy = {
   'zh-TW': {
-    title: '店鋪設定', edit: '編輯設定', complete: '店舖資料 · 已填寫', incomplete: '店舖資料 · 未填寫',
+    title: '店鋪設定', edit: '編輯設定', view: '檢視設定', complete: '店舖資料 · 已填寫', incomplete: '店舖資料 · 未填寫',
     delivery: '配送方式 · 已開啟 {n} 種', payment: '收款 · Stripe（平台代收）', start: '開始三步設定',
     step1: '1 / 3 · 店名', step2: '2 / 3 · 配送', step3: '3 / 3 · 第一個商品', name: '店名', email: '信箱', phone: '電話（選填）',
     selectAll: '全選', home: '宅配', seven: '7-ELEVEN', family: '全家', hilife: '萊爾富', ok: 'OK', on: '開放', off: '關閉',
@@ -29,7 +29,7 @@ export const settingsV2Copy = {
     pending: '上次儲存尚待確認；請核對並儲存原草稿，或重新讀取最新狀態。',
   },
   'zh-CN': {
-    title: '店铺设置', edit: '编辑设置', complete: '店铺资料 · 已填写', incomplete: '店铺资料 · 未填写',
+    title: '店铺设置', edit: '编辑设置', view: '查看设置', complete: '店铺资料 · 已填写', incomplete: '店铺资料 · 未填写',
     delivery: '配送方式 · 已启用 {n} 种', payment: '收款 · Stripe（平台代收）', start: '开始三步设置',
     step1: '1 / 3 · 店名', step2: '2 / 3 · 配送', step3: '3 / 3 · 首件商品', name: '店名', email: '邮箱', phone: '电话（选填）',
     selectAll: '全选', home: '送货上门', seven: '7-ELEVEN', family: '全家', hilife: '莱尔富', ok: 'OK', on: '已开启', off: '已关闭',
@@ -46,7 +46,7 @@ export const settingsV2Copy = {
     pending: '上次保存仍待确认；请核对并保存原草稿，或重新加载最新状态。',
   },
   en: {
-    title: 'Store settings', edit: 'Edit settings', complete: 'Store details · Complete', incomplete: 'Store details · Incomplete',
+    title: 'Store settings', edit: 'Edit settings', view: 'View settings', complete: 'Store details · Complete', incomplete: 'Store details · Incomplete',
     delivery: 'Delivery methods · {n} enabled', payment: 'Payments · Stripe (collected by platform)', start: 'Start quick setup',
     step1: '1 / 3 · Store name', step2: '2 / 3 · Delivery', step3: '3 / 3 · First product', name: 'Store name', email: 'Email', phone: 'Phone (optional)',
     selectAll: 'Select all', home: 'Home delivery', seven: '7-ELEVEN', family: 'FamilyMart', hilife: 'Hi-Life', ok: 'OK', on: 'on', off: 'off',

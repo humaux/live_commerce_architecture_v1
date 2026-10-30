@@ -183,3 +183,36 @@ Humaux is available this relay; earlier unavailable statements are historical.
 Store/canvas receipts and the final WAIT_RUN IDs are reported in the handoff/PR.
 Integrator supplies a fresh session on completion/failure/cancellation; queue >3h
 is escalated to integrator. GREEN, independent parity review, E4 and LIVE remain pending.
+
+
+## FIX1 · directed CI repair (2026-10-30)
+
+Authority and unchanged UI process: the BOURDIEU, PROJECT UNDERSTANDING,
+MOBBIN → EAGLE, FIGMA OFFICIAL GUIDANCE, required-field parity and copy tables
+above remain the design basis. This is a repair of signed navigation callers,
+MOCK scenario isolation and lost read-only access, with no Figma writes or layout
+redesign. Q1–Q5: same merchant tasks/permission boundaries; Q6 remains UNKNOWN.
+No new reference pattern is needed. See FIX1.md for every failing job/test/raw
+trace, classification, code action and unresolved ledger timing evidence.
+
+Additional visible copy:
+
+|zh-TW|zh-CN|en|
+|---|---|---|
+|檢視設定|查看设置|View settings|
+
+Required fact parity: this read-only entry opens the same connection facts on
+mobile/desktop and all locales. It grants no management capability; existing
+reconnect-disabled, no-recheck and next_due-unchanged assertions remain.
+
+|Page/control|Operation|Expected|Actual|
+|---|---|---|---|
+|Settings viewer / View settings, three locales|real click, reload, real click|connection Page visible; managed actions disabled/absent; schedule unchanged|PENDING CI|
+|All dependent settings entry callers|real Edit settings click, including after refresh|same downstream cards/values/permissions as before|PENDING CI|
+|Zero-market mock in its own tab|real check/select-all/save, same-tab reload/retry|unchecked baseline; exact sequential replay and five persisted services|PENDING CI|
+
+E1 static checks passed; implementation/browser GREEN and independent acceptance
+PENDING. No local tests/servers. Static UI detector returned `[]`; no Figma
+copy-lint run because no frame changed. Ledger timeout remains UNKNOWN; no budget
+change or unsupported base-failure claim. Same blocker returning on FIX1 CI is
+BLOCKED for integrator, without a third approach.

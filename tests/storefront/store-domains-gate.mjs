@@ -214,8 +214,8 @@ try {
     await page.setViewportSize(VIEW[view]);
     await page.goto(`${adminOrigin}/${locale}/settings?store=${store}`);
     const card = page.getByTestId("storefront-card");
-    // Settings remembers Advanced per session; a fresh tab must enter it through the merchant control.
-    const advanced = page.getByRole("button", { name: { en: "Advanced", "zh-TW": "進階", "zh-CN": "进阶" }[locale], exact: true });
+    // Every settings visit starts at the signed overview; enter the full editor through its merchant control.
+    const advanced = page.getByRole("button", { name: { en: "Edit settings", "zh-TW": "編輯設定", "zh-CN": "编辑设置" }[locale], exact: true });
     await expect(advanced.or(card)).toBeVisible();
     if (await advanced.isVisible()) await advanced.click();
     await expect(card).toBeVisible();

@@ -281,6 +281,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
             <span data-testid="settings-v2-quickstart-prompt">{button(c.start, () => { setFromQuickstart(true); setScreen("step1"); }, true)}</span>
             {button(c.edit, onAdvanced)}
           </div>}
+          {!canManage && button(c.view, onAdvanced)}
           <div className="settings-v2-rows">{[
             data.profile.name && data.profile.contact_email ? c.complete : c.incomplete,
             c.delivery.replace("{n}", String(data.delivery.filter(d => d.service?.enabled).length)), c.payment,

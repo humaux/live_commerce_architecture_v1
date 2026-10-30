@@ -582,6 +582,11 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
 
 /** AD-04: MOCK zero-market delivery on the real route; no production/provider calls. */
 async function paritySettingsAcceptance(page: Page, store: string, testInfo: TestInfo) {
+  // MOCK scenario isolation: share authentication and the exact same store, but
+  // use a fresh tab so deliverySwitches' saved per-tab draft is not a zero-market draft.
+  // No storage is cleared; same-tab reload below must still recover uncertain intent.
+  const sourcePage = page;
+  page = await sourcePage.context().newPage();
   const marketID = "80000000-0000-4000-8000-000000000021";
   const markets: Record<string, unknown>[] = [], services: Record<string, unknown>[] = [];
   const policies = new Map<string, Record<string, unknown>>();
@@ -728,9 +733,11 @@ async function paritySettingsAcceptance(page: Page, store: string, testInfo: Tes
     for (const name of ["全選", "宅配", "7-ELEVEN", "全家", "萊爾富", "OK"]) await expect(page.getByRole("checkbox", { name, exact: true })).toBeChecked();
   } finally {
     await page.unroute(pattern);
-    await page.goto(`/en/settings?store=${store}`);
-    await expect(overview).toBeVisible();
-    await overview.getByRole("button", { name: "Store details · Complete", exact: true }).click();
+    await page.close();
+    await sourcePage.goto(`/en/settings?store=${store}`);
+    const restoredOverview = sourcePage.getByTestId("settings-v2-overview");
+    await expect(restoredOverview).toBeVisible();
+    await restoredOverview.getByRole("button", { name: "Store details · Complete", exact: true }).click();
   }
 }
 
