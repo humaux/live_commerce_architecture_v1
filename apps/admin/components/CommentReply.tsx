@@ -1,6 +1,7 @@
 // Purpose: explicit A4/A5 reply submission with coded rules, capability gates and uncertain-send fencing.
 // Depends on: inbox transport, privacy epochs, published templates and server comment marks.
 // Used by: CommentStream; never persists a reply body or automatically resends an uncertain command.
+// Invariants: buyer/channel draft isolation; one-shot private replies and server window/capability rules remain authoritative.
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Store } from "@/lib/model";
@@ -15,7 +16,7 @@ import { commentCopy, commentReason } from "@/src/features/live/comment-copy";
 import type { StreamComment } from "@/src/features/live/comment-model";
 import { commentSendState } from "@/src/features/live/comment-model";
 import { validCommentText } from "@/src/features/live/comment-request";
-import type { ConsoleCapabilities } from "@/src/features/live/console-model";
+import type { ConsoleCapabilities, ConsoleOffer } from "@/src/features/live/console-model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { CommentReceipt } from "@/src/features/live/comment-receipt";
 
@@ -29,6 +30,7 @@ export function CommentReply({
   capabilities,
   onSent,
   onDenied,
+  offer, drafts,
 }: {
   store: Store;
   session: string;
@@ -38,10 +40,21 @@ export function CommentReply({
   capabilities: ConsoleCapabilities;
   onSent: () => void;
   onDenied: () => void;
+  offer?: ConsoleOffer; drafts?: Map<string, { private: string; public: string }>;
 }) {
-  const c = commentCopy(locale),
-    [mode, setMode] = useState<"private" | "public">("private"),
-    [text, setText] = useState(""),
+  const c = commentCopy(locale);
+  const draftText = (kind: "checkout" | "stock" = "checkout") => {
+    if (offer?.sold_out) return c.soldDraft;
+    if (!offer) return c.questionDraft;
+    return (kind === "stock" ? c.stockDraft : c.draft).replace("{product}", offer.product_name).replace("{quantity}", String(comment.marks.claim?.quantity ?? "—")).replace("{stock}", offer.stock.tracked ? String(offer.stock.sellable) : "—");
+  };
+  const remember = (value: string, channel: "private" | "public") => {
+    if (!drafts) return;
+    const prior = drafts.get(comment.ref) ?? { private: draftText(), public: c.questionDraft };
+    drafts.set(comment.ref, { ...prior, [channel]: value });
+  };
+  const [mode, setMode] = useState<"private" | "public">("private"),
+    [text, setText] = useState(drafts ? drafts.get(comment.ref)?.private ?? draftText() : ""),
     [templates, setTemplates] = useState<Template[]>([]),
     [template, setTemplate] = useState("");
   const [busy, setBusy] = useState(false),
@@ -51,6 +64,7 @@ export function CommentReply({
   const [receiptReady, setReceiptReady] = useState(false),
     [receiptBlocked, setReceiptBlocked] = useState(true);
   const [restrictionChecked, setRestrictionChecked] = useState(false);
+  const [verified, setVerified] = useState(false);
   const restricted = comment.marks.claim?.reason === "restricted";
   const receipt = useRef<CommentReceipt | null>(null);
   const publicReceipt = useRef<CommentReceipt | null>(null);
@@ -222,7 +236,7 @@ export function CommentReply({
       if (value.send_state !== "unknown")
         setReceiptBlocked(!receipt.current?.clear());
       else setReceiptBlocked(true);
-      setText("");
+      // Keep the exact submitted body only in authorised component memory; never persist it.
       setTemplate("");
       callbacks.current.onSent();
     } catch (e) {
@@ -248,8 +262,9 @@ export function CommentReply({
   };
   const switchMode = (next: "private" | "public") => {
     if (busy || terminalUnknown) return;
+    remember(text, mode);
     setMode(next);
-    setText("");
+    setText(drafts ? drafts.get(comment.ref)?.[next] ?? (next === "private" ? draftText() : c.questionDraft) : "");
     setTemplate("");
     setError("");
     setState(null);
@@ -283,6 +298,10 @@ export function CommentReply({
           {c.publicReply}
         </button>
       </div>
+      {drafts && <div className="live-quick-replies">
+        {!offer?.sold_out && <button type="button" disabled={busy || terminalUnknown || !!rule || state === "queued" || state === "sent"} onClick={() => { const value = mode === "public" ? c.questionDraft : draftText(); setText(value); remember(value, mode); setTemplate(""); }}>{c.checkout}</button>}
+        <button type="button" disabled={busy || terminalUnknown || !!rule || state === "queued" || state === "sent"} onClick={() => { const value = draftText("stock"); setText(value); remember(value, mode); setTemplate(""); }}>{c.stockDetails}</button>
+      </div>}
       <p className="live-helper">{mode === "private" ? c.one : c.publicRule}</p>
       <p className="live-helper">{c.window}</p>
       {cap?.state === "review_required" && <p>{c.testOnly}</p>}
@@ -325,6 +344,7 @@ export function CommentReply({
           data-testid="comment-verified"
           onClick={() => {
             if (window.confirm(c.confirmVerified) && receipt.current?.clear() && publicReceipt.current?.clear()) {
+              setVerified(true);
               setReceiptBlocked(false);
               setPublicBlocked(false);
               setState(null);
@@ -337,9 +357,9 @@ export function CommentReply({
           {c.verified}
         </button>
       )}
-      {state && (
+      {(state || comment.marks.private_reply || comment.marks.public_replies > 0) && (
         <p role="status" data-testid="comment-send-state">
-          {c[state]}
+          {state ? state === "sent" && mode === "public" ? c.publicSent : c[state] : comment.marks.private_reply ? commentSendState(comment.marks.private_reply.state) === "blocked" ? c.blockedHelper : c[commentSendState(comment.marks.private_reply.state)] : c.wait}
         </p>
       )}
       {error && (
@@ -347,6 +367,7 @@ export function CommentReply({
           {commentReason(locale, error)}
         </p>
       )}
+      {drafts && <div className="comment-reply-target"><strong>{c.target} {comment.author_name ?? c.unnamed}</strong>{offer && <p>{offer.product_name} · {comment.marks.claim?.quantity} {c.units}</p>}</div>}
       <fieldset
         disabled={
           !allowed ||
@@ -355,10 +376,11 @@ export function CommentReply({
           terminalUnknown ||
           (!!rule && !canPreempt) ||
           state === "queued" ||
-          state === "sent"
+          state === "sent" ||
+          (drafts !== undefined && comment.marks.public_replies > 0 && !verified)
         }
       >
-        <label>
+        <details><summary>{c.advanced}</summary><label>
           {c.template}
           <select
             data-testid="comment-template"
@@ -376,13 +398,14 @@ export function CommentReply({
             ))}
           </select>
         </label>
+        </details>
         {!selected && (
           <label>
             {c.text}
             <textarea
               data-testid="comment-reply-text"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => { setText(e.target.value); remember(e.target.value, mode); }}
               rows={3}
             />
             <span className="live-helper">
@@ -398,7 +421,7 @@ export function CommentReply({
             (!selected && !limit.valid) || (restricted && !restrictionChecked)
           }
         >
-          {busy ? c.sending : c.send}
+          {busy ? c.sending : terminalUnknown ? c.waitPending : state === "sent" || state === "queued" || (mode === "private" && !!comment.marks.private_reply) || (comment.marks.public_replies > 0 && !verified) ? c.wait : mode === "public" ? c.publicSend : c.send}
         </button>
       </fieldset>
       {confirm && (

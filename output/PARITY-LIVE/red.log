@@ -1,7 +1,38 @@
-PARITY-LIVE tests-only RED
+PARITY-LIVE — causal RED ESTABLISHED in RELAY 2; prior relay receipt retained below
 base=df35b338b5cfde5de34bb590e2ba118efc17e4a4
+head=898e71a829d7f4bce261eebc95ec5028693f8901
 branch=unit/parity-live
-run=PENDING_PUSH
-job=PENDING
-assertion_failure=NOT_RUN
-static=node --check exit 0; browser ownership derive/check exit 0
+pr=355
+Foundation_run=41050615992 job=124045445870 status=success (gh pr checks 355)
+Gates_run=41050616128 attempt=1 job=124051353169 status=failure name=gate (--browser-live-console)
+synthetic_merge_sha=57cbd1545e0651859bf8366829acbabe16d8f232 (job matrix receipt)
+job_log=gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124051353169/logs
+original_requested_command=gh run view 41050616128 --log-failed --job 124051353169
+original_command_result=run still in progress; logs unavailable via gh run view; read completed job logs through jobs API instead
+failure=panic: test timed out after 13m0s; running TestBrowserLiveConsoleRealChain/workspace
+failure_time=2026-10-30T12:24:14.4769774Z
+preceding_errors=http proxy context canceled; then dial tcp loopback connection refused
+causal_root=UNKNOWN; no emitted Playwright assertion summary in job log; do not infer which test failed
+artifact_id=12975464801 name=gate-browser-live-console size=6688271
+artifact_download_1=gh run download via configured proxy; no returned content after >2min; task-owned download terminated
+artifact_download_2=direct transport; subprocess timeout at 60 seconds; no artifact content obtained
+assertion_RED=NOT_ESTABLISHED (timeout is not a new assertion failure)
+GREEN=NOT_RUN
+implementation=NOT_RUN (RED prerequisite unmet)
+relay_source_edits=NONE
+relay_push=NONE
+local_tests_servers_builds=NOT_RUN
+WAIT_RUN=41050616128 (other jobs still queued at lookup; browser job already failed; attempt 1, no rerun requested)
+wakeup=integrator relay required with browser failure artifact or authorized harness/root-cause resolution; no task-owned background process remains
+
+RELAY2: assertion_RED=ESTABLISHED from complete CRC32-verified ZIP entries in partial artifact12975464801
+Desktop1429:39502 /1429:39683: expect(getByRole('heading',{name:'留言與私訊',exact:true})).toBeVisible failed, element not found, timeout10000ms.
+Evidence=output/PARITY-LIVE/red-diagnostics/*8a9e8*.md.gz and *e09b0*.md.gz
+Desktop39502_sha256=90e3273b1e0ba0f7fbe377a08e81fbb37d2a5e09948e7fd782ec306ce9f10ed2
+Desktop39683_sha256=f6d8a0495166b6eed818d0faf60272a3c3b8473a3e8a1291dd1df0ab7fbf28fd
+Mobile39782/39607/39834: missing tab留言 causes click timeout110000ms.
+Download attempts bounded45s/90s, partial ZIP3668964bytes; no further process remains. Outer workflow failure remains timeout, not full test summary.
+
+implementation_static=E1 tsc7.0.2 noEmit incremental=false resolver config exit0; syntax/ownership/diff checks exit0
+implementation_runtime=NOT_RUN locally; await own CI after batch push
+raw_context_packaging=byte-identical gzip (mtime0) to retain GitHub trailing whitespace without a source whitespace exemption; SHA256 values refer to decompressed original bytes

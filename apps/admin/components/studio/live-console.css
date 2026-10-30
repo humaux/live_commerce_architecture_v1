@@ -1,0 +1,98 @@
+/* Purpose: signed UX-LIVE v3 content layout, three task tabs and persistent buyer reply context.
+ * Depends on: existing admin surface/ink/border/primary tokens and workspace.css primitives.
+ * Used by: LiveWorkspace only; no shared shell or other module styles change.
+ * Invariants: active tabs change presentation only; the reply owner and its send fences stay mounted. */
+.live-workspace { --live-surface:#fff; --live-canvas:#f5f6f7; --live-line:#dfe5ec; --live-selected:#e8f5f1; font-size:14px; }
+.live-workspace h2,.live-workspace h3,.live-workspace h4 { color:var(--ink,#202f42); }
+.live-workspace button { border:1px solid var(--live-line); border-radius:6px; background:var(--live-surface); color:var(--ink,#193c61); cursor:pointer; }
+.live-workspace button:disabled { cursor:default; opacity:.65; }
+.live-workspace button:focus-visible,.live-workspace summary:focus-visible { outline:2px solid var(--ui-primary,#247965); outline-offset:3px; }
+.live-workspace button.primary { background:var(--ui-primary,#247965); color:#fff; }
+.live-workspace-toolbar { padding:8px 0; gap:12px; }
+.live-workspace-toolbar label { display:flex; align-items:center; flex:0 1 auto; gap:8px; }
+.live-parity-header { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.live-parity-header h2 { font-size:20px; margin:0; flex:1 1 240px; }
+.live-order-state { color:var(--ui-primary,#247965); font-size:13px; }
+.live-status-toolbar { float:right; }
+.live-status-toolbar button { font-size:12px; padding:4px 10px; }
+.live-status-bar { display:flex; flex-wrap:wrap; border:0; padding:8px 0 12px; gap:12px; color:var(--ui-primary,#247965); }
+.live-status-bar > div { display:flex; align-items:baseline; gap:4px; }
+.live-status-bar dt,.live-status-bar dd { font-size:13px; margin:0; color:inherit; font-weight:400; }
+.live-advanced { font-size:13px; margin:0 0 8px; }
+.live-advanced summary,.live-offer details summary { cursor:pointer; color:var(--muted,#526071); }
+.live-revenue-stats { display:flex; gap:20px; flex-wrap:wrap; }
+.live-revenue-stats dd { margin:0; }
+.live-console-columns { display:grid; grid-template-columns:minmax(200px, .76fr) minmax(0,2.1fr); gap:16px; margin-top:12px; background:var(--live-canvas); padding:16px; }
+.live-console-left,.comment-stream,.comment-buyer { min-width:0; }
+.live-console h3 { font-size:16px; margin:0 0 12px; }
+.live-video-surface { display:flex; flex-direction:column; justify-content:center; gap:24px; min-height:190px; padding:16px; border-radius:6px; color:#fff; background:#142b43; }
+.live-video-surface strong { background:var(--live-selected); color:#142b43; padding:26px 12px; font-size:18px; }
+.live-video-surface span { font-size:12px; }
+.live-preview > p,.live-preview > a { font-size:12px; }
+.live-preview .live-instagram-notice { padding:6px 0; border:0; }
+.live-products { margin-top:16px; }
+.live-offer { border:1px solid var(--live-line); border-radius:8px; background:#fff; padding:12px; margin-bottom:12px; }
+.live-offer-heading { display:block; }
+.live-offer p { margin:8px 0; font-size:13px; }
+.live-offer h3 { font-size:15px; margin:0; }
+.live-product-toggle { width:100%; margin:10px 0; }
+.comment-workspace { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:16px; align-items:stretch; }
+.comment-stream { background:#fff; padding:16px; }
+.comment-stream > header button { min-height:32px; font-size:12px; padding:4px 8px; }
+.comment-filters { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; padding:0 0 12px; overflow:visible; }
+.comment-filters button { padding:8px 2px; font-size:13px; min-width:0; }
+.comment-filters [aria-pressed=true],.comment-modes [aria-pressed=true] { background:var(--live-selected); border-color:var(--live-line); color:var(--ink); }
+.comment-rows { max-height:650px; margin:0; padding:0; }
+.comment-rows li { border:1px solid var(--live-line); border-radius:8px; padding:14px 12px; margin-bottom:12px; min-height:132px; }
+.comment-rows li[data-selected] { background:var(--live-selected); }
+.comment-byline { font-size:13px; }
+.comment-byline time { font-size:11px; }
+.comment-rows li > button { min-height:44px; }
+.comment-buyer { display:flex; flex-direction:column; background:#fff; padding:16px; gap:12px; }
+.live-buyer-context { flex:1; min-height:240px; }
+.live-buyer-context h4 { font-size:14px; margin-bottom:8px; }
+.live-buyer-context p { margin:8px 0; }
+.live-buyer-context details { margin-top:12px; }
+.live-sticky-reply { border:1px solid var(--live-line); border-radius:8px; padding:12px; background:#fff; }
+.live-reply-summary { color:var(--muted,#526071); font-size:12px; line-height:1.6; }
+.comment-reply { margin-top:0; padding-top:0; border:0; }
+.comment-modes,.live-quick-replies { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.live-quick-replies { padding-bottom:8px; }
+.comment-modes button,.live-quick-replies button { min-width:0; padding:8px 2px; font-size:13px; }
+.comment-reply > .live-helper { font-size:12px; margin:4px 0; }
+.comment-reply fieldset { gap:8px; }
+.comment-reply textarea { min-height:80px; font-size:14px; }
+.comment-reply [data-testid=comment-send] { width:100%; }
+.live-mobile-tabs { display:none; }
+@media(max-width:760px) {
+ .live-workspace { font-size:14px; }
+ .live-workspace-toolbar { gap:8px; }
+ .live-workspace-toolbar label { flex-wrap:wrap; }
+ .live-workspace-toolbar a { font-size:12px; }
+ .live-parity-header h2 { font-size:17px; }
+ .live-parity-header > button { min-height:36px; font-size:12px; }
+ .live-status-bar { gap:5px 10px; }
+ .live-status-bar dt,.live-status-bar dd { font-size:11px; }
+ .live-mobile-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:8px; }
+ .live-mobile-tabs button { border-radius:6px 6px 0 0; }
+ .live-mobile-tabs [aria-selected=true] { background:var(--live-selected); }
+ .live-console-columns { display:flex; flex-direction:column; padding:10px 0; gap:10px; }
+ .comment-workspace,.comment-buyer { display:contents; }
+ .live-console:not([data-mobile-tab=live]) .live-console-left,
+ .live-console:not([data-mobile-tab=comments]) .comment-stream,
+ .live-console:not([data-mobile-tab=buyer]) .live-buyer-context { display:none; }
+ .live-console-left,.comment-stream,.live-buyer-context { padding:12px; background:#fff; min-height:220px; }
+ .comment-rows { max-height:350px; }
+ .comment-rows li { min-height:92px; }
+ .live-sticky-reply { position:sticky; bottom:8px; z-index:2; padding:10px; margin:0; }
+ .live-sticky-reply .comment-reply > .live-helper { font-size:11px; }
+ .live-buyer-context p { margin:7px 0; }
+}
+
+.comment-byline > button { display:inline-flex; gap:16px; align-items:center; border:0; background:transparent; padding:8px 0; font-weight:600; }
+.live-selection-dot { width:18px; height:18px; border:1px solid var(--live-line); border-radius:50%; background:#fff; box-sizing:border-box; }
+[aria-pressed=true] > .live-selection-dot { border:5px solid var(--ui-primary,#247965); }
+.comment-reply-target { font-size:13px; padding:8px 0; }
+.comment-reply-target p { margin:6px 0 0; font-size:12px; }
+
+.live-demo-tag { background:var(--live-selected); padding:4px 8px; color:var(--muted,#526071); font-size:12px; }

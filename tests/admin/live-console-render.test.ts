@@ -16,7 +16,7 @@ const React = app("react"), { renderToStaticMarkup } = app("react-dom/server");
 const store = { id: "11111111-1111-4111-8111-111111111111", role: "owner", name: "Synthetic store" }, scene = "22222222-2222-4222-8222-222222222222";
 function render(locale: "en" | "zh-TW" | "zh-CN", platform: string, embeddable: boolean, denied = false) {
   const snapshots: any[] = [
-    { session: { title: "A1 PRIVATE TITLE", lifecycle: "draft", version: 1 }, stats: { comments: { total: null, source: "unavailable" }, keyword_comments: 0, buyers: 0, orders: { count: 0, amount_minor: 0 }, paid: { amount_minor: 0 }, currency: "TWD", as_of: "2026-10-07T00:00:00Z" }, stream: { state: "not_started", source_platform: platform, video_embeddable: embeddable, last_ok_at: null }, offers: [], recommended: null },
+    { session: { title: "A1 PRIVATE TITLE", lifecycle: "draft", version: 1 }, window: { state: "CLOSED", generation: 1, match_mode: "KEYWORD_QTY_CONTAINS" }, stats: { comments: { total: null, source: "unavailable" }, keyword_comments: 0, buyers: 0, orders: { count: 0, amount_minor: 0 }, paid: { count: 0, amount_minor: 0 }, currency: "TWD", as_of: "2026-10-07T00:00:00Z" }, stream: { state: "not_started", source_platform: platform, video_embeddable: embeddable, last_ok_at: null }, offers: [], recommended: null },
     null, null, null,
   ];
   let at = 0, listRefreshes = 0; const polls: boolean[] = [], refreshes: number[] = [];

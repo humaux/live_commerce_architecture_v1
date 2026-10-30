@@ -51,9 +51,9 @@ async function customerRead<T>(read: () => Promise<T>): Promise<T> {
 }
 
 /** Fetch one conversation or bundle; linking never infers identity from names, claim owners or purchase history. */
-export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, onOrder, onLinked, sessionId, compact = false }: {
+export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, onOrder, onLinked, sessionId, compact = false, onFacts }: {
   store: Store; conversationId?: string; bundleId?: string; onUnauthorized?: () => void;
-  onOrder?: (orderId: string) => void; onLinked?: () => void; sessionId?: string; compact?: boolean;
+  onOrder?: (orderId: string) => void; onLinked?: () => void; sessionId?: string; compact?: boolean; onFacts?: (data: BuyerData | null) => void;
 }) {
   const params = useParams<{ locale: string }>(), locale = params?.locale ?? "zh-TW", c = inboxCopy(locale);
   const scope = `${store.id}:${conversationId ?? ""}:${bundleId ?? ""}`;
@@ -72,8 +72,9 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
   const [uncertain, setUncertain] = useState(false);
   const pending = useRef(new ReplyReceipt());
   const inFlight = useRef(false), goneScope = useRef<string | null>(null);
-  const callbacks = useRef({ onUnauthorized, onLinked }); callbacks.current = { onUnauthorized, onLinked };
+  const callbacks = useRef({ onUnauthorized, onLinked, onFacts }); callbacks.current = { onUnauthorized, onLinked, onFacts };
   const clear = useCallback(() => {
+    callbacks.current.onFacts?.(null);
     setValue(null); setVersion(null); setLinkedName(null); setLinkedGone(false); setChoices([]); setCustomer(null);
     setAfter(""); setNext(""); setError(null); setBusy(false); setUncertain(false);
     pending.current.clear(); inFlight.current = false;
@@ -122,6 +123,7 @@ export function BuyerPanel({ store, conversationId, bundleId, onUnauthorized, on
       }
     }
     if (!privacy.fence.current(ticket)) return;
+    callbacks.current.onFacts?.(result);
     setValue({ scope, data: result }); setVersion(header ? versionOf(header) : null); setLinkedName(name); setLinkedGone(gone);
   }, [scope, store.id, conversationId, bundleId, canReadCustomers, privacy.fence, guard]);
   const customerPage = useCallback(async (cursor: string, ticket: Ticket) => {
