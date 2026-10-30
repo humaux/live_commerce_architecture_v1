@@ -208,7 +208,10 @@ for (const width of [1440, 390]) {
   test(`PEOPLE-V2 blocked erasure retains customer and orders en-${width}`, async ({ page }) => {
     await signed(page, width); const f = await fixture(page, "blocked"); await page.goto(detailURL("en"));
     await expect(page.getByTestId("customer-erase")).toBeVisible(); await eraseReady(page);
-    await act(page, copy.en.confirmErase, "server refusal is visible without claiming erasure", () => page.getByTestId("erase-submit").click(), () => expect(page.getByTestId("erase-problem")).toContainText(/payment|order|refund/i));
+    await act(page, copy.en.confirmErase, "server refusal is visible without claiming erasure", () => page.getByTestId("erase-submit").click(), async () => {
+      await expect(page.getByRole("heading", { name: "Cannot erase right now", exact: true })).toBeVisible();
+      await expect(page.getByText("An order, payment or refund is still open. Resolve the transaction before checking erasure again.", { exact: true })).toBeVisible();
+    });
     expect(f.posts).toHaveLength(1); expect(f.detail.active).toBe(true);
     await expect(page.getByTestId("customer-erased")).toHaveCount(0);
     await act(page, "Refresh", "refused erasure keeps all three server orders", () => page.reload(), async () => { await expect(page.getByTestId("customer-orders").locator("tbody tr")).toHaveCount(3); await expect(page.getByTestId("customer-erased")).toHaveCount(0); }, "reload");

@@ -1,5 +1,5 @@
 // Purpose: Owns customer detail and merchant privacy-action controls.
-// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./CustomerTags, ./CustomerHistoricalOrders, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
+// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./CustomerTags, ./CustomerHistoricalOrders, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css, ./customers/parity.css
 // Invariants: existing synchronous privacy contracts; uncertain commands are never automatically replayed.
 // Used by: apps/admin/app/[locale]/customers/[customer]/page.tsx
 "use client";
@@ -37,6 +37,7 @@ import { CustomerHistoricalOrders } from "./CustomerHistoricalOrders";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
+import "./customers/parity.css";
 
 type Notice = { tone: "ok" | "bad"; text: string } | null;
 const errorText = (c: CustomersCopy, code: string) => c.errors[code] ?? c.errors.default;
@@ -131,10 +132,13 @@ function Body({
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
   const p = c.people;
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [pendingKind, setPendingKind] = useState("");
   const [storageReady, setStorageReady] = useState(false);
-  const [screen, setScreen] = useState<"profile" | "submitted" | "pending">("profile");
+  const [resultText, setResultText] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [screen, setScreen] = useState<"profile" | "submitted" | "pending" | "downloaded" | "erased" | "limit" | "blocked">("profile");
   const markerKey = useRef("");
   const writing = useRef(false);
   // Store only a command kind under an opaque session/store/customer digest. No PII, payload or key is cached.
@@ -157,7 +161,7 @@ function Body({
     })();
     return () => { cancelled = true; };
   }, [boundary, store, detail.customer_id]);
-  const locked = !storageReady || pendingKind !== "";
+  const locked = !storageReady || pendingKind !== "" || permissionDenied;
   function mark(kind: string) {
     if (!markerKey.current) return false;
     try { sessionStorage.setItem(markerKey.current, kind); setPendingKind(kind); return true; }
@@ -178,7 +182,7 @@ function Body({
     writing.current = false;
     setBusy("");
     if (result.ok) {
-      if (privacy) { clearMarker(); setExportOpen(false); }
+      if (privacy) { clearMarker(); setExportOpen(false); setScreen("downloaded"); }
       setNotice({ tone: "ok", text: next.done });
       void refresh();
     } else if (result.uncertain) {
@@ -188,6 +192,8 @@ function Body({
     } else {
       if (privacy) clearMarker();
       setNotice({ tone: "bad", text: errorText(c, result.code) });
+      if (privacy && result.code === "export_too_large") { setExportOpen(false); setScreen("limit"); }
+      if (result.code === "forbidden") { setExportOpen(false); setPermissionDenied(true); }
     }
   }
   const withdraw = (purpose: string, channel: string) =>
@@ -197,14 +203,30 @@ function Body({
     run: (key) => postExport(store, detail.customer_id, key, boundary) });
   const identity = <p className="people-identity">{storeInfo.name} · {detail.display_name ?? c.noName}<br />
     {p.customerID} {detail.customer_id.slice(0, 8)}{detail.phone_last3 && <> · {p.phone} {detail.phone_last3}</>}</p>;
-  if (screen !== "profile") return <section className="customers-section people-result" role="status">
-    <h2>{pendingKind === "unknown" ? p.unconfirmed : screen === "submitted" ? (pendingKind === "erase" ? p.eraseSubmitted : p.exportSubmitted) : (pendingKind === "erase" ? p.erasePending : p.exportPending)}</h2>
-    {identity}
-    <p>{screen === "submitted" ? p.unconfirmed : p.paused}</p>
-    <button type="button" onClick={() => setScreen(screen === "submitted" ? "pending" : "profile")}>
-      {screen === "submitted" ? p.pending : p.viewData}
-    </button>
-  </section>;
+  async function inspectPending() {
+    if (checking) return;
+    setChecking(true);
+    // Existing synchronous contract has no request-status API. A fresh customer
+    // read is the only available reconciliation evidence; a failed read retains
+    // the authorized snapshot and the persistent command fence.
+    try { await refresh(); }
+    catch { /* Never clear the marker or replay an uncertain command. */ }
+    finally { setChecking(false); setScreen("pending"); }
+  }
+  if (screen !== "profile") {
+    const outcome = screen === "downloaded" || screen === "erased" || screen === "limit" || screen === "blocked";
+    const heading = screen === "downloaded" ? p.downloaded : screen === "erased" ? p.erased : screen === "limit" ? p.limit : screen === "blocked" ? p.blocked :
+      screen === "submitted" ? (pendingKind === "erase" ? p.eraseSubmitted : p.exportSubmitted) : (pendingKind === "erase" ? p.erasePending : p.exportPending);
+    return <section className="customers-section people-result" role="status">
+      <h2>{heading}</h2>{identity}
+      <p>{screen === "submitted" ? p.unconfirmed : screen === "pending" ? p.paused : screen === "limit" ? p.limitBody : screen === "blocked" ? p.blockedBody : screen === "downloaded" ? p.downloadedBody(detail.orders_count, detail.consent_history.length) : resultText}</p>
+      {screen === "downloaded" && <p>{p.fileSafety}</p>}
+      {screen === "erased" && <p data-testid="customer-erased">{c.erasedState}</p>}
+      <button type="button" disabled={checking} onClick={() => { if (screen === "submitted") void inspectPending(); else setScreen("profile"); }}>
+        {screen === "submitted" ? p.pending : outcome ? p.backCustomer : p.viewData}
+      </button>
+    </section>;
+  }
 
   const label = (purpose: string) => (purpose === "marketing_messages" ? p.marketing : p.ads);
   const source = (value: string) => value === "buyer_settings" ? p.settings : c.sources[value] ?? (value === "merchant_recorded" ? c.sources.merchant : "—");
@@ -213,6 +235,7 @@ function Body({
       <nav className="people-tabs" aria-label={p.title}>
         <a href="#people-orders">{p.orders}</a><a href="#people-consent">{p.consent}</a><a href="#people-privacy">{p.privacy}</a>
       </nav>
+      {permissionDenied && <section className="customers-section" role="status"><h2>{p.forbiddenTitle}</h2><p>{p.forbiddenBody}</p></section>}
       {pendingKind && <section className="customers-section people-pending"><p>{p.paused}</p>{identity}
         <button type="button" onClick={() => setScreen("pending")}>{p.pendingBack}</button></section>}
       <div className="people-profile">
@@ -277,14 +300,15 @@ function Body({
           store={store} customer={detail.customer_id} boundary={boundary} />
       </>}
       <section id="people-privacy" className="customers-section people-privacy" aria-label={p.privacy} data-testid="customer-privacy">
-        <h2>{c.privacySection}</h2>
+        <h2>{p.customerPrivacy}</h2>
 
         <div className="customers-actions">
           <button type="button" data-testid="customer-download" disabled={busy !== "" || locked} onClick={() => setExportOpen(true)}>
             {busy === "export" ? c.downloading : p.download}
           </button>
           {detail.active && <EraseDialog detail={detail} store={store} boundary={boundary} c={c} busy={busy !== "" || locked} identity={identity} beforeSend={() => mark("erase")} clearMarker={clearMarker}
-            onUncertain={() => setScreen("submitted")} onDone={(text) => { setNotice({ tone: "ok", text }); void refresh(); }} />}
+            onUncertain={() => setScreen("submitted")} onDenied={() => setPermissionDenied(true)} onBlocked={() => setScreen("blocked")}
+            onDone={(text) => { setResultText(text); setScreen("erased"); void refresh(); }} />}
         </div>
         {notice && (
           <p className={notice.tone === "ok" ? "orders-notice" : "orders-bad"} role={notice.tone === "ok" ? "status" : "alert"}
@@ -361,14 +385,13 @@ function Body({
         <ul className="customers-consent">
           {consentPairs.map(({ purpose, channel }) => {
             const on = detail.consents[purpose];
+            const event = detail.consent_history.filter(item => item.purpose === purpose).sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))[0];
             return (
               <li key={purpose} data-testid={`consent-${purpose}`}>
-                <span>{label(purpose)}{detail.consent_history.find((event) => event.purpose === purpose) && <small className="people-event">
-                  {(() => { const event = detail.consent_history.find((item) => item.purpose === purpose)!; return `${source(event.source)} · ${date(event.occurred_at)}`; })()}
-                </small>}</span>
-                <Badge tone={on ? "success" : "neutral"}>
-                  {on ? p.granted : detail.consent_history.some((event) => event.purpose === purpose && !event.granted) ? p.withdrawn : c.consentNone}
-                </Badge>
+                <span>{label(purpose)}<small className="people-event">
+                  {on ? p.granted : detail.consent_state?.[purpose] === "withdrawn" || event && !event.granted ? p.withdrawn : p.never}
+                  {event && <> · {source(event.source)} · {date(event.occurred_at)}</>}
+                </small></span>
                 {on && detail.active && (
                   <button type="button" data-testid={`withdraw-${purpose}`} disabled={busy !== "" || locked}
                     onClick={() => void withdraw(purpose, channel)}>
@@ -382,6 +405,11 @@ function Body({
 
       </section>
 
+      {detail.privacy_actions.length > 0 && <section className="customers-section" aria-label={c.actionsSection}>
+        <h2>{c.actionsSection}</h2><table className="orders-actions-table" data-testid="privacy-actions"><tbody>
+          {detail.privacy_actions.map((action, index) => <tr key={index}><td>{displayTime(locale, action.completed_at)}</td><td>{c.kinds[action.kind.toLowerCase()] ?? "—"}</td></tr>)}
+        </tbody></table>
+      </section>}
       </div>
 
       </div>
@@ -390,9 +418,9 @@ function Body({
 }
 
 // Native dialogs preserve keyboard dismissal and focus; only the signed name + scope checkbox enables erasure.
-function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, beforeSend, clearMarker, onUncertain, onDone }: {
+function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, beforeSend, clearMarker, onUncertain, onDenied, onBlocked, onDone }: {
   detail: Detail; store: string; boundary: string; c: CustomersCopy; busy: boolean; identity: ReactNode;
-  beforeSend: () => boolean; clearMarker: () => void; onUncertain: () => void; onDone: (text: string) => void;
+  beforeSend: () => boolean; clearMarker: () => void; onUncertain: () => void; onDenied: () => void; onBlocked: () => void; onDone: (text: string) => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const typedInput = useRef<HTMLInputElement>(null);
@@ -429,6 +457,8 @@ function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, be
       setOpen(false); onUncertain();
     } else {
       clearMarker(); key.current = newKey("erase"); setProblem(errorText(c, result.code));
+      if (result.code === "erasure_blocked") { setOpen(false); onBlocked(); }
+      if (result.code === "forbidden") { setOpen(false); onDenied(); }
     }
   }
   return <>

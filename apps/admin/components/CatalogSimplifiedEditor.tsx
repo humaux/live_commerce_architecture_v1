@@ -1,5 +1,5 @@
 // Purpose: Signed catalog edit, variant/stock checks, media, review and saved task screens.
-// Depends on: react, next/link, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/images-client, @/lib/catalog-v2-model, @/lib/catalog-v2-client, @/lib/catalog-v2-write, @/lib/product-document, @/lib/product-editor-copy, @/lib/use-product-leave-guard, ./ProductMediaManager.
+// Depends on: react, next/link, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/images-client, @/lib/catalog-v2-model, @/lib/catalog-v2-client, @/lib/catalog-v2-write, @/lib/product-document, @/lib/product-editor-copy, @/lib/use-product-leave-guard, ./ProductMediaManager, ./catalog/parity.css.
 // Used by: ProductEditor on the existing product route.
 // Invariants: stable SKU IDs, minimal CAS patch, no write before review; server inventory floor/atomicity authoritative; UNKNOWN fenced.
 "use client";
@@ -16,6 +16,7 @@ import { draftFromDetail, editDocument, type DraftRow } from '@/lib/product-docu
 import { productEditorCopy } from '@/lib/product-editor-copy';
 import type { ProductNavigationState } from '@/lib/use-product-leave-guard';
 import { ProductMediaManager } from './ProductMediaManager';
+import "./catalog/parity.css";
 type Screen = 'edit' | 'variants' | 'stock' | 'media' | 'review' | 'saved';
 /** Compose bounded task screens over the incumbent catalog write and media lifecycles. */
 export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNavigationChange }: {
@@ -99,10 +100,11 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
         <label>{text(draft.rows.length === 2 ? c.price : draft.rows.length > 2 ? c.multiPrice : c.onePrice, { currency: store.currency, n: draft.rows.length })}<input data-testid="catalog-common-price" inputMode="decimal" value={commonPrice}
           onChange={e => setDraft({ ...draft, rows: draft.rows.map(row => ({ ...row, price: e.target.value })) })} /></label>
         {!commonPrice && draft.rows.length > 1 && <p>{c.noPriceChange}</p>}
-        <div className="cat-actions"><button type="button" onClick={() => setScreen('variants')}>{c.variants}</button>
-          <button type="button" onClick={() => setScreen('media')}>{media ? media.items.length ? c.media : c.mediaNone : pc.loading}</button></div>
+        <label className="cat-status-radio"><input type="radio" name="catalog-status" aria-label={c[baseline.status]} checked readOnly />{c[baseline.status]}</label>
       </fieldset>
-      <div className="cat-actions"><Link role="button" href={`/${locale}/products?store=${store.id}`}>{c.cancel}</Link>
+      <div className="cat-editor-links"><button type="button" disabled={locked} onClick={() => setScreen('variants')}>{c.variants}</button>
+        <button type="button" disabled={locked} onClick={() => setScreen('media')}>{media ? media.items.length ? c.media : c.mediaNone : pc.loading}</button></div>
+      <div className="cat-actions cat-save-bar" data-testid="catalog-save-bar"><Link role="button" href={`/${locale}/products?store=${store.id}`}>{c.cancel}</Link>
         <button className="product-primary" type="submit" disabled={locked}>{c.review}</button></div>
     </form> : screen === 'variants' ? <section>
       <h2 ref={title} tabIndex={-1}>{c.variants}</h2>
@@ -115,16 +117,15 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
       <button type="button" disabled={locked} onClick={() => setScreen('edit')}>{c.backEditor}</button>
     </section> : screen === 'stock' && stockDraft ? <section>
       <h2 ref={title} tabIndex={-1}>{c.stock}</h2>
-      <p>{skuFacts(stockIndex)} · {rowStock(stockIndex)}</p>
+      <p>{skuFacts(stockIndex)}</p><p>{rowStock(stockIndex)}</p>
       <fieldset className="cat-task-fields" disabled={locked}>
-        <label><input data-testid="catalog-stock-tracked" type="checkbox" checked={stockDraft.tracked} onChange={e => setStockDraft({ ...stockDraft, tracked: e.target.checked })} />{c.tracked}</label>
         {stockDraft.tracked ? <><label>{c.total}<input data-testid="catalog-stock-total" inputMode="numeric" value={stockDraft.quantity} onChange={e => setStockDraft({ ...stockDraft, quantity: e.target.value })} /></label>
-          <label>{c.delta}<input data-testid="catalog-stock-delta" inputMode="numeric" value={Number(stockDraft.quantity) - (baseline.skus[stockIndex]?.on_hand ?? 0)} onChange={e => { if (/^[-+]?\d+$/.test(e.target.value)) setStockDraft({ ...stockDraft, quantity: String((baseline.skus[stockIndex]?.on_hand ?? 0) + Number(e.target.value)) }); }} /></label></> :
+</> :
           <label>{pc.max}<input data-testid="catalog-stock-max" inputMode="numeric" value={stockDraft.max} onChange={e => setStockDraft({ ...stockDraft, max: e.target.value })} /></label>}
-        <p>{c.reason}</p>
+        {stockDraft.tracked && <p className="cat-stock-floor">{text(c.stockFloor, { n: baseline.skus[stockIndex]?.committed ?? 0 })}</p>}
       </fieldset>
       {stockError && <p role="alert">{stockError}</p>}
-      <div className="cat-actions"><button type="button" disabled={locked} onClick={returnToVariants}>{c.keep}</button>
+      <div className="cat-actions cat-save-bar"><button type="button" disabled={locked} onClick={returnToVariants}>{stockError ? c.keep : c.backVariants}</button>
         <button type="button" disabled={locked} onClick={checkStock}>{c.checkStock}</button></div>
     </section> : screen === 'media' ? <section>
       <h2 ref={title} tabIndex={-1}>{c.media}</h2>

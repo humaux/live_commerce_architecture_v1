@@ -1,9 +1,13 @@
-// read.go serves the merchant customer list and detail (contract §5): one call to
+// read.go serves the merchant customer list and detail (contract §5): scoped calls to
 // identity.read_merchant_customers (0078, customers:read), strict decoding of its projection, and the order
 // summaries of the detail page through the existing internal/merchantorders projection.
 //
 // Non-goals: no write, no privacy action (privacy.go), no order rule (merchantorders.Get is the single order
 // projection), never an actor_key, owner session id or PSP reference: the SQL does not select them.
+// Purpose: scoped merchant list/detail projections, including recorded consent state.
+// Depends on: pgx, identity.read_merchant_customers, merchantorders, pagination, platform.
+// Used by: internal/httpapi customer reads and privacy.go.
+// Invariants: existing definers authorize every read; absence never implies withdrawal; no new grants or SQL writer.
 
 package customers
 
@@ -78,6 +82,15 @@ func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in
 		if err != nil {
 			return empty, err
 		}
+		// The existing customers:read definer already scopes and validates the
+		// append-only history. Reuse it rather than adding a SQL grant/migration
+		// or guessing withdrawal from the list's false boolean. Page size is bounded.
+		detail, _, err := loadDetail(ctx, tx, scope, token, c.CustomerID)
+		if err != nil {
+			return empty, err
+		}
+		// Keep the boolean and display state from the same consent-history read.
+		c.Consents, c.ConsentState = detail.Consents, detail.ConsentState
 		empty.Items = append(empty.Items, c)
 	}
 	if len(empty.Items) > limit {

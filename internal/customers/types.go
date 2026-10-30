@@ -82,22 +82,53 @@ type Consents struct {
 	AdsPersonalization bool `json:"ads_personalization"`
 }
 
+// ConsentState distinguishes an absent decision from a recorded withdrawal. It is
+// a read projection only; Consents remains the authorization result (CD4).
+type ConsentState struct {
+	MarketingMessages  string `json:"marketing_messages"`
+	AdsPersonalization string `json:"ads_personalization"`
+}
+
+// consentState adds whether a decision exists; CD4's current-grant derivation stays shared.
+func consentState(history []ConsentEvent) ConsentState {
+	current := CurrentConsents(history)
+	out := ConsentState{MarketingMessages: "never", AdsPersonalization: "never"}
+	for _, event := range history {
+		if !ValidPair(event.Purpose, event.Channel) {
+			continue
+		}
+		if event.Purpose == PurposeMarketingMessages {
+			out.MarketingMessages = "withdrawn"
+			if current.MarketingMessages {
+				out.MarketingMessages = "granted"
+			}
+		} else {
+			out.AdsPersonalization = "withdrawn"
+			if current.AdsPersonalization {
+				out.AdsPersonalization = "granted"
+			}
+		}
+	}
+	return out
+}
+
 // Customer is one list row (contract §5). CustomerID is the buyer.owners id (C-1, D1): it is not a credential.
 type Customer struct {
-	CustomerID      string   `json:"customer_id"`
-	FirstSeenAt     string   `json:"first_seen_at"`
-	LastActivityAt  string   `json:"last_activity_at"`
-	DisplayName     *string  `json:"display_name"`
-	PhoneLast3      *string  `json:"phone_last3"`
-	OrdersCount     int64    `json:"orders_count"`
-	PaidOrdersCount int64    `json:"paid_orders_count"`
-	CapturedMinor   int64    `json:"captured_minor"`
-	RefundedMinor   int64    `json:"refunded_minor"`
-	Currency        *string  `json:"currency"`
-	ClaimsCount     int64    `json:"claims_count"`
-	Platforms       []string `json:"platforms"`
-	Consents        Consents `json:"consents"`
-	Active          bool     `json:"active"`
+	CustomerID      string       `json:"customer_id"`
+	FirstSeenAt     string       `json:"first_seen_at"`
+	LastActivityAt  string       `json:"last_activity_at"`
+	DisplayName     *string      `json:"display_name"`
+	PhoneLast3      *string      `json:"phone_last3"`
+	OrdersCount     int64        `json:"orders_count"`
+	PaidOrdersCount int64        `json:"paid_orders_count"`
+	CapturedMinor   int64        `json:"captured_minor"`
+	RefundedMinor   int64        `json:"refunded_minor"`
+	Currency        *string      `json:"currency"`
+	ClaimsCount     int64        `json:"claims_count"`
+	Platforms       []string     `json:"platforms"`
+	Consents        Consents     `json:"consents"`
+	ConsentState    ConsentState `json:"consent_state"`
+	Active          bool         `json:"active"`
 	// Imported is true for a customer created by the CSV import (W5-02B): it has an import profile instead of orders or bundles.
 	Imported bool `json:"imported"`
 	// Tags are the merchant-typed store tags of this customer, name-ordered (W6-01B); never nil.
@@ -428,6 +459,7 @@ func decodeDetail(raw json.RawMessage) (detailWire, error) {
 	if CurrentConsents(d.ConsentHistory) != d.Consents {
 		return detailWire{}, ErrUnavailable
 	}
+	d.ConsentState = consentState(d.ConsentHistory)
 	return d, nil
 }
 
