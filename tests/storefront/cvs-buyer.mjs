@@ -132,8 +132,11 @@ async function toQuote(page, store, locale, kind, quantity = 1) {
   await reachCheckout(page, store.origin, locale, store.product, { quantity });
   await page.getByRole("button", { name: copy[locale].delivery, exact: true }).click();
   await page.locator("#delivery").selectOption({ label: `${copy[locale].chains[kind]}` });
+  // READ ONLY: retain the actual selection before the signed quote screen unmounts the delivery selector.
+  const deliveryKey = await page.locator("#delivery").inputValue();
   await page.getByRole("button", { name: copy[locale].quote, exact: true }).click();
   await expect(page.getByTestId("address-section")).toBeVisible();
+  return deliveryKey;
 }
 async function mapRoundTrip(page, ctx, store, locale, kind, label) {
   await page.getByTestId("cvs-recipient-name").fill("王小明");

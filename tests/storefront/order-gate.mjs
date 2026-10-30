@@ -17,7 +17,7 @@ import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
-import { reachCheckout, switchLocale, confirmCheckoutAddress } from "./shop-helpers.mjs";
+import { reachCheckout, switchLocale, confirmCheckoutAddress, openCheckoutDetails } from "./shop-helpers.mjs";
 import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { displayTime } from "../../packages/format/src/index.ts";
 
@@ -779,6 +779,7 @@ try {
   const cookieHistory=(await c1.cookies(origin))[0].value;
   await a.evaluate(()=>{for(const key of Object.keys(localStorage))if(key.startsWith("commerce-purchase-order-v1:"))localStorage.removeItem(key);});
   await a.reload();await expect(a.getByTestId("toggle-order-history")).toBeEnabled();await expect(a.getByTestId("order-section")).toHaveCount(0);
+  await openCheckoutDetails(a); // signed review discloses the existing history control through View details
   const reloadedHistory=historyRead(a);await Promise.all([reloadedHistory,a.getByTestId("toggle-order-history").click()]);await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,"en",await reloadedHistory);
   await a.locator(`button[data-order-id="${order1}"]`).click();await expect(a.getByTestId("order-id")).toHaveText(order1);
   assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);assert.equal((await c1.cookies(origin))[0].value,cookieHistory);
@@ -788,11 +789,13 @@ try {
   // Same owned session, read-only history in UTC: no extra order or fixture row.
   const utcContext=await newContext(false,"UTC");await utcContext.addCookies(await c1.cookies(origin));
   const utcPage=await utcContext.newPage();await utcPage.goto(origin+checkoutPath);
+  await openCheckoutDetails(utcPage);
   assert.equal(await utcPage.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"UTC");
   await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
   const utcHistory=historyRead(utcPage);await Promise.all([utcHistory,utcPage.getByTestId("toggle-order-history").click()]);
   await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcHistory);
   await utcPage.reload();await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
+  await openCheckoutDetails(utcPage);
   const utcReloadHistory=historyRead(utcPage);await Promise.all([utcReloadHistory,utcPage.getByTestId("toggle-order-history").click()]);
   await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcReloadHistory);
   await utcContext.close();

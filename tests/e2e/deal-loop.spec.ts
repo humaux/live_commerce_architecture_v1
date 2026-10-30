@@ -246,16 +246,15 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   expect((await quotation).status()).toBe(200);
   await expect(buyer.getByTestId("address-section")).toBeVisible();
   for (const [key, value] of Object.entries(pii)) await buyer.locator(`input[name="${key}"]`).fill(value);
-  // Before the address is confirmed the create button is disabled, visibly grey and described; confirmed, it wears the full action colour
-  // (visual QA: the faded teal read as an enabled button gone wrong).
-  await expect(buyer.getByTestId("create-order")).toBeDisabled();
-  await expect(buyer.getByTestId("create-order")).toHaveCSS("background-color", "rgb(231, 237, 243)");
-  await expect(buyer.getByTestId("create-order")).toHaveAccessibleDescription(/\S{6,}/);
+  // The signed fixed action is grey and explains why before confirmation, then solid navy.
+  await expect(buyer.getByTestId("checkout-submit")).toBeDisabled();
+  await expect(buyer.getByTestId("checkout-submit")).toHaveCSS("background-color", "rgb(231, 237, 243)");
+  await expect(buyer.getByTestId("checkout-submit")).toHaveAccessibleDescription(/\S{6,}/);
   await buyer.getByTestId("confirm-address").click();
-  await expect(buyer.getByTestId("create-order")).toBeEnabled();
-  await expect(buyer.getByTestId("create-order")).toHaveCSS("background-color", "rgb(36, 121, 101)");
-  await expect(buyer.getByTestId("create-order")).toHaveCSS("opacity", "1");
-  await buyer.getByTestId("create-order").click();
+  await expect(buyer.getByTestId("checkout-submit")).toBeEnabled();
+  await expect(buyer.getByTestId("checkout-submit")).toHaveCSS("background-color", "rgb(20, 41, 66)");
+  await expect(buyer.getByTestId("checkout-submit")).toHaveCSS("opacity", "1");
+  await buyer.getByTestId("checkout-submit").click();
   await expect(buyer.getByTestId("order-section")).toBeVisible();
   const order = ((await buyer.getByTestId("order-id").innerText()) ?? "").trim();
   expect(order).toMatch(/^[0-9a-f-]{36}$/);

@@ -354,8 +354,8 @@ async function placeCodOrder(page, v, product) {
   await expect(radio).toBeVisible();
   await radio.check();
   await page.getByTestId("confirm-address").click();
-  await expect(page.getByTestId("create-order")).toBeEnabled();
-  await page.getByTestId("create-order").click();
+  await expect(page.getByTestId("checkout-submit")).toBeEnabled();
+  await page.getByTestId("checkout-submit").click();
   await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
   const id = (await page.getByTestId("order-id").innerText()).trim();
   assert.match(id, /^[a-f0-9-]{36}$/);

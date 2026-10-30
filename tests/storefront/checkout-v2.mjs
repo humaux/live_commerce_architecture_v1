@@ -454,6 +454,7 @@ async function checkoutParitySuite({ newContext, origin, product, recipient, evi
       await check("disabled token", "disabled submit is solid light grey without a dashed border", async () => {
         const button = page.getByTestId("checkout-submit");
         await expect(button).toBeDisabled();
+        await expect(button).toHaveAccessibleDescription(/\S{6,}/);
         // READ/MEASURE only: computed paint never mutates DOM or application state.
         const paint = await button.evaluate((el) => { const s = getComputedStyle(el); return { background: s.backgroundColor, border: s.borderTopStyle, opacity: s.opacity }; });
         assert.equal(paint.background, "rgb(231, 237, 243)");
@@ -539,6 +540,8 @@ async function checkoutParitySuite({ newContext, origin, product, recipient, evi
         await page.getByRole("button", { name: copy[locale].change, exact: true }).click();
         await page.getByRole("button", { name: old.quote, exact: true }).click();
         await expect(page.getByTestId("quote-reconfirm")).toBeVisible();
+        // A restored destination collapses its editor on the signed review; edit through View details.
+        await openCheckoutDetails(page);
         await fill(); await page.locator(`input[name="home_payment_mode"][value="${mode}"]`).click();
         await page.getByTestId("confirm-address").click();
         await expect(page.getByTestId("checkout-submit")).toBeDisabled();

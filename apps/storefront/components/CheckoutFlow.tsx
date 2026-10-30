@@ -103,7 +103,7 @@ export default function CheckoutFlow({
   const [method, setMethod] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteChange, setQuoteChange] = useState<number | null>(null);
-  const [reviewState, setReviewState] = useState<{ quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; submitting?: boolean } | null>(null);
+  const [reviewState, setReviewState] = useState<{ quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; submitting?: boolean; needsConfirm?: boolean } | null>(null);
   const v2 = checkoutCopy[locale];
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -711,6 +711,7 @@ export default function CheckoutFlow({
               </div>;
             })()}
             {(quote || pendingKind === "checkout") ? <button type="submit" form="checkout-order-form" data-testid="checkout-submit" className="primary"
+              aria-describedby={quote && reviewState?.quoteID === quote.id && reviewState.needsConfirm ? "create-order-hint" : undefined}
               disabled={busy || loading || pending || orderLocked || error === "session" || quoteChange !== null || !quote || reviewState?.quoteID !== quote.id || !reviewState.ready}>
               {pendingKind === "checkout" ? v2.unknown : reviewState?.submitting ? v2.submitting : v2.submit}
             </button> : <button

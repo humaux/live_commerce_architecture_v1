@@ -177,7 +177,7 @@ try {
   assert.equal(merged.seen.cart.items.length, 2, "unpaid cart merges");
   await merged.reload(); await expect(merged.getByTestId("cart-line")).toHaveCount(2);
   const otherSKU = merged.seen.cart.items.find((item) => item.sku_id !== mergeLink.sku).sku_id;
-  await action(merged, "back-to-cart", () => merged.getByRole("link", { name: "返回購物車", exact: true }).click(), "merged items can be reviewed in the cart", () => expect(merged).toHaveURL(/\/zh-TW\/cart/));
+  await action(merged, "back-to-cart", () => merged.locator(".checkout-top").getByRole("link", { name: "返回", exact: true }).click(), "merged items can be reviewed in the cart", () => expect(merged).toHaveURL(/\/zh-TW\/cart/));
   await action(merged, "remove-other-cart-line", () => merged.locator(`[data-testid="cart-line"][data-sku="${otherSKU}"]`).getByRole("button", { name: /移出購物車/ }).click(), "only the other cart item is removed", async () => {
     await expect(merged.getByTestId("cart-line")).toHaveCount(1);
     await expect(merged.locator(`[data-testid="cart-line"][data-sku="${mergeLink.sku}"]`).getByTestId("cart-line-qty")).toHaveText("2");

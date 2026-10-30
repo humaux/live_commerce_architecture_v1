@@ -100,11 +100,10 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
   };
   const measure = async (state) => { if (mobile && locale === "zh-TW") await density(picker, densities, state); };
   try {
-    await openCheckout();
+    const deliveryKey = await openCheckout();
     await page.getByTestId("cvs-recipient-name").fill("王小明"); // existing synthetic recipient, never a real buyer
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     // CheckoutFlow's optionKey is market:country:method, while CVS accepts only the service suffix.
-    const deliveryKey = await page.locator("#delivery").inputValue();
     const selectedDelivery = /^[^:]+:[A-Z]{2}:delivery:([a-z0-9_-]+)$/.exec(deliveryKey);
     assert.ok(selectedDelivery, "selected checkout option must contain market, country and a delivery service");
     const service = selectedDelivery[1];

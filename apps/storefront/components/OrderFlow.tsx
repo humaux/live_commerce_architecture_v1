@@ -122,7 +122,7 @@ export default function OrderFlow({
   onFeeChanged?: () => void;
   onQuoteRefresh?: (quote: Quote) => void;
   detailsOpen?: boolean;
-  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; submitting?: boolean }) => void;
+  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; submitting?: boolean; needsConfirm?: boolean }) => void;
   cvsResume?: CvsDraft;
   onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
   cvsKinds?: CvsKind[];
@@ -166,10 +166,12 @@ export default function OrderFlow({
   const timing = paymentMode === "cash_on_delivery" ? checkout.cod : paymentMode === "pay_at_pickup" ? checkout.pickup : checkout.online;
   const canSubmit = !busy && !blocked && !expired && !!confirmed && !!option && paymentChoices.includes(paymentMode) && !reconfirmRequired && (codFee === null || quote?.cod_due_minor !== undefined);
   const quoteReady = !!option && paymentChoices.includes(paymentMode) && (codFee === null || quote?.cod_due_minor !== undefined);
+  // The fixed and form actions share the visible reason while an address still needs confirmation.
+  const needsConfirm = !confirmed && !blocked && !expired;
   useEffect(() => {
-    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady, submitting });
+    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady, submitting, needsConfirm });
     return () => { if (quote) onReviewState?.({ quoteID: quote.id, ready: false, timing }); };
-  }, [quote?.id, canSubmit, timing, quoteReady, submitting, onReviewState]);
+  }, [quote?.id, canSubmit, timing, quoteReady, submitting, needsConfirm, onReviewState]);
   useEffect(() => {
     onCodFee?.(codFee);
     return () => onCodFee?.(null);
@@ -352,9 +354,6 @@ export default function OrderFlow({
       throw reason;
     }
   }
-
-  // The create button stays disabled until the address and total are confirmed; say so next to it (and to assistive tech) while that is the reason.
-  const needsConfirm = !confirmed && !blocked && !expired;
 
   return (
     <section
