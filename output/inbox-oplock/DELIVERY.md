@@ -1,0 +1,66 @@
+# INBOX-OPLOCK — RED preparation
+
+Refs: integrator cross-vendor review of RC `c2173f5fc`, finding P1-2 (2026-10-30).
+
+## Assignment and evidence
+
+- Actor: Codex, dispatched by Claude integrator; no recursive delegation.
+- Base: `c2173f5fcc6b4031ccbba7727c0ae088ff3996a0`.
+- Branch: `unit/inbox-oplock`; worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/inbox-oplock`.
+- Model/effort: runtime did not expose a verified exact model/effort identifier.
+- Allowed module: inbox component and its named browser/Node assertions, card evidence, generated browser ownership.
+- Current stage: tests-only RED candidate; production component unchanged. Author review is E0.
+- Static syntax checks: `node --check tests/admin/inbox-v2-ui.spec.ts` and `node --check tests/admin/inbox-unknown.test.ts`, exit 0 (E1 only).
+- CI receipts: `red.log`. Causal RED and integrator relay are required before implementation.
+- Local tests, servers, browsers, Go/PG, LIVE effects, independent review, GREEN: NOT_RUN.
+- Humaux lookup/store/canvas/coord unavailable in this runtime; this file is a worktree handoff, not a substitute shared-state update.
+
+## Acceptance gate
+
+The PR's own GitHub Gates/Foundation must first demonstrate that own A9 sent evidence fails the migrated unlock assertion on the unchanged component. After integrator confirmation, one component fix must make the same assertions green. With integration:read the exact-operation assertions remain unchanged. Without it, only the ACK's outbound_id and terminal sent/failed ledger row with has_unknown_outbound exactly false may settle the ACK. No reconciliation may create a second POST.
+
+Browser collection titles/count remain unchanged: the existing unpermitted case covers sent/failed through Check status and thread refresh, missing/queued/blocked own rows, an unrelated sent row, rejected-text editing, and reload after sent. Node cases additionally cover unknown and true/absent/null/malformed history authority, current/captured submit callbacks, and all three locales. Discovery assertions are unchanged.
+
+## Click ledger plan
+
+Actual results are PENDING CI; the existing browser ledger writer records each scenario.
+
+| Page | Control/action | Expected |
+| --- | --- | --- |
+| Messages, each locale | Fill draft; click Send | Exactly one POST, queued display lock |
+| Selected thread | Check status / Refresh with own row missing, queued, blocked | Composer folded; Send disabled; zero operation reads |
+| Selected thread | Check status / Refresh with own sent row | Empty next composer usable after a new draft; one POST |
+| Selected thread | Check status / Refresh with own failed row; Edit original text | ACK's own draft restored; no POST |
+| Selected thread | Reload after sent; reopen; fill | Server facts still permit next reply; one POST |
+
+## Project understanding
+
+Read AGENTS.md and 架构.md §0, §1, §2, §10, §26, §27: preserve evidence boundaries, server authority, message eligibility, worktree ownership and independent acceptance. Read contracts/live-console-v1.md:640: pending/unknown never authorizes another send; A9 history authority and A4/A5/A12 server checks remain controlling. The current card is authority for the narrowly authorized unpermitted oracle migration. No grants, migrations, contracts or server checks change.
+
+## Bourdieu
+
+Q1–Q5: NOT_ASSESSED; this behavioral correction preserves the existing screen and changes no information hierarchy or settings. Novice/expert refers to experience replying in this inbox, never class or device. Q6 aesthetics: UNKNOWN until owner; no aesthetic claim or new design.
+
+## Mobbin → Eagle
+
+No new visual pattern or reference used; no Mobbin query or Eagle import is required for this existing-composer correction. External design research NOT_RUN.
+
+## Figma official guidance
+
+No Figma change, frame, component, variable or prototype is delivered; no Figma guidance application is claimed. Figma tools/copy lint/density measurement NOT_RUN (no visual change).
+
+## Field parity and copy
+
+No new desktop/mobile frame or summary/review state. Existing browser assertions exercise the same composer/status/edit controls at 390px in zh-TW, zh-CN and en. No new visible product strings; the existing three-locale copy remains the oracle.
+
+| zh-TW | zh-CN | en |
+| --- | --- | --- |
+| 查詢狀態 | 查询状态 | Check status |
+| 重新整理 | 刷新 | Refresh |
+| 編輯原文 | 编辑原文 | Edit original text |
+| 已送出，未代表已讀。 | 已发送，不代表已读。 | Sent does not mean read. |
+| 傳送遭拒；原文保留，可編輯。 | 发送被拒；原文已保留，可以编辑。 | Send rejected; original text saved for editing. |
+
+## Handoff
+
+Do not implement until the integrator confirms causal RED. Never merge, auto-merge or deploy from this lane. Generated ownership is the only changed file outside the named inbox tests/evidence at this stage; list it in the PR for integrator review. Preserve failed CI evidence.

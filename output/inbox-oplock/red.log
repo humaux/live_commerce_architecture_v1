@@ -1,0 +1,10 @@
+INBOX-OPLOCK RED candidate
+base_sha=c2173f5fcc6b4031ccbba7727c0ae088ff3996a0
+branch=unit/inbox-oplock
+stage=tests-only; InboxThread.tsx unchanged
+expected_causal_failure=own A9 sent row unlocks without integration:read
+ci_run=PENDING initial PR creation
+ci_job=PENDING
+conclusion=PENDING; no RED or GREEN claimed
+local_tests=NOT_RUN by owner instruction
+next=integrator relays completed CI; inspect exact failed assertion and record run/job before root fix

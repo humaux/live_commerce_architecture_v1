@@ -352,7 +352,8 @@ for (const locale of Object.keys(warning)) {
 }
 
 for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "different-operation", "different-conversation", "different-action", "different-provider", "different-purpose", "missing-ack-id", "no-read-permission", "acknowledged", "unknown"]) {
-  test(`acknowledged send stays locked on ${refusal} operation evidence`, async (t) => {
+  test(refusal === "no-read-permission" ? "own A9 sent row unlocks without operation read permission"
+    : `acknowledged send stays locked on ${refusal} operation evidence`, async (t) => {
     const env = environment(t);
     let reads = 0, operationReads = 0, expired = 0;
     const page = { ...projection("sent"), items: [...projection("sent").items,
@@ -380,6 +381,18 @@ for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "dif
     const captured = node(host, n => n.type === "form").props.onSubmit;
     submit(host);
     await host.waitFor(() => reads === 2 && idle(host), "refused operation read and unrelated final A9 committed");
+    if (refusal === "no-read-permission") {
+      assert.equal(node(host, n => n.type === "form").props.hidden, false,
+        "own A9 sent row unlocks without integration:read");
+      assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, "");
+      change(host, "reply-text", "MOCK_NEXT_DRAFT");
+      assert.equal(sendControl(host).props.disabled, false);
+      assert.equal(sends(calls).length, 1, "A9 reconciliation never resends");
+      assert.equal(operationReads, 0);
+      assert.equal(expired, 0);
+      assert.equal(calls.filter(call => call.method === "POST" && call.path.includes("/operations/")).length, 0);
+      return;
+    }
     assert.equal(sendControl(host).props.disabled, true);
     assert.equal(node(host, n => n.type === "form").props.hidden, true);
     captured({ preventDefault() {} });
@@ -389,6 +402,94 @@ for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "dif
     assert.equal(expired, refusal === "signed-out" ? 1 : 0, "only a real signed-out result expires privacy scope");
     assert.equal(calls.filter(call => call.method === "POST" && call.path.includes("/operations/")).length, 0);
   });
+}
+
+for (const locale of Object.keys(warning)) {
+  for (const state of ["sent", "failed"]) {
+    for (const refresh of [false, true]) {
+      test(`unpermitted ACK adopts only its own A9 ${state} on ${refresh ? "refresh" : "status"} (${locale})`, async (t) => {
+        const env = environment(t);
+        let reads = 0, terminal = false;
+        const own = { ...projection("queued").items[1], text: "MOCK_OWN_ACK_TEXT" };
+        const other = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075",
+          at: "2030-01-01T00:00:03Z", text: "MOCK_OTHER_STAFF_SENT", send_state: "sent" };
+        const calls = transport(() => response(++reads === 1 ? thread : {
+          ...thread, has_unknown_outbound: false, items: [...thread.items,
+            { ...own, send_state: terminal ? state : "queued" }, other,
+            { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER" }],
+        }), () => response({ operation_id: ackOperation, outbound_id: own.outbound_id, send_state: "queued" }));
+        const testedStore = { ...store, role: "staff", permissions: ["inbox:reply"] };
+        const host = env.mount(() => InboxThread({ store: testedStore, conversation, locale,
+          onUnauthorized() {}, onRead() {},
+        } as any));
+        await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
+        change(host, "reply-text", own.text);
+        submit(host);
+        await host.waitFor(() => reads === 2 && idle(host), "queued ACK and unrelated sent row committed");
+        assert.equal(node(host, n => n.type === "form").props.hidden, true);
+        assert.equal(sendControl(host).props.disabled, true);
+        terminal = true;
+        const control = refresh ? node(host, n => n.type === "button" && !!n.props["aria-label"])
+          : node(host, n => n.props["data-testid"] === "inbox-send-status");
+        control.props.onClick();
+        await host.waitFor(() => reads === 3 && idle(host), "own terminal A9 row committed");
+        const expected = state === "sent"
+          ? locale === "en" ? "Sent does not mean read." : locale === "zh-CN" ? "已发送，不代表已读。" : "已送出，未代表已讀。"
+          : locale === "en" ? "Send rejected; original text saved for editing."
+            : locale === "zh-CN" ? "发送被拒；原文已保留，可以编辑。" : "傳送遭拒；原文保留，可編輯。";
+        assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), expected);
+        if (state === "failed") {
+          node(host, n => n.props["data-testid"] === "inbox-edit-original").props.onClick();
+          assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, own.text,
+            "failed ACK restores its original text rather than unrelated B's text");
+        } else {
+          assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, "");
+          change(host, "reply-text", "MOCK_NEXT_REPLY");
+        }
+        assert.equal(node(host, n => n.type === "form").props.hidden, false);
+        assert.equal(sendControl(host).props.disabled, false);
+        assert.equal(sends(calls).length, 1, "terminal reconciliation never resends");
+        assert.equal(calls.filter(call => call.path.includes("/operations/")).length, 0);
+      });
+    }
+  }
+  for (const scenario of ["omitted", "queued", "blocked", "unknown", "history-true", "history-absent", "history-null", "history-malformed"]) {
+    test(`unpermitted ACK stays locked for A9 ${scenario} (${locale})`, async (t) => {
+      const env = environment(t);
+      let reads = 0;
+      const own = { ...projection("sent").items[1], text: "MOCK_OWN_ACK_TEXT" };
+      const other = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075",
+        at: "2030-01-01T00:00:03Z", text: "MOCK_UNRELATED_SENT" };
+      const page: Record<string, unknown> = { ...thread, has_unknown_outbound: false, items: [...thread.items,
+        ...(scenario === "omitted" ? [] : [{ ...own, send_state: scenario.startsWith("history-") ? "sent" : scenario }]),
+        other, { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER" }],
+      };
+      if (scenario === "history-true") page.has_unknown_outbound = true;
+      if (scenario === "history-absent") delete page.has_unknown_outbound;
+      if (scenario === "history-null") page.has_unknown_outbound = null;
+      if (scenario === "history-malformed") page.has_unknown_outbound = "false";
+      const calls = transport(() => response(++reads === 1 ? thread : page),
+        () => response({ operation_id: ackOperation, outbound_id: own.outbound_id, send_state: "queued" }));
+      const testedStore = { ...store, role: "staff", permissions: ["inbox:reply"] };
+      const host = env.mount(() => InboxThread({ store: testedStore, conversation, locale,
+        onUnauthorized() {}, onRead() {},
+      } as any));
+      await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
+      change(host, "reply-text", own.text);
+      const captured = node(host, n => n.type === "form").props.onSubmit;
+      submit(host);
+      await host.waitFor(() => reads === 2 && idle(host), "unresolved A9 evidence committed");
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await host.waitFor(() => reads === 3 && idle(host), "repeated unresolved A9 evidence committed");
+      assert.equal(node(host, n => n.type === "form").props.hidden, true);
+      assert.equal(sendControl(host).props.disabled, true);
+      captured({ preventDefault() {} });
+      node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+      assert.equal(host.ref(ReplyReceipt).pending(), null);
+      assert.equal(sends(calls).length, 1, "unresolved evidence cannot create a second POST");
+      assert.equal(calls.filter(call => call.path.includes("/operations/")).length, 0);
+    });
+  }
 }
 
 test("exact rejected ACK restores its own text rather than a later staff member's display row", async (t) => {
