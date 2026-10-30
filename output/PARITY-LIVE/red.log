@@ -56,3 +56,22 @@ local_runtime_tests_servers=NOT_RUN by owner instruction
 local_syntax=FAILED_ENV node24.15.0 --check cannot parse the pre-existing TypeScript type alias (file/stdin, strip-types flag); tsc unavailable in this worktree; CI must compile
 local_browser_ownership_check=exit0; local_git_diff_check=exit0
 GREEN=PENDING new own-head CI; no merge/auto-merge/deploy
+
+RELAY3_PUSH head=efcec5444a3c00c7ca1785df3286637d1ba174d4 pr=355
+WAIT_RUN Foundation=41063731968 job=124089669565 status=queued
+WAIT_RUN Gates=41063731987 status=pending gate_jobs=NOT_CREATED
+GREEN=PENDING own_PR_CI; author=E0; no runtime acceptance claimed
+logs=gh run view 41063731968 --log-failed --job 124089669565 (once completed)
+wakeup=integrator fresh-session relay on these runs; no task-owned process/watcher; bounded CI lookup ended below10min
+Post-push receipts remain local; no evidence-only push.
+
+RELAY4 regression receipt (not the original tests-only RED):
+head=efcec5444a3c00c7ca1785df3286637d1ba174d4
+Foundation_run=41063731968 job=124089669565 status=failure
+failure=2 existing live-console-render tests crash at Object.values(data.capabilities) before assertions; suite14/pass12/fail2
+root=SSR A1 fixture bypasses frozen parseConsole and omits mandatory capabilities
+repair=complete DTO + satisfies ConsoleSnapshot; additive three-locale evidence/denial marker assertions; existing assertions verbatim
+fix_attempt=1 for missing-capabilities fixture blocker
+raw_filtered_receipt=output/PARITY-LIVE/relay4-foundation.log
+static_ownership_generate=exit0; static_ownership_check=exit0; static_diff_check=exit0
+local_tests_servers=NOT_RUN; GREEN=PENDING own new-head CI

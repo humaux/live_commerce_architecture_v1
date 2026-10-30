@@ -1,6 +1,7 @@
 // Purpose: Render the actual LC-U1 component for degraded secondary reads, permission locks and platform notice boundaries.
 // Depends on: existing React SSR/typescript-api VM, real LiveConsole/workspace copy/format; read hook values are test inputs, not network acceptance.
 // Used by: test-node and LC-U1 review; no browser, database, provider or production-state write.
+// Invariants: typed A1 fixtures retain the frozen DTO; existing degradation/poll/permission assertions stay intact.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -9,14 +10,15 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
 import { workspaceCopy } from "../../apps/admin/src/features/live/workspace-copy.ts";
 import * as model from "../../apps/admin/src/features/live/workspace-model.ts";
+import type { ConsoleCapabilities, ConsoleSnapshot } from "../../apps/admin/src/features/live/console-model.ts";
 import * as format from "../../packages/format/src/index.ts";
 
 const app = createRequire(new URL("../../apps/admin/package.json", import.meta.url));
 const React = app("react"), { renderToStaticMarkup } = app("react-dom/server");
 const store = { id: "11111111-1111-4111-8111-111111111111", role: "owner", name: "Synthetic store" }, scene = "22222222-2222-4222-8222-222222222222";
-function render(locale: "en" | "zh-TW" | "zh-CN", platform: string, embeddable: boolean, denied = false) {
+function render(locale: "en" | "zh-TW" | "zh-CN", platform: "facebook" | "instagram", embeddable: boolean, denied = false, capabilities: ConsoleCapabilities = {}) {
   const snapshots: any[] = [
-    { session: { title: "A1 PRIVATE TITLE", lifecycle: "draft", version: 1 }, window: { state: "CLOSED", generation: 1, match_mode: "KEYWORD_QTY_CONTAINS" }, stats: { comments: { total: null, source: "unavailable" }, keyword_comments: 0, buyers: 0, orders: { count: 0, amount_minor: 0 }, paid: { count: 0, amount_minor: 0 }, currency: "TWD", as_of: "2026-10-07T00:00:00Z" }, stream: { state: "not_started", source_platform: platform, video_embeddable: embeddable, last_ok_at: null }, offers: [], recommended: null },
+    { session: { id: scene, title: "A1 PRIVATE TITLE", lifecycle: "draft", version: 1, started_at: null, ended_at: null }, window: { state: "CLOSED", generation: 1, opened_at: null, match_mode: "KEYWORD_QTY_CONTAINS" }, stats: { comments: { total: null, source: "unavailable" }, keyword_comments: 0, buyers: 0, orders: { count: 0, amount_minor: 0 }, paid: { count: 0, amount_minor: 0 }, currency: "TWD", as_of: "2026-10-07T00:00:00Z" }, stream: { state: "not_started", source_platform: platform, video_embeddable: embeddable, last_ok_at: null, poll_interval_ms: 5000, lag_ms: null }, offers: [], capabilities, recommended: null } satisfies ConsoleSnapshot,
     null, null, null,
   ];
   let at = 0, listRefreshes = 0; const polls: boolean[] = [], refreshes: number[] = [];
@@ -59,6 +61,21 @@ test("secondary failures preserve A1; only A1 is periodic; IG notice follows the
     const denied = render(locale, "facebook", true, true).html;
     assert.doesNotMatch(denied, /A1 PRIVATE TITLE|live-primary-action|live-status-bar/);
     assert.match(denied, /live-console-unavailable/); assert.match(denied, /disabled=""/);
+  }
+});
+
+test("console demo marker follows server MOCK evidence in all three locales", () => {
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+    assert.doesNotMatch(render(locale, "facebook", true).html, /live-demo-tag/);
+    for (const evidence of ["DESIGN", "MOCK", "LIVE_READ", "LIVE_SEND"] as const) {
+      const capabilities: ConsoleCapabilities = { facebook: { read_comment: { state: "unknown", reason: "not_checked", evidence, checked_at: null } } };
+      const html = render(locale, "facebook", true, false, capabilities).html;
+      if (evidence === "MOCK") {
+        assert.match(html, /live-demo-tag/);
+        assert.ok(html.includes(workspaceCopy[locale].demoData));
+      } else assert.doesNotMatch(html, /live-demo-tag/);
+      assert.doesNotMatch(render(locale, "facebook", true, true, capabilities).html, /live-demo-tag/);
+    }
   }
 });
 

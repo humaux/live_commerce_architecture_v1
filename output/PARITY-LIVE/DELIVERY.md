@@ -1,6 +1,6 @@
 # PARITY-LIVE — implementation handoff
 
-Status: RELAY 2 implementation prepared after causal assertion RED. Static checks E1; current implementation CI and independent visual acceptance PENDING. Historical sections below retain the earlier handoff chronology.
+Status: RELAY 4 targeted harness repair prepared. Foundation failed on efcec544; replacement own-head CI and independent visual acceptance PENDING. Historical sections below retain prior receipts.
 Task: dispatched by Claude integrator; branch unit/parity-live; worktree parity-live; base df35b338b5cfde5de34bb590e2ba118efc17e4a4. Role: UI implementer. Runtime model/effort metadata is not exposed; no sub-agent or recursive delegation.
 Authority: owner card 2026-10-30; repository AGENTS.md; 架构.md §§0/1/2/26/27; contracts/live-console-v1.md §§2.5/3.3/4.2/4.4/6/7.1–7.2; existing closed console, claims and comment DTOs.
 Visual authority: ux-live/output/ux-live/DELIVERY.md §v3 OWNER-FEEDBACK REWORK (not its superseded v2 frame index), v3/frames.json and v3/exports.json. Fleet Bridge read current desktop 1429:39502, mobile 1429:39607 and public-reply desktop 1429:42507; no Figma writes.
@@ -330,3 +330,26 @@ Foundation41060952171/job124080250278 failed on implementation head a6e9876dce5d
 |結果未確認|结果未确认|Delivery uncertain|
 
 These generic labels preserve the existing regression gate verbatim; the signed composer wording remains channel-specific. Static browser-ownership --check and git diff --check exit0. Node24.15.0 --check failed to parse the pre-existing TypeScript type alias, including the strip-types/stdin variants; no syntax PASS is claimed. No tsc binary or node_modules in this worktree, so typecheck deferred to CI. No local runtime tests/servers. No page/spec/import/Go changes, so browser ownership generation and Go depmap regeneration are unnecessary; ownership check confirms no drift. Only source changes: CommentStream.tsx and console comment-copy.ts. Humaux memory/canvas/coord/code-index tools unavailable: NOT_RUN. Author judgment E0; new-head CI and independent parity acceptance remain PENDING.
+
+## RELAY 3 WAIT_RUN — current head
+
+RELAY3_PUSH head=efcec5444a3c00c7ca1785df3286637d1ba174d4 pr=355
+WAIT_RUN Foundation=41063731968 job=124089669565 status=queued
+WAIT_RUN Gates=41063731987 status=pending gate_jobs=NOT_CREATED
+GREEN=PENDING own_PR_CI; author=E0; no runtime acceptance claimed
+logs=gh run view 41063731968 --log-failed --job 124089669565 (once completed)
+wakeup=integrator fresh-session relay on these runs; no task-owned process/watcher; bounded CI lookup ended below10min
+Post-push receipts remain local; no evidence-only push.
+
+
+## RELAY 4 — complete the frozen A1 render fixture
+
+Authority: RELAY 4 card; Foundation run41063731968/job124089669565, head efcec5444a3c00c7ca1785df3286637d1ba174d4. Failed step: Node unit suites, tests/admin/live-console-render.test.ts lines52/65; TypeError at Object.values before the existing assertions. Filtered raw receipt: relay4-foundation.log. This is an implementation regression, not a new causal RED.
+
+Root cause: the SSR harness bypasses readConsole/parseConsole and supplied an incomplete A1 snapshot without required capabilities. The signed console now reads those observations for its demo marker. Production parseConsole already rejects missing capability objects; no production fallback or parser weakening is warranted. Complete all required A1 fields in the fixture, bind it with satisfies ConsoleSnapshot, and add zh-TW/zh-CN/en demo-marker assertions for MOCK versus DESIGN/LIVE_READ/LIVE_SEND/absent observations and denied access. Existing degraded-read, poll, IG-notice, permission and refresh assertions remain verbatim. No production source, UI copy, API or contract changes in this relay.
+
+Attempt count: first targeted repair of this missing-capabilities harness blocker. Relay3's generic delivery-copy blocker was different. Both known failed render cases share this fixture; do not weaken either assertion. Relevant component harness search found live-workspace.test.ts (static source inspection) and live-console-render.test.ts (SSR); only the latter executes LiveConsole.
+
+Scope: tests/admin/live-console-render.test.ts is a same-module harness outside the original browser-spec write paths, explicitly listed in PR body for integrator review. Generated browser-ownership.json updated its render-test hash only. Task evidence adds relay4-foundation.log and updates this DELIVERY/red.log. No Go imports changed, so depmap regeneration is unnecessary. Existing untracked Figma read receipts and prior PR-body/comment drafts are preserved and excluded from the commit.
+
+Local commands: node scripts/dev/derive-browser-ownership.mjs exit0; node scripts/dev/derive-browser-ownership.mjs --check exit0; git diff --check exit0. These are static provenance checks, not runtime acceptance. No local tests/server/browser/build, no merge/auto-merge/deploy. New-head GREEN and independent real-route screenshot/click review PENDING. Author judgment E0; Humaux store/canvas/coord/code-index remain NOT_RUN (tools unavailable). Integrator supplies wakeup through the next run-completion relay.
