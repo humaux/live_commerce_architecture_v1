@@ -442,6 +442,8 @@ export function InboxThread({
   const nextReply = delivery === "sent" && latestOutbound?.at && thread?.items.some(item =>
     item.direction === "in" && item.at && item.at > latestOutbound.at!);
   const folded = !!(delivery || uncertainDelivery) && !editing && !retry && !nextReply;
+  // Reply-only staff retain the sent receipt on the message while the next composer is open.
+  const inlineReceipt = nextReply && !uncertainDelivery && !permitted(store, "integration:read");
   const deliveryLabels = { queued: c.deliveryPending, sent: c.deliverySent, failed: c.deliveryRejected,
     blocked: c.locked, unknown: c.deliveryUnknown };
   const resultCopy = uncertainDelivery
@@ -498,7 +500,10 @@ export function InboxThread({
               key={`${item.direction}:${item.seq ?? item.at ?? index}:${index}`}>
               {item.at && <time className={styles.meta} dateTime={item.at} title={displayTime(locale, item.at)}>{instantToTaipei(item.at).slice(-5)}</time>}
               <p>{item.unreadable ? c.unreadable : item.text}</p>
-              {item.send_state && (item !== latestOutbound || !folded) && <span className={styles.meta}>{deliveryLabels[item.send_state]}</span>}
+              {item.send_state && (item !== latestOutbound || !folded) && <span className={styles.meta}
+                role={inlineReceipt && item === latestOutbound ? "status" : undefined}
+                data-testid={inlineReceipt && item === latestOutbound ? "inbox-delivery-state" : undefined}
+              >{deliveryLabels[item.send_state]}</span>}
               {(item.attachments ?? []).map((attachment, i) => <span className={styles.badge} key={i}>{c.attachment}: {attachment.type}</span>)}
             </li>)}
         </ol>

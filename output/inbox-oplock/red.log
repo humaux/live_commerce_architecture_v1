@@ -298,3 +298,143 @@ Filtered GitHub failure receipt follows (trailing whitespace trimmed; line numbe
 2538-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7784849Z        ^
 2539-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7785025Z
 2540-foundation	Node unit suites (storefront, i18n)	2026-10-30T07:06:03.7785773Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:16)
+
+RELAY 2 implementation failure (not the tests-only RED)
+head_sha=b0ad9de375743a068779f9a0367906b6f8717f3e
+foundation_run=41018599404
+foundation_job=123940483680
+retrieval=gh run view 41018599404 --log-failed --job 123940483680
+failed_assertion=inbox-unknown.test.ts:440 sent receipt VNode absent after nextReply opens composer
+targeted_correction_attempt=1; preserve the already-visible sent message label as an accessible receipt
+Filtered raw receipt follows; suite summaries are scoped to their individual Node processes:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:36.3983986Z ℹ tests 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:36.3984848Z ℹ pass 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:36.3985203Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:37.0571269Z ℹ tests 12
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:37.0572098Z ℹ pass 12
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:37.0572366Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.2309754Z ℹ tests 500
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.2310195Z ℹ pass 500
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.2310398Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.4072289Z ℹ tests 13
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.4086395Z ℹ pass 13
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.4087080Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.5743469Z ℹ tests 13
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.5744370Z ℹ pass 13
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.5744779Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.8018910Z ℹ tests 9
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.8020342Z ℹ pass 9
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:57.8020713Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.2901860Z ℹ tests 55
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.2903499Z ℹ pass 55
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.2903950Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.7725833Z ℹ tests 55
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.7726925Z ℹ pass 55
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.7727308Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.9627184Z ℹ tests 5
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.9627850Z ℹ pass 5
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:58.9629519Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.1208029Z ℹ tests 1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.1217430Z ℹ pass 1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.1217712Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.3160808Z ℹ tests 19
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.3170799Z ℹ pass 19
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:17:59.3171177Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.4401846Z ℹ tests 37
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.4402702Z ℹ pass 37
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.4403055Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.9021491Z ℹ tests 51
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.9022417Z ℹ pass 51
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:00.9022853Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.6704573Z ℹ tests 29
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.6705045Z ℹ pass 29
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.6705268Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.9601753Z ℹ tests 4
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.9607274Z ℹ pass 4
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:01.9627447Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:02.6346093Z ℹ tests 27
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:02.6346896Z ℹ pass 27
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:02.6347273Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:04.5309897Z ℹ tests 105
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:04.5310764Z ℹ pass 105
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:04.5311414Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:05.6319133Z ℹ tests 25
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:05.6320058Z ℹ pass 25
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:05.6320417Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.3332448Z ℹ tests 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.3333348Z ℹ pass 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.3333647Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.6774057Z ℹ tests 11
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.6774834Z ℹ pass 11
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:07.6775169Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.3062547Z ℹ tests 17
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.3063504Z ℹ pass 17
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.3063941Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.5265560Z ℹ tests 4
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.5267009Z ℹ pass 4
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:08.5267391Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:09.5168469Z ℹ tests 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:09.5169475Z ℹ pass 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:09.5169880Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:10.9457635Z ℹ tests 30
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:10.9458627Z ℹ pass 30
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:10.9459025Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:15.7625249Z ℹ tests 118
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:15.7625690Z ℹ pass 118
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:15.7625896Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:18.5933492Z ℹ tests 58
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:18.5934278Z ℹ pass 58
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:18:18.5934692Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4130030Z ##[error]ℹ tests/foundation/catalog_matrix_ledger_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4144177Z ##[error]ℹ tests/foundation/catalog_matrix_evidence_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4147900Z ##[error]ℹ tests/foundation/browser_catalog_core_test.go: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4150772Z ℹ tests/admin/product-editor.acceptance.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4152832Z ℹ tests/admin/product-editor-matrix-ledger.ts: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4155035Z ℹ tests/foundation/testdata/product_editor_matrix_cases.json: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4158104Z ℹ tests/ci/product-editor-matrix-ledger.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4160158Z ℹ tests/ci/product-editor-matrix-claims.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4162189Z ℹ tests/ci/product-editor-matrix-source.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4163947Z ℹ tests/ci/product-editor-matrix-execution.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4166165Z ℹ tests/ci/product-editor-matrix-execution.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4168581Z ℹ tests/ci/product-editor-matrix-controls.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4170747Z ℹ tests/ci/product-editor-matrix-controls.test.mjs: API + real stdin + GITHUB_OUTPUT + ci-plan select --browser-product-editor
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4889955Z ℹ tests 336
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4890390Z ℹ pass 336
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:31.4890594Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.7050017Z ℹ tests 11
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.7050632Z ℹ pass 11
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.7050871Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.9330182Z ℹ tests 10
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.9330964Z ℹ pass 10
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:32.9331192Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:33.7298696Z ℹ tests 28
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:33.7299146Z ℹ pass 28
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:33.7299362Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2721224Z ✖ unpermitted ACK adopts only its own A9 sent on status (en) (18.818256ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2721875Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (en) (10.794933ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2728892Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-TW) (7.219243ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2729558Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-TW) (8.585592ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2736968Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-CN) (7.195077ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.2737656Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-CN) (10.08317ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3267292Z ℹ tests 301
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3267781Z ℹ pass 295
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3268002Z ℹ fail 6
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3286311Z ✖ unpermitted ACK adopts only its own A9 sent on status (en) (18.818256ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3287208Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3289560Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3294012Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (en) (10.794933ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3294582Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3297138Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3301761Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-TW) (7.219243ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3302325Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3304677Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3309439Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-TW) (8.585592ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3310045Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3312785Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3317610Z ✖ unpermitted ACK adopts only its own A9 sent on status (zh-CN) (7.195077ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3318202Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3320685Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3326244Z ✖ unpermitted ACK adopts only its own A9 sent on refresh (zh-CN) (10.08317ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3327698Z   AssertionError [ERR_ASSERTION]: actual component VNode found
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3330357Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:440:29)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T07:19:43.3375123Z ##[error]Process completed with exit code 1.
