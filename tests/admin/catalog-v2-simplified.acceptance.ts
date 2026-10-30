@@ -3,7 +3,7 @@
 // Used by: catalog-core.spec.ts in the existing TWD product-editor CI browser mode.
 // Invariants: additive assertions; MOCK response state survives reload, never claims PG/LIVE acceptance; no UI writes via API/evaluate.
 import { expect, test, type Page, type Route, type TestInfo } from "@playwright/test";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { nativePage } from "./fixtures/native-device";
 
 const id = (n: number) => `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`;
@@ -109,6 +109,20 @@ async function saveLedger(ledger: Ledger, info: TestInfo) {
 const mobileDensity = new Map<string, { blocks: number; chars: number }>();
 /** READ/MEASURE only: count visible text parents plus editable values inside the task surface, including scroll content. */
 async function density(page: Page, state: string, locale: Locale) {
+  // Real route captures, kept beside the click ledger for independent signed-frame review.
+  const pairs: Record<string, [string, string]> = {
+    list: ['62828','62906'], active: ['63218','63287'], draft: ['63348','63405'], archived: ['63453','63499'],
+    selected: ['63540','63620'], bulkReview: ['63693','63740'], bulkResult: ['63782','63827'], updated: ['63867','63937'],
+    edit: ['64000','64049'], variants: ['64093','64149'], stock: ['64200','64239'], stockError: ['64273','64314'],
+    media: ['64350','64391'], review: ['64427','64474'], saved: ['64516','64561'],
+  };
+  if (locale === 'zh-TW' && pairs[state]) {
+    const frame = `1429-${pairs[state][page.viewportSize()?.width === 390 ? 1 : 0]}`;
+    const file = test.info().outputPath('parity', `${frame}.png`);
+    await mkdir(test.info().outputPath('parity'), { recursive: true });
+    await page.screenshot({ path: file });
+    await test.info().attach(`parity/${frame}`, { path: file, contentType: 'image/png' });
+  }
   if (locale !== "zh-CN" || page.viewportSize()?.width !== 390) return;
   const value = await page.locator('[data-testid="products-page"], [data-testid="product-editor"]').first().evaluate((root) => {
     const visible = (e: Element) => {
@@ -136,6 +150,43 @@ async function density(page: Page, state: string, locale: Locale) {
 export function registerCatalogSimplifiedAcceptance() {
   test.describe("CATV2 signed simplified catalog (MOCK responses)", () => {
     test.describe.configure({ mode: "default" });
+    for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [390, 1440]) {
+      test(`PARITY catalog signed controls ${locale} ${width}`, async ({ page }, info) => {
+        const c = signed[locale], ledger: Ledger = [];
+        await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+        try {
+          const f = await setup(page, locale); await f.open();
+          await expect(page.getByTestId(`product-row-${productID}`)).toBeVisible();
+          await expect(page.getByTestId('products-search'), 'PARITY-CATALOG: unsigned search removed').toHaveCount(0);
+          await expect(page.getByTestId('products-advanced'), 'PARITY-CATALOG: unsigned advanced removed').toHaveCount(0);
+          await expect(page.getByText(c.select, { exact: true }), 'PARITY-CATALOG: visible selection label').toBeVisible();
+          // READ/MEASURE only: signed chips have a complete rounded border, never an underline-only tab.
+          const chip = await page.getByRole('button', { name: c.all, exact: true }).evaluate(el => {
+            const css = getComputedStyle(el); return { radius: parseFloat(css.borderRadius), top: css.borderTopStyle, bottom: css.borderBottomStyle };
+          });
+          expect(chip.top).toBe('solid'); expect(chip.bottom).toBe('solid'); expect(chip.radius).toBeGreaterThanOrEqual(4);
+          await f.open(`/${productID}`);
+          await expect(page.getByTestId('product-name')).toHaveValue(c.names[0]);
+          const active = { 'zh-TW': '在售', 'zh-CN': '在售', en: 'Active' }[locale];
+          await action(ledger, page, active, 'click', 'signed status radio remains checked', async () => {
+            await page.getByRole('radio', { name: active, exact: true }).click();
+            await expect(page.getByRole('radio', { name: active, exact: true })).toBeChecked();
+          });
+          const bar = page.getByTestId('catalog-save-bar');
+          await expect(bar).toBeVisible();
+          expect(await bar.evaluate(el => getComputedStyle(el).position)).toMatch(/sticky|fixed/);
+          await page.getByRole('button', { name: c.variants, exact: true }).click();
+          await expect(page.getByTestId('catalog-price-0')).toBeVisible();
+          await expect(page.getByTestId('catalog-price-1')).toBeVisible();
+          await page.getByTestId('catalog-stock-0').click();
+          await expect(page.getByTestId('catalog-stock-tracked')).toHaveCount(0);
+          await expect(page.getByTestId('catalog-stock-delta')).toHaveCount(0);
+          await expect(page.getByLabel(c.total, { exact: true })).toBeVisible();
+          expect(f.writes).toHaveLength(0);
+        } finally { await saveLedger(ledger, info); }
+      });
+    }
+
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [390, 1440]) {
       test(`CATV2 list ${locale} ${width}: signed copy, all filters and row identity`, async ({ page }, info) => {
         const ledger: Ledger = [], c = signed[locale];
@@ -174,10 +225,10 @@ export function registerCatalogSimplifiedAcceptance() {
         } finally { await saveLedger(ledger, info); }
       });
     }
-    for (const [locale, width] of [["zh-CN", 390], ["en", 1440]] as const) {
+    for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [390, 1440]) {
       test(`CATV2 archive ${locale}: selection, cancel, per-item outcomes and persisted refresh`, async ({ page }, info) => {
         const ledger: Ledger = [], c = signed[locale];
-        await page.setViewportSize({ width, height: 900 });
+        await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
         try {
           const f = await setup(page, locale); await f.open();
           await expect(page.getByTestId(`product-row-${productID}`)).toBeVisible();
@@ -216,7 +267,7 @@ export function registerCatalogSimplifiedAcceptance() {
 
       test(`CATV2 edit ${locale}: invalid stock sends nothing, review retains facts, save survives refresh`, async ({ page }, info) => {
         const ledger: Ledger = [], c = signed[locale];
-        await page.setViewportSize({ width, height: 900 });
+        await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
         try {
           const f = await setup(page, locale); await f.open(`/${productID}`);
           await expect(page.getByTestId("product-name")).toHaveValue(c.names[0]);
@@ -278,7 +329,7 @@ export function registerCatalogSimplifiedAcceptance() {
 
       test(`CATV2 images ${locale}: separate roles and native pickers`, async ({ page }, info) => {
         const ledger: Ledger = [], c = signed[locale];
-        await page.setViewportSize({ width, height: 900 });
+        await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
         try {
           const f = await setup(page, locale); await f.open(`/${productID}`);
           await expect(page.getByTestId("product-name")).toBeVisible();

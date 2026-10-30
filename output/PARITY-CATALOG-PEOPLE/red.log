@@ -1,0 +1,5 @@
+PARITY-CATALOG-PEOPLE — RED batch
+State: PENDING_PUSH; no CI failure claimed.
+Expected assertion failures: PARITY-CONSENT-STATE (unit + HTTP/PG projection), PARITY-CATALOG unsigned controls/status/sticky save bar, PARITY-PEOPLE unsigned disclosure/dedicated privacy outcomes/pending server read/denied commands.
+Run/job IDs: pending CI allocation.
+No local tests or servers.

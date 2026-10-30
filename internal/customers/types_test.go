@@ -355,3 +355,38 @@ func TestBuyerTokenAndAuthorityInput(t *testing.T) {
 		t.Fatalf("buyer erase: %v", err)
 	}
 }
+
+// PARITY-CATALOG-PEOPLE: assert additive read state without requiring a new symbol to compile on RED.
+func TestParityConsentStateProjection(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		history []ConsentEvent
+		want    string
+	}{
+		{"never", []ConsentEvent{}, "never"},
+		{"withdrawn", []ConsentEvent{ev(PurposeMarketingMessages, ChannelMetaDM, false, testTS)}, "withdrawn"},
+		{"granted", []ConsentEvent{ev(PurposeMarketingMessages, ChannelMetaDM, true, testTS)}, "granted"},
+		{"regranted", []ConsentEvent{ev(PurposeMarketingMessages, ChannelMetaDM, true, "2026-10-01T04:05:06.123456Z"), ev(PurposeMarketingMessages, ChannelMetaDM, false, testTS)}, "granted"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := detailJSON(t, func(m map[string]any) { m["consent_history"] = tc.history; m["consents"] = CurrentConsents(tc.history) })
+			d, err := decodeDetail(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			encoded, err := json.Marshal(d.Customer)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var row struct {
+				State map[string]string `json:"consent_state"`
+			}
+			if err := json.Unmarshal(encoded, &row); err != nil {
+				t.Fatal(err)
+			}
+			if row.State[PurposeMarketingMessages] != tc.want || row.State[PurposeAdsPersonalization] != "never" {
+				t.Fatalf("PARITY-CONSENT-STATE: %s got %v; want marketing=%s ads=never", tc.name, row.State, tc.want)
+			}
+		})
+	}
+}

@@ -3,7 +3,7 @@
 // Used by: tests/foundation/browser_customers_billing_test.go, --browser-customers-billing in GitHub CI.
 // Invariants: MOCK responses retain the existing DTO; no API/contract changes, DOM writes, force clicks or live data.
 import { expect, test, type Page } from "@playwright/test";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const required = (name: string) => {
@@ -64,7 +64,7 @@ async function signed(page: Page, width: number) {
   await act(page, "Sign in with identity service", "signed merchant workspace opens", () => page.getByRole("button", { name: "Sign in with identity service" }).click(), () => expect(page.getByTestId("shell-store-selector")).toBeVisible());
 }
 
-async function fixture(page: Page, fault: "none" | "export" | "erase" | "blocked" = "none") {
+async function fixture(page: Page, fault: "none" | "export" | "erase" | "blocked" | "limit" | "read-export" | "read-erase" | "erase-success" | "forbidden" = "none", consentState?: "never" | "withdrawn" | "granted") {
   // MOCK fixture/fault preparation only. Actual privacy requests below originate solely from UI clicks.
   const row = {
     customer_id: customer, first_seen_at: "2026-09-12T00:00:00Z", last_activity_at: "2026-10-25T00:00:00Z",
@@ -87,7 +87,17 @@ async function fixture(page: Page, fault: "none" | "export" | "erase" | "blocked
     ],
     privacy_actions: [] as { kind: string; via: string; completed_at: string; summary: Record<string, number> | null }[],
   };
+  if (consentState) {
+    // New additive read DTO fixture; boolean false is never sufficient to invent a withdrawal.
+    row.consents.marketing_messages = consentState === 'granted';
+    detail.consents.marketing_messages = consentState === 'granted';
+    Object.assign(row, { consent_state: { marketing_messages: consentState, ads_personalization: 'granted' } });
+    Object.assign(detail, { consent_state: { marketing_messages: consentState, ads_personalization: 'granted' } });
+    detail.consent_history = detail.consent_history.filter(event => event.purpose !== 'marketing_messages');
+    if (consentState !== 'never') detail.consent_history.push({ purpose: 'marketing_messages', channel: 'meta_dm', granted: consentState === 'granted', source: 'buyer_settings', policy_version: 'lc-2026-10', occurred_at: '2026-10-20T00:00:00Z' });
+  }
   const posts: { resource: string; key: string | undefined; body: string | null }[] = [];
+  let detailReads = 0;
   await page.route(`**/api/stores/${store}/customers**`, async (route) => {
     const request = route.request(), url = new URL(request.url());
     const resource = url.pathname.split(`/customers`)[1];
@@ -98,11 +108,17 @@ async function fixture(page: Page, fault: "none" | "export" | "erase" | "blocked
         const q = url.searchParams.get("q") ?? "";
         return json({ items: !q || name.startsWith(q) || "805".endsWith(q) ? [row] : [], next_cursor: "" });
       }
-      if (resource === `/${customer}`) return json(detail);
+      if (resource === `/${customer}`) {
+        detailReads++;
+        if (posts.length && fault.startsWith('read-')) return json({ code: 'unavailable' }, 503);
+        return json(detail);
+      }
       return route.continue();
     }
     posts.push({ resource, key: request.headers()["idempotency-key"], body: request.postData() });
-    if ((fault === "export" && resource.endsWith("/exports")) || (fault === "erase" && resource.endsWith("/erasure"))) return route.abort("failed");
+    if (((fault === "export" || fault === "read-export") && resource.endsWith("/exports")) || ((fault === "erase" || fault === "read-erase") && resource.endsWith("/erasure"))) return route.abort("failed");
+    if (fault === "forbidden") return json({ code: "forbidden" }, 403);
+    if (fault === "limit" && resource.endsWith("/exports")) return json({ code: "export_too_large" }, 409);
     if (fault === "blocked" && resource.endsWith("/erasure")) return json({ code: "erasure_blocked" }, 409);
     if (resource.endsWith("/exports")) {
       detail.privacy_actions.push({ kind: "EXPORT", via: "merchant", completed_at: "2026-10-29T00:00:00Z", summary: null });
@@ -116,7 +132,7 @@ async function fixture(page: Page, fault: "none" | "export" | "erase" | "blocked
     }
     return route.continue();
   });
-  return { detail, posts };
+  return { detail, posts, get detailReads() { return detailReads; } };
 }
 const mainURL = (locale: Locale) => `${origin}/${locale}/customers?store=${store}`;
 const detailURL = (locale: Locale) => `${origin}/${locale}/customers/${customer}?store=${store}`;
@@ -237,4 +253,110 @@ for (const width of [1440, 390]) {
       await fits(page);
     });
   }
+}
+
+
+// PARITY: independent signed-control assertions and full frame captures on the real routed pages.
+const parityCopy = {
+  'zh-TW': { advanced: '進階', marketing: '行銷訊息：已撤回', downloaded: '資料已下載', erased: '顧客已抹除', limit: '資料超出下載上限', blocked: '目前無法抹除', back: '返回顧客資料' },
+  'zh-CN': { advanced: '高级', marketing: '营销消息：已撤回授权', downloaded: '资料已下载', erased: '客户资料已清除', limit: '资料超出下载上限', blocked: '目前无法清除', back: '返回客户资料' },
+  en: { advanced: 'Advanced', marketing: 'Marketing messages: Consent withdrawn', downloaded: 'Data downloaded', erased: 'Customer erased', limit: 'Download limit exceeded', blocked: 'Cannot erase right now', back: 'Back to customer' },
+} as const;
+async function parity(page: Page, desktop: string, mobile: string) {
+  const frame = `1429-${page.viewportSize()?.width === 390 ? mobile : desktop}`;
+  const dir = test.info().outputPath('parity'); await mkdir(dir, { recursive: true });
+  const file = path.join(dir, `${frame}.png`); await page.screenshot({ path: file });
+  await test.info().attach(`parity/${frame}`, { path: file, contentType: 'image/png' });
+}
+for (const locale of ['zh-TW', 'zh-CN', 'en'] as const) for (const width of [1440, 390]) {
+  test(`PARITY people signed controls ${locale}-${width}`, async ({ page }) => {
+    const c = copy[locale], p = parityCopy[locale];
+    await signed(page, width); await fixture(page); await page.goto(mainURL(locale));
+    await expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible();
+    await expect(page.getByRole('button', { name: c.submit, exact: true })).toBeVisible();
+    await expect(page.locator('summary', { hasText: p.advanced }), 'PARITY-PEOPLE: unsigned list disclosure removed').toHaveCount(0);
+    await parity(page, '44136', '44240');
+    await act(page, c.search, 'signed search input is editable', () => page.getByTestId('customers-search').fill('示範林'), () => expect(page.getByTestId('customers-search')).toHaveValue('示範林'), 'fill');
+    await act(page, c.submit, 'signed search results', () => page.getByRole('button', { name: c.submit, exact: true }).click(), () => expect(page.getByTestId(`customer-open-${customer}`)).toBeVisible());
+    await parity(page, '44287', '44349');
+    await act(page, c.view, 'signed profile opens', () => page.getByTestId(`customer-open-${customer}`).click(), () => expect(page.getByTestId('customer-consent')).toBeVisible());
+    await expect(page.locator('summary', { hasText: p.advanced }), 'PARITY-PEOPLE: unsigned detail disclosure removed').toHaveCount(0);
+    await parity(page, '44396', '44485');
+    await act(page, c.download, 'download review opens before POST', () => page.getByRole('button', { name: c.download, exact: true }).click(), () => expect(page.getByRole('button', { name: c.confirmDownload, exact: true })).toBeVisible());
+    await parity(page, '44734', '44772');
+    await page.getByRole('button', { name: p.back, exact: true }).click();
+    await act(page, c.erase, 'erasure review opens', () => page.getByRole('button', { name: c.erase, exact: true }).click(), () => expect(page.getByTestId('erase-typed')).toBeVisible());
+    await parity(page, '45148', '45193');
+    await page.getByTestId('erase-typed').fill(name);
+    await page.getByRole('checkbox', { name: c.checked, exact: true }).check();
+    await expect(page.getByRole('button', { name: c.confirmErase, exact: true })).toBeEnabled();
+    await parity(page, '45229', '45272');
+  });
+  for (const fault of ['none', 'limit', 'blocked', 'read-export', 'read-erase', 'erase-success'] as const) {
+    test(`PARITY people privacy ${fault} ${locale}-${width}`, async ({ page }) => {
+      const c = copy[locale], p = parityCopy[locale];
+      await signed(page, width); const f = await fixture(page, fault); await page.goto(detailURL(locale));
+      const erase = fault === 'blocked' || fault === 'read-erase' || fault === 'erase-success';
+      await expect(page.getByTestId(erase ? 'customer-erase' : 'customer-download')).toBeEnabled();
+      if (erase) {
+        await page.getByTestId('customer-erase').click();
+        await page.getByTestId('erase-typed').fill(name);
+        await page.getByRole('checkbox', { name: c.checked, exact: true }).check();
+      } else await page.getByTestId('customer-download').click();
+      let downloads = 0; page.on('download', () => downloads++);
+      await act(page, erase ? c.confirmErase : c.confirmDownload, 'one privacy command only', () => page.getByRole('button', { name: erase ? c.confirmErase : c.confirmDownload, exact: true }).click(), () => expect.poll(() => f.posts.length).toBe(1));
+      if (fault.startsWith('read-')) {
+        await expect(page.getByRole('button', { name: c.pending, exact: true })).toBeVisible();
+        await parity(page, erase ? '45306' : '44801', erase ? '45347' : '44842');
+        const reads = f.detailReads;
+        await act(page, c.pending, 'read existing request without repeating POST', () => page.getByRole('button', { name: c.pending, exact: true }).click(), async () => {
+          await expect.poll(() => f.detailReads, 'PARITY-PEOPLE: pending lookup actually reads server').toBeGreaterThan(reads);
+          await expect(page.getByRole('button', { name: c.viewData, exact: true })).toBeVisible();
+        });
+        await parity(page, erase ? '45379' : '44874', erase ? '45424' : '44919');
+        await page.getByRole('button', { name: c.viewData, exact: true }).click();
+        await expect(page.getByTestId('customer-download')).toBeDisabled();
+        await expect(page.getByTestId('customer-erase')).toBeDisabled();
+        await parity(page, erase ? '45460' : '44955', erase ? '45516' : '45011');
+        // Restore reads only (fixture preparation), then refresh; the uncertainty marker must remain fenced.
+        await page.unrouteAll({ behavior: 'wait' }); await fixture(page); await page.reload();
+        await expect(page.getByTestId('customer-download')).toBeDisabled();
+        await expect(page.getByTestId('customer-erase')).toBeDisabled();
+      } else {
+        const title = fault === 'limit' ? p.limit : fault === 'blocked' ? p.blocked : fault === 'erase-success' ? p.erased : p.downloaded;
+        await expect(page.getByRole('heading', { name: title, exact: true }), 'PARITY-PEOPLE: signed dedicated outcome').toBeVisible();
+        await parity(page, fault === 'limit' ? '45105' : fault === 'blocked' ? '45563' : fault === 'erase-success' ? '45606' : '45058', fault === 'limit' ? '45131' : fault === 'blocked' ? '45589' : fault === 'erase-success' ? '45634' : '45086');
+        if (fault !== 'none') expect(downloads).toBe(0);
+        else await expect.poll(() => downloads).toBe(1);
+        await act(page, p.back, 'same customer remains readable', () => page.getByRole('button', { name: p.back, exact: true }).last().click(), () => expect(page.getByTestId('customer-orders').locator('tbody tr')).toHaveCount(3));
+        if (fault === 'erase-success') {
+          await expect(page.getByTestId('customer-erased')).toBeVisible();
+          await parity(page, '45653', '45704');
+          await page.reload();
+          await expect(page.getByTestId('customer-erased')).toBeVisible();
+          await expect(page.getByTestId('customer-orders').locator('tbody tr')).toHaveCount(3);
+        }
+      }
+      expect(f.posts).toHaveLength(1);
+    });
+  }
+}
+
+for (const width of [1440, 390]) {
+  test(`PARITY withdrawn list is a server fact ${width}`, async ({ page }) => {
+    await signed(page, width); await fixture(page, 'none', 'withdrawn'); await page.goto(mainURL('zh-TW'));
+    await expect(page.getByTestId(`customer-row-${customer}`), 'PARITY-CONSENT-STATE: signed list distinguishes recorded withdrawal').toContainText(parityCopy['zh-TW'].marketing);
+    await page.getByTestId(`customer-open-${customer}`).click();
+    await expect(page.getByTestId('consent-marketing_messages')).toContainText('已撤回');
+  });
+  test(`PARITY privacy permission refusal ${width}`, async ({ page }) => {
+    await signed(page, width); const f = await fixture(page, 'forbidden'); await page.goto(detailURL('zh-TW'));
+    await page.getByTestId('customer-download').click();
+    await page.getByRole('button', { name: copy['zh-TW'].confirmDownload, exact: true }).click();
+    await expect(page.getByTestId('customer-download'), 'PARITY-PEOPLE: denied privacy commands stay disabled').toBeDisabled();
+    await expect(page.getByTestId('customer-erase')).toBeDisabled();
+    await expect(page.getByTestId('customer-orders').locator('tbody tr')).toHaveCount(3);
+    await parity(page, '44564', '44654');
+    expect(f.posts).toHaveLength(1);
+  });
 }

@@ -172,7 +172,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 	owner := m.p.cap.Scope.OwnerID // has one order (the psSetup hold): a customer
 
 	getStatus := func(token string) cbhResp { return c.do(c.on, "GET", base+"/customers?limit=50", token, nil, nil) }
-	const listItemKeys = "active,captured_minor,claims_count,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags"
+	const listItemKeys = "active,captured_minor,claims_count,consent_state,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags"
 
 	t.Run("GET customers: permissions, grammar, shape, paging, method", func(t *testing.T) {
 		c.want("no token", getStatus(""), 401, "")
@@ -189,6 +189,10 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 			}
 			if got := cbhKeys(items[0].(map[string]any)); got != listItemKeys {
 				t.Errorf("%s: list row keys\n got  %s\n want %s", name, got, listItemKeys)
+			}
+			state := cbhMap(items[0].(map[string]any)["consent_state"])
+			if cbhKeys(state) != "ads_personalization,marketing_messages" || state["marketing_messages"] != "never" || state["ads_personalization"] != "never" {
+				t.Errorf("PARITY-CONSENT-STATE: absent events must be never, got %v", state)
 			}
 			if cbhKeys(r.json) != "items,next_cursor" {
 				t.Errorf("%s: page keys %s", name, cbhKeys(r.json))
