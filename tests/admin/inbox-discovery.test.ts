@@ -68,8 +68,26 @@ test("real Playwright --list collects each original INU case and isolated INU09 
   assert.equal(result.status, 0, `actual Playwright collection failed: ${diagnostics || result.stderr}`);
   assert.deepEqual(report.errors ?? [], [], "actual collector reports no worker-fixture scope errors");
   const allDiscovered = rows(report.suites ?? []);
-  const simplified = allDiscovered.filter((row) => row.file === "inbox-v2-ui.spec.ts");
+  const inboxV2 = allDiscovered.filter((row) => row.file === "inbox-v2-ui.spec.ts");
+  const simplified = inboxV2.filter((row) => !row.title.startsWith("PARITY inbox "));
   assert.equal(simplified.length, 39, "all 21 existing scenarios, 12 local-ACK older-obligation and 6 distinct-rejection scenarios collect");
+  // Keep the original discovery contract intact while checking every added signed-frame case.
+  const parityTitles: string[] = [];
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    parityTitles.push(`PARITY inbox ${locale}: signed list controls and no legacy toolbar`);
+    parityTitles.push(`PARITY inbox ${locale}: own sent DM reopens follow-ups without another inbound`);
+  }
+  for (const layout of ["desktop", "mobile"]) {
+    for (const scenario of ["connection", "closed", "permission", "failed", "queued", "unknown", "still", "sent"])
+      for (const buyer of ["A", "B"]) {
+        if (buyer === "B" && !["queued", "unknown", "still"].includes(scenario)) continue;
+        parityTitles.push(`PARITY inbox ${layout} ${scenario} ${buyer}: signed send state`);
+      }
+    parityTitles.push(`PARITY inbox ${layout}: fixed filter slots, list/thread and help frames`);
+  }
+  assert.equal(parityTitles.length, 30, "signed-frame discovery matrix has 30 new scenarios");
+  assert.deepEqual(inboxV2.filter((row) => row.title.startsWith("PARITY inbox ")).map((row) => row.title).sort(),
+    parityTitles.sort(), "every added parity scenario collects exactly once alongside the original 39");
   for (const locale of ["zh-TW", "zh-CN", "en"])
     for (const state of ["queued", "blocked"])
       assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} successful ACK then distinct ${state} rejection`).length, 1);
