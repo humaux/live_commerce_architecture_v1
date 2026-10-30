@@ -5,6 +5,7 @@
 // test through the real buyer path on demand (LC_OPP_PLACE_URL), so the real list route is what returns them. Locators avoid implementation test ids
 // except the two the baseline already had (order-expand-{id}, state-filter) and the page roots.
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { moneyDesign } from "./parity-money-support";
 import { nativePage } from "./fixtures/native-device";
 
 const required = (name: string) => {
@@ -274,22 +275,29 @@ test("OP4 the same nav on the orders page", async ({ page }) => {
 test("OP3 finance page shows a separate pay-at-pickup column in every locale; CSV link carries it", async ({ page }) => {
   await signedLogin(page);
   const today = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
-  const header: Record<string, RegExp> = { en: /pay[- ]at[- ]pickup/i, "zh-TW": /取貨付款/, "zh-CN": /取货付款/ };
-  for (const locale of ["en", "zh-TW", "zh-CN"]) {
+  const header: Record<string, RegExp> = { en: /Collected at pickup/i, "zh-TW": /門市取貨已收款/, "zh-CN": /门店取货已收款/ };
+  for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
     await page.goto(new URL(`/${locale}/finance?store=${store}`, origin).toString());
     await expect(page.getByTestId("finance-page")).toBeVisible();
+    await page.getByRole("button",{name:moneyDesign[locale].financeDates,exact:true}).click();
     const from = page.getByTestId("finance-from");
     await from.fill(today);
     await page.getByTestId("finance-to").fill(today);
     await page.getByTestId("finance-show").click();
+    await page.getByRole("button",{name:moneyDesign[locale].daily,exact:true}).click();
     const table = page.getByTestId("finance-table");
     await expect(table).toBeVisible();
-    await expect(table.locator("thead th").filter({ hasText: header[locale] })).toHaveCount(1);
+    const other = page.getByTestId(`finance-other-${today}-TWD`);
+    await expect(other.getByText(header[locale])).toHaveCount(1);
     const line = page.getByTestId(`finance-row-${today}-TWD`);
     await expect(line).toBeVisible();
     // the carrier-collected money is in its own cell, with the order count; captured and net stay at zero
-    await expect(line.locator("td").filter({ hasText: new RegExp(`\\(${seed.collected.length}\\)`) })).toHaveCount(1);
+    await expect(other.locator("dd").filter({hasText:new RegExp(`/ ${seed.collected.length}$`)})).toHaveCount(1);
+    await expect(line.locator("td").nth(3)).toHaveText("NT$0");
+    await expect(line.locator("td").nth(5)).toHaveText("NT$0");
   }
+  await page.getByRole("button",{name:moneyDesign["zh-CN"].backFinance,exact:true}).click();
+  await page.getByRole("button",{name:moneyDesign["zh-CN"].csv,exact:true}).click();
   const href = await page.getByTestId("finance-csv").getAttribute("href");
   expect(href).toBeTruthy();
   // in-page fetch: the Secure __Host- session cookie is sent by the browser, not by the APIRequestContext jar over http

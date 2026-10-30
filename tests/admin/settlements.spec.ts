@@ -1,5 +1,5 @@
 // Purpose: real-click browser gate of the read-only settlement statements page (list, detail with lines, payout states, empty state, 390px) against real PG, Go and the production admin Next build.
-// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/card-payments-settlements-copy, ../../apps/admin/lib/card-payments-settlements-model, ../../apps/admin/src/shell-copy, ../../packages/format/src/index; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_STMT_PAID, LC_BROWSER_STMT_CARRIED, LC_BROWSER_STMT_PENDING, LC_BROWSER_PAYOUT_REF
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/card-payments-settlements-copy, ../../apps/admin/lib/card-payments-settlements-model, ../../apps/admin/src/shell-copy, ../../packages/format/src/index; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_STMT_PAID, LC_BROWSER_STMT_CARRIED, LC_BROWSER_STMT_PENDING, LC_BROWSER_PAYOUT_REF, ./parity-money-support
 // Used by: apps/admin/src/features/settings/routes.ts (settlements), scripts/dev/test-local.sh (--browser-card-payments), tests/foundation/browser_card_payments_test.go
 // W4-U1 (contracts/stripe-platform-account-v1.md §6.4; W4-S2 delivery): BFF GET /api/stores/{store}/settlements[/{id}] -> Go read_store_settlements.
 // The statements are produced by tests/foundation/w4_u1_seed_test.go only through the operator paths (sync -> close -> payout): one paid, one that
@@ -11,8 +11,8 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { cardPaymentsSettlementsCopy } from "../../apps/admin/lib/card-payments-settlements-copy";
 import { parseSettlementDetail, periodLabel } from "../../apps/admin/lib/card-payments-settlements-model";
-import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { money } from "../../packages/format/src/index";
+import { moneyClick, moneyDesign, moneyLocales, moneyShot, moneyWidths } from "./parity-money-support";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -104,6 +104,51 @@ async function shot(page: Page, name: string, locale: string, viewport: "desktop
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 }
 
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`PARITY-MONEY settlement list, detail and returned frames (${locale}, ${width})`, async ({ page }) => {
+    const c = moneyDesign[locale];
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await signedLogin(page);
+    await page.goto(url(locale));
+    await expect(page.getByRole("heading", { level: 1, name: c.statements, exact: true })).toBeVisible();
+    // The old 11-column financial spreadsheet must not remain the statement selector.
+    await expect(page.getByRole("columnheader", { name: c.legacyCaptured, exact: true }), "PARITY-MONEY 1173:10740/10741: legacy wide ledger removed").toHaveCount(0);
+    await expect(page.getByRole("button", { name: c.openStatement, exact: true }).first()).toBeVisible();
+    await moneyShot(page, evidence, "statements", locale, width);
+    await moneyClick(page, evidence, c.openStatement, "signed statement breakdown opens from real ledger", async () => {
+      await page.getByTestId(`settlement-row-${paid}`).getByRole("button", { name: c.openStatement, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.statement, exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: c.composition, exact: true })).toBeVisible();
+    });
+    await moneyShot(page, evidence, "statement", locale, width);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: c.statement, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: c.backStatements, exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1, name: c.statements, exact: true })).toBeVisible();
+    const rows = await returnedFixture(page); // disclosed frozen DTO read fixture, same as STL6; never writes money
+    const source = rows.find(row => row.payout_returned)!;
+    const carrying = rows.find(row => row.returned_in_minor > 0)!;
+    await page.goto(url(locale));
+    await moneyClick(page, evidence, "returned statement", "returned payout remains unsettled with original payout history", async () => {
+      await page.getByTestId(`settlement-row-${source.statement_id}`).getByRole("button", { name: c.openStatement, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.returned, exact: true })).toBeVisible();
+      await expect(page.getByText(c.returnedStatus, { exact: true })).toBeVisible();
+      await expect(page.getByTestId("settlement-detail")).toContainText(source.payout_ref!);
+      await expect(page.getByTestId("settlement-detail")).toContainText(money(locale, "TWD", source.payout_minor!));
+    });
+    await moneyShot(page, evidence, "returned", locale, width);
+    await page.getByRole("button", { name: c.backStatements, exact: true }).click();
+    await moneyClick(page, evidence, "returned funds carried in", "return contribution is separate from previous negative carry", async () => {
+      await page.getByTestId(`settlement-row-${carrying.statement_id}`).getByRole("button", { name: c.openStatement, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.carriedReturn, exact: true })).toBeVisible();
+      await expect(page.getByText(c.returnContribution, { exact: true })).toBeVisible();
+      await expect(page.getByTestId("settlement-detail-returned_in")).toContainText(money(locale, "TWD", carrying.returned_in_minor));
+      await expect(page.getByTestId("settlement-detail-carried_in")).toBeVisible();
+    });
+    await moneyShot(page, evidence, "carriedReturn", locale, width);
+  });
+}
+
 // Preserve the original real-chain serial group. The new independent MOCK DTO cases below must still execute
 // if SA-1 has not merged yet and the old server cannot emit the required fields; they never make that failure PASS.
 test.describe("STL1–STL5 real settlement ledger", () => {
@@ -112,7 +157,7 @@ test("STL1 list: every statement row shows the server's numbers (signed) and the
   await signedLogin(page);
   await page.goto(url("en"));
   await expect(page.getByTestId("settlements-page")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy.en.settlements);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(moneyDesign.en.statements);
   const statements = await listOf(page);
   expect(statements.map((s) => s.statement_id).sort()).toEqual([paid, carried, pending].sort());
   await expect(page.locator('[data-testid^="settlement-row-"]')).toHaveCount(3);
@@ -120,22 +165,25 @@ test("STL1 list: every statement row shows the server's numbers (signed) and the
   const label = { paid: en.paid, none: en.noPayout, pending: en.pending } as Record<string, string>;
   for (const s of statements) {
     const cells = page.getByTestId(`settlement-row-${s.statement_id}`).locator("td");
-    const expected = [
-      periodLabel(s.period_start, s.period_end),
-      ...contributions(s).map((minor) => signed(s.currency, minor)),
-      money("en", s.currency, s.net_payable_minor), // the net is the server's own number, never a displayed sum
-      label[state[s.statement_id]],
-    ];
-    for (const [index, text] of expected.entries()) expect(flat(await cells.nth(index).textContent()), `${s.statement_id} column ${index}`).toBe(text);
-    await expect(page.getByTestId(`settlement-status-${s.statement_id}`)).toHaveAttribute("data-state", state[s.statement_id]);
-    // What is on screen adds up: all seven contributions equal the same server net; old signs stay intact.
-    const shown = [];
-    for (let index = 1; index <= 8; index++) shown.push(minorOf(flat(await cells.nth(index).textContent())));
-    expect(shown.slice(0, 7).reduce((a, b) => a + b, 0), `${s.statement_id}: displayed columns vs net`).toBe(shown[7]);
-    expect(shown[7]).toBe(s.net_payable_minor);
+    expect(flat(await cells.nth(1).textContent())).toBe(periodLabel(s.period_start,s.period_end));
+    expect(flat(await cells.nth(3).textContent())).toBe(money("en",s.currency,s.net_payable_minor));
+    await expect(page.getByTestId(`settlement-status-${s.statement_id}`)).toHaveAttribute("data-state",state[s.statement_id]);
+    await expect(page.getByTestId(`settlement-status-${s.statement_id}`)).toHaveText(label[state[s.statement_id]]);
+    // The compact selector opens the signed breakdown: preserve every original signed-amount and conservation check here.
+    await page.getByTestId(`settlement-open-${s.statement_id}`).click();
+    await expect(page.getByTestId("settlement-detail")).toBeVisible();
+    const keys = ["captured","refunded","dispute","stripe-fee","platform-fee","carried-in","returned-in"];
+    const shown: number[] = [];
+    for (const [index,minor] of contributions(s).entries()) {
+      const cell = page.getByTestId(`settlement-detail-${keys[index]}`);
+      await expect(cell).toHaveText(signed(s.currency,minor));
+      shown.push(minorOf(flat(await cell.textContent())));
+    }
+    const displayedNet = minorOf(flat(await page.getByTestId("settlement-detail-net").textContent()));
+    expect(shown.reduce((a,b) => a+b,0),`${s.statement_id}: displayed contributions vs net`).toBe(displayedNet);
+    expect(displayedNet).toBe(s.net_payable_minor);
+    await page.getByTestId("settlement-back").click();
   }
-  await expect(page.getByTestId("settlements-legend")).toContainText(en.legend);
-  await expect(page.getByTestId("settlements-formula")).toHaveText(en.formula);
   // the three sign cases are really on screen: a negative net, a negative dispute total (reversal), a carried debt
   expect(statements.find((s) => s.statement_id === carried)!.net_payable_minor).toBeLessThan(0);
   expect(statements.find((s) => s.statement_id === pending)!.dispute_minor).toBeLessThan(0);
@@ -157,7 +205,8 @@ test("STL2 detail: lines, payout reference of the paid statement, none for the o
     for (const [index, minor] of contributions(s).entries())
       await expect(page.getByTestId(`settlement-detail-${detailKeys[index]}`)).toHaveText(signed(s.currency, minor));
     await expect(page.getByTestId("settlement-detail-net")).toHaveText(money("en", s.currency, s.net_payable_minor));
-    await expect(page.getByTestId("settlement-detail").getByTestId("settlements-formula")).toHaveText(en.formula);
+    // Seller copy replaces the internal formula; the seven signed values and net remain asserted above.
+    await expect(page.getByRole("heading",{name:moneyDesign.en.composition,exact:true})).toBeVisible();
     const lines = page.locator('[data-testid^="settlement-line-"]');
     await expect(lines).toHaveCount(s.line_count);
     for (const [index, line] of (s.lines ?? []).entries()) {
@@ -196,7 +245,7 @@ test("STL3 zh-TW and zh-CN: the same statements in the other languages", async (
     await expect(page.getByTestId(`settlement-status-${paid}`)).toHaveText(copy.paid);
     await expect(page.getByTestId(`settlement-status-${carried}`)).toHaveText(copy.noPayout);
     await expect(page.getByTestId(`settlement-status-${pending}`)).toHaveText(copy.pending);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[locale].settlements);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(moneyDesign[locale].statements);
     if (locale === "zh-TW") await shot(page, "settlements-list", locale, "desktop");
   }
 });
@@ -278,8 +327,8 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
       await page.goto(url(locale));
       await expect(page.getByTestId(`settlement-status-${source.statement_id}`)).toHaveText(copy.status);
       await expect(page.getByTestId(`settlement-returned-message-${source.statement_id}`)).toHaveText(copy.message);
-      await expect(page.getByRole("columnheader", { name: copy.amount, exact: true })).toBeVisible();
-      await expect(page.getByTestId(`settlement-row-${carrying.statement_id}`)).toContainText("+" + money(locale, "TWD", 125000));
+      // The signed compact selector moves the returned contribution into the clicked detail.
+      await expect(page.getByTestId(`settlement-row-${carrying.statement_id}`)).toContainText(money(locale, "TWD", 173200));
       await clickProof(page, locale, `settlement-open-${source.statement_id}`, "returned state, explanation and original payout retained", async () => {
         await expect(page.getByTestId("settlement-detail-status")).toHaveAttribute("data-state", "returned");
         await expect(page.getByTestId(`settlement-returned-message-${source.statement_id}`)).toHaveText(copy.message);
@@ -290,12 +339,18 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
         await expect(page.getByTestId(`settlement-row-${carrying.statement_id}`)).toBeVisible();
       });
       await clickProof(page, locale, `settlement-open-${carrying.statement_id}`, "returned funds add once to the carrying statement", async () => {
+        await expect(page.getByText(moneyDesign[locale].returnContribution, { exact: true })).toBeVisible();
         await expect(page.getByTestId("settlement-detail-returned-in")).toHaveText("+" + money(locale, "TWD", 125000));
         await expect(page.getByTestId("settlement-detail-net")).toHaveText(money(locale, "TWD", 173200));
         await expect(page.getByTestId("settlement-detail-status")).toHaveAttribute("data-state", "pending");
         await expect(page.getByTestId("settlement-returned-at")).toHaveCount(0);
       });
       await page.reload();
+      await expect(page.getByTestId("settlement-detail-returned-in")).toHaveText("+" + money(locale, "TWD", 125000));
+      await expect(page.getByTestId("settlement-detail-net")).toHaveText(money(locale, "TWD", 173200));
+      await clickProof(page, locale, "settlement-back", "reload preserves selection and the list retains the original returned payout", async () => {
+        await expect(page.getByTestId(`settlement-row-${source.statement_id}`)).toBeVisible();
+      });
       await expect(page.getByTestId(`settlement-status-${source.statement_id}`)).toHaveText(copy.status);
       await clickProof(page, locale, `settlement-open-${carrying.statement_id}`, "reload keeps server returned amount and net unchanged", async () => {
         await expect(page.getByTestId("settlement-detail-returned-in")).toHaveText("+" + money(locale, "TWD", 125000));

@@ -1,3 +1,7 @@
+// Purpose: Independent customers/billing HTTP contract and finance generation-time acceptance.
+// Depends on: synthetic signed fixtures, real Go router, PostgreSQL and frozen DTO contracts.
+// Used by: GitHub Foundation/Gates customers-billing coverage.
+// Invariants: no real PII/providers; new timestamp assertion is causal RED before implementation.
 package foundation_test
 
 // CB09 (contracts/customers-billing-v1.md §5 every row, §6, §7, §8, customers-core D3/D9/D12/D13 and billing-core
@@ -26,6 +30,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -435,12 +440,30 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		}
 	})
 
+	// PARITY-MONEY additive data ruling: the financial observation time comes from the server,
+	// never from a browser clock or the selected business-date range. No ledger freshness is implied.
+	t.Run("PARITY-MONEY finance summary provides server generation time", func(t *testing.T) {
+		started := time.Now().UTC().Truncate(time.Second)
+		r := c.do(c.on, "GET", base+"/finance/summary?from=2026-01-01&to=2026-01-31", c.tokens["ordersRO"], nil, nil)
+		finished := time.Now().UTC()
+		c.want("PARITY-MONEY summary generation time", r, 200, "")
+		value, ok := r.json["generated_at"].(string)
+		if !ok || value == "" {
+			t.Fatal("PARITY-MONEY: finance summary is missing server-generated generated_at for the signed overview")
+		}
+		generated, err := time.Parse(time.RFC3339Nano, value)
+		if err != nil || generated.Before(started) || generated.After(finished) {
+			t.Fatalf("PARITY-MONEY: generated_at must be the successful server read time inside this request: %q, error=%v", value, err)
+		}
+		c.noStore("PARITY-MONEY timestamped finance summary", r)
+	})
+
 	t.Run("GET finance/summary and summary.csv", func(t *testing.T) {
 		q := "?from=2026-01-01&to=2026-01-31"
 		r := c.do(c.on, "GET", base+"/finance/summary"+q, c.tokens["ordersRO"], nil, nil)
 		c.want("summary", r, 200, "")
 		c.noStore("summary", r)
-		if cbhKeys(r.json) != "from,rows,timezone,to,totals" || r.json["timezone"] != "Asia/Taipei" || r.json["from"] != "2026-01-01" || r.json["to"] != "2026-01-31" {
+		if cbhKeys(r.json) != "from,generated_at,rows,timezone,to,totals" || r.json["timezone"] != "Asia/Taipei" || r.json["from"] != "2026-01-01" || r.json["to"] != "2026-01-31" {
 			t.Errorf("summary: %s", r.raw)
 		}
 		if rows, ok := r.json["rows"].([]any); !ok || len(rows) != 0 {

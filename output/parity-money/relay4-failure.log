@@ -1,0 +1,119 @@
+PARITY-MONEY relay 4 · CI regression, not the initial tests-only RED
+head_sha=2941fc48e1851561193ee5c8860af8691a15a5ab
+execution_merge_sha=abb94af78098be7c15e7f2fd82bfed684898d989
+Gates_run=41076945403
+Gates_job=124141385483 (bundle:08, failure; member --browser-password-auth)
+artifact=gate-browser-password-auth id=12988274746
+Foundation_run=41076945549
+Foundation_job=124135542633 (success; structural only)
+source=GitHub original job logs and artifact playwright.log
+failure=three locale finance CSV tests fail only after reload at reauth.spec.ts:189
+repair_attempt=1 for CSV preview state restoration; earlier date editor fix is a separate blocker
+Original Playwright failure receipt follows:
+
+
+Running 9 tests using 1 worker
+
+  ✓  1 tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-TW orders: expired re-auth CSV click opens dialog and downloads after one replay (1.5s)
+  ✘  2 tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay (11.0s)
+  ✓  3 tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-CN orders: expired re-auth CSV click opens dialog and downloads after one replay (1.1s)
+  ✘  4 tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✓  5 tests/admin/oc/reauth.spec.ts:141:5 › OC-04 en orders: expired re-auth CSV click opens dialog and downloads after one replay (1.2s)
+  ✘  6 tests/admin/oc/reauth.spec.ts:141:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay (10.9s)
+  ✓  7 tests/admin/oc/reauth.spec.ts:246:1 › OC-04 zh-TW desktop: guarded BFF codes, password re-auth with exact replay, OIDC re-auth, routing and hints (1.0m)
+  ✓  8 tests/admin/oc/reauth.spec.ts:376:3 › OC-04 zh-CN desktop: the refused invite opens the localized dialog and is replayed once after password re-auth (1.1s)
+  ✓  9 tests/admin/oc/reauth.spec.ts:376:3 › OC-04 en mobile: the refused invite opens the localized dialog and is replayed once after password re-auth (998ms)
+
+
+  1) tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('finance-csv')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('finance-csv') with timeout 10000ms
+      - waiting for getByTestId('finance-csv')
+
+
+      187 |         expect(new URL(page.url()).pathname).toBe(`/${locale}/${kind}`);
+      188 |         await page.reload();
+    > 189 |         await expect(control).toBeVisible();
+          |                               ^
+      190 |         await expect(modal(page)).toHaveCount(0);
+      191 |         expect(urls, "refresh must not repeat the download").toHaveLength(2);
+      192 |         expect(downloads).toHaveLength(1);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:189:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.TbRBnkuk/oc-20261030T151932.030940506/results/oc-reauth-OC-04-zh-TW-fina-77ec1--downloads-after-one-replay/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.TbRBnkuk/oc-20261030T151932.030940506/results/oc-reauth-OC-04-zh-TW-fina-77ec1--downloads-after-one-replay/error-context.md
+
+  2) tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('finance-csv')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('finance-csv') with timeout 10000ms
+      - waiting for getByTestId('finance-csv')
+
+
+      187 |         expect(new URL(page.url()).pathname).toBe(`/${locale}/${kind}`);
+      188 |         await page.reload();
+    > 189 |         await expect(control).toBeVisible();
+          |                               ^
+      190 |         await expect(modal(page)).toHaveCount(0);
+      191 |         expect(urls, "refresh must not repeat the download").toHaveLength(2);
+      192 |         expect(downloads).toHaveLength(1);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:189:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.TbRBnkuk/oc-20261030T151932.030940506/results/oc-reauth-OC-04-zh-CN-fina-41684--downloads-after-one-replay/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.TbRBnkuk/oc-20261030T151932.030940506/results/oc-reauth-OC-04-zh-CN-fina-41684--downloads-after-one-replay/error-context.md
+
+  3) tests/admin/oc/reauth.spec.ts:141:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('finance-csv')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('finance-csv') with timeout 10000ms
+      - waiting for getByTestId('finance-csv')
+
+
+      187 |         expect(new URL(page.url()).pathname).toBe(`/${locale}/${kind}`);
+      188 |         await page.reload();
+    > 189 |         await expect(control).toBeVisible();
+          |                               ^
+      190 |         await expect(modal(page)).toHaveCount(0);
+      191 |         expect(urls, "refresh must not repeat the download").toHaveLength(2);
+      192 |         expect(downloads).toHaveLength(1);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:189:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.TbRBnkuk/oc-20261030T151932.030940506/results/oc-reauth-OC-04-en-finance-623bd--downloads-after-one-replay/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.TbRBnkuk/oc-20261030T151932.030940506/results/oc-reauth-OC-04-en-finance-623bd--downloads-after-one-replay/error-context.md
+
+  3 failed
+    tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay 
+    tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay 
+    tests/admin/oc/reauth.spec.ts:141:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay 
+  6 passed (1.7m)

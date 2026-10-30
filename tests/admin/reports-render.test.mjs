@@ -1,5 +1,5 @@
 // Purpose: execute actual report view rendering and report BFF leaf with independent synthetic boundaries.
-// Depends on: existing TypeScript transpiler, React SSR, Node test/assert and report pure modules.
+// Depends on: existing TypeScript transpiler, React SSR, Node test/assert, report modules and finance/settlement server pages.
 // Used by: focused Node gate; MOCK transport only, not a substitute for browser/Go/PG gates.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -366,7 +366,7 @@ test("legacy-store permission probe: forbidden/not-found/signed-out fail the rea
   let captured = null, probe = null;
   const shell = ({children}) => createElement("div", null, children);
   const Reports = load("../../apps/admin/components/Reports.tsx", {
-    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":{}, "@live-commerce/ui":{TabStrip:shell,DateControl:()=>null},
+    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":adminRequire("../../packages/i18n/src/index.ts"), "@live-commerce/ui":{TabStrip:shell,DateControl:()=>null},
     "@/lib/model":{}, "@/lib/customers-client":{ReadError,useGuardedRead:(_scope,run)=>{captured=run;return {status:"loading",data:null,boundary:"",reload(){},refresh:async()=>false};}},
     "@/lib/customers-model":{financeDay:()=>"2026-09-01"}, "@/lib/orders-client":{OrderReadError,readOrderActions:async()=>{throw probe;}},
     "@/lib/reports-request":adminRequire("./lib/reports-request.ts"),
@@ -374,7 +374,7 @@ test("legacy-store permission probe: forbidden/not-found/signed-out fail the rea
     "@/lib/reports-copy":{reportsCopy:{en:new Proxy({tabs:{}},{get:(t,k)=>k in t?t[k]:"x"})}}, "@/lib/reports-presentation":{},
     "./WorkspaceFrame":{WorkspaceFrame:shell}, "./AdminPageHeader":{AdminPageHeader:()=>null},
     "./ReportViews":{ProductReportTable:()=>null,ChannelReportChart:()=>null,FunnelReportChart:()=>null,ManualReportTable:()=>null},
-    "./orders.css":{}, "./reports.css":{},
+    "./orders.css":{}, "./reports.css":{}, "./finance/money.css":{},
   }).Reports;
   renderToStaticMarkup(createElement(Reports, {locale:"en",stores:[],store:{id,name:"S",currency:"TWD"},initialError:null,renderKey:"r",initialFrom:from,initialTo:to}));
   assert.equal(typeof captured, "function");
@@ -394,7 +394,7 @@ const shellOf = ({children}) => createElement("div", null, children);
 const proxyCopy = new Proxy({tabs:{}}, {get:(t,k)=>k in t?t[k]:String(k)});
 function loadReports(read, exportOutcome, overrides = {}) {
   return load("../../apps/admin/components/Reports.tsx", {
-    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":{}, "@live-commerce/ui":{TabStrip:shellOf,DateControl:()=>null},
+    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":adminRequire("../../packages/i18n/src/index.ts"), "@live-commerce/ui":{TabStrip:shellOf,DateControl:()=>null},
     "@/lib/model":{}, "@/lib/customers-client":{ReadError:class extends Error{},useGuardedRead:()=>read},
     "@/lib/customers-model":{financeDay:()=>"2026-09-01"}, "@/lib/orders-client":{OrderReadError:class extends Error{},readOrderActions:async()=>({})},
     "@/lib/reports-request":adminRequire("./lib/reports-request.ts"),
@@ -402,7 +402,7 @@ function loadReports(read, exportOutcome, overrides = {}) {
     "@/lib/reports-copy":{reportsCopy:{en:proxyCopy}}, "@/lib/reports-presentation":{},
     "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null},
     "./ReportViews":{ProductReportTable:()=>null,ChannelReportChart:()=>null,FunnelReportChart:()=>null,ManualReportTable:()=>null},
-    "./orders.css":{}, "./reports.css":{}, ...overrides,
+    "./orders.css":{}, "./reports.css":{}, "./finance/money.css":{}, ...overrides,
   }).Reports;
 }
 
@@ -450,16 +450,61 @@ test("an uncertain export lock is bound to the session boundary, so a different 
 test("Finance landing links to reports under the same canSeeReports rule", () => {
   const read = {status:"ready",boundary:"b",data:{rows:[],totals:[],from,to},reload(){},refresh:async()=>true};
   const Finance = load("../../apps/admin/components/Finance.tsx", {
+    "../../../packages/format/src/index.ts":load("../../packages/format/src/index.ts"),
     "next/navigation":{useRouter:()=>({push(){}})}, "next/link":{__esModule:true,default:({href,children,...p})=>createElement("a",{href,...p},children)},
-    "@live-commerce/i18n":{}, "@live-commerce/ui":{DateControl:()=>null,TableFrame:shellOf}, "@/lib/model":{}, "@/lib/client":{money:()=>""},
+    "@live-commerce/i18n":adminRequire("../../packages/i18n/src/index.ts"), "@live-commerce/ui":{DateControl:()=>null,TableFrame:shellOf}, "@/lib/model":{}, "@/lib/client":{money:()=>""},
     "@/lib/customers-client":{financeCSVHref:()=>"/x.csv",readFinance:async()=>({}),useGuardedRead:()=>read},
     "@/lib/customers-model":adminRequire("./lib/customers-model.ts"), "@/lib/orders-client":{readOrderActions:async()=>({orders_export:false})},
     "@/lib/customers-copy":adminRequire("./lib/customers-copy.ts"), "@/lib/reports-copy":{reportsCopy:{en:{title:"Sales reports"}}},
     "@/lib/presentation-copy":adminRequire("./lib/presentation-copy.ts"),
-    "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null}, "./orders.css":{}, "./order-actions.css":{}, "./customers.css":{},
+    "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null}, "./orders.css":{}, "./order-actions.css":{}, "./customers.css":{}, "./finance/money.css":{},
   }).Finance;
   const html = (permissions) => renderToStaticMarkup(createElement(Finance, {locale:"en",stores:[],store:{id,name:"S",currency:"TWD",permissions},from,to,today:to,initialError:null,renderKey:"r"}));
   assert.match(html(["orders:read"]), new RegExp(`data-testid="finance-reports"`)); assert.match(html(["orders:read"]), new RegExp(`/en/finance/reports\\?store=${id}`));
   assert.match(html(undefined), /finance-reports/);
   assert.doesNotMatch(html(["customers:read"]), /finance-reports/);
+});
+
+test("actual finance and settlement server pages accept only their persisted read selectors", async () => {
+  const missing = new Error("404");
+  const navigation = { notFound() { throw missing; } };
+  // Isolate transport only: the real shared loader still validates all keys, scalar values,
+  // locales and store UUIDs. Browser/Go gates retain session and tenant authorization checks.
+  const loader = load("../../apps/admin/app/[locale]/customers/page-data.ts", {
+    "next/headers": { headers: async () => { throw Error("unexpected transport"); } },
+    "next/navigation": navigation,
+    "@live-commerce/i18n": adminRequire("../../packages/i18n/src/index.ts"),
+    "@/lib/auth": { authConfig: null },
+    "@/lib/orders-model": adminRequire("./lib/orders-model.ts"),
+  });
+  const FinancePage = load("../../apps/admin/app/[locale]/finance/page.tsx", {
+    "next/navigation": navigation,
+    "@/lib/customers-model": adminRequire("./lib/customers-model.ts"),
+    "@/components/Finance": { Finance() {} },
+    "../customers/page-data": loader,
+  }).default;
+  const SettlementsPage = load("../../apps/admin/app/[locale]/settings/settlements/page.tsx", {
+    "next/navigation": navigation,
+    "@/lib/orders-model": adminRequire("./lib/orders-model.ts"),
+    "@/components/Settlements": { Settlements() {} },
+    "../../customers/page-data": loader,
+  }).default;
+  const visit = (Page, query, locale = "en") => Page({ params: Promise.resolve({ locale }), searchParams: Promise.resolve(query) });
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    for (const view of [undefined, "daily", "basis", "csv"]) {
+      const page = await visit(FinancePage, { store: id, from, to, ...(view ? { view } : {}) }, locale);
+      assert.equal(page.props.locale, locale); assert.equal(page.props.from, from); assert.equal(page.props.to, to);
+    }
+    await visit(SettlementsPage, { store: id }, locale);
+    await visit(SettlementsPage, { store: id, statement: id }, locale);
+  }
+  for (const query of [
+    { view: "overview" }, { view: "dates" }, { view: "CSV" }, { view: " csv" },
+    { view: "" }, { view: ["daily", "csv"] }, { tenant_id: id }, { amount: "1" }, { store: "bad" },
+  ]) await assert.rejects(visit(FinancePage, query), error => error === missing);
+  for (const query of [
+    { statement: "" }, { statement: "x".repeat(36) }, { statement: "-".repeat(36) },
+    { statement: [id, id] }, { statement: id.toUpperCase().replace("1111", "ABCD") },
+    { tenant_id: id }, { amount: "1" }, { store: "bad" },
+  ]) await assert.rejects(visit(SettlementsPage, query), error => error === missing);
 });

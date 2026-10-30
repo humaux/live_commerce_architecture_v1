@@ -1,0 +1,113 @@
+{
+  "evidence": "E1 static source identity; own acceptance E0",
+  "files": [
+    {
+      "path": "apps/admin/components/Billing.tsx",
+      "sha256": "b7bbf904b29e17c2fb41d6ed471b88f3f3c4d824902efe5f7ad8e114a20c9252"
+    },
+    {
+      "path": "apps/admin/components/CardPayments.tsx",
+      "sha256": "fa03a6a84c94c738dd4294edde531e5876d25db843544b06497829f7b88ee9c7"
+    },
+    {
+      "path": "apps/admin/components/CodSettings.tsx",
+      "sha256": "76f8a64898397fb24fc930729c989cc001595df416d93f033bf4c40351307776"
+    },
+    {
+      "path": "apps/admin/components/Finance.tsx",
+      "sha256": "68d85b15776f3afe1d5e68355947b7816dab3eb41efaf3cafcf9e214613b4349"
+    },
+    {
+      "path": "apps/admin/components/Reports.tsx",
+      "sha256": "4bb4c4d15732643848d404bbcca1705ad25268403d7407066e204f43fd29b10f"
+    },
+    {
+      "path": "apps/admin/components/Settlements.tsx",
+      "sha256": "a6d59598f40864859da091cd0873a568cd7f88eecae22eb695eaf01e5d4e0ed5"
+    },
+    {
+      "path": "apps/admin/lib/customers-model.ts",
+      "sha256": "2048f363a76c133516593bf0797e34a0de3c92bd1ded31497b5b801298316b7a"
+    },
+    {
+      "path": "contracts/customers-billing-v1.md",
+      "sha256": "52d94df697f8c3d830f6ea3a12fa3768fbeed0a6a6eb4e66285422c5341442a5"
+    },
+    {
+      "path": "internal/reporting/finance.go",
+      "sha256": "74459318c012b7ef79fefbda68f64916a6543ffbf3d2bb0c3b7a77fd2ea811a9"
+    },
+    {
+      "path": "output/ci-select-backend-browser/browser-ownership.json",
+      "sha256": "cd2ae3c8d063ad2921d4675115916ffbc496f7d53f3a2047934ae0c9c41ecce9"
+    },
+    {
+      "path": "packages/i18n/src/index.ts",
+      "sha256": "294bd4841de62a396eb2214c61a8b26344c4beecbea61521af5649045e358141"
+    },
+    {
+      "path": "tests/admin/card-payments.spec.ts",
+      "sha256": "9f3c025333c91ddd1f72c1623e19d36e070be3481938873ffe1b04b66df9aa3b"
+    },
+    {
+      "path": "tests/admin/checkout-offline.spec.ts",
+      "sha256": "aef4848a45c475a12d8d704bca82bff688d5ea4821a2e1a6ab17ed6d3ce51f2a"
+    },
+    {
+      "path": "tests/admin/customers-bff.test.ts",
+      "sha256": "a913617de0a090f099a87f0aa42c30cd60fe0f35399ea6f26e35881f950387de"
+    },
+    {
+      "path": "tests/admin/customers-billing.spec.ts",
+      "sha256": "e365c951cb36df57be6e427e04912f9e047382003ba165471978bc71bf7f6371"
+    },
+    {
+      "path": "tests/admin/customers-model.test.ts",
+      "sha256": "c6f8f9f933dca1a8068c4ec0351cfee7810f80726c26ce7bf8a1dec44a57d259"
+    },
+    {
+      "path": "tests/admin/home-cod.spec.ts",
+      "sha256": "721edb8568a5642c1ad877efc3f6c9589b6a2c05df125abeb42aa8e685e9cf45"
+    },
+    {
+      "path": "tests/admin/oc/reauth.spec.ts",
+      "sha256": "4e7446885ff295d1fd4b2893535fed9a818b3e92f1beaeeddbf3d6fb031a5c8c"
+    },
+    {
+      "path": "tests/admin/ops-polish-model.test.ts",
+      "sha256": "287b334747ae9889c5a1a001f0dc91737483b1114839b3c78c9d7675ab69b029"
+    },
+    {
+      "path": "tests/admin/ops-polish.spec.ts",
+      "sha256": "e9a4f798930a4d71a00ed442b8194a483e8a96b7808421aee4471409e4dc66d5"
+    },
+    {
+      "path": "tests/admin/reports-render.test.mjs",
+      "sha256": "74cfd240c88e3a92eb2807f9c3d894349015e450e43d85dd5676c02b168e0cd5"
+    },
+    {
+      "path": "tests/admin/reports.spec.ts",
+      "sha256": "43212cbf3f7a1f9a68c1b0d8dd10421b82df7c61731cc09a6d96d191d6fce713"
+    },
+    {
+      "path": "tests/admin/settlements.spec.ts",
+      "sha256": "c2ad07de1051906df365da1032cea4502140636ac54b3c0de1db05a21dc8287c"
+    },
+    {
+      "path": "tests/admin/transfer-model.test.ts",
+      "sha256": "e7eed6e57f36d2d29078aff608021f78542cc03563428d09bb07e41b11a291f0"
+    },
+    {
+      "path": "tests/foundation/customers_billing_http_test.go",
+      "sha256": "c8559a8726c124ffb181ee6ba032bec21963ec2a134bc5299dcfe5d6ecb08672"
+    },
+    {
+      "path": "apps/admin/components/finance/money.css",
+      "sha256": "f8b08f5f3208c9f60e00ec10f5b08966bea4eb4c3ae3467771b0ebe91aac5429"
+    },
+    {
+      "path": "packages/i18n/src/money.ts",
+      "sha256": "86107772e663f28632aa9f628f7f7a1944971a13c30d254ee969bc0b228675ce"
+    }
+  ]
+}

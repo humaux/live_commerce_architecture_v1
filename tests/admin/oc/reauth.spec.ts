@@ -13,6 +13,7 @@
 //   unchanged and the originating page as Location; an OIDC account is offered the OIDC route; the mail_unavailable OIDC hint only for
 //   an OIDC account (MOCK 503); zh-TW / zh-CN / en; focus trap, focus return, 44 px targets at 390 px.
 //   Review P1: real orders/finance CSV controls open re-auth for stale sessions, replay once and download valid CSV bytes.
+import { moneyDesign } from "../parity-money-support";
 import { createHmac, randomBytes } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -153,6 +154,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
         page.on("response", (response) => { if (new URL(response.url()).pathname === endpoint) statuses.push(response.status()); });
         page.on("download", (download) => downloads.push(download.suggestedFilename()));
         await page.goto(`/${locale}/${route}`);
+        if (kind === "finance") await page.getByRole("button",{name:moneyDesign[locale].csv,exact:true}).click();
         const control = page.getByTestId(kind === "orders" ? "orders-export" : "finance-csv");
         await expect(control).toBeVisible();
         await age(owner); // Fixture preparation only; the export itself is a real user click.
