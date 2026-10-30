@@ -1,6 +1,6 @@
-# PARITY-STATES · RED handoff · 2026-10-30
+# PARITY-STATES · implementation handoff · 2026-10-30
 
-Status: tests-only RED registration repair prepared; implementation, CI assertion RED, GREEN and independent review are PENDING. Author assessment E0. Static syntax checks are E1 only. No local tests, builds, servers, browsers, database or containers ran.
+Status: causal assertion RED confirmed on b3c4736a; implementation prepared for one batch push. GREEN and independent review PENDING. Author assessment E0; local static checks E1 only. No local tests, builds, servers, browsers, database or containers ran.
 
 Task: integrator-dispatched PARITY-STATES; role ui implementation worker, runtime Codex GPT-6 (effort inherited, no override). Base `df35b338b5cfde5de34bb590e2ba118efc17e4a4`; branch `unit/parity-states`; worktree `parity-states`; PR target `r3/integration`. Main checkout is read-only. No recursive delegation.
 
@@ -12,7 +12,7 @@ Current source at the base SHA confirms the audit's symptom: StatePanel/InlineEr
 
 ## Gate and staged delivery
 
-1. One tests-only push includes ALL new assertions: admin real routes in existing browser-merchant-orders-ui; buyer real routes in existing browser-storefront. Existing parent assertions remain unchanged and in order. BFF read interception is explicitly MOCK fixture setup; production Next route/components still render the page.
+1. One tests-only push includes ALL new assertions: admin real routes in existing browser-merchant-orders-ui; buyer real routes in existing browser-storefront. Existing storefront gate-adapter assertions remain verbatim and in order. Admin assertions for superseded denial copy now require the exact current signed copy; privacy/control assertions remain. BFF read interception is explicitly MOCK fixture setup; production Next route/components still render the page.
 2. RED is accepted only if the new signed-copy/panel assertions fail, not compilation or fixture setup. Record original run/job/head and tested merge SHA in red.log after CI reaches them. No implementation before causal RED.
 3. Then change shared internals and buyer state branches in one implementation push, preserving session/ACL/read/command semantics. Existing caller text remains contextual; do not claim an empty orders/customer filter is first-time collection setup.
 4. GREEN is this PR's own CI. Independent reviewer compares actual route screenshots to DELIVERY PNGs; author PASS remains E0. No merge, auto-merge, force push, status posting or deployment.
@@ -76,11 +76,15 @@ Read the module's read-only `output/ux-audit-ref/FIGMA-GUIDE.md`, source dated 2
 
 ## Scope and risks
 
-This RED commit changes tests, two existing browser entry imports/calls, generated ownership and card evidence only. Explicit outside-write-path list for integrator: `tests/admin/orders-ui.spec.ts`, `tests/storefront/shop-real-gate.mjs`, `output/ci-select-backend-browser/browser-ownership.json`, `output/parity-states/**`. The entry changes only ADD reachability; all original gate assertions stay verbatim/in order. No application source changed yet.
+Implementation changes shared admin state internals and the existing WorkspaceFrame expiry/denial boundary. Buyer pages use one StorefrontState/StorefrontReadFailure; CartProvider exposes readProblem separately from write recovery, preserving its observation-order fence. Same-locator payment GET failure keeps the original pending view/amount, hides payment actions until a successful read, and shows InlineError. Permission/context refusal clears that payment view. The original Stripe Continue/Cancel and bounded polling/signal contracts stay in place; the signed Check status action itself only GETs. CheckoutFlow is untouched.
 
-Implementation will need same-app scope preapproval for WorkspaceFrame's existing shell denial/expiry branch (no standalone session-expired route exists), CartProvider's swallowed read failure, CartView and OrderLink state branches, and standalone order payment display while leaving CheckoutFlow untouched. List actual paths in the implementation PR body; STOP if contracts/lockfiles/backend need changes.
+Same-app scope preapproval used: WorkspaceFrame.tsx, admin-state-block.css, shell-copy.ts; CartProvider.tsx, CartView.tsx, OrderLink.tsx and OrderPayment.tsx. SSR harness allowlists load the real signed components. Admin old-copy expectations are replaced with current signed copy (no authorization/privacy assertions removed); storefront gate-adapter assertions are unchanged. No API/contract/migration/backend/package manifest/lockfile change.
 
-Risks/NOT_RUN: assertion RED, GREEN, browser click ledger, screenshot parity, density, tsc, local tests/server/build/browser/PG, provider/production/LIVE and independent review. No own process remains running. Integrator owns the CI-completion relay; poll cutoff ≤10 min per push, then fresh session from stored run IDs.
+Static commands: node --check on registered browser entries, updated SSR harnesses, staff-team.spec.ts and state-recovery.ts: exit 0. Browser ownership generator then --check: exit 0 (53 modes). depmap.sh: exit 0, no content change. python3 scripts/check_packet.py: exit 0, PASS_PACKET_STRUCTURE_ONLY; its timestamp-only result was restored, not committed. tsc NOT_RUN: no local compiler/dependencies; CI owns type/build/browser/runtime verification.
+
+Risks/NOT_RUN: implementation CI GREEN, screenshot parity, density and independent review are pending. All local tests/server/build/browser/PG/provider/production/LIVE NOT_RUN. No completion claim. Humaux tools are absent; store/canvas/coord/rejected lookup UNKNOWN, no shared record claimed. Integrator owns CI-completion relay; handoff includes the real Foundation/Gates run IDs, never a plan job.
+
+Downloaded failed CI artifacts are retained locally in output/parity-states/relay2/ (24 MB), not staged into the source commit. No local runtime process remains. No bridge or Figma write/restart. Bridge status/read context rechecked this session; connected fileKey remains null, defaultFile matches the card.
 
 ## Three-language copy contract
 
@@ -126,3 +130,39 @@ All new assertions/fixtures now live directly in the already registered `tests/a
 Merged `origin/r3/integration` at `3ea359f79` before spec deletion, then regenerated ownership (53 modes, `--check` exit 0). The merge contains upstream deployment changes only; no deployment file was authored by this card. `node --check` on both registered entries exits 0 (E1). No local runtime verification. New CI registration and assertion RED remain PENDING; integrator will relay after the next runs.
 
 Submission correction: `0f197e893` accidentally pushed fragment deletions without their unstaged destinations after git add failed. A follow-up commit includes both destinations and generated ownership. No assertions removed from the final tree; no force push. Count the follow-up as attempt 2 for this blocker; STOP if it persists.
+
+## RELAY 2 · causal assertion RED and implementation
+
+PR head b3c4736a53279bb9557755e4540351f01c1ce126; Gates run 41052469401 / bundle:01 job 124056245071; tested merge c6e49cf79ab86b427a5ee676ef87650a8200e50a. Foundation 41052469470 / job 124051677598 succeeded. Admin: 24 new PARITY-STATES failures, 21 existing cases passed. Buyer: the final PARITY-STATES assertion lists missing signed panels and a legacy lookup paragraph (expected DIV, received P). These are causal UI assertion failures, not build/setup/registration failures. See red.log; raw artifacts 12976717841 and 12976991799.
+
+One new test expectation was corrected after tracing current route permissions: removing orders:read removes both Orders and Overview; the safe existing home is /studio with the original store query. The test now asserts that exact destination and that the denial is gone. It does not route a denied role to a second denial or change grants to clear the test.
+
+The Figma sample brand, design-demo labels, sample-order text and demonstration controls are not product facts. Real store/order values stay server-derived. Payment uncertainty repeats the real quoted total in the signed panel, on both viewports and failed-read state. CSS places this recovery before long delivery details without remounting the payment controller; all original order details and disclosures remain available. Independent visual comparison of actual CI screenshots is still required; no E4 parity claim.
+
+### Admin signed copy · zh-TW | zh-CN | en
+
+|Key|zh-TW|zh-CN|en|
+|---|---|---|---|
+|title|目前無法開啟此頁|暂时无法打开此页面|This page cannot be opened|
+|body|此連結無法開啟，或目前帳號沒有此操作權限。請返回可用的功能。|此链接无法打开，或当前账号没有操作权限。请返回可用的功能。|This link cannot be opened, or your account cannot use this feature. Return to an available feature.|
+|note|若需這項功能，請向店鋪擁有者確認權限。|如需使用此功能，请向店铺所有者确认权限。|Ask the store owner if you need access to this feature.|
+|home|返回工作台|返回工作台|Back to workspace|
+|retry|重試|重试|Try again|
+|expired|登入已過期，請重新登入後繼續。|登录已过期，请重新登录后继续。|Your session has expired. Sign in again to continue.|
+|signIn|重新登入|重新登录|Sign in again|
+
+Admin loading/error/empty titles retain the caller's existing three-locale task copy. Session recovery retains shellCopy's existing three-locale sessionExpired/signIn. Order offline retains lookupCopy.loadFailed; payment initial read failure retains paymentCopy.failed. No new visible literal outside the locale copy tables. Copy inventory of those existing contextual states is below.
+
+|Context key|zh-TW|zh-CN|en|
+|---|---|---|---|
+|admin.errorTitle|無法載入這個頁面|无法加载这个页面|We couldn’t load this page|
+|admin.errorDescription|頁面暫時無法載入，請重試或返回儀表板。|页面暂时无法加载，请重试或返回仪表盘。|The page could not be loaded. Try again, or return to the dashboard.|
+|admin.notFoundTitle|找不到這個頁面|找不到这个页面|We couldn’t find this page|
+|admin.notFoundDescription|頁面可能已移動或不存在，請返回儀表板繼續操作。|页面可能已移动或不存在，请返回仪表盘继续操作。|The page may have moved or no longer exists. Return to the dashboard to continue.|
+|admin.loading|正在載入…|正在加载…|Loading…|
+|admin.retry|重試|重试|Try again|
+|admin.home|返回儀表板|返回仪表盘|Back to dashboard|
+|lookup.loadFailed|無法載入訂單。|无法加载订单。|The order could not be loaded.|
+|lookup.invalid|請檢查訂單編號與聯絡方式的格式。|请检查订单编号与联系方式的格式。|Check the format of the order number and the contact.|
+|lookup.tooMany|嘗試次數過多，請稍後再試。|尝试次数过多，请稍后再试。|Too many attempts. Please try again later.|
+|payment.failed|暫時無法確認付款狀態，請重新整理此訂單查詢，不要重複下單。|暂时无法确认付款状态，请刷新此订单查询，不要重复下单。|Payment status could not be confirmed. Refresh this order to check again; do not place it again.|

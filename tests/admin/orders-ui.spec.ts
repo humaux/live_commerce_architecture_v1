@@ -907,8 +907,8 @@ for (const privateCursor of [false, true]) test(`MOU08 authoritative poll denial
   await page.route(`**/api/stores/${store}/orders${privateCursor ? "/search" : ""}?*`,route=>route.fulfill({status:403,contentType:"application/json",headers:{"cache-control":"private, no-store"},body:'{"code":"forbidden"}'}));
   await expect(page.getByTestId("orders-table")).toHaveCount(0,{timeout:25_000});
   await expect(page.getByTestId("order-detail")).toHaveCount(0);
-  await expect(page.getByTestId("merchant-orders")).toContainText("This account does not have permission to read orders.");
-  await expect(page.getByTestId("merchant-orders")).toContainText("Your current role can’t use this feature. Contact the store owner.");
+  await expect(page.getByTestId("merchant-orders")).toContainText("This page cannot be opened");
+  await expect(page.getByTestId("merchant-orders")).toContainText("Ask the store owner if you need access to this feature.");
   await noPII(page);
 });
 
@@ -1438,7 +1438,8 @@ function registerParityStates(signedLogin: (page: Page) => Promise<void>) {
         await expect(denied.getByRole("heading", { name: c.title, exact: true })).toBeVisible();
         await expect(page.getByText(/403\s*·/)).toHaveCount(0);
         await denied.getByRole("link", { name: c.home, exact: true }).click();
-        await expect(page).toHaveURL(new RegExp(`/${locale}/?(?:\\?store=|$)`));
+        await expect(page).toHaveURL(`${process.env.LC_BROWSER_PUBLIC_ORIGIN}/${locale}/studio?store=${process.env.LC_BROWSER_ORDER_STORE}`);
+        await expect(denied).toHaveCount(0); // Home must be available to the narrowed grants, never the denied Overview.
       });
     }
   }

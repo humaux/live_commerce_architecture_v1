@@ -1,20 +1,25 @@
-PARITY-STATES connects the owner-signed recovery panels to shared admin state boundaries and buyer cart/order/link/lookup branches. Current commit is **tests-only RED**, with no application implementation yet. Exact authority: owner card 2026-10-30; Figma iJ9lDdFIXgTlKkt5Tvrc0X page 4:8829; ux-states DELIVERY.md single current 2026-10-28 section. No Figma writes.
+Wire the owner-signed StatePanel/InlineError into real admin and buyer recovery boundaries. Admin denial no longer renders raw `403 ·`; shared loading, empty, read failure and session expiry use signed panels. Cart/order/link/lookup branches share one storefront state component. Failed cart reads no longer appear empty; failed same-order payment status reads preserve the original result/amount without replaying payment. All three locales are in packages/i18n; existing caller task copy stays contextual.
 
-Base: `df35b338b5cfde5de34bb590e2ba118efc17e4a4`. Branch: `unit/parity-states`. Target: `r3/integration`.
+Authority: owner PARITY-STATES card 2026-10-30; Figma iJ9lDdFIXgTlKkt5Tvrc0X page 4:8829; current ux-states DELIVERY 2026-10-28. Branch unit/parity-states, base r3/integration; no CheckoutFlow/API/contract/migration/backend/manifest/lockfile change. No Figma writes. The existing Stripe Continue/Cancel and polling/signal semantics remain; the signed Check status control itself only GETs the same payment. Recovery is placed ahead of long delivery details while original order facts/disclosures remain available.
 
-New coverage runs through existing browser-merchant-orders-ui and browser-storefront gates on REAL routes. Read fixtures are explicitly MOCK. All three locales and 1440×900 / 390×844; signed copy/controls, no raw `403 ·`, loading/error/empty, expired session/link, repeated read failure, original-order uncertainty, real clicks and refresh behavior. Recovery must not replay commands or payment signals. Existing parent gate assertions stay verbatim and in order. No CheckoutFlow changes.
+RED (E3 observed failure only): head b3c4736a53279bb9557755e4540351f01c1ce126, Gates run 41052469401 / bundle:01 job 124056245071, tested synthetic merge c6e49cf79ab86b427a5ee676ef87650a8200e50a. Admin: 24 new PARITY-STATES signed-panel failures; all 21 original tests passed. Buyer: the final PARITY-STATES assertion reports missing signed panels and lookup expected DIV/actual legacy P. Foundation 41052469470 / 124051677598 passed. Earlier fragment-registration failure is not counted as RED. See output/parity-states/red.log.
 
-Evidence: E1 `node --check` for both registered gate entries, exit 0; generated browser ownership + `--check`, exit 0. Original Foundation `41050630088` / job `124045491838` failed on unregistered imported fragments (NOT causal RED). Repair attempt 1 moves the assertions directly into registered runners; no checker or assertion changes. CI assertion RED PENDING; GREEN NOT_RUN; own PASS E0. See output/parity-states/DELIVERY.md and red.log. Local tests/build/server/browser/PG/provider/production and independent review NOT_RUN. No completion claim. Wait ≤10 minutes for run registration, then integrator relays a fresh session after Foundation/Gates concludes; implementation only after causal assertion RED.
+GREEN: PENDING implementation push CI. Author PASS = E0. Static E1: node --check exit 0; ownership generator + --check exit 0 (53 modes); depmap regenerated without change; check_packet.py exit 0, packet structure only. tsc unavailable locally. No local tests/build/server/browser/PG/container runs. Independent review, screenshot parity, density, provider/SANDBOX/LIVE/production acceptance NOT_RUN. No completion claim.
 
-Outside explicit write paths (integrator review required):
-- tests/admin/orders-ui.spec.ts — directly contains all added admin state tests (+ dependency header); existing assertions unchanged.
-- tests/storefront/shop-real-gate.mjs — directly contains added buyer state checks and the call (+ dependency header); existing assertions unchanged.
-- output/ci-select-backend-browser/browser-ownership.json — generated, never hand-edited.
-- output/parity-states/** — card delivery/red receipt and read-only Figma/Eagle references.
+Admin SSR harness allowlists now load the real signed components. Superseded denial-copy expectations require current signed copy; privacy and permission assertions remain. New shell recovery test now checks exact /studio?store=... and no denial after navigation: its fixture removes orders:read, so Overview is also denied. Existing storefront gate-adapter assertions/order, fixtures, thresholds and exemption lists remain unchanged.
 
-The existing session-expired UI is in WorkspaceFrame, not a standalone route. Implementation will list actual same-app paths needed for shell denial/expiry and CartProvider's swallowed failed read under owner scope preapproval. No contract/API/migration/backend/lockfile change. No module page edits on admin.
+Outside nominal write paths (same-app scope preapproval; integrator review list):
+- apps/admin/components/WorkspaceFrame.tsx — actual session-expired/route-denied boundary (no standalone expired route exists).
+- apps/admin/components/admin-state-block.css — remove double state-card border/padding.
+- apps/admin/src/shell-copy.ts — remove raw-code denial strings shared by existing tests.
+- apps/storefront/components/CartProvider.tsx — expose failed reads separately from durable write recovery; retain ordering fences.
+- apps/storefront/components/CartView.tsx, OrderLink.tsx, OrderPayment.tsx — actual cart/link/payment state branches.
+- tests/admin/orders-ui.spec.ts, tests/storefront/shop-real-gate.mjs — registered browser coverage from the RED commits; current admin copy/landing assertions track the signed panel.
+- tests/admin/code-alignment-admin-state.test.mjs, shell-render.test.ts, staff-team.spec.ts — current signed expectations and real component import harnesses.
+- output/ci-select-backend-browser/browser-ownership.json — generated after spec edits.
+- output/parity-states/** — delivery/copy/parity/RED receipts and read-only references. Raw downloaded failed CI artifacts are local only, not committed.
 
-Parity sheet: screenshot paths are under each browser artifact root; delivery PNGs are under ux-states/output/ux-states/shots. Captures are pending CI. Generic admin list/error and session branches keep truthful task copy; merchant collection/Meta-operation examples are not fabricated. No prototype/sample-order scaffolding ships.
+Parity sheet: REAL routes, all three locales at 1440×900 and 390×844. Artifacts save these paths under their browser root; independent reviewer compares against ux-states/output/ux-states/shots. No sample brand/order facts, design labels or rehearsal controls are shipped. Admin generic task states retain truthful task copy rather than fabricating collection or OAuth examples. Captures/visual/density acceptance remain PENDING implementation CI.
 
 |Frame|Artifact screenshot|DELIVERY PNG|
 |---|---|---|
@@ -35,8 +40,8 @@ Parity sheet: screenshot paths are under each browser artifact root; delivery PN
 |1429:35484|parity/1429-35484.png|buyer-unknown-desktop-read-failure.png|
 |1429:35506|parity/1429-35506.png|buyer-unknown-mobile-read-failure.png|
 
+Click ledger and required desktop/mobile/read-failure facts: output/parity-states/DELIVERY.md. Recovery click results are CI-owned; no local or author-only product PASS. BOURDIEU Q1–Q6, project contracts, Mobbin→Eagle principles, official Figma guidance and three-language copy tables are recorded there.
 
-Risk: new specs are not executed locally; fixture reachability and actual assertion RED must be read from CI before implementing. Independent visual comparison/density and complete implementation copy inventory remain PENDING.
-Rollback: revert this PR's commits; no data or schema change.
+Rollback: revert the PR's commits; no data/schema change. Humaux tools are unavailable on this endpoint; store/canvas/coord are UNKNOWN, not claimed. Integrator relays a fresh session when Foundation/Gates completes; stop CI polling within ~10 minutes and report real run IDs.
 
 🤖 Generated with Codex (dispatched by Claude Code integrator).

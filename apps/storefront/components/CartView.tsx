@@ -1,8 +1,14 @@
+// Purpose: Cart page lines and signed read, empty and access states.
+// Depends on: CartProvider, CartLines, shop-copy and state/StorefrontState.
+// Used by: localized cart route.
+// Invariants: read recovery never submits orders or replays the cart write journal.
 "use client";
 
 // The /{locale}/cart page body: lines with quantity edit/remove, subtotal, free-delivery progress and the Checkout button.
 // State from CartProvider (BFF /api/buyer/session, /api/buyer/cart -> Go /v1/buyer/session, /cart), details from
 // lib/cart-details.ts. Empty cart and "still loading the session" are distinct states (no flash of "empty").
+import { useState } from "react";
+import { StorefrontState } from "./state/StorefrontState";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import { useCart } from "./CartProvider";
@@ -11,22 +17,20 @@ import { shopCopy } from "../lib/shop-copy";
 
 export default function CartView({ locale }: { locale: Locale }) {
   const copy = shopCopy[locale];
-  const { cart, ready } = useCart();
+  const { cart, ready, readProblem, refresh } = useCart();
+  const [retried, setRetried] = useState(false);
   const empty = !cart || cart.items.length === 0;
   return (
     <div className="sf-cartpage" data-testid="cart-page">
       <CartNotice locale={locale} />
-      {empty ? (
-        <div className="sf-empty" data-testid="cart-empty">
-          <p className="sf-empty__title">{ready ? copy.cartEmpty : copy.loading}</p>
-          {ready && <p className="sf-muted">{copy.cartEmptyHint}</p>}
-          {ready && (
-            <Link className="sf-btn sf-btn--primary" href={`/${locale}/products`}>
-              {copy.continueShopping}
-            </Link>
-          )}
-        </div>
-      ) : (
+      {ready && readProblem ? (
+        <StorefrontState locale={locale} variant={readProblem} failed={retried}
+          onRead={readProblem === "offline" ? () => { setRetried(true); void refresh(); } : undefined} />
+      ) : empty ? (
+        <div data-testid="cart-empty">
+          {ready ? <StorefrontState locale={locale} variant="empty" />
+            : <p className="sf-empty__title" role="status">{copy.loading}</p>}
+        </div>      ) : (
         <div className="sf-cartpage__grid">
           <CartLines locale={locale} />
           <aside className="sf-cartpage__aside" aria-label={copy.subtotal}>

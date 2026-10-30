@@ -1,5 +1,6 @@
 // Purpose: share a context-bound cart and same-receipt recovery across the storefront shell.
 // Depends on: React, buyer-client session authority, purchase cart/journal helpers and cart-state.
+// Invariants: read failures never become successful empty carts; refresh never replays writes.
 // Used by: storefront header, cart drawer, product purchase and cart pages; never a second cart writer.
 "use client";
 
@@ -16,7 +17,7 @@
 //   "view my order" or "start a new cart" (continueShopping), neither cancels the order.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { initializeBuyerSession, readBuyerSession } from "../lib/buyer-client";
+import { BuyerClientError, initializeBuyerSession, readBuyerSession } from "../lib/buyer-client";
 import { cartWithQuantity, continueShopping, knownOrderID, readPurchase, validCart, writePurchase } from "../lib/purchase";
 import type { Cart } from "../lib/purchase";
 import { cartCount, cartProblem } from "../lib/cart-state";
@@ -24,6 +25,7 @@ import type { CartProblem } from "../lib/cart-state";
 
 type CartApi = {
   cart: Cart | null;
+  readProblem: "forbidden" | "offline" | null;
   context: string;
   count: number;
   ready: boolean;
@@ -52,6 +54,7 @@ export function useCart(): CartApi {
 /** Keeps visible cart ownership aligned with the context used by the durable purchase journal. */
 export default function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
+  const [readProblem, setReadProblem] = useState<"forbidden" | "offline" | null>(null);
   const [context, setContext] = useState("");
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -69,6 +72,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     // even when B's read fails or its write acknowledgement is lost.
     if (currentContext.current !== next) {
       currentContext.current = next;
+      setReadProblem(null);
       setCart(null);
       setOrderID(null);
       setReady(false);
@@ -92,15 +96,24 @@ export default function CartProvider({ children }: { children: ReactNode }) {
         const current = await readPurchase("cart", session.context, validCart);
         if (ticket !== observedGeneration.current || working.current || currentContext.current !== session.context) return;
         setCart(current);
+        setReadProblem(null);
         setOrderID(knownOrderID(session.context));
       } else {
         pendingObservation.current = null;
         adoptContext("");
+        setReadProblem(null);
         setCart(null);
         setOrderID(null);
       }
-    } catch {
-      /* count stays as it was */
+    } catch (reason) {
+      // Keep a prior authoritative cart and its pending read eligible. Do not confuse a failed
+      // read with an empty cart or route a read retry through durable command recovery.
+      if (ticket >= observedGeneration.current && !working.current &&
+          (pendingObservation.current === null || pendingObservation.current === ticket)) {
+        const denied = reason instanceof BuyerClientError && [401, 403, 404].includes(reason.status ?? 0);
+        setReadProblem(denied ? "forbidden" : "offline");
+        if (denied) { setCart(null); setOrderID(null); }
+      }
     } finally {
       if (pendingObservation.current === ticket) pendingObservation.current = null;
       // A failed newer session cannot settle a successful observation still awaiting its cart.
@@ -159,6 +172,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
         if (ticket !== generation.current) return false;
         if (result.kind !== "cart") throw new Error("unexpected result");
         setCart(result.value);
+        setReadProblem(null);
         setOrderID(null);
         return true;
       } catch (reason) {
@@ -198,7 +212,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     try {
       const result = await writePurchase(ctx);
       if (ticket !== generation.current) return;
-      if (result.kind === "cart") setCart(result.value);
+      if (result.kind === "cart") { setCart(result.value); setReadProblem(null); }
       setProblem(null);
     } catch (reason) {
       if (ticket === generation.current) setProblem(cartProblem(reason));
@@ -220,6 +234,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
       const next = await continueShopping(context, orderID);
       if (ticket !== generation.current) return;
       setCart(next);
+      setReadProblem(null);
       setOrderID(null);
       setProblem(null);
     } catch (reason) {
@@ -233,6 +248,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo<CartApi>(
     () => ({
       cart,
+      readProblem,
       context,
       count: cartCount(cart),
       ready,
@@ -248,7 +264,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
       startNewCart,
       dismiss: () => setProblem(null),
     }),
-    [cart, context, ready, busy, problem, orderID, drawerOpen, add, setQuantity, refresh, retry, startNewCart],
+    [cart, readProblem, context, ready, busy, problem, orderID, drawerOpen, add, setQuantity, refresh, retry, startNewCart],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

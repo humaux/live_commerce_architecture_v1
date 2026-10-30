@@ -184,7 +184,7 @@ function watch(page: Page): Net {
 const navEntry = (page: Page, id: "team" | "billing") => page.locator("[data-shell-rail]").getByTestId(`nav-${id}`);
 const roleWord = { en: "Fulfilment", "zh-TW": "履約" } as const;
 const subjectRe = { en: /invited/i, "zh-TW": /邀請/ } as const;
-const routeForbidden = { en: /403 · You do not have access to this page\./, "zh-TW": /403 · 你沒有存取此頁面的權限。/ } as const;
+const routeForbidden = { en: /This page cannot be opened/, "zh-TW": /目前無法開啟此頁/ } as const;
 
 const chains: { locale: Locale; vp: VP; first: boolean }[] = [
   { locale: "zh-TW", vp: "desktop", first: true },

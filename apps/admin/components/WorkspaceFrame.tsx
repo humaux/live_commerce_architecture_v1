@@ -1,10 +1,11 @@
 // Purpose: Owns admin workspace navigation, workspace loading and logout controls.
-// Depends on: react, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/src/shell-copy, @/src/page-title, @/src/routes, @/src/shell/api, @/lib/team-model, @/lib/model, ./BillingBanner, ./Icon, @/lib/company, ./OperatorFooter
+// Depends on: react, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/src/shell-copy, @/src/page-title, @/src/routes, @/src/shell/api, @/lib/team-model, @/lib/model, ./BillingBanner, ./Icon, @/lib/company, ./OperatorFooter, ./AdminForbidden, @live-commerce/ui/ds
 // Used by: apps/admin/components/Customers.tsx, apps/admin/components/StudioClaims.tsx, apps/admin/components/MerchantOrders.tsx, apps/admin/components/Finance.tsx, apps/admin/components/Ledger.tsx, apps/admin/components/Billing.tsx, apps/admin/components/Promotions.tsx, apps/admin/components/CustomerDetail.tsx, apps/admin/components/SettingsWizard.tsx, apps/admin/components/Attribution.tsx, apps/admin/components/Studio.tsx, apps/admin/components/ProductImport.tsx, apps/admin/components/ManualOrder.tsx, apps/admin/components/Dashboard.tsx, apps/admin/components/Ads.tsx, apps/admin/components/Team.tsx, apps/admin/components/Design.tsx, apps/admin/components/ProductList.tsx, apps/admin/components/CollectionManager.tsx, apps/admin/components/ProductEditor.tsx, apps/admin/app/[locale]/orders/cvs-print/page.tsx
 "use client";
 // Purpose: authenticated workspace navigation and store-scoped billing/Meta advice.
 // Depends on: shell API, route permissions, BillingBanner and MetaHealthBanner B1.
 // Used by: all admin workspace pages.
+// Invariants: server reads own scope; expired/denied boundaries never mount private content.
 // W0 shell only. API boundary: src/shell/api.ts; existing child page bodies are unchanged.
 import {
   useCallback,
@@ -31,6 +32,8 @@ import { BillingBanner } from "./BillingBanner";
 import { MetaHealthBanner } from "./MetaHealthBanner";
 import { Icon } from "./Icon";
 import { company } from "@/lib/company";
+import { StatePanel } from "@live-commerce/ui/ds";
+import { AdminForbidden } from "./AdminForbidden";
 import { OperatorFooter } from "./OperatorFooter";
 
 /** Frames authorized pages and mounts advisory banners for the current authenticated store. */
@@ -404,26 +407,17 @@ export function WorkspaceFrame({
               error === "expired" ? "shell-session-expired" : undefined
             }
           >
-            <h1>{error === "expired" ? c.sessionExpired : c.unavailable}</h1>
-            {error === "expired" ? (
-              <a data-testid="shell-sign-in" href={localizedPath(locale, "/")}>
-                {c.signIn}
-              </a>
-            ) : (
-              <button onClick={() => setRetry((n) => n + 1)}>{c.retry}</button>
-            )}
+            <StatePanel variant={error === "expired" ? "expired" : "offline"} headingLevel={1}
+              title={error === "expired" ? c.sessionExpired : c.unavailable}
+              action={error === "expired"
+                ? { label: c.signIn, href: localizedPath(locale, "/"), testId: "shell-sign-in" }
+                : { label: c.retry, onClick: () => setRetry(n => n + 1) }} />
           </div>
         ) : !data || data.key !== storeParam ? (
           <div className={s.status} role="status"><h1>{c.loading}</h1></div>
         ) : !allowed ? (
           <div className={s.status} data-testid="route-forbidden">
-            <h1>{c.forbidden}</h1>
-            <button
-              data-testid="route-forbidden-home"
-              onClick={() => navigate(home)}
-            >
-              {c.back}
-            </button>
+            <AdminForbidden locale={locale} href={`/${locale}${home === "/" ? "" : home}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`} headingLevel={1} />
           </div>
         ) : (
           <>

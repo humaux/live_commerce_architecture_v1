@@ -26,3 +26,22 @@ foundation	Package docs and gate map are current	2026-10-30T11:57:37.6908998Z ch
 foundation	Package docs and gate map are current	2026-10-30T11:57:37.7022978Z ##[error]Process completed with exit code 1.
 
 Correction: push0f197e893 contains only staged fragment deletions because an explicit missing-path git add failed and the shell continued. Follow-up contains the preserved cases in registered runners and generated ownership. Count as repair attempt2; no force-push. If this blocker persists on CI, STOP and report.
+
+RELAY 2 / head b3c4736a53279bb9557755e4540351f01c1ce126
+Gates run 41052469401 / bundle:01 job 124056245071: FAILURE.
+Tested synthetic merge: c6e49cf79ab86b427a5ee676ef87650a8200e50a.
+Foundation run 41052469470 / job 124051677598: SUCCESS (same PR head).
+Buyer artifact 12976991799 / gate-browser-storefront:
+  shop-real-gate.log:16 AssertionError: PARITY-STATES: signed panels and real recovery controls on buyer routes.
+  empty-zh-TW-1440 signed section[data-variant="empty"] heading absent.
+  offline/forbidden/expired/unknown signed panel assertions fail in three locales, desktop/mobile.
+  lookup-zh-TW-1440 expects InlineError wrapper DIV; actual legacy P (visible expected localized error).
+  CI reached new assertions; this is causal assertion RED, not compile/registry failure.
+Admin artifact 12976717841: downloading; not yet classified.
+No local tests/server/browser executed. Raw CI artifacts retained locally under relay2/.
+Admin artifact 12976717841 / playwright.log: 24 PARITY-STATES assertion failures; 21 original tests passed.
+  Signed forbidden heading absent at orders-ui.spec.ts:1351.
+  Shared offline panel absent at :1394 (loading assertions reached and passed).
+  Session expired panel absent at :1419.
+  Shell signed denial heading absent at :1438 (raw diagnostic in legacy render).
+All 24 failures are this card's new cases, no unrelated failure in this member.

@@ -9,6 +9,7 @@ import { posix } from "node:path";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
+import * as i18n from "../../packages/i18n/src/index.ts";
 
 const requireApp = createRequire(new URL("../../apps/admin/package.json", import.meta.url));
 const React = requireApp("react");
@@ -37,9 +38,9 @@ const ds = { ...controls, ...states };
 const sharedPath = "apps/admin/components/AdminStateBlock.tsx";
 const forbiddenPath = "apps/admin/components/AdminForbidden.tsx";
 const shared = () => load(sharedPath, (name) =>
-  name.endsWith(".css") ? css : name === "@live-commerce/ui/ds" ? ds : requireApp(name));
+  name.endsWith(".css") ? css : name === "@live-commerce/ui/ds" ? ds : name === "@live-commerce/i18n" ? i18n : requireApp(name));
 const forbidden = () => load(forbiddenPath, (name) =>
-  name.endsWith(".css") ? css : name === "@live-commerce/ui/ds" ? ds : requireApp(name));
+  name.endsWith(".css") ? css : name === "@live-commerce/ui/ds" ? ds : name === "@live-commerce/i18n" ? i18n : requireApp(name));
 const renderRoute = (path, props = {}, pathname = "/en/orders") => {
   const sharedModule = shared();
   const route = load(path, (name) => {
@@ -133,9 +134,9 @@ test("shared block renders real DS empty/error states and an accessible token-st
 
 test("AD-10: forbidden display uses exact neutral Figma copy in every locale and no role mapping", () => {
   const expected = {
-    en: ["You can’t use this feature", "Your current role can’t use this feature. Contact the store owner."],
-    "zh-CN": ["你目前无法使用这个功能", "你目前的角色无法使用此功能，请联系店铺所有者。"],
-    "zh-TW": ["你目前無法使用這個功能", "你目前的角色無法使用此功能，請聯絡店鋪擁有者。"],
+    en: ["This page cannot be opened", "This link cannot be opened, or your account cannot use this feature. Return to an available feature."],
+    "zh-CN": ["暂时无法打开此页面", "此链接无法打开，或当前账号没有操作权限。请返回可用的功能。"],
+    "zh-TW": ["目前無法開啟此頁", "此連結無法開啟，或目前帳號沒有此操作權限。請返回可用的功能。"],
   };
   const { AdminForbidden } = forbidden();
   for (const [locale, copy] of Object.entries(expected)) {
@@ -148,7 +149,7 @@ test("AD-10: forbidden display uses exact neutral Figma copy in every locale and
   }
 });
 
-test("AD-10: shared forbidden state retains each caller's localized denial and neutral guidance", () => {
+test("AD-10: shared forbidden state uses current signed neutral guidance for every caller", () => {
   const { AdminForbidden } = forbidden();
   const customers = load("apps/admin/lib/customers-copy.ts", requireApp).customersCopy;
   const orders = load("apps/admin/lib/orders-copy.ts", requireApp).ordersCopy;
@@ -157,7 +158,10 @@ test("AD-10: shared forbidden state retains each caller's localized denial and n
     for (const locale of ["en", "zh-CN", "zh-TW"]) {
       const defaultHtml = renderToStaticMarkup(React.createElement(AdminForbidden, { locale }));
       const html = renderToStaticMarkup(React.createElement(AdminForbidden, { locale, description: copy[locale].forbidden }));
-      assert.ok(html.includes(copy[locale].forbidden), `${component} ${locale} denial`);
+      assert.ok(html.includes(i18n.adminSignedStateCopy[locale].title), `${component} ${locale} signed denial`);
+      assert.ok(html.includes(i18n.adminSignedStateCopy[locale].note), `${component} ${locale} next step`);
+      assert.match(html, /data-variant="forbidden"/);
+      assert.doesNotMatch(html, /403\s*·/);
       // Match a paragraph element, never the preceding SVG <path> in the state icon.
       const body = /<p(?:\s[^>]*)?>(.*?)<\/p>/.exec(defaultHtml)?.[1];
       assert.ok(body && html.includes(body), `${component} ${locale} neutral guidance`);
