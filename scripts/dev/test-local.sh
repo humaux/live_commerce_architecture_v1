@@ -1631,6 +1631,18 @@ case "$1" in
   printf 'PASS: W3-U2 signed-session production Next/BFF clicks; MOCK business upstream, separate REAL_PG adapter gate required.\n'
     }
     ;;
+  --browser-admin-parity)
+    lc_build=admin
+    lc_fixture=none
+    lc_covers=""
+    lc_browsers=chromium
+    lc_prepare() {
+  test -f tests/admin/parity-shell-browser.mjs
+    }
+    lc_run() {
+  node --test --test-reporter=spec --experimental-strip-types tests/admin/parity-shell-browser.mjs
+    }
+    ;;
   # APPEND MODES HERE
   *) return 1 ;;
 esac
