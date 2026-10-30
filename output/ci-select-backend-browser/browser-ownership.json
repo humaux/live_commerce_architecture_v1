@@ -320,6 +320,7 @@
     "tests/foundation/buyer_payment_view_test.go": "4bf3a1de90b465d1eb51192a8a3d9f0f5acfc63fca67b10a6755bc2598f01997",
     "tests/foundation/buyer_registration_test.go": "bac86b57b2e08bfdd8ea139c37089a0b8f58694e8b379222dfab4623d8cc1197",
     "tests/foundation/buyer_retirement_test.go": "c318eee6be5afd5f5bf81887e8a4afe1cfcf4cd4543d29a3af0f5fb14d4a2d21",
+    "tests/foundation/buyer_return_requests_test.go": "64618e14be358d765b8e70219a6ae1871252768bbc2ebf3ca0de2569e723169e",
     "tests/foundation/cart_quote_test.go": "40f61d6f2764f6b33c0a8bfba2aaa6ccecb9aec7394faffe732ebc924d1a377b",
     "tests/foundation/catalog_core_concurrency_test.go": "d4a7b11c6f8a48f84bac1487033b2378554a8dfafd9f8a97305b885e5af9d5bf",
     "tests/foundation/catalog_core_extra_test.go": "cbd5f3fe4740e786e371d6c3eca4902246acc3635078be6812ec501d2480920f",
