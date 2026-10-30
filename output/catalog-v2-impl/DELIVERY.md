@@ -1,3 +1,48 @@
+# RVFIX318 implementation after causal RED · 2026-10-30
+
+Implementation attempt1, base1ce84e568cb4616c52c1e12c9ee594d82d3c7b89. Parent integrator retains coord; own child canvas only, no recursive delegation. Assigned branch/worktree only. Actual model/effort UNKNOWN (runtime does not expose exact identifiers). git pull --ff-only origin unit/catalog-v2-ui and normal merge origin/r3/integration21eaceb5c both already current. Author E0; static E1; implementation GREEN and independent E4 PENDING.
+
+## Root cause, fix and gate
+
+Current ProductList review/results rendered local product snapshots before checking the guarded-read lifecycle. The hook already removes its data on hidden/loading/401/403. Both cached branches now require ready at render time, so facts and archive controls are concealed on the first non-ready render, before cleanup effects. Signed-out/forbidden/not-found clears selection, review, outcomes and cached result rows; store change also clears result rows. Bulk/copy refuse non-ready reads. Successful revalidation can retain the authorized workflow; denied reads cannot resurrect old selection/snapshots after retry. No new abstraction/import/string/setting or shared hook changes.
+
+Integrator accepts causal RED: Gates40974219596 bundle03/job123799691930, tests-only head1ce84e568, product-editor26passed/1failed/6notrun, CATV2 authority zh-TW review:366 "hidden tab must conceal cached product facts". GitHub jobs API confirms failure. Server-busy bundle08/job123799691842 and visual-lint shard2/4/job123799691668 are infrastructure per ruling, untouched. Receipts appended to red.log. Gate = unchanged six native-browser real-click cases, zh-TW/zh-CN/en × review/results, plus PR required CI; GREEN is pending the implementation's own CI.
+
+## Required facts and click ledger
+
+|Required field/control|Desktop/mobile authorized view|Hidden/revalidation/401/403|Retry/reload and evidence|
+|---|---|---|---|
+|Product identity, price/range, available/sold-out stock|Same existing review and per-item result composition, all locales|Both snapshot branches concealed unless ready; denied caches cleared|Unchanged CATV2 six cases; CI PENDING|
+|Selection, archive count, policy, cancel/confirm|Same real select/archive/confirm flow|Cached review and confirm absent; no bulk/copy without ready|Fresh retry must show list without old selection/review; review0writes/results1write; CI PENDING|
+|Per-item archive success/refusal and return|Same server outcomes and stock/price context|Results branch absent; outcomes/resultRows cleared on denied read|No old result resurrection after retry; CI PENDING|
+|Localized denial/retry|Existing zh-TW/zh-CN/en entries|Existing alert reachable instead of being masked by cached summary|Real retry and denied reload assertions unchanged; CI PENDING|
+
+No visible strings changed. The existing full zh-TW/zh-CN/en copy table below remains applicable, including denial/retry. Native action ledgers are attached by the unchanged CI cases; no local clicks or browser execution claimed.
+
+## BOURDIEU
+
+Q1 recent task novices keep the same select/review/confirm flow; Q2 experienced sellers keep authorized review/results on successful revalidation; Q3 server read authority determines fact visibility; Q4 no class/device/locale inference; Q5 same boundary and facts on desktop/mobile and all three locales; Q6 aesthetics separate, UNKNOWN until owner. No redesign.
+
+## PROJECT UNDERSTANDING
+
+Read AGENTS.md and architecture §§0/1/2/26/27: evidence separation, existing Go/PG and TypeScript boundaries, physical-goods scope, isolated worktree and independent acceptance. catalog-inventory-v1 §g/Boundary: scoped facts, server inventory and atomic archive outcomes. Read current ProductList, customers-client guarded lifecycle and catalog read/write clients. Current card is implementation authority; source/CI are status authority. Humaux development detail7bdb220b read; rejected representative3/9 coverage0.3333, not exhaustive. Six existing cases, all fixtures/assertions/timing and gate-adapter unchanged.
+
+## MOBBIN → EAGLE
+
+No new layout/pattern/reference or imagery. Existing approved composition retained. Live Mobbin/Eagle access NOT_RUN; no new query/import needed for this lifecycle fix.
+
+## FIGMA OFFICIAL GUIDANCE
+
+No frame/token/component/prototype/layout/copy edits or design hand-in. Existing guide applications below remain; fresh guide access and copy lint NOT_RUN. No new aesthetic or product-fact claim.
+
+## Static verification and handoff
+
+TypeScript noEmit exit0 using existing worktree static config and read-only shared dependency cache; own temporary link removed. Evidence rvfix318/impl-tsc.log and impl-static.log; source SHA256 binds static evidence. Browser ownership regenerated last (53 modes, exit0; artifact unchanged); --check exit0. Whitespace and generator syntax checks exit0. No import/harness change, dependency edge or Go change, so depmap unnecessary. This batch authors only ProductList.tsx and output/catalog-v2-impl; authorized generated ownership may be unchanged. No out-of-card authored source path. Earlier PR exceptions remain in its body.
+
+Rollback point: revert this implementation commit through normal review/CI; base1ce84e568. Existing dirty red.log and untracked handoffs preserved. No owned process/server/fixture/container. NOT_RUN: local tests/servers/browsers/builds/install/PG/container; implementation CI GREEN; independent E4; SANDBOX/LIVE/deploy. Integrator completion relay is the wake-up after exact-head Gates/Foundation WAIT_RUN registration in a PR comment; stop without long polling or evidence-only push. No merge/automerge/status/force-push. P2 remains in authorized "P2 for issue" comment.
+
+---
+
 # RVFIX318 · display authorization regression · tests-only RED · 2026-10-30
 
 Author E0; syntax E1 only. New causal RED, implementation GREEN and independent E4 PENDING. Assigned UI worker in unit/catalog-v2-ui; parent retains coord ownership. Base ff056786a8382451c7446bc3767f07b4181180c1; origin/r3/integration21eaceb5c72ce6b55955607529daef31fe3163b7 fetched/merged, already current. Runtime model/effort UNKNOWN. No recursive delegation or local runtime.

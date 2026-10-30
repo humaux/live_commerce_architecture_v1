@@ -1,7 +1,7 @@
 // Purpose: Browse catalog summaries and review explicit bulk changes before submitting them.
 // Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/catalog-v2-copy, @/lib/product-editor-copy, @/lib/product-document, @/lib/catalog-v2-write, @/lib/use-product-leave-guard, @/lib/images-client, ./WorkspaceFrame, ./AdminPageHeader, ./ProductPhoto, ./orders.css, ./ProductAdmin.css, ./ProductDocument.css
 // Used by: apps/admin/app/[locale]/products/page.tsx
-// Invariants: selection replaces browse chrome; one Edit action per row; commands are fenced; archive preserves history; no inline editors.
+// Invariants: product facts require a ready guarded read; selection replaces browse chrome; one Edit action per row; commands are fenced; archive preserves history; no inline editors.
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -53,7 +53,13 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const locked = write.busy || write.message?.kind === 'uncertain';
   useProductLeaveGuard({ dirty: false, locked }, pc.leave);
   const page = read.data, rows = page?.items ?? [];
-  useEffect(() => { setSelected([]); setReview(null); setResults([]); }, [sid]);
+  useEffect(() => { setSelected([]); setReview(null); setResults([]); setResultRows([]); }, [sid]);
+  useEffect(() => {
+    // Conceal snapshots during revalidation; a denied scope must not resurrect them after retry.
+    if (read.status === 'signed-out' || read.status === 'forbidden' || read.status === 'not-found') {
+      setSelected([]); setReview(null); setResults([]); setResultRows([]);
+    }
+  }, [read.status]);
   const go = (nextStatus: string, nextQ = q, nextAfter = '') => {
     setSelected([]); setResults([]); setReview(null);
     router.push(href(locale, sid, nextQ, nextStatus, nextAfter));
@@ -66,14 +72,14 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const stock = (r: ProductSummary) => !r.inventory_tracked ? pc.mixedTracking :
     r.available <= 0 ? c.soldOut : catalogText(c.available, { n: r.available });
   async function bulk(target: ProductStatus, items = rows.filter(r => selected.includes(r.id))) {
-    if (locked || !items.length) return;
+    if (read.status !== 'ready' || locked || !items.length) return;
     if (target === 'active' && items.some(r => !r.cover_image_id)) { write.fail(pc.imageRequired); return; }
     await write.run(command('POST', 'products/bulk-status', { ids: items.map(r => r.id), status: target }), parseBulk,
       async value => { setResultRows(items); setResults(value); setSelected([]); setReview(null); await read.refresh(); }, pc.success);
   }
   async function copySelected() {
     const row = rows.find(r => selected.includes(r.id));
-    if (locked || selected.length !== 1 || !row) return;
+    if (read.status !== 'ready' || locked || selected.length !== 1 || !row) return;
     await write.run(command('POST', `products/${row.id}/copy`, { expected_version: row.version }), parseCreated,
       async value => { setResultRows([row]); setResults([{ id: value.id, status: 'draft' }]); setSelected([]); await read.refresh(); }, pc.success);
   }
@@ -84,13 +90,13 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
       {write.message && write.message.kind !== 'success' && <div role="status"><p>{write.message.text}</p>
         {write.canRetry && <button type="button" disabled={write.busy} onClick={() => void write.retry()}>{pc.retry}</button>}
       </div>}
-      {review ? <section className="cat-task-panel" aria-labelledby="archive-review-title">
+      {read.status === 'ready' && review ? <section className="cat-task-panel" aria-labelledby="archive-review-title">
         <h2 id="archive-review-title">{catalogText(c.archiveTitle, { n: review.length })}</h2>
         <p>{c.archivePolicy}</p>
         <ul>{review.map(r => <li key={r.id}><strong>{r.name}</strong><p>{price(r)} · {stock(r)}</p></li>)}</ul>
         <div className="cat-actions"><button type="button" disabled={locked} onClick={() => setReview(null)}>{c.backSelection}</button>
           <button type="button" className="product-primary" disabled={locked} onClick={() => void bulk('archived', review)}>{c.confirmArchive}</button></div>
-      </section> : results.length ? <section className="cat-task-panel" data-testid="product-batch-results">
+      </section> : read.status === 'ready' && results.length ? <section className="cat-task-panel" data-testid="product-batch-results">
         <h2>{archiveResult ? catalogText(c.result, { saved: results.filter(r => !r.error).length, failed: results.filter(r => !!r.error).length }) : pc.results}</h2>
         <ul>{results.map((r, i) => {
           const row = page?.items.find(row => row.id === r.id) ?? resultRows.find(row => row.id === r.id) ?? resultRows[i];
