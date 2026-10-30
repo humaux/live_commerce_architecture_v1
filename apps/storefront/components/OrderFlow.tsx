@@ -55,6 +55,7 @@ import {
 } from "../lib/cvs-contract";
 import {
   checkoutInput,
+  codQuoteMatches,
   refreshCodQuote,
   offeredPaymentModes,
   currentDestination,
@@ -160,7 +161,8 @@ export default function OrderFlow({
   const cod = codCopy[locale];
   const pickup = useRef<PickupHandle | null>(null);
   const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
-  const paymentChoices = option && quote ? offeredPaymentModes(option, quote.amount.total_minor) : [];
+  const paymentChoices = option && quote ? offeredPaymentModes(option, quote.amount.total_minor)
+    .filter((mode) => mode !== "cash_on_delivery" || codQuoteMatches(quote, option)) : [];
   const codFee = paymentMode === "cash_on_delivery" && option && paymentChoices.includes("cash_on_delivery") ? option.cod_surcharge_minor ?? 0 : null;
   const checkout = checkoutCopy[locale];
   const timing = paymentMode === "cash_on_delivery" ? checkout.cod : paymentMode === "pay_at_pickup" ? checkout.pickup : checkout.online;
@@ -178,7 +180,7 @@ export default function OrderFlow({
   }, [codFee, onCodFee]);
 
   useEffect(() => {
-    if (!quote || !option || !offeredPaymentModes(option, quote.amount.total_minor).includes(paymentMode)) return;
+    if (!quote || !option || !paymentChoices.includes(paymentMode)) return;
     // Remember automatic choices too: reload must compare the payable the buyer actually reviewed.
     try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, paymentMode); }
     catch { setOption(null); setNotice("failed"); }
@@ -222,12 +224,19 @@ export default function OrderFlow({
           optionRefresh ? readPurchase(`quotes/${quote.id}`, context, validQuote) : Promise.resolve(quote),
           checkoutOption(context, quote),
         ]);
-        const latest = await refreshCodQuote(context, currentQuote, found);
+        const savedMode = sessionStorage.getItem(`commerce-checkout-mode-v2:${context}:${quote.id}`);
+        const modes = offeredPaymentModes(found, currentQuote.amount.total_minor);
+        const selected = modes.includes(savedMode as PaymentMode) ? savedMode
+          : modes.includes(paymentMode) ? paymentMode : modes[0];
+        // Online review does not depend on a COD-only read. Selected/automatic
+        // COD and fee-refusal recovery still require fresh matching server due.
+        const latest = optionRefresh || selected === "cash_on_delivery"
+          ? await refreshCodQuote(context, currentQuote, found) : currentQuote;
         if (version !== live.current) return;
         if (optionRefresh || latest !== quote) onQuoteRefresh?.(latest);
         // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
-        const offered = offeredPaymentModes(found, latest.amount.total_minor);
-        const savedMode = sessionStorage.getItem(`commerce-checkout-mode-v2:${context}:${quote.id}`);
+        const offered = offeredPaymentModes(found, latest.amount.total_minor)
+          .filter((mode) => mode !== "cash_on_delivery" || codQuoteMatches(latest, found));
         if (offered?.length) setPaymentMode((current) => offered.includes(savedMode as PaymentMode) ? savedMode as PaymentMode : offered.includes(current) ? current : offered[0]);
         setOption(found);
         // Options can arrive after the buyer edits or confirms a recovered

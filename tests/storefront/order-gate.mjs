@@ -827,6 +827,7 @@ try {
   const foreignHistory=await api(foreign,"GET","orders?limit=1");assert.equal(foreignHistory.status,200);assert.deepEqual(foreignHistory.body,{items:[],next_cursor:""});
   assert.equal((await api(foreign,"GET",`orders?cursor=${encodeURIComponent(firstHistory.body.next_cursor)}`)).status,422);
   assert.equal((await api(a,"GET","orders?cursor=bad")).status,422);
+  await openCheckoutDetails(foreign);
   await foreign.getByTestId("toggle-order-history").click();await expect(foreign.getByTestId("order-history")).toContainText("No orders in this shopping session.");
   await foreign.getByTestId("toggle-order-history").click();await expect(foreign.getByTestId("address-section")).toBeVisible();
   pass("BH08 foreign buyer history is empty and foreign or malformed cursors are denied");

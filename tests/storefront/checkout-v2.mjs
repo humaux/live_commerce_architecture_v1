@@ -542,6 +542,12 @@ async function checkoutParitySuite({ newContext, origin, product, recipient, evi
         await expect(page.getByTestId("quote-reconfirm")).toBeVisible();
         // A restored destination collapses its editor on the signed review; edit through View details.
         await openCheckoutDetails(page);
+        if (mode === "card") {
+          await expect(page.locator('input[name="home_payment_mode"][value="card"]')).toBeEnabled();
+          // This unchanged MOCK pins card money while COD due no longer matches
+          // its current fee. Card review stays usable; stale COD is not offered.
+          await expect(page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]')).toHaveCount(0);
+        }
         await fill(); await page.locator(`input[name="home_payment_mode"][value="${mode}"]`).click();
         await page.getByTestId("confirm-address").click();
         await expect(page.getByTestId("checkout-submit")).toBeDisabled();

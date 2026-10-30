@@ -1,6 +1,6 @@
 # PARITY-CHECKOUT — implementation, awaiting own-head CI
 
-Current handoff: directed **FIX1** is documented in [FIX1.md](FIX1.md), with every failing Gates 41063668416 job classified from native artifacts. Previous relay sections below are historical. FIX1 has E1 static evidence only; its exact-head CI and independent review remain pending.
+Current handoff: directed **FIX2** is documented in [FIX2.md](FIX2.md), including every failed Gates 41082084811 job and the shared product root cause. Earlier FIX1/relay sections are historical. FIX2 has E1 static evidence only; its own-head CI and independent review remain pending.
 
 Status: E1 static structure/type/syntax only for implementation; author assessment E0. Causal tests-only RED confirmed by GitHub CI (E3 bounded to RED head); GREEN and independent parity acceptance pending. This is not completion.
 
@@ -126,3 +126,25 @@ Merged integration base 3ea359f79 before editing. [FIX1.md](FIX1.md) inventories
 UI PROCESS — Bourdieu: Q1 one task, Q2 optional details, Q3 server facts, Q4 existing CVS boundary, Q5 CI real-click checks, Q6 aesthetics UNKNOWN; the six verdicts above remain applicable. UI PROCESS — Project understanding: reread 架构.md §§0/1/2/26/27, buyer checkout/options contracts, actual controller/callers and native failing receipts; server money/reconfirmation/UNKNOWN remain binding. UI PROCESS — Mobbin → Eagle: no new design; reuse the signed structural references listed above, no additional imports. UI PROCESS — Figma official guidance: existing G1–G7 mapping above remains; no canvas/prototype edits or new strings. Required-fact checklist and three-language copy table above remain the acceptance scope.
 
 Static E1: current-source storefront tsc and 10 MJS/TS node syntax checks exit 0; card-required ownership generated/checked; packet check is structure only. [fix1-failure-evidence.log](fix1-failure-evidence.log) preserves exact native assertions and lint summaries with downloaded-file hashes. [source-hashes.json](source-hashes.json) binds the changed sources. No local runtime test/server. Same assertion still RED after FIX1 means BLOCKED, no third approach. Humaux store/canvas/coord unavailable this session. Exact new head and WAIT_RUN IDs go into the PR comment; integrator relays completion. Author E0; GREEN and independent acceptance pending.
+
+## FIX2 — directed failure repair (2026-10-31)
+
+[FIX2.md](FIX2.md) inventories all five failing jobs from Gates41082084811, including Chromium/WebKit BH08 history hidden by signed disclosure. The product root fix prevents a non-selected COD read from locking card re-quote review, while mismatched COD is unselectable and selected/automatic COD plus fee-refusal refresh remain strict. No fixture/amount/threshold change; all original real-click, money, acknowledgment, refresh and isolation assertions remain. The parity ledger now explicitly checks card availability and stale COD exclusion across all three locales/two viewports.
+
+### UI PROCESS — Bourdieu
+
+Q1 one review task; Q2 optional history via existing details; Q3 selected server payable and recipient facts stay together; Q4 payment availability respects server options/current COD facts; Q5 existing CI real-click and refresh checks retained, execution pending; Q6 aesthetics UNKNOWN until owner. Novice/expert remains task experience only. No new design.
+
+### UI PROCESS — Project understanding
+
+Reread architecture §§0/1/2/26/27, buyer-checkout-v1 Decisions (server revalidation/idempotent receipt), buyer-checkout-options-v1 (authenticated current offer), buyer-destination-v1 Buyer snapshot (scoped immutable destination), actual controller/helper consumers and current native failure logs. Current FIX2 card explicitly authorizes this directed attempt after the earlier stop. The desktop/mobile fact checklist and three-language copy table above remain applicable; no visible strings added.
+
+### UI PROCESS — Mobbin → Eagle
+
+No new visual pattern or assets: signed checkout disclosure/commitment structure remains, with references MVNM2RJ3M6VBW and MVOVHC45BTJIX documented above. No additional query/import/Eagle write required for this behavior repair.
+
+### UI PROCESS — Figma official guidance
+
+The freshly reread signed controls-polish handoff and its G1/G2/G3/G4/G6 mapping govern existing components/tokens/disclosures. No Figma/prototype change, new export or copy-lint claim. Required recipient/phone/destination/payable/timing/state checks remain in the three-locale/two-viewport suite.
+
+Static E1: strict current-source tsc, both changed MJS syntax checks, generated ownership plus --check and whitespace all exit0. New component import harness search found source readers/legacy inventories only; no compiling harness to update. NOT_RUN: own-head CI GREEN, independent E4, prohibited local tests/servers, production/provider execution, remaining pickup/CVS comparisons and unavailable Humaux store/canvas/coord/index. Final head/WAIT_RUN receipts go in PR comment; integrator relays completion. Same assertion RED after FIX2 is BLOCKED; no third approach.
