@@ -5,6 +5,7 @@
   "apps/storefront/components/checkout/CheckoutDeliveryOptions.tsx": "b4e578cf4d9898a7e6c94ccf4fef49a269b7ddc24cd02a10b6990a9630d6e078",
   "apps/storefront/components/checkout/CheckoutPaymentChoices.tsx": "37ca5e641bab3d3a813d64ddbf9f64b84d8ca78ab84538ac5335e6f021f9d4af",
   "apps/storefront/components/checkout/CheckoutReview.tsx": "229bcf11c632201b55e7abc858e83da8e929dac0ebcefc9229d0ced01c231590",
+  "apps/storefront/tests/order-gate-timeout.test.mjs": "1e636c4869ba9ac1947f6027e9b0205859eaba9bf0e589bb999c839af23e1215",
   "output/ci-select-backend-browser/browser-ownership.json": "770e1cd229cb505808a8778f9ccda9c6937dede042eed3623e575fdd8d0044dd",
   "packages/i18n/src/checkout.ts": "4556f296c3792d5e1733b88c64748b08a7273b8d76ed0b2ff7bc0781554dab6c",
   "tests/storefront/ads-attribution.mjs": "1d6095e58c42743c452b343ecfd83a845fbe73d060321025cbd52b44c9c1efb0",

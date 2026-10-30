@@ -40,3 +40,11 @@ Native select was read before its asynchronous options rendered; add a visibilit
 Implementation now authorized by observed causal assertion RED.
 Static fixture diagnosis: parity COD setup used one NT$12.50 unit, which correctly fails the existing whole-TWD COD eligibility rule. Use two unchanged-priced units (as existing COD gates already do), preserving all eligibility limits and amounts from real quotes. No backend/fixture/threshold change.
 Implementation static E1: current-source tsc noEmit/incremental=false exit0; all changed MJS node --check exit0; browser-ownership generation/check exit0; check_packet exit0 (structure only); diff --check exit0. No local tests/server. Final implementation CI receipt will be posted to PR #351, not an evidence-only GREEN commit.
+
+RELAY 3 (2026-10-30): implementation head 127f868bafa9ccabca06b63d342b1379ddbd8e5f.
+Foundation run 41056857665 / job 124066455551 FAILED; 499/500 Node tests passed.
+BO03 quote-less focus-scroll harness failed ReferenceError: confirmCheckoutAddress is not defined.
+Native filtered receipt: relay3-foundation-failure.log (gh run view --log-failed --job).
+This is an implementation harness regression, not a new parity assertion RED.
+Targeted fix attempt 1/2: execute real shop-helpers confirmation/disclosure source in the VM; preserve pointer assertion, add idle/disclosure order assertion. No product source, safety assertion, timing or exemption changed.
+Static node --check, ownership generation/--check and diff --check exit0; ownership output unchanged. No local test/server. New implementation CI pending push; integrator will relay the new exact-head conclusion.
