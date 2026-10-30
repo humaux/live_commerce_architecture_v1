@@ -1,0 +1,10 @@
+RVFIX2 implementation attempt1 — E1 static evidence only
+node --check tests/admin/inbox-unknown.test.ts: exit0
+node --check tests/admin/inbox-v2-ui.spec.ts: exit0
+node --check tests/admin/inbox-review-host.test.ts: exit0
+git diff --check: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0; wrote53modes
+command -v tsc: exit1; tsc unavailable / NOT_RUN
+No local tests, build, servers, browser, PG, containers or LIVE.
+Author runtime assessment E0; implementation CI PENDING.
+Source hashes: source-sha256.txt. RED: red.log and red-assertions.log.

@@ -1,0 +1,22 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2158013Z ✖ completed ACK cannot mask later queued evidence or its omission (en) (13.655121ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2158829Z ✖ completed ACK cannot mask later blocked evidence or its omission (en) (10.113003ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2159852Z ✖ completed ACK cannot mask later queued evidence or its omission (zh-TW) (8.720342ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2160788Z ✖ completed ACK cannot mask later blocked evidence or its omission (zh-TW) (6.888983ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2161737Z ✖ completed ACK cannot mask later queued evidence or its omission (zh-CN) (15.661083ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2162686Z ✖ completed ACK cannot mask later blocked evidence or its omission (zh-CN) (8.737959ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2225492Z ℹ tests 217
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2225926Z ℹ pass 211
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2226255Z ℹ fail 6
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2228172Z ✖ completed ACK cannot mask later queued evidence or its omission (en) (13.655121ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2230841Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2234593Z ✖ completed ACK cannot mask later blocked evidence or its omission (en) (10.113003ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2237532Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2241389Z ✖ completed ACK cannot mask later queued evidence or its omission (zh-TW) (8.720342ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2243810Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2247392Z ✖ completed ACK cannot mask later blocked evidence or its omission (zh-TW) (6.888983ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2249609Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2253285Z ✖ completed ACK cannot mask later queued evidence or its omission (zh-CN) (15.661083ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2255497Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2258965Z ✖ completed ACK cannot mask later blocked evidence or its omission (zh-CN) (8.737959ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2261379Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:153:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T13:17:34.2276796Z ##[error]Process completed with exit code 1.

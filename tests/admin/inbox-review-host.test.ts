@@ -243,12 +243,15 @@ const mock = (code: string) => `data:text/javascript,${encodeURIComponent(code)}
 const runtimeURL = mock(`const r=globalThis.__inboxReviewRuntime;
 export const {createContext,useContext,useState,useRef,useCallback,useEffect,jsx,Fragment}=r;export const jsxs=jsx;`);
 const adapters: Record<string, string> = {
+  // InboxThread's operations-client/model imports use the generic real-source resolver below;
+  // only transport is mocked, so response parsing and exact operation identity remain exercised.
   react: runtimeURL,
   "react/jsx-runtime": runtimeURL,
   "react-dom": mock("export const flushSync=callback=>callback(); export const createPortal=(...args)=>globalThis.__inboxReviewRuntime.createPortal(...args);"),
   "next/navigation": mock('export const useParams=()=>({locale:"en"});'),
   "@live-commerce/format": mock(
-    "export const displayTime=(_,value)=>value; export const money=(_,currency,value)=>`${currency} ${value}`;",
+    `export { instantToTaipei } from ${JSON.stringify(pathToFileURL(resolve(root, "packages/format/src/index.ts")).href)};` +
+    "export const STORE_TIME_ZONE='Asia/Taipei'; export const displayTime=(_,value)=>value; export const money=(_,currency,value)=>`${currency} ${value}`;",
   ),
   "@/lib/meta-health-hook": mock("export const useMetaHealth=()=>({data:globalThis.__inboxReviewRuntime.health});"),
   "./WorkspaceFrame": mock("export const WorkspaceFrame=({children})=>children;"),
@@ -258,7 +261,8 @@ registerHooks({
     if (adapters[specifier]) return { url: adapters[specifier], shortCircuit: true };
     if (specifier.endsWith(".css")) return { url: mock("export default {};"), shortCircuit: true };
     let file: string | undefined;
-    if (specifier.startsWith("@/")) file = resolve(root, "apps/admin", specifier.slice(2));
+    if (specifier === "@live-commerce/i18n") file = resolve(root, "packages/i18n/src/index.ts");
+    else if (specifier.startsWith("@/")) file = resolve(root, "apps/admin", specifier.slice(2));
     else if (specifier.startsWith(".") && context.parentURL?.startsWith("file:")) {
       file = resolve(dirname(fileURLToPath(context.parentURL)), specifier);
     }
@@ -356,7 +360,7 @@ function submit(host: Host) {
   host.flush();
 }
 function clickText(host: Host, label: string) {
-  const button = node(host, (n) => n.type === "button" && textOf(n) === label);
+  const button = node(host, (n) => n.type === "button" && (textOf(n) === label || n.props["aria-label"] === label));
   assert.equal(button.props.disabled, false, "actual button is enabled");
   button.props.onClick();
   host.flush();
@@ -405,7 +409,7 @@ const response = (value: unknown, status = 200) =>
       "Cache-Control": "no-store",
     },
   });
-function transport(read: () => any, send?: () => any) {
+function transport(read: () => any, send?: () => any, operation?: () => any) {
   const calls: {
     path: string;
     method: string;
@@ -424,6 +428,7 @@ function transport(read: () => any, send?: () => any) {
     if (path.endsWith("message-templates")) return response({ items: [] });
     if (method === "POST" && path.endsWith("/read")) return response({ read_seq: 1 });
     if (method === "GET" && path.includes("/messages?")) return read();
+    if (method === "GET" && path.includes("/operations/") && operation) return operation();
     if (method === "POST" && path.endsWith("/messages")) return send?.() ?? response({ send_state: "queued" });
     throw new Error(`unexpected MOCK route ${method} ${path}`);
   };

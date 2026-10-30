@@ -1,0 +1,23 @@
+{
+  "status": "success",
+  "folder": "MVQL9Z23MS9BM",
+  "total": 8,
+  "used_candidates": [
+    {
+      "id": "MVOVLMVQ5ZSCB",
+      "name": "Mobbin · Chime 收件匣與全部已讀可復原（手機）",
+      "url": "https://mobbin.com/screens/07910db5-539d-4ba0-810d-6b644cfed68e",
+      "folders": [
+        "MVQL9Z23MS9BM"
+      ]
+    },
+    {
+      "id": "MVNUXG8K4FQ39",
+      "name": "Quo · Support inbox · conversation and customer context",
+      "url": "https://mobbin.com/screens/22447f0e-e9aa-4a11-9927-cb23c9c54cc2",
+      "folders": [
+        "MVQL9Z23MS9BM"
+      ]
+    }
+  ]
+}

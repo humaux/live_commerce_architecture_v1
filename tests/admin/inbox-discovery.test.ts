@@ -67,7 +67,30 @@ test("real Playwright --list collects each original INU case and isolated INU09 
     .join("\n");
   assert.equal(result.status, 0, `actual Playwright collection failed: ${diagnostics || result.stderr}`);
   assert.deepEqual(report.errors ?? [], [], "actual collector reports no worker-fixture scope errors");
-  const discovered = rows(report.suites ?? []);
+  const allDiscovered = rows(report.suites ?? []);
+  const simplified = allDiscovered.filter((row) => row.file === "inbox-v2-ui.spec.ts");
+  assert.equal(simplified.length, 39, "all 21 existing scenarios, 12 local-ACK older-obligation and 6 distinct-rejection scenarios collect");
+  for (const locale of ["zh-TW", "zh-CN", "en"])
+    for (const state of ["queued", "blocked"])
+      assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} successful ACK then distinct ${state} rejection`).length, 1);
+  for (const locale of ["zh-TW", "zh-CN", "en"])
+    for (const state of ["queued", "blocked"])
+      for (const timing of ["with-completion", "observed-before-completion"])
+        assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} local ACK older ${state} ${timing}`).length, 1);
+  for (const locale of ["zh-TW", "zh-CN", "en"])
+    for (const state of ["queued", "blocked"])
+      assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} completed ACK before later ${state}`).length, 1);
+  for (const locale of ["zh-TW", "zh-CN", "en"])
+    for (const scenario of ["main", "states"])
+      assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} ${scenario}`).length, 1);
+  for (const locale of ["zh-TW", "zh-CN", "en"])
+    for (const visibility of ["visible", "omitted"])
+      assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} ACK before first projection ${visibility}`).length, 1);
+  for (const locale of ["zh-TW", "zh-CN", "en"])
+    assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} ACK without operation read permission`).length, 1);
+  assert.equal(new Set(allDiscovered.map((row) => `${row.project}:${row.file}:${row.title}`)).size,
+    allDiscovered.length, "new suite and legacy cases are each collected exactly once");
+  const discovered = allDiscovered.filter((row) => row.file !== "inbox-v2-ui.spec.ts");
   // Current real matrix: INU01-05/08 once, INU06/07 in TW/CN/en, plus INU09 once: 12+1.
   assert.equal(discovered.length, 13, "all existing locale scenarios plus protocol scenario are collected");
   const counts = Object.fromEntries(

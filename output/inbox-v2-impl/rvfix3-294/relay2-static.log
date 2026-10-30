@@ -1,0 +1,6 @@
+node --check tests/admin/inbox-unknown.test.ts: exit 0
+node --check tests/admin/inbox-v2-ui.spec.ts: exit 0
+git diff --check: exit 0
+Mutation blob: c64193157c7660dd226df65b890ff6272af0c742; equals 9d4d9ed1c:apps/admin/components/InboxThread.tsx.
+E1 syntax/structure only, not runtime test evidence. No local tests/build/server/browser/PG/container/LIVE.
+browser ownership: wrote /Volumes/data/live_commerce_architecture_v1/.worktrees/inbox-v2-ui/output/ci-select-backend-browser/browser-ownership.json (53 modes)

@@ -88,24 +88,25 @@
     "tests/admin/inbox-browser-support.ts": "3210d85f617b13713a6584d771536b7baa070590a8e0d55dcd610a5cd3c48363",
     "tests/admin/inbox-bundle-browser.test.ts": "8f326f6de6b33e829229348047a783357eb9dc1900a7591f895a5e2d68111fb9",
     "tests/admin/inbox-bundle-ui.spec.ts": "286f6a0ae14e2a77ea2d7442680f324057a9c8b965630e44122e5a6b82dcada6",
-    "tests/admin/inbox-copy.test.ts": "dc922bdf9612ad7f615d67c80b50b0bfcc484ade2cac387757568c8808fb04bd",
+    "tests/admin/inbox-copy.test.ts": "d0c975af91bd253cb29f8c4e762b776c46705c69cd40bdaeffaf1ef1e7e56b54",
     "tests/admin/inbox-credential-artifacts.test.ts": "165d97e50b8906d2c4c58c3b70b3f20a56bc5c022bfb08835b2df4f2406b717e",
     "tests/admin/inbox-customer-link.test.ts": "13e0f5ad72f084733bc9a845a14e6aa3a01ccb347b5bcaf64baa8459c54e249b",
-    "tests/admin/inbox-customer-ui.spec.ts": "b22cc6728f3b3e6d827f8582e6b6fbad981bff1c63a09dd6d6e2a1a60d3df296",
-    "tests/admin/inbox-discovery.test.ts": "6ae36c0182995bca078fc2b0c734eebe697ec124df5a3476c6f4194d577ce26f",
+    "tests/admin/inbox-customer-ui.spec.ts": "18c01228a77a24676a3945717ef9f938d1e548d8a375ea5b5fb0099d4d5ec5a8",
+    "tests/admin/inbox-discovery.test.ts": "6573d82c6a61fc0695db0b2c125066fab1f5631a2b24cce56bce1853234f7528",
     "tests/admin/inbox-entry.test.ts": "11cd26750c9900f82f2c2e156995b548fdf694176fa39e759f93bbe59ba62991",
     "tests/admin/inbox-evidence.test.ts": "e417a8357f92368a77a1d0da92613e7a72a0ad2a21f1f08405abe280eb1f0888",
     "tests/admin/inbox-privacy.test.ts": "604201722d1c075fb11556ac1a8e491ba8ed751afb716569682bbda345a31618",
     "tests/admin/inbox-private-evidence.ts": "4a1e3ee15b4b0443d256573a5909a126564a9f3b89edc12735d8963f15681bea",
     "tests/admin/inbox-recovery-env.test.ts": "4a14776e532799dd5146a9bfd797308ae333fa5f4d16393d4171b1fd8b799cac",
     "tests/admin/inbox-recovery-locale.test.ts": "763c837c98c39794d9c1dbd09316aa2921c5e4da267d4f63c7b7468f83fbb971",
-    "tests/admin/inbox-review-host.test.ts": "be57de4d2471bb07853dfa96e5536c7cc7802fdebb4d1eb275b9c906fdafa736",
+    "tests/admin/inbox-review-host.test.ts": "ffa1a9f6e2bc7c224b52a3ec12c14dd0b5a5600026416ecfb2d2e6a3c6b2a018",
     "tests/admin/inbox-review-recovery.test.ts": "2822ebb3e0d12a3feb564781e264d210308948cc34116ffef4f989f0dac2d528",
     "tests/admin/inbox-review.test.ts": "70c1e53e37e68aa8eeebeba18dacfd838c63eac06fe1e9e23f38a98dd1a6abdf",
     "tests/admin/inbox-shell-navigation.test.ts": "8711fd9cc66fe8bd5ca8a44ea71de7fc5e39bef69e02aca3697c9325ff31bef0",
-    "tests/admin/inbox-ui.spec.ts": "ef288e4bc908e9f5e4e178cef3f8fa89fff38b9c2749024d9e6ecfa25f369a66",
-    "tests/admin/inbox-unknown.test.ts": "c2d379d7720babe40bc6aee3cd9c807a48def7071e4ccc847b5c84f9fb214d55",
-    "tests/admin/inbox-window.test.ts": "17c58a16c202857d83f770ee6fe7a39aa597ed09ce3e044b99e8a82e4b0f9a87",
+    "tests/admin/inbox-ui.spec.ts": "3800b14707d0741e6757eb4ba1e549d8ea358352b4eddd92987107a8f0be2474",
+    "tests/admin/inbox-unknown.test.ts": "fa05dc3d1125288395f2c9f12acf1bf56852d76b24f90fd959e242c2658f3aff",
+    "tests/admin/inbox-v2-ui.spec.ts": "7ddce8558a7408aadd09810940dc48cae5ec837f8f612eec735fadf9864f6919",
+    "tests/admin/inbox-window.test.ts": "c99a6a0abf01263434288211c040763fc37f0f5e3d4167bdcd05f85705f26156",
     "tests/admin/input-delivery.spec.ts": "7e27d34fe5736e3d1ee9dcf56ec32df36f387cac4914d4eaa7f593d667a11f39",
     "tests/admin/invite-next.test.ts": "641a704b4833fa8c85cc257061cb37ea4417853ffaf5e9f068de9001ee359a57",
     "tests/admin/ledger.spec.ts": "030274df6481a8f9783f45de7e54ac965a56cf4721edca269c8359f7d58a15ca",
@@ -382,7 +383,7 @@
     "tests/foundation/http_readiness_test.go": "7d827d96b01f9c7ed2a54a2620ed462e4956a99a8e16e96651463519a3bd4b04",
     "tests/foundation/identity_independent_test.go": "719d578eaeca01cd622e0e78f379fca6a4c1d7cf7ca47b780fc88adbcf5e62c8",
     "tests/foundation/identity_integration_test.go": "df5b8a02150b3f47278b2684998bf30c5d1be98aaf5403963978bd90491993a8",
-    "tests/foundation/inbox_unknown_authority_test.go": "f1f33e61aa88fd752103622400f696a540ee543cee36123d0304306409e5d4d6",
+    "tests/foundation/inbox_unknown_authority_test.go": "ff722a09c9158884d30a88976b7e7b0d4e80f0649f555d6cca16aa704b74665f",
     "tests/foundation/inbox_unread_trigger_test.go": "66b3eeb7347490faeeb53a26e320a2464836a67b821d46753bf17162a25f3912",
     "tests/foundation/k3_lc_b1_adversarial_test.go": "d74d0fe215123fe29b22eccf0f7c1b3c6985ea2016b83ab16544260500a89e03",
     "tests/foundation/k3_lc_b4_adversarial_test.go": "26d3265cbe63884bb8a1abf5986b6ccc8b8ae9d9d118e8940ddeb09d94501418",
@@ -771,21 +772,22 @@
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
     "scripts/dev/test-local.sh": "aba15714154152771ea22cf6eb1ef7e30ea08d6e7b7a4a991c14fc2c8c8e6698",
-    "playwright.config.ts": "c2cb305786453222fb6e23cdd8df131b2959e7f0563c8701c2328ad1de661ce6",
+    "playwright.config.ts": "19b2b460a9dfb968714c1237e99eac91c315996f975e1f3d32c8acc9eb2d53c2",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
     "package.json": "dfa3b54b5ffe4382bd9ec06971526e0e82c33e4303e916d50a85c121196bfca0",
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "8aebfb5c6eb32438509b2085bdf846eca549f58d553d8e4c3146286b46e63205"
+    "scripts/dev/test-node.sh": "40d903e0f35e74392999297f24ed59b73c3e82c127268c578e098c8f4981ae2e"
   },
   "modes": {
     "--browser-inbox": {
       "specs": [
         "tests/admin/inbox-bundle-ui.spec.ts",
         "tests/admin/inbox-customer-ui.spec.ts",
-        "tests/admin/inbox-ui.spec.ts"
+        "tests/admin/inbox-ui.spec.ts",
+        "tests/admin/inbox-v2-ui.spec.ts"
       ],
       "inputs": [
         "tests/admin/fixtures/native-device.ts",
@@ -793,7 +795,8 @@
         "tests/admin/inbox-bundle-ui.spec.ts",
         "tests/admin/inbox-customer-ui.spec.ts",
         "tests/admin/inbox-private-evidence.ts",
-        "tests/admin/inbox-ui.spec.ts"
+        "tests/admin/inbox-ui.spec.ts",
+        "tests/admin/inbox-v2-ui.spec.ts"
       ],
       "apps": [
         "admin"
@@ -812,7 +815,8 @@
         "tests/foundation/browser_inbox_ui_test.go:server/import apps/admin",
         "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-bundle-ui.spec.ts",
         "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-customer-ui.spec.ts",
-        "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-ui.spec.ts"
+        "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-ui.spec.ts",
+        "tests/foundation/browser_inbox_ui_test.go:suite=inbox -> tests/admin/inbox-v2-ui.spec.ts"
       ]
     },
     "--browser-meta-health-ui": {

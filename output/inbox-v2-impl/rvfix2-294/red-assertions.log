@@ -1,0 +1,26 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2356419Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, en) (100.510508ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2358418Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, en) (11.207611ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2361784Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, zh-TW) (6.071427ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2363620Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, zh-TW) (10.027213ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2367259Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, zh-CN) (6.224176ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2368949Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, zh-CN) (5.461169ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2452497Z ℹ pass 191
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2452881Z ℹ fail 6
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2457365Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, en) (100.510508ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2458896Z   AssertionError [ERR_ASSERTION]: a newer buyer message cannot reopen an unresolved acknowledged send
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2462150Z       at assertLocked (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:68:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2472990Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, en) (11.207611ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2474547Z   AssertionError [ERR_ASSERTION]: a newer buyer message cannot reopen an unresolved acknowledged send
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2477407Z       at assertLocked (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:68:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2488472Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, zh-TW) (6.071427ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2489954Z   AssertionError [ERR_ASSERTION]: a newer buyer message cannot reopen an unresolved acknowledged send
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2493064Z       at assertLocked (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:68:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2503718Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, zh-TW) (10.027213ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2505335Z   AssertionError [ERR_ASSERTION]: a newer buyer message cannot reopen an unresolved acknowledged send
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2508279Z       at assertLocked (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:68:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2518658Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (visible, zh-CN) (6.224176ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2519576Z   AssertionError [ERR_ASSERTION]: a newer buyer message cannot reopen an unresolved acknowledged send
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2521931Z       at assertLocked (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:68:16)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2529984Z ✖ A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (omitted, zh-CN) (5.461169ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2530829Z   AssertionError [ERR_ASSERTION]: a newer buyer message cannot reopen an unresolved acknowledged send
+foundation	Node unit suites (storefront, i18n)	2026-10-29T08:59:54.2532587Z       at assertLocked (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-unknown.test.ts:68:16)

@@ -1,0 +1,37 @@
+RVFIX3 relay 3 — VALID causal RED, verified 2026-10-29
+Head ea0b7f9f0a7a8ce78f2f4e9359eebd89d03cf2f8; pull_request Foundation run 40883939766 / job 123482504315 FAILURE.
+Checkout 19cc819b: Merge ea0b7f9f0a7a8ce78f2f4e9359eebd89d03cf2f8 into d0e7331525fec046fbe9361906fa66367ae583c6.
+Command: gh run view 40883939766 --log-failed --job 123482504315.
+Six NEW completed-ACK versus later queued/blocked cases (en, zh-TW, zh-CN) fail at inbox-unknown.test.ts:158:16.
+Assertion: completed ACK cannot reopen the composer over a later unresolved outbound; actual false, expected true.
+The header Refresh is reachable; read 4 has committed the later row. This is the intended business assertion, unlike the invalidated historical node lookup failures.
+Inbox suite: 217 tests, 211 passed, 6 failed; Node unit step exit 1. E3 causal RED only.
+Filtered original assertion lines: relay3-foundation-failure.log. No browser RED claim; separate Gates run 40883939962 is not implementation acceptance.
+Restore the isolated ACK handoff implementation, retaining every corrected regression. Implementation-head GREEN and independent review PENDING. Author acceptance E0.
+
+CORRECTION — RVFIX3 relay 2, 2026-10-29
+Current stage: corrected regression + deliberate RED mutation; new CI receipt PENDING.
+Foundation 40881614504 / job 123474306476 at implementation head ad3d2b606ec24093b83cbd682e72d6aa2a582b93 failed six cases.
+Re-read Foundation 40879608359 / job 123467284173 at tests-only head 9d4d9ed1c01a9e7ff01f15455ed78af95b1a24e8: same failure.
+Both logs stop at inbox-unknown.test.ts:153, node() assertion "actual component VNode found".
+The successful ACK has unfolded the composer and removed inbox-send-status. Neither run reached the later-message refresh or safety assertions.
+The earlier description as causal product RED was incorrect and is RETRACTED. These are test-action reachability failures, not evidence of the reviewed lock defect.
+Correction: use the existing enabled header Refresh in Node and native browser cases; preserve every lock/result/one-POST/captured-handler assertion.
+RED mutation: restore InboxThread.tsx exactly from 9d4d9ed1c01a9e7ff01f15455ed78af95b1a24e8 (only the ad3d2b606 ACK-handoff implementation is reverted).
+Expected RED: after read 4 commits later queued/blocked evidence, assert form.hidden === true fails with false in each locale. No causal RED claim until CI proves this.
+After verified RED, restore the implementation from ad3d2b606ec24093b83cbd682e72d6aa2a582b93 in ONE push, retaining the corrected actions. GREEN must be that implementation head's own CI.
+No tests weakened, no gate/threshold/fixture/permission change; no deployment. New run/job/SHA receipt goes in the PR comment and local WAIT-RUN handoff after push.
+
+--- INVALIDATED historical receipt retained for audit (not current causal evidence) ---
+RVFIX3 #294 — causal RED verified 2026-10-29
+Tests-only head: 9d4d9ed1c01a9e7ff01f15455ed78af95b1a24e8
+Foundation run 40879608359 / job 123467284173: FAILURE, pull_request, exact head verified via gh run view JSON.
+Command: gh run view 40879608359 --log-failed --job 123467284173 (filtered original output in red-assertions.log).
+Six new completed-ACK versus later queued/blocked assertions fail across en, zh-TW, zh-CN.
+Each fails at tests/admin/inbox-unknown.test.ts:153:9 (expected folded form; actual composer is open and no result node exists).
+Suite: 217 tests, 211 passed, 6 failed; process exit 1. Assertion failure, not compile/import/fixture failure.
+E3 causal RED only. Gates 40879608745 is a separate historical tests-only run; no browser RED claim.
+Author runtime assessment E0. Implementation follows this receipt; GREEN and independent acceptance PENDING.
+No local test/server/browser/PG/container/LIVE. Humaux/coord store/canvas/index/link NOT_RUN (interfaces unavailable).
+
+POST-PUSH corrected RED: head ea0b7f9f0a7a8ce78f2f4e9359eebd89d03cf2f8; Foundation WAIT_RUN 40883939766 / job 123482504315 IN_PROGRESS; Gates WAIT_RUN 40883939962 PENDING. Both exact-head native workflow IDs verified. Actual causal RED remains PENDING; no evidence-only push. Integrator supplies completion relay.

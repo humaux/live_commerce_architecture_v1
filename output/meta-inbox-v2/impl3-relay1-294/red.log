@@ -1,0 +1,22 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4365085Z ✖ A9 display omission cannot reconcile observed queued in en (48.477473ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4366101Z ✖ A9 display omission cannot reconcile observed blocked in en (48.510321ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4366856Z ✖ A9 display omission cannot reconcile observed queued in zh-TW (60.932896ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4367525Z ✖ A9 display omission cannot reconcile observed blocked in zh-TW (78.319992ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4368233Z ✖ A9 display omission cannot reconcile observed queued in zh-CN (64.567997ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4369089Z ✖ A9 display omission cannot reconcile observed blocked in zh-CN (64.072302ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4388664Z ℹ tests 259
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4389100Z ℹ pass 253
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4389304Z ℹ fail 6
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4391437Z ✖ A9 display omission cannot reconcile observed queued in en (48.477473ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4392133Z   AssertionError [ERR_ASSERTION]: a different sent row cannot reconcile the observed operation
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4398868Z ✖ A9 display omission cannot reconcile observed blocked in en (48.510321ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4399559Z   AssertionError [ERR_ASSERTION]: a different sent row cannot reconcile the observed operation
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4407240Z ✖ A9 display omission cannot reconcile observed queued in zh-TW (60.932896ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4408454Z   AssertionError [ERR_ASSERTION]: a different sent row cannot reconcile the observed operation
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4416495Z ✖ A9 display omission cannot reconcile observed blocked in zh-TW (78.319992ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4417371Z   AssertionError [ERR_ASSERTION]: a different sent row cannot reconcile the observed operation
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4423893Z ✖ A9 display omission cannot reconcile observed queued in zh-CN (64.567997ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4424583Z   AssertionError [ERR_ASSERTION]: a different sent row cannot reconcile the observed operation
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4431108Z ✖ A9 display omission cannot reconcile observed blocked in zh-CN (64.072302ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4431796Z   AssertionError [ERR_ASSERTION]: a different sent row cannot reconcile the observed operation
+foundation	Node unit suites (storefront, i18n)	2026-10-30T00:24:09.4450189Z ##[error]Process completed with exit code 1.

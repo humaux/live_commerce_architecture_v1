@@ -1,7 +1,7 @@
 // Purpose: own private inbox list/filter/cursor selection with no buyer data in navigation or storage.
 // Depends on: React/react-dom, @live-commerce/format, inbox-client/types, BundleRecovery, WorkspaceFrame and privacy fences.
 // Used by: /[locale]/messages; threads and BuyerPanel are cleared on hide or session changes.
-// Invariants: successful reads remove unread-filter rows without clearing the selected thread.
+// Invariants: reads remove unread-filter rows without clearing the thread; selected filter chips are not actions.
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -33,6 +33,7 @@ export function Inbox({
 }) {
   const c = inboxCopy(locale);
   const [filter, setFilter] = useState("all");
+  const [counts, setCounts] = useState({ all: 0, assigned: 0 });
   const [page, setPage] = useState<ConversationList | null>(null);
   const [selected, setSelected] = useState<ConversationItem | null>(null);
   const [error, setError] = useState(initialError);
@@ -41,6 +42,7 @@ export function Inbox({
   const loading = useRef(false);
   const clear = useCallback(() => {
     setPage(null);
+    setCounts({ all: 0, assigned: 0 });
     setSelected(null);
     setError(null);
     setBusy(false);
@@ -62,7 +64,7 @@ export function Inbox({
       setBusy(true);
       setError(null);
       const ticket = privacy.fence.begin();
-      const query = new URLSearchParams({ filter, limit: "50" });
+      const query = new URLSearchParams({ filter: filter === "assigned" ? "all" : filter, limit: "50" });
       if (cursor) query.set("cursor", cursor);
       try {
         const data = await inboxRead<ConversationList>(
@@ -71,6 +73,12 @@ export function Inbox({
           ticket.signal,
         );
         if (!privacy.fence.current(ticket)) return;
+        if (filter === "all" || filter === "assigned") {
+          setCounts((old) => ({
+            all: cursor ? old.all + data.items.length : data.items.length,
+            assigned: (cursor ? old.assigned : 0) + data.items.filter(item => item.assignee !== null).length,
+          }));
+        }
         setPage((old) =>
           cursor && old
             ? {
@@ -131,6 +139,14 @@ export function Inbox({
     privacy.fence,
     privacy.blocked,
   ]);
+  const changeFilter = (value: string) => {
+    if (value === filter) return;
+    privacy.fence.invalidate(true);
+    setPage(null); setSelected(null); setError(null); setBusy(false);
+    loading.current = false;
+    setFilter(value);
+  };
+  const rows = page?.items.filter(item => filter !== "assigned" || item.assignee !== null);
   const status = error ?? (privacy.blocked.current ? "unauthorized" : null);
   return (
     <WorkspaceFrame
@@ -143,17 +159,9 @@ export function Inbox({
         return true;
       }}
     >
-      <main className={styles.page} data-testid="inbox-page">
+      <main className={styles.page} data-testid="inbox-page" data-selected={!!selected}>
         <header className={styles.heading}>
-          <div>
-            <h1>{c.title}</h1>
-            <p>{c.subtitle}</p>
-          </div>
-          {page && (
-            <span className={styles.badge}>
-              {c.unread}: {page.unread_total}
-            </span>
-          )}
+          <h1>{c.simpleTitle}</h1>
         </header>
         {!store || !allowed ? (
           <p role="alert" className={styles.notice}>
@@ -162,40 +170,31 @@ export function Inbox({
         ) : (
           <>
             <div className={styles.toolbar}>
-              <label>
-                {c.title}{" "}
-                <select
-                  data-testid="inbox-filter"
-                  value={filter}
-                  disabled={!privacy.visible || privacy.blocked.current}
-                  onChange={(event) => {
-                    if (event.target.value === filter) return;
-                    privacy.fence.invalidate(true);
-                    clear();
-                    setFilter(event.target.value);
-                  }}
-                >
-                  {[
-                    "all",
-                    "unread",
-                    "unreplied",
-                    "messenger",
-                    "instagram",
-                    "live_comment",
-                  ].map((value) => (
-                    <option key={value} value={value}>
-                      {c[value as "all"]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                className={styles.button}
-                disabled={busy || !privacy.visible || privacy.blocked.current}
-                onClick={() => setReload((value) => value + 1)}
-              >
-                {c.refresh}
+              {([
+                ["all", c.simpleAll, counts.all],
+                ["unread", c.unread, page?.unread_total ?? 0],
+                ["assigned", c.assignedInStore, counts.assigned],
+              ] as const).map(([value, label, count]) => (
+                <button key={value} className={styles.chip} data-testid={`inbox-filter-${value}`}
+                  aria-pressed={filter === value} disabled={filter === value || !privacy.visible || privacy.blocked.current}
+                  onClick={() => changeFilter(value)}>{`${label} ${count}`}</button>
+              ))}
+              <button className={styles.chip} data-testid="inbox-filter-instagram" aria-pressed={filter === "instagram"}
+                disabled={filter === "instagram" || !privacy.visible || privacy.blocked.current} onClick={() => changeFilter("instagram")}>{c.instagram}</button>
+              <button className={styles.iconButton} aria-label={c.refresh}
+                disabled={busy || !privacy.visible || privacy.blocked.current} onClick={() => setReload(value => value + 1)}>
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1"/></svg>
               </button>
+              <details className={styles.extraFilters}>
+                <summary data-testid="inbox-more-filters" aria-label={c.more}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></summary>
+                <label>{c.title}
+                  <select data-testid="inbox-filter" value={filter === "assigned" ? "all" : filter}
+                    disabled={!privacy.visible || privacy.blocked.current} onChange={event => changeFilter(event.target.value)}>
+                    {["all", "unread", "unreplied", "messenger", "instagram", "live_comment"].map(value =>
+                      <option key={value} value={value}>{c[value as "all"]}</option>)}
+                  </select>
+                </label>
+              </details>
             </div>
             {status && (
               <p role="alert" className={`${styles.notice} ${styles.error}`}>
@@ -215,6 +214,7 @@ export function Inbox({
             ) : (
               <div
                 className={`${styles.layout} ${selected ? styles.selected : ""}`}
+                data-bundle={!!selected && !selected.conversation_id}
               >
                 <ul
                   className={styles.list}
@@ -222,12 +222,12 @@ export function Inbox({
                   aria-label={c.title}
                   aria-busy={busy}
                 >
-                  {!page?.items.length && (
+                  {!rows?.length && (
                     <li className={styles.empty}>
                       {busy ? c.loading : c.empty}
                     </li>
                   )}
-                  {page?.items.map((item) => (
+                  {rows?.map((item) => (
                     <li key={item.conversation_id ?? item.bundle_id}>
                       <button
                         className={styles.row}
@@ -242,16 +242,7 @@ export function Inbox({
                           {item.display_name ??
                             (item.conversation_id ? c.unnamed : c.bundle)}
                         </strong>
-                        <span className={styles.meta}>
-                          {item.platform} · {displayTime(locale, item.last_at)}
-                          {item.unread && (
-                            <span className={styles.badge}>{c.unread}</span>
-                          )}
-                          {item.unreplied && (
-                            <span className={styles.badge}>{c.pending}</span>
-                          )}
-                          {item.link_pending_manual && <span>{c.manual}</span>}
-                        </span>
+                        <span className={styles.meta}>{`${c[item.platform as "instagram"] ?? c.live_comment} · ${displayTime(locale, item.last_at)} · ${item.unread ? c.unread : c.read}`}</span>
                       </button>
                     </li>
                   ))}
@@ -271,10 +262,11 @@ export function Inbox({
                   {selected ? (
                     <>
                       <button
-                        className={`${styles.button} ${styles.back}`}
+                        data-testid="inbox-back" aria-label={c.back}
+                        className={`${styles.iconButton} ${styles.back}`}
                         onClick={() => setSelected(null)}
                       >
-                        {c.back}
+                        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m14 6-6 6 6 6"/></svg>
                       </button>
                       {selected.conversation_id ? (
                         <InboxThread
@@ -282,6 +274,7 @@ export function Inbox({
                           store={store}
                           conversation={selected}
                           locale={locale}
+                          customerPanel={<BuyerPanel store={store} conversationId={selected.conversation_id} compact onUnauthorized={privacy.expire} />}
                           onUnauthorized={privacy.expire}
                           onRead={() =>
                             setPage((old) =>
@@ -329,19 +322,10 @@ export function Inbox({
                     <p className={styles.empty}>{c.select}</p>
                   )}
                 </section>
-                {selected && (
-                  <BuyerPanel
-                    key={`${store.id}:${selected.conversation_id ?? selected.bundle_id}`}
-                    store={store}
-                    conversationId={selected.conversation_id ?? undefined}
-                    bundleId={
-                      selected.conversation_id
-                        ? undefined
-                        : (selected.bundle_id ?? undefined)
-                    }
-                    onUnauthorized={privacy.expire}
-                  />
-                )}
+                {selected && !selected.conversation_id && <BuyerPanel
+                  key={`${store.id}:${selected.bundle_id}`} store={store} bundleId={selected.bundle_id ?? undefined}
+                  onUnauthorized={privacy.expire} />}
+
               </div>
             )}
           </>

@@ -1,6 +1,7 @@
 // Purpose: frozen A8-A14 and published-template browser DTOs, including nullable bundle-only rows.
 // Depends on: live-console-v1 §§3/4/11 and internal/inbox + msgtemplates projections; no I/O.
 // Used by: Inbox, InboxThread and standalone BuyerPanel; absent fields remain unknown.
+// Invariants: optional A9 outbound IDs correlate only exact ACKs; absence grants no delivery authority.
 
 /** Ledger projection; unknown delivery must not initiate a new send. */
 export type SendState = "queued" | "sent" | "failed" | "blocked" | "unknown";
@@ -37,6 +38,7 @@ export type Message = {
   send_state?: SendState | null;
   send_code?: string | null;
   principal_id?: string | null;
+  outbound_id?: string;
   unreadable?: boolean;
 };
 /** A9 current server window and takeover generation. */

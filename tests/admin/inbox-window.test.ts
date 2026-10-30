@@ -88,7 +88,7 @@ for (const remaining of [safetyMargin + 1, safetyMargin, 60_000, 0]) {
       assert.ok(notice, "closing state has a distinct visible explanation");
       assert.match(textOf(notice), /clos|five minute|5 minute/i);
     } else assert.equal(!!closingNotice(host), false, "hard closure and open state differ from safety-margin closing");
-    if (remaining === 0) assert.ok(textOf(host.output).includes("The reply window is closed."));
+    if (remaining === 0) assert.ok(textOf(host.output).includes("The reply window has ended."));
   });
 }
 
@@ -137,7 +137,7 @@ test("window deadline timer closes controls at cutoff and hard end without waiti
   time.run(hardTimer);
   host.flush();
   assert.equal(!!closingNotice(host), false);
-  assert.ok(textOf(host.output).includes("The reply window is closed."));
+  assert.ok(textOf(host.output).includes("The reply window has ended."));
 });
 
 const instructions = {

@@ -1,0 +1,8 @@
+node --check tests/admin/inbox-unknown.test.ts => exit 0
+
+node --check tests/admin/inbox-v2-ui.spec.ts => exit 0
+
+git diff --check => exit 0
+
+tsc: NOT_RUN (not installed); all local tests/servers/browser/PG/LIVE: NOT_RUN
+Ownership generation: exit0,53modes; E1 only.

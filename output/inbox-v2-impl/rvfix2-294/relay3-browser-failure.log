@@ -1,0 +1,65 @@
+Exact head: 3713daeb014cfbd50f61fa1f1c81b8da90fc4c57
+Gates RUN 40849465782 / bundle:06 JOB 123369250921 FAILURE
+Synthetic merge: 341844284921608e868e18be889ee834ae486649
+Artifact: gate-browser-inbox id 12888084373
+Source: output/inbox-v2-impl/rvfix2-294/relay3-artifacts/playwright/inbox-ui/20261029T100751.892158329/playwright.log
+22 passed / 9 failed; six expected operationReads=3 actual=0; three expected sent actual queued.
+  1) tests/admin/inbox-v2-ui.spec.ts:277:5 › INV2 zh-TW ACK before first projection visible ────────
+    Error: expect(received).toBe(expected) // Object.is equality
+    Expected: 3
+    Received: 0
+    > 301 |       expect(state.operationReads).toBe(3);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:301:36
+  2) tests/admin/inbox-v2-ui.spec.ts:277:5 › INV2 zh-TW ACK before first projection omitted ────────
+    Error: expect(received).toBe(expected) // Object.is equality
+    Expected: 3
+    Received: 0
+    > 301 |       expect(state.operationReads).toBe(3);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:301:36
+  3) tests/admin/inbox-v2-ui.spec.ts:313:3 › INV2 zh-TW states ─────────────────────────────────────
+    Error: expect(locator).toHaveText(expected) failed
+    Expected: "已送出，未代表已讀。"
+    Received: "傳送中；尚未確認送達，勿重送。"
+    Timeout:  10000ms
+    > 351 |     await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.sent);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:351:60
+  4) tests/admin/inbox-v2-ui.spec.ts:277:5 › INV2 zh-CN ACK before first projection visible ────────
+    Error: expect(received).toBe(expected) // Object.is equality
+    Expected: 3
+    Received: 0
+    > 301 |       expect(state.operationReads).toBe(3);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:301:36
+  5) tests/admin/inbox-v2-ui.spec.ts:277:5 › INV2 zh-CN ACK before first projection omitted ────────
+    Error: expect(received).toBe(expected) // Object.is equality
+    Expected: 3
+    Received: 0
+    > 301 |       expect(state.operationReads).toBe(3);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:301:36
+  6) tests/admin/inbox-v2-ui.spec.ts:313:3 › INV2 zh-CN states ─────────────────────────────────────
+    Error: expect(locator).toHaveText(expected) failed
+    Expected: "已发送，不代表已读。"
+    Received: "发送中；尚未确认送达，不要重发。"
+    Timeout:  10000ms
+    > 351 |     await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.sent);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:351:60
+  7) tests/admin/inbox-v2-ui.spec.ts:277:5 › INV2 en ACK before first projection visible ───────────
+    Error: expect(received).toBe(expected) // Object.is equality
+    Expected: 3
+    Received: 0
+    > 301 |       expect(state.operationReads).toBe(3);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:301:36
+  8) tests/admin/inbox-v2-ui.spec.ts:277:5 › INV2 en ACK before first projection omitted ───────────
+    Error: expect(received).toBe(expected) // Object.is equality
+    Expected: 3
+    Received: 0
+    > 301 |       expect(state.operationReads).toBe(3);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:301:36
+  9) tests/admin/inbox-v2-ui.spec.ts:313:3 › INV2 en states ────────────────────────────────────────
+    Error: expect(locator).toHaveText(expected) failed
+    Expected: "Sent does not mean read."
+    Received: "Sending; delivery unconfirmed. Do not resend."
+    Timeout:  10000ms
+    > 351 |     await expect(page.getByTestId("inbox-delivery-state")).toHaveText(copy.sent);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/inbox-v2-ui.spec.ts:351:60
+  9 failed
+  22 passed (1.8m)

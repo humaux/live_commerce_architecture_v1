@@ -102,7 +102,8 @@ type ConversationList struct {
 }
 
 // MessageItem is one A9 row. Inbound rows carry direction "in" and a seq; outbound rows (the merchant's own sends, LC-B4) carry
-// direction "out", kind, send_state (§4.4: queued | sent | failed | blocked | unknown), principal_id and no seq. Unreadable is set only
+// direction "out", kind, send_state (§4.4: queued | sent | failed | blocked | unknown), principal_id, outbound_id (the same id A4/A5/A12
+// return, so a client can match its own ACK to exactly one row) and no seq. Unreadable is set only
 // when the frozen-classifier replay or the keyring open fails (never dropped silently).
 type MessageItem struct {
 	Direction   string           `json:"direction"`
@@ -114,6 +115,7 @@ type MessageItem struct {
 	SendState   *string          `json:"send_state,omitempty"`
 	SendCode    *string          `json:"send_code,omitempty"`
 	PrincipalID *string          `json:"principal_id,omitempty"`
+	OutboundID  *string          `json:"outbound_id,omitempty"`
 	Unreadable  *bool            `json:"unreadable,omitempty"`
 }
 

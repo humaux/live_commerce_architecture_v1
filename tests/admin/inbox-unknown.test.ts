@@ -10,14 +10,14 @@ import {
 } from "./inbox-review-host.test.ts";
 const { InboxThread } = await import("../../apps/admin/components/InboxThread.tsx");
 const warning: Record<string, string> = {
-  en: "Delivery is uncertain. Check Messenger before taking another action; this reply is not automatically resent.",
-  "zh-TW": "送達狀態不確定。請先到 Messenger 確認；系統不會自動重送。",
-  "zh-CN": "送达状态不确定。请先到 Messenger 确认；系统不会自动重发。",
+  en: "Delivery unconfirmed; check status without resending.",
+  "zh-TW": "送達待確認；只查詢，不重送。",
+  "zh-CN": "送达情况待确认；只查询，不重发。",
 };
 const projection = (state: string) => ({
   ...thread,
   items: [...thread.items, {
-    direction: "out", at: "2030-01-01T00:00:01Z", text: `MOCK_OUTBOUND_${state}`,
+    direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: `MOCK_OUTBOUND_${state}`,
     attachments: null, send_state: state, send_code: state === "unknown" ? "timeout" : null,
   }],
 });
@@ -30,12 +30,80 @@ const idle = (host: Host) => host.output?.props["aria-busy"] === false;
 const sendControl = (host: Host) => node(host, (n) => n.props["data-testid"] === "reply-send");
 const sends = (calls: ReturnType<typeof transport>) =>
   calls.filter((call) => call.method === "POST" && call.path.endsWith("/messages"));
+const ackOperation = "70000000-0000-4000-8000-000000000073";
+function operationResponse(state: string, overrides: Record<string, unknown> = {}, status = 200) {
+  return new Response(JSON.stringify({ operation_id: ackOperation, provider: "facebook", action: "meta.dm_send",
+    purpose: "service", state, reason_code: "", attempts: 1, created_at: "2030-01-01T00:00:01Z",
+    updated_at: "2030-01-01T00:00:05Z", object: { kind: "conversation", id: conversation.conversation_id },
+    actions: Object.fromEntries(["query", "cancel", "retry"].map(key => [key, { available: false, reason: "operation_closed" }])),
+    events: [], ...overrides,
+  }), { status, headers: { "Content-Type": "application/json", "Cache-Control": "private, no-store" } });
+}
 async function loaded(host: Host, state: string) {
   await host.waitFor(() => idle(host) && textOf(host.output).includes(`MOCK_OUTBOUND_${state}`),
     "A9 projection and A10 authority read committed");
 }
 
 for (const locale of Object.keys(warning)) {
+  for (const omitted of [false, true]) {
+    test(`A12 queued ACK cannot adopt an unrelated sent result on its first A9 read (${omitted ? "omitted" : "visible"}, ${locale})`, async (t) => {
+      const env = environment(t);
+      let reads = 0;
+      let operationState = "READY";
+      const own = { direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: "MOCK_ACK_DRAFT",
+        attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071", send_state: "queued" };
+      const concurrent = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:03Z", text: "MOCK_OTHER_STAFF_SENT",
+        principal_id: "70000000-0000-4000-8000-000000000072", send_state: "sent" };
+      const page = { ...thread, has_unknown_outbound: false, items: [
+        ...thread.items, ...(omitted ? [] : [own]), concurrent,
+        { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER_AFTER_ACK" },
+      ] };
+      const calls = transport(() => response(++reads === 1 ? thread : page), () => response({
+        operation_id: "70000000-0000-4000-8000-000000000073",
+        outbound_id: "70000000-0000-4000-8000-000000000074", send_state: "queued", takeover_generation: 8,
+      }), () => operationResponse(operationState));
+      const host = mount(env, locale);
+      await host.waitFor(() => reads === 1 && idle(host), "initial A9/A10 authority committed before A12");
+      change(host, "reply-text", own.text);
+      assert.equal(sendControl(host).props.disabled, false);
+      const captured = node(host, n => n.type === "form").props.onSubmit;
+      submit(host);
+      await host.waitFor(() => reads === 2 && idle(host) && textOf(host.output).includes(concurrent.text),
+        "actual queued ACK followed by the first concurrent-staff A9 read committed");
+      const pendingCopy = locale === "en" ? "Sending; delivery unconfirmed. Do not resend."
+        : locale === "zh-CN" ? "发送中；尚未确认送达，不要重发。" : "傳送中；尚未確認送達，勿重送。";
+      const assertLocked = () => {
+        assert.equal(sendControl(host).props.disabled, true,
+          "an unrelated sent row must not unlock an acknowledged queued operation before its first projection");
+        assert.equal(node(host, n => n.type === "form").props.hidden, true,
+          "a newer buyer message cannot reopen an unresolved acknowledged send");
+        assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), pendingCopy);
+        captured({ preventDefault() {} });
+        node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+        assert.equal(host.ref(ReplyReceipt).pending(), null);
+        assert.equal(sends(calls).length, 1, "current and captured callbacks cannot issue a second A12");
+      };
+      assertLocked();
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await host.waitFor(() => reads === 3 && idle(host), "repeat A9 query committed without resending");
+      assertLocked();
+      assert.equal(calls.filter(call => call.path.endsWith(`/operations/${ackOperation}`)).length, 2,
+        "status reads are bound to the acknowledged operation, never a latest-row guess");
+      operationState = "SUCCEEDED";
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await host.waitFor(() => reads === 4 && idle(host), "own operation SUCCEEDED read committed");
+      assert.equal(node(host, n => n.type === "form").props.hidden, false);
+      assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, "",
+        "confirmed delivery never restores the already submitted draft");
+      assert.equal(sendControl(host).props.disabled, true, "an empty next reply cannot be sent");
+      // Like the native browser case, enter a new draft before checking send eligibility.
+      change(host, "reply-text", "MOCK_NEXT_REPLY_AFTER_OWN_SUCCESS");
+      assert.equal(sendControl(host).props.disabled, false, "exact successful operation can open the next reply");
+      assert.equal(node(host, n => n.type === "form").props.hidden, false);
+      assert.equal(sends(calls).length, 1, "reconciliation is read-only");
+    });
+  }
+
   test(`persisted A9 UNKNOWN after page entry warns and blocks the real composer in ${locale}`, async (t) => {
     const env = environment(t), calls = transport(() => response(projection("unknown")));
     const host = mount(env, locale);
@@ -49,6 +117,296 @@ for (const locale of Object.keys(warning)) {
     assert.equal(sends(calls).length, 0);
   });
 }
+
+for (const locale of Object.keys(warning)) {
+  for (const state of ["queued", "blocked"]) {
+    test(`completed ACK cannot mask later ${state} evidence or its omission (${locale})`, async (t) => {
+      const env = environment(t);
+      let reads = 0, operationState = "READY", showLater = false, omitLater = false;
+      const own = { direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: "MOCK_COMPLETED_OWN_ACK",
+        attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071", send_state: "sent" };
+      const later = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:03Z", text: "MOCK_LATER_UNRESOLVED_STAFF",
+        principal_id: "70000000-0000-4000-8000-000000000072", send_state: state };
+      const calls = transport(() => {
+        reads++;
+        return response(reads === 1 ? thread : { ...thread, has_unknown_outbound: false, items: [
+          ...thread.items, own, ...(showLater && !omitLater ? [later] : []),
+          { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER" },
+        ] });
+      }, () => response({ operation_id: ackOperation, outbound_id: "70000000-0000-4000-8000-000000000074", send_state: "queued", takeover_generation: 8 }),
+      () => operationResponse(operationState));
+      const host = mount(env, locale);
+      await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
+      change(host, "reply-text", own.text);
+      submit(host);
+      await host.waitFor(() => reads === 2 && idle(host), "actual queued ACK committed");
+      operationState = "SUCCEEDED";
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await host.waitFor(() => reads === 3 && idle(host), "own successful operation committed before later staff send");
+      assert.equal(node(host, n => n.type === "form").props.hidden, false);
+      change(host, "reply-text", "MOCK_NEXT_VALID_DRAFT");
+      assert.equal(sendControl(host).props.disabled, false);
+      const captured = node(host, n => n.type === "form").props.onSubmit;
+      showLater = true;
+      for (const expectedReads of [4, 5, 6]) {
+        omitLater = expectedReads === 5;
+        // The successful ACK unfolded the composer; use the always-visible thread refresh.
+        const refresh = node(host, n => n.type === "button" && !!n.props["aria-label"]);
+        assert.equal(refresh.props.disabled, false, "thread refresh is available after ACK success");
+        refresh.props.onClick();
+        await host.waitFor(() => reads === expectedReads && idle(host), "later staff result or omission committed");
+        assert.equal(node(host, n => n.type === "form").props.hidden, true,
+          "completed ACK cannot reopen the composer over a later unresolved outbound");
+        assert.equal(sendControl(host).props.disabled, true,
+          "later queued/blocked evidence remains locked even when its page omits it");
+        const result = textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state"));
+        assert.equal(result, state === "queued"
+          ? locale === "en" ? "Sending; delivery unconfirmed. Do not resend."
+            : locale === "zh-CN" ? "发送中；尚未确认送达，不要重发。" : "傳送中；尚未確認送達，勿重送。"
+          : locale === "en" ? "Sending locked" : locale === "zh-CN" ? "发送已锁定" : "已鎖定");
+        captured({ preventDefault() {} });
+        node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+        assert.equal(host.ref(ReplyReceipt).pending(), null);
+        assert.equal(sends(calls).length, 1, "current and captured handlers cannot create a second A12");
+      }
+    });
+  }
+}
+
+for (const locale of Object.keys(warning)) {
+  for (const state of ["queued", "blocked"]) {
+    for (const scenario of ["handoff", "older-pending-on-entry", "two-observed-then-omitted"]) {
+      test(`projected ${state} obligations survive ${scenario} and omission (${locale})`, async (t) => {
+        const env = environment(t);
+        let reads = 0, phase = 0;
+        const a = { direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: "MOCK_PROJECTED_A",
+          attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071", send_state: state };
+        const b = { ...a, outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:03Z", text: "MOCK_PROJECTED_B",
+          principal_id: "70000000-0000-4000-8000-000000000072" };
+        const buyer = { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_NEWER_BUYER" };
+        const calls = transport(() => {
+          reads++;
+          let items;
+          if (scenario === "handoff") items = phase === 0 ? [a]
+            : phase === 1 ? [{ ...a, send_state: "sent" }, b]
+            : phase === 2 ? [{ ...a, send_state: "sent" }]
+            : [{ ...a, send_state: "sent" }, { ...b, send_state: phase === 4 ? "sent" : state }];
+          else items = phase === 0 ? [a, { ...b, send_state: scenario === "older-pending-on-entry" ? "sent" : state }]
+            : phase === 1 ? [{ ...b, send_state: "sent" }]
+            : phase === 2 ? []
+            : [{ ...a, send_state: phase === 4 ? "sent" : state }, { ...b, send_state: "sent" }];
+          return response({ ...thread, has_unknown_outbound: false, items: [...thread.items, ...items, buyer] });
+        });
+        const host = mount(env, locale);
+        await host.waitFor(() => reads === 1 && idle(host), "initial projected obligations committed without a local ACK");
+        // Hook-host counterexample deliberately supplies a draft even to the folded form.
+        // Native browser coverage below uses only visible controls and real clicks.
+        change(host, "reply-text", "MOCK_FRESH_DRAFT_MUST_NOT_SEND");
+        const captured = node(host, n => n.type === "form").props.onSubmit;
+        const assertLocked = () => {
+          assert.equal(node(host, n => n.type === "form").props.hidden, true,
+            "every observed unresolved outbound keeps the composer folded, including below a newer sent row");
+          assert.equal(sendControl(host).props.disabled, true,
+            "settling one projection cannot admit a fresh send while another obligation remains");
+          assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), state === "queued"
+            ? locale === "en" ? "Sending; delivery unconfirmed. Do not resend."
+              : locale === "zh-CN" ? "发送中；尚未确认送达，不要重发。" : "傳送中；尚未確認送達，勿重送。"
+            : locale === "en" ? "Sending locked" : locale === "zh-CN" ? "发送已锁定" : "已鎖定");
+          captured({ preventDefault() {} });
+          node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+          assert.equal(host.ref(ReplyReceipt).pending(), null);
+          assert.equal(sends(calls).length, 0, "captured and current submit handlers cannot POST over an unresolved projection");
+        };
+        assertLocked();
+        for (phase = 1; phase <= 4; phase++) {
+          const expectedReads = reads + 1;
+          const refresh = node(host, n => n.type === "button" && !!n.props["aria-label"]);
+          assert.equal(refresh.props.disabled, false);
+          refresh.props.onClick();
+          await host.waitFor(() => reads === expectedReads && idle(host), "settlement, omission or exact recovery committed");
+          if (phase < 4) assertLocked();
+          else {
+            assert.equal(node(host, n => n.type === "form").props.hidden, false,
+              "only explicit settlement of every observed obligation opens the next reply");
+            change(host, "reply-text", "MOCK_NEXT_DRAFT_AFTER_ALL_SETTLED");
+            assert.equal(sendControl(host).props.disabled, false);
+          }
+        }
+        assert.equal(sends(calls).length, 0, "all reconciliation is read-only");
+        assert.equal(calls.filter(call => call.path.includes("/operations/")).length, 0,
+          "projected staff sends without an ACK cannot acquire an invented operation identity");
+      });
+    }
+  }
+}
+
+for (const locale of Object.keys(warning)) {
+  for (const state of ["queued", "blocked"]) {
+    for (const timing of ["with-completion", "observed-before-completion"]) {
+      for (const terminal of ["SUCCEEDED", "FAILED_FINAL"]) {
+        test(`local ACK ${terminal} retains older ${state} ${timing} (${locale})`, async (t) => {
+          const env = environment(t);
+          let reads = 0, phase = 0, operationState = "READY";
+          const own = { direction: "out", outbound_id: "70000000-0000-4000-8000-000000000074", at: "2030-01-01T00:00:01Z", text: "MOCK_EXACT_ACK_ORIGINAL",
+            attachments: null, kind: "dm", principal_id: "70000000-0000-4000-8000-000000000071" };
+          const other = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:02Z", text: "MOCK_OLDER_UNRESOLVED_B",
+            principal_id: "70000000-0000-4000-8000-000000000072" };
+          const calls = transport(() => {
+            reads++;
+            return response(reads === 1 ? thread : { ...thread, has_unknown_outbound: false, items: [
+              ...thread.items, { ...own, send_state: operationState === "READY" ? "queued"
+                : terminal === "SUCCEEDED" ? "sent" : "failed" },
+              ...(phase === 1 || phase >= 3 ? [{ ...other, send_state: phase === 4 ? "sent" : state }] : []),
+              { ...other, outbound_id: "70000000-0000-4000-8000-000000000076", at: "2030-01-01T00:00:03Z", text: "MOCK_NEWER_SENT_C", send_state: "sent" },
+              { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:04Z", text: "MOCK_BUYER_AFTER_C" },
+            ] });
+          }, () => response({ operation_id: ackOperation, outbound_id: "70000000-0000-4000-8000-000000000074", send_state: "queued", takeover_generation: 8 }),
+          () => operationResponse(operationState));
+          const host = mount(env, locale);
+          await host.waitFor(() => reads === 1 && idle(host), "initial A9 authority committed");
+          change(host, "reply-text", own.text);
+          const captured = node(host, n => n.type === "form").props.onSubmit;
+          submit(host);
+          await host.waitFor(() => reads === 2 && idle(host), "actual local ACK A committed");
+          const assertLocked = () => {
+            assert.equal(node(host, n => n.type === "form").props.hidden, true,
+              "local ACK completion must not mask older unresolved B beneath newer sent C");
+            assert.equal(sendControl(host).props.disabled, true);
+            const expected = state === "queued" || operationState === "READY"
+              ? locale === "en" ? "Sending; delivery unconfirmed. Do not resend."
+                : locale === "zh-CN" ? "发送中；尚未确认送达，不要重发。" : "傳送中；尚未確認送達，勿重送。"
+              : locale === "en" ? "Sending locked" : locale === "zh-CN" ? "发送已锁定" : "已鎖定";
+            assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), expected);
+            captured({ preventDefault() {} });
+            node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+            assert.equal(host.ref(ReplyReceipt).pending(), null);
+            assert.equal(sends(calls).length, 1, "neither callback can send while B is unresolved");
+          };
+          for (phase = 1; phase <= 4; phase++) {
+            if (phase === 1 && timing === "with-completion" || phase === 2) operationState = terminal;
+            const expectedReads = reads + 1;
+            node(host, n => n.type === "button" && !!n.props["aria-label"]).props.onClick();
+            await host.waitFor(() => reads === expectedReads && idle(host), "ACK and projection read committed");
+            if (phase < 4) assertLocked();
+            else {
+              if (terminal === "FAILED_FINAL") {
+                node(host, n => n.props["data-testid"] === "inbox-edit-original").props.onClick();
+                assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, own.text,
+                  "settling B preserves the rejected exact ACK's original text");
+              }
+              assert.equal(node(host, n => n.type === "form").props.hidden, false);
+              change(host, "reply-text", "MOCK_NEXT_DRAFT_AFTER_B_SETTLED");
+              assert.equal(sendControl(host).props.disabled, false, "only explicit B settlement releases its obligation");
+            }
+          }
+          assert.equal(sends(calls).length, 1, "reconciliation never resends");
+          assert.ok(calls.filter(call => call.path.endsWith(`/operations/${ackOperation}`)).length >= 2,
+            "local A reconciliation keeps its exact operation identity");
+        });
+      }
+    }
+  }
+}
+
+for (const locale of Object.keys(warning)) {
+  for (const pendingState of ["queued", "blocked"]) {
+    test(`successful local ACK cannot mask later ${pendingState} rejection (${locale})`, async (t) => {
+      const env = environment(t);
+      let reads = 0, otherState: string | null = null;
+      const own = { ...projection("sent").items[1], text: "MOCK_SUCCESSFUL_A_ORIGINAL" };
+      const other = { ...own, outbound_id: "70000000-0000-4000-8000-000000000075",
+        at: "2030-01-01T00:00:02Z", text: "MOCK_REJECTED_B_ORIGINAL" };
+      const calls = transport(() => response(++reads === 1 ? thread : {
+        ...thread, has_unknown_outbound: false,
+        // No inbound after B: another buyer message must not be needed to show its rejection.
+        items: [...thread.items, own, ...(otherState ? [{ ...other, send_state: otherState }] : [])],
+      }), () => response({ operation_id: ackOperation, outbound_id: own.outbound_id,
+        send_state: "queued", takeover_generation: 8 }), () => operationResponse("SUCCEEDED"));
+      const host = mount(env, locale);
+      await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
+      change(host, "reply-text", own.text);
+      submit(host);
+      await host.waitFor(() => reads === 2 && idle(host), "successful local A reconciled");
+      for (const state of [pendingState, "failed", "failed"]) {
+        otherState = state;
+        const expectedReads = reads + 1;
+        node(host, n => n.type === "button" && !!n.props["aria-label"]).props.onClick();
+        await host.waitFor(() => reads === expectedReads && idle(host), "independent B read committed");
+        assert.equal(node(host, n => n.type === "form").props.hidden, true);
+        if (state === "failed") {
+          const rejected = locale === "en" ? "Send rejected; original text saved for editing."
+            : locale === "zh-CN" ? "发送被拒；原文已保留，可以编辑。" : "傳送遭拒；原文保留，可編輯。";
+          assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), rejected,
+            "successful A must not hide the distinct B rejection, even on repeated refresh");
+        } else {
+          assert.equal(sendControl(host).props.disabled, true);
+        }
+      }
+      node(host, n => n.props["data-testid"] === "inbox-edit-original").props.onClick();
+      assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, other.text,
+        "recover failed B's text, never successful A's retained draft");
+      assert.equal(node(host, n => n.type === "form").props.hidden, false);
+      assert.equal(sends(calls).length, 1, "status and recovery never resend");
+    });
+  }
+}
+
+for (const refusal of ["signed-out", "forbidden", "not-found", "malformed", "different-operation", "different-conversation", "different-action", "different-provider", "different-purpose", "missing-ack-id", "no-read-permission", "acknowledged", "unknown"]) {
+  test(`acknowledged send stays locked on ${refusal} operation evidence`, async (t) => {
+    const env = environment(t);
+    let reads = 0, operationReads = 0, expired = 0;
+    const page = { ...projection("sent"), items: [...projection("sent").items,
+      { ...thread.items[0], seq: 2, at: "2030-01-01T00:00:06Z", text: "MOCK_LATER_BUYER" }] };
+    const calls = transport(() => response(++reads === 1 ? thread : page),
+      () => response({ send_state: "queued", outbound_id: "70000000-0000-4000-8000-000000000074", ...(refusal === "missing-ack-id" ? {} : { operation_id: ackOperation }) }),
+      () => {
+        operationReads++;
+        return operationResponse(refusal === "acknowledged" ? "ACKNOWLEDGED" : refusal === "unknown" ? "UNKNOWN" : "SUCCEEDED", refusal === "different-operation" ? { operation_id: store.id }
+          : refusal === "different-conversation" ? { object: { kind: "conversation", id: store.id } }
+          : refusal === "different-action" ? { action: "meta.public_reply" }
+          : refusal === "different-provider" ? { provider: "instagram" }
+          : refusal === "different-purpose" ? { purpose: "marketing" }
+          : refusal === "malformed" ? { state: "invented" } : {},
+          refusal === "signed-out" ? 401 : refusal === "forbidden" ? 403 : refusal === "not-found" ? 404 : 200);
+      });
+    // A stable authenticated store snapshot avoids changing load's dependencies on every hook render.
+    const testedStore = refusal === "no-read-permission"
+      ? { ...store, role: "staff", permissions: ["inbox:reply"] } : store;
+    const host = env.mount(() => InboxThread({ store: testedStore,
+      conversation, locale: "en", onUnauthorized() { expired++; }, onRead() {},
+    } as any));
+    await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
+    change(host, "reply-text", "MOCK_ACK_DRAFT");
+    const captured = node(host, n => n.type === "form").props.onSubmit;
+    submit(host);
+    await host.waitFor(() => reads === 2 && idle(host), "refused operation read and unrelated final A9 committed");
+    assert.equal(sendControl(host).props.disabled, true);
+    assert.equal(node(host, n => n.type === "form").props.hidden, true);
+    captured({ preventDefault() {} });
+    node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+    assert.equal(sends(calls).length, 1);
+    assert.equal(operationReads, ["missing-ack-id", "no-read-permission"].includes(refusal) ? 0 : 1);
+    assert.equal(expired, refusal === "signed-out" ? 1 : 0, "only a real signed-out result expires privacy scope");
+    assert.equal(calls.filter(call => call.method === "POST" && call.path.includes("/operations/")).length, 0);
+  });
+}
+
+test("exact rejected ACK restores its own text rather than a later staff member's display row", async (t) => {
+  const env = environment(t);
+  let reads = 0;
+  const calls = transport(() => response(++reads === 1 ? thread : projection("sent")),
+    () => response({ send_state: "queued", outbound_id: "70000000-0000-4000-8000-000000000074", operation_id: ackOperation }),
+    () => operationResponse("FAILED_FINAL"));
+  const host = mount(env);
+  await host.waitFor(() => reads === 1 && idle(host), "initial authority committed");
+  change(host, "reply-text", "MOCK_OWN_REJECTED_TEXT");
+  submit(host);
+  await host.waitFor(() => reads === 2 && idle(host), "own definitive rejection committed");
+  assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), "Send rejected; original text saved for editing.");
+  node(host, n => n.props["data-testid"] === "inbox-edit-original").props.onClick();
+  assert.equal(node(host, n => n.props["data-testid"] === "reply-text").props.value, "MOCK_OWN_REJECTED_TEXT");
+  assert.equal(sends(calls).length, 1);
+});
 
 test("A12 queued ACK followed by final A9 UNKNOWN overrides the local queued notice and blocks another send", async (t) => {
   const env = environment(t);
@@ -112,15 +470,94 @@ test("a later A9 page omitting the known UNKNOWN is not delivery reconciliation"
 });
 
 for (const state of ["queued", "sent", "failed", "blocked"]) {
-  test(`persisted ${state} is not mislabeled UNKNOWN and retains ordinary composer eligibility`, async (t) => {
+  test(`persisted ${state} stays distinct from UNKNOWN and enforces signed send locking`, async (t) => {
     const env = environment(t);
     transport(() => response(projection(state)));
     const host = mount(env);
     await loaded(host, state);
     assert.equal(textOf(host.output).includes(warning.en), false);
     change(host, "reply-text", "MOCK_ELIGIBLE_DRAFT");
-    assert.equal(sendControl(host).props.disabled, false);
+    assert.equal(sendControl(host).props.disabled, state === "queued" || state === "blocked",
+      "pending or policy-blocked results cannot start another send");
+    assert.equal(node(host, n => n.type === "form").props.hidden, true,
+      "signed result view folds the duplicate composer on page entry");
+    if (state === "queued" || state === "blocked") {
+      node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+      assert.equal(host.ref(ReplyReceipt).pending(), null, "captured or hidden form cannot bypass the result lock");
+    }
   });
+}
+
+for (const state of ["sent", "queued", "blocked", "unknown"]) {
+  test(`a newer buyer message starts the next composer only after confirmed ${state}`, async (t) => {
+    const env = environment(t);
+    const page = projection(state);
+    page.items.push({ ...thread.items[0], seq: 2, at: "2030-01-01T00:00:02Z", text: "MOCK_NEXT_INBOUND" });
+    const calls = transport(() => response(page));
+    const host = mount(env);
+    await loaded(host, state);
+    assert.equal(node(host, n => n.type === "form").props.hidden, state !== "sent");
+    change(host, "reply-text", "MOCK_NEXT_REPLY");
+    assert.equal(sendControl(host).props.disabled, state !== "sent");
+    if (state !== "sent") {
+      node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+      assert.equal(sends(calls).length, 0, "new inbound cannot bypass an uncertain or policy-blocked send");
+      assert.equal(host.ref(ReplyReceipt).pending(), null);
+    }
+  });
+}
+
+for (const locale of Object.keys(warning)) {
+  for (const state of ["queued", "blocked"]) {
+    test(`A9 display omission cannot reconcile observed ${state} in ${locale}`, async (t) => {
+      const env = environment(t);
+      let reads = 0;
+      let unrelated = false, recovered = false;
+      const page = { ...thread, has_unknown_outbound: false,
+        items: Array.from({ length: 50 }, (_, index) => ({
+          ...thread.items[0], seq: index + 2, at: "2030-01-01T00:00:02Z",
+          text: "MOCK_NEWER_INBOUND_PAGE",
+        })) };
+      const calls = transport(() => response(++reads === 1 ? projection("sent") :
+        reads === 2 ? projection(state) : recovered ? projection("sent") : unrelated
+          ? { ...page, items: [...page.items, { ...projection("sent").items.at(-1), outbound_id: "70000000-0000-4000-8000-000000000075", at: "2030-01-01T00:00:03Z" }] }
+          : page));
+      const host = mount(env, locale);
+      await loaded(host, "sent");
+      change(host, "reply-text", "MOCK_CAPTURED_DRAFT");
+      assert.equal(sendControl(host).props.disabled, false);
+      const captured = node(host, n => n.type === "form").props.onSubmit;
+      node(host, n => n.type === "button" && !!n.props["aria-label"]).props.onClick();
+      await loaded(host, state);
+      const result = textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state"));
+      for (const expectedReads of [3, 4]) {
+        node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+        await host.waitFor(() => reads === expectedReads && idle(host) &&
+          textOf(host.output).includes("MOCK_NEWER_INBOUND_PAGE"), "inbound-only A9 refresh committed");
+        assert.equal(sendControl(host).props.disabled, true,
+          "explicit false UNKNOWN authority does not reconcile an omitted queued/blocked operation");
+        assert.equal(node(host, n => n.type === "form").props.hidden, true);
+        assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), result);
+        captured({ preventDefault() {} });
+        node(host, n => n.type === "form").props.onSubmit({ preventDefault() {} });
+        assert.equal(host.ref(ReplyReceipt).pending(), null);
+        assert.equal(sends(calls).length, 0, "neither captured nor current form may POST a fresh send");
+      }
+      unrelated = true;
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await host.waitFor(() => reads === 5 && idle(host), "unrelated sent row committed");
+      assert.equal(sendControl(host).props.disabled, true, "a different sent row cannot reconcile the observed operation");
+      assert.equal(textOf(node(host, n => n.props["data-testid"] === "inbox-delivery-state")), result);
+      captured({ preventDefault() {} });
+      assert.equal(sends(calls).length, 0);
+      recovered = true;
+      node(host, n => n.props["data-testid"] === "inbox-send-status").props.onClick();
+      await loaded(host, "sent");
+      assert.equal(sendControl(host).props.disabled, false, "the observed row's confirmed result can release its lock");
+      assert.equal(host.ref(ReplyReceipt).pending(), null);
+      assert.equal(sends(calls).length, 0, "querying a resolved result never sends");
+    });
+  }
 }
 
 for (const fact of [true, null, undefined, "false"]) {

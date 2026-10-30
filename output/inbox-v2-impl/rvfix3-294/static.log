@@ -1,0 +1,5 @@
+Static-only checks (E1); no runtime tests or servers.
+node --check tests/admin/inbox-unknown.test.ts: exit 0
+node --check tests/admin/inbox-v2-ui.spec.ts: exit 0
+node --check tests/admin/inbox-discovery.test.ts: exit 0
+git diff --check: exit 0

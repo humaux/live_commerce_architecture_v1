@@ -1,5 +1,5 @@
 // Purpose: Supported locales, shared seller messages and validated locale-aware URL helpers.
-// Depends on: state-recovery, people, catalog and editor copy; no runtime, network or storage dependency.
+// Depends on: state-recovery, people, catalog, editor and signed inbox copy; no runtime, network or storage dependency.
 // Used by: admin/storefront routes, shared UI callers and locale tests.
 // Invariants: only supported locales and validated local paths can enter generated URLs.
 export const locales = ['zh-CN', 'zh-TW', 'en'] as const;
@@ -7,6 +7,7 @@ export { stateRecoveryCopy } from './state-recovery.ts';
 export { cvsPickerCopy } from './cvs-picker.ts';
 export { editorCopy } from './editor.ts';
 export type Locale = (typeof locales)[number];
+export { inboxMessages, type InboxMessages } from './inbox.ts';
 
 // Signed ux-settings polish/simplify copy. Values and currency are supplied by the server.
 export const settingsV2Copy = {

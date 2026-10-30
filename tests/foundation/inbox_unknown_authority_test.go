@@ -10,11 +10,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 	"time"
 
 	"livecommerce/internal/httpapi"
 )
+
+var canonicalOutboundID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 // TestInboxUnknownAuthority proves the response fact survives inbound floors, outbound truncation and older-page reads.
 func TestInboxUnknownAuthority(t *testing.T) {
@@ -69,15 +72,21 @@ func TestInboxUnknownAuthority(t *testing.T) {
 			t.Errorf("has_unknown_outbound=%s (exists=%v), want %s", got, exists, want)
 		}
 		var items []struct {
-			Direction string `json:"direction"`
+			Direction  string `json:"direction"`
+			OutboundID string `json:"outbound_id"`
 		}
 		if err := json.Unmarshal(body["items"], &items); err != nil {
 			t.Fatal(err)
 		}
-		outbound := 0
+		outbound, seen := 0, map[string]bool{}
 		for _, item := range items {
 			if item.Direction == "out" {
 				outbound++
+				// A9 outbound_id (2026-10-30): the A12 ACK correlation; one canonical UUID per row, never shared.
+				if !canonicalOutboundID.MatchString(item.OutboundID) || seen[item.OutboundID] {
+					t.Fatalf("outbound row outbound_id=%q, want a distinct canonical UUID", item.OutboundID)
+				}
+				seen[item.OutboundID] = true
 			}
 		}
 		if outbound > maxOutbound {

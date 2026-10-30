@@ -1,0 +1,24 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.5871195Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.5871415Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.5871671Z ℹ duration_ms 8837.003249
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.5899190Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6190365Z node:internal/modules/run_main:107
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6191171Z     triggerUncaughtException(
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6191606Z     ^
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6191797Z
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6192268Z AssertionError [ERR_ASSERTION]: inbox authority suite missing
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6193564Z     at file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/[eval1]:1:221
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6194738Z     at ModuleJob.run (node:internal/modules/esm/module_job:561:25)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6195553Z     at async node:internal/modules/esm/loader:223:26
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6196602Z     at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:220:20)
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6197890Z     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6198719Z   generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6199172Z   code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6199585Z   actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6200754Z   expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6201186Z   operator: '==',
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6201559Z   diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6201881Z }
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6202048Z
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6202209Z Node.js v24.22.1
+foundation	Node unit suites (storefront, i18n)	2026-10-28T22:24:16.6224527Z ##[error]Process completed with exit code 1.

@@ -1,0 +1,37 @@
+INBOX-V2-IMPL implementation static validation — 2026-10-29
+node --check: packages/i18n/src/inbox.ts, packages/i18n/src/index.ts, apps/admin/src/features/messages/copy.ts, tests/admin/inbox-copy.test.ts, tests/admin/inbox-review-host.test.ts, tests/admin/inbox-ui.spec.ts, tests/admin/inbox-customer-ui.spec.ts, tests/admin/inbox-v2-ui.spec.ts, tests/admin/inbox-unknown.test.ts, tests/admin/inbox-window.test.ts
+exit_code=0 (set -e loop, no tests executed)
+git diff --check
+exit_code=0
+node scripts/dev/derive-browser-ownership.mjs
+exit_code=0; regenerated tracked browser-ownership.json, 53 modes
+E1 only: syntax/whitespace/static ownership generation. JSX/type/runtime acceptance NOT_RUN locally.
+tsc=NOT_RUN; compiler/dependencies not installed in this worktree; earlier attempt exit 254 Command tsc not found.
+No local tests, build server, browser, database or container started.
+Exact implementation source hashes: source-sha256.txt. CI head/run receipts supplied after the single implementation push; no evidence-only push.
+CI registration repair attempt1: source push c7cb646d had no check suite; GitHub mergeable=false/dirty. Remote integration=dcecd6220094234b4760315c676d9737ed713c40.
+git fetch origin r3/integration; merge --no-commit --no-ff FETCH_HEAD: one conflict, i18n/src/index.ts header comments only.
+Resolution retains both module exports and the integration header. No product source from integration manually edited.
+node --check packages/i18n/src/index.ts: exit0
+node scripts/dev/derive-browser-ownership.mjs on merged source: exit0,53modes
+git diff --name-only --diff-filter=U: empty; git diff --check: exit0
+Source hashes refreshed for current merged files. No local tests/servers.
+
+Relay2 formatter architecture repair attempt1 (base 7a10e999):
+node --check tests/admin/inbox-review-host.test.ts: exit0
+node --check tests/admin/inbox-v2-ui.spec.ts: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0,53modes
+git diff --check: exit0
+E1 syntax/static generation only; no local tests/server/browser.
+
+Relay3 inbox registration assertion repair attempt1 (base 6195fce8):
+bash -n scripts/dev/test-node.sh: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0,53modes
+git diff --check: exit0
+Only the inbox-specific authority array adds the fourth INV2 file; no assertion removed.
+E1 syntax/static generation only; no local tests/discovery/server/browser/PG/container.
+
+Relay4 color-token repair attempt1 (base 8c663521b36012aec0375b361c0b78af43716bab):
+git diff --check: exit0
+E1 whitespace only; no local tests or runtime style verification. Existing DS hex ratchet runs on GitHub CI.
+No browser-discovery input or Go dependency changed; ownership/depmap unchanged.

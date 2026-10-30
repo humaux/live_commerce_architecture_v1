@@ -1,0 +1,27 @@
+RVFIX6 P1 tests-only batch. CI assertion RED PENDING.
+Baseline 1772b71a1b84b5188e6eeb0fcb69241b305dd712; integration a09262050d750895347e7333b8228194fec00cb2 merged as18eed2963.
+New unit: successful local ACK cannot mask later queued/blocked rejection (en/zh-TW/zh-CN).
+New browser: successful ACK then distinct queued/blocked rejection (all three locales).
+Expected causal failure: inbox-delivery-state retains successful A instead of rejected B; recovery missing or targets A.
+No local tests or servers. Native run/job IDs will be added from GitHub receipts, never inferred.
+
+RVFIX6 tests-only head: 0f13bd50fe9928c1c52e6862eff44c16e2b44a6c
+WAIT_RUN: 40983874335 — Foundation checks, job123830148198, in_progress
+WAIT_RUN: 40983874479 — Gates (GitHub runners), in_progress; no actual test job assigned at receipt time
+Causal RED PENDING: do not treat historical RED/GREEN or plan job as new assertion evidence.
+Implementation NOT_STARTED; resume only after exact-head new assertions fail.
+
+2026-10-30 implementation relay: causal RED confirmed; entries above describe the earlier pending state.
+Exact RED head: 0f13bd50fe9928c1c52e6862eff44c16e2b44a6c.
+Foundation 40983874335 / job 123830148198: failure, head independently read with gh run view.
+Raw failed log: six successful local ACK cannot mask later queued|blocked rejection cases (en/zh-TW/zh-CN),
+each fails AssertionError: successful A must not hide the distinct B rejection, even on repeated refresh.
+Gates 40983874479 / bundle:06 job 123831384255: failure, exact head independently read with gh run view.
+Integrator-confirmed gate-browser-inbox artifact: six failures / 52 passes; tests/admin/inbox-v2-ui.spec.ts:333,
+INV2 <locale> successful ACK then distinct queued|blocked rejection fails expect(locator).toHaveText.
+Same run shard:g10 job 123831384533: unrelated TestLocalRecoveryLogicalRestoreAndColdStart pg_restore exit 1;
+integrator classifies this as P2 flake and explicitly authorizes ignoring it for this fix.
+Additional Foundation blocker found in the raw failed log: tests/admin/inbox-discovery.test.ts:72
+expects 33 simplified cases but collects 39 after the six new browser cases. No assertion/fixture changed:
+the dispatch explicitly forbids assertion edits. Disclosed for integrator disposition; GREEN is not claimed.
+Implementation follows this confirmed causal RED. No second RED batch or local runtime verification.

@@ -1,0 +1,27 @@
+RVFIX4 #294 causal RED: VERIFIED (2026-10-30 continuation; earlier PENDING entries below are historical)
+Pre-RED head: ada3500f51adf8ee924ba02c1ad93258b6ed758d
+Tests-only: 18 new component counterexamples and additive native-click coverage.
+Required witness: folded/disabled safety assertion after A-to-B handoff,
+older pending beneath newer sent on entry, or previously observed pending omission.
+Import/lookup/collection failure does not count as causal RED.
+Workflow run IDs, job IDs and raw filtered assertion receipt follow after push/CI.
+Implementation has not been written. GREEN PENDING; author assessment E0.
+
+2026-10-30 relay: tests-only head ae8a41fe37db6067571eea94a7267ee87c9306b6
+Foundation WAIT_RUN: 40929100216; foundation job 123642440286; queued.
+Gates WAIT_RUN: 40929100369; workflow queued (plan job is not a test witness).
+Observed via gh run list --commit <head>, gh run view 40929100216 --json ...,
+and gh pr checks 294. No behavioral assertion has run yet; causal RED PENDING.
+Integrator completion relay is the wake-up mechanism; no further polling this session.
+
+2026-10-30 CI continuation: causal assertion RED confirmed on ae8a41fe37db6067571eea94a7267ee87c9306b6.
+Foundation run 40929100216 / job 123642440286: 217 pass / 18 fail in Inbox suite.
+All 18 new projected-obligation locale/state/scenario cases fail their own folded-composer assertion
+at tests/admin/inbox-unknown.test.ts:207 (actual false, expected true); raw filtered red-assertions.log.
+Gates run 40929100369 / job 123645010286 (bundle:06): Inbox 6 failed / 34 passed.
+Downloaded artifact gate-browser-inbox id 12923022670: playwright.log confirms all six new native
+handoff assertions at inbox-v2-ui.spec.ts:383 fail because the delivery-state element disappears.
+Tested synthetic merge: dae2426493bbd92628972abd8c7127a42b24b300; both workflow head APIs equal ae8a41fe3.
+All current failed jobs read: receipts 123659542487 rejects --browser-inbox; required 123659727521 propagates it.
+No runner apt/dpkg/mirror failure; no infrastructure rerun. No unrelated gate blocker.
+First implementation attempt follows this valid RED. Tests remain unchanged. GREEN PENDING; author E0.

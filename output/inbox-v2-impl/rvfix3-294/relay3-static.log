@@ -1,0 +1,9 @@
+node --check tests/admin/inbox-unknown.test.ts: exit 0
+node --check tests/admin/inbox-v2-ui.spec.ts: exit 0
+node --check tests/admin/inbox-discovery.test.ts: exit 0
+git diff --check: exit 0
+InboxThread.tsx byte-identical to ad3d2b606 implementation blob (git diff empty). No import or header change.
+Local tsc NOT_RUN: node_modules/typescript/bin/tsc unavailable. TSX compilation requires CI.
+E1 static only; author runtime assessment E0. No local tests/build/server/browser/PG/container/LIVE.
+node scripts/dev/derive-browser-ownership.mjs: exit 0; 53 modes, no artifact diff.
+Final git diff --check: exit 0.
