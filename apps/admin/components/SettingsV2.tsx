@@ -45,24 +45,31 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
     const at = ++generation.current;
     setLoading(true); setNotice("");
     try {
-      const boundary = await sessionBoundary(), fresh = await readSnapshot(store.id, currency);
-      if (!active.current || at !== generation.current) return;
-      if (boundary !== await sessionBoundary()) throw new Error("session_changed");
-      scope.current = boundary; key.current = `commerce-settings-v2:${store.id}:${boundary}`;
-      let next = draftOf(fresh);
-      const rawPending = sessionStorage.getItem(`${key.current}:command`);
-      pending.current = null;
+      const boundary = await sessionBoundary(), scopedKey = `commerce-settings-v2:${store.id}:${boundary}`;
+      const rawPending = sessionStorage.getItem(`${scopedKey}:command`);
+      let command: Journal | null = null;
       if (rawPending) {
         const value = JSON.parse(rawPending) as Journal;
         if (typeof value.key !== "string" || !/^[0-9a-f-]{36}$/.test(value.key) || typeof value.body !== "string" ||
             value.body.length > 8192 || !["POST", "PUT"].includes(value.method) ||
             !/^(?:profile|quickstart|products|skus|inventory\/adjustments|markets\/[0-9a-f-]{36}\/countries\/TW\/delivery-services\/[a-z][a-z0-9_-]{0,39})$/.test(value.resource)) throw new Error("journal_shape");
-        pending.current = value;
-        if (reconciled(value, fresh)) journal(null);
+        command = value;
       }
+      const skuCommand = command?.resource === "skus" ? command : null;
+      const initialStock = sessionStorage.getItem(`${scopedKey}:initial-stock`);
+      const skuProduct = skuCommand ? (JSON.parse(skuCommand.body) as Record<string, unknown>).product_id : null;
+      const stockProduct = initialStock ? (JSON.parse(initialStock) as Record<string, unknown>).product_id : null;
+      if (skuCommand && initialStock && skuProduct !== stockProduct) throw new Error("recovery_product_mismatch");
+      const recoveryProduct = skuCommand ? skuProduct : initialStock ? stockProduct : null;
+      if ((skuCommand || initialStock) && typeof recoveryProduct !== "string") throw new Error("recovery_product_shape");
+      const fresh = await readSnapshot(store.id, currency, recoveryProduct as string | null);
+      if (!active.current || at !== generation.current) return;
+      if (boundary !== await sessionBoundary()) throw new Error("session_changed");
+      scope.current = boundary; key.current = scopedKey;
+      pending.current = command;
+      if (command && reconciled(command, fresh)) journal(null);
+      let next = draftOf(fresh);
       const cached = sessionStorage.getItem(key.current);
-      const skuCommand = pending.current?.resource === "skus" ? pending.current : null;
-      const initialStock = sessionStorage.getItem(`${key.current}:initial-stock`);
       if ((!discardDraft || skuCommand || initialStock) && cached) {
         const saved = JSON.parse(cached) as { version: number; draft: SimpleDraft };
         const d = saved.draft;
@@ -174,7 +181,8 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           sessionStorage.removeItem(`${key.current}:initial-stock`);
         }
         if (pending.current) throw new SaveFailure(true, changed);
-        const fresh = await readSnapshot(store.id, currency);
+        const fresh = await readSnapshot(store.id, currency,
+          sessionStorage.getItem(`${key.current}:initial-stock`) ? data.product?.id ?? null : null);
         // A partial quick start is not called complete. The server derives these steps.
         if (fromQuickstart && !fresh.marker.completed && Object.values(fresh.marker.steps).every(Boolean)) {
           fresh.marker = await send<Quickstart>("quickstart", "POST", {});

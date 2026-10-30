@@ -1352,3 +1352,76 @@ Rollback: revert this isolated tests-only commit. Do not implement before causal
 
 P2 for issue: profile CAS conflict recovery remains deferred per review and
 prior PR comment 6499957731; no implementation in this card.
+
+---
+
+## FIX12 — intent-bound product recovery implementation (2026-10-30)
+
+Authority: human IMPL AFTER CAUSAL RED dispatch; current repository source at
+6fdba18594dcd046f1dc8ad41890ac8a75343f98 and original GitHub job APIs.
+Pull --ff-only and merge origin/r3/integration both already up to date.
+Causal RED: Gates40967861632 / bundle:07 job123778347162 / artifact12940365670,
+settings-real.spec.ts:28 -> settings-v2.spec.ts:225: pending SKU recovery must
+use intent-bound A when newest draft is B. Both discovery preconditions passed.
+Foundation40967861611 / job123776825940 success at that same tests-only head.
+
+Root cause: latest-draft discovery B supplied the product before A's pending
+SKU/unsent-stock evidence was validated. Load now reads the current store/session
+recovery target first. Snapshot reads that UUID and requires its response ID;
+SKU and stock targets must agree when both exist. Every existing draft/version,
+product/code/price/currency/warehouse/quantity validation remains. Ordinary-save
+refresh stays on the retained product while an unsent stock intent exists.
+No command is sent during recovery; explicit Save retains exact replay semantics.
+No test, fixture, assertion, retry, timing, exemption or gate was changed.
+
+|Page/control|Operation|Expected|Actual|
+|---|---|---|---|
+|Settings / Reload after newer B|native click|recover pending SKU's A, stock 10; zero writes|RED at tests-only head; implementation CI pending|
+|Settings / Reload after SKU ACK/read loss|native click|recover stock intent's A; corrupt evidence refused|implementation CI pending|
+|Settings / ordinary Save, refresh|native clicks|retain A intent and draft through profile version change|implementation CI pending|
+|Settings / explicit Save|native click|same command key/body; stock only for A|implementation CI pending|
+|Catalog / refresh B|native navigation/read receipt|B SKU and inventory unchanged|implementation CI pending|
+
+### UI PROCESS — BOURDIEU
+
+Q1 task: resume entered stock safely. Q2 novice/expert means recent experience
+with this task. Q3 competing catalog activity must not select the recovery target.
+Q4 only explicit Save writes. Q5 no class/device classification. Q6 aesthetics
+UNKNOWN until owner. No new screen, visible string, option or layout.
+
+### UI PROCESS — PROJECT UNDERSTANDING
+
+Read 架构.md sections 0 (evidence separation), 1 (PG inventory authority),
+2 (retail scope), 26/27 (worktree ownership and independent acceptance),
+contracts/tasks.json DAG and merchant-settings-wizard-v1.md session/drafts/
+uncertainty plus profile CAS amendment. These require scoped nonsecret evidence,
+exact uncertain-command replay and server-authoritative state. Read both
+readSnapshot callers, load/save validation and the existing native-click regression.
+No migration, contract, backend, dependency, R2 pin or API shape change.
+
+### UI PROCESS — MOBBIN → EAGLE
+
+Recovery logic only. Existing signed module references remain applicable;
+no new reference used, image copied, Eagle read/import or Mobbin query required.
+
+### UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No Figma, component layout, variable or prototype change. Existing guide,
+three-language copy and desktop/mobile fact-parity tables remain applicable;
+no new visual lint/density or Figma execution claimed. No locale string changed.
+
+Scope: SettingsV2.tsx, settings-v2.ts and this card's delivery/red evidence.
+No new import, renamed spec, route or page; no harness allowlist/dependency edge
+change. Browser ownership is regenerated last and checked, never hand-edited.
+No new outside-card path. P2 for issue: existing profile CAS recovery deferral.
+Local node --check settings-v2.ts and git diff --check exit 0 (E1 syntax only).
+tsc NOT_RUN: no compiler/dependencies in this worktree; no install attempted.
+Own-head GREEN and independent E4 pending; author judgment E0.
+NOT_RUN: local tests/servers/browsers/PG (prohibited), provider SANDBOX/LIVE,
+production/deploy. No local process or fixture started; all pre-existing evidence
+retained. Rollback: revert this implementation commit on the assigned branch.
+Assigned Codex UI implementer; runtime exact model/effort selector unavailable.
+No delegation/separate claim; integrator retains ownership. Humaux fix stored
+and own child canvas updated; code map/search transport errors, rg used instead.
+Integrator completion/failure relay owns wakeup after exact-head WAIT_RUN handoff.
+No merge/auto-merge/status/deploy; no evidence-only commit after GREEN.

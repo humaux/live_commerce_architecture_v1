@@ -35,7 +35,8 @@ export function parseProfile(value: unknown): Profile {
 }
 
 /** Bounded discovery: incomplete/ambiguous collections cannot enable a switch. */
-export async function readSnapshot(store: string, currency: string): Promise<Snapshot> {
+export async function readSnapshot(store: string, currency: string, recoveryProductId: string | null = null): Promise<Snapshot> {
+  if (recoveryProductId !== null && !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(recoveryProductId)) throw new Error("recovery_product_shape");
   const [profileRaw, marker, markets, productsRaw, warehousesRaw, storefront] = await Promise.all([
     readSettings<unknown>(store, "profile"), readSettings<Quickstart>(store, "quickstart"),
     readSettings<Page<Market>>(store, "markets").catch(() => null),
@@ -50,7 +51,11 @@ export async function readSnapshot(store: string, currency: string): Promise<Sna
   // as proof that the store has no products (which could create a duplicate).
   const products = productsRaw === null ? null : parseSummaryPage(productsRaw);
   const warehouses = productsRaw === null || warehousesRaw === null ? [] : parseWarehouses(warehousesRaw);
-  const product = products?.items.length ? parseProduct(await readSettings(store, `products/${products.items[0].id}`)) : null;
+  // Discovery is only a default. An unfinished operation owns its original
+  // product even when another operator creates a newer draft in the meantime.
+  const productId = recoveryProductId ?? products?.items[0]?.id;
+  const product = productId ? parseProduct(await readSettings(store, `products/${productId}`)) : null;
+  if (recoveryProductId !== null && product?.id !== recoveryProductId) throw new Error("recovery_product_mismatch");
   // No arbitrary first-market choice: multiple markets require the existing advanced editor.
   const candidates = markets?.items.filter(m => m.active && m.currency === currency) ?? [];
   const market = markets && !markets.next_cursor && candidates.length === 1 ? candidates[0] : null;

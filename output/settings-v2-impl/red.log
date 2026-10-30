@@ -308,3 +308,91 @@ Causal RED and GREEN PENDING; next Gates/Foundation run ids will be recorded in
 PR comment and this local log after the single tests-only push, without another
 push. Local tests, servers, browsers NOT_RUN by instruction. Author verdict E0.
 Humaux unavailable; memory_store/canvas/coord NOT_RUN, parent retains task ownership.
+
+FIX12 pushed tests-only head: 6fdba18594dcd046f1dc8ad41890ac8a75343f98
+WAIT_RUN: 40967861632 (Gates, in_progress; behavioural RED PENDING).
+WAIT_RUN: 40967861611 (Foundation, in_progress); foundation job 123776825940 pending.
+Run IDs verified against exact pushed head via gh run list and gh pr checks 303.
+Post-push receipt is local-only; no further push. Integrator relay owns resumption.
+
+FIX12 relay readback 2026-10-30 — CAUSAL RED CONFIRMED (E3, CI only).
+git pull --ff-only origin unit/settings-v2-ui: Already up to date.
+Head: 6fdba18594dcd046f1dc8ad41890ac8a75343f98; integration ancestor
+21eaceb5c72ce6b55955607529daef31fe3163b7 (HEAD...integration = 27 ahead / 0 behind).
+Gates run 40967861632 / job 123778347162 gate (bundle:07): failure.
+Raw checkout: refs/remotes/pull/303/merge,
+tested merge SHA 4e58231dbecb5f3206509ae2dac3322c58244002.
+Artifact 12940365670 gate-browser-identity downloaded under
+output/settings-v2-impl/fix12-relay-current-artifact/.
+Its settings-real-20261029T225729.814521514/playwright.log fails at
+settings-v2.spec.ts:225: pending SKU recovery must use intent-bound A when
+the newest draft is B; settings-v2-overview expected visible, absent.
+The native settings discovery ok + items[0].id === productB preconditions
+at lines 217-218 passed before that unchanged behavioural assertion.
+This is causal RED, unlike previous run 40962897623 setup failure.
+Foundation 40967861611 / job 123776825940: success at the same head.
+No whole-PR GREEN: Gates 40967861632 still in progress at readback.
+Local static checks only: node --check tests/admin/settings-v2.spec.ts,
+node scripts/dev/derive-browser-ownership.mjs --check, git diff --check: exit 0.
+No new source changes, commit or push: FIX12 setup-only correction already
+exists in 6fdba1859; awaiting integrator's implementation relay as instructed.
+NOT_RUN: implementation, current-head GREEN, independent E4, local runtime
+tests/servers/browsers, SANDBOX/LIVE/deploy. Author assessment E0.
+Humaux discovery/search/canvas-read succeeded earlier; later transport failed,
+including coord_lock acquire. No acquired lock => store/canvas writes NOT_RUN.
+WAIT_RUN: 40967861632 (remaining Gates checks); integrator relay owns wakeup.
+
+FIX12 current-session recheck 2026-10-30 (no source change or duplicate push).
+Authoritative pull is already up to date at 6fdba18594dcd046f1dc8ad41890ac8a75343f98.
+Fresh origin/r3/integration fetch: HEAD...integration = 27 ahead / 0 behind.
+Current GitHub job API binds failed bundle:07 job 123778347162 to this head,
+run 40967861632. Artifact API binds gate-browser-identity 12940365670 to
+the same head/run. Fresh download confirms settings-v2.spec.ts:225 fails on
+"pending SKU recovery must use intent-bound A when the newest draft is B".
+Both preserved catalog discovery preconditions precede this assertion and passed.
+The exact requested native waitForResponse correction is already committed in
+6fdba185; all following behavioural assertions are unchanged in that commit.
+Static node --check, git diff --check, browser ownership regeneration and final
+derive-browser-ownership.mjs --check exit 0; generated file unchanged (53 modes).
+Foundation 40967861611/job123776825940 success is not whole-PR GREEN.
+WAIT_RUN: 40967861632; integrator relay owns completion/resumption.
+Latest FIX12 explicitly requires stop before the implementation relay; no
+implementation, duplicate tests-only push, or evidence-only push this session.
+NOT_RUN: local tests/servers/browsers, implementation GREEN, independent E4,
+SANDBOX/LIVE/deploy. Causal CI RED E3; author verdict E0.
+
+FIX12 terminal CI status readback 2026-10-30 (no duplicate source push).
+Current remote/local head: 6fdba18594dcd046f1dc8ad41890ac8a75343f98.
+Pull --ff-only: already up to date; fetched integration: 27 ahead / 0 behind.
+Gates 40967861632 is now completed/failure, not pending.
+bundle:07 job 123778347162 completed/failure at this exact head.
+Fresh GitHub artifact 12940365670, settings-real-20261029T225729.814521514/
+playwright.log, confirms unchanged behavioural failure at settings-v2.spec.ts:225:
+pending SKU recovery must use intent-bound A when the newest draft is B.
+settings-v2-overview absent after native Reload; the preserved native discovery
+ok/B-first setup checks at lines 217-218 were reached and passed beforehand.
+Foundation 40967861611/job123776825940 completed/success at this head;
+receipts and required fail downstream. No whole-PR GREEN.
+Static node --check spec, git diff --check, browser ownership regeneration and
+final --check: exit 0; ownership remains unchanged (53 modes).
+No implementation/source edit, commit, push or new outside-card path this session.
+WAIT_RUN: 40967861632 (completed/failure; integrator implementation relay needed).
+NOT_RUN: implementation GREEN, E4, local tests/servers/browsers, SANDBOX/LIVE/deploy.
+
+FIX12 implementation authorization / causal RED receipts (2026-10-30).
+Human integrator IMPL AFTER CAUSAL RED authorizes the ONE A-bound recovery fix.
+Pulled origin unit/settings-v2-ui --ff-only: already up to date at
+6fdba18594dcd046f1dc8ad41890ac8a75343f98. Fetched r3/integration;
+merge origin/r3/integration: Already up to date (27 ahead / 0 behind).
+GitHub original job API independently re-read in this implementation session:
+Gates run40967861632 / bundle:07 job123778347162 failure, exact head6fdba1859.
+Artifact12940365670 gate-browser-identity; settings-real.spec.ts:28 invokes
+settings-v2.spec.ts:225: pending SKU recovery must use intent-bound A when the
+newest draft is B. Native discovery ok/B-first preconditions passed first.
+Foundation run40967861611 / job123776825940 success at the same full head.
+These receipts establish E3 causal RED only, not implementation GREEN.
+Root fix: load scoped command/stock target before snapshot selection; UUID
+validation and exact response-id matching; reject conflicting SKU/stock targets.
+Ordinary-save refresh also reads the retained product while stock intent exists.
+Original assertions, fixtures, timing and all cached evidence validations unchanged.
+Implementation static checks/own-head CI recorded in DELIVERY and PR comment.
