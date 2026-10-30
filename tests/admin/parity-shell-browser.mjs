@@ -13,6 +13,9 @@ import { fixture, storeID, otherID } from "./shell-fixture.mjs";
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
+// matrix-receipts counts this node suite as the mode's browser execution only with this mark (BROWSER_SPEC_MARK).
+console.log("## matrix-receipts browser-spec");
+
 // Independent signed-copy oracle: do not import the implementation's copy as expected output.
 const copy = {
   "zh-TW": { nav: ["總覽", "直播", "訂單與出貨", "商品與庫存", "訊息中心", "顧客", "行銷優惠", "網路商店", "收款與報表", "設定"], menu: "開啟導覽", close: "關閉導覽", help: "說明", account: "帳號", logout: "登出", helpText: "選擇工作區入口", language: "語言", store: "切換商店" },
