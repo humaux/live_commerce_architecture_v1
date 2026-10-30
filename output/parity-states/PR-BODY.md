@@ -44,4 +44,6 @@ Click ledger and required desktop/mobile/read-failure facts: output/parity-state
 
 Rollback: revert the PR's commits; no data/schema change. Humaux tools are unavailable on this endpoint; store/canvas/coord are UNKNOWN, not claimed. Integrator relays a fresh session when Foundation/Gates completes; stop CI polling within ~10 minutes and report real run IDs.
 
+RELAY 3: head `121d16300` Foundation `41058992626` / `124073641046` passed; Gates bundle:01 `41058992663` / `124091034229` passed. Bundle:02 `124091034606` failed: storefront artifact `12984047644` has 36/48 buyer cases PASS and 12 failed-read assertions blocked by a strict locator collision with Next.js route announcer. Repair attempt 1 scopes only the new offline/unknown/order-offline alert assertions to their signed panel, preserving exact copy, role, clicks, read-only/no-replay checks, fixtures and timeouts. No product source or original gate-adapter assertion changes in this repair. Generated ownership updated. New-head CI PENDING; no full GREEN or E4 claim. Receipt: output/parity-states/RELAY3.log. Integrator relay owns wakeup.
+
 🤖 Generated with Codex (dispatched by Claude Code integrator).

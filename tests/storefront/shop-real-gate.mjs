@@ -424,7 +424,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
             const panel = page.locator('section[data-variant="offline"]');
             await expect(panel).toBeVisible();
             await panel.getByRole("button", { name: c.retry, exact: true }).click();
-            await expect(page.getByRole("alert")).toBeVisible();
+            await expect(panel.getByRole("alert")).toBeVisible();
             await expect(page).toHaveURL(`${origin}/${locale}/orders/${orderID}`);
             await page.reload();
             await expect(panel).toBeVisible();
@@ -442,7 +442,8 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
             if (kind === "offline") {
               const retry = page.getByRole("button", { name: c.retry, exact: true });
               await retry.click();
-              await expect(page.getByRole("alert")).toContainText(c.failed);
+              // The task's InlineError, independent of Next's separate route-announcer alert.
+              await expect(panel.getByRole("alert")).toContainText(c.failed);
               await shot(width === 1440 ? "1429-35448" : "1429-35466");
               cartFailed = false;
               await retry.click();
@@ -454,7 +455,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
               const before = reads.filter(url => url.endsWith("/payment")).length;
               paymentFailed = true;
               await panel.getByRole("button", { name: c.check, exact: true }).click();
-              await expect(page.getByRole("alert")).toContainText(c.unknownFailed);
+              await expect(panel.getByRole("alert")).toContainText(c.unknownFailed);
               assert.ok(reads.filter(url => url.endsWith("/payment")).length > before, "Check status reads the same payment");
               await expect(page.getByTestId("order-page")).toContainText("2,620");
               await expect(page.getByTestId("pay-order")).toHaveCount(0);

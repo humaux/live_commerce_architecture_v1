@@ -166,3 +166,11 @@ Admin loading/error/empty titles retain the caller's existing three-locale task 
 |lookup.invalid|請檢查訂單編號與聯絡方式的格式。|请检查订单编号与联系方式的格式。|Check the format of the order number and the contact.|
 |lookup.tooMany|嘗試次數過多，請稍後再試。|尝试次数过多，请稍后再试。|Too many attempts. Please try again later.|
 |payment.failed|暫時無法確認付款狀態，請重新整理此訂單查詢，不要重複下單。|暂时无法确认付款状态，请刷新此订单查询，不要重复下单。|Payment status could not be confirmed. Refresh this order to check again; do not place it again.|
+
+## RELAY 3 · recovery-alert locator repair (attempt 1)
+
+Current implementation head `121d16300c44c2a2e19c62b5c769c7829f9889df`: Foundation `41058992626` / `124073641046` succeeded; Gates `41058992663` / bundle:01 `124091034229` succeeded. Bundle:02 `124091034606` failed in the storefront member. These are CI observations on the PR synthetic merge `9773319304fbdc872b5eff7e8f2a8bce12e24e06`, not full GREEN or independent visual acceptance.
+
+Artifact `12984047644` contains 48 buyer ledger rows: 36 PASS, 12 FAIL, all offline/unknown failed-read assertions across three locales and two viewports. Next.js adds a route-announcer `role="alert"`, so the new full-page alert locator matches it alongside the expected signed InlineError. Scope those new alert assertions to the existing signed panel; also scope order-offline's visibility assertion so a route announcement cannot satisfy it. Exact copy, accessibility role, real click operations, read-only/no-replay assertions, fixtures and waits remain. Production source and original gate-adapter assertions remain unchanged. This is attempt 1 for the locator blocker. Raw CI artifacts stay local; compact receipt: `RELAY3.log`.
+
+Static E1 only: `node --check tests/storefront/shop-real-gate.mjs`, ownership generation and `--check` exit 0. New head CI and screenshot review PENDING. Local tests/servers NOT_RUN. Humaux is not available; store/canvas/coord cannot be claimed.
