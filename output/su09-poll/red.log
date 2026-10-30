@@ -1,0 +1,47 @@
+SU09-POLL causal CI RED — verified 2026-10-30
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/342 (draft; base r3/integration)
+RED head: e3aba80a5522f61c33cf9e916b0022715ee87c61
+RED base: 1acd628a417394c4bb9549d7c9d041d193b304de
+Run: 40998688876 (Foundation checks, pull_request, attempt 1)
+Job: 123877742349 (foundation), FAILURE
+https://github.com/humaux/live_commerce_architecture_v1/actions/runs/40998688876/job/123877742349
+Production source at RED head: unchanged; commit adds only order-payment-polling.test.mjs.
+Causal failure: test line 34 expects activeAttempt(CLOSED_UNPAID/AWAITING_PAYMENT/cancel_requested=true) === true;
+actual false. Node suite: 500 tests, 499 pass, 1 fail, 0 skip, 0 todo; step exit 1.
+The other four SU09-POLL tests pass, including terminal cases and existing polling bounds.
+Evidence: E3 causal CI RED only; this is not implementation acceptance or GREEN.
+Raw receipt command: gh run view 40998688876 --job 123877742349 --log-failed
+Checkout receipt command: gh run view 40998688876 --job 123877742349 --log
+
+foundation	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-30T03:40:38.7587368Z HEAD is now at 4a3209a9 Merge e3aba80a5522f61c33cf9e916b0022715ee87c61 into 1acd628a417394c4bb9549d7c9d041d193b304de
+foundation	Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09	2026-10-30T03:40:38.7809675Z 4a3209a9dc7f84f18924a919aa9da7c2e83120c0
+
+Filtered raw failure receipt:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:24.4270394Z ℹ tests 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:24.4271373Z ℹ pass 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:24.4271801Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:24.4272671Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:24.4273128Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:25.0871513Z ℹ tests 12
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:25.0872414Z ℹ pass 12
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:25.0872818Z ℹ fail 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:25.0873923Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:25.0874167Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:28.1750641Z ✖ SU09-POLL: CLOSED_UNPAID keeps polling until asynchronous commercial cancellation arrives (2.211487ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:28.1794230Z ✔ SU09-POLL: CLOSED_UNPAID stops polling once the commercial order is terminal (0.377826ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:28.1812579Z ✔ SU09-POLL: existing payment terminal cases remain inactive (0.275626ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:28.1827304Z ✔ SU09-POLL: prepared pending attempts and the Stripe presence fence are unchanged (0.338643ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:28.1869084Z ✔ SU09-POLL: polling step delays and ten-minute window are unchanged (1.463438ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5709049Z ℹ tests 500
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5709563Z ℹ pass 499
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5709798Z ℹ fail 1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5710288Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5710525Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5711570Z test at apps/storefront/tests/order-payment-polling.test.mjs:33:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5712436Z ✖ SU09-POLL: CLOSED_UNPAID keeps polling until asynchronous commercial cancellation arrives (2.211487ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5713353Z   AssertionError [ERR_ASSERTION]: payment closure before commercial cancellation must not stop GET polling
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5714083Z   false !== true
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5715399Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/storefront/tests/order-payment-polling.test.mjs:34:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5720187Z     actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5720578Z     expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T03:46:50.5775639Z ##[error]Process completed with exit code 1.
