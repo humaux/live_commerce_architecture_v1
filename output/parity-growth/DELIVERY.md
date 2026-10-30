@@ -1,9 +1,19 @@
 # PARITY-GROWTH — implementation candidate, GitHub CI pending
 
-Current section: **Relay 3 targeted repair** below. Historical RED-stage status is not current acceptance.
+Current section: **Relay 4 route-fixture repair** below. Historical RED-stage status is not current acceptance.
 Evidence: implementation author E0; local static E1; causal GitHub RED E3 (MOCK). GREEN / browser parity / independent review: PENDING.
 
-## Relay 3 targeted repair
+## Relay 4 route-fixture repair
+
+Authority: current PR head `5ef4cc44857ff92e40e551edf484e851d136c182`; Gates run `41075396782`, failed job `124143813883`, tested merge `9b3ab3af402c500b69add3923c115ac1b524c713`. This relay changes no UI or Figma design. Existing signed-frame references and deferred data fields still apply.
+
+- **Root cause / attempt 1 of 2:** artifact `12989464352` shows 15 passing ads tests and two failed desktop/mobile loading-state cases. The real read was released and interception removed immediately; the CI trace shows `setNetworkInterceptionPatterns` (empty patterns) before the delayed `Route.continue`, which then failed with `Route is already handled!`. The prior artifact-name repair succeeded: screenshot uploads completed. This is a separate fixture-lifecycle blocker, not a new assertion RED.
+- Wait for the real refresh control before installing the read delay. Track every continuation promise, release the delay, await all continuations, then remove interception. Errors still propagate; no catch/ignore, timeout/retry increase, invented response, skipped assertion or disabled test. All real-click journeys and both loading screenshots remain.
+- `relay4-assertions.log`, `relay4-bundle03.log` and `relay4-receipt.json` preserve the original failure and ordering. Downloaded ZIPs were removed after extracting these receipts. Static syntax, ownership regeneration/check, packet validation and whitespace checks exit 0 (E1); source hashes are in the receipt. No browser/test/server was run locally. No component imports changed, so no harness stub change is needed. No dependency-map change is needed for this browser-fixture-only edit.
+- Playwright cleanup authority, checked 2026-10-30: https://playwright.dev/docs/api/class-page#page-unroute-all documents that default removal does not wait for running handlers. Here explicit promises finish before interception removal, preserving errors instead of ignoring them.
+- Current candidate GitHub browser/PG acceptance, whole-PR GREEN and independent parity review remain PENDING. Humaux MCP is unavailable; no store/canvas/coord claim. The integrator completion relay is the wake mechanism. No merge/auto-merge/deploy or external ad action.
+
+## Relay 3 targeted repair (historical)
 
 Current baseline: `f239dbc50b89df1a0c2c622a18f269bfc0d51552`. Exact-head Gates run `41065293413`, job `124113569764` (`bundle:04`), tested merge `b42b92a81ccee6ca56f3c586dd1a3123356f1914`.
 

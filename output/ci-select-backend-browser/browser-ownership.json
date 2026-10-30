@@ -4,7 +4,7 @@
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
-    "tests/admin/ads.spec.ts": "a35e0eb35ad18e94ddd419d4ac7e1996e5bbd2bc7dc02848ae5a368e3bb6ed4f",
+    "tests/admin/ads.spec.ts": "4dc104efe198929e527691b00b61e79d5bea66acc09e9a7af25ae8783e65669b",
     "tests/admin/attribution-audience.test.ts": "de4eaaaf5f3ee3bd262243d9f2dc3e5f636b50183e98a9038f5927de341105d3",
     "tests/admin/attribution-checkout.spec.ts": "1f42c6aaaab3fde22097a7babbbb98b5a3f19c70d337ed7cc704bf91e17dd0dc",
     "tests/admin/attribution-format.test.ts": "662fc1de39ba699c1e3ded9f7bd1c91d00caf1abedb24efaabfe14277fab8e36",

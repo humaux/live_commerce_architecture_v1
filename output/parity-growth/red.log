@@ -103,3 +103,14 @@ RELAY3_ASSERTION_RED=not a new assertion RED; preserve tests-only RED 4105427859
 RELAY3_FIX_ATTEMPT=1/2 for artifact filename blocker
 RELAY3_FIX=all owned parity emitters use hyphen filenames and exact Figma ids in mapping; prior raw-operation-copy P1 corrected in same batch
 RELAY3_GREEN=PENDING next-head CI; no evidence-only push after GREEN
+
+RELAY4_BASELINE=5ef4cc44857ff92e40e551edf484e851d136c182
+RELAY4_RUN=41075396782
+RELAY4_JOB=124143813883 (bundle:03, failure)
+RELAY4_TESTED_MERGE_SHA=9b3ab3af402c500b69add3923c115ac1b524c713
+RELAY4_FAILURE=15 ads tests pass, desktop/mobile loading fixture fails Route is already handled; trace: interception removed before delayed continuation
+RELAY4_FIX_ATTEMPT=1/2 for route-fixture lifecycle blocker
+RELAY4_FIX=await every delayed continuation before unroute; retain all assertions/screenshots, error propagation, original response and real clicks
+RELAY4_STATIC=E1; syntax, generated ownership check, packet and whitespace exit0; receipt includes file hashes
+RELAY4_GREEN=PENDING next-head GitHub CI; original causal RED unchanged
+RELAY4_WAKE=integrator completion relay after WAIT_RUN

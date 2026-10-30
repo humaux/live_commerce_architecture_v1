@@ -773,15 +773,26 @@ function registerGrowthAdsParity(env: Environment & { pageAsset: string }) {
         await shot(page, env, frame("detail"));
         await page.getByRole("button", { name: "前往廣告列表", exact: true }).click();
         await page.goto(`${env.origin}/zh-TW/ads?store=${env.store}`);
+        await expect(page.getByRole("button", { name: "重新讀取", exact: true })).toBeVisible();
         let release!: () => void;
         const hold = new Promise<void>(resolve => { release = resolve; });
+        const continuations: Promise<void>[] = [];
         // Fixture preparation: delay a REAL read, preserve its response body and every write.
-        await page.route("**/api/stores/*/ads/drafts", async route => { await hold; await route.continue(); });
+        await page.route("**/api/stores/*/ads/drafts", route => {
+          const continuation = hold.then(() => route.continue());
+          continuations.push(continuation);
+          return continuation;
+        });
         try {
           await page.getByRole("button", { name: "重新讀取", exact: true }).click();
           await expect(page.getByRole("heading", { name: "正在讀取廣告列表", exact: true })).toBeVisible();
           await shot(page, env, frame("loading"));
-        } finally { release(); await page.unroute("**/api/stores/*/ads/drafts"); }
+        } finally {
+          release();
+          // Removing interception resumes pending reads; finish our handlers first to avoid double handling.
+          await Promise.all(continuations);
+          await page.unroute("**/api/stores/*/ads/drafts");
+        }
         await expect(page.getByRole("heading", { name: "廣告草稿", exact: true })).toBeVisible();
       });
       test(`C3 editor, settings, leave and source ${device.width}`, async ({ page }) => {
