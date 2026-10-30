@@ -337,6 +337,50 @@ test("RPUI 92/93 days, reversed dates, real truncated/failed reads and empty suc
   } finally { await context.close(); }
 });
 
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`RPUI RVFIX-370 reader recovers from funnel refusal ${locale}/${width}`, async ({ browser }) => {
+    const { context, page } = await signed(browser, locale, width, "reader"), c = reportsCopy[locale], p = moneyDesign[locale];
+    try {
+      await expect(page.getByTestId("reports-products-table")).toBeVisible();
+      await step(page, "reader Funnel refusal", "report-specific refusal retains navigation and range entry", async () => {
+        await page.getByTestId("reports-tab-funnel").click();
+        await expect(page.getByTestId("reports-page")).toContainText(c.forbidden);
+        for (const tab of ["products", "channels", "funnel", "manual-orders"]) {
+          await expect(page.getByTestId(`reports-tab-${tab}`), "RVFIX-370: report refusal must retain report navigation").toBeVisible();
+          await expect(page.getByTestId(`reports-tab-${tab}`)).toBeEnabled();
+        }
+        await expect(page.getByRole("button", { name: p.chooseDates, exact: true })).toBeVisible();
+        await expect(page.getByTestId("reports-products-table")).toHaveCount(0);
+      });
+      await page.reload();
+      await expect(page).toHaveURL(/report=funnel/);
+      await expect(page.getByTestId("reports-page")).toContainText(c.forbidden);
+      await step(page, "refused report date editor", "range and store controls remain reachable after refresh", async () => {
+        await page.getByRole("button", { name: p.chooseDates, exact: true }).click();
+        await expect(page.getByLabel(c.store, { exact: true })).toBeVisible();
+        await expect(page.getByTestId("reports-from")).toHaveValue("2026-09-01");
+        await expect(page.getByTestId("reports-to")).toHaveValue("2026-09-30");
+        await page.getByRole("button", { name: p.cancel, exact: true }).click();
+        await expect(page.getByTestId("reports-tab-products")).toBeVisible();
+      });
+      await step(page, "reader Products recovery", "authorized rows return and persist without granting export permission", async () => {
+        await page.getByTestId("reports-tab-products").click();
+        await expect(page).toHaveURL(/report=products/);
+        await expect(page.getByTestId("reports-products-table").locator("tbody tr")).toHaveCount(5);
+        await expect(page.getByTestId("reports-products-table")).toContainText("=Alpha");
+        await expect(page.getByTestId("reports-page")).not.toContainText(c.forbidden);
+        await expect(page.getByTestId("reports-csv-products")).toBeDisabled();
+        await page.reload();
+        await expect(page).toHaveURL(/report=products/);
+        await expect(page.getByTestId("reports-products-table").locator("tbody tr")).toHaveCount(5);
+        await expect(page.getByTestId("reports-products-table")).toContainText("=Alpha");
+        await expect(page.getByTestId("reports-csv-products")).toBeDisabled();
+      });
+      await fits(page);
+    } finally { await context.close(); }
+  });
+}
+
 test("RPUI reader/no-orders signed identities: export disabled and funnel permission refusal", async ({ browser }) => {
   const c = reportsCopy.en;
   for (const actor of ["reader", "none"]) {
