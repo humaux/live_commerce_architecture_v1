@@ -5,8 +5,8 @@
 // Purpose: authenticated workspace navigation and store-scoped billing/Meta advice.
 // Depends on: shell API, route permissions, BillingBanner and MetaHealthBanner B1.
 // Used by: all admin workspace pages.
-// Invariants: server reads own scope; expired/denied boundaries never mount private content.
-// W0 shell only. API boundary: src/shell/api.ts; existing child page bodies are unchanged.
+// Invariants: shell A preserves authenticated scope, navigation guards, session fences and drawer focus; expired/denied boundaries never mount private content.
+// Shell only. API boundary: src/shell/api.ts; existing child page bodies are unchanged.
 import {
   useCallback,
   useEffect,
@@ -65,6 +65,7 @@ export function WorkspaceFrame({
     [retry, setRetry] = useState(0);
   const [open, setOpen] = useState(false),
     [expanded, setExpanded] = useState<string | null>(null);
+  const [mobile, setMobile] = useState(false);
   const [signingOut, setSigningOut] = useState(false),
     [signOutFailed, setSignOutFailed] = useState(false);
   const busy = useRef(false);
@@ -155,8 +156,13 @@ export function WorkspaceFrame({
   useEffect(() => {
     close();
     const media = matchMedia("(min-width: 1024px)");
-    media.addEventListener("change", close);
-    return () => media.removeEventListener("change", close);
+    const adapt = () => {
+      setMobile(!media.matches);
+      close();
+    };
+    adapt();
+    media.addEventListener("change", adapt);
+    return () => media.removeEventListener("change", adapt);
   }, [pathname, close]);
   const before = (destination?: string) => !locked && (!onBeforeNavigate || onBeforeNavigate(destination));
   function navigate(path: string) {
@@ -244,6 +250,36 @@ export function WorkspaceFrame({
   const selectedStore = storeParam
     ? stores.find((store) => store.id === storeParam)
     : [...stores].sort((a, b) => a.id.localeCompare(b.id))[0];
+  const storeSwitcher = selectedStore && (
+    <label className={s.store}>
+      <span className="sr-only">{c.store}</span>
+      <span className={s.brand} data-testid="shell-store-brand" aria-hidden="true">
+        <span className={s.brandMark}>{Array.from(selectedStore.name.trim())[0]?.toLocaleUpperCase(locale)}</span>
+        <span className={s.brandName} data-testid="shell-store-name" title={selectedStore.name}>{selectedStore.name}</span>
+        <span className={s.storeChevron}>⌄</span>
+      </span>
+      <select
+        aria-label={c.store}
+        data-testid="shell-store-selector"
+        value={selectedStore?.id ?? ""}
+        disabled={locked || !stores.length}
+        onChange={(e) => {
+          // Inbox teardown flushes controlled inputs; retain the user's choice before it runs.
+          const nextStore = e.currentTarget.value;
+          if (before())
+            window.location.assign(
+              `/${locale}/?store=${encodeURIComponent(nextStore)}`,
+            );
+        }}
+      >
+        {stores.map((store) => (
+          <option value={store.id} key={store.id}>
+            {store.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
   return (
     <>
       <title>
@@ -251,7 +287,7 @@ export function WorkspaceFrame({
           ? c.signIn
           : route
             ? pageTitle(locale, pathname)
-            : "Commerce workspace"}
+            : c.navigation}
       </title>
       <AppShell
         open={open}
@@ -266,14 +302,10 @@ export function WorkspaceFrame({
             >
               {company.productName}
             </div>
+            {!mobile && storeSwitcher}
             {nav.length > 0 && (
               <nav className={s.navigation} aria-label={c.navigation}>
-                {nav.filter((g) => g.id !== "settings").map(groupView)}
-              </nav>
-            )}
-            {nav.some((g) => g.id === "settings") && (
-              <nav className={s.bottom} aria-label={c.settings}>
-                {nav.filter((g) => g.id === "settings").map(groupView)}
+                {nav.map(groupView)}
               </nav>
             )}
           </>
@@ -290,35 +322,37 @@ export function WorkspaceFrame({
             >
               <Icon name="menu" />
             </button>
-            {selectedStore && (
-              <label className={s.store}>
-                <span className="sr-only">{c.store}</span>
-                <span className={s.brand} data-testid="shell-store-brand" aria-hidden="true">
-                  <span className={s.brandMark}>{Array.from(selectedStore.name.trim())[0]?.toLocaleUpperCase(locale)}</span>
-                  <span className={s.brandName} data-testid="shell-store-name" title={selectedStore.name}>{selectedStore.name}</span>
-                  <span className={s.storeChevron}>⌄</span>
-                </span>
-                <select
-                  aria-label={c.store}
-                  data-testid="shell-store-selector"
-                  value={selectedStore?.id ?? ""}
-                  disabled={locked || !stores.length}
-                  onChange={(e) => {
-                    // Inbox teardown flushes controlled inputs; retain the user's choice before it runs.
-                    const nextStore = e.currentTarget.value;
-                    if (before())
-                      window.location.assign(
-                        `/${locale}/?store=${encodeURIComponent(nextStore)}`,
-                      );
-                  }}
-                >
-                  {stores.map((store) => (
-                    <option value={store.id} key={store.id}>
-                      {store.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            {mobile && storeSwitcher}
+            {route && selectedStore && (
+              <nav
+                className={s.crumbs}
+                data-shell-route={route.path}
+                aria-label={c.navigation}
+              >
+                {route.id === "dashboard" ? (
+                  <span aria-current="page">{c.overview}</span>
+                ) : (
+                  <>
+                    <a
+                      href={`/${locale}/`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate("/");
+                      }}
+                    >
+                      {c.overview}
+                    </a>
+                    {c[route.group] !== pageTitle(locale, pathname) && (
+                      <>
+                        <span aria-hidden="true">/</span>
+                        <span>{c[route.group]}</span>
+                      </>
+                    )}
+                    <span aria-hidden="true">/</span>
+                    <span aria-current="page">{pageTitle(locale, pathname)}</span>
+                  </>
+                )}
+              </nav>
             )}
             <label>
               <span className="sr-only">{c.language}</span>
@@ -370,35 +404,6 @@ export function WorkspaceFrame({
           </>
         }
       >
-        {route && selectedStore && (
-          <nav
-            className={s.crumbs}
-            data-shell-route={route.path}
-            aria-label={c.navigation}
-          >
-            {route.id !== "dashboard" && (
-              <>
-                <a
-                  href={`/${locale}/`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate("/");
-                  }}
-                >
-                  {c.overview}
-                </a>
-                {c[route.group] !== pageTitle(locale, pathname) && (
-                  <>
-                    <span aria-hidden="true">/</span>
-                    <span>{c[route.group]}</span>
-                  </>
-                )}
-                <span aria-hidden="true">/</span>
-                <span aria-current="page">{pageTitle(locale, pathname)}</span>
-              </>
-            )}
-          </nav>
-        )}
         {error ? (
           <div
             className={s.status}
