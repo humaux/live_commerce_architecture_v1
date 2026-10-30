@@ -285,7 +285,7 @@ export function CommentStream({
                     )}
                   {row.marks.private_reply && (
                     <p className="live-helper" data-testid={`comment-send-state-${row.ref}`}>
-                      {commentReason(locale, commentSendState(row.marks.private_reply.state))}
+                      {commentReason(locale, `delivery_${commentSendState(row.marks.private_reply.state)}`)}
                     </p>
                   )}
                   <CommentLabelAction row={row} />

@@ -1,6 +1,7 @@
 // Purpose: LC-U2a three-locale stream/reply labels and fixed privacy-safe rule explanations.
 // Depends on: frozen live-console-v1 reply rules; no provider error strings or buyer data.
 // Used by: CommentStream and CommentReply.
+// Invariants: generic delivery badges stay distinct from channel-specific composer receipts.
 const en = {
   recentOrders: "Recent orders",
   memoryLimit: "1,000 comments loaded. Refresh to return to recent comments before loading more.",
@@ -63,6 +64,11 @@ const en = {
   failed: "Failed",
   blocked: "Blocked",
   unknown: "Confirming delivery (will not send again)",
+  delivery_sent: "Sent",
+  delivery_queued: "Queued",
+  delivery_failed: "Failed",
+  delivery_blocked: "Blocked",
+  delivery_unknown: "Delivery uncertain",
   unavailable: "Comments are temporarily unavailable. Refresh to try again.",
   forbidden:
     "You cannot access these comments. Ask a store owner to review your permissions.",
@@ -195,6 +201,11 @@ const tw: Copy = {
   failed: "傳送失敗",
   blocked: "已阻擋",
   unknown: "確認送出狀態中（不會重複傳）",
+  delivery_sent: "已傳送",
+  delivery_queued: "排隊中",
+  delivery_failed: "傳送失敗",
+  delivery_blocked: "已阻擋",
+  delivery_unknown: "結果未確認",
   unavailable: "留言暫時無法載入，請重新整理。",
   forbidden: "沒有留言存取權限，請店主確認權限。",
   restricted: "已限制",
@@ -314,6 +325,11 @@ const cn: Copy = {
   failed: "发送失败",
   blocked: "已阻止",
   unknown: "正在确认发送状态（不会重复发送）",
+  delivery_sent: "已发送",
+  delivery_queued: "排队中",
+  delivery_failed: "发送失败",
+  delivery_blocked: "已阻止",
+  delivery_unknown: "结果未确认",
   unavailable: "评论暂时无法加载，请刷新。",
   forbidden: "没有评论访问权限，请店主确认权限。",
   restricted: "已限制",

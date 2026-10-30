@@ -36,3 +36,23 @@ Download attempts bounded45s/90s, partial ZIP3668964bytes; no further process re
 implementation_static=E1 tsc7.0.2 noEmit incremental=false resolver config exit0; syntax/ownership/diff checks exit0
 implementation_runtime=NOT_RUN locally; await own CI after batch push
 raw_context_packaging=byte-identical gzip (mtime0) to retain GitHub trailing whitespace without a source whitespace exemption; SHA256 values refer to decompressed original bytes
+
+IMPLEMENTATION_PUSH head=a6e9876dce5d0b5231f4ca3b83f9fde5a3ef8e99 pr=355
+WAIT_RUN Foundation=41060952171 job=124080250278 status=queued
+WAIT_RUN Gates=41060952253 status=queued browser_job=NOT_CREATED
+GREEN=PENDING own_PR_CI only; author=E0 static=E1
+Post-push receipts remain uncommitted; no extra evidence-only push.
+Wakeup=integrator fresh-session relay on these run conclusions; no local watcher/process.
+
+RELAY3 regression receipt (implementation head, not tests-only RED):
+head=a6e9876dce5d0b5231f4ca3b83f9fde5a3ef8e99
+Foundation_run=41060952171 job=124080250278 status=failure
+failure=15 PR31 soldout cases: en/zh-TW/zh-CN x SUCCEEDED/ACKNOWLEDGED/READY/DISPATCHING/UNKNOWN; existing delivery-state warning remains visible assertion
+suite=105 tests,90 pass,15 fail; exit1
+root=channel-specific signed composer wording reused by generic stream delivery badges
+fix_attempt=1; independent three-locale delivery_* copy keys used only by stream badges; existing assertions untouched
+raw_filtered_receipt=output/PARITY-LIVE/relay3-foundation.log
+local_runtime_tests_servers=NOT_RUN by owner instruction
+local_syntax=FAILED_ENV node24.15.0 --check cannot parse the pre-existing TypeScript type alias (file/stdin, strip-types flag); tsc unavailable in this worktree; CI must compile
+local_browser_ownership_check=exit0; local_git_diff_check=exit0
+GREEN=PENDING new own-head CI; no merge/auto-merge/deploy

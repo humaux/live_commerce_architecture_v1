@@ -312,3 +312,21 @@ The table covers both console copy owners, including error, permission, advanced
 |已保留|已预留|Reserved|
 |買家留言 {keyword} 就能登記購買|买家评论 {keyword} 即可登记购买|Comment {keyword} to register this product|
 |留言先登記，結帳時才留貨。|评论先登记，结账时才预留库存。|Comments register interest. Stock is reserved at checkout.|
+
+## IMPLEMENTATION WAIT_RUN — current head
+
+Pushed `a6e9876dce5d0b5231f4ca3b83f9fde5a3ef8e99` to unit/parity-live, PR #355 into r3/integration. Own Foundation41060952171/job124080250278 and Gates41060952253 are queued, exact headSha confirmed by native gh run list. No browser job yet; plan job is not acceptance or WAIT_RUN. GREEN/current-head E3/E4, all-frame screenshots/density comparison and independent review remain PENDING/NOT_RUN. Post-push receipts are local only to avoid restarting the fleet. Integrator relays a fresh session when these runs finish. Original RED head/run/job remain above. No task-owned process remains.
+
+## RELAY 3 — delivery badge regression, targeted fix 1
+
+Foundation41060952171/job124080250278 failed on implementation head a6e9876dce5d0b5231f4ca3b83f9fde5a3ef8e99: 15 existing PR31 sold-out delivery-warning assertions (105 cases, 90 pass, 15 fail). This is not the original tests-only RED. Raw filtered receipt: relay3-foundation.log. Root cause: the signed channel-specific composer labels replaced the generic labels shared by comment-row delivery badges. Fix: keep composer labels and add separate three-locale delivery_* keys consumed by the stream badge. Existing sent-only sold-out success condition, unknown/pending fences and all assertions stay unchanged. No new import or harness dependency.
+
+|Delivery badge zh-TW|zh-CN|en|
+|---|---|---|
+|已傳送|已发送|Sent|
+|排隊中|排队中|Queued|
+|傳送失敗|发送失败|Failed|
+|已阻擋|已阻止|Blocked|
+|結果未確認|结果未确认|Delivery uncertain|
+
+These generic labels preserve the existing regression gate verbatim; the signed composer wording remains channel-specific. Static browser-ownership --check and git diff --check exit0. Node24.15.0 --check failed to parse the pre-existing TypeScript type alias, including the strip-types/stdin variants; no syntax PASS is claimed. No tsc binary or node_modules in this worktree, so typecheck deferred to CI. No local runtime tests/servers. No page/spec/import/Go changes, so browser ownership generation and Go depmap regeneration are unnecessary; ownership check confirms no drift. Only source changes: CommentStream.tsx and console comment-copy.ts. Humaux memory/canvas/coord/code-index tools unavailable: NOT_RUN. Author judgment E0; new-head CI and independent parity acceptance remain PENDING.
