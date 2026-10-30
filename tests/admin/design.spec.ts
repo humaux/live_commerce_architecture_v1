@@ -1,6 +1,7 @@
 // Purpose: Exercises design draft, media, preview and publication controls through the browser harness.
 // Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, design-copy, shell-copy, shared Taipei displayTime; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_DESIGN_STORES, LC_BROWSER_BFF_STORE, LC_BROWSER_READONLY_STORE, LC_BROWSER_FOREIGN_STORES
 // Used by: apps/admin/src/features/storefront/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_store_design_test.go
+// Invariants: native controls preserve save/CAS, receipt identity, append-only rollback and reload persistence.
 // SDB admin gate of unit store-design (contracts/storefront-v2.md section B; independent test author, evidence label BROWSER, IdP = MOCK).
 // BFF routes exercised through the UI: GET|PUT /api/stores/{store}/design/draft, POST design/publish|rollback|preview-token,
 // GET design/versions, GET|POST design/media, GET design/media/{id} -> Go /v1/admin/stores/{store}/design/* (integration:read /
@@ -22,7 +23,7 @@ async function editorTask(page: Page, task: 'profile' | 'home' | 'pages' | 'nav'
   await expect(page.getByTestId('design-status')).toHaveCount(1);
   if (await page.getByTestId(`design-${task}`).isVisible()) return;
   if (await page.getByTestId('design-back').isVisible()) await page.getByTestId('design-back').click();
-  await page.getByTestId(task === 'versions' ? 'design-tab-versions' : `design-task-${task}`).click();
+  await page.getByTestId(task === 'versions' ? 'design-live-versions' : `design-task-${task}`).click();
   await expect(page.getByTestId(`design-${task}`)).toBeVisible();
 }
 async function editorPublish(page: Page) {
@@ -134,7 +135,9 @@ for (const j of journeys) {
     }
     await expect(page.getByRole("tab")).toHaveCount(0);
     for (const task of ['profile','home','pages','nav']) await expect(page.getByTestId(`design-task-${task}`)).toBeVisible();
-    await expect(page.getByTestId('design-tab-versions')).toBeVisible();
+    await expect(page.getByTestId('design-tab-versions')).toHaveCount(0);
+    await expect(page.getByTestId('design-live-versions')).toBeVisible();
+    await expect(page.getByTestId('design-hub').getByRole('button')).toHaveCount(4);
 
     // ---- profile: name, accent colour, logo upload (+ refused uploads), contact ----
     await editorTask(page, "profile");
@@ -242,7 +245,7 @@ for (const j of journeys) {
     expect(put.headers()["x-csrf-token"]).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(JSON.stringify(put.postDataJSON().document)).not.toContain("<");
     await expect(note).toHaveText(c.okSaved);
-    await expect(status).toContainText(c.saved);
+    await expect(status).toHaveText(`${fill(c.draftVersion, { n: 1 })} · ${c.neverPublished}`);
     await expect(status).toContainText(fill(c.draftVersion, { n: 1 }));
     await expect(status).toContainText(c.neverPublished);
 
@@ -279,7 +282,7 @@ for (const j of journeys) {
     await editorTask(page, "profile");
     if (!(await page.getByTestId("design-profile-intro").isVisible())) await page.getByTestId("design-profile-intro-toggle").click();
     await page.getByLabel(c.profile.tagline, { exact: true }).fill("");
-    await expect(status).toContainText(c.saved);
+    await expect(status).toHaveText(`${fill(c.draftVersion, { n: 1 })} · ${c.neverPublished}`);
     expect(await beforeUnloadPrevented()).toBe(false);
     const before = dlg.seen.length;
     await goSettings();

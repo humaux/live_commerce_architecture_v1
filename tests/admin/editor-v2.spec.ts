@@ -247,6 +247,7 @@ async function save(page: Page, state: Awaited<ReturnType<typeof open>>, locale:
   });
 }
 async function review(page: Page, locale: Locale) {
+  if (await page.getByTestId("design-preview-view").isVisible()) await back(page, locale);
   await click(page, page.getByTestId("design-publish"), "Publish", "whole-document review", async () => {
     await expect(page.getByTestId("design-publish-review")).toBeVisible();
     await expect(page.getByText(ui[locale].scope, { exact: true })).toBeVisible();
@@ -506,4 +507,155 @@ for (const locale of locales) {
     await expect(page.getByTestId("design-status")).toContainText("28");
     await expect(page.getByTestId("design-publish")).toBeHidden();
   });
+}
+
+// PARITY-INBOX-EDITOR literal copy is independent of the implementation dictionary.
+// Versions/content come from the existing fixture responses, never Figma's sample values.
+const signedEditor = {
+  "zh-TW": { subtitle: "預覽與發布前會先儲存", preview: "預覽草稿", publish: "發布", draft: "草稿 42 · 線上 27", confirm: "發布草稿 42？", immediate: "發布後，買家立即看到新內容", confirmAction: "確認發布草稿 42", success: "已發布為版本 28", available: "目前網址可使用", pendingHelp: "先查詢結果，請勿再次發布", previewLabel: "草稿 42 預覽 · 15 分鐘有效", previewLive: "尚未發布 · 買家看到版本 27" },
+  "zh-CN": { subtitle: "预览和发布前会先保存", preview: "预览草稿", publish: "发布", draft: "草稿 42 · 线上 27", confirm: "发布草稿 42？", immediate: "发布后，买家立即看到新内容", confirmAction: "确认发布草稿 42", success: "已发布为版本 28", available: "当前网址可用", pendingHelp: "请先查询结果，勿重复发布", previewLabel: "草稿 42 预览 · 15 分钟有效", previewLive: "尚未发布 · 买家看到版本 27" },
+  en: { subtitle: "Saves first", preview: "Preview", publish: "Publish", draft: "Draft 42 · Live 27", confirm: "Publish draft 42?", immediate: "Buyers see the new content immediately", confirmAction: "Publish draft 42", success: "Published as version 28", available: "Current address is active", pendingHelp: "Check the result before publishing again", previewLabel: "Draft 42 preview · Valid for 15 minutes", previewLive: "Unpublished · Buyers see version 27" },
+} as const;
+
+async function editorParity(page: Page, frame: string) {
+  await expect(page).toHaveURL(/\/(zh-TW|zh-CN|en)\/design/);
+  // GitHub artifacts reject colons in paths; retain the signed frame ID in the attachment label.
+  const path = test.info().outputPath("parity", `${frame.replaceAll(":", "-")}.png`);
+  await page.screenshot({ path });
+  await test.info().attach(`parity/${frame}.png`, { path, contentType: "image/png" });
+}
+
+for (const locale of locales) for (const mobile of [false, true]) {
+  test(`PARITY editor hub ${locale}/${mobile ? "mobile" : "desktop"}: signed copy, four rows and domains`, async ({ page }) => {
+    await open(page, locale, mobile);
+    await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 });
+    await hub(page, locale);
+    const signed = signedEditor[locale];
+    await expect(page.getByText(signed.subtitle, { exact: true }), "signed save-before-preview/publish subtitle").toBeVisible();
+    await expect(page.getByTestId("design-status")).toHaveText(signed.draft);
+    await expect(page.getByRole("button", { name: signed.preview, exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: signed.publish, exact: true })).toBeVisible();
+    await expect(page.getByTestId("design-hub").getByRole("button"), "four direct edit rows; domain is a separate action").toHaveText([
+      ui[locale].pages, ui[locale].home, ui[locale].nav, ui[locale].profile,
+    ]);
+    await expect(page.getByTestId("design-tab-versions"), "no extra publication-history row").toHaveCount(0);
+    await expect(page.getByRole("button", { name: ui[locale].domains, exact: true })).toBeVisible();
+    if (locale === "zh-TW") await editorParity(page, mobile ? "1429:63170" : "1429:63114");
+    ledger.push({ page: new URL(page.url()).pathname, control: "Signed task hub", action: "read", expected: "literal copy and four tasks", actual: "observed" });
+  });
+}
+
+for (const mobile of [false, true]) {
+  test(`PARITY editor ${mobile ? "mobile" : "desktop"}: every editing and preview frame through native controls`, async ({ page }) => {
+    const locale = "zh-TW";
+    const state = await open(page, locale, mobile);
+    await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 });
+    const shot = (desktop: string, phone: string) => editorParity(page, mobile ? phone : desktop);
+    await task(page, locale, "home");
+    await shot("1429:64602", "1429:64684");
+    const rows = page.getByTestId("design-section");
+    await rows.nth(1).getByTestId("design-section-more").click();
+    await rows.nth(1).getByRole("button", { name: designCopy[locale].nav.up, exact: true }).click();
+    await expect(rows.first()).toContainText("Products");
+    await expect(page.getByTestId("design-status")).toContainText("未儲存");
+    await shot("1429:64758", "1429:64840");
+    await save(page, state, locale);
+    await back(page, locale);
+    await shot("1429:65658", "1429:65714");
+    await page.reload();
+    await task(page, locale, "home");
+    await expect(rows.first()).toContainText("Products");
+    await back(page, locale);
+    await task(page, locale, "profile");
+    await expect(page.getByTestId("design-name")).toHaveValue("Demo");
+    await expect(page.getByTestId("design-accent")).toHaveValue("#247965");
+    await shot("1429:64914", "1429:65008");
+    await back(page, locale);
+    await task(page, locale, "pages");
+    await page.getByTestId("design-page-open").filter({ hasText: "Shipping" }).click();
+    await expect(page.getByLabel(designCopy[locale].pages.body, { exact: true })).toHaveValue("See checkout.");
+    await shot("1429:65094", "1429:65151");
+    await page.getByTestId("design-page-more").click();
+    await page.getByTestId("design-page-add").click();
+    await fill(page, page.getByLabel(designCopy[locale].pages.title, { exact: true }), "Returns policy", "New page title");
+    await fill(page, page.getByLabel(designCopy[locale].pages.slug, { exact: true }), "returns-policy", "New page URL");
+    await expect(page.getByLabel(designCopy[locale].pages.body, { exact: true })).toHaveValue("");
+    await shot("1429:65280", "1429:65337");
+    await page.getByTestId("design-cancel").click();
+    await task(page, locale, "nav");
+    await expect(page.getByTestId("design-nav-footer-row")).toContainText("Shipping");
+    await shot("1429:65386", "1429:65477");
+    await back(page, locale);
+    await page.getByRole("button", { name: ui[locale].domains, exact: true }).click();
+    await expect(page.getByTestId("design-domain-platform")).toContainText(address);
+    await expect(page.getByTestId("design-domain-custom")).toContainText(customAddress);
+    await shot("1429:66030", "1429:66073");
+    await back(page, locale);
+    const popupPromise = page.waitForEvent("popup");
+    await page.getByRole("button", { name: signedEditor[locale].preview, exact: true }).click();
+    const popup = await popupPromise;
+    await expect(popup).toHaveURL(new RegExp(`${address.replaceAll(".", "\\.")}/\\?preview=`));
+    expect(state.receipts.size, "preview never publishes").toBe(0);
+    const preview = page.getByTestId("design-preview-view");
+    await expect(preview, "signed preview state on the real editor route").toBeVisible();
+    await expect(preview).toContainText("15 分鐘有效");
+    await expect(preview).toContainText("買家看到版本 27");
+    await shot("1429:65560", "1429:65613");
+    await popup.close();
+    ledger.push({ page: new URL(page.url()).pathname, control: "All editor states", action: "click/fill/reload", expected: "order persists, optional fields remain, preview does not publish", actual: "observed" });
+  });
+
+  for (const outcome of ["success", "forbidden", "uncertain"] as const) {
+    test(`PARITY editor ${mobile ? "mobile" : "desktop"}/${outcome}: signed review and result`, async ({ page }) => {
+      const locale = "zh-TW";
+      const state = await open(page, locale, mobile);
+      await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 });
+      state.outcome = outcome;
+      await review(page, locale);
+      const signed = signedEditor[locale];
+      const panel = page.getByTestId("design-publish-review");
+      await expect(panel.getByRole("heading", { name: signed.confirm, exact: true })).toBeVisible();
+      await expect(panel.getByText(signed.immediate, { exact: true })).toBeVisible();
+      await expect(panel).toContainText(signed.available);
+      await expect(panel.getByRole("button", { name: signed.confirmAction, exact: true })).toBeEnabled();
+      if (outcome === "success") await editorParity(page, mobile ? "1429:65800" : "1429:65762");
+      await panel.getByRole("button", { name: signed.confirmAction, exact: true }).click();
+      const result = page.getByTestId(outcome === "uncertain" ? "design-publish-pending" : "design-publish-result");
+      await expect(result).toBeVisible();
+      await expect(result).toContainText(ui[locale].scope);
+      await expect(result).toContainText(ui[locale].unchanged);
+      await expect(result).toContainText(address);
+      await expect(result).toContainText(signed.available);
+      if (outcome === "uncertain") {
+        await expect(result).toContainText(signed.pendingHelp);
+        await expect(page.getByTestId("design-publish")).toBeHidden();
+      } else await expect(result.getByRole("heading")).toHaveText(outcome === "success" ? signed.success : ui[locale].failed);
+      const frames = { success: ["1429:65830", "1429:65868"], forbidden: ["1429:65898", "1429:65934"], uncertain: ["1429:65962", "1429:66000"] };
+      await editorParity(page, frames[outcome][mobile ? 1 : 0]);
+      if (outcome === "success") {
+        await page.getByTestId("design-view-published").click();
+        await expect(page.getByTestId("design-published-content")).toContainText("28");
+        await editorParity(page, mobile ? "1429:66154" : "1429:66108");
+        await back(page, locale);
+        await expect(page.getByTestId("design-publish")).toBeHidden();
+        await expect(page.getByTestId("design-status")).toContainText("28");
+        await editorParity(page, mobile ? "1430:68181" : "1430:68109");
+        await page.reload();
+        await hub(page, locale);
+        await expect(page.getByTestId("design-publish")).toBeHidden();
+        expect(state.receipts.size).toBe(1);
+      } else if (outcome === "uncertain") {
+        const original = { ...state.attempts[0] };
+        await page.reload();
+        await expect(result).toContainText(ui[locale].pending);
+        await expect(page.getByTestId("design-publish-recheck")).toHaveText(ui[locale].query);
+        await expect(page.getByTestId("design-publish-recheck")).toBeEnabled();
+        await page.getByRole("button", { name: ui[locale].query, exact: true }).click();
+        await expect(result).toContainText(ui[locale].pending);
+        for (const attempt of state.attempts) expect(attempt).toEqual(original);
+        expect(state.receipts.size).toBe(0);
+      } else expect(state.receipts.size).toBe(0);
+      ledger.push({ page: new URL(page.url()).pathname, control: `${outcome} publication`, action: "review, confirm, refresh/query", expected: "receipt-bound result; no duplicate publish", actual: "observed" });
+    });
+  }
 }

@@ -31,12 +31,23 @@
 .design-status {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 14px;
+  gap: 4px;
   align-items: baseline;
   color: var(--muted);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
+.design-page .design-version-link {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 44px;
+}
+.design-subtitle { margin: 0; color: var(--muted); }
 .design-status strong {
   color: var(--ink);
   font-size: 14px;
@@ -389,12 +400,18 @@
 /* Signed editor: a task list first, one editor/disclosure at a time. Hidden native
    disclosure contents cannot be overridden by inherited flex/grid declarations. */
 .design-page [hidden] { display: none !important; }
-.design-saved-badge { display: none; }
 .design-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .design-editor { max-width: 960px; }
-.design-task-list { display: grid; background: var(--ui-surface); border-block: 1px solid var(--ui-border); }
-.design-task-list > button { text-align: start; border: 0; border-bottom: 1px solid var(--ui-border); border-radius: 0; min-height: 48px; padding: 12px 16px; }
-.design-task-list > button:last-child { border-bottom: 0; }
+.design-editor:has(> .design-task-list) { max-width: 480px; }
+.design-editor:has(> .design-task-list) .design-toolbar {
+  position: static; display: grid; gap: 16px; padding: 0; border: 0; background: transparent;
+}
+.design-editor:has(> .design-task-list) .design-actions { width: 100%; }
+.design-editor:has(> .design-task-list) .design-actions button { flex: 1; }
+.design-task-list { display: grid; gap: 16px; width: min(100%, 448px); }
+.design-task-list > button { display: flex; align-items: center; justify-content: space-between; text-align: start; background: var(--ui-surface); border: 0; border-radius: 0; min-height: 48px; padding: 12px 16px; }
+.design-task-list > button::after { content: ''; width: 7px; height: 7px; border-top: 1px solid currentColor; border-right: 1px solid currentColor; transform: rotate(45deg); }
+.design-editor > [data-testid="design-domains-open"] { width: min(100%, 448px); margin-top: 20px; }
 .design-block-head > button:first-child { text-align: start; flex: 1; }
 .design-row { display: block; }
 .design-row-actions { display: flex; gap: 8px; }
