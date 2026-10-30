@@ -1,0 +1,7 @@
+PARITY-LIVE tests-only RED
+base=df35b338b5cfde5de34bb590e2ba118efc17e4a4
+branch=unit/parity-live
+run=PENDING_PUSH
+job=PENDING
+assertion_failure=NOT_RUN
+static=node --check exit 0; browser ownership derive/check exit 0
