@@ -87,7 +87,7 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
   const { context, page } = await merchant(browser, false);
   await page.goto(new URL(`/${locale}/settings?store=${store}`, origin).toString());
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
-  await page.getByRole("button", { name: "進階", exact: true }).click();
+  await page.getByRole("button", { name: "編輯設定", exact: true }).click();
   await page.getByRole("button", { name: c.next, exact: true }).click();
   // step 2: the cash-on-delivery card sits in the merchant-arranged branch
   const card = page.getByTestId("cod-settings-card");
@@ -107,6 +107,7 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
   await shot(page, "settings-cod", locale, "desktop");
   // read back from the server after a reload: the card carries the saved values
   await page.reload();
+  await page.getByRole("button", { name: "編輯設定", exact: true }).click();
   await page.getByRole("button", { name: new RegExp(c.steps[1]) }).click(); // the draft keeps the wizard on step 3: back to step 2
   const again = page.getByTestId("cod-settings-card");
   await expect(again.getByTestId("cod-enabled")).toBeChecked();
@@ -115,6 +116,7 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
   await expect(again.getByTestId("cod-carrier")).toHaveValue("black_cat");
   for (const language of ["zh-TW", "zh-CN", "en"] as const) {
     await page.goto(new URL(`/${language}/settings?store=${store}`, origin).toString());
+    await page.getByRole("button", { name: { "zh-TW": "編輯設定", "zh-CN": "编辑设置", en: "Edit settings" }[language], exact: true }).click();
     await page.getByRole("button", { name: new RegExp(settingsCopy[language].steps[1]) }).click();
     await expect(page.getByTestId("cod-settings-card")).toBeVisible();
     for (const width of [390, 1366, 1586]) {

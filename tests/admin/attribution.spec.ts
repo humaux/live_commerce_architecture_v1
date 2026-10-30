@@ -518,10 +518,11 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
   await expect(page).toHaveURL(
     new RegExp(`/${locale}/settings\\?store=${store}$`),
   );
-  // Rare configuration lives behind the signed Settings overview's Advanced entry.
-  await page.getByRole("button", { name: { en: "Advanced", "zh-TW": "進階", "zh-CN": "进阶" }[locale], exact: true }).click();
+  // Rare configuration lives behind the signed Settings overview's Edit settings entry.
+  await page.getByRole("button", { name: { en: "Edit settings", "zh-TW": "編輯設定", "zh-CN": "编辑设置" }[locale], exact: true }).click();
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
   await page.reload();
+  await page.getByRole("button", { name: { en: "Edit settings", "zh-TW": "編輯設定", "zh-CN": "编辑设置" }[locale], exact: true }).click();
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
   await page.goto(reportURL); // Return to the report after the reconnect entry's actual click + reload.
   await assertNotAuthorized();
