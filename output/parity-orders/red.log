@@ -1,0 +1,30 @@
+PARITY-ORDERS RED dispatch receipt — 2026-10-30T12:05:23.981281+00:00
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/362 (draft)
+Branch: unit/parity-orders -> r3/integration
+Tests-only head: 7093800f8a743fbd3f8c3caf6cbce269fa4d2f3a
+Gates run: 41052482621 (IN_PROGRESS; plan only); gate test job ids not assigned/readable yet. Plan job is NOT acceptance.
+Foundation run: 41052482837 (QUEUED); job: 124051700926 (foundation, QUEUED).
+Expected new Go assertion: PARITY-ORDERS: list is missing additive item_summary
+Expected new browser assertions: orders-table count 0; separate /[locale]/orders/[order] route.
+Actual new-assertion failure: NOT_RUN/PENDING (queue); do not call this proven RED.
+GREEN: NOT_RUN; implementation not pushed before RED.
+Local tests/PG/browser/servers: NOT_RUN (prohibited).
+E1 static: gofmt/go vet/strict tsc/ownership derive+check/diff check exit 0; see static-checks.log.
+No implementation PASS or E3/E4 claim. No merge/status posting/production actions.
+WAIT_RUN: 41052482621
+WAIT_RUN: 41052482837
+Wake-up owner: integrator relays a fresh session with this run's conclusion per implementation-card protocol.
+Next: gh pr checks 362; gh run view <id> --log-failed filtered to this card. Capture actual assertion failures and job ids before implementing.
+
+RELAY1 current-head causal RED (2026-10-30)
+HEAD 7093800f8a743fbd3f8c3caf6cbce269fa4d2f3a
+Gates run 41052482621 / browser job 124054769784 FAILURE.
+Raw job log API confirms real TestBrowserMerchantOrdersUIRealChain execution (320.39s).
+Artifact 12975688337: playwright.log: 12 new PARITY-ORDERS cases failed; 21 original cases passed.
+New assertions: orders-list missing (line102), orders-table count expected0 actual1 (line100), standalone /orders/<id> expected but old ?order=<id> returned (line196).
+Foundation run41052482837/job124051700926 SUCCESS is static foundation, not PG or product acceptance.
+Go item_summary RED remains pending Gates shards on same head; implementation push must retain that test.
+
+Confirmed Go RED: Gates41052482621/job124054770244 shard:g10.
+Native log relay1-g10.log lines1714–1721: TestMerchantOrdersV2ItemSummaryContract both private-search=false/true fail at merchant_orders_v2_test.go:98, “PARITY-ORDERS: list is missing additive item_summary”.
+No compile, fixture or transport failure caused this RED.

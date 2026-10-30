@@ -2,7 +2,7 @@
 // Depends on: ../../apps/admin/lib/orders-model (strict MOCK shipment DTO validation), @playwright/test, node:fs/promises, node:path, node:http, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_ORDER_STORE, LC_BROWSER_ORDER_IDS, LC_BROWSER_FROZEN_SKU_CODE, LC_BROWSER_FOREIGN_STORE, LC_BROWSER_FOREIGN_ORDER_ID, LC_BROWSER_UNLISTED_STORE, LC_BROWSER_SECOND_TOKEN, LC_BROWSER_NO_ORDERS_TOKEN, LC_BROWSER_EXPIRED_TOKEN, LC_BROWSER_REVOKED_TOKEN
 // Used by: apps/admin/src/features/orders/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_merchant_orders_ui_test.go
 // Invariants: ORDERS-V2-IMPL uses real clicks and response-derived identities/counts; shipment writes are explicitly MOCK,
-//   never reach PG, and preserve this harness's read-only fingerprints. Existing MOU assertions remain unchanged.
+//   never reach PG, and preserve this harness's read-only fingerprints. MOU authority/financial/privacy/lifecycle intents survive the signed presentation migration.
 import { expect, test, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -109,6 +109,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
     const before = await detailCalls(page);
     for (const [index, bucket] of designQueues.entries()) {
       await parityAction(`queue-${bucket}`, "Native queue click and refresh retain selection, exact server rows and counts without detail/PII reads", async () => {
+        await revealQueues(page);
         const chip = page.getByRole("button", {name: new RegExp(`^${c.queues[index]}\\s+\\d+$`)});
         let data = await parityRead(page, () => chip.click(), bucket);
         data = await parityRead(page, () => page.reload(), bucket);
@@ -133,7 +134,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
       });
     }
     await parityAction("private-search-page-two", "Search is private, page two retains query, detail has a separate route, Back restores it and reload clears query", async () => {
-      await parityRead(page, () => page.getByTestId("orders-bucket-all").click());
+      await parityRead(page, () => selectQueue(page,"all"));
       await query.fill("0001");
       let data = await parityRead(page, () => search.click());
       expect(data.next_cursor).not.toBe("");
@@ -191,7 +192,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
       if (!saved) { await route.continue(); return; }
       await route.fulfill({status: 200, contentType: "application/json", headers: {"cache-control": "private, no-store"}, body: JSON.stringify({items: [{...head, note: null, void_reason: null, principal_id: "10000000-0000-4000-8000-000000000001"}]})});
     });
-    await expand(page, id);
+    await expand(page, id, false);
     await parityAction("single-route", "View opens a standalone order detail with the short server identity and no inline list", async () => {
       await expect(page).toHaveURL(new RegExp(`/${locale}/orders/${id}(?:\\?|$)`));
       await expect(page.getByRole("heading", {name: c.detail, exact: true})).toBeVisible();
@@ -236,7 +237,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
     });
     await parityAction("review-blocks-shipment", "Payment review stays blocked after refresh, with no shipment command", async () => {
       await page.getByRole("button", {name: c.back, exact: true}).click();
-      await expand(page, ids.review);
+      await expand(page, ids.review, false);
       await expect(page.getByRole("heading", {name: c.detail, exact: true})).toBeVisible();
       await expect(page.getByTestId("order-detail")).toContainText(c.blocked);
       await expect(page.getByRole("button", {name: c.record, exact: true})).toHaveCount(0);
@@ -271,18 +272,27 @@ async function signedLogin(page: Page) {
   const selector = page.getByTestId("shell-store-selector");
   if ((await selector.inputValue()) !== store)
     await switchOrderStore(page, store);
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   // These frozen MOU scenarios explicitly inspect drafts. v2's default is tested
   // separately; choose the all-states inspection scope via the actual control.
   await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("all");
   await expect(page).toHaveURL(/state=all/);
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   expect(await detailCalls(page)).toBe(before);
 }
 
 // Filters are collapsed on every viewport. Exercise their real disclosure before
 // using an existing filter; all state, privacy and response assertions stay intact.
+async function revealQueues(page: Page) {
+  const menu=page.getByTestId("orders-queue-menu");
+  if(await menu.isVisible() && await menu.getAttribute("aria-expanded")==="false") await menu.click();
+}
+async function selectQueue(page: Page, bucket: string) {
+  await revealQueues(page);
+  await page.getByTestId(`orders-bucket-${bucket}`).click();
+}
+
 async function revealOrderFilters(page: Page) {
   const toggle = page.getByTestId("orders-more-filters");
   if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
@@ -396,32 +406,36 @@ async function detailCalls(page: Page) {
   return ((await response.json()) as { details: number }).details;
 }
 
-async function expand(page: Page, id: string) {
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+async function expand(page: Page, id: string, facts = true) {
+  const existing=page.getByTestId("order-detail");
+  if(await existing.count() || await page.getByTestId("order-detail-back").count()) {
+    await page.getByTestId("order-detail-back").click();
+  }
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   if (
     !(await page.getByTestId(`order-expand-${id}`).count()) &&
     (await page.getByTestId("orders-previous").isEnabled())
   ) {
     await page.getByTestId("orders-previous").click();
     await expect(page).not.toHaveURL(/cursor=/);
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   for (let p = 0; p < 3; p++) {
     if (await page.getByTestId(`order-expand-${id}`).count()) {
       const button = page.getByTestId(`order-expand-${id}`);
-      if ((await button.getAttribute("aria-expanded")) !== "true")
-        await button.click();
+      await button.click();
       await expect(page.getByTestId("order-detail")).toHaveAttribute(
         "aria-label",
         new RegExp(id),
       );
+      if(facts) await page.getByTestId("order-more-details").locator("summary").first().click();
       return;
     }
     await expect(page.getByTestId("orders-next")).toBeEnabled();
     const previousURL = page.url();
     await page.getByTestId("orders-next").click();
     await expect(page).not.toHaveURL(previousURL);
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   throw new Error("fixture order was absent from three real cursor pages");
 }
@@ -455,10 +469,10 @@ test("MOU01/04 real login, cursor pagination, financial state and frozen detail"
   };
   expect(body.items).toHaveLength(10);
   expect(body.next_cursor).toMatch(/^[A-Za-z0-9_-]{1,1024}$/);
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   expect(
-    await page.getByTestId("orders-table").getByRole("row").count(),
-  ).toBeGreaterThanOrEqual(11);
+    await page.locator('[data-testid^="order-row-"]').count(),
+  ).toBeGreaterThanOrEqual(10);
   await noPII(page); // Detail is not eagerly fetched for every row.
   await page.getByTestId("orders-next").click();
   await expect(page).toHaveURL(/cursor=/);
@@ -467,11 +481,12 @@ test("MOU01/04 real login, cursor pagination, financial state and frozen detail"
     "Synthetic home address",
   );
   await noPersistentOrderBody(page);
+  await page.getByTestId("order-detail-back").click();
   await page.getByTestId("orders-previous").click();
   await expect(page).not.toHaveURL(/cursor=/);
   await expect(page.getByTestId("order-detail")).toHaveCount(0);
   await page.getByTestId("orders-refresh").click();
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   for (const [mode, expected] of [
     ["pending", ["AWAITING_PAYMENT", "PENDING", "NONE"]],
     ["authorized", ["AWAITING_PAYMENT", "AUTHORIZED", "NONE"]],
@@ -540,7 +555,7 @@ test("MOU02 two principals, store authority and invalid sessions never reveal PI
   for (const badStore of [unlistedStore, "not-a-uuid"]) {
     await page.goto(`/en/orders?store=${badStore}`);
     await noPII(page);
-    await expect(page.getByTestId("orders-table")).toHaveCount(0);
+    await expect(page.getByTestId("orders-list")).toHaveCount(0);
   }
   await session(context, secondToken);
   await page.goto(`/en/orders?store=${store}`);
@@ -605,10 +620,12 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
       await route.fulfill({ response: real });
     },
   );
+  await page.getByTestId("order-detail-back").click();
   const old = page.getByTestId(`order-expand-${ids.authorized}`);
   await old.click();
   await oldSeen;
   // Selection change must invalidate the pending older result immediately.
+  await page.getByTestId("order-detail-back").click();
   await page.getByTestId(`order-expand-${ids.captured}`).click();
   await expect(page.getByTestId("order-detail")).toHaveAttribute(
     "aria-label",
@@ -651,7 +668,7 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
           (
             JSON.parse(sessionStorage.getItem("mou-native-pageshows") ?? "[]") as
               Array<{ path: string; persisted: boolean }>
-          ).slice(before).some((event) => event.path === "/en/orders"),
+          ).slice(before).some((event) => event.path.startsWith("/en/orders")),
         beforeHistory,
       ),
     ).toBe(true);
@@ -666,7 +683,7 @@ test("MOU03 controlled delayed detail, pagehide, history and cross-tab logout", 
       ).slice(before),
     beforeHistory,
   );
-  const returnEvent = nativeEvents.find((event) => event.path === "/en/orders");
+  const returnEvent = nativeEvents.find((event) => event.path.startsWith("/en/orders"));
   expect(returnEvent).toBeDefined();
   // G-UI8 audit [READ/MEASURE]: reads Navigation Timing notRestoredReasons
   const notRestoredReasons = await page.evaluate(() => {
@@ -778,6 +795,7 @@ test("MOU03 labeled fault injection: invalid DTO, non-JSON and network failure r
   await expect(page.getByTestId("order-detail")).toContainText(
     "Synthetic Buyer",
   );
+  await page.getByTestId("order-detail-back").click();
   const path = `**/api/stores/${store}/orders?*`;
   for (const fault of ["non-json", "invalid-dto", "network"] as const) {
     let fired = false;
@@ -810,7 +828,7 @@ test("MOU03 labeled fault injection: invalid DTO, non-JSON and network failure r
     await noPII(page);
     await page.unroute(path, handler);
     await page.getByTestId("orders-refresh").click();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
   }
 });
 
@@ -909,9 +927,9 @@ test("MOU03 delayed old success/error cannot repaint filter, locale or new sessi
 async function paymentBadgesFit(page: Page) {
   // Global fixed-table column rules must never hide "authorized, not captured".
   const badges = await page
-    .locator("[data-testid=order-payment-cell] .orders-badge")
+    .locator("[data-testid=order-payment-cell] .orders-badge, .orders-statuses dd .orders-badge")
     .evaluateAll((elements) => elements.map((element) => {
-      const cell = element.closest("td")!.getBoundingClientRect();
+      const cell = element.closest("td,[data-testid=order-payment-cell],dd")!.getBoundingClientRect();
       const badge = element.getBoundingClientRect();
       return {
         withinCell: badge.left >= cell.left - 1 && badge.right <= cell.right + 1,
@@ -946,7 +964,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
     // Filters stay mounted during loading so late-response tests can change
     // intent. The SQL readback must first await the current read, not capture
     // that older response as if it belonged to the next click.
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
     const response = page.waitForResponse(r => r.url().includes(`/api/stores/${store}/orders`) && r.url().includes("view=v2")).then(async r => { expect(r.status(), control).toBe(200); expect(r.headers()["cache-control"]).toBe("private, no-store"); return r.json(); });
     await action();
     const data = await response;
@@ -957,19 +975,19 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   }
   await revealOrderFilters(page);
   await apply("explicit cancelled state", () => page.getByTestId("state-filter").selectOption("CANCELLED"));
-  await apply("cancelled queue retains state", () => page.getByTestId("orders-bucket-cancelled").click());
+  await apply("cancelled queue retains state", () => selectQueue(page,"cancelled"));
   await expect(page.getByTestId("state-filter")).toHaveValue("CANCELLED");
   await expect(page).toHaveURL(/state=CANCELLED/);
   await page.reload();
   await expect(page.getByTestId("state-filter")).toHaveValue("CANCELLED");
   await expect(page.getByTestId("orders-bucket-cancelled")).toHaveAttribute("aria-pressed", "true");
-  await apply("all queue retains state", () => page.getByTestId("orders-bucket-all").click());
+  await apply("all queue retains state", () => selectQueue(page,"all"));
   await expect(page.getByTestId("state-filter")).toHaveValue("CANCELLED");
   await revealOrderFilters(page);
   await apply("default hide drafts", () => page.getByTestId("state-filter").selectOption("active"));
   await expect(page.getByTestId(`order-row-${ids.draft0}`)).toHaveCount(0);
   for (const bucket of ["unpaid","transfer_review","ready_to_ship","ready_to_consign","shipped","completed","cancelled","all"]) {
-    await apply(`queue ${bucket}`, () => page.getByTestId(`orders-bucket-${bucket}`).click());
+    await apply(`queue ${bucket}`, () => selectQueue(page,bucket));
     await expect(page.getByTestId(`orders-bucket-${bucket}`)).toHaveAttribute("aria-pressed","true");
   }
   for (const [label, query, target] of [["order",ids.shipped,ids.shipped],["tracking","SYNTHETIC-MOU-TRACK",ids.shipped],["phone last4","0001",ids.shipped],["recipient","Synthetic Buyer",ids.shipped],["frozen SKU",frozenSKU,ids.shipped]] as const) {
@@ -1023,7 +1041,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
     await page.getByTestId("locale-switch").selectOption(locale);
     await expect(page).toHaveURL(new RegExp(`/${locale}/orders`));
     await expect(page.getByRole("heading", {level:1})).toHaveText(locale === "zh-TW" ? "訂單" : locale === "zh-CN" ? "订单" : "Orders");
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
     for (const [width,height] of [[1586,992],[1366,768],[390,844]]) {
       await page.setViewportSize({width,height});
       if (width === 390) {
@@ -1050,31 +1068,27 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
         const refreshRead = page.waitForResponse(r => r.url().includes(`/api/stores/${store}/orders?`) && r.status() === 200);
         await page.getByTestId("orders-refresh").click();
         await refreshRead;
-        await expect(page.getByTestId("orders-table")).toBeVisible();
+        await expect(page.getByTestId("orders-list")).toBeVisible();
         await more.click();
         await expect(more).toHaveAttribute("aria-expanded", "false");
         clicks.push({control:`mobile refresh ${locale}`,result:"open secondary controls, real refresh/readback, collapse"});
       }
       if (width === 390) {
-        const rail = page.getByTestId("orders-tabs");
-        // Native click/keyboard drive scrolling; evaluate below only measures geometry.
-        await rail.hover();
-        await page.mouse.wheel(1200, 0);
-        await expect.poll(() => rail.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
-        await page.getByTestId("orders-bucket-cancelled").click();
-        await expect(page.getByTestId("orders-bucket-cancelled")).toHaveAttribute("aria-pressed", "true");
+        const menu=page.getByTestId("orders-queue-menu");
+        await selectQueue(page,"cancelled");
+        await expect(page.getByTestId("orders-bucket-cancelled")).toHaveAttribute("aria-pressed","true");
+        await expect(menu).toHaveAttribute("aria-expanded","false");
         await page.reload();
-        await expect.poll(() => rail.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
-        const bounds = await rail.boundingBox(), active = await page.getByTestId("orders-bucket-cancelled").boundingBox();
-        expect(active!.x).toBeGreaterThanOrEqual(bounds!.x - 1);
-        expect(active!.x + active!.width).toBeLessThanOrEqual(bounds!.x + bounds!.width + 1);
-        const tabs = await rail.locator("button").evaluateAll(nodes => nodes.map(node => ({y:node.getBoundingClientRect().y,h:node.getBoundingClientRect().height,w:node.getBoundingClientRect().width})));
-        expect(new Set(tabs.map(tab => Math.round(tab.y))).size).toBe(1);
-        expect(tabs.every(tab => tab.h >= 44 && tab.w >= 44)).toBe(true);
-        await screenshot(page,resolve(v2Evidence,`queue-scroll-${locale}-390x844.png`));
-        await page.getByTestId("orders-bucket-all").click();
-        await expect(page.getByTestId("orders-bucket-all")).toHaveAttribute("aria-pressed", "true");
-        clicks.push({control:`horizontal queue ${locale}`,result:"real horizontal wheel then click, single row, 44px targets, cancelled visible after reload; returned to all"});
+        await expect(menu).toContainText(parityCopy[locale as keyof typeof parityCopy].queues[7]);
+        const bounds=await menu.boundingBox();
+        expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(390);
+        await revealQueues(page);
+        const targets=await page.getByTestId("orders-tabs").locator("button").evaluateAll(nodes=>nodes.map(node=>({h:node.getBoundingClientRect().height,w:node.getBoundingClientRect().width})));
+        expect(targets.every(target=>target.h>=44&&target.w>=44)).toBe(true);
+        await screenshot(page,resolve(v2Evidence,`queue-menu-${locale}-390x844.png`));
+        await selectQueue(page,"all");
+        await expect(page.getByTestId("orders-bucket-all")).toHaveAttribute("aria-pressed","true");
+        clicks.push({control:`mobile queue ${locale}`,result:"native menu, cancelled click/reload retains classification, all 44px targets, returned to all"});
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.getByRole("heading",{level:1}).scrollIntoViewIfNeeded();
@@ -1089,7 +1103,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
         await pageSelect.uncheck(); await expect(pageSelect).not.toBeChecked();
         clicks.push({control:`mobile secondary filters ${locale}`, result:`native toggle, select, apply, reopen persisted value, reset; first order y=${row!.y} < ${height}`});
       }
-      await page.getByTestId("orders-table").scrollIntoViewIfNeeded();
+      await page.getByTestId("orders-list").scrollIntoViewIfNeeded();
       await screenshot(page,resolve(v2Evidence,`ledger-${locale}-${width}x${height}.png`));
     }
   }
@@ -1113,30 +1127,35 @@ for (const privateCursor of [false, true]) test(`MOU08 authoritative poll denial
     expect(new URL(page.url()).searchParams.has("q")).toBe(false);
     expect(new URL(page.url()).searchParams.has("cursor")).toBe(false);
   } else await expand(page,ids.captured);
+  const facts=page.getByTestId("order-more-details");
+  if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
   await expect(page.getByTestId("order-detail")).toContainText("Synthetic home address");
   // Explicit fault injection of a backend permission revocation. No DOM events or synthetic clicks.
   await page.route(`**/api/stores/${store}/orders${privateCursor ? "/search" : ""}?*`,route=>route.fulfill({status:403,contentType:"application/json",headers:{"cache-control":"private, no-store"},body:'{"code":"forbidden"}'}));
-  await expect(page.getByTestId("orders-table")).toHaveCount(0,{timeout:25_000});
+  await expect(page.getByTestId("orders-list")).toHaveCount(0,{timeout:25_000});
   await expect(page.getByTestId("order-detail")).toHaveCount(0);
   await expect(page.getByTestId("merchant-orders")).toContainText("This account does not have permission to read orders.");
   await expect(page.getByTestId("merchant-orders")).toContainText("Your current role can’t use this feature. Contact the store owner.");
   await noPII(page);
 });
 
-test("MOU05 approved inline comp at desktop/mobile in three locales and page-two locale context", async ({
+test("MOU05 signed standalone composition at desktop/mobile in three locales and page-two locale context", async ({
   page,
 }, testInfo) => {
   await signedLogin(page);
   await expand(page, ids.pickup); // Native comp: first row, immediately expanded.
   for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
+    if(!(await page.getByTestId("order-detail").count())) await expand(page,ids.pickup);
     await page.getByTestId("locale-switch").selectOption(locale);
     await expect(page).toHaveURL(new RegExp(`/${locale}/orders`));
-    await expect(page).toHaveURL(new RegExp(`order=${ids.pickup}`));
+    await expect(page).toHaveURL(new RegExp(`/orders/${ids.pickup}`));
     await expect(page.getByTestId("order-detail")).toHaveAttribute(
       "aria-label",
       new RegExp(ids.pickup),
     );
-    await page.setViewportSize({ width: 1586, height: 992 });
+    const facts = page.getByTestId("order-more-details");
+    if (!(await facts.getAttribute("open"))) { if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click(); }
+    await page.setViewportSize({ width: 1440, height: 900 });
     // G-UI8 audit [READ/MEASURE]: waits for CSS animations to finish before measuring (read/wait)
     await page.evaluate(() =>
       Promise.all(
@@ -1208,6 +1227,7 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
       path: testInfo.outputPath(`inline-full-${locale}-390.png`),
       fullPage: true,
     });
+    await page.getByTestId("order-detail-back").click();
     await revealOrderFilters(page);
     await expect(page.getByTestId("state-filter")).toBeVisible();
     await page.getByTestId("state-filter").focus();
@@ -1240,7 +1260,7 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
   for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
     await page.getByTestId("locale-switch").selectOption(locale);
     await expect(page).toHaveURL(new RegExp(`/${locale}/orders`));
-    await expect(page).toHaveURL(new RegExp(`order=${ids.draft0}`));
+    await expect(page).toHaveURL(new RegExp(`/orders/${ids.draft0}`));
     await expect(page).toHaveURL(/cursor=/);
     await expect(page.getByTestId("order-detail")).toHaveAttribute(
       "aria-label",
@@ -1258,7 +1278,7 @@ type OrdersDesignPage = {
   next_cursor: string;
 };
 const designQueues = ["all", "unpaid", "transfer_review", "ready_to_ship", "ready_to_consign", "shipped", "completed", "cancelled"] as const;
-const designOrderNumber = (id: string) => `LC-${id.replaceAll("-", "").toUpperCase()}`;
+const designOrderNumber = (id: string) => `#${id.replaceAll("-", "").slice(-5).toUpperCase()}`;
 
 async function designClick(control: string, expected: string, action: () => Promise<void>) {
   const directory = resolve(evidence, "orders-v2-impl", test.info().testId);
@@ -1300,21 +1320,23 @@ async function designRead(page: Page, action: () => Promise<unknown>, bucket = "
 }
 
 async function designActiveVisible(page: Page, bucket: string) {
-  const rail = page.getByTestId("orders-tabs");
-  const active = page.getByTestId(`orders-bucket-${bucket}`);
-  await expect(active).toHaveAttribute("aria-pressed", "true");
-  // READ/MEASURE only: geometry cannot scroll a chip or change selection.
-  await expect.poll(async () => {
-    const parent = await rail.boundingBox(), chip = await active.boundingBox();
-    return !!parent && !!chip && chip.x >= parent.x - 1 && chip.x + chip.width <= parent.x + parent.width + 1;
-  }, { message: `The whole active ${bucket} chip is inside its horizontal viewport` }).toBe(true);
+  const active=page.getByTestId(`orders-bucket-${bucket}`);
+  await expect(active).toHaveAttribute("aria-pressed","true");
+  const menu=page.getByTestId("orders-queue-menu"),mobile=await menu.isVisible();
+  const rail=mobile?menu:page.getByTestId("orders-tabs");
+  if(mobile) await expect(menu).toHaveAttribute("aria-expanded","false");
+  // READ/MEASURE only: full current classification is visible in its signed viewport.
+  await expect.poll(async()=>{
+    const parent=await rail.boundingBox(),chip=await (mobile?menu:active).boundingBox();
+    return !!parent&&!!chip&&chip.x>=parent.x-1&&chip.x+chip.width<=parent.x+parent.width+1;
+  },{message:`The whole active ${bucket} classification is visible`}).toBe(true);
 }
 
 test("ORDERS-V2-IMPL queue tabs, all paginated rows and result total agree with the server after refresh", async ({ page }) => {
   test.setTimeout(120_000);
   await signedLogin(page);
   for (const bucket of designQueues) await designClick(`queue-${bucket}-and-refresh`, "Every page has the response rows/counts; unique traversed rows equal the queue count and result total", async () => {
-    let data = await designRead(page, () => page.getByTestId(`orders-bucket-${bucket}`).click(), bucket, "");
+    let data = await designRead(page, () => selectQueue(page,bucket), bucket, "");
     expect(data.total).toBe(data.counts[bucket]);
     const total = data.total;
     data = await designRead(page, () => page.reload(), bucket, "");
@@ -1341,13 +1363,11 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
     await signedLogin(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByTestId("locale-switch").selectOption(locale);
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
     let selected = "";
     await designClick("later-queue", "Cancelled chip is fully visible after native click and refresh", async () => {
-      // Native wheel reveals later queues; there is no evaluate scroll mutation.
-      await page.getByTestId("orders-tabs").hover();
-      await page.mouse.wheel(1200, 0);
-      const data = await designRead(page, () => page.getByTestId("orders-bucket-cancelled").click(), "cancelled");
+      await revealQueues(page);
+      const data = await designRead(page, () => selectQueue(page,"cancelled"), "cancelled");
       expect(data.items.length).toBeGreaterThan(0);
       selected = data.items[0].order_id;
       await designActiveVisible(page, "cancelled");
@@ -1443,7 +1463,7 @@ for (const [locale, width] of [["en", 1586], ["zh-TW", 390], ["zh-CN", 390]] as 
     await signedLogin(page);
     await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
     await page.getByTestId("locale-switch").selectOption(locale);
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
     const id = ids.captured;
     const path = `/api/stores/${store}/orders/${id}`;
     let saved = false;
