@@ -321,6 +321,7 @@ func TestLiveConsoleOrderForBuyerPrefill(t *testing.T) {
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
 func TestLiveConsoleOrderForBuyerLivePrice(t *testing.T) {
+	t.Run("FEAT-MANUAL-DISCOUNT", mdForBuyerContract)
 	e := lbuNew(t)
 	token := e.token()
 	_, offer, bundle, conv := e.scenario()

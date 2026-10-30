@@ -255,6 +255,7 @@ func TestCatalogV2Smoke(t *testing.T) {
 	// sBlueL has no balance -> out
 	body, ctype := v2Multipart(t, v2PNG(t, 10))
 	a.raw("POST", "/products/"+tee.ID+"/images", t04Key("v2-img"), body, ctype, 200, nil)
+	t.Run("FEAT-MANUAL-DISCOUNT picker thumbnail", func(t *testing.T) { mdPickerContract(t, a, tee.ID, tag) })
 
 	// ---- draft is invisible to buyers; publishing makes it visible ----------------------------------------------
 	if got := v2ListRead(t, h, "q="+tag, 200); len(got.Products) != 0 {
