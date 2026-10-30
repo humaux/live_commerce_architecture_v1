@@ -46,3 +46,15 @@ gate (bundle:09)	Gate	2026-10-30T15:45:43.7850679Z --- FAIL: TestBrowserMerchant
 gate (bundle:09)	Gate	2026-10-30T15:45:44.0314472Z bundle member --browser-merchant-orders-ui: failure
 gate (bundle:09)	Gate	2026-10-30T15:48:43.4815547Z bundle member --browser-picklist: failure
 gate (bundle:09)	Bundle member 1 evidence	2026-10-30T15:49:25.5259694Z ##[error]The path for one of the files in artifact is not valid: /playwright/merchant-orders-c-browser/20261030T154131.041085887/results/orders-ui-PARITY-ORDERS-si-06b7d--shipping-entry-zh-TW-1440-/parity/1429:25977.png. Contains the following character:  Colon :
+
+FIX1 current relay BLOCKED receipt (2026-10-31)
+Native head 932937e7aead8773880a977e6b2a47a717cb84ac; tested synthetic merge ab50d04f2c36fcc6ee6f817d9699b80147002ee1; Gates41090484680 attempt1.
+Job124185561277 --browser-webkit: cvs: pass=0 fail=2 skip=0 leaf_pass=0 leaf_fail=1 leaf_skip=0 exit=1 verdict=1.
+Artifact12994344180 gate-browser-webkit / cvs-buyer.mjs.log:17-32: ExpectError expect(locator).toBeVisible(); getByTestId('cvs-candidate-024793'); expected visible; timeout5000ms; element(s) not found; tests/storefront/cvs-picker.mjs:387:34.
+Go wrapper browser_taiwan_cvs_test.go:159 reports storefront browser gate failed; merchant orders half NOT_RUN in this attempt. Out-of-app blocker, no class(c) base failure claim.
+Job124185561381 bundle08: --- FAIL: TestBrowserOC (107.33s); --browser-password-auth member failure.
+Artifact12995610677 gate-browser-password-auth / oc-20261030T164550.766850856/playwright.log:15-100: OC-04 orders zh-TW/zh-CN/en fails tests/admin/oc/reauth.spec.ts:188:31 after reload; getByTestId('orders-export') expected visible, received hidden, timeout10000ms. Same OC-04 test still RED after FIX1; card stop condition, no third approach.
+Foundation41090484506/job124182766494 success on same native head (E1, not Gates GREEN).
+WAIT_RUN41090484680; no new push or rerun. Raw downloaded failures retained under fix1-current-webkit/ and fix1-current-password/; current job logs fix1-current-job.log and fix1-current-bundle08.log. Overall Gates still pending at observation; no acceptance claimed.
+
+FIX2 directed RED,2026-10-31: run41090484680 native932937e7 testedab50d04f; completed FAILURE. Jobs124185561381 OC04 orders3locales;124185562324 orders10cases; OMITTED124185561277 WebKit CVS cvs-candidate-024793 not visible5000ms. Receipts124214325754 fails all3; required124214689095 downstream. Base41107905131 pending. FIX2.md has every failure/class; STOP out-of-card, no new push/GREEN.

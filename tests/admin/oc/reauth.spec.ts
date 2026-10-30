@@ -185,6 +185,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
         await signedIn(page);
         expect(new URL(page.url()).pathname).toBe(`/${locale}/${kind}`);
         await page.reload();
+        if (kind === "orders") await page.getByTestId("orders-more-filters").click();
         await expect(control).toBeVisible();
         await expect(modal(page)).toHaveCount(0);
         expect(urls, "refresh must not repeat the download").toHaveLength(2);

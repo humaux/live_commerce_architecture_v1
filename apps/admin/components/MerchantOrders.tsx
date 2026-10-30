@@ -690,7 +690,6 @@ export function MerchantOrders({
                 checked={Object.hasOwn(bulkRows,row.order_id)} checkDisabled={selectedIDs.length>=500&&!Object.hasOwn(bulkRows,row.order_id)}
                 onCheck={checked=>checkRows([row],checked)} onSelect={()=>choose(row)} isNew={fresh.has(row.order_id)}
                 parcelBadge={groupOf(row.order_id)?parcelC.badge(groupOf(row.order_id)!.short):undefined}/>) }
-            </div>
             {current.page.items.length === 0 && (
               <AdminStateBlock
                 variant="empty"
@@ -698,6 +697,7 @@ export function MerchantOrders({
                 description={v2.emptyDescription}
               />
             )}
+            </div>
             <footer className="orders-pager">
               <span>
                 {c.pageCount}: {current.page.items.length}

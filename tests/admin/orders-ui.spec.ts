@@ -292,8 +292,13 @@ async function signedLogin(page: Page) {
 // Filters are collapsed on every viewport. Exercise their real disclosure before
 // using an existing filter; all state, privacy and response assertions stay intact.
 async function revealQueues(page: Page) {
+  // The menu can be temporarily absent during a locale navigation. Use the
+  // harness viewport, then await the real control instead of sampling isVisible.
+  if ((page.viewportSize()?.width ?? 1440) > 680) return;
   const menu=page.getByTestId("orders-queue-menu");
-  if(await menu.isVisible() && await menu.getAttribute("aria-expanded")==="false") await menu.click();
+  await expect(menu).toBeVisible();
+  if(await menu.getAttribute("aria-expanded")==="false") await menu.click();
+  await expect(menu).toHaveAttribute("aria-expanded","true");
 }
 async function selectQueue(page: Page, bucket: string) {
   await revealQueues(page);
@@ -492,6 +497,7 @@ test("MOU01/04 real login, cursor pagination, financial state and frozen detail"
   await page.getByTestId("orders-previous").click();
   await expect(page).not.toHaveURL(/cursor=/);
   await expect(page.getByTestId("order-detail")).toHaveCount(0);
+  await revealOrderFilters(page);
   await page.getByTestId("orders-refresh").click();
   await expect(page.getByTestId("orders-list")).toBeVisible();
   for (const [mode, expected] of [
@@ -1138,7 +1144,14 @@ for (const privateCursor of [false, true]) test(`MOU08 authoritative poll denial
   if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
   await expect(page.getByTestId("order-detail")).toContainText("Synthetic home address");
   // Explicit fault injection of a backend permission revocation. No DOM events or synthetic clicks.
+  // Standalone detail already unmounts the list. Await the denied poll itself
+  // within the original 25s poll budget before checking that all PII is gone.
+  const deniedPoll = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === `/api/stores/${store}/orders${privateCursor ? "/search" : ""}` && response.status() === 403;
+  }, {timeout:25_000});
   await page.route(`**/api/stores/${store}/orders${privateCursor ? "/search" : ""}?*`,route=>route.fulfill({status:403,contentType:"application/json",headers:{"cache-control":"private, no-store"},body:'{"code":"forbidden"}'}));
+  await deniedPoll;
   await expect(page.getByTestId("orders-list")).toHaveCount(0,{timeout:25_000});
   await expect(page.getByTestId("order-detail")).toHaveCount(0);
   await expect(page.getByTestId("merchant-orders")).toContainText("This account does not have permission to read orders.");
@@ -1370,6 +1383,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
     await signedLogin(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByTestId("locale-switch").selectOption(locale);
+    await expect(page).toHaveURL(new RegExp(`/${locale}/orders`));
     await expect(page.getByTestId("orders-list")).toBeVisible();
     let selected = "";
     await designClick("later-queue", "Cancelled chip is fully visible after native click and refresh", async () => {

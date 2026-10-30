@@ -46,6 +46,8 @@
 
 .signed-queue-menu{display:none}
 @media(max-width:680px){
+.signed-orders .orders-selection-bar{display:flex;flex-wrap:wrap;gap:8px;padding:12px}
+.signed-orders .orders-selection-bar .orders-form-actions{flex-wrap:wrap;flex-basis:100%;min-width:0}
  .signed-queue-menu{display:flex;width:100%;align-items:center;justify-content:space-between;background:var(--ui-primary-soft)!important;border-color:var(--ui-primary)!important;text-align:left}
  .signed-queue-menu::after{content:"";width:7px;height:7px;border-bottom:1px solid currentColor;border-right:1px solid currentColor;transform:rotate(45deg);margin-right:4px}
  .signed-queue-control:not([data-open=true]) .signed-queue-options{display:none}
