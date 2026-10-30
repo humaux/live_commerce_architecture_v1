@@ -55,16 +55,16 @@ async function session(context: BrowserContext, token: string) {
   ]);
 }
 
-// The signed primary filters are buttons; the retained uncommon filters are behind overflow.
-async function filter(page: Page, value: string) {
-  if (["all", "unread", "assigned", "instagram"].includes(value)) {
-    await page.getByTestId(`inbox-filter-${value}`).click();
-  } else {
-    const picker = page.getByTestId("inbox-filter");
-    if (!await picker.isVisible()) await page.getByTestId("inbox-more-filters").click();
-    await picker.selectOption(value);
-    await page.getByTestId("inbox-more-filters").click();
+// Signed chip navigation replaces the removed overflow picker; reselecting an active chip is disabled.
+async function filter(page: Page, value: "all" | "unread" | "assigned" | "instagram") {
+  const chip = page.getByTestId(`inbox-filter-${value}`);
+  if (await chip.getAttribute("aria-pressed") === "true") {
+    await expect(chip).toBeDisabled();
+    return;
   }
+  await chip.click();
+  await expect(chip).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("inbox-list")).toHaveAttribute("aria-busy", "false");
 }
 async function details(page: Page) {
   const disclosure = page.getByTestId("customer-details-toggle");
@@ -109,28 +109,28 @@ async function action(page: Page, id: string, suffix: string, click: () => Promi
 
 test("INU01 live_operator actual list/filter/read/takeover/send/release persists in PG", async ({ page }) => {
   await login(page);
+  await filter(page, "instagram");
   const refreshedList = page.waitForResponse(
     (r) => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/stores/${store}/inbox/conversations`,
   );
-  await page.getByTestId("inbox-page").getByRole("button", { name: "Refresh", exact: true }).click();
+  await filter(page, "all");
   expect((await refreshedList).status()).toBe(200);
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
-  record("list refresh", "click Refresh", "real A8 list read and named conversation restored");
+  record("list refresh", "click Instagram then All", "real A8 list read and named conversation restored");
   const before = await facts(page);
   await filter(page, "instagram");
   await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
   await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
   record("filter", "select Instagram", "only Instagram conversation visible");
-  await filter(page, "messenger");
+  await filter(page, "all");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
-  await filter(page, "messenger");
+  await filter(page, "all");
   await expect(
     page.getByTestId(`conversation-${ids.open}`),
     "same filter must not clear the loaded page",
   ).toBeVisible();
-  await expect(page.getByTestId(`conversation-${ids.instagram}`)).toHaveCount(0);
-  await filter(page, "unreplied");
-  await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
+  await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
+  // INU09 checks pending-bundle filtering before its copy action clears that shared row.
   // #242 item 2: prepare a distinct read conversation through the real A9/A10 UI path.
   await filter(page, "all");
   await expect(page.getByTestId(`conversation-${ids.closed}`)).toBeVisible();
@@ -180,13 +180,15 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   await expect(page.getByTestId(`conversation-${ids.closed}`), "completed unread reload excludes the distinct read conversation").toHaveCount(0);
   await expect(page.getByTestId(`conversation-${ids.open}`), "completed unread reload excludes the marked-read conversation").toHaveCount(0);
   record("unread row persistence", "reload then select unread", "marked-read thread remains absent after authoritative reload");
-  await filter(page, "live_comment");
+  await filter(page, "instagram");
   await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
   await filter(page, "all");
+  await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
+  await expect(page.getByTestId(`conversation-${ids.instagram}`)).toBeVisible();
   record(
     "filter",
-    "select Messenger/unreplied/live comment/all",
-    "server filtered rows match platform and reply status",
+    "click Instagram and All",
+    "Instagram excludes Messenger; All restores both channels; unread excludes read rows",
   );
   const read = page.waitForResponse(
     (r) => r.request().method() === "POST" && r.url().includes(`/conversations/${ids.open}/read`),
@@ -597,7 +599,7 @@ for (const copy of localeCases) {
         await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
         record(`mobile back ${copy.locale}`, "click back", "private detail removed before reopening the list");
       }
-      await filter(page, "messenger");
+      await filter(page, "all");
       await open(page, ids.open);
       await expect(page.getByTestId("inbox-thread")).toContainText(dm);
       await expect(page.getByTestId("buyer-panel")).toBeVisible();
@@ -625,7 +627,7 @@ for (const copy of localeCases) {
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       if (width === 390) await page.getByRole("button", { name: copy.back, exact: true }).click();
-      await filter(page, "messenger");
+      await filter(page, "all");
       // The list heading belongs to the list view; mobile hides it while a thread is open.
       await expect(page.getByTestId("inbox-page").getByRole("heading", { level: 1 })).toHaveText(copy.title);
       await open(page, ids.open);
