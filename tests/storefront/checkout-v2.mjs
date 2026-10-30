@@ -3,7 +3,7 @@
 // Used by: order-gate.mjs and home-cod-buyer.mjs in GitHub CI only.
 // Invariants: money assertions use response fields; evaluate only reads layout; no checkout with a MOCK quote.
 import assert from "node:assert/strict";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { formatMoney } from "../../apps/storefront/lib/money.ts";
@@ -387,7 +387,224 @@ export async function checkoutV2Suite({ newContext, origin, product, recipient, 
     } catch (error) { failures.push(`${locale}/${mobile ? 390 : "desktop"}: ${error.message}`); }
     finally { await context.close(); }
   }
+  try { await checkoutParitySuite({ newContext, origin, product, recipient, evidence }); }
+  catch (error) { failures.push(error.message); }
   assert.deepEqual(failures, [], "CHECKOUT-V2 new behaviour assertions");
+}
+
+// PARITY-CHECKOUT authority: ux-checkout/DELIVERY.md, current controls polish 2026-10-29.
+// Expectations are signed buyer copy, independent of the implementation's translation exports.
+const parityCopy = {
+  "zh-TW": { title: "核對訂單", total: "最終應付", details: "查看明細", help: "付款時機說明", online: "送出後線上付款", cod: "貨到付款", submit: "送出訂單", submitting: "正在送出訂單", unknown: "確認訂單狀態中", confirm: "確認新金額", legacy: ["結帳", "本次報價商品"], legacyTotal: "訂單金額" },
+  "zh-CN": { title: "核对订单", total: "最终应付", details: "查看明细", help: "付款时间说明", online: "提交后在线付款", cod: "货到付款", submit: "提交订单", submitting: "正在提交订单", unknown: "正在确认订单状态", confirm: "确认新金额", legacy: ["结账", "本次报价商品"], legacyTotal: "订单金额" },
+  en: { title: "Review your order", total: "Final amount due", details: "View details", help: "Payment timing help", online: "Pay online after placing the order", cod: "Cash on delivery", submit: "Place order", submitting: "Submitting order", unknown: "Checking order status", confirm: "Confirm new total", legacy: ["Checkout", "Items in this quotation"], legacyTotal: "Order total" },
+};
+const parityFrames = {
+  card: { default: ["1429:23435", "1429:23484"], reconfirm: ["1429:23533", "1429:23577"], submitting: ["1429:23621", "1429:23661"], unknown: ["1429:23701", "1429:23741"] },
+  cash_on_delivery: { default: ["1429:24143", "1429:24194"], reconfirm: ["1429:24245", "1429:24291"], submitting: ["1429:24337", "1429:24379"], unknown: ["1429:24421", "1429:24463"] },
+};
+
+async function checkoutParitySuite({ newContext, origin, product, recipient, evidence }) {
+  const ledger = [], failures = [], manifest = [], measurements = [];
+  const file = path.join(evidence, "parity-checkout-click-ledger.json");
+  await mkdir(path.join(evidence, "parity"), { recursive: true });
+  const cases = ["zh-TW", "zh-CN", "en"].flatMap((locale) => [false, true].flatMap((mobile) =>
+    (locale === "zh-TW" ? ["card", "cash_on_delivery"] : ["card"]).map((mode) => ({ locale, mobile, mode }))));
+  for (const { locale, mobile, mode } of cases) {
+    const c = parityCopy[locale], old = localeScreen[locale], context = await newContext(mobile), page = await context.newPage();
+    const label = `${locale}/${mobile ? 390 : 1440}/${mode}`;
+    const check = async (control, expected, perform) => {
+      try { await ledgerStep(ledger, file, page, `${label} ${control}`, "real click/fill/select/keyboard or read-only assertion", expected, perform); }
+      catch (error) { failures.push(`${label} ${control}: ${error.message}`); }
+    };
+    const shot = async (state, target = page) => {
+      // Only TW home-online/COD frames match this fixture's delivery method. Other locales
+      // validate translated home checkout; never mislabel them as signed pickup frames.
+      const frame = locale === "zh-TW" ? parityFrames[mode][state][Number(mobile)] : null;
+      const relative = `parity/${frame ?? `${locale}-${mode}-${state}-${mobile ? 390 : 1440}`}.png`;
+      await target.screenshot({ path: path.join(evidence, relative), fullPage: false, animations: "disabled", scale: "css" });
+      manifest.push({ frame, locale, mode, state, viewport: target.viewportSize(), route: new URL(target.url()).pathname, screenshot: relative });
+      await writeFile(path.join(evidence, "parity-checkout-screenshots.json"), JSON.stringify(manifest, null, 2));
+    };
+    const fill = async () => { for (const [key, value] of Object.entries(recipient)) await page.locator(`input[name="${key}"]`).fill(value); };
+    const confirmAddress = async () => { await page.getByTestId("confirm-address").click(); await expect(page.getByTestId("checkout-submit")).toBeEnabled(); };
+    try {
+      await reachCheckout(page, origin, locale, product);
+      assert.equal(new URL(page.url()).pathname, `/${locale}/checkout`, "parity must exercise the real route");
+      await page.getByRole("button", { name: old.delivery, exact: true }).click();
+      await check("delivery selector", "all option labels use buyer wording without raw country codes", async () => {
+        const select = page.getByRole("combobox");
+        const labels = await select.locator("option").allTextContents();
+        assert(labels.length > 0);
+        assert(labels.every((text) => !/·\s*[A-Z]{2}(?:\s*·|\s*$)/.test(text)), `raw country code: ${labels.join(" | ")}`);
+        const selected = await select.inputValue();
+        await select.selectOption(selected);
+      });
+      const [response] = await Promise.all([
+        page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST"),
+        page.getByRole("button", { name: old.quote, exact: true }).click(),
+      ]);
+      assert.equal(response.status(), 200);
+      const quote = await response.json();
+      await expect(page.getByTestId("address-section")).toBeVisible();
+      await check("disabled token", "disabled submit is solid light grey without a dashed border", async () => {
+        const button = page.getByTestId("checkout-submit");
+        await expect(button).toBeDisabled();
+        // READ/MEASURE only: computed paint never mutates DOM or application state.
+        const paint = await button.evaluate((el) => { const s = getComputedStyle(el); return { background: s.backgroundColor, border: s.borderTopStyle, opacity: s.opacity }; });
+        assert.equal(paint.background, "rgb(231, 237, 243)");
+        assert.notEqual(paint.border, "dashed");
+        assert.equal(paint.opacity, "1");
+      });
+      await fill();
+      const radio = page.locator(`input[name="home_payment_mode"][value="${mode}"]`);
+      await radio.click(); await confirmAddress();
+      const footer = page.locator(".purchase-footer"), review = page.getByTestId("checkout-review");
+      const payable = formatMoney(locale, mode === "cash_on_delivery" ? quote.cod_due_minor : quote.amount.total_minor, quote.currency);
+      await check("signed screen", "one review heading; legacy long-form headings and amount label are absent", async () => {
+        await expect(page.getByRole("heading", { level: 1, name: c.title, exact: true })).toBeVisible();
+        await expect(page.getByRole("heading", { name: c.title, exact: true })).toHaveCount(1);
+        for (const name of c.legacy) await expect(page.getByRole("heading", { name, exact: true })).toHaveCount(0);
+        await expect(page.locator(".address-fields input:visible")).toHaveCount(0);
+        await expect(footer.getByText(c.legacyTotal, { exact: true })).toHaveCount(0);
+      });
+      await check("required facts", "destination, recipient and phone remain together; a single server final total anchors the bar", async () => {
+        for (const key of ["recipient_name", "phone", "line1", "city"]) await expect(review).toContainText(recipient[key]);
+        await expect(radio).toBeChecked();
+        await expect(footer.getByText(c.total, { exact: true })).toBeVisible();
+        await expect(footer.locator("strong")).toHaveText(payable);
+        await expect(page.getByText(payable, { exact: true }).and(page.locator(":visible"))).toHaveCount(1);
+        await expect(footer).toContainText(mode === "cash_on_delivery" ? c.cod : c.online);
+        await expect(footer.getByRole("button", { name: c.submit, exact: true })).toBeEnabled();
+      });
+      await check("primary token", "enabled primary is the signed solid navy", async () => {
+        // READ/MEASURE only; exact signed primary #142942, not the legacy teal.
+        const background = await page.getByTestId("checkout-submit").evaluate((el) => getComputedStyle(el).backgroundColor);
+        assert.equal(background, "rgb(20, 41, 66)");
+      });
+      await check("details disclosure", "underlined View details opens and closes server breakdown using real clicks", async () => {
+        const details = footer.getByRole("button", { name: c.details, exact: true });
+        await expect(details).toHaveAttribute("aria-expanded", "false");
+        await expect(page.getByTestId("review-subtotal")).toBeHidden();
+        assert.match(await details.evaluate((el) => getComputedStyle(el).textDecorationLine), /underline/);
+        await details.click();
+        await expect(details).toHaveAttribute("aria-expanded", "true");
+        await expect(page.getByTestId("review-subtotal")).toHaveText(formatMoney(locale, quote.amount.subtotal_minor, quote.currency));
+        await expect(page.getByTestId("review-shipping")).toHaveText(formatMoney(locale, quote.amount.shipping_minor, quote.currency));
+        await details.click(); await expect(page.getByTestId("review-subtotal")).toBeHidden();
+      });
+      await check("contextual help", "question-mark help beside timing toggles the selected method explanation", async () => {
+        const help = footer.getByRole("button", { name: c.help, exact: true });
+        await expect(help).toHaveText("?");
+        await expect(help).toHaveAttribute("aria-expanded", "false");
+        await help.click(); await expect(help).toHaveAttribute("aria-expanded", "true");
+        await expect(page.getByTestId("payment-help-content")).toBeVisible();
+        await help.click(); await expect(page.getByTestId("payment-help-content")).toBeHidden();
+      });
+      await check("fixed bar clearance", "last content and controls scroll above the bar at the signed viewport", async () => {
+        await page.locator("body").click({ position: { x: 2, y: 2 } }); await page.keyboard.press("ControlOrMeta+End");
+        // READ/MEASURE only; all scrolling above is keyboard input.
+        await expect.poll(() => page.getByTestId("checkout-content-end").evaluate((el) => {
+          const bar = document.querySelector(".purchase-footer");
+          return !!bar && el.getBoundingClientRect().bottom <= bar.getBoundingClientRect().top;
+        })).toBe(true);
+        const geometry = await footer.evaluate((el) => { const box = el.getBoundingClientRect(); return { bottom: box.bottom, height: innerHeight, overflow: document.documentElement.scrollWidth > innerWidth }; });
+        assert.equal(geometry.bottom, geometry.height); assert.equal(geometry.overflow, false);
+        measurements.push({ label, ...geometry });
+      });
+      await page.keyboard.press("ControlOrMeta+Home"); await shot("default");
+      await check("refresh persistence", "server recipient, selected method, current final amount and single review survive reload", async () => {
+        await page.reload(); await expect(page.getByTestId("address-section")).toBeVisible();
+        await expect(radio).toBeChecked(); await confirmAddress();
+        await expect(page.getByRole("heading", { level: 1, name: c.title, exact: true })).toBeVisible();
+        for (const key of ["recipient_name", "phone", "line1"]) await expect(review).toContainText(recipient[key]);
+        await expect(footer.locator("strong")).toHaveText(payable);
+      });
+      // MOCK response fixture only: the same response is pinned across reload, and is
+      // never sent to checkout. Server money is shown as given, never recomputed by UI.
+      let changedQuote;
+      await page.route("**/api/buyer/quotes**", async (route) => {
+        const result = await route.fetch(), body = await result.json();
+        if (result.status() !== 200) return route.fulfill({ response: result });
+        if (route.request().method() === "POST") changedQuote = { ...body, amount: { ...body.amount, total_minor: body.amount.total_minor + 1700, shipping_minor: body.amount.shipping_minor + 1700 }, ...(mode === "cash_on_delivery" ? { cod_due_minor: body.cod_due_minor + 1700 } : {}) };
+        await route.fulfill({ response: result, json: changedQuote ?? body });
+      });
+      await check("re-quote", "changed server total blocks submit until a separate Confirm new total click, including after reload", async () => {
+        const details = footer.getByRole("button", { name: c.details, exact: true });
+        await details.click();
+        await page.getByRole("button", { name: copy[locale].change, exact: true }).click();
+        await page.getByRole("button", { name: old.quote, exact: true }).click();
+        await expect(page.getByTestId("quote-reconfirm")).toBeVisible();
+        await fill(); await page.locator(`input[name="home_payment_mode"][value="${mode}"]`).click();
+        await page.getByTestId("confirm-address").click();
+        await expect(page.getByTestId("checkout-submit")).toBeDisabled();
+        await expect(footer.locator("strong")).toHaveText(formatMoney(locale, mode === "cash_on_delivery" ? changedQuote.cod_due_minor : changedQuote.amount.total_minor, quote.currency));
+        await page.keyboard.press("ControlOrMeta+Home"); await shot("reconfirm");
+        await page.reload(); await expect(page.getByTestId("quote-reconfirm")).toBeVisible();
+        await page.getByTestId("confirm-address").click();
+        await expect(page.getByTestId("checkout-submit")).toBeDisabled();
+        await page.getByRole("button", { name: c.confirm, exact: true }).click();
+        await expect(page.getByTestId("checkout-submit")).toBeEnabled();
+      });
+      await page.unrouteAll({ behavior: "wait" });
+    } catch (error) { failures.push(`${label} setup: ${error.message}`); }
+    finally { await context.close(); }
+    // New isolated buyer: a MOCK changed quote must never reach the real order writer.
+    const submissionContext = await newContext(mobile), submittingPage = await submissionContext.newPage();
+    let releaseSubmit = () => {}, releaseTimer;
+    try {
+      await reachCheckout(submittingPage, origin, locale, product);
+      await submittingPage.getByRole("button", { name: old.delivery, exact: true }).click();
+      const [response] = await Promise.all([
+        submittingPage.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST"),
+        submittingPage.getByRole("button", { name: old.quote, exact: true }).click(),
+      ]);
+      assert.equal(response.status(), 200);
+      await expect(submittingPage.getByTestId("address-section")).toBeVisible();
+      for (const [key, value] of Object.entries(recipient)) await submittingPage.locator(`input[name="${key}"]`).fill(value);
+      await submittingPage.locator(`input[name="home_payment_mode"][value="${mode}"]`).click();
+      await submittingPage.getByTestId("confirm-address").click();
+      const held = new Promise((resolve) => { releaseSubmit = resolve; });
+      // MOCK transport fault only; do not contact PSP/carrier or create an order with a modified quote.
+      let submits = 0;
+      await submittingPage.route("**/api/buyer/checkout", async (route) => { submits++; await held; await route.abort("failed"); });
+      releaseTimer = setTimeout(releaseSubmit, 15000); // bounded fault injection, always released in finally
+      await submittingPage.getByTestId("checkout-submit").click();
+      await expect.poll(() => submits).toBe(1);
+      try {
+        await ledgerStep(ledger, file, submittingPage, `${label} submitting`, "real submit click with held transport",
+          "signed Submitting order label disables resubmission while required recipient facts remain", async () => {
+            await expect(submittingPage.getByTestId("checkout-submit")).toHaveText(c.submitting);
+            await expect(submittingPage.getByTestId("checkout-submit")).toBeDisabled();
+            for (const key of ["recipient_name", "phone", "line1"]) await expect(submittingPage.getByTestId("checkout-review")).toContainText(recipient[key]);
+          });
+      } catch (error) { failures.push(`${label} submitting: ${error.message}`); }
+      await shot("submitting", submittingPage);
+      releaseSubmit(); clearTimeout(releaseTimer);
+      await expect(submittingPage.getByTestId("recover-purchase")).toBeVisible();
+      try {
+        await ledgerStep(ledger, file, submittingPage, `${label} UNKNOWN`, "transport loss then real reload",
+          "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout", async () => {
+            const bar = submittingPage.locator(".purchase-footer");
+            await expect(submittingPage.getByTestId("checkout-submit")).toHaveText(c.unknown);
+            await expect(submittingPage.getByTestId("checkout-submit")).toBeDisabled();
+            await expect(bar.locator("strong")).toHaveText("—");
+            await expect(bar.getByRole("button", { name: c.details, exact: true })).toHaveCount(0);
+            await expect(bar.getByRole("button", { name: c.help, exact: true })).toHaveCount(0);
+            for (const key of ["recipient_name", "phone", "line1"]) await expect(submittingPage.getByTestId("checkout-review")).toContainText(recipient[key]);
+            await submittingPage.reload();
+            await expect(submittingPage.getByTestId("recover-purchase")).toBeVisible();
+            await expect(submittingPage.getByTestId("checkout-submit")).toBeDisabled();
+            await expect(bar.locator("strong")).toHaveText("—");
+            assert.equal(submits, 1, "reload cannot replay an UNKNOWN write");
+          });
+      } catch (error) { failures.push(`${label} UNKNOWN: ${error.message}`); }
+      await shot("unknown", submittingPage);
+    } catch (error) { failures.push(`${label} submission setup: ${error.message}`); }
+    finally { releaseSubmit(); clearTimeout(releaseTimer); await submittingPage.unrouteAll({ behavior: "wait" }); await submissionContext.close(); }
+  }
+  await writeFile(path.join(evidence, "parity-checkout-layout.json"), JSON.stringify(measurements, null, 2));
+  assert.deepEqual(failures, [], "PARITY-CHECKOUT signed-frame assertions (not compile/startup)");
 }
 
 export async function checkoutV2Cod(page, quote, locale, recipient, fee, evidence) {
