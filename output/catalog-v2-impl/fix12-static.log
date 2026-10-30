@@ -1,0 +1,8 @@
+ProductList.tsx sha256 c48c171789fb19dfc7f0091389a458176eb6db6de17f27396bd1c02c7f154235
+tsc --noEmit -p output/catalog-v2-impl/tsconfig.static.json exit0
+Compiler from main read-only; temporary apps/admin and packages/ui node_modules links point to existing main apps/admin/node_modules; removed after check.
+Initial tsc exit1 missing React modules in shared UI; fix12-tsc.log retained; corrected resolution tsc output fix12-tsc-resolved.log empty.
+Impeccable static source detector exit0 findings[]
+No local tests/servers/browsers/build/install/PG/containers.
+node scripts/dev/derive-browser-ownership.mjs exit0
+node scripts/dev/derive-browser-ownership.mjs --check exit0

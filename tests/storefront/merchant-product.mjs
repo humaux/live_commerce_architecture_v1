@@ -25,7 +25,12 @@ export async function createProductInEditor(merchant, { adminOrigin, store, loca
   const created=await productReply; assert.equal(created.status(),200,"product document create");
   const product=await created.json(),sku=product.skus[0];assert.equal(sku.product_id,product.id);
   await expect(merchant.getByTestId("product-save-result")).toBeVisible();
-  const link=merchant.getByTestId("product-save-result").locator(`a[href*="/products/${product.id}"]`);await link.click();await merchant.waitForURL(url=>url.pathname.endsWith("/products/"+product.id));await merchant.reload();
+  const link=merchant.getByTestId("product-save-result").locator(`a[href*="/products/${product.id}"]`);await link.click();await merchant.waitForURL(url=>url.pathname.endsWith("/products/"+product.id));
+  // Status remains in Advanced; reach it through the merchant control before the unchanged reload oracle.
+  await expect(merchant.getByTestId("product-form").or(merchant.getByTestId("catalog-task-editor"))).toBeVisible();
+  if (await merchant.getByTestId("catalog-task-editor").isVisible()) await merchant.getByTestId("catalog-advanced-toggle").click();
+  await expect(merchant.getByTestId("product-form")).toBeVisible();
+  await merchant.reload();
   await expect(merchant.getByTestId("product-status")).toHaveValue("active");
   return { product, sku };
 }

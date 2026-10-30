@@ -1,9 +1,10 @@
 // Purpose: PM-v2 committed media editing: per-role order/move, option-axis cells and normalized uploads.
 // Depends on: fenced catalog commands, /api/stores/{store}/products/{product}/images and PM-v2 action routes, photo-preprocess.
-// Used by: ProductDocumentForm edit; Go /v1/admin/stores/{store}/products/{product}/images remains authority.
+// Used by: ProductDocumentForm and CatalogSimplifiedEditor edit; Go /v1/admin/stores/{store}/products/{product}/images remains authority.
+// Invariants: role caps, axis bindings and receipt recovery stay identical in compact and full presentation.
 "use client";
 import { useEffect, useRef, useState, useId } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { catalogTaskCopy, catalogText, type Locale } from "@live-commerce/i18n";
 import type { OptionAxis } from "@/lib/catalog-v2-model";
 import type { ProductImageList } from "@/lib/model";
 import {
@@ -65,7 +66,9 @@ export function ProductMediaManager({
   disabled,
   onChanged,
   onLocked,
+  compact = false,
 }: {
+  compact?: boolean;
   locale: Locale;
   store: string;
   productID: string;
@@ -75,6 +78,7 @@ export function ProductMediaManager({
   onChanged: (list: ProductImageList | null) => void;
   onLocked: (locked: boolean) => void;
 }) {
+  const task = catalogTaskCopy[locale];
   const c = productMediaCopy[locale],
     scope = `${store}:${productID}:${boundary}`,
     journal = mediaRecoveryKey(store, productID),
@@ -500,35 +504,28 @@ export function ProductMediaManager({
       </div>
     );
   };
-  const picker = (role: MediaRole, value?: string) => (
-    <label className="pm-upload">
-      <span>{role === "sku" ? c.addOption : c.add}</span>
-      <input
-        type="file"
-        aria-label={
-          role === "sku" ? `${c.addOption}: ${value}` : `${c.add}: ${c[role]}`
-        }
-        data-testid={role === "main" ? "photo-input" : `photo-input-${role}`}
-        accept={PHOTO_ACCEPT}
-        multiple={role !== "sku"}
-        disabled={locked || group(role).length >= mediaCaps[role]}
-        onChange={(e) => {
-          void upload(e.target.files, role, value);
-          e.target.value = "";
-        }}
-      />
-    </label>
-  );
+  const picker = (role: MediaRole, value?: string) => {
+    const inputID = `${id}-picker-${role}-${value ?? ''}`;
+    const label = compact ? (role === 'sku' ? catalogText(task.chooseVariant, { value: value ?? '' }) : task.choose) : role === 'sku' ? c.addOption : c.add;
+    // A label would associate with the compact button, obscuring its own text name.
+    const PickerContainer = compact ? 'div' : 'label';
+    return <PickerContainer className="pm-upload">
+      {compact ? <button type="button" disabled={locked || group(role).length >= mediaCaps[role]}
+        onClick={() => document.getElementById(inputID)?.click()}>{label}</button> : <span>{label}</span>}
+      <input id={inputID} hidden={compact} type="file"
+        aria-label={role === 'sku' ? `${c.addOption}: ${value}` : `${c.add}: ${c[role]}`}
+        data-testid={role === 'main' ? 'photo-input' : `photo-input-${role}`}
+        accept={PHOTO_ACCEPT} multiple={role !== 'sku'} disabled={locked || group(role).length >= mediaCaps[role]}
+        onChange={e => { void upload(e.target.files, role, value); e.target.value = ''; }} />
+    </PickerContainer>;
+  };
   const section = (role: "main" | "detail") => (
     <section aria-labelledby={`${id}-${role}`}>
       <h2 id={`${id}-${role}`}>
-        {c[role]}{" "}
-        <small>
-          {group(role).length}/{mediaCaps[role]}
-        </small>
+        {compact ? catalogText(task[role], { n: group(role).length }) : <>{c[role]} <small>{group(role).length}/{mediaCaps[role]}</small></>}
       </h2>
-      <p className="pe-hint">{role === "main" ? c.mainHelp : c.detailHelp}</p>
-      <ProductMediaTiles
+      {!compact && <p className="pe-hint">{role === "main" ? c.mainHelp : c.detailHelp}</p>}
+      {(!compact || group(role).length > 0) && <ProductMediaTiles
         role={role}
         photos={group(role).map(tile)}
         disabled={locked}
@@ -536,11 +533,32 @@ export function ProductMediaManager({
         onMove={(a, b) => order(role, a, b)}
         onDelete={remove}
         onRole={moveRole}
-      />
+      />}
       {picker(role)}
       {noteView(role)}
-      <p className="pe-hint pm-accept">{c.acceptHint}</p>
+      {!compact && <p className="pe-hint pm-accept">{c.acceptHint}</p>}
     </section>
+  );
+  const axisControls = (
+        <div className="pm-field">
+          <label htmlFor={`${id}-axis`}>{c.axis}</label>
+          <select
+            data-testid="media-axis-picker"
+            id={`${id}-axis`}
+            value={list?.image_axis ?? ""}
+            disabled={locked || !axes.length}
+            onChange={(e) =>
+              action("image-axis", { axis: e.target.value || null }, "sku")
+            }
+          >
+            <option value="">{c.defaultAxis}</option>
+            {axes.map((a) => (
+              <option key={a.name} value={a.name}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </div>
   );
   return (
     <div className="pm-media" data-testid="photo-manager">
@@ -586,26 +604,8 @@ export function ProductMediaManager({
       {section("main")}
       <section aria-labelledby={`${id}-sku`}>
         <h2 id={`${id}-sku`}>{c.sku}</h2>
-        <p className="pe-hint">{c.skuHelp}</p>
-        <div className="pm-field">
-          <label htmlFor={`${id}-axis`}>{c.axis}</label>
-          <select
-            data-testid="media-axis-picker"
-            id={`${id}-axis`}
-            value={list?.image_axis ?? ""}
-            disabled={locked || !axes.length}
-            onChange={(e) =>
-              action("image-axis", { axis: e.target.value || null }, "sku")
-            }
-          >
-            <option value="">{c.defaultAxis}</option>
-            {axes.map((a) => (
-              <option key={a.name} value={a.name}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {!compact && <p className="pe-hint">{c.skuHelp}</p>}
+        {compact ? <details><summary>{task.advanced}</summary>{axisControls}</details> : axisControls}
         {!axis ? (
           <p>{c.noAxis}</p>
         ) : (
@@ -638,9 +638,9 @@ export function ProductMediaManager({
                     />
                   ) : (
                     <>
-                      <p>{c.useCover}</p>
+                      {!compact && <p>{c.useCover}</p>}
                       {picker("sku", value)}
-                      <p className="pe-hint pm-accept">{c.acceptHint}</p>
+                      {!compact && <p className="pe-hint pm-accept">{c.acceptHint}</p>}
                     </>
                   )}
                   {noteView("sku", value)}
@@ -675,6 +675,7 @@ export function ProductMediaManager({
         {noteView("sku")}
       </section>
       {section("detail")}
+      {compact && <p className="pe-hint">{task.uploadHelp}</p>}
     </div>
   );
 }

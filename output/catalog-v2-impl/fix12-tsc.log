@@ -1,0 +1,70 @@
+apps/admin/components/AdsDraft.tsx(221,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AdsDraft.tsx(231,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AdsResults.tsx(112,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/AdsResults.tsx(122,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/Attribution.tsx(180,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/Attribution.tsx(193,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/CollectionManager.tsx(551,22): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/DesignMedia.tsx(148,24): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Finance.tsx(108,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Finance.tsx(113,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/OrderListFilters.tsx(44,191): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/OrderListFilters.tsx(45,185): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/ProductImport.tsx(207,30): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/ProductPhoto.tsx(271,20): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Promotions.tsx(164,173): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Promotions.tsx(168,169): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/ReauthDialog.tsx(202,146): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/ReauthDialog.tsx(207,150): error TS7006: Parameter 'e' implicitly has an 'any' type.
+apps/admin/components/Reports.tsx(142,22): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Reports.tsx(145,22): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/Studio.tsx(702,28): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGallerySections.tsx(247,72): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(136,208): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(179,247): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(180,130): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(181,257): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(182,100): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(188,201): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(189,203): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(245,83): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(277,309): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(278,162): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(279,148): error TS7006: Parameter 'event' implicitly has an 'any' type.
+apps/admin/components/UiGalleryTemplates.tsx(280,109): error TS7006: Parameter 'event' implicitly has an 'any' type.
+packages/ui/src/AppShell.tsx(6,51): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/AppShell.tsx(42,23): error TS18046: 'e' is of type 'unknown'.
+packages/ui/src/AppShell.tsx(43,20): error TS2339: Property 'focus' does not exist on type '{}'.
+packages/ui/src/AppShell.tsx(55,17): error TS2339: Property 'focus' does not exist on type '{}'.
+packages/ui/src/AppShell.tsx(58,18): error TS2339: Property 'focus' does not exist on type '{}'.
+packages/ui/src/AppShell.tsx(71,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/Presentation.tsx(16,8): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/Presentation.tsx(27,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/Presentation.tsx(180,48): error TS18046: 'child' is of type 'unknown'.
+packages/ui/src/Presentation.tsx(197,55): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Element'.
+packages/ui/src/Presentation.tsx(198,24): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Element'.
+packages/ui/src/Presentation.tsx(199,22): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Element'.
+packages/ui/src/ds/AppShellV2.tsx(5,97): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/ds/AppShellV2.tsx(26,131): error TS18046: 'e' is of type 'unknown'.
+packages/ui/src/ds/AppShellV2.tsx(27,20): error TS2339: Property 'focus' does not exist on type '{}'.
+packages/ui/src/ds/AppShellV2.tsx(39,15): error TS2339: Property 'focus' does not exist on type '{}'.
+packages/ui/src/ds/AppShellV2.tsx(42,16): error TS2339: Property 'focus' does not exist on type '{}'.
+packages/ui/src/ds/AppShellV2.tsx(122,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/ds/Controls.tsx(14,8): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/ds/Controls.tsx(57,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/ds/Data.tsx(5,137): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/ds/Data.tsx(104,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/ds/Data.tsx(119,21): error TS7006: Parameter 'event' implicitly has an 'any' type.
+packages/ui/src/ds/Dialog.tsx(5,68): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/ds/Dialog.tsx(66,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/ds/Fields.tsx(5,121): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/ds/Fields.tsx(17,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/ds/Icon.tsx(4,38): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/ds/Icon.tsx(37,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/ds/Layout.tsx(5,74): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/ds/Layout.tsx(17,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/ds/States.tsx(6,73): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+packages/ui/src/ds/States.tsx(28,12): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+packages/ui/src/ds/States.tsx(271,26): error TS7006: Parameter 'r' implicitly has an 'any' type.
+packages/ui/src/ds/States.tsx(271,29): error TS7006: Parameter 'i' implicitly has an 'any' type.
+packages/ui/src/ds/States.tsx(273,26): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Record<FileProblem, string>'.

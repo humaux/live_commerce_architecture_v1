@@ -1,0 +1,4 @@
+node --check tests/admin/catalog-v2-simplified.acceptance.ts: exit0
+git diff --check: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0,53modes
+Local runtime/tests/server/browser/build: NOT_RUN
