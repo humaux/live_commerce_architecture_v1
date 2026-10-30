@@ -4,8 +4,7 @@
 // No response interception or completed-order synthesis. The runner supplies authoritative fixture totals.
 // Actual buyer ad URL -> checkout (AT5) is added by the root's storefront/checkout acceptance path.
 import { expect, test, type Page } from "@playwright/test";
-import { registerGrowthAttributionParity } from "./parity-growth.spec";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { attributionCopy } from "../../apps/admin/lib/attribution-copy";
@@ -1029,8 +1028,83 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
     });
   }
 
+// C3 cases live in this registered fixture entry point so check-gates proves reachability.
+{
+type Environment = {
+  origin: string; store: string; evidence: string;
+  login: (page: Page) => Promise<void>;
+};
+const devices = [
+  { width: 1440, height: 900, side: 0 },
+  { width: 390, height: 844, side: 1 },
+] as const;
+const frames = {
+  editor: ["6:20130", "6:20255"], source: ["1049:6945", "1049:7058"],
+  settings: ["1049:7120", "1049:7233"], review: ["1049:7295", "1049:7408"],
+  saved: ["1049:7470", "1049:7583"], status: ["1049:7645", "1049:7758"],
+  leave: ["1049:7820", "1049:7933"], conflict: ["1049:7995", "1049:8108"],
+  detail: ["5:17304", "5:17438"], assets: ["5:17516", "5:17633"],
+  legend: ["1134:9548", "1134:9549"], loading: ["1134:9550", "1134:9551"],
+  list: ["4:11612", "4:11750"], index: ["6:23064", "6:23199"],
+  results: ["1151:9420", "1151:9421"], attribution: ["1151:9422", "1151:9423"],
+  breakdown: ["1151:9428", "1151:9429"],
+} as const;
+
+async function shot(page: Page, env: Environment, frame: string) {
+  const directory = path.join(env.evidence, "parity");
+  await mkdir(directory, { recursive: true });
+  // READ/MEASURE only. Screenshots document the real route, never /ui-gallery.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: path.join(directory, `${frame}.png`), animations: "disabled" });
+  await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame, route: page.url(), screenshot: `parity/${frame}.png` }) + "\n");
+}
+async function click(page: Page, env: Environment, name: string, expected: string) {
+  await page.getByRole("button", { name, exact: true }).click();
+  await expect(page.getByRole("heading", { name: expected, exact: true })).toBeVisible();
+  await appendFile(path.join(env.evidence, "growth-click-ledger.jsonl"), JSON.stringify({ route: page.url(), control: name, operation: "click", expected, actual: "visible", result: "PASS" }) + "\n");
+}
+/** Uses the original real PG/Go attribution fixture; no reports or balances are synthesized. */
+function registerGrowthAttributionParity(env: Environment & { draftID: string; from: string; to: string }) {
+  for (const device of devices) test(`C3 signed attribution task screens ${device.width}`, async ({ page }) => {
+    await env.login(page); await page.setViewportSize({ width: device.width, height: device.height });
+    const base = `${env.origin}/zh-TW/ads/attribution?store=${env.store}&from=${env.from}&to=${env.to}`;
+    await page.goto(base);
+    await expect(page.getByRole("heading", { name: "歸因報表", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "廣告歸因與直播復盤", exact: true })).toHaveCount(0);
+    await expect(page.getByText("先選一份廣告草稿或一場直播，再核對它帶來的訂單。", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("attribution-session-panel")).toHaveCount(0);
+    await expect(page.getByTestId("attribution-draft-panel")).toHaveCount(0);
+    await shot(page, env, frames.index[device.side]);
+    await click(page, env, "成效總覽", "成效總覽");
+    for (const label of ["本平台 · 信用卡收付款", "Meta · 刊登成效", "Meta · 回報購買"])
+      await expect(page.getByRole("heading", { name: label, exact: true })).toBeVisible();
+    await shot(page, env, frames.results[device.side]);
+    await page.getByRole("button", { name: "查看廣告／直播歸因", exact: true }).click();
+    await page.getByTestId(`attribution-open-${env.draftID}`).click();
+    await expect(page.getByRole("heading", { name: "廣告歸因", exact: true })).toBeVisible();
+    await expect(page.getByText("待收款 · 不算入已收款", { exact: true })).toBeVisible();
+    await shot(page, env, frames.attribution[device.side]);
+    await click(page, env, "Meta 分組明細", "Meta 分組明細");
+    await expect(page.getByText("Meta 彙總，不是買家個人資料。", { exact: true })).toBeVisible();
+    await shot(page, env, frames.breakdown[device.side]);
+    await page.getByRole("button", { name: "重新讀取", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Meta 分組明細", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "返回廣告歸因", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "廣告歸因", exact: true })).toBeVisible();
+  });
+  test("C3 attribution main screen in all three locales", async ({ page }) => {
+    await env.login(page);
+    for (const [locale, heading, action] of [["zh-TW", "歸因報表", "成效總覽"], ["zh-CN", "归因报表", "成效总览"], ["en", "Attribution report", "Results overview"]]) {
+      await page.goto(`${env.origin}/${locale}/ads/attribution?store=${env.store}&from=${env.from}&to=${env.to}`);
+      await expect(page.getByRole("heading", { level: 1, name: heading, exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: action, exact: true })).toBeVisible();
+    }
+  });
+}
+
 // Independent group: a signed-frame assertion failure must not hide the existing AT gates.
 test.describe("PARITY-GROWTH attribution", () => {
   test.describe.configure({ mode: "default" });
   registerGrowthAttributionParity({ origin, store, evidence, draftID: fixture.draft_id, from: fixture.from, to: fixture.to, login: page => login(page, 1586) });
 });
+}
