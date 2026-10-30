@@ -1,10 +1,15 @@
 "use client";
 
-// Inline payment section. BFF routes used (via lib/order-payment.ts -> lib/buyer-client.ts):
+// Purpose: render the inline buyer payment section and own its bounded GET polling.
+// Depends on: lib/order-payment.ts -> lib/buyer-client.ts and the payment/copy contracts.
+// Used by: the buyer order detail view in components/OrderFlow.tsx.
+// Invariants: terminal payments never trigger refresh POSTs; CLOSED_UNPAID keeps bounded
+// GET polling until commercial cancellation/confirmation is visible. BFF routes:
 //   GET  /api/buyer/orders/{id}/payment          -> Go GET /v1/buyer/orders/{id}/payment
 //   POST .../payment/prepare | handoff           -> Stripe start/take_stripe_handoff
 //   POST .../payment/refresh | cancel (Stripe)   -> HostedPaymentStarter.RefreshPayment / CancelPayment
-// Stripe states and polling: contracts/stripe-buyer-ui-v1.md §5-§6.// Refund summary (stripe-refund-v1 §7.2) is read from the same payment view; no refund route is called.
+// Stripe states and polling: contracts/stripe-buyer-ui-v1.md §5-§6, amended by SU09-POLL.
+// Refund summary (stripe-refund-v1 §7.2) is read from the same view; no refund route is called.
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Order } from "../lib/purchase";
@@ -32,16 +37,20 @@ type Plan = {
   note: "explain" | "cutoff" | "readOnly" | "cancelling" | "unavailable" | "";
 };
 
-// stripe-buyer-ui-v1 §5 terminal set; also the polling/refresh stop condition (§6).
+// stripe-buyer-ui-v1 §5 terminal set; refresh POSTs stop here, even if order state lags.
 const terminalPayment = (view: PaymentView) =>
   view.payment_state === "CAPTURED" ||
   view.payment_state === "PARTIALLY_REFUNDED" ||
   view.payment_state === "REFUNDED" ||
   view.payment_state === "CLOSED_UNPAID" ||
   view.payment_state === "REVIEW_REQUIRED";
-// A prepared Stripe attempt that may still change: the only thing worth polling or refreshing.
+// SU09-POLL: payment closure can precede asynchronous commercial cancellation.
 const activeAttempt = (view: PaymentView) =>
-  view.cancel_requested !== undefined && !terminalPayment(view);
+  view.cancel_requested !== undefined &&
+  (!terminalPayment(view) ||
+    (view.payment_state === "CLOSED_UNPAID" &&
+      view.commercial_state !== "CANCELLED" &&
+      view.commercial_state !== "CONFIRMED"));
 const POLL_STEPS_MS = [5000, 10000, 20000, 30000];
 const POLL_WINDOW_MS = 10 * 60 * 1000;
 
@@ -193,7 +202,8 @@ export default function OrderPayment({
     void read(version).then(() => restart());
     // Stripe poll (§6): ONE setTimeout chain owned by this epoch, GET-only. It stops 10 min
     // after the last restart (mount, Pay/Continue/Refresh/Cancel, focus, pageshow, visible),
-    // on a terminal state, when hidden, or at cleanup. It never POSTs; a click-driven
+    // when the attempt (including any pending commercial cancellation) settles,
+    // when hidden, or at cleanup. It never POSTs; a click-driven
     // READY wait (working.current) pauses it.
     let timer: ReturnType<typeof setTimeout> | undefined;
     let step = 0;
@@ -269,7 +279,7 @@ export default function OrderPayment({
     view && (isStripeView(view) || stripeMarker)
       ? stripePlan(view, Date.now())
       : null;
-  const attempt = !!view && activeAttempt(view);
+  const attempt = !!view && activeAttempt(view) && !terminalPayment(view);
   // §5 disclosure text; null (nothing rendered) unless the hosted view returned `collector`.
   const collector = view ? collectorDisclosure(locale, view.collector, shopName) : null;
 
