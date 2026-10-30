@@ -69,6 +69,8 @@ export function InboxThread({
   const deliveryLock = useRef(false);
   const lockedOutbounds = useRef<Pick<Thread["items"][number], "at" | "outbound_id" | "send_state">[]>([]);
   const acknowledged = useRef<{ id: string | null; outbound_id: string | null; text: string | null } | null>(null);
+  // The visible rejection can belong to another send; never recover a successful ACK's draft.
+  const recoveryText = useRef<string | null>(null);
   const [delivery, setDelivery] = useState<string | null>(null);
   const persistedUnknown = useRef(false);
   const historyClear = useRef(false);
@@ -89,6 +91,7 @@ export function InboxThread({
     deliveryLock.current = false;
     lockedOutbounds.current = [];
     acknowledged.current = null;
+    recoveryText.current = null;
     persistedUnknown.current = false;
     historyClear.current = false;
     inFlight.current = false;
@@ -150,6 +153,7 @@ export function InboxThread({
         if (!before) {
           const ack = acknowledged.current;
           let ackComplete = false;
+          let ackState: string | null = null;
           if (ack) {
             // A9 outbound identity correlates projections, never proves an operation result.
             // No permission, missing ID, failed or mismatched operation read stays locked.
@@ -162,8 +166,10 @@ export function InboxThread({
                   operation.provider === (conversation.platform === "instagram" ? "instagram" : "facebook") &&
                   operation.object?.kind === "conversation" && operation.object.id === cid) {
                   const state = operationDelivery[operation.state];
+                  ackState = state;
                   ackComplete = state === "sent" || state === "failed";
                   setDelivery(state);
+                  recoveryText.current = state === "failed" ? ack.text : null;
                   deliveryLock.current = state === "queued" || state === "blocked";
                   persistedUnknown.current ||= state === "unknown";
                 }
@@ -201,8 +207,12 @@ export function InboxThread({
             const latest = [...data.items].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
               .find(item => item.direction === "out");
             const pendingProjection = [...unresolved].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))[0];
-            // Keep the exact rejected ACK and its original text until all other obligations settle.
-            if (pendingProjection || !ack) setDelivery(pendingProjection?.send_state ?? latest?.send_state ?? null);
+            // Retain a rejected ACK's own recovery, but successful A cannot mask distinct B's result.
+            if (pendingProjection || !ack || (ackState === "sent" && latest && !settledByAck(latest))) {
+              setDelivery(pendingProjection?.send_state ?? latest?.send_state ?? null);
+              recoveryText.current = !pendingProjection && latest?.send_state === "failed" && !latest.unreadable
+                ? latest.text : null;
+            }
             deliveryLock.current = unresolved.length > 0;
           } else {
             deliveryLock.current ||= unresolved.length > 0;
@@ -378,6 +388,7 @@ export function InboxThread({
       setText("");
       setTemplate("");
       setDelivery(result.send_state);
+      recoveryText.current = null;
       deliveryLock.current = result.send_state === "queued" || result.send_state === "blocked";
       lockedOutbounds.current = [];
       acknowledged.current = deliveryLock.current ? {
@@ -484,10 +495,9 @@ export function InboxThread({
       {folded && <section className={styles.result}>
         <p role="status" data-testid="inbox-delivery-state">{resultCopy}</p>
         {(uncertainDelivery || delivery === "queued" || delivery === "blocked") && <button data-testid="inbox-send-locked" className={styles.button} disabled>{c.locked}</button>}
-        {delivery === "failed" && !uncertainDelivery && (acknowledged.current
-          ? acknowledged.current.text !== null : latestOutbound && !latestOutbound.unreadable) &&
+        {delivery === "failed" && !uncertainDelivery && recoveryText.current !== null &&
           <button className={styles.button} data-testid="inbox-edit-original" disabled={busy} onClick={() => {
-            setText(acknowledged.current?.text ?? latestOutbound!.text); setTemplate(""); setEditing(true); setError(null);
+            setText(recoveryText.current!); setTemplate(""); setEditing(true); setError(null);
           }}>{c.editOriginal}</button>}
         <button className={styles.button} data-testid="inbox-send-status" disabled={busy || retry} onClick={() => {
           setError(null); setQueriedUnknown(uncertainDelivery); void load();

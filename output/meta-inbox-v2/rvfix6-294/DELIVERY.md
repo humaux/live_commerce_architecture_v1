@@ -67,3 +67,44 @@ Rollback reference1772b71a1; no destructive restore. Native run IDs go to PR com
 Integrator completion relay wakes next session; stop within ~10min CI polling, no silent background work.
 P2 for issue: no new P2 in this review; existing timestamp display-order P2 remains separately recorded.
 NOT_RUN: local tests/server/browser/PG/container/LIVE/tsc, causal RED, implementation GREEN, independent acceptance.
+
+## Implementation relay after causal RED (2026-10-30)
+
+Current authority: integrator's IMPL AFTER CAUSAL RED dispatch; repository source at
+0f13bd50fe9928c1c52e6862eff44c16e2b44a6c; docs/delivery/units/meta-inbox-v2.md;
+contracts/live-console-v1.md A9/A12 and nullable delivery guard. Architecture sections listed above reread.
+Humaux/coord/code-index tools unavailable in this session: lookup/store/canvas/index/link NOT_RUN.
+This continues the assigned card without delegation or claiming another task. Existing unrelated dirty files preserved.
+
+Root cause: each exact-operation read repainted successful A before projection selection, while Edit original
+always preferred A's retained draft. Retain A's operation/outbound identity and draft for exact reconciliation;
+select a distinct projected result after A succeeds and keep a separate private recoveryText for that result.
+Rejected A still takes priority after independent obligations settle. Independent queued/blocked tracking,
+UNKNOWN latch, authorization, send guards, copy, assertions, fixture data and timings remain unchanged.
+Recovery text clears with conversation erasure and each new successful submission receipt.
+No imports changed; the three direct InboxThread harnesses therefore need no new dependency allowlist.
+
+RED: Foundation40983874335/job123830148198 and Gates40983874479/bundle:06 job123831384255;
+exact RED head0f13bd50f, six locale/state failures each. Foundation raw assertions read in this session;
+browser artifact six failures/52 passes is the integrator's independent receipt, not a local browser run.
+See red.log for provenance and the explicitly ignored shard:g10 P2 pg_restore flake.
+Additional known GREEN blocker: inbox-discovery.test.ts:72 expects33 but discovers39 after this card's six
+new browser cases. Left unchanged under the explicit no-assertion-edit rule and relayed for integrator disposition.
+
+No new design, visible string, setting, page, route or API. BOURDIEU/PROJECT UNDERSTANDING/MOBBIN→EAGLE/
+FIGMA OFFICIAL GUIDANCE sections above continue to apply to this behavior-only fix. All three locale
+entries and existing parity facts are unchanged. Native click/reload recovery acceptance remains CI PENDING;
+the click ledger above is not marked PASS. No new Mobbin query or Figma work is needed.
+
+Pulled assigned branch --ff-only; origin/r3/integration a09262050d750895347e7333b8228194fec00cb2 already
+ancestor of current head (HEAD...origin/r3/integration=34/0), so no merge required this relay.
+Source edit: apps/admin/components/InboxThread.tsx only. Evidence stays in this directory.
+Browser ownership must be regenerated last and checked before the single implementation push; no hand edits.
+No Go dependency edge changed; dependency-map.md unchanged. Static command exits go in implementation-static.log.
+Rollback reference: 0f13bd50fe9928c1c52e6862eff44c16e2b44a6c, source diff only; no destructive rollback performed.
+Out-of-card paths this relay: only mandatory browser-ownership generated output if its content changes.
+No merge/automerge/status/deploy. No evidence-only follow-up push. Final head/WAIT_RUNs go in PR comment;
+integrator completion relay supplies the wake-up after this session, within the ten-minute CI polling bound.
+Evidence: author runtime E0; local static checks E1 only; implementation GREEN and final independent review PENDING.
+NOT_RUN: local tests/servers/browsers/builds/PG/containers/LIVE, tsc (compiler/dependencies absent),
+current-head CI runtime acceptance, native click/persistence acceptance, independent acceptance, Humaux operations.

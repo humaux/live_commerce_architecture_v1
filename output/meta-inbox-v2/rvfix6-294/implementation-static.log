@@ -1,0 +1,7 @@
+git diff --check exit=0
+node --check scripts/dev/derive-browser-ownership.mjs exit=0
+tsc NOT_RUN: no compiler command or local node_modules; no dependency install.
+Local tests, servers, browsers, builds, PG, containers, LIVE NOT_RUN by card.
+browser ownership: wrote /Volumes/data/live_commerce_architecture_v1/.worktrees/inbox-v2-ui/output/ci-select-backend-browser/browser-ownership.json (53 modes)
+browser ownership generation exit=0
+browser ownership --check exit=0
