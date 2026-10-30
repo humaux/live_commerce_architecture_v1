@@ -26,7 +26,7 @@ const suites: Record<string, string[]> = {
   // files in the selected suite so the gate registry can verify reachability.
   "settings-real": ["settings-real.spec.ts", "settings-v2.spec.ts"],
   "merchant-orders-bff": ["orders-bff.spec.ts"],
-  "merchant-orders-ui": ["orders-ui.spec.ts"],
+  "merchant-orders-ui": ["orders-ui.spec.ts", "shipping-center.spec.ts"],
   "parcel-merge-ui": ["parcel-merge.spec.ts"],
   "inbox": ["inbox-ui.spec.ts", "inbox-bundle-ui.spec.ts", "inbox-customer-ui.spec.ts", "inbox-v2-ui.spec.ts"],
   "studio-ui": ["studio-ui.spec.ts"],

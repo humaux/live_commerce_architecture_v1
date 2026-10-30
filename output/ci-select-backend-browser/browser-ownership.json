@@ -141,7 +141,7 @@
     "tests/admin/orders-bff.spec.ts": "28963e8f589eed64858f7e41c48b67f1f7bc3cbc211a5dadf4a682e875fd756a",
     "tests/admin/orders-model.test.ts": "aaa4b12d5a6c4a2c876341b98fd73c5a812b94a7ee05bd51f1415058d1d427c0",
     "tests/admin/orders-request.test.ts": "ccb87d390afac556c21fd6a050aba65cc43096021015109afe236f0e0390031b",
-    "tests/admin/orders-ui.spec.ts": "85b163f2347405e3ec518c894a1776bf4c4074408e235488a394c20198e189e0",
+    "tests/admin/orders-ui.spec.ts": "bdfac1975b76d0f4e67e3a305073da88d2aab9eff42d13e60de013c92e0fcd18",
     "tests/admin/orders-v2.test.ts": "688a6e9c082513399efc876ecdf05279e4f35c2fb4f6fda5817ca0a71f64fb7e",
     "tests/admin/parcel-merge.spec.ts": "848450092e2159ac9ea174fc2116379f24fb03697d53756be89e8d08f512d469",
     "tests/admin/parcels-bff.test.ts": "4496e04ca16357e2c758e0c881f3dbca00af9a4a58703137d1d9e73a675daedf",
@@ -193,6 +193,7 @@
     "tests/admin/shell-registry.test.ts": "7743ea45769bf2ed6aa86734f9100c9e3bf9928b064a5921bb23fcfce99533a4",
     "tests/admin/shell-render.test.ts": "bd26b696f3aeec218e83991e373dedcbdfefcc053d4798bdc9979d300d013e54",
     "tests/admin/shell-runner.mjs": "0f2bb2e12159f71dd343ac7f1cfbf35e633abf1429e146b02789887f26ae4e2a",
+    "tests/admin/shipping-center.spec.ts": "0e78d90fb3d80490435b81147c2cf257a1569c0c7710f7f3331b3a080e71f2b7",
     "tests/admin/staff-team.spec.ts": "06cfc46ec86f174d84ed21abf65fedbc149950bdb13b06110054f29f2fa550b9",
     "tests/admin/store-domains-ui.test.ts": "106267e4643d2d2af2f415c0561960cc9d14556ee7267d363d186a1ef7089291",
     "tests/admin/store-number.test.ts": "e225e1a16939a49179abaa8fee4bd4169c83c765b3113ca7615522d48fb39df8",
@@ -772,7 +773,7 @@
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
     "scripts/dev/test-local.sh": "aba15714154152771ea22cf6eb1ef7e30ea08d6e7b7a4a991c14fc2c8c8e6698",
-    "playwright.config.ts": "19b2b460a9dfb968714c1237e99eac91c315996f975e1f3d32c8acc9eb2d53c2",
+    "playwright.config.ts": "1530a01ed442883c3fb67b0d95d44937d645a270563369fb11e3a318ded3d016",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
     "package.json": "dfa3b54b5ffe4382bd9ec06971526e0e82c33e4303e916d50a85c121196bfca0",
@@ -1519,6 +1520,7 @@
         "tests/admin/parcels-bff.test.ts",
         "tests/admin/parcels-model.test.ts",
         "tests/admin/parcels-request.test.ts",
+        "tests/admin/shipping-center.spec.ts",
         "tests/admin/storefront-model.test.ts",
         "tests/admin/transfer-model.test.ts"
       ],
@@ -1530,6 +1532,7 @@
         "tests/admin/parcels-bff.test.ts",
         "tests/admin/parcels-model.test.ts",
         "tests/admin/parcels-request.test.ts",
+        "tests/admin/shipping-center.spec.ts",
         "tests/admin/storefront-model.test.ts",
         "tests/admin/transfer-model.test.ts"
       ],
@@ -1577,6 +1580,7 @@
         "tests/foundation/browser_merchant_orders_ui_test.go -> tests/admin/parcel-merge.spec.ts",
         "tests/foundation/browser_merchant_orders_ui_test.go:server/import apps/admin",
         "tests/foundation/browser_merchant_orders_ui_test.go:suite=merchant-orders-ui -> tests/admin/orders-ui.spec.ts",
+        "tests/foundation/browser_merchant_orders_ui_test.go:suite=merchant-orders-ui -> tests/admin/shipping-center.spec.ts",
         "tests/foundation/browser_merchant_orders_ui_test.go:suite=parcel-merge-ui -> tests/admin/parcel-merge.spec.ts"
       ]
     },

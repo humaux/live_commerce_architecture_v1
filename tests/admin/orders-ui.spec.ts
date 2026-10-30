@@ -3,6 +3,7 @@
 // Used by: apps/admin/src/features/orders/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_merchant_orders_ui_test.go
 // Invariants: ORDERS-V2-IMPL uses real clicks and response-derived identities/counts; shipment writes are explicitly MOCK,
 //   never reach PG, and preserve this harness's read-only fingerprints. Existing MOU assertions remain unchanged.
+//   PARITY-SHIPCENTER adds real-route acceptance through ./shipping-center.spec without changing the frozen MOU cases.
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -10,6 +11,7 @@ import * as http from "node:http";
 import { nativePage } from "./fixtures/native-device";
 import { parseShipmentVersion } from "../../apps/admin/lib/orders-model";
 import {picklistCopy} from '../../apps/admin/lib/picklist-copy';
+import { registerShippingCenterTests } from "./shipping-center.spec";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -34,6 +36,7 @@ const expiredToken = required("LC_BROWSER_EXPIRED_TOKEN");
 const revokedToken = required("LC_BROWSER_REVOKED_TOKEN");
 const cookieName = "__Host-commerce_session";
 const pii = ["Synthetic Buyer", "+886900000001", "Synthetic home address"];
+registerShippingCenterTests(signedLogin);
 const v2Evidence = resolve(evidence, "../../../orders-v2-fix");
 
 test.use({
