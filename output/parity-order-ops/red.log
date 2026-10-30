@@ -1,0 +1,7 @@
+PARITY-ORDER-OPS RED
+base_sha=3ea359f796d36153bb4b8aa7259e4e0c27676b86
+phase=tests-only prepared; CI NOT_RUN
+expected=Playwright visible-copy assertions fail on 1 · 商品 / 退款與售後 / 查門市編號
+run_id=PENDING
+job_id=PENDING
+No local tests or servers run.

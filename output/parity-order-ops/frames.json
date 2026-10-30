@@ -1,0 +1,527 @@
+{
+  "file": "iJ9lDdFIXgTlKkt5Tvrc0X",
+  "page": "4:8829",
+  "method": "Fleet Bridge get_design_context + get_screenshot, read-only",
+  "frames": [
+    {
+      "frame": "21:582",
+      "name": "Admin Desktop · 建立訂單 · SHOPLINE",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/21-582.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-21-582-1793361278370-0.png",
+      "png_sha256": "369c95fba9ae02ea5ed1909ff8482c4223996feffc9ddc49381ca1daf33dd629",
+      "context": "output/parity-order-ops/figma/21-582.json",
+      "context_sha256": "06787ec635b23e51e683db3296db73e62b8893536ad6ec320b0813659d239936"
+    },
+    {
+      "frame": "21:967",
+      "name": "Admin Mobile · 建立訂單 · SHOPLINE",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/21-967.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-21-967-1793361282024-0.png",
+      "png_sha256": "6338e1b75f34f9fde831010e221c71eb0799fbb95dc2294a45407abfedec7594",
+      "context": "output/parity-order-ops/figma/21-967.json",
+      "context_sha256": "e44bff2bb22ae686d1911f37878ada956b505ea0a769268e587f2ec4bf831086"
+    },
+    {
+      "frame": "750:3249",
+      "name": "Admin Desktop · 建立訂單 · 1件 · SHOPLINE",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/750-3249.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-750-3249-1793361285876-0.png",
+      "png_sha256": "f692e87dd9edcf049bbb1e72308ba0b066637415948238043b5aba81b41dddd7",
+      "context": "output/parity-order-ops/figma/750-3249.json",
+      "context_sha256": "2eae06cf596f1e59d90c3ac146a9ce1f624824029ba891d77ed3948482f44609"
+    },
+    {
+      "frame": "750:3317",
+      "name": "Admin Desktop · 建立訂單 · 2件加小包 · SHOPLINE",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/750-3317.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-750-3317-1793361288653-0.png",
+      "png_sha256": "ac064b5a0c000416d6e7cfa99001e638d6e2197d593f0c91f8ffde8c1c6edb97",
+      "context": "output/parity-order-ops/figma/750-3317.json",
+      "context_sha256": "30ea5ab1c93b105f5f10c2eb0c1a246a090629974631896d9b059c24120f198d"
+    },
+    {
+      "frame": "750:3385",
+      "name": "Admin Desktop · 建立訂單 · 1件加小包 · SHOPLINE",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/750-3385.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-750-3385-1793361292595-0.png",
+      "png_sha256": "9cc7a4aaf6638a57230694c62e5b90be0b5223347f78467f3a4dab72ec15d34e",
+      "context": "output/parity-order-ops/figma/750-3385.json",
+      "context_sha256": "780fe6991d4caf2dc2d89f7492594f02fef82c6796aee8f8cea90a5d45305761"
+    },
+    {
+      "frame": "750:3453",
+      "name": "Admin Desktop · 本單選擇商品 · SHOPLINE",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/750-3453.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-750-3453-1793361295794-0.png",
+      "png_sha256": "dcd0cc6ac157021c790b06d8eb9e19b51a088fd5b8340f1995cd917f3c1024a5",
+      "context": "output/parity-order-ops/figma/750-3453.json",
+      "context_sha256": "38ec532c1238322dbe6019743ba766dd48c7ce58554cb13266680a62f1380566"
+    },
+    {
+      "frame": "750:3457",
+      "name": "Admin Mobile · 建立訂單 · 1件 · SHOPLINE",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/750-3457.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-750-3457-1793361298130-0.png",
+      "png_sha256": "a2da4ac48e4e255626ba6660935ceecb0706556abb0a0c0071e2acb71e9c3a10",
+      "context": "output/parity-order-ops/figma/750-3457.json",
+      "context_sha256": "39954e1c09301eb5b47753979c38952dc2d5cdd9af7041665ab5457e79e50edb"
+    },
+    {
+      "frame": "750:3503",
+      "name": "Admin Mobile · 建立訂單 · 2件加小包 · SHOPLINE",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/750-3503.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-750-3503-1793361303094-0.png",
+      "png_sha256": "7ee21efa4c238c9465a3cf2490c4bd01b33fcd684efd62d9bdeae4d0bf3b69d8",
+      "context": "output/parity-order-ops/figma/750-3503.json",
+      "context_sha256": "bae916795b89d658e792155d8bf01c3e95bcc54dcdd2844ae3790ce2e648a346"
+    },
+    {
+      "frame": "750:3549",
+      "name": "Admin Mobile · 建立訂單 · 1件加小包 · SHOPLINE",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/750-3549.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-750-3549-1793361306615-0.png",
+      "png_sha256": "b30e63a5a802a073c1d0935dfd9d0548bdeb54834e69757b4a40a83b468bb838",
+      "context": "output/parity-order-ops/figma/750-3549.json",
+      "context_sha256": "ed14f2cc408530fcc79d87b518080c3848469c8949d5c0bb16b67a995b219d1c"
+    },
+    {
+      "frame": "750:3595",
+      "name": "Admin Mobile · 本單選擇商品 · SHOPLINE",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/750-3595.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-750-3595-1793361308875-0.png",
+      "png_sha256": "0941bdeac29a54dff542821f306937083d1b9fea2e5dd0abacf21aa6dd908a4c",
+      "context": "output/parity-order-ops/figma/750-3595.json",
+      "context_sha256": "2fbf7b6763b5231d5a1e1849a49a7d374ee9c112815fb50d3243ee0282cf8594"
+    },
+    {
+      "frame": "6:20488",
+      "name": "Admin Desktop · 退款與售後 · SHOPLINE",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/6-20488.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-6-20488-1793361311146-0.png",
+      "png_sha256": "beb592b611cf3c06a0782b6522e0251ae2044bb8eae1fd7b2090044635af7158",
+      "context": "output/parity-order-ops/figma/6-20488.json",
+      "context_sha256": "bc54538d8f2f7355a7c33599e0d474c0978a184d2ce78ba931d42a939371c87b"
+    },
+    {
+      "frame": "6:20626",
+      "name": "Admin Mobile · 退款與售後 · SHOPLINE",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/6-20626.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-6-20626-1793361313216-0.png",
+      "png_sha256": "b9f9f64ff419764729f10050706d01be8dcda516e5cda1d1701b5bda61942e0a",
+      "context": "output/parity-order-ops/figma/6-20626.json",
+      "context_sha256": "d177c27660c13798e5c77e1f08bbeee7eefdd7763c60b43a9ff7cc2958cc6249"
+    },
+    {
+      "frame": "30:1662",
+      "name": "Admin Desktop · 售後申請 · SHOPLINE",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/30-1662.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-30-1662-1793361315871-0.png",
+      "png_sha256": "3139ca688769d6f219173c15d64ab1683dea9fc3bdacb8403268bb807a16c10c",
+      "context": "output/parity-order-ops/figma/30-1662.json",
+      "context_sha256": "c8df48c28f9663726cc7e94d16c4a56d741421721f2d47656712da910f5663fe"
+    },
+    {
+      "frame": "30:1731",
+      "name": "Admin Mobile · 售後申請 · SHOPLINE",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/30-1731.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-30-1731-1793361317471-0.png",
+      "png_sha256": "083e03e0028f12df05e8941f64adc984e6503d18f76503ca9f13f9a623cfe1a8",
+      "context": "output/parity-order-ops/figma/30-1731.json",
+      "context_sha256": "a8475d45af27da599a4ff624c2d8b7b825c149c523f3542a2785f5366ca3ed35"
+    },
+    {
+      "frame": "30:1757",
+      "name": "Admin Desktop · 處理售後 R-1001 · SHOPLINE",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/30-1757.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-30-1757-1793361319257-0.png",
+      "png_sha256": "ce9015bb9ea3700d819de2c640017c990d8e2aa9139338730e264e2834bbab6b",
+      "context": "output/parity-order-ops/figma/30-1757.json",
+      "context_sha256": "a798a75c1830e7fcfbc9066492f363f3638bd652759be877c5a3a6a1a4f79f8f"
+    },
+    {
+      "frame": "30:1818",
+      "name": "Admin Mobile · 處理售後 R-1001 · SHOPLINE",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/30-1818.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-30-1818-1793361320355-0.png",
+      "png_sha256": "c9c336900a8f96804b4fa9e296e3db4800ee026f061234b5ea957fbb91cb117c",
+      "context": "output/parity-order-ops/figma/30-1818.json",
+      "context_sha256": "03e0a0ca3d9a7ec051017dca0c6eefa7ff313e803eaa04ec965c0946938f8e65"
+    },
+    {
+      "frame": "95:2858",
+      "name": "Admin Desktop · 售後 R-0998 · SHOPLINE",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/95-2858.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-95-2858-1793361322332-0.png",
+      "png_sha256": "87327bc056b82006811d7c1dd7e58ffaf9b874797bb32008ef3251c6c7fb50a8",
+      "context": "output/parity-order-ops/figma/95-2858.json",
+      "context_sha256": "7362cc3f33b5f742bd4b9ae912b982d81697d0e6dde6f3148a5564decc17db45"
+    },
+    {
+      "frame": "95:2918",
+      "name": "Admin Mobile · 售後 R-0998 · task layout",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/95-2918.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-95-2918-1793361323289-0.png",
+      "png_sha256": "7c9d4b0f6eee9a1ca4fb3e291eae46dfac986263a1118d677f7df6ecc0146768",
+      "context": "output/parity-order-ops/figma/95-2918.json",
+      "context_sha256": "642596eae206d6f25afada485553bcf07e9f863ee435a9df3e69b01aa55af259"
+    },
+    {
+      "frame": "1431:70774",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 查編號／已選建安",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-70774.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-70774-1793361324031-0.png",
+      "png_sha256": "655bd16ea39cb8e158133c84fcc7578d4c711da33c4afe148ba4a01d3766210d",
+      "context": "output/parity-order-ops/figma/1431-70774.json",
+      "context_sha256": "176d88823d70fcbcedee8bb8c2093c5c6e114b967ea7d4f1e861ca4fe7a30280"
+    },
+    {
+      "frame": "1431:70793",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 查編號／已選建安",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-70793.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-70793-1793361324942-0.png",
+      "png_sha256": "5baab0ef5a3957a0a02cf5b37465451014b19510d896f1cd9d3ec42b8480226e",
+      "context": "output/parity-order-ops/figma/1431-70793.json",
+      "context_sha256": "aa24383ed55ed391860d0577dc8f326650e46be3e03cad4374eb939332e851c8"
+    },
+    {
+      "frame": "1431:70856",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 查編號／地址搜尋",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-70856.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-70856-1793361326034-0.png",
+      "png_sha256": "5fc885282e8672472d93edfd5fc71c7c5549939a16eddcb3d1b32b63a5bf6982",
+      "context": "output/parity-order-ops/figma/1431-70856.json",
+      "context_sha256": "25245a737724b1d3a87843cb44fd24681e487527bc12f3a561a931ab31180e0b"
+    },
+    {
+      "frame": "1431:70881",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 查編號／地址搜尋",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-70881.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-70881-1793361327371-0.png",
+      "png_sha256": "23cc1eb483a765f77df732aa19260101c9d0bed0e9f721acfd78acb53b9edcf4",
+      "context": "output/parity-order-ops/figma/1431-70881.json",
+      "context_sha256": "a62febc1b72bc7a1edb2a4cd1e223bd86e1713c1066cd93347d62178dab0cbaa"
+    },
+    {
+      "frame": "1431:70906",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 查編號／已選門市",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-70906.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-70906-1793361329051-0.png",
+      "png_sha256": "672df8db68aea4354971b3cbb180d541f1f933fe9ea384126ead89fc1b4c1df6",
+      "context": "output/parity-order-ops/figma/1431-70906.json",
+      "context_sha256": "5c1f8a142b27f51788c832615f64ac46b3e7cc299e628059efc8e93ee7a3a177"
+    },
+    {
+      "frame": "1431:70922",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 查編號／已選門市",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-70922.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-70922-1793361329968-0.png",
+      "png_sha256": "a0d8b3ec3be56c62143e4d97829224b02bf23858333ab7ab14f8c25aa48031c3",
+      "context": "output/parity-order-ops/figma/1431-70922.json",
+      "context_sha256": "6a90dbbfdc9ee8ea27f9ed8f4c49e4873b8e7e9615b86bec12d199454d3733e0"
+    },
+    {
+      "frame": "1431:70938",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 代建訂單／已返回訂單",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-70938.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-70938-1793361331079-0.png",
+      "png_sha256": "7512227d650900b51ff030439646919ac0b66151214391aae49c1014dbfcfd72",
+      "context": "output/parity-order-ops/figma/1431-70938.json",
+      "context_sha256": "5a19424fa5328356235d41b9664203e1c3a54f321ca7914da2c915cc6b290d54"
+    },
+    {
+      "frame": "1431:70957",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 代建訂單／已返回訂單",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-70957.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-70957-1793361331890-0.png",
+      "png_sha256": "c6ff6cafa3c6b0dc0a3de06a87b68d5f1c1b295d11e7b4a080080d6b12e76aaf",
+      "context": "output/parity-order-ops/figma/1431-70957.json",
+      "context_sha256": "caa0bbfef80062b863e141370eb3b405ee5b5f64676f98258b84932dc3ebc317"
+    },
+    {
+      "frame": "1431:70976",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 代建訂單／地址搜尋",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-70976.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-70976-1793361332945-0.png",
+      "png_sha256": "d3408497ca85dfe9ccfd072a6c09917e78a86ba3d776fc311f92f4c00c0d115e",
+      "context": "output/parity-order-ops/figma/1431-70976.json",
+      "context_sha256": "60b4be2d0e4a4f73fd99dc59a6a98f4bbd2e62dc6accacfb3f665d4169f45b26"
+    },
+    {
+      "frame": "1431:71001",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 代建訂單／地址搜尋",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-71001.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71001-1793361333750-0.png",
+      "png_sha256": "a852cb7420cf41626c5722ed38c4af82744b7f60db908e3bbf59d2d31392765a",
+      "context": "output/parity-order-ops/figma/1431-71001.json",
+      "context_sha256": "c79bfbdcc8aeae4940039e73a5d94219f727702b7bec4059e75b87af25ade0a0"
+    },
+    {
+      "frame": "1431:71026",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 代建訂單／已選門市",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-71026.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71026-1793361334756-0.png",
+      "png_sha256": "df7a5cc8bb90122e733df42e901ff30a0445a0ff93511453606b3dcb421a2aa3",
+      "context": "output/parity-order-ops/figma/1431-71026.json",
+      "context_sha256": "be7bd0378d1e9d4e6cccc471d27240032a995f39594d52df5ee7b986c92bff83"
+    },
+    {
+      "frame": "1431:71036",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 代建訂單／已選門市",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-71036.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71036-1793361335915-0.png",
+      "png_sha256": "c8693405f052dfe22001216d9288c750e6a5995716ad9895c3180b03d4d0e71f",
+      "context": "output/parity-order-ops/figma/1431-71036.json",
+      "context_sha256": "4f69b52d1cd14df4fa174b10e27edd3d0e49158a6f7c5bc0319e9554da1986cd"
+    },
+    {
+      "frame": "1431:71280",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 查編號／已複製編號",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-71280.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71280-1793361336951-0.png",
+      "png_sha256": "1963e172171b853263093c03a1bc8e7063680d6788843db0211f46386411b8a9",
+      "context": "output/parity-order-ops/figma/1431-71280.json",
+      "context_sha256": "0b9a8c0c13ad8b8d6affeae4fb991542cf3dc8d360812545325a739eb59daec8"
+    },
+    {
+      "frame": "1431:71320",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 查編號／已複製編號",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-71320.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71320-1793361338084-0.png",
+      "png_sha256": "1b35b82bd279d5b0239e3fb48bdbbba9349922e3cb2eb32ece9da2838d841093",
+      "context": "output/parity-order-ops/figma/1431-71320.json",
+      "context_sha256": "ca8d943587810a768ab7d12645519b7dd80fe40ee0eb308320357b8de7a555a9"
+    },
+    {
+      "frame": "1431:71405",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 貼上資料／久旺",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-71405.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71405-1793361339390-0.png",
+      "png_sha256": "42deeb9a44ab3ff44fec02dc4ddd54b6c8a2ccd9ba946b9337828f7285f3c2e3",
+      "context": "output/parity-order-ops/figma/1431-71405.json",
+      "context_sha256": "26a743c6e87da07e1645642230df327f3bdc05c09cd01966fb6d296423606b9a"
+    },
+    {
+      "frame": "1431:71427",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 已選久旺",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-71427.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71427-1793361340784-0.png",
+      "png_sha256": "eeff0930666e24fede8e1cbac3c4f8b7352da234f85c8f93df5ab9844c5d48b0",
+      "context": "output/parity-order-ops/figma/1431-71427.json",
+      "context_sha256": "e1e01880f6d71f43ae365e26e679cc8ed62d5d5e439c5703ab1df764218550ae"
+    },
+    {
+      "frame": "1431:71443",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 編號未列／泰山新輔醫店",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-71443.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71443-1793361342260-0.png",
+      "png_sha256": "df7f3224e3ee97209831ae35ff8a727a1085d79ac96267ec7d62ca223ec89ad4",
+      "context": "output/parity-order-ops/figma/1431-71443.json",
+      "context_sha256": "c21fe1b3fbb7b16e2535568b751ba18ef33a2f0c4318954be28ed0a434d54fa7"
+    },
+    {
+      "frame": "1431:71469",
+      "name": "DESIGN v2 · Merchant Desktop · 門市 · 已選泰山新輔醫店",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "browser_screenshot": "parity/1431-71469.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71469-1793361344310-0.png",
+      "png_sha256": "97bf353a928cfcac917e47050bc0b15be661eb737d241de9a446d4d8854ee2b0",
+      "context": "output/parity-order-ops/figma/1431-71469.json",
+      "context_sha256": "9b007407cd16b17d8f21bbaaee6b104df4667d31b2fa7c608c0492d0c08bf905"
+    },
+    {
+      "frame": "1431:71485",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 貼上資料／久旺",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-71485.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71485-1793361345366-0.png",
+      "png_sha256": "957d73261e51e44022c88ce60b163d8b7f613a7abd760280ec54f0037ed08ebd",
+      "context": "output/parity-order-ops/figma/1431-71485.json",
+      "context_sha256": "32c2116c4aae4a17e226de896ede01c4695a69c1da8223399e0e7f5276df9477"
+    },
+    {
+      "frame": "1431:71507",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 已選久旺",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-71507.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71507-1793361346646-0.png",
+      "png_sha256": "e1334f06d1cfe7cd42630230333c0fb3df2b611a6986321cd1fd713c85175a85",
+      "context": "output/parity-order-ops/figma/1431-71507.json",
+      "context_sha256": "dcdd46fdc8964929d60749241e4f484e8c99ce2c513b9330b59d454e0bb252a4"
+    },
+    {
+      "frame": "1431:71523",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 編號未列／泰山新輔醫店",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-71523.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71523-1793361347697-0.png",
+      "png_sha256": "5efb18c47c7bc4e7793bd6cf30aed40db87670ec1b6085aea9ec59057880b999",
+      "context": "output/parity-order-ops/figma/1431-71523.json",
+      "context_sha256": "0eb9690a34291fc6511268d3342462442517b18d3c1b6de22633f4025294601a"
+    },
+    {
+      "frame": "1431:71549",
+      "name": "DESIGN v2 · Merchant Mobile · 門市 · 已選泰山新輔醫店",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browser_screenshot": "parity/1431-71549.png",
+      "delivery_png": "output/parity-order-ops/figma/get_screenshot-1431-71549-1793361349261-0.png",
+      "png_sha256": "e4790f0f5469e6e474ba170717ece63e482f95e47fdcfb025329bbad35993cdd",
+      "context": "output/parity-order-ops/figma/1431-71549.json",
+      "context_sha256": "3bda79353679baf59638da5411356e0164c5a2b376a88dfe303c409003c9bc17"
+    }
+  ]
+}
