@@ -1,6 +1,7 @@
 // Purpose: Renders draft and session aggregate attribution tables.
 // Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @live-commerce/format, @/lib/attribution-copy, @/lib/attribution-format, @/src/routes, @/lib/attribution-model, ./AttributionAudienceRead
 // Used by: apps/admin/components/Attribution.tsx
+// Invariants: complete server projections remain inspectable; missing metrics never become zero.
 "use client";
 // Read-only attribution panels: frozen BFF aggregates -> Go /v1/admin/stores/{store}/ads/attribution.
 // Parent owns report navigation/loading; this module owns the complete report tables and their empty states.
@@ -70,10 +71,12 @@ export function DraftPanel({
   c,
   locale,
   draft: d,
+  view = "all",
 }: {
   c: AttributionCopy;
   locale: Locale;
   draft: DraftAttribution;
+  view?: "all" | "breakdown";
 }) {
   const dimension = {
     age_gender: c.ageGender,
@@ -82,12 +85,23 @@ export function DraftPanel({
     device: c.device,
     hourly: c.hourly,
   };
+  if (view === "breakdown") {
+    const rows = d.breakdowns.filter(b => b.dimension === "region");
+    return <section className="growth-card" aria-label={c.region}>
+      <h2>{c.region}</h2>
+      <Table c={c} testID="attribution-region-breakdown" headers={[c.bucket, c.spend, c.clicks, c.purchases]} empty={!rows.length}>
+        {rows.map((b, i) => <tr key={i}><th scope="row">{b.bucket}</th><td>{amount(locale, d.currency, b.spend_minor, c)}</td><td>{number(locale, b.clicks, c)}</td><td>{number(locale, b.purchases, c)}</td></tr>)}
+      </Table>
+      {!!d.breakdowns_unavailable.length && <p>{c.breakdownsUnavailable}</p>}
+    </section>;
+  }
   return (
     <section
       className="attribution-section"
       aria-labelledby="attribution-draft-title"
       data-testid="attribution-draft-panel"
     >
+      {view === "all" && <>
       <h2 id="attribution-draft-title">{c.drafts}</h2>
       <p>
         {c.source}: {d.source_ref || d.draft_id}
@@ -153,6 +167,7 @@ export function DraftPanel({
           </dl>
         </div>
       </div>
+      </>}
       <h3>{c.audience}</h3>
       {!d.breakdowns.length && <p>{c.noAudience}</p>}
       {d.breakdowns_unavailable.map((unavailable, i) => (
@@ -209,12 +224,13 @@ export function DraftPanel({
           </tr>
         ))}
       </Table>
-      <BuyerPanel
+      {view === "all" &&       <BuyerPanel
         c={c}
         locale={locale}
         currency={d.currency}
         buyers={d.buyers}
-      />
+      />}
+
     </section>
   );
 }

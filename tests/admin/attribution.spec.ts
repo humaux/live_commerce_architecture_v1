@@ -205,9 +205,23 @@ async function login(page: Page, width: number) {
     await expect(page.locator("[data-shell-rail]")).toBeHidden();
   }
 }
+// Signed layout: selections and complete audit facts use native disclosures, opened by real clicks.
+async function openDisclosure(page: Page, id: string) {
+  const details = page.getByTestId(id);
+  await expect(details).toBeVisible();
+  if (await details.getAttribute("open") === null) await details.locator(":scope > summary").click();
+}
+async function auditTask(page: Page) { await openDisclosure(page, "attribution-advanced"); }
+async function selectTask(page: Page, kind: "draft" | "session", id: string) {
+  await openDisclosure(page, "attribution-selection");
+  await page.getByTestId(`attribution-${kind}`).selectOption(id);
+  await auditTask(page);
+}
+
 async function visibleFacts(page: Page, locale: Locale) {
   const c = attributionCopy[locale],
     expected = fixture.expected;
+  await auditTask(page);
   const session = page.getByTestId("attribution-session-panel"),
     draft = page.getByTestId("attribution-draft-panel");
   await expect(session).toBeVisible();
@@ -470,6 +484,7 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
     }
   };
   const assertInsufficient = async () => {
+    await auditTask(page);
     await expect(selection).toHaveValue(fixture.state_sessions.insufficient);
     await expect(panel.getByTestId("attribution-insufficient")).toHaveText(
       requiredLabels[locale].insufficient,
@@ -485,16 +500,18 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
     await expect(panel.getByRole("table")).toHaveCount(0);
     await assertUnknownSpend();
   };
-  await selection.selectOption(fixture.state_sessions.insufficient);
+  await selectTask(page, "session", fixture.state_sessions.insufficient);
   await expect(page).toHaveURL(
     new RegExp(`session=${fixture.state_sessions.insufficient}`),
   );
   await assertInsufficient();
   await page.reload();
+        await auditTask(page);
   await assertInsufficient();
   await reportShot(page, locale, width, "insufficient");
 
   const assertNotAuthorized = async () => {
+    await auditTask(page);
     await expect(selection).toHaveValue(fixture.state_sessions.not_authorized);
     await expect(panel.getByTestId("attribution-not-authorized")).toHaveText(
       requiredLabels[locale].notAuthorized,
@@ -504,12 +521,13 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
     await expect(panel.getByRole("table")).toHaveCount(0);
     await assertUnknownSpend();
   };
-  await selection.selectOption(fixture.state_sessions.not_authorized);
+  await selectTask(page, "session", fixture.state_sessions.not_authorized);
   await expect(page).toHaveURL(
     new RegExp(`session=${fixture.state_sessions.not_authorized}`),
   );
   await assertNotAuthorized();
   await page.reload();
+        await auditTask(page);
   await assertNotAuthorized();
   await reportShot(page, locale, width, "not-authorized");
 
@@ -526,7 +544,7 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
   await page.goto(reportURL); // Return to the report after the reconnect entry's actual click + reload.
   await assertNotAuthorized();
 
-  await selection.selectOption(fixture.session_id);
+  await selectTask(page, "session", fixture.session_id);
   await expect(page).toHaveURL(new RegExp(`session=${fixture.session_id}`));
   await visibleFacts(page, locale);
 }
@@ -534,6 +552,7 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
 async function unknownDraftClicks(page: Page, locale: Locale, width: number) {
   const selection = page.getByTestId("attribution-draft");
   const assertUnknown = async () => {
+    await auditTask(page);
     await expect(selection).toHaveValue(fixture.unknown_draft_id);
     const facts = page
       .getByTestId("attribution-draft-panel")
@@ -544,13 +563,14 @@ async function unknownDraftClicks(page: Page, locale: Locale, width: number) {
       requiredLabels[locale].truncated,
     );
   };
-  await selection.selectOption(fixture.unknown_draft_id);
+  await selectTask(page, "draft", fixture.unknown_draft_id);
   await expect(page).toHaveURL(new RegExp(`draft=${fixture.unknown_draft_id}`));
   await assertUnknown();
   await page.reload();
+        await auditTask(page);
   await assertUnknown();
   await reportShot(page, locale, width, "unknown-draft");
-  await selection.selectOption(fixture.draft_id);
+  await selectTask(page, "draft", fixture.draft_id);
   await expect(page).toHaveURL(new RegExp(`draft=${fixture.draft_id}`));
   await visibleFacts(page, locale);
 }
@@ -707,13 +727,9 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           expected: "fixture date window",
           actual: "PASS",
         });
-        await page
-          .getByTestId("attribution-draft")
-          .selectOption(fixture.draft_id);
+        await selectTask(page, "draft", fixture.draft_id);
         await expect(page).toHaveURL(new RegExp(`draft=${fixture.draft_id}`));
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(fixture.session_id);
+        await selectTask(page, "session", fixture.session_id);
         await expect(page).toHaveURL(
           new RegExp(`session=${fixture.session_id}`),
         );
@@ -779,9 +795,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           );
         // R12: real unboosted claim + consented card Begin/capture remains in
         // its session cohort, without crediting any ad/draft.
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(fixture.organic.session_id);
+        await selectTask(page, "session", fixture.organic.session_id);
         const organicPanel = page.getByTestId("attribution-session-panel");
         const organicFacts = organicPanel.getByTestId(
           "attribution-session-facts",
@@ -811,9 +825,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         // Acknowledged UNKNOWN is a read-only receipt. Reload retains it but
         // does not disable a new intention; the server replays during cooldown.
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(fixture.state_sessions.not_read);
+        await selectTask(page, "session", fixture.state_sessions.not_read);
         await expect(page.getByTestId("attribution-not-read")).toHaveText(
           c.notRead,
         );
@@ -842,6 +854,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
             page.getByTestId("attribution-audience-retry"),
           ).toHaveCount(0);
           await page.reload();
+        await auditTask(page);
           await expect(
             page.getByTestId("attribution-audience-unconfirmed"),
           ).toHaveText(c.audienceUnconfirmed);
@@ -856,9 +869,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         const freshSession =
           fixture.fresh_audience_sessions[`${locale}/${width}`];
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(freshSession);
+        await selectTask(page, "session", freshSession);
         await expect(page).toHaveURL(new RegExp(`session=${freshSession}`));
         await expect(page.getByTestId("attribution-not-read")).toHaveText(
           c.notRead,
@@ -886,6 +897,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           page.getByTestId("attribution-audience-completed"),
         ).toHaveCount(0);
         await page.reload();
+        await auditTask(page);
         await expect(page.getByTestId("attribution-session")).toHaveValue(
           freshSession,
         );
@@ -899,9 +911,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
             "new READY receipt and operation_id; queued receipt survives reload; one operation per fresh session",
           actual: "PASS",
         });
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(fixture.session_id);
+        await selectTask(page, "session", fixture.session_id);
         await expect(page).toHaveURL(
           new RegExp(`session=${fixture.session_id}`),
         );
@@ -942,6 +952,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           actual: "PASS",
         });
         await page.reload();
+        await auditTask(page);
         await expect(page.getByTestId("attribution-draft")).toHaveValue(
           fixture.draft_id,
         );
@@ -1056,6 +1067,19 @@ async function shot(page: Page, env: Environment, frame: string) {
   // READ/MEASURE only. Screenshots document the real route, never /ui-gallery.
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: path.join(directory, `${frame}.png`), animations: "disabled" });
+  // READ/MEASURE: visible text only; never change the DOM or use it to drive the journey.
+  const density = await page.locator(".growth-task").evaluate(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node: Node | null; const texts: string[] = [];
+    while ((node = walker.nextNode())) {
+      const text = node.textContent?.trim(); if (!text || !node.parentElement?.checkVisibility()) continue;
+      const range = document.createRange(); range.selectNodeContents(node);
+      const box = range.getBoundingClientRect();
+      if (box.bottom > 0 && box.top < innerHeight && box.width > 0) texts.push(text);
+    }
+    return { blocks: texts.length, characters: texts.reduce((n, text) => n + text.length, 0) };
+  });
+  await appendFile(path.join(directory, "density.jsonl"), JSON.stringify({ frame, ...density }) + "\n");
   await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame, route: page.url(), screenshot: `parity/${frame}.png` }) + "\n");
 }
 async function click(page: Page, env: Environment, name: string, expected: string) {

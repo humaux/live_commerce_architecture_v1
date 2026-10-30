@@ -1,6 +1,7 @@
 // Purpose: Owns merchant ads settings, connection and draft workflows.
-// Depends on: @live-commerce/format (Taipei store timestamps), react, next/navigation, @live-commerce/i18n, @live-commerce/ui, ./AdminPageHeader, @/lib/model, @/lib/settings-client, @/lib/ads-client, @/lib/ads-model, @/lib/ads-copy, ./WorkspaceFrame, ./Icon, ./ads.css, ./AdsConnection, ./AdsDraft, ./AdsResults, @/lib/attribution-copy
+// Depends on: @live-commerce/format (Taipei store timestamps), react, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/settings-client, @/lib/ads-client, @/lib/ads-model, @/lib/ads-copy, ./WorkspaceFrame, ./ads.css, ./AdsConnection, ./AdsDraft, ./AdsResults, ./ads/parity.css
 // Used by: apps/admin/app/[locale]/ads/page.tsx
+// Invariants: server-authenticated scope, versioned writes, no inferred external outcomes.
 "use client";
 
 // Merchant ads page: Meta connection, draft list + detail, draft form, report, CAPI setting (contracts/meta-ads-v1.md §2, §5, §7).
@@ -25,22 +26,20 @@
 // a paused draft is never resumed (X7: copy into a new draft); spend is never described as a hard stop (§12).
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Locale } from "@live-commerce/i18n";
+import { growthCopy, type Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
-import { Field, TableFrame } from "@live-commerce/ui";
-import { AdminPageHeader } from "./AdminPageHeader";
+import { Field } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { newKey, postConnect, postDraft, postDraftAction, putCapi, putDraft, readDraft, readDrafts, readSettings, AdsReadError, type WriteResult } from "@/lib/ads-client";
 import { buildDraftInput, capiBody, copyForm, emptyForm, formFromDraft, formatMinor, type AdsCode, type ConnectError, type Draft, type DraftForm as FormState, type Settings } from "@/lib/ads-model";
 import { adsCopy, errorText } from "@/lib/ads-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { Icon } from "./Icon";
 import "./ads.css";
+import "./ads/parity.css";
 import { ConnectionSection } from "./AdsConnection";
 import { Badge, DraftFormPanel, DraftDetail, type Mode } from "./AdsDraft";
 import { ReportSection, CapiSection } from "./AdsResults";
-import { attributionCopy } from "@/lib/attribution-copy";
 
 /** Describes AdsInitialError values shared by this presentation module. */
 export type AdsInitialError = "signed-out" | "forbidden" | "unavailable";
@@ -62,8 +61,11 @@ export function Ads({
   locale: Locale; stores: Store[]; store: Store | null; connect: string; connectError: ConnectError | "";
   draft: string; initialError: AdsInitialError | null;
 }) {
-  const c = adsCopy[locale];
+  const c = adsCopy[locale], g = growthCopy[locale];
   const router = useRouter();
+  const [screen, setScreen] = useState<"list" | "assets" | "legend" | "detail" | "saved" | "review" | "status" | "report" | "capi" | "recovery">(initialDraft ? "detail" : connect || connectError ? "assets" : "list");
+  const [conflict, setConflict] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(!!initialDraft);
   const [status, setStatus] = useState<Status>(initialError ?? "loading");
   const [settings, setSettings] = useState<Settings | null>(null);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -115,9 +117,10 @@ export function Ads({
       return;
     }
     const active = new AbortController();
+    setDetailLoading(true);
     readDraft(store.id, selected, active.signal).then(
-      (d) => !active.signal.aborted && setDetail(d),
-      () => !active.signal.aborted && setDetail(null),
+      d => { if (!active.signal.aborted) { setDetail(d); setDetailLoading(false); } },
+      () => { if (!active.signal.aborted) { setDetail(null); setDetailLoading(false); setScreen("recovery"); } },
     );
     return () => active.abort();
   }, [store, selected, status, tick]);
@@ -204,6 +207,7 @@ export function Ads({
         setStatus("signed-out");
       }
       setBanner({ kind: "bad", text: errorText(c, result.code) });
+      if (result.code === "revision_changed") setConflict(true);
       if (result.code === "revision_changed" || result.code === "attempt_changed" || result.code === "draft_approved") reload();
     };
     last.current = go;
@@ -244,6 +248,7 @@ export function Ads({
     setProblems([]);
     setBanner(null);
     setUncertain("");
+    setConflict(false);
     setMode({ kind: "edit", form: formFromDraft(d), draft: d });
   }
   function openCopy(d: Draft) {
@@ -257,6 +262,7 @@ export function Ads({
     if (mode.kind === "edit") keys.current.delete(`draft-edit:${mode.draft.id}`);
     else keys.current.delete("draft-new");
     setMode({ kind: "none" });
+    setConflict(false);
     setUncertain("");
     last.current = null;
     reload();
@@ -289,7 +295,7 @@ export function Ads({
             target.revision,
           ),
         c.saved,
-        () => setMode({ kind: "none" }),
+        (updated) => { setMode({ kind: "none" }); setConflict(false); if (updated) setDetail(updated); setScreen("saved"); },
       );
     } else {
       await run(
@@ -299,7 +305,8 @@ export function Ads({
         c.saved,
         (created) => {
         setMode({ kind: "none" });
-        if (created) setSelected(created.id);
+        if (created) { setSelected(created.id); setDetail(created); window.history.replaceState(null, "", url({ draft: created.id })); }
+        setScreen("saved");
       },
       );
     }
@@ -319,200 +326,69 @@ export function Ads({
     );
   }
 
-  const bar = (
-    <div className="ads-controls">
-      {stores.length > 1 && (
-        <Field id="ads-store" label={c.store}>
-          <select
-            id="ads-store"
-            data-testid="store-selector"
-            value={store?.id ?? ""}
-            onChange={(e) => router.push(`/${locale}/ads?store=${e.target.value}`)
-            }
-          >
-            {stores.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </Field>
-      )}
-      <button type="button" data-testid="ads-refresh" disabled={status === "loading"} onClick={() => { blocked.current = false; setStatus("loading"); reload(); }}>
-        <Icon name="refresh" size={18} />{c.refresh}
-      </button>
-    </div>
-  );
-
+  function showList() {
+    closeForm(); setSelected(""); setDetail(null); setScreen("list");
+    window.history.replaceState(null, "", url());
+  }
+  function openDraft(d: Draft) {
+    setConfirmEnd(false); setSelected(d.id); setDetail(d); setScreen("detail");
+    window.history.replaceState(null, "", url({ draft: d.id }));
+  }
+  const refresh = () => { blocked.current = false; setStatus("loading"); reload(); };
+  const title = screen === "assets" ? g.assetsTitle : screen === "legend" ? g.legendTitle : screen === "recovery" ? g.recovery
+    : screen === "saved" || screen === "detail" && selectedDraft?.status === "DRAFT" ? g.saved : screen === "detail" ? g.status : screen === "review" ? g.review : screen === "status" ? (selectedDraft?.ops.length ? g.status : g.statusUnread)
+    : screen === "report" ? g.results : screen === "capi" ? c.capiTitle : status === "loading" ? g.loading : g.drafts;
+  const back = <button type="button" onClick={showList}>{g.list}</button>;
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="ads">
-      <div className="ads-page" data-testid="merchant-ads">
-        <AdminPageHeader locale={locale} description={c.subtitle} actions={bar}>
-          <a data-testid="ads-attribution-link" href={`/${locale}/ads/attribution${store ? `?store=${store.id}` : ""}`}>{attributionCopy[locale].title}</a>
-        </AdminPageHeader>
-        {status === "loading" && (
-          <p className="ads-message" role="status">{c.loading}</p>
-        )}
-        {(status === "signed-out" || status === "forbidden" || status === "unavailable") && (
-          <div className="ads-message" role="status" data-testid="ads-error">
-            <p>{!store && status === "unavailable" ? c.noStore : status === "signed-out" ? c.signedOut : status === "forbidden" ? c.forbidden : c.unavailable}</p>
-            <button
-              type="button"
-              onClick={() =>
-                initialError || !store
-                  ? router.refresh()
-                  : ((blocked.current = false), setStatus("loading"), reload())
-              }
-            >
-              {c.retry}
-            </button>
-          </div>
-        )}
-        {status === "ready" && settings && store && (
-          <>
-            <div className="ads-notices">
-              {settings.environment === "SANDBOX" && (
-                <p className="ads-banner ads-banner-sandbox" role="status" data-testid="ads-sandbox">{c.sandboxBanner}</p>
-              )}
-              {allowanceOff ? (
-                <p className="ads-banner ads-banner-off" role="status" data-testid="ads-allowance-off">{c.allowanceOff}</p>
-              ) : (
-                <p className="ads-note" data-testid="ads-allowance">
-                  {c.allowanceLine(
-                    formatMinor(
-                      locale,
-                      settings.allowance_currency,
-                      settings.max_active_budget_minor,
-                    ),
-                  )}
-                </p>
-              )}
-              <p className="ads-note" data-testid="ads-budget-note">{c.budgetNote}</p>
-            </div>
-            {banner && (
-              <p className={banner.kind === "ok" ? "ads-notice" : "ads-bad"} role={banner.kind === "ok" ? "status" : "alert"} data-testid="ads-banner">
-                {banner.text}
-                {uncertain && banner.kind === "bad" && (
-                  <button type="button" className="ads-inline" data-testid="ads-retry-same" onClick={retrySame}>{c.retrySame}</button>
-                )}
-              </p>
-            )}
-            <ConnectionSection when={when} c={c} locale={locale} settings={settings} store={store} connect={connect} connectError={connectError}
-              busy={busy} uncertain={uncertain} startConnect={startConnect} run={run} boundary={boundary}
-              done={() => { setBanner({ kind: "ok", text: c.connected }); router.replace(url()); reload(); }}
-              startAgain={() => { router.replace(url()); void startConnect(); }} />
-            <section className="ads-section" aria-labelledby="ads-drafts-h">
-              <div className="ads-section-head">
-                <h2 id="ads-drafts-h">{c.draftsTitle}</h2>
-                <button type="button" className="primary" data-testid="ads-new-draft" onClick={openNew} disabled={mode.kind !== "none"}>
-                  <Icon name="plus" size={16} />{c.newDraft}
-                </button>
+      <div className="growth-task ads-page" data-testid="merchant-ads">
+        {mode.kind === "none" && <><h1>{title}</h1><p className="growth-intro">{screen === "list" ? g.listIntro : selectedDraft?.status === "DRAFT" && (screen === "saved" || screen === "detail") ? g.savedIntro : g.separation}</p></>}
+        {stores.length > 1 && <Field id="ads-store" label={c.store}><select id="ads-store" data-testid="store-selector" value={store?.id ?? ""} onChange={e => router.push(`/${locale}/ads?store=${e.target.value}`)}>{stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>}
+        {status === "loading" && <p role="status">{c.loading}</p>}
+        {(status === "signed-out" || status === "forbidden" || status === "unavailable") && <div className="growth-card" role="status" data-testid="ads-error"><p>{!store && status === "unavailable" ? c.noStore : status === "signed-out" ? c.signedOut : status === "forbidden" ? c.forbidden : c.unavailable}</p><button type="button" onClick={() => initialError || !store ? router.refresh() : refresh()}>{c.retry}</button></div>}
+        {status === "ready" && settings && store && <>
+          {banner && <p className={banner.kind === "ok" ? "ads-notice" : "ads-bad"} role={banner.kind === "ok" ? "status" : "alert"} data-testid="ads-banner">{banner.text}{uncertain && banner.kind === "bad" && <button type="button" data-testid="ads-retry-same" onClick={retrySame}>{c.retrySame}</button>}</p>}
+          {screen !== "list" && screen !== "assets" && mode.kind === "none" && <aside className="growth-note">
+            {settings.environment === "SANDBOX" && <p data-testid="ads-sandbox">{c.sandboxBanner}</p>}
+            {allowanceOff ? <p data-testid="ads-allowance-off">{c.allowanceOff}</p> : <p data-testid="ads-allowance">{c.allowanceLine(formatMinor(locale, settings.allowance_currency, settings.max_active_budget_minor))}</p>}
+          </aside>}
+          {mode.kind !== "none" ? <DraftFormPanel key={mode.kind + (mode.kind === "edit" ? mode.draft.id : "")} c={c} locale={locale} settings={settings} mode={mode} sources={drafts} problems={problems} busy={busy.startsWith("draft-")} uncertain={uncertain.startsWith("draft-")} onSubmit={submitDraft} onCancel={closeForm} onRetry={retrySame}
+            conflict={conflict} onKeep={() => setConflict(false)} onLatest={() => { closeForm(); setScreen("detail"); reload(); }} /> : <>
+            {screen === "list" && <>
+              <div className="growth-note"><h2>{g.accountEnvironment}</h2>
+                {settings.environment === "SANDBOX" && <p role="status" data-testid="ads-sandbox">{c.sandboxBanner}</p>}
+                {allowanceOff ? <p role="status" data-testid="ads-allowance-off">{c.allowanceOff}</p> : <p data-testid="ads-allowance">{c.allowanceLine(formatMinor(locale, settings.allowance_currency, settings.max_active_budget_minor))}</p>}
               </div>
-              {mode.kind !== "none" && (
-                <DraftFormPanel
-                  key={mode.kind + (mode.kind === "edit" ? mode.draft.id : "")}
-                  c={c}
-                  locale={locale}
-                  settings={settings}
-                  mode={mode}
-                  problems={problems}
-                  busy={busy.startsWith("draft-")}
-                  uncertain={uncertain.startsWith("draft-")}
-                  onSubmit={submitDraft}
-                  onCancel={closeForm}
-                  onRetry={retrySame}
-                />
-              )}
-              {drafts.length === 0 ? (
-                <p className="ads-empty" data-testid="ads-drafts-empty">{c.draftsEmpty}</p>
-              ) : (
-                <TableFrame
-                  className="ads-table-scroll"
-                  label={c.draftsTitle}
-                  scrollHint={attributionCopy[locale].scrollHint}
-                >
-                  <table className="ads-table" data-testid="ads-drafts">
-                    <thead>
-                      <tr>
-                        <th>{c.colTemplate}</th>
-                        <th className="ads-number">{c.colBudget}</th>
-                        <th>{c.colSchedule}</th>
-                        <th>{c.colStatus}</th>
-                        <th>{c.colCreated}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {drafts.map((d) => (
-                        <tr
-                          key={d.id} className={d.id === selected ? "ads-selected" : ""} data-testid={`ads-draft-${d.id}`}
-                        >
-                          <td data-label={c.colTemplate}>
-                            <button
-                              type="button"
-                              aria-expanded={d.id === selected}
-                              data-testid={`ads-open-${d.id}`}
-                              aria-label={`${c.select}: ${c.templates[d.template]} ${short(d.id)}`}
-                              onClick={() => {
-                                setConfirmEnd(false);
-                                setSelected(d.id === selected ? "" : d.id);
-                                window.history.replaceState(
-                                  null,
-                                  "",
-                                  url({ draft: d.id === selected ? "" : d.id }),
-                                );
-                              }}
-                            >
-                              <Icon
-                                name="chevron"
-                                size={16}
-                                style={{
-                                  transform: d.id === selected ? "rotate(90deg)" : undefined,
-                                }}
-                              />
-                              <span>{c.templates[d.template]}</span>
-                            </button>
-                          </td>
-                          <td className="ads-number" data-label={c.colBudget}>
-                            {formatMinor(
-                              locale,
-                              d.currency,
-                              d.lifetime_budget_minor,
-                            )}
-                          </td>
-                          <td data-label={c.colSchedule}>
-                            {when(locale, d.starts_at, "—")} →{" "}
-                            {when(locale, d.ends_at, "—")}
-                          </td>
-                          <td data-label={c.colStatus}><Badge c={c} status={d.status} /></td>
-                          <td data-label={c.colCreated}>{when(locale, d.created_at, "—")}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </TableFrame>
-              )}
-              {selectedDraft && (
-                <DraftDetail when={when} c={c} locale={locale} d={selectedDraft} busy={busy} allowanceOff={allowanceOff} confirmEnd={confirmEnd}
-                  setConfirmEnd={setConfirmEnd} onEdit={() => openEdit(selectedDraft)} onCopy={() => openCopy(selectedDraft)} act={act} formOpen={mode.kind !== "none"} />
-              )}
-            </section>
-            <ReportSection when={when} c={c} locale={locale} store={store} />
-            <CapiSection
-              c={c}
-              settings={settings}
-              busy={busy === "capi"}
-              uncertain={uncertain === "capi"}
-              onRetry={retrySame}
-              save={(enabled, dataset, test) => {
-                const body = JSON.stringify(capiBody(enabled, dataset, test));
-                return run(
-                  "capi",
-                  body,
-                  (key) => putCapi(store.id, key, body, boundary.current),
-                  c.capiSaved,
-                );
-              }}
-            />
-          </>
-        )}
+              <div className="growth-actions"><button type="button" onClick={() => setScreen("assets")}>{g.assets}</button><button type="button" data-testid="ads-refresh" onClick={refresh}>{g.refresh}</button><button type="button" onClick={() => setScreen("legend")}>{g.legend}</button></div>
+              {drafts.length === 0 ? <section className="growth-card" data-testid="ads-drafts-empty"><h2>{g.noDrafts}</h2><p>{g.emptyHint}</p></section> : <div className="growth-card growth-table-wrap"><table className="growth-table" data-testid="ads-drafts"><thead><tr><th>{c.colTemplate}</th><th>{c.colBudget}</th><th>{c.colSchedule}</th><th>{c.colStatus}</th></tr></thead><tbody>{drafts.map(d => <tr key={d.id} data-testid={`ads-draft-${d.id}`}><td><button type="button" data-testid={`ads-open-${d.id}`} aria-expanded={d.id === selected} onClick={() => openDraft(d)}>{c.templates[d.template]} · {short(d.id)}</button></td><td>{formatMinor(locale, d.currency, d.lifetime_budget_minor)}</td><td>{when(locale, d.starts_at, "—")} – {when(locale, d.ends_at, "—")}</td><td><Badge c={c} status={d.status} /></td></tr>)}</tbody></table></div>}
+              <div className="growth-note"><h2>{g.resultsHint}</h2><p>{g.resultsNote}</p></div>
+              <div className="growth-actions"><a className="growth-button" data-testid="ads-attribution-link" href={`/${locale}/ads/attribution?store=${store.id}`}>{g.attribution}</a><button type="button" data-testid="ads-results-link" onClick={() => setScreen("report")}>{g.results}</button><button type="button" data-testid="ads-capi-link" onClick={() => setScreen("capi")}>{c.capiTitle}</button></div>
+              <div className="growth-dock"><button type="button" className="primary" data-testid="ads-new-draft" onClick={openNew}>{g.newDraft}</button></div>
+            </>}
+            {screen === "legend" && <><div className="growth-grid">{(["DRAFT", "APPROVED", "SUBMITTING", "REMOTE_PAUSED", "ACTIVE", "PAUSED", "UNKNOWN", "FAILED", "ENDED", "REJECTED"] as const).map(state => <section className="growth-card" key={state}><h2>{g.stateTitles[state]}</h2><p>{g.stateDescriptions[state]}</p></section>)}</div><div className="growth-dock">{back}</div></>}
+            {screen === "assets" && <>
+              <h2>{g.authorized}</h2>
+              {settings.environment === "SANDBOX" && <p role="status" data-testid="ads-sandbox">{c.sandboxBanner}</p>}
+              <p data-testid="ads-budget-note">{c.budgetNote}</p>
+              <ConnectionSection when={when} c={{ ...c, connectButton: g.reauthorize }} locale={locale} settings={settings} store={store} connect={connect} connectError={connectError} busy={busy} uncertain={uncertain} startConnect={startConnect} run={run} boundary={boundary}
+                done={() => { setBanner({ kind: "ok", text: c.connected }); router.replace(url()); reload(); }} startAgain={() => { router.replace(url()); void startConnect(); }} />
+              <div className="growth-dock">{back}</div>
+            </>}
+            {screen === "recovery" && <><section className="growth-card"><p>{g.recoveryHint}</p></section><div className="growth-dock"><button type="button" onClick={showList}>{g.goList}</button></div></>}
+            {["detail", "saved", "review", "status"].includes(screen) && <>
+              {detailLoading && !selectedDraft && <p role="status">{c.loading}</p>}
+              {selectedDraft && <>
+                {screen === "review" && <div className="growth-columns"><section className="growth-card"><h2>{g.content}</h2><p>{selectedDraft.source_ref}</p><h2>{g.budget}</h2><p>{formatMinor(locale, selectedDraft.currency, selectedDraft.lifetime_budget_minor)} · {when(locale, selectedDraft.starts_at, "—")} – {when(locale, selectedDraft.ends_at, "—")}</p><h2>{g.audience}</h2><p>{selectedDraft.countries.join(", ")} · {selectedDraft.age_min}–{selectedDraft.age_max}</p></section><aside className="growth-note"><h2>{g.separate}</h2><p>{g.separation}</p></aside></div>}
+                <DraftDetail identity={settings.identities.find(i => i.binding_id === selectedDraft.identity_binding_id)?.asset_id} account={settings.connections.find(i => i.binding_id === selectedDraft.ad_binding_id)?.asset_id} when={when} c={c} locale={locale} d={selectedDraft} busy={busy} allowanceOff={allowanceOff} confirmEnd={confirmEnd} setConfirmEnd={setConfirmEnd} onEdit={() => openEdit(selectedDraft)} onCopy={() => openCopy(selectedDraft)} act={act} formOpen={false} />
+                {screen === "saved" && <aside className="growth-note"><h2>{g.nextApproval}</h2><p>{g.separation}</p></aside>}
+                <div className="growth-actions"><button type="button" data-testid="ads-refresh" onClick={refresh}>{g.refresh}</button><button type="button" onClick={() => setScreen("review")}>{g.reviewAction}</button><button type="button" onClick={() => setScreen("status")}>{g.statusAction}</button></div>
+              </>}
+              <div className="growth-dock"><button type="button" onClick={showList}>{g.goList}</button></div>
+            </>}
+            {screen === "report" && <><p data-testid="ads-budget-note">{c.budgetNote}</p><ReportSection when={when} c={c} locale={locale} store={store} /><div className="growth-dock">{back}</div></>}
+            {screen === "capi" && <><CapiSection c={c} settings={settings} busy={busy === "capi"} uncertain={uncertain === "capi"} onRetry={retrySame} save={(enabled, dataset, test) => { const body = JSON.stringify(capiBody(enabled, dataset, test)); return run("capi", body, key => putCapi(store.id, key, body, boundary.current), c.capiSaved); }} /><div className="growth-dock">{back}</div></>}
+          </>}
+        </>}
       </div>
     </WorkspaceFrame>
   );

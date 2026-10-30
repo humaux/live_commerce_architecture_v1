@@ -1,5 +1,6 @@
 // Purpose: Owns merchant promotion creation, editing and pause/resume controls.
-// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/orders-model, @/lib/customers-client, @/lib/promotions-client, @/lib/promotions-model, @/lib/promotions-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css, ./promotions.css
+// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/orders-model, @/lib/customers-client, @/lib/promotions-client, @/lib/promotions-model, @/lib/promotions-copy, ./WorkspaceFrame, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css, ./promotions.css, ./ads/parity.css
+// Invariants: segment data is unavailable; fallback never invents memberships or consent.
 // Used by: apps/admin/app/[locale]/promotions/page.tsx
 "use client";
 
@@ -10,7 +11,7 @@
 // Idempotency-Key per distinct body, reused only for a byte-identical retry after an unknown outcome. A change never touches orders already
 // placed; an in-flight buyer quote of an edited code is refused at checkout (promo_changed) and re-quoted.
 import { useRef, useState, type FormEvent } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { growthCopy, type Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { currencySign, money } from "@/lib/client";
 import { wholeOnly } from "@/lib/orders-model";
@@ -21,13 +22,13 @@ import {
 } from "@/lib/promotions-model";
 import { promotionsCopy, type PromotionsCopy } from "@/lib/promotions-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
 import { DateControl, TableFrame } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
 import "./promotions.css";
+import "./ads/parity.css";
 
 const errorText = (c: PromotionsCopy, code: string) => c.errors[code] ?? c.errors.default;
 
@@ -37,7 +38,8 @@ export function Promotions({
 }: {
   locale: Locale; stores: Store[]; store: Store | null; initialError: ReadCode | null; renderKey: string;
 }) {
-  const c = promotionsCopy[locale];
+  const c = promotionsCopy[locale], g = growthCopy[locale];
+  const [codes, setCodes] = useState(false);
   const read = useGuardedRead(`${renderKey}|${locale}|${store?.id ?? ""}`, store ? (signal) => readPromotions(store.id, signal) : null, initialError);
   const failure =
     read.status === "signed-out" ? c.signedOut
@@ -47,8 +49,16 @@ export function Promotions({
     : "";
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="promotions">
-      <div className="orders-page customers-page" data-testid="promotions-page">
-        <AdminPageHeader locale={locale} description={c.subtitle} />
+      <div className="growth-task orders-page customers-page" data-testid="promotions-page">
+        <h1>{codes ? c.title : g.drafts}</h1>
+        {!codes && <>
+          <p className="growth-intro">{g.listIntro}</p>
+          <div className="growth-note" role="status"><h2>{g.accountEnvironment}</h2><p>{g.off}</p></div>
+          <section className="growth-card"><h2>{g.noDrafts}</h2><p>{g.emptyHint}</p></section>
+          <aside className="growth-note"><h2>{g.resultsHint}</h2><p>{g.resultsNote}</p></aside>
+          <div className="growth-actions"><button type="button" onClick={read.reload}>{g.refresh}</button><button type="button" data-testid="promotions-codes" onClick={() => setCodes(true)}>{g.codes}</button></div>
+        </>}
+        {codes && <button type="button" onClick={() => setCodes(false)}>{g.list}</button>}
         {(read.status === "loading" || read.status === "hidden") && <p className="orders-message" role="status">{c.loading}</p>}
         {failure && (
           <div className="orders-message" role="status">
@@ -56,7 +66,7 @@ export function Promotions({
             <button type="button" onClick={read.reload}>{c.retry}</button>
           </div>
         )}
-        {read.status === "ready" && read.data && store && (
+        {codes && read.status === "ready" && read.data && store && (
           <Sections rows={read.data} store={store} boundary={read.boundary} refresh={read.refresh} locale={locale} c={c} />
         )}
       </div>

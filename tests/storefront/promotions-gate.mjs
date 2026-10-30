@@ -136,6 +136,8 @@ async function scenario(index, run) {
   if (index === 0) await growthMarketingParity(merchant, { origin: adminOrigin, evidence });
   await merchant.goto(`${adminOrigin}/${run.locale}/promotions`);
   await expect(merchant.getByTestId("promotions-page")).toBeVisible();
+  // C3: the marketing fallback links to the existing code-management task.
+  await merchant.getByTestId("promotions-codes").click();
   await expect(merchant.getByTestId("promotion-form")).toBeVisible();
   // stop-bleed D02: NT$ amounts are whole dollars; a decimal is refused in the form with its own sentence and nothing is written
   let writes = 0;
@@ -302,6 +304,7 @@ async function scenario(index, run) {
   await noOverflow(merchant, `${label} finance`);
   await shot(merchant, "admin-finance", run);
   await merchant.goto(`${adminOrigin}/${run.locale}/promotions`);
+  await merchant.getByTestId("promotions-codes").click();
   await expect(merchant.getByTestId("promotion-row").filter({ hasText: cell.code }).getByTestId("promotion-used")).toHaveText("1");
   await expect(merchant.getByTestId("promotion-row").filter({ hasText: cell.big_code }).getByTestId("promotion-used")).toHaveText("0");
   pass(`${label} merchant: finance shows the confirmed transfer amount ${money(total * (index + 1))} (discounted orders only); the code's usage is 1, the refused code's 0`);

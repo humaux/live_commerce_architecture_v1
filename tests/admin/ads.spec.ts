@@ -13,6 +13,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
 import path from "node:path";
+import { growthCopy } from "../../packages/i18n/src/growth.ts";
 import { adsCopy } from "../../apps/admin/lib/ads-copy";
 import { displayTime, instantToTaipei, taipeiToInstant } from "../../packages/format/src/index.ts";
 
@@ -100,12 +101,33 @@ const localInput = (offsetMs: number) => {
 async function openAds(page: Page, locale = "en") {
   await page.goto(`/${locale}/ads?store=${store}`);
   await expect(page.getByTestId("merchant-ads")).toBeVisible();
-  await expect(page.getByTestId("ads-connection")).toBeVisible();
+  await expect(page.getByTestId("ads-new-draft")).toBeVisible();
 }
+const growth = (page: Page) => growthCopy[new URL(page.url()).pathname.split("/")[1] as "en" | "zh-TW" | "zh-CN"];
+async function sourceTask(page: Page) {
+  await page.getByRole("button", { name: growth(page).source, exact: true }).click();
+  await page.getByTestId("ads-source-advanced").locator(":scope > summary").click();
+}
+async function settingsTask(page: Page) { await page.getByRole("button", { name: growth(page).settings, exact: true }).click(); }
+async function applyTask(page: Page) { await page.getByRole("button", { name: growth(page).apply, exact: true }).click(); }
+async function listTask(page: Page) { await page.getByRole("button", { name: growth(page).goList, exact: true }).click(); }
+async function cancelEdit(page: Page) {
+  await page.getByTestId("ads-f-cancel").click(); // cancel settings
+  await page.getByTestId("ads-f-cancel").click(); // leave editor
+  await page.getByRole("button", { name: growth(page).discard, exact: true }).click();
+}
+
+async function auditDraft(page: Page) {
+  const details = page.getByTestId("ads-advanced");
+  await expect(details).toBeVisible();
+  if (await details.getAttribute("open") === null) await details.locator(":scope > summary").click();
+}
+
 async function driveUntil(page: Page, status: string) {
   await expect(async () => {
     await ctl("drive");
     await page.getByTestId("ads-refresh").click();
+    await auditDraft(page);
     await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", status, { timeout: 2500 });
   }).toPass({ timeout: 90_000, intervals: [500, 1000, 2000] });
 }
@@ -132,6 +154,7 @@ test("MA09a connect through the fake FLfB dialog: dialog params, state cookie, 3
   recordBodies(page);
   await signedLogin(page);
   await openAds(page);
+  await page.getByRole("button", { name: growth(page).assets, exact: true }).click();
   // W0 registry: the fixture role holds ads:* only, so Marketing is a one-route group whose rail button is the current page (aria-current).
   await expect(page.getByTestId("nav-group-marketing")).toHaveAttribute("aria-current", "page");
   await expect(page.getByTestId("ads-sandbox")).toHaveText(en.sandboxBanner); // AD9: the store is SANDBOX
@@ -231,6 +254,7 @@ test("MA09a connect through the fake FLfB dialog: dialog params, state cookie, 3
 test("MA09a state_mismatch, state_expired, meta_connect_failed and Start again: fixed codes, never a guess, the code is not exchanged on a mismatch", async ({ page }) => {
   await signedLogin(page);
   await openAds(page);
+  await page.getByRole("button", { name: growth(page).assets, exact: true }).click();
   const before = (await graph()).oauth_exchanges;
   // (a) a return that did not start in this browser: no binding cookie -> state_mismatch, no store guessed
   await page.goto(`/api/ads/meta/callback?code=SYNTH-CODE-x&state=${"A".repeat(43)}`);
@@ -240,6 +264,7 @@ test("MA09a state_mismatch, state_expired, meta_connect_failed and Start again: 
 
   // (b) the return carries a tampered state: the state row does not match -> state_mismatch, still no exchange
   await openAds(page);
+  await page.getByRole("button", { name: growth(page).assets, exact: true }).click();
   await page.route("https://www.facebook.com/**", async (route) => {
     const u = new URL(route.request().url());
     const state = u.searchParams.get("state") ?? "";
@@ -254,6 +279,7 @@ test("MA09a state_mismatch, state_expired, meta_connect_failed and Start again: 
 
   // (c) the state expired while the merchant was on Meta's page -> state_expired
   await openAds(page);
+  await page.getByRole("button", { name: growth(page).assets, exact: true }).click();
   await page.route("https://www.facebook.com/**", async (route) => {
     const u = new URL(route.request().url());
     await ctl("oauth/expire");
@@ -266,6 +292,7 @@ test("MA09a state_mismatch, state_expired, meta_connect_failed and Start again: 
 
   // (d) Meta refuses the code (never issued) -> meta_connect_failed (502), and Start again opens a fresh dialog
   await openAds(page);
+  await page.getByRole("button", { name: growth(page).assets, exact: true }).click();
   await page.route("https://www.facebook.com/**", async (route) => {
     const u = new URL(route.request().url());
     await route.fulfill({ status: 302, headers: { Location: `${origin}/api/ads/meta/callback?code=SYNTH-CODE-never-issued&state=${encodeURIComponent(u.searchParams.get("state") ?? "")}` } });
@@ -299,12 +326,15 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
   // new draft
   await page.getByTestId("ads-new-draft").click();
   await expect(page.getByTestId("ads-form")).toBeVisible();
+  await sourceTask(page);
   await expect(page.getByTestId("ads-template-BOOST_POST")).toBeChecked();
+  await page.getByTestId("ads-f-source").fill(`${pageAsset}_1234567890`);
+  await page.getByRole("button", { name: growth(page).keepSource, exact: true }).click();
+  await settingsTask(page);
   await expect(page.getByTestId("ads-f-countries")).toHaveValue(/TW/);
   await expect(page.getByTestId("ads-f-agemin")).toHaveValue("18");
   await expect(page.getByTestId("ads-f-agemax")).toHaveValue("65");
-  await expect(page.getByTestId("ads-f-account")).toHaveValue(/[0-9a-f-]{36}/); // the only connected account is preselected
-  await page.getByTestId("ads-f-source").fill(`${pageAsset}_1234567890`);
+  await expect(page.getByTestId("ads-f-account")).toHaveValue(/[0-9a-f-]{36}/);
   await page.getByTestId("ads-f-budget").fill("3000");
   await expect(page.getByText(en.fDatesHint, { exact: true })).toBeVisible();
   const startsWall = localInput(3 * 3600_000);
@@ -312,10 +342,11 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
   await page.getByTestId("ads-f-starts").fill(startsWall);
   await page.getByTestId("ads-f-ends").fill(endsWall);
   const savedDraft = page.waitForResponse((r) => r.request().method() === "POST" && /\/ads\/drafts$/.test(new URL(r.url()).pathname));
+  await applyTask(page);
   await page.getByTestId("ads-f-save").click();
   const savedResponse = await savedDraft;
   expect(savedResponse.status()).toBe(201);
-  const persisted = await savedResponse.json() as { starts_at: string; ends_at: string };
+  const persisted = await savedResponse.json() as { id: string; starts_at: string; ends_at: string };
   for (const [wall, instant] of [[startsWall, persisted.starts_at], [endsWall, persisted.ends_at]]) {
     expect(instantToTaipei(instant)).toBe(wall);
     expect(Date.parse(instant)).toBe(Date.parse(`${wall}:00+08:00`));
@@ -332,7 +363,7 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
   expect(Object.keys(input).sort()).toEqual(["ad_binding_id", "age_max", "age_min", "countries", "currency", "ends_at", "identity_binding_id", "lifetime_budget_minor", "source_ref", "starts_at", "template"]);
   expect(Date.parse(input.starts_at)).toBe(Date.parse(`${startsWall}:00+08:00`));
   expect(Date.parse(input.ends_at)).toBe(Date.parse(`${endsWall}:00+08:00`));
-  firstDraft = (await page.getByTestId(/^ads-draft-/).first().getAttribute("data-testid"))!.replace("ads-draft-", "");
+  firstDraft = persisted.id;
   expect(firstDraft).toMatch(uuidRe);
   await expect(page.getByTestId("ads-detail")).toContainText("3,000");
   await expect(page.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.starts_at));
@@ -352,29 +383,27 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
     await utcContext.close();
   }
   await page.getByTestId("ads-edit").click();
+  await settingsTask(page);
   await expect(page.getByText(en.fDatesHint, { exact: true })).toBeVisible();
   await expect(page.getByTestId("ads-f-starts")).toHaveValue(startsWall);
   await expect(page.getByTestId("ads-f-ends")).toHaveValue(endsWall);
-  await page.getByTestId("ads-f-cancel").click();
-  // Creation selects in memory; the existing row control persists the selection in the URL.
-  await page.getByTestId(`ads-open-${firstDraft}`).click();
-  await expect(page.getByTestId(`ads-open-${firstDraft}`)).toHaveAttribute("aria-expanded", "false");
+  await cancelEdit(page);
+  // Signed layout: return to the list and reopen the saved row, then reload the real route.
+  await listTask(page);
   await page.getByTestId(`ads-open-${firstDraft}`).click();
   await expect(page).toHaveURL(new RegExp(`[?&]draft=${firstDraft}(?:&|$)`));
   await page.reload();
-  await expect(page.getByTestId(`ads-open-${firstDraft}`)).toHaveAttribute("aria-expanded", "true");
-  await page.getByTestId(`ads-open-${firstDraft}`).click();
-  await expect(page.getByTestId(`ads-open-${firstDraft}`)).toHaveAttribute("aria-expanded", "false");
-  await page.getByTestId(`ads-open-${firstDraft}`).click();
   await expect(page.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.starts_at));
   await expect(page.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.ends_at));
   await page.getByTestId("ads-edit").click();
+  await settingsTask(page);
   await expect(page.getByText(en.fDatesHint, { exact: true })).toBeVisible();
   await expect(page.getByTestId("ads-f-starts")).toHaveValue(startsWall);
   await expect(page.getByTestId("ads-f-ends")).toHaveValue(endsWall);
-  await page.getByTestId("ads-f-cancel").click();
+  await cancelEdit(page);
 
   // approve
+  await auditDraft(page);
   await page.getByTestId("ads-approve").click();
   await expect(page.getByTestId("ads-banner")).toHaveText(en.approved);
   await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "APPROVED");
@@ -425,18 +454,23 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
   // U5: Pause stays available while any remote id exists (a pause is always allowed, §5.3); what must appear is the copy action
   await expect(page.getByTestId("ads-copy")).toBeVisible();
   await expect(page.getByTestId("ads-actions").getByRole("button", { name: /resume|reactivate|re-activate|activate|重新啟用|恢復|恢复/i })).toHaveCount(0);
-  await expect(page.getByTestId(`ads-draft-${firstDraft}`).locator("[data-state]")).toHaveAttribute("data-state", "PAUSED");
+  await expect(page.getByTestId("ads-detail").locator(":scope > .growth-card [data-state]")).toHaveAttribute("data-state", "PAUSED");
 
   // copy: a NEW draft (new id, fresh approval needed); the paused one stays paused
   await page.getByTestId("ads-copy").click();
   await expect(page.getByTestId("ads-form")).toBeVisible();
-  await expect(page.getByTestId("ads-f-budget")).toHaveValue("3000");
+  await sourceTask(page);
   await expect(page.getByTestId("ads-f-source")).toHaveValue(new RegExp(`^${pageAsset}_`));
+  await page.getByRole("button", { name: growth(page).keepSource, exact: true }).click();
+  await settingsTask(page);
+  await expect(page.getByTestId("ads-f-budget")).toHaveValue("3000");
   await page.getByTestId("ads-f-starts").fill(localInput(4 * 3600_000));
   await page.getByTestId("ads-f-ends").fill(localInput(28 * 3600_000));
+  await applyTask(page);
   await page.getByTestId("ads-f-save").click();
   await expect(page.getByTestId("ads-banner")).toHaveText(en.saved);
   await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "DRAFT");
+  await listTask(page);
   const ids = await page.getByTestId(/^ads-draft-/).evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")!.replace("ads-draft-", "")));
   expect(ids).toHaveLength(2);
   copyDraft = ids.find((id) => id !== firstDraft)!;
@@ -454,6 +488,7 @@ test("MA09a allowance off (O4) disables approve with the copy; SANDBOX banner fo
   await expect(page.getByTestId("ads-allowance")).toHaveCount(0);
   await page.getByTestId(`ads-open-${copyDraft}`).click();
   await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "DRAFT");
+  await auditDraft(page);
   await expect(page.getByTestId("ads-approve")).toBeDisabled();
   await expect(page.getByText(en.approveOffHint)).toBeVisible();
   await ctl("allowance/on");
@@ -472,6 +507,7 @@ test("MA09a allowance off (O4) disables approve with the copy; SANDBOX banner fo
 test("MA09a report: three separate blocks with window, timezone and fetched_at, no combined figure, budget is not a hard stop", async ({ page }) => {
   await signedLogin(page);
   await openAds(page);
+  await page.getByTestId("ads-results-link").click();
   await page.getByTestId("ads-report-load").click();
   await expect(page.getByTestId("ads-block-orders")).toBeVisible();
   await expect(page.getByTestId("ads-block-delivery")).toBeVisible();
@@ -497,14 +533,16 @@ test("MA09a three locales, desktop 1440x992 and 390 px: no horizontal scroll, sc
     for (const viewport of [{ name: "desktop", width: 1440, height: 992 }, { name: "mobile", width: 390, height: 844 }] as const) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto(`/${locale}/ads?store=${store}&draft=${firstDraft}`);
-      await expect(page.getByRole("heading", { level: 1 })).toHaveText(adsCopy[locale].title);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(growthCopy[locale].status);
+      await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "PAUSED");
+      await expect(page.getByTestId("ads-detail").locator(":scope > .growth-card [data-state]")).toHaveText(adsCopy[locale].statuses.PAUSED);
+      await shot(page, "ads-detail", locale, viewport.name);
+      await listTask(page);
+      await page.getByRole("button", { name: growthCopy[locale].assets, exact: true }).click();
       await expect(page.getByTestId("ads-connection")).toBeVisible();
       await shot(page, "ads-connection", locale, viewport.name);
-      await page.getByTestId("ads-detail").scrollIntoViewIfNeeded();
-      await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "PAUSED");
-      await expect(page.getByTestId(`ads-draft-${firstDraft}`).locator("[data-state]")).toHaveText(adsCopy[locale].statuses.PAUSED);
-      await shot(page, "ads-detail", locale, viewport.name);
-      await page.getByTestId("ads-report").scrollIntoViewIfNeeded();
+      await page.getByRole("button", { name: growthCopy[locale].list, exact: true }).click();
+      await page.getByTestId("ads-results-link").click();
       await page.getByTestId("ads-report-load").click();
       await expect(page.getByTestId("ads-block-delivery")).toBeVisible();
       // The harness account is TWD. Literal symbols catch a zh-TW-only bare-$ regression.
@@ -526,14 +564,19 @@ test.describe("MA09a frozen responses reach the merchant", () => {
   await signedLogin(page);
   await openAds(page);
   await page.getByTestId("ads-new-draft").click();
+  await sourceTask(page);
   await page.getByTestId("ads-f-source").fill(`${pageAsset}_9876543210`);
+  await page.getByRole("button", { name: growth(page).keepSource, exact: true }).click();
+  await settingsTask(page);
   await page.getByTestId("ads-f-budget").fill("20000"); // NT$20,000 > the NT$10,000 allowance
   await page.getByTestId("ads-f-starts").fill(localInput(5 * 3600_000));
   await page.getByTestId("ads-f-ends").fill(localInput(29 * 3600_000));
+  await applyTask(page);
   await page.getByTestId("ads-f-save").click();
   await expect(page.getByTestId("ads-banner")).toHaveText(en.saved);
   let status = 0;
   page.on("response", (r) => { if (/\/approve$/.test(new URL(r.url()).pathname)) status = r.status(); });
+  await auditDraft(page);
   await page.getByTestId("ads-approve").click();
   await expect(page.getByTestId("ads-banner")).toBeVisible();
   expect(status).toBe(409);
@@ -544,6 +587,7 @@ test.describe("MA09a frozen responses reach the merchant", () => {
   test("MA09a a report window without any insights still renders the three blocks (zeros, not fetched), not an error", async ({ page }) => {
     await signedLogin(page);
     await openAds(page);
+    await page.getByTestId("ads-results-link").click();
     await page.getByTestId("ads-report-from").fill("2026-01-01");
     await page.getByTestId("ads-report-to").fill("2026-01-07");
     await page.getByTestId("ads-report-load").click();
@@ -563,16 +607,21 @@ test("MA09a Meta refusal original text survives refresh in three locales and per
   await signedLogin(page);
   await openAds(page);
   await page.getByTestId("ads-new-draft").click();
+  await sourceTask(page);
   await page.getByTestId("ads-f-source").fill(`${pageAsset}_1234567890`);
+  await page.getByRole("button", { name: growth(page).keepSource, exact: true }).click();
+  await settingsTask(page);
   await page.getByTestId("ads-f-budget").fill("3000");
   await page.getByTestId("ads-f-starts").fill(localInput(3*3600_000));
   await page.getByTestId("ads-f-ends").fill(localInput(27*3600_000));
   const saved = page.waitForResponse(r=>r.request().method()==="POST" && /\/ads\/drafts$/.test(new URL(r.url()).pathname));
+  await applyTask(page);
   await page.getByTestId("ads-f-save").click();
   const created = await saved;
   expect(created.status()).toBe(201);
   const {id} = await created.json();
   expect(id).toMatch(uuidRe);
+  await auditDraft(page);
   await page.getByTestId("ads-approve").click();
   await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status","APPROVED");
   await ctl("reject/meta");
@@ -583,12 +632,19 @@ test("MA09a Meta refusal original text survives refresh in three locales and per
     for (const viewport of ["desktop","mobile"] as const) {
       await page.setViewportSize(viewport==="desktop" ? {width:1586,height:992} : {width:390,height:844});
       await page.goto(`${origin}/${locale}/ads?store=${store}&draft=${id}`);
+      await auditDraft(page);
       const message=page.getByTestId("ads-meta-message");
       await expect(message).toHaveText(original);
       await expect(page.getByTestId("ads-ops")).toContainText("graph_100");
+      const detailURL = page.url();
+      await listTask(page);
+      await page.getByRole("button", { name: growth(page).assets, exact: true }).click();
       await expect(page.getByTestId("ads-meta-refusals")).toContainText(original);
+      await page.goto(detailURL);
+      await auditDraft(page);
       await expect(message.locator("script,b,a")).toHaveCount(0);
       await page.reload();
+      await auditDraft(page);
       await expect(message).toHaveText(original);
       await message.scrollIntoViewIfNeeded();
       await shot(page,"meta-original-refusal",locale,viewport);
@@ -632,6 +688,19 @@ async function shot(page: Page, env: Environment, frame: string) {
   // READ/MEASURE only. Screenshots document the real route, never /ui-gallery.
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: path.join(directory, `${frame}.png`), animations: "disabled" });
+  // READ/MEASURE: visible text only; never change the DOM or use it to drive the journey.
+  const density = await page.locator(".growth-task").evaluate(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node: Node | null; const texts: string[] = [];
+    while ((node = walker.nextNode())) {
+      const text = node.textContent?.trim(); if (!text || !node.parentElement?.checkVisibility()) continue;
+      const range = document.createRange(); range.selectNodeContents(node);
+      const box = range.getBoundingClientRect();
+      if (box.bottom > 0 && box.top < innerHeight && box.width > 0) texts.push(text);
+    }
+    return { blocks: texts.length, characters: texts.reduce((n, text) => n + text.length, 0) };
+  });
+  await appendFile(path.join(directory, "density.jsonl"), JSON.stringify({ frame, ...density }) + "\n");
   await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame, route: page.url(), screenshot: `parity/${frame}.png` }) + "\n");
 }
 async function click(page: Page, env: Environment, name: string, expected: string) {
@@ -714,6 +783,25 @@ function registerGrowthAdsParity(env: Environment & { pageAsset: string }) {
         await page.getByRole("button", { name: "保留原選擇並返回", exact: true }).click();
         await click(page, env, "修改預算、排期與對象", "修改預算、排期與對象");
         await expect(page.getByText("自動版位", { exact: true })).toBeVisible();
+        for (const [label, value] of [["NT$3,000", "3000"], ["NT$1,500", "1500"]]) {
+          await page.getByRole("button", { name: label, exact: true }).click();
+          await expect(page.getByTestId("ads-f-budget")).toHaveValue(value);
+        }
+        for (const [label, value] of [["香港 HK", "HK"], ["台灣 TW", "TW"]]) {
+          await page.getByRole("button", { name: label, exact: true }).click();
+          await expect(page.getByTestId("ads-f-countries")).toHaveValue(value);
+        }
+        for (const [label, min, max] of [["25–44 歲", "25", "44"], ["18–65 歲", "18", "65"]]) {
+          await page.getByRole("button", { name: label, exact: true }).click();
+          await expect(page.getByTestId("ads-f-agemin")).toHaveValue(min);
+          await expect(page.getByTestId("ads-f-agemax")).toHaveValue(max);
+        }
+        for (const [label, days] of [["3 天", 3], ["7 天", 7]] as const) {
+          await page.getByRole("button", { name: label, exact: true }).click();
+          const start = await page.getByTestId("ads-f-starts").inputValue(), end = await page.getByTestId("ads-f-ends").inputValue();
+          expect(Date.parse(taipeiToInstant(end)!) - Date.parse(taipeiToInstant(start)!)).toBe(days * 86400_000);
+        }
+        await appendFile(path.join(env.evidence, "growth-click-ledger.jsonl"), JSON.stringify({ route: page.url(), control: "budget/country/age/schedule presets", operation: "8 real clicks", expected: "controlled form reflects each preset", actual: "asserted after every click", result: "PASS" }) + "\n");
         await page.getByTestId("ads-f-budget").fill("1500");
         await shot(page, env, frame("settings"));
         await page.getByRole("button", { name: "套用到草稿", exact: true }).click();
