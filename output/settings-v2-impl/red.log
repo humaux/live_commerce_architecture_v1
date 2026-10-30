@@ -483,3 +483,18 @@ Both Copy setups now select exactly their target row, expand native Advanced,
 then click products-copy-selected. POST predicates, discovery preconditions,
 behavioural assertions, fixtures and product implementation remain unchanged.
 Current-head causal RED and GREEN PENDING CI; no runtime verification locally.
+FIX13 relay of current tests-only head eb9d94fd43eb4dab975f7f94218b8c98ab554741, 2026-10-30:
+Gates run 40988280532 / gate (bundle:07) job 123845389234 FAILED.
+Foundation run 40988280632 / foundation job 123844307626 SUCCESS applies to that head only.
+Raw job API confirms head_sha; gh run view --log-failed is unavailable while the
+parent workflow remains in progress. Completed job logs and fresh artifact
+12949125368 (gate-browser-identity) were read through the GitHub API/download.
+Original settings-real Playwright log SHA256:
+8cdcbf97d0db49eae887bad68973232d4324c0d86323100efae76c10a64926c0.
+settings-v2.spec.ts:219 times out waiting for product-form after Catalog Copy
+succeeds. Catalog's default editor is simplified; product-form exists only in
+the native Advanced editor. This remains SETUP FAILURE, not causal RED.
+Both observer tabs now click catalog-advanced-toggle once during B setup;
+its per-tab preference survives subsequent visits/refresh. Every discovery
+precondition and behavioural assertion remains verbatim/in order.
+Implementation unchanged. Fresh causal RED/GREEN/E4 pending CI; author E0.

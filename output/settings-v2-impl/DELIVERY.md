@@ -1595,3 +1595,65 @@ No process/fixture started; pre-existing untracked evidence retained. Humaux
 tools are unavailable in this session: no store/canvas write claimed. Assigned
 worktree/branch only, no delegation. Integrator relays CI conclusion; existing
 Foundation 90m / Gates bundle 360m / member 150m limits remain unchanged.
+## FIX13 relay — native observer editor setup (2026-10-30)
+
+Authority: current integrator relay for PR #303 and original GitHub receipts,
+not historical delivery claims. Pulled unit/settings-v2-ui --ff-only: current at
+eb9d94fd43eb4dab975f7f94218b8c98ab554741. Fresh origin/r3/integration
+a09262050d750895347e7333b8228194fec00cb2 is already an ancestor (32/0), so no
+merge is necessary. Assigned worktree only; no delegation or separate claim.
+Humaux tools are unavailable: no shared memory/canvas write claimed.
+
+### Current receipt and minimal change
+
+Gates 40988280532 / bundle:07 job 123845389234 fails at settings-v2.spec.ts:219,
+waiting for product-form, after the native selection/Copy succeeds. GitHub job
+API binds the failure to eb9d94fd; fresh artifact 12949125368 confirms it.
+Foundation 40988280632 / job 123844307626 succeeded at that head only.
+This is another setup failure, NOT the new recovery assertion's causal RED.
+ProductEditor.tsx renders CatalogSimplifiedEditor by default; its existing
+catalog-advanced-toggle selects ProductDocumentForm and persists the choice
+in that tab's sessionStorage. Each competitor observer now clicks that native
+control once. No product code, assertion, fixture, timeout, gate or exemption
+changes. Both discovery preconditions remain verbatim/in order. Recovery
+implementation remains blocked on causal RED. Outside-card paths: none.
+
+|Page/control|Operation|Expected|Actual|
+|---|---|---|---|
+|Post-create competing product / Advanced|native click|existing product-form becomes visible|PENDING CI|
+|Earlier SKU-recovery competitor / Advanced|native click|same persisted editor for baseline and refresh|PENDING CI|
+|Settings / Reload and refresh|unchanged native actions/assertions|original identity, price and stock; no implicit writes|PENDING causal RED|
+
+### UI PROCESS — BOURDIEU
+
+Q1 recover unsent setup safely; Q2 experience means recent task experience;
+Q3 concurrent catalog work cannot redirect intent; Q4 explicit Save alone
+writes; Q5 no class/device inference; Q6 aesthetics UNKNOWN.
+
+### UI PROCESS — PROJECT UNDERSTANDING
+
+Read architecture 0/1/2/26/27, AGENTS.md and merchant-settings-wizard-v1
+Session/drafts/uncertainty: PG authority, scoped nonsecret recovery, native
+clicks and independent CI acceptance. Current ProductEditor.tsx and the raw
+GitHub receipt explain this setup correction; no new seller setting is added.
+
+### UI PROCESS — MOBBIN → EAGLE
+
+No visual design or new pattern. Existing module references remain applicable;
+no new Mobbin query or reference import is required for observer navigation.
+
+### UI PROCESS — FIGMA OFFICIAL GUIDANCE
+
+No Figma/layout/component/variable/prototype changes. Existing guidance,
+required-field parity and three-language tables remain applicable; this patch
+adds no visible product strings and claims no visual acceptance.
+
+E1: node --check tests/admin/settings-v2.spec.ts and git diff --check exit 0.
+Browser ownership regenerated last and checked before commit; no imports or
+dependency edges change, so depmap regeneration is unnecessary. Author judgment
+E0; new-head CI, causal RED, GREEN and independent E4 remain PENDING. NOT_RUN:
+local tests/servers/browsers/PG (prohibited), provider SANDBOX/LIVE/deploy.
+Rollback: revert this isolated tests-only commit. No local process or fixture
+started. Existing untracked evidence retained. Integrator relays CI completion;
+Foundation 90m / Gates bundle 360m / member 150m remain workflow timeouts.
+WAIT_RUN IDs will be posted in the PR comment without an evidence-only push.

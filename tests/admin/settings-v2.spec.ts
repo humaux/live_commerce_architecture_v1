@@ -216,6 +216,8 @@ export async function settingsV2Acceptance(page: Page, store: string) {
     new URL(r.url()).pathname === `/api/stores/${store}/products/${competingProduct}`);
   const competingBefore = readCompeting();
   await createObserver.goto(`/en/products/${competingProduct}?store=${store}`);
+  // Native, tab-persisted editor choice: Catalog now opens its simplified view.
+  await createObserver.getByTestId("catalog-advanced-toggle").click();
   await expect(createObserver.getByTestId("product-form")).toBeVisible();
   const competingBaseline = await (await competingBefore).json();
   expect(competingBaseline.skus).toEqual([]);
@@ -270,6 +272,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
     new URL(r.url()).pathname === `/api/stores/${store}/products/${productB}`);
   const beforeB = readB();
   await catalog.goto(`/en/products/${productB}?store=${store}`);
+  await catalog.getByTestId("catalog-advanced-toggle").click();
   await expect(catalog.getByTestId("product-form")).toBeVisible();
   // READ ONLY: baseline B's actual SKU/inventory facts, not synthetic fixtures.
   const baselineB = await (await beforeB).json();
