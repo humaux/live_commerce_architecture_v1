@@ -359,9 +359,17 @@ full_cases() {
   bins=$(docker export "$cid" | tar -t | sed -n 's#^app/bin/\([a-z-]\+\)$#\1#p' | sort | tr '\n' ' ')
   docker rm "$cid" >/dev/null
   caps=$(docker run --rm --entrypoint getcap "$p-caddy:$SMOKE_TAG" /usr/bin/caddy 2>&1 || true)
-  if [[ "$users" == "65532:65532 1000:1000 1000:1000 10001:10001 " && "$bins" == "$want_bins" && "$want_bins" == *migrate* && -z "$caps" ]]; then
-    rec S08 PASS "users ok, lc-go binaries=[${bins% }], caddy file caps removed"
-  else rec S08 FAIL "users=[$users] bins=[$bins] want=[$want_bins] caps=[$caps]"; fi
+  # Every file under apps/storefront/public must ship in lc-storefront (next start serves it from cwd/public).
+  # The CVS store lists live there; the runtime stage once omitted public/ and the picker 404ed in production (2026-10-30).
+  local pub_want pub_img
+  pub_want=$(cd "$LC_REPO_ROOT/apps/storefront/public" && find . -type f | sed 's#^\./##' | sort | tr '\n' ' ')
+  cid=$(docker create "$p-storefront:$SMOKE_TAG")
+  pub_img=$(docker export "$cid" | tar -t | sed -n 's#^app/apps/storefront/public/\(.*[^/]\)$#\1#p' | sort | tr '\n' ' ')
+  docker rm "$cid" >/dev/null
+  if [[ "$users" == "65532:65532 1000:1000 1000:1000 10001:10001 " && "$bins" == "$want_bins" && "$want_bins" == *migrate* && -z "$caps" \
+        && -n "$pub_want" && "$pub_img" == "$pub_want" ]]; then
+    rec S08 PASS "users ok, lc-go binaries=[${bins% }], caddy file caps removed, storefront public/ complete"
+  else rec S08 FAIL "users=[$users] bins=[$bins] want=[$want_bins] caps=[$caps] storefront public want=[$pub_want] image=[$pub_img]"; fi
 
   # temp config
   SMOKE_ROOT=$(mktemp -d /tmp/lc-smoke.XXXXXX)
