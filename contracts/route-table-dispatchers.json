@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "bfbb4441b77afb0b48f0c3bd0c326b75e276a528fa54e588a645cbe0f814c43a",
+    "dispatcher_sha256": "31499ffb3ce0f159bcacb0f380bcbfe7fb94c220f5b91231d91e5edd840fbbd7",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -76,6 +76,7 @@
       "handler.privacyExport",
       "handler.privacyGet",
       "handler.quoteWithCodDue",
+      "handler.replayGet",
       "handler.storeMedia",
       "handler.transferRequest",
       "handler.viewOnly",
@@ -122,7 +123,7 @@
       "writeOK"
     ],
     "declarations": [
-      "const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute",
+      "const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,replayDetailRoute,replayListRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute",
       "const claimDerivedKeyPrefix,claimLinkPath,claimRedeemPath,claimTokenHeader",
       "const designPreviewPath,designPublishedPath,previewTokenHeader",
       "const lookupPath,lookupWindow,routeLookup",
@@ -169,6 +170,7 @@
       "func handler.privacyExport",
       "func handler.privacyGet",
       "func handler.quoteWithCodDue",
+      "func handler.replayGet",
       "func handler.storeMedia",
       "func handler.transferRequest",
       "func handler.viewOnly",
@@ -251,6 +253,8 @@
       "type quoteAmountResponse",
       "type quoteLineResponse",
       "type quoteResponse",
+      "type replayItem",
+      "type replayOffer",
       "type responseError",
       "type route",
       "type routeEntry",
@@ -274,6 +278,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "2026-10-28 integrator + independent review (Opus, OC-09b quoteWithCodDue + quoteResponse.CodDueMinor; output/buyer-route-table/review-oc09b-pin.md)"
+    "reviewed": "output/buyer-route-table/FEAT-LIVE-REPLAY-FIX2-pin-candidate.md"
   }
 ]
