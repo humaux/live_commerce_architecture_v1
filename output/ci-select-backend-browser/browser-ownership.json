@@ -149,7 +149,9 @@
     "tests/admin/parcels-model.test.ts": "4af0a4b7881802004e29343b7361076ae333fcc50a89b2b8fd527254685148ff",
     "tests/admin/parcels-request.test.ts": "2e6b5ce176f30a273a9eeb9aee7fef931676c8bcee2569842b361ed1bcf8957f",
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
-    "tests/admin/password-auth.spec.ts": "b4d4930eafa9f83409191b0d54cc07941c4f3e6f2694b3bf821c2a6fad9a296c",
+    "tests/admin/parity-entry-dashboard.ts": "d189f0101b7eeb2c2a81a177489f6552f285c9103fa24047b574f21d2e65758c",
+    "tests/admin/parity-entry.spec.ts": "d778864c83fc1a67ecf86e942f857b07bce5d04315f4646b5906942dacc04fb0",
+    "tests/admin/password-auth.spec.ts": "b260486dd044c3ba5a79f8d92a1a7cd7ddfcdd1dcb3c25d25e8af5f9ed5500e5",
     "tests/admin/password-bff.test.ts": "a0aef82247f79280f4f950dee28cff5116c98be35e1d09898ddfee6d623922a4",
     "tests/admin/password-response-canaries.ts": "19567bd49311a0b0ba1f13923b29c48a4a90fbbc0a224772aacdd7bc3452c9fb",
     "tests/admin/people-v2.spec.ts": "bd8e1409a1752eed73942ea87d3820e2b850d5c985dea8e8c2fbd8c01e88b9c9",
@@ -772,7 +774,7 @@
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
     "scripts/dev/test-local.sh": "aba15714154152771ea22cf6eb1ef7e30ea08d6e7b7a4a991c14fc2c8c8e6698",
-    "playwright.config.ts": "19b2b460a9dfb968714c1237e99eac91c315996f975e1f3d32c8acc9eb2d53c2",
+    "playwright.config.ts": "2dc20420d2718e84d77fdab6d06a27e3c7b8958368b22a99da29832fa0f4a514",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
     "package.json": "dfa3b54b5ffe4382bd9ec06971526e0e82c33e4303e916d50a85c121196bfca0",
@@ -1282,12 +1284,15 @@
     "--browser-password-auth": {
       "specs": [
         "tests/admin/oc/reauth.spec.ts",
+        "tests/admin/parity-entry.spec.ts",
         "tests/admin/password-auth.spec.ts",
         "tests/admin/password-bff.test.ts",
         "tests/admin/staff-team.spec.ts"
       ],
       "inputs": [
         "tests/admin/oc/reauth.spec.ts",
+        "tests/admin/parity-entry-dashboard.ts",
+        "tests/admin/parity-entry.spec.ts",
         "tests/admin/password-auth.spec.ts",
         "tests/admin/password-bff.test.ts",
         "tests/admin/password-response-canaries.ts",
@@ -1315,6 +1320,7 @@
         "tests/foundation/browser_oc_test.go:suite=oc -> tests/admin/oc/reauth.spec.ts",
         "tests/foundation/browser_password_auth_test.go -> tests/admin/password-auth.spec.ts",
         "tests/foundation/browser_password_auth_test.go:server/import apps/admin",
+        "tests/foundation/browser_password_auth_test.go:suite=password-auth -> tests/admin/parity-entry.spec.ts",
         "tests/foundation/browser_password_auth_test.go:suite=password-auth -> tests/admin/password-auth.spec.ts",
         "tests/foundation/browser_staff_team_test.go -> tests/admin/staff-team.spec.ts",
         "tests/foundation/browser_staff_team_test.go:server/import apps/admin",
@@ -2451,6 +2457,7 @@
     },
     "--browser-webkit": {
       "specs": [
+        "tests/admin/parity-entry.spec.ts",
         "tests/admin/password-auth.spec.ts",
         "tests/admin/taiwan-cvs.spec.ts",
         "tests/storefront/browser-engine.mjs",
@@ -2462,6 +2469,8 @@
         "tests/storefront/stripe-browser.mjs"
       ],
       "inputs": [
+        "tests/admin/parity-entry-dashboard.ts",
+        "tests/admin/parity-entry.spec.ts",
         "tests/admin/password-auth.spec.ts",
         "tests/admin/password-response-canaries.ts",
         "tests/admin/taiwan-cvs.spec.ts",
@@ -2504,6 +2513,7 @@
         "tests/foundation/browser_order_chain_test.go -> tests/storefront/order-gate.mjs",
         "tests/foundation/browser_password_auth_test.go -> tests/admin/password-auth.spec.ts",
         "tests/foundation/browser_password_auth_test.go:server/import apps/admin",
+        "tests/foundation/browser_password_auth_test.go:suite=password-auth -> tests/admin/parity-entry.spec.ts",
         "tests/foundation/browser_password_auth_test.go:suite=password-auth -> tests/admin/password-auth.spec.ts",
         "tests/foundation/browser_stripe_test.go -> tests/storefront/browser-engine.mjs",
         "tests/foundation/browser_stripe_test.go -> tests/storefront/stripe-browser.mjs",

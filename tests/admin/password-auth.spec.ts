@@ -11,6 +11,7 @@
 // canaries.txt (every password, emailed code and address used; the Go side scans server logs for them).
 import { createHash, randomBytes } from "node:crypto";
 import { responseBodyForSecretScan } from "./password-response-canaries.ts";
+import { dashboardParity } from "./parity-entry-dashboard.ts";
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -228,7 +229,9 @@ test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> 
   await expect(page.getByTestId("entry-address").getByRole("link")).toHaveText(storeReceipt.storefront_origin);
   await page.getByRole("button", { name: "進入工作區" }).click();
   // merchant-tools G1 (migration 0094): the workspace landing is the dashboard; the stock ledger moved to /inventory.
-  await expect(page.getByRole("heading", { name: "總覽", level: 1 })).toBeVisible();
+  // PARITY-ENTRY: same signed-in landing assertion, now the signed frame's page-content heading.
+  await expect(page.getByRole("heading", { name: "工作台", level: 1 })).toBeVisible();
+  await dashboardParity(page, evidenceDir!);
 
   // logout
   expect((await browserJSON(page, "/api/auth/logout", { method: "POST", body: {}, csrf: true })).status).toBe(204);
