@@ -69,7 +69,10 @@ test("real Playwright --list collects each original INU case and isolated INU09 
   assert.deepEqual(report.errors ?? [], [], "actual collector reports no worker-fixture scope errors");
   const allDiscovered = rows(report.suites ?? []);
   const simplified = allDiscovered.filter((row) => row.file === "inbox-v2-ui.spec.ts");
-  assert.equal(simplified.length, 33, "all 21 existing scenarios plus 12 local-ACK older-obligation scenarios collect");
+  assert.equal(simplified.length, 39, "all 21 existing scenarios, 12 local-ACK older-obligation and 6 distinct-rejection scenarios collect");
+  for (const locale of ["zh-TW", "zh-CN", "en"])
+    for (const state of ["queued", "blocked"])
+      assert.equal(simplified.filter((row) => row.title === `INV2 ${locale} successful ACK then distinct ${state} rejection`).length, 1);
   for (const locale of ["zh-TW", "zh-CN", "en"])
     for (const state of ["queued", "blocked"])
       for (const timing of ["with-completion", "observed-before-completion"])

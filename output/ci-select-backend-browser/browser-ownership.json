@@ -92,7 +92,7 @@
     "tests/admin/inbox-credential-artifacts.test.ts": "165d97e50b8906d2c4c58c3b70b3f20a56bc5c022bfb08835b2df4f2406b717e",
     "tests/admin/inbox-customer-link.test.ts": "13e0f5ad72f084733bc9a845a14e6aa3a01ccb347b5bcaf64baa8459c54e249b",
     "tests/admin/inbox-customer-ui.spec.ts": "18c01228a77a24676a3945717ef9f938d1e548d8a375ea5b5fb0099d4d5ec5a8",
-    "tests/admin/inbox-discovery.test.ts": "c4f439a840e3d77ca3ab9d4dec6f7a3d203dc6f949ecc030f50cae27684ec9f1",
+    "tests/admin/inbox-discovery.test.ts": "6573d82c6a61fc0695db0b2c125066fab1f5631a2b24cce56bce1853234f7528",
     "tests/admin/inbox-entry.test.ts": "11cd26750c9900f82f2c2e156995b548fdf694176fa39e759f93bbe59ba62991",
     "tests/admin/inbox-evidence.test.ts": "e417a8357f92368a77a1d0da92613e7a72a0ad2a21f1f08405abe280eb1f0888",
     "tests/admin/inbox-privacy.test.ts": "604201722d1c075fb11556ac1a8e491ba8ed751afb716569682bbda345a31618",
