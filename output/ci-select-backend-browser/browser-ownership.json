@@ -149,7 +149,7 @@
     "tests/admin/parcels-model.test.ts": "4af0a4b7881802004e29343b7361076ae333fcc50a89b2b8fd527254685148ff",
     "tests/admin/parcels-request.test.ts": "2e6b5ce176f30a273a9eeb9aee7fef931676c8bcee2569842b361ed1bcf8957f",
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
-    "tests/admin/parity-shell-browser.mjs": "bdc209514b4b16093c653a8478653f1a206dfd864ac25f865f542ea6ce8a2986",
+    "tests/admin/parity-shell-browser.mjs": "397492363afff6832aa910d2e27a17e7f7bde8e51aba85a44c57f3b76adf4deb",
     "tests/admin/password-auth.spec.ts": "b4d4930eafa9f83409191b0d54cc07941c4f3e6f2694b3bf821c2a6fad9a296c",
     "tests/admin/password-bff.test.ts": "a0aef82247f79280f4f950dee28cff5116c98be35e1d09898ddfee6d623922a4",
     "tests/admin/password-response-canaries.ts": "19567bd49311a0b0ba1f13923b29c48a4a90fbbc0a224772aacdd7bc3452c9fb",
