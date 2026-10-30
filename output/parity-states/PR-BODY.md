@@ -4,11 +4,11 @@ Base: `df35b338b5cfde5de34bb590e2ba118efc17e4a4`. Branch: `unit/parity-states`. 
 
 New coverage runs through existing browser-merchant-orders-ui and browser-storefront gates on REAL routes. Read fixtures are explicitly MOCK. All three locales and 1440×900 / 390×844; signed copy/controls, no raw `403 ·`, loading/error/empty, expired session/link, repeated read failure, original-order uncertainty, real clicks and refresh behavior. Recovery must not replay commands or payment signals. Existing parent gate assertions stay verbatim and in order. No CheckoutFlow changes.
 
-Evidence: E1 `node --check` for both specs and parent entries, exit 0; generated browser ownership + `--check`, exit 0. CI assertion RED PENDING; GREEN NOT_RUN; own PASS E0. See output/parity-states/DELIVERY.md and red.log. Local tests/build/server/browser/PG/provider/production and independent review NOT_RUN. No completion claim. Wait ≤10 minutes for run registration, then integrator relays a fresh session after Foundation/Gates concludes; implementation only after causal assertion RED.
+Evidence: E1 `node --check` for both registered gate entries, exit 0; generated browser ownership + `--check`, exit 0. Original Foundation `41050630088` / job `124045491838` failed on unregistered imported fragments (NOT causal RED). Repair attempt 1 moves the assertions directly into registered runners; no checker or assertion changes. CI assertion RED PENDING; GREEN NOT_RUN; own PASS E0. See output/parity-states/DELIVERY.md and red.log. Local tests/build/server/browser/PG/provider/production and independent review NOT_RUN. No completion claim. Wait ≤10 minutes for run registration, then integrator relays a fresh session after Foundation/Gates concludes; implementation only after causal assertion RED.
 
 Outside explicit write paths (integrator review required):
-- tests/admin/orders-ui.spec.ts — ADD spec import/registration only (+ dependency header).
-- tests/storefront/shop-real-gate.mjs — ADD spec import/call only (+ dependency header).
+- tests/admin/orders-ui.spec.ts — directly contains all added admin state tests (+ dependency header); existing assertions unchanged.
+- tests/storefront/shop-real-gate.mjs — directly contains added buyer state checks and the call (+ dependency header); existing assertions unchanged.
 - output/ci-select-backend-browser/browser-ownership.json — generated, never hand-edited.
 - output/parity-states/** — card delivery/red receipt and read-only Figma/Eagle references.
 

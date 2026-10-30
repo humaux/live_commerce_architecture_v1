@@ -1,0 +1,1 @@
+PARITY-STATES RELAY 1: Foundation41050630088/job124045491838 failed on two unregistered imported test fragments, not new UI assertions. Attempt1 moves all assertions into registered parent runners. Tests-only; implementation and GREEN NOT_RUN. New WAIT_RUN ids will be posted in PR356 comment after push. Integrator relay is the wakeup path.

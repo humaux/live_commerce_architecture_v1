@@ -2,7 +2,11 @@ PARITY-STATES RED receipt
 Base/head before tests: df35b338b5cfde5de34bb590e2ba118efc17e4a4
 Branch: unit/parity-states
 PR base: r3/integration
-CI RED run/job: PENDING_PUSH
+PR: #356 https://github.com/humaux/live_commerce_architecture_v1/pull/356
+RED candidate head: 7b2ab178b90b80bc18c099babdf8e371637a0d21
+WAIT_RUN: 41050630088 Foundation / job 124045491838 QUEUED
+WAIT_RUN: 41050630085 Gates / test jobs not yet registered
+CI assertion RED: PENDING (no failed assertion observed; queued is not RED)
 Expected causal RED: new signed StatePanel copy/variant assertions on real routes; never compile/setup failure.
 Implementation/GREEN: NOT_RUN until assertion RED is read from GitHub CI.
 Local node --check: tests/admin/parity-states.spec.ts, tests/storefront/parity-states.spec.mjs, tests/storefront/shop-real-gate.mjs exit 0.
@@ -10,3 +14,15 @@ Generated browser ownership + --check exit 0 (53 modes); explicit card authoriza
 No local test/server/browser/build/database/container run.
 Next receipt: gh pr checks <PR>; gh run view <RUN> --log-failed, filtered to this card's assertions.
 Wait cutoff: no more than ~10 min polling; integrator relays a fresh session after Foundation/Gates concludes.
+
+RELAY 1 / original head 7b2ab178b90b80bc18c099babdf8e371637a0d21
+Foundation run 41050630088 / job 124045491838: FAILURE (registration, NOT causal assertion RED).
+Repair attempt 1: move all new assertions into registered parent gate files, remove import-only fragments; no production implementation.
+Origin integration3ea359f79 merged before deleting browser specs; generated ownership53 modes + --check exit0.
+node --check tests/admin/orders-ui.spec.ts and tests/storefront/shop-real-gate.mjs exit0.
+Original CI failed lines follow:
+foundation	Package docs and gate map are current	2026-10-30T11:57:37.6907134Z check-gates: tests/admin/parity-states.spec.ts is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+foundation	Package docs and gate map are current	2026-10-30T11:57:37.6908998Z check-gates: tests/storefront/parity-states.spec.mjs is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+foundation	Package docs and gate map are current	2026-10-30T11:57:37.7022978Z ##[error]Process completed with exit code 1.
+
+Correction: push0f197e893 contains only staged fragment deletions because an explicit missing-path git add failed and the shell continued. Follow-up contains the preserved cases in registered runners and generated ownership. Count as repair attempt2; no force-push. If this blocker persists on CI, STOP and report.

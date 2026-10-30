@@ -1,6 +1,6 @@
 # PARITY-STATES · RED handoff · 2026-10-30
 
-Status: tests-only RED prepared; implementation, CI assertion RED, GREEN and independent review are PENDING. Author assessment E0. Static syntax checks are E1 only. No local tests, builds, servers, browsers, database or containers ran.
+Status: tests-only RED registration repair prepared; implementation, CI assertion RED, GREEN and independent review are PENDING. Author assessment E0. Static syntax checks are E1 only. No local tests, builds, servers, browsers, database or containers ran.
 
 Task: integrator-dispatched PARITY-STATES; role ui implementation worker, runtime Codex GPT-6 (effort inherited, no override). Base `df35b338b5cfde5de34bb590e2ba118efc17e4a4`; branch `unit/parity-states`; worktree `parity-states`; PR target `r3/integration`. Main checkout is read-only. No recursive delegation.
 
@@ -112,3 +112,17 @@ The following table is the independent test contract for signed panel strings, w
 |lookupSubmit|查詢|查询|Find order|
 |lookupFailed|暫時無法查詢，請稍後再試。|暂时无法查询，请稍后再试。|Lookup is unavailable right now. Please try again later.|
 |lookupNoMatch|找不到符合的訂單，請確認訂單編號與電子郵件或手機號碼。|找不到匹配的订单，请确认订单编号与邮箱或手机号码。|We could not find a matching order. Check the order number and the email or phone number.|
+
+## RED push receipt (relay)
+
+PR #356, head `7b2ab178b90b80bc18c099babdf8e371637a0d21`. Foundation WAIT_RUN `41050630088`, foundation job `124045491838` queued; Gates WAIT_RUN `41050630085`, test jobs not registered at handoff. No causal RED or GREEN yet. Receipt updates are local pending the implementation commit; no evidence-only push. Integrator relays this session when the CI concludes.
+
+## RELAY 1 · gate registration repair (attempt 1)
+
+Original head `7b2ab178b90b80bc18c099babdf8e371637a0d21`: Foundation `41050630088`, job `124045491838`, failed in “Package docs and gate map are current”. Both new imported spec fragments were reported as “run by no gate”. This is a registration failure, **not assertion RED**. Original receipt is in red.log.
+
+All new assertions/fixtures now live directly in the already registered `tests/admin/orders-ui.spec.ts` and `tests/storefront/shop-real-gate.mjs`; the two import-only fragments are removed. Existing gate assertions and call order remain unchanged. No gate checker, exemption, threshold, fixture expectation or production source changed. This tests-only repair precedes implementation.
+
+Merged `origin/r3/integration` at `3ea359f79` before spec deletion, then regenerated ownership (53 modes, `--check` exit 0). The merge contains upstream deployment changes only; no deployment file was authored by this card. `node --check` on both registered entries exits 0 (E1). No local runtime verification. New CI registration and assertion RED remain PENDING; integrator will relay after the next runs.
+
+Submission correction: `0f197e893` accidentally pushed fragment deletions without their unstaged destinations after git add failed. A follow-up commit includes both destinations and generated ownership. No assertions removed from the final tree; no force push. Count the follow-up as attempt 2 for this blocker; STOP if it persists.
