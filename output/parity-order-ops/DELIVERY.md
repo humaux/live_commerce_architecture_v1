@@ -1,6 +1,6 @@
 # PARITY-ORDER-OPS — tests-only RED handoff
 
-2026-10-30. **E1 syntax/registration only; CI RED pending. Implementation, GREEN and independent review NOT_RUN.**
+2026-10-30. **E1 syntax only; direct registration repair awaits CI. Causal RED pending. Implementation, GREEN and independent review NOT_RUN.**
 
 ## Assignment and authority
 
@@ -14,12 +14,14 @@
 
 ## RED gate and static evidence
 
-- New `tests/admin/parity-order-ops.spec.ts` is registered by additive import in `tests/admin/returns-ui.spec.ts`. That existing spec is launched by `TestBrowserReturnsUI` / `--browser-returns-ui` with a signed MOCK IdP, real Go/Next and isolated PG.
+- New `tests/admin/parity-order-ops.spec.ts` and existing `tests/admin/returns-ui.spec.ts` are directly registered in `TestBrowserReturnsUI` / `--browser-returns-ui` with a signed MOCK IdP, real Go/Next and isolated PG. No indirect spec import is needed.
+- Relay 1: head `7a8e296d140bbca04cc13006ccf04cac9af9aa1e`, Foundation run `41052644741` / job `124052242197` failed because `check-gates` does not recognize indirect spec registration. This is not causal assertion RED. Raw filtered receipt: [foundation-registration-failure.log](foundation-registration-failure.log). Targeted fix attempt 1/2 registers the new spec directly in the existing harness, preserves every assertion and regenerates ownership. Application implementation remains untouched until assertion RED.
 - 24 cases: four flows × zh-TW/zh-CN/en × 1440×900/390×844. TW produces one screenshot for each of the 40 listed frames. A failed early assertion intentionally prevents later screenshots; an absent screenshot is NOT_RUN, never parity acceptance.
 - Expected RED on original source: exact visible headings `1 · 商品`, `2 · 收件人與配送`, `退款與售後`, `查門市編號` (and translated counterparts); legacy flat headings are asserted absent. Missing CVS route must fail the visible heading assertion, not compilation.
 - MOCK GET fixtures use current ProductSummary/ProductDetail/ManualOption/Rma wire shapes. Product names/prices are synthetic; CVS stores are public directory facts. Identity and store authorization are not stubbed. No POST fixture, actual refund, money calculation or production action.
 - Click/fill/select operations drive draft/picker quantities, cancellation, RMA navigation/filter reload, CVS explicit selection/copy/change/paste and manual-order return. Clipboard/layout evaluates are reads only. Per-test `parity/clicks-*.json` records covered flow steps and actual results; exhaustive control accounting remains an implementation acceptance item.
 - `node --check tests/admin/parity-order-ops.spec.ts`: exit 0; `node --check tests/admin/returns-ui.spec.ts`: exit 0.
+- Relay 1 static commands repeated after registration repair: both syntax checks exit 0; `gofmt -l tests/foundation/browser_returns_ui_test.go` exit 0 with no formatting changes; no local tests/servers.
 - `node scripts/dev/derive-browser-ownership.mjs`: exit 0 / 53 modes. `node scripts/dev/derive-browser-ownership.mjs --check`: exit 0. Generated artifact committed with registration.
 - `git diff --check`: exit 0. TypeScript compiler/dependencies are absent locally; tsc NOT_RUN. No local tests, builds or servers started. Go/PG/browser/CI validation NOT_RUN until GitHub receipts.
 - No new application imports yet, so component-harness import allowlists and Go dependency map are unchanged. Existing next-startup gate assertions are untouched.

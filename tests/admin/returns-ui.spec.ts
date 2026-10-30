@@ -18,8 +18,6 @@ import { expect, test, type BrowserContext, type Locator, type Page } from "@pla
 import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-// C5: additive signed-frame tests share this suite's signed MOCK identity and isolated Go/Next stack.
-import "./parity-order-ops.spec";
 
 const required = (name: string) => {
   const value = process.env[name];

@@ -5,3 +5,31 @@ expected=Playwright visible-copy assertions fail on 1 · 商品 / 退款與售�
 run_id=PENDING
 job_id=PENDING
 No local tests or servers run.
+
+observed_at=2026-10-30T12:05:18.651840+00:00
+pr=364
+head_sha=7a8e296d140bbca04cc13006ccf04cac9af9aa1e
+foundation_run_id=41052644741
+foundation_job_id=124052242197
+foundation_status=QUEUED
+gates_run_id=41052644803
+gates_status=QUEUED
+gates_browser_job_id=NOT_ASSIGNED
+red_assertion_failure=NOT_OBSERVED_YET
+green=NOT_RUN
+handoff=Integrator relays completed workflow conclusion in a fresh session; no local polling process left running.
+receipt_commit=Local receipt for next implementation commit; no evidence-only push.
+latest_foundation_observation=IN_PROGRESS (run view; checkout step; no test conclusion)
+
+relay_1_head_sha=7a8e296d140bbca04cc13006ccf04cac9af9aa1e
+relay_1_foundation_run_id=41052644741
+relay_1_foundation_job_id=124052242197
+relay_1_foundation_conclusion=FAILURE
+relay_1_failure=check-gates: tests/admin/parity-order-ops.spec.ts is run by no gate
+relay_1_evidence=output/parity-order-ops/foundation-registration-failure.log
+relay_1_causal_red=NOT_RUN (gate registration failed before browser assertions)
+relay_1_fix_attempt=1 of 2 for spec registration
+relay_1_root_cause=check-gates recognizes direct Go spec registration, not an imported spec
+relay_1_fix=register both specs directly in TestBrowserReturnsUI; remove indirect spec import; regenerate ownership
+relay_1_phase=tests-only registration repair; implementation not started; new CI assertion RED required
+relay_1_local_tests_servers=NOT_RUN

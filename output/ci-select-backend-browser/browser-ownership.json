@@ -149,7 +149,7 @@
     "tests/admin/parcels-model.test.ts": "4af0a4b7881802004e29343b7361076ae333fcc50a89b2b8fd527254685148ff",
     "tests/admin/parcels-request.test.ts": "2e6b5ce176f30a273a9eeb9aee7fef931676c8bcee2569842b361ed1bcf8957f",
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
-    "tests/admin/parity-order-ops.spec.ts": "52f336bade4cc51efef898887406a4a3d8f033c8e216cce3114486409a650765",
+    "tests/admin/parity-order-ops.spec.ts": "f6e10fcfc800629e4ce9b996ce49ccce665a9ba93936ee548d5380af7a984559",
     "tests/admin/password-auth.spec.ts": "b4d4930eafa9f83409191b0d54cc07941c4f3e6f2694b3bf821c2a6fad9a296c",
     "tests/admin/password-bff.test.ts": "a0aef82247f79280f4f950dee28cff5116c98be35e1d09898ddfee6d623922a4",
     "tests/admin/password-response-canaries.ts": "19567bd49311a0b0ba1f13923b29c48a4a90fbbc0a224772aacdd7bc3452c9fb",
@@ -183,7 +183,7 @@
     "tests/admin/reports.spec.ts": "4ec8e5fcbc46218231a3e45a344dab6b9c33a347d9f428e533e0e98d03aff759",
     "tests/admin/returns-model.test.ts": "0252872342060b71f556ac0bd1ab432fa59027f30cf99ed6035181e0e8cf5529",
     "tests/admin/returns-request.test.ts": "7716794c6a76666e182797bec5c7c8b38816101ac36de445cd3f4c8127613c80",
-    "tests/admin/returns-ui.spec.ts": "afe8076ab3a66eb1a6959917baed189bb555aaad1f5d1cfca3bbd873e7b611a4",
+    "tests/admin/returns-ui.spec.ts": "d54c3ac061abbf0b0e71864e2b8f3388e368e2f143579bcbc56865493ea9555c",
     "tests/admin/safe-json-cancel.test.ts": "ab24bd8a7156d66a0f738ec12cc24c6a742c947fd8bbe08f534a07f42c60e8ee",
     "tests/admin/settings-real.spec.ts": "eb3d8818387f05918077a48c6cc0f932ac04dc5d4ce2039a91122ba261a48a34",
     "tests/admin/settings-v2.spec.ts": "e76e956ad10ebdd8e14c7c2c0b9e3088d1b8ae7b404578d795face1e6de6b7a3",
@@ -285,7 +285,7 @@
     "tests/foundation/browser_product_media_v2_test.go": "a27c65c69a356443f027696fd27ae75665f35c213de6b54b9e6157fd7e865b1d",
     "tests/foundation/browser_promotions_test.go": "02d1c51144f009243bc08b2c33c3ccac54adb669b5dff3564236af2fbe64a68a",
     "tests/foundation/browser_refund_fulfilment_test.go": "4e8445b9531a98914c82b362a4652a468c4d57969866eb3ac943f0dac28de866",
-    "tests/foundation/browser_returns_ui_test.go": "5714f112135c244f4d733af6527b99662ff8a19286b570c9a5ca1bd0559d4fee",
+    "tests/foundation/browser_returns_ui_test.go": "f8f02b0691b70d6bf90d74d0be7cd43c8ebd3aabce2317ec7bf0070c37c72baa",
     "tests/foundation/browser_staff_team_test.go": "77741041966846fa4427ca2d4fb8412ee7716bb4a195f73d0836cca3d7e5b32c",
     "tests/foundation/browser_store_design_test.go": "7f893c3d86600f71b8a3851c43353cc3eb4c9e48ddd90f2ebec10e0b440aa3ad",
     "tests/foundation/browser_store_domains_test.go": "13ebb75fb6440d6089a6a554a02b94c0779a9b9e6896140ef594055ff3406d53",
@@ -2917,6 +2917,7 @@
     },
     "--browser-returns-ui": {
       "specs": [
+        "tests/admin/parity-order-ops.spec.ts",
         "tests/admin/returns-model.test.ts",
         "tests/admin/returns-request.test.ts",
         "tests/admin/returns-ui.spec.ts"
@@ -2944,6 +2945,7 @@
         "tests/admin/returns-model.test.ts:server/import apps/admin",
         "tests/admin/returns-request.test.ts:import apps/admin/lib/orders-request.ts",
         "tests/admin/returns-request.test.ts:server/import apps/admin",
+        "tests/foundation/browser_returns_ui_test.go -> tests/admin/parity-order-ops.spec.ts",
         "tests/foundation/browser_returns_ui_test.go -> tests/admin/returns-ui.spec.ts"
       ]
     },

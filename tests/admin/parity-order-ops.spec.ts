@@ -1,6 +1,6 @@
 // Purpose: C5 signed-frame acceptance on real manual-order, returns and CVS-tool routes.
 // Depends on: Playwright; returns-ui's signed MOCK IdP/Go/Next harness; frozen catalog/manual/RMA DTOs.
-// Used by: returns-ui.spec.ts registration, TestBrowserReturnsUI and generated browser ownership.
+// Used by: TestBrowserReturnsUI's direct spec registration and generated browser ownership.
 // Invariants: fixtures prepare GETs only; every state change uses a real control; never refund or calculate money.
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
