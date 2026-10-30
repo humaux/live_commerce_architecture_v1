@@ -1,5 +1,5 @@
 // Purpose: shop-real-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
-// Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
+// Depends on: tests/helpers/next-startup.mjs, ./parity-states.spec.mjs and existing app/fixture/edge imports below.
 // Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // SFR gate (SANDBOX tier, REAL stack): the buyer storefront shell in a real browser against the production Next build, the real private
 // buyerhttp handler and PG, with a shop the merchant built through the real admin API (products, option axes, stock, photos, collections, design
@@ -25,6 +25,7 @@ import { launch, ctxOpts, iosZoomOffenders, engine } from "./browser-engine.mjs"
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 import { measureMediaSizes } from "./media-sizes-perf.mjs";
 import { checkOfflineError } from "./offline-error.spec.ts";
+import { checkBuyerParityStates } from "./parity-states.spec.mjs";
 
 const env = (name) => { const v = process.env[name]; assert(v, `${name} is required`); return v; };
 const root = process.cwd(), evidence = env("LC_SFR_EVIDENCE");
@@ -314,6 +315,7 @@ try {
   pass("SFR09 /{locale}/checkout is the checkout page; no page errors or hydration warnings across the walk-through");
 
   await checkOfflineError({ browser, origin, control }); // OC-11: logged, not counted in `cases`
+  await checkBuyerParityStates({ browser, origin, evidence });
 
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {

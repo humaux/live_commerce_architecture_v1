@@ -1,5 +1,5 @@
 // Purpose: Exercises orders, filters and details with supplied isolated browser identities.
-// Depends on: ../../apps/admin/lib/orders-model (strict MOCK shipment DTO validation), @playwright/test, node:fs/promises, node:path, node:http, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_ORDER_STORE, LC_BROWSER_ORDER_IDS, LC_BROWSER_FROZEN_SKU_CODE, LC_BROWSER_FOREIGN_STORE, LC_BROWSER_FOREIGN_ORDER_ID, LC_BROWSER_UNLISTED_STORE, LC_BROWSER_SECOND_TOKEN, LC_BROWSER_NO_ORDERS_TOKEN, LC_BROWSER_EXPIRED_TOKEN, LC_BROWSER_REVOKED_TOKEN
+// Depends on: ../../apps/admin/lib/orders-model (strict MOCK shipment DTO validation), @playwright/test, node:fs/promises, node:path, node:http, ./fixtures/native-device, ./parity-states.spec; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_ORDER_STORE, LC_BROWSER_ORDER_IDS, LC_BROWSER_FROZEN_SKU_CODE, LC_BROWSER_FOREIGN_STORE, LC_BROWSER_FOREIGN_ORDER_ID, LC_BROWSER_UNLISTED_STORE, LC_BROWSER_SECOND_TOKEN, LC_BROWSER_NO_ORDERS_TOKEN, LC_BROWSER_EXPIRED_TOKEN, LC_BROWSER_REVOKED_TOKEN
 // Used by: apps/admin/src/features/orders/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_merchant_orders_ui_test.go
 // Invariants: ORDERS-V2-IMPL uses real clicks and response-derived identities/counts; shipment writes are explicitly MOCK,
 //   never reach PG, and preserve this harness's read-only fingerprints. Existing MOU assertions remain unchanged.
@@ -10,6 +10,7 @@ import * as http from "node:http";
 import { nativePage } from "./fixtures/native-device";
 import { parseShipmentVersion } from "../../apps/admin/lib/orders-model";
 import {picklistCopy} from '../../apps/admin/lib/picklist-copy';
+import { registerParityStates } from "./parity-states.spec";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -1324,3 +1325,6 @@ for (const state of ["PROVIDER_LABEL_CREATED", "REVIEW_REQUIRED"] as const) {
     });
   });
 }
+
+// PARITY-STATES adds assertions without replacing any existing orders acceptance.
+registerParityStates(signedLogin);

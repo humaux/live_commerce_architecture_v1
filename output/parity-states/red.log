@@ -1,0 +1,12 @@
+PARITY-STATES RED receipt
+Base/head before tests: df35b338b5cfde5de34bb590e2ba118efc17e4a4
+Branch: unit/parity-states
+PR base: r3/integration
+CI RED run/job: PENDING_PUSH
+Expected causal RED: new signed StatePanel copy/variant assertions on real routes; never compile/setup failure.
+Implementation/GREEN: NOT_RUN until assertion RED is read from GitHub CI.
+Local node --check: tests/admin/parity-states.spec.ts, tests/storefront/parity-states.spec.mjs, tests/storefront/shop-real-gate.mjs exit 0.
+Generated browser ownership + --check exit 0 (53 modes); explicit card authorization.
+No local test/server/browser/build/database/container run.
+Next receipt: gh pr checks <PR>; gh run view <RUN> --log-failed, filtered to this card's assertions.
+Wait cutoff: no more than ~10 min polling; integrator relays a fresh session after Foundation/Gates concludes.
