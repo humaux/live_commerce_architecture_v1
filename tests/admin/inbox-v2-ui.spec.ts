@@ -523,6 +523,8 @@ for (const copy of copies) {
         // Fixture preparation: each variant must sign in afresh before installing its own transport.
         await page.unrouteAll({ behavior: "wait" });
         await page.context().clearCookies();
+        // The shared signed-login helper uses desktop navigation; mobile coverage resumes after entry.
+        await page.setViewportSize({ width: 1280, height: 900 });
         const state = await enter(page, copy);
         await page.setViewportSize({ width: 390, height: 844 });
         await open(page, ids.instagram);
