@@ -1,6 +1,6 @@
 # PARITY-LIVE — implementation handoff
 
-Status: RELAY 4 targeted harness repair prepared. Foundation failed on efcec544; replacement own-head CI and independent visual acceptance PENDING. Historical sections below retain prior receipts.
+Status: FIX1 relay 1, second shared-helper directed repair prepared. Current replacement CI and independent acceptance PENDING; historical receipts below are bound to their recorded heads.
 Task: dispatched by Claude integrator; branch unit/parity-live; worktree parity-live; base df35b338b5cfde5de34bb590e2ba118efc17e4a4. Role: UI implementer. Runtime model/effort metadata is not exposed; no sub-agent or recursive delegation.
 Authority: owner card 2026-10-30; repository AGENTS.md; 架构.md §§0/1/2/26/27; contracts/live-console-v1.md §§2.5/3.3/4.2/4.4/6/7.1–7.2; existing closed console, claims and comment DTOs.
 Visual authority: ux-live/output/ux-live/DELIVERY.md §v3 OWNER-FEEDBACK REWORK (not its superseded v2 frame index), v3/frames.json and v3/exports.json. Fleet Bridge read current desktop 1429:39502, mobile 1429:39607 and public-reply desktop 1429:42507; no Figma writes.
@@ -353,3 +353,16 @@ Attempt count: first targeted repair of this missing-capabilities harness blocke
 Scope: tests/admin/live-console-render.test.ts is a same-module harness outside the original browser-spec write paths, explicitly listed in PR body for integrator review. Generated browser-ownership.json updated its render-test hash only. Task evidence adds relay4-foundation.log and updates this DELIVERY/red.log. No Go imports changed, so depmap regeneration is unnecessary. Existing untracked Figma read receipts and prior PR-body/comment drafts are preserved and excluded from the commit.
 
 Local commands: node scripts/dev/derive-browser-ownership.mjs exit0; node scripts/dev/derive-browser-ownership.mjs --check exit0; git diff --check exit0. These are static provenance checks, not runtime acceptance. No local tests/server/browser/build, no merge/auto-merge/deploy. New-head GREEN and independent real-route screenshot/click review PENDING. Author judgment E0; Humaux store/canvas/coord/code-index remain NOT_RUN (tools unavailable). Integrator supplies wakeup through the next run-completion relay.
+
+RELAY4_PUSH head=8296581fb4e84058b9c0f35d52af4b0cb4e496a0 pr=355
+WAIT_RUN Foundation=41065893297 job=124097075104 status=queued
+WAIT_RUN Gates=41065893191 status=pending gate_jobs=NOT_CREATED
+GREEN=PENDING own_PR_CI; author=E0; no E3/E4 acceptance claimed
+wakeup=integrator fresh-session relay on run conclusion; no local watcher/process
+Post-push receipts remain local and in PR comment; no evidence-only push.
+
+## FIX1 RELAY 1 — shared desktop tab lookup
+
+See FIX1.md latest classification table and fix1-relay1/assertions.json. Six desktop cases (two flows × three locales) failed the helper's attachment assertion before action; mobile cases passed on the prior head. Preserve hidden-tab DOM attachment and branch on actual visibility before real clicks. Only helper locator/comment and generated ownership changed; all business/persistence/privacy assertions remain verbatim. No product markup, UI strings, Figma or design authority changes; the existing BOURDIEU / PROJECT UNDERSTANDING / MOBBIN → EAGLE / FIGMA OFFICIAL GUIDANCE / three-language / parity and click-ledger sections continue to apply. New-head runtime outcomes PENDING. This is directed helper repair 2; same failure again means BLOCKED.
+
+E1: node --check helper, required ownership generation/--check exit 0. E0: author correctness; no acceptance claim. Local runtime tests/servers, independent review, SANDBOX/LIVE/production NOT_RUN. Humaux tools unavailable; store/canvas updates NOT_RUN. Existing untracked prior evidence is preserved, and downloaded failed CI evidence remains in this task directory. No local process/fixture/container/port was started.

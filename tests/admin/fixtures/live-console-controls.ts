@@ -5,7 +5,9 @@
 import { expect, type Page } from "@playwright/test";
 
 export async function showLivePanel(page: Page, panel: "live" | "comments" | "buyer") {
-  const tabs = page.getByTestId("live-console").getByRole("tab");
+  // Desktop keeps the mobile tablist CSS-hidden; include it for the attachment check only.
+  // The visibility guard still ensures that every tab interaction is a real, actionable click.
+  const tabs = page.getByTestId("live-console").getByRole("tab", { includeHidden: true });
   await expect(tabs.first()).toBeAttached();
   if (await tabs.first().isVisible()) {
     const tab = tabs.nth(panel === "live" ? 0 : panel === "comments" ? 1 : 2);

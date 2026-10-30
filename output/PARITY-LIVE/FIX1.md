@@ -1,6 +1,6 @@
 # PARITY-LIVE-FIX1 — directed repair of PR #355
 
-Status: diagnosis recorded before repairs; current-head CI PENDING. Author correctness E0.
+Status: FIX1 relay directed repair 2 prepared; replacement own-head CI PENDING. Author correctness E0.
 Worker: integrator-dispatched Codex UI/test maintainer, no recursive delegation or new claim. Runtime model/effort metadata is not exposed. Worktree `parity-live`, branch `unit/parity-live` only.
 Input head `8296581fb4e84058b9c0f35d52af4b0cb4e496a0`; first merged integration `a3dc78e4d5ec72831aaf6a376793f0f6a7a56425` in `a3f0514d6`.
 Existing unstaged DELIVERY/red.log and untracked prior relay/Figma material were preserved.
@@ -32,3 +32,28 @@ Outside original implementation paths: tests/admin/live-settings.spec.ts and sha
 Rollback: revert the single FIX1 implementation commit, retain RED evidence; no production action or merge/auto-merge authorized.
 
 Static receipts (E1, exit 0): `node --check` for live-console.spec.ts, live-settings.spec.ts, fixtures/live-console-controls.ts; `node scripts/dev/derive-browser-ownership.mjs` and `--check`; `git diff --check`. Generator includes the shared helper in both browser modes, with no new unresolved import. No component imports changed, so no component compilation allowlist changes required. No Go dependency change; depmap unchanged.
+
+
+## FIX1 post-push relay receipt (no evidence commit)
+
+Head f51a0c2db2a5262e1083150d95ed0f73d014dae0. WAIT_RUN Foundation41106774257/job124238545940; Gates41106774405. Both pending; integrator relays a new session on completion. GREEN/E3/E4 and independent acceptance are not established.
+Correction: final `git diff HEAD^ HEAD --check` exits 2: output/PARITY-LIVE/fix1-evidence/assertions.log:150 new blank line at EOF. Pre-artifact whitespace check had exited 0; final whitespace PASS must not be claimed. Source syntax and generated ownership checks exited 0. No second push per FIX1 single-push constraint.
+
+## FIX1 RELAY 1 — desktop hidden-tab locator root (2026-10-31)
+
+Authority: current owner relay/card; raw completed job 124240810483 of Gates 41106774405 at head f51a0c2db2a5262e1083150d95ed0f73d014dae0, synthetic merge 0e2f4f452cb7166d53dbbf28d95d7a948ee78b84. `gh run view --job --log-failed` refused while the parent run was unfinished; completed-job `/actions/jobs/124240810483/logs` supplied the raw receipt. Artifact 13001713943 was downloaded successfully. Integration 629f42152f864621a99ac2247c3baf5d751a422f was merged before this repair; existing task evidence preserved. Merge commit includes the required co-author trailer.
+
+|Failing job / run|Failing test|Evidence|Class / repair|
+|---|---|---|---|
+|124240810483 / 41106774405, --browser-live-settings|manual reminders template and restriction real clicks; en/zh-TW/zh-CN at 1440|All 3 original error-context.md files: `expect(locator).toBeAttached()`; `getByTestId('live-console').getByRole('tab').first()` not found, 10000ms. Preserved byte-for-byte in fix1-relay1/*.md.gz; original hashes and test names in assertions.json.|(b) Shared setup helper regression introduced in FIX1 attempt 1. `getByRole` excludes CSS-hidden desktop mobile tabs. Include hidden roles for the existing attachment assertion; retain isVisible guard before real clicks and selected-state assertion.|
+|124240810483 / 41106774405, --browser-live-settings|five sold-out delivery states real clicks and masked badges; en/zh-TW/zh-CN at 1440|Same 3 exact attachment failures in independent contexts; run summary 6 failed / 16 passed. No mobile failures.|(b) Same root, one shared-helper fix. All five state assertions, sent-only badge, privacy, requests, persistence, and real-click paths remain unchanged.|
+
+Current source confirms LiveConsole.tsx always renders the three mobile tabs; components/studio/live-console.css hides them on desktop (`display:none`) and displays them at the mobile breakpoint. No product redesign or additional UI strings. Both consumers (live-console.spec.ts and live-settings.spec.ts) use the repaired helper; its other methods keep real summary clicks.
+
+Resolved historical job members, not current acceptance: latest ui-gallery member succeeded with 6 matrix cases / 1267 ledger rows; Foundation 41106774257/job124238545940 succeeded on f51a0c2d. Gates overall is still pending with a failed bundle. Base 41105181453 remains queued at lookup, so no identical-base class (c) or base GREEN claim. Receipts/required are not diagnosed as standalone failures while unfinished.
+
+Attempt bound: this is the second directed shared-helper repair. If this same test/assertion remains red, STOP with BLOCKED and exact evidence; do not attempt a third approach.
+
+Scope outside original card paths: tests/admin/fixtures/live-console-controls.ts, generated output/ci-select-backend-browser/browser-ownership.json, output/PARITY-LIVE/{FIX1.md,DELIVERY.md,red.log,fix1-relay1/} evidence. Existing full artifact extraction stays untracked; only failure contexts, hashes and filtered receipt are committed. No new component imports, no source headers removed, no Go dependency changes (depmap unchanged). No gates, exemptions, fixtures, thresholds or timeouts changed. `tests/ci/next-startup.test.mjs` untouched.
+
+Local static commands: node --check tests/admin/fixtures/live-console-controls.ts exit 0; browser ownership generation exit 0; browser ownership --check exit 0. Replacement CI, actual clicks/persistence/parity/density and independent review PENDING; no local tests or servers. Humaux search/store/canvas/coord and code-index tools unavailable (NOT_RUN). Integrator supplies fresh-session wakeup on registered own-head CI runs; no local watcher.
