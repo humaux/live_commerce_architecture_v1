@@ -388,17 +388,21 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   await signedLogin(page);
   await page.goto(`/en/finance?store=${store}`);
   await expect(page.getByTestId("finance-page")).toBeVisible();
+  await page.getByRole("button", {name: moneyDesign.en.financeDates, exact:true}).click();
   const from = page.getByTestId("finance-from"), to = page.getByTestId("finance-to");
   await expect(from).toHaveAttribute("type", "date");
   await expect(to).toHaveAttribute("type", "date");
   await from.fill(financeDay(-2));
   await to.fill(financeDay(0));
   await page.getByTestId("finance-show").click();
+  await page.getByRole("button", {name: moneyDesign.en.daily, exact:true}).click();
   await expect(page.getByTestId("finance-table")).toBeVisible();
   const day = financeDay(0);
   await expect(page.getByTestId(`finance-row-${day}-TWD`)).toBeVisible();
   await expect(page.getByTestId("finance-total-TWD")).toBeVisible();
-  await expect(page.getByTestId("finance-test-badge")).toHaveText(en.testBadge);
+  await page.getByRole("button", {name: moneyDesign.en.backFinance, exact:true}).click();
+  await expect(page.getByTestId("finance-test-badge")).toContainText("Test payments");
+  await page.getByRole("button", {name: moneyDesign.en.financeDates, exact:true}).click();
   // the range rule (D13): start after end, and more than 91 days, are refused before any request
   const summaries: string[] = [];
   page.on("request", (r) => {
@@ -421,7 +425,10 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   await expect(page.getByTestId("finance-range-invalid")).toHaveCount(0);
   await from.fill(financeDay(-2));
   await page.getByTestId("finance-show").click();
+  await page.getByRole("button", {name: moneyDesign.en.daily, exact:true}).click();
   await expect(page.getByTestId(`finance-row-${day}-TWD`)).toBeVisible();
+  await page.getByRole("button", {name: moneyDesign.en.backFinance, exact:true}).click();
+  await page.getByRole("button", {name: moneyDesign.en.csv, exact:true}).click();
   // the CSV: the link carries the same range, the response is an attachment with the frozen header, integers only
   const link = page.getByTestId("finance-csv");
   const href = (await link.getAttribute("href")) ?? "";
@@ -470,7 +477,7 @@ test("CB11 billing: standing, subscribe redirects to hosted Checkout (MOCK), the
   expect(JSON.parse(checkouts[0].body ?? "{}")).toEqual({ price_id: price });
   // the bearer URL is used once and dropped: nothing of it in the admin origin's storage
   await page.goto(`/en/billing?store=${store}&checkout=cancel`);
-  await expect(page.getByTestId("billing-cancelled")).toHaveText(bc.checkoutCancel);
+  await expect(page.getByTestId("billing-cancelled")).toHaveText(moneyDesign.en.cancelled);
   await storageLacks(page, ["checkout.stripe.com", "fakebearer", "cs_test_"]);
   // the customer completes payment at Stripe: the webhook (signed, real handler) mirrors the subscription
   await ctl("checkout-complete");
@@ -478,13 +485,15 @@ test("CB11 billing: standing, subscribe redirects to hosted Checkout (MOCK), the
   await expect(page.getByTestId("billing-updating")).toBeVisible();
   await expect(page.getByTestId("billing-standing")).toHaveAttribute("data-standing", "GOOD", { timeout: 20_000 });
   await expect(page.getByTestId("billing-subscriptions")).toContainText(bc.subStatus.active);
-  await expect(page.getByTestId(`plan-choose-${price}`)).toBeDisabled(); // a live subscription: manage it, do not buy a second (409 rule)
+  await expect(page.getByTestId(`plan-choose-${price}`)).toHaveCount(0);
+  await expect(page.getByTestId("billing-portal-open")).toBeVisible(); // a live subscription: manage it, do not buy a second (409 rule)
   await expect(page).toHaveURL(new RegExp(`/en/billing\\?store=${store}$`)); // the return marker is dropped
   const portals: { key: string | null; body: string | null; status: number }[] = [];
   page.on("response", (r) => {
     if (r.request().method() === "POST" && new URL(r.url()).pathname.endsWith("/billing/portal"))
       portals.push({ key: keyOf(r.request().headers()), body: r.request().postData(), status: r.status() });
   });
+  await page.getByTestId("billing-portal-open").click();
   await page.getByTestId("billing-portal").click();
   await page.waitForURL(/^https:\/\/billing\.stripe\.com\/p\/session\//);
   expect(portals).toHaveLength(1);
@@ -573,7 +582,7 @@ for (const locale of ["en", "zh-TW"] as const) {
         await shot(page, "customer-detail", locale, viewport);
         await page.goto(`/${locale}/finance?store=${store}`);
         await expect(page.getByTestId("finance-page")).toBeVisible();
-        await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[locale].financePage);
+        await expect(page.getByRole("heading", { level: 1 })).toHaveText(moneyDesign[locale].finance);
         await shot(page, "finance", locale, viewport);
         await page.goto(`/${locale}/billing?store=${store}`);
         await expect(page.getByTestId("billing-standing")).toHaveAttribute("data-standing", "RESTRICTED");

@@ -244,9 +244,10 @@ test("finance: the collected cash appears in the COD column, never in captured/n
   const { context, page } = await merchant(browser, false);
   await page.goto(new URL(`/en/finance?store=${store}&from=${today}&to=${today}`, origin).toString());
   await expect(page.getByTestId("finance-page")).toBeVisible();
+  await page.getByRole("button", {name: moneyDesign.en.daily, exact:true}).click();
   await expect(page.getByTestId("finance-table")).toBeVisible();
   const cells = page.getByTestId("finance-cod-collected");
-  await expect(cells.filter({ hasText: "(1)" }).first()).toBeVisible(); // one collected order, order total + surcharge
+  await expect(cells.filter({ hasText: "/ 1" }).first()).toBeVisible(); // one collected order, order total + surcharge
   await shot(page, "finance", "en", "desktop");
   await context.close();
 });

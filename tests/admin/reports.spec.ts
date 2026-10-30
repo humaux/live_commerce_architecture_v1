@@ -42,6 +42,10 @@ async function signed(browser: Browser, locale: "en" | "zh-TW" | "zh-CN", width:
   return { context, page };
 }
 async function fill(page: Page, field: Locator, value: string, name: string) {
+  if (await field.count() === 0) {
+    const locale = new URL(page.url()).pathname.split("/")[1] as "en" | "zh-TW" | "zh-CN";
+    await page.getByRole("button", {name:moneyDesign[locale].chooseDates,exact:true}).click();
+  }
   await step(page, name, `input displays ${value}`, async () => { await field.fill(value); await expect(field).toHaveValue(value); }, "fill");
 }
 async function fits(page: Page) {
@@ -264,19 +268,24 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
       });
       await fill(page, page.getByTestId("reports-from"), "2026-10-01", c.from);
       await fill(page, page.getByTestId("reports-to"), "2026-10-31", c.to);
-      await step(page, "Edited range not applied", "Channels and Funnel retain the September data label; October inputs do not imply a new query", async () => {
-        for (const tab of ["channels", "funnel", "channels"]) {
+      await step(page, "Edited range not applied", "the signed date editor preserves applied dates until Apply; Cancel leaves September data intact", async () => {
+        await expect(page).toHaveURL(/from=2026-09-01/);
+        await expect(page.getByTestId("reports-range-pending")).toHaveText(c.rangePending);
+        await expect(page.getByTestId("reports-csv-channels")).toBeHidden();
+        await page.getByRole("button",{name:moneyDesign[locale].cancel,exact:true}).click();
+        for (const tab of ["channels","funnel","channels"]) {
           await page.getByTestId(`reports-tab-${tab}`).click();
           await expect(page.getByTestId("reports-applied-range")).toHaveText(`${c.appliedRange}: 2026-09-01 – 2026-09-30 (${c.taipeiTime})`);
-          await expect(page.getByTestId("reports-range-pending")).toHaveText(c.rangePending);
-          await expect(page.getByTestId(`reports-csv-${tab}`)).toBeDisabled();
+          await expect(page.getByTestId("reports-range-pending")).toHaveCount(0);
         }
+        await fill(page,page.getByTestId("reports-from"),"2026-10-01",c.from);
+        await fill(page,page.getByTestId("reports-to"),"2026-10-31",c.to);
       });
       await step(page, "Show report", "date change navigates and survives refresh", async () => {
         await page.getByTestId("reports-show").click(); await expect(page).toHaveURL(/from=2026-10-01/);
         await expect(page.getByTestId("reports-applied-range")).toHaveText(`${c.appliedRange}: 2026-10-01 – 2026-10-31 (${c.taipeiTime})`);
         await expect(page.getByTestId("reports-range-pending")).toHaveCount(0);
-        await page.reload(); await expect(page.getByTestId("reports-from")).toHaveValue("2026-10-01");
+        await page.reload(); await page.getByRole("button",{name:moneyDesign[locale].chooseDates,exact:true}).click(); await expect(page.getByTestId("reports-from")).toHaveValue("2026-10-01"); await page.getByRole("button",{name:moneyDesign[locale].cancel,exact:true}).click();
         // Codex review P2 (PR #3): the selected report tab survives Show and refresh instead of resetting to Products.
         await expect(page).toHaveURL(/report=channels/);
         await expect(page.getByTestId("reports-tab-channels")).toHaveAttribute("aria-selected", "true");
@@ -304,8 +313,8 @@ test("RPUI 92/93 days, reversed dates, real truncated/failed reads and empty suc
     for (const fault of ["read-503", "truncate-report"]) {
       await ctl("fault", fault);
       await step(page, `fault ${fault}`, "actual failed response shows unavailable; Retry reads genuine data", async () => {
-        await page.reload(); await expect(page.getByTestId("reports-page")).toContainText(c.unavailable);
-        await page.getByRole("button", { name: c.retry, exact: true }).click(); await expect(page.getByTestId("reports-products-table")).toBeVisible();
+        await page.reload(); await expect(page.getByRole("heading",{name:moneyDesign.en.failure,exact:true})).toBeVisible();
+        await page.getByRole("button", { name: moneyDesign.en.retry, exact: true }).click(); await expect(page.getByTestId("reports-products-table")).toBeVisible();
       });
     }
     await fill(page, page.getByTestId("reports-from"), "2025-01-01", c.from); await fill(page, page.getByTestId("reports-to"), "2025-01-02", c.to);

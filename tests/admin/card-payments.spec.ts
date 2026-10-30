@@ -155,7 +155,8 @@ test("CPU1 enabled store: badges, limits from the server, no credential input, e
   await link.click();
   await expect(page).toHaveURL(new RegExp(`/en/settings/payments/card\\?store=${store}`));
   await expect(page.getByTestId("card-payments-page")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy.en.cardPayments);
+  await page.getByTestId("card-advanced").locator("summary").click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(moneyDesign.en.card);
 
   const summary = await summaryOf(page);
   expect([summary.platform_state, summary.store_state, summary.allowed]).toEqual(["OPEN", "ENABLED", true]);
@@ -183,6 +184,7 @@ test("CPU2 disable: one keyless CAS PUT, the page shows DISABLED and offers enab
   const spy = watch(page);
   await signedLogin(page);
   await page.goto(cardUrl("en"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   const summary = await summaryOf(page);
   await page.getByTestId("card-disable-open").click();
   await expect(page.getByTestId("card-disable-dialog")).toContainText(en.disableConfirm);
@@ -201,6 +203,7 @@ test("CPU3 enable dialog: verbatim terms, accept box, suffix length and charset 
   const spy = watch(page);
   await signedLogin(page);
   await page.goto(cardUrl("en"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   const summary = await summaryOf(page);
   expect(summary.store_state).toBe("DISABLED");
   await page.getByTestId("card-enable-open").click();
@@ -245,6 +248,7 @@ test("CPU4 409: a competing change reloads the page with the retry message, and 
   const spy = watch(page);
   await signedLogin(page);
   await page.goto(cardUrl("en"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(badge(page)).toHaveText(en.stateENABLED);
   await ctl("store/bump"); // another session changes the enrollment (real definer): this page's version is stale
   await page.getByTestId("card-disable-open").click();
@@ -270,6 +274,7 @@ test("CPU5 platform not OPEN: 'not open yet' in zh-TW and en, no toggle at all; 
   await ctl("platform/close");
   for (const locale of ["zh-TW", "en"] as const) {
     await page.goto(cardUrl(locale));
+      await page.getByTestId("card-advanced").locator("summary").click();
     await expect(page.getByTestId("card-not-open")).toBeVisible();
     await expect(page.getByTestId("card-not-open")).toHaveText(locale === "zh-TW" ? NOT_OPEN_ZH_TW : en.notOpen);
     await expect(page.getByTestId("platform-state-badge")).toHaveText(cardPaymentsCopy[locale].platformCLOSED);
@@ -279,6 +284,7 @@ test("CPU5 platform not OPEN: 'not open yet' in zh-TW and en, no toggle at all; 
   }
   await ctl("platform/open");
   await page.goto(cardUrl("en"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-not-open")).toHaveCount(0);
   await expect(page.getByTestId("card-enable-open")).toBeVisible();
   await spy.assertClean();
@@ -289,12 +295,14 @@ test("CPU6 BLOCKED: the suspended note, disable only (never enable), and unblock
   await signedLogin(page);
   await ctl("store/block");
   await page.goto(cardUrl("zh-TW"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-blocked-note")).toHaveText(BLOCKED_ZH_TW);
   await expect(badge(page)).toHaveText(cardPaymentsCopy["zh-TW"].stateBLOCKED);
   await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
   await expect(page.getByTestId("card-disable-open")).toBeVisible();
   await shot(page, "card-blocked", "zh-TW", "desktop");
   await page.goto(cardUrl("en"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-blocked-note")).toHaveText(en.blockedNote);
   await expect(badge(page)).toHaveText(en.stateBLOCKED);
   // disable is never gated (contract §3.3): it succeeds and the store stays BLOCKED, with no enable offered
@@ -305,6 +313,7 @@ test("CPU6 BLOCKED: the suspended note, disable only (never enable), and unblock
   await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
   await ctl("store/unblock");
   await page.goto(cardUrl("en"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(badge(page)).toHaveText(en.stateDISABLED);
   await expect(page.getByTestId("card-blocked-note")).toHaveCount(0);
   await expect(page.getByTestId("card-enable-open")).toBeVisible();
@@ -316,11 +325,13 @@ test("CPU6b not allowlisted reads like not open (same message, no 'platform open
   await signedLogin(page);
   await ctl("store/disallow"); // the real platform-disallow definer: the allowlist is withdrawn AND the enrolled store is blocked (PF11)
   await page.goto(cardUrl("zh-TW"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-blocked-note")).toHaveText(BLOCKED_ZH_TW);
   await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
   await ctl("store/unblock"); // the block is cleared, the allowlist is still withdrawn: DISABLED and not allowlisted
   for (const locale of ["zh-TW", "en"] as const) {
     await page.goto(cardUrl(locale));
+      await page.getByTestId("card-advanced").locator("summary").click();
     await expect(page.getByTestId("card-not-open")).toHaveText(locale === "zh-TW" ? NOT_OPEN_ZH_TW : en.notOpen);
     await expect(page.getByTestId("platform-state-badge")).toHaveCount(0); // "platform open" would contradict the message
     await expect(page.getByTestId("card-blocked-note")).toHaveCount(0);
@@ -332,6 +343,7 @@ test("CPU6b not allowlisted reads like not open (same message, no 'platform open
   await shot(page, "card-not-allowlisted", "en", "desktop");
   await ctl("store/allow");
   await page.goto(cardUrl("en"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-not-open")).toHaveCount(0);
   await expect(page.getByTestId("platform-state-badge")).toHaveText(en.platformOPEN);
   await expect(page.getByTestId("card-enable-open")).toBeVisible();
@@ -342,11 +354,13 @@ test("CPU7 three languages: the terms are quoted verbatim in zh-TW, translated i
   const spy = watch(page);
   await signedLogin(page);
   await page.goto(cardUrl("zh-CN"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await page.getByTestId("card-enable-open").click();
   await expect(page.getByTestId("card-terms")).toHaveText(cardPaymentsCopy["zh-CN"].terms);
   await page.getByTestId("card-enable-cancel").click();
   await expect(page.getByTestId("card-enable-dialog")).toHaveCount(0);
   await page.goto(cardUrl("zh-TW"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await page.getByTestId("card-enable-open").click();
   await expect(page.getByTestId("card-terms")).toHaveText(TERMS_ZH_TW);
   // the store kept the suffix of its earlier enrollment: the dialog offers it again (the GET only exposes the final preview)
@@ -366,15 +380,18 @@ test("CPU7b platform not OPEN while the store is ENABLED: 'not open yet' and no 
   const spy = watch(page);
   await signedLogin(page);
   await page.goto(cardUrl("en"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(badge(page)).toHaveText(en.stateENABLED);
   await ctl("platform/close");
   await page.goto(cardUrl("zh-TW"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-not-open")).toHaveText(NOT_OPEN_ZH_TW);
   await expect(page.getByTestId("platform-state-badge")).toHaveText(cardPaymentsCopy["zh-TW"].platformCLOSED);
   await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
   await expect(page.getByTestId("card-disable-open")).toBeVisible();
   await ctl("platform/open");
   await page.goto(cardUrl("en"));
+  await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-not-open")).toHaveCount(0);
   await expect(page.getByTestId("card-disable-open")).toBeVisible();
   await spy.assertClean();
@@ -386,6 +403,7 @@ test("CPU8 phone width: the page and its dialog fit 390px in en and zh-TW", asyn
   await signedLogin(page);
   for (const locale of ["en", "zh-TW"] as const) {
     await page.goto(cardUrl(locale));
+      await page.getByTestId("card-advanced").locator("summary").click();
     await expect(badge(page)).toHaveText(cardPaymentsCopy[locale].stateENABLED);
     await shot(page, "card-enabled", locale, "mobile");
     await page.getByTestId("card-disable-open").click();

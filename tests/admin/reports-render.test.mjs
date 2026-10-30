@@ -366,7 +366,7 @@ test("legacy-store permission probe: forbidden/not-found/signed-out fail the rea
   let captured = null, probe = null;
   const shell = ({children}) => createElement("div", null, children);
   const Reports = load("../../apps/admin/components/Reports.tsx", {
-    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":{}, "@live-commerce/ui":{TabStrip:shell,DateControl:()=>null},
+    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":adminRequire("../../packages/i18n/src/index.ts"), "@live-commerce/ui":{TabStrip:shell,DateControl:()=>null},
     "@/lib/model":{}, "@/lib/customers-client":{ReadError,useGuardedRead:(_scope,run)=>{captured=run;return {status:"loading",data:null,boundary:"",reload(){},refresh:async()=>false};}},
     "@/lib/customers-model":{financeDay:()=>"2026-09-01"}, "@/lib/orders-client":{OrderReadError,readOrderActions:async()=>{throw probe;}},
     "@/lib/reports-request":adminRequire("./lib/reports-request.ts"),
@@ -374,7 +374,7 @@ test("legacy-store permission probe: forbidden/not-found/signed-out fail the rea
     "@/lib/reports-copy":{reportsCopy:{en:new Proxy({tabs:{}},{get:(t,k)=>k in t?t[k]:"x"})}}, "@/lib/reports-presentation":{},
     "./WorkspaceFrame":{WorkspaceFrame:shell}, "./AdminPageHeader":{AdminPageHeader:()=>null},
     "./ReportViews":{ProductReportTable:()=>null,ChannelReportChart:()=>null,FunnelReportChart:()=>null,ManualReportTable:()=>null},
-    "./orders.css":{}, "./reports.css":{},
+    "./orders.css":{}, "./reports.css":{}, "./finance/money.css":{},
   }).Reports;
   renderToStaticMarkup(createElement(Reports, {locale:"en",stores:[],store:{id,name:"S",currency:"TWD"},initialError:null,renderKey:"r",initialFrom:from,initialTo:to}));
   assert.equal(typeof captured, "function");
@@ -394,7 +394,7 @@ const shellOf = ({children}) => createElement("div", null, children);
 const proxyCopy = new Proxy({tabs:{}}, {get:(t,k)=>k in t?t[k]:String(k)});
 function loadReports(read, exportOutcome, overrides = {}) {
   return load("../../apps/admin/components/Reports.tsx", {
-    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":{}, "@live-commerce/ui":{TabStrip:shellOf,DateControl:()=>null},
+    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":adminRequire("../../packages/i18n/src/index.ts"), "@live-commerce/ui":{TabStrip:shellOf,DateControl:()=>null},
     "@/lib/model":{}, "@/lib/customers-client":{ReadError:class extends Error{},useGuardedRead:()=>read},
     "@/lib/customers-model":{financeDay:()=>"2026-09-01"}, "@/lib/orders-client":{OrderReadError:class extends Error{},readOrderActions:async()=>({})},
     "@/lib/reports-request":adminRequire("./lib/reports-request.ts"),
@@ -402,7 +402,7 @@ function loadReports(read, exportOutcome, overrides = {}) {
     "@/lib/reports-copy":{reportsCopy:{en:proxyCopy}}, "@/lib/reports-presentation":{},
     "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null},
     "./ReportViews":{ProductReportTable:()=>null,ChannelReportChart:()=>null,FunnelReportChart:()=>null,ManualReportTable:()=>null},
-    "./orders.css":{}, "./reports.css":{}, ...overrides,
+    "./orders.css":{}, "./reports.css":{}, "./finance/money.css":{}, ...overrides,
   }).Reports;
 }
 
@@ -451,12 +451,12 @@ test("Finance landing links to reports under the same canSeeReports rule", () =>
   const read = {status:"ready",boundary:"b",data:{rows:[],totals:[],from,to},reload(){},refresh:async()=>true};
   const Finance = load("../../apps/admin/components/Finance.tsx", {
     "next/navigation":{useRouter:()=>({push(){}})}, "next/link":{__esModule:true,default:({href,children,...p})=>createElement("a",{href,...p},children)},
-    "@live-commerce/i18n":{}, "@live-commerce/ui":{DateControl:()=>null,TableFrame:shellOf}, "@/lib/model":{}, "@/lib/client":{money:()=>""},
+    "@live-commerce/i18n":adminRequire("../../packages/i18n/src/index.ts"), "@live-commerce/ui":{DateControl:()=>null,TableFrame:shellOf}, "@/lib/model":{}, "@/lib/client":{money:()=>""},
     "@/lib/customers-client":{financeCSVHref:()=>"/x.csv",readFinance:async()=>({}),useGuardedRead:()=>read},
     "@/lib/customers-model":adminRequire("./lib/customers-model.ts"), "@/lib/orders-client":{readOrderActions:async()=>({orders_export:false})},
     "@/lib/customers-copy":adminRequire("./lib/customers-copy.ts"), "@/lib/reports-copy":{reportsCopy:{en:{title:"Sales reports"}}},
     "@/lib/presentation-copy":adminRequire("./lib/presentation-copy.ts"),
-    "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null}, "./orders.css":{}, "./order-actions.css":{}, "./customers.css":{},
+    "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null}, "./orders.css":{}, "./order-actions.css":{}, "./customers.css":{}, "./finance/money.css":{},
   }).Finance;
   const html = (permissions) => renderToStaticMarkup(createElement(Finance, {locale:"en",stores:[],store:{id,name:"S",currency:"TWD",permissions},from,to,today:to,initialError:null,renderKey:"r"}));
   assert.match(html(["orders:read"]), new RegExp(`data-testid="finance-reports"`)); assert.match(html(["orders:read"]), new RegExp(`/en/finance/reports\\?store=${id}`));

@@ -1,5 +1,5 @@
 // Purpose: Owns the merchant cash-on-delivery settings card.
-// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/logistics-client, @/lib/cod-model, @/lib/cod-copy, ./settings.css
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/logistics-client, @/lib/cod-model, @/lib/cod-copy, ./settings.css, ./finance/money.css
 // Used by: apps/admin/components/SettingsWizard.tsx
 "use client";
 
@@ -11,7 +11,7 @@
 // card. One Idempotency-Key per distinct body, reused only for a byte-identical retry after an unknown outcome. A change never touches
 // orders already placed (each keeps its own surcharge snapshot); the surcharge is shown only to the merchant and to the buyer of that order.
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { moneyCopy, type Locale } from "@live-commerce/i18n";
 import { Field, FormRow } from "@live-commerce/ui";
 import { sessionBoundary } from "@/lib/settings-client";
 import { OrderReadError } from "@/lib/orders-client";
@@ -23,6 +23,7 @@ import {
 } from "@/lib/cod-model";
 import { codCopy, codError } from "@/lib/cod-copy";
 import "./settings.css";
+import "./finance/money.css";
 
 type Load = "loading" | "ready" | "hidden" | "error";
 
@@ -34,7 +35,10 @@ export function CodSettings({
   store: string;
   locale: Locale;
 }) {
-  const cc = codCopy[locale];
+  const p = moneyCopy[locale];
+  const cc = { ...codCopy[locale], setTitle:p.cod, setIntro:p.codIntro, setEnabled:p.codEnabled, setMax:p.cap, setSurcharge:p.surcharge, setCarrier:p.carrier, setMaxHint:p.codCapHint, setSurchargeHint:p.codFeeHint, setNote:p.codNote, save:p.save, carrierBlackCat:p.blackCat, carrierHsinchu:p.hsinchu };
+  const [review, setReview] = useState(false);
+  const reviewRequested = useRef(false);
   const [boundary, setBoundary] = useState("");
   const [load, setLoad] = useState<Load>("loading");
   const [saved, setSaved] = useState<CodSettings | null>(null);
@@ -64,12 +68,14 @@ export function CodSettings({
     const active = new AbortController();
     readCodSettings(store, active.signal).then(
       (value) => {
+        if (active.signal.aborted) return;
         setSaved(value);
         setEnabled(value.enabled);
         setMaxTwd(String(value.max_twd));
         setSurchargeTwd(String(value.surcharge_twd));
         setCarrier(value.carrier);
         setLoad("ready");
+        if (reviewRequested.current) { setReview(true); reviewRequested.current = false; }
       },
       (error) => {
         if (active.signal.aborted) return;
@@ -109,6 +115,7 @@ export function CodSettings({
       pending.current = null;
       setUncertain(false);
       setNotice(cc.saved);
+      reviewRequested.current = true;
       setTick((value) => value + 1);
       return;
     }
@@ -126,9 +133,9 @@ export function CodSettings({
   }
 
   return (
-    <section className="settings-fields" data-testid="cod-settings-card" aria-labelledby="cod-settings-title">
-      <h2 id="cod-settings-title" className="settings-section-title settings-subtitle">{cc.setTitle}</h2>
-      <p className="settings-note">{cc.setIntro}</p>
+    <section className="money-cod settings-fields" data-testid="cod-settings-card" aria-labelledby="cod-settings-title">
+      <h2 id="cod-settings-title" className="settings-section-title settings-subtitle">{review ? p.codReview : cc.setTitle}</h2>
+      <p className="settings-note">{review ? p.codSaved : cc.setIntro}</p>
       {load === "loading" && <p role="status">{cc.loading}</p>}
       {load === "error" && (
         <div role="status">
@@ -136,7 +143,7 @@ export function CodSettings({
           <button type="button" onClick={() => setTick((value) => value + 1)}>{cc.retry}</button>
         </div>
       )}
-      {load === "ready" && saved && (
+      {load === "ready" && saved && !review && (
         <form onSubmit={(event) => void submit(event)} className="settings-fields">
           <label className="settings-check">
             <input type="checkbox" data-testid="cod-enabled" checked={enabled} disabled={busy} onChange={(event) => setEnabled(event.target.checked)} />
@@ -198,6 +205,7 @@ export function CodSettings({
           </div>
         </form>
       )}
+      {load === "ready" && saved && review && <section data-testid="cod-settings-review" className="money-card"><dl>{[[p.codEnabled,saved.enabled ? p.enabled : p.disabled],[p.cap,new Intl.NumberFormat(locale).format(saved.max_twd)],[p.surcharge,new Intl.NumberFormat(locale).format(saved.surcharge_twd)],[p.carrier,saved.carrier === "hsinchu" ? p.hsinchu : p.blackCat]].map(([label,value]) => <div key={label} className="money-kv"><dt>{label}</dt><dd>{value}</dd></div>)}</dl><button onClick={() => setReview(false)}>{p.backCod}</button></section>}
       {problem && (
         <p className="settings-warning" role="alert" data-testid="cod-settings-problem">{problem}</p>
       )}

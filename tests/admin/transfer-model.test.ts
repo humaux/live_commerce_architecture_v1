@@ -1,3 +1,7 @@
+// Purpose: Preserve the existing contract acceptance while following signed PARITY-MONEY navigation.
+// Depends on: original fixture and public contract imports below; independent finance design copy.
+// Used by: the registered Node/browser gate for this module.
+// Invariants: money, permissions, uncertainty and persistence assertions are preserved.
 // checkout-offline: strict parsers and body builders for the admin bank-transfer DTOs (apps/admin/lib/transfer-model.ts, contracts/storefront-v2.md §C).
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -98,13 +102,13 @@ test("XFM06 finance rows: the 11-key shape parses, and a transfer pair without t
   const row = (day: string) => ({ day, currency: "TWD", environment: "LIVE", captured_count: 0, captured_minor: 0, refunded_minor: 0, net_minor: 0,
     pickup_collected_count: 0, pickup_collected_minor: 0, bank_transfer_confirmed_count: 2, bank_transfer_confirmed_minor: 180000 });
   const total = { ...row(""), day: "" };
-  const parsed = parseFinanceSummary({ from: "2026-10-01", to: "2026-10-01", timezone: "Asia/Taipei", rows: [row("2026-10-01")], totals: [total] });
+  const parsed = parseFinanceSummary({ from: "2026-10-01", to: "2026-10-01", timezone: "Asia/Taipei", generated_at: "2026-10-30T12:00:00Z", rows: [row("2026-10-01")], totals: [total] });
   assert.equal(parsed.rows[0].bank_transfer_confirmed_minor, 180000);
   // the 7- and 9-key rows of an older Go still parse with zeroed transfer columns
   const old = { day: "2026-10-01", currency: "TWD", environment: "LIVE", captured_count: 1, captured_minor: 100, refunded_minor: 0, net_minor: 100 };
-  assert.equal(parseFinanceSummary({ from: "2026-10-01", to: "2026-10-01", timezone: "Asia/Taipei", rows: [old], totals: [{ ...old, day: "" }] }).rows[0].bank_transfer_confirmed_count, 0);
+  assert.equal(parseFinanceSummary({ from: "2026-10-01", to: "2026-10-01", timezone: "Asia/Taipei", generated_at: "2026-10-30T12:00:00Z", rows: [old], totals: [{ ...old, day: "" }] }).rows[0].bank_transfer_confirmed_count, 0);
   const noPickup = (({ pickup_collected_count, pickup_collected_minor, ...r }) => r)(row("2026-10-01"));
-  assert.throws(() => parseFinanceSummary({ from: "2026-10-01", to: "2026-10-01", timezone: "Asia/Taipei", rows: [noPickup], totals: [] }), /unavailable/);
+  assert.throws(() => parseFinanceSummary({ from: "2026-10-01", to: "2026-10-01", timezone: "Asia/Taipei", generated_at: "2026-10-30T12:00:00Z", rows: [noPickup], totals: [] }), /unavailable/);
   const half = (({ bank_transfer_confirmed_minor, ...r }) => r)(row("2026-10-01"));
-  assert.throws(() => parseFinanceSummary({ from: "2026-10-01", to: "2026-10-01", timezone: "Asia/Taipei", rows: [half], totals: [] }), /unavailable/);
+  assert.throws(() => parseFinanceSummary({ from: "2026-10-01", to: "2026-10-01", timezone: "Asia/Taipei", generated_at: "2026-10-30T12:00:00Z", rows: [half], totals: [] }), /unavailable/);
 });

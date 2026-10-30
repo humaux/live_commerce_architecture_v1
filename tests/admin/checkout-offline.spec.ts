@@ -1,3 +1,7 @@
+// Purpose: Preserve the existing contract acceptance while following signed PARITY-MONEY navigation.
+// Depends on: original fixture and public contract imports below; independent finance design copy.
+// Used by: the registered Node/browser gate for this module.
+// Invariants: money, permissions, uncertainty and persistence assertions are preserved.
 // COB merchant half (contracts/storefront-v2.md §C; unit checkout-offline; R4 independent browser gate). BFF routes exercised through the UI:
 //   GET|PUT /api/stores/{store}/bank-transfer-settings, GET .../orders/{id}/bank-transfer, POST .../orders/{id}/bank-transfer/{confirm,reject,refund-offline},
 //   GET|PUT policy + delivery service (free-shipping threshold), GET finance/summary -> Go /v1/admin/stores/{store}/...
@@ -8,6 +12,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { settingsCopy } from "../../apps/admin/lib/settings-copy";
+import { moneyDesign } from "./parity-money-support";
 import { transferCopy } from "../../apps/admin/lib/transfer-copy";
 
 const required = (name: string) => {
@@ -232,8 +237,9 @@ test("final: finance shows the four confirmations in its own column, the expired
   await shot(page, "expired", "en", "mobile");
   await page.goto(new URL(`/en/finance?store=${store}`, origin).toString());
   await expect(page.getByTestId("finance-page")).toBeVisible();
+  await page.getByRole("button",{name:moneyDesign.en.daily,exact:true}).click();
   const cells = page.getByTestId("finance-transfer-confirmed");
-  await expect(cells.filter({ hasText: "(4)" }).first()).toBeVisible(); // 4 confirmed transfers, never inside the captured/net columns
+  await expect(cells.filter({ hasText: "/ 4" }).first()).toBeVisible(); // 4 confirmed transfers, never inside the captured/net columns
   await shot(page, "finance", "en", "mobile");
   const c = settingsCopy.en;
   await page.goto(new URL(`/en/settings?store=${store}`, origin).toString());

@@ -1,3 +1,7 @@
+// Purpose: Independent customers/billing HTTP contract and finance generation-time acceptance.
+// Depends on: synthetic signed fixtures, real Go router, PostgreSQL and frozen DTO contracts.
+// Used by: GitHub Foundation/Gates customers-billing coverage.
+// Invariants: no real PII/providers; new timestamp assertion is causal RED before implementation.
 package foundation_test
 
 // CB09 (contracts/customers-billing-v1.md §5 every row, §6, §7, §8, customers-core D3/D9/D12/D13 and billing-core
@@ -459,7 +463,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		r := c.do(c.on, "GET", base+"/finance/summary"+q, c.tokens["ordersRO"], nil, nil)
 		c.want("summary", r, 200, "")
 		c.noStore("summary", r)
-		if cbhKeys(r.json) != "from,rows,timezone,to,totals" || r.json["timezone"] != "Asia/Taipei" || r.json["from"] != "2026-01-01" || r.json["to"] != "2026-01-31" {
+		if cbhKeys(r.json) != "from,generated_at,rows,timezone,to,totals" || r.json["timezone"] != "Asia/Taipei" || r.json["from"] != "2026-01-01" || r.json["to"] != "2026-01-31" {
 			t.Errorf("summary: %s", r.raw)
 		}
 		if rows, ok := r.json["rows"].([]any); !ok || len(rows) != 0 {

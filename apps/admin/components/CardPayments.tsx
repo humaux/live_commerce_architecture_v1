@@ -1,5 +1,5 @@
 // Purpose: Card payments page — platform Stripe activation state, verbatim-terms enable dialog, disable control.
-// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/card-payments-client, @/lib/customers-client, @/lib/card-payments-model, @/lib/card-payments-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, ./orders.css, ./customers.css
+// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/card-payments-client, @/lib/customers-client, @/lib/card-payments-model, @/lib/card-payments-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, ./orders.css, ./customers.css, ./finance/money.css
 // Used by: apps/admin/app/[locale]/settings/payments/card/page.tsx
 "use client";
 
@@ -9,7 +9,7 @@
 // anywhere. The PUT is CAS-guarded by expected_version; a 409 or an uncertain outcome reloads the summary
 // (reload-and-retry) instead of retrying blindly.
 import { useState } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { moneyCopy, type Locale } from "@live-commerce/i18n";
 import { Badge } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
@@ -28,9 +28,9 @@ import {
 } from "@/lib/card-payments-model.ts";
 import { cardPaymentsCopy, type CardPaymentsCopy } from "@/lib/card-payments-copy.ts";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./customers.css";
+import "./finance/money.css";
 
 const stateTone: Record<StoreCardState, "neutral" | "success" | "warning" | "danger"> = {
   NONE: "neutral",
@@ -60,7 +60,7 @@ export function CardPayments({
   initialError: ReadCode | null;
   renderKey: string;
 }) {
-  const c = cardPaymentsCopy[locale];
+  const c = cardPaymentsCopy[locale], p = moneyCopy[locale];
   const read = useGuardedRead(
     `${renderKey}|${locale}|${store?.id ?? ""}`,
     store ? (signal) => readCardSummary(store.id, signal) : null,
@@ -74,8 +74,8 @@ export function CardPayments({
     : "";
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.title} active="card-payments">
-      <div className="orders-page customers-page" data-testid="card-payments-page">
-        <AdminPageHeader locale={locale} description={c.subtitle} />
+      <div className="money-page" data-testid="card-payments-page">
+        <h1>{p.card}</h1>
         {(read.status === "loading" || read.status === "hidden") && (
           <p className="orders-message" role="status">{c.loading}</p>
         )}
@@ -110,6 +110,8 @@ function Sections({
   locale: Locale;
   c: CardPaymentsCopy;
 }) {
+  const p = moneyCopy[locale];
+  const ready = summary.store_state === "ENABLED" && summary.platform_state === "OPEN" && summary.allowed;
   const canManage = store.role === "owner" || (store.permissions ?? []).includes("billing:manage");
   const [dialog, setDialog] = useState<"enable" | "disable" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -158,6 +160,12 @@ function Sections({
 
   return (
     <>
+      {ready && <>
+        <p>{p.cardIntro}</p>
+        <section className="money-card"><h2>{p.unified}</h2><Badge tone="success">{p.ready}</Badge><div className="money-flow">{[[p.buyerPays,p.buyerPaysHint],[p.platformCollects,p.platformCollectsHint],[p.storePayout,p.storePayoutHint]].map(([heading,text]) => <div key={heading}><strong>{heading}</strong><p>{text}</p></div>)}</div><h2>{p.cardBasis}</h2><p>{p.cardBasisHint}</p></section>
+        <section className="money-card"><h2>{p.fees}</h2><dl><div><dt>{p.weekly}</dt><dd>{p.weekly}</dd></div><div><dt>{p.platformFee}</dt><dd>{p.feePending}</dd></div></dl><p className="money-note">{p.feeHint}</p></section>
+      </>}
+      <details className="money-card" data-testid="card-advanced"><summary>{p.advanced}</summary>
       <section data-testid="card-state">
         <p>
           {c.stateLabel}{" "}
@@ -223,10 +231,11 @@ function Sections({
           )}
         </div>
       )}
+      </details>
       {/* the settlement statements have no nav entry (nav:false); billing:manage holders reach them from here */}
       {canManage && dialog === null && (
         <p>
-          <a href={`/${locale}/settings/settlements?store=${store.id}`} data-testid="card-settlements-link">{c.settlementsLink}</a>
+          <a href={`/${locale}/settings/settlements?store=${store.id}`} data-testid="card-settlements-link">{p.settlementLink}</a>
         </p>
       )}
       {dialog === "enable" && (

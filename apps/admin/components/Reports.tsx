@@ -1,11 +1,11 @@
 // Purpose: authenticated four-tab sales reports, range controls, permission feedback and one audited CSV action.
-// Depends on: React/Next, existing guarded reads/order-actions/session fence, report client/copy and pure ReportViews.
+// Depends on: React/Next, existing guarded reads/order-actions/session fence, report client/copy and pure ReportViews., ./finance/money.css
 // Used by: app/[locale]/finance/reports/page.tsx; finance group remains the sole primary navigation entry.
 // Invariants: I01 server authority, I05 backend-only money, I06 no uncertain export retry, I15 no private cache.
 "use client";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import type { Locale } from "@live-commerce/i18n";
+import { moneyCopy, type Locale } from "@live-commerce/i18n";
 import { TabStrip, DateControl } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { useGuardedRead, ReadError, type ReadCode } from "@/lib/customers-client";
@@ -16,10 +16,10 @@ import { readReport, downloadReport, exportOutcome, loadUncertainScopes, exportW
 import { reportsCopy } from "@/lib/reports-copy";
 import type { ProductSort } from "@/lib/reports-presentation";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
 import { ProductReportTable, ChannelReportChart, FunnelReportChart, ManualReportTable } from "./ReportViews";
 import "./orders.css";
 import "./reports.css";
+import "./finance/money.css";
 
 /** Frozen report page props; initial dates are optional and otherwise use the last 30 Taipei days. */
 export type ReportsProps = {
@@ -35,7 +35,8 @@ export function Reports(props: ReportsProps) {
 }
 
 function ReportsWorkspace({ locale, stores, store, initialError, renderKey, initialFrom, initialTo, initialTab, initialSort, initialAscending }: ReportsProps) {
-  const c = reportsCopy[locale], router = useRouter();
+  const c = reportsCopy[locale], p = moneyCopy[locale], router = useRouter();
+  const [dateOpen, setDateOpen] = useState(false);
   const [defaults] = useState(() => { const now = new Date(); return { from: financeDay(now, -29), to: financeDay(now) }; });
   const from = initialFrom ?? defaults.from, to = initialTo ?? defaults.to;
   const [draftFrom, setDraftFrom] = useState(from), [draftTo, setDraftTo] = useState(to);
@@ -131,22 +132,26 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
   const panel = (name: ReportName) => ({ id: `reports-panel-${name}`, role: "tabpanel", "aria-labelledby": `reports-tab-${name}`,
     "aria-describedby": view ? `reports-applied-range${rangePending ? " reports-range-pending" : ""}` : undefined, hidden: tab !== name, tabIndex: 0 });
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="finance">
-    <div className="orders-page reports-page" data-testid="reports-page">
-      <AdminPageHeader locale={locale} title={c.title} description={c.subtitle} />
-      <form className="reports-controls" onSubmit={submit}>
+    <div className="money-page reports-page" data-testid="reports-page">
+      <h1>{failure ? p.reportFailure : dateOpen ? p.chooseDates : c.title}</h1>
+      {!dateOpen && !failure && <div className="money-actions"><button onClick={() => {setDraftFrom(from);setDraftTo(to);setDateOpen(true);}}>{p.chooseDates}</button></div>}
+      {dateOpen && <form className="money-card money-editor" onSubmit={submit}><p>{p.rangeHint}</p>
         <label>{c.store}<select aria-label={c.store} value={store?.id ?? ""} disabled={stores.length < 2 || !valid}
           onChange={(event) => navigate(event.target.value)}>{!stores.length && <option value="">{c.noStore}</option>}
           {stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-        <label>{c.from}<DateControl emptyLabel={c.from} lang={locale} type="date" value={draftFrom} required data-testid="reports-from"
+        <label>{p.from}<DateControl emptyLabel={p.from} lang={locale} type="date" value={draftFrom} required data-testid="reports-from"
           aria-describedby={rangePending ? "reports-range-pending" : undefined}
           onChange={(event) => setDraftFrom(event.target.value)} /></label>
-        <label>{c.to}<DateControl emptyLabel={c.to} lang={locale} type="date" value={draftTo} required data-testid="reports-to"
+        <label>{p.to}<DateControl emptyLabel={p.to} lang={locale} type="date" value={draftTo} required data-testid="reports-to"
           aria-describedby={rangePending ? "reports-range-pending" : undefined}
           onChange={(event) => setDraftTo(event.target.value)} /></label>
-        <button type="submit" disabled={!store || !valid} data-testid="reports-show">{c.show}</button>
+        <div className="money-actions"><button type="button" onClick={() => {setDraftFrom(from);setDraftTo(to);setDateOpen(false);}}>{p.cancel}</button><button type="submit" disabled={!store || !valid} data-testid="reports-show" className="primary">{p.apply}</button></div>
         {!valid && <p role="alert" data-testid="reports-range-invalid">{c.rangeInvalid}</p>}
         {rangePending && <p id="reports-range-pending" role="status" data-testid="reports-range-pending">{c.rangePending}</p>}
-      </form>
+      </form>}
+      {failure && <section className="money-card" role="status"><h2>{p.failure}</h2><p>{read.status === "unavailable" ? p.reportFailureHint : failure}</p>{read.status !== "signed-out" && <button onClick={read.reload}>{p.retry}</button>}</section>}
+      <div hidden={dateOpen || !!failure}>
+      {rangePending && !dateOpen && <p id="reports-range-pending" role="status" data-testid="reports-range-pending">{c.rangePending}</p>}
       <div className="reports-basis"><p data-testid="reports-money-basis"><strong>{c.moneyBasis}</strong></p><p>{c.moneyDetails}</p><p>{c.rangeBasis}</p></div>
       {view && <p id="reports-applied-range" data-testid="reports-applied-range">{c.appliedRange}: {view.report.from} – {view.report.to} ({c.taipeiTime})</p>}
       <TabStrip role="tablist" className="reports-tabs" label={c.tabsLabel} previousLabel={c.previous} nextLabel={c.next} onKeyDown={keyTabs}>
@@ -156,7 +161,6 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
         <button {...tabProps("manual-orders")} data-testid="reports-tab-manual-orders">{c.tabs["manual-orders"]}</button>
       </TabStrip>
       {(read.status === "loading" || read.status === "hidden") && <p role="status">{read.status === "hidden" ? c.hidden : c.loading}</p>}
-      {failure && <div role="status"><p>{failure}</p>{read.status !== "signed-out" && <button type="button" onClick={read.reload}>{c.retry}</button>}</div>}
       {!validQuery && <p role="alert">{c.rangeInvalid}</p>}
       <section {...panel("products")}>
         {view?.name === "products" && <ProductReportTable locale={locale} report={view.report} sort={sort} ascending={ascending}
@@ -178,6 +182,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
       <p>{c.csvHint}</p>
       {read.status === "ready" && !read.data?.canExport && <p role="status">{read.data?.permissionKnown ? c.csvForbidden : c.exportUnknownPermission}</p>}
       {exportMessage && read.status !== "hidden" && <p role="status" data-testid="reports-export-result">{exportMessage}</p>}
+      </div>
     </div>
   </WorkspaceFrame>;
 }

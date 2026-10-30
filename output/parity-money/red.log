@@ -1,0 +1,81 @@
+Relay1 verified causal RED
+head_sha=09d352dd97b1660b18b7bb7b07d0fca994997f19
+Gates_run=41055239291
+Gates_job=124069270267 (g09, failure)
+execution_merge_sha=005ab56f42ed0d81529f18b39f3863bde160c585
+causal_RED=confirmed: new timestamp assertion failed; original CB09 subtests passed
+transport=gh api job logs; gh run view --log-failed unavailable while overall run pending
+Evidence=CI assertion failure only; GREEN/product acceptance remains NOT_RUN
+Raw filtered receipt below (trailing whitespace normalized); historical queued handoff retained for provenance.
+
+PARITY-MONEY tests-only RED handoff
+observed_at=2026-10-30T12:27:45.108019+00:00
+mode=MOCK/SANDBOX CI (not yet executed)
+evidence=E1 static readiness; author assertions are E0, not acceptance
+PR=https://github.com/humaux/live_commerce_architecture_v1/pull/370
+base_branch=r3/integration
+base_sha=3ea359f796d36153bb4b8aa7259e4e0c27676b86
+head_sha=09d352dd97b1660b18b7bb7b07d0fca994997f19
+Foundation_run=41055239182
+Foundation_job=124060995570 (foundation, queued)
+Gates_run=41055239291 (queued; test jobs not created yet)
+WAIT_RUN: 41055239182
+WAIT_RUN: 41055239291
+causal_RED=NOT_RUN; no assertion failure observed yet
+GREEN=NOT_RUN
+checkout_merge_sha=PENDING (job has not started)
+expected_Foundation_failure=PARITY-MONEY: finance summary is missing server-generated generated_at for the signed overview
+expected_browser_failures=signed overview/billing/card/COD headings, report date editor, compact statement selector legacy-column absence
+new_Go_test=TestCustomersBillingCB09HTTP/PARITY-MONEY_finance_summary_provides_server_generation_time
+local_tests=NOT_RUN (prohibited)
+local_servers=NOT_RUN (prohibited)
+local_browser=NOT_RUN (prohibited)
+static=node --check six changed TS files exit0; gofmt Go test exit0; depmap regeneration exit0 no diff; ownership generate and --check exit0; git diff --check exit0
+reference_capture=48 roots get_design_context + get_screenshot via Fleet Bridge; no Figma writes
+processes_started=none remaining; no ports, fixtures or containers
+wakeup_owner=integrator Claude per dispatched card; relay a fresh session when the Foundation/Gates runs complete
+next=inspect gh run view 41055239182 --log-failed filtered to PARITY-MONEY assertions; inspect own selected browser jobs; implement only after causal RED
+blocker_policy=outside-card gate blocker -> STOP; max 2 targeted fixes; no weakened tests
+implementation_required=all UI states and i18n; generated_at additive field + contract + strict parser updates under data ruling; old test action mapping; per-frame parity/screenshots; COD own component with integrator mount if needed
+missing_authority=module ux-finance/ux-billing/ux-cod DELIVERY paths absent; current live Figma used; no substituted historical delivery
+source_changes=tests only plus authorized generated browser ownership; product remains unchanged
+550-2026-10-30T12:45:30.0208864Z ##[endgroup]
+551-2026-10-30T12:45:30.0209284Z [command]/usr/bin/git sparse-checkout disable
+552-2026-10-30T12:45:30.0210174Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+553:2026-10-30T12:45:30.0211348Z ##[group]Checking out the ref
+554-2026-10-30T12:45:30.0211882Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/370/merge
+555-2026-10-30T12:45:31.0166818Z Updating files:  32% (4473/13644)
+556-2026-10-30T12:45:31.0255042Z Updating files:  33% (4503/13644)
+--
+640-2026-10-30T12:45:32.2342127Z
+641-2026-10-30T12:45:32.2342359Z Turn off this advice by setting config variable advice.detachedHead to false
+642-2026-10-30T12:45:32.2342718Z
+643:2026-10-30T12:45:32.2343154Z HEAD is now at 005ab56f Merge 09d352dd97b1660b18b7bb7b07d0fca994997f19 into 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+644-2026-10-30T12:45:32.2344992Z ##[endgroup]
+645-2026-10-30T12:45:32.2384666Z [command]/usr/bin/git log -1 --format=%H
+646-2026-10-30T12:45:32.2412785Z 005ab56f42ed0d81529f18b39f3863bde160c585
+--
+1519-2026-10-30T12:49:50.2880390Z === RUN   TestCustomersBillingCB09HTTP/POST_consent-withdrawals:_key,_strict_body,_permission,_replay,_conflict
+1520-2026-10-30T12:49:50.3070819Z === RUN   TestCustomersBillingCB09HTTP/POST_exports:_attachment_headers,_envelope,_key,_permission,_bound
+1521-2026-10-30T12:49:51.0154763Z === RUN   TestCustomersBillingCB09HTTP/POST_erasure:_typed_confirm,_blocked,_key,_permission,_replay,_retained_customer
+1522:2026-10-30T12:49:51.1101593Z === RUN   TestCustomersBillingCB09HTTP/PARITY-MONEY_finance_summary_provides_server_generation_time
+1523:2026-10-30T12:49:51.1175995Z     customers_billing_http_test.go:448: PARITY-MONEY: finance summary is missing server-generated generated_at for the signed overview
+1524-2026-10-30T12:49:51.1196695Z === RUN   TestCustomersBillingCB09HTTP/GET_finance/summary_and_summary.csv
+1525-2026-10-30T12:49:51.1471619Z === RUN   TestCustomersBillingCB09HTTP/billing:_GET_billing,_GET_standing,_POST_checkout,_POST_portal
+1526-2026-10-30T12:49:51.2140277Z === RUN   TestCustomersBillingCB09HTTP/billing_restricted_is_HTTP_402_on_the_claim-window_route_(B9,_B12)
+--
+1532-2026-10-30T12:49:53.0680291Z     --- PASS: TestCustomersBillingCB09HTTP/POST_consent-withdrawals:_key,_strict_body,_permission,_replay,_conflict (0.02s)
+1533-2026-10-30T12:49:53.0681498Z     --- PASS: TestCustomersBillingCB09HTTP/POST_exports:_attachment_headers,_envelope,_key,_permission,_bound (0.71s)
+1534-2026-10-30T12:49:53.0682751Z     --- PASS: TestCustomersBillingCB09HTTP/POST_erasure:_typed_confirm,_blocked,_key,_permission,_replay,_retained_customer (0.09s)
+1535:2026-10-30T12:49:53.0684156Z     --- FAIL: TestCustomersBillingCB09HTTP/PARITY-MONEY_finance_summary_provides_server_generation_time (0.01s)
+1536-2026-10-30T12:49:53.0685226Z     --- PASS: TestCustomersBillingCB09HTTP/GET_finance/summary_and_summary.csv (0.03s)
+1537-2026-10-30T12:49:53.0686934Z     --- PASS: TestCustomersBillingCB09HTTP/billing:_GET_billing,_GET_standing,_POST_checkout,_POST_portal (0.07s)
+1538-2026-10-30T12:49:53.0688292Z     --- PASS: TestCustomersBillingCB09HTTP/billing_restricted_is_HTTP_402_on_the_claim-window_route_(B9,_B12) (0.49s)
+--
+2896-2026-10-30T13:01:50.9311048Z   COREPACK_ENABLE_NETWORK: 0
+2897-2026-10-30T13:01:50.9311370Z   GATE_OUTCOME: failure
+2898-2026-10-30T13:01:50.9311606Z ##[endgroup]
+2899:2026-10-30T13:01:50.9885086Z matrix-receipts: {"mode":"shard:g09","run_id":"41055239291","run_attempt":"1","sha":"005ab56f42ed0d81529f18b39f3863bde160c585","status":"FAIL","test_count":224,"spec_count":0}
+2900-2026-10-30T13:01:50.9979531Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+2901-2026-10-30T13:01:50.9979966Z with:
+2902-2026-10-30T13:01:50.9980257Z   name: receipt-gate-shard_g09

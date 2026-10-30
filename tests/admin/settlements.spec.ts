@@ -166,22 +166,25 @@ test("STL1 list: every statement row shows the server's numbers (signed) and the
   const label = { paid: en.paid, none: en.noPayout, pending: en.pending } as Record<string, string>;
   for (const s of statements) {
     const cells = page.getByTestId(`settlement-row-${s.statement_id}`).locator("td");
-    const expected = [
-      periodLabel(s.period_start, s.period_end),
-      ...contributions(s).map((minor) => signed(s.currency, minor)),
-      money("en", s.currency, s.net_payable_minor), // the net is the server's own number, never a displayed sum
-      label[state[s.statement_id]],
-    ];
-    for (const [index, text] of expected.entries()) expect(flat(await cells.nth(index).textContent()), `${s.statement_id} column ${index}`).toBe(text);
-    await expect(page.getByTestId(`settlement-status-${s.statement_id}`)).toHaveAttribute("data-state", state[s.statement_id]);
-    // What is on screen adds up: all seven contributions equal the same server net; old signs stay intact.
-    const shown = [];
-    for (let index = 1; index <= 8; index++) shown.push(minorOf(flat(await cells.nth(index).textContent())));
-    expect(shown.slice(0, 7).reduce((a, b) => a + b, 0), `${s.statement_id}: displayed columns vs net`).toBe(shown[7]);
-    expect(shown[7]).toBe(s.net_payable_minor);
+    expect(flat(await cells.nth(1).textContent())).toBe(periodLabel(s.period_start,s.period_end));
+    expect(flat(await cells.nth(3).textContent())).toBe(money("en",s.currency,s.net_payable_minor));
+    await expect(page.getByTestId(`settlement-status-${s.statement_id}`)).toHaveAttribute("data-state",state[s.statement_id]);
+    await expect(page.getByTestId(`settlement-status-${s.statement_id}`)).toHaveText(label[state[s.statement_id]]);
+    // The compact selector opens the signed breakdown: preserve every original signed-amount and conservation check here.
+    await page.getByTestId(`settlement-open-${s.statement_id}`).click();
+    await expect(page.getByTestId("settlement-detail")).toBeVisible();
+    const keys = ["captured","refunded","dispute","stripe-fee","platform-fee","carried-in","returned-in"];
+    const shown: number[] = [];
+    for (const [index,minor] of contributions(s).entries()) {
+      const cell = page.getByTestId(`settlement-detail-${keys[index]}`);
+      await expect(cell).toHaveText(signed(s.currency,minor));
+      shown.push(minorOf(flat(await cell.textContent())));
+    }
+    const displayedNet = minorOf(flat(await page.getByTestId("settlement-detail-net").textContent()));
+    expect(shown.reduce((a,b) => a+b,0),`${s.statement_id}: displayed contributions vs net`).toBe(displayedNet);
+    expect(displayedNet).toBe(s.net_payable_minor);
+    await page.getByTestId("settlement-back").click();
   }
-  await expect(page.getByTestId("settlements-legend")).toContainText(en.legend);
-  await expect(page.getByTestId("settlements-formula")).toHaveText(en.formula);
   // the three sign cases are really on screen: a negative net, a negative dispute total (reversal), a carried debt
   expect(statements.find((s) => s.statement_id === carried)!.net_payable_minor).toBeLessThan(0);
   expect(statements.find((s) => s.statement_id === pending)!.dispute_minor).toBeLessThan(0);
@@ -203,7 +206,8 @@ test("STL2 detail: lines, payout reference of the paid statement, none for the o
     for (const [index, minor] of contributions(s).entries())
       await expect(page.getByTestId(`settlement-detail-${detailKeys[index]}`)).toHaveText(signed(s.currency, minor));
     await expect(page.getByTestId("settlement-detail-net")).toHaveText(money("en", s.currency, s.net_payable_minor));
-    await expect(page.getByTestId("settlement-detail").getByTestId("settlements-formula")).toHaveText(en.formula);
+    // Seller copy replaces the internal formula; the seven signed values and net remain asserted above.
+    await expect(page.getByRole("heading",{name:moneyDesign.en.composition,exact:true})).toBeVisible();
     const lines = page.locator('[data-testid^="settlement-line-"]');
     await expect(lines).toHaveCount(s.line_count);
     for (const [index, line] of (s.lines ?? []).entries()) {
