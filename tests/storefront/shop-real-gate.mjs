@@ -380,6 +380,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
         const label = `${kind}-${locale}-${width}`;
         const writes = [], reads = [];
         let cartFailed = kind === "offline", paymentFailed = false, lookupFailed = true;
+        let cartReadBarrier = Promise.resolve();
         page.on("request", request => {
           if (request.url().includes("/api/buyer/")) {
             if (request.method() === "GET") reads.push(new URL(request.url()).pathname);
@@ -388,7 +389,11 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
         });
         // MOCK fixture setup at existing BFF boundaries. These are response data, never user actions or DOM changes.
         await context.route("**/api/buyer/session", route => route.fulfill({ json: active }));
-        await context.route("**/api/buyer/cart", route => kind === "cart-forbidden" ? route.fulfill({ status: 403, json: { code: "forbidden" } }) : cartFailed ? route.fulfill({ status: 503, json: { code: "unavailable" } }) : route.fulfill({ json: cart }));
+        await context.route("**/api/buyer/cart", async route => {
+          // MOCK read latency only: keep the original response fixtures and command boundaries.
+          await cartReadBarrier;
+          return kind === "cart-forbidden" ? route.fulfill({ status: 403, json: { code: "forbidden" } }) : cartFailed ? route.fulfill({ status: 503, json: { code: "unavailable" } }) : route.fulfill({ json: cart });
+        });
         await context.route(`**/api/buyer/orders/${orderID}`, route => kind === "forbidden" ? route.fulfill({ status: 404, json: { code: "not_found" } }) : kind === "order-offline" ? route.fulfill({ status: 503, json: { code: "unavailable" } }) : route.fulfill({ json: order }));
         await context.route(`**/api/buyer/orders/${orderID}/payment`, route => paymentFailed ? route.fulfill({ status: 503, json: { code: "unavailable" } }) : route.fulfill({ json: payment }));
         await context.route("**/api/buyer/orders/lookup", route => route.fulfill({ status: lookupFailed ? 503 : 404, json: { code: lookupFailed ? "unavailable" : "not_found" } }));
@@ -441,7 +446,15 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
             await shot(frames[kind][width === 1440 ? 0 : 1]);
             if (kind === "offline") {
               const retry = page.getByRole("button", { name: c.retry, exact: true });
-              await retry.click();
+              const heldRead = Promise.withResolvers();
+              cartReadBarrier = heldRead.promise;
+              const cartRequested = page.waitForRequest(request => new URL(request.url()).pathname === "/api/buyer/cart" && request.method() === "GET");
+              try {
+                await retry.click();
+                await cartRequested;
+                // No failure result exists while the clicked read is still held at the BFF.
+                await expect(panel.getByRole("alert")).toHaveCount(0);
+              } finally { heldRead.resolve(); }
               // The task's InlineError, independent of Next's separate route-announcer alert.
               await expect(panel.getByRole("alert")).toContainText(c.failed);
               await shot(width === 1440 ? "1429-35448" : "1429-35466");

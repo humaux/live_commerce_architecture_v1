@@ -25,7 +25,12 @@ export default function CartView({ locale }: { locale: Locale }) {
       <CartNotice locale={locale} />
       {ready && readProblem ? (
         <StorefrontState locale={locale} variant={readProblem} failed={retried}
-          onRead={readProblem === "offline" ? () => { setRetried(true); void refresh(); } : undefined} />
+          onRead={readProblem === "offline" ? async () => {
+            // A click is not a failed read: announce the result only after this refresh settles.
+            setRetried(false);
+            await refresh();
+            setRetried(true);
+          } : undefined} />
       ) : empty ? (
         <div data-testid="cart-empty">
           {ready ? <StorefrontState locale={locale} variant="empty" />

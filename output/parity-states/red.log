@@ -45,3 +45,11 @@ Admin artifact 12976717841 / playwright.log: 24 PARITY-STATES assertion failures
   Session expired panel absent at :1419.
   Shell signed denial heading absent at :1438 (raw diagnostic in legacy render).
 All 24 failures are this card's new cases, no unrelated failure in this member.
+
+PARITY-STATES-FIX1 / inspected implementation head 88c147747271e71b60078afb647e03d1e56c2b83
+Gates run 41079438742 / tested synthetic merge b91e125e64bc87196879b25ad5f4a0e24e4a147b: FAILURE.
+Job 124153748956: TestBrowserStorefront / offline zh-CN+en at 1440+390; retry button detached before click; artifact 12992061186, shop-real-gate.log:16-55. 44/48 parity cases passed.
+Job 124153748986: TestBrowserMerchantOrdersUIRealChain / parcel-merge suggestions 403 old-copy assertion; actual signed heading This page cannot be opened; artifact 12990484924, playwright-parcel.log:7-42. All 45 main orders cases passed.
+Receipts job 124180894791: precisely two failing receipts above. Required job 124181437431 failed; aggregate job 124180894904 succeeded.
+Classification and directed changes: FIX1.md. Compact original excerpts: FIX1-ci.log. Current base run 41105181453 was queued at inspection; no base-green or identical-base failure claim.
+Local static E1 only; new-head GREEN PENDING; integrator owns CI-completion relay. No local runtime verification.
