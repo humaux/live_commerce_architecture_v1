@@ -21,7 +21,7 @@ import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
+import { reachCheckout, switchLocale, confirmCheckoutAddress } from "./shop-helpers.mjs";
 import { expect } from "@playwright/test";
 import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { privacyCopy } from "../../apps/storefront/lib/privacy-copy.ts";
@@ -108,7 +108,7 @@ async function checkoutPage(context) {
   assert.equal((await pending).status(), 200);
   await expect(p.getByTestId("address-section")).toBeVisible();
   for (const [key, value] of Object.entries(pii)) await p.locator(`input[name="${key}"]`).fill(value);
-  await p.getByTestId("confirm-address").click();
+  await confirmCheckoutAddress(p);
   await expect(p.getByTestId("create-order")).toBeEnabled();
   return { p, puts };
 }
@@ -345,7 +345,7 @@ try {
         await expect(cp).toHaveURL(`${origin}/${locale}/checkout`);
         await expect(cp.getByTestId("address-section")).toBeVisible();
         for (const [key, value] of Object.entries(pii)) await cp.locator(`input[name="${key}"]`).fill(value);
-        await cp.getByTestId("confirm-address").click();
+        await confirmCheckoutAddress(cp);
         await expect(cp.getByTestId("create-order")).toBeEnabled();
       }
       await expect(cp.locator("html")).toHaveAttribute("lang", locale);

@@ -1,0 +1,42 @@
+PARITY-CHECKOUT — tests-only RED pending, no assertion RED claimed.
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/351
+HEAD: f91605e45b4c96080850c69d7403ecce11646b72
+BASE: df35b338b5cfde5de34bb590e2ba118efc17e4a4
+WAIT_RUN Gates: 41049530544 (pull_request, own head, in_progress; browser-home-cod job not yet created at handoff)
+WAIT_RUN Foundation: 41049529690, job 124041853508 (foundation, in_progress)
+No plan job id is used as acceptance/wait target.
+RED assertion result: PENDING. GREEN: NOT_RUN (implementation withheld until own assertions RED).
+Local static: node --check tests/storefront/checkout-v2.mjs exit0; browser ownership generator + --check exit0; git diff --check exit0.
+No local tests, servers, builds or production action. Existing next-startup gate-adapter assertions unchanged.
+Integrator relay: resume this worktree after Gates browser-home-cod conclusion; inspect gh run view 41049530544 --log-failed with filtered failure lines, then record the real failing job IDs before implementing. If an outside-card gate blocks, STOP/report. No merge/auto-merge.
+
+RELAY 1 inspection (2026-10-30):
+PR head: f91605e45b4c96080850c69d7403ecce11646b72 (tests-only).
+Gates run 41049530544, attempt 1, job 124043567546: FAILURE.
+Synthetic merge/prebuilt SHA: 76ca71d9865d69fa148c13b95f867311f48c0a68.
+Original command gh run view 41049530544 --log-failed --job 124043567546 could not return logs while the aggregate run was in_progress. Fallback: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124043567546/logs.
+Raw filtered receipt: relay1-job-124043567546.log.
+Observed: TestBrowserHomeCod failed after 561.33s; buyer script exited before placed.
+Artifact upload also failed: parity/1429:23435.png contains a forbidden colon. Only receipt-gate-browser-home-cod (artifact 12974971199) exists; buyer assertion logs/ledger were not uploaded.
+Causal new-assertion RED: UNVERIFIED, not claimed. Product implementation remains NOT_RUN.
+Targeted repair attempt 1/2: encode frame IDs with hyphens in screenshot filenames only; preserve exact frame IDs in manifest, every assertion and all thresholds. Regenerate browser ownership per card.
+Local static node --check, ownership generation, ownership --check, git diff --check: exit 0. No local tests/server.
+
+RELAY 1 tests-only evidence repair handoff:
+HEAD: 2318e7c9beda70cb52872703cc1ea16988df9668
+WAIT_RUN: 41051681920 (Gates, own pull_request head, pending at registration)
+WAIT_RUN: 41051681909 (Foundation checks, own pull_request head, queued at registration)
+Jobs not yet assigned; these are workflow run IDs, not plan jobs.
+Wake-up owner: integrator relays the Gates browser-home-cod conclusion and Foundation result in a fresh session. Do not poll beyond 10 minutes. Attempt 1/2 on artifact-upload blocker.
+RED: UNVERIFIED until assertion ledger/raw buyer logs can be read from CI artifacts. GREEN/implementation NOT_RUN. No E3 completion claim.
+
+RELAY 2: causal RED confirmed on tests-only head 2318e7c9beda70cb52872703cc1ea16988df9668.
+Gates run 41051681920 / job 124052345726; synthetic merge dbf3b7edb274991b504adfcec564215ff2bb7ed4.
+Foundation run 41051681909 / job 124049017123 PASS on this RED head (not implementation acceptance).
+Artifact 12976765423 gate-browser-home-cod downloaded to relay2-artifact/.
+New parity assertions fail on missing signed heading/final label/details/help, teal rgb(36,121,101) vs navy rgb(20,41,66), dashed disabled border, submitting and unknown copy.
+Existing gate startup/compile succeeded. See parity-checkout-click-ledger.json and home-cod-buyer.mjs.log in artifact.
+Native select was read before its asynchronous options rendered; add a visibility assertion before reading options, retaining count and raw-code assertions.
+Implementation now authorized by observed causal assertion RED.
+Static fixture diagnosis: parity COD setup used one NT$12.50 unit, which correctly fails the existing whole-TWD COD eligibility rule. Use two unchanged-priced units (as existing COD gates already do), preserving all eligibility limits and amounts from real quotes. No backend/fixture/threshold change.
+Implementation static E1: current-source tsc noEmit/incremental=false exit0; all changed MJS node --check exit0; browser-ownership generation/check exit0; check_packet exit0 (structure only); diff --check exit0. No local tests/server. Final implementation CI receipt will be posted to PR #351, not an evidence-only GREEN commit.

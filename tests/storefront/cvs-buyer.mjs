@@ -11,7 +11,7 @@
 // Nothing else is reachable. BFF routes exercised: /api/buyer/{checkout-options,quotes,cvs-selections,cvs-selections/{id}/verify,cvs-stores,destination,
 // checkout,orders/{id}} -> Go /v1/buyer/*. Evidence: screenshots (desktop 1440x900 and 390x844, three locales) hashed into screenshots.json.
 // Wording: contract strings for zh-TW (§5.3/§16.1/§16.4, cvs-ui U2/U3/U4); the rest is located through data-testid.
-import { reachCheckout } from "./shop-helpers.mjs";
+import { reachCheckout, confirmCheckoutAddress } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import http from "node:http";
@@ -55,19 +55,19 @@ const copy = {
     delivery: "選擇配送", quote: "取得目前總額", pick: "選擇門市", change: "更換門市",
     consent: "取件人姓名與手機將提供給物流商與門市，用於通知與取貨。", enteredLabel: "你填寫的門市",
     comingSoon: "即將開放", chains: { cvs_711: "7-ELEVEN", cvs_familymart: "全家", cvs_hilife: "萊爾富", cvs_okmart: "OK超商" },
-    confirmTotal: "確認更新後的金額",
+    confirmTotal: "確認新金額",
   },
   "zh-CN": {
     delivery: "选择配送", quote: "获取当前总额", pick: /选择门[市店]/, change: /更换门[市店]/,
     consent: "取件人姓名与手机将提供给物流商与门店，用于通知与取货。", comingSoon: "即将开放",
     chains: { cvs_711: "7-ELEVEN", cvs_familymart: "全家", cvs_hilife: "莱尔富", cvs_okmart: "OK超商" },
-    confirmTotal: "确认更新后的金额",
+    confirmTotal: "确认新金额",
   },
   en: {
     delivery: "Choose delivery", quote: "Get current total", pick: "Choose store", change: "Change store",
     consent: "The recipient's name and mobile are shared with the carrier and store for pickup notices.", comingSoon: "Coming soon",
     chains: { cvs_711: "7-ELEVEN", cvs_familymart: "FamilyMart", cvs_hilife: "Hi-Life", cvs_okmart: "OK mart" },
-    confirmTotal: "Confirm updated total",
+    confirmTotal: "Confirm new total",
   },
 };
 
@@ -131,7 +131,7 @@ async function toQuote(page, store, locale, kind, quantity = 1) {
   // a pay-at-pickup total must be a whole TWD amount (F20: GoodsAmount/CollectionAmount are integers); the fixture SKU costs TWD 12.50
   await reachCheckout(page, store.origin, locale, store.product, { quantity });
   await page.getByRole("button", { name: copy[locale].delivery, exact: true }).click();
-  await page.locator("#delivery").selectOption({ label: `${copy[locale].chains[kind]} · TW` });
+  await page.locator("#delivery").selectOption({ label: `${copy[locale].chains[kind]}` });
   await page.getByRole("button", { name: copy[locale].quote, exact: true }).click();
   await expect(page.getByTestId("address-section")).toBeVisible();
 }
@@ -156,7 +156,7 @@ async function showsStoreCard(page, store, locale, kind, label) {
   if (!(await card.isVisible().catch(() => false))) {
     try { await expect(card).toBeVisible({ timeout: 8000 }); } catch {
       await page.getByRole("button", { name: copy[locale].delivery, exact: true }).click().catch(() => {});
-      await page.locator("#delivery").selectOption({ label: `${copy[locale].chains[kind]} · TW` }).catch(() => {});
+      await page.locator("#delivery").selectOption({ label: `${copy[locale].chains[kind]}` }).catch(() => {});
       await page.getByRole("button", { name: copy[locale].quote, exact: true }).click().catch(() => {});
       await expect(card).toBeVisible({ timeout: 20000 });
     }
@@ -211,12 +211,12 @@ try {
     await expect(page.getByTestId("cvs-recipient-name")).toHaveValue("王小明");
     await page.getByTestId("cvs-recipient-name").fill("A1");
     await page.getByTestId("cvs-recipient-phone").fill("0212345678");
-    await page.getByTestId("confirm-address").click();
+    await confirmCheckoutAddress(page);
     await expect(page.getByTestId("cvs-recipient-error")).toBeVisible();
     await shot(page, "picker-errors", locale, viewport);
     await page.getByTestId("cvs-recipient-name").fill("王小明");
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
-    await page.getByTestId("confirm-address").click();
+    await confirmCheckoutAddress(page);
     await expect(page.getByTestId("create-order")).toBeEnabled();
     if (locale === "zh-TW" && !mobile) {
       // change store, pick again: the second round trip works and the card returns
@@ -240,7 +240,7 @@ try {
     // pay at pickup: no Stripe step, the placed order shows the pending collection (§16.2, §16.4)
     await page.getByRole("radio", { name: /Pay at pickup/i }).check();
     await expect(page.getByTestId("cvs-pay-note")).toBeVisible();
-    await page.getByTestId("confirm-address").click();
+    await confirmCheckoutAddress(page);
     await expect(page.getByTestId("create-order")).toBeEnabled();
     await page.getByTestId("create-order").click();
     try { await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 }); } catch (e) {
@@ -301,12 +301,12 @@ try {
     await page.getByTestId("cvs-entered-code").fill("12345"); // 7-ELEVEN needs 6 digits
     await expect(page.getByTestId("cvs-entered-name")).toHaveCount(0);
     await expect(page.getByTestId("cvs-entered-address")).toHaveCount(0);
-    await page.getByTestId("confirm-address").click();
+    await confirmCheckoutAddress(page);
     await expect(page.getByTestId("cvs-entered-code")).toHaveAttribute("aria-invalid", "true"); // a field error from the code format, no request needed
     snapshotClicks.push({ locale, viewport, control: "store code / confirm", operation: "fill 12345; click", expected: "format error", actual: "aria-invalid=true", result: "PASS" });
     await page.getByTestId("cvs-entered-code").fill("000000");
     const missing = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
-    const [miss] = await Promise.all([missing, page.getByTestId("confirm-address").click()]);
+    const [miss] = await Promise.all([missing, confirmCheckoutAddress(page)]);
     assert.equal(miss.status(), 422);
     assert.equal((await miss.json()).code, "store_not_found");
     await expect(page.getByTestId("cvs-entered-code")).toHaveAttribute("aria-invalid", "true");
@@ -314,7 +314,7 @@ try {
     snapshotClicks.push({ locale, viewport, control: "store code / confirm", operation: "fill 000000; click", expected: "422 store_not_found beside code", actual: "localized field error", result: "PASS" });
     await page.getByTestId("cvs-entered-code").fill("131386");
     const resolved = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
-    const [lookup] = await Promise.all([resolved, page.getByTestId("confirm-address").click()]);
+    const [lookup] = await Promise.all([resolved, confirmCheckoutAddress(page)]);
     // The BFF normalizes successful JSON to 200; private Go/PG creation remains 201.
     assert.equal(lookup.status(), 200);
     const savedStore = await lookup.json();
@@ -345,7 +345,7 @@ try {
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     await page.getByTestId("cvs-entered-code").fill("131386");
     const restored = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/cvs-stores" && r.request().method() === "POST");
-    const [restoredResponse] = await Promise.all([restored, page.getByTestId("confirm-address").click()]);
+    const [restoredResponse] = await Promise.all([restored, confirmCheckoutAddress(page)]);
     assert.equal(restoredResponse.status(), 200);
     assert.equal((await restoredResponse.json()).pickup_id, savedStore.pickup_id, "refresh preserves the persisted buyer pickup and its canonical identity");
     await expect(page.getByTestId("cvs-store-name")).toContainText("建盛");

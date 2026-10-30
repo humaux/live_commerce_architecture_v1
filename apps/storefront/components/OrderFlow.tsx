@@ -98,6 +98,7 @@ export default function OrderFlow({
   onFeeChanged,
   onQuoteRefresh,
   onReviewState,
+  detailsOpen = false,
   cvsResume,
   onCvsBrand,
   cvsKinds,
@@ -120,7 +121,8 @@ export default function OrderFlow({
   reconfirmRequired?: boolean;
   onFeeChanged?: () => void;
   onQuoteRefresh?: (quote: Quote) => void;
-  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean }) => void;
+  detailsOpen?: boolean;
+  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; submitting?: boolean }) => void;
   cvsResume?: CvsDraft;
   onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
   cvsKinds?: CvsKind[];
@@ -149,6 +151,7 @@ export default function OrderFlow({
   const [codError, setCodError] = useState<string | null>(null);
   const [optionRefresh, setOptionRefresh] = useState(0);
   // storefront-v2 §C: optional buyer email, and the one bank-transfer refusal (bank_transfer_unavailable) shown next to the create button.
+  const [submitting, setSubmitting] = useState(false);
   const [email, setEmail] = useState("");
   const [emailInvalid, setEmailInvalid] = useState(false);
   const [transferError, setTransferError] = useState<TransferErrorCode | null>(null);
@@ -164,9 +167,9 @@ export default function OrderFlow({
   const canSubmit = !busy && !blocked && !expired && !!confirmed && !!option && paymentChoices.includes(paymentMode) && !reconfirmRequired && (codFee === null || quote?.cod_due_minor !== undefined);
   const quoteReady = !!option && paymentChoices.includes(paymentMode) && (codFee === null || quote?.cod_due_minor !== undefined);
   useEffect(() => {
-    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady });
+    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady, submitting });
     return () => { if (quote) onReviewState?.({ quoteID: quote.id, ready: false, timing }); };
-  }, [quote?.id, canSubmit, timing, quoteReady, onReviewState]);
+  }, [quote?.id, canSubmit, timing, quoteReady, submitting, onReviewState]);
   useEffect(() => {
     onCodFee?.(codFee);
     return () => onCodFee?.(null);
@@ -360,18 +363,10 @@ export default function OrderFlow({
       data-testid="address-section"
       aria-labelledby="address-title"
     >
+      <div hidden={!!confirmed && !detailsOpen}>
       <h2 id="address-title">{cvsOption ? cvsCopy[locale].title : copy.address}</h2>
       <p>{quote ? copy.explain : copy.recoverWithoutQuote}</p>
-      <p className="address-total">
-        {quote && (
-          <>
-            {purchaseCopy[locale].orderTotal}:{" "}
-            <strong>{money(quote.amount.total_minor, quote.currency)}</strong>{" "}
-            ·{" "}
-          </>
-        )}
-        {copy.country}: {country}
-      </p>
+      <p className="address-total">{copy.country}: {country}</p>
       {/* Keep the loading line's space: collapsing it can move a Safari pointer target between down/up. */}
       <p
         role={notice ? (notice === "failed" || notice === "invalid" ? "alert" : "status") : undefined}
@@ -533,10 +528,11 @@ export default function OrderFlow({
         </div>
       )}
       {codError && <p role="alert" data-testid="cod-checkout-error">{codError}</p>}
-      {quote && <CheckoutReview locale={locale} quote={quote} destination={confirmed} fee={codFee} timing={timing}
+      </div>
+      {quote && <CheckoutReview locale={locale} quote={quote} destination={confirmed} fee={codFee} timing={timing} detailsOpen={detailsOpen}
         method={paymentMode === "bank_transfer" ? bank.payBank : paymentMode === "cash_on_delivery" ? cod.orderTitle : paymentMode === "pay_at_pickup" ? cvsCopy[locale].createPickup : bank.payCard}>
           {!cvsOption && option && <CheckoutPaymentChoices locale={locale} quote={quote} option={option} modes={paymentChoices}
-            selected={paymentMode} disabled={busy || blocked || expired || !headLoaded} money={money} onChange={(mode) => {
+            selected={paymentMode} detailsOpen={detailsOpen} disabled={busy || blocked || expired || !headLoaded} money={money} onChange={(mode) => {
               try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, mode); }
               catch { setOption(null); setNotice("failed"); return; }
               setPaymentMode(mode);
@@ -545,6 +541,7 @@ export default function OrderFlow({
               setCodError(null);
             }} />}
       </CheckoutReview>}
+      <div hidden={!!confirmed && !detailsOpen}>
       {/* Why the button below is disabled, in words (never colour alone): the address must be confirmed first. */}
       {needsConfirm && (
         <p id="create-order-hint" className="order-note" data-testid="create-order-hint">
@@ -561,11 +558,13 @@ export default function OrderFlow({
             const typed = email.trim();
             if (typed !== "" && !validBuyerEmail(typed)) {
               setEmailInvalid(true);
+              setConfirmed(null);
               return;
             }
             setTransferError(null);
             setPromoError(null);
             setCodError(null);
+            setSubmitting(true);
             try {
               const result = await writeCheckout(
                 context,
@@ -613,6 +612,8 @@ export default function OrderFlow({
                 return;
               }
               throw reason;
+            } finally {
+              if (version === live.current) setSubmitting(false);
             }
           });
       }}>
@@ -641,6 +642,7 @@ export default function OrderFlow({
               ? cvsCopy[locale].payAtPickupNote
               : copy.unavailable}
       </p>
+      </div>
     </section>
   );
 }

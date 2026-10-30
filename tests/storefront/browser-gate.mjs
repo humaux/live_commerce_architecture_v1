@@ -231,12 +231,14 @@ try {
   await ui.getByRole("button",{name:"Choose delivery",exact:true}).click();
   await expect(ui.getByRole("heading",{name:"Delivery and quotation",exact:true})).toBeVisible();
   await ui.getByRole("button",{name:"Get current total",exact:true}).click();
-  await expect(ui.getByRole("heading",{name:"Items in this quotation",exact:true})).toBeVisible();
+  await ui.getByTestId("checkout-details-toggle").click();
+  await expect(ui.getByRole("heading",{name:"View details",exact:true})).toBeVisible();
   await expect(ui.getByText("No payment has been taken.",{exact:false})).toBeVisible();
   await expect(ui.getByRole("button",{name:"View quotation",exact:true})).toBeEnabled();
   await expect(ui.getByText("Not paid",{exact:true})).toBeVisible();
   await ui.reload();
-  await expect(ui.getByRole("heading",{name:"Items in this quotation",exact:true})).toBeVisible();
+  await ui.getByTestId("checkout-details-toggle").click();
+  await expect(ui.getByRole("heading",{name:"View details",exact:true})).toBeVisible();
   await expect(ui.getByRole("button",{name:"View quotation",exact:true})).toBeEnabled();
   await expect(ui.getByText("Not paid",{exact:true})).toBeVisible();
   await expect(ui.getByRole("button",{name:"Choose delivery",exact:true})).toHaveCount(0);

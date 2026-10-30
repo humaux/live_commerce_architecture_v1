@@ -7,17 +7,17 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { formatMoney } from "../../apps/storefront/lib/money.ts";
-import { reachCheckout } from "./shop-helpers.mjs";
+import { reachCheckout, confirmCheckoutAddress, openCheckoutDetails } from "./shop-helpers.mjs";
 
 const copy = {
-  en: { timing: "Pay after placing your order", open: "Expand payment help", close: "Collapse payment help", changed: "Total updated. Please confirm again.", confirm: "Confirm updated total", change: "Change delivery", quote: "Get current total" },
-  "zh-TW": { timing: "送出後付款", open: "展開付款說明", close: "收合付款說明", changed: "金額已更新，請再確認", confirm: "確認更新後的金額", change: "重新選擇配送", quote: "取得目前總額" },
-  "zh-CN": { timing: "送出后付款", open: "展开付款说明", close: "收合付款说明", changed: "金额已更新，请再确认", confirm: "确认更新后的金额", change: "重新选择配送", quote: "取得目前总额" },
+  en: { timing: "Pay online after placing the order", open: "Expand payment help", close: "Collapse payment help", changed: "Total updated. Please confirm again.", confirm: "Confirm new total", change: "Change delivery", quote: "Get current total" },
+  "zh-TW": { timing: "送出後線上付款", open: "展開付款說明", close: "收合付款說明", changed: "金額已更新，請再確認", confirm: "確認新金額", change: "重新選擇配送", quote: "取得目前總額" },
+  "zh-CN": { timing: "提交后在线付款", open: "展开付款说明", close: "收合付款说明", changed: "金额已更新，请再确认", confirm: "确认新金额", change: "重新选择配送", quote: "取得目前总额" },
 };
 const localeScreen = {
   en: { delivery: "Choose delivery", quote: "Get current total", timing: copy.en.timing, open: copy.en.open, close: copy.en.close },
   "zh-TW": { delivery: "選擇配送", quote: "取得目前總額", timing: copy["zh-TW"].timing, open: copy["zh-TW"].open, close: copy["zh-TW"].close },
-  "zh-CN": { delivery: "选择配送", quote: "获取当前总额", timing: "提交订单后付款", open: "展开付款说明", close: "收起付款说明" },
+  "zh-CN": { delivery: "选择配送", quote: "获取当前总额", timing: "提交后在线付款", open: "展开付款说明", close: "收起付款说明" },
 };
 
 // RVFIX #273: the isolated merchant API changes the real saved fee after BOTH buyers quote.
@@ -48,7 +48,7 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
       assert.equal(quote.cod_due_minor, quote.amount.total_minor + 5000, "initial fee is the saved NT$50 fixture");
       for (const [key, value] of Object.entries(recipient)) await page.locator(`input[name="${key}"]`).fill(value);
       await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
-      await page.getByTestId("confirm-address").click();
+      await confirmCheckoutAddress(page);
       await expect(page.getByTestId("create-order")).toBeEnabled();
       await expect(page.getByTestId("checkout-review").getByTestId("review-total")).toHaveText(formatMoney("en", quote.cod_due_minor, quote.currency));
       buyers.push({ context, page, quote, recovery });
@@ -76,7 +76,7 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
           await expect(page.locator('input[name="home_payment_mode"]')).toHaveCount(1);
           await expect(page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]')).toBeChecked();
           for (const [key, value] of Object.entries(recipient)) await page.locator(`input[name="${key}"]`).fill(value);
-          await page.getByTestId("confirm-address").click();
+          await confirmCheckoutAddress(page);
           await expect(page.getByTestId("create-order")).toBeEnabled();
           await expect(page.getByTestId("checkout-submit")).toBeEnabled();
           await expect(page.getByTestId("review-total")).toHaveText(formatMoney("en", quote.cod_due_minor, quote.currency));
@@ -99,7 +99,7 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
       assert.equal(buyer.quote.cod_due_minor, buyer.quote.amount.total_minor + 5000);
       for (const [key, value] of Object.entries(recipient)) await page.locator(`input[name="${key}"]`).fill(value);
       await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
-      await page.getByTestId("confirm-address").click();
+      await confirmCheckoutAddress(page);
       await expect(page.getByTestId("create-order")).toBeEnabled();
       await page.route("**/api/buyer/checkout", async (route) => {
         const request = route.request(), response = await route.fetch();
@@ -214,14 +214,14 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
         await page.reload();
         await expect(page.getByTestId("address-section")).toBeVisible();
         await expect(page.getByTestId("quote-reconfirm")).toContainText(copy.en.changed);
-        await page.getByTestId("confirm-address").click();
+        await confirmCheckoutAddress(page);
         await expect(page.getByTestId("create-order")).toBeDisabled();
         await expect(page.getByTestId("checkout-submit")).toBeDisabled();
         await page.getByRole("button", { name: copy.en.confirm, exact: true }).click();
         await expect(page.getByTestId("create-order")).toBeEnabled();
         await page.reload();
         await expect(page.getByTestId("address-section")).toBeVisible();
-        await page.getByTestId("confirm-address").click();
+        await confirmCheckoutAddress(page);
         await expect(page.getByTestId("quote-reconfirm")).toHaveCount(0);
         await expect(page.getByTestId("create-order")).toBeEnabled();
         await expect(page.getByTestId("checkout-submit")).toBeEnabled();
@@ -266,7 +266,8 @@ async function ledgerStep(ledger, file, page, control, action, expected, perform
 export async function checkoutV2Review(page, quote, locale, recipient, { codFee = null, ledger, file }) {
   const c = copy[locale], summary = page.getByTestId("checkout-review"), footer = page.locator(".purchase-footer");
   const money = (amount) => formatMoney(locale, amount, quote.currency);
-  const timing = codFee === null ? c.timing : locale === "en" ? "Cash on delivery: pay when your parcel arrives" : "貨到付款：到貨時付款";
+  const timing = codFee === null ? c.timing : locale === "en" ? "Cash on delivery" : "貨到付款";
+  await openCheckoutDetails(page);
   await ledgerStep(ledger, file, page, "final review", "read after real address confirmation", "server money, recipient, destination and timing in review and fixed bar", async () => {
     await expect(summary).toBeVisible();
     await expect(summary.getByTestId("review-subtotal")).toHaveText(money(quote.amount.subtotal_minor));
@@ -294,7 +295,7 @@ export async function checkoutV2Review(page, quote, locale, recipient, { codFee 
 export async function checkoutV2Suite({ newContext, origin, product, recipient, evidence }) {
   const ledger = [], failures = [], file = path.join(evidence, "checkout-v2-click-ledger.json");
   const fill = async (page) => { for (const [key, value] of Object.entries(recipient)) await page.locator(`input[name="${key}"]`).fill(value); };
-  const confirm = async (page) => { await page.getByTestId("confirm-address").click(); await expect(page.getByTestId("create-order")).toBeEnabled(); };
+  const confirm = async (page) => { await confirmCheckoutAddress(page); await expect(page.getByTestId("create-order")).toBeEnabled(); };
   for (const mobile of [false, true]) {
     const context = await newContext(mobile), page = await context.newPage();
     await reachCheckout(page, origin, "en", product);
@@ -310,13 +311,13 @@ export async function checkoutV2Suite({ newContext, origin, product, recipient, 
         ["review", () => checkoutV2Review(page, quote, "en", recipient, { ledger, file })],
         ["help", async () => {
           const help = page.getByTestId("payment-help-toggle");
-          await ledgerStep(ledger, file, page, "payment help", "click twice", "Chevron, labels and >=44px target track expanded state", async () => {
-            await expect(help).toHaveText(copy.en.open); await expect(help).toHaveAttribute("aria-expanded", "false");
-            await expect(help.locator("svg")).toBeVisible();
+          await ledgerStep(ledger, file, page, "payment help", "click twice", "Signed question-mark, accessible name and >=44px target track expanded state", async () => {
+            await expect(help).toHaveText("?"); await expect(help).toHaveAccessibleName("Payment timing help"); await expect(help).toHaveAttribute("aria-expanded", "false");
+            await expect(help).toBeVisible();
             const box = await help.boundingBox(); assert(box && box.height >= 44 && box.width >= 44);
-            await help.click(); await expect(help).toHaveText(copy.en.close); await expect(help).toHaveAttribute("aria-expanded", "true");
+            await help.click(); await expect(help).toHaveText("?"); await expect(help).toHaveAccessibleName("Payment timing help"); await expect(help).toHaveAttribute("aria-expanded", "true");
             await expect(page.getByTestId("payment-help-content")).toBeVisible();
-            await help.click(); await expect(help).toHaveText(copy.en.open); await expect(page.getByTestId("payment-help-content")).toBeHidden();
+            await help.click(); await expect(help).toHaveText("?"); await expect(help).toHaveAccessibleName("Payment timing help"); await expect(page.getByTestId("payment-help-content")).toBeHidden();
           });
         }],
       ]) { try { await test(); } catch (error) { failures.push(`${mobile ? "390" : "desktop"} ${name}: ${error.message}`); } }
@@ -339,10 +340,10 @@ export async function checkoutV2Suite({ newContext, origin, product, recipient, 
           await expect(page.getByTestId("quote-reconfirm")).toContainText(copy.en.changed);
           for (const amount of [quote.amount.total_minor, changedQuote.amount.total_minor]) await expect(page.getByTestId("quote-reconfirm")).toContainText(formatMoney("en", amount, quote.currency));
           await expect(page.getByTestId("quote-reconfirm")).toContainText("→");
-          await fill(page); await page.getByTestId("confirm-address").click();
+          await fill(page); await confirmCheckoutAddress(page);
           await expect(page.getByTestId("create-order")).toBeDisabled(); await expect(page.getByTestId("checkout-submit")).toBeDisabled();
           await page.reload(); await expect(page.getByTestId("quote-reconfirm")).toContainText(copy.en.changed);
-          await page.getByTestId("confirm-address").click(); await expect(page.getByTestId("create-order")).toBeDisabled();
+          await confirmCheckoutAddress(page); await expect(page.getByTestId("create-order")).toBeDisabled();
           const reconfirm = page.getByRole("button", { name: copy.en.confirm, exact: true });
           const box = await reconfirm.boundingBox(); assert(box && box.height >= 44);
           await reconfirm.click(); await expect(page.getByTestId("create-order")).toBeEnabled(); await expect(page.getByTestId("checkout-submit")).toBeEnabled();
@@ -365,14 +366,14 @@ export async function checkoutV2Suite({ newContext, origin, product, recipient, 
       await fill(page); await confirm(page);
       await ledgerStep(ledger, file, page, `${locale} final screen`, "real quote/address/radio/help controls and reload", "server total, recipient and timing persist; selected radio is explicit", async () => {
         const review = page.getByTestId("checkout-review"), radio = review.getByRole("radio").first();
-        await radio.click(); await page.getByTestId("confirm-address").click();
+        await radio.click(); await confirmCheckoutAddress(page);
         await expect(radio).toBeChecked(); await expect(radio.locator("..")).toHaveClass(/selected/);
         await expect(review).toContainText(recipient.recipient_name); await expect(review).toContainText(recipient.phone);
         await expect(page.locator(".purchase-footer")).toContainText(words.timing);
         await expect(review.getByTestId("review-total")).toHaveText(formatMoney(locale, quote.amount.total_minor, quote.currency));
         const help = page.getByTestId("payment-help-toggle");
-        await help.click(); await expect(help).toHaveText(words.close); await expect(page.getByTestId("payment-help-content")).toBeVisible();
-        await help.click(); await expect(help).toHaveText(words.open);
+        await help.click(); await expect(help).toHaveText("?"); await expect(page.getByTestId("payment-help-content")).toBeVisible();
+        await help.click(); await expect(help).toHaveText("?");
         await page.reload(); await expect(page.getByTestId("address-section")).toBeVisible(); await confirm(page);
         await expect(page.getByTestId("checkout-review")).toContainText(recipient.phone);
         await expect(page.locator(".purchase-footer")).toContainText(words.timing);
@@ -408,6 +409,7 @@ async function checkoutParitySuite({ newContext, origin, product, recipient, evi
   const ledger = [], failures = [], manifest = [], measurements = [];
   const file = path.join(evidence, "parity-checkout-click-ledger.json");
   await mkdir(path.join(evidence, "parity"), { recursive: true });
+  // Two NT$12.50 units meet the existing whole-TWD COD rule; one unit cannot offer COD.
   const cases = ["zh-TW", "zh-CN", "en"].flatMap((locale) => [false, true].flatMap((mobile) =>
     (locale === "zh-TW" ? ["card", "cash_on_delivery"] : ["card"]).map((mode) => ({ locale, mobile, mode }))));
   for (const { locale, mobile, mode } of cases) {
@@ -430,11 +432,12 @@ async function checkoutParitySuite({ newContext, origin, product, recipient, evi
     const fill = async () => { for (const [key, value] of Object.entries(recipient)) await page.locator(`input[name="${key}"]`).fill(value); };
     const confirmAddress = async () => { await page.getByTestId("confirm-address").click(); await expect(page.getByTestId("checkout-submit")).toBeEnabled(); };
     try {
-      await reachCheckout(page, origin, locale, product);
+      await reachCheckout(page, origin, locale, product, { quantity: 2 });
       assert.equal(new URL(page.url()).pathname, `/${locale}/checkout`, "parity must exercise the real route");
       await page.getByRole("button", { name: old.delivery, exact: true }).click();
       await check("delivery selector", "all option labels use buyer wording without raw country codes", async () => {
         const select = page.getByRole("combobox");
+        await expect(select).toBeVisible();
         const labels = await select.locator("option").allTextContents();
         assert(labels.length > 0);
         assert(labels.every((text) => !/·\s*[A-Z]{2}(?:\s*·|\s*$)/.test(text)), `raw country code: ${labels.join(" | ")}`);
@@ -554,7 +557,7 @@ async function checkoutParitySuite({ newContext, origin, product, recipient, evi
     const submissionContext = await newContext(mobile), submittingPage = await submissionContext.newPage();
     let releaseSubmit = () => {}, releaseTimer;
     try {
-      await reachCheckout(submittingPage, origin, locale, product);
+      await reachCheckout(submittingPage, origin, locale, product, { quantity: 2 });
       await submittingPage.getByRole("button", { name: old.delivery, exact: true }).click();
       const [response] = await Promise.all([
         submittingPage.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST"),
@@ -617,12 +620,12 @@ export async function checkoutV2Cod(page, quote, locale, recipient, fee, evidenc
     await card.click(); await expect(card).toBeChecked(); await expect(cod).not.toBeChecked();
     await expect(page.locator(".purchase-footer")).toContainText(copy[locale].timing);
     await cod.click(); await expect(cod).toBeChecked(); await expect(card).not.toBeChecked();
-    await page.getByTestId("confirm-address").click();
+    await confirmCheckoutAddress(page);
   });
   await page.reload();
   await expect(page.getByTestId("address-section")).toBeVisible();
   await expect(cod).toBeChecked(); // saved choice is revalidated against current server options before it is restored
   // The server retains the recipient; confirmation must be explicit again. Re-selecting COD never writes money.
-  await cod.click(); await page.getByTestId("confirm-address").click();
+  await cod.click(); await confirmCheckoutAddress(page);
   await checkoutV2Review(page, quote, locale, recipient, { codFee: fee, ledger, file });
 }
