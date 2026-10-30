@@ -76,34 +76,19 @@ function hasBaseline(observed: Observation | null, target: string) {
   return !!observed && !!target && observed.target === target && observed.version >= 0;
 }
 
-/** Signed simplified settings is the default; rare existing commands stay behind one explicit advanced entry. */
+/** Signed overview is the entry on every visit; OAuth returns reach their connection card. */
 export function SettingsWizard({
   locale,
   initial,
 }: { locale: Locale; initial: SettingsInitial }) {
   const [advanced, setAdvanced] = useState(false);
-  const viewKey = useRef("");
   useEffect(() => {
-    let active = true;
-    sessionBoundary().then(boundary => {
-      if (!active || !initial.store) return;
-      viewKey.current = `commerce-settings-view:${initial.store.id}:${boundary}`;
-      // Existing OAuth returns and connection-recovery anchors must still reach their target card.
-      const target = new URL(window.location.href);
-      if (target.searchParams.has("meta_connect") || target.searchParams.has("meta_error")
-        || target.hash === "#facebook-instagram") showAdvanced(true);
-      else setAdvanced(sessionStorage.getItem(viewKey.current) === "advanced");
-    }).catch(() => {});
-    return () => { active = false; };
-  }, [initial.store?.id]);
-  function showAdvanced(value: boolean) {
-    try {
-      if (viewKey.current) value ? sessionStorage.setItem(viewKey.current, "advanced") : sessionStorage.removeItem(viewKey.current);
-    } catch { /* View choice only; mutation journals have their own fail-closed storage fence. */ }
-    setAdvanced(value);
-  }
-  return advanced ? <AdvancedSettings locale={locale} initial={initial} onBack={() => showAdvanced(false)} />
-    : <SettingsV2 locale={locale} initial={initial} onAdvanced={() => showAdvanced(true)} />;
+    const target = new URL(window.location.href);
+    setAdvanced(target.searchParams.has("meta_connect") || target.searchParams.has("meta_error")
+      || target.hash === "#facebook-instagram");
+  }, [initial.store?.id, locale]);
+  return advanced ? <AdvancedSettings locale={locale} initial={initial} onBack={() => setAdvanced(false)} />
+    : <SettingsV2 locale={locale} initial={initial} onAdvanced={() => setAdvanced(true)} />;
 }
 
 /** Existing advanced configuration commands retain their original session, journal and CAS safety. */
