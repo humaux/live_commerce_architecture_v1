@@ -77,8 +77,7 @@ function fixture(locale: Locale) {
   });
 }
 
-async function mockReads(page: Page, store: string, locale: Locale) {
-  const rows = fixture(locale);
+async function mockReads(page: Page, store: string, locale: Locale, rows = fixture(locale), pageSize = rows.length) {
   const writes: string[] = [];
   await page.route(url => url.pathname.startsWith("/api/"), async route => {
     const request = route.request(), url = new URL(request.url());
@@ -94,11 +93,13 @@ async function mockReads(page: Page, store: string, locale: Locale) {
       const data = await response.json();
       await route.fulfill({ response, json: { ...data, items: data.items.map((s: { id: string }) => s.id === store ? { ...s, name: "大夢甄選" } : s) } });
     } else if (url.pathname === `/api/stores/${store}/orders`) {
-      const counts = { all: 3, unpaid: 0, transfer_review: 0, ready_to_ship: 2, ready_to_consign: 0, shipped: 0, completed: 0, cancelled: 0 };
-      const items = rows.map(r => r.summary);
-      await route.fulfill({ headers, json: url.searchParams.get("view") === "v2" ? { items, next_cursor: "", total: 3, counts, sessions: [] } : { items: items.map(({ order_number, recipient_masked, delivery_kind, live_sessions, ...base }) => base), next_cursor: "" } });
+      const counts = { all: rows.length, unpaid: 0, transfer_review: 0, ready_to_ship: rows.filter(r => r.summary.work_state === "READY").length, ready_to_consign: 0, shipped: 0, completed: 0, cancelled: 0 };
+      const offset = url.searchParams.has("cursor") ? pageSize : 0;
+      const items = rows.slice(offset, offset + pageSize).map(r => r.summary);
+      const next_cursor = offset + pageSize < rows.length ? "shipping-page-2" : "";
+      await route.fulfill({ headers, json: url.searchParams.get("view") === "v2" ? { items, next_cursor, total: rows.length, counts, sessions: [] } : { items: items.map(({ order_number, recipient_masked, delivery_kind, live_sessions, ...base }) => base), next_cursor } });
     } else {
-      const i = orderIDs.findIndex(id => url.pathname === `/api/stores/${store}/orders/${id}`);
+      const i = rows.findIndex(row => url.pathname === `/api/stores/${store}/orders/${row.summary.order_id}`);
       if (i >= 0) await route.fulfill({ headers, json: rows[i].detail });
       else await route.continue();
     }
@@ -146,6 +147,133 @@ export function registerShippingCenterTests(login: (page: Page) => Promise<void>
   const path = (locale: string) => `/${locale}/orders/shipping?store=${store}`;
   for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
     const c = copies[locale];
+    test(`PARITY-SHIPCENTER RV3 ${locale}: long batch summary cannot cover rows or pagination at 1440 and 390`, async ({ page }, info) => {
+      info.setTimeout(90000);
+      await login(page);
+      // MOCK read preparation: two full valid pages, four ordinary named products per order;
+      // all quantities/amounts still reconcile, and each full identity is unique.
+      const base = fixture(locale)[0];
+      const rows = Array.from({ length: 20 }, (_, i) => {
+        const id = `11111111-1111-4111-8111-${String(90000 + i).padStart(12, "0")}`;
+        return { summary: { ...base.summary, order_id: id, order_number: `LC-${id.replaceAll("-", "").toUpperCase()}` },
+          detail: { ...base.detail, order_id: id, items: Array.from({ length: 4 }, (_, j) => ({
+            ...base.detail.items[0], sku_id: `22222222-2222-4222-8222-${String(80000 + j).padStart(12, "0")}`,
+            code: `SYNTHETIC-BATCH-${j}`, name: `${c.items[j % c.items.length]} · ${c.items[(j + 1) % c.items.length]}`,
+            quantity: 1, unit_price_minor: 32000,
+            amount: { subtotal_minor: 32000, discount_minor: 0, tax_minor: 0, total_minor: 32000 },
+          })) } };
+      });
+      const { writes } = await mockReads(page, store, locale, rows, 10);
+      const ledger = ledgerFor(info, locale);
+      const next = locale === "zh-TW" ? "下一頁" : locale === "zh-CN" ? "下一页" : "Next page";
+      const first = locale === "zh-TW" ? "返回第一頁" : locale === "zh-CN" ? "返回第一页" : "Back to first page";
+      const checkbox = (i: number) => content(page).getByRole("checkbox", { name: `#${90000 + i}`, exact: true });
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(path(locale));
+      for (let i = 0; i < 20; i++) {
+        if (i === 10) await ledger.click(next, "next page remains visible and clickable with ten selections", async () => {
+          await button(page, next).scrollIntoViewIfNeeded();
+          await expect(button(page, next)).toBeInViewport();
+          await button(page, next).click();
+          await expect(checkbox(i)).toBeVisible();
+        });
+        await ledger.click(`batch select #${90000 + i}`, "real selection keeps the signed 76px footer bounded", async () => {
+          await checkbox(i).click();
+          await expect(checkbox(i)).toBeChecked();
+          // READ/MEASURE only: no DOM mutation or synthetic input; frame 1429:28034 reserves 76px.
+          const footer = await content(page).locator("footer").boundingBox();
+          expect(footer, "selection footer exists").not.toBeNull();
+          expect(footer!.height, "RV3 selection footer stays within the signed 76px height").toBeLessThanOrEqual(76);
+          expect(footer!.y).toBeGreaterThanOrEqual(0);
+          expect(footer!.y + footer!.height).toBeLessThanOrEqual(900);
+        });
+      }
+      await page.reload();
+      await expect(content(page)).toContainText(c.selected(20));
+      await ledger.click("last desktop row deselect/reselect", "last row is reachable, clickable and persisted after refresh", async () => {
+        await checkbox(19).scrollIntoViewIfNeeded();
+        await expect(checkbox(19)).toBeInViewport();
+        await checkbox(19).click();
+        await expect(checkbox(19)).not.toBeChecked();
+        await page.reload();
+        await expect(checkbox(19)).not.toBeChecked();
+        await checkbox(19).click();
+        await expect(checkbox(19)).toBeChecked();
+      });
+      await ledger.click(first, "first-page control remains reachable with twenty selections", async () => {
+        await button(page, first).scrollIntoViewIfNeeded();
+        await expect(button(page, first)).toBeInViewport();
+        await button(page, first).click();
+        await expect(checkbox(0)).toBeChecked();
+      });
+      await ledger.click(c.view, "bounded footer View still opens the complete selection", async () => {
+        await button(page, c.view).click();
+        await expect(content(page).getByTestId("shipping-selected-orders").locator("article")).toHaveCount(20);
+        await button(page, c.back).click();
+      });
+      // Preserve the signed mobile single-order task: restore the real desktop selection,
+      // then verify rows/paging through mobile links, never hidden/forced batch controls.
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.reload();
+      await expect(content(page).locator("footer")).toBeHidden();
+      await ledger.click("mobile next page with restored batch", "pagination stays in the viewport and opens page two", async () => {
+        await button(page, next).scrollIntoViewIfNeeded();
+        await expect(button(page, next)).toBeInViewport();
+        await button(page, next).click();
+        await expect(page).toHaveURL(/cursor=shipping-page-2/);
+      });
+      const mobileURL = page.url();
+      await ledger.click("last mobile order #90019", "last row link stays reachable and opens the existing detail", async () => {
+        const last = content(page).getByTestId(`shipping-order-${rows[19].summary.order_id}`).getByRole("link").filter({ hasText: "#90019" });
+        await last.scrollIntoViewIfNeeded();
+        await expect(last).toBeInViewport();
+        await last.click();
+        await expect(page).toHaveURL(new RegExp(`order=${rows[19].summary.order_id}`));
+      });
+      await page.goto(mobileURL);
+      await ledger.click("mobile first page", "pagination remains clickable after reload", async () => {
+        await button(page, first).scrollIntoViewIfNeeded();
+        await expect(button(page, first)).toBeInViewport();
+        await button(page, first).click();
+        await expect(content(page).getByTestId(`shipping-order-${rows[0].summary.order_id}`)).toBeVisible();
+      });
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await ledger.click(c.cancel, "Cancel clears all twenty selections and persists after reload", async () => {
+        await button(page, c.cancel).click();
+        await expect(button(page, c.view)).toBeDisabled();
+        await page.reload();
+        await expect(button(page, c.view)).toBeDisabled();
+        await expect(content(page).getByRole("checkbox", { checked: true })).toHaveCount(0);
+      });
+      expect(writes).toEqual([]);
+    });
+
+    test(`PARITY-SHIPCENTER RV3 ${locale}: printed cross-border home address retains destination country`, async ({ page }, info) => {
+      await login(page);
+      const rows = fixture(locale);
+      rows[0].detail.country = "HK";
+      rows[0].detail.destination.country = "HK";
+      const { writes } = await mockReads(page, store, locale, rows);
+      const ledger = ledgerFor(info, locale);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(path(locale));
+      await ledger.click("select → review → preview", "cross-border order reaches preview through real controls", async () => {
+        await select(page, 0).click();
+        await button(page, c.view).click();
+        await button(page, c.confirm).click();
+        await expect(content(page).getByTestId("shipping-packing-slip")).toHaveCount(1);
+      });
+      await page.reload();
+      await page.emulateMedia({ media: "print" });
+      const addressLabel = locale === "en" ? "Destination" : "配送目的地";
+      const address = content(page).getByTestId("shipping-packing-slip").locator("dl > div").filter({ has: page.locator("dt", { hasText: addressLabel }) }).locator("dd");
+      await expect(address).toBeVisible();
+      for (const fact of ["000", "Synthetic city", "Synthetic address", "HK"]) {
+        await expect(address, `RV3 printed home address includes server destination fact ${fact}`).toContainText(fact);
+      }
+      expect(writes).toEqual([]);
+    });
+
     const cases = locale === "zh-TW" ? combinations : combinations.filter(c => c.name === "all");
     for (const combo of cases) {
       test(`PARITY-SHIPCENTER ${locale} ${combo.name}: select, review, print, return and refresh`, async ({ page }, info) => {
