@@ -4,7 +4,8 @@
 // Invariants: no per-keystroke backend writes, no automatic choice, canonical server facts persist.
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
+import path from "node:path";
 import { expect } from "@playwright/test";
 
 const localeCopy = {
@@ -12,6 +13,107 @@ const localeCopy = {
   "zh-CN": { title: "选择自提门店", query: "地址、门店名称或编号", empty: "未找到匹配的门店", confirm: "确认自提门店", confirmTotal: "确认更新后的金额", source: "数据：绿界门店清单 · 更新 2026-10-28" },
   en: { title: "Choose pickup store", query: "Address, store name or code", empty: "No matching stores", confirm: "Confirm pickup store", confirmTotal: "Confirm updated total", source: "Source: ECPay stores · Updated 2026-10-28" },
 };
+
+const signedCopy = {
+  "zh-TW": { browse: "依縣市／區找門市", close: "關閉", helper: "輸入門市地址、名稱或編號", hint: "請核對地址或切換品牌。", best: "最符合", change: "更換", review: "核對取貨門市", back: "返回", retry: "重試" },
+  "zh-CN": { browse: "按县市／区查门店", close: "关闭", helper: "输入自提门店的地址、名称或编号", hint: "请核对地址，或换一个品牌。", best: "最匹配", change: "更换", review: "核对自提门店", back: "返回", retry: "重试" },
+  en: { browse: "Browse by city / district", close: "Close", helper: "Enter a pickup store address, name or code", hint: "Check the address or switch brand.", best: "Best match", change: "Change", review: "Review pickup store", back: "Back", retry: "Retry" },
+};
+
+// PARITY-CVS: the real checkout route, never /ui-gallery. Network interception below
+// prepares only an outage fixture; every state transition uses real user controls.
+async function exerciseSignedCvsParity({ page, locale, ledger }) {
+  const c = localeCopy[locale], s = signedCopy[locale];
+  const originalViewport = page.viewportSize();
+  const picker = page.getByTestId("cvs-picker");
+  const query = picker.getByRole("textbox", { name: c.query, exact: true });
+  const posts = [];
+  const watch = (request) => {
+    if (new URL(request.url()).pathname === "/api/buyer/cvs-stores" && request.method() === "POST") posts.push(request);
+  };
+  const frames = {
+    desktop: ["1429:14065", "1429:14294", "1429:14519", "1429:14738", "1431:71232"],
+    mobile: ["1429:14122", "1429:14359", "1429:14578", "1429:14800", "1431:71249"],
+  };
+  const capture = async (viewport, state) => {
+    if (locale !== "zh-TW") return;
+    const directory = path.join(process.env.LC_CVS_EVIDENCE, "parity");
+    await mkdir(directory, { recursive: true });
+    await page.screenshot({ path: path.join(directory, `${frames[viewport][state]}.png`) });
+  };
+  const facts = async () => {
+    const card = picker.getByTestId("cvs-picker-chosen");
+    await expect(card).toContainText("7-ELEVEN · 樂隆");
+    await expect(card.getByTestId("cvs-picker-chosen-code")).toHaveText("121275");
+    await expect(card).toContainText("台北市大安區敦化南路二段331巷14號");
+    await expect(picker.getByRole("button", { name: s.change, exact: true })).toBeVisible();
+    // READ/MEASURE only: the signed card gives the code visual priority.
+    const codeSize = await card.getByTestId("cvs-picker-chosen-code").evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
+    assert.ok(codeSize >= 32, "signed chosen store code is at least 32px");
+  };
+  page.on("request", watch);
+  try {
+    // Keep the owner-mandated manual fallback and official link reachable outside the sheet.
+    await expect(page.getByTestId("cvs-entered-code")).toHaveAttribute("maxlength", "6");
+    await expect(page.getByTestId("cvs-entered-code")).toHaveAttribute("inputmode", "numeric");
+    await expect(page.getByTestId("cvs-search-link")).toHaveAttribute("href", /^https:\/\//);
+    await expect(page.getByTestId("cvs-search-link")).toContainText("7-ELEVEN");
+    for (const [viewport, size] of [["desktop", { width: 1440, height: 900 }], ["mobile", { width: 390, height: 844 }]]) {
+      await page.setViewportSize(size);
+      await page.getByTestId("cvs-open-picker").click();
+      await expect(picker.getByRole("heading", { name: c.title, exact: true })).toBeVisible();
+      await expect(query, "PARITY-CVS: signed first view is search-first").toBeVisible();
+      await expect(picker.getByRole("button", { name: s.browse, exact: true })).toBeVisible();
+      await expect(picker.getByTestId("cvs-picker-region-tab")).toHaveCount(0);
+      await expect(picker.getByTestId("cvs-picker-search-tab")).toHaveCount(0);
+      await expect(picker.getByRole("button", { name: s.close, exact: true })).toHaveText(s.close);
+      await expect(picker.getByText(s.helper, { exact: true })).toBeVisible();
+      await query.fill("");
+      await capture(viewport, 0);
+      await query.fill("敦化南路");
+      const best = picker.getByTestId("cvs-candidate-121275");
+      await expect(picker.locator('[data-testid^="cvs-candidate-"]').first()).toContainText(s.best);
+      await expect(picker.getByTestId("cvs-candidate-127620")).toBeVisible();
+      await capture(viewport, 1);
+      await query.fill("不存在的火星門市XYZ");
+      await expect(picker.getByText(c.empty, { exact: true })).toBeVisible();
+      await expect(picker.getByText(s.hint, { exact: true })).toBeVisible();
+      await expect(query).toHaveValue("不存在的火星門市XYZ");
+      await capture(viewport, 2);
+      await query.fill("敦化南路");
+      await best.click();
+      await facts();
+      await expect(picker.locator('[data-testid^="cvs-candidate-"]')).toHaveCount(0);
+      assert.equal(posts.length, 0, "a radio-row click cannot confirm a store");
+      await capture(viewport, 3);
+      await picker.getByRole("button", { name: s.change, exact: true }).click();
+      await expect(query).toHaveValue("敦化南路");
+      await best.click();
+      await picker.getByRole("button", { name: c.confirm, exact: true }).click();
+      await expect(picker.getByRole("heading", { name: s.review, exact: true })).toBeVisible();
+      await facts();
+      await expect(picker.getByRole("button", { name: s.back, exact: true })).toBeVisible();
+      assert.equal(posts.length, 0, "review must precede any store confirmation POST");
+      await capture(viewport, 4);
+      await picker.getByRole("button", { name: s.back, exact: true }).click();
+      await expect(picker.getByRole("heading", { name: c.title, exact: true })).toBeVisible();
+      await facts();
+      await picker.getByRole("button", { name: s.change, exact: true }).click();
+      await picker.getByRole("button", { name: s.browse, exact: true }).click();
+      await picker.getByTestId("cvs-picker-county").selectOption("臺北市");
+      await picker.getByTestId("cvs-picker-district").selectOption("大安區");
+      await expect(picker.locator('[data-testid^="cvs-candidate-"]').first()).toBeVisible();
+      await picker.getByRole("button", { name: s.back, exact: true }).click();
+      await expect(query).toHaveValue("敦化南路");
+      await picker.getByRole("button", { name: s.close, exact: true }).click();
+      await expect(picker).not.toBeVisible();
+      ledger.push({ locale, viewport, control: "signed search / results / chosen / review / back / change / area / close", operation: "real click/fill/selectOption", expected: "signed copy, four canonical facts, no POST before review, legacy tabs absent", actual: "all assertions satisfied", result: "PASS" });
+    }
+  } finally {
+    page.off("request", watch);
+    if (originalViewport) await page.setViewportSize(originalViewport);
+  }
+}
 
 export async function exerciseCvsPaste({ page, locale, openCheckout, ledger }) {
   const fixtures = JSON.parse(await readFile(new URL("../../packages/format/tests/fixtures/cvs-match-real-cases.json", import.meta.url), "utf8"));
@@ -100,6 +202,7 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
   const measure = async (state) => { if (mobile && locale === "zh-TW") await density(picker, densities, state); };
   try {
     await openCheckout();
+    await exerciseSignedCvsParity({ page, locale, ledger });
     await page.getByTestId("cvs-recipient-name").fill("王小明"); // existing synthetic recipient, never a real buyer
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     // CheckoutFlow's optionKey is market:country:method, while CVS accepts only the service suffix.
