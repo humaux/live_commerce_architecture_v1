@@ -1,0 +1,15 @@
+PARITY-SHIPCENTER causal RED — 2026-10-30
+PR=353
+head_sha=e23c1167780288321bb9d9775c2be93a5441bf4a
+synthetic_merge_sha=bea8958320315102a0d40378908e9a9bd3f22d86
+Gates_run=41049898125
+Gates_job=124044734532 (gate bundle:09)
+artifact=12974094813 gate-browser-merchant-orders-ui
+assertion=shipping-center real-route heading missing (15 new cases); no compile/setup failure
+result=15 failed (all PARITY-SHIPCENTER), 21 existing passed
+Foundation_run=41049898111
+Foundation_job=124043064745
+Foundation_result=success
+raw_log=red-evidence/playwright.log
+GREEN=NOT_RUN
+local_tests_servers=NOT_RUN (owner prohibition)

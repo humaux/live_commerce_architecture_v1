@@ -1,0 +1,107 @@
+/* Purpose: Signed shipping-center desktop/mobile geometry and per-order print pages.
+ * Depends on: existing admin theme and UI semantic tokens; ShippingCenter/ShippingShell DOM.
+ * Used by: ShippingCenter.tsx and ShippingShell.tsx.
+ * Invariants: fixed controls stay outside scrolling content; printing hides chrome and breaks after every slip.
+ */
+.shell { min-height: 100dvh; background: var(--ui-page); color: var(--ui-text); font-family: "Noto Sans SC", "Noto Sans CJK SC", Arial, sans-serif; }
+.shell * { box-sizing: border-box; }
+.shell a { color: inherit; text-decoration: none; }
+.shell button, .shell a, .shell select, .shell input { touch-action: manipulation; }
+.shell :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.sidebar { position: fixed; inset: 0 auto 0 0; z-index: 20; width: 240px; overflow-y: auto; background: var(--ui-surface); padding: 16px; color: var(--ink); }
+.brand { font-size: 23px; line-height: 35px; font-weight: 500; }
+.store { font-size: 12px; line-height: 18px; padding: 4px 0 5px; border-bottom: 1px solid var(--line); color: var(--muted); overflow-wrap: anywhere; }
+.sidebar nav { display: grid; gap: 4px; padding-top: 4px; }
+.sidebar nav > a, .sidebar summary { display: block; min-height: 44px; padding: 11px 24px; font-size: 14px; line-height: 22px; border-radius: 5px; cursor: pointer; color: var(--ds-crumb-text); }
+.sidebar summary { list-style: none; }
+.sidebar summary::-webkit-details-marker { display: none; }
+.sidebar details a { display: block; padding: 12px 24px 12px 36px; min-height: 44px; font-size: 13px; }
+.sidebar a[aria-current="page"] { background: color-mix(in srgb, var(--ui-primary) 9%, var(--ui-surface)); font-weight: 600; color: var(--ink); }
+.sidebar a:hover, .sidebar summary:hover { background: var(--ui-primary-soft); }
+.topbar { height: 64px; margin-left: 240px; padding: 10px 24px; background: var(--ui-surface); display: flex; align-items: center; justify-content: space-between; }
+.breadcrumb { display: flex; gap: 5px; color: var(--muted); font-size: 14px; line-height: 21px; }
+.language { width: 64px; min-height: 44px; border: 1px solid var(--line); border-radius: 5px; background: var(--ui-surface); color: var(--ink); padding: 8px; }
+.mobileStore, .mobile, .mobileOrder { display: none; }
+.task { position: relative; margin-left: 240px; min-height: calc(100dvh - 64px); padding: 24px 32px 20px; }
+.heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 44px; }
+.heading h1 { margin: 0; font-size: 28px; font-weight: 600; line-height: 42px; }
+.control { display: inline-flex; justify-content: center; align-items: center; width: 160px; min-height: 44px; border: 1px solid var(--line); border-radius: 5px; padding: 10px 16px; font-size: 14px; line-height: 22px; font-weight: 500; font-family: inherit; background: var(--ui-surface); color: var(--ink); text-align: center; cursor: pointer; }
+.control:hover:not(:disabled) { background: var(--ui-primary-soft); }
+.control:disabled { opacity: .45; cursor: default; }
+.primary { background: var(--ui-primary); border-color: var(--ui-primary); color: var(--ui-surface); }
+.primary:disabled { background: var(--ui-primary); border-color: var(--ui-primary); color: var(--ui-surface); }
+.primary:hover:not(:disabled) { background: var(--ui-primary-hover); }
+.notice { margin: 20px 0 0; padding: 12px; background: color-mix(in srgb, var(--ui-primary) 9%, var(--ui-surface)); font-size: 12px; line-height: 18px; }
+.viewport { position: absolute; inset: 92px 32px 124px; overflow: auto; }
+.centerViewport { top: 180px; }
+.rows { display: grid; gap: 12px; }
+.order { display: grid; grid-template-columns: 104px minmax(0, 1.1fr) minmax(100px, 1fr) 180px; align-items: center; min-height: 84px; padding: 16px; gap: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--ui-surface); }
+.checkbox { display: flex; align-items: center; min-height: 44px; padding-left: 12px; }
+.checkbox input { width: 20px; height: 20px; min-height: 20px; padding: 0; margin: 0; accent-color: var(--ui-primary); cursor: pointer; }
+.orderText { display: grid; gap: 8px; font-size: 14px; line-height: 21px; overflow-wrap: anywhere; }
+.orderText strong { font-size: 12px; font-weight: 500; color: var(--ink); }
+.status { justify-self: start; white-space: nowrap; background: color-mix(in srgb, var(--ui-primary) 9%, var(--ui-surface)); padding: 8px; font-size: 14px; line-height: 20px; }
+.reviewStatus { color: var(--ui-warning); background: var(--canvas); }
+.rowView { width: 180px; }
+.selectionBar { position: absolute; inset: auto 32px 20px; display: grid; grid-template-columns: 84px minmax(0, 1fr) 144px 144px; align-items: center; gap: 12px; min-height: 76px; padding: 16px; background: var(--ui-surface); }
+.selectionBar > strong { font-size: 16px; line-height: 24px; font-weight: 500; }
+.selectionBar > span { font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
+.selectionBar .control { width: 144px; }
+.count { margin: 0 0 12px; font-size: 18px; line-height: 27px; font-weight: 500; }
+.selectedOrders { display: grid; gap: 12px; }
+.selectedOrder { padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--ui-surface); }
+.selectedOrder > strong { display: block; font-size: 16px; line-height: 24px; font-weight: 500; color: var(--ink); }
+.selectedOrder > p { margin: 12px 0 0; font-size: 14px; line-height: 21px; }
+.selectedOrders + .notice { margin-top: 12px; }
+.slip { margin-top: 12px; max-width: 744px; border: 1px solid var(--line); border-radius: 8px; background: var(--ui-surface); padding: 16px; }
+.slip > strong { display: block; color: var(--ink); font-size: 16px; line-height: 24px; font-weight: 500; }
+.slip h3 { margin: 12px 0 0; color: var(--ink); font-size: 18px; line-height: 27px; font-weight: 500; }
+.slip dl { display: grid; gap: 16px; margin: 16px 0; font-size: 14px; line-height: 21px; }
+.slip dl > div { display: flex; justify-content: space-between; gap: 16px; }
+.slip dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.slip small { color: var(--muted); font-size: 12px; line-height: 18px; }
+.printOnly, .slip .printOnly { display: none; }
+.actions { position: absolute; inset: auto 32px 20px; min-height: 76px; padding: 16px; display: flex; gap: 12px; background: var(--ui-surface); }
+.actions .control { width: 180px; }
+.actions .primary { width: 280px; }
+.result h2 { margin: 0; font-size: 24px; line-height: 36px; font-weight: 600; }
+.result .notice { margin-top: 12px; }
+.result > p:not(.notice) { margin: 12px 0 0; white-space: pre-line; font-size: 14px; line-height: 21px; }
+.resultActions, .paging { display: flex; gap: 12px; margin-top: 12px; }
+.resultActions { flex-direction: column; }
+.resultActions .control { width: 240px; }
+.error { padding: 16px; background: var(--ui-surface); border: 1px solid var(--line); border-radius: 8px; }
+@media (max-width: 760px) {
+  .sidebar, .breadcrumb, .language, .desktop { display: none; }
+  .topbar { margin-left: 0; padding: 16px; align-items: flex-start; }
+  .mobileStore { display: block; overflow-wrap: anywhere; font-size: 12px; line-height: 18px; color: var(--muted); }
+  .task { margin-left: 0; padding: 16px; }
+  .heading h1 { font-size: 22px; line-height: 33px; }
+  .heading .control { width: 124px; flex-shrink: 0; }
+  .mobile { display: block; }
+  .notice { margin-top: 12px; }
+  .viewport { inset: 92px 16px 16px; scrollbar-gutter: auto; }
+  .centerViewport { top: 168px; }
+  .order { display: block; min-height: 106px; padding: 0; }
+  .order > .checkbox, .order > .orderText, .order > .status, .rowView { display: none; }
+  .mobileOrder { display: flex; justify-content: space-between; align-items: flex-start; min-height: 104px; padding: 16px; gap: 12px; }
+  .mobileOrder > span { min-width: 0; font-size: 12px; line-height: 24px; font-weight: 500; white-space: pre-line; overflow-wrap: anywhere; color: var(--ink); }
+  .mobileOrder svg { width: 8px; height: 14px; margin: 3px 3px 0 0; fill: none; stroke: var(--ink); stroke-width: 1.5; flex-shrink: 0; }
+  .task:has(.actions) .viewport { bottom: 188px; }
+  .actions { inset: auto 16px 16px; flex-wrap: wrap; padding: 12px; }
+  .actions .control, .actions .primary { width: auto; flex: 1 1 40%; }
+  .resultActions { flex-direction: column; }
+  .resultActions .control { width: 100%; }
+}
+@media print {
+  @page { margin: 16mm; }
+  .sidebar, .topbar, .screenOnly, .actions, .selectionBar { display: none !important; }
+  .shell { background: var(--ui-surface); }
+  .task { margin: 0; padding: 0; min-height: 0; }
+  .viewport { position: static; overflow: visible; }
+  .selectedOrders { display: block; }
+  .selectedOrder { border: 0; padding: 0; background: var(--ui-surface); }
+  .slip { display: block; width: 100%; max-width: none; margin: 0; padding: 0; border: 0; border-radius: 0; break-after: page; page-break-after: always; break-inside: avoid; }
+  .slip .printOnly { display: flex; }
+  .slip p.printOnly { display: block; white-space: pre-line; }
+}
