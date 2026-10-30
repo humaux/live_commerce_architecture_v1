@@ -1,5 +1,5 @@
 // Purpose: Owns storefront design draft editing, publication and rollback controls.
-// Depends on: @live-commerce/format (Taipei store timestamps), react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/customers-client, @/lib/settings-client, @/lib/storefront-client, @/lib/design-client, @/lib/design-copy, @/lib/design-model, @/lib/use-design-load, ./WorkspaceFrame, ./AdminPageHeader, ./DesignProfile, ./DesignNav, ./DesignSections, ./DesignPages, ./DesignMedia, ./orders.css, ./design.css
+// Depends on: @live-commerce/format (Taipei store timestamps), react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/customers-client, @/lib/settings-client, @/lib/storefront-client, @/lib/design-client, @/lib/design-copy, @/lib/design-model, @/lib/use-design-load, ./WorkspaceFrame, ./AdminPageHeader, ./DesignProfile, ./DesignNav, ./DesignSections, ./DesignPages, ./DesignVersions, ./DesignSummary, ./DesignDomains, ./DesignMedia, ./orders.css, ./design.css
 // Used by: apps/admin/app/[locale]/design/page.tsx
 "use client";
 
@@ -10,7 +10,7 @@
 // .../preview-token, GET .../design/versions, GET|POST .../design/media, GET .../design/media/{id}, POST
 // .../design/media/{id}/delete, plus GET .../storefront (the active address, to open the preview) -> Go
 // /v1/admin/stores/{id}/design/* (internal/httpapi/design.go; integration:read / integration:manage).
-// Invariants: pending publication is armed durably before send and resolved only by its original key/body.
+// Invariants: pending publication is armed durably before send and resolved only by its original key/body; summaries retain that attempt's document.
 // Owns: the editable copy of the document, the dirty/unsaved guard, the local "what is still missing" hints and the
 // request choreography (save before publish/preview, compare-and-set versions). It never validates what the server
 // owns (the server's 422 path is shown on the field) and never keeps the preview token (it only opens the link).
@@ -19,7 +19,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
-import { Badge, TabStrip, TableFrame } from "@live-commerce/ui";
+import { Badge } from "@live-commerce/ui";
 import { catalogPresentationCopy } from "@/lib/catalog-v2-copy";
 import type { Store } from "@/lib/model";
 import type { ReadCode } from "@/lib/customers-client";
@@ -50,12 +50,14 @@ import { DesignProfile } from "./DesignProfile";
 import { DesignNav } from "./DesignNav";
 import { DesignSections } from "./DesignSections";
 import { DesignPages } from "./DesignPages";
+import { Versions } from "./DesignVersions";
+import { DesignSummary } from "./DesignSummary";
+import { DesignDomains } from "./DesignDomains";
 import type { MediaOps } from "./DesignMedia";
 import "./orders.css";
 import "./design.css";
 
-type Tab = "profile" | "nav" | "home" | "pages" | "versions";
-const TABS: Tab[] = ["profile", "nav", "home", "pages", "versions"];
+type Tab = "hub" | "profile" | "nav" | "home" | "pages" | "versions" | "domains" | "review" | "result" | "published";
 type Note = { kind: "ok" | "error"; text: string } | null;
 
 type Pending = { version: number; key: string; boundary: string; retries: number };
@@ -115,7 +117,7 @@ export function Design({
       onBeforeNavigate={guard}
     >
       <div className="orders-page design-page" data-testid="design-page">
-        <AdminPageHeader locale={locale} description={c.subtitle} />
+        <AdminPageHeader locale={locale} title={c.editor.title} />
         {stores.length > 1 && (
           <div className="orders-controls">
             <label>
@@ -203,7 +205,19 @@ function Editor({
   const [live, setLive] = useState(initial.draft.published_version);
   const [media, setMedia] = useState(initial.media);
   const [versions, setVersions] = useState(initial.versions);
-  const [tab, setTab] = useState<Tab>("profile");
+  const [tab, setTab] = useState<Tab>("hub");
+  const [address, setAddress] = useState('');
+  const [receipt, setReceipt] = useState<VersionList['items'][number] | null>(null);
+  const [publishedDoc, setPublishedDoc] = useState<DesignDocument | null>(null);
+  const [resultError, setResultError] = useState('');
+  useEffect(() => {
+    const controller = new AbortController();
+    let current = true;
+    void readStorefront(store, controller.signal).then(async state => {
+      if (current && await sessionBoundary() === boundary) setAddress(state.domains.find(d => d.serving)?.origin ?? '');
+    }).catch(() => { /* domain readiness never guesses or blocks document editing */ });
+    return () => { current = false; controller.abort(); };
+  }, [store,boundary]);
   const [busy, setBusy] = useState<
     "" | "save" | "publish" | "preview" | "rollback"
   >("");
@@ -308,16 +322,28 @@ function Editor({
     }
   }
 
-  async function doPublish() {
+  async function openReview() {
     if (busy || pendingRef.current) return;
-    let version = base;
     if (dirty || base === 0) {
-      const saved = await save();
-      if (saved === null) return;
-      version = saved;
+      if ((await save()) === null) return;
     }
-    if (!window.confirm(fill(c.publishConfirm, { n: version }))) return;
+    try {
+      const state = await readStorefront(store, AbortSignal.timeout(5000));
+      setAddress(state.domains.find(d => d.serving)?.origin ?? '');
+    } catch { setAddress(''); }
+    setTab('review');
+    setNote(null);
+  }
+
+  async function doPublish() {
+    if (busy || pendingRef.current || dirty) return;
+    const version = base;
     setBusy("publish");
+    setReceipt(null);
+    // Keep this attempt's content in memory only; later saves must not change its summary.
+    // Reload retains the request identity, but unavailable content must never fall back to a newer draft.
+    setPublishedDoc(JSON.parse(saved) as DesignDocument);
+    setResultError('');
     const attempt: Pending = { version, key: crypto.randomUUID(), boundary, retries: 0 };
     setPending(attempt); // synchronous sessionStorage write BEFORE the first POST
     setUnconfirmed(false);
@@ -327,11 +353,12 @@ function Editor({
     const r = await publish(store, version, boundary, attempt.key);
     if (!mounted.current) return;
     setBusy("");
-    if (await applyPublish(r, attempt)) return;
+    if (await applyPublish(r, attempt, true)) return;
+    setTab("hub");
     void recheckPublish(true);
   }
 
-  async function applyPublish(r: Outcome<VersionList["items"][number]>, attempt: Pending): Promise<boolean> {
+  async function applyPublish(r: Outcome<VersionList["items"][number]>, attempt: Pending, initialSend = false): Promise<boolean> {
     if (!mounted.current || pendingRef.current?.key !== attempt.key) return true;
     if (!r.ok) {
       if (r.code === "idempotency_conflict") {
@@ -339,6 +366,14 @@ function Editor({
         return true; // report integrity failure, retain the original attempt; never mint a replacement key
       }
       if (r.uncertain || r.code !== "conflict") {
+        // A definite rejection of the INITIAL send has no ambiguous prior attempt.
+        // Recovery refusals still retain their identity: they cannot disprove an earlier commit.
+        if (!r.uncertain && initialSend) {
+          setPending(null);
+          setResultError(c.errors[r.code] ?? c.errors.default);
+          setTab('result');
+          return true;
+        }
         setUnconfirmed(true);
         return !r.uncertain; // definite auth/validation refusals keep the unresolved identity without automatic replay
       }
@@ -351,6 +386,9 @@ function Editor({
     setUnconfirmed(false);
     setIntegrity(false);
     setLive(r.value.version);
+    setReceipt(r.value);
+    setVersions(previous => ({ live_version: r.value.version, items: [r.value, ...previous.items.filter(v => v.version !== r.value.version)] }));
+    setTab('result');
     setNote({ kind: "ok", text: fill(c.okPublished, { n: r.value.version }) });
     // The receipt establishes success. The list only supplies current display/supersession, never confirmation.
     try {
@@ -498,14 +536,15 @@ function Editor({
   const saveReason = busy ? p.busy : !dirty && base !== 0 ? p.noChanges : "";
   const publishReason = busy ? p.busy : pending ? c.publishPending : liveIsDraft ? p.alreadyPublished : "";
   return (
-    <div className="design-editor">
-      <div className="design-toolbar" data-testid="design-toolbar">
+    <div className="design-editor" data-testid="design-screen">
+      {tab !== 'hub' && <button type="button" data-testid="design-back" disabled={!!busy} onClick={() => setTab('hub')}>{c.editor.back}</button>}
+      <div className="design-toolbar" data-testid="design-toolbar" hidden={['review','result','published'].includes(tab)}>
         <div
           className="design-status"
           role="status"
           data-testid="design-status"
         >
-          <Badge tone={dirty ? "warning" : base === 0 ? "neutral" : "success"}>
+          <Badge className={!dirty && base !== 0 ? 'design-saved-badge' : undefined} tone={dirty ? "warning" : base === 0 ? "neutral" : "success"}>
             {status}
           </Badge>
           <span>
@@ -524,22 +563,25 @@ function Editor({
             disabled={!!busy || (!dirty && base !== 0)}
             aria-describedby={saveReason ? "design-save-reason" : undefined}
             data-testid="design-save"
+            hidden={!['hub','profile','home','nav','pages'].includes(tab) || (tab === 'hub' && !dirty && base !== 0)}
           >
             {busy === "save" ? c.saving : c.save}
           </button>
+          <button type="button" data-testid="design-cancel" hidden={!['profile','home','nav','pages'].includes(tab)} disabled={!!busy} onClick={() => { setDoc(JSON.parse(saved) as DesignDocument); setNote(null); setTab('hub'); }}>{c.editor.cancel}</button>
           <button
             type="button"
             onClick={() => void doPreview()}
             disabled={!!busy}
             aria-describedby={busy ? "design-save-reason" : undefined}
             data-testid="design-preview"
+            hidden={tab !== 'hub'}
           >
             {c.preview}
           </button>
           <button
             type="button"
             className="design-primary"
-            onClick={() => void doPublish()}
+            onClick={() => void openReview()}
             disabled={!!busy || liveIsDraft || !!pending}
             aria-describedby={
               publishReason
@@ -549,13 +591,14 @@ function Editor({
                 : undefined
             }
             data-testid="design-publish"
+            hidden={tab !== 'hub' || !!pending || liveIsDraft}
           >
             {busy === "publish" ? c.publishing : c.publish}
           </button>
         </div>
       </div>
       {(saveReason || publishReason) && (
-        <div className="design-disabled-reasons">
+        <div className="design-disabled-reasons" hidden>
           {saveReason && <p id="design-save-reason">{saveReason}</p>}
           {publishReason && publishReason !== saveReason && (
             <p id="design-publish-reason">{publishReason}</p>
@@ -565,14 +608,18 @@ function Editor({
       {pending && busy !== "publish" && (
         <div className="design-note warning" role="alert" data-testid="design-publish-pending">
           <p>
-            <strong>{c.publishPending}</strong>
+            <strong>{c.editor.pending}</strong>
           </p>
           <p>{fill(c.publishPendingBody, { n: pending.version })}</p>
+          <p>{live === null ? c.neverPublished : fill(c.liveVersion, { n: live })}</p>
+          <p>{c.editor.scope}</p><p>{c.editor.unchanged}</p>
+          <p>{address || c.editor.noAddress}{address && ` · ${c.editor.available}`}</p>
           {unconfirmed && <p data-testid="design-publish-unconfirmed">{c.publishUnconfirmed}</p>}
           {integrity && <p data-testid="design-publish-integrity">{c.publishIntegrity}</p>}
           <button type="button" onClick={() => void recheckPublish()} disabled={rechecking} data-testid="design-publish-recheck">
-            {rechecking ? c.publishRechecking : c.publishRecheck}
+            {rechecking ? c.publishRechecking : c.editor.query}
           </button>
+          {publishedDoc ? <details><summary>{c.editor.details}</summary><DesignSummary store={store} doc={publishedDoc} c={c} /></details> : <p>{c.editor.contentUnavailable}</p>}
         </div>
       )}
       {superseded && <p className="design-note" data-testid="design-publish-superseded">{c.publishSuperseded}</p>}
@@ -592,49 +639,42 @@ function Editor({
           </button>
         </p>
       )}
-      <TabStrip
-        label={c.title}
-        previousLabel={p.previousTabs}
-        nextLabel={p.nextTabs}
-      >
-        <div className="design-tabs" role="tablist" aria-label={c.title}>
-          {TABS.map((id) => {
-            const count =
-              id === "versions"
-                ? 0
-                : issues.filter((i) => tabOf(i.path) === id).length;
-            return (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                id={`design-tab-${id}`}
-                aria-selected={tab === id}
-                aria-controls="design-tabpanel"
-                className={tab === id ? "active" : undefined}
-                onClick={() => setTab(id)}
-                data-testid={`design-tab-${id}`}
-              >
-                {c.tabs[id]}
-                {count ? (
-                  <Badge
-                    tone="danger"
-                    className="design-badge"
-                    aria-label={String(count)}
-                  >
-                    {count}
-                  </Badge>
-                ) : null}
-              </button>
-            );
-          })}
+      {tab === 'hub' && <nav className="design-task-list" data-testid="design-hub" aria-label={c.editor.title}>
+        {(['pages','home','nav','profile'] as const).map(id => <button key={id} type="button" data-testid={`design-task-${id}`} onClick={() => setTab(id)}>{c.editor[id]}</button>)}
+        <button type="button" data-testid="design-domains-open" onClick={() => setTab('domains')}>{c.editor.domains}</button>
+        <button type="button" data-testid="design-tab-versions" onClick={() => setTab('versions')}>{c.editor.versions}</button>
+      </nav>}
+      {tab === 'domains' && <DesignDomains store={store} boundary={boundary} locale={locale} c={c} />}
+      {tab === 'review' && <section className="design-panel" data-testid="design-publish-review">
+        <h2>{fill(c.publishConfirm, { n: base })}</h2>
+        <p>{live === null ? c.neverPublished : fill(c.liveVersion, { n: live })}</p>
+        <p>{c.editor.scope}</p><p>{c.editor.unchanged}</p>
+        <p>{address || c.editor.noAddress}{address && ` · ${c.editor.available}`}</p>
+        <details><summary>{c.editor.details}</summary><DesignSummary store={store} doc={JSON.parse(saved) as DesignDocument} c={c} /></details>
+        <div className="design-actions">
+          <button type="button" data-testid="design-publish-continue" disabled={!!busy} onClick={() => setTab('hub')}>{c.editor.continue}</button>
+          <button type="button" className="design-primary" data-testid="design-publish-confirm" disabled={!!busy || !!pending} onClick={() => void doPublish()}>{c.editor.confirm}</button>
         </div>
-      </TabStrip>
+      </section>}
+      {tab === 'result' && !pending && <section className="design-panel" data-testid="design-publish-result">
+        <h2>{resultError ? c.editor.failed : c.editor.published}</h2>
+        <p>{fill(c.draftVersion, { n: receipt?.source_version ?? base })} · {live === null ? c.neverPublished : fill(c.liveVersion, { n: live })}</p>
+        {resultError ? <p role="alert">{resultError}</p> : receipt && <p>{displayTime(locale, receipt.published_at)}</p>}
+        <p>{c.editor.scope}</p><p>{c.editor.unchanged}</p>
+        <p>{address || c.editor.noAddress}{address && ` · ${c.editor.available}`}</p>
+        {publishedDoc ? <details><summary>{c.editor.details}</summary><DesignSummary store={store} doc={publishedDoc} c={c} /></details> : <p>{c.editor.contentUnavailable}</p>}
+        {!resultError && <button type="button" data-testid="design-view-published" onClick={() => setTab('published')}>{c.editor.view}</button>}
+      </section>}
+      {tab === 'published' && <section className="design-panel" data-testid="design-published-content">
+        <h2>{live === null ? c.neverPublished : fill(c.liveVersion, { n: live })}</h2>
+        {publishedDoc && !superseded && <DesignSummary store={store} doc={publishedDoc} c={c} />}
+        {!publishedDoc && <p>{c.editor.contentUnavailable}</p>}
+        {address && <a href={address} target="_blank" rel="noopener noreferrer">{c.editor.visit}</a>}
+      </section>}
       <fieldset
         className="design-body"
         id="design-tabpanel"
-        role="tabpanel"
-        aria-labelledby={`design-tab-${tab}`}
+        hidden={!["profile","home","nav","pages","versions"].includes(tab)}
         disabled={busy === "save" || busy === "preview"}
       >
         {tab === "profile" && (
@@ -688,79 +728,6 @@ function Editor({
           />
         )}
       </fieldset>
-    </div>
-  );
-}
-
-function Versions({
-  list,
-  live,
-  busy,
-  c,
-  locale,
-  onRollback,
-}: {
-  list: VersionList;
-  live: number | null;
-  busy: boolean;
-  c: DesignCopy;
-  locale: Locale;
-  onRollback: (version: number) => void;
-}) {
-  return (
-    <div className="design-panel" data-testid="design-versions">
-      <p className="design-muted">{c.versions.help}</p>
-      {list.items.length === 0 && <p>{c.versions.none}</p>}
-      {list.items.length > 0 && (
-        <TableFrame
-          label={c.tabs.versions}
-          scrollHint={catalogPresentationCopy[locale].tableScroll}
-        >
-          <table className="design-table">
-            <thead>
-              <tr>
-                <th>{c.versions.version}</th>
-                <th>{c.versions.kind.publish}</th>
-                <th>{c.versions.at}</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {list.items.map((v) => (
-                <tr key={v.version} data-testid="design-version-row">
-                  <td>
-                    v{v.version}
-                    {v.version === live && (
-                      <Badge tone="info" className="design-live">
-                        {c.versions.live}
-                      </Badge>
-                    )}
-                  </td>
-                  <td>
-                    {c.versions.kind[v.kind]}
-                    {v.kind === "rollback"
-                      ? ` · ${fill(c.versions.source, { n: v.source_version })}`
-                      : ""}
-                  </td>
-                  <td>{displayTime(locale, v.published_at)}</td>
-                  <td>
-                    {v.version !== live && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => onRollback(v.version)}
-                        data-testid="design-rollback"
-                      >
-                        {c.versions.rollback}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableFrame>
-      )}
     </div>
   );
 }

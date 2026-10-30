@@ -1,0 +1,65 @@
+Head 7d19e61394cb8450416e12e036439b9be52bff46; run 40914495431/job 123593141674; artifact gate-browser-design
+  ✓   1 tests/admin/design.spec.ts:93:3 › SDB01 merchant journey en desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (4.1s)
+  ✓   2 tests/admin/design.spec.ts:93:3 › SDB01 merchant journey zh-TW desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (3.3s)
+  ✓   3 tests/admin/design.spec.ts:93:3 › SDB01 merchant journey en mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (3.8s)
+  ✓   4 tests/admin/design.spec.ts:93:3 › SDB01 merchant journey zh-TW mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (3.9s)
+  ✓   5 tests/admin/design.spec.ts:390:1 › SDB02 BFF: allowlist, no query, 64 KiB generic cap vs 260 KiB design cap, CSRF/key/origin, identity headers, media bytes (1.1s)
+  ✓   6 tests/admin/design.spec.ts:494:1 › SDB03 read-only member: the page opens, every write is refused by the server and the UI says so; nothing is stored (826ms)
+  ✓   7 tests/admin/design.spec.ts:517:1 › SDB04 stale write: a second tab that saved first makes this tab's save a conflict with a reload path (1.1s)
+  ✓   8 tests/admin/design.spec.ts:544:1 › SDB05 a 422 reaches the editor with the offending field path (contract B-acceptance: details {path, reason}), through the BFF and on the field (747ms)
+  ✘   9 tests/admin/editor-v2.spec.ts:175:3 › EDITOR-V2 main zh-TW desktop: four tasks, current versions, domain status (10.8s)
+  ✘  10 tests/admin/editor-v2.spec.ts:175:3 › EDITOR-V2 main zh-TW mobile: four tasks, current versions, domain status (10.8s)
+  ✘  11 tests/admin/editor-v2.spec.ts:175:3 › EDITOR-V2 main zh-CN desktop: four tasks, current versions, domain status (10.9s)
+  ✘  12 tests/admin/editor-v2.spec.ts:175:3 › EDITOR-V2 main zh-CN mobile: four tasks, current versions, domain status (10.8s)
+  ✘  13 tests/admin/editor-v2.spec.ts:175:3 › EDITOR-V2 main en desktop: four tasks, current versions, domain status (10.9s)
+  ✘  14 tests/admin/editor-v2.spec.ts:175:3 › EDITOR-V2 main en mobile: four tasks, current versions, domain status (10.9s)
+  ✘  15 tests/admin/editor-v2.spec.ts:205:3 › EDITOR-V2 desktop: edit every group, reorder, save, refresh, cancel (10.9s)
+  ✘  16 tests/admin/editor-v2.spec.ts:205:3 › EDITOR-V2 mobile: edit every group, reorder, save, refresh, cancel (10.8s)
+  ✘  17 tests/admin/editor-v2.spec.ts:302:3 › EDITOR-V2 zh-TW: preview saves first; publish review, receipt, view, back and cancel keep server state (10.8s)
+  ✘  18 tests/admin/editor-v2.spec.ts:351:3 › EDITOR-V2 zh-TW: definite refusal is distinct from uncertain original-request recovery (10.9s)
+  ✘  19 tests/admin/editor-v2.spec.ts:362:3 › EDITOR-V2 zh-TW: uncertain result survives refresh; query retains original key/body and never offers a second publish (10.8s)
+  ✘  20 tests/admin/editor-v2.spec.ts:302:3 › EDITOR-V2 zh-CN: preview saves first; publish review, receipt, view, back and cancel keep server state (10.9s)
+  ✘  21 tests/admin/editor-v2.spec.ts:351:3 › EDITOR-V2 zh-CN: definite refusal is distinct from uncertain original-request recovery (10.9s)
+  ✘  22 tests/admin/editor-v2.spec.ts:362:3 › EDITOR-V2 zh-CN: uncertain result survives refresh; query retains original key/body and never offers a second publish (10.9s)
+  ✘  23 tests/admin/editor-v2.spec.ts:302:3 › EDITOR-V2 en: preview saves first; publish review, receipt, view, back and cancel keep server state (10.9s)
+  ✘  24 tests/admin/editor-v2.spec.ts:351:3 › EDITOR-V2 en: definite refusal is distinct from uncertain original-request recovery (10.8s)
+  ✘  25 tests/admin/editor-v2.spec.ts:362:3 › EDITOR-V2 en: uncertain result survives refresh; query retains original key/body and never offers a second publish (10.8s)
+  ✓  26 tests/admin/oc/design-publish-pending.spec.ts:89:5 › OC11 RVFIX P1 zh-TW after-commit: new login requires explicit recovery of the original request (6.4s)
+  ✓  27 tests/admin/oc/design-publish-pending.spec.ts:89:5 › OC11 RVFIX P1 zh-TW before-commit: new login requires explicit recovery of the original request (6.3s)
+  ✓  28 tests/admin/oc/design-publish-pending.spec.ts:89:5 › OC11 RVFIX P1 zh-CN after-commit: new login requires explicit recovery of the original request (6.2s)
+  ✓  29 tests/admin/oc/design-publish-pending.spec.ts:89:5 › OC11 RVFIX P1 zh-CN before-commit: new login requires explicit recovery of the original request (6.3s)
+  ✓  30 tests/admin/oc/design-publish-pending.spec.ts:89:5 › OC11 RVFIX P1 en after-commit: new login requires explicit recovery of the original request (6.2s)
+  ✓  31 tests/admin/oc/design-publish-pending.spec.ts:89:5 › OC11 RVFIX P1 en before-commit: new login requires explicit recovery of the original request (6.3s)
+  ✓  32 tests/admin/oc/design-publish-pending.spec.ts:166:1 › OC11 publish lost after commit: pending, no second publish, recheck finds it (3.3s)
+  ✓  33 tests/admin/oc/design-publish-pending.spec.ts:210:1 › OC11 publish never reached Go: reload stays pending offline, restored same-key resend commits once (4.0s)
+  ✓  34 tests/admin/oc/design-publish-pending.spec.ts:256:1 › OC11 old publish row of the same draft version never confirms a new lost publish (publish, rollback, publish again) (3.1s)
+  ✓  35 tests/admin/oc/design-publish-pending.spec.ts:277:1 › OC11 reload while the publish request is in flight: pending is armed before the request, no second publish (1.1s)
+  ✓  36 tests/admin/oc/design-publish-pending.spec.ts:322:1 › OC11 stale versions list: confirmed publish, failed refresh, second publish aborted before commit never shows success (3.0s)
+  ✓  37 tests/admin/oc/design-publish-pending.spec.ts:339:1 › OC11 P1a another tab publishes the same draft: only its own key can confirm a pending request (3.6s)
+  ✓  38 tests/admin/oc/design-publish-pending.spec.ts:360:1 › OC11 stale draft: restoring transport keeps the original version and ends pending with conflict (3.7s)
+  ✓  39 tests/admin/oc/design-publish-pending.spec.ts:390:1 › OC11 P1b pending blocks local rollback, external rollback resolves the committed request as superseded (3.8s)
+  ✓  40 tests/admin/oc/design-publish-pending.spec.ts:425:1 › OC11 P1b a hung recovery POST has a bounded timeout and releases its busy control (8.2s)
+  ✘  41 tests/admin/oc/design-publish-pending.spec.ts:458:3 › OC11 pending and same-key recovery render in zh-TW and survive refresh (13.7s)
+  ✓  42 tests/admin/oc/design-publish-pending.spec.ts:458:3 › OC11 pending and same-key recovery render in zh-CN and survive refresh (3.9s)
+  ✓  43 tests/admin/oc/design-publish-pending.spec.ts:458:3 › OC11 pending and same-key recovery render in en and survive refresh (3.7s)
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: signed four-task hub replaces the expanded five-tab form
+    Error: the request-bound recovery settled and its busy state cleared
+      82 |     message: "the request-bound recovery settled and its busy state cleared",
+  18 failed
+  25 passed (5.1m)

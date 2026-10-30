@@ -1,0 +1,38 @@
+PR #323 RED head 8709197df65b1190ca1eb2f8627994d02cc325cd
+Gates 40933762355 / bundle:04 job 123660587541 / artifact 12924102742
+Source: gate-browser-design/playwright/store-design/20261029T185340.286020705/playwright.log
+  ✘   9 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-TW: receipt-bound content after committed response loss and newer save (13.5s)
+  ✘  10 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-TW: receipt-bound content after committed response loss and newer save with reload (13.7s)
+  ✘  11 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-CN: receipt-bound content after committed response loss and newer save (13.5s)
+  ✘  12 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-CN: receipt-bound content after committed response loss and newer save with reload (13.7s)
+  ✘  13 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 en: receipt-bound content after committed response loss and newer save (13.5s)
+  ✘  14 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 en: receipt-bound content after committed response loss and newer save with reload (13.5s)
+  1) tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-TW: receipt-bound content after committed response loss and newer save
+    Error: a later saved draft must never be shown as the original publication
+    Expected substring: not "Unpublished B"
+  2) tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-TW: receipt-bound content after committed response loss and newer save with reload
+    Error: missing original content must not fall back to the newer draft
+    Expected: 0
+    Received: 1
+  3) tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-CN: receipt-bound content after committed response loss and newer save
+    Error: a later saved draft must never be shown as the original publication
+    Expected substring: not "Unpublished B"
+  4) tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-CN: receipt-bound content after committed response loss and newer save with reload
+    Error: missing original content must not fall back to the newer draft
+    Expected: 0
+    Received: 1
+  5) tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 en: receipt-bound content after committed response loss and newer save
+    Error: a later saved draft must never be shown as the original publication
+    Expected substring: not "Unpublished B"
+  6) tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 en: receipt-bound content after committed response loss and newer save with reload
+    Error: missing original content must not fall back to the newer draft
+    Expected: 0
+    Received: 1
+  6 failed
+    tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-TW: receipt-bound content after committed response loss and newer save
+    tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-TW: receipt-bound content after committed response loss and newer save with reload
+    tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-CN: receipt-bound content after committed response loss and newer save
+    tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-CN: receipt-bound content after committed response loss and newer save with reload
+    tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 en: receipt-bound content after committed response loss and newer save
+    tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 en: receipt-bound content after committed response loss and newer save with reload
+  43 passed (3.7m)
