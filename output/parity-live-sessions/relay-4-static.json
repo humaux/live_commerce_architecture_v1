@@ -1,0 +1,90 @@
+{
+  "recorded_at": "2026-10-30T15:34:12.701159+00:00",
+  "incoming_head": "5a09fc681c16e5eabcd967519a2fc97bd07dd3c1",
+  "checks": [
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/studio-ui.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "relay-4-syntax-studio-ui.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/meta-connect-gate.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "relay-4-syntax-meta-connect-gate.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/parity-live-sessions.ts"
+      ],
+      "exit_code": 0,
+      "log": "relay-4-syntax-parity-helper.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/typescript/bin/tsc",
+        "-p",
+        "output/parity-live-sessions/tsconfig.relay-4.json",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 0,
+      "log": "relay-4-tsc.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "scripts/dev/derive-browser-ownership.mjs"
+      ],
+      "exit_code": 0,
+      "log": "relay-4-ownership-generate.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "scripts/dev/derive-browser-ownership.mjs",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "relay-4-ownership-check.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/dev/depmap.sh"
+      ],
+      "exit_code": 0,
+      "log": "relay-4-depmap.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/check_packet.py"
+      ],
+      "exit_code": 0,
+      "log": "relay-4-packet.log",
+      "evidence": "E1_STATIC_ONLY"
+    }
+  ],
+  "runtime_tests": "NOT_RUN_OWNER_PROHIBITED",
+  "ci": "PENDING_NEW_HEAD",
+  "repeat_reason": "Capture individual exit codes; previous shell sequence did not record each generator status."
+}

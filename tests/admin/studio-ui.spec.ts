@@ -2,7 +2,7 @@
 // Depends on: @playwright/test, node:fs/promises, node:crypto, ../../apps/admin/lib/studio-model, ../../apps/admin/src/shell-copy, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STUDIO_STORE, LC_BROWSER_STUDIO_FOREIGN_STORE, LC_BROWSER_STUDIO_UNLISTED_STORE, LC_BROWSER_STUDIO_SESSION, LC_BROWSER_STUDIO_READONLY_TOKEN, LC_BROWSER_STUDIO_EXPIRED_TOKEN; ./parity-live-sessions (C4 independent oracle)
 // Used by: apps/admin/src/features/live/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_studio_ui_test.go
 // Invariants: scoped server facts and original security assertions remain authoritative; no LIVE effect or test-budget relaxation.
-import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
+import { parityWords } from "./parity-live-sessions";
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -274,9 +274,9 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   page.once("dialog", async (dialog) => { await dialog.accept(); });
   await page.getByTestId("locale-switch").selectOption("zh-CN");
   await expect(page).toHaveURL(/\/zh-CN\/studio/);
-  await expect(page.getByRole("heading", { level: 1, name: "直播场次", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "直播准备", exact: true })).toBeVisible();
   await page.goto(`/zh-CN/studio?store=${store}&scene=${preparedSession}#edit`);
-  await expect(page.getByText("已准备模拟授权")).toBeVisible();
+  await expect(page.getByText("连接授权", { exact: true })).toBeVisible();
   await screenshot(page, "zh-CN-desktop-first-1586x992", 1586, 992);
   await screenshot(page, "zh-CN-phone-first-390x844", 390, 844);
   await page.goto(`/zh-TW/studio?store=${store}&scene=${preparedSession}#edit`);
@@ -437,8 +437,12 @@ test("STU05 the Studio route without a scene settles: live-sessions reads stay b
     if (round > 0) await page.reload(); // each round still exercises the bare route before opening its first card
     await expect(page.getByText("Loading scenes…")).toHaveCount(0);
     await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
-    await page.locator(".studio-scene-list .studio-scene").first().click();
-    await expect(page.getByLabel("Scene name")).toBeVisible(); // signed cards open the same first scene through a real click
+    const firstCard = page.locator(".studio-scene-list .studio-scene").first();
+    const firstTitle = await firstCard.locator("strong").innerText();
+    await firstCard.click();
+    await expect(page.getByRole("heading", { level: 1, name: parityWords.en.prepare, exact: true })).toBeVisible();
+    await expect(page.getByTestId("merchant-studio").getByText(firstTitle, { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/en\/studio\?.*scene=[0-9a-f-]{36}/);
     // G-UI8 settle window: a looping page keeps issuing reads here; a settled one issues none (the scene list read plus a handful of detail reads at most).
     await page.waitForTimeout(2500);
     expect(reads.length, `round ${round}: live-sessions GETs while the bare Studio route settled`).toBeLessThanOrEqual(6);
@@ -526,31 +530,3 @@ test("STU04 native conceal retains an uncertain committed request", async () => 
     await close();
   }
 });
-
-// C4 independent oracle: the permanent split editor is replaced by the signed session cards.
-for (const locale of ["zh-TW", "zh-CN", "en"] as const) test(`C4 session cards and creation ${locale}`, async ({ page }) => {
-  const c = parityWords[locale];
-  await signedLogin(page);
-  for (const viewport of parityViewports) {
-    await page.setViewportSize(viewport);
-    await page.goto(`/${locale}/studio?store=${store}`);
-    await expect(page.getByTestId("merchant-studio")).toBeVisible();
-    await expect(page.getByRole("heading", { name: c.sessions, exact: true })).toBeVisible();
-    for (const name of [c.create, c.copyLast, c.all, c.preparing, c.live, c.ended])
-      await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /^(Scene settings|場次設定|场次设置)$/ })).toHaveCount(0);
-    await expect(page.getByRole("complementary", { name: /MOCK rehearsal|模擬演練|模拟演练/ })).toHaveCount(0);
-    await parityClick(page, c.preparing, () => expect(page.getByRole("button", { name: c.preparing, exact: true })).toHaveAttribute("aria-pressed", "true"));
-    for (const filter of [c.live, c.ended]) await parityClick(page, filter, () => expect(page.getByRole("button", { name: filter, exact: true })).toHaveAttribute("aria-pressed", "true"));
-    await parityClick(page, c.all, () => expect(page.getByRole("button", { name: c.all, exact: true })).toHaveAttribute("aria-pressed", "true"));
-    await parityShot(page, evidence, locale, viewport.width === 1440 ? "5:14545" : "5:14691");
-  }
-  await parityClick(page, c.create, () => expect(page.getByLabel(studioParityName[locale], { exact: true })).toBeVisible());
-  const title = `C4 ${locale} durable draft`;
-  await page.getByLabel(studioParityName[locale], { exact: true }).fill(title);
-  await parityClick(page, studioParitySave[locale], () => expect(page.getByText(title, { exact: true }).first()).toBeVisible());
-  await page.reload();
-  await expect(page.getByText(title, { exact: true }).first()).toBeVisible();
-});
-const studioParityName = {"zh-TW":"場次名稱", "zh-CN":"场次名称", en:"Scene name"};
-const studioParitySave = {"zh-TW":"建立草稿", "zh-CN":"建立草稿", en:"Create draft"};

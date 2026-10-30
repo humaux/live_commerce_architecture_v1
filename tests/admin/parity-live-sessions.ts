@@ -2,7 +2,7 @@
 // Depends on: Playwright, node:fs/promises and the owning spec's isolated evidence directory.
 // Used by: studio-ui, claims-ui, live-console, attribution, meta-connect, meta-connect-gate and meta-health-ui specs.
 // Invariants: real routes only; screenshots supplement clicks; no product state or DOM mutation.
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Locator } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 
 export const parityWords = {
@@ -42,10 +42,10 @@ export type ParityLocale = keyof typeof parityWords;
 export const parityViewports = [{ width: 1440, height: 900 }, { width: 390, height: 844 }] as const;
 
 /** Record actual control interactions, including failed expectations, in the browser artifact. */
-export async function parityClick(page: Page, name: string, verify: () => Promise<unknown>) {
+export async function parityClick(page: Page, name: string, verify: () => Promise<unknown>, within: Page | Locator = page) {
   const row = { route: new URL(page.url()).pathname, control: name, operation: "click", expected: "visible signed-frame result", actual: "NOT_RUN", result: "FAIL" };
   try {
-    const button = page.getByRole("button", { name, exact: true });
+    const button = within.getByRole("button", { name, exact: true });
     await expect(button).toBeVisible();
     await button.click();
     await verify(); row.actual = "expected visible result observed"; row.result = "PASS";

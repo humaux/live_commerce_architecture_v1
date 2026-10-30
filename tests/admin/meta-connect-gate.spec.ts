@@ -677,3 +677,32 @@ test.describe("meta-connect independent browser gate", () => {
     expect((await facts()).connections).toBe(0);
   });
 });
+
+// C4 independent oracle: the permanent split editor is replaced by the signed session cards.
+// FIXTURE/SETUP: independent MCG10 PG fixture preserves STU04 exact five create requests and five logins.
+for (const locale of ["zh-TW", "zh-CN", "en"] as const) test(`C4 session cards and creation ${locale}`, async ({ page }) => {
+  const c = parityWords[locale], studio = page.getByTestId("merchant-studio");
+  await signedLogin(page);
+  for (const viewport of parityViewports) {
+    await page.setViewportSize(viewport);
+    await page.goto(`/${locale}/studio?store=${store}`);
+    await expect(page.getByTestId("merchant-studio")).toBeVisible();
+    await expect(page.getByRole("heading", { name: c.sessions, exact: true })).toBeVisible();
+    for (const name of [c.create, c.copyLast, c.all, c.preparing, c.live, c.ended])
+      await expect(studio.getByRole("button", { name, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^(Scene settings|場次設定|场次设置)$/ })).toHaveCount(0);
+    await expect(page.getByRole("complementary", { name: /MOCK rehearsal|模擬演練|模拟演练/ })).toHaveCount(0);
+    await parityClick(page, c.preparing, () => expect(studio.getByRole("button", { name: c.preparing, exact: true })).toHaveAttribute("aria-pressed", "true"), studio);
+    for (const filter of [c.live, c.ended]) await parityClick(page, filter, () => expect(studio.getByRole("button", { name: filter, exact: true })).toHaveAttribute("aria-pressed", "true"), studio);
+    await parityClick(page, c.all, () => expect(studio.getByRole("button", { name: c.all, exact: true })).toHaveAttribute("aria-pressed", "true"), studio);
+    await parityShot(page, evidence, locale, viewport.width === 1440 ? "5:14545" : "5:14691");
+  }
+  await parityClick(page, c.create, () => expect(page.getByLabel(studioParityName[locale], { exact: true })).toBeVisible());
+  const title = `C4 ${locale} durable draft`;
+  await page.getByLabel(studioParityName[locale], { exact: true }).fill(title);
+  await parityClick(page, studioParitySave[locale], () => expect(page.getByText(title, { exact: true }).first()).toBeVisible());
+  await page.reload();
+  await expect(page.getByText(title, { exact: true }).first()).toBeVisible();
+});
+const studioParityName = {"zh-TW":"場次名稱", "zh-CN":"场次名称", en:"Scene name"};
+const studioParitySave = {"zh-TW":"建立草稿", "zh-CN":"建立草稿", en:"Create draft"};
