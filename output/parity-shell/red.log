@@ -1,0 +1,64 @@
+PARITY-SHELL RED stage — historical assertion RED confirmed; current registration fix pending
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/350
+Head: 2ef451b98cb0a767960273248fa20835c00c0ca9
+Base at start: df35b338b5cfde5de34bb590e2ba118efc17e4a4
+Gates run: 41049199418 (in_progress; parity job not assigned at last read)
+Foundation run: 41049199291 / foundation job 124040755100 (in_progress)
+Observed: gh pr checks 350; gh run view <run> --json status,conclusion,jobs,url,headSha
+Expected assertion RED: shell A white sidebar replaces legacy dark navy (rgb(255, 255, 255)).
+Actual assertion outcome: NOT_RUN/PENDING. Do not treat plan job completion as RED evidence.
+Local static only: node --check parity-shell-browser.mjs; bash -n both changed shell scripts; derive-browser-ownership generation + --check; all exit 0.
+No local tests, builds, servers or production actions.
+WAIT_RUN: 41049199418
+WAIT_RUN: 41049199291
+Wake-up owner: integrator relay via fresh session after CI completion, per card.
+
+RELAY 1 readback (2026-10-30):
+Historical tests-only head: 2ef451b98cb0a767960273248fa20835c00c0ca9
+Foundation run 41049199291 / job 124040755100: FAIL, exit 1.
+Root cause: check-gates: mode --browser-admin-parity is in test-local.sh registry but has no GATES.md row.
+This Foundation failure is NOT assertion RED.
+Historical causal RED: Gates run 41049199418 / parity job 124042191888: FAIL.
+Raw job log: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124042191888/logs
+2026-10-30T11:41:26.3024323Z tests 54; pass 6; fail 48; cancelled 0; skipped 0; todo 0.
+AssertionError [ERR_ASSERTION]: shell A: white sidebar replaces legacy dark navy
+actual: rgb(31, 41, 55); expected: rgb(255, 255, 255)
+All 48 route/viewport/locale captures fail on the new white-rail assertion; six real shell-control journeys pass.
+Evidence E3 for assertion RED at the historical tests-only SHA only; no current-head acceptance.
+Targeted registry fix attempt 1: added the missing mode row to docs/delivery/GATES.md.
+Current head: 32ca8367c3b17d1e3d4d3c86efca69d045c91951
+Only registration documentation changed. No assertion, fixture, baseline, threshold, implementation or exemption changed.
+WAIT_RUN: 41049926127 (Gates; pending)
+WAIT_RUN: 41049926003 (Foundation; foundation job 124043161518; in_progress)
+GREEN: NOT_RUN/PENDING. Shell implementation: NOT_RUN. Independent review: NOT_RUN.
+No local tests/builds/servers or production actions; no processes started.
+Wake-up owner remains the integrator relay after CI completion. End session per CI wait contract.
+foundation	Package docs and gate map are current	2026-10-30T11:39:58.4095323Z shard-plan: ok (1591 top-level tests, each in exactly one of 10 groups)
+foundation	Package docs and gate map are current	2026-10-30T11:39:58.5252303Z check-backend-coverage: ok (71 internal package dirs and 90 split-package files classified; 54 browser modes declare lc_covers)
+foundation	Package docs and gate map are current	2026-10-30T11:39:59.1318085Z check-gates: mode --browser-admin-parity is in test-local.sh registry but has no GATES.md row
+foundation	Package docs and gate map are current	2026-10-30T11:39:59.1419179Z ##[error]Process completed with exit code 1.
+
+RELAY 2 — current tests-only head assertion RED verified 2026-10-30:
+PR head: 32ca8367c3b17d1e3d4d3c86efca69d045c91951
+Gates run 41049926127 / gate (--browser-admin-parity) job 124044902136: FAIL, exit 1.
+CI checkout is the PR synthetic merge: 660bfe7edc41a6e193a3f535292205a0afa8e089 (matrix receipt).
+54 tests; 6 pass; 48 fail; 0 cancelled; 0 skipped; 0 todo.
+All 48 captures failed their NEW assertion: shell A: white sidebar replaces legacy dark navy.
+actual rgb(31, 41, 55); expected rgb(255, 255, 255).
+Foundation run 41049926003 / job 124043161518: PASS at the same PR head.
+E3 causal RED only; not implementation acceptance.
+gh run view 41049926127 --log-failed --job 124044902136: refused until whole run completes.
+Fallback raw finished-job log: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124044902136/logs.
+Original new assertions retained verbatim; added breadcrumb click/refresh and logout document-navigation synchronization.
+
+Raw current-head CI excerpt:
+2026-10-30T11:59:47.3558388Z ℹ tests 54
+2026-10-30T11:59:47.3558980Z ℹ pass 6
+2026-10-30T11:59:47.3559225Z ℹ fail 48
+2026-10-30T11:59:47.3559522Z ℹ cancelled 0
+2026-10-30T11:59:47.3559800Z ℹ skipped 0
+2026-10-30T11:59:47.3560023Z ℹ todo 0
+2026-10-30T11:59:47.3643691Z   AssertionError [ERR_ASSERTION]: shell A: white sidebar replaces legacy dark navy
+2026-10-30T11:59:47.3649746Z     actual: 'rgb(31, 41, 55)',
+2026-10-30T11:59:47.3650050Z     expected: 'rgb(255, 255, 255)',
+2026-10-30T11:59:47.4410120Z matrix-receipts: {"mode":"--browser-admin-parity","run_id":"41049926127","run_attempt":"1","sha":"660bfe7edc41a6e193a3f535292205a0afa8e089","status":"FAIL","test_count":54,"spec_count":0}

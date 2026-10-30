@@ -154,6 +154,12 @@ for (const [locale, c] of Object.entries(copy)) for (const viewport of viewports
         await page.reload({ waitUntil: "load" });
         await ready(page, route.path);
       });
+      if (viewport.width === 1440) await step(page, c.nav[0], "click breadcrumb, refresh", "overview breadcrumb navigates and persists", async () => {
+        await page.locator("[data-shell-topbar] [data-shell-route]").getByRole("link", { name: c.nav[0], exact: true }).click();
+        await ready(page, "/");
+        await page.reload({ waitUntil: "load" });
+        await ready(page, "/");
+      });
       // Every group disclosure is exercised; content module controls belong to their own cards.
       await openMenu(page, locale, viewport);
       for (const name of c.nav) {
@@ -198,7 +204,13 @@ for (const [locale, c] of Object.entries(copy)) for (const viewport of viewports
       });
       await step(page, copy[next].logout, "account, sign out", "signed-out entry remains after refresh", async () => {
         await page.locator("summary").filter({ hasText: copy[next].account }).click();
-        await page.getByTestId("workspace-sign-out").click();
+        // Wait for the actual document navigation; the session fence hides controls before logout finishes.
+        await Promise.all([
+          page.waitForEvent("load"),
+          page.getByTestId("workspace-sign-out").click(),
+        ]);
+        assert.equal(new URL(page.url()).pathname.replace(/\/$/, ""), `/${next}`);
+        assert.equal(new URL(page.url()).searchParams.has("store"), false);
         await expect(page.getByTestId("shell-store-selector")).toHaveCount(0);
         await page.reload({ waitUntil: "load" });
         await expect(page.getByTestId("shell-store-selector")).toHaveCount(0);

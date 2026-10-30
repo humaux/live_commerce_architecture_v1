@@ -2,11 +2,32 @@
  * Purpose: Owns the admin global theme and shared page layout styles.
  * Depends on: ../../../packages/ui/src/tokens.css
  * Used by: apps/admin/app/[locale]/layout.tsx
+ * Invariants: signed admin tokens are scoped to this app; shell rules do not change domain layouts.
  */
 @import "../../../packages/ui/src/tokens.css";
 
-:root {
+html:root {
   color-scheme: light;
+  /* PARITY-SHELL: admin-only signed orders shell A; shared storefront tokens stay independent. */
+  --ui-primary: #247965;
+  --ui-primary-hover: #1c6554;
+  --ui-primary-soft: #eaf6f2;
+  --ui-rail: #fff;
+  --ui-rail-selected: var(--ui-primary-soft);
+  --ui-rail-active: var(--ink);
+  --ui-rail-text: #596579;
+  --ui-rail-width: 240px;
+  --ui-shell-row-gap: var(--ui-space-1);
+  --ui-shell-inset: var(--ui-space-4);
+  --ui-shell-topbar: 64px;
+  --ui-shell-brand-size: 23px;
+  --ui-shell-control-radius: 5px;
+  --ds-primary: var(--ui-primary);
+  --ds-primary-hover: var(--ui-primary-hover);
+  --ds-primary-soft: var(--ui-primary-soft);
+  --ds-link: var(--ui-primary-hover);
+  --ds-nav-active: var(--ui-rail-selected);
+  --ds-nav-text-active: var(--ui-rail-active);
   --navy: #193c61;
   --ink: #142942;
   --muted: #64758a;
@@ -1011,11 +1032,88 @@ code {
 }
 .operator-footer p { margin: 0; }
 .platform-shell-brand {
-  padding: 16px 16px 0;
-  color: #fff;
-  font-size: 19px;
-  font-weight: 750;
+  padding: var(--ui-shell-inset) var(--ui-shell-inset) 0;
+  color: var(--ink);
+  font-size: var(--ui-shell-brand-size);
+  font-weight: 500;
 }
+
+/* Shell A is scoped to the admin chrome; page layouts keep their own module rules. */
+[data-ui-shell] [data-shell-rail] {
+  color: var(--ui-text);
+  border-right: 1px solid var(--ui-border);
+}
+[data-ui-shell] [data-shell-rail] > label {
+  flex: 0 0 auto;
+  width: calc(100% - 2 * var(--ui-shell-inset));
+  margin: 0 var(--ui-shell-inset) var(--ui-shell-row-gap);
+  border-bottom: 1px solid var(--ui-border);
+}
+[data-ui-shell] [data-shell-rail] [data-testid="shell-store-brand"] {
+  border: 0;
+  padding-inline: 0;
+  color: var(--ui-muted);
+  font-size: var(--ui-text-helper);
+  font-weight: 400;
+}
+[data-ui-shell] [data-shell-rail] [data-testid="shell-store-brand"] > span:first-child { display: none; }
+[data-ui-shell] [data-shell-rail] > nav {
+  padding: 0 var(--ui-shell-inset) var(--ui-shell-inset);
+  scrollbar-color: var(--ui-muted) var(--ui-rail);
+}
+[data-ui-shell] [data-shell-rail] nav > div { margin-bottom: var(--ui-shell-row-gap); }
+[data-ui-shell] [data-shell-rail] nav button {
+  color: var(--ui-rail-text);
+  padding-inline: var(--ui-space-6);
+  font-weight: 500;
+  border-radius: var(--ui-shell-control-radius);
+  min-height: var(--ui-target);
+}
+[data-ui-shell] [data-shell-rail] nav button > svg { display: none; }
+[data-ui-shell] [data-shell-rail] nav button:hover:not(:disabled) {
+  background: var(--ui-neutral-soft);
+}
+[data-ui-shell] [data-shell-rail] nav button[data-active="true"],
+[data-ui-shell] [data-shell-rail] nav button[aria-current="page"] {
+  color: var(--ui-rail-active);
+  background: var(--ui-rail-selected);
+  box-shadow: none;
+}
+[data-ui-shell] [data-shell-topbar] {
+  min-height: var(--ui-shell-topbar);
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-2) var(--ui-space-6);
+}
+[data-ui-shell] [data-shell-topbar] [data-shell-route] {
+  flex: 1;
+  min-width: 0;
+  margin: 0 auto 0 0;
+}
+[data-ui-shell] [data-shell-topbar] [data-shell-route] [aria-current] { color: var(--ui-text); }
+[data-ui-shell] [data-shell-topbar] > label select,
+[data-ui-shell] [data-shell-topbar] summary {
+  border-color: transparent;
+  border-radius: var(--ui-shell-control-radius);
+}
+@media (max-width: 1023px) {
+  [data-ui-shell] [data-shell-rail] > button { color: var(--ui-text); }
+  [data-ui-shell] [data-shell-topbar] {
+    min-height: var(--ui-shell-topbar);
+    padding: var(--ui-space-2) var(--ui-space-3);
+    gap: var(--ui-space-2);
+    grid-template-columns: var(--ui-target) minmax(var(--ui-target), 1fr) auto auto auto;
+  }
+  /* The task heading in each module carries the mobile breadcrumb context. */
+  [data-ui-shell] [data-shell-topbar] [data-shell-route] { display: none; }
+  [data-ui-shell] [data-shell-topbar] [data-testid="shell-store-brand"] {
+    border: 0;
+    padding-inline: 0;
+    color: var(--ui-muted);
+    font-size: var(--ui-text-helper);
+    font-weight: 400;
+  }
+}
+
 .entry-root {
   min-height: 100vh;
   background: #f7f9fc;
