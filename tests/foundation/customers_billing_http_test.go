@@ -26,6 +26,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -433,6 +434,24 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		if pa := cbhMap(firstOf(cbhArr(d.json["privacy_actions"]))); cbhKeys(pa) != "completed_at,kind,summary,via" || pa["kind"] != "ERASURE" || pa["via"] != "merchant" {
 			t.Errorf("privacy action row: %v", pa)
 		}
+	})
+
+	// PARITY-MONEY additive data ruling: the financial observation time comes from the server,
+	// never from a browser clock or the selected business-date range. No ledger freshness is implied.
+	t.Run("PARITY-MONEY finance summary provides server generation time", func(t *testing.T) {
+		started := time.Now().UTC().Truncate(time.Second)
+		r := c.do(c.on, "GET", base+"/finance/summary?from=2026-01-01&to=2026-01-31", c.tokens["ordersRO"], nil, nil)
+		finished := time.Now().UTC()
+		c.want("PARITY-MONEY summary generation time", r, 200, "")
+		value, ok := r.json["generated_at"].(string)
+		if !ok || value == "" {
+			t.Fatal("PARITY-MONEY: finance summary is missing server-generated generated_at for the signed overview")
+		}
+		generated, err := time.Parse(time.RFC3339Nano, value)
+		if err != nil || generated.Before(started) || generated.After(finished) {
+			t.Fatalf("PARITY-MONEY: generated_at must be the successful server read time inside this request: %q, error=%v", value, err)
+		}
+		c.noStore("PARITY-MONEY timestamped finance summary", r)
 	})
 
 	t.Run("GET finance/summary and summary.csv", func(t *testing.T) {

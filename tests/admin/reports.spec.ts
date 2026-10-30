@@ -1,5 +1,5 @@
 // Purpose: Independent W6 report real-click acceptance from reporting-v2 §§1–6, with persisted export audits in Go.
-// Depends on: Playwright, reports-copy labels only, genuine browser_w6_customers_reports_test.go stack and LC_W6UI_*.
+// Depends on: Playwright, reports-copy labels only, genuine browser_w6_customers_reports_test.go stack and LC_W6UI_*., ./parity-money-support
 // Used by: TestBrowserW6Reports / --browser-reports; no API writes or JSON mocks substitute user clicks.
 // Invariants: I01/I05/I11/I18; signed MOCK OIDC, REAL_PG synthetic corpus; provider SANDBOX/LIVE NOT_RUN.
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
@@ -7,6 +7,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { reportsCopy } from "../../apps/admin/lib/reports-copy";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
+import { moneyClick, moneyDesign, moneyLocales, moneyShot, moneyWidths } from "./parity-money-support";
 
 const required = (key: string) => { const value = process.env[key]; if (!value) throw new Error(`${key} required`); return value; };
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN"), evidence = required("LC_BROWSER_EVIDENCE"), store = required("LC_W6UI_STORE");
@@ -26,7 +27,7 @@ async function ctl(resource: string, mode = "") {
   const response = await fetch(`${control}/${resource}`, { method: "POST", headers: { "X-W6UI-Gate-Key": gateKey, "Content-Type": "application/json" }, body: JSON.stringify({ mode }) });
   expect(response.status, `fixture ${resource}`).toBe(204);
 }
-async function signed(browser: Browser, locale: "en" | "zh-TW", width: number, actor = "owner") {
+async function signed(browser: Browser, locale: "en" | "zh-TW" | "zh-CN", width: number, actor = "owner") {
   await ctl("actor", actor);
   const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width, height: width === 390 ? 844 : 900 } });
   const page = await context.newPage();
@@ -73,6 +74,47 @@ async function exportTab(page: Page, tab: string) {
     expect(text).not.toContain("W6-ARCHIVE-ONLY");
   });
   return csvRows(text);
+}
+
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`PARITY-MONEY report date and failure frames (${locale}, ${width})`, async ({ browser }) => {
+    const c = moneyDesign[locale], { context, page } = await signed(browser, locale, width);
+    try {
+      const before = page.url();
+      await moneyClick(page, evidence, c.chooseDates, "signed date editor opens, cancelling preserves range", async () => {
+        await page.getByRole("button", { name: c.chooseDates, exact: true }).click();
+        await expect(page.getByRole("heading", { name: c.chooseDates, exact: true }), "PARITY-MONEY 1151:9432/9433: signed date range").toBeVisible();
+        await page.getByLabel(c.from, { exact: true }).fill("2026-09-02");
+        await page.getByLabel(c.to, { exact: true }).fill("2026-09-30");
+        await moneyShot(page, evidence, "reportDates", locale, width);
+        await page.getByRole("button", { name: c.cancel, exact: true }).click();
+        await expect(page).toHaveURL(before);
+      });
+      await moneyClick(page, evidence, c.apply, "applied report date persists on refresh", async () => {
+        await page.getByRole("button", { name: c.chooseDates, exact: true }).click();
+        await page.getByLabel(c.from, { exact: true }).fill("2026-09-02");
+        await page.getByLabel(c.to, { exact: true }).fill("2026-09-30");
+        await page.getByRole("button", { name: c.apply, exact: true }).click();
+        await expect(page).toHaveURL(/from=2026-09-02/);
+        await page.reload();
+        await expect(page).toHaveURL(/from=2026-09-02/);
+        // Pre-Figma always-open dates/submit have moved into the explicit date editor.
+        await expect(page.getByTestId("reports-from")).toHaveCount(0);
+        await expect(page.getByTestId("reports-show")).toHaveCount(0);
+      });
+      // Fixture-only failed GET. The visible failure and subsequent recovery must come from the real page.
+      await page.route(`**/api/stores/${store}/reports/products?*`, route => route.fulfill({ status: 503, body: "unavailable" }));
+      await page.reload();
+      await expect(page.getByRole("heading", { name: c.reportFailure, exact: true })).toBeVisible();
+      await expect(page.getByText(c.failure, { exact: true })).toBeVisible();
+      await moneyShot(page, evidence, "reportFailure", locale, width);
+      await page.unroute(`**/api/stores/${store}/reports/products?*`);
+      await moneyClick(page, evidence, c.retry, "reload restores real report rows", async () => {
+        await page.getByRole("button", { name: c.retry, exact: true }).click();
+        await expect(page.getByTestId("reports-products-table")).toBeVisible();
+      });
+    } finally { await context.close(); }
+  });
 }
 
 test("RPUI calibration-sensitive response: genuine products read renders data", async ({ browser }) => {

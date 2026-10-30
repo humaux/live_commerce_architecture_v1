@@ -1,5 +1,5 @@
 // Purpose: real-click browser gate of the platform card-payments page (enable dialog, disable, every state badge, BLOCKED and platform-CLOSED rules, 409 reload) against real PG, Go and the production admin Next build.
-// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/card-payments-copy, ../../apps/admin/src/shell-copy, ../../packages/format/src/index; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/card-payments-copy, ../../apps/admin/src/shell-copy, ../../packages/format/src/index; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, ./parity-money-support
 // Used by: apps/admin/src/features/settings/routes.ts (card-payments), scripts/dev/test-local.sh (--browser-card-payments), tests/foundation/browser_card_payments_test.go
 // W4-U1 (contracts/stripe-platform-account-v1.md §0.3 AD-PF2, §2, §3.3, §5; docs/delivery/units/w4-u1-payment-activation-ui.md "Integrator 裁决").
 // BFF routes exercised through the UI: GET|PUT /api/stores/{store}/payments/card -> Go /v1/admin/stores/{store}/payments/card (keyless CAS PUT).
@@ -14,6 +14,7 @@ import path from "node:path";
 import { cardPaymentsCopy } from "../../apps/admin/lib/card-payments-copy";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { money } from "../../packages/format/src/index";
+import { moneyClick, moneyDesign, moneyLocales, moneyShot, moneyWidths } from "./parity-money-support";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -121,6 +122,27 @@ async function clickAndCapturePut(page: Page, testid: string) {
   return { status: response.status(), headers: request.headers(), body: request.postDataJSON() as Record<string, unknown> };
 }
 const badge = (page: Page) => page.getByTestId("card-state-badge");
+
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`PARITY-MONEY signed card collection frame (${locale}, ${width})`, async ({ page }) => {
+    const c = moneyDesign[locale];
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await signedLogin(page);
+    await page.goto(cardUrl(locale));
+    await expect(page.getByRole("heading", { level: 1, name: c.card, exact: true }), "PARITY-MONEY 6:20884/6:20993: signed payment settings title").toBeVisible();
+    await expect(page.getByRole("heading", { name: c.unified, exact: true })).toBeVisible();
+    await expect(page.getByText(c.cardIntro, { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: c.cardBasis, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: c.oldCard, exact: true })).toHaveCount(0);
+    await expect(page.getByTestId("card-payments-page").locator('input[type="password"], input[name*="key"], input[name*="account"]')).toHaveCount(0);
+    await moneyShot(page, evidence, "card", locale, width);
+    await moneyClick(page, evidence, c.settlementLink, "real settlement route opens", async () => {
+      await page.getByRole("link", { name: c.settlementLink, exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`/${locale}/settings/settlements`));
+      await expect(page.getByTestId("settlements-page")).toBeVisible();
+    });
+  });
+}
 
 test("CPU1 enabled store: badges, limits from the server, no credential input, entry link from Settings", async ({ page }) => {
   const spy = watch(page);

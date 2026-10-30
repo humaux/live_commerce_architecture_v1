@@ -1,5 +1,5 @@
 // Purpose: real-click browser gate of the read-only settlement statements page (list, detail with lines, payout states, empty state, 390px) against real PG, Go and the production admin Next build.
-// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/card-payments-settlements-copy, ../../apps/admin/lib/card-payments-settlements-model, ../../apps/admin/src/shell-copy, ../../packages/format/src/index; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_STMT_PAID, LC_BROWSER_STMT_CARRIED, LC_BROWSER_STMT_PENDING, LC_BROWSER_PAYOUT_REF
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/card-payments-settlements-copy, ../../apps/admin/lib/card-payments-settlements-model, ../../apps/admin/src/shell-copy, ../../packages/format/src/index; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_STMT_PAID, LC_BROWSER_STMT_CARRIED, LC_BROWSER_STMT_PENDING, LC_BROWSER_PAYOUT_REF, ./parity-money-support
 // Used by: apps/admin/src/features/settings/routes.ts (settlements), scripts/dev/test-local.sh (--browser-card-payments), tests/foundation/browser_card_payments_test.go
 // W4-U1 (contracts/stripe-platform-account-v1.md §6.4; W4-S2 delivery): BFF GET /api/stores/{store}/settlements[/{id}] -> Go read_store_settlements.
 // The statements are produced by tests/foundation/w4_u1_seed_test.go only through the operator paths (sync -> close -> payout): one paid, one that
@@ -13,6 +13,7 @@ import { cardPaymentsSettlementsCopy } from "../../apps/admin/lib/card-payments-
 import { parseSettlementDetail, periodLabel } from "../../apps/admin/lib/card-payments-settlements-model";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { money } from "../../packages/format/src/index";
+import { moneyClick, moneyDesign, moneyLocales, moneyShot, moneyWidths } from "./parity-money-support";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -102,6 +103,51 @@ async function shot(page: Page, name: string, locale: string, viewport: "desktop
   }
   manifest.push({ File: path.basename(file), Sha256: createHash("sha256").update(await readFile(file)).digest("hex"), Locale: locale, Viewport: viewport });
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+}
+
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`PARITY-MONEY settlement list, detail and returned frames (${locale}, ${width})`, async ({ page }) => {
+    const c = moneyDesign[locale];
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await signedLogin(page);
+    await page.goto(url(locale));
+    await expect(page.getByRole("heading", { level: 1, name: c.statements, exact: true })).toBeVisible();
+    // The old 11-column financial spreadsheet must not remain the statement selector.
+    await expect(page.getByRole("columnheader", { name: c.legacyCaptured, exact: true }), "PARITY-MONEY 1173:10740/10741: legacy wide ledger removed").toHaveCount(0);
+    await expect(page.getByRole("button", { name: c.openStatement, exact: true }).first()).toBeVisible();
+    await moneyShot(page, evidence, "statements", locale, width);
+    await moneyClick(page, evidence, c.openStatement, "signed statement breakdown opens from real ledger", async () => {
+      await page.getByTestId(`settlement-row-${paid}`).getByRole("button", { name: c.openStatement, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.statement, exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: c.composition, exact: true })).toBeVisible();
+    });
+    await moneyShot(page, evidence, "statement", locale, width);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: c.statement, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: c.backStatements, exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1, name: c.statements, exact: true })).toBeVisible();
+    const rows = await returnedFixture(page); // disclosed frozen DTO read fixture, same as STL6; never writes money
+    const source = rows.find(row => row.payout_returned)!;
+    const carrying = rows.find(row => row.returned_in_minor > 0)!;
+    await page.goto(url(locale));
+    await moneyClick(page, evidence, "returned statement", "returned payout remains unsettled with original payout history", async () => {
+      await page.getByTestId(`settlement-row-${source.statement_id}`).getByRole("button", { name: c.openStatement, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.returned, exact: true })).toBeVisible();
+      await expect(page.getByText(c.returnedStatus, { exact: true })).toBeVisible();
+      await expect(page.getByTestId("settlement-detail")).toContainText(source.payout_ref!);
+      await expect(page.getByTestId("settlement-detail")).toContainText(money(locale, "TWD", source.payout_minor!));
+    });
+    await moneyShot(page, evidence, "returned", locale, width);
+    await page.getByRole("button", { name: c.backStatements, exact: true }).click();
+    await moneyClick(page, evidence, "returned funds carried in", "return contribution is separate from previous negative carry", async () => {
+      await page.getByTestId(`settlement-row-${carrying.statement_id}`).getByRole("button", { name: c.openStatement, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.carriedReturn, exact: true })).toBeVisible();
+      await expect(page.getByText(c.returnContribution, { exact: true })).toBeVisible();
+      await expect(page.getByTestId("settlement-detail-returned_in")).toContainText(money(locale, "TWD", carrying.returned_in_minor));
+      await expect(page.getByTestId("settlement-detail-carried_in")).toBeVisible();
+    });
+    await moneyShot(page, evidence, "carriedReturn", locale, width);
+  });
 }
 
 // Preserve the original real-chain serial group. The new independent MOCK DTO cases below must still execute

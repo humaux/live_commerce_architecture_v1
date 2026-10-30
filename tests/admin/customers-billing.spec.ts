@@ -1,5 +1,5 @@
 // Purpose: Exercises customer, finance and billing UI with the real harness and MOCK billing provider.
-// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/billing-copy, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/customers-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CUSTOMER, LC_BROWSER_CUSTOMER_ERASE, LC_BROWSER_ORDER, LC_BROWSER_SESSION, LC_BROWSER_PRICE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_PHONE_TAIL, LC_BROWSER_PHONE_FULL, LC_BROWSER_ACTOR_KEY, LC_BROWSER_RESTRICTED_TOKEN, LC_BROWSER_NOFIN_TOKEN
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/billing-copy, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/customers-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CUSTOMER, LC_BROWSER_CUSTOMER_ERASE, LC_BROWSER_ORDER, LC_BROWSER_SESSION, LC_BROWSER_PRICE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_PHONE_TAIL, LC_BROWSER_PHONE_FULL, LC_BROWSER_ACTOR_KEY, LC_BROWSER_RESTRICTED_TOKEN, LC_BROWSER_NOFIN_TOKEN, ./parity-money-support
 // Used by: apps/admin/src/features/customers/routes.ts, apps/admin/src/features/finance/routes.ts, apps/admin/src/features/settings/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_customers_billing_test.go
 // CB11 admin half (contracts/customers-billing-v1.md §5 "Admin screens", §8 CB11; customers-billing-ui.md U1-U6, U9).
 // BFF routes exercised through the UI: GET|POST /api/stores/{store}/customers*, GET finance/summary[.csv],
@@ -18,6 +18,7 @@ import { billingCopy } from "../../apps/admin/lib/billing-copy";
 import { claimsCopy } from "../../apps/admin/lib/claims-copy";
 import { customersCopy } from "../../apps/admin/lib/customers-copy";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
+import { moneyClick, moneyDesign, moneyLocales, moneyOverview, moneyShot, moneyWidths } from "./parity-money-support";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -88,6 +89,136 @@ async function storageLacks(page: Page, needles: string[]) {
   for (const needle of needles) expect(stored).not.toContain(needle);
 }
 const keyOf = (headers: Record<string, string>) => headers["idempotency-key"] ?? null;
+
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`PARITY-MONEY finance signed states (${locale}, ${width})`, async ({ page }) => {
+    const c = moneyDesign[locale];
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await signedLogin(page);
+    const target = `/${locale}/finance?store=${store}&from=${financeDay(-1)}&to=${financeDay()}`;
+    const reading = page.waitForResponse(response => response.request().method() === "GET" && /\/finance\/summary\?/.test(response.url()));
+    await page.goto(target);
+    await moneyOverview(page, locale);
+    const summary = await (await reading).json();
+    expect(typeof summary.generated_at, "PARITY-MONEY server timestamp required; browser time is not a substitute").toBe("string");
+    await expect(page.getByTestId("finance-generated-at")).toHaveAttribute("datetime", summary.generated_at);
+    await moneyShot(page, evidence, "overview", locale, width);
+    await moneyClick(page, evidence, c.daily, "signed daily ledger and return control", async () => {
+      await page.getByRole("button", { name: c.daily, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.dailyTitle, exact: true })).toBeVisible();
+      await expect(page.getByTestId("finance-table")).toBeVisible();
+    });
+    await moneyShot(page, evidence, "daily", locale, width);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: c.dailyTitle, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: c.backFinance, exact: true }).click();
+    await moneyClick(page, evidence, c.basis, "signed explanation, no financial write", async () => {
+      await page.getByRole("button", { name: c.basis, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.basisTitle, exact: true })).toBeVisible();
+    });
+    await moneyShot(page, evidence, "basis", locale, width);
+    await page.getByRole("button", { name: c.backFinance, exact: true }).click();
+    const before = page.url();
+    await moneyClick(page, evidence, c.financeDates, "draft dates, cancel leaves original range", async () => {
+      await page.getByRole("button", { name: c.financeDates, exact: true }).click();
+      await expect(page.getByRole("heading", { name: c.financeDates, exact: true })).toBeVisible();
+      await page.getByLabel(c.from, { exact: true }).fill(financeDay(-7));
+      await page.getByLabel(c.to, { exact: true }).fill(financeDay());
+      await moneyShot(page, evidence, "financeDates", locale, width);
+      await page.getByRole("button", { name: c.cancel, exact: true }).click();
+      await expect(page).toHaveURL(before);
+    });
+    await moneyClick(page, evidence, c.apply, "applied dates survive refresh", async () => {
+      await page.getByRole("button", { name: c.financeDates, exact: true }).click();
+      await page.getByLabel(c.from, { exact: true }).fill(financeDay(-7));
+      await page.getByLabel(c.to, { exact: true }).fill(financeDay());
+      await page.getByRole("button", { name: c.apply, exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`from=${financeDay(-7)}`));
+      await page.reload();
+      await moneyOverview(page, locale);
+      await expect(page).toHaveURL(new RegExp(`from=${financeDay(-7)}`));
+    });
+    await moneyClick(page, evidence, c.csv, "export preview then a real audited CSV download", async () => {
+      await page.getByRole("button", { name: c.csv, exact: true }).click();
+      await expect(page.getByRole("heading", { name: c.csvReady, exact: true })).toBeVisible();
+      await moneyShot(page, evidence, "financeCSV", locale, width);
+      const downloading = page.waitForEvent("download");
+      await page.getByRole("link", { name: c.download, exact: true }).click();
+      expect((await downloading).suggestedFilename()).toMatch(/^finance-.*\.csv$/);
+    });
+    // Fixture-only transient response; all recovery actions are real clicks on the real route.
+    await page.route(`**/api/stores/${store}/finance/summary?*`, route => route.fulfill({ status: 503, body: "unavailable" }));
+    await page.goto(target);
+    await expect(page.getByRole("heading", { name: c.financeFailure, exact: true })).toBeVisible();
+    await expect(page.getByText(c.failure, { exact: true })).toBeVisible();
+    await moneyShot(page, evidence, "financeFailure", locale, width);
+    await page.unroute(`**/api/stores/${store}/finance/summary?*`);
+    await moneyClick(page, evidence, c.retry, "finance recovers without a money command", async () => {
+      await page.getByRole("button", { name: c.retry, exact: true }).click();
+      await moneyOverview(page, locale);
+    });
+  });
+
+  test(`PARITY-MONEY billing signed states (${locale}, ${width})`, async ({ page }) => {
+    const c = moneyDesign[locale];
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await signedLogin(page);
+    const target = `/${locale}/billing?store=${store}`;
+    try {
+      for (const [standing, frame, label] of [
+        ["good", "billing", c.good], ["unbilled", "unbilled", c.unbilled],
+        ["grace", "overdue", c.overdue], ["restricted", "restricted", c.restricted],
+      ] as const) {
+        await ctl(`standing/${standing}`); // runner-only synthetic webhook setup, never a substitute for UI actions
+        await page.goto(target);
+        await expect(page.getByRole("heading", { level: 1, name: c.billing, exact: true }), "PARITY-MONEY signed billing title").toBeVisible();
+        await expect(page.getByRole("heading", { name: c.payment, exact: true })).toBeVisible();
+        await expect(page.getByRole("heading", { name: c.usage, exact: true })).toBeVisible();
+        await expect(page.getByTestId("billing-standing")).toContainText(label);
+        await expect(page.getByRole("heading", { level: 1, name: c.oldBilling, exact: true })).toHaveCount(0);
+        await moneyShot(page, evidence, frame, locale, width);
+      }
+      await ctl("standing/good");
+      // Existing DTO field only: deterministic cancellation state unreachable through this harness's control endpoint.
+      await page.route(`**/api/stores/${store}/billing`, async route => {
+        const response = await route.fetch();
+        const body = await response.json();
+        for (const sub of body.subscriptions) sub.cancel_at_period_end = true;
+        await route.fulfill({ response, json: body });
+      });
+      await page.goto(target);
+      await expect(page.getByTestId("billing-subscriptions")).toContainText(c.cancellation);
+      await moneyShot(page, evidence, "cancelling", locale, width);
+      await page.unroute(`**/api/stores/${store}/billing`);
+      await page.goto(`${target}&checkout=cancel`);
+      await expect(page.getByTestId("billing-cancelled")).toHaveText(c.cancelled);
+      await moneyShot(page, evidence, "cancelled", locale, width);
+      await ctl("standing/unbilled");
+      await page.goto(`${target}&checkout=done`);
+      await expect(page.getByTestId("billing-updating")).toHaveText(c.updating);
+      await moneyShot(page, evidence, "updating", locale, width);
+      await ctl("standing/good");
+      await page.goto(target);
+      await moneyClick(page, evidence, c.manage, "external billing explanation before leaving; return does not open Stripe", async () => {
+        await page.getByRole("button", { name: c.manage, exact: true }).first().click();
+        await expect(page.getByRole("heading", { level: 1, name: c.manage, exact: true })).toBeVisible();
+        await expect(page.getByText(c.portalIntro, { exact: true })).toBeVisible();
+        await moneyShot(page, evidence, "portal", locale, width);
+        await page.getByRole("button", { name: c.backBilling, exact: true }).click();
+        await expect(page.getByRole("heading", { level: 1, name: c.billing, exact: true })).toBeVisible();
+      });
+      // Permission fixture only; no authorization is changed in the application or database.
+      await page.route(`**/api/stores/${store}/billing`, route => route.fulfill({ status: 403, json: { error: "forbidden" } }));
+      await page.goto(target);
+      await expect(page.getByRole("heading", { level: 1, name: c.billingRefusal, exact: true })).toBeVisible();
+      await expect(page.getByTestId("billing-subscriptions")).toHaveCount(0);
+      await moneyShot(page, evidence, "billingRefusal", locale, width);
+    } finally {
+      await page.unroute(`**/api/stores/${store}/billing`);
+      await ctl("standing/unbilled"); // restore the original CB11 fixture for the existing real-chain scenarios
+    }
+  });
+}
 
 test("CB11 customers list: table, phone last 3 only, search by name and phone digits, no actor or PSP data, nav entries", async ({ page }) => {
   await signedLogin(page);
