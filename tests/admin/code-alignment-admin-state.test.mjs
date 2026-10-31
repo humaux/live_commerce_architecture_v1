@@ -120,8 +120,13 @@ test("shared block renders real DS empty/error states and an accessible token-st
   assert.match(empty, /data-kind="empty"/);
   assert.match(empty, /No orders/);
   assert.match(empty, /href="\/en\/orders"/);
-  const failure = renderToStaticMarkup(React.createElement(AdminStateBlock, {
+  const firstFailure = renderToStaticMarkup(React.createElement(AdminStateBlock, {
     variant: "error", title: "Unavailable", description: "Try again", onRetry() {}, retryLabel: "Try again",
+  }));
+  assert.match(firstFailure, /data-kind="error"/);
+  assert.doesNotMatch(firstFailure, /role="alert"/);
+  const failure = renderToStaticMarkup(React.createElement(AdminStateBlock, {
+    variant: "error", title: "Unavailable", description: "Try again", onRetry() {}, retryLabel: "Try again", failed: true,
   }));
   assert.match(failure, /data-kind="error"/);
   assert.match(failure, /role="alert"/);

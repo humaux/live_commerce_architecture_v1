@@ -433,8 +433,36 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
             await expect(page).toHaveURL(`${origin}/${locale}/orders/${orderID}`);
             await page.reload();
             await expect(panel).toBeVisible();
+          } else if (kind === "unknown") {
+            await page.goto(`${origin}/${locale}/orders/${orderID}`);
+            // P1: routine PENDING state (CREATING) with no failed read must NOT show the unknown panel
+            await expect(page.locator('section[data-variant="unknown"]')).toHaveCount(0);
+            await expect(page.getByTestId("pay-order")).toBeVisible();
+            await expect(page.locator(".sf-empty")).toHaveCount(0);
+            await expect(page.getByText(/403\s*·/)).toHaveCount(0);
+            // Real failed read: status read fails -> unknown panel is PRESENT
+            paymentFailed = true;
+            await page.getByTestId("refresh-order").click();
+            const panel = page.locator('section[data-variant="unknown"]');
+            await expect(panel.getByRole("heading", { name: c.unknown, exact: true })).toBeVisible();
+            await expect(panel).toContainText(c.unknownBody);
+            await expect(page.getByTestId("pay-order")).toHaveCount(0);
+            const frames = { unknown: ["1429-35308", "1429-35331"] };
+            await shot(frames.unknown[width === 1440 ? 0 : 1]);
+            await expect(page.getByTestId("order-page")).toContainText("2,620");
+            const before = reads.filter(url => url.endsWith("/payment")).length;
+            await panel.getByRole("button", { name: c.check, exact: true }).click();
+            await expect(panel.getByRole("alert")).toContainText(c.unknownFailed);
+            assert.ok(reads.filter(url => url.endsWith("/payment")).length > before, "Check status reads the same payment");
+            await expect(page.getByTestId("order-page")).toContainText("2,620");
+            await expect(page.getByTestId("pay-order")).toHaveCount(0);
+            await shot(width === 1440 ? "1429-35484" : "1429-35506");
+            paymentFailed = false;
+            await panel.getByRole("button", { name: c.check, exact: true }).click();
+            await expect(page.locator('section[data-variant="unknown"]')).toHaveCount(0);
+            await expect(page.getByTestId("pay-order")).toBeVisible();
           } else {
-            const route = kind === "empty" || kind === "offline" ? "cart" : kind === "expired" ? "order-link" : `orders/${orderID}`;
+            const route = kind === "empty" || kind === "offline" ? "cart" : "order-link";
             await page.goto(`${origin}/${locale}/${route}`);
             const panel = page.locator(`section[data-variant="${kind}"]`);
             await expect(panel.getByRole("heading", { name: c[kind], exact: true })).toBeVisible();
@@ -442,7 +470,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
             if (c[`${kind}Note`]) await expect(panel).toContainText(c[`${kind}Note`]);
             await expect(page.locator(".sf-empty")).toHaveCount(0);
             await expect(page.getByText(/403\s*·/)).toHaveCount(0);
-            const frames = { empty: ["1429-35150", "1429-35170"], forbidden: ["1429-35190", "1429-35210"], offline: ["1429-35230", "1429-35249"], expired: ["1429-35268", "1429-35288"], unknown: ["1429-35308", "1429-35331"] };
+            const frames = { empty: ["1429-35150", "1429-35170"], offline: ["1429-35230", "1429-35249"], expired: ["1429-35268", "1429-35288"] };
             await shot(frames[kind][width === 1440 ? 0 : 1]);
             if (kind === "offline") {
               const retry = page.getByRole("button", { name: c.retry, exact: true });
@@ -462,24 +490,21 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
               await expect(page.getByRole("heading", { name: c.empty, exact: true })).toBeVisible();
               await page.reload();
               await expect(page.getByRole("heading", { name: c.empty, exact: true })).toBeVisible();
-            } else if (kind === "unknown") {
-              await expect(page.getByTestId("order-page")).toContainText("2,620");
-              const before = reads.filter(url => url.endsWith("/payment")).length;
-              paymentFailed = true;
-              await panel.getByRole("button", { name: c.check, exact: true }).click();
-              await expect(panel.getByRole("alert")).toContainText(c.unknownFailed);
-              assert.ok(reads.filter(url => url.endsWith("/payment")).length > before, "Check status reads the same payment");
-              await expect(page.getByTestId("order-page")).toContainText("2,620");
-              await expect(page.getByTestId("pay-order")).toHaveCount(0);
-              await shot(width === 1440 ? "1429-35484" : "1429-35506");
-              paymentFailed = false;
-              await page.reload();
-              await expect(panel).toBeVisible();
+              // Real click: failed cart read outside /cart opens drawer in read-problem state, never empty
+              cartFailed = true;
+              await page.goto(`${origin}/${locale}/products`);
+              await page.getByTestId("header-cart").click();
+              const drawer = page.getByTestId("cart-drawer");
+              await expect(drawer).toBeVisible();
+              const drawerOffline = drawer.locator('section[data-variant="offline"]');
+              await expect(drawerOffline.getByRole("heading", { name: c.offline, exact: true })).toBeVisible();
+              await expect(drawer.locator(".sf-empty")).toHaveCount(0);
+              cartFailed = false;
             } else {
               await page.reload();
               await expect(panel).toBeVisible();
-              const actionName = kind === "empty" ? c.browse : kind === "expired" ? c.lookup : c.home;
-              const suffix = kind === "empty" ? "/products" : kind === "expired" ? "/orders/lookup" : "";
+              const actionName = kind === "empty" ? c.browse : c.lookup;
+              const suffix = kind === "empty" ? "/products" : "/orders/lookup";
               await panel.getByRole("link", { name: actionName, exact: true }).click();
               await expect(page).toHaveURL(new RegExp(`/${locale}${suffix}/?$`));
             }

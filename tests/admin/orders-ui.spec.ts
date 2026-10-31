@@ -1392,10 +1392,13 @@ function registerParityStates(signedLogin: (page: Page) => Promise<void>) {
           release();
           const panel = page.getByTestId("merchant-orders").locator('[data-variant="offline"]');
           await expect(panel).toBeVisible();
+          await expect(panel.getByRole("alert")).toHaveCount(0);
           const retry = panel.getByRole("button", { name: c.retry, exact: true });
           await expect(retry).toBeEnabled();
+          const before = reads.length;
           await retry.click();
           await expect(panel.getByRole("alert")).toBeVisible();
+          expect(reads.length).toBeGreaterThan(before);
           state = "empty";
           await retry.click();
           await expect(page.getByTestId("merchant-orders").locator('[data-variant="empty"]')).toBeVisible();

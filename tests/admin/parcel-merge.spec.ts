@@ -412,7 +412,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
   for (const read of ["suggestions", "groups"] as const) {
     for (const [status, copy] of [
       [401, "Sign in to view orders."],
-      [403, "This page cannot be opened"],
+      [403, "This link cannot be opened, or your account cannot use this feature. Return to an available feature."],
       [404, "This order is unavailable in the selected store."],
     ] as const) {
       await test.step(`${read} ${status} clears orders/detail/bulk/groups before stale read completions`, async () => {
@@ -463,8 +463,8 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
           if (status === 403) {
             // The signed permission panel replaces the legacy sentence; purge coverage below is unchanged.
             const denial = page.getByTestId("merchant-orders").locator('section[data-variant="forbidden"]');
-            await expect(denial.getByRole("heading", { name: copy, exact: true })).toBeVisible();
-            await expect(denial).toContainText("This link cannot be opened, or your account cannot use this feature. Return to an available feature.");
+            await expect(denial.getByRole("heading", { name: "This page cannot be opened", exact: true })).toBeVisible();
+            await expect(denial).toContainText(copy);
             await expect(denial).toContainText("Ask the store owner if you need access to this feature.");
             await expect(denial.getByRole("link", { name: "Back to workspace", exact: true })).toHaveAttribute("href", "/en");
           }
