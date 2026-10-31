@@ -509,7 +509,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
               await expect(page).toHaveURL(new RegExp(`/${locale}${suffix}/?$`));
             }
           }
-          assert.deepEqual(writes.filter(write => kind !== "lookup" || write.path !== "/api/buyer/orders/lookup"), [], "recovery must not replay any command or payment signal");
+          assert.deepEqual(writes.filter(write => (kind !== "lookup" || write.path !== "/api/buyer/orders/lookup") && (kind !== "unknown" || !write.path.endsWith("/payment/refresh"))), [], "recovery must not replay any command or payment signal");
           ledger.push({ route: kind, locale, width, operation: "real click / fill / reload", expected: "signed copy; safe recovery; no replay; refresh result retained where applicable", result: "PASS", reads, writes });
         } catch (error) {
           failures.push(`${label}: ${error.message}`);

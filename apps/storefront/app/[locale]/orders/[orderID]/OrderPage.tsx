@@ -24,6 +24,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
   const [state, setState] = useState<"loading" | "ready" | "failed" | "forbidden">("loading");
   const [retried, setRetried] = useState(false);
   const [paymentBusy, setPaymentBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const epoch = useRef(0);
   const orderRef = useRef<Order | null>(null);
   orderRef.current = order;
@@ -31,6 +32,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
   async function load(isRetry = false) {
     const mine = ++epoch.current;
     if (!isRetry && !orderRef.current) setState("loading");
+    else if (orderRef.current) setRefreshing(true);
     try {
       const session = await readBuyerSession();
       if (session.state !== "active" || !session.context) throw new BuyerClientError("requires_reset");
@@ -48,6 +50,8 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
           ([401, 403, 404].includes(reason.status ?? 0) || reason.code === "requires_reset" || reason.code === "context_changed");
         setState(denied ? "forbidden" : "failed");
       }
+    } finally {
+      if (mine === epoch.current) setRefreshing(false);
     }
   }
   useEffect(() => {
@@ -61,8 +65,8 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
   const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
   return (
-    <main className="purchase-main claim-main" data-testid="order-page" aria-busy={state === "loading"}>
-      {state === "loading" && <p role="status">{copy.loading}</p>}
+    <main className="purchase-main claim-main" data-testid="order-page" aria-busy={state === "loading" || refreshing}>
+      {(state === "loading" || refreshing) && <p role="status">{copy.loading}</p>}
       {(state === "failed" || state === "forbidden") && (
         <div data-testid="order-page-failed">
           <StorefrontState locale={locale} variant={state === "forbidden" ? "forbidden" : "offline"}
@@ -79,7 +83,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
           order={order}
           locale={locale}
           money={money}
-          busy={paymentBusy}
+          busy={paymentBusy || refreshing}
           onPaymentBusy={setPaymentBusy}
           isSelected={() => true}
           refresh={() => void load()}

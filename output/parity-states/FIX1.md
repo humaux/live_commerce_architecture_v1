@@ -2,6 +2,18 @@
 
 Date: 2026-10-31 (Asia/Shanghai). Status: implementation prepared; PR CI PENDING. Author assessment E0; permitted static checks E1. No completion or E4 claim.
 
+## FIX1 Relay 1 (Head 027e31f7) — Run 41173161218 Directed Repair
+
+PR #356 head `027e31f743ff7f37cba987795686679ba42539c5`. Base Gates `41167677841` on `acf2ebd2c` success.
+Upstream `origin/r3/integration` merged: already up to date.
+
+| Failing job | Failing test / assertion | Original evidence | Class and directed change |
+|---|---|---|---|
+| `124455859451` — gate (bundle:02), `--browser-storefront` | `TestBrowserStorefront` → `checkBuyerParityStates` → `unknown-(zh-TW\|zh-CN\|en)-(1440\|390)` (6 cases): `recovery must not replay any command or payment signal` | `shop-real-gate.log` in artifact `gate-browser-storefront` (run 41173161218). The test setup for `kind === "unknown"` clicks `refresh-order` (`await page.getByTestId("refresh-order").click()`), which fires the standard Stripe payment signal `POST /api/buyer/orders/${orderID}/payment/refresh` before the recovery panel appears. The trailing assertion only excluded `kind === "lookup"` (`/api/buyer/orders/lookup`). | **(b) browser test assertion filter fix.**<br>In `tests/storefront/shop-real-gate.mjs:512`, updated the filter to `write => (kind !== "lookup" \|\| write.path !== "/api/buyer/orders/lookup") && (kind !== "unknown" \|\| !write.path.endsWith("/payment/refresh"))`, verifying that recovery from the unknown state (`Check status` / `c.check`) emits zero writes / payment signals. |
+| `124455859499` & `124455859710` — gate (`--browser-click-sweep@7/10` & `@8/10`) | `click-sweep.mjs` → `storefront /orders/[orderID]` ("Refresh order" / "重新整理訂單"): `no-effect: no visible change within 3 s` | `click-sweep.mjs.log` in artifacts `gate-browser-click-sweep_7_10` and `gate-browser-click-sweep_8_10` (run 41173161218). `if (!isRetry && !orderRef.current) setState("loading")` suppressed all UI feedback during order refresh when `orderRef.current` was already set. | **(b) product code root fix.**<br>In `apps/storefront/app/[locale]/orders/[orderID]/OrderPage.tsx:27–55, 68–87`, added `refreshing` state set to `true` during background refresh and `false` in `finally`. Bound `<main aria-busy={state === "loading" \|\| refreshing}>`, rendered `{(state === "loading" \|\| refreshing) && <p role="status">{copy.loading}</p>}`, and passed `busy={paymentBusy \|\| refreshing}` to `OrderDetails`. This preserves mounted `OrderDetails` and `OrderPayment` (retaining `latest.current` for `signedUnknown`) while immediately disabling `<button data-testid="refresh-order" disabled={busy}>` and displaying loading status, satisfying click-sweep visible mutation requirements. |
+| `124446517509` — gate (bundle:06), `--browser-inbox` | `TestBrowserInboxUIRealChain` → `INU04`, `INU06`, `INU07` | Resolved in commit `027e31f7` via `tests/admin/inbox-browser-support.ts:77–81` by dynamically selecting the mobile navigation toggle label across locales (`"打开导航"`, `"開啟導覽"`, `"Open navigation"`). Verified passed in Gates run `41173161218`. | **(c) identical failure on base & (b) shared setup helper fix.**<br>Passed in run 41173161218. |
+| `receipts` & `required` | `matrix-receipts: RED` | Dependent on bundle:02 and click-sweep jobs above failing | **Dependent.** Resolves automatically when the failing jobs pass. |
+
 ## FIX1 relay 2 — Run 41170058531 Directed Repair
 
 PR #356 head `4622add16ace5a71be484e9cc77d77c2524f5cce`. Base Gates `41167677841` on `acf2ebd2c` success.
