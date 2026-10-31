@@ -109,4 +109,15 @@ Retained exact-run artifact: `output/PARITY-CATALOG-PEOPLE/fix1-evidence/custome
 |tests/admin/people-v2.spec.ts:346:3 › PARITY withdrawn list is a server fact 390|PARITY-CONSENT-STATE: signed list distinguishes recorded withdrawal; |1874|(b)|
 |tests/admin/people-v2.spec.ts:352:3 › PARITY privacy permission refusal 390|PARITY-PEOPLE: denied privacy commands stay disabled; Expected: disabled; Received: enabled|1913|(b)|
 
+## Relay 3 CI run 41173763994 on head 0c7f9b37d — failing job → test → evidence → class
+
+|Job|Failing test|Evidence|Class / disposition|
+|---|---|---|---|
+|`124458076046` bundle:03|`TestBrowserCatalogCore/PE12-17-TWD` / `catalog-core.spec.ts >> review: copy UNKNOWN then client/401/403 preserves receipt fence after reload`|`playwright.log:71` (`locator.toBeDisabled: Error: element not found: getByTestId('products-copy-selected')`)|(a) Older test asserts UI that signed Figma frame intentionally relocated. Confirmation button `products-copy-selected` is inside modal `product-copy-review`. After reload to list, the disabled control is `products-copy-entry`. Updated `tests/admin/product-review.acceptance.ts:226`.|
+|`124458077108` bundle:06|`TestBrowserInboxUIRealChain` (`tests/admin/inbox-ui.spec.ts`, tests 8, 10, 11, 14, 17, 18)|`playwright.log:127` (`locator.click: Test timeout of 30000ms exceeded waiting for getByRole('button', { name: 'Open navigation', exact: true })`)|(b) Shared browser test helper race. In `tests/admin/inbox-browser-support.ts:77`, `if (!await nav.isVisible())` evaluates before desktop DOM layout settles, falsely triggering mobile navigation opener which does not exist on desktop. Replaced with `try { await expect(nav).toBeVisible({ timeout: 500 }); } catch { await page.getByRole("button", { name: "Open navigation", exact: true }).click(); }`.|
+|`124458077587` --browser-click-sweep@4/10|`journey J1 product editor -> storefront desktop/zh-TW [journey] "the merchant list shows the product (search + click)"`|`click-sweep.mjs.log:43` (`locator.fill: Timeout 30000ms exceeded waiting for getByTestId('products-search')`)|(a) Older test asserts unsigned search removed by signed Figma frame (`catalog-v2-simplified.acceptance.ts:218`). In `tests/ui/click-sweep.mjs:444-447`, replaced `products-search` fill/submit with real status tab click `products-tab-active`.|
+|`124459434850` receipts|`bundle:03`, `bundle:06`, `click-sweep@4/10` status FAIL|`job/124459434850`|Dependent on the three failing jobs above.|
+|`124459711685` required|`gate=failure`, `receipts=failure`|`job/124459711685`|Dependent aggregate job.|
+|`124458078696` aggregate|Aggregate check failure|`job/124458078696`|Dependent aggregate job.|
+
 
