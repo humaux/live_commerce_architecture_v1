@@ -198,11 +198,20 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page
     .getByRole("button", { name: "Retry pending command", exact: true })
     .click();
-  await expect(page.getByLabel("Stable service code", { exact: true })).toBeVisible();
-  await expect(pendingControls).toBeHidden();
-  expect(marketRequests.length).toBe(2);
+  await expect.poll(() => marketRequests.length).toBe(2);
   expect(marketRequests[0].key === marketRequests[1].key).toBe(true);
   expect(marketRequests[0].body === marketRequests[1].body).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Object.keys(localStorage).some((k) =>
+          k.startsWith("commerce-settings-command:"),
+        ),
+      ),
+    )
+    .toBe(false);
+  await expect(pendingControls).toBeHidden();
+  await expect(page.getByLabel("Stable service code", { exact: true })).toBeVisible();
   await noPayuni(page);
 
   // Locale routes preserve nonsecret setup and the store's TWD currency.

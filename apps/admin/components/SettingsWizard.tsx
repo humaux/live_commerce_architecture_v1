@@ -837,11 +837,11 @@ function AdvancedSettings({
         ]);
         commitDraft(
           {
-            ...draft,
+            ...draftRef.current,
             marketID: saved.id,
             policyObservation: null,
             serviceObservation: {
-              target: `${saved.id}:${draft.country}:${draft.serviceCode}`,
+              target: `${saved.id}:${draftRef.current.country}:${draftRef.current.serviceCode}`,
               version: 0,
               dirty: false,
             },
@@ -851,7 +851,7 @@ function AdvancedSettings({
         setNotice(c.saved);
       } else if (resource.endsWith("/policy")) {
         const saved = value as Policy;
-        const target = `${saved.market_id}:${saved.country}:${draft.serviceCode}`;
+        const target = `${saved.market_id}:${saved.country}:${draftRef.current.serviceCode}`;
         setPolicy(saved);
         saveDraft({
           ...draftRef.current,
