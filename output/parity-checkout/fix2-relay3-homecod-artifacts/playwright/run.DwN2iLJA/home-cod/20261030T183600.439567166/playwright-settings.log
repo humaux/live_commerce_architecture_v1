@@ -1,9 +1,0 @@
-
-Running 3 tests using 1 worker
-
-  ✓  1 tests/admin/home-cod.spec.ts:84:1 › settings: the merchant enables cash on delivery with a cap, surcharge and carrier (zh-TW desktop), values read back (4.3s)
-  -  2 tests/admin/home-cod.spec.ts:141:1 › ship-collect: the merchant records the manual shipment, then the collected cash (zh-TW desktop)
-  -  3 tests/admin/home-cod.spec.ts:183:1 › finance: the collected cash appears in the COD column, never in captured/net (en desktop)
-
-  2 skipped
-  1 passed (4.9s)
