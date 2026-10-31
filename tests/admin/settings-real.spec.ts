@@ -261,11 +261,10 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.route(serviceURL, (route) => route.request().method() === "GET"
     ? serviceRead.deliver(route) : route.continue());
   const savePolicy = policyForm.getByRole("button", { name: "Save pricing policy", exact: true });
-  // PARITY-NO-MARKET: "home" was already entered at the start of the zero-market save (the initial delivery setup), so typing it again changes no state and
-  // starts no read. Re-open the wizard instead: its hydrate read of the saved home policy is the pending baseline under test.
-  await page.reload();
-  await page.getByRole("button", { name: "Edit settings", exact: true }).click();
-  await expect(page.getByLabel("Stable service code", { exact: true })).toHaveValue("home");
+  // PARITY-NO-MARKET: "home" was already entered at the start of the zero-market save, so typing it again changes no state and starts no read, and a reload
+  // restores the draft with its already-hydrated (non-pending) baseline. Move to another code and back: the return to "home" starts the held read under test.
+  await page.getByLabel("Stable service code", { exact: true }).fill("home2");
+  await page.getByLabel("Stable service code", { exact: true }).fill("home");
   await expect.poll(policyRead.arrived).toBe(true);
   await expect.soft(savePolicy, "a pending version read is not a saveable baseline").toBeDisabled();
   policyRead.release();
