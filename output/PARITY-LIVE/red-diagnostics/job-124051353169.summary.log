@@ -1,6 +1,0 @@
-Source: GitHub jobs API repos/humaux/live_commerce_architecture_v1/actions/jobs/124051353169/logs
-2026-10-30T12:11:14.4741801Z === RUN   TestBrowserLiveConsoleRealChain/workspace
-2026-10-30T12:24:14.4769774Z panic: test timed out after 13m0s
-2026-10-30T12:24:14.4771195Z 		TestBrowserLiveConsoleRealChain/workspace (13m0s)
-2026-10-30T12:24:14.9795686Z matrix-receipts: {"mode":"--browser-live-console","run_id":"41050616128","run_attempt":"1","sha":"57cbd1545e0651859bf8366829acbabe16d8f232","status":"FAIL","test_count":1,"spec_count":1}
-2026-10-30T12:24:18.6470308Z Artifact gate-browser-live-console.zip successfully finalized. Artifact ID 12975464801
