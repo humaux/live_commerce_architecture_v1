@@ -25,6 +25,7 @@ import { launch, ctxOpts, iosZoomOffenders, engine } from "./browser-engine.mjs"
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 import { measureMediaSizes } from "./media-sizes-perf.mjs";
 import { checkOfflineError } from "./offline-error.spec.ts";
+import { checkBuyerBrowseParity } from "./buyer-browse-parity.spec.ts";
 
 const env = (name) => { const v = process.env[name]; assert(v, `${name} is required`); return v; };
 const root = process.cwd(), evidence = env("LC_SFR_EVIDENCE");
@@ -317,6 +318,7 @@ try {
 
   await checkOfflineError({ browser, origin, control }); // OC-11: logged, not counted in `cases`
   await checkBuyerParityStates({ browser, origin, evidence });
+  await checkBuyerBrowseParity({ browser, origin, evidence, facts });
 
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {

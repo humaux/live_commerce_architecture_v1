@@ -876,6 +876,7 @@ case "$1" in
   test -f tests/foundation/browser_storefront_test.go
   grep -q '^func TestBrowserStorefront' tests/foundation/browser_storefront_test.go
   test -f tests/storefront/shop-real-gate.mjs
+  test -f tests/storefront/buyer-browse-parity.spec.ts
   node --test --experimental-strip-types apps/storefront/tests/shop.test.mjs
     }
     lc_run() {
