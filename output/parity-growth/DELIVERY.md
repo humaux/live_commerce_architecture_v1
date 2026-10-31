@@ -42,7 +42,7 @@ Current baseline: `f239dbc50b89df1a0c2c622a18f269bfc0d51552`. Exact-head Gates r
 
 - PR #366, `unit/parity-growth` → `r3/integration`. Base `3ea359f796d36153bb4b8aa7259e4e0c27676b86`; RED head `e37bb6524349e47f1d5ed600cc4dcb765627e96a`. Final candidate head is recorded in the PR comment after push.
 - Causal RED: Gates run **41054278594**, bundle job **124066658713**, tested synthetic merge **8c7cf2404ce307a2d6fc893a94c2ddd8da6815b6**. New real-route assertions failed on editor heading, signed list copy, attribution heading and marketing fallback heading. Foundation **41054278546 / 124057780561** passed on the RED head. These are not GREEN evidence for implementation.
-- Losslessly compressed raw failed browser logs (`*.log.gz`) and representative screenshots: `relay2-failures/`; source artifacts `gate-browser-meta-ads` (12978428571), `gate-browser-ads-attribution` (12978886087), `gate-browser-promotions` (12978168572), all on the RED run. Full workflow URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41054278594 . `red.log` binds the assertions and SHA.
+- Losslessly compressed raw failed browser logs (`*.log.gz`) and representative screenshots were collected from the RED run and are now kept OUT of git (ADR-20261031 decision 1): the local copies stay in the lane's ignored path and in GitHub Actions for 90 days. Source artifacts `gate-browser-meta-ads` (12978428571), `gate-browser-ads-attribution` (12978886087), `gate-browser-promotions` (12978168572), all on the RED run **41054278594**. sha256 of the removed copies: `ads-attribution-1.log.gz` 9faceec15e822d8e0de9af2a2157614593884d1639fe3b7ae073e0ae810224c2, `ads-attribution.log.gz` 356757cfadc9c3878cdfdca61e794e3a3dfab5027efe54fefe672b9067bc3345, `meta-ads.log.gz` a47ffc6476f3ef8837194ed284e244723e8080323a73f6942b6ca9b10eb91808, `promotions.log.gz` f6c4d81228173c5c6bfdba4a41636ea25e071aa9e0623f35a5647e1665c53ea3, `ads-attribution-red.png` 0be0bc65af953618e5285975e11d84b68bc972a9e3a098743cb4416200f625dc, `meta-ads-red.png` 30058b00cf2d0caca1626613fdb4004d4ce84dc87ec60450f1f2740667bbeb9e. Full workflow URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41054278594 . `red.log` binds the assertions and SHA.
 - Current Figma authority refreshed through Fleet Bridge on 2026-10-30: all 38 roots read with get_design_context + get_screenshot; every PNG hash matches the signed reference. `relay2-figma-readback.json` records current context hashes and reference links. No Figma write or bridge restart.
 - Root cause addressed: the production routes retained the pre-Figma stack. Ads now switches between list, asset authorization, editor, source selection, settings, saved/review/status, leave, stale selection recovery and concurrent-update recovery. Source/account/budget/date/age/version values come from the existing authenticated DTOs. Settings Apply changes local form state; Save still uses the original validated, versioned, idempotent API operation. A failed version update keeps local edits until the user reads the latest server copy.
 - Attribution starts with selectable draft/session cards, then renders one signed task. Separate results use the existing report API; source metrics are never added together. Original complete audit tables and guarded audience reads remain reachable with native disclosures. Marketing uses the required off fallback; discount code management stays reachable through its own task button.
@@ -181,46 +181,48 @@ Outside C3 application write paths: tests/admin/{ads,attribution}.spec.ts, tests
 
 ## Frame parity sheet (all screenshots pending CI)
 
-| Frame | Real route / state | Browser artifact | Signed reference PNG | Status |
+Signed reference PNGs are Figma captures and are not committed in bulk (ADR-20261031 decision 3): the column below cites each capture's sha256, `frame-manifest.json` keeps the node id, the viewport, the capture path and the sha256, and `relay2-figma-readback.json` keeps the Figma file key `iJ9lDdFIXgTlKkt5Tvrc0X` with the read timestamp and the per-frame context hash. The raw captures (PNGs and the Fleet Bridge context dumps) stay in the lane's ignored local path and are re-fetchable from the file key + node id.
+
+| Frame | Real route / state | Browser artifact | Signed reference (manifest sha256) | Status |
 |---|---|---|---|---|
-| 5:17304 | /ads · Admin · 广告详情 · SHOPLINE | parity/5-17304.png | [figma/5-17304/get_screenshot-5-17304-1793361325193-0.png](figma/5-17304/get_screenshot-5-17304-1793361325193-0.png) | NOT_RUN |
-| 5:17438 | /ads · Admin Mobile · 广告详情 · SHOPLINE | parity/5-17438.png | [figma/5-17438/get_screenshot-5-17438-1793361326127-0.png](figma/5-17438/get_screenshot-5-17438-1793361326127-0.png) | NOT_RUN |
-| 5:17516 | /ads · Admin · 资产授权 · SHOPLINE | parity/5-17516.png | [figma/5-17516/get_screenshot-5-17516-1793361328107-0.png](figma/5-17516/get_screenshot-5-17516-1793361328107-0.png) | NOT_RUN |
-| 5:17633 | /ads · Admin Mobile · 资产授权 · SHOPLINE | parity/5-17633.png | [figma/5-17633/get_screenshot-5-17633-1793361329143-0.png](figma/5-17633/get_screenshot-5-17633-1793361329143-0.png) | NOT_RUN |
-| 6:20130 | /ads · Admin · 广告草稿 · SHOPLINE | parity/6-20130.png | [figma/6-20130/get_screenshot-6-20130-1793361330220-0.png](figma/6-20130/get_screenshot-6-20130-1793361330220-0.png) | NOT_RUN |
-| 6:20255 | /ads · Admin Mobile · 广告草稿 · SHOPLINE | parity/6-20255.png | [figma/6-20255/get_screenshot-6-20255-1793361331165-0.png](figma/6-20255/get_screenshot-6-20255-1793361331165-0.png) | NOT_RUN |
-| 6:23064 | /ads/attribution · Admin Desktop · 歸因報表 · DaWan Live | parity/6-23064.png | [figma/6-23064/get_screenshot-6-23064-1793361332168-0.png](figma/6-23064/get_screenshot-6-23064-1793361332168-0.png) | NOT_RUN |
-| 6:23199 | /ads/attribution · Admin Mobile · 歸因報表 · DaWan Live | parity/6-23199.png | [figma/6-23199/get_screenshot-6-23199-1793361333035-0.png](figma/6-23199/get_screenshot-6-23199-1793361333035-0.png) | NOT_RUN |
-| 1049:6945 | /ads · Admin Desktop · 廣告草稿 · source | parity/1049-6945.png | [figma/1049-6945/get_screenshot-1049-6945-1793361334045-0.png](figma/1049-6945/get_screenshot-1049-6945-1793361334045-0.png) | NOT_RUN |
-| 1049:7058 | /ads · Admin Mobile · 廣告草稿 · source | parity/1049-7058.png | [figma/1049-7058/get_screenshot-1049-7058-1793361334851-0.png](figma/1049-7058/get_screenshot-1049-7058-1793361334851-0.png) | NOT_RUN |
-| 1049:7120 | /ads · Admin Desktop · 廣告草稿 · settings | parity/1049-7120.png | [figma/1049-7120/get_screenshot-1049-7120-1793361336145-0.png](figma/1049-7120/get_screenshot-1049-7120-1793361336145-0.png) | NOT_RUN |
-| 1049:7233 | /ads · Admin Mobile · 廣告草稿 · settings | parity/1049-7233.png | [figma/1049-7233/get_screenshot-1049-7233-1793361337052-0.png](figma/1049-7233/get_screenshot-1049-7233-1793361337052-0.png) | NOT_RUN |
-| 1049:7295 | /ads · Admin Desktop · 廣告草稿 · review | parity/1049-7295.png | [figma/1049-7295/get_screenshot-1049-7295-1793361338469-0.png](figma/1049-7295/get_screenshot-1049-7295-1793361338469-0.png) | NOT_RUN |
-| 1049:7408 | /ads · Admin Mobile · 廣告草稿 · review | parity/1049-7408.png | [figma/1049-7408/get_screenshot-1049-7408-1793361339565-0.png](figma/1049-7408/get_screenshot-1049-7408-1793361339565-0.png) | NOT_RUN |
-| 1049:7470 | /ads · Admin Desktop · 廣告草稿 · saved | parity/1049-7470.png | [figma/1049-7470/get_screenshot-1049-7470-1793361341105-0.png](figma/1049-7470/get_screenshot-1049-7470-1793361341105-0.png) | NOT_RUN |
-| 1049:7583 | /ads · Admin Mobile · 廣告草稿 · saved | parity/1049-7583.png | [figma/1049-7583/get_screenshot-1049-7583-1793361342801-0.png](figma/1049-7583/get_screenshot-1049-7583-1793361342801-0.png) | NOT_RUN |
-| 1049:7645 | /ads · Admin Desktop · 廣告草稿 · status | parity/1049-7645.png | [figma/1049-7645/get_screenshot-1049-7645-1793361344573-0.png](figma/1049-7645/get_screenshot-1049-7645-1793361344573-0.png) | NOT_RUN |
-| 1049:7758 | /ads · Admin Mobile · 廣告草稿 · status | parity/1049-7758.png | [figma/1049-7758/get_screenshot-1049-7758-1793361345566-0.png](figma/1049-7758/get_screenshot-1049-7758-1793361345566-0.png) | NOT_RUN |
-| 1049:7820 | /ads · Admin Desktop · 廣告草稿 · leave | parity/1049-7820.png | [figma/1049-7820/get_screenshot-1049-7820-1793361346963-0.png](figma/1049-7820/get_screenshot-1049-7820-1793361346963-0.png) | NOT_RUN |
-| 1049:7933 | /ads · Admin Mobile · 廣告草稿 · leave | parity/1049-7933.png | [figma/1049-7933/get_screenshot-1049-7933-1793361348136-0.png](figma/1049-7933/get_screenshot-1049-7933-1793361348136-0.png) | NOT_RUN |
-| 1049:7995 | /ads · Admin Desktop · 廣告草稿 · conflict | parity/1049-7995.png | [figma/1049-7995/get_screenshot-1049-7995-1793361349622-0.png](figma/1049-7995/get_screenshot-1049-7995-1793361349622-0.png) | NOT_RUN |
-| 1049:8108 | /ads · Admin Mobile · 廣告草稿 · conflict | parity/1049-8108.png | [figma/1049-8108/get_screenshot-1049-8108-1793361350258-0.png](figma/1049-8108/get_screenshot-1049-8108-1793361350258-0.png) | NOT_RUN |
-| 1134:9548 | /ads · Admin Desktop · 廣告列表 · 狀態說明 | parity/1134-9548.png | [figma/1134-9548/get_screenshot-1134-9548-1793361351393-0.png](figma/1134-9548/get_screenshot-1134-9548-1793361351393-0.png) | NOT_RUN |
-| 1134:9549 | /ads · Admin Mobile · 廣告列表 · 狀態說明 | parity/1134-9549.png | [figma/1134-9549/get_screenshot-1134-9549-1793361352015-0.png](figma/1134-9549/get_screenshot-1134-9549-1793361352015-0.png) | NOT_RUN |
-| 1134:9550 | /ads · Admin Desktop · 廣告列表 · 讀取回饋 | parity/1134-9550.png | [figma/1134-9550/get_screenshot-1134-9550-1793361353077-0.png](figma/1134-9550/get_screenshot-1134-9550-1793361353077-0.png) | NOT_RUN |
-| 1134:9551 | /ads · Admin Mobile · 廣告列表 · 讀取回饋 | parity/1134-9551.png | [figma/1134-9551/get_screenshot-1134-9551-1793361353601-0.png](figma/1134-9551/get_screenshot-1134-9551-1793361353601-0.png) | NOT_RUN |
-| 1151:9420 | /ads/attribution · Admin Desktop · 成效總覽 · DaWan Live | parity/1151-9420.png | [figma/1151-9420/get_screenshot-1151-9420-1793361354607-0.png](figma/1151-9420/get_screenshot-1151-9420-1793361354607-0.png) | NOT_RUN |
-| 1151:9421 | /ads/attribution · Admin Mobile · 成效總覽 · DaWan Live | parity/1151-9421.png | [figma/1151-9421/get_screenshot-1151-9421-1793361355231-0.png](figma/1151-9421/get_screenshot-1151-9421-1793361355231-0.png) | NOT_RUN |
-| 1151:9422 | /ads/attribution · Admin Desktop · 廣告歸因明細 · DaWan Live | parity/1151-9422.png | [figma/1151-9422/get_screenshot-1151-9422-1793361356209-0.png](figma/1151-9422/get_screenshot-1151-9422-1793361356209-0.png) | NOT_RUN |
-| 1151:9423 | /ads/attribution · Admin Mobile · 廣告歸因明細 · DaWan Live | parity/1151-9423.png | [figma/1151-9423/get_screenshot-1151-9423-1793361357321-0.png](figma/1151-9423/get_screenshot-1151-9423-1793361357321-0.png) | NOT_RUN |
-| 1151:9428 | /ads/attribution · Admin Desktop · Meta 分組明細 · DaWan Live | parity/1151-9428.png | [figma/1151-9428/get_screenshot-1151-9428-1793361358350-0.png](figma/1151-9428/get_screenshot-1151-9428-1793361358350-0.png) | NOT_RUN |
-| 1151:9429 | /ads/attribution · Admin Mobile · Meta 分組明細 · DaWan Live | parity/1151-9429.png | [figma/1151-9429/get_screenshot-1151-9429-1793361358989-0.png](figma/1151-9429/get_screenshot-1151-9429-1793361358989-0.png) | NOT_RUN |
-| 4:11612 | /ads · Admin · 营销 · SHOPLINE | parity/4-11612.png | [figma/4-11612/get_screenshot-4-11612-1793361359948-0.png](figma/4-11612/get_screenshot-4-11612-1793361359948-0.png) | NOT_RUN |
-| 4:11750 | /ads · Admin Mobile · 营销 · SHOPLINE | parity/4-11750.png | [figma/4-11750/get_screenshot-4-11750-1793361360696-0.png](figma/4-11750/get_screenshot-4-11750-1793361360696-0.png) | NOT_RUN |
-| 6:18113 | /promotions · Admin · 客户分群 · SHOPLINE | parity/6-18113.png | [figma/6-18113/get_screenshot-6-18113-1793361361726-0.png](figma/6-18113/get_screenshot-6-18113-1793361361726-0.png) | DEFERRED: segment DTO absent |
-| 6:18232 | /promotions · Admin Mobile · 客户分群 · SHOPLINE | parity/6-18232.png | [figma/6-18232/get_screenshot-6-18232-1793361362834-0.png](figma/6-18232/get_screenshot-6-18232-1793361362834-0.png) | DEFERRED: segment DTO absent |
-| 1194:7740 | /promotions · Admin · 营销 · SHOPLINE · 功能關閉 | parity/1194-7740.png | [figma/1194-7740/get_screenshot-1194-7740-1793361364024-0.png](figma/1194-7740/get_screenshot-1194-7740-1793361364024-0.png) | NOT_RUN |
-| 1194:7796 | /promotions · Admin Mobile · 营销 · SHOPLINE · 功能關閉 | parity/1194-7796.png | [figma/1194-7796/get_screenshot-1194-7796-1793361364571-0.png](figma/1194-7796/get_screenshot-1194-7796-1793361364571-0.png) | NOT_RUN |
+| 5:17304 | /ads · Admin · 广告详情 · SHOPLINE | parity/5-17304.png | manifest sha256:3f825a10a94107428bcbb664e9061e947e2dca20d50fc1ce67012b85a2c04ddd | NOT_RUN |
+| 5:17438 | /ads · Admin Mobile · 广告详情 · SHOPLINE | parity/5-17438.png | manifest sha256:a0bae7480dfe7cefc01b8906de690c61c5c59cd3808194c68c3a822eaf21b839 | NOT_RUN |
+| 5:17516 | /ads · Admin · 资产授权 · SHOPLINE | parity/5-17516.png | manifest sha256:b0737210e46cfadc43f073a2382b95e7c248b8a6af8a98b255fd15e1882e3b43 | NOT_RUN |
+| 5:17633 | /ads · Admin Mobile · 资产授权 · SHOPLINE | parity/5-17633.png | manifest sha256:be88b5da64844f1e761738afa0ba7a464d99a9cb23cd22c728f86b227ab3a887 | NOT_RUN |
+| 6:20130 | /ads · Admin · 广告草稿 · SHOPLINE | parity/6-20130.png | manifest sha256:4b88cdfa95ebddf82546eb2bb27b6fb34522e4239e750f6ad6875c0bf3dea760 | NOT_RUN |
+| 6:20255 | /ads · Admin Mobile · 广告草稿 · SHOPLINE | parity/6-20255.png | manifest sha256:f3ea7e0ab4abc775626100a8b60a9ae0455277b1250670c90a678db76a1129b2 | NOT_RUN |
+| 6:23064 | /ads/attribution · Admin Desktop · 歸因報表 · DaWan Live | parity/6-23064.png | manifest sha256:c0373c1370126e118f0ac903a5bda11bf693fddf3f2638256ab7f542f089a81d | NOT_RUN |
+| 6:23199 | /ads/attribution · Admin Mobile · 歸因報表 · DaWan Live | parity/6-23199.png | manifest sha256:7ae7e1e8f8d931f1f985f5000be69175fa764c1dbb0c6143898bbebed2737573 | NOT_RUN |
+| 1049:6945 | /ads · Admin Desktop · 廣告草稿 · source | parity/1049-6945.png | manifest sha256:997aa85c1987c7437259ccca443302c61aa179289aa52bbc6170e94ebd3ea33e | NOT_RUN |
+| 1049:7058 | /ads · Admin Mobile · 廣告草稿 · source | parity/1049-7058.png | manifest sha256:91e114b08bac4dfc4a0a52e37acb9b10d9acf2a96a6968e581684bcd77f5736a | NOT_RUN |
+| 1049:7120 | /ads · Admin Desktop · 廣告草稿 · settings | parity/1049-7120.png | manifest sha256:2ff924069e4058bd9557d818cd126c98eaecc5b22fe1d5551114f77ca97ef4fb | NOT_RUN |
+| 1049:7233 | /ads · Admin Mobile · 廣告草稿 · settings | parity/1049-7233.png | manifest sha256:130fb330e941dd629fd614945659a45628b91171276e5a012f88e764fe00e3c2 | NOT_RUN |
+| 1049:7295 | /ads · Admin Desktop · 廣告草稿 · review | parity/1049-7295.png | manifest sha256:04d85b72645bd530a366f22a52d722a9a9f314ce28e06d4c477bcd607c8c1065 | NOT_RUN |
+| 1049:7408 | /ads · Admin Mobile · 廣告草稿 · review | parity/1049-7408.png | manifest sha256:e322788bce9fc1c04fd779985a63bb7a751d4bb1f8d7eeaf260c698008d73457 | NOT_RUN |
+| 1049:7470 | /ads · Admin Desktop · 廣告草稿 · saved | parity/1049-7470.png | manifest sha256:1ffab850de4bdff713d648856d3c1a823460ee405f6856036271b1c51aeb0de5 | NOT_RUN |
+| 1049:7583 | /ads · Admin Mobile · 廣告草稿 · saved | parity/1049-7583.png | manifest sha256:610aafa13714764e8e43a81624ad1da24232f5be6b0d4f0c43f63dc5793bc64d | NOT_RUN |
+| 1049:7645 | /ads · Admin Desktop · 廣告草稿 · status | parity/1049-7645.png | manifest sha256:93b9c2146a4096735f852da674be067c0338f0ea016b801c7751cea06ea97c57 | NOT_RUN |
+| 1049:7758 | /ads · Admin Mobile · 廣告草稿 · status | parity/1049-7758.png | manifest sha256:bad45f8f669957d6d54b08b07e2d56a54dc081d3157c6f7b86b4fdb6a7d60d72 | NOT_RUN |
+| 1049:7820 | /ads · Admin Desktop · 廣告草稿 · leave | parity/1049-7820.png | manifest sha256:afe196d4dbb3b47124788c3cc5d7108bbe233da0d98f21e62344de67c18104c7 | NOT_RUN |
+| 1049:7933 | /ads · Admin Mobile · 廣告草稿 · leave | parity/1049-7933.png | manifest sha256:3a5a634c23a9c318e0f1e2d4c856de64325ba75ea990d50dc436628d7b99901c | NOT_RUN |
+| 1049:7995 | /ads · Admin Desktop · 廣告草稿 · conflict | parity/1049-7995.png | manifest sha256:ced54f7e0b4cdc52158c7b934d15f4970334211a6639fa94c4b4f95eb5315913 | NOT_RUN |
+| 1049:8108 | /ads · Admin Mobile · 廣告草稿 · conflict | parity/1049-8108.png | manifest sha256:5a29aec36a4955e8da1262203c5fec33789f64a21edcf3a8f95332adaee28de8 | NOT_RUN |
+| 1134:9548 | /ads · Admin Desktop · 廣告列表 · 狀態說明 | parity/1134-9548.png | manifest sha256:3deee0c99950eb80e85c94b6d297077cd7c7621792ce8d46b0e9e0b18b10eda1 | NOT_RUN |
+| 1134:9549 | /ads · Admin Mobile · 廣告列表 · 狀態說明 | parity/1134-9549.png | manifest sha256:e36ad3497e46f06cd4caa745f6e53f7269025cf33297bd732d24126a7be8e551 | NOT_RUN |
+| 1134:9550 | /ads · Admin Desktop · 廣告列表 · 讀取回饋 | parity/1134-9550.png | manifest sha256:c0a6b0465573316278b4a63d586c9eef85e0a76444011fdad91d1f90bc3bdf68 | NOT_RUN |
+| 1134:9551 | /ads · Admin Mobile · 廣告列表 · 讀取回饋 | parity/1134-9551.png | manifest sha256:00d56af85294e5677c1ae287d3c698db296097442f5e85869c4c8d578d15c2e6 | NOT_RUN |
+| 1151:9420 | /ads/attribution · Admin Desktop · 成效總覽 · DaWan Live | parity/1151-9420.png | manifest sha256:0904554b5bd5777dcafa569c4c72c4f5ebffb548832c3e66f2765ecbac4d5288 | NOT_RUN |
+| 1151:9421 | /ads/attribution · Admin Mobile · 成效總覽 · DaWan Live | parity/1151-9421.png | manifest sha256:46988d03ff57b6e52c79e85bd6b6473915f546e7c0f4353e0dedae2121c1bc3d | NOT_RUN |
+| 1151:9422 | /ads/attribution · Admin Desktop · 廣告歸因明細 · DaWan Live | parity/1151-9422.png | manifest sha256:06306feabceb7cee49634a488cba431c7247ca6b4a042076d993625a92556b4e | NOT_RUN |
+| 1151:9423 | /ads/attribution · Admin Mobile · 廣告歸因明細 · DaWan Live | parity/1151-9423.png | manifest sha256:e6c0b21455abd7d784f234d521290819e526f95d2c6683ce4e297e2cd5a2d8a7 | NOT_RUN |
+| 1151:9428 | /ads/attribution · Admin Desktop · Meta 分組明細 · DaWan Live | parity/1151-9428.png | manifest sha256:2d95d3877b1f3ba870e227c2d3b1d543954ec8dbaf4b6b4ff8268699afa1696d | NOT_RUN |
+| 1151:9429 | /ads/attribution · Admin Mobile · Meta 分組明細 · DaWan Live | parity/1151-9429.png | manifest sha256:7aae748e6dc21c30a7fc665322762fd65aa36442036f548279b949c39f15add3 | NOT_RUN |
+| 4:11612 | /ads · Admin · 营销 · SHOPLINE | parity/4-11612.png | manifest sha256:e156e7c360e656e65d18be8a76b8f177bec334a2c755f00e3c80640982ef864c | NOT_RUN |
+| 4:11750 | /ads · Admin Mobile · 营销 · SHOPLINE | parity/4-11750.png | manifest sha256:07809dd37adca5f6ad5256cb53dcbf30187108b891a0278c553310b72f2805f4 | NOT_RUN |
+| 6:18113 | /promotions · Admin · 客户分群 · SHOPLINE | parity/6-18113.png | manifest sha256:63027494800f402ddb5e5aedef0c14c28ccf847fdf1d2268d62912977f4e14fc | DEFERRED: segment DTO absent |
+| 6:18232 | /promotions · Admin Mobile · 客户分群 · SHOPLINE | parity/6-18232.png | manifest sha256:54798b3bcfebf43c4512f417ef5b217f9ae1ca9060e3a8e7a8ee931731de6163 | DEFERRED: segment DTO absent |
+| 1194:7740 | /promotions · Admin · 营销 · SHOPLINE · 功能關閉 | parity/1194-7740.png | manifest sha256:5fd97f4bccadd7b2b441dcd70c3d8c71939b754b8f233f136d8963356e4eb644 | NOT_RUN |
+| 1194:7796 | /promotions · Admin Mobile · 营销 · SHOPLINE · 功能關閉 | parity/1194-7796.png | manifest sha256:c6864772196143aec1710c543783be1806a2c5003951a2b516ced36fcca0d09f | NOT_RUN |
 
 ## Copy table (RED targets; existing dictionaries retained)
 
