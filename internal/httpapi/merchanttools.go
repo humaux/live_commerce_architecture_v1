@@ -52,7 +52,7 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 				return err
 			}
 			var err error
-			csv, err = merchanttools.ExportProducts(ctx, tx, s)
+			csv, err = merchanttools.ExportProducts(ctx, tx, s, bearerToken(r))
 			return err
 		})
 		if ok {
@@ -179,7 +179,7 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		var csv []byte
 		ok = toolsRun(w, r, pool, "orders:read", 0, func(ctx context.Context, tx pgx.Tx, s platform.Scope) error {
 			var err error
-			csv, err = merchanttools.TrackingResultCSV(ctx, tx, s, r.PathValue("batch_id"), onlyFailed)
+			csv, err = merchanttools.TrackingResultCSV(ctx, tx, s, bearerToken(r), r.PathValue("batch_id"), onlyFailed)
 			return err
 		})
 		if ok {

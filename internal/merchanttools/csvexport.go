@@ -5,12 +5,15 @@
 // history, no file storage (generated per request, nothing kept), no image bytes.
 // Tables read under RLS as commerce_runtime inside the caller's platform.WithScope transaction: catalog.products, catalog.skus,
 // catalog.collections, catalog.collection_products, catalog.product_images, inventory.balances, control.stores (one currency read).
+// Depends on: identity.authorize_products_export (0214) before any catalog read in the same transaction.
+// Used by: internal/httpapi/merchanttools.go. Invariants: §16 recent auth; unchanged CSV format and RLS scope.
 
 package merchanttools
 
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/csv"
 	"strconv"
 
@@ -29,9 +32,13 @@ func storeCurrency(ctx context.Context, tx pgx.Tx, scope platform.Scope) (string
 }
 
 // ExportProducts returns the whole catalog as CSV bytes (BOM included).
-func ExportProducts(ctx context.Context, tx pgx.Tx, scope platform.Scope) ([]byte, error) {
-	if tx == nil || !command.ValidID(scope.TenantID) || !command.ValidID(scope.StoreID) {
+func ExportProducts(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string) ([]byte, error) {
+	if tx == nil || !command.ValidID(scope.TenantID) || !command.ValidID(scope.StoreID) || len(token) < 32 || len(token) > 512 {
 		return nil, command.ErrInvalid
+	}
+	hash := sha256.Sum256([]byte(token))
+	if _, err := tx.Exec(ctx, `SELECT identity.authorize_products_export($1,$2::uuid)`, hash[:], scope.StoreID); err != nil {
+		return nil, mapDashboardError(err)
 	}
 	currency, err := storeCurrency(ctx, tx, scope)
 	if err != nil {
