@@ -41,7 +41,7 @@ const row = (domainOrigin: string, state: State = "REQUESTED", kind: Domain["kin
 
 async function open(page: Page, locale: Locale, mobile: boolean) {
   await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 });
-  const state = { domains: [row(platform, "ACTIVE", "platform", true), row(first)], readsFail: false, uncertain: false, apex: false, addresses: ["192.0.2.20", "2001:db8::20"], writes: [] as { key: string; body: string; action: string }[], receipts: new Map<string, unknown>() };
+  const state = { domains: [row(platform, "ACTIVE", "platform", true), row(first)], readsFail: false, uncertain: false, apex: false, failStatus: 0, addresses: ["192.0.2.20", "2001:db8::20"], writes: [] as { key: string; body: string; action: string }[], receipts: new Map<string, unknown>() };
   // Server-shaped MOCK responses only. Real signed login/store scope and product event handlers remain active.
   await page.route(`**/api/stores/${store}/storefront/domains**`, async route => {
     const request = route.request();
@@ -55,6 +55,8 @@ async function open(page: Page, locale: Locale, mobile: boolean) {
     expect(key).toMatch(/^storefront-domain-/);
     const body = request.postData()!;
     state.writes.push({ key, body, action });
+    // Definitive server rejection (4xx): no receipt is stored and the outcome is not uncertain.
+    if (state.failStatus) return route.fulfill({ status: state.failStatus, json: { code: "rejected" } });
     let result = state.receipts.get(key);
     if (!result) {
       const value = request.postDataJSON();
@@ -223,3 +225,63 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const mobile of [fa
     await expect(panel).not.toContainText("互動原型");
   });
 }
+
+const journalKey = `storefront-domains-cmd:${store}`;
+// Read-only measurement of the sessionStorage journal, never a replacement for an action.
+const journal = (page: Page) => page.evaluate(k => sessionStorage.getItem(k), journalKey);
+
+test("PARITY-DOMAINS definitive 409 on add clears journal and fence", async ({ page }) => {
+  test.setTimeout(90000);
+  const c = copy.en, state = await open(page, "en", false);
+  const panel = page.getByTestId("design-domains");
+  state.failStatus = 409;
+  await panel.getByRole("button", { name: c.add, exact: true }).click();
+  await page.getByLabel(c.hostname, { exact: true }).fill(second);
+  await panel.getByRole("button", { name: c.apply, exact: true }).click();
+  await expect(panel.getByRole("alert")).toBeVisible();
+  // A conflict is not a validation reject: the invalid-hostname copy must not be used.
+  await expect(panel).not.toContainText(c.invalid);
+  await page.reload();
+  await expect(panel.getByRole("heading", { name: c.title, exact: true }).last()).toBeVisible();
+  await expect(panel.getByRole("heading", { name: c.pending, exact: true })).toHaveCount(0);
+  expect(await journal(page)).toBeNull();
+});
+
+test("PARITY-DOMAINS definitive 403 on suspend clears journal and fence", async ({ page }) => {
+  test.setTimeout(90000);
+  const c = copy.en, state = await open(page, "en", false);
+  const panel = page.getByTestId("design-domains");
+  await panel.getByTestId("domain-custom-row").filter({ hasText: first }).getByRole("button", { name: c.settings, exact: true }).click();
+  await panel.getByRole("button", { name: c.suspend, exact: true }).click();
+  state.failStatus = 403;
+  await panel.getByRole("button", { name: c.confirmSuspend, exact: true }).click();
+  await expect(panel.getByRole("alert")).toBeVisible();
+  await page.reload();
+  await expect(panel.getByRole("heading", { name: c.title, exact: true }).last()).toBeVisible();
+  await expect(panel.getByRole("heading", { name: c.pending, exact: true })).toHaveCount(0);
+  expect(await journal(page)).toBeNull();
+});
+
+for (const [name, addresses, a, aaaa] of [
+  ["v6 first", ["2001:db8::20", "192.0.2.20"], "192.0.2.20", "2001:db8::20"],
+  ["v4 only", ["192.0.2.20"], "192.0.2.20", null],
+] as const) test(`PARITY-DOMAINS apex DNS rows by IP family: ${name}`, async ({ page }) => {
+  test.setTimeout(90000);
+  const c = copy.en, state = await open(page, "en", false);
+  const panel = page.getByTestId("design-domains");
+  state.apex = true; state.addresses = [...addresses];
+  await panel.getByRole("button", { name: c.add, exact: true }).click();
+  await page.getByLabel(c.hostname, { exact: true }).fill("apex.example.test");
+  await panel.getByRole("button", { name: c.apply, exact: true }).click();
+  await panel.getByRole("button", { name: c.records, exact: true }).click();
+  await expect(panel.getByTestId("domain-dns-A")).toHaveCount(1);
+  await expect(panel.getByTestId("domain-dns-A")).toContainText(a);
+  if (aaaa) {
+    await expect(panel.getByTestId("domain-dns-AAAA")).toHaveCount(1);
+    await expect(panel.getByTestId("domain-dns-AAAA")).toContainText(aaaa);
+    await expect(panel).not.toContainText(c.missingIP);
+  } else {
+    await expect(panel.getByTestId("domain-dns-AAAA")).toHaveCount(0);
+    await expect(panel).toContainText(c.missingIP);
+  }
+});
