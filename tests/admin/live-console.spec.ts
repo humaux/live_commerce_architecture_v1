@@ -352,9 +352,11 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Active).toBe(false);
     expect((await facts(request)).receipts.at(-1)!.input.max_quantity_per_claim).toBe(10);
     await page.getByTestId("live-console-refresh").click();
+    await showLiveTools(page); // refresh remounts the signed disclosures closed; reopen with real clicks
     await page.getByTestId(`live-offer-toggle-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Active).toBe(true);
 
+    await showLiveTools(page);
     await page.getByTestId(`live-stock-${offer}`).fill("17");
     await page.getByTestId(`live-stock-save-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(17);
@@ -410,6 +412,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await page.getByTestId(`live-offer-${offer}`).getByRole("button", { name: workspaceCopy[locale].cancel, exact: true }).click();
     await expect(stockInput).toHaveValue("23");
     expect((await facts(request)).receipts).toHaveLength(beforeCancel);
+    await showLiveTools(page);
     await page.getByTestId(`live-recommend-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Recommended).toEqual({ offer_id: offer, at: "2030-01-01T00:00:00Z" });
     expect((await facts(request)).receipts.at(-1)!.input.post_comment).toBe(false);
@@ -417,18 +420,22 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     // Server-side CAS bump, then a real click must reconcile before a fresh command.
     await fault(request, scene, "conflict");
     const conflictCount = (await facts(request)).receipts.length;
+    await showLiveTools(page);
     await page.getByTestId(`live-offer-toggle-${offer}`).click();
     await expect.poll(async () => (await facts(request)).receipts.length).toBe(conflictCount + 1);
     expect((await facts(request)).receipts.at(-1)!.status).toBe(409);
     await expect(page.getByTestId("live-command-retry")).toHaveCount(0);
     await page.getByTestId("live-console-refresh").click();
+    await showLiveTools(page);
     await page.getByTestId(`live-offer-toggle-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Active).toBe(false);
     await page.getByTestId("live-console-refresh").click();
+    await showLiveTools(page);
 
     // I06: lose ACK after a committed MOCK effect. Polling is read-only; explicit retry must reuse the key.
     await fault(request, scene, "unknown");
     const beforeUnknown = (await facts(request)).receipts.length;
+    await showLiveTools(page);
     await page.getByTestId(`live-offer-toggle-${offer}`).click();
     await expect(page.getByTestId("live-command-retry")).toBeVisible();
     const unknown = (await facts(request)).receipts.at(-1)!;
@@ -458,6 +465,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     expect(retries.filter((receipt) => receipt.effect)).toHaveLength(1);
 
     page.once("dialog", (dialog) => dialog.accept());
+    await showLiveTools(page);
     await page.getByTestId("live-primary-action").click();
     await phase(page, "ended");
     await screenshot(page, `${name}-ended`);
@@ -867,7 +875,8 @@ async function parityFixture(page: Page, locale: ParityLocale, state = "selected
   await page.route(`**/api/stores/${store}/**`, async intercepted => {
     const request = intercepted.request(), path = new URL(request.url()).pathname;
     const base = `/api/stores/${store}/live-sessions/${comments.session}`;
-    const json = (value: unknown) => intercepted.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(value) });
+    // The real BFF always answers private reads with `cache-control: private, no-store`; studio-client.json() rejects anything else.
+    const json = (value: unknown) => intercepted.fulfill({ status: 200, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify(value) });
     if (path === `${base}/console`) return json(snapshot());
     if (path === `${base}/claims` && request.method() === "GET") return json({ window: window(), offers: [offer()], stats: { generation: 1, accepted: 1, rejected: Object.fromEntries(["NO_MATCH", "UNKNOWN_KEYWORD", "OFFER_INACTIVE", "INVALID_QUANTITY", "QUANTITY_REQUIRED", "QUANTITY_OVER_MAX", "BUNDLE_LIMIT"].map(key => [key, 0])) } });
     if (path === `${base}/comments` && request.method() === "GET") return json({ epoch: 1, reset: false, scan_exhausted: false, items: rows(), next: { epoch: 1, seq: 2 }, older_cursor: null, stream: snapshot().stream });
