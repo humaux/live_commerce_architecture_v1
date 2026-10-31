@@ -172,7 +172,9 @@ type Net = { requests: { url: string; type: string; method: string; referer: str
 function watch(page: Page): Net {
   const net: Net = { requests: [], console: [] };
   page.on("request", (r) => {
-    void r.headerValue("referer").then((referer) => net.requests.push({ url: r.url(), type: r.resourceType(), method: r.method(), referer }));
+    void r.headerValue("referer")
+      .then((referer) => net.requests.push({ url: r.url(), type: r.resourceType(), method: r.method(), referer }))
+      .catch(() => {});
   });
   page.on("console", (m) => net.console.push(m.text()));
   page.on("pageerror", (e) => net.console.push(String(e)));

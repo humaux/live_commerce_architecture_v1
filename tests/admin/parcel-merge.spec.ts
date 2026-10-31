@@ -392,6 +392,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await expect(page.getByTestId(`parcel-badge-${ps1}`)).toBeVisible();
     await expect(detail.getByTestId("shipment-parcel-block")).toHaveText("This order is in a parcel group; fill in the waybill on the group.");
     await expect(detail.getByTestId("shipment-form")).toHaveCount(0);
+    await orderList(page);
   });
 
   await test.step("a failed OPEN-groups read shows its error and Retry; the real retry rebuilds the panel and the row badge", async () => {
