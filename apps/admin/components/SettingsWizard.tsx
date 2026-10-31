@@ -1374,6 +1374,7 @@ function AdvancedSettings({
                           <label>
                             {c.service}
                             <select
+                              aria-label={c.service}
                               value={activeService?.code ?? ""}
                               onChange={(event) => {
                                 const selected = services.find(
@@ -1426,6 +1427,7 @@ function AdvancedSettings({
                           <label>
                             {c.deliveryKind}
                             <select
+                              aria-label={c.deliveryKind}
                               value={draft.serviceKind}
                               onChange={(event) =>
                                 update(
@@ -1505,6 +1507,7 @@ function AdvancedSettings({
                             <label>
                               {c.taxMode}
                               <select
+                                aria-label={c.taxMode}
                                 value={draft.taxMode}
                                 onChange={(event) =>
                                   update(
@@ -1525,6 +1528,7 @@ function AdvancedSettings({
                             <label>
                               {c.taxBasis}
                               <select
+                                aria-label={c.taxBasis}
                                 value={draft.taxBasis}
                                 onChange={(event) =>
                                   update(
