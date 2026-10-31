@@ -231,11 +231,13 @@ try {
   await ui.getByRole("button",{name:"Choose delivery",exact:true}).click();
   await expect(ui.getByRole("heading",{name:"Delivery and quotation",exact:true})).toBeVisible();
   await ui.getByRole("button",{name:"Get current total",exact:true}).click();
+  await ui.getByTestId("checkout-details-toggle").click();
   await expect(ui.getByRole("heading",{name:"Items in this quotation",exact:true})).toBeVisible();
   await expect(ui.getByText("No payment has been taken.",{exact:false})).toBeVisible();
   await expect(ui.getByRole("button",{name:"View quotation",exact:true})).toBeEnabled();
   await expect(ui.getByText("Not paid",{exact:true})).toBeVisible();
   await ui.reload();
+  await ui.getByTestId("checkout-details-toggle").click();
   await expect(ui.getByRole("heading",{name:"Items in this quotation",exact:true})).toBeVisible();
   await expect(ui.getByRole("button",{name:"View quotation",exact:true})).toBeEnabled();
   await expect(ui.getByText("Not paid",{exact:true})).toBeVisible();
@@ -248,6 +250,7 @@ try {
   await ui.screenshot({path:path.join(evidence,"buyer-desktop.png"),fullPage:true});
   await ui.locator('footer a[hreflang="zh-CN"]').click();
   await ui.waitForURL("**/zh-CN/checkout");
+  await ui.getByTestId("checkout-details-toggle").click();
   await expect(ui.locator(".sf-line__unit",{hasText:"× 2"})).toBeVisible();
   await expect(ui.getByRole("heading",{name:"本次报价商品",exact:true})).toBeVisible();
   // Actual cart commit with every response dropped leaves the original key (the cart is written from the cart page now).

@@ -1,0 +1,154 @@
+[
+  {
+    "page": "/en/checkout",
+    "control": "final review",
+    "action": "read after real address confirmation",
+    "expected": "server money, recipient, destination and timing in review and fixed bar",
+    "actual": "server money, recipient, destination and timing in review and fixed bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "checkout scroll",
+    "action": "keyboard End",
+    "expected": "last review control ends above the fixed bar without horizontal overflow",
+    "actual": "last review control ends above the fixed bar without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "payment help",
+    "action": "click twice",
+    "expected": "Chevron, labels and >=44px target track expanded state",
+    "actual": "Chevron, labels and >=44px target track expanded state",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "final review",
+    "action": "read after real address confirmation",
+    "expected": "server money, recipient, destination and timing in review and fixed bar",
+    "actual": "server money, recipient, destination and timing in review and fixed bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "checkout scroll",
+    "action": "keyboard End",
+    "expected": "last review control ends above the fixed bar without horizontal overflow",
+    "actual": "last review control ends above the fixed bar without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "changed quote",
+    "action": "click delivery / quote / confirm address",
+    "expected": "old-to-new amount and explicit re-confirm block both submits, including after refresh",
+    "actual": "old-to-new amount and explicit re-confirm block both submits, including after refresh",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "final review",
+    "action": "read after real address confirmation",
+    "expected": "server money, recipient, destination and timing in review and fixed bar",
+    "actual": "server money, recipient, destination and timing in review and fixed bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "checkout scroll",
+    "action": "keyboard End",
+    "expected": "last review control ends above the fixed bar without horizontal overflow",
+    "actual": "last review control ends above the fixed bar without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "payment help",
+    "action": "click twice",
+    "expected": "Chevron, labels and >=44px target track expanded state",
+    "actual": "Chevron, labels and >=44px target track expanded state",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "final review",
+    "action": "read after real address confirmation",
+    "expected": "server money, recipient, destination and timing in review and fixed bar",
+    "actual": "server money, recipient, destination and timing in review and fixed bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "checkout scroll",
+    "action": "keyboard End",
+    "expected": "last review control ends above the fixed bar without horizontal overflow",
+    "actual": "last review control ends above the fixed bar without horizontal overflow",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "changed quote",
+    "action": "click delivery / quote / confirm address",
+    "expected": "old-to-new amount and explicit re-confirm block both submits, including after refresh",
+    "actual": "old-to-new amount and explicit re-confirm block both submits, including after refresh",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW final screen",
+    "action": "real quote/address/radio/help controls and reload",
+    "expected": "server total, recipient and timing persist; selected radio is explicit",
+    "actual": "server total, recipient and timing persist; selected radio is explicit",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW final screen",
+    "action": "real quote/address/radio/help controls and reload",
+    "expected": "server total, recipient and timing persist; selected radio is explicit",
+    "actual": "server total, recipient and timing persist; selected radio is explicit",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN final screen",
+    "action": "real quote/address/radio/help controls and reload",
+    "expected": "server total, recipient and timing persist; selected radio is explicit",
+    "actual": "server total, recipient and timing persist; selected radio is explicit",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN final screen",
+    "action": "real quote/address/radio/help controls and reload",
+    "expected": "server total, recipient and timing persist; selected radio is explicit",
+    "actual": "server total, recipient and timing persist; selected radio is explicit",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en final screen",
+    "action": "real quote/address/radio/help controls and reload",
+    "expected": "server total, recipient and timing persist; selected radio is explicit",
+    "actual": "server total, recipient and timing persist; selected radio is explicit",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en final screen",
+    "action": "real quote/address/radio/help controls and reload",
+    "expected": "server total, recipient and timing persist; selected radio is explicit",
+    "actual": "server total, recipient and timing persist; selected radio is explicit",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "fixed submit",
+    "action": "click submit then reload",
+    "expected": "one original order is displayed and restored",
+    "actual": "one original order is displayed and restored",
+    "status": "PASS"
+  }
+]

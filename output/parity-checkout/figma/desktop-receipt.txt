@@ -1,0 +1,2 @@
+{"id":"1429:23435","name":"DESIGN v2 · Buyer Desktop · 結帳 · online · default"}
+IMAGE output/parity-checkout/figma/get_screenshot-1429-23435-1793359964690-0.png

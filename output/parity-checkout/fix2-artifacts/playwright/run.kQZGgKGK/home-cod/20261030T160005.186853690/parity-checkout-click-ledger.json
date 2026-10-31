@@ -1,0 +1,770 @@
+[
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card delivery selector",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "all option labels use buyer wording without raw country codes",
+    "actual": "all option labels use buyer wording without raw country codes",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card disabled token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "disabled submit is solid light grey without a dashed border",
+    "actual": "disabled submit is solid light grey without a dashed border",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card signed screen",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "one review heading; legacy long-form headings and amount label are absent",
+    "actual": "one review heading; legacy long-form headings and amount label are absent",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card required facts",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "actual": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card primary token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "enabled primary is the signed solid navy",
+    "actual": "enabled primary is the signed solid navy",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card details disclosure",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "underlined View details opens and closes server breakdown using real clicks",
+    "actual": "underlined View details opens and closes server breakdown using real clicks",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card contextual help",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "question-mark help beside timing toggles the selected method explanation",
+    "actual": "question-mark help beside timing toggles the selected method explanation",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card fixed bar clearance",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "last content and controls scroll above the bar at the signed viewport",
+    "actual": "last content and controls scroll above the bar at the signed viewport",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card refresh persistence",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "server recipient, selected method, current final amount and single review survive reload",
+    "actual": "server recipient, selected method, current final amount and single review survive reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card re-quote",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n",
+    "status": "FAIL"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card submitting",
+    "action": "real submit click with held transport",
+    "expected": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "actual": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/card UNKNOWN",
+    "action": "transport loss then real reload",
+    "expected": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "actual": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery delivery selector",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "all option labels use buyer wording without raw country codes",
+    "actual": "all option labels use buyer wording without raw country codes",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery disabled token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "disabled submit is solid light grey without a dashed border",
+    "actual": "disabled submit is solid light grey without a dashed border",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery signed screen",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "one review heading; legacy long-form headings and amount label are absent",
+    "actual": "one review heading; legacy long-form headings and amount label are absent",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery required facts",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "actual": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery primary token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "enabled primary is the signed solid navy",
+    "actual": "enabled primary is the signed solid navy",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery details disclosure",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "underlined View details opens and closes server breakdown using real clicks",
+    "actual": "underlined View details opens and closes server breakdown using real clicks",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery contextual help",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "question-mark help beside timing toggles the selected method explanation",
+    "actual": "question-mark help beside timing toggles the selected method explanation",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery fixed bar clearance",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "last content and controls scroll above the bar at the signed viewport",
+    "actual": "last content and controls scroll above the bar at the signed viewport",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery refresh persistence",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "server recipient, selected method, current final amount and single review survive reload",
+    "actual": "server recipient, selected method, current final amount and single review survive reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery re-quote",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "actual": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery submitting",
+    "action": "real submit click with held transport",
+    "expected": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "actual": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/1440/cash_on_delivery UNKNOWN",
+    "action": "transport loss then real reload",
+    "expected": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "actual": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card delivery selector",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "all option labels use buyer wording without raw country codes",
+    "actual": "all option labels use buyer wording without raw country codes",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card disabled token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "disabled submit is solid light grey without a dashed border",
+    "actual": "disabled submit is solid light grey without a dashed border",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card signed screen",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "one review heading; legacy long-form headings and amount label are absent",
+    "actual": "one review heading; legacy long-form headings and amount label are absent",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card required facts",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "actual": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card primary token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "enabled primary is the signed solid navy",
+    "actual": "enabled primary is the signed solid navy",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card details disclosure",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "underlined View details opens and closes server breakdown using real clicks",
+    "actual": "underlined View details opens and closes server breakdown using real clicks",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card contextual help",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "question-mark help beside timing toggles the selected method explanation",
+    "actual": "question-mark help beside timing toggles the selected method explanation",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card fixed bar clearance",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "last content and controls scroll above the bar at the signed viewport",
+    "actual": "last content and controls scroll above the bar at the signed viewport",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card refresh persistence",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "server recipient, selected method, current final amount and single review survive reload",
+    "actual": "server recipient, selected method, current final amount and single review survive reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card re-quote",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n",
+    "status": "FAIL"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card submitting",
+    "action": "real submit click with held transport",
+    "expected": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "actual": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/card UNKNOWN",
+    "action": "transport loss then real reload",
+    "expected": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "actual": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery delivery selector",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "all option labels use buyer wording without raw country codes",
+    "actual": "all option labels use buyer wording without raw country codes",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery disabled token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "disabled submit is solid light grey without a dashed border",
+    "actual": "disabled submit is solid light grey without a dashed border",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery signed screen",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "one review heading; legacy long-form headings and amount label are absent",
+    "actual": "one review heading; legacy long-form headings and amount label are absent",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery required facts",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "actual": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery primary token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "enabled primary is the signed solid navy",
+    "actual": "enabled primary is the signed solid navy",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery details disclosure",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "underlined View details opens and closes server breakdown using real clicks",
+    "actual": "underlined View details opens and closes server breakdown using real clicks",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery contextual help",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "question-mark help beside timing toggles the selected method explanation",
+    "actual": "question-mark help beside timing toggles the selected method explanation",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery fixed bar clearance",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "last content and controls scroll above the bar at the signed viewport",
+    "actual": "last content and controls scroll above the bar at the signed viewport",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery refresh persistence",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "server recipient, selected method, current final amount and single review survive reload",
+    "actual": "server recipient, selected method, current final amount and single review survive reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery re-quote",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "actual": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery submitting",
+    "action": "real submit click with held transport",
+    "expected": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "actual": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "zh-TW/390/cash_on_delivery UNKNOWN",
+    "action": "transport loss then real reload",
+    "expected": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "actual": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card delivery selector",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "all option labels use buyer wording without raw country codes",
+    "actual": "all option labels use buyer wording without raw country codes",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card disabled token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "disabled submit is solid light grey without a dashed border",
+    "actual": "disabled submit is solid light grey without a dashed border",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card signed screen",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "one review heading; legacy long-form headings and amount label are absent",
+    "actual": "one review heading; legacy long-form headings and amount label are absent",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card required facts",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "actual": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card primary token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "enabled primary is the signed solid navy",
+    "actual": "enabled primary is the signed solid navy",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card details disclosure",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "underlined View details opens and closes server breakdown using real clicks",
+    "actual": "underlined View details opens and closes server breakdown using real clicks",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card contextual help",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "question-mark help beside timing toggles the selected method explanation",
+    "actual": "question-mark help beside timing toggles the selected method explanation",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card fixed bar clearance",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "last content and controls scroll above the bar at the signed viewport",
+    "actual": "last content and controls scroll above the bar at the signed viewport",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card refresh persistence",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "server recipient, selected method, current final amount and single review survive reload",
+    "actual": "server recipient, selected method, current final amount and single review survive reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card re-quote",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n",
+    "status": "FAIL"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card submitting",
+    "action": "real submit click with held transport",
+    "expected": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "actual": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/1440/card UNKNOWN",
+    "action": "transport loss then real reload",
+    "expected": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "actual": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card delivery selector",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "all option labels use buyer wording without raw country codes",
+    "actual": "all option labels use buyer wording without raw country codes",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card disabled token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "disabled submit is solid light grey without a dashed border",
+    "actual": "disabled submit is solid light grey without a dashed border",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card signed screen",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "one review heading; legacy long-form headings and amount label are absent",
+    "actual": "one review heading; legacy long-form headings and amount label are absent",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card required facts",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "actual": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card primary token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "enabled primary is the signed solid navy",
+    "actual": "enabled primary is the signed solid navy",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card details disclosure",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "underlined View details opens and closes server breakdown using real clicks",
+    "actual": "underlined View details opens and closes server breakdown using real clicks",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card contextual help",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "question-mark help beside timing toggles the selected method explanation",
+    "actual": "question-mark help beside timing toggles the selected method explanation",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card fixed bar clearance",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "last content and controls scroll above the bar at the signed viewport",
+    "actual": "last content and controls scroll above the bar at the signed viewport",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card refresh persistence",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "server recipient, selected method, current final amount and single review survive reload",
+    "actual": "server recipient, selected method, current final amount and single review survive reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card re-quote",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n",
+    "status": "FAIL"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card submitting",
+    "action": "real submit click with held transport",
+    "expected": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "actual": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "status": "PASS"
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "zh-CN/390/card UNKNOWN",
+    "action": "transport loss then real reload",
+    "expected": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "actual": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card delivery selector",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "all option labels use buyer wording without raw country codes",
+    "actual": "all option labels use buyer wording without raw country codes",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card disabled token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "disabled submit is solid light grey without a dashed border",
+    "actual": "disabled submit is solid light grey without a dashed border",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card signed screen",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "one review heading; legacy long-form headings and amount label are absent",
+    "actual": "one review heading; legacy long-form headings and amount label are absent",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card required facts",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "actual": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card primary token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "enabled primary is the signed solid navy",
+    "actual": "enabled primary is the signed solid navy",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card details disclosure",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "underlined View details opens and closes server breakdown using real clicks",
+    "actual": "underlined View details opens and closes server breakdown using real clicks",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card contextual help",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "question-mark help beside timing toggles the selected method explanation",
+    "actual": "question-mark help beside timing toggles the selected method explanation",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card fixed bar clearance",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "last content and controls scroll above the bar at the signed viewport",
+    "actual": "last content and controls scroll above the bar at the signed viewport",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card refresh persistence",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "server recipient, selected method, current final amount and single review survive reload",
+    "actual": "server recipient, selected method, current final amount and single review survive reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card re-quote",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n",
+    "status": "FAIL"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card submitting",
+    "action": "real submit click with held transport",
+    "expected": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "actual": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/1440/card UNKNOWN",
+    "action": "transport loss then real reload",
+    "expected": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "actual": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card delivery selector",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "all option labels use buyer wording without raw country codes",
+    "actual": "all option labels use buyer wording without raw country codes",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card disabled token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "disabled submit is solid light grey without a dashed border",
+    "actual": "disabled submit is solid light grey without a dashed border",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card signed screen",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "one review heading; legacy long-form headings and amount label are absent",
+    "actual": "one review heading; legacy long-form headings and amount label are absent",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card required facts",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "actual": "destination, recipient and phone remain together; a single server final total anchors the bar",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card primary token",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "enabled primary is the signed solid navy",
+    "actual": "enabled primary is the signed solid navy",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card details disclosure",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "underlined View details opens and closes server breakdown using real clicks",
+    "actual": "underlined View details opens and closes server breakdown using real clicks",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card contextual help",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "question-mark help beside timing toggles the selected method explanation",
+    "actual": "question-mark help beside timing toggles the selected method explanation",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card fixed bar clearance",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "last content and controls scroll above the bar at the signed viewport",
+    "actual": "last content and controls scroll above the bar at the signed viewport",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card refresh persistence",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "server recipient, selected method, current final amount and single review survive reload",
+    "actual": "server recipient, selected method, current final amount and single review survive reload",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card re-quote",
+    "action": "real click/fill/select/keyboard or read-only assertion",
+    "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload",
+    "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    - waiting for element to be visible, enabled and editable\n    - element is not visible\n  2 × retrying fill action\n      - waiting 100ms\n      - waiting for element to be visible, enabled and editable\n      - element is not enabled\n  59 × retrying fill action\n       - waiting 500ms\n       - waiting for element to be visible, enabled and editable\n       - element is not enabled\n  - retrying fill action\n    - waiting 500ms\n",
+    "status": "FAIL"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card submitting",
+    "action": "real submit click with held transport",
+    "expected": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "actual": "signed Submitting order label disables resubmission while required recipient facts remain",
+    "status": "PASS"
+  },
+  {
+    "page": "/en/checkout",
+    "control": "en/390/card UNKNOWN",
+    "action": "transport loss then real reload",
+    "expected": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "actual": "Checking order status is read-only, hides details/help and payable, preserves recipient and never replays checkout",
+    "status": "PASS"
+  }
+]

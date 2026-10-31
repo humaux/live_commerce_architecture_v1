@@ -1,0 +1,44 @@
+[
+  {
+    "File": "merchant-store-created-en-desktop.png",
+    "Sha256": "e1272bc151bf7ab0f537112fb0f6b4cee2711e04d22c61e415324b102250489e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "merchant-claims-source-bound-en-desktop.png",
+    "Sha256": "dc003798a9e62d8339a06d83ab33880398b5ed9fdcf80e715f465a9b5cd6b9e4",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "merchant-claims-after-comment-en-desktop.png",
+    "Sha256": "c23a58c53c550776aa9e03dfe045aad0b5b5f01b21b52c11b009a43be2c6c6f7",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "buyer-claim-zh-TW-desktop.png",
+    "Sha256": "41db270f6b49e1a16ae98526da3c230b5e369a3d5234ba110d9d50742b1ec5a0",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "buyer-claim-zh-TW-mobile.png",
+    "Sha256": "55d8e9e1976631ff41acecea85083564fd4f8e61abf30a7ed5b80d931af2e9a2",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "buyer-claim-added-zh-TW-desktop.png",
+    "Sha256": "db60d77b16aa2b90205c128595204d32d41607b2ef08f899458edb66043096e3",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "buyer-claim-added-zh-TW-mobile.png",
+    "Sha256": "afe347c3674463dabd9948f39454714909981c51da22272278c57fe37d54c40d",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  }
+]

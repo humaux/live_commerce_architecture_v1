@@ -1,0 +1,60 @@
+browser engine: chromium
+HTTP 404 GET /api/buyer/orders/320def6f-e82a-46fd-a6f1-d54a2098c00c/payment 
+HTTP 404 GET /api/buyer/orders/320def6f-e82a-46fd-a6f1-d54a2098c00c/payment 
+HTTP 409 POST /api/buyer/checkout {"code":"cod_surcharge_changed","retryable":false,"message":"Fee changed","request_id":"00000000000000000000000000000000","details":{}}
+HTTP 403 GET /api/buyer/cart 
+PASS order A zh-TW/desktop: whole-TWD total 25, surcharge 50, placed AWAITING_COLLECTION/PENDING
+PASS order B en/desktop: whole-TWD total 25, surcharge 50, placed AWAITING_COLLECTION/PENDING
+PASS order C zh-TW/mobile: whole-TWD total 25, surcharge 50, placed AWAITING_COLLECTION/PENDING
+PASS order D en/mobile: whole-TWD total 25, surcharge 50, placed AWAITING_COLLECTION/PENDING
+PASS order A: COLLECTED and still AWAITING_COLLECTION; B, C, D: still PENDING
+PASS MOCK terminal buyer headings: RETURNED / REFUNDED_OFFLINE / CANCELLED, zh-TW/en at 390/1586
+HTTP 409 POST /api/buyer/checkout {"code":"cod_surcharge_changed","message":"Request refused.","request_id":"8ab249cd2703e319eb1bcbb424d9ca15","retryable":false,"details":{}}
+HTTP 409 POST /api/buyer/checkout {"code":"cod_surcharge_changed","message":"Request refused.","request_id":"5dcaa83af0be9467288093c0abd5d2c4","retryable":false,"details":{}}
+PASS COD-255 retry-tw-desktop-up: zh-TW/desktop, authoritative money / fail-closed
+HTTP 409 POST /api/buyer/checkout {"code":"cod_surcharge_changed","message":"Request refused.","request_id":"0473da75ad5a2db3f7112431b8f31810","retryable":false,"details":{}}
+PASS COD-255 retry-tw-mobile-down: zh-TW/mobile, authoritative money / fail-closed
+HTTP 409 POST /api/buyer/checkout {"code":"cod_surcharge_changed","message":"Request refused.","request_id":"e905ef302f3849cf87c069ccb4076528","retryable":false,"details":{}}
+PASS COD-255 retry-cn-desktop-down: zh-CN/desktop, authoritative money / fail-closed
+HTTP 409 POST /api/buyer/checkout {"code":"cod_surcharge_changed","message":"Request refused.","request_id":"73042b977889692cbfacd37f3988f33d","retryable":false,"details":{}}
+PASS COD-255 retry-cn-mobile-up: zh-CN/mobile, authoritative money / fail-closed
+HTTP 409 POST /api/buyer/checkout {"code":"cod_surcharge_changed","message":"Request refused.","request_id":"1d684b731f45c180a43d4e0e22a9220b","retryable":false,"details":{}}
+PASS COD-255 retry-en-desktop-up: en/desktop, authoritative money / fail-closed
+HTTP 409 POST /api/buyer/checkout {"code":"cod_surcharge_changed","message":"Request refused.","request_id":"bf1b65f1cce01a61fb77875f651cbb74","retryable":false,"details":{}}
+PASS COD-255 retry-en-mobile-down: en/mobile, authoritative money / fail-closed
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: COD-255 gap-up: server due refresh required
+
+COD-255 gap-up: server due refresh required
+
+expect(received).toBe(expected) // Object.is equality
+
+Expected: true
+Received: false
+
+Call Log:
+- Timeout 5000ms exceeded while waiting on the predicate
+    at captureRawStack (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toBe (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at surchargeRefresh (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/home-cod-buyer.mjs:255:102)
+    at async file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/home-cod-buyer.mjs:523:39 {
+  matcherResult: {
+    pass: false,
+    message: 'COD-255 gap-up: server due refresh required\n' +
+      '\n' +
+      'expect(received).toBe(expected) // Object.is equality\n' +
+      '\n' +
+      'Expected: true\n' +
+      'Received: false\n' +
+      '\n' +
+      'Call Log:\n' +
+      '- Timeout 5000ms exceeded while waiting on the predicate',
+    name: 'toBe'
+  }
+}
+
+Node.js v24.22.1
