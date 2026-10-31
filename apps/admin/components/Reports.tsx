@@ -132,11 +132,11 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
     : outcome === "signed-out" ? c.signedOut : outcome === "not-found" ? c.notFound : outcome === "unavailable" ? c.csvUnavailable : "";
   const view = read.status === "ready" ? read.data?.view : null;
   const panel = (name: ReportName) => ({ id: `reports-panel-${name}`, role: "tabpanel", "aria-labelledby": `reports-tab-${name}`,
-    "aria-describedby": view ? `reports-applied-range${rangePending ? " reports-range-pending" : ""}` : undefined, hidden: tab !== name, tabIndex: 0 });
+    "aria-describedby": view ? `reports-applied-range${rangePending ? " reports-range-pending" : ""}` : undefined, hidden: tab !== name || !!failure, tabIndex: 0 });
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="finance">
     <div className="money-page reports-page" data-testid="reports-page">
       <h1>{failure ? p.reportFailure : dateOpen ? p.chooseDates : c.title}</h1>
-      {!dateOpen && !failure && <div className="money-actions"><button onClick={() => {setDraftFrom(from);setDraftTo(to);setDateOpen(true);}}>{p.chooseDates}</button></div>}
+      {!dateOpen && <div className="money-actions"><button onClick={() => {setDraftFrom(from);setDraftTo(to);setDateOpen(true);}}>{p.chooseDates}</button></div>}
       {dateOpen && <form className="money-card money-editor" onSubmit={submit}><p>{p.rangeHint}</p>
         <label>{c.store}<select aria-label={c.store} value={store?.id ?? ""} disabled={stores.length < 2 || !valid}
           onChange={(event) => navigate(event.target.value)}>{!stores.length && <option value="">{c.noStore}</option>}
@@ -152,10 +152,12 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
         {rangePending && <p id="reports-range-pending" role="status" data-testid="reports-range-pending">{c.rangePending}</p>}
       </form>}
       {failure && <section className="money-card" role="status"><h2>{p.failure}</h2><p>{read.status === "unavailable" ? p.reportFailureHint : failure}</p>{read.status !== "signed-out" && <button onClick={read.reload}>{p.retry}</button>}</section>}
-      <div hidden={dateOpen || !!failure}>
+      <div hidden={dateOpen}>
       {rangePending && !dateOpen && <p id="reports-range-pending" role="status" data-testid="reports-range-pending">{c.rangePending}</p>}
+      <div hidden={!!failure}>
       <div className="reports-basis"><p data-testid="reports-money-basis"><strong>{c.moneyBasis}</strong></p><p>{c.moneyDetails}</p><p>{c.rangeBasis}</p></div>
       {view && <p id="reports-applied-range" data-testid="reports-applied-range">{c.appliedRange}: {view.report.from} – {view.report.to} ({c.taipeiTime})</p>}
+      </div>
       <TabStrip role="tablist" className="reports-tabs" label={c.tabsLabel} previousLabel={c.previous} nextLabel={c.next} onKeyDown={keyTabs}>
         <button {...tabProps("products")} data-testid="reports-tab-products">{c.tabs.products}</button>
         <button {...tabProps("channels")} data-testid="reports-tab-channels">{c.tabs.channels}</button>
@@ -181,7 +183,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
         {view?.name === "manual-orders" && <ManualReportTable locale={locale} report={view.report} staff={view.staff} sessions={view.sessions} />}
         <div className="reports-export"><button {...csvProps} data-testid="reports-csv-manual-orders">{csvLabel}</button></div>
       </section>
-      <p>{c.csvHint}</p>
+      {!failure && <p>{c.csvHint}</p>}
       {read.status === "ready" && !read.data?.canExport && <p role="status">{read.data?.permissionKnown ? c.csvForbidden : c.exportUnknownPermission}</p>}
       {exportMessage && read.status !== "hidden" && <p role="status" data-testid="reports-export-result">{exportMessage}</p>}
       </div>

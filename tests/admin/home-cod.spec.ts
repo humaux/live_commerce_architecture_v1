@@ -106,7 +106,8 @@ for (const locale of moneyLocales) for (const width of moneyWidths) {
     try {
       const target = `/${locale}/settings?store=${store}`;
       await page.goto(target);
-      await page.getByRole("button", { name: locale === "en" ? "Advanced" : locale === "zh-CN" ? "进阶" : "進階", exact: true }).click();
+      // Signed settings overview (#354): the wizard is entered through its Edit settings button.
+      await page.getByRole("button", { name: locale === "en" ? "Edit settings" : locale === "zh-CN" ? "编辑设置" : "編輯設定", exact: true }).click();
       await page.getByRole("button", { name: sc.next, exact: true }).click();
       const card = page.getByTestId("cod-settings-card");
       await expect(card.getByRole("heading", { name: c.cod, exact: true }), "PARITY-MONEY 94:2153/94:2223: signed COD title").toBeVisible();
