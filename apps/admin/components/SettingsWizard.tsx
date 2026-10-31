@@ -995,6 +995,12 @@ function AdvancedSettings({
         (createdMarketValue) => {
           const savedMarket = createdMarketValue as Market;
           const current = draftRef.current;
+          // RVFIX2-403: keep the created tw row now; a failed/lost policy PUT must not send the next save down the zero-market path (second POST).
+          // draft.marketID still changes only in the PUT success callback (no early loadPolicy).
+          setMarkets((rows) => [
+            ...rows.filter((r) => r.id !== savedMarket.id),
+            savedMarket,
+          ]);
           // Now save the pricing policy for this newly created market
           const policyResource = `markets/${savedMarket.id}/countries/${current.country}/delivery-services/${current.serviceCode}/policy`;
           command(
