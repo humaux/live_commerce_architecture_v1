@@ -92,6 +92,7 @@ async function shot(page, name) {
   shots.push({ File: path.basename(file), Sha256: createHash("sha256").update(await readFile(file)).digest("hex") });
 }
 const noOverflow = (p) => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+const mailNumber = (id) => id.replace(/-/g, "").slice(0, 12).toUpperCase().replace(/^(.{4})(.{4})(.{4})$/, "$1-$2-$3");
 const numberOf = (text) => (/\b[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}\b/.exec(text) || [])[0];
 const stripId = (s) => s.replace(/"request_id":"[0-9a-f]+"/g, '"request_id":"-"');
 
@@ -193,7 +194,7 @@ try {
     await b.getByTestId("lookup-submit").click();
     await b.waitForURL(`${origin}/${locale}/orders/${orderID}`);
     await expect(b.getByTestId("order-section")).toBeVisible();
-    await expect(b.getByTestId("order-id")).toHaveText(orderID);
+    await expect(b.getByTestId("order-section").getByRole("heading", { level: 1 })).toContainText(mailNumber(orderID)); // signed frame: the page shows the mail order number, not the full id (URL asserted above)
     await expect(b.getByTestId("bank-transfer")).toBeVisible();
     await expect(b.getByTestId("transfer-bank")).toContainText(BANK.name);
     await expect(b.getByTestId("transfer-account-number")).toHaveText(BANK.account);
@@ -271,7 +272,7 @@ try {
 
     // ---- the original buyer is untouched ----------------------------------------------------------------------------------------------------------
     await a.goto(`${origin}/${locale}/orders/${orderID}`);
-    await expect(a.getByTestId("order-id")).toHaveText(orderID);
+    await expect(a.getByTestId("order-section").getByRole("heading", { level: 1 })).toContainText(mailNumber(orderID));
     await ctxB.close(); await ctxC.close();
     lastBuyer = { ctx: ctxA, page: a, orderID, locale };
     if (!mobile || locale !== "en") await ctxA.close();

@@ -1,0 +1,23 @@
+/* Purpose: component-scoped layout of the buyer order status page (signed frames 4:9963.. / 1198:14549.. / 63:1475..): back link, order heading + state chip,
+ * two cards (商品明細, 收件與配送), payment block, hand-off screen. Uses the existing storefront tokens only.
+ * Depends on: --navy, --line, --muted from app/globals.css (not edited here). Used by: OrderStatusView.tsx, OrderTerminalView.tsx.
+ * Invariants: desktop two columns (>760px), mobile one column; no fixed text heights. */
+.purchase-main.os-main { max-width: 1040px; }
+.os-back { display: inline-block; margin-bottom: 16px; color: var(--navy); font-weight: 600; text-decoration: none; }
+.os-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
+.os-chip { border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 14px; color: var(--navy); }
+.os-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.os-card { border: 1px solid var(--line); border-radius: 8px; padding: 20px; background: white; min-width: 0; }
+.os-card h2, .os-pay h2 { margin: 0 0 12px; font-size: 20px; line-height: 1.35; color: var(--navy); }
+.os-card address { font-style: normal; }
+.os-pay { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 16px; }
+.os-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.os-actions button, .os-actions a, .os-handoff button { min-height: 44px; padding: 0 18px; }
+.tap-link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.os-handoff { max-width: 620px; margin: 24px auto; }
+.os-terminal .order-breakdown div { display: flex; justify-content: space-between; gap: 12px; }
+@media (max-width: 760px) {
+  .os-grid { grid-template-columns: minmax(0, 1fr); }
+  .os-card { padding: 16px; }
+  .os-actions > * { flex: 1 1 100%; }
+}

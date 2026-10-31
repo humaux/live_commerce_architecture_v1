@@ -10,7 +10,7 @@
 //   POST .../payment/refresh | cancel (Stripe)   -> HostedPaymentStarter.RefreshPayment / CancelPayment
 // Stripe states and polling: contracts/stripe-buyer-ui-v1.md §5-§6, amended by SU09-POLL.
 // Refund summary (stripe-refund-v1 §7.2) is read from the same view; no refund route is called.
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type MutableRefObject, type ReactNode, type Ref } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError } from "../lib/buyer-client";
 import { StorefrontState } from "./state/StorefrontState";
@@ -30,9 +30,9 @@ import { collectorDisclosure, paymentCopy } from "../lib/payment-copy";
 import { orderCopy } from "../lib/order-copy";
 import { useShopName } from "./ShopName";
 
-type Message =
+export type Message =
   "failed" | "blocked" | "uncertain" | "submitted" | "creating" | "opFailed";
-type Plan = {
+export type Plan = {
   pay: boolean;
   cont: boolean;
   cancel: boolean;
@@ -93,6 +93,15 @@ function stripePlan(view: PaymentView, now: number): Plan {
   return none;
 }
 
+// PARITY-BUYER-AFTER: the buyer order page (components/order-status) draws this same state machine in the signed frame layout through
+// `renderFrame`; every read, poll, handoff and cancel is unchanged, only the markup is the caller's. `onSubmitted` fires once per click that
+// opened (or is creating) the provider page.
+export type PaymentFrame = {
+  view: PaymentView | null; plan: Plan | null; message: Message | null; reading: boolean; sending: boolean; signalling: boolean;
+  readFailure: boolean; readDenied: boolean; signedUnknown: boolean; collector: string | null; busy: boolean; ariaBusy: boolean;
+  statusProps: { role?: string; tabIndex?: number; ref?: Ref<HTMLParagraphElement> }; pay: () => void; cancel: () => void; reread: () => void;
+};
+
 // Local extension of approved B: one inline payment section, no second checkout
 // or generic retry path. The controller owns durable intent and one-shot Take;
 // this component owns only the selected-screen lifetime and visible read state.
@@ -106,6 +115,8 @@ export default function OrderPayment({
   onBusy,
   isSelected,
   paymentSignalRef,
+  renderFrame,
+  onSubmitted,
 }: {
   context: string;
   order: Order;
@@ -117,6 +128,8 @@ export default function OrderPayment({
   isSelected: () => boolean;
   // The parent's Refresh order button awaits this while a Stripe attempt is live (§5 Refresh).
   paymentSignalRef: MutableRefObject<(() => Promise<void>) | null>;
+  renderFrame?: (state: PaymentFrame) => ReactNode;
+  onSubmitted?: () => void;
 }) {
   const copy = paymentCopy[locale];
   const shopName = useShopName();
@@ -366,6 +379,7 @@ export default function OrderPayment({
         isCurrent: () => epoch.current === version && selectedAtStart(),
       });
       // Stripe reports its own outcome; a void result means the child tab was sent.
+      if (epoch.current === version && outcome !== "aborted") onSubmitted?.();
       if (epoch.current === version)
         setMessage(
           outcome === "creating"
@@ -414,6 +428,14 @@ export default function OrderPayment({
       }
     }
   }
+
+  if (renderFrame)
+    return <>{renderFrame({
+      view, plan, message, reading, sending, signalling, readFailure, readDenied, signedUnknown, collector, busy,
+      ariaBusy: reading || sending || signalling,
+      statusProps: plan ? { role: "status", tabIndex: -1, ref: statusLine } : {},
+      pay: () => void pay(), cancel: () => void cancel(), reread: () => { void read(epoch.current); },
+    })}</>;
 
   return (
     <section

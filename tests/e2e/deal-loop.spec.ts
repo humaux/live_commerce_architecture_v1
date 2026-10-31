@@ -221,7 +221,7 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   buyer.on("request", (request) => buyerRequests.push(request.url()));
   const opened = await buyer.goto(link);
   expect(opened?.status()).toBe(200);
-  await expect(buyer.getByRole("heading", { level: 1, name: claim.title })).toBeVisible();
+  await expect(buyer.getByRole("heading", { level: 1, name: claim.confirmTitle })).toBeVisible();
   await expect(buyer.getByTestId("claim-line-A1")).toContainText(`${claim.quantity} 2`);
   await expect(buyer.getByTestId("claim-line-A1")).toContainText(fixtures.sku_code);
   expect(new URL(buyer.url()).hash).toBe("");

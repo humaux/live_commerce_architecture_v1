@@ -147,7 +147,7 @@ async function mine(req, res, pathname) {
   }
   if (rest === "cart") return send(res, 200, { id: uid(700), currency: "TWD", version: 1, items: [{ sku_id: OTHER_SKU, quantity: 1 }] });
   if (rest === "claim-link") {
-    return send(res, 200, { bundle_version: 1, bound: true, expires_at: iso(3600e3), lines: [{ keyword: "A1", sku_id: SKU, sku_code: "TOTE-CARAMEL", product_name: "輕量帆布托特包", currency: "TWD", unit_price_minor: 128000, quantity: 1, pending: false, available: true, sold_out: false }] });
+    return send(res, 200, { bundle_version: 1, bound: true, expires_at: iso(3600e3), lines: [{ keyword: "A1", sku_id: SKU, sku_code: "TOTE-CARAMEL", product_name: "輕量帆布托特包", currency: "TWD", unit_price_minor: 128000, quantity: 1, pending: true, available: true, sold_out: false }] }); // pending: true = not yet in the cart (fixture fix: false + absent from the cart is the "nothing to check out" state, not the confirm frame)
   }
   if (rest === "claim-link/redeem") {
     if (claimState.redeem === "unknown") return error(res, 503, "unavailable");

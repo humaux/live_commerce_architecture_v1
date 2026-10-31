@@ -224,8 +224,8 @@
     "tests/admin/w6-real-route-loader.mjs": "64c32f6e3c9088d1395c5fc8cb5aeaa2b62c635e37f41558daef4932af4ccc73",
     "tests/admin/w6-route-seam.test.mjs": "8e2254dcb729b718a962dd849e2ec119a1ec9dafc6ff07990d205f85582fee87",
     "tests/browser-evidence.mjs": "37fca6070130b26a900e723a767c6d3034c6e721a43fdf3e188a7b9e91fd829a",
-    "tests/e2e/deal-loop.spec.ts": "35a915f1e3caf29ea4627065cfd5c5f1c65cb0bc2cc1a1a6b373d429b8370d3b",
-    "tests/e2e/live-tools.spec.ts": "00c2f0a08b15580bac542f964b250577c14f68fe8473126d0d8f327bfc0ac37f",
+    "tests/e2e/deal-loop.spec.ts": "7501540b5ff012d62a871a2fcca5d12c5b0687f2d218a308546e1d911a7eb240",
+    "tests/e2e/live-tools.spec.ts": "18993a23161dbd4cb2d7e4ba15f280e1c71d88af195aef2c7e5ff373b1c89b20",
     "tests/foundation/acceptance_test.go": "6ed85632c5029cfa218c3ea7ac32ccf69d361c71a5ac9d673663250d9b8688e4",
     "tests/foundation/account_onboarding_test.go": "e573d6f56f0eabe35231d87f21335463d1790801ca09a52d3e81f973941fcade",
     "tests/foundation/account_process_test.go": "213c2801cee78b59821a8fd7e8721cf3099cc5d57dfa1f9aadb45fdf41ed5ede",
@@ -720,23 +720,23 @@
     "tests/helpers/next-startup.mjs": "c7c5606a472a37ec3732ebc13a3cb53c8585759805b27d5682bbfbe907137039",
     "tests/helpers/owned-child.mjs": "f087e525f04ce0e1dfeb1190a71025db5c167a76e801fa937f0b249ac8cda611",
     "tests/storefront/ad-link.mjs": "8ff0d04d1953b3440e50967051efd3e089c38e96ad9c5ceab2907a8bff2a6525",
-    "tests/storefront/ads-attribution.mjs": "1d6095e58c42743c452b343ecfd83a845fbe73d060321025cbd52b44c9c1efb0",
-    "tests/storefront/ads-consent.mjs": "21283a0849d5941c419656f335aa0f24d4974aa5567d55bbe1065c9e2fae4107",
+    "tests/storefront/ads-attribution.mjs": "1da803025927aa70c8c1c11ad74714cc8604a17e40b341ce0e9d1e73d0164899",
+    "tests/storefront/ads-consent.mjs": "64a91cb2ab885ec726186a6c601b328d1bd28338caeaf944878e1da50a3839f0",
     "tests/storefront/amount-match.mjs": "db1f29bf92ecfa334d6e5bf10735ddb1607d8a7bb888839d94ad5b3d710eaf5f",
     "tests/storefront/amount-match.test.mjs": "1a82f40cbc42b92c7d5c79c7a171cb88cfd239ed76a3614f7f4e7f2dd15c3d74",
     "tests/storefront/browser-engine.mjs": "5dec33e55e6a5eb155a2b00fc0ed9c564cebf06c55cb24d5e93ea149b29bb711",
     "tests/storefront/browser-gate.mjs": "a90c0697ce659eb77a572f2517617f447930903f9274e808a9e33be21a744ddb",
-    "tests/storefront/buyer-after-parity.mjs": "871164f4d17d0c0b221183089f2ccb3b7bf823c7678977449c4267e6a54fa330",
-    "tests/storefront/buyer-comms-gate.mjs": "55c8bb40907fd003258b9fa5909aa9c379845d8e76334e8aafa26b008e134f86",
+    "tests/storefront/buyer-after-parity.mjs": "8e436108b7ae7b5c4c8a650d03432260acc1e1bc00f6d437abd9f88f2f2c3a35",
+    "tests/storefront/buyer-comms-gate.mjs": "5cca8c34aba74ccc04e2531be4d30f79798b3ebcfe5f47f9d28b87043cadd28a",
     "tests/storefront/catalog-media-gate.mjs": "2a88ccf112a2e945b07e9fbc4a9b78f4934111b4c7cd1317bfe0bb0031eabbca",
     "tests/storefront/checkout-v2.mjs": "84b37bc46423bdeac8ffa6a369dacaf06148c950e3335e1d85b0a5f421f7addb",
-    "tests/storefront/claim-checkout.mjs": "8c3f22b47a79f3d309ab7f28f3dff824cf43497d41b471c96941157037c09245",
+    "tests/storefront/claim-checkout.mjs": "5679a86a4e6d043664d60fbf32e165141b310c02fa99daa27ea04f6198259f1e",
     "tests/storefront/cod-footer.spec.ts": "a6fc969d7189f98edd2c1fb90deb9175aafe5150524046de79a0b69f34fc761b",
     "tests/storefront/collector-buyer.mjs": "6d4dc2824450901bfd2cf9389452ff3013a767ce944023994108b1f54045a7cf",
     "tests/storefront/cvs-buyer.mjs": "27a52b9961ee86ab9914d5c57c12ef92969d981f25fe54da8d94f362f9ed31dc",
     "tests/storefront/cvs-pap-only.mjs": "5cfb53e5dee4fb24445919f5444bfd0540a2eaea25123ff7475a95a5d9e10e14",
     "tests/storefront/cvs-picker.mjs": "92a4fc0c4ae2f3198b3e6502f93e0b6100ba8c0737a43f9a6075d4e683c70851",
-    "tests/storefront/home-cod-buyer.mjs": "dc2f6504e1c4099627d67eebe680dc6bf734f1b3a588b3fbe9341ddb90a5946b",
+    "tests/storefront/home-cod-buyer.mjs": "6e1922d58aa75e6ce2c5f8c57279852e513421e58ddc1103bc4574fd8bb3dbd8",
     "tests/storefront/legal-pages.mjs": "75096e2148250a804a3ed4a35d29eae48aa017dec6978c569deb2a03d9341cbf",
     "tests/storefront/manual-order-link-gate.mjs": "5e58a7e8414a47e511b88f079f3bad20ca269b03b4e3e793f146cb0157ca04f3",
     "tests/storefront/media-sizes-perf.mjs": "cda916ddd4385236dffca710f0d22169f91ceaab2e0390dc7d56a809e5d77ac6",
@@ -745,7 +745,7 @@
     "tests/storefront/offline-buyer.mjs": "3b73b2d8339323af0d3508175c0e9f385934d3afa651425fcf7134bc332b5129",
     "tests/storefront/offline-error.spec.ts": "bf531d759ba26fbb7731aa556a7de6c40a8e1686585e40a8250d62f1abe1969b",
     "tests/storefront/order-gate.mjs": "2de390c4c61a964e07a66d0ff804f3a2b0253158267a19804dae4b9c7817c82e",
-    "tests/storefront/privacy-buyer.mjs": "ce7a34da7f4f7e410320b80a5f659d4e6accb3855a366a564f648ab1664ece9c",
+    "tests/storefront/privacy-buyer.mjs": "1823f85a4bdbe4e38a6f5006d847cbb6f664971503ebf9fdd635f57ab3e28c85",
     "tests/storefront/promotions-gate.mjs": "4f9309f4dea11dfb5b4bd760d57d94b958adc1036f59cab2f170ee02f47d7e4b",
     "tests/storefront/refund-buyer.mjs": "e89297f2997f0153b811175d7c00718dec9657de3e606b759512248ca53acaca",
     "tests/storefront/shipment-buyer.mjs": "bedeb90babda691f1db89879711ffbdc0a29da2b476772eb367f00d5e1faf1db",
@@ -1959,7 +1959,9 @@
         "admin",
         "storefront"
       ],
-      "unresolved": [],
+      "unresolved": [
+        "tests/storefront/privacy-buyer.mjs: unresolved import ../../apps/storefront/components/privacy/copy.ts"
+      ],
       "foundationInputs": [
         "tests/admin/customer-tags-bff.test.ts",
         "tests/admin/customer-tags-client.test.mjs",
@@ -2151,7 +2153,9 @@
         "admin",
         "storefront"
       ],
-      "unresolved": [],
+      "unresolved": [
+        "tests/storefront/ads-consent.mjs: unresolved import ../../apps/storefront/components/privacy/copy.ts"
+      ],
       "foundationInputs": [
         "tests/admin/ads-model.test.ts"
       ],

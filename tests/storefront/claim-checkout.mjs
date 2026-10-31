@@ -17,9 +17,9 @@ const browser = await launch({ proxy: { server: process.env.LC_CDC_PROXY } });
 const ledger = [], orders = [], contexts = [], tokens = [];
 let cases = 0, activePage = null;
 const copy = {
-  "zh-TW": { checkout: "直接結帳", delivery: "選擇配送", quote: "取得目前總額", pickup: /取貨付款/, merge: /其他商品也會一起結帳/ },
-  "zh-CN": { checkout: "直接结账", delivery: "选择配送", quote: "获取当前总额", pickup: /取货付款/, merge: /其他商品也会一起结账/ },
-  en: { checkout: "Check out now", delivery: "Choose delivery", quote: "Get current total", pickup: /Pay at pickup/i, merge: /other items.*checked out together/i },
+  "zh-TW": { checkout: /前往結帳（共 \d+ 件）/, delivery: "選擇配送", quote: "取得目前總額", pickup: /取貨付款/, merge: /其他商品也會一起結帳/ },
+  "zh-CN": { checkout: /前往结账（共 \d+ 件）/, delivery: "选择配送", quote: "获取当前总额", pickup: /取货付款/, merge: /其他商品也会一起结账/ },
+  en: { checkout: /Go to checkout \(\d+ items\)/, delivery: "Choose delivery", quote: "Get current total", pickup: /Pay at pickup/i, merge: /other items.*checked out together/i },
 };
 const taipeiLabel = { "zh-TW": "台北時間（UTC+8）", "zh-CN": "台北时间（UTC+8）", en: "Taipei time (UTC+8)" };
 async function fixture(name, action = "link", order = undefined, sku = undefined) {
@@ -172,7 +172,7 @@ try {
   const merged = await newPage(engine === "webkit"), mergeLink = await fixture("merge");
   await addToCart(merged, origin, "zh-TW", process.env.LC_CDC_PRODUCT);
   await openClaim(merged, mergeLink);
-  await expect(merged.getByTestId("claim-merge-notice")).toContainText("其他商品也會一起結帳");
+  await expect(merged.getByTestId("claim-merge-notice")).toContainText(/共 \d+ 件一起結帳/); // signed frame 4:12347 wording (was 其他商品也會一起結帳)
   await checkout(merged, mergeLink);
   assert.equal(merged.seen.cart.items.length, 2, "unpaid cart merges");
   await merged.reload(); await expect(merged.getByTestId("cart-line")).toHaveCount(2);
@@ -211,7 +211,7 @@ try {
   await expect(partial.getByTestId("claim-line-B2")).toContainText(/售完|售罄|Sold out/);
   await checkout(partial, partialLink, "zh-TW", true); pass("partial sold-out skip");
   partial.seen.redeem = 0; await openClaim(partial, partialLink);
-  await expect(partial.getByTestId("claim-add")).toContainText("件可買");
+  await expect(partial.getByTestId("claim-add")).toContainText(/前往結帳（共 \d+ 件）/); // the frame has one checkout label; the sold-out line above carries the partial signal
   await checkout(partial, partialLink, "zh-TW", true);
   assert.equal(partial.seen.redeemed.applied.length, 0, "revisit redeems nothing");
   await partial.reload(); await expect(partial.getByTestId("cart-line")).toHaveCount(1);
@@ -232,7 +232,7 @@ try {
   await openClaim(race, raceLink); await fixture("race", "deplete");
   await race.getByTestId("claim-add").click();
   await expect.poll(() => race.seen.preview?.lines.some((line) => line.sold_out)).toBe(true);
-  await expect(race.getByTestId("claim-add")).toHaveText("直接結帳");
+  await expect(race.getByTestId("claim-add")).toHaveText(/前往結帳（共 \d+ 件）/);
   await expect(race.getByTestId("claim-add")).toBeDisabled();
   await expect(race.getByText("購物車裡已有這些商品。",{exact:true})).toHaveCount(0);
   assert.equal(race.seen.redeemed.skipped[0].reason,"sold_out"); assert.deepEqual(race.seen.redeemed.cart.items,[]);
@@ -241,7 +241,7 @@ try {
   await openClaim(repeat, repeatLink); await repeat.getByTestId("claim-add").click({ clickCount: 2 });
   await expect(repeat).toHaveURL(/\/zh-TW\/checkout/); assert.equal(repeat.seen.redeem, 1); pass("double click sends one redeem");
   await repeat.goBack();
-  await expect(repeat.getByTestId("claim-not-found")).toContainText("重新開啟商家私訊中的連結");
+  await expect(repeat.getByTestId("claim-not-found")).toContainText("請私訊商家重新取得"); // signed frame 66:1746 wording (was 重新開啟商家私訊中的連結)
   assert.equal(new URL(repeat.url()).hash, ""); await noLeaks(repeat, repeatLink); pass("back navigation forgets token and asks to reopen the message link");
   repeat.seen.redeem=0;await openClaim(repeat,repeatLink);await checkout(repeat,repeatLink);await place(repeat,repeatLink);
   pass("double-click journey yields exactly one persisted order");
