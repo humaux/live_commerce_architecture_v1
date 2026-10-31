@@ -1024,6 +1024,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await page.getByTestId("orders-delivery-filter").selectOption("home");
   await apply("delivery home", () => page.getByTestId("orders-apply").click());
   await page.reload();
+  await revealOrderFilters(page);
   await expect(page.getByTestId("orders-payment-filter")).toHaveValue("card");
   await expect(page.getByTestId("orders-delivery-filter")).toHaveValue("home");
   await apply("reset filters", () => page.getByTestId("orders-reset").click());
@@ -1035,6 +1036,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   expect(live.total).toBe(1);
   await expect(page.getByTestId(`order-row-${ids.live_order}`)).toContainText("Live claim");
   await page.reload();
+  await revealOrderFilters(page);
   await expect(page.getByTestId("orders-session-filter")).toHaveValue(ids.live_session);
   await apply("reset live filter", () => page.getByTestId("orders-reset").click());
   const today = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
@@ -1045,6 +1047,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   const dated = await apply("Taipei day", () => page.getByTestId("orders-apply").click());
   expect(dated.total).toBeGreaterThan(0);
   await page.reload();
+  await revealOrderFilters(page);
   await expect(page.getByTestId("orders-from")).toHaveValue(today);
   await expect(page.getByTestId("orders-to")).toHaveValue(today);
   await apply("reset before visual acceptance", () => page.getByTestId("orders-reset").click());

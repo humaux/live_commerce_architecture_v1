@@ -141,7 +141,7 @@
     "tests/admin/orders-bff.spec.ts": "28963e8f589eed64858f7e41c48b67f1f7bc3cbc211a5dadf4a682e875fd756a",
     "tests/admin/orders-model.test.ts": "aaa4b12d5a6c4a2c876341b98fd73c5a812b94a7ee05bd51f1415058d1d427c0",
     "tests/admin/orders-request.test.ts": "ccb87d390afac556c21fd6a050aba65cc43096021015109afe236f0e0390031b",
-    "tests/admin/orders-ui.spec.ts": "6c1d39802057e1d5aaa7744ab28058493327973b5f70c109049c94cc46c45419",
+    "tests/admin/orders-ui.spec.ts": "c44e8ae8c28e30387815604efc19c428f900782c28e964a24bfe5c568f1e577e",
     "tests/admin/orders-v2.test.ts": "c034401b86e5f04b3d8a2f4eaf0fbc2b1a202ab36925b3455bdce8f12308bd94",
     "tests/admin/parcel-merge.spec.ts": "6418b269c6a25c1e7eb00cbf314e7ee3c96d77e693e18f1cc67c76d05389f476",
     "tests/admin/parcels-bff.test.ts": "4496e04ca16357e2c758e0c881f3dbca00af9a4a58703137d1d9e73a675daedf",
