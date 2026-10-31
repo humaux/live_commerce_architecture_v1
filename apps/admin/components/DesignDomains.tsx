@@ -9,10 +9,13 @@ import {
   readDomains,
   requestDomain,
   moveDomain,
-  type StorefrontDomains,
-  type StorefrontDomainRow,
-  type DomainRequestResult,
 } from '@/lib/storefront-client';
+import type {
+  DomainRequestResult,
+  MerchantDomainState,
+  StorefrontDomainRow,
+  StorefrontDomains,
+} from '@/lib/storefront-model';
 import { sessionBoundary } from '@/lib/settings-client';
 
 type ViewMode =
@@ -110,8 +113,10 @@ export function DesignDomains({
     };
   }, [loadDomains, journalKey]);
 
-  const platformDomain = domains?.domains.find((d) => d.kind === 'platform') ?? null;
-  const customDomains = domains?.domains.filter((d) => d.kind === 'custom') ?? [];
+  const platformDomain =
+    domains?.domains.find((d: StorefrontDomainRow) => d.kind === 'platform') ?? null;
+  const customDomains =
+    domains?.domains.filter((d: StorefrontDomainRow) => d.kind === 'custom') ?? [];
 
   // Copy full value action handler
   const handleCopyValue = useCallback(async (value: string) => {
@@ -475,58 +480,63 @@ export function DesignDomains({
               {/* CNAME or Apex (A/AAAA) */}
               {receiptDns.apex ? (
                 receiptDns.edge_addresses && receiptDns.edge_addresses.length >= 2 ? (
-                  <>
-                    <div data-testid="domain-dns-A" className="design-row">
-                      <span>A</span>
-                      <span>{receiptDns.edge_addresses[0]}</span>
-                      <div className="design-row-actions">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void handleCopyValue(
-                              (receiptDomain || selectedDomain?.origin || '').replace(
-                                /^https?:\/\//,
-                                '',
-                              ),
-                            )
-                          }
-                        >
-                          {cCopy.copyHost}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleCopyValue(receiptDns.edge_addresses![0])}
-                        >
-                          {cCopy.copyValue}
-                        </button>
-                      </div>
-                    </div>
-                    <div data-testid="domain-dns-AAAA" className="design-row">
-                      <span>AAAA</span>
-                      <span>{receiptDns.edge_addresses[1]}</span>
-                      <div className="design-row-actions">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void handleCopyValue(
-                              (receiptDomain || selectedDomain?.origin || '').replace(
-                                /^https?:\/\//,
-                                '',
-                              ),
-                            )
-                          }
-                        >
-                          {cCopy.copyHost}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleCopyValue(receiptDns.edge_addresses![1])}
-                        >
-                          {cCopy.copyValue}
-                        </button>
-                      </div>
-                    </div>
-                  </>
+                  (() => {
+                    const [edgeIpv4, edgeIpv6] = receiptDns.edge_addresses;
+                    return (
+                      <>
+                        <div data-testid="domain-dns-A" className="design-row">
+                          <span>A</span>
+                          <span>{edgeIpv4}</span>
+                          <div className="design-row-actions">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void handleCopyValue(
+                                  (receiptDomain || selectedDomain?.origin || '').replace(
+                                    /^https?:\/\//,
+                                    '',
+                                  ),
+                                )
+                              }
+                            >
+                              {cCopy.copyHost}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleCopyValue(edgeIpv4)}
+                            >
+                              {cCopy.copyValue}
+                            </button>
+                          </div>
+                        </div>
+                        <div data-testid="domain-dns-AAAA" className="design-row">
+                          <span>AAAA</span>
+                          <span>{edgeIpv6}</span>
+                          <div className="design-row-actions">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void handleCopyValue(
+                                  (receiptDomain || selectedDomain?.origin || '').replace(
+                                    /^https?:\/\//,
+                                    '',
+                                  ),
+                                )
+                              }
+                            >
+                              {cCopy.copyHost}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleCopyValue(edgeIpv6)}
+                            >
+                              {cCopy.copyValue}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()
                 ) : (
                   <p>{cCopy.missingIP}</p>
                 )
@@ -677,16 +687,16 @@ export function DesignDomains({
           </div>
 
           {/* Custom domain rows */}
-          {customDomains.map((d) => {
-            const stateIndex =
-              {
-                REQUESTED: 0,
-                OWNERSHIP_PENDING: 1,
-                TLS_PENDING: 2,
-                ACTIVE: 3,
-                SUSPENDED: 4,
-                DETACHED: 5,
-              }[d.state] ?? 0;
+          {customDomains.map((d: StorefrontDomainRow) => {
+            const stateMap: Record<MerchantDomainState, number> = {
+              REQUESTED: 0,
+              OWNERSHIP_PENDING: 1,
+              TLS_PENDING: 2,
+              ACTIVE: 3,
+              SUSPENDED: 4,
+              DETACHED: 5,
+            };
+            const stateIndex = stateMap[d.state] ?? 0;
             return (
               <div key={d.origin} data-testid="domain-custom-row" className="design-row">
                 <article
