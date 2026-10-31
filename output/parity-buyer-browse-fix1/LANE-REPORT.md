@@ -1,8 +1,8 @@
 # LANE-REPORT — PARITY-BUYER-BROWSE-FIX1
 
-Model: opencode-go/kimi-k2.7-code  
-Worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/parity-buyer-browse  
-Branch: unit/parity-buyer-browse  
+Model: opencode-go/kimi-k2.7-code
+Worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/parity-buyer-browse
+Branch: unit/parity-buyer-browse
 Base after merge: origin/r3/integration (includes integrator commit a122b3cd6 for inbox race and ADR-20261031 evidence retention baseline).
 
 | failing job | failing test / assertion | class | change (file:line) |
