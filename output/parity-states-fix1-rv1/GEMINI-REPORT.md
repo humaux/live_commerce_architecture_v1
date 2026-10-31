@@ -8,7 +8,7 @@ We merged `origin/r3/integration` (`71e403e8f`), resolved the conflict in `tests
 
 | Failing Job / Test / Review Item | Class | What Changed (`file:line`) |
 |---|---|---|
-| PR #356 merge conflict with `origin/r3/integration` (`71e403e8f` / #362) | a | Merged `origin/r3/integration` (`71e403e8f`), preserving both `#362` signed order list/detail specs and `#356` `registerParityStates(signedLogin)` in `tests/admin/orders-ui.spec.ts:1586-1710` |
+| PR #356 merge conflict with `origin/r3/integration` (`71e403e8f` / #362) | a | Merged `origin/r3/integration` (`71e403e8f`), preserving both `#362` signed order list/detail specs and `#356` `registerParityStates(signedLogin)` in `tests/admin/orders-ui.spec.ts:1586-1710`, and stripped trailing whitespace in `output/parity-orders/relay4-ci.log:16,39` for `git diff --check` |
 | Review P2: `CartView.tsx` formatting slip (`</div>      ) : (`) | b | Split `</div>` and `) : (` onto separate lines in `apps/storefront/components/CartView.tsx:41-42` |
 | Review P2: non-blocking notes (`CartProvider.tsx` 404 handling, `OrderPayment.tsx` `readFailure ? null : plan`, click ledger literal `"PASS"`) | c | Documented for P2 issue tracking (`P2 for issue`: `CartProvider.tsx:96`, `OrderPayment.tsx:644`, `tests/admin/orders-ui.spec.ts:1625,1667`); no behavioural regressions |
 | Browser ownership manifest sync | a | Regenerated `output/ci-select-backend-browser/browser-ownership.json` (`node scripts/dev/derive-browser-ownership.mjs` + `--check` exit 0, 54 modes) |
