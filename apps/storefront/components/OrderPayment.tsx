@@ -1,7 +1,7 @@
 "use client";
 
 // Purpose: render the inline buyer payment section and own its bounded GET polling.
-// Depends on: lib/order-payment.ts -> lib/buyer-client.ts and the payment/copy contracts.
+// Depends on: lib/order-payment.ts, lib/buyer-client.ts, state/StorefrontState and the payment/copy contracts.
 // Used by: the buyer order detail view in components/OrderFlow.tsx.
 // Invariants: terminal payments never trigger refresh POSTs; CLOSED_UNPAID keeps bounded
 // GET polling until commercial cancellation/confirmation is visible. BFF routes:
@@ -12,6 +12,8 @@
 // Refund summary (stripe-refund-v1 §7.2) is read from the same view; no refund route is called.
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { BuyerClientError } from "../lib/buyer-client";
+import { StorefrontState } from "./state/StorefrontState";
 import type { Order } from "../lib/purchase";
 import {
   isStripeView,
@@ -118,6 +120,8 @@ export default function OrderPayment({
 }) {
   const copy = paymentCopy[locale];
   const shopName = useShopName();
+  const [readFailure, setReadFailure] = useState(false);
+  const [readDenied, setReadDenied] = useState(false);
   const [view, setView] = useState<PaymentView | null>(null);
   const [marker, setMarker] =
     useState<ReturnType<typeof pendingOrderPayment>>(null);
@@ -162,16 +166,28 @@ export default function OrderPayment({
       const pending = pendingOrderPayment(context, order.order_id);
       latest.current = value;
       setView(value);
+      setReadFailure(false);
+      setReadDenied(false);
       setMarker(pending);
       setMessage((old) => (old === "failed" ? null : old));
-    } catch {
+    } catch (reason) {
       if (
         !quiet &&
         version === epoch.current &&
         request === readVersion.current
       ) {
-        latest.current = null;
-        setView(null);
+        const denied = reason instanceof BuyerClientError &&
+          ([401, 403, 404].includes(reason.status ?? 0) || reason.code === "context_changed");
+        const previous = latest.current;
+        // A failed status read is not a payment result. Keep the same original uncertainty,
+        // but revoke visible payment recovery as soon as access/context is lost.
+        if (denied || !previous || previous.payment_state !== "PENDING" ||
+            !["CREATING", "UNAVAILABLE"].includes(previous.handoff_state)) {
+          latest.current = null;
+          setView(null);
+        }
+        setReadFailure(true);
+        setReadDenied(denied);
         setMessage("failed");
       }
     } finally {
@@ -194,6 +210,8 @@ export default function OrderPayment({
       latest.current = null;
       setView(null);
       setMarker(null);
+      setReadFailure(false);
+      setReadDenied(false);
     }
     // A failed Refresh-order signal must survive the remount that click causes.
     const keep = keepFailure.current;
@@ -274,6 +292,8 @@ export default function OrderPayment({
     };
   }, [context, order, refreshToken]);
 
+  const signedUnknown = readFailure && !!view && view.payment_state === "PENDING" &&
+    ["CREATING", "UNAVAILABLE"].includes(view.handoff_state);
   const stripeMarker = marker?.body.method_code === "stripe_checkout";
   const plan =
     view && (isStripeView(view) || stripeMarker)
@@ -402,6 +422,8 @@ export default function OrderPayment({
       aria-labelledby="payment-title"
       aria-busy={reading || sending || signalling}
     >
+      {signedUnknown && <StorefrontState locale={locale} variant="unknown" failed={readFailure} note={money(order.snapshot.quote.amount.total_minor, order.snapshot.quote.currency)}
+        onRead={() => { void read(epoch.current); }} />}
       <h2 id="payment-title">{copy.title}</h2>
       {view && (
         <>
@@ -443,7 +465,11 @@ export default function OrderPayment({
           )}
         </>
       )}
-      {message &&
+      {readFailure && !signedUnknown && <StorefrontState locale={locale}
+        variant={readDenied ? "forbidden" : "offline"} title={readDenied ? undefined : copy.failed}
+        body={readDenied ? undefined : ""} note={readDenied ? undefined : ""}
+        onRead={readDenied ? undefined : () => { void read(epoch.current); }} />}
+      {message && !(readFailure && signedUnknown) &&
         // Stripe only: a stale "handoff requested" must not sit beside a final payment state.
         !(
           plan &&
@@ -469,7 +495,7 @@ export default function OrderPayment({
         // Refresh) legitimately runs several GETs (focus after the native confirm + the remount
         // read); a role=status here re-announced the same loading text for each of them.
         <p>{copy.loading}</p>
-      ) : plan ? (
+      ) : readFailure ? null : plan ? (
         <>
           {plan.pay && view && (
             <p>

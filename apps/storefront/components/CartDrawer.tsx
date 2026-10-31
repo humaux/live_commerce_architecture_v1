@@ -1,14 +1,15 @@
+// Purpose: Cart drawer (native <dialog>) and header bag button rendering shared CartProvider state.
+// Depends on: React, next/link, @live-commerce/i18n, ./CartProvider, ./CartLines, ./state/StorefrontState and ./icons.
+// Used by: storefront layout and header.
+// Invariants: renders shared CartProvider state; read problems display signed StatePanel rather than empty cart.
 "use client";
 
-// Cart drawer (native <dialog>, so focus trap, Esc and the backdrop are the browser's own) and the header bag button that
-// opens it. No BFF call of its own: it renders the shared CartProvider state through components/CartLines.tsx.
-// The product page opens it after "Add to cart" (setDrawerOpen(true)); "View cart" goes to /{locale}/cart,
-// "Checkout" to /{locale}/checkout.
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { useCart } from "./CartProvider";
 import { CartLines, CartNotice, CartSummary } from "./CartLines";
+import { StorefrontState } from "./state/StorefrontState";
 import { cartPath } from "../lib/routes";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { BagIcon, CloseIcon } from "./icons";
@@ -30,7 +31,11 @@ export function HeaderCart({ locale }: { locale: Locale }) {
 
 export default function CartDrawer({ locale }: { locale: Locale }) {
   const copy = shopCopy[locale];
-  const { drawerOpen, setDrawerOpen, cart, ready } = useCart();
+  const { drawerOpen, setDrawerOpen, cart, ready, readProblem, refresh } = useCart();
+  const [retried, setRetried] = useState(false);
+  useEffect(() => {
+    if (!readProblem) setRetried(false);
+  }, [readProblem]);
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -63,7 +68,18 @@ export default function CartDrawer({ locale }: { locale: Locale }) {
         </header>
         <div className="sf-drawer__body">
           <CartNotice locale={locale} />
-          {empty ? (
+          {ready && readProblem ? (
+            <StorefrontState
+              locale={locale}
+              variant={readProblem}
+              failed={retried}
+              onRead={readProblem === "offline" ? async () => {
+                setRetried(false);
+                const result = await refresh();
+                if (result === false) setRetried(true);
+              } : undefined}
+            />
+          ) : empty ? (
             <div className="sf-empty sf-empty--compact">
               <p className="sf-empty__title">{ready ? copy.cartEmpty : copy.loading}</p>
               {ready && <p className="sf-muted">{copy.cartEmptyHint}</p>}
@@ -75,7 +91,7 @@ export default function CartDrawer({ locale }: { locale: Locale }) {
             <CartLines locale={locale} />
           )}
         </div>
-        {!empty && (
+        {!empty && !readProblem && (
           <footer className="sf-drawer__foot">
             <CartSummary locale={locale} onNavigate={close} />
             <Link className="sf-link" href={cartPath(locale)} onClick={close}>
