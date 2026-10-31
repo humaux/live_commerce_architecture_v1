@@ -1,6 +1,7 @@
 // Purpose: Owns sign-in and initial-store onboarding entry views.
-// Depends on: @/lib/storefront-handle, react, @live-commerce/i18n, @/lib/entry-copy, @/lib/company, ./OperatorFooter, @/lib/entry-state, ./Icon, @/lib/session-events, ./PasswordAuth
+// Depends on: @/lib/storefront-handle, react, @live-commerce/i18n, @/lib/entry-copy, @/lib/company, ./OperatorFooter, @/lib/entry-state, ./Icon, @/lib/session-events, ./PasswordAuth, ./auth/entry.css
 // Used by: apps/admin/app/[locale]/page.tsx, apps/admin/app/[locale]/reset/page.tsx, apps/admin/app/[locale]/signup/page.tsx
+// Invariants: signed-out parity styling never changes onboarding persistence or server-owned session/store creation.
 "use client";
 import { validStorefrontReceipt } from "@/lib/storefront-handle";
 // Signed-out / onboarding shell for /[locale]/ and (signed-out only) /[locale]/signup, /[locale]/reset.
@@ -24,6 +25,7 @@ import {
 } from "@/lib/entry-state";
 import { Icon } from "./Icon";
 import { signalLogout } from "@/lib/session-events";
+import "./auth/entry.css";
 import { PasswordAuth, type PasswordMode } from "./PasswordAuth";
 
 type EntryStatus = "disabled" | "signed-out" | "onboarding" | "unavailable";
@@ -347,7 +349,7 @@ export function Entry({
         : "";
 
   return (
-    <div className="entry-root">
+    <div className={`entry-root${status === "signed-out" && passwordMode ? " entry-parity" : ""}`}>
       {/* Signup/reset use registry metadata; the root entry's title must not affect the signed-in dashboard. */}
       {!path && <title>{brandedTitle(passwordMode === "signin" ? passwordCopy[locale].signinTitle : status === "onboarding" ? c.title : c.signInTitle)}</title>}
       <header className="entry-topbar">
@@ -706,7 +708,7 @@ export function Entry({
           </>
         )}
       </main>
-      <OperatorFooter locale={locale} />
+      {!(status === "signed-out" && passwordMode) && <OperatorFooter locale={locale} />}
     </div>
   );
 }

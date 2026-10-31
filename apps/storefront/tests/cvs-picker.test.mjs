@@ -10,6 +10,22 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { loadCvsDirectory } from "../lib/cvs-directory-client.ts";
+import * as directoryClient from "../lib/cvs-directory-client.ts";
+import { cvsPickerCopy } from "../../../packages/i18n/src/cvs-picker.ts";
+
+test("PARITY-CVS source copy interpolates the actual immutable directory filename date", () => {
+  assert.equal(typeof directoryClient.cvsDirectorySource, "function", "directory source must expose filename-derived date rather than localized hard-coded date");
+  for (const brand of ["UNIMART", "UNIMARTFREEZE", "FAMI", "HILIFE", "OKMART"]) {
+    const source = directoryClient.cvsDirectorySource(brand);
+    const match = /-(\d{4})(\d{2})(\d{2})\.json$/.exec(source.path);
+    assert.ok(match, "date provenance is the actual requested snapshot filename");
+    assert.equal(source.date, `${match[1]}-${match[2]}-${match[3]}`);
+  }
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    assert.ok(cvsPickerCopy[locale].source.includes("{date}"), `${locale} source copy must accept the loaded directory date`);
+    assert.doesNotMatch(cvsPickerCopy[locale].source, /20\d{2}-\d{2}-\d{2}/, "a translation is not a snapshot freshness authority");
+  }
+});
 
 test("CVS directory transport validates, retries and caches without buyer credentials", async (t) => {
   const row = { code: "000001", name: "Synthetic store", address: "Synthetic address", county: "Synthetic county", district: "Synthetic district" };

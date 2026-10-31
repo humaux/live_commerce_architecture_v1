@@ -25,10 +25,10 @@ export default async function OrdersPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: string; order?: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { locale } = await params;
+  const { locale, order: pathOrder } = await params;
   if (!isLocale(locale)) notFound();
   const query = await searchParams;
   if (Object.keys(query).some((key) => key === "q" || !["store", "state", "order", "cursor", ...filterKeys].includes(key))) notFound();
@@ -41,7 +41,8 @@ export default async function OrdersPage({
   const state = single("state") || "active";
   const filters = { ...emptyFilters, ...Object.fromEntries(filterKeys.map((key) => [key, single(key) || emptyFilters[key]])) } as OrderFilters;
   if (!validOrderFilters(filters)) notFound();
-  const order = single("order");
+  const order = pathOrder ?? single("order");
+  if(pathOrder && query.order!==undefined) notFound();
   const cursor = single("cursor");
   if ((requested && !canonicalUUID.test(requested)) ||
     !orderStates.includes(state as OrderFilter) ||

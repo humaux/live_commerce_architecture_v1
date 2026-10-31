@@ -437,13 +437,12 @@ export function InboxThread({
   const channel = conversation.platform === "instagram" ? c.instagram : c.messenger;
   const latestOutbound = [...(thread?.items ?? [])].sort((a, b) => (b.at ?? "").localeCompare(a.at ?? ""))
     .find(item => item.direction === "out");
-  // A later inbound starts the next reply task after a confirmed send, using the same signed composer.
-  // It cannot unlock a queued, blocked or UNKNOWN outcome.
-  const nextReply = delivery === "sent" && latestOutbound?.at && thread?.items.some(item =>
-    item.direction === "in" && item.at && item.at > latestOutbound.at!);
+  // A confirmed DM permits another reply within the existing server window, without a new inbound.
+  // Presentation never clears another outbound obligation, UNKNOWN latch or server permission check.
+  const nextReply = delivery === "sent" && !uncertainDelivery && !deliveryLock.current && historyClear.current;
   const folded = !!(delivery || uncertainDelivery) && !editing && !retry && !nextReply;
-  // Reply-only staff retain the sent receipt on the message while the next composer is open.
-  const inlineReceipt = nextReply && !uncertainDelivery && !permitted(store, "integration:read");
+  // Keep the confirmed receipt visible while composing, including when its projection is not in this page.
+  const inlineReceipt = nextReply && latestOutbound?.send_state === "sent";
   const deliveryLabels = { queued: c.deliveryPending, sent: c.deliverySent, failed: c.deliveryRejected,
     blocked: c.locked, unknown: c.deliveryUnknown };
   const resultCopy = uncertainDelivery
@@ -509,7 +508,7 @@ export function InboxThread({
         </ol>
       </>}
       {error && <p role="alert" className={`${styles.notice} ${styles.error}`}>{inboxError(locale, error)}</p>}
-      {folded && <section className={styles.result}>
+      {(folded || (nextReply && !inlineReceipt)) && <section className={styles.result}>
         <p role="status" data-testid="inbox-delivery-state">{resultCopy}</p>
         {(uncertainDelivery || delivery === "queued" || delivery === "blocked") && <button data-testid="inbox-send-locked" className={styles.button} disabled>{c.locked}</button>}
         {delivery === "failed" && !uncertainDelivery && recoveryText.current !== null &&

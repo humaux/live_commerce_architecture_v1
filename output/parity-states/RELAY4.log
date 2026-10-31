@@ -1,0 +1,18 @@
+PARITY-STATES RELAY 4 — destination readiness and route-handler lifecycle, attempt 1
+PR #356; failed head 7a45c5d6facd8c5f98bbd51c2a803a4b8fe6f5ae
+Gates 41070114352 / bundle:09 job 124130717361: FAILURE
+Tested synthetic merge a4e9d8d57686852c0e7b6fb0821c8ae865e1cd8a
+Artifact 12988537262 gate-browser-merchant-orders-ui: 41 PASS, 4 FAIL of 45.
+All 21 original cases and 20 of 24 new PARITY-STATES cases passed.
+Failures: shell diagnostic recovery zh-TW/390, zh-CN/1440, zh-CN/390, en/1440.
+Error: apiResponse.json: Response has been disposed at orders-ui.spec.ts:1433.
+Trace: destination /studio navigation starts a fresh /api/stores route.fetch; denial absence passes during shell loading; After Hooks begins before GET resolves; response read then races disposed context.
+Repair: ADD destination store-selector value and visible merchant-studio assertions, then page.unrouteAll({ behavior: "wait" }) to drain pending route projections before context disposal.
+No assertion, fixture, expected copy, timeout, threshold or exception removed/relaxed. No ignored errors/retries/sleeps added. No product source change.
+Playwright official API authority (2026-10-30): https://playwright.dev/docs/api/class-page#page-unroute-all — wait behavior drains running handlers, unlike ignoreErrors.
+Foundation 41070114213 / 124111675933 SUCCESS applies only to the failed PR head above; not new-head acceptance.
+Static E1: node --check tests/admin/orders-ui.spec.ts exit 0; derive-browser-ownership + --check exit 0 (53 modes).
+Runtime verification: GitHub CI only; new-head GREEN pending. No local tests, server, browser, build, database or container.
+Raw CI artifact/trace retained locally under output/parity-states/relay4/, not committed.
+Humaux tools unavailable; no store/canvas/coord success claimed. Existing integrator assignment retained; no recursive delegation.
+Integrator CI-completion relay is the wakeup mechanism; polling cutoff ~10 minutes.

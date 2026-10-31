@@ -43,6 +43,13 @@ async function shot(page: Page, name: string, locale: string, viewport: "desktop
   manifest.push({ File: path.basename(file), Sha256: createHash("sha256").update(await readFile(file)).digest("hex"), Locale: locale, Viewport: viewport });
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 }
+async function revealSavedFacts(page: Page) {
+  const url=new URL(page.url());
+  if(!/\/orders\/[0-9a-f-]{36}$/.test(url.pathname)&&!url.searchParams.has("order"))return;
+  const facts=page.getByTestId("order-more-details");
+  await expect(facts).toBeVisible();
+  if(await facts.getAttribute("open")===null)await facts.locator("summary").first().click();
+}
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
@@ -61,22 +68,26 @@ async function openOrders(page: Page, locale: string) {
   if (await selector.count()) {
     if ((await selector.inputValue()) !== store) await selector.selectOption(store);
   }
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   // The order list names its time zone (integration: the stop-bleed M06 label "Taipei time / 台北時間 / 台北时间" replaces "Taipei, UTC+8").
-  await expect(page.getByTestId("orders-table")).toContainText(/Taipei time|台北時間|台北时间/);
+
 }
 async function expand(page: Page, id: string): Promise<Locator> {
+  if(await page.getByTestId("order-detail-back").count())await page.getByTestId("order-detail-back").click();
   for (let pageNo = 0; pageNo < 5; pageNo++) {
     const button = page.getByTestId(`order-expand-${id}`);
     if (await button.count()) {
       if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
       const detail = page.getByTestId("order-detail");
       await expect(detail).toHaveAttribute("aria-label", new RegExp(id));
-      return detail;
+      const facts=page.getByTestId("order-more-details");
+      if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
+      await expect(detail).toContainText(/Taipei time|台北時間|台北时间/);
+      return detail.getByTestId("order-facts");
     }
     await expect(page.getByTestId("orders-next")).toBeEnabled();
     await page.getByTestId("orders-next").click();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   throw new Error("order was absent from the real cursor pages");
 }
@@ -87,7 +98,7 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
   const { context, page } = await merchant(browser, false);
   await page.goto(new URL(`/${locale}/settings?store=${store}`, origin).toString());
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
-  await page.getByRole("button", { name: "進階", exact: true }).click();
+  await page.getByRole("button", { name: "編輯設定", exact: true }).click();
   await page.getByRole("button", { name: c.next, exact: true }).click();
   // step 2: the cash-on-delivery card sits in the merchant-arranged branch
   const card = page.getByTestId("cod-settings-card");
@@ -106,7 +117,8 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
   await expect(card.getByTestId("cod-settings-problem")).toHaveCount(0);
   await shot(page, "settings-cod", locale, "desktop");
   // read back from the server after a reload: the card carries the saved values
-  await page.reload();
+  await page.reload(); await revealSavedFacts(page);
+  await page.getByRole("button", { name: "編輯設定", exact: true }).click();
   await page.getByRole("button", { name: new RegExp(c.steps[1]) }).click(); // the draft keeps the wizard on step 3: back to step 2
   const again = page.getByTestId("cod-settings-card");
   await expect(again.getByTestId("cod-enabled")).toBeChecked();
@@ -115,6 +127,7 @@ test("settings: the merchant enables cash on delivery with a cap, surcharge and 
   await expect(again.getByTestId("cod-carrier")).toHaveValue("black_cat");
   for (const language of ["zh-TW", "zh-CN", "en"] as const) {
     await page.goto(new URL(`/${language}/settings?store=${store}`, origin).toString());
+    await page.getByRole("button", { name: { "zh-TW": "編輯設定", "zh-CN": "编辑设置", en: "Edit settings" }[language], exact: true }).click();
     await page.getByRole("button", { name: new RegExp(settingsCopy[language].steps[1]) }).click();
     await expect(page.getByTestId("cod-settings-card")).toBeVisible();
     for (const width of [390, 1366, 1586]) {

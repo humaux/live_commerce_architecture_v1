@@ -2,7 +2,7 @@
 //   the HTTP layer maps, the file digest, the PG error mapping that never carries uploaded content, and the batch record / results
 //   readers over the migrationimport definers. Customer-specific parsing and the apply loop live in customers.go / customers_csv.go.
 // Depends on: pgx/v5 (pgconn codes), internal/command (ValidID, ErrInvalid, ErrNotFound), internal/platform (Scope, ErrForbidden,
-//   ErrUnauthorized), internal/csvguard (Cell); SQL migrationimport.record_batch / read_batch_results (migration 0152,
+//   ErrUnauthorized, ErrReauthRequired), internal/csvguard (Cell); SQL migrationimport.record_batch / read_batch_results (0152/0214,
 //   customers:privacy; owner commerce_privacy_writer, EXECUTE commerce_runtime).
 // Used by: customers.go (preview/commit), internal/httpapi/imports.go (routes, error classification).
 // Invariants: the uploaded bytes never reach a log or an error message (only a PG error code does); results rows carry
@@ -80,6 +80,9 @@ func mapPG(err error) error {
 		case "PT401":
 			return platform.ErrUnauthorized
 		case "PT403":
+			if pg.Message == "reauth_required" {
+				return platform.ErrReauthRequired
+			}
 			return platform.ErrForbidden
 		case "PT404":
 			return command.ErrNotFound

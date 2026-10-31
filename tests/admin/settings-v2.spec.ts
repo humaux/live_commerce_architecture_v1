@@ -1,9 +1,10 @@
 // Purpose: signed settings-v2 real-click acceptance within the existing single-session settings harness.
-// Depends on: Playwright, settings-real.spec.ts's signed MOCK IdP / isolated PG workspace and profile API.
+// Depends on: Playwright, catalog-document-driver selectProductForCopy, settings-real.spec.ts's signed MOCK IdP / isolated PG workspace and profile API.
 // Used by: settings-real.spec.ts; --browser-identity CI (never a second session or local server).
 // Invariants: clicks/fills drive writes; refresh checks persisted receipts; faults are explicitly MOCK;
 // no provider calls, fixture tenant authority, forced clicks, DOM writes or direct API mutations.
-import { expect, type Page } from "@playwright/test";
+import { expect, type Page, type TestInfo } from "@playwright/test";
+import { selectProductForCopy } from "./catalog-document-driver";
 
 const copy = {
   "zh-TW": { profile: "店舖資料 · 未填寫", delivery: "配送方式 · 已開啟 0 種", payment: "收款 · Stripe（平台代收）", edit: "編輯設定" },
@@ -13,7 +14,7 @@ const copy = {
 
 // This is a helper, deliberately called by the existing test rather than registering
 // another test: the Go fixture independently requires exactly one session/store.
-export async function settingsV2Acceptance(page: Page, store: string) {
+export async function settingsV2Acceptance(page: Page, store: string, testInfo: TestInfo) {
   const path = `/en/settings?store=${store}`;
   await page.setViewportSize({ width: 390, height: 844 });
   for (const [locale, c] of Object.entries(copy)) {
@@ -38,7 +39,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
       expect(density.blocks).toBeLessThanOrEqual(12);
       expect(density.chars).toBeLessThanOrEqual(100);
     }
-    await overview.getByRole("button", { name: c.edit, exact: true }).click();
+    await overview.getByRole("button", { name: c.profile, exact: true }).click();
     await expect(page.getByTestId("settings-v2-editor")).toBeVisible();
     await page.goto(path);
   }
@@ -52,14 +53,15 @@ export async function settingsV2Acceptance(page: Page, store: string) {
     await expect(page.getByTestId("settings-v2-editor")).toBeVisible();
     await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
   }
-  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await overview.getByRole("button", { name: /^Store details ·/ }).click();
   await page.getByLabel("Store name", { exact: true }).fill("Settings acceptance store");
   await page.getByLabel("Email", { exact: true }).fill("settings@example.test");
   await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-0000");
   for (const label of ["Home delivery", "7-ELEVEN", "FamilyMart", "Hi-Life", "OK"]) {
-    // Fresh stores have no existing market/service/policy: the signed contract
-    // forbids fabricated defaults. Disabled switches must explain the prerequisite.
-    await expect(page.getByRole("checkbox", { name: label, exact: true })).toBeDisabled();
+    // AD-04 supersedes the no-seeding rule on this surface. Merely
+    // opening the editor leaves these enabled choices unchecked; no write occurs.
+    await expect(page.getByRole("checkbox", { name: label, exact: true })).toBeEnabled();
+    await expect(page.getByRole("checkbox", { name: label, exact: true })).not.toBeChecked();
   }
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   const review = page.getByTestId("settings-v2-review");
@@ -79,7 +81,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
   await page.reload();
   await expect(overview.getByRole("button", { name: "Store details · Complete", exact: true })).toBeVisible();
-  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await overview.getByRole("button", { name: /^Store details ·/ }).click();
   await expect(page.getByLabel("Store name", { exact: true })).toHaveValue("Settings acceptance store");
   await expect(page.getByLabel("Email", { exact: true })).toHaveValue("settings@example.test");
   await expect(page.getByLabel("Phone (optional)", { exact: true })).toHaveValue("000-000-0000");
@@ -116,7 +118,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await page.getByRole("button", { name: "Reload", exact: true }).click();
   await expect(overview).toBeVisible();
   expect(writes).toBe(2);
-  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await overview.getByRole("button", { name: /^Store details ·/ }).click();
   await expect(page.getByLabel("Phone (optional)", { exact: true })).toHaveValue("000-000-0000");
   // Reload above is read-only even when an aborted request has no receipt. An
   // explicit save of the original attempted values must reuse its exact key/body;
@@ -133,7 +135,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   expect(recovery).toEqual([uncertainCommand]);
   await page.unroute(profileURL);
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
-  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await overview.getByRole("button", { name: /^Store details ·/ }).click();
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
 
   // All three signed quick-start steps, back controls and explicit dismissal.
@@ -205,8 +207,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await createObserver.goto(`/en/products?store=${store}`);
   const createCopied = createObserver.waitForResponse(r => r.request().method() === "POST" &&
     new URL(r.url()).pathname === `/api/stores/${store}/products/${createdProduct.id}/copy`);
-  await createObserver.getByTestId(`product-row-${createdProduct.id}`).getByRole("checkbox").click();
-  await createObserver.getByTestId("products-advanced").click();
+  await selectProductForCopy(createObserver, createdProduct.id);
   await createObserver.getByTestId("products-copy-selected").click();
   const createCopyResponse = await createCopied;
   expect(createCopyResponse.ok()).toBe(true);
@@ -260,8 +261,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await catalog.goto(`/en/products?store=${store}`);
   const copied = catalog.waitForResponse(r => r.request().method() === "POST" &&
     new URL(r.url()).pathname === `/api/stores/${store}/products/${productA}/copy`);
-  await catalog.getByTestId(`product-row-${productA}`).getByRole("checkbox").click();
-  await catalog.getByTestId("products-advanced").click();
+  await selectProductForCopy(catalog, productA);
   await catalog.getByTestId("products-copy-selected").click();
   const copiedResponse = await copied;
   expect(copiedResponse.ok(), "Catalog creates a real newer draft B").toBe(true);
@@ -425,7 +425,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   // with the unsent stock intent, even when the profile version advances.
   // Both branches use normal controls; no storage restoration hides draft loss.
   for (const editProfile of [false, true]) {
-    await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+    await overview.getByRole("button", { name: /^Store details ·/ }).click();
     if (editProfile) await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-3333");
     await page.getByRole("button", { name: "Review settings", exact: true }).click();
     await expect(review).toContainText("Stock (units): 10");
@@ -442,7 +442,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
     expect(skuCommands, "ordinary settings save cannot repeat the acknowledged SKU").toEqual([originalSku, originalSku]);
     expect(inventoryCommands, "ordinary settings save cannot send the retained stock").toHaveLength(0);
     if (editProfile) {
-      await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+      await overview.getByRole("button", { name: /^Store details ·/ }).click();
       await expect(page.getByLabel("Phone (optional)", { exact: true })).toHaveValue("000-000-3333");
       await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
     }
@@ -534,7 +534,7 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await page.unroute(inventoryURL);
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
   await page.reload();
-  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await overview.getByRole("button", { name: /^Store details ·/ }).click();
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   for (const fact of ["Acceptance draft bag", "1280", "10", "TWD"]) await expect(review).toContainText(fact);
   await page.getByRole("button", { name: "Back to edit", exact: true }).click();
@@ -562,20 +562,182 @@ export async function settingsV2Acceptance(page: Page, store: string) {
   await page.unroute(quickstartURL);
   await page.reload();
   await expect(overview).toBeVisible();
-  await expect(page.getByTestId("settings-v2-quickstart-prompt")).toHaveCount(0);
+  await expect(page.getByTestId("settings-v2-quickstart-prompt")).toBeVisible();
   // No storage clearing or hidden setup control: ordinary profile edits must
   // work after the completed marker is read, including across another refresh.
-  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await overview.getByRole("button", { name: /^Store details ·/ }).click();
   await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-2222");
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Settings saved", exact: true }), "a committed marker with a lost response must not block later profile saves").toBeVisible();
   await page.reload();
-  await expect(page.getByTestId("settings-v2-quickstart-prompt")).toHaveCount(0);
-  await overview.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await expect(page.getByTestId("settings-v2-quickstart-prompt")).toBeVisible();
+  await overview.getByRole("button", { name: /^Store details ·/ }).click();
   await expect(page.getByLabel("Phone (optional)", { exact: true })).toHaveValue("000-000-2222");
   await deliverySwitches(page, store, path);
+  await paritySettingsAcceptance(page, store, testInfo);
   await page.setViewportSize({ width: 1586, height: 992 });
+}
+
+/** AD-04: MOCK zero-market delivery on the real route; no production/provider calls. */
+async function paritySettingsAcceptance(page: Page, store: string, testInfo: TestInfo) {
+  // MOCK scenario isolation: share authentication and the exact same store, but
+  // use a fresh tab so deliverySwitches' saved per-tab draft is not a zero-market draft.
+  // No storage is cleared; same-tab reload below must still recover uncertain intent.
+  const sourcePage = page;
+  page = await sourcePage.context().newPage();
+  const marketID = "80000000-0000-4000-8000-000000000021";
+  const markets: Record<string, unknown>[] = [], services: Record<string, unknown>[] = [];
+  const policies = new Map<string, Record<string, unknown>>();
+  const receipts = new Map<string, { body: string; value: unknown }>();
+  const commands: Array<{ path: string; key: string; body: string }> = [];
+  let losePolicy = true;
+  const pattern = `**/api/stores/${store}/markets**`;
+  await page.route(pattern, async route => {
+    const request = route.request(), suffix = new URL(request.url()).pathname.split(`/api/stores/${store}/`)[1];
+    const reply = (value: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(value) });
+    if (request.method() === "GET") {
+      if (suffix === "markets") return reply({ items: markets, next_cursor: "" });
+      if (suffix === `markets/${marketID}/countries/TW/delivery-services`) return reply({ items: services, next_cursor: "" });
+      const service = services.find(s => suffix === `markets/${marketID}/countries/TW/delivery-services/${s.code}`);
+      if (service) return reply(service);
+      if (policies.has(suffix)) return reply(policies.get(suffix));
+      return reply({ code: "not_found", request_id: "parity-settings-mock", retryable: false, details: {} }, 404);
+    }
+    const key = request.headers()["idempotency-key"], bytes = request.postData() ?? "";
+    expect(key, "every sequential command has a stable identity").toBeTruthy();
+    commands.push({ path: suffix, key, body: bytes });
+    const prior = receipts.get(key);
+    if (prior) {
+      expect(bytes, "uncertain retry uses identical bytes").toBe(prior.body);
+      return reply(prior.value);
+    }
+    const input = request.postDataJSON();
+    let value: Record<string, unknown>;
+    if (suffix === "markets") {
+      expect(request.method()).toBe("POST");
+      expect(input).toEqual({ code: "tw", name: "台灣", currency: "TWD" });
+      expect(markets).toHaveLength(0);
+      value = { ...input, id: marketID, version: 1, active: true };
+      markets.push(value);
+    } else if (suffix.endsWith("/policy")) {
+      expect(request.method()).toBe("PUT");
+      const code = suffix.split("/").at(-2);
+      expect(input).toMatchObject({ market_id: marketID, country: "TW", method: `delivery:${code}`, currency: "TWD",
+        shipping_mode: "country_flat", shipping_minor: 0, tax_mode: "inclusive", tax_basis: "goods", tax_rate_bps: 0,
+        enabled: true, expected_version: 0, configuration_ref: "快速上手預設（owner 2026-10-30）" });
+      const { configuration_ref: _reason, expected_version: _expected, ...safe } = input;
+      value = { ...safe, version: 1 };
+      policies.set(suffix, value);
+    } else {
+      expect(request.method()).toBe("PUT");
+      expect(policies.has(`${suffix}/policy`), "policy must be saved before its service").toBe(true);
+      expect(input).toMatchObject({ market_id: marketID, country: "TW", mode: "MANUAL", enabled: true,
+        visible: true, expected_version: 0, policy_version: 1 });
+      expect(suffix.endsWith(`/delivery-services/${input.code}`)).toBe(true);
+      const { expected_version: _expected, ...safe } = input;
+      value = { ...safe, version: 1, policy_method: `delivery:${input.code}`, currency: "TWD" };
+      services.push(value);
+    }
+    receipts.set(key, { body: bytes, value });
+    if (suffix.endsWith("/policy") && losePolicy) {
+      losePolicy = false;
+      return route.abort("failed"); // MOCK lost acknowledgement after this exact command commits.
+    }
+    return reply(value);
+  });
+  const overview = page.getByTestId("settings-v2-overview");
+  const shot = async (desktop: string, mobile: string) => {
+    for (const [id, width, height] of [[desktop, 1440, 900], [mobile, 390, 844]] as const) {
+      await page.setViewportSize({ width, height });
+      await page.screenshot({ path: testInfo.outputPath("parity", `${id}.png`), animations: "disabled" });
+    }
+  };
+  try {
+    for (const [locale, start, edit, legacy] of [
+      ["zh-TW", "開始三步設定", "編輯設定", "進階"],
+      ["zh-CN", "开始三步设置", "编辑设置", "进阶"],
+      ["en", "Start quick setup", "Edit settings", "Advanced"],
+    ]) {
+      await page.goto(`/${locale}/settings?store=${store}`);
+      await expect(overview).toBeVisible();
+      await expect(overview.getByRole("button", { name: start, exact: true }), "setup remains available after completion").toBeVisible();
+      await expect(page.getByRole("button", { name: legacy, exact: true })).toHaveCount(0);
+      const buttons = overview.getByRole("button");
+      await expect(buttons).toHaveCount(5);
+      await expect(buttons.nth(0)).toHaveText(start);
+      await expect(buttons.nth(0)).toHaveClass(/settings-v2-primary/);
+      await expect(buttons.nth(1)).toHaveText(edit);
+      await expect(buttons.nth(1)).toHaveClass(/settings-v2-secondary/);
+      await expect(buttons.nth(2)).toHaveText(copy[locale as keyof typeof copy].profile.replace("未填寫", "已填寫").replace("未填写", "已填写").replace("Incomplete", "Complete"));
+      await expect(buttons.nth(3)).toHaveText(copy[locale as keyof typeof copy].delivery);
+      await expect(buttons.nth(4)).toHaveText(copy[locale as keyof typeof copy].payment);
+      if (locale === "zh-TW") {
+        await expect(page.getByTestId("settings-wizard")).not.toContainText(/设置|编辑|发货|启用|选填|储存/);
+        await shot("1429-32319", "1429-32392");
+      }
+      await buttons.nth(1).click();
+      await expect(page.getByTestId("metaconnect-card")).toBeVisible();
+      await expect(page.getByTestId("settings-card-payments-link")).toBeVisible();
+      await page.reload();
+      await expect(overview, "full editor is never sticky across a reload").toBeVisible();
+    }
+    for (const suffix of ["&meta_connect=connected", "&meta_error=cancelled", "#facebook-instagram"]) {
+      await page.goto(`/en/settings?store=${store}${suffix}`);
+      await expect(page.getByTestId("metaconnect-card"), "OAuth return reaches the connection card").toBeVisible();
+    }
+    await page.goto(`/zh-TW/settings?store=${store}`);
+    await overview.getByRole("button", { name: "開始三步設定", exact: true }).click();
+    await shot("1429-33165", "1429-33243");
+    await page.getByRole("button", { name: "下一步：配送", exact: true }).click();
+    const all = page.getByRole("checkbox", { name: "全選", exact: true });
+    const home = page.getByRole("checkbox", { name: "宅配", exact: true });
+    await expect(home, "a store with zero markets can select delivery").toBeEnabled();
+    await expect(all).toBeEnabled();
+    for (const name of ["宅配", "7-ELEVEN", "全家", "萊爾富", "OK"]) await expect(page.getByRole("checkbox", { name, exact: true })).not.toBeChecked();
+    expect(commands, "reading and entering the flow never seeds configuration").toHaveLength(0);
+    await shot("1429-33321", "1429-33467");
+    await home.check();
+    await expect(home).toBeChecked();
+    await all.check();
+    for (const name of ["宅配", "7-ELEVEN", "全家", "萊爾富", "OK"]) await expect(page.getByRole("checkbox", { name, exact: true })).toBeChecked();
+    await all.uncheck();
+    for (const name of ["宅配", "7-ELEVEN", "全家", "萊爾富", "OK"]) await expect(page.getByRole("checkbox", { name, exact: true })).not.toBeChecked();
+    await home.check();
+    await all.check();
+    await page.getByRole("button", { name: "下一步：商品", exact: true }).click();
+    await shot("1429-33613", "1429-33693");
+    await page.getByRole("button", { name: "核對設定", exact: true }).click();
+    await expect(page.getByTestId("settings-v2-review")).toContainText("宅配: 開放");
+    await shot("1429-32781", "1429-32846");
+    await page.getByRole("button", { name: "儲存設定", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "尚未取得最新狀態", exact: true })).toBeVisible();
+    expect(commands).toHaveLength(2); // market, then the lost policy receipt; no service may run yet.
+    await page.reload();
+    await expect(overview).toBeVisible();
+    await overview.getByRole("button", { name: "開始三步設定", exact: true }).click();
+    await page.getByRole("button", { name: "下一步：配送", exact: true }).click();
+    await expect(all).toBeChecked();
+    await page.getByRole("button", { name: "下一步：商品", exact: true }).click();
+    await page.getByRole("button", { name: "核對設定", exact: true }).click();
+    await page.getByRole("button", { name: "儲存設定", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "設定已儲存", exact: true })).toBeVisible();
+    expect(commands[2]).toEqual(commands[1]);
+    expect(markets).toHaveLength(1);
+    expect(services).toHaveLength(5);
+    expect(policies.size).toBe(5);
+    await page.reload();
+    await expect(overview.getByRole("button", { name: "配送方式 · 已開啟 5 種", exact: true })).toBeVisible();
+    await overview.getByRole("button", { name: "配送方式 · 已開啟 5 種", exact: true }).click();
+    for (const name of ["全選", "宅配", "7-ELEVEN", "全家", "萊爾富", "OK"]) await expect(page.getByRole("checkbox", { name, exact: true })).toBeChecked();
+  } finally {
+    await page.unroute(pattern);
+    await page.close();
+    await sourcePage.goto(`/en/settings?store=${store}`);
+    const restoredOverview = sourcePage.getByTestId("settings-v2-overview");
+    await expect(restoredOverview).toBeVisible();
+    await restoredOverview.getByRole("button", { name: "Store details · Complete", exact: true }).click();
+  }
 }
 
 async function deliverySwitches(page: Page, store: string, path: string) {
@@ -618,7 +780,7 @@ async function deliverySwitches(page: Page, store: string, path: string) {
   });
   try {
     await page.goto(path);
-    await page.getByTestId("settings-v2-overview").getByRole("button", { name: "Edit settings", exact: true }).click();
+    await page.getByTestId("settings-v2-overview").getByRole("button", { name: /^Store details ·/ }).click();
     for (const [, , label] of methods) {
       const control = page.getByRole("checkbox", { name: label, exact: true });
       await expect(control).toBeEnabled();
@@ -632,7 +794,7 @@ async function deliverySwitches(page: Page, store: string, path: string) {
     expect(writes.sort()).toEqual(services.map(s => s.code).sort());
     await page.reload();
     await expect(page.getByRole("button", { name: "Delivery methods · 5 enabled", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Edit settings", exact: true }).click();
+    await page.getByRole("button", { name: /^Store details ·/ }).click();
     for (const [, , label] of methods) await expect(page.getByRole("checkbox", { name: label, exact: true })).toBeChecked();
   } finally {
     await page.unroute(pattern);
