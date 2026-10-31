@@ -1001,6 +1001,16 @@ function AdvancedSettings({
             ...rows.filter((r) => r.id !== savedMarket.id),
             savedMarket,
           ]);
+          // The row now makes activeMarket non-null, so the form needs a baseline for it or Save stays disabled after a 403:
+          // a brand-new market has no policy yet, version 0 is exactly what the first PUT sends.
+          saveDraft({
+            ...draftRef.current,
+            policyObservation: {
+              target: `${savedMarket.id}:${current.country}:${current.serviceCode}`,
+              version: 0,
+              dirty: false,
+            },
+          });
           // Now save the pricing policy for this newly created market
           const policyResource = `markets/${savedMarket.id}/countries/${current.country}/delivery-services/${current.serviceCode}/policy`;
           command(
