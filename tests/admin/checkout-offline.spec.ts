@@ -126,7 +126,8 @@ test("settings: the merchant sets bank details, the window and the free-shipping
   await expect(card.getByTestId("transfer-settings-problem")).toHaveCount(0);
   // step 3: the delivery policy's free-shipping threshold, then the service re-save that pins the new policy version
   await page.getByRole("button", { name: c.next, exact: true }).click();
-  await page.getByRole("combobox", { name: c.market, exact: true }).selectOption(market);
+  await expect(page.getByRole("region", { name: c.steps[2] })).toBeVisible();
+  void market;
   // the saved policy must hydrate (its version is the CAS token of the save) before any field is edited
   const policyRead = page.waitForResponse((r) => r.url().includes("/policy") && r.request().method() === "GET");
   await page.getByLabel(c.serviceCode, { exact: true }).fill(service);

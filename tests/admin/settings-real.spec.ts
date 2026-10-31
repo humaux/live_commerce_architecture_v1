@@ -149,12 +149,13 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.setViewportSize({ width: 1586, height: 992 });
 
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  const marketForm = page.getByTestId("settings-market-form");
-  await expect(marketForm).toBeVisible();
-  await marketForm.getByLabel("Market code", { exact: true }).fill("taiwan");
-  await marketForm
-    .getByLabel("Market name", { exact: true })
-    .fill("Taiwan retail");
+  const initialPolicyForm = page.getByTestId("settings-policy-form");
+  await expect(initialPolicyForm).toBeVisible();
+  await page.getByLabel("Stable service code", { exact: true }).fill("home");
+  await initialPolicyForm
+    .getByLabel(/^Configuration reference \/ reason/)
+    .fill("Fixture initial delivery setup");
+  await initialPolicyForm.getByLabel("Enable pricing policy", { exact: true }).check();
   // Lose only the response after the real command commits. No mocked success.
   const marketRequests: Array<{ key: string; body: string }> = [];
   let loseMarketResponse = true;
@@ -184,8 +185,8 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
       await route.abort("failed").catch(() => undefined);
     } else await route.continue();
   });
-  await marketForm
-    .getByRole("button", { name: "Create market", exact: true })
+  await initialPolicyForm
+    .getByRole("button", { name: "Save pricing policy", exact: true })
     .click();
   await committedMarket;
   await page.reload();
@@ -197,11 +198,20 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page
     .getByRole("button", { name: "Retry pending command", exact: true })
     .click();
-  await expect(page.getByLabel("Stable service code", { exact: true })).toBeVisible();
-  await expect(pendingControls).toBeHidden();
-  expect(marketRequests.length).toBe(2);
+  await expect.poll(() => marketRequests.length).toBe(2);
   expect(marketRequests[0].key === marketRequests[1].key).toBe(true);
   expect(marketRequests[0].body === marketRequests[1].body).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Object.keys(localStorage).some((k) =>
+          k.startsWith("commerce-settings-command:"),
+        ),
+      ),
+    )
+    .toBe(false);
+  await expect(pendingControls).toBeHidden();
+  await expect(page.getByLabel("Stable service code", { exact: true })).toBeVisible();
   await noPayuni(page);
 
   // Locale routes preserve nonsecret setup and the store's TWD currency.
@@ -251,6 +261,9 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.route(serviceURL, (route) => route.request().method() === "GET"
     ? serviceRead.deliver(route) : route.continue());
   const savePolicy = policyForm.getByRole("button", { name: "Save pricing policy", exact: true });
+  // PARITY-NO-MARKET: "home" was already entered at the start of the zero-market save, so typing it again changes no state and starts no read, and a reload
+  // restores the draft with its already-hydrated (non-pending) baseline. Move to another code and back: the return to "home" starts the held read under test.
+  await page.getByLabel("Stable service code", { exact: true }).fill("home2");
   await page.getByLabel("Stable service code", { exact: true }).fill("home");
   await expect.poll(policyRead.arrived).toBe(true);
   await expect.soft(savePolicy, "a pending version read is not a saveable baseline").toBeDisabled();
@@ -316,7 +329,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await expect(page.getByTestId("settings-status")).toContainText("home");
 
   await page
-    .getByRole("button", { name: "Market and delivery", exact: false })
+    .getByRole("button", { name: /^\d+\s*Delivery$/ })
     .click();
   await expect(
     page
@@ -384,7 +397,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await expect(svcName).toHaveValue("Remote saved name");
   await page.reload();
   await page.getByRole("button", { name: "Edit settings", exact: true }).click();
-  await page.getByRole("button", { name: "Market and delivery", exact: false }).click();
+  await page.getByRole("button", { name: /^\d+\s*Delivery$/ }).click();
   await expect(svcName).toHaveValue("Remote saved name"); // persisted
   // Lost response WITHOUT a page reload: the write commits, the reply is lost, the pending banner offers an exact-replay retry.
   const svcWrites: Array<{ key: string; body: string }> = [];
@@ -420,7 +433,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.unroute(svcPath);
   await page.reload();
   await page.getByRole("button", { name: "Edit settings", exact: true }).click();
-  await page.getByRole("button", { name: "Market and delivery", exact: false }).click();
+  await page.getByRole("button", { name: /^\d+\s*Delivery$/ }).click();
   await expect(svcName).toHaveValue("Lost reply name"); // persisted after the replay
   const originalCSRF = (await context.cookies()).find(
     (c) => c.name === "__Host-commerce_csrf",
