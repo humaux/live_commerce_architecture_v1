@@ -44,6 +44,13 @@ const ui = {
 const cookieName = "__Host-commerce_session";
 test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-failure" });
 
+async function revealSavedFacts(page: Page) {
+  const url=new URL(page.url());
+  if(!/\/orders\/[0-9a-f-]{36}$/.test(url.pathname)&&!url.searchParams.has("order"))return;
+  const facts=page.getByTestId("order-more-details");
+  await expect(facts).toBeVisible();
+  if(await facts.getAttribute("open")===null)await facts.locator("summary").first().click();
+}
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
@@ -57,20 +64,28 @@ async function openOrders(page: Page, locale: string) {
   if (await selector.count()) {
     if ((await selector.inputValue()) !== store) await selector.selectOption(store);
   }
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
+  const more=page.getByTestId("orders-more-filters");
+  if(await more.getAttribute("aria-expanded")==="false") await more.click();
 }
 async function expand(page: Page, id: string): Promise<Locator> {
+  // Standalone details replace the list; return through the seller's control before choosing another order.
+  const back = page.getByTestId("order-detail-back");
+  if (await back.count()) await back.click();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   for (let pageNo = 0; pageNo < 5; pageNo++) {
     const button = page.getByTestId(`order-expand-${id}`);
     if (await button.count()) {
       if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
       const detail = page.getByTestId("order-detail");
       await expect(detail).toHaveAttribute("aria-label", new RegExp(id));
-      return detail;
+      const facts=page.getByTestId("order-more-details");
+      if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
+      return detail.getByTestId("order-facts");
     }
     await expect(page.getByTestId("orders-next")).toBeEnabled();
     await page.getByTestId("orders-next").click();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   throw new Error("fixture order was absent from the real cursor pages");
 }

@@ -75,15 +75,17 @@ async function buyerShots(page: Page, name: string) {
   await page.setViewportSize({ width: 1440, height: 900 });
 }
 
-// The orders list re-renders after its first read, which collapses an already expanded row: expand until the detail holds.
+// Signed detail is a standalone route; saved facts and legacy commands are a native disclosure.
 async function expandOrder(page: Page, order: string): Promise<Locator> {
-  const button = page.getByTestId(`order-expand-${order}`);
-  await expect(button).toBeVisible();
+  const detail = page.getByTestId("order-detail");
+  if (!(await detail.count())) await expect(page.getByTestId(`order-expand-${order}`)).toBeVisible();
   await expect(async () => {
-    if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
-    await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label", new RegExp(order), { timeout: 3_000 });
+    if (!(await detail.count())) await page.getByTestId(`order-expand-${order}`).click();
+    await expect(detail).toHaveAttribute("aria-label", new RegExp(order), { timeout: 3_000 });
   }).toPass({ timeout: 30_000, intervals: [500, 1_000, 2_000] });
-  return page.getByTestId("order-detail");
+  const facts = page.getByTestId("order-more-details");
+  if (await facts.getAttribute("open") === null) await facts.locator("summary").first().click();
+  return detail.getByTestId("order-facts");
 }
 
 async function storageHas(page: Page, secrets: string[]) {
@@ -288,7 +290,7 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   // ------------------------------------------------------------------------------------------------ 8. merchant ships
   await merchant.goto(`${admin}/en/orders?store=${store}`);
   await expect(merchant.getByTestId("merchant-orders")).toBeVisible();
-  await expect(merchant.getByTestId("orders-table")).toBeVisible();
+  await expect(merchant.getByTestId("orders-list")).toBeVisible();
   const detail = await expandOrder(merchant, order);
   await expect(detail.locator('[data-state="CONFIRMED"]').first()).toBeVisible();
   await expect(detail).toContainText(money(2500));
@@ -324,7 +326,7 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
 
   // ------------------------------------------------------------------------------------------------ 10. refund
   await merchant.reload();
-  await expect(merchant.getByTestId("orders-table")).toBeVisible();
+  await expect(merchant.getByTestId("order-detail")).toHaveAttribute("aria-label", new RegExp(order));
   const refundDetail = await expandOrder(merchant, order);
   await refundDetail.getByRole("button", { name: /^(refund|退款|發起退款|发起退款|issue refund)/i }).click();
   const dialog = merchant.locator("dialog[open]");

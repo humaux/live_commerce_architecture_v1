@@ -142,7 +142,7 @@ export async function main() {
   const q = (extra = "") => `?store=${store}${extra}`;
   const adminURL = (route, locale) => {
     const p = route.path;
-    const sub = { "/products/[product]": `/products/${facts.products[0].id}`, "/customers/[customer]": `/customers/${facts.customer}`, "/invite/[token]": `/invite/${"A".repeat(43)}` }[p] ?? p;
+    const sub = { "/orders/[order]": `/orders/${facts.orders.cash_on_delivery}`, "/products/[product]": `/products/${facts.products[0].id}`, "/customers/[customer]": `/customers/${facts.customer}`, "/invite/[token]": `/invite/${"A".repeat(43)}` }[p] ?? p;
     if (route.public) return `${adminOrigin}/${locale}${sub}`;
     if (p === "/studio/claims") return `${adminOrigin}/${locale}${sub}${q(`&scene=${facts.session}`)}`;
     if (p === "/orders/cvs-print") return `${adminOrigin}/${locale}${sub}${q(`&order=${facts.orders.cvs_label_created}&thermal=0`)}`;
