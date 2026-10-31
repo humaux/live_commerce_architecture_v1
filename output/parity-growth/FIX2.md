@@ -3,7 +3,7 @@
 Status: Directed fix completed locally, ready for CI run.
 Date: 2026-10-31 Asia/Taipei. PR #366 (`unit/parity-growth` -> `r3/integration`).
 Failing CI Run: 41084050704 (attempt 1) on head `4fdf52f5`
-Latest base Gates: 41204331038 on 3c8997eb3 (success)
+Latest base Gates: 41204331038 on 3c8997eb3 (success), merged through `faf6502b5`
 
 ## Failing Jobs and Failure Classification Table
 
@@ -15,12 +15,12 @@ Latest base Gates: 41204331038 on 3c8997eb3 (success)
 | 124209655416 (`required`) | Dependency failure | `required`: blocked by `gate` and `receipts` | Cascade | Will resolve once dependent browser gates pass. |
 
 ## Step 1 Integration Merge
-- Base `origin/r3/integration` (`3c8997eb3`) merged into `unit/parity-growth`.
-- Merge commit: `b61a82628940d702ff97657a08cf652f02806abd`.
-- Resolved conflicts in `output/ci-select-backend-browser/browser-ownership.json` and `packages/i18n/src/index.ts`.
+- Base `origin/r3/integration` merged into `unit/parity-growth`.
+- Merge commit: `81e9d425c` (bringing latest base commit `faf6502b5`).
+- Clean merge of `output/ci-select-backend-browser/browser-ownership.json`.
 
 ## Evidence Retention Compliance (ADR-20261031)
 - Removed raw CI artifact copies and bulk Figma screenshots from tracking (`git rm -r --cached output/parity-growth/relay2-failures output/parity-growth/figma`).
 - Frame references are preserved in `output/parity-growth/frame-manifest.json` with node IDs and sha256 hashes.
-- `node scripts/dev/check-evidence-retention.mjs --base origin/r3/integration` passes with budget well below 4 MiB.
+- `node scripts/dev/check-evidence-retention.mjs --base origin/r3/integration` passes (34 output/ files, 652587 bytes vs origin/r3/integration; ADR-20261031 budget well below 4 MiB).
 - Browser ownership regenerated with `node scripts/dev/derive-browser-ownership.mjs` and verified with `--check`.
