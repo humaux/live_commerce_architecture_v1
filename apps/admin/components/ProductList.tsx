@@ -97,7 +97,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
       {write.message && write.message.kind !== 'success' && <div role="status"><p>{write.message.text}</p>
         {write.canRetry && <button type="button" disabled={write.busy} onClick={() => void write.retry()}>{pc.retry}</button>}
       </div>}
-      {!copyReview && !copied && <details className="cat-operations"><summary data-testid="products-operations">{c.operations}</summary>
+      {!copyReview && !copied && <details className="cat-operations"><summary data-testid="products-operations"><span aria-hidden="true">{c.operations}</span></summary>
         <button type="button" data-testid="products-copy-entry" disabled={read.status !== 'ready' || locked || selected.length !== 1}
           onClick={() => { const row = rows.find(r => selected.includes(r.id)); if (row) { setCopied(null); setReview(null); setResults([]); setCopyReview(row); } }}>{c.copyEntry}</button>
         <Link data-testid="products-ledger-link" href={`/${locale}/inventory?store=${sid}`}>{legacy.inventory}</Link>
@@ -136,11 +136,10 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
         {failure && <div role="alert"><p>{failure}</p><button type="button" onClick={read.reload}>{legacy.retry}</button></div>}
         {read.status === 'ready' && page && <>
           <div className="cat-list-tools">
-            <label className="pe-select cat-select-all"><span>{catalogText(c.select, { n: rows.length })}</span><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
+            <label className="pe-select cat-select-all"><span aria-hidden="true">{catalogText(selected.length ? c.selected : c.select, { n: selected.length || rows.length })}</span><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
               checked={!!rows.length && rows.every(r => selected.includes(r.id))} disabled={locked || !rows.length}
               onChange={e => setSelected(e.target.checked ? rows.slice(0, 100).map(r => r.id) : [])} /></label>
             <div data-testid="product-batch" className="cat-actions">
-              {selected.length > 0 && <strong>{catalogText(c.selected, { n: selected.length })}</strong>}
               {(selected.length > 0 || locked) && <button type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>}
               {selected.length > 0 && <>
                 <button type="button" disabled={locked} onClick={() => void bulk('active')}>{pc.publishSelected}</button>
