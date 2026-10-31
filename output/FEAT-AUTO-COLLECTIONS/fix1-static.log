@@ -1,0 +1,15 @@
+E1 static checks only; no local tests/servers. All commands below exited 0.
+GOTOOLCHAIN=go1.27.3 go vet ./internal/catalog ./internal/httpapi ./tests/foundation (no diagnostics)
+gofmt -l internal/catalog/collections.go internal/httpapi/collections.go tests/foundation/collection_rules_test.go tests/foundation/r2_integration_upgrade_test.go (no filenames)
+git diff --check; git diff origin/r3/integration --check (no diagnostics)
+node scripts/dev/derive-browser-ownership.mjs (54 modes); --check (no diagnostics)
+bash scripts/dev/depmap.sh; --check (up to date; no resulting diff)
+
+SHA256 of inspected source after static checks:
+f2c8098c53f3698d37924c079e39cde851ba0489c8b03d4b2e0d91ce51e54c3f  internal/catalog/collections.go
+8ef2a9add40701115f23aa840e2e764ddb9f87ebfe4709c326dccd79b4efac6f  internal/httpapi/collections.go
+f0a6238da41126c35e8a4773680797ab28e63410f9a9a7e5406ca8f01c5696c7  migrations/0212_collection_rules.sql
+744f22e1c23f26fadcf1194a0eba116f95de918504419bd9da629ef61c62581e  tests/foundation/collection_rules_test.go
+571fe865962c2d027a798ab9b4cb45f2f6d39ef29d095f90257374b4e5b222f0  tests/foundation/r2_integration_upgrade_test.go
+64294a003b0cfb73a9270fa6e789e934952761865f4c5fe7eea025de2048dd4e  contracts/storefront-v2.md
+cace725801c468c774fcc610717783f42aa110bc54b31f41445c2aaefcace1b7  output/ci-select-backend-browser/browser-ownership.json
