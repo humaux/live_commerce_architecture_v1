@@ -1,0 +1,39 @@
+RELAY4 native CI evidence (MOCK)
+Native head: 3ec3cae92aff9a73785f1a6550e8867cd810e676
+Gates: 41070105635 / WebKit job 124115129799 FAILURE
+Tested synthetic merge: cb9f4843ca401de2f22b647553f7dab2a84efe79
+Artifact: 12987382687 (gate-browser-webkit)
+Foundation: 41070105779 / job 124111646846 SUCCESS on the prior head only
+Raw job logs: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124115129799/logs
+Artifact path: playwright/run.3dyYSpOK/taiwan-cvs/20261030T145806.584855471/playwright.log
+
+
+Running 1 test using 1 worker
+
+  ✘  1 tests/admin/taiwan-cvs.spec.ts:133:1 › TCV08 merchant: create a label, copy the code, print in a new tab, timeline, UNKNOWN banner, collection and cancel actions, buyer_entered label (32.0s)
+
+
+  1) tests/admin/taiwan-cvs.spec.ts:133:1 › TCV08 merchant: create a label, copy the code, print in a new tab, timeline, UNKNOWN banner, collection and cancel actions, buyer_entered label 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator: getByTestId('orders-next')
+    Expected: enabled
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeEnabled" getByTestId('orders-next') with timeout 10000ms
+      - waiting for getByTestId('orders-next')
+
+
+      80 |       return detail.getByTestId("order-facts");
+      81 |     }
+    > 82 |     await expect(page.getByTestId("orders-next")).toBeEnabled();
+         |                                                   ^
+      83 |     await page.getByTestId("orders-next").click();
+      84 |     await expect(page.getByTestId("orders-list")).toBeVisible();
+      85 |   }
+        at expand (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/taiwan-cvs.spec.ts:82:51)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/taiwan-cvs.spec.ts:244:12
+

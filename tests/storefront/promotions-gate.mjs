@@ -278,6 +278,7 @@ async function scenario(index, run) {
   await merchant.getByTestId(`order-expand-${orderId}`).click();
   const detail = merchant.getByTestId("order-detail");
   await expect(detail).toBeVisible();
+  await merchant.getByTestId("order-more-details").locator("summary").first().click();
   await expect(detail.locator(".orders-totals")).toContainText(amt(discount));
   await expect(detail.locator(".orders-totals")).toContainText(amt(total));
   await expect(detail.locator(".orders-totals")).toContainText(amt(shipping));

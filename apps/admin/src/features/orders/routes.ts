@@ -1,3 +1,7 @@
+// Purpose: Register orders list, standalone details and existing action-route navigation metadata.
+// Depends on: ../../route-types.ts; permissions are display metadata, Go remains authority.
+// Used by: apps/admin/src/routes.ts and admin shell route matching.
+// Invariants: Detail routes never add a sidebar item or grant a permission.
 // W0 route metadata only; data/authorization remain in the existing BFF and Go.
 import type { RouteEntry } from "../../route-types.ts";
 export const ordersRoutes = [
@@ -22,6 +26,11 @@ export const ordersRoutes = [
     template: "form",
     nav: false,
     spec: "tests/admin/shell-browser.mjs",
+  },
+  {
+    id: "order-detail", path: "/orders/[order]", group: "orders", labelKey: "orderList",
+    icon: "orders", permission: "orders:read", template: "detail", nav: false,
+    spec: "tests/admin/orders-ui.spec.ts",
   },
   {
     id: "returns",
