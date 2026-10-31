@@ -1,0 +1,4 @@
+Expected failing assertions (NOT_RUN locally; CI runs TestBrowserHomeCod), tests/storefront/home-cod-buyer.mjs:
+1. place(): footer-cod-due toContainText(c.due) after selecting cash_on_delivery - current bar shows 最終應付 / "Final amount due" (v2.total). Fails for every locale (orders A-D).
+2. place(): card -> COD re-select, footer-cod-due toContainText(c.due) - same cause.
+3. modeSaveFailure(): after the injected sessionStorage.setItem failure for commerce-checkout-mode-v2:, the alert toBeVisible fails - OrderFlow.tsx:186/:551 set notice "failed" while `confirmed` stays set, so the wrapper at :380 hides it; create-order also has no visible worded reason (aria-describedby).
