@@ -16,6 +16,8 @@ const copy = {
 // another test: the Go fixture independently requires exactly one session/store.
 export async function settingsV2Acceptance(page: Page, store: string, testInfo: TestInfo) {
   await noMarketAcceptance(page, store, testInfo);
+  await duplicateMarketAcceptance(page, store, "denied");
+  await duplicateMarketAcceptance(page, store, "lost");
   await marketSelectionAcceptance(page, store);
   const path = `/en/settings?store=${store}`;
   await page.setViewportSize({ width: 390, height: 844 });
@@ -579,6 +581,72 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await deliverySwitches(page, store, path);
   await paritySettingsAcceptance(page, store, testInfo);
   await page.setViewportSize({ width: 1586, height: 992 });
+}
+
+/** RVFIX2-403: MOCK. A created tw market must survive a failed/uncertain policy PUT; the next save never POSTs /markets again. */
+async function duplicateMarketAcceptance(source: Page, store: string, fault: "denied" | "lost") {
+  const page = await source.context().newPage();
+  const marketID = "80000000-0000-4000-8000-000000000041";
+  const markets: Record<string, unknown>[] = [];
+  const posts: string[] = [], puts: string[] = [];
+  const receipts = new Map<string, { bytes: string; value: unknown }>();
+  let faultLeft = true;
+  const pattern = `**/api/stores/${store}/markets**`;
+  await page.route(pattern, async route => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname.split(`/api/stores/${store}/`)[1];
+    const reply = (value: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(value) });
+    if (request.method() === "GET") {
+      if (path === "markets") return reply({ items: markets, next_cursor: "" });
+      if (path.endsWith("/delivery-services") || path.endsWith("/payment-methods")) return reply({ items: [], next_cursor: "" });
+      return reply({ code: "not_found", request_id: "rvfix2-mock", retryable: false, details: {} }, 404);
+    }
+    const key = request.headers()["idempotency-key"], bytes = request.postData() ?? "";
+    const prior = receipts.get(key);
+    if (path === "markets") posts.push(path); else puts.push(path);
+    if (prior) return reply(prior.value);
+    const input = request.postDataJSON() as Record<string, unknown>;
+    if (path === "markets") {
+      const value = { ...input, id: marketID, active: true, version: 1 };
+      markets.push(value);
+      receipts.set(key, { bytes, value });
+      return reply(value, 201);
+    }
+    if (faultLeft) {
+      faultLeft = false;
+      if (fault === "denied") return reply({ code: "forbidden", request_id: "rvfix2-mock", retryable: false, details: {} }, 403);
+      const { configuration_ref: _r, expected_version: _e, ...safe } = input; // MOCK lost reply: the command commits, the answer never arrives.
+      receipts.set(key, { bytes, value: { ...safe, version: 1 } });
+      return route.abort("failed");
+    }
+    const { configuration_ref: _r, expected_version: _e, ...safe } = input;
+    return reply({ ...safe, version: 1 });
+  });
+  try {
+    await page.goto(`/en/settings?store=${store}`);
+    await page.getByRole("button", { name: "Edit settings", exact: true }).click();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByLabel("Stable service code", { exact: true }).fill("home");
+    const policyForm = page.getByTestId("settings-policy-form");
+    await policyForm.getByLabel("Configuration reference / reason", { exact: true }).fill("RVFIX2 MOCK");
+    await policyForm.getByLabel("Enable pricing policy", { exact: true }).check();
+    const save = policyForm.getByRole("button", { name: "Save pricing policy", exact: true });
+    await save.click();
+    await expect.poll(() => puts.length, "the first policy PUT is sent").toBe(1);
+    if (fault === "denied") {
+      await expect(save).toBeEnabled();
+      await save.click();
+    } else {
+      await page.getByTestId("settings-pending").getByRole("button").click();
+    }
+    await expect.poll(() => puts.length, "the second policy PUT is sent").toBe(2);
+    expect(posts, "a created market is never POSTed twice").toHaveLength(1);
+    expect(puts[1], "the second PUT targets the created market, not zero:...").toMatch(new RegExp(`^markets/${marketID}/`));
+  } finally {
+    await page.unroute(pattern);
+    await page.close();
+  }
 }
 
 /** AD-05: MOCK discovery/receipts; every merchant mutation starts with a real click. */

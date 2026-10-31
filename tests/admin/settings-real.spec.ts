@@ -261,7 +261,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.route(serviceURL, (route) => route.request().method() === "GET"
     ? serviceRead.deliver(route) : route.continue());
   const savePolicy = policyForm.getByRole("button", { name: "Save pricing policy", exact: true });
-  // PARITY-NO-MARKET: "home" was already entered before the zero-market save (line 154), so typing it again changes no state and
+  // PARITY-NO-MARKET: "home" was already entered at the start of the zero-market save (the initial delivery setup), so typing it again changes no state and
   // starts no read. Re-open the wizard instead: its hydrate read of the saved home policy is the pending baseline under test.
   await page.reload();
   await page.getByRole("button", { name: "Edit settings", exact: true }).click();
