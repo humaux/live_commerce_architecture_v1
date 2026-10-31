@@ -1091,6 +1091,9 @@ async function marketSelectionAcceptance(source: Page, store: string) {
         expect(writes.filter(w => w.path === "markets").length > 0, `${k.name}: create-tw POST`).toBe(k.post);
         const want = k.target === "new" ? C : k.target;
         expect(writes.filter(w => w.method === "PUT").every(w => w.body.market_id === want), `${k.name}: policy targets ${want}`).toBe(true);
+        // Measurement only: the command journal lives in localStorage, which every page of this context shares. Closing the page while the PUT reply is
+        // still unprocessed leaves the journal set, and the next case then loads with a pending command and a disabled Save.
+        await expect.poll(() => page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("commerce-settings-command:"))), `${k.name}: command journal settled before the page closes`).toBe(false);
       }
     } finally {
       await page.unroute(pattern);
