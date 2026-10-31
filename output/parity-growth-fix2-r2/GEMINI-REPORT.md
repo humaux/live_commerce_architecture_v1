@@ -1,8 +1,8 @@
 # GEMINI-REPORT — PARITY-GROWTH-FIX2 R2 (PR #366)
 
-Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-growth`  
-Branch: `unit/parity-growth`  
-Base: `3c8997eb3e9c269c6667ab62a09d0e90d56da529`  
+Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-growth`
+Branch: `unit/parity-growth`
+Base: `3c8997eb3e9c269c6667ab62a09d0e90d56da529`
 CI Run: `41084050704` (PR #366 head `4fdf52f5`)
 
 | Failing job / test | Class (a/b/c) | What changed (`file:line`) |
