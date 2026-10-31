@@ -337,7 +337,8 @@ async function place(buyer) {
   await expect(footer.getByTestId("footer-cod-due")).toHaveCount(0); // default (non-COD) mode: no COD due in the bar
   await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
   await expect(footer.getByTestId("footer-cod-due")).toBeVisible();
-  await expect(footer).toContainText(locale === "en" ? "Final amount due" : "最終應付");
+  await expect(footer.getByTestId("footer-cod-due")).toContainText(c.due); // #422: Figma COD bar label (OC-09b), not v2.total
+  await expect(footer.getByTestId("footer-cod-due")).not.toContainText(locale === "en" ? "Final amount due" : "最終應付");
   await expect(footer.locator("strong")).toHaveText(`NT$${(total + surcharge) / 100}`);
   await expect(footer).toContainText(`NT$${surcharge / 100}`);
   const cardMode = page.locator('input[name="home_payment_mode"][value="card"]');
@@ -346,7 +347,8 @@ async function place(buyer) {
     await expect(footer.getByTestId("footer-cod-due")).toHaveCount(0); // card: hidden
     await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
     await expect(footer.getByTestId("footer-cod-due")).toBeVisible();
-    await expect(footer).toContainText(locale === "en" ? "Final amount due" : "最終應付");
+    await expect(footer.getByTestId("footer-cod-due")).toContainText(c.due);
+    await expect(footer.getByTestId("footer-cod-due")).not.toContainText(locale === "en" ? "Final amount due" : "最終應付");
   }
   await confirmCheckoutAddress(page);
   await expect(page.getByTestId("create-order")).toBeEnabled();
@@ -419,6 +421,38 @@ async function place(buyer) {
   pass(`${label} ${locale}/${viewport}: whole-TWD total ${total / 100}, surcharge ${surcharge / 100}, placed AWAITING_COLLECTION/PENDING`);
   return { ...buyer, page, id };
 }
+// #422: a failed payment-mode save must stay visible with the details closed, and submit must fail closed with a worded reason.
+async function modeSaveFailure(ctx, locale) {
+  const c = copy[locale], page = await ctx.newPage();
+  await reachCheckout(page, origin, locale, product, { quantity: 2 });
+  await page.getByRole("button", { name: c.delivery, exact: true }).click();
+  await page.getByRole("button", { name: c.quote, exact: true }).click();
+  await expect(page.getByTestId("address-section")).toBeVisible();
+  for (const [key, value] of Object.entries(pii)) await page.locator(`input[name="${key}"]`).fill(value);
+  await confirmCheckoutAddress(page);
+  const toggle = page.getByTestId("checkout-details-toggle");
+  const setDetails = async (open) => { if (await toggle.isVisible() && (await toggle.getAttribute("aria-expanded") === "true") !== open) await toggle.click(); };
+  await setDetails(false);
+  // MEASURE: injected storage failure. page.evaluate only stubs sessionStorage.setItem to throw for the mode key; it is not a UI substitute.
+  await page.evaluate(() => {
+    const real = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) { if (String(k).startsWith("commerce-checkout-mode-v2:")) throw new Error("injected storage failure"); return real.call(this, k, v); };
+  });
+  await setDetails(true);
+  await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').click(); // real click triggers the mode save; check() would fail by design: the failed save keeps the radio unchecked
+  await setDetails(false);
+  const alert = page.getByTestId("address-section").getByRole("alert").filter({ hasText: /\S/ });
+  await expect(alert.first()).toBeVisible(); // the failure notice is visible to the buyer even with details closed
+  const create = page.getByTestId("create-order");
+  await expect(create).toBeDisabled();
+  const reason = await create.getAttribute("aria-describedby");
+  assert.ok(reason, `${locale}: disabled submit names its reason (aria-describedby)`);
+  await expect(page.locator(`[id="${reason}"]`)).toBeVisible();
+  assert.ok((await page.locator(`[id="${reason}"]`).innerText()).trim().length > 0, `${locale}: the reason is in words`);
+  pass(`COD-422 ${locale}: payment-mode save failure is visible and submit is disabled with a reason`);
+  await page.close();
+}
+
 // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change)
 const api = (page, method, suffix) => page.evaluate(async ({ method, suffix }) => {
   const session = await (await fetch("/api/buyer/session", { cache: "no-store" })).json();
@@ -461,6 +495,7 @@ try {
     const ctx = await newContext(p.mobile);
     buyers[p.key] = await place({ ...p, label: `order ${p.key}`, ctx });
   }
+  for (const p of plan.slice(0, 2)) await modeSaveFailure(await newContext(p.mobile), p.locale);
   await writeFile(path.join(evidence, "orders.json"), JSON.stringify(Object.fromEntries(Object.entries(buyers).map(([k, v]) => [k, { id: v.id, locale: v.locale, mobile: v.mobile }])), null, 2));
   await signal("placed"); await waitGo("1");
 
