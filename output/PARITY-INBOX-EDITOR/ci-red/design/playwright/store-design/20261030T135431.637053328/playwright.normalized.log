@@ -1,0 +1,696 @@
+
+Running 63 tests using 1 worker
+
+  ✓   1 tests/admin/design.spec.ts:110:3 › SDB01 merchant journey en desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (5.3s)
+  ✓   2 tests/admin/design.spec.ts:110:3 › SDB01 merchant journey zh-TW desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (4.4s)
+  ✓   3 tests/admin/design.spec.ts:110:3 › SDB01 merchant journey en mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (5.0s)
+  ✓   4 tests/admin/design.spec.ts:110:3 › SDB01 merchant journey zh-TW mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (4.9s)
+  ✓   5 tests/admin/design.spec.ts:429:1 › SDB02 BFF: allowlist, no query, 64 KiB generic cap vs 260 KiB design cap, CSRF/key/origin, identity headers, media bytes (1.1s)
+  ✓   6 tests/admin/design.spec.ts:533:1 › SDB03 read-only member: the page opens, every write is refused by the server and the UI says so; nothing is stored (867ms)
+  ✓   7 tests/admin/design.spec.ts:557:1 › SDB04 stale write: a second tab that saved first makes this tab's save a conflict with a reload path (1.3s)
+  ✓   8 tests/admin/design.spec.ts:588:1 › SDB05 a 422 reaches the editor with the offending field path (contract B-acceptance: details {path, reason}), through the BFF and on the field (784ms)
+  ✓   9 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-TW: receipt-bound content after committed response loss and newer save (4.7s)
+  ✓  10 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-TW: receipt-bound content after committed response loss and newer save with reload (4.1s)
+  ✓  11 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-CN: receipt-bound content after committed response loss and newer save (4.2s)
+  ✓  12 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 zh-CN: receipt-bound content after committed response loss and newer save with reload (4.0s)
+  ✓  13 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 en: receipt-bound content after committed response loss and newer save (4.1s)
+  ✓  14 tests/admin/editor-v2.spec.ts:132:3 › EDITOR-V2 en: receipt-bound content after committed response loss and newer save with reload (3.9s)
+  ✓  15 tests/admin/editor-v2.spec.ts:281:3 › EDITOR-V2 main zh-TW desktop: four tasks, current versions, domain status (1.0s)
+  ✓  16 tests/admin/editor-v2.spec.ts:281:3 › EDITOR-V2 main zh-TW mobile: four tasks, current versions, domain status (922ms)
+  ✓  17 tests/admin/editor-v2.spec.ts:281:3 › EDITOR-V2 main zh-CN desktop: four tasks, current versions, domain status (954ms)
+  ✓  18 tests/admin/editor-v2.spec.ts:281:3 › EDITOR-V2 main zh-CN mobile: four tasks, current versions, domain status (1.0s)
+  ✓  19 tests/admin/editor-v2.spec.ts:281:3 › EDITOR-V2 main en desktop: four tasks, current versions, domain status (911ms)
+  ✓  20 tests/admin/editor-v2.spec.ts:281:3 › EDITOR-V2 main en mobile: four tasks, current versions, domain status (852ms)
+  ✓  21 tests/admin/editor-v2.spec.ts:311:3 › EDITOR-V2 desktop: edit every group, reorder, save, refresh, cancel (3.2s)
+  ✓  22 tests/admin/editor-v2.spec.ts:311:3 › EDITOR-V2 mobile: edit every group, reorder, save, refresh, cancel (3.0s)
+  ✓  23 tests/admin/editor-v2.spec.ts:408:3 › EDITOR-V2 zh-TW: preview saves first; publish review, receipt, view, back and cancel keep server state (1.8s)
+  ✓  24 tests/admin/editor-v2.spec.ts:466:3 › EDITOR-V2 zh-TW: definite refusal is distinct from uncertain original-request recovery (894ms)
+  ✓  25 tests/admin/editor-v2.spec.ts:477:3 › EDITOR-V2 zh-TW: uncertain result survives refresh; query retains original key/body and never offers a second publish (3.3s)
+  ✓  26 tests/admin/editor-v2.spec.ts:408:3 › EDITOR-V2 zh-CN: preview saves first; publish review, receipt, view, back and cancel keep server state (1.8s)
+  ✓  27 tests/admin/editor-v2.spec.ts:466:3 › EDITOR-V2 zh-CN: definite refusal is distinct from uncertain original-request recovery (858ms)
+  ✓  28 tests/admin/editor-v2.spec.ts:477:3 › EDITOR-V2 zh-CN: uncertain result survives refresh; query retains original key/body and never offers a second publish (3.2s)
+  ✓  29 tests/admin/editor-v2.spec.ts:408:3 › EDITOR-V2 en: preview saves first; publish review, receipt, view, back and cancel keep server state (1.6s)
+  ✓  30 tests/admin/editor-v2.spec.ts:466:3 › EDITOR-V2 en: definite refusal is distinct from uncertain original-request recovery (895ms)
+  ✓  31 tests/admin/editor-v2.spec.ts:477:3 › EDITOR-V2 en: uncertain result survives refresh; query retains original key/body and never offers a second publish (3.3s)
+  ✘  32 tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-TW/desktop: signed copy, four rows and domains (10.7s)
+  ✘  33 tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-TW/mobile: signed copy, four rows and domains (10.8s)
+  ✘  34 tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-CN/desktop: signed copy, four rows and domains (11.1s)
+  ✘  35 tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-CN/mobile: signed copy, four rows and domains (10.9s)
+  ✘  36 tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub en/desktop: signed copy, four rows and domains (10.9s)
+  ✘  37 tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub en/mobile: signed copy, four rows and domains (10.9s)
+  ✘  38 tests/admin/editor-v2.spec.ts:548:3 › PARITY editor desktop: every editing and preview frame through native controls (30.2s)
+  ✘  39 tests/admin/editor-v2.spec.ts:608:5 › PARITY editor desktop/success: signed review and result (11.0s)
+  ✘  40 tests/admin/editor-v2.spec.ts:608:5 › PARITY editor desktop/forbidden: signed review and result (11.0s)
+  ✘  41 tests/admin/editor-v2.spec.ts:608:5 › PARITY editor desktop/uncertain: signed review and result (11.0s)
+  ✘  42 tests/admin/editor-v2.spec.ts:548:3 › PARITY editor mobile: every editing and preview frame through native controls (30.1s)
+  ✘  43 tests/admin/editor-v2.spec.ts:608:5 › PARITY editor mobile/success: signed review and result (11.0s)
+  ✘  44 tests/admin/editor-v2.spec.ts:608:5 › PARITY editor mobile/forbidden: signed review and result (11.0s)
+  ✘  45 tests/admin/editor-v2.spec.ts:608:5 › PARITY editor mobile/uncertain: signed review and result (10.9s)
+  ✓  46 tests/admin/oc/design-publish-pending.spec.ts:111:5 › OC11 RVFIX P1 zh-TW after-commit: new login requires explicit recovery of the original request (6.7s)
+  ✓  47 tests/admin/oc/design-publish-pending.spec.ts:111:5 › OC11 RVFIX P1 zh-TW before-commit: new login requires explicit recovery of the original request (6.5s)
+  ✓  48 tests/admin/oc/design-publish-pending.spec.ts:111:5 › OC11 RVFIX P1 zh-CN after-commit: new login requires explicit recovery of the original request (6.4s)
+  ✓  49 tests/admin/oc/design-publish-pending.spec.ts:111:5 › OC11 RVFIX P1 zh-CN before-commit: new login requires explicit recovery of the original request (6.5s)
+  ✓  50 tests/admin/oc/design-publish-pending.spec.ts:111:5 › OC11 RVFIX P1 en after-commit: new login requires explicit recovery of the original request (6.4s)
+  ✓  51 tests/admin/oc/design-publish-pending.spec.ts:111:5 › OC11 RVFIX P1 en before-commit: new login requires explicit recovery of the original request (6.4s)
+  ✓  52 tests/admin/oc/design-publish-pending.spec.ts:190:1 › OC11 publish lost after commit: pending, no second publish, recheck finds it (3.4s)
+  ✓  53 tests/admin/oc/design-publish-pending.spec.ts:234:1 › OC11 publish never reached Go: reload stays pending offline, restored same-key resend commits once (4.0s)
+  ✓  54 tests/admin/oc/design-publish-pending.spec.ts:281:1 › OC11 old publish row of the same draft version never confirms a new lost publish (publish, rollback, publish again) (3.3s)
+  ✓  55 tests/admin/oc/design-publish-pending.spec.ts:302:1 › OC11 reload while the publish request is in flight: pending is armed before the request, no second publish (1.1s)
+  ✓  56 tests/admin/oc/design-publish-pending.spec.ts:348:1 › OC11 stale versions list: confirmed publish, failed refresh, second publish aborted before commit never shows success (3.4s)
+  ✓  57 tests/admin/oc/design-publish-pending.spec.ts:366:1 › OC11 P1a another tab publishes the same draft: only its own key can confirm a pending request (3.5s)
+  ✓  58 tests/admin/oc/design-publish-pending.spec.ts:388:1 › OC11 stale draft: restoring transport keeps the original version and ends pending with conflict (3.8s)
+  ✓  59 tests/admin/oc/design-publish-pending.spec.ts:420:1 › OC11 P1b pending blocks local rollback, external rollback resolves the committed request as superseded (3.9s)
+  ✓  60 tests/admin/oc/design-publish-pending.spec.ts:456:1 › OC11 P1b a hung recovery POST has a bounded timeout and releases its busy control (8.3s)
+  ✓  61 tests/admin/oc/design-publish-pending.spec.ts:489:3 › OC11 pending and same-key recovery render in zh-TW and survive refresh (3.9s)
+  ✓  62 tests/admin/oc/design-publish-pending.spec.ts:489:3 › OC11 pending and same-key recovery render in zh-CN and survive refresh (3.9s)
+  ✓  63 tests/admin/oc/design-publish-pending.spec.ts:489:3 › OC11 pending and same-key recovery render in en and survive refresh (3.9s)
+
+
+  1) tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-TW/desktop: signed copy, four rows and domains
+
+    Error: signed save-before-preview/publish subtitle
+
+    expect(locator).toBeVisible() failed
+
+    Locator: getByText('預覽與發布前會先儲存', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - signed save-before-preview/publish subtitle getByText('預覽與發布前會先儲存', { exact: true }) with timeout 10000ms
+      - waiting for getByText('預覽與發布前會先儲存', { exact: true })
+
+
+      531 |     await hub(page, locale);
+      532 |     const signed = signedEditor[locale];
+    > 533 |     await expect(page.getByText(signed.subtitle, { exact: true }), "signed save-before-preview/publish subtitle").toBeVisible();
+          |                                                                                                                   ^
+      534 |     await expect(page.getByTestId("design-status")).toHaveText(signed.draft);
+      535 |     await expect(page.getByRole("button", { name: signed.preview, exact: true })).toBeVisible();
+      536 |     await expect(page.getByRole("button", { name: signed.publish, exact: true })).toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:533:115
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-96305--copy-four-rows-and-domains/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-96305--copy-four-rows-and-domains/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-96305--copy-four-rows-and-domains/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-96305--copy-four-rows-and-domains/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-TW/mobile: signed copy, four rows and domains
+
+    Error: signed save-before-preview/publish subtitle
+
+    expect(locator).toBeVisible() failed
+
+    Locator: getByText('預覽與發布前會先儲存', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - signed save-before-preview/publish subtitle getByText('預覽與發布前會先儲存', { exact: true }) with timeout 10000ms
+      - waiting for getByText('預覽與發布前會先儲存', { exact: true })
+
+
+      531 |     await hub(page, locale);
+      532 |     const signed = signedEditor[locale];
+    > 533 |     await expect(page.getByText(signed.subtitle, { exact: true }), "signed save-before-preview/publish subtitle").toBeVisible();
+          |                                                                                                                   ^
+      534 |     await expect(page.getByTestId("design-status")).toHaveText(signed.draft);
+      535 |     await expect(page.getByRole("button", { name: signed.preview, exact: true })).toBeVisible();
+      536 |     await expect(page.getByRole("button", { name: signed.publish, exact: true })).toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:533:115
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-0e5b3--copy-four-rows-and-domains/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-0e5b3--copy-four-rows-and-domains/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-0e5b3--copy-four-rows-and-domains/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-0e5b3--copy-four-rows-and-domains/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-CN/desktop: signed copy, four rows and domains
+
+    Error: signed save-before-preview/publish subtitle
+
+    expect(locator).toBeVisible() failed
+
+    Locator: getByText('预览和发布前会先保存', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - signed save-before-preview/publish subtitle getByText('预览和发布前会先保存', { exact: true }) with timeout 10000ms
+      - waiting for getByText('预览和发布前会先保存', { exact: true })
+
+
+      531 |     await hub(page, locale);
+      532 |     const signed = signedEditor[locale];
+    > 533 |     await expect(page.getByText(signed.subtitle, { exact: true }), "signed save-before-preview/publish subtitle").toBeVisible();
+          |                                                                                                                   ^
+      534 |     await expect(page.getByTestId("design-status")).toHaveText(signed.draft);
+      535 |     await expect(page.getByRole("button", { name: signed.preview, exact: true })).toBeVisible();
+      536 |     await expect(page.getByRole("button", { name: signed.publish, exact: true })).toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:533:115
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-1d643--copy-four-rows-and-domains/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-1d643--copy-four-rows-and-domains/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-1d643--copy-four-rows-and-domains/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-1d643--copy-four-rows-and-domains/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-CN/mobile: signed copy, four rows and domains
+
+    Error: signed save-before-preview/publish subtitle
+
+    expect(locator).toBeVisible() failed
+
+    Locator: getByText('预览和发布前会先保存', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - signed save-before-preview/publish subtitle getByText('预览和发布前会先保存', { exact: true }) with timeout 10000ms
+      - waiting for getByText('预览和发布前会先保存', { exact: true })
+
+
+      531 |     await hub(page, locale);
+      532 |     const signed = signedEditor[locale];
+    > 533 |     await expect(page.getByText(signed.subtitle, { exact: true }), "signed save-before-preview/publish subtitle").toBeVisible();
+          |                                                                                                                   ^
+      534 |     await expect(page.getByTestId("design-status")).toHaveText(signed.draft);
+      535 |     await expect(page.getByRole("button", { name: signed.preview, exact: true })).toBeVisible();
+      536 |     await expect(page.getByRole("button", { name: signed.publish, exact: true })).toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:533:115
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-90737--copy-four-rows-and-domains/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-90737--copy-four-rows-and-domains/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-90737--copy-four-rows-and-domains/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-90737--copy-four-rows-and-domains/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub en/desktop: signed copy, four rows and domains
+
+    Error: signed save-before-preview/publish subtitle
+
+    expect(locator).toBeVisible() failed
+
+    Locator: getByText('Saves first', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - signed save-before-preview/publish subtitle getByText('Saves first', { exact: true }) with timeout 10000ms
+      - waiting for getByText('Saves first', { exact: true })
+
+
+      531 |     await hub(page, locale);
+      532 |     const signed = signedEditor[locale];
+    > 533 |     await expect(page.getByText(signed.subtitle, { exact: true }), "signed save-before-preview/publish subtitle").toBeVisible();
+          |                                                                                                                   ^
+      534 |     await expect(page.getByTestId("design-status")).toHaveText(signed.draft);
+      535 |     await expect(page.getByRole("button", { name: signed.preview, exact: true })).toBeVisible();
+      536 |     await expect(page.getByRole("button", { name: signed.publish, exact: true })).toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:533:115
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-e9f33--copy-four-rows-and-domains/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-e9f33--copy-four-rows-and-domains/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-e9f33--copy-four-rows-and-domains/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-e9f33--copy-four-rows-and-domains/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub en/mobile: signed copy, four rows and domains
+
+    Error: signed save-before-preview/publish subtitle
+
+    expect(locator).toBeVisible() failed
+
+    Locator: getByText('Saves first', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - signed save-before-preview/publish subtitle getByText('Saves first', { exact: true }) with timeout 10000ms
+      - waiting for getByText('Saves first', { exact: true })
+
+
+      531 |     await hub(page, locale);
+      532 |     const signed = signedEditor[locale];
+    > 533 |     await expect(page.getByText(signed.subtitle, { exact: true }), "signed save-before-preview/publish subtitle").toBeVisible();
+          |                                                                                                                   ^
+      534 |     await expect(page.getByTestId("design-status")).toHaveText(signed.draft);
+      535 |     await expect(page.getByRole("button", { name: signed.preview, exact: true })).toBeVisible();
+      536 |     await expect(page.getByRole("button", { name: signed.publish, exact: true })).toBeVisible();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:533:115
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-3e8b7--copy-four-rows-and-domains/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-3e8b7--copy-four-rows-and-domains/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-3e8b7--copy-four-rows-and-domains/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-hu-3e8b7--copy-four-rows-and-domains/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) tests/admin/editor-v2.spec.ts:548:3 › PARITY editor desktop: every editing and preview frame through native controls
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForEvent: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for event "popup"
+    ============================================================
+
+      591 |     await shot("1429:66030", "1429:66073");
+      592 |     await back(page, locale);
+    > 593 |     const popupPromise = page.waitForEvent("popup");
+          |                               ^
+      594 |     await page.getByRole("button", { name: signedEditor[locale].preview, exact: true }).click();
+      595 |     const popup = await popupPromise;
+      596 |     await expect(popup).toHaveURL(new RegExp(`${address.replaceAll(".", "\\.")}/\\?preview=`));
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:593:31
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '預覽草稿', exact: true })
+
+
+      592 |     await back(page, locale);
+      593 |     const popupPromise = page.waitForEvent("popup");
+    > 594 |     await page.getByRole("button", { name: signedEditor[locale].preview, exact: true }).click();
+          |                                                                                         ^
+      595 |     const popup = await popupPromise;
+      596 |     await expect(popup).toHaveURL(new RegExp(`${address.replaceAll(".", "\\.")}/\\?preview=`));
+      597 |     expect(state.receipts.size, "preview never publishes").toBe(0);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:594:89
+
+    attachment #1: parity/1429:64602.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/attachments/parity-1429-64602-png-98d10565128680fe42944ccb2f0bebe664833c4b.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: parity/1429:64758.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/attachments/parity-1429-64758-png-185c4e29b32a9961e246f1ad75c877668f19a426.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: parity/1429:65658.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/attachments/parity-1429-65658-png-c799afde87499e0ed1ff6a23ce6ef06b5b2cf21d.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: parity/1429:64914.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/attachments/parity-1429-64914-png-07efedfc23a10178b332045b37d655a13cfa23ef.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: parity/1429:65094.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/attachments/parity-1429-65094-png-d7456a86543601e64cdd3003d4cadb51298d9593.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #6: parity/1429:65280.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/attachments/parity-1429-65280-png-c268718a843e25a5551661c216068ec70942c350.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #7: parity/1429:65386.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/attachments/parity-1429-65386-png-edb49d6d7ff9578aa6ebf5d842cc734f887441cd.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #8: parity/1429:66030.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/attachments/parity-1429-66030-png-91f0f9a67de2385c5cfa484b1f0ebedcde2900e9.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #9: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/error-context.md
+
+    attachment #13: trace (application/zip) ────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-0c32b-ame-through-native-controls/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) tests/admin/editor-v2.spec.ts:608:5 › PARITY editor desktop/success: signed review and result ─
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+
+
+      614 |       const signed = signedEditor[locale];
+      615 |       const panel = page.getByTestId("design-publish-review");
+    > 616 |       await expect(panel.getByRole("heading", { name: signed.confirm, exact: true })).toBeVisible();
+          |                                                                                       ^
+      617 |       await expect(panel.getByText(signed.immediate, { exact: true })).toBeVisible();
+      618 |       await expect(panel).toContainText(signed.available);
+      619 |       await expect(panel.getByRole("button", { name: signed.confirmAction, exact: true })).toBeEnabled();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:616:87
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-24e34-ss-signed-review-and-result/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-24e34-ss-signed-review-and-result/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-24e34-ss-signed-review-and-result/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-24e34-ss-signed-review-and-result/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) tests/admin/editor-v2.spec.ts:608:5 › PARITY editor desktop/forbidden: signed review and result
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+
+
+      614 |       const signed = signedEditor[locale];
+      615 |       const panel = page.getByTestId("design-publish-review");
+    > 616 |       await expect(panel.getByRole("heading", { name: signed.confirm, exact: true })).toBeVisible();
+          |                                                                                       ^
+      617 |       await expect(panel.getByText(signed.immediate, { exact: true })).toBeVisible();
+      618 |       await expect(panel).toContainText(signed.available);
+      619 |       await expect(panel.getByRole("button", { name: signed.confirmAction, exact: true })).toBeEnabled();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:616:87
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-24e00-en-signed-review-and-result/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-24e00-en-signed-review-and-result/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-24e00-en-signed-review-and-result/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-24e00-en-signed-review-and-result/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) tests/admin/editor-v2.spec.ts:608:5 › PARITY editor desktop/uncertain: signed review and result
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+
+
+      614 |       const signed = signedEditor[locale];
+      615 |       const panel = page.getByTestId("design-publish-review");
+    > 616 |       await expect(panel.getByRole("heading", { name: signed.confirm, exact: true })).toBeVisible();
+          |                                                                                       ^
+      617 |       await expect(panel.getByText(signed.immediate, { exact: true })).toBeVisible();
+      618 |       await expect(panel).toContainText(signed.available);
+      619 |       await expect(panel.getByRole("button", { name: signed.confirmAction, exact: true })).toBeEnabled();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:616:87
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-c3dbc-in-signed-review-and-result/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-c3dbc-in-signed-review-and-result/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-c3dbc-in-signed-review-and-result/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-de-c3dbc-in-signed-review-and-result/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) tests/admin/editor-v2.spec.ts:548:3 › PARITY editor mobile: every editing and preview frame through native controls
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForEvent: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for event "popup"
+    ============================================================
+
+      591 |     await shot("1429:66030", "1429:66073");
+      592 |     await back(page, locale);
+    > 593 |     const popupPromise = page.waitForEvent("popup");
+          |                               ^
+      594 |     await page.getByRole("button", { name: signedEditor[locale].preview, exact: true }).click();
+      595 |     const popup = await popupPromise;
+      596 |     await expect(popup).toHaveURL(new RegExp(`${address.replaceAll(".", "\\.")}/\\?preview=`));
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:593:31
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '預覽草稿', exact: true })
+
+
+      592 |     await back(page, locale);
+      593 |     const popupPromise = page.waitForEvent("popup");
+    > 594 |     await page.getByRole("button", { name: signedEditor[locale].preview, exact: true }).click();
+          |                                                                                         ^
+      595 |     const popup = await popupPromise;
+      596 |     await expect(popup).toHaveURL(new RegExp(`${address.replaceAll(".", "\\.")}/\\?preview=`));
+      597 |     expect(state.receipts.size, "preview never publishes").toBe(0);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:594:89
+
+    attachment #1: parity/1429:64684.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/attachments/parity-1429-64684-png-c6f8efafc4351f955d83818eecd981c63028a214.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: parity/1429:64840.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/attachments/parity-1429-64840-png-03544478534c6af223a4ad25785507bb20adb279.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: parity/1429:65714.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/attachments/parity-1429-65714-png-4f68082ab1c69f27918213e2be16ece4bb476f67.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: parity/1429:65008.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/attachments/parity-1429-65008-png-9015b85a541015941184fe4443f344276d216b01.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: parity/1429:65151.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/attachments/parity-1429-65151-png-6d99c888ad897bdfd9b039e06831658b19d7eb48.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #6: parity/1429:65337.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/attachments/parity-1429-65337-png-85088c67039abb8a5bc78fdd57ba56268127ae13.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #7: parity/1429:65477.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/attachments/parity-1429-65477-png-4f38b720305aa90c97cec5a6116444090007c13d.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #8: parity/1429:66073.png (image/png) ───────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/attachments/parity-1429-66073-png-537971a11ef24b4b3f6353ce91ec44740beb3219.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #9: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/error-context.md
+
+    attachment #13: trace (application/zip) ────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d354a-ame-through-native-controls/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) tests/admin/editor-v2.spec.ts:608:5 › PARITY editor mobile/success: signed review and result ─
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+
+
+      614 |       const signed = signedEditor[locale];
+      615 |       const panel = page.getByTestId("design-publish-review");
+    > 616 |       await expect(panel.getByRole("heading", { name: signed.confirm, exact: true })).toBeVisible();
+          |                                                                                       ^
+      617 |       await expect(panel.getByText(signed.immediate, { exact: true })).toBeVisible();
+      618 |       await expect(panel).toContainText(signed.available);
+      619 |       await expect(panel.getByRole("button", { name: signed.confirmAction, exact: true })).toBeEnabled();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:616:87
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d5ef6-ss-signed-review-and-result/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d5ef6-ss-signed-review-and-result/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d5ef6-ss-signed-review-and-result/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-d5ef6-ss-signed-review-and-result/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) tests/admin/editor-v2.spec.ts:608:5 › PARITY editor mobile/forbidden: signed review and result
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+
+
+      614 |       const signed = signedEditor[locale];
+      615 |       const panel = page.getByTestId("design-publish-review");
+    > 616 |       await expect(panel.getByRole("heading", { name: signed.confirm, exact: true })).toBeVisible();
+          |                                                                                       ^
+      617 |       await expect(panel.getByText(signed.immediate, { exact: true })).toBeVisible();
+      618 |       await expect(panel).toContainText(signed.available);
+      619 |       await expect(panel.getByRole("button", { name: signed.confirmAction, exact: true })).toBeEnabled();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:616:87
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-48fe9-en-signed-review-and-result/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-48fe9-en-signed-review-and-result/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-48fe9-en-signed-review-and-result/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-48fe9-en-signed-review-and-result/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) tests/admin/editor-v2.spec.ts:608:5 › PARITY editor mobile/uncertain: signed review and result
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true }) with timeout 10000ms
+      - waiting for getByTestId('design-publish-review').getByRole('heading', { name: '發布草稿 42？', exact: true })
+
+
+      614 |       const signed = signedEditor[locale];
+      615 |       const panel = page.getByTestId("design-publish-review");
+    > 616 |       await expect(panel.getByRole("heading", { name: signed.confirm, exact: true })).toBeVisible();
+          |                                                                                       ^
+      617 |       await expect(panel.getByText(signed.immediate, { exact: true })).toBeVisible();
+      618 |       await expect(panel).toContainText(signed.available);
+      619 |       await expect(panel.getByRole("button", { name: signed.confirmAction, exact: true })).toBeEnabled();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/editor-v2.spec.ts:616:87
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-86057-in-signed-review-and-result/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-86057-in-signed-review-and-result/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-86057-in-signed-review-and-result/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261030T135431.637053328/results/editor-v2-PARITY-editor-mo-86057-in-signed-review-and-result/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14 failed
+    tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-TW/desktop: signed copy, four rows and domains
+    tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-TW/mobile: signed copy, four rows and domains
+    tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-CN/desktop: signed copy, four rows and domains
+    tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub zh-CN/mobile: signed copy, four rows and domains
+    tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub en/desktop: signed copy, four rows and domains
+    tests/admin/editor-v2.spec.ts:528:3 › PARITY editor hub en/mobile: signed copy, four rows and domains
+    tests/admin/editor-v2.spec.ts:548:3 › PARITY editor desktop: every editing and preview frame through native controls
+    tests/admin/editor-v2.spec.ts:608:5 › PARITY editor desktop/success: signed review and result ──
+    tests/admin/editor-v2.spec.ts:608:5 › PARITY editor desktop/forbidden: signed review and result
+    tests/admin/editor-v2.spec.ts:608:5 › PARITY editor desktop/uncertain: signed review and result
+    tests/admin/editor-v2.spec.ts:548:3 › PARITY editor mobile: every editing and preview frame through native controls
+    tests/admin/editor-v2.spec.ts:608:5 › PARITY editor mobile/success: signed review and result ───
+    tests/admin/editor-v2.spec.ts:608:5 › PARITY editor mobile/forbidden: signed review and result ─
+    tests/admin/editor-v2.spec.ts:608:5 › PARITY editor mobile/uncertain: signed review and result ─
+  49 passed (6.1m)
