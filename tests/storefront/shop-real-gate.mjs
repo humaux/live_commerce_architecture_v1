@@ -335,7 +335,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
       empty: "購物車還沒有商品", emptyBody: "先挑選想買的商品，再回到購物車確認數量與配送方式。", emptyNote: "選好商品後，可在購物車確認數量。", browse: "瀏覽商品",
       forbidden: "目前無法開啟此頁", forbiddenBody: "此連結無法開啟，或目前購物連線無法使用這項功能。請從商店重新開始。", forbiddenNote: "如需查看訂單，請使用商店的訂單查詢。", home: "返回商店",
       offline: "暫時無法載入購物車", offlineBody: "請檢查網路連線，再重新載入。這次只讀取購物車，不會送出訂單。", offlineNote: "商品與數量以原購物連線重新讀取的結果為準。", retry: "重新載入", failed: "目前仍無法連線。請保留原頁，稍後重新載入。",
-      expired: "訂單連結已失效", expiredBody: "這個連結無法再使用。你可以使用訂單編號查詢，或聯絡下單的商店。", lookup: "前往訂單查詢",
+      expired: "訂單連結已失效", expiredBody: "這個連結無法再使用。你可以使用訂單編號查詢，或聯絡下單的商店。", lookup: "前往訂單查詢", expiredGo: "前往查詢訂單",
       unknown: "付款結果尚未確認", unknownBody: "請先查詢這筆訂單的付款狀態。確認前請勿再次付款。", check: "查詢狀態", unknownFailed: "目前無法讀取最新狀態。請稍後查詢同一筆訂單。",
       lookupSubmit: "查詢訂單", lookupFailed: "暫時無法查詢，請稍後再試。", lookupNoMatch: "找不到符合的訂單，請確認訂單編號與電子郵件或手機號碼。",
     },
@@ -343,7 +343,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
       empty: "购物车还没有商品", emptyBody: "先挑选想买的商品，再回到购物车确认数量与配送方式。", emptyNote: "选好商品后，可在购物车确认数量。", browse: "浏览商品",
       forbidden: "暂时无法打开此页面", forbiddenBody: "此链接无法打开，或当前购物会话无法使用此功能。请从商店重新开始。", forbiddenNote: "如需查看订单，请使用商店的订单查询。", home: "返回商店",
       offline: "暂时无法加载购物车", offlineBody: "请检查网络连接，再重新加载。本次只读取购物车，不会提交订单。", offlineNote: "商品与数量以当前购物会话重新读取的结果为准。", retry: "重新加载", failed: "暂时仍无法连接。请保留当前页面，稍后重新加载。",
-      expired: "订单链接已失效", expiredBody: "这个链接无法再使用。你可以使用订单编号查询，或联系下单的商店。", lookup: "前往订单查询",
+      expired: "订单链接已失效", expiredBody: "这个链接无法再使用。你可以使用订单编号查询，或联系下单的商店。", lookup: "前往订单查询", expiredGo: "前往查询订单",
       unknown: "付款结果尚未确认", unknownBody: "请先查询这笔订单的付款状态。确认前请勿再次付款。", check: "查询状态", unknownFailed: "暂时无法读取最新状态。请稍后查询同一笔订单。",
       lookupSubmit: "查询订单", lookupFailed: "暂时无法查询，请稍后再试。", lookupNoMatch: "找不到匹配的订单，请确认订单编号与邮箱或手机号码。",
     },
@@ -351,7 +351,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
       empty: "Your cart is empty", emptyBody: "Choose products first, then return to your cart to confirm quantities and delivery.", emptyNote: "You can check quantities in your cart after choosing products.", browse: "Browse products",
       forbidden: "This page cannot be opened", forbiddenBody: "This link cannot be opened, or your shopping session cannot use this feature. Start again from the store.", forbiddenNote: "Use the store’s order lookup to view an order.", home: "Return to store",
       offline: "Your cart could not be loaded", offlineBody: "Check your connection and reload. This only reads your cart and does not place an order.", offlineNote: "Products and quantities come from re-reading your original shopping session.", retry: "Reload", failed: "We still cannot connect. Keep this page open and reload later.",
-      expired: "This order link has expired", expiredBody: "This link can no longer be used. Look the order up with its number, or contact the store you ordered from.", lookup: "Go to order lookup",
+      expired: "This order link has expired", expiredBody: "This link can no longer be used. Look the order up with its number, or contact the store you ordered from.", lookup: "Go to order lookup", expiredGo: "Go to order lookup",
       unknown: "Your payment result is not confirmed", unknownBody: "Check this order’s payment status first. Do not pay again until it is confirmed.", check: "Check status", unknownFailed: "The latest status could not be loaded. Check the same order again later.",
       lookupSubmit: "Find order", lookupFailed: "Lookup is unavailable right now. Please try again later.", lookupNoMatch: "We could not find a matching order. Check the order number and the email or phone number.",
     },
@@ -506,7 +506,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
             } else {
               await page.reload();
               await expect(panel).toBeVisible();
-              const actionName = kind === "empty" ? c.browse : kind === "forbidden" ? c.home : c.lookup;
+              const actionName = kind === "empty" ? c.browse : kind === "forbidden" ? c.home : kind === "expired" ? c.expiredGo : c.lookup; // expired: signed frame 26:746 button text
               const suffix = kind === "empty" ? "/products" : kind === "forbidden" ? "" : "/orders/lookup";
               await panel.getByRole("link", { name: actionName, exact: true }).click();
               await expect(page).toHaveURL(new RegExp(`/${locale}${suffix}/?$`));

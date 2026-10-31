@@ -401,15 +401,16 @@ for (const [key, n, kind, frames] of [["home", 0, "home", { d: "29:1064", m: "29
       const page = await openOrder(DEVICES[dev](), orderN);
       const c = new Check(page, `handoff ${key} ${dev}`);
       await c.load();
-      const popup = page.context().waitForEvent("page", { timeout: 4000 }).then((p) => p.close()).catch(() => {});
+      // The provider tab must stay open until the hand-off page is checked: OrderPayment fences on destination.ready(), so closing it early reads as an aborted hand-off.
+      const popup = page.context().waitForEvent("page", { timeout: 4000 }).catch(() => null);
       await c.step("click 前往安全付款頁", () => click(page, page.getByRole("button", { name: /^\s*前往安全付款頁\s*$/ }), { page: "order", control: "前往安全付款頁", expected: "前往付款 page" }));
-      await popup; await c.load();
+      const providerTab = await popup; await c.load();
       await c.heading("前往付款");
       c.text("付款會在新分頁開啟，請保留此商店分頁。完成後回到這裡查詢結果。", "如果付款結果尚未確認，請勿重新建立訂單或重複付款。");
       if (!/訂單 [A-Z0-9][A-Z0-9-]{3,} · NT\$1,280/.test(c.body)) c.problems.push("missing line 「訂單 <short number> · NT$1,280」");
       await need(c, "查看付款結果");
       await c.shot(frames[dev]);
-      try { c.done(); } finally { await page.close(); }
+      try { c.done(); } finally { await providerTab?.close().catch(() => {}); await page.close(); }
     }
   });
 }
@@ -417,7 +418,7 @@ for (const [key, n, kind, frames] of [["home", 0, "home", { d: "29:1064", m: "29
 // terminal order views (no payment entry)
 for (const [key, n, o, frames, text, headings] of [
   ["completed", 0, { line: "bag", unit: 48000, commercial: "CONFIRMED", fulfillment: "MERCHANT_SHIPPED", pay: { state: "CAPTURED", handoff: "CLOSED", methods: false },
-    shipment: { status: "SHIPPED", carrier_code: "other", carrier_name: null, tracking_number: "TRK12345", tracking_url: null, recorded_at: iso(-3600e3) } },
+    shipment: { status: "SHIPPED", carrier_code: "other", carrier_name: "其他物流", // validShipment (lib/purchase.ts) refuses "other" with a null name tracking_number: "TRK12345", tracking_url: null, recorded_at: iso(-3600e3) } },
     { d: "63:1475", m: "63:1476" }, ["已完成", "這筆訂單已完成", "訂單資訊保留供您核對。", "收納袋 × 1", "付款狀態", "已付款", "訂單狀態", "商品金額", "NT$480", "運費", "NT$0", "合計"], ["訂購商品", "付款與配送"]],
   ["cancelled", 0, { line: "bag", unit: 48000, commercial: "CANCELLED", pay: { state: "NOT_STARTED", handoff: "NONE", methods: false } },
     { d: "63:1477", m: "63:1478" }, ["已取消", "這筆訂單已取消", "無需再為這筆訂單付款。", "收納袋 × 1", "付款狀態", "未付款", "訂單狀態", "商品金額", "NT$480", "這筆訂單已取消，不提供付款入口。", "合計"], ["訂購商品", "付款與配送"]],

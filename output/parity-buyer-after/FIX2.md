@@ -1,13 +1,15 @@
-# PARITY-BUYER-AFTER-FIX2 (PR #444, run 41244447379)
+# PARITY-BUYER-AFTER FIX2 r1 — lane report
 
-Evidence limits: Playwright output sits in CI artifacts, which this lane cannot download (tool allowlist). Each row is derived from the failing
-job log (job id, Go test line) plus a static read of the spec the Go test drives against the PR diff. Nothing was run locally.
+Run read: 41247231613 (head 8a9e6246). The jobs listed in the card's FAILS (e2e, returns-ui, live-claims) were from an older head and are green on this head; merge of origin/r3/integration was already up to date.
 
-| job (id) | failing test | spec driven | cause | class | fix |
-|---|---|---|---|---|---|
-| 124665648696 | TestBrowserStorefront (browser_storefront_test.go:393, exit 1) | tests/storefront/shop-real-gate.mjs `checkBuyerParityStates` | lookup button label is now `查詢訂單` / `查询订单` (signed frame 26:708 default state); the old spec clicked `查詢` exact | a | `lookupSubmit` zh-TW / zh-CN updated (en unchanged: `Find order`) |
-| 124665648696 | same | same, `expired` case | order-link refusal is drawn as frames 26:746 / 26:1028 (h1 + h2 + body + link), no `section[data-variant="expired"]` | a | expired copy = frame title/body, panel = `order-link` main, same real click on the lookup link |
-| 124665648625 | TestBrowserE2EDealLoop | tests/e2e/deal-loop.spec.ts:231 | claim button `直接結帳` replaced by the single frame action `前往結帳（共 N 件）` | a | button located by the frame label regexp |
-| 124665648897 | TestBrowserLiveClaimsRealChain | tests/admin/claims-ui.spec.ts | h1 / price note / action label / not-found text changed to frames 4:12347, 66:1746 (not-found now holds body + note + cart link, so exact `toHaveText` cannot hold) | a | copies table set to the frame strings; not-found uses `toContainText` of the frame body |
-| 124665648881 | TestBrowserReturnsUI | tests/admin/returns-ui.spec.ts (admin only) | the PR diff touches no admin, Go or returns file; the harness seeds through merchant APIs; no buyer page is walked | c? | none; merged newer `origin/r3/integration`. If red again: BLOCKED with the run's evidence file |
-| receipts / required / aggregate | | | fail only because of the jobs above | - | - |
+| Failing job / test | Evidence | Class | Change |
+|---|---|---|---|
+| foundation: `all eleven gate adapters preserve original assertions` (tests/ci/next-startup.test.mjs:284) | `buyer-comms-gate.mjs: original gate assertions changed (missing: expect(b.getByTestId("order-id")).toHaveText(orderID))` | a (signed frame replaced the full order-id row with the mail-number heading; the gate was already rewritten to the heading) | tests/ci/next-startup.test.mjs: `SIGNED_FRAME_REWRITES` maps the two baseline selectors/matchers to their rewritten form for that one file; every other baseline assertion is still compared unchanged |
+| gate buyer-after-parity: `payment hand-off page · home/cvs` | screenshot 29-1064: page stayed on 完成付款 with 暫時無法確認付款狀態 (hand-off aborted) | test bug in my spec: it closed the provider tab the instant it opened, OrderPayment fences on `destination.ready()` and treats a closed tab as aborted | tests/storefront/buyer-after-parity.mjs: keep the provider tab open until the hand-off page is checked, close in `finally` |
+| gate buyer-after-parity: `terminal order view · completed` | screenshot 63-1475: 無法載入訂單 | fixture invalid: `validShipment` (apps/storefront/lib/purchase.ts:339) rejects `carrier_code:"other"` with `carrier_name:null` | tests/storefront/buyer-after-parity.mjs: fixture `carrier_name: "其他物流"` |
+| gate bundle:02 / `--browser-storefront` PARITY-STATES `expired-*` | `waiting for getByTestId('order-link').getByRole('link', { name: '前往訂單查詢' })` | a (signed frame 26:746 button reads 前往查詢訂單 / 前往查询订单 / Go to order lookup; heading and body asserts already pass) | tests/storefront/shop-real-gate.mjs: per-locale `expiredGo`, used for the expired recovery click |
+| receipts / required | follow from the jobs above | n/a | none |
+
+Not run (owner rule: CI only). Ownership regenerated and checked.
+
+STATUS: DONE
