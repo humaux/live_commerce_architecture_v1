@@ -8,6 +8,7 @@ export { stateRecoveryCopy, adminSignedStateCopy, buyerSignedStateCopy } from '.
 export { cvsPickerCopy } from './cvs-picker.ts';
 export { entryParityCopy } from './entry-parity.ts';
 export { editorCopy } from './editor.ts';
+export { domainsParityCopy, type DomainsParityCopy } from './domains-parity.ts';
 export type Locale = (typeof locales)[number];
 export { inboxMessages, type InboxMessages } from './inbox.ts';
 export { growthCopy } from './growth.ts';
