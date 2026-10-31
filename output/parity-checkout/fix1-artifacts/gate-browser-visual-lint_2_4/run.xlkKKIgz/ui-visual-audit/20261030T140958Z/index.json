@@ -1,0 +1,2441 @@
+{
+ "generated": "2026-10-30T14:19:12.541Z",
+ "commit": "b10a8cdda6",
+ "out": "output/playwright/run.xlkKKIgz/ui-visual-audit/20261030T140958Z",
+ "matrix": {
+  "locales": [
+   "zh-TW",
+   "zh-CN",
+   "en"
+  ],
+  "viewports": [
+   {
+    "name": "desktop",
+    "size": "1586x992"
+   },
+   {
+    "name": "mobile",
+    "size": "390x844"
+   }
+  ],
+  "apps": {
+   "admin": 36,
+   "storefront": 17,
+   "platform": 5
+  }
+ },
+ "expected": 83,
+ "captured": 81,
+ "notRun": [],
+ "missing": [
+  "storefront|orders-orderid|zh-TW|390x844",
+  "storefront|orders-orderid|en|390x844"
+ ],
+ "shots": [
+  {
+   "app": "admin",
+   "route": "/finance/reports",
+   "id": "finance-reports",
+   "state": "registry",
+   "url": "/zh-CN/finance/reports?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/finance-reports/zh-CN-390x844.png",
+   "sha256": "538902382d20f155026e84c1bac757ffba1203de79c3eb92a5e5111c524c1bdf",
+   "bytes": 89608,
+   "status": 200,
+   "pageHeight": 891,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/finance",
+   "id": "finance",
+   "state": "registry",
+   "url": "/en/finance?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/finance/en-390x844.png",
+   "sha256": "1ea8e288022503a5cee72d104127490624cc075acdccb15aa3bd45422553bb22",
+   "bytes": 43290,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/finance",
+   "id": "finance",
+   "state": "registry",
+   "url": "/zh-TW/finance?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/finance/zh-TW-390x844.png",
+   "sha256": "887491fecf692853137e83873281a8083a1d42c8046b5db1edf8f81ce52865a3",
+   "bytes": 50680,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/",
+   "id": "home",
+   "state": "registry",
+   "url": "/zh-CN?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/home/zh-CN-390x844.png",
+   "sha256": "63ad839a6c0cef445ec5470ef4107178e1f4142cc0d7236f23a14c678c22d05e",
+   "bytes": 89894,
+   "status": 200,
+   "pageHeight": 1635,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/inventory",
+   "id": "inventory",
+   "state": "registry",
+   "url": "/en/inventory?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/inventory/en-390x844.png",
+   "sha256": "9847b5c52dcd98ab4017a9ee9a345460f99f82e91fc5aa133f90b0f423eb0ed4",
+   "bytes": 53950,
+   "status": 200,
+   "pageHeight": 968,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/inventory",
+   "id": "inventory",
+   "state": "registry",
+   "url": "/zh-TW/inventory?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/inventory/zh-TW-390x844.png",
+   "sha256": "d609740dcc6faffcd608f2e3f2c19f712a0813a797d5700a95220929c2fa8d1a",
+   "bytes": 59644,
+   "status": 200,
+   "pageHeight": 925,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/invite/[token]",
+   "id": "invite-token",
+   "state": "registry",
+   "url": "/zh-CN/invite/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/invite-token/zh-CN-390x844.png",
+   "sha256": "471fec6bc40ec82f55ec43320846839d9fdb51a8cfc985eeed0c32b4f188af88",
+   "bytes": 29959,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/messages",
+   "id": "messages",
+   "state": "registry",
+   "url": "/en/messages?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/messages/en-390x844.png",
+   "sha256": "fcc775bb9ee34760088b26b6b0658bd9e7e5b5d3f1f4ceda7d04bf0a2ec6967f",
+   "bytes": 26069,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/messages",
+   "id": "messages",
+   "state": "registry",
+   "url": "/zh-TW/messages?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/messages/zh-TW-390x844.png",
+   "sha256": "4e8d4b5e0631eb5fecdb19b2829a304ef09de7fdd6c4aeb331261a3fe37d7d62",
+   "bytes": 30605,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/orders/cvs-print",
+   "id": "orders-cvs-print",
+   "state": "registry",
+   "url": "/zh-CN/orders/cvs-print?store=9d4f08e7-089d-4110-a60d-087d0b5290e9&order=b4ae086e-27ea-43ec-a207-cabf8302fcd6&thermal=0",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/orders-cvs-print/zh-CN-390x844.png",
+   "sha256": "e1f987a0c71f0fe1f4cd97a3591a3b2f0180d0ff38227e0391e3cd77a8362c98",
+   "bytes": 34865,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [
+    "harness: the external ECPay navigation is cancelled so the page's own state is shown"
+   ],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/orders/new",
+   "id": "orders-new",
+   "state": "registry",
+   "url": "/en/orders/new?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/orders-new/en-390x844.png",
+   "sha256": "eeda440044c3ef120bc7ed6f466efe9fcd48b990f0b0e021eaaf4e96c079ae45",
+   "bytes": 63997,
+   "status": 200,
+   "pageHeight": 1416,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/orders/new",
+   "id": "orders-new",
+   "state": "registry",
+   "url": "/zh-TW/orders/new?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/orders-new/zh-TW-390x844.png",
+   "sha256": "71e3073924376da2795e070cdaa7cb57672a6513f8b9f7ae5ae950b7a3773d0c",
+   "bytes": 75097,
+   "status": 200,
+   "pageHeight": 1419,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/orders",
+   "id": "orders",
+   "state": "registry",
+   "url": "/zh-CN/orders?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/orders/zh-CN-390x844.png",
+   "sha256": "ef6f7fc12831863b698e94f419d155314ae0b9a3782dd123fbc056b75752c834",
+   "bytes": 186547,
+   "status": 200,
+   "pageHeight": 2850,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/products/import",
+   "id": "products-import",
+   "state": "registry",
+   "url": "/en/products/import?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/products-import/en-390x844.png",
+   "sha256": "5f60e50fc77a4b9a3030aba51e498faa34cbac1c9a6c0716f849ead11f7873c0",
+   "bytes": 85846,
+   "status": 200,
+   "pageHeight": 1099,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/products/import",
+   "id": "products-import",
+   "state": "registry",
+   "url": "/zh-TW/products/import?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/products-import/zh-TW-390x844.png",
+   "sha256": "2ff21ec9184b400e804afbe188fb7a0a281e459074b407c158fcb14355fc1861",
+   "bytes": 103355,
+   "status": 200,
+   "pageHeight": 1049,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/products/new",
+   "id": "products-new-variants",
+   "state": "create-with-variants",
+   "url": "/zh-CN/products/new?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/products-new-variants/zh-CN-390x844.png",
+   "sha256": "c77fa44de6154844d04f90dcc38050e8e7e4204df2d3b72827b2b451792f35b7",
+   "bytes": 51191,
+   "status": 200,
+   "pageHeight": 929,
+   "issues": [],
+   "supplemental": [
+    {
+     "kind": "inner-scroll frames",
+     "selector": ".pe-fields, .cat-task-editor",
+     "complete": true,
+     "scrollHeight": 2541,
+     "frames": [
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-01.png",
+       "sha256": "b93084ffebf66eb9d3710771181c5c4c3e97f5631d879b1e0a56d3a3f4adced2",
+       "bytes": 50951,
+       "geometry": {
+        "scrollTop": 0,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 0,
+        "to": 306
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-02.png",
+       "sha256": "1138d82835b94882729463b8c0c381d431dbeaf0d355202a001c72472e7e29b4",
+       "bytes": 46317,
+       "geometry": {
+        "scrollTop": 229,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 229,
+        "to": 535
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-03.png",
+       "sha256": "9105e1b54e9bbc14b337055efa28474ab1e846cea176d94e07dfa9bb821616c0",
+       "bytes": 41435,
+       "geometry": {
+        "scrollTop": 458,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 458,
+        "to": 764
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-04.png",
+       "sha256": "6adea14279e9f2aeca0ee93d32eccb8272d85002f02322e7fc993e482891295d",
+       "bytes": 45672,
+       "geometry": {
+        "scrollTop": 687,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 687,
+        "to": 993
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-05.png",
+       "sha256": "d3c6ada0af1db6df12e5c56e653bb5f6e16a259cf4125da47fb7334da3de4d08",
+       "bytes": 40534,
+       "geometry": {
+        "scrollTop": 916,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 916,
+        "to": 1222
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-06.png",
+       "sha256": "11d06488113d1e52a83f17eba0950e807819a5f1fcab7d59ae2337e22adb07ad",
+       "bytes": 37426,
+       "geometry": {
+        "scrollTop": 1145,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1145,
+        "to": 1451
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-07.png",
+       "sha256": "79ba01b66979079d7a45dae31c883d00cd7b5a5dccac798564f5ebb1264e5da8",
+       "bytes": 47670,
+       "geometry": {
+        "scrollTop": 1374,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1374,
+        "to": 1680
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-08.png",
+       "sha256": "ce715e0e10d4c7cc55c3fec2106d585ad2cf4faaba99b3a2c07ef120293e349b",
+       "bytes": 43752,
+       "geometry": {
+        "scrollTop": 1603,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1603,
+        "to": 1909
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-09.png",
+       "sha256": "46a7465e08e637f1140d84b5b216f3b8b99350a06ad3583a1bbce0bb14f21103",
+       "bytes": 36619,
+       "geometry": {
+        "scrollTop": 1832,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1832,
+        "to": 2138
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-10.png",
+       "sha256": "44bf88326420118c868a3559de7360737f0d7327a905edbc6344635c6b7dbc05",
+       "bytes": 40323,
+       "geometry": {
+        "scrollTop": 2061,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 2061,
+        "to": 2367
+       }
+      },
+      {
+       "file": "shots/admin/products-new-variants/zh-CN-390x844-inner-11.png",
+       "sha256": "b64ba04b7f0a17ec3400ac121b377a019dcf7abb4a388db27936bf8b45ef2a8b",
+       "bytes": 40761,
+       "geometry": {
+        "scrollTop": 2234,
+        "scrollHeight": 2541,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 2234,
+        "to": 2540
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "app": "admin",
+   "route": "/products/new",
+   "id": "products-new",
+   "state": "create-empty",
+   "url": "/en/products/new?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/products-new/en-390x844.png",
+   "sha256": "fe9f2289bd45ae2c53c1bf79ad653c9305ef4495e498fc48dd21bfc6e5f6406a",
+   "bytes": 50487,
+   "status": 200,
+   "pageHeight": 1056,
+   "issues": [],
+   "supplemental": [
+    {
+     "kind": "inner-scroll frames",
+     "selector": ".pe-fields, .cat-task-editor",
+     "complete": true,
+     "scrollHeight": 2109,
+     "frames": [
+      {
+       "file": "shots/admin/products-new/en-390x844-inner-01.png",
+       "sha256": "5f7ed439f3fd7f0e0da1476ed972276397db94939ee031fce9e094ee2a94eaba",
+       "bytes": 45553,
+       "geometry": {
+        "scrollTop": 0,
+        "scrollHeight": 2109,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 0,
+        "to": 306
+       }
+      },
+      {
+       "file": "shots/admin/products-new/en-390x844-inner-02.png",
+       "sha256": "fd94dd8723b1c361139ea83a354f7462d36b9862701ea872b98ba5f00641ad4a",
+       "bytes": 47800,
+       "geometry": {
+        "scrollTop": 229,
+        "scrollHeight": 2109,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 229,
+        "to": 535
+       }
+      },
+      {
+       "file": "shots/admin/products-new/en-390x844-inner-03.png",
+       "sha256": "5512a1eac637e56d4d7c2b17960ade9043ab4dfee01b3dc046742a4e1710d463",
+       "bytes": 41641,
+       "geometry": {
+        "scrollTop": 458,
+        "scrollHeight": 2109,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 458,
+        "to": 764
+       }
+      },
+      {
+       "file": "shots/admin/products-new/en-390x844-inner-04.png",
+       "sha256": "3a7aa23e4d0aac4069f5bd2ae0e298c72afa60042984349b88269a2fdd7e0a03",
+       "bytes": 33848,
+       "geometry": {
+        "scrollTop": 687,
+        "scrollHeight": 2109,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 687,
+        "to": 993
+       }
+      },
+      {
+       "file": "shots/admin/products-new/en-390x844-inner-05.png",
+       "sha256": "5a4da128719aa70e0485dbcffd0ae8f66f99793b493ad411beffb5b735c1f120",
+       "bytes": 40619,
+       "geometry": {
+        "scrollTop": 916,
+        "scrollHeight": 2109,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 916,
+        "to": 1222
+       }
+      },
+      {
+       "file": "shots/admin/products-new/en-390x844-inner-06.png",
+       "sha256": "7a0fa52eeb7f2f5d3754e1ab0048b92e976a8263291bd20858bd1257fc63f4e4",
+       "bytes": 37180,
+       "geometry": {
+        "scrollTop": 1145,
+        "scrollHeight": 2109,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1145,
+        "to": 1451
+       }
+      },
+      {
+       "file": "shots/admin/products-new/en-390x844-inner-07.png",
+       "sha256": "bf51011186333ac71cd0f121ad1ff6d945b7189cc9ffd16606cb51c33441d523",
+       "bytes": 36206,
+       "geometry": {
+        "scrollTop": 1374,
+        "scrollHeight": 2109,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1374,
+        "to": 1680
+       }
+      },
+      {
+       "file": "shots/admin/products-new/en-390x844-inner-08.png",
+       "sha256": "40685bc3da8d99eaf1fab3ad22e55fd85cc2974007c7f9d044dc3c669b76df14",
+       "bytes": 36579,
+       "geometry": {
+        "scrollTop": 1603,
+        "scrollHeight": 2109,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1603,
+        "to": 1909
+       }
+      },
+      {
+       "file": "shots/admin/products-new/en-390x844-inner-09.png",
+       "sha256": "529d06e56e45936ead68475574ec7ca05cc353e36012876f8700d5390177b8dd",
+       "bytes": 37370,
+       "geometry": {
+        "scrollTop": 1803,
+        "scrollHeight": 2109,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1803,
+        "to": 2109
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "app": "admin",
+   "route": "/products/new",
+   "id": "products-new",
+   "state": "create-empty",
+   "url": "/zh-TW/products/new?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/products-new/zh-TW-390x844.png",
+   "sha256": "1c5c262050c2f44d4da6911e733728ebb17b0785d3daf98cbdc4af79f67accc5",
+   "bytes": 56182,
+   "status": 200,
+   "pageHeight": 929,
+   "issues": [],
+   "supplemental": [
+    {
+     "kind": "inner-scroll frames",
+     "selector": ".pe-fields, .cat-task-editor",
+     "complete": true,
+     "scrollHeight": 2096,
+     "frames": [
+      {
+       "file": "shots/admin/products-new/zh-TW-390x844-inner-01.png",
+       "sha256": "c7faafa26f977002bab451353803cc4c94e34b67c12e41e509a34b52bebcb1d5",
+       "bytes": 49199,
+       "geometry": {
+        "scrollTop": 0,
+        "scrollHeight": 2096,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 0,
+        "to": 306
+       }
+      },
+      {
+       "file": "shots/admin/products-new/zh-TW-390x844-inner-02.png",
+       "sha256": "cbbfa3648197c9de597f93ae9c7b03d0f7df2f4a648a4730914c81543f254f1a",
+       "bytes": 53434,
+       "geometry": {
+        "scrollTop": 229,
+        "scrollHeight": 2096,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 229,
+        "to": 535
+       }
+      },
+      {
+       "file": "shots/admin/products-new/zh-TW-390x844-inner-03.png",
+       "sha256": "0333ca8eca1c2ee59985ede456714e76f117dfdb04bbb6f90ead4027e9e8649b",
+       "bytes": 42660,
+       "geometry": {
+        "scrollTop": 458,
+        "scrollHeight": 2096,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 458,
+        "to": 764
+       }
+      },
+      {
+       "file": "shots/admin/products-new/zh-TW-390x844-inner-04.png",
+       "sha256": "e57dcf75c5dbeac485ba9232ecb6b803a30cfa11eaba9007433c18720a49b292",
+       "bytes": 40726,
+       "geometry": {
+        "scrollTop": 687,
+        "scrollHeight": 2096,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 687,
+        "to": 993
+       }
+      },
+      {
+       "file": "shots/admin/products-new/zh-TW-390x844-inner-05.png",
+       "sha256": "67436a937503d6ddab6bbb56189bb8c74264cafd21662d53209f6af7908ac50e",
+       "bytes": 42072,
+       "geometry": {
+        "scrollTop": 916,
+        "scrollHeight": 2096,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 916,
+        "to": 1222
+       }
+      },
+      {
+       "file": "shots/admin/products-new/zh-TW-390x844-inner-06.png",
+       "sha256": "043e60fc677411dce8b5a2dfa78606d78ff1b315b24d46951b4dd0ff50558a4d",
+       "bytes": 38115,
+       "geometry": {
+        "scrollTop": 1145,
+        "scrollHeight": 2096,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1145,
+        "to": 1451
+       }
+      },
+      {
+       "file": "shots/admin/products-new/zh-TW-390x844-inner-07.png",
+       "sha256": "ddd7a234f2faab959196ec825a18656f5716ac9cded922a6cf6072d0b84cee81",
+       "bytes": 39534,
+       "geometry": {
+        "scrollTop": 1374,
+        "scrollHeight": 2096,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1374,
+        "to": 1680
+       }
+      },
+      {
+       "file": "shots/admin/products-new/zh-TW-390x844-inner-08.png",
+       "sha256": "4787cea3b6f9183ecec96d5811ad36e75520977806c3baed08bd25cacc824d4c",
+       "bytes": 38420,
+       "geometry": {
+        "scrollTop": 1603,
+        "scrollHeight": 2096,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1603,
+        "to": 1909
+       }
+      },
+      {
+       "file": "shots/admin/products-new/zh-TW-390x844-inner-09.png",
+       "sha256": "d2c0b3f0bbe78a3165e138623049bcce588cec1c1ba80d548ee8ebd5122f233d",
+       "bytes": 39769,
+       "geometry": {
+        "scrollTop": 1789,
+        "scrollHeight": 2096,
+        "clientHeight": 306,
+        "clientWidth": 358,
+        "contentTop": 425.1875,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306.3125
+        },
+        "visible": {
+         "x": 16,
+         "y": 425.1875,
+         "width": 358,
+         "height": 306
+        },
+        "wheelPoint": {
+         "x": 20,
+         "y": 578.1875
+        }
+       },
+       "visibleRange": {
+        "from": 1789,
+        "to": 2095
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "app": "admin",
+   "route": "/products/[product]",
+   "id": "products-product",
+   "state": "registry",
+   "url": "/zh-CN/products/20ccdfab-c3c2-4fe5-9d0c-ea5bce7cb25b?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/products-product/zh-CN-390x844.png",
+   "sha256": "0c68a9db784691f2eb7e565b6f47b77db9f86916a8fa36bd13c13cd7f69163e9",
+   "bytes": 45456,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": [
+    {
+     "kind": "inner-scroll frames",
+     "selector": ".pe-fields, .cat-task-editor",
+     "complete": true,
+     "scrollHeight": 440,
+     "frames": [
+      {
+       "file": "shots/admin/products-product/zh-CN-390x844-inner-01.png",
+       "sha256": "c4092140bd8c1f04bfae7bf41f9865d53a323e37ef395c806814bf8e5bddda97",
+       "bytes": 45492,
+       "geometry": {
+        "scrollTop": 0,
+        "scrollHeight": 440,
+        "clientHeight": 440,
+        "clientWidth": 356,
+        "contentTop": 253.390625,
+        "windowY": 0,
+        "rect": {
+         "x": 16,
+         "y": 252.390625,
+         "width": 358,
+         "height": 442
+        },
+        "visible": {
+         "x": 17,
+         "y": 253.390625,
+         "width": 356,
+         "height": 440
+        },
+        "wheelPoint": {
+         "x": 21,
+         "y": 473.390625
+        }
+       },
+       "visibleRange": {
+        "from": 0,
+        "to": 440
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "app": "admin",
+   "route": "/products",
+   "id": "products",
+   "state": "registry",
+   "url": "/en/products?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/products/en-390x844.png",
+   "sha256": "19ccb4d040a3133aa75f200f090b564930858b0b77418ffa3a025715f4135c5e",
+   "bytes": 47710,
+   "status": 200,
+   "pageHeight": 1152,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/products",
+   "id": "products",
+   "state": "registry",
+   "url": "/zh-TW/products?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/products/zh-TW-390x844.png",
+   "sha256": "df4f3d454603ad888393de1882aa158d33fc5698abee325db07da698d4d5286a",
+   "bytes": 52889,
+   "status": 200,
+   "pageHeight": 1131,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/promotions",
+   "id": "promotions",
+   "state": "registry",
+   "url": "/zh-CN/promotions?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/promotions/zh-CN-390x844.png",
+   "sha256": "e11c87e3f7187e8fe380166c06496a0cf002b15821f66773b05dd7aa45ee59ca",
+   "bytes": 100664,
+   "status": 200,
+   "pageHeight": 1507,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/reset",
+   "id": "reset",
+   "state": "registry",
+   "url": "/en/reset",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/reset/en-390x844.png",
+   "sha256": "1f17d2e98710b093e7e40e15750c516fd449fa58c2e9e2393723be875475282a",
+   "bytes": 28380,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/reset",
+   "id": "reset",
+   "state": "registry",
+   "url": "/zh-TW/reset",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/reset/zh-TW-390x844.png",
+   "sha256": "df88718ee8075e76cecf8d65f709df6059ef4695e8eae7afd05dc4815bcc680d",
+   "bytes": 35573,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/returns",
+   "id": "returns",
+   "state": "registry",
+   "url": "/zh-CN/returns?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/returns/zh-CN-390x844.png",
+   "sha256": "442eed60e5fb1452224f7423f20622bbb2957a09778f70647bd3e2842cddd7c9",
+   "bytes": 59498,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "url": "/en/settings/operations?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/settings-operations/en-390x844.png",
+   "sha256": "3649e3c18ef7d188f1bed22570fad09349eef94e40d4c937cdbabc17fcbb7b71",
+   "bytes": 35898,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "url": "/zh-TW/settings/operations?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/settings-operations/zh-TW-390x844.png",
+   "sha256": "8bb385124de2d6f2c067d9944a643a5361beb66f9224679bdc5d2a884d5c77b3",
+   "bytes": 42562,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/payments/card",
+   "id": "settings-payments-card",
+   "state": "registry",
+   "url": "/zh-CN/settings/payments/card?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/settings-payments-card/zh-CN-390x844.png",
+   "sha256": "9b9cff6487ecff96a53cae9e754a801677d0d4f97e04f67a5bf6422a8cbbd2f1",
+   "bytes": 35640,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/settlements",
+   "id": "settings-settlements",
+   "state": "registry",
+   "url": "/en/settings/settlements?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/settings-settlements/en-390x844.png",
+   "sha256": "06cc5d6a32d28242e0747cf0d229e7359b57b167133bf1cf9e3cc76c4608f189",
+   "bytes": 30882,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/settlements",
+   "id": "settings-settlements",
+   "state": "registry",
+   "url": "/zh-TW/settings/settlements?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/settings-settlements/zh-TW-390x844.png",
+   "sha256": "00db6f36e5eba93332e680765accced6858e1a67aa5019554308c35c240fb8ff",
+   "bytes": 34992,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings",
+   "id": "settings",
+   "state": "registry",
+   "url": "/zh-CN/settings?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/settings/zh-CN-390x844.png",
+   "sha256": "729beaa399fb80e679f5e36efe997af01c00267093b6d85c313d26d26e0ade82",
+   "bytes": 37774,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/",
+   "id": "signed-out-home",
+   "state": "signed-out",
+   "url": "/en",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/signed-out-home/en-390x844.png",
+   "sha256": "e24d65da0a2044a9b751b50bcfda8f1490c9be723c2b4360ca7a3230e780bc51",
+   "bytes": 37773,
+   "status": 200,
+   "pageHeight": 873,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/",
+   "id": "signed-out-home",
+   "state": "signed-out",
+   "url": "/zh-TW",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/signed-out-home/zh-TW-390x844.png",
+   "sha256": "71969fdee2e981b0a8a659a18adcc20f48870a50bd9790effc61f4870f18817a",
+   "bytes": 43649,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/signup",
+   "id": "signup",
+   "state": "registry",
+   "url": "/zh-CN/signup",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/signup/zh-CN-390x844.png",
+   "sha256": "e7c6df161681d5a0651fbf1784278bc5ef6fbc3a8bcd8334f6455a314a430f48",
+   "bytes": 41076,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/studio/claims",
+   "id": "studio-claims",
+   "state": "registry",
+   "url": "/en/studio/claims?store=9d4f08e7-089d-4110-a60d-087d0b5290e9&scene=11dc5e26-a448-4f40-aeb8-c4960246d6ca",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/studio-claims/en-390x844.png",
+   "sha256": "8a6a63b2a7b945a428efe739ef046c834a482d50e3cc37301c62bc773aa984a8",
+   "bytes": 219959,
+   "status": 200,
+   "pageHeight": 3475,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/studio/claims",
+   "id": "studio-claims",
+   "state": "registry",
+   "url": "/zh-TW/studio/claims?store=9d4f08e7-089d-4110-a60d-087d0b5290e9&scene=11dc5e26-a448-4f40-aeb8-c4960246d6ca",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/studio-claims/zh-TW-390x844.png",
+   "sha256": "9f0045a523d46050f4a0b1440882867b33d6bd887251c281895bbe6618073d21",
+   "bytes": 270906,
+   "status": 200,
+   "pageHeight": 3401,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/studio/console",
+   "id": "studio-console",
+   "state": "registry",
+   "url": "/zh-CN/studio/console?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/studio-console/zh-CN-390x844.png",
+   "sha256": "3ad1484535005998bca513eedaac8dba6a3da539f3ddb556c8c1447d6608187c",
+   "bytes": 120523,
+   "status": 200,
+   "pageHeight": 1457,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/studio/settings",
+   "id": "studio-settings",
+   "state": "registry",
+   "url": "/en/studio/settings?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/studio-settings/en-390x844.png",
+   "sha256": "2fdd995df3ff13fa4e5b1ae40a2814ff4aa3eda9c8cf278ce1c76fcf7650d9b8",
+   "bytes": 85061,
+   "status": 200,
+   "pageHeight": 1267,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/studio/settings",
+   "id": "studio-settings",
+   "state": "registry",
+   "url": "/zh-TW/studio/settings?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/studio-settings/zh-TW-390x844.png",
+   "sha256": "374461b9a149fd30fc4ae343850d523fadffc4509ec8135602a3b3882d93ae84",
+   "bytes": 103597,
+   "status": 200,
+   "pageHeight": 1259,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/studio",
+   "id": "studio",
+   "state": "registry",
+   "url": "/zh-CN/studio?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/studio/zh-CN-390x844.png",
+   "sha256": "f7387edc4c5cb9fafb22549ea7695aada53ed03ed05a315b3cedf4a5b4c8868a",
+   "bytes": 89757,
+   "status": 200,
+   "pageHeight": 1332,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/team",
+   "id": "team",
+   "state": "registry",
+   "url": "/en/team?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/team/en-390x844.png",
+   "sha256": "020e6caed78d81a8db7b0e17f8e14e26058f800ebdaf233385f8f349f0203a6b",
+   "bytes": 50345,
+   "status": 200,
+   "pageHeight": 1072,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "admin",
+   "route": "/team",
+   "id": "team",
+   "state": "registry",
+   "url": "/zh-TW/team?store=9d4f08e7-089d-4110-a60d-087d0b5290e9",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/team/zh-TW-390x844.png",
+   "sha256": "3fd1a4a0ce2b5d7bc0280f72c7afc21985681a0bb60a6ad643e552ce35590918",
+   "bytes": 65579,
+   "status": 200,
+   "pageHeight": 1045,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "platform",
+   "route": "/contact",
+   "id": "contact",
+   "state": "public",
+   "url": "/zh-CN/contact",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/platform/contact/zh-CN-390x844.png",
+   "sha256": "b6832a3b3b3f6c4fe95310a2f91a1b364d452d365342fdd67dc07165382bd04a",
+   "bytes": 170175,
+   "status": 200,
+   "pageHeight": 2008,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "platform",
+   "route": "/data-deletion",
+   "id": "data-deletion",
+   "state": "public",
+   "url": "/en/data-deletion",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/platform/data-deletion/en-390x844.png",
+   "sha256": "1a02d6d464f30c45ef15a608e0a017ba98361dbcc1c16ea27187dedca8b74ce2",
+   "bytes": 238177,
+   "status": 200,
+   "pageHeight": 2713,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "platform",
+   "route": "/data-deletion",
+   "id": "data-deletion",
+   "state": "public",
+   "url": "/data-deletion",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/platform/data-deletion/zh-TW-390x844.png",
+   "sha256": "369b818f293849d2b117b2a07141e0c61c7b251fec9a23ea3b781d0366ae54b4",
+   "bytes": 251896,
+   "status": 200,
+   "pageHeight": 2409,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "platform",
+   "route": "/",
+   "id": "home",
+   "state": "public",
+   "url": "/zh-CN",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/platform/home/zh-CN-390x844.png",
+   "sha256": "6071b1a1afe12dac7348c5949a4b0b5e5921e081b9df3bae4ee826374b7a1f8f",
+   "bytes": 224356,
+   "status": 200,
+   "pageHeight": 2749,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "platform",
+   "route": "/privacy",
+   "id": "privacy",
+   "state": "public",
+   "url": "/en/privacy",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/platform/privacy/en-390x844.png",
+   "sha256": "967b006d6d72fc4d03720c9ba72073028c18f36bd83b20eb43c06e002fc62bbd",
+   "bytes": 427609,
+   "status": 200,
+   "pageHeight": 4342,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "platform",
+   "route": "/privacy",
+   "id": "privacy",
+   "state": "public",
+   "url": "/privacy",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/platform/privacy/zh-TW-390x844.png",
+   "sha256": "ac5258ad68021bc65408cd10dc09419fae2fa528c86585f6aed7870ec5e675a6",
+   "bytes": 430905,
+   "status": 200,
+   "pageHeight": 3280,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "platform",
+   "route": "/terms",
+   "id": "terms",
+   "state": "public",
+   "url": "/zh-CN/terms",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/platform/terms/zh-CN-390x844.png",
+   "sha256": "eccfab4393665a642f8e7f44eefaf4a78da19a79591ab8c1f0ef028e5e338cce",
+   "bytes": 343285,
+   "status": 200,
+   "pageHeight": 3000,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/cart",
+   "id": "cart",
+   "state": "registry",
+   "url": "/en/cart",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/cart/en-390x844.png",
+   "sha256": "2f58c15b6ea2a86913266241834e465595c88c88fdeadf0982237c014aa66431",
+   "bytes": 61136,
+   "status": 200,
+   "pageHeight": 1359,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/cart",
+   "id": "cart",
+   "state": "registry",
+   "url": "/zh-TW/cart",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/cart/zh-TW-390x844.png",
+   "sha256": "a8169658dc3e4350fd86d8501e85d9e3e7c578db68d8f196130eeb028f25d234",
+   "bytes": 63129,
+   "status": 200,
+   "pageHeight": 1359,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/checkout",
+   "id": "checkout",
+   "state": "registry",
+   "url": "/en/checkout",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/checkout/en-390x844.png",
+   "sha256": "642ff83393ba962869ef6014d66bddfd1a60478e3ab4b167d74b21d8b79cd6bc",
+   "bytes": 61603,
+   "status": 200,
+   "pageHeight": 1807,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/checkout",
+   "id": "checkout",
+   "state": "registry",
+   "url": "/zh-TW/checkout",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/checkout/zh-TW-390x844.png",
+   "sha256": "7ad4c02e7c1816ada3d85a5b70de74b9dcffff11ed2bff74cac7d1c425ce867f",
+   "bytes": 61992,
+   "status": 200,
+   "pageHeight": 1807,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/claim",
+   "id": "claim",
+   "state": "registry",
+   "url": "/en/claim",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/claim/en-390x844.png",
+   "sha256": "3ce11eaee0abd1a97169bc49c3a62d608eab1ce7a0740d73cd8ef57f8924ff2d",
+   "bytes": 58352,
+   "status": 200,
+   "pageHeight": 1318,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/claim",
+   "id": "claim",
+   "state": "registry",
+   "url": "/zh-TW/claim",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/claim/zh-TW-390x844.png",
+   "sha256": "11ba06315e5a900df8574bcbdfaf2f9336384ed356cec5cd935ec543a8f73cba",
+   "bytes": 64647,
+   "status": 200,
+   "pageHeight": 1318,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/collections/[slug]",
+   "id": "collections-slug",
+   "state": "registry",
+   "url": "/en/collections/sweep-home",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/collections-slug/en-390x844.png",
+   "sha256": "a06fb8dfd638c177f927ddef62a4f3c891502fbfb1838e5f2536fa310fa2a86f",
+   "bytes": 70591,
+   "status": 200,
+   "pageHeight": 1563,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/collections/[slug]",
+   "id": "collections-slug",
+   "state": "registry",
+   "url": "/zh-TW/collections/sweep-home",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/collections-slug/zh-TW-390x844.png",
+   "sha256": "7b49be4511301b404a4d1d6261f2fc095adbc5f80a17b662cd9462f08d22fbd5",
+   "bytes": 72255,
+   "status": 200,
+   "pageHeight": 1511,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/collections",
+   "id": "collections",
+   "state": "registry",
+   "url": "/en/collections",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/collections/en-390x844.png",
+   "sha256": "9951567d1ce66d029eb5c65f25f5f7481dd841e309e2b271cafd0f04d70db712",
+   "bytes": 51837,
+   "status": 200,
+   "pageHeight": 1318,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/collections",
+   "id": "collections",
+   "state": "registry",
+   "url": "/zh-TW/collections",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/collections/zh-TW-390x844.png",
+   "sha256": "5904b54f0d495b099d5423d044d3588e30562daf283e9a237d161d326da28dda",
+   "bytes": 54170,
+   "status": 200,
+   "pageHeight": 1318,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/data-deletion",
+   "id": "data-deletion",
+   "state": "registry",
+   "url": "/en/data-deletion",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/data-deletion/en-390x844.png",
+   "sha256": "75b4066ef861e3cb47f86c6ea84544ee302735ac623f8ae4812be1fa844ca681",
+   "bytes": 112940,
+   "status": 200,
+   "pageHeight": 1607,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/data-deletion",
+   "id": "data-deletion",
+   "state": "registry",
+   "url": "/zh-TW/data-deletion",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/data-deletion/zh-TW-390x844.png",
+   "sha256": "bd8987d2387e5a79663396e4e18897cd6036cc659575ad3e5181beada81824be",
+   "bytes": 131386,
+   "status": 200,
+   "pageHeight": 1534,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/",
+   "id": "home",
+   "state": "registry",
+   "url": "/en",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/home/en-390x844.png",
+   "sha256": "7096da48a5db9970fae10755ef65faab852b65e6314af07aeb2ee708a85667e7",
+   "bytes": 82476,
+   "status": 200,
+   "pageHeight": 2284,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/",
+   "id": "home",
+   "state": "registry",
+   "url": "/zh-TW",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/home/zh-TW-390x844.png",
+   "sha256": "f7e69506b575d7196bdf5d7017f2fdf6cfdc15daac3485587a5fe786a67cdb0d",
+   "bytes": 85072,
+   "status": 200,
+   "pageHeight": 2284,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/legal/anti-fraud",
+   "id": "legal-anti-fraud",
+   "state": "registry",
+   "url": "/en/legal/anti-fraud",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/legal-anti-fraud/en-390x844.png",
+   "sha256": "a8c65f604e028e97a46835d5ae1b7042d3b259339a63656ea885766d0606590a",
+   "bytes": 131906,
+   "status": 200,
+   "pageHeight": 1872,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/legal/anti-fraud",
+   "id": "legal-anti-fraud",
+   "state": "registry",
+   "url": "/zh-TW/legal/anti-fraud",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/legal-anti-fraud/zh-TW-390x844.png",
+   "sha256": "ca5c3b1339c3a4f31e3dd3794a049fbd5b9046475751190f0abbf4c73cce97c4",
+   "bytes": 139478,
+   "status": 200,
+   "pageHeight": 1665,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/legal/[slug]",
+   "id": "legal-slug",
+   "state": "registry",
+   "url": "/en/legal/refunds",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/legal-slug/en-390x844.png",
+   "sha256": "2f37f365ef77ca2c0e1b64c37e363c5c224fed9f8b68d0dc31552a17d2c795c7",
+   "bytes": 58562,
+   "status": 200,
+   "pageHeight": 1186,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/legal/[slug]",
+   "id": "legal-slug",
+   "state": "registry",
+   "url": "/zh-TW/legal/refunds",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/legal-slug/zh-TW-390x844.png",
+   "sha256": "d128923c5fc3ace5574ae646d638b9406c3d6f7d34de58bce5f0789dcb53af9c",
+   "bytes": 57178,
+   "status": 200,
+   "pageHeight": 1151,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/order-link",
+   "id": "order-link",
+   "state": "registry",
+   "url": "/en/order-link",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/order-link/en-390x844.png",
+   "sha256": "5ae7de97fde3a33062460eb1b53268415b5f9081bce80bec7bec735543a72e12",
+   "bytes": 56882,
+   "status": 200,
+   "pageHeight": 1318,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/order-link",
+   "id": "order-link",
+   "state": "registry",
+   "url": "/zh-TW/order-link",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/order-link/zh-TW-390x844.png",
+   "sha256": "34585789116775d6b2fef93936ca19279dc0abdcf06d64aae98e47045d3d0544",
+   "bytes": 61724,
+   "status": 200,
+   "pageHeight": 1318,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/orders/lookup",
+   "id": "orders-lookup",
+   "state": "registry",
+   "url": "/en/orders/lookup",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/orders-lookup/en-390x844.png",
+   "sha256": "55ad19571e268d8779d6ce9dd58a6b4305e999fa4e3b5a8130079a7328321f54",
+   "bytes": 69526,
+   "status": 200,
+   "pageHeight": 1470,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/orders/lookup",
+   "id": "orders-lookup",
+   "state": "registry",
+   "url": "/zh-TW/orders/lookup",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/orders-lookup/zh-TW-390x844.png",
+   "sha256": "941e52bd57cce43e65920c11196fa77a56de3d099138afb0f80b0fb91d71904b",
+   "bytes": 76469,
+   "status": 200,
+   "pageHeight": 1445,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/pages/[slug]",
+   "id": "pages-slug",
+   "state": "registry",
+   "url": "/en/pages/about",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/pages-slug/en-390x844.png",
+   "sha256": "672c3d0e5c3223e133dd2f2e80b20ca0014354242efa727a96a93baea21ce809",
+   "bytes": 47651,
+   "status": 200,
+   "pageHeight": 1079,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/pages/[slug]",
+   "id": "pages-slug",
+   "state": "registry",
+   "url": "/zh-TW/pages/about",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/pages-slug/zh-TW-390x844.png",
+   "sha256": "13480d0cee57b1f15675a69c932c54f43d7b99e3884532240326cedb183876c6",
+   "bytes": 49002,
+   "status": 200,
+   "pageHeight": 1079,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/privacy",
+   "id": "privacy",
+   "state": "registry",
+   "url": "/en/privacy",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/privacy/en-390x844.png",
+   "sha256": "94e6ccb3c0faa8ce66e2dc220412a13bdb83bf071b1c8e641956d2a6438671f9",
+   "bytes": 163290,
+   "status": 200,
+   "pageHeight": 2534,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/privacy",
+   "id": "privacy",
+   "state": "registry",
+   "url": "/zh-TW/privacy",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/privacy/zh-TW-390x844.png",
+   "sha256": "f04c2692226e50a42575ed906d92da72fdd97b64808570ac837d32cfbbbbb606",
+   "bytes": 202238,
+   "status": 200,
+   "pageHeight": 2363,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/products/[slug]",
+   "id": "products-slug",
+   "state": "registry",
+   "url": "/en/products/sweep-wool-scarf",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/products-slug/en-390x844.png",
+   "sha256": "506e4ce38c01bee9ee1dc7631d646269602df296e19476f8cf35e1ba9cbc2a14",
+   "bytes": 103515,
+   "status": 200,
+   "pageHeight": 2747,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/products/[slug]",
+   "id": "products-slug",
+   "state": "registry",
+   "url": "/zh-TW/products/sweep-wool-scarf",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/products-slug/zh-TW-390x844.png",
+   "sha256": "44f45748ceaef85c0aeeab75ab095ce85fcd9dc6dffcf6fa071e6d1f64f1a620",
+   "bytes": 108846,
+   "status": 200,
+   "pageHeight": 2703,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/products",
+   "id": "products",
+   "state": "registry",
+   "url": "/en/products",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/products/en-390x844.png",
+   "sha256": "b9db3cfd07aa4819021072924cf939001e02870b80a81be59d009496d3ff451a",
+   "bytes": 71576,
+   "status": 200,
+   "pageHeight": 1827,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/products",
+   "id": "products",
+   "state": "registry",
+   "url": "/zh-TW/products",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/products/zh-TW-390x844.png",
+   "sha256": "32cda01c62a30afdcbe7707373471eeabaf78d2a9f92479c23e899d40900d8a9",
+   "bytes": 72923,
+   "status": 200,
+   "pageHeight": 1775,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/search",
+   "id": "search",
+   "state": "registry",
+   "url": "/en/search?q=Sweep",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/search/en-390x844.png",
+   "sha256": "841ddcb8f2f86218278b0f67c9749fc74dca73f28a5b12216460403441610f2c",
+   "bytes": 70173,
+   "status": 200,
+   "pageHeight": 1773,
+   "issues": [],
+   "supplemental": []
+  },
+  {
+   "app": "storefront",
+   "route": "/search",
+   "id": "search",
+   "state": "registry",
+   "url": "/zh-TW/search?q=Sweep",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/storefront/search/zh-TW-390x844.png",
+   "sha256": "f78311081eea7eb05417c8ec1848bd9f6a7897c850f799f0f9f8e1b7bc68e45e",
+   "bytes": 73999,
+   "status": 200,
+   "pageHeight": 1773,
+   "issues": [],
+   "supplemental": []
+  }
+ ]
+}
