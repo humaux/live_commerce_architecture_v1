@@ -618,12 +618,13 @@ test("matrix: locale copy differs per locale and the reset wording is the same f
     await fillCredentials(page, email);
     await submitButton(page).click();
     await expect(page.getByRole("heading", { name: "Check your email", exact: true })).toBeVisible();
+    const sentText = await page.locator("main, body").first().innerText();
+    const masked = `${email[0]}***@${email.split("@")[1]}`;
+    expect(sentText).toContain(masked);
     await page.getByRole("button", { name: "Enter the confirmation code", exact: true }).click();
     await expect(codeInput(page)).toBeVisible();
-    const text = await page.locator("main, body").first().innerText();
-    const masked = `${email[0]}***@${email.split("@")[1]}`;
-    expect(text).toContain(masked);
-    return text.replaceAll(masked, "<MASK>");
+    const codeText = await page.locator("main, body").first().innerText();
+    return `${sentText.replaceAll(masked, "<MASK>")}\n${codeText.replaceAll(masked, "<MASK>")}`;
   };
   const known = newEmail();
   await (await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin, extraHTTPHeaders: { origin: publicOrigin, "x-forwarded-for": source() } })).post("/api/auth/password/signup", { data: { email: known, password: newPassword(), locale: "en" } });

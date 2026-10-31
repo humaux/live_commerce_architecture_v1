@@ -23,12 +23,13 @@ export async function dashboardParity(page: Page, evidence: string) {
     },
   };
   const dashboardURL = "**/api/stores/*/tools/dashboard";
+  const headers = { "cache-control": "private, no-store" };
   // FIXTURE only: an existing closed dashboard response, including a historical offline order; never a real order write.
   const order = { order_id: "33333333-3333-4333-8333-333333333333", created_at: "2026-10-30T01:00:00.000000Z", updated_at: "2026-10-30T01:00:00.000000Z",
     currency: "TWD", total_minor: 2500, commercial_state: "AWAITING_TRANSFER", fulfillment_state: "MANUAL_UNASSIGNED", payment_state: "NOT_STARTED",
     test_mode: false, work_state: "NONE", refunded_minor: 0, refund_pending_minor: 0, pickup_source: null, payment_mode: "bank_transfer",
     collection_state: null, cod_surcharge_minor: null, cod_collect_minor: null, source: "merchant_manual" };
-  await page.route(dashboardURL, route => route.fulfill({ json: { generated_at: "2026-10-30T02:00:00Z", timezone: "Asia/Taipei",
+  await page.route(dashboardURL, route => route.fulfill({ headers, json: { generated_at: "2026-10-30T02:00:00Z", timezone: "Asia/Taipei",
     orders: { today: 2, last_7_days: 5 }, gmv: [],
     todos: { awaiting_transfer_confirmation: 1, to_ship: 2, cvs_awaiting_label: 1, low_stock_skus: 0, open_refunds: 0 }, latest_orders: [order],
   } }));
@@ -43,7 +44,7 @@ export async function dashboardParity(page: Page, evidence: string) {
       expect(route.request().headers()["x-csrf-token"]).toBeTruthy();
       draft = { ...draft, version: draft.version + 1, document: sent.document };
     } else expect(route.request().method()).toBe("GET");
-    await route.fulfill({ json: draft });
+    await route.fulfill({ headers, json: draft });
   });
   const market = { id: "11111111-1111-4111-8111-111111111111", code: "taiwan", name: "Taiwan", currency: "TWD", version: 1, active: true };
   const services = ["home", "cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"].map((kind, index) => ({
@@ -52,14 +53,14 @@ export async function dashboardParity(page: Page, evidence: string) {
   }));
   const marketsURL = /\/api\/stores\/[^/]+\/markets(?:\?|$)/;
   const servicesURL = /\/api\/stores\/[^/]+\/markets\/[^/]+\/countries\/TW\/delivery-services(?:\/[^/?]+(?:\/policy)?)?(?:\?.*)?$/;
-  await page.route(marketsURL, route => route.fulfill({ json: { items: [market], next_cursor: "" } }));
+  await page.route(marketsURL, route => route.fulfill({ headers, json: { items: [market], next_cursor: "" } }));
   await page.route(servicesURL, async route => {
     const path = new URL(route.request().url()).pathname;
-    if (path.endsWith("delivery-services")) { await route.fulfill({ json: { items: services, next_cursor: "" } }); return; }
+    if (path.endsWith("delivery-services")) { await route.fulfill({ headers, json: { items: services, next_cursor: "" } }); return; }
     const service = services.find(item => path.split("/").includes(item.code));
     expect(service).toBeDefined();
     if (path.endsWith("/policy")) {
-      await route.fulfill({ json: { market_id: market.id, country: "TW", method: service!.policy_method, currency: "TWD", shipping_mode: "country_flat", tax_mode: "none", tax_basis: "goods", version: 1, shipping_minor: 0, tax_rate_bps: 0, quote_ttl_seconds: 600, enabled: true } });
+      await route.fulfill({ headers, json: { market_id: market.id, country: "TW", method: service!.policy_method, currency: "TWD", shipping_mode: "country_flat", tax_mode: "none", tax_basis: "goods", version: 1, shipping_minor: 0, tax_rate_bps: 0, quote_ttl_seconds: 600, enabled: true } });
       return;
     }
     if (route.request().method() === "PUT") {
@@ -69,17 +70,17 @@ export async function dashboardParity(page: Page, evidence: string) {
       service!.enabled = sent.enabled;
       service!.version++;
     }
-    await route.fulfill({ json: service });
+    await route.fulfill({ headers, json: service });
   });
   const healthURL = "**/api/stores/*/meta/health";
   const recheckURL = "**/api/stores/*/meta/health/recheck";
-  await page.route(healthURL, route => route.fulfill({ json: { severity: "none", pages: [{ page_id: "123456", page_name: "Synthetic page", status: "active", severity: "none", capabilities: [
+  await page.route(healthURL, route => route.fulfill({ headers, json: { severity: "none", pages: [{ page_id: "123456", page_name: "Synthetic page", status: "active", severity: "none", capabilities: [
     { binding_id: "22222222-2222-4222-8222-222222222222", provider: "facebook", capability: "read_comment", state: "ok", reason: "probe_ok", evidence: "MOCK" },
   ] }] } }));
   await page.route(recheckURL, route => {
     expect(route.request().method()).toBe("POST");
     expect(route.request().postDataJSON()).toEqual({ page_id: "123456" });
-    return route.fulfill({ status: 202, json: { next_check_at: "2026-10-30T00:01:00Z" } });
+    return route.fulfill({ status: 202, headers, json: { next_check_at: "2026-10-30T00:01:00Z" } });
   });
   const location = (view = "", locale = "zh-TW") => {
     const url = new URL(root);
